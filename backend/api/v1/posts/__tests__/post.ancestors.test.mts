@@ -88,6 +88,7 @@ describe('post.ancestors', () => {
       expect(response.body.results[0]?.id).toBe(postId)
       expect(response.body.results.at(-1)?.id).toBe(childCommentId)
       expect(response.body.posts[childCommentId].can_delete).toBe(true)
+      expect(response.headers['cache-control']).toBe('private, no-store')
     })
 
     it('includes community sidecar records for community post ancestors', async () => {
@@ -243,7 +244,7 @@ describe('post.ancestors', () => {
       expect(response.body.results.at(-1)?.id).toBe(commentId)
     })
 
-    it('sets an explicit private, no-store Cache-Control header, since the edge tag scheme cannot purge a response covering multiple ancestor entities', async () => {
+    it('sets public cache headers for anonymous ancestor reads', async () => {
       const rootId = await insertTestPost({
         title: 'Ancestor Root No Cache',
         slug: `ancestor-root-no-cache-${Date.now()}`,
@@ -262,7 +263,8 @@ describe('post.ancestors', () => {
       const request = createRequest()
       const response = await request.get(`/api/v1/posts/${commentId}/ancestors`).expect(200)
 
-      expect(response.headers['cache-control']).toBe('private, no-store')
+      expect(response.headers['cache-control']).toBe('public')
+      expect(response.headers.vary).toContain('Cookie')
     })
 
     it('returns 404 for logged-out users and returns ancestors to followers on followers-private roots', async () => {

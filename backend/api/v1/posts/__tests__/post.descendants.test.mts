@@ -78,7 +78,8 @@ describe('post.descendants', () => {
         .get(`/api/v1/posts/${postId}/descendants?max_depth=2`)
         .expect(200)
 
-      expect(response.headers['cache-control']).toBe('private, no-store')
+      expect(response.headers['cache-control']).toBe('public')
+      expect(response.headers.vary).toContain('Cookie')
 
       expect(Array.isArray(response.body.results)).toBe(true)
       expect(response.body.page_info).toBeDefined()

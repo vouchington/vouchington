@@ -11,6 +11,14 @@ import {
 import { createTopicAliases } from '@services/topics/aliases'
 describe('RSS Feed Items Routes', () => {
   describe('GET /api/v1/rss-feed-items', () => {
+    it('marks an early empty anonymous result public', async () => {
+      const response = await createRequest()
+        .get('/api/v1/rss-feed-items?q=news%20%23missing-rss-topic-for-cache')
+        .expect(200)
+      expect(response.body.results).toEqual([])
+      expect(response.headers['cache-control']).toBe('public')
+    })
+
     it('should return rss feed items and cache headers for logged-out users', async () => {
       const topic = await createTestTopic()
       const feedId = await createTestRssFeedWithTiming(topic.id)
@@ -32,7 +40,8 @@ describe('RSS Feed Items Routes', () => {
         rss_feed_item_id: itemId,
         source_url: expect.any(String),
       })
-      expect(response.headers['cache-control']).toBe('private, no-store')
+      expect(response.headers['cache-control']).toBe('public')
+      expect(response.headers.vary).toContain('Cookie')
     })
 
     it('should support filtering by rss_feeds', async () => {
@@ -252,10 +261,7 @@ describe('RSS Feed Items Routes', () => {
         .query({ rss_feeds: feedId })
         .expect(200)
 
-      // Should not have public cache-control for authenticated users
-      expect(
-        !response.headers['cache-control'] || !response.headers['cache-control'].includes('public'),
-      ).toBe(true)
+      expect(response.headers['cache-control']).toBe('private, no-store')
     })
 
     it('should handle pagination with consistent structure', async () => {

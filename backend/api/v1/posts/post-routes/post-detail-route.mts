@@ -26,6 +26,7 @@ import { getPostHackerNewsDetails } from '@services/urls/hacker-news-sidecars'
 import { DELETED_USER_ID, getUserMarkdown, isAdminUser, isFollowingUser } from '@services/users'
 import { userTag } from '@ts-shared/cache/cache-tags'
 import app from '../../../app.mts'
+import { setPublicCacheHeaders } from '../../../cache-headers.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
 import { getRouteAccessPost, getRoutePostByAnyCached } from '@services/posts/route-access'
 
@@ -47,6 +48,7 @@ app.route('/api/v1/posts/:idOrSlug').get(async (ctx: Context) => {
   ctx.assert(readState, 404, 'Post not found')
 
   ctx.set('Cache-Control', 'private, no-store')
+  if (!currentUser) setPublicCacheHeaders(ctx)
   if (readState === 'placeholder') {
     // A deleted or unmoderated comment with a valid reply below it: its place in the thread only.
     if (ctx.req.method === 'HEAD') {

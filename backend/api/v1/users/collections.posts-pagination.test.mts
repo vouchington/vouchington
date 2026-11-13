@@ -30,10 +30,12 @@ describe('GET /api/v1/users/:idOrSlug/posts/:listType pagination', () => {
     }
     const request = createRequest()
     await request.authenticateAs(owner)
+    await createRequest().get(`/api/v1/users/${owner.username}/posts/saved`).expect(401)
 
     const first = await request
       .get(`/api/v1/users/${owner.username}/posts/saved?limit=2`)
       .expect(200)
+    expect(first.headers['cache-control']).toBe('private, no-store')
     const second = await request
       .get(
         `/api/v1/users/${owner.username}/posts/saved?limit=2&after=${encodeURIComponent(first.body.page_info.end_cursor)}`,

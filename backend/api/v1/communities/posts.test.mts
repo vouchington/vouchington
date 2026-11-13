@@ -66,6 +66,7 @@ describe('Community Posts Routes', () => {
 
       expect(Array.isArray(response.body.results)).toBe(true)
       expect(response.body).toHaveProperty('page_info')
+      expect(response.headers['cache-control']).toBe('public')
     })
 
     it('includes post bookmarks for authenticated users', async () => {
@@ -88,6 +89,7 @@ describe('Community Posts Routes', () => {
       const response = await request.get(`/api/v1/communities/${community.slug}/posts`).expect(200)
 
       expect(response.body.bookmarks?.[postId]?.save).toBe(true)
+      expect(response.headers['cache-control']).toBe('private, no-store')
     })
   })
 

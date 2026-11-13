@@ -1,5 +1,6 @@
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
+import { setPublicCacheHeaders } from '../../cache-headers.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
 import {
@@ -42,6 +43,7 @@ app.route('/api/v1/rss-feed-items/:id').get(async (ctx: Context) => {
   ctx.assert(item, 404, 'RSS feed item not found')
 
   ctx.set('Cache-Control', 'private, no-store')
+  if (!currentUser) setPublicCacheHeaders(ctx)
 
   const output: Record<string, unknown> = {
     rss_feed_item: proxyRssFeedItemCoverArt(item),

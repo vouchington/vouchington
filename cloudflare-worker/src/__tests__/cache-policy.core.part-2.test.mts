@@ -47,6 +47,31 @@ describe('cache-policy', () => {
     expect(result.stripAllCookies).toBe(true)
   })
 
+  it.each(['/api/v1/posts/comment-abc/ancestors', '/api/v1/posts/comment-abc/descendants'])(
+    'caches anonymous requests to embedded thread route %s',
+    pathname => {
+      const result = getCachePolicy({
+        pathname,
+        botTier: null,
+        isAuthenticated: false,
+        staticCachedPaths,
+        sitemapCacheTtlSeconds: 86_400,
+        staticCacheTtlSeconds: 86_400,
+        botCacheTtlSeconds: 86_400,
+        anonCacheTtlSeconds: 30,
+        rssCacheTtlSeconds: 300,
+        hasReferralAttributionSignal: false,
+        hasFeatureFlagOverrideCookie: false,
+        hasUnverifiedSessionCookies: false,
+      })
+
+      expect(result.mode).toBe('cache')
+      expect(result.audience).toBe('anon')
+      expect(result.ttlSeconds).toBe(30)
+      expect(result.stripAllCookies).toBe(true)
+    },
+  )
+
   it.each([
     '/api/v1/my',
     '/api/v1/my/profile',
@@ -58,8 +83,6 @@ describe('cache-policy', () => {
     '/api/v1/session',
     '/api/v1/copyright-notices/00000000-0000-7000-8000-000000000001/participant',
     '/api/v1/copyright-email-intakes/00000000-0000-7000-8000-000000000001/raw',
-    '/api/v1/posts/comment-abc/ancestors',
-    '/api/v1/posts/comment-abc/descendants',
   ])('bypasses private backend route %s before cache dispatch', pathname => {
     const result = getCachePolicy({
       pathname,

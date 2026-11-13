@@ -37,6 +37,14 @@ describe('posts', () => {
     })
 
     describe('GET /api/v1/posts', () => {
+      it('marks an early empty anonymous result public', async () => {
+        const response = await createRequest()
+          .get('/api/v1/posts?q=unknown%20%23missing-post-topic-for-cache')
+          .expect(200)
+        expect(response.body.results).toEqual([])
+        expect(response.headers['cache-control']).toBe('public')
+      })
+
       it('should return a list of posts', async () => {
         await insertTestPost({
           title: 'Test Post',
@@ -51,7 +59,8 @@ describe('posts', () => {
         expect(response.body).toHaveProperty('posts_metrics')
         expect(response.body).toHaveProperty('results')
         expect(response.body).toHaveProperty('page_info')
-        expect(response.headers['cache-control']).toBe('private, no-store')
+        expect(response.headers['cache-control']).toBe('public')
+        expect(response.headers.vary).toContain('Cookie')
         expect(response.body).not.toHaveProperty('bookmarks')
         expect(response.body).not.toHaveProperty('election_votes')
         expect(response.body).not.toHaveProperty('post_moderations')

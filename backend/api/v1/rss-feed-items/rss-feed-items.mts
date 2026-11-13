@@ -1,6 +1,7 @@
 import { clampAnonLimit, getPaginationLimits } from '@services/pagination'
 import { isAdminUser } from '@services/users'
 import app from '../../app.mts'
+import { setPublicCacheHeaders } from '../../cache-headers.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import {
@@ -45,6 +46,7 @@ app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
   validateRequestContract(ctx, 'GET:/api/v1/rss-feed-items', {
     query: preparedSearchParams.validationQuery,
   })
+  if (!currentUser) setPublicCacheHeaders(ctx)
   const parsedSearchParams = await resolveRssFeedItemsSearchParams(preparedSearchParams)
   const { shouldReturnEmpty, searchOptions } = parsedSearchParams
   if (!currentUser) searchOptions.limit = clampAnonLimit(searchOptions.limit)

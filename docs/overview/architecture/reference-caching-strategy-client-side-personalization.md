@@ -65,10 +65,14 @@ despite the per-request CSP nonce. What's still excluded from the edge cache:
   headers on the client response as a defense in depth if an origin route accidentally emits a
   public header. When a bot-classified request hits one of these private bypasses, the Worker
   keeps the bot session invariant and strips `st`/`dt` before forwarding to the backend.
-- **`GET /api/v1/posts/:idOrSlug/ancestors` and `GET /api/v1/posts/:idOrSlug/descendants`**: the
-  Cache-Tag scheme tags each response by the single path `idOrSlug`. Ancestors embed every parent
-  post, and descendants embed every child post on the page, so an edit to a post other than that
-  path identifier has no tag to purge the cached response. Both routes bypass edge caching.
+
+Anonymous post-thread ancestors and descendants use the same cache path as other public content
+responses. Their freshness follows the Cloudflare Worker's TTL policy, including accepted lag
+after visibility changes; a request must not probe the origin merely to re-check whether cached
+posts are still public. Authenticated responses remain private and uncacheable. Server-to-CDN
+`Cache-Tag` purges are reserved for legal removals such as copyright and user deletion, rather
+than freshness. Owner-only user collections continue to require authentication and are never
+made public by this cache policy.
 
 ## Related
 

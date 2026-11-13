@@ -1,5 +1,6 @@
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
+import { setPublicCacheHeaders } from '../../cache-headers.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { apiResponse } from '@vouchington/utils/api-response-contract'
@@ -44,6 +45,7 @@ app.route('/api/v1/stories/:id').get(async (ctx: Context) => {
   validateRequestContract(ctx, 'GET:/api/v1/stories/:id', { path: ctx.params, query })
   const story = await getStoryById(storyId)
   ctx.assert(story, 404, 'Story not found')
+  if (!currentUser) setPublicCacheHeaders(ctx)
   const page = (
     await getStoryMemberPagesBatch(currentUser, [{ story_id: story.id, exclude_item_id, after }], {
       limit,

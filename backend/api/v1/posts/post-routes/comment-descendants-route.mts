@@ -24,6 +24,7 @@ import {
 } from '@services/posts'
 import type { CommunityMemberRole } from '@services/communities/types'
 import app from '../../../app.mts'
+import { setPublicCacheHeaders } from '../../../cache-headers.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
 import { getRouteAccessPost } from '@services/posts/route-access'
 import { apiResponse } from '@vouchington/utils/api-response-contract'
@@ -96,12 +97,8 @@ app.route('/api/v1/posts/:idOrSlug/ancestors').get(async (ctx: Context) => {
     'Post not found',
   )
 
-  // The edge Cache-Tag scheme (ts-shared/cache/cache-tags.mts) tags API detail routes by a
-  // single leaf idOrSlug, but this response embeds every ancestor post. Editing a parent post
-  // would leave a stale cached response for this route with no tag to purge it by, so this
-  // route explicitly opts out of edge caching (CachedOrigin caches any 2xx response lacking an
-  // explicit private/no-store/no-cache directive — omitting Cache-Control is not a bypass).
   ctx.set('Cache-Control', 'private, no-store')
+  if (!currentUser) setPublicCacheHeaders(ctx)
 
   let communityMemberRole: CommunityMemberRole | null = null
   if (currentUser && rootPost.community_id) {
