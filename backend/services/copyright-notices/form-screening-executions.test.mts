@@ -1,3 +1,4 @@
+import { assertFailedScreenHumanApproval } from '@voucha/test-helpers/copyright-failed-screen-human-outcome'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import {
@@ -23,7 +24,6 @@ import {
   completeCopyrightFormScreening,
   failCopyrightFormScreening,
 } from './form-screening-executions.mts'
-import { reviewCopyrightFormIntake } from './form-reviews.mts'
 
 describe('current copyright form screening execution', () => {
   it('fences stale completion and replays the current result after a failed retry', async () => {
@@ -138,24 +138,15 @@ describe('current copyright form screening execution', () => {
   })
 
   it('staff approval creates human authority during failed screening', async () => {
-    const { intake } = await createSignedInCopyrightForm()
+    expect.hasAssertions()
+    const [claimant, poster, moderator] = await Promise.all([
+      createTestUser(),
+      createTestUser(),
+      createTestUser({ extraRoles: ['moderator'] }),
+    ])
+    const { intake } = await createSignedInCopyrightForm(1, { claimant, poster })
     const initial = (await claimCopyrightFormScreening(intake.id))!
     await failCopyrightFormScreening(initial)
-    const user = await createTestUser()
-    await reviewCopyrightFormIntake({
-      intakeId: intake.id,
-      currentUser: { ...user, roles: ['moderator'] },
-      is_accepted: true,
-      rationale: 'Human statutory review.',
-    })
-    const aggregate = await getCopyrightNoticePrivateAggregate(intake.copyright_notice_id)
-    expect(aggregate?.assessments.at(-1)).toMatchObject({
-      copyright_notice_form_screening_id: null,
-      assessed_by_id: user.id,
-      is_substantially_compliant: true,
-    })
-    await expect(
-      countCopyrightActiveRestrictionsForNotice(intake.copyright_notice_id),
-    ).resolves.toBe(1)
+    await assertFailedScreenHumanApproval(intake, moderator, claimant.id, poster.id)
   })
 })
