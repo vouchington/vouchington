@@ -52,9 +52,13 @@ export async function upgradeVerifiedNativeSession(options: {
     const user = await options.fetchUser(options.uid, query)
     if (!user || user.id !== options.uid) throw sessionReloginRequired()
     const claims = await getEnrichedSessionClaims(user, { mfaVerifiedAt: device.mfa_at })
-    await query(sql`/* upgradeVerifiedNativeSession */
+    const consumed = await query(sql`/* upgradeVerifiedNativeSession */
       UPDATE user_sessions SET revoked_at = CURRENT_TIMESTAMP, last_seen_at = CURRENT_TIMESTAMP
-      WHERE id = ${options.sid} AND user_id = ${options.uid} AND revoked_at IS NULL`)
+      WHERE id = ${options.sid} AND user_id = ${options.uid} AND revoked_at IS NULL
+        AND device_token_digest = ${hashDeviceToken(options.deviceToken)}
+        AND expires_at > clock_timestamp()
+      RETURNING id`)
+    if (consumed.rows.length !== 1) throw sessionReloginRequired()
     registerPostCommitAction(query, () => revokeSessionKey(options.sid))
     return createDeviceAndSessionTokens({
       query,
