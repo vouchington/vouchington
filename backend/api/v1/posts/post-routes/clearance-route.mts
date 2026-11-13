@@ -22,6 +22,7 @@ import {
 import type { CommunityMemberRole } from '@services/communities/types'
 import { isAdminUser } from '@services/users'
 import app from '../../../app.mts'
+import { setPublicCacheHeaders } from '../../../cache-headers.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
 import { apiQuery } from '../../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
@@ -81,10 +82,8 @@ app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
     search_vector_ts: null,
   }))
 
-  // The edge Cache-Tag scheme tags this route by the path idOrSlug, but the body embeds every
-  // descendant post on the page. A child edit would leave a stale cached response with no tag to
-  // purge it by. CachedOrigin caches any 2xx that lacks an explicit private/no-store directive.
   ctx.set('Cache-Control', 'private, no-store')
+  if (!currentUser) setPublicCacheHeaders(ctx)
 
   let communityMemberRole: CommunityMemberRole | null = null
   if (currentUser && rootPost.community_id) {

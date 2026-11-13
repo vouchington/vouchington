@@ -1,4 +1,6 @@
 import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
+import { closeServer, listen } from '@voucha/test-helpers/api/http-boundary'
+import type { AddressInfo } from 'node:net'
 import { rejectTestMediaDeliveryEdgeState } from '@voucha/test-helpers/copyright-delivery-edge'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { markImageModerationFlagged } from '@voucha/test-helpers'
@@ -15,6 +17,7 @@ import {
   createCounterNoticeRestoreIntent,
 } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
+import * as cachePurge from '@services/entity-cache/purge'
 
 describe('copyright action delivery branches', () => {
   let edge: ReturnType<typeof installTestMediaDeliveryEdge>
@@ -53,6 +56,7 @@ describe('copyright action delivery branches', () => {
       }),
     ).resolves.toMatchObject({ status: 'applied' })
     edge.put.mockClear()
+    const purge = vi.spyOn(cachePurge, 'purgeCacheTags')
 
     await expect(processCopyrightActionIntent(withhold.id, new Date())).resolves.toBe('stale')
 
@@ -61,6 +65,54 @@ describe('copyright action delivery branches', () => {
       revision: target.placement_revision + 2,
     })
     expect(edge.put).not.toHaveBeenCalled()
+    expect(purge).not.toHaveBeenCalled()
+  })
+
+  it('keeps a withhold owed until its legal cache purge succeeds', async () => {
+    const { aggregate, assessment, moderator, notice } =
+      await createCopyrightRestorationHoldFixture()
+    await acceptCopyrightNoticeAndImposeRestriction({
+      noticeId: notice.id,
+      targetId: aggregate.targets[0]!.id,
+      assessmentId: assessment.id,
+      imposedAt: new Date('2026-07-01T12:00:00.000Z'),
+      imposedById: moderator.id,
+    })
+    const withhold = (await getActionIntent(notice.id, 'withhold'))!
+    const purge = vi.spyOn(cachePurge, 'purgeCacheTags')
+    const now = new Date()
+    let requests = 0
+    const server = await listen((_request, response) => {
+      requests++
+      response.writeHead(requests === 1 ? 503 : 200).end()
+    })
+    vi.stubEnv('CF_WORKER_ROUTE', `http://127.0.0.1:${(server.address() as AddressInfo).port}`)
+    vi.stubEnv('CF_WORKER_SECRET', 'test-secret')
+    vi.stubEnv('SKIP_CACHE_PURGE', 'false')
+    try {
+      await expect(processCopyrightActionIntent(withhold.id, now)).rejects.toThrow(
+        'Cache purge request failed',
+      )
+      expect(requests).toBe(1)
+      expect(purge).toHaveBeenCalledExactlyOnceWith(['legal-removal'])
+      expect(await getActionIntent(notice.id, 'withhold')).toMatchObject({
+        state: 'pending',
+        completed_at: null,
+        failure_message: 'Cache purge request failed',
+      })
+
+      await expect(
+        processCopyrightActionIntent(withhold.id, new Date(now.getTime() + 61_000)),
+      ).resolves.toBe('applied')
+      expect(requests).toBe(2)
+      expect(purge).toHaveBeenCalledTimes(2)
+      expect(await getActionIntent(notice.id, 'withhold')).toMatchObject({
+        state: 'completed',
+        completed_at: expect.any(Date),
+      })
+    } finally {
+      await closeServer(server)
+    }
   })
 
   it('completes an unavailable restore without projecting a deleted placement', async () => {

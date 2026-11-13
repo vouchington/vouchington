@@ -24,6 +24,7 @@ import { getPostHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import { getUrlEmbedsByUrlIds, type UrlEmbed } from '@services/rss-feed-items/get-url-embed'
 import app from '../../../app.mts'
 import { apiQuery } from '../../../api-query-contract.mts'
+import { setPublicCacheHeaders } from '../../../cache-headers.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
 import {
   getPostElectionSidecars,
@@ -38,6 +39,7 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/posts')
   const preparedSearchParams = preparePostsSearchParams(ctx.query, getPaginationLimits(25))
   validateRequestContract(ctx, 'GET:/api/v1/posts', { query: preparedSearchParams.validationQuery })
+  if (!currentUser) setPublicCacheHeaders(ctx)
 
   const parsedSearchParams = await resolvePostsSearchParams(preparedSearchParams)
   const { shouldReturnEmpty, searchOptions } = parsedSearchParams

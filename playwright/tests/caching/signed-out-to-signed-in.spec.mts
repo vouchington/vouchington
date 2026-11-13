@@ -34,7 +34,9 @@ test.describe('Signed-out to signed-in caching', () => {
 
     expect(anonymousResponse.status).toBe(200)
     expect(anonymousResponse.cacheStatus).toBe('DISPATCHED')
-    expect(anonymousResponse.cacheControl).toBe('private, no-store')
+    expect(anonymousResponse.cacheControl).toBe(
+      'public, max-age=30, stale-while-revalidate=60, stale-if-error=86400',
+    )
     expect(anonymousResponse.body).not.toHaveProperty('election_vote')
 
     await withCleanUser(page)
@@ -42,6 +44,7 @@ test.describe('Signed-out to signed-in caching', () => {
     const authenticatedResponse = await browserFetch(page, requestPath)
     expect(authenticatedResponse.status).toBe(200)
     expect(authenticatedResponse.cacheStatus).toBe('BYPASS')
+    expect(authenticatedResponse.cacheControl).toBe('private, no-store')
     expect(authenticatedResponse.body).toHaveProperty('election_vote')
   })
 })

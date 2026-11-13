@@ -21,6 +21,7 @@ describe('GET /api/v1/users/:idOrSlug/urls/:listType pagination', () => {
     const owner = await createTestUser({ username: safeUsername('urls-page-empty') })
     if (!owner) throw new Error('Failed to create owner')
 
+    await createRequest().get(`/api/v1/users/${owner.id}/urls/saved`).expect(401)
     const request = createRequest()
     await request.authenticateAs(owner)
     const response = await request.get(`/api/v1/users/${owner.id}/urls/saved`).expect(200)
@@ -28,6 +29,7 @@ describe('GET /api/v1/users/:idOrSlug/urls/:listType pagination', () => {
       results: [],
       page_info: { has_next_page: false, end_cursor: null },
     })
+    expect(response.headers['cache-control']).toBe('private, no-store')
   })
 
   it('paginates saved urls at the exact limit across pages without duplicates', async () => {

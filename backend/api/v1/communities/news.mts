@@ -2,6 +2,7 @@ import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import { getRssFeedItemHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import app from '../../app.mts'
+import { setPublicCacheHeaders } from '../../cache-headers.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { loadCommunityForViewer } from '@services/communities'
@@ -49,6 +50,7 @@ app.route('/api/v1/communities/:idOrSlug/news').get(async (ctx: Context) => {
   )
   const { idOrSlug } = ctx.params as { idOrSlug: string }
   const { community } = await loadCommunityForViewer(currentUser, idOrSlug)
+  if (!currentUser && community.visibility === 'public') setPublicCacheHeaders(ctx)
   validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/news', {
     path: ctx.params,
   })

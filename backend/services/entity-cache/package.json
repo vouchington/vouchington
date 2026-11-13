@@ -32,6 +32,7 @@
     "@services/batch-lookup": "workspace:^",
     "@services/bloom-filter-config": "workspace:^",
     "@ts-shared/cache": "workspace:^",
+    "@ts-shared/deploy-environment": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
     "http-errors": "^2.0.1",

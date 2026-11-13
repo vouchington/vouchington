@@ -1,4 +1,5 @@
 import app from '../../app.mts'
+import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import type { Context } from '@jongleberry/api-server'
 import { defineQueryContract, queryString } from '@vouchington/pagination'
@@ -125,6 +126,7 @@ app.route('/api/v1/users/:idOrSlug/urls/:listType').get(async (ctx: Context) => 
   )
   const urls = await getUserUrlsCollection(resolved.target.id, listType, pagination)
 
+  setPrivateNoStoreCacheHeaders(ctx)
   ctx.json(urls)
 })
 
@@ -146,6 +148,7 @@ app.route('/api/v1/users/:idOrSlug/domains/:listType').get(async (ctx: Context) 
   )
   const hostnames = await getUserHostnamesCollection(resolved.target.id, listType, pagination)
 
+  setPrivateNoStoreCacheHeaders(ctx)
   ctx.json({
     page_info: hostnames.page_info,
     results: hostnames.results.map(

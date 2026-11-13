@@ -5,9 +5,15 @@ const AUTH_SENSITIVE_VARY_HEADERS = ['Cookie', 'Authorization']
 
 type HeaderValue = string | number | readonly string[]
 
-/** Prevent browsers and the Cloudflare edge from retaining legal-case responses. */
+/** Prevent browsers and the Cloudflare edge from retaining private responses. */
 export function setPrivateNoStoreCacheHeaders(ctx: Context): void {
   ctx.set('Cache-Control', 'private, no-store')
+}
+
+/** Mark a response as public while preserving auth-sensitive Vary members. */
+export function setPublicCacheHeaders(ctx: Context): void {
+  ctx.set('Cache-Control', 'public')
+  ctx.set('Vary', mergeAuthSensitiveVary(ctx.res.getHeader('Vary')))
 }
 
 export function setAnonymousPublicCacheHeaders(

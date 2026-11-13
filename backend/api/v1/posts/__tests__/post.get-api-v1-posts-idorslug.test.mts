@@ -51,7 +51,10 @@ describe('post', () => {
         expect(response.body).toHaveProperty('post_metrics')
         expect(response.body).toHaveProperty('post_election')
         expect(response.body).toHaveProperty('html')
-        expect(response.headers['cache-control']).toBe('private, no-store')
+        expect(response.headers['cache-control']).toBe('public')
+        expect(response.headers.vary).toContain('Cookie')
+        const head = await createRequest().head(`/api/v1/posts/${postId}`).expect(200)
+        expect(head.headers['cache-control']).toBe('public')
       })
 
       it('should return a post by slug', async () => {
@@ -149,6 +152,7 @@ describe('post', () => {
         const response = await request.get(`/api/v1/posts/${postId}`).expect(200)
 
         expect(response.body.post.id).toBe(postId)
+        expect(response.headers['cache-control']).toBe('public')
       })
 
       it('should return users-private posts to authenticated users and hide them from logged-out users', async () => {

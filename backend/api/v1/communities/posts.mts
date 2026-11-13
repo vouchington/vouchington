@@ -1,4 +1,5 @@
 import app from '../../app.mts'
+import { setPublicCacheHeaders } from '../../cache-headers.mts'
 import { getPostHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import { apiQuery } from '../../api-query-contract.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
@@ -61,6 +62,7 @@ app.route('/api/v1/communities/:idOrSlug/posts').get(async (ctx: Context) => {
   )
   const { idOrSlug } = ctx.params as { idOrSlug: string }
   const { community } = await loadCommunityForViewer(currentUser, idOrSlug)
+  if (!currentUser && community.visibility === 'public') setPublicCacheHeaders(ctx)
   validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/posts', {
     path: ctx.params,
   })

@@ -21,13 +21,7 @@ function chunkTags(tags: string[], size: number): string[][] {
 const enqueue = createBackgroundBulkEnqueue(CACHE_PURGE_TAGS_JOB, (chunk: string[]) => ({
   data: { tags: chunk },
   opts: {
-    // Dedup key is derived from the sorted chunk content, not a single tag: two enqueue calls
-    // only collapse into one job when they produce the exact same chunk. This is a narrower
-    // dedup than the old per-tag debounce (an overlapping-but-not-identical chunk no longer
-    // collapses), but chunking already collapses what used to be N one-tag jobs/HTTP calls into
-    // one job per <=30 tags, so total purge-call volume still drops sharply in the common case
-    // (e.g. one post edit producing 3 tags: 3 jobs/3 calls before, 1 job/1 call now). Worst case
-    // of the narrower dedup is a few extra purge calls, never fewer purges than needed.
+    // Ordinary invalidations coalesce identical sorted chunks while a purge is pending or active.
     deduplication: {
       id: `${CACHE_PURGE_TAGS_JOB.name}__${chunk.toSorted().join(DEDUPLICATION_TAG_SEPARATOR)}`,
       mode: 'debounce' as const,

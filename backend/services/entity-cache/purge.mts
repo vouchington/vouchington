@@ -21,16 +21,32 @@ function getConfiguredWorkerRoute(route: string | undefined): string | undefined
 // durable retry work. This throws so either the queue retry policy or the caller's durable-work
 // policy owns failures rather than silently swallowing them.
 /* no-mistakes: integration=http */
-export async function purgeCacheTags(tags: readonly string[]): Promise<void> {
-  if (tags.length === 0 || isCachePurgeSkipped()) return
+export async function purgeCacheTags(
+  tags: readonly string[],
+  options?: { requireConfirmation?: boolean },
+): Promise<void> {
+  if (tags.length === 0) return
+  if (isCachePurgeSkipped()) {
+    if (options?.requireConfirmation)
+      throw new Error('Cache purge confirmation required but cache purge is skipped')
+    return
+  }
   const route = getConfiguredWorkerRoute(process.env.CF_WORKER_ROUTE)
   // Without an explicit route, there is no deployed worker target to call. Skip quietly so
   // local and undeployed environments do not try to guess at a production origin.
-  if (!route) return
+  if (!route) {
+    if (options?.requireConfirmation)
+      throw new Error('Cache purge confirmation required but worker route is missing')
+    return
+  }
   const secret = process.env.CF_WORKER_SECRET
   // No CF_WORKER_SECRET configured means there's no worker deployment to verify against
   // (e.g. local dev without the worker running) — nothing to do, and nothing to retry.
-  if (!secret) return
+  if (!secret) {
+    if (options?.requireConfirmation)
+      throw new Error('Cache purge confirmation required but worker secret is missing')
+    return
+  }
 
   let response: Awaited<ReturnType<typeof fetch>>
   try {

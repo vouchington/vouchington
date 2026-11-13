@@ -52,6 +52,7 @@ describe('RSS Feed Items Routes', () => {
       const memberRequest = createRequest()
       await memberRequest.authenticateAs(viewer)
       const memberResponse = await memberRequest.get(`/api/v1/rss-feed-items/${itemId}`).expect(200)
+      expect(memberResponse.headers['cache-control']).toBe('private, no-store')
       expect(memberResponse.body.rss_feed_item_embeds[itemId]).toMatchObject({
         title: 'Administrator-only raw title',
         markdown: null,
@@ -143,7 +144,8 @@ describe('RSS Feed Items Routes', () => {
       expect(response.body.page_info).toBeUndefined()
       expect(response.body.results).toBeUndefined()
       expect(response.body.rss_feed_item_embeds).toHaveProperty(itemId)
-      expect(response.headers['cache-control']).toBe('private, no-store')
+      expect(response.headers['cache-control']).toBe('public')
+      expect(response.headers.vary).toContain('Cookie')
     })
   })
 

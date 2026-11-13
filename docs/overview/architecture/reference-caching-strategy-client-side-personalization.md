@@ -36,6 +36,17 @@ client must revalidate or apply its own HTTP caching policy rather than assume t
   including copyright removal and user deletion; it is not a freshness mechanism. The authenticated
   purge path remains separate from ordinary expiry and must fail visibly if a required legal purge
   cannot complete.
+  All regular cached responses carry one shared legal-removal tag so legal erasure can evict
+  embedded content in threads, lists, HTML, and feeds without collecting dependency identities
+  before streaming. The staging canary keeps its separate override tag.
+  Account deletion attempts an immediate purge after the privacy fence commits, but keeps the
+  coarse purge owed until erasure and sibling external work finish. Its final durable purge must
+  complete before deletion is acknowledged. Copyright withholds await successful eviction before
+  their durable action completes. Purge failure retains the action's existing retry and explicit
+  operator-replay path; it cannot disappear with a lost or exhausted cache-purge queue job.
+  Deployed copyright completion also fails if legal purging is disabled or its target is missing;
+  local and undeployed environments retain their explicit no-cache opt-out. This intentionally
+  evicts broadly after legal removal, with an unmeasured cache-warmup cost.
 
 ## What is NOT Cached
 
@@ -65,10 +76,14 @@ despite the per-request CSP nonce. What's still excluded from the edge cache:
   headers on the client response as a defense in depth if an origin route accidentally emits a
   public header. When a bot-classified request hits one of these private bypasses, the Worker
   keeps the bot session invariant and strips `st`/`dt` before forwarding to the backend.
-- **`GET /api/v1/posts/:idOrSlug/ancestors` and `GET /api/v1/posts/:idOrSlug/descendants`**: the
-  Cache-Tag scheme tags each response by the single path `idOrSlug`. Ancestors embed every parent
-  post, and descendants embed every child post on the page, so an edit to a post other than that
-  path identifier has no tag to purge the cached response. Both routes bypass edge caching.
+
+Anonymous post-thread ancestors and descendants use the same cache path as other public content
+responses. Their freshness follows the Cloudflare Worker's TTL policy, including accepted lag
+after visibility changes; a request must not probe the origin merely to re-check whether cached
+posts are still public. Authenticated responses remain private and uncacheable. Server-to-CDN
+`Cache-Tag` purges are reserved for legal removals such as copyright and user deletion, rather
+than freshness. Owner-only user collections continue to require authentication and are never
+made public by this cache policy.
 
 ## Related
 

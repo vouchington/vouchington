@@ -128,6 +128,7 @@ describe('community', () => {
         ).toContain(item.id)
         expect(response.body.rss_feed_items[item.id]).toBeDefined()
         expect(response.body.users).toEqual({})
+        expect(response.headers['cache-control']).toBe('public')
       })
 
       it('returns public related discussions without authentication', async () => {

@@ -20,11 +20,11 @@ describe('deleteUser durable cleanup identity', () => {
 
     expect(audit.priorUsername).toBe(currentUsername)
     expect(audit.externalWorks.map(work => work.workKey)).toEqual(
-      expect.arrayContaining([`user:${user.id}`, `user:${currentUsername}`]),
+      expect.arrayContaining(['legal-removal', `user:${user.id}`, `user:${currentUsername}`]),
     )
   })
 
-  it('completes durable cache work after the immediate purge succeeds', async () => {
+  it('leaves the legal purge owed after the immediate purge succeeds', async () => {
     const user = await createTestUser()
     const currentUsername = `deletion-purge-${v7()}`
     await updateUserUsername(user.id, currentUsername)
@@ -33,13 +33,24 @@ describe('deleteUser durable cleanup identity', () => {
     const attempt = await deleteUser(user, user)
     const audit = await getUserDeletionCompletionAuditForTest(attempt.requestId)
 
-    expect(purge).toHaveBeenCalledExactlyOnceWith([`user:${user.id}`, `user:${currentUsername}`])
+    expect(purge).toHaveBeenCalledExactlyOnceWith([
+      'legal-removal',
+      `user:${user.id}`,
+      `user:${currentUsername}`,
+    ])
     expect(
       audit.externalWorks
         .map(work => work.workKey)
         .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
-    ).toEqual([`user:${user.id}`, `user:${currentUsername}`].toSorted())
-    expect(audit.externalWorks.every(work => work.completedAt instanceof Date)).toBe(true)
+    ).toEqual(['legal-removal', `user:${user.id}`, `user:${currentUsername}`].toSorted())
+    expect(
+      audit.externalWorks.find(work => work.workKey === 'legal-removal')?.completedAt,
+    ).toBeNull()
+    expect(
+      audit.externalWorks
+        .filter(work => work.workKey !== 'legal-removal')
+        .every(work => work.completedAt instanceof Date),
+    ).toBe(true)
   })
 
   it('leaves durable cache work pending when the immediate purge fails', async () => {
@@ -54,6 +65,7 @@ describe('deleteUser durable cleanup identity', () => {
       const audit = await getUserDeletionCompletionAuditForTest(attempt.requestId)
 
       expect(purge).toHaveBeenCalledExactlyOnceWith([
+        'legal-removal',
         `user:${user.id}`,
         `user:${user.username?.toLowerCase()}`,
       ])
@@ -61,7 +73,9 @@ describe('deleteUser durable cleanup identity', () => {
         audit.externalWorks
           .map(work => work.workKey)
           .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
-      ).toEqual([`user:${user.id}`, `user:${user.username?.toLowerCase()}`].toSorted())
+      ).toEqual(
+        ['legal-removal', `user:${user.id}`, `user:${user.username?.toLowerCase()}`].toSorted(),
+      )
       expect(audit.externalWorks.every(work => work.completedAt === null)).toBe(true)
     } finally {
       vi.unstubAllEnvs()

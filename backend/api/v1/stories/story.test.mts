@@ -60,6 +60,7 @@ describe('story', () => {
       expect(response.body.rss_feed_item_embeds[itemId]).toMatchObject({
         source_url: response.body.rss_feed_items[itemId].url.url,
       })
+      expect(response.headers['cache-control']).toBe('private, no-store')
     })
 
     it('returns 200 with cache headers for unauthenticated request', async () => {
@@ -68,7 +69,7 @@ describe('story', () => {
       const request = createRequest()
       const response = await request.get(`/api/v1/stories/${story.id}`).expect(200)
 
-      expect(response.headers['cache-control']).toBeDefined()
+      expect(response.headers['cache-control']).toBe('public')
       expect(response.body.story.id).toBe(story.id)
     })
   })

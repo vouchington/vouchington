@@ -424,3 +424,12 @@ visible to its statement, but an earlier provider event can commit after a later
 already frozen that invoice's cap. This rare commit-order inversion is accepted: replay must
 not rewrite a financial snapshot or increase an already allocated refund. Staff can inspect
 the retained evidence rather than treating provider timestamps as a global commit order.
+
+## Legal cache removal
+
+Copyright withholds await legal cache eviction within their durable action completion boundary,
+so losing a cache-purge queue job cannot leave a completed action without its purge. Failures
+retain the action's existing retry and explicit operator-replay path. Account deletion keeps its
+own durable external-work receipts. See the
+[caching strategy](../reference-caching-strategy-client-side-personalization.md#cache-invalidation)
+for why legal removal uses broad eviction while ordinary freshness follows the Worker TTL.
