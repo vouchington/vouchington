@@ -54,7 +54,7 @@ export const isAuthCallbackRoute = (pathname: string): boolean =>
 export const isOAuthConsentRoute = (pathname: string): boolean =>
   pathname === '/oauth/consent' || pathname === '/oauth/consent/'
 
-// Referral attribution needs origin to run (cookies stripped + HIT skips origin on cacheable
-// audiences); `/@` is a loose superset of web's LANDING_PAGE_HANDLE_RE, so a false positive costs one extra origin hit.
+// Explicit referral attribution needs origin to run (cookies stripped + HIT skips origin on
+// cacheable audiences). Handle landing pages remain cacheable for anonymous visitors.
 export const hasReferralAttributionSignal = (url: URL): boolean =>
-  url.searchParams.has('referrer') || url.pathname.startsWith('/@')
+  Boolean(url.searchParams.get('referrer'))
