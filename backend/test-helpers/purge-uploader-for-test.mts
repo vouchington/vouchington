@@ -21,7 +21,8 @@ export async function purgeUploaderForTest(user: PrivateUser, imageId: string): 
   await drainUserDeletionForTest(attempt)
 
   // Read the actual committed lifecycle on the primary; never backdate deletion to qualify it.
-  // Two cache-tag receipts belong to this fixture. Read one extra to reject fixture growth.
+  // Three cache-tag receipts belong to this fixture: id, username and legal removal. Read one
+  // extra to reject fixture growth.
   const { rows } = await write<UploaderPurgeClock>(
     `/* purgeUploaderForTest:clock */
     SELECT account.deleted_at, request.completed_at, works.work_count,
@@ -46,7 +47,7 @@ export async function purgeUploaderForTest(user: PrivateUser, imageId: string): 
         FROM user_deletion_external_works
         WHERE request_id = request.id
         ORDER BY id
-        LIMIT 3
+        LIMIT 4
       ) work
     ) works
     WHERE account.id = $1
@@ -58,7 +59,11 @@ export async function purgeUploaderForTest(user: PrivateUser, imageId: string): 
   assert(clock.deleted_at instanceof Date, 'Production privacy fence must mark deletion')
   assert(clock.completed_at instanceof Date, 'Production deletion must complete before purge')
   assert(clock.last_lifecycle_at instanceof Date)
-  assert.equal(clock.work_count, 2, 'Expected the owned id and username cache-tag receipts')
+  assert.equal(
+    clock.work_count,
+    3,
+    'Expected the owned id, username and legal-removal cache-tag receipts',
+  )
 
   // Advance injected business time beyond every owned persisted lifecycle timestamp. The real
   // 90-day user retention window has elapsed; all database timestamps remain untouched.
