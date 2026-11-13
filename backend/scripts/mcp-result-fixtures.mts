@@ -7,8 +7,11 @@ export function buildMcpResultFixtures(
   catalog: McpCatalog,
   cases: readonly McpResultFixtureCase[],
 ) {
-  const tools = catalog.servers.find(server => server.audience === 'user')?.tools ?? []
-  const toolsByName = new Map(tools.map(entry => [entry.tool.name, entry.tool]))
+  const toolsByName = new Map<string, McpCatalog['servers'][number]['tools'][number]['tool']>()
+  // The user audience is listed first, so its tools keep precedence over same-named tools elsewhere.
+  for (const server of catalog.servers)
+    for (const entry of server.tools)
+      if (!toolsByName.has(entry.tool.name)) toolsByName.set(entry.tool.name, entry.tool)
   const seen = new Set<string>()
   for (const fixture of cases) {
     if (seen.has(fixture.id)) throw new Error(`Duplicate MCP result fixture: ${fixture.id}`)
