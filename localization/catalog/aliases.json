@@ -9383,6 +9383,8 @@
 {"alias":"settings.householdInvitations.loadMore","consumer":"web","copyId":"copy.settings.householdInvitations.loadMore"},
 {"alias":"settings.householdInvitations.memberFallback","consumer":"web","copyId":"copy.settings.householdInvitations.memberFallback"},
 {"alias":"settings.householdInvitations.noPendingInvitations","consumer":"web","copyId":"copy.settings.householdInvitations.noPendingInvitations"},
+{"alias":"settings.householdInvitations.notificationBody","consumer":"web","copyId":"copy.settings.householdInvitations.notificationBody"},
+{"alias":"settings.householdInvitations.notificationTitle","consumer":"web","copyId":"copy.settings.householdInvitations.notificationTitle"},
 {"alias":"settings.householdInvitations.receivedFromOther","consumer":"web","copyId":"copy.settings.householdInvitations.receivedFromOther"},
 {"alias":"settings.householdInvitations.receivedFromOwner","consumer":"web","copyId":"copy.settings.householdInvitations.receivedFromOwner"},
 {"alias":"settings.householdInvitations.receivedTitle","consumer":"web","copyId":"copy.settings.householdInvitations.receivedTitle"},

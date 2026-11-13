@@ -6225,6 +6225,8 @@
 {"id":"copy.settings.householdInvitations.loadMore","value":"Carregar mais"},
 {"id":"copy.settings.householdInvitations.memberFallback","value":"Uma pessoa membro da Voucha"},
 {"id":"copy.settings.householdInvitations.noPendingInvitations","value":"Não há convites pendentes."},
+{"id":"copy.settings.householdInvitations.notificationBody","value":"Recebeu um convite para se juntar a um agregado familiar."},
+{"id":"copy.settings.householdInvitations.notificationTitle","value":"Convite para o agregado familiar"},
 {"id":"copy.settings.householdInvitations.receivedFromOther","value":"Convite de {inviter} para a família de {owner}"},
 {"id":"copy.settings.householdInvitations.receivedFromOwner","value":"Convite de {owner}"},
 {"id":"copy.settings.householdInvitations.receivedTitle","value":"Convites recebidos"},

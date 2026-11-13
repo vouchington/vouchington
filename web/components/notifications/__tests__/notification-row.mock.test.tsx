@@ -16,6 +16,9 @@ vi.mock(import('../notification-icon'), () => ({
 }))
 
 import { NotificationRow } from '../notification-row'
+import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
+import { mergeMessages } from '@/lib/i18n/use-translations'
+import { esMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
 import type { NotificationListNotification } from '../notification-list'
 
 const baseNotification: NotificationListNotification = {
@@ -29,6 +32,30 @@ const baseNotification: NotificationListNotification = {
 }
 
 describe('NotificationRow', () => {
+  it.each([false, true])('localizes household invitation copy (compact: %s)', compact => {
+    mergeMessages('es', esMessages)
+    render(
+      <UiLocaleProvider uiLocale='es'>
+        <NotificationRow
+          notification={{
+            ...baseNotification,
+            entity_type: 'household_invitation',
+            title: 'Household invitation',
+            body: 'You have been invited to join a household.',
+          }}
+          onOpen={vi.fn<() => void>()}
+          onDelete={vi.fn<() => void>()}
+          compact={compact}
+        />
+      </UiLocaleProvider>,
+    )
+
+    expect(screen.getByText('Invitación al hogar')).toBeInTheDocument()
+    expect(screen.getByText('Te han invitado a unirte a un hogar.')).toBeInTheDocument()
+    expect(screen.queryByText('Household invitation')).not.toBeInTheDocument()
+    expect(screen.queryByText('You have been invited to join a household.')).not.toBeInTheDocument()
+  })
+
   describe('non-compact mode', () => {
     it('renders the title and calls onOpen when the main button is clicked', () => {
       const onOpen = vi.fn<VitestLooseMock>()

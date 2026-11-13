@@ -6225,6 +6225,8 @@
 {"id":"copy.settings.householdInvitations.loadMore","value":"Load more invitations"},
 {"id":"copy.settings.householdInvitations.memberFallback","value":"A Voucha member"},
 {"id":"copy.settings.householdInvitations.noPendingInvitations","value":"No pending invitations."},
+{"id":"copy.settings.householdInvitations.notificationBody","value":"You have been invited to join a household."},
+{"id":"copy.settings.householdInvitations.notificationTitle","value":"Household invitation"},
 {"id":"copy.settings.householdInvitations.receivedFromOther","value":"Invited by {inviter} to {owner}'s household"},
 {"id":"copy.settings.householdInvitations.receivedFromOwner","value":"Invited by {owner}"},
 {"id":"copy.settings.householdInvitations.receivedTitle","value":"Household invitations"},
