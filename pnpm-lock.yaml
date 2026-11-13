@@ -10990,9 +10990,6 @@ importers:
       '@services/search-params':
         specifier: workspace:^
         version: link:../search-params
-      '@services/topics':
-        specifier: workspace:^
-        version: link:../topics
       '@services/users':
         specifier: workspace:^
         version: link:../users
