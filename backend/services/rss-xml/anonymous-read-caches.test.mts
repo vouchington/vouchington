@@ -166,8 +166,11 @@ describe('anonymous read caches', () => {
       markdown: publicText,
     })
     const generation = await getRssSnapshotLegalGeneration()
-    await expectCachedRead('rss_post_descriptions_anon', () =>
-      buildPostsRssFeed({ username: user.username! }),
+    await expectCachedRead('rss_post_descriptions_anon', async () =>
+      (await buildPostsRssFeed({ username: user.username! })).replace(
+        /<lastBuildDate>[^<]*<\/lastBuildDate>/g,
+        '',
+      ),
     )
     const secret = `never-public-${randomUUID()}`
     await makeTestRssPostPrivate(id, secret)
