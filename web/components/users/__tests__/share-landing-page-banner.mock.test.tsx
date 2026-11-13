@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { act, render, screen, fireEvent } from '@testing-library/react'
 import { ShareLandingPageBanner } from '../share-landing-page-banner'
 
 vi.mock(
@@ -42,11 +42,11 @@ describe('ShareLandingPageBanner', () => {
     expect(screen.getByRole('region', { name: /share your landing page/i })).toBeInTheDocument()
   })
 
-  it('links the landing page URL to /@username', () => {
+  it('marks the share link for referral attribution', () => {
     render(<ShareLandingPageBanner username='testuser' />)
 
     const link = screen.getByText('/@testuser')
-    expect(link.getAttribute('href')).toBe('/@testuser')
+    expect(link.getAttribute('href')).toBe('/@testuser?referrer=testuser')
   })
 
   it('links the edit button to /my/landing-pages', () => {
@@ -56,16 +56,28 @@ describe('ShareLandingPageBanner', () => {
     expect(editLink.getAttribute('href')).toBe('/my/landing-pages')
   })
 
-  it('copies the full URL to clipboard on copy click', async () => {
-    const writeText = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
-    Object.assign(navigator, { clipboard: { writeText } })
+  it('copies a share URL with the referral marker and UTM parameters', async () => {
+    const writeText = vi.fn<Clipboard['writeText']>().mockResolvedValue(undefined)
+    const clipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, 'clipboard')
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
 
-    render(<ShareLandingPageBanner username='testuser' />)
+    try {
+      render(<ShareLandingPageBanner username='testuser' />)
 
-    fireEvent.click(screen.getByRole('button', { name: /copy/i }))
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /copy/i }))
+      })
 
-    await waitFor(() => {
-      expect(writeText).toHaveBeenCalledWith(expect.stringContaining('/@testuser'))
-    })
+      expect(writeText).toHaveBeenCalledOnce()
+      const copiedUrl = new URL(writeText.mock.calls[0]![0])
+      expect(copiedUrl.origin).toBe(window.location.origin)
+      expect(copiedUrl.pathname).toBe('/@testuser')
+      expect(copiedUrl.searchParams.get('utm_source')).toBe('voucha')
+      expect(copiedUrl.searchParams.get('utm_medium')).toBe('share')
+      expect(copiedUrl.searchParams.get('referrer')).toBe('testuser')
+    } finally {
+      if (clipboardDescriptor) Object.defineProperty(navigator, 'clipboard', clipboardDescriptor)
+      else Reflect.deleteProperty(navigator, 'clipboard')
+    }
   })
 })
