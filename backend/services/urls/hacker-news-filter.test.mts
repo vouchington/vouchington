@@ -1,3 +1,9 @@
+import { valkeyEvents } from 'valkyries'
+import { stableSerialize } from '@services/entity-cache/search-cache'
+import {
+  POST_IDS_ANON_CACHE,
+  RSS_FEED_ITEMS_ANON_CACHE,
+} from '@services/entity-cache/anonymous-search-prefixes'
 import { setHackerNewsReferenceFlagsForTest } from '@voucha/test-helpers/hacker-news-references'
 import { getPostIdsCached, searchRssFeedItemsCached } from '../entity-fetch/search-caches.mts'
 import { createHash } from 'node:crypto'
@@ -22,6 +28,26 @@ import {
   getRssFeedItemHackerNewsSummaries,
 } from './hacker-news-sidecars.mts'
 import { setCanonicalUrl } from './set-canonical.mts'
+
+async function readStoredSnapshot<T>(
+  prefix: string,
+  options: object,
+  read: () => Promise<T>,
+): Promise<T> {
+  const key = stableSerialize(options)
+  const stored = Promise.withResolvers<void>()
+  const onSet = (event: { cacheName: string; keys: string[] }) => {
+    if (event.cacheName === prefix && event.keys.includes(key)) stored.resolve()
+  }
+  valkeyEvents.on('cache:set', onSet)
+  try {
+    const result = await read()
+    await stored.promise
+    return result
+  } finally {
+    valkeyEvents.off('cache:set', onSet)
+  }
+}
 
 const lookup = (url_id: string, story_count: number, comment_count: number) => ({
   url_id,
@@ -71,21 +97,23 @@ describe('has_hacker_news_references', () => {
     })
     expect(withRefs.results.map(r => r.id)).toEqual([seen])
     expect(without.results.map(r => r.id)).toEqual([plain])
-    expect(
-      (
-        await searchRssFeedItemsCached({ rss_feed_ids: [feedId], has_hacker_news_references: true })
-      ).results.map(row => row.id),
-    ).toEqual([seen])
+    for (const filter of [true, false]) {
+      const options = { rss_feed_ids: [feedId], has_hacker_news_references: filter }
+      const snapshot = await readStoredSnapshot(RSS_FEED_ITEMS_ANON_CACHE, options, () =>
+        searchRssFeedItemsCached(options),
+      )
+      expect(snapshot.results.map(row => row.id)).toEqual([filter ? seen : plain])
+    }
     const restore = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
       references_visible: false,
     })
     try {
       for (const filter of [true, false]) {
-        const unfiltered = await searchRssFeedItemsCached({
-          rss_feed_ids: [feedId],
-          has_hacker_news_references: filter,
-        })
-        expect(unfiltered.results.map(r => r.id).toSorted()).toEqual([seen, plain].toSorted())
+        const options = { rss_feed_ids: [feedId], has_hacker_news_references: filter }
+        const cached = await searchRssFeedItemsCached(options)
+        expect(cached.results.map(row => row.id)).toEqual([filter ? seen : plain])
+        const canonical = await searchRssFeedItems(options)
+        expect(canonical.results.map(row => row.id).toSorted()).toEqual([seen, plain].toSorted())
       }
       expect(await getRssFeedItemHackerNewsSummaries([{ id: seen, url: { id: seenUrl } }])).toEqual(
         {},
@@ -126,21 +154,23 @@ describe('has_hacker_news_references', () => {
       has_hacker_news_references: true,
     })
     expect(page.results.map(r => r.id)).toEqual([viaRelation.id])
-    expect(
-      (await getPostIdsCached({ user_id: user!.id, has_hacker_news_references: true })).results.map(
-        row => row.id,
-      ),
-    ).toEqual([viaRelation.id])
+    for (const filter of [true, false]) {
+      const options = { user_id: user!.id, has_hacker_news_references: filter }
+      const snapshot = await readStoredSnapshot(POST_IDS_ANON_CACHE, options, () =>
+        getPostIdsCached(options),
+      )
+      expect(snapshot.results.map(row => row.id)).toEqual([filter ? viaRelation.id : unrelated.id])
+    }
     const restore = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
       references_visible: false,
     })
     try {
       for (const filter of [true, false]) {
-        const unfiltered = await getPostIdsCached({
-          user_id: user!.id,
-          has_hacker_news_references: filter,
-        })
-        expect(unfiltered.results.map(r => r.id).toSorted()).toEqual(
+        const options = { user_id: user!.id, has_hacker_news_references: filter }
+        const cached = await getPostIdsCached(options)
+        expect(cached.results.map(row => row.id)).toEqual([filter ? viaRelation.id : unrelated.id])
+        const canonical = await getPostIds(undefined, options)
+        expect(canonical.results.map(row => row.id).toSorted()).toEqual(
           [viaRelation.id, unrelated.id].toSorted(),
         )
       }
