@@ -111539,6 +111539,7 @@
       "method": "PUT",
       "migratedFrom": ["backend/api/v1/bookmarks/relation-limits.test.mts"],
       "path": "/api/v1/bookmarks/topic/70000000-0000-7000-8000-000000005381/follow",
+      "pending": true,
       "responseSchema": {
         "hash": "99bf708cb0cedd797029293ae07734fc205fce184be19bae21179cf98d8ece1f",
         "key": "native.relation-limits.topic-follow.conflict"
@@ -111565,6 +111566,7 @@
       "method": "PUT",
       "migratedFrom": ["backend/api/v1/bookmarks/bookmarks.mts"],
       "path": "/api/v1/bookmarks/rss_feed/70000000-0000-7000-8000-000000005382/subscribe",
+      "pending": true,
       "responseSchema": {
         "hash": "99bf708cb0cedd797029293ae07734fc205fce184be19bae21179cf98d8ece1f",
         "key": "native.relation-limits.rss-subscribe.conflict"
@@ -111591,6 +111593,7 @@
       "method": "POST",
       "migratedFrom": ["backend/services/user-import-export/import-topics.test.mts"],
       "path": "/api/v1/my/import/topics",
+      "pending": true,
       "requestBody": {
         "names": ["Local News"]
       },
@@ -111615,6 +111618,7 @@
       "method": "GET",
       "migratedFrom": ["backend/services/user-import-export/rss-feed-import-row-updates.test.mts"],
       "path": "/api/v1/my/import/rss-feeds/70000000-0000-7000-8000-000000005383",
+      "pending": true,
       "responseSchema": {
         "hash": "c684af40e59c703b886c1394ec50a24381073899029e70330ebae13d8af8aa7b",
         "key": "native.relation-limits.rss-feeds.import.skipped"

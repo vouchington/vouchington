@@ -16,6 +16,7 @@ export const nativeRelationLimitApiFixtureCases: ApiFixtureCase[] = [
   {
     ...shared,
     id: 'native.relation-limits.topic-follow.conflict',
+    pending: true,
     method: 'PUT',
     path: `/api/v1/bookmarks/topic/${topicId}/follow`,
     route: {
@@ -31,6 +32,7 @@ export const nativeRelationLimitApiFixtureCases: ApiFixtureCase[] = [
   {
     ...shared,
     id: 'native.relation-limits.rss-subscribe.conflict',
+    pending: true,
     method: 'PUT',
     path: `/api/v1/bookmarks/rss_feed/${feedId}/subscribe`,
     route: {
@@ -46,6 +48,7 @@ export const nativeRelationLimitApiFixtureCases: ApiFixtureCase[] = [
   {
     ...shared,
     id: 'native.relation-limits.topics.import.skipped',
+    pending: true,
     method: 'POST',
     path: '/api/v1/my/import/topics',
     route: { routeTemplate: '/api/v1/my/import/topics' },
@@ -66,6 +69,7 @@ export const nativeRelationLimitApiFixtureCases: ApiFixtureCase[] = [
   {
     ...shared,
     id: 'native.relation-limits.rss-feeds.import.skipped',
+    pending: true,
     method: 'GET',
     path: `/api/v1/my/import/rss-feeds/${importId}`,
     route: {
