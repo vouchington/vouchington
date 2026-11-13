@@ -1,3 +1,4 @@
+import { runSequentially } from '@modules/utils/run-sequentially'
 import { invalidateRssSnapshotsForLegalRemoval } from '@services/entity-cache/rss-snapshot-generation'
 import { settleUserDeletionOperations } from './settle-deletion-operations.mts'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
@@ -97,18 +98,21 @@ async function attemptImmediateUserDeletionCacheEviction(
 ): Promise<void> {
   const tags = getUserDeletionCacheTags(target)
   try {
-    await invalidateRssSnapshotsForLegalRemoval()
-    await purgeCacheTags(tags)
-    await settleUserDeletionOperations(
-      [
-        completeUserDeletionExternalWorks(
-          requestId,
-          'cloudflare-cache-tag',
-          tags.filter(tag => tag !== LEGAL_REMOVAL_TAG),
+    await runSequentially([
+      () => invalidateRssSnapshotsForLegalRemoval(),
+      () => purgeCacheTags(tags),
+      () =>
+        settleUserDeletionOperations(
+          [
+            completeUserDeletionExternalWorks(
+              requestId,
+              'cloudflare-cache-tag',
+              tags.filter(tag => tag !== LEGAL_REMOVAL_TAG),
+            ),
+          ],
+          'User deletion cache receipts failed',
         ),
-      ],
-      'User deletion cache receipts failed',
-    )
+    ])
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
   }
