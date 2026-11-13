@@ -3,6 +3,7 @@ import type { BotTier } from './bot-tier.mts'
 import type { CachePolicy } from './cache-policy.mts'
 import { finalizeOriginResponse } from './cache-writeback.mts'
 import { edgeErrorResponse } from '@vouchington/edge'
+import { edgeNotFoundResponse } from './edge-not-found.mts'
 import { buildWorkerOriginRequest, fetchWorkerOriginResponse } from './origin-request.mts'
 import { checkBotRateLimit } from './rate-limit.mts'
 import { getOriginPathOverride, resolveOrigin, type RouteTarget } from './routing.mts'
@@ -75,7 +76,7 @@ export async function runOriginBypass(input: OriginBypassInput): Promise<Respons
   // duplication: the two entrypoints independently recompute routing from ctx.props/dispatch URL).
   const pathOverride = getOriginPathOverride(url.pathname) ?? undefined
   if (target === 'sitemaps' && !pathOverride) {
-    return edgeErrorResponse(404, 'Not Found', 'NOT_FOUND')
+    return edgeNotFoundResponse('origin-bypass:sitemaps')
   }
 
   const originResult = resolveOrigin(target, env)

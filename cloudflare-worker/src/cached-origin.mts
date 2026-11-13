@@ -2,6 +2,7 @@ import { WorkerEntrypoint } from 'cloudflare:workers'
 import { finalizeCachedOriginResponse } from './cached-origin-response.mts'
 import { DISPATCH_BOT_TIER_HEADER, DISPATCH_IP_HEADER } from './cache-dispatch.mts'
 import { buildWebCsp } from './csp.mts'
+import { edgeNotFoundResponse } from './edge-not-found.mts'
 import { edgeErrorResponse, purgeCacheTags, stripDispatchOnlyHeaders } from '@vouchington/edge'
 import { buildWorkerOriginRequest, fetchWorkerOriginResponse } from './origin-request.mts'
 import { isProductionMode } from './production-mode.mts'
@@ -60,11 +61,11 @@ export class CachedOrigin extends WorkerEntrypoint<Env, CachedOriginProps> {
     const pathOverride = getOriginPathOverride(url.pathname) ?? undefined
 
     if (target === 'sitemaps' && !pathOverride) {
-      return edgeErrorResponse(404, 'Not Found', 'NOT_FOUND')
+      return edgeNotFoundResponse('cached-origin:sitemaps')
     }
 
     if (url.pathname === EDGE_CACHE_CANARY_PATH) {
-      if (isProductionMode(env)) return edgeErrorResponse(404, 'Not Found', 'NOT_FOUND')
+      if (isProductionMode(env)) return edgeNotFoundResponse('cached-origin:canary')
       if (request.headers.get(INTERNAL_CANARY_FAULT_HEADER) === 'sie') {
         return edgeErrorResponse(503, 'Canary origin unavailable', 'SERVICE_UNAVAILABLE')
       }
