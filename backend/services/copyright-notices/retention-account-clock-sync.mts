@@ -14,6 +14,7 @@ type Source = {
 /** Propagates one account's latest legal clock through one indexed party page. */
 export async function runCopyrightAccountClockSyncPage(
   data: CopyrightAccountClockSyncJobData,
+  requestedPageSize?: number,
 ): Promise<{ data: CopyrightAccountClockSyncJobData; hasMore: boolean }> {
   await using query = await beginBoundedTransaction({
     connectionTimeoutMs: 5_000,
@@ -45,7 +46,7 @@ export async function runCopyrightAccountClockSyncPage(
     source.purged_at,
   ])
   const afterNoticeId = data.sourceVersion === sourceVersion ? data.afterNoticeId : null
-  const pageSize = getCopyrightCasePurgePageSize()
+  const pageSize = getCopyrightCasePurgePageSize(requestedPageSize)
   const cursor =
     afterNoticeId === null ? sql`` : sql` AND party.copyright_notice_id > ${afterNoticeId}::uuid`
   const { rows: parties } = await query<{ copyright_notice_id: string }>(

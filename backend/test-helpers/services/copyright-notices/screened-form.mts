@@ -1,4 +1,4 @@
-import { appendTestCopyrightFormScreening } from '../../copyright-form-screenings.mts'
+import { seedCompletedTestCopyrightFormScreening } from '../../copyright-form-screenings.mts'
 import {
   createTestUser,
   insertTestImage,
@@ -40,7 +40,7 @@ export async function createClearScreenedForm(
   options: { now?: Date } = {},
 ) {
   const notice = await createSignedInCopyrightForm(targetCount, people, options)
-  const screeningId = await appendTestCopyrightFormScreening({
+  const screeningId = await seedCompletedTestCopyrightFormScreening({
     intakeId: notice.intake.id,
     inputSha256: Buffer.alloc(32, targetCount),
     recommendation: 'not_obviously_invalid',

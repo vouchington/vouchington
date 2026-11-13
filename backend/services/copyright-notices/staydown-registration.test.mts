@@ -1,12 +1,14 @@
+import { createAutomatedStaydownNotice } from '@voucha/test-helpers/copyright-automated-staydown-fixture'
 import { describe, expect, it, vi } from 'vitest'
 import * as imageEnqueues from '@queues/content-analysis/enqueues/image-jobs'
 import { backgroundCpu as contentAnalysisQueue } from '@queues/background-cpu/queues'
 import { readCopyrightStaydownEntries } from '@voucha/test-helpers/data-stores/psql/copyright-staydown'
-import { createRestrictedStaydownCase } from '@voucha/test-helpers/services/copyright-notices/staydown-fixture'
+import { createEffectiveStaydownNotice } from '@voucha/test-helpers/copyright-effective-review-fixtures'
+import { readEffectiveReviewState } from '@voucha/test-helpers/copyright-effective-review-state'
+import { assertStaydownMandatoryReview } from '@voucha/test-helpers/copyright-staydown-review-outcome'
 import { useStaydownMatching } from '@voucha/test-helpers/services/copyright-notices/staydown-matching'
 import { getImageByIdFromPrimary } from '@services/images/get'
 import { isCopyrightStaydownMatchingEnabled } from './config.mts'
-import { completeCopyrightMandatoryHumanReview } from './index.mts'
 
 /**
  * `contentAnalysisQueue` is `Queue<unknown>`. Read the image id only when the payload actually has one,
@@ -83,11 +85,16 @@ describe('copyright staydown registration', () => {
     it('hashes and registers nothing when a moderator confirms a restriction', async () => {
       expect(await isCopyrightStaydownMatchingEnabled()).toBe(false)
 
-      const staydownCase = await createRestrictedStaydownCase({ targetCount: 2 })
+      const staydownCase = await createEffectiveStaydownNotice(2)
+      for (const [index] of staydownCase.restrictions.entries()) {
+        await settledRegistration(() =>
+          assertStaydownMandatoryReview(staydownCase, 'confirm', index),
+        )
+      }
 
       expect(staydownCase.restrictions).toHaveLength(2)
       expect(await readCopyrightStaydownEntries(staydownCase.noticeId)).toEqual([])
-      await expectNoRegistrationHashJobs(staydownCase.imageIds)
+      await expectNoRegistrationHashJobs(staydownCase.restrictions.map(row => row.imageId))
     })
   })
 
@@ -95,15 +102,20 @@ describe('copyright staydown registration', () => {
     useStaydownMatching()
 
     it('registers the exact digest of each moderator-confirmed image and queues its perceptual hash', async () => {
-      const staydownCase = await settledRegistration(() =>
-        createRestrictedStaydownCase({ targetCount: 2 }),
-      )
-
+      const staydownCase = await createEffectiveStaydownNotice(2)
+      const committed: string[] = []
+      for (const [index, restriction] of staydownCase.restrictions.entries()) {
+        if (
+          await settledRegistration(() =>
+            assertStaydownMandatoryReview(staydownCase, 'confirm', index),
+          )
+        )
+          committed.push(restriction.imageId)
+      }
+      const imageIds = staydownCase.restrictions.map(row => row.imageId)
       const entries = await readCopyrightStaydownEntries(staydownCase.noticeId)
-      const images = await Promise.all(staydownCase.imageIds.map(id => getImageByIdFromPrimary(id)))
-      expect(entries.map(entry => entry.image_id).toSorted()).toEqual(
-        staydownCase.imageIds.toSorted(),
-      )
+      const images = await Promise.all(imageIds.map(id => getImageByIdFromPrimary(id)))
+      expect(entries.map(entry => entry.image_id).toSorted()).toEqual(committed.toSorted())
       for (const entry of entries) {
         const image = images.find(candidate => candidate?.id === entry.image_id)
         expect(entry.sha_256.equals(image!.sha_256!)).toBe(true)
@@ -112,15 +124,26 @@ describe('copyright staydown registration', () => {
           entry.copyright_restriction_id,
         )
       }
-      await expectRegistrationHashJobs(staydownCase.imageIds)
+      await expectRegistrationHashJobs(committed)
     })
 
     it('does not register an automated restriction no moderator has reviewed', async () => {
-      const staydownCase = await createRestrictedStaydownCase({ imposedBy: 'automation' })
+      const staydownCase = await createAutomatedStaydownNotice()
 
-      expect(staydownCase.restrictions[0]?.human_review_action).toBeNull()
+      expect(staydownCase.authority).toEqual({
+        automated: true,
+        screening_id: staydownCase.screeningId,
+        assessed_by: null,
+        imposed_by: null,
+        reviewed_at: null,
+        current: true,
+      })
+      expect(
+        (await readEffectiveReviewState(staydownCase.noticeId, [staydownCase.claimant.id])).state
+          .restrictions[0]?.review,
+      ).toBeNull()
       expect(await readCopyrightStaydownEntries(staydownCase.noticeId)).toEqual([])
-      await expectNoRegistrationHashJobs(staydownCase.imageIds)
+      await expectNoRegistrationHashJobs(staydownCase.restrictions.map(row => row.imageId))
     })
 
     it.each([
@@ -129,23 +152,16 @@ describe('copyright staydown registration', () => {
     ])(
       'registers an automated restriction after mandatory review only when the moderator chose $action: $registers',
       async ({ action, registers }) => {
-        const staydownCase = await createRestrictedStaydownCase({ imposedBy: 'automation' })
+        const staydownCase = await createAutomatedStaydownNotice()
 
-        await settledRegistration(() =>
-          completeCopyrightMandatoryHumanReview({
-            currentUser: staydownCase.moderator,
-            noticeId: staydownCase.noticeId,
-            restrictionId: staydownCase.restrictions[0]!.id,
-            action,
-            rationale: 'Reviewed the image against the claimed work.',
-            reviewedAt: new Date('2026-07-01T13:00:00.000Z'),
-          }),
+        const committed = await settledRegistration(() =>
+          assertStaydownMandatoryReview(staydownCase, action),
         )
-
+        const imageIds = staydownCase.restrictions.map(row => row.imageId)
         const entries = await readCopyrightStaydownEntries(staydownCase.noticeId)
-        expect(entries.map(entry => entry.image_id)).toEqual(registers ? staydownCase.imageIds : [])
-        if (registers) await expectRegistrationHashJobs(staydownCase.imageIds)
-        else await expectNoRegistrationHashJobs(staydownCase.imageIds)
+        expect(entries.map(entry => entry.image_id)).toEqual(registers && committed ? imageIds : [])
+        if (registers && committed) await expectRegistrationHashJobs(imageIds)
+        else await expectNoRegistrationHashJobs(staydownCase.restrictions.map(row => row.imageId))
       },
     )
   })

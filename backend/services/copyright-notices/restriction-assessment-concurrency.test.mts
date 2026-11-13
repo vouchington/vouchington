@@ -5,7 +5,16 @@ import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/co
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { acceptAndSupersedeCopyrightNotice } from '@voucha/test-helpers/copyright-restriction-assessment-race'
 import { observeTestPostgresClientQueries } from '@voucha/test-helpers/postgres-query-pool-observer'
-import { appendCopyrightSubmissionAssessment } from './compliance.mts'
+import { seedCopyrightSubmissionAssessment } from '@voucha/test-helpers/copyright-notice-submissions'
+import { isCopyrightStaydownMatchingEnabled } from './config.mts'
+import {
+  copyrightRaceResult,
+  assessmentSerializationConflict,
+  nativeCopyrightSerializationConflict,
+  readCopyrightAssessmentRaceState,
+  copyrightRestrictedRaceState,
+  copyrightSupersededRaceState,
+} from '@voucha/test-helpers/copyright-assessment-race-outcomes'
 import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 
 async function createScene() {
@@ -42,7 +51,7 @@ async function createScene() {
   const submission = aggregate?.submissions[0]
   const target = aggregate?.targets[0]
   if (!submission || !target) throw new Error('Owned copyright evidence disappeared')
-  const original = await appendCopyrightSubmissionAssessment({
+  const original = await seedCopyrightSubmissionAssessment({
     submissionId: submission.id,
     currentUser,
     assessedAt: new Date(),
@@ -50,6 +59,8 @@ async function createScene() {
   })
   return {
     noticeId: notice.id,
+    posterId: post.poster.id,
+    revision: target.placement_revision,
     acceptance: {
       noticeId: notice.id,
       targetId: target.id,
@@ -68,80 +79,78 @@ async function createScene() {
 }
 
 describe('copyright enforcement and superseding assessment', () => {
-  it('commits a valid restriction and rolls back the overlapping superseding assessment', async () => {
-    const { noticeId, acceptance, assessment } = await createScene()
-    const { restricted, assessed } = await acceptAndSupersedeCopyrightNotice(
-      acceptance,
-      assessment,
-      'restriction',
-    )
-    expect(restricted).toMatchObject({
-      status: 'fulfilled',
-      value: {
-        authorizing_assessment_id: acceptance.assessmentId,
-        copyright_notice_target_id: acceptance.targetId,
-        imposed_by_id: acceptance.imposedById,
-      },
-    })
-    const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
-    expect(assessed).toMatchObject({
-      status: 'rejected',
-      reason: { status: 409, code: 'CONFLICT', cause: { code: '40001' } },
-    })
-    expect(aggregate?.submissions[0]).toMatchObject({
-      current_assessment_identity_id: acceptance.assessmentId,
-    })
-    expect(aggregate?.assessments).toHaveLength(1)
-    expect(aggregate?.restrictions).toEqual([
-      expect.objectContaining({
-        authorizing_assessment_id: acceptance.assessmentId,
-        lifted_at: null,
-      }),
-    ])
-    expect(aggregate?.actionIntents).toEqual([
-      expect.objectContaining({ action: 'withhold', state: 'pending' }),
-    ])
-    expect(
-      aggregate?.lifecycleEvents.filter(
-        event => event.change_type === 'provisional_restriction_imposed',
-      ),
-    ).toHaveLength(1)
-  })
+  it.each(['restriction', 'assessment'] as const)(
+    'keeps complete legal facts when %s reaches its write first',
+    async first => {
+      const { noticeId, acceptance, assessment, posterId, revision } = await createScene()
+      const before = await readCopyrightAssessmentRaceState(noticeId)
+      const staydown = await isCopyrightStaydownMatchingEnabled()
+      const { restricted, assessed } = await acceptAndSupersedeCopyrightNotice(
+        acceptance,
+        assessment,
+        first,
+      )
+      const after = await readCopyrightAssessmentRaceState(noticeId)
+      const restrictionId = after.restrictions[0]?.id
+      const supersedingId = after.assessments.find(
+        row => row.supersedes === acceptance.assessmentId,
+      )?.id
+      const restrictedState = copyrightRestrictedRaceState(
+        before,
+        acceptance,
+        restrictionId,
+        posterId,
+        revision,
+        staydown,
+      )
+      const assessedState = copyrightSupersededRaceState(
+        before,
+        assessment.submissionId,
+        acceptance.assessmentId,
+        supersedingId,
+      )
+      // A failed transaction contributes no authority, restriction, action or audit side effects.
+      expect([
+        {
+          restricted: {
+            status: 'fulfilled',
+            id: restrictionId,
+            target: acceptance.targetId,
+            assessment: acceptance.assessmentId,
+            imposedBy: acceptance.imposedById,
+            review: 'confirm',
+            reviewer: acceptance.imposedById,
+          },
+          assessed: assessmentSerializationConflict,
+          state: restrictedState,
+        },
+        {
+          restricted: nativeCopyrightSerializationConflict,
+          assessed: { status: 'fulfilled', id: supersedingId },
+          state: assessedState,
+        },
+        {
+          restricted: nativeCopyrightSerializationConflict,
+          assessed: assessmentSerializationConflict,
+          state: before,
+        },
+      ]).toContainEqual({
+        restricted: copyrightRaceResult(restricted),
+        assessed: copyrightRaceResult(assessed),
+        state: after,
+      })
+    },
+  )
 
-  it('rolls back overlapping acceptance and rejects stale authority after the superseding commit', async () => {
+  it('rejects stale authority after a committed superseding assessment without writing', async () => {
     const { noticeId, acceptance, assessment } = await createScene()
-    const { restricted, assessed } = await acceptAndSupersedeCopyrightNotice(
-      acceptance,
-      assessment,
-      'assessment',
-    )
-    expect(restricted).toMatchObject({
-      status: 'rejected',
-      reason: { code: '40001' },
-    })
-    const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
-    expect(aggregate?.assessments).toHaveLength(2)
-    const superseding = aggregate?.assessments.find(
-      row => row.supersedes_assessment_id === acceptance.assessmentId,
-    )
-    expect(superseding).toMatchObject({ id: expect.any(String) })
-    expect(assessed).toMatchObject({ status: 'fulfilled', value: { id: superseding?.id } })
-    expect(aggregate?.submissions[0]).toMatchObject({
-      current_assessment_identity_id: superseding?.id,
-    })
+    await seedCopyrightSubmissionAssessment(assessment)
+    const before = await getCopyrightNoticePrivateAggregate(noticeId)
     await expect(acceptCopyrightNoticeAndImposeRestriction(acceptance)).rejects.toMatchObject({
       status: 422,
       message: 'A current notice assessment is required before restriction',
     })
-    expect(await getCopyrightNoticePrivateAggregate(noticeId)).toEqual(aggregate)
-    expect(aggregate?.notice.accepted_at).toBeNull()
-    expect(aggregate?.restrictions).toEqual([])
-    expect(aggregate?.actionIntents).toEqual([])
-    expect(
-      aggregate?.lifecycleEvents.filter(
-        event => event.change_type === 'provisional_restriction_imposed',
-      ),
-    ).toEqual([])
+    expect(await getCopyrightNoticePrivateAggregate(noticeId)).toEqual(before)
   })
 
   it('rolls back acceptance and restriction when the restriction write fails', async () => {

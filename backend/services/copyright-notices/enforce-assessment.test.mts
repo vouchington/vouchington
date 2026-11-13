@@ -1,91 +1,17 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { interceptCopyrightImpositionForTest } from '@voucha/test-helpers/copyright-imposition-intercept'
 import { assertLeadingQueryAnnotation } from '@vouchington/postgres'
 import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
+import { searchPendingCopyrightEnforcementAssessmentIds } from './index.mts'
+import { seedCopyrightSubmissionAssessment } from '@voucha/test-helpers/copyright-notice-submissions'
+import { createCopyrightRestorationHoldFixture } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
+import { seedCopyrightStatementRestriction } from '@voucha/test-helpers/copyright-statement-restriction-fixture'
 import {
-  enforceCopyrightAssessment,
-  searchPendingCopyrightEnforcementAssessmentIds,
-} from './index.mts'
-import { appendCopyrightSubmissionAssessment } from './compliance.mts'
-import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
-import { createOutboundCopyrightCorrespondence } from './correspondence.mts'
-import {
-  createTestUserDirect,
-  getTestPostImagePlacement,
-  insertTestImage,
-  insertTestPost,
-  insertTestPostImage,
-} from '@voucha/test-helpers'
-import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
-import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-
-async function createEnforcementFixture() {
-  const [claimant, moderatorRecord] = await Promise.all([
-    createTestUserDirect(),
-    createTestUserDirect(),
-  ])
-  const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
-  const postId = await insertTestPost({
-    title: `copyright enforcement ${crypto.randomUUID()}`,
-    slug: `copyright-enforcement-${crypto.randomUUID()}`,
-    createdById: claimant.id,
-    markdown: 'image',
-  })
-  const imageId = await insertTestImage(claimant.id)
-  await insertTestPostImage({ postId, imageId })
-  const placement = await getTestPostImagePlacement(postId, imageId)
-  if (!placement) throw new Error('fixture image placement disappeared')
-  const notice = await createCopyrightNoticeAggregate({
-    jurisdiction: 'us_dmca',
-    receivedAt: new Date('2026-06-30T16:00:00.000Z'),
-    claimantUserId: claimant.id,
-    claimantDisplayName: 'private snapshot',
-    claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
-    workDescription: `work-${crypto.randomUUID()}`,
-    policyVersion: 'test-v1',
-    initialSubmission: { kind: 'notice', sourceKind: 'signed_in_form', bodyCiphertext: 'notice' },
-    targets: [
-      {
-        placementId: placement.placement_id,
-        placementRevision: placement.placement_revision,
-        imageId,
-        bindingFamily: 'post',
-        hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
-      },
-    ],
-  })
-  const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
-  if (!aggregate) throw new Error('fixture notice disappeared')
-  const submission = aggregate.submissions[0]!
-  const correspondence = await createOutboundCopyrightCorrespondence({
-    noticeId: notice.id,
-    submissionId: submission.id,
-    correspondenceKind: 'receipt',
-    compositionKind: 'deterministic_template',
-    bodyCiphertext: `receipt-${crypto.randomUUID()}`,
-    draftedById: null,
-  })
-  await createCopyrightDeliveryIntent({
-    noticeId: notice.id,
-    submissionId: submission.id,
-    correspondenceId: correspondence.id,
-    recipientUserId: null,
-    recipientRole: 'claimant',
-    deliveryKind: 'claimant_receipt',
-    channel: 'email',
-    idempotencyKey: `copyright-receipt-${crypto.randomUUID()}`,
-    recipientEmail: `tests+copyright-${crypto.randomUUID()}@voucha.ai`,
-  })
-  const assessment = await appendCopyrightSubmissionAssessment({
-    submissionId: submission.id,
-    assessedAt: new Date('2026-07-01T11:00:00.000Z'),
-    currentUser: moderator,
-    substantiallyCompliant: true,
-  })
-  return { assessment, moderator, notice, submission }
-}
+  assertAssessmentEnforcement,
+  assertAssessmentEnforcementNoop,
+} from '@voucha/test-helpers/copyright-assessment-enforcement-subjects'
+import { assertEnforcementSupersession } from '@voucha/test-helpers/copyright-assessment-supersession-subject'
 
 describe('copyright assessment enforcement', () => {
   afterEach(() => {
@@ -93,8 +19,10 @@ describe('copyright assessment enforcement', () => {
   })
 
   it('imposes nothing for an assessment that was rejected before enforcement runs', async () => {
-    const { assessment, moderator, notice, submission } = await createEnforcementFixture()
-    await appendCopyrightSubmissionAssessment({
+    const scene = await createCopyrightRestorationHoldFixture()
+    const { assessment, moderator, notice } = scene
+    const submission = scene.aggregate.submissions[0]!
+    await seedCopyrightSubmissionAssessment({
       submissionId: submission.id,
       assessedAt: new Date('2026-07-01T12:00:00.000Z'),
       currentUser: moderator,
@@ -102,60 +30,50 @@ describe('copyright assessment enforcement', () => {
       supersedesAssessmentId: assessment.id,
     })
 
-    await expect(enforceCopyrightAssessment(assessment.id)).resolves.toBeUndefined()
+    await assertAssessmentEnforcementNoop(scene)
     await expect(countCopyrightActiveRestrictionsForNotice(notice.id)).resolves.toBe(0)
   })
 
   it('settles stale authority discovered while a target is being imposed', async () => {
-    const { assessment, moderator, notice, submission } = await createEnforcementFixture()
-    let supersessions = 0
-    interceptCopyrightImpositionForTest(notice.id, async () => {
-      supersessions += 1
-      await appendCopyrightSubmissionAssessment({
-        submissionId: submission.id,
-        assessedAt: new Date('2026-07-01T12:00:00.000Z'),
-        currentUser: moderator,
-        substantiallyCompliant: false,
-        supersedesAssessmentId: assessment.id,
-      })
-      await expect(enforceCopyrightAssessment(assessment.id)).resolves.toBeUndefined()
+    expect.hasAssertions()
+    await assertEnforcementSupersession(await createCopyrightRestorationHoldFixture())
+  })
+
+  it('imposes an unchanged compliant assessment in one complete job invocation', async () => {
+    expect.hasAssertions()
+    await assertAssessmentEnforcement(await createCopyrightRestorationHoldFixture())
+  })
+
+  it('replays an independently committed imposition without duplicating effects', async () => {
+    const scene = await createCopyrightRestorationHoldFixture()
+    const target = scene.aggregate.targets[0]!
+    await seedCopyrightStatementRestriction({
+      noticeId: scene.notice.id,
+      targetId: target.id,
+      assessmentId: scene.assessment.id,
+      revision: target.placement_revision,
+      moderatorId: scene.moderator.id,
     })
-
-    await expect(enforceCopyrightAssessment(assessment.id)).resolves.toBeUndefined()
-    expect(supersessions).toBe(1)
-    await expect(countCopyrightActiveRestrictionsForNotice(notice.id)).resolves.toBe(0)
+    await assertAssessmentEnforcementNoop(scene)
+    await expect(countCopyrightActiveRestrictionsForNotice(scene.notice.id)).resolves.toBe(1)
   })
 
-  it('imposes an unchanged compliant assessment once', async () => {
-    const { assessment, notice } = await createEnforcementFixture()
-
-    await enforceCopyrightAssessment(assessment.id)
-    await enforceCopyrightAssessment(assessment.id)
-    await expect(countCopyrightActiveRestrictionsForNotice(notice.id)).resolves.toBe(1)
-  })
-
-  it('leaves a committed assessment owing its target until the sweep enforces it once', async () => {
-    const { assessment, notice } = await createEnforcementFixture()
-    const listed = () =>
-      readTestOwnedCopyrightSweepIds(searchPendingCopyrightEnforcementAssessmentIds, assessment.id)
-
-    await expect(listed()).resolves.toEqual([assessment.id])
-    await expect(countCopyrightActiveRestrictionsForNotice(notice.id)).resolves.toBe(0)
-
-    await enforceCopyrightAssessment(assessment.id)
-    await expect(listed()).resolves.toEqual([])
-    await expect(countCopyrightActiveRestrictionsForNotice(notice.id)).resolves.toBe(1)
+  it('leaves a committed assessment owing its target until the sweep enforcement commit', async () => {
+    const scene = await createCopyrightRestorationHoldFixture()
+    await expect(
+      readTestOwnedCopyrightSweepIds(
+        searchPendingCopyrightEnforcementAssessmentIds,
+        scene.assessment.id,
+      ),
+    ).resolves.toEqual([scene.assessment.id])
+    await expect(countCopyrightActiveRestrictionsForNotice(scene.notice.id)).resolves.toBe(0)
+    await assertAssessmentEnforcement(scene)
   })
 
   it('annotates every statement while enforcing an owed assessment under the production contract', async () => {
-    const { assessment, notice } = await createEnforcementFixture()
+    const scene = await createCopyrightRestorationHoldFixture()
     enableProductionAnnotationContract()
-
-    const { queries } = await withCapturedTestQueries(() =>
-      enforceCopyrightAssessment(assessment.id),
-    )
-
-    await expect(countCopyrightActiveRestrictionsForNotice(notice.id)).resolves.toBe(1)
+    const queries = await assertAssessmentEnforcement(scene)
     expect(queries.length).toBeGreaterThan(0)
     for (const { text } of queries) assertLeadingQueryAnnotation(text)
     expect(
@@ -164,7 +82,7 @@ describe('copyright assessment enforcement', () => {
   })
 
   it('pages owned pending assessments under the production annotation contract', async () => {
-    const { assessment } = await createEnforcementFixture()
+    const { assessment } = await createCopyrightRestorationHoldFixture()
     enableProductionAnnotationContract()
 
     const { result, queries } = await withCapturedTestQueries(() =>

@@ -1,18 +1,10 @@
-import { read } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import type { CopyrightOperationalScope } from '../services/copyright-notices/operational-retention-cursor.mts'
 
-/** Observe the reserved token cursor before and after a failed bounded page. */
-export async function readCopyrightOrphanTokenCursor(): Promise<{
+/** Observe only this owned pass's committed pagination progress. */
+export function readCopyrightOrphanTokenCursor(scope: CopyrightOperationalScope): Promise<{
   cursor_record_id: string | null
   sweep_upper_bound_record_id: string | null
 }> {
-  const { rows } = await read<{
-    cursor_record_id: string | null
-    sweep_upper_bound_record_id: string | null
-  }>(sql`/* readCopyrightOrphanTokenCursor */
-    SELECT cursor_record_id, sweep_upper_bound_record_id
-    FROM copyright_notice_operational_retention_cursors
-    WHERE kind = 'orphan_email_thread_tokens'`)
-  if (!rows[0]) throw new Error('Reserved orphan token cursor was not found')
-  return rows[0]
+  const { cursor_record_id, sweep_upper_bound_record_id } = scope.cursor
+  return Promise.resolve({ cursor_record_id, sweep_upper_bound_record_id })
 }

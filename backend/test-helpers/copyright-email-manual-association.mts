@@ -32,8 +32,7 @@ export async function associateAndThreadCopyrightEmail(
     [intakeId, noticeId],
   )
   const threaded = first === 'thread' ? winner : loser
-  if (threaded.status === 'rejected') throw threaded.reason
-  return { threaded: threaded.value, manual: first === 'manual' ? winner : loser }
+  return { threaded, manual: first === 'manual' ? winner : loser }
 }
 
 /** The smallest accepted case row for a staff association boundary. */

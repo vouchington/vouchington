@@ -43,7 +43,7 @@ export async function cleanupTerminalRetentionFamilies(
 
   const copyright = await runCopyrightOperationalRetentionCleanup({
     limits,
-    formScreeningAttemptIds: options.copyrightFormScreeningAttemptIds,
+    scopes: options.copyrightScopes,
     now: options.copyrightNow,
     activeFamilies:
       options.activeCopyrightFamilies?.filter(active) ??

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
-import { positionCopyrightOperationalCursor } from '@voucha/test-helpers/copyright-operational-retention'
+import { createCopyrightOperationalScope } from '@voucha/test-helpers/copyright-operational-retention'
 import { readCopyrightIntakeRecommendationCount } from '@voucha/test-helpers/copyright-operational-email-retention'
 import { deleteCopyrightRecommendationPageForTest } from '@voucha/test-helpers/copyright-recommendation-page'
 import { readCopyrightIntakeRetentionState } from '@voucha/test-helpers/copyright-email-retention-state'
@@ -19,7 +18,6 @@ const DAY_MS = 24 * 60 * 60 * 1_000
 const future = (days: number) => new Date(Date.now() + days * DAY_MS)
 
 describe('copyright email admission during operational erasure', () => {
-  useCopyrightOperationalCursorReservation()
   it('caps recommendation deletion to the remaining child budget', async () => {
     const intake = await createRetentionParsedEmail('recommendation-page-budget')
     for (const marker of [1, 2]) {
@@ -47,8 +45,9 @@ describe('copyright email admission during operational erasure', () => {
     await expect(readTestPendingCopyrightAgentDispatches(intake.id)).resolves.toEqual([
       { kind: 'email', intakeId: intake.id },
     ])
-    await positionCopyrightOperationalCursor('unlinked_email_intakes', intake.id)
+    const scope1 = createCopyrightOperationalScope([intake.id])
     await sweepUnlinkedCopyrightEmailIntakes({
+      scope: scope1,
       now: future(91),
       retentionDays: 90,
       childLimit: 1,
@@ -66,8 +65,9 @@ describe('copyright email admission during operational erasure', () => {
   it('lets a fresh reply parse while an erased ancestor still has thread references', async () => {
     const messageId = `<expired-ancestor-${crypto.randomUUID()}@example.test>`
     const ancestor = await createRetentionParsedEmail('erasing-ancestor', { messageId })
-    await positionCopyrightOperationalCursor('unlinked_email_intakes', ancestor.id)
+    const scope2 = createCopyrightOperationalScope([ancestor.id])
     await sweepUnlinkedCopyrightEmailIntakes({
+      scope: scope2,
       now: future(91),
       retentionDays: 90,
       childLimit: 1,

@@ -63,8 +63,10 @@ function proofVersion(row: LockedNotice): string {
 export async function runCopyrightCasePurgePage(
   data: CopyrightCasePurgeJobData,
   now: Date = new Date(),
+  requestedPageSize?: number,
 ): Promise<PageResult> {
-  if (data.phase === 'residual_parties') return deleteCopyrightCaseResidualPartyPage(data)
+  if (data.phase === 'residual_parties')
+    return deleteCopyrightCaseResidualPartyPage(data, requestedPageSize)
   if (!(await isCopyrightEvidenceRetentionDeletionEnabled())) return { data, hasMore: false }
   await using query = await beginBoundedTransaction({
     connectionTimeoutMs: 5_000,
@@ -98,6 +100,7 @@ export async function runCopyrightCasePurgePage(
     await query.commit()
     return await deleteCopyrightCaseResidualPartyPage(
       enterCopyrightCasePurgePhase(data, 'residual_parties'),
+      requestedPageSize,
     )
   }
   const { rows: eligible } = await query<EligibleNotice>(
@@ -107,7 +110,7 @@ export async function runCopyrightCasePurgePage(
   const lock = locked[0]!
   const clock = lock.legal_clock
   const beforeVersion = proofVersion(lock)
-  const pageSize = getCopyrightCasePurgePageSize()
+  const pageSize = getCopyrightCasePurgePageSize(requestedPageSize)
   const changed = data.proofVersion !== null && data.proofVersion !== beforeVersion
   const current: CopyrightCasePurgeJobData = changed
     ? {

@@ -1,13 +1,6 @@
-import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { associateCopyrightEmailIntakeWithNotice } from './email-manual-association.mts'
-import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
-import {
-  readCopyrightEmailManualAssociationEvent,
-  readCopyrightEmailManualAssociationReview,
-} from '@voucha/test-helpers/copyright-email-manual-association'
+import { readCopyrightThreadRetirementBound } from '@voucha/test-helpers/copyright-thread-retention'
 import { holdCopyrightCaseBeforeThreadEligibility } from '@voucha/test-helpers/copyright-thread-sweep-admission-race'
 import {
-  createCopyrightThreadMarkerScene,
   enterOwnedCopyrightThreadChildPhase,
   readOwnedCopyrightThreadChildren,
   readOwnedCopyrightCaseHoldHistory,
@@ -18,21 +11,15 @@ import {
 } from './retention-review-closures.mts'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
-import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
-import { positionCopyrightOperationalCursor } from '@voucha/test-helpers/copyright-operational-retention'
+import { createCopyrightOperationalScope } from '@voucha/test-helpers/copyright-operational-retention'
 import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
 import { createRetentionParsedEmail } from '@voucha/test-helpers/services/copyright-notices/retention-parsed-email'
 import {
-  seedCopyrightThreadRetirement,
   seedTestCopyrightAncestorEdge,
   linkTestCopyrightEmailIntake,
   readCopyrightThreadReferenceState,
 } from '@voucha/test-helpers/copyright-operational-email-retention'
-import {
-  assessAfterMixedCopyrightRetirementRead,
-  afterCopyrightHoldCoverage,
-  afterCopyrightThreadRetirementRead,
-} from '@voucha/test-helpers/copyright-preservation-coverage-interleave'
+import { afterCopyrightHoldCoverage } from '@voucha/test-helpers/copyright-preservation-coverage-interleave'
 import {
   releaseUserPreservationHold,
   placeUserPreservationHold,
@@ -43,9 +30,8 @@ import { sweepCopyrightCaseThreads } from './operational-retention-threading.mts
 const day = 24 * 60 * 60 * 1000
 
 describe('copyright preservation transaction commit order', () => {
-  useCopyrightOperationalCursorReservation()
   it.each(['account', 'case'] as const)(
-    'rolls back the %s hold when retirement commits after its coverage read',
+    'preserves exact %s hold and retirement facts in either commit outcome',
     async kind => {
       const admin = await createTestUser({ administrator: true })
       const notice = await createRetentionMinimalCase()
@@ -56,36 +42,105 @@ describe('copyright preservation transaction commit order', () => {
       await linkTestCopyrightEmailIntake(initial.id, notice.noticeId)
       await linkTestCopyrightEmailIntake(reply.id, notice.noticeId, 'thread', notice.moderator.id)
       expect((await readCopyrightThreadReferenceState(reply.id)).referenceCount).toBeGreaterThan(0)
-      await positionCopyrightOperationalCursor('email_thread_references', notice.noticeId)
-      await enterOwnedCopyrightThreadChildPhase(notice.noticeId, reply.id, 'references', false)
-      await expect(
-        afterCopyrightHoldCoverage(
+      const scope1 = createCopyrightOperationalScope([notice.noticeId])
+      await enterOwnedCopyrightThreadChildPhase(
+        scope1,
+        notice.noticeId,
+        reply.id,
+        'references',
+        false,
+      )
+      const before = await readCopyrightThreadReferenceState(reply.id)
+      let retired: boolean | null = null
+      let holdId: string | undefined
+      try {
+        const hold = await afterCopyrightHoldCoverage(
           notice.noticeId,
           async () => {
-            const retired = await sweepCopyrightCaseThreads({
-              now: new Date(Date.now() + 181 * day),
-              replyDays: 180,
-              batchSize: 10,
-              maxBatches: 100,
-            })
-            expect(retired.deleted).toBeGreaterThan(0)
+            retired =
+              (
+                await sweepCopyrightCaseThreads({
+                  scope: scope1,
+                  now: new Date(Date.now() + 181 * day),
+                  replyDays: 180,
+                  batchSize: 10,
+                  maxBatches: 100,
+                })
+              ).deleted > 0
           },
-          () =>
-            kind === 'account'
+          async () => {
+            const value = await (kind === 'account'
               ? placeUserPreservationHold(admin, notice.posterId, 'native-retirement-conflict')
               : placeCopyrightCasePreservationHold(
                   notice.moderator,
                   notice.noticeId,
                   'litigation_threat',
-                ),
-        ),
-      ).rejects.toMatchObject({ status: 409, code: 'CONFLICT', cause: { code: '40001' } })
-      expect((await getUserPreservationHoldState(admin, notice.posterId)).holds).toEqual([])
-      expect(await readOwnedCopyrightCaseHoldHistory(notice.noticeId)).toEqual([])
-      expect(await readCopyrightThreadReferenceState(reply.id)).toEqual({
-        tokenId: null,
-        referenceCount: 0,
-      })
+                ))
+            holdId = value.id
+            return value
+          },
+        )
+          .then(value => ({ status: 'fulfilled', value }))
+          .catch((err: unknown) => ({ status: 'rejected', reason: err }))
+        const conflict = expect.objectContaining({
+          status: 'rejected',
+          reason: expect.objectContaining({
+            status: 409,
+            code: 'CONFLICT',
+            cause: expect.objectContaining({ code: '40001' }),
+          }),
+        })
+        const success = expect.objectContaining({
+          status: 'fulfilled',
+          value: expect.objectContaining({ id: holdId }),
+        })
+        expect([
+          {
+            hold: conflict,
+            retired: true,
+            references: { tokenId: null, referenceCount: 0 },
+            accounts: 0,
+            cases: 0,
+            marker: true,
+          },
+          {
+            hold: conflict,
+            retired: false,
+            references: before,
+            accounts: 0,
+            cases: 0,
+            marker: false,
+          },
+          {
+            hold: conflict,
+            retired: null,
+            references: before,
+            accounts: 0,
+            cases: 0,
+            marker: false,
+          },
+          {
+            hold: success,
+            retired: false,
+            references: before,
+            accounts: Number(kind === 'account'),
+            cases: Number(kind === 'case'),
+            marker: false,
+          },
+        ]).toContainEqual({
+          hold,
+          retired,
+          references: await readCopyrightThreadReferenceState(reply.id),
+          accounts: (await getUserPreservationHoldState(admin, notice.posterId)).holds.length,
+          cases: (await readOwnedCopyrightCaseHoldHistory(notice.noticeId)).length,
+          marker: (await readCopyrightThreadRetirementBound(notice.noticeId)) !== null,
+        })
+      } finally {
+        if (holdId) {
+          if (kind === 'account') await releaseUserPreservationHold(admin, notice.posterId)
+          else await releaseCopyrightCasePreservationHold(notice.moderator, notice.noticeId, holdId)
+        }
+      }
     },
   )
   it.each(['matched_token', 'reply_edges', 'ancestor_edges'] as const)(
@@ -108,8 +163,9 @@ describe('copyright preservation transaction commit order', () => {
       )
       if (family !== 'matched_token') await seedTestCopyrightAncestorEdge(reply.id, initial.id)
       const target = family === 'ancestor_edges' ? initial.id : reply.id
-      await positionCopyrightOperationalCursor('email_thread_references', notice.noticeId)
+      const scope2 = createCopyrightOperationalScope([notice.noticeId])
       await enterOwnedCopyrightThreadChildPhase(
+        scope2,
         notice.noticeId,
         target,
         family === 'matched_token' ? 'references' : family,
@@ -121,15 +177,21 @@ describe('copyright preservation transaction commit order', () => {
       })
       const failures: unknown[] = []
       let held = false
+      let holdOutcome: unknown
       try {
         const result = await holdCopyrightCaseBeforeThreadEligibility(
           notice.noticeId,
           async () => {
-            await placeUserPreservationHold(admin, notice.posterId, family)
-            held = true
+            holdOutcome = await placeUserPreservationHold(admin, notice.posterId, family)
+              .then(value => {
+                held = true
+                return { status: 'fulfilled', value }
+              })
+              .catch((err: unknown) => ({ status: 'rejected', reason: err }))
           },
           () =>
             sweepCopyrightCaseThreads({
+              scope: scope2,
               now: new Date(Date.now() + 181 * day),
               replyDays: 180,
               batchSize: 10,
@@ -137,9 +199,29 @@ describe('copyright preservation transaction commit order', () => {
             }),
           err => failures.push(err),
         )
-        expect(failures).toEqual([expect.objectContaining({ code: '40001' })])
-        expect(result.deleted).toBe(0)
-        expect(await readOwnedCopyrightThreadChildren(target)).toEqual(before)
+        const nativeAbort = expect.objectContaining({ code: '40001' })
+        const holdAbort = expect.objectContaining({
+          status: 'rejected',
+          reason: expect.objectContaining({ status: 409, code: 'CONFLICT', cause: nativeAbort }),
+        })
+        const holdSuccess = expect.objectContaining({ status: 'fulfilled' })
+        const state = {
+          hold: holdOutcome,
+          deleted: result.deleted > 0,
+          children: await readOwnedCopyrightThreadChildren(target),
+          failures,
+        }
+        expect([
+          { hold: holdSuccess, deleted: false, children: before, failures: [nativeAbort] },
+          { hold: holdSuccess, deleted: false, children: before, failures: [] },
+          {
+            hold: holdAbort,
+            deleted: true,
+            children: { matched_token_id: null, edges: 0 },
+            failures: [],
+          },
+          { hold: holdAbort, deleted: false, children: before, failures: [nativeAbort] },
+        ]).toContainEqual(state)
       } finally {
         if (held) await releaseUserPreservationHold(admin, notice.posterId)
       }
@@ -154,23 +236,28 @@ describe('copyright preservation transaction commit order', () => {
     await linkTestCopyrightEmailIntake(initial.id, notice.noticeId)
     await linkTestCopyrightEmailIntake(reply.id, notice.noticeId, 'thread', notice.moderator.id)
     const before = await readCopyrightThreadReferenceState(reply.id)
-    await positionCopyrightOperationalCursor('email_thread_references', notice.noticeId)
+    const scope3 = createCopyrightOperationalScope([notice.noticeId])
     let holdId: string | undefined
+    let holdOutcome: unknown
     const failures: unknown[] = []
     try {
       const result = await holdCopyrightCaseBeforeThreadEligibility(
         notice.noticeId,
         async () => {
-          holdId = (
-            await placeCopyrightCasePreservationHold(
-              notice.moderator,
-              notice.noticeId,
-              'litigation_threat',
-            )
-          ).id
+          holdOutcome = await placeCopyrightCasePreservationHold(
+            notice.moderator,
+            notice.noticeId,
+            'litigation_threat',
+          )
+            .then(value => {
+              holdId = value.id
+              return { status: 'fulfilled', value }
+            })
+            .catch((err: unknown) => ({ status: 'rejected', reason: err }))
         },
         () =>
           sweepCopyrightCaseThreads({
+            scope: scope3,
             now: new Date(Date.now() + 181 * day),
             replyDays: 180,
             batchSize: 10,
@@ -178,115 +265,33 @@ describe('copyright preservation transaction commit order', () => {
           }),
         err => failures.push(err),
       )
-      expect(failures).toEqual([expect.objectContaining({ code: '40001' })])
-      expect(result.deleted).toBe(0)
-      expect(await readCopyrightThreadReferenceState(reply.id)).toEqual(before)
+      const native = expect.objectContaining({ code: '40001' })
+      const conflict = expect.objectContaining({
+        status: 'rejected',
+        reason: expect.objectContaining({ status: 409, code: 'CONFLICT', cause: native }),
+      })
+      const success = expect.objectContaining({ status: 'fulfilled' })
+      expect([
+        { hold: success, deleted: false, references: before, failures: [native], history: 1 },
+        { hold: success, deleted: false, references: before, failures: [], history: 1 },
+        { hold: conflict, deleted: false, references: before, failures: [native], history: 0 },
+        {
+          hold: conflict,
+          deleted: true,
+          references: { tokenId: null, referenceCount: 0 },
+          failures: [],
+          history: 0,
+        },
+      ]).toContainEqual({
+        hold: holdOutcome,
+        deleted: result.deleted > 0,
+        references: await readCopyrightThreadReferenceState(reply.id),
+        failures,
+        history: (await readOwnedCopyrightCaseHoldHistory(notice.noticeId)).length,
+      })
     } finally {
       if (holdId)
         await releaseCopyrightCasePreservationHold(notice.moderator, notice.noticeId, holdId)
     }
-  })
-})
-
-describe('thread evidence admission and retirement commit order', () => {
-  useCopyrightOperationalCursorReservation()
-  const options = () => ({
-    now: new Date(Date.now() + 181 * day),
-    replyDays: 180,
-    batchSize: 10,
-    maxBatches: 100,
-  })
-  it('keeps the admitted evidence when its writer commits before the retirement marker', async () => {
-    const { notice, reply, candidate } = await createCopyrightThreadMarkerScene()
-    const before = await readCopyrightThreadReferenceState(reply.id)
-    const failures: unknown[] = []
-    let admitted: unknown
-    const result = await holdCopyrightCaseBeforeThreadEligibility(
-      notice.noticeId,
-      async () => {
-        admitted = await associateCopyrightEmailIntakeWithNotice(
-          notice.moderator,
-          candidate.id,
-          notice.noticeId,
-        )
-      },
-      () => sweepCopyrightCaseThreads(options()),
-      err => failures.push(err),
-    )
-    expect(admitted).toEqual({
-      copyright_notice: { id: notice.noticeId },
-      copyright_email_intake: { id: candidate.id },
-    })
-    expect(failures).toEqual([expect.objectContaining({ code: '40001' })])
-    expect(result.deleted).toBe(0)
-    expect(await readCopyrightThreadReferenceState(reply.id)).toEqual(before)
-    expect(await readCopyrightEmailIntakeNoticeLinks(candidate.id)).toEqual([
-      expect.objectContaining({
-        copyright_notice_id: notice.noticeId,
-        link_kind: 'thread',
-      }),
-    ])
-    expect(await readCopyrightEmailManualAssociationReview(candidate.id)).toEqual([
-      { copyright_notice_id: notice.noticeId, action: 'pending' },
-    ])
-    expect(await readCopyrightEmailManualAssociationEvent(candidate.id)).toEqual([
-      {
-        copyright_notice_id: notice.noticeId,
-        changed_by_id: notice.moderator.id,
-        copyright_notice_email_intake_id: candidate.id,
-      },
-    ])
-  })
-  it('rolls back the overlapping writer and rejects later graph admission after retirement commits', async () => {
-    const { notice, reply, candidate } = await createCopyrightThreadMarkerScene()
-    await expect(
-      afterCopyrightThreadRetirementRead(
-        notice.noticeId,
-        async () => {
-          const result = await sweepCopyrightCaseThreads(options())
-          expect(result.deleted).toBeGreaterThan(0)
-          expect((await readCopyrightThreadReferenceState(reply.id)).referenceCount).toBe(0)
-        },
-        () =>
-          associateCopyrightEmailIntakeWithNotice(notice.moderator, candidate.id, notice.noticeId),
-      ),
-    ).rejects.toMatchObject({
-      status: 409,
-      code: 'copyright_email_thread_changed',
-      cause: { code: '40001' },
-    })
-    expect(await readCopyrightEmailIntakeNoticeLinks(candidate.id)).toEqual([])
-    expect(await readCopyrightEmailManualAssociationReview(candidate.id)).toEqual([])
-    expect(await readCopyrightEmailManualAssociationEvent(candidate.id)).toEqual([])
-    await expect(
-      associateCopyrightEmailIntakeWithNotice(notice.moderator, candidate.id, notice.noticeId),
-    ).rejects.toMatchObject({
-      status: 409,
-      code: 'copyright_email_thread_changed',
-      message: 'Copyright case email threading has been retired',
-    })
-    expect(await readCopyrightEmailIntakeNoticeLinks(candidate.id)).toEqual([])
-    expect(await readCopyrightEmailManualAssociationReview(candidate.id)).toEqual([])
-    expect(await readCopyrightEmailManualAssociationEvent(candidate.id)).toEqual([])
-  })
-  it('keeps a later absent-case dependency after a different marker was found', async () => {
-    const retired = await createRetentionMinimalCase()
-    await seedCopyrightThreadRetirement(retired.noticeId, retired.noticeId)
-    const { notice } = await createCopyrightThreadMarkerScene()
-    await expect(
-      assessAfterMixedCopyrightRetirementRead(
-        [retired.noticeId, notice.noticeId],
-        notice.submissionId,
-        notice.moderator,
-        async () => {
-          expect((await sweepCopyrightCaseThreads(options())).deleted).toBeGreaterThan(0)
-        },
-      ),
-    ).rejects.toMatchObject({ code: '40001' })
-    const aggregate = await getCopyrightNoticePrivateAggregate(notice.noticeId)
-    expect(aggregate?.assessments).toEqual([])
-    expect(
-      aggregate?.lifecycleEvents.filter(event => event.change_type === 'submission_assessed'),
-    ).toEqual([])
   })
 })

@@ -88,7 +88,7 @@ export async function insertCopyrightEmailIntakeNoticeLink(
       ) VALUES (
         ${input.intakeId}, ${input.noticeId}, ${input.linkKind},
         ${matchedTokenId}, ${input.linkKind === 'thread' ? 'pending' : null}
-      ) ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
+      ) ON CONFLICT DO NOTHING
       RETURNING copyright_notice_id, link_kind
     `)
     inserted = result.rows

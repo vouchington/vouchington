@@ -77,7 +77,12 @@ export function getCopyrightCasePurgeConcurrency(): number {
   })
 }
 
-export function getCopyrightCasePurgePageSize(): number {
+export function getCopyrightCasePurgePageSize(requested?: number): number {
+  if (requested !== undefined) {
+    if (!Number.isInteger(requested) || requested < 1 || requested > 100)
+      throw new RangeError('Copyright purge page size must be between 1 and 100')
+    return requested
+  }
   return getBoundedPositiveIntegerField(psqlQueueConfig, COPYRIGHT_CASE_PURGE_PAGE_SIZE_FIELD, {
     defaultValue: 100,
     maxValue: 100,

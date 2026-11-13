@@ -1,7 +1,6 @@
 import { beginTransaction, read } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import { lockCopyrightJurisdictionPolicy } from '../../copyright-jurisdiction-policy-lock.mts'
 
 export type CopyrightTerritorialContractShape = {
   accepted_at: Date | null
@@ -90,34 +89,12 @@ export async function readTerritorialContractTableNames(): Promise<string[]> {
   return rows.map(row => row.table_name)
 }
 
-export async function concealJurisdictionPolicyApprovals(
-  transaction: TransactionQuery,
-  jurisdiction: 'eu_dsa' | 'uk',
-  actorId: string,
-): Promise<void> {
-  await lockCopyrightJurisdictionPolicy(jurisdiction, transaction)
-  await transaction(sql`/* concealJurisdictionPolicyApprovals */
-    INSERT INTO copyright_jurisdiction_policy_withdrawals (
-      copyright_jurisdiction_policy_approval_id, withdrawn_by_id
-    )
-    SELECT approval.id, ${actorId}
-    FROM copyright_jurisdiction_policy_approvals approval
-    WHERE approval.jurisdiction = ${jurisdiction}
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_jurisdiction_policy_withdrawals withdrawal
-        WHERE withdrawal.copyright_jurisdiction_policy_approval_id = approval.id
-      )
-    ON CONFLICT (copyright_jurisdiction_policy_approval_id) DO NOTHING
-  `)
-}
-
 export async function insertJurisdictionPolicyApproval(
   transaction: TransactionQuery,
   jurisdiction: 'eu_dsa' | 'uk',
   policyVersion: string,
   actorId: string,
 ): Promise<string> {
-  await lockCopyrightJurisdictionPolicy(jurisdiction, transaction)
   const { rows } = await transaction<{ id: string }>(sql`/* insertJurisdictionPolicyApproval */
     INSERT INTO copyright_jurisdiction_policy_approvals (
       jurisdiction, policy_version, approved_by_id

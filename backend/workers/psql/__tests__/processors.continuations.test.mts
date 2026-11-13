@@ -7,7 +7,6 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { withClassifierRetentionSweepLock } from '@voucha/test-helpers/classifier-retention-sweep-lock'
 import { countClassifierRows } from '@voucha/test-helpers/classifier-retention'
 import { readClassifierDefaultLineage } from '@voucha/test-helpers/classifier-default-retention'
-import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
 import { readCopyrightOperationalRow } from '@voucha/test-helpers/copyright-operational-retention'
 import { loseNextPsqlJobAddReplyForTest } from '@voucha/test-helpers/injected-failures'
 import {
@@ -93,7 +92,6 @@ describe('processPsql retention continuations', () => {
   })
 
   describe('daily copyright admission', () => {
-    useCopyrightOperationalCursorReservation()
     it('admits pending copyright families from the daily result and propagates admission failure', async () => {
       const fixture = await createDailyCopyrightContinuationFixture()
       const initialJobId = `retention-test-${randomUUID()}`
@@ -119,7 +117,7 @@ describe('processPsql retention continuations', () => {
         processPsql('dataRetentionCleanup', {}, undefined, initialJobId, {
           retention: {
             families: ['copyrightFormScreeningAttempts'],
-            copyrightFormScreeningAttemptIds: fixture.ids,
+            copyrightScopes: fixture.copyrightScopes,
             copyrightNow: fixture.now,
           },
         }),

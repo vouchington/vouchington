@@ -4,14 +4,19 @@ import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyri
 import {
   createCopyrightNoticeForManualAssociation,
   markTestCopyrightNoticeErasedAndCommit,
+  isTestCopyrightCaseEvidenceErased,
 } from '@voucha/test-helpers/copyright-email-manual-association'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { createMcpCopyrightFormIntake } from '@voucha/test-helpers/copyright-mcp-write-fixtures'
 import { createTestCopyrightFormIntakeReview } from '@voucha/test-helpers/data-stores/psql/copyright-form-reviews'
+import { interleaveCopyrightOwnedRead } from '@voucha/test-helpers/copyright-owned-read-interleave'
 import {
-  appendCopyrightAssessmentAfterErasure,
-  recoverCopyrightAssessmentAfterErasure,
-} from '@voucha/test-helpers/copyright-assessment-erasure-race'
+  copyrightRaceResult,
+  assessmentSerializationConflict,
+  nativeCopyrightSerializationConflict,
+  readCopyrightAssessmentRaceState,
+} from '@voucha/test-helpers/copyright-assessment-race-outcomes'
+import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import { recoverMissingDecisionAssessments } from './enforcement-recovery.mts'
 import {
   recoverRejectedCopyrightFormReviewEffect,
@@ -30,18 +35,39 @@ describe('copyright assessment and case erasure', () => {
       submittedByUserId: null,
       bodyCiphertext: 'owned-assessment-source',
     })
-    await expect(
-      appendCopyrightAssessmentAfterErasure(
-        {
+    const before = await readCopyrightAssessmentRaceState(noticeId)
+    const race = await interleaveCopyrightOwnedRead({
+      ownedId: submission.id,
+      marker: 'appendCopyrightSubmissionAssessment:lockSubmission',
+      first: () =>
+        appendCopyrightSubmissionAssessment({
           submissionId: submission.id,
           currentUser: moderator,
           substantiallyCompliant: true,
           assessedAt: new Date(),
+        }),
+      second: () => markTestCopyrightNoticeErasedAndCommit(noticeId),
+    })
+    expect(race.observerErrors).toEqual([])
+    expect(race.second).toEqual({ status: 'fulfilled', value: undefined })
+    expect([
+      { result: assessmentSerializationConflict, state: before },
+      {
+        result: {
+          status: 'rejected',
+          statusCode: 410,
+          code: undefined,
+          message: 'Copyright case evidence was erased',
+          causeCode: '23514',
         },
-        noticeId,
-      ),
-    ).rejects.toMatchObject({ status: 410 })
+        state: before,
+      },
+    ]).toContainEqual({
+      result: copyrightRaceResult(race.first),
+      state: await readCopyrightAssessmentRaceState(noticeId),
+    })
     const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
+    expect(await isTestCopyrightCaseEvidenceErased(noticeId)).toBe(true)
     expect(aggregate?.assessments).toEqual([])
     expect(
       aggregate?.lifecycleEvents.filter(event => event.change_type === 'submission_assessed'),
@@ -56,13 +82,34 @@ describe('copyright assessment and case erasure', () => {
       moderatorId: moderator.id,
       is_accepted: true,
     })
-    await expect(
-      recoverCopyrightAssessmentAfterErasure(
-        intake.copyright_notice_submission_id,
-        intake.copyright_notice_id,
-      ),
-    ).rejects.toMatchObject({ status: 410 })
+    const before = await readCopyrightAssessmentRaceState(intake.copyright_notice_id)
+    const race = await interleaveCopyrightOwnedRead({
+      ownedId: intake.copyright_notice_submission_id,
+      marker: 'recoverMissingCopyrightDecisionAssessments',
+      first: () =>
+        recoverMissingDecisionAssessments({ ids: [intake.copyright_notice_submission_id] }),
+      second: () => markTestCopyrightNoticeErasedAndCommit(intake.copyright_notice_id),
+    })
+    expect(race.observerErrors).toEqual([])
+    expect(race.second).toEqual({ status: 'fulfilled', value: undefined })
+    expect([
+      { result: nativeCopyrightSerializationConflict, state: before },
+      {
+        result: {
+          status: 'rejected',
+          statusCode: 410,
+          code: undefined,
+          message: 'Copyright case evidence was erased',
+          causeCode: '23514',
+        },
+        state: before,
+      },
+    ]).toContainEqual({
+      result: copyrightRaceResult(race.first),
+      state: await readCopyrightAssessmentRaceState(intake.copyright_notice_id),
+    })
     const aggregate = await getCopyrightNoticePrivateAggregate(intake.copyright_notice_id)
+    expect(await isTestCopyrightCaseEvidenceErased(intake.copyright_notice_id)).toBe(true)
     expect(aggregate?.assessments).toEqual([])
     expect(
       aggregate?.lifecycleEvents.filter(event => event.change_type === 'submission_assessed'),

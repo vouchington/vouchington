@@ -1,8 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { COPYRIGHT_EMAIL_THREAD_CHANGED } from '@modules/on-error/error-codes'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
-import { positionCopyrightOperationalCursor } from '@voucha/test-helpers/copyright-operational-retention'
+import { createCopyrightOperationalScope } from '@voucha/test-helpers/copyright-operational-retention'
 import {
   linkTestCopyrightEmailIntake,
   readCopyrightThreadReferenceState,
@@ -61,8 +60,6 @@ async function assertSecondReplayRolledBack(
 }
 
 describe('copyright email reference admission and graph derivation', () => {
-  useCopyrightOperationalCursorReservation()
-
   it('declines reference admission when erasure commits after its preflight', async () => {
     const sesMessageId = `ses-phase-erasure-preflight-${randomUUID()}`
     const { intake } = await createCopyrightEmailIntake({
@@ -74,8 +71,8 @@ describe('copyright email reference admission and graph derivation', () => {
       rawByteSize: 12,
       sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
     })
-    await positionCopyrightOperationalCursor('unlinked_email_intakes', intake.id)
-    const cursorBefore = await readCopyrightUnlinkedEmailOperationalCursor()
+    const scope1 = createCopyrightOperationalScope([intake.id])
+    const cursorBefore = await readCopyrightUnlinkedEmailOperationalCursor(scope1)
     const atTokenInsert = Promise.withResolvers<void>()
     const releaseTokenInsert = Promise.withResolvers<void>()
     const restore = runBeforePostgresStatementForTest(
@@ -95,6 +92,7 @@ describe('copyright email reference admission and graph derivation', () => {
     try {
       await atTokenInsert.promise
       const erased = await sweepUnlinkedCopyrightEmailIntakes({
+        scope: scope1,
         now: new Date(Date.now() + 91 * DAY_MS),
         retentionDays: 90,
         childLimit: 20,
@@ -151,7 +149,7 @@ describe('copyright email reference admission and graph derivation', () => {
       expect((await readCopyrightIntakeRetentionState(intake.id)).receiptExists).toBe(true)
       expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([])
       // A committed marker can leave the child cursor in progress; an SSI loser cannot move it.
-      const cursorAfter = await readCopyrightUnlinkedEmailOperationalCursor()
+      const cursorAfter = await readCopyrightUnlinkedEmailOperationalCursor(scope1)
       expect(erased.erased === 0 ? cursorAfter : cursorBefore).toEqual(cursorBefore)
     } finally {
       releaseTokenInsert.resolve()

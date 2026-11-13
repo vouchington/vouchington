@@ -1,3 +1,5 @@
+import { linkCopyrightEmailIntakeToNotice } from './copyright-email-intake-link.mts'
+import { seedCopyrightThreadTokenAtForTest } from './copyright-thread-retention.mts'
 // Test-only email intake setup uses the real copyright service paths.
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import { beginTransaction, write } from '@data-stores/psql'
@@ -101,5 +103,23 @@ export async function seedUnmatchedCopyrightEmailReply() {
   )
   await insertResolvedCopyrightEmailThreadReferences(transaction, intake.id, references, tokenIds)
   await transaction.commit()
+  return intake
+}
+
+/** Committed message identity for a case; promotion is not the threading/erasure subject. */
+export async function seedCopyrightEmailInitialThreadSource(noticeId: string, messageId: string) {
+  const intake = await createUnparsedCopyrightEmailIntake()
+  const [reference] = buildCopyrightEmailThreadReferenceRows({
+    messageId,
+    inReplyTo: [],
+    references: [],
+  })
+  if (!reference) throw new Error('Owned message identity is missing')
+  await seedCopyrightThreadTokenAtForTest({
+    createdAt: new Date(),
+    intakeId: intake.id,
+    lookupDigest: reference.lookup_digest,
+  })
+  await linkCopyrightEmailIntakeToNotice({ intakeId: intake.id, noticeId, linkKind: 'initial' })
   return intake
 }

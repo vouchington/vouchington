@@ -1,33 +1,26 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createTestUser, createTestUserDirect } from '@voucha/test-helpers'
-import { getPrivateUserByAny } from '@services/users/get'
+import { createTestUserDirect } from '@voucha/test-helpers'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
 import { readCopyrightStaydownEntries } from '@voucha/test-helpers/data-stores/psql/copyright-staydown'
 import { useStaydownMatching } from '@voucha/test-helpers/services/copyright-notices/staydown-matching'
-import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
-import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
-import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import {
-  createTestLiftNotice,
   readTestLiftReversalFacts,
   readTestLiftSourceFlags,
   replayTestLiftConfirmationConsequences,
 } from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
-import {
-  createTestCopyrightImageFixture,
-  createTestCopyrightRestrictionForImage,
-} from '@voucha/test-helpers/copyright-surface-target-fixtures'
+import { createTestCopyrightImageFixture } from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { liftCopyrightRestrictionWithoutSetter } from './restriction-lifts.mts'
 import { readTestRepeatInfringerIncidents } from '@voucha/test-helpers/copyright-repeat-infringer'
-import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 import {
-  completeCopyrightMandatoryHumanReview,
-  createCopyrightAppeal,
-  processCopyrightActionIntent,
-  reviewCopyrightAppeal,
-} from './index.mts'
+  createCommittedSurfaceRestriction,
+  seedCommittedSourceReversal,
+  seedCommittedAdministratorLift,
+} from '@voucha/test-helpers/copyright-reversal-scene'
+import { seedRestorationSceneWithhold } from '@voucha/test-helpers/copyright-withhold-scene-fixture'
+import { seedCompletedReversalStatement } from '@voucha/test-helpers/copyright-restored-statement-fixture'
+import { assertReversalDeliveryOutcome } from '@voucha/test-helpers/copyright-reversal-delivery-outcome'
+import { assertAdministratorLiftOutcome } from '@voucha/test-helpers/copyright-administrator-lift-outcome'
 
 const onlySource = (source: 'review' | 'appeal' | 'administrator_lift') => ({
   reversal_authorized: true,
@@ -36,11 +29,11 @@ const onlySource = (source: 'review' | 'appeal' | 'administrator_lift') => ({
   reversal_by_administrator_lift: source === 'administrator_lift',
 })
 
-async function applyRestore(noticeId: string) {
+async function restoreIntent(noticeId: string) {
   const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
-  const restore = aggregate?.actionIntents.find(intent => intent.action === 'restore')
-  if (!restore) throw new Error('Reversal restore intent missing')
-  return processCopyrightActionIntent(restore.id)
+  const intent = aggregate?.actionIntents.find(row => row.action === 'restore')
+  if (!intent) throw new Error('Committed restore obligation disappeared')
+  return intent
 }
 
 describe('independent copyright reversal sources', () => {
@@ -48,10 +41,11 @@ describe('independent copyright reversal sources', () => {
     vi.restoreAllMocks()
     vi.unstubAllEnvs()
   })
+
   it('leaves every reversal predicate false before any reversal is recorded', async () => {
-    const fixture = await createTestCopyrightImageFixture('topic-logo-image')
-    const restricted = await createTestCopyrightRestrictionForImage(fixture)
-    expect(await readTestLiftSourceFlags(restricted.restrictionId)).toEqual({
+    const image = await createTestCopyrightImageFixture('topic-logo-image')
+    const scene = await createCommittedSurfaceRestriction([image])
+    expect(await readTestLiftSourceFlags(scene.restrictions[0]!.id)).toEqual({
       reversal_authorized: false,
       reversal_by_review: false,
       reversal_by_appeal: false,
@@ -61,70 +55,41 @@ describe('independent copyright reversal sources', () => {
 
   it('authorizes an administrator lift alone and preserves its owner-notice cause', async () => {
     installTestMediaDeliveryEdge()
-    const fixture = await createTestCopyrightImageFixture('topic-logo-image')
-    const { noticeId, restrictions, actionIntents } = await createTestLiftNotice([fixture])
-    const withhold = actionIntents.find(intent => intent.action === 'withhold')
-    if (!withhold) throw new Error('Withhold intent missing')
-    await expect(processCopyrightActionIntent(withhold.id)).resolves.toBe('applied')
+    const image = await createTestCopyrightImageFixture('topic-logo-image')
+    const scene = await createCommittedSurfaceRestriction([image], true)
+    await seedRestorationSceneWithhold(scene.actionIntents[0]!.id)
     const administrator = await createTestUserDirect({ administrator: true })
-    await liftCopyrightRestrictionWithoutSetter({
-      currentUser: administrator,
-      noticeId,
-      restrictionId: restrictions[0]!.id,
-      rationale: 'Provider-owned image restored.',
-      liftedAt: new Date(),
-    })
-    expect(await readTestLiftReversalFacts(restrictions[0]!.id)).toMatchObject(
+    await seedCommittedAdministratorLift(scene.noticeId, scene.restrictions[0]!.id, administrator)
+    expect(await readTestLiftReversalFacts(scene.restrictions[0]!.id)).toMatchObject(
       onlySource('administrator_lift'),
     )
-    await expect(applyRestore(noticeId)).resolves.toBe('applied')
+    await seedCompletedReversalStatement((await restoreIntent(scene.noticeId)).id)
+    expect(
+      (await getCopyrightNoticePrivateAggregate(scene.noticeId))?.restrictions[0]?.lifted_at,
+    ).toBeInstanceOf(Date)
   })
 
   it('authorizes a reviewed appeal alone and keeps appeal wording', async () => {
     installTestMediaDeliveryEdge()
-    const fixture = await createTestCopyrightImageFixture('user-profile-image')
-    const restricted = await createTestCopyrightRestrictionForImage(fixture)
-    await expect(processCopyrightActionIntent(restricted.withholdIntentId)).resolves.toBe('applied')
-    await completeCopyrightMandatoryHumanReview({
-      noticeId: restricted.noticeId,
-      restrictionId: restricted.restrictionId,
-      currentUser: restricted.moderator,
-      action: 'confirm',
-      rationale: 'Confirm the restriction before the appeal.',
-      reviewedAt: new Date(),
-    })
-    const beforeIncident = (await readTestRepeatInfringerIncidents(fixture.actorUserId)).find(
-      incident => incident.copyright_notice_id === restricted.noticeId,
-    )
-    expect(beforeIncident?.is_operative).toBe(true)
-    const appellant = await getPrivateUserByAny(fixture.actorUserId)
-    if (!appellant) throw new Error('Appellant disappeared')
-    const appeal = await createCopyrightAppeal(
-      appellant,
-      restricted.noticeId,
-      crypto.randomUUID(),
-      {
-        reason: 'I created this image.',
-        targetIds: [restricted.targetId],
-      },
-    )
-    await reviewCopyrightAppeal({
-      submissionId: appeal.submission.id,
-      currentUser: restricted.moderator,
-      recommendationId: null,
-      manualFallbackReason: 'Manual review required.',
-      rationale: 'The supplied record supports reversal.',
-      decisions: [{ restrictionId: restricted.restrictionId, action: 'reverse' }],
-    })
-    expect(await readTestLiftReversalFacts(restricted.restrictionId)).toMatchObject(
+    const image = await createTestCopyrightImageFixture('user-profile-image')
+    const scene = await createCommittedSurfaceRestriction([image], true)
+    await seedRestorationSceneWithhold(scene.actionIntents[0]!.id)
+    expect(
+      (await readTestRepeatInfringerIncidents(image.actorUserId)).find(
+        row => row.copyright_notice_id === scene.noticeId,
+      )?.is_operative,
+    ).toBe(true)
+    await seedCommittedSourceReversal(scene, 'appeal', image.actorUserId)
+    expect(await readTestLiftReversalFacts(scene.restrictions[0]!.id)).toMatchObject(
       onlySource('appeal'),
     )
-    const afterIncident = (await readTestRepeatInfringerIncidents(fixture.actorUserId)).find(
-      incident => incident.copyright_notice_id === restricted.noticeId,
-    )
-    expect(afterIncident?.is_operative).toBe(false)
-    await expect(applyRestore(restricted.noticeId)).resolves.toBe('applied')
-    const text = (await readTestCopyrightStatementIntents(restricted.noticeId)).find(
+    expect(
+      (await readTestRepeatInfringerIncidents(image.actorUserId)).find(
+        row => row.copyright_notice_id === scene.noticeId,
+      )?.is_operative,
+    ).toBe(false)
+    await seedCompletedReversalStatement((await restoreIntent(scene.noticeId)).id)
+    const text = (await readTestCopyrightStatementIntents(scene.noticeId)).find(
       row => row.delivery_kind === 'poster_restoration_notice' && row.channel === 'email',
     )?.text
     expect(text).toContain('the appeal reversed the decision')
@@ -132,63 +97,74 @@ describe('independent copyright reversal sources', () => {
 
   describe('staydown registration after an administrator lift', () => {
     useStaydownMatching()
-
     it('removes its confirmed entry at the lift and cannot register it again', async () => {
-      const fixture = await createTestCopyrightImageFixture('topic-logo-image')
+      const image = await createTestCopyrightImageFixture('topic-logo-image')
       const sibling = await createTestCopyrightImageFixture('user-profile-image')
-      // Exercise the bulk registration path and keep an unrelated restriction active.
-      const { noticeId, restrictions } = await createTestLiftNotice([fixture, sibling])
-      expect(await readCopyrightStaydownEntries(noticeId)).toEqual(
+      const scene = await createCommittedSurfaceRestriction([image, sibling], true)
+      expect(await readCopyrightStaydownEntries(scene.noticeId)).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ copyright_restriction_id: restrictions[0]!.id }),
-          expect.objectContaining({ copyright_restriction_id: restrictions[1]!.id }),
+          expect.objectContaining({ copyright_restriction_id: scene.restrictions[0]!.id }),
+          expect.objectContaining({ copyright_restriction_id: scene.restrictions[1]!.id }),
         ]),
       )
       const administrator = await createTestUserDirect({ administrator: true })
-      await liftCopyrightRestrictionWithoutSetter({
-        currentUser: administrator,
-        noticeId,
-        restrictionId: restrictions[0]!.id,
-        rationale: 'Withdraw the provider decision.',
-        liftedAt: new Date(),
-      })
-      const remaining = [expect.objectContaining({ copyright_restriction_id: restrictions[1]!.id })]
-      expect(await readCopyrightStaydownEntries(noticeId)).toEqual(remaining)
-      await replayTestLiftConfirmationConsequences(noticeId)
-      expect(await readCopyrightStaydownEntries(noticeId)).toEqual(remaining)
+      await seedCommittedAdministratorLift(scene.noticeId, scene.restrictions[0]!.id, administrator)
+      const remaining = [
+        expect.objectContaining({ copyright_restriction_id: scene.restrictions[1]!.id }),
+      ]
+      expect(await readCopyrightStaydownEntries(scene.noticeId)).toEqual(remaining)
+      await replayTestLiftConfirmationConsequences(scene.noticeId)
+      expect(await readCopyrightStaydownEntries(scene.noticeId)).toEqual(remaining)
     })
   })
 
-  describe('provisional review reversal', () => {
-    useCopyrightIntakeEnvironment()
-    useAutomaticProvisionalWithholding()
+  it('authorizes human review alone and keeps review wording', async () => {
+    installTestMediaDeliveryEdge()
+    const image = await createTestCopyrightImageFixture('post-image')
+    const scene = await createCommittedSurfaceRestriction([image])
+    await seedRestorationSceneWithhold(scene.actionIntents[0]!.id)
+    await seedCommittedSourceReversal(scene, 'review', image.actorUserId)
+    expect(await readTestLiftReversalFacts(scene.restrictions[0]!.id)).toMatchObject(
+      onlySource('review'),
+    )
+    await seedCompletedReversalStatement((await restoreIntent(scene.noticeId)).id)
+    const text = (await readTestCopyrightStatementIntents(scene.noticeId)).find(
+      row => row.delivery_kind === 'poster_restoration_notice' && row.channel === 'email',
+    )?.text
+    expect(text).toContain('human review reversed the decision')
+  })
 
-    it('authorizes human review alone and keeps review wording', async () => {
-      installTestMediaDeliveryEdge()
-      const poster = await createTestUser()
-      const { notice } = await createClearScreenedForm(1, { poster })
-      const noticeId = notice.intake.copyright_notice_id
-      await applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id)
-      const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
-      const restriction = aggregate?.restrictions[0]
-      const withhold = aggregate?.actionIntents.find(intent => intent.action === 'withhold')
-      if (!restriction || !withhold) throw new Error('Provisional restriction missing')
-      await expect(processCopyrightActionIntent(withhold.id)).resolves.toBe('applied')
-      const moderator = await createTestUserDirect({ extraRoles: ['moderator'] })
-      await completeCopyrightMandatoryHumanReview({
-        noticeId,
-        restrictionId: restriction.id,
-        currentUser: moderator,
-        action: 'reverse',
-        rationale: 'The notice was mistaken.',
-        reviewedAt: new Date(),
-      })
-      expect(await readTestLiftReversalFacts(restriction.id)).toMatchObject(onlySource('review'))
-      await expect(applyRestore(noticeId)).resolves.toBe('applied')
-      const text = (await readTestCopyrightStatementIntents(noticeId)).find(
-        row => row.delivery_kind === 'poster_restoration_notice' && row.channel === 'email',
-      )?.text
-      expect(text).toContain('human review reversed the decision')
+  it('commits every administrator lift fact together or returns its exact SSI conflict', async () => {
+    expect.hasAssertions()
+    installTestMediaDeliveryEdge()
+    const image = await createTestCopyrightImageFixture('topic-logo-image')
+    const scene = await createCommittedSurfaceRestriction([image], true)
+    await seedRestorationSceneWithhold(scene.actionIntents[0]!.id)
+    await assertAdministratorLiftOutcome(
+      {
+        currentUser: await createTestUserDirect({ administrator: true }),
+        noticeId: scene.noticeId,
+        restrictionId: scene.restrictions[0]!.id,
+        rationale: 'Provider-owned image restored.',
+        liftedAt: new Date(),
+      },
+      image.placementId,
+    )
+  })
+
+  it('keeps complete restore phases when its worker is aborted by SSI', async () => {
+    expect.hasAssertions()
+    installTestMediaDeliveryEdge()
+    const image = await createTestCopyrightImageFixture('post-image')
+    const scene = await createCommittedSurfaceRestriction([image])
+    await seedRestorationSceneWithhold(scene.actionIntents[0]!.id)
+    await seedCommittedSourceReversal(scene, 'review', image.actorUserId)
+    await assertReversalDeliveryOutcome({
+      noticeId: scene.noticeId,
+      restrictionId: scene.restrictions[0]!.id,
+      placementId: image.placementId,
+      restoreId: (await restoreIntent(scene.noticeId)).id,
+      posterId: image.actorUserId,
     })
   })
 })

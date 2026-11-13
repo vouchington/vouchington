@@ -5,8 +5,11 @@ import sql from 'sql-template-strings'
 import { enterCopyrightCasePurgePhase } from './retention-case-purge-phase-state.mts'
 
 /** Same-job cleanup of finite party links after the live case root is gone. */
-export async function deleteCopyrightCaseResidualPartyPage(data: CopyrightCasePurgeJobData) {
-  const pageSize = getCopyrightCasePurgePageSize()
+export async function deleteCopyrightCaseResidualPartyPage(
+  data: CopyrightCasePurgeJobData,
+  requestedPageSize?: number,
+) {
+  const pageSize = getCopyrightCasePurgePageSize(requestedPageSize)
   await using query = await beginBoundedTransaction({
     connectionTimeoutMs: 5_000,
     statementTimeoutMs: 20_000,

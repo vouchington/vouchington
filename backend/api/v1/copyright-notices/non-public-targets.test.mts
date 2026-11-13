@@ -1,3 +1,4 @@
+import { assertCopyrightEmailApprovalAdmission } from '@voucha/test-helpers/copyright-api-admission-outcomes'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { createCopyrightFormFixture } from '@voucha/test-helpers/copyright-route-fixtures'
@@ -85,6 +86,7 @@ describe('copyright notice targets are limited to posts the claimant can view', 
   ] satisfies HostedPostAudience[])(
     'lets staff approve an emailed notice naming a %s post',
     async audience => {
+      expect.hasAssertions()
       const fixture = await createCopyrightFormFixture(audience)
       const intake = await createParsedCopyrightEmailIntake()
       const staff = createRequest()
@@ -98,8 +100,17 @@ describe('copyright notice targets are limited to posts the claimant can view', 
           manual_fallback_reason: 'No recommendation is available.',
         })
 
-      expect(approved.status).toBe(201)
-      await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.not.toEqual([])
+      await assertCopyrightEmailApprovalAdmission(
+        {
+          status: approved.status,
+          code: approved.body.code,
+          message: approved.body.message,
+          noticeId: approved.body.copyright_notice?.id,
+        },
+        intake,
+        fixture.form.claimant_display_name,
+        fixture.form.targets[0]!.image_id,
+      )
     },
   )
 
@@ -155,16 +166,23 @@ describe('copyright notice targets are limited to posts the claimant can view', 
     const intake = await createParsedCopyrightEmailIntake()
     const staff = createRequest()
     await staff.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
-    await staff
+    const approved = await staff
       .post(`/api/v1/copyright-email-intakes/${intake.id}/approvals`)
       .send({
         ...form,
         rationale: 'The email supplies a complete notice.',
         manual_fallback_reason: 'No recommendation is available.',
       })
-      .expect(201)
-    await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([
-      { decision: 'approved', promoted_copyright_notice_id: expect.any(String) },
-    ])
+    await assertCopyrightEmailApprovalAdmission(
+      {
+        status: approved.status,
+        code: approved.body.code,
+        message: approved.body.message,
+        noticeId: approved.body.copyright_notice?.id,
+      },
+      intake,
+      form.claimant_display_name,
+      banner.imageId,
+    )
   })
 })

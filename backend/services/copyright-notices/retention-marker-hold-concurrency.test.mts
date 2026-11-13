@@ -1,206 +1,105 @@
-import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { runCopyrightAccountClockSyncPage } from './retention-account-clock-sync.mts'
-import { afterS3ImagesClientVersionListForTest } from '@voucha/test-helpers/s3-images-client-injection'
-import { useCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
-import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
-import { addRetentionArtifact } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
 import { describe, expect, it } from 'vitest'
-import { createTestUser } from '@voucha/test-helpers'
+import { useCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
+import { assertCopyrightMarkerHoldRace } from '@voucha/test-helpers/copyright-marker-hold-outcome'
+import { createCopyrightMarkerHoldScene } from '@voucha/test-helpers/copyright-marker-hold-scene'
 import {
-  holdCopyrightCaseAfterPurgeProof,
-  readCopyrightStorageClaimProof,
-} from '@voucha/test-helpers/copyright-case-hold-interleave'
-import {
-  createCopyrightNoticeForManualAssociation,
-  isTestCopyrightCaseEvidenceErased,
-} from '@voucha/test-helpers/copyright-email-manual-association'
-import { addCopyrightCasePurgeFixtureParty } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-fixture'
-import {
-  placeUserPreservationHold,
-  releaseUserPreservationHold,
-} from '../users/preservation-holds.mts'
+  seedCopyrightCommittedAccountHold,
+  readCopyrightAccountHoldRaceState,
+} from '@voucha/test-helpers/copyright-account-hold-race-state'
+import { destructiveHoldNow } from '@voucha/test-helpers/copyright-destructive-hold-scene'
+import { releaseUserPreservationHold } from '../users/preservation-holds.mts'
+import { runCopyrightAccountClockSyncPage } from './retention-account-clock-sync.mts'
 import { runCopyrightCasePurgePage } from './retention-case-purge-page.mts'
 
-const purgeNow = new Date('2100-01-01T12:00:00.000Z')
+const timings = ['marker', 'claim', 'proof', 'version_list', 'empty_version_list'] as const
 
 describe('copyright retention marker preservation', () => {
   const bucket = useCopyrightEvidenceBucket()
-  it('does not mark evidence erased when an account hold commits after the proof read', async () => {
-    const admin = await createTestUser({ administrator: true })
-    const party = await createTestUser()
-    const noticeId = await createCopyrightNoticeForManualAssociation()
-    await addCopyrightCasePurgeFixtureParty(noticeId, party.id)
-    const first = await runCopyrightCasePurgePage(
-      {
-        noticeId,
-        phase: 'parties',
-        phaseIndex: 0,
-        afterId: null,
-        legalClockAt: null,
-        proofVersion: null,
-      },
-      purgeNow,
-    )
-    let holdPlaced = false
-    try {
-      const page = await holdCopyrightCaseAfterPurgeProof(
-        noticeId,
-        async () => {
-          await placeUserPreservationHold(admin, party.id, 'committed-before-copyright-marker')
-          holdPlaced = true
-        },
-        () =>
-          runCopyrightCasePurgePage({ ...first.data, phase: 'evidence', phaseIndex: 2 }, purgeNow),
-      )
-      expect(page).toMatchObject({ hasMore: true, deferred: true, data: { phase: 'parties' } })
-      expect(await isTestCopyrightCaseEvidenceErased(noticeId)).toBe(false)
-    } finally {
-      if (holdPlaced) await releaseUserPreservationHold(admin, party.id)
-    }
-  })
-  it('does not claim physical deletion when an account hold commits after the proof read', async () => {
-    const admin = await createTestUser({ administrator: true })
-    const party = await createTestUser()
-    const noticeId = await createCopyrightNoticeForManualAssociation()
-    await addCopyrightCasePurgeFixtureParty(noticeId, party.id)
-    const submission = await appendTestCopyrightNoticeSubmission({
-      noticeId,
-      kind: 'notice',
-      sourceKind: 'staff',
-      submittedByUserId: admin.id,
-      receivedAt: new Date(),
-      bodyCiphertext: 'owned-retention-evidence',
-    })
-    const key = await addRetentionArtifact(submission.id)
-    const proof = await readCopyrightStorageClaimProof(key)
-    const first = await runCopyrightCasePurgePage(
-      {
-        noticeId,
-        phase: 'parties',
-        phaseIndex: 0,
-        afterId: null,
-        legalClockAt: null,
-        proofVersion: null,
-      },
-      purgeNow,
-    )
-    let holdPlaced = false
-    try {
-      const page = await holdCopyrightCaseAfterPurgeProof(
-        noticeId,
-        async () => {
-          await placeUserPreservationHold(admin, party.id, 'committed-before-object-deletion-claim')
-          holdPlaced = true
-        },
-        () =>
-          runCopyrightCasePurgePage(
-            {
-              ...first.data,
-              phase: 'evidence',
-              phaseIndex: 0,
-              evidenceOwner: {
-                objectId: proof.id,
-                generation: proof.generation,
-                family: 'intakes',
-                afterId: null,
-              },
-            },
-            purgeNow,
-          ),
-      )
-      expect(page).toMatchObject({ hasMore: true, deferred: true, data: { phase: 'parties' } })
-      expect((await readCopyrightStorageClaimProof(key)).claimed).toBe(false)
-      expect(await isTestCopyrightCaseEvidenceErased(noticeId)).toBe(false)
-    } finally {
-      if (holdPlaced) await releaseUserPreservationHold(admin, party.id)
-    }
-  })
-  it.each(['proof', 'version_list', 'empty_version_list'] as const)(
-    'does not delete claimed evidence when an account hold commits after %s',
+  it.each(timings)(
+    'couples hold admission after %s to complete marker, registry and provider state',
     async timing => {
-      const admin = await createTestUser({ administrator: true })
-      const party = await createTestUser()
-      const noticeId = await createCopyrightNoticeForManualAssociation()
-      await addCopyrightCasePurgeFixtureParty(noticeId, party.id)
-      const submission = await appendTestCopyrightNoticeSubmission({
-        noticeId,
-        kind: 'notice',
-        sourceKind: 'staff',
-        submittedByUserId: admin.id,
-        receivedAt: new Date(),
-        bodyCiphertext: 'owned-claimed-retention-evidence',
-      })
-      const key = await addRetentionArtifact(submission.id)
-      const versions = timing === 'empty_version_list' ? 0 : 2
+      expect.hasAssertions()
+      await assertCopyrightMarkerHoldRace(timing, bucket)
+    },
+  )
+
+  it.each(['proof', 'empty_version_list'] as const)(
+    'keeps committed preservation and resumes %s evidence after release',
+    async timing => {
+      const scene = await createCopyrightMarkerHoldScene(timing)
+      const key = scene.key!
+      const versions = timing === 'proof' ? 2 : 0
       if (versions > 0) await bucket.put(key, { versions })
-      const proof = await readCopyrightStorageClaimProof(key)
-      const first = await runCopyrightCasePurgePage(
-        {
-          noticeId,
+      await seedCopyrightCommittedAccountHold(scene.admin, scene.party.id)
+      const heldData = structuredClone(scene.data)
+      const blocked = await runCopyrightCasePurgePage(scene.data, destructiveHoldNow)
+      expect(blocked).toEqual({ data: heldData, hasMore: true, deferred: true })
+      expect(await scene.readState()).toEqual(scene.before)
+      expect(await bucket.countVersions(key)).toBe(versions)
+      expect(
+        (
+          await runCopyrightAccountClockSyncPage({
+            accountUserId: scene.party.id,
+            afterNoticeId: null,
+            sourceVersion: null,
+          })
+        ).hasMore,
+      ).toBe(false)
+      const settledHold = await readCopyrightAccountHoldRaceState(scene.party.id)
+      expect(settledHold.pending).toBe(false)
+      expect(settledHold.holds).toHaveLength(1)
+      expect(settledHold.holds[0]?.released_at).toBeNull()
+      const settledRows = await scene.readState()
+      // A fresh phase probe avoids the intentional reset of the pre-sync proof.
+      const freshData = { ...scene.data, proofVersion: null, legalClockAt: null }
+      expect(await runCopyrightCasePurgePage(freshData, destructiveHoldNow)).toEqual({
+        data: {
+          ...freshData,
           phase: 'parties',
           phaseIndex: 0,
           afterId: null,
-          legalClockAt: null,
-          proofVersion: null,
+          childFrames: undefined,
+          evidenceOwner: undefined,
+          legalClockAt: expect.any(String),
+          proofVersion: expect.any(String),
         },
-        purgeNow,
+        hasMore: true,
+        deferred: true,
+      })
+      expect(freshData).toEqual({ ...heldData, proofVersion: null, legalClockAt: null })
+      expect(await scene.readState()).toEqual(settledRows)
+      expect(scene.data).toEqual(heldData)
+      expect(await bucket.countVersions(key)).toBe(versions)
+      await releaseUserPreservationHold(scene.admin, scene.party.id)
+      expect(
+        (
+          await runCopyrightAccountClockSyncPage({
+            accountUserId: scene.party.id,
+            afterNoticeId: null,
+            sourceVersion: null,
+          })
+        ).hasMore,
+      ).toBe(false)
+      // The supplied phase is a fresh caller-owned page; every live eligibility/preservation read still runs.
+      const resumed = await runCopyrightCasePurgePage(
+        { ...scene.data, proofVersion: null, legalClockAt: null },
+        destructiveHoldNow,
       )
-      const claimed = await runCopyrightCasePurgePage(
-        {
-          ...first.data,
-          phase: 'evidence',
-          phaseIndex: 0,
-          evidenceOwner: {
-            objectId: proof.id,
-            generation: proof.generation,
-            family: 'intakes',
-            afterId: null,
-          },
+      expect(resumed).toMatchObject({ hasMore: true, data: { phase: 'evidence' } })
+      expect(resumed.deferred).toBeUndefined()
+      expect(await scene.readState()).toEqual({
+        ...scene.before,
+        clock: { ...scene.before.clock, last_legal_activity_at: expect.any(Date) },
+        storage: null,
+        aggregate: {
+          ...scene.before.aggregate!,
+          evidenceArtifacts: scene.before.aggregate!.evidenceArtifacts.map(row => ({
+            ...row,
+            storage_object_id: null,
+          })),
         },
-        purgeNow,
-      )
-      expect((await readCopyrightStorageClaimProof(key)).claimed).toBe(true)
-      const artifactsBefore = (await getCopyrightNoticePrivateAggregate(noticeId))!
-        .evidenceArtifacts
-      let holdPlaced = false
-      try {
-        const placeHold = async () => {
-          await placeUserPreservationHold(admin, party.id, 'committed-before-physical-deletion')
-          holdPlaced = true
-        }
-        const observation =
-          timing !== 'proof'
-            ? afterS3ImagesClientVersionListForTest(bucket.name(), key, placeHold)
-            : undefined
-        const page =
-          timing === 'proof'
-            ? await holdCopyrightCaseAfterPurgeProof(noticeId, placeHold, () =>
-                runCopyrightCasePurgePage(claimed.data, purgeNow),
-              )
-            : await runCopyrightCasePurgePage(claimed.data, purgeNow)
-        expect(holdPlaced).toBe(true)
-        expect(page).toMatchObject({ hasMore: true, deferred: true, data: { phase: 'parties' } })
-        expect(await bucket.countVersions(key)).toBe(versions)
-        expect(await isTestCopyrightCaseEvidenceErased(noticeId)).toBe(false)
-        expect((await readCopyrightStorageClaimProof(key)).claimed).toBe(true)
-        expect((await getCopyrightNoticePrivateAggregate(noticeId))!.evidenceArtifacts).toEqual(
-          artifactsBefore,
-        )
-        expect(observation?.deleteCalls() ?? 0).toBe(0)
-        await releaseUserPreservationHold(admin, party.id)
-        holdPlaced = false
-        const synced = await runCopyrightAccountClockSyncPage({
-          accountUserId: party.id,
-          afterNoticeId: null,
-          sourceVersion: null,
-        })
-        expect(synced.hasMore).toBe(false)
-        const resumed = await runCopyrightCasePurgePage(page.data, purgeNow)
-        expect(resumed.hasMore).toBe(true)
-        expect(resumed.deferred).toBeUndefined()
-      } finally {
-        if (holdPlaced) await releaseUserPreservationHold(admin, party.id)
-      }
+      })
+      expect(await bucket.countVersions(key)).toBe(0)
     },
   )
 })

@@ -2,27 +2,7 @@ import { randomInt } from 'node:crypto'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import { testRationaleRetentionEligible } from '../../security-retention.mts'
 import sql from 'sql-template-strings'
-import { afterEach } from 'vitest'
-import { overrideDynamicConfigFieldsForTest } from '../../dynamic-config.mts'
-import { psqlQueueConfig } from '../../../queues/psql/enqueues/ordering-config.mts'
 import { processCopyrightActionIntent } from '../../../services/copyright-notices/index.mts'
-
-/** One fork-local page limit. Never changes the shared Valkey configuration. */
-export function useCopyrightCasePurgePageSize() {
-  let restore: (() => void) | undefined
-  afterEach(() => {
-    restore?.()
-    restore = undefined
-  })
-  return async (size: number) => {
-    restore?.()
-    await psqlQueueConfig.waitForInitialization()
-    await psqlQueueConfig.close()
-    restore = overrideDynamicConfigFieldsForTest(psqlQueueConfig, {
-      copyright_case_purge_page_size: size,
-    })
-  }
-}
 
 /** A complete published snapshot covering this fixture's receipt, after its UUIDv7 insert. */
 export async function publishCopyrightCasePurgeCoverage(noticeId: string): Promise<void> {

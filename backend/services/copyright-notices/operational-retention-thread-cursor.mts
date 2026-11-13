@@ -1,10 +1,19 @@
+import {
+  createCopyrightOperationalCursor,
+  type CopyrightOperationalCursor,
+} from './operational-retention-cursor.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { BlockerPage } from './operational-retention-thread-blockers.mts'
 
 export async function resetCopyrightThreadRetentionCursor(
   transaction: TransactionQuery,
+  progress?: CopyrightOperationalCursor,
 ): Promise<void> {
+  if (progress) {
+    Object.assign(progress, createCopyrightOperationalCursor())
+    return
+  }
   await transaction(sql`/* resetCopyrightThreadRetentionCursor */
     UPDATE copyright_notice_operational_retention_cursors
     SET cursor_record_id = NULL, sweep_upper_bound_record_id = NULL,
@@ -19,7 +28,15 @@ export async function advanceCopyrightThreadCaseCursor(
   transaction: TransactionQuery,
   noticeId: string,
   upperBound: string,
+  progress?: CopyrightOperationalCursor,
 ): Promise<void> {
+  if (progress) {
+    Object.assign(progress, createCopyrightOperationalCursor(), {
+      cursor_record_id: noticeId,
+      sweep_upper_bound_record_id: upperBound,
+    })
+    return
+  }
   await transaction(sql`/* advanceCopyrightThreadCaseCursor */
     UPDATE copyright_notice_operational_retention_cursors
     SET cursor_record_id = ${noticeId}::uuid, cursor_child_id = NULL,
@@ -35,7 +52,18 @@ export async function saveCopyrightThreadBlockerProof(
   transaction: TransactionQuery,
   blocker: BlockerPage,
   upperBound: string,
+  progress?: CopyrightOperationalCursor,
 ): Promise<void> {
+  if (progress) {
+    Object.assign(progress, {
+      cursor_blocker_phase: blocker.phase,
+      cursor_blocker_child_id: blocker.childId,
+      cursor_blocker_assessment_identity_id: blocker.assessmentId,
+      cursor_blocker_generation: blocker.generation,
+      sweep_upper_bound_record_id: upperBound,
+    })
+    return
+  }
   await transaction(sql`/* advanceCopyrightThreadBlockerProof */
     UPDATE copyright_notice_operational_retention_cursors
     SET cursor_blocker_phase = ${blocker.phase},

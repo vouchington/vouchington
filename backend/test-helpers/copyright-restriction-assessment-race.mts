@@ -113,7 +113,12 @@ export async function overlapCopyrightWriters<First, Second>(
             void outcome.then(([settled]) => {
               if (settled?.status === 'rejected') loanReady.reject(settled.reason)
             })
-            const loan = await loanReady.promise
+            const checkpoint = await Promise.race([
+              loanReady.promise.then(loan => ({ loan })),
+              outcome.then(() => ({ loan: undefined })),
+            ])
+            const loan = checkpoint.loan
+            if (!loan) return result
             await loan.ready
             // Removing a redundant generation write can let the sibling commit without waiting.
             // Resume after that completed public effect or its native transaction wait.
@@ -131,8 +136,7 @@ export async function overlapCopyrightWriters<First, Second>(
     writePool.on('acquire', observe)
     try {
       await (first = firstOperation())
-      if (first === undefined || second === undefined)
-        throw new Error('Owned writes did not reach the overlap')
+      if (second === undefined) second = secondOperation()
       return await Promise.all([first, second])
     } finally {
       await Promise.allSettled([first, second])

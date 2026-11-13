@@ -1,18 +1,22 @@
+import { seedCommittedCopyrightCourtAdmission } from '@voucha/test-helpers/copyright-committed-court-admission'
+import { expectedCopyrightAdmissionState } from '@voucha/test-helpers/copyright-admission-association-expected'
+import { copyrightRaceResult } from '@voucha/test-helpers/copyright-assessment-race-outcomes'
+import {
+  createCopyrightAdmissionReply,
+  claimCopyrightAdmissionRestoreFixture,
+  readCopyrightAdmissionAssociationState,
+} from '@voucha/test-helpers/copyright-admission-association-state'
+import {
+  assertCopyrightAdmissionAssociationRace,
+  assertCopyrightFailureAdmissionRace,
+} from '@voucha/test-helpers/copyright-admission-association-outcomes'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 import { createTestUser } from '@voucha/test-helpers'
-import {
-  createCopyrightNoticeForManualAssociation,
-  readCopyrightEmailManualAssociationEvent,
-  readCopyrightEmailManualAssociationReview,
-} from '@voucha/test-helpers/copyright-email-manual-association'
-import {
-  copyrightEmailMessageId,
-  recordThreadedCopyrightEmail,
-} from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
+import { createCopyrightNoticeForManualAssociation } from '@voucha/test-helpers/copyright-email-manual-association'
+
 import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
-import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import {
   admitAndAssociateCopyrightEmail,
@@ -21,7 +25,6 @@ import {
 } from '@voucha/test-helpers/copyright-admission-association-race'
 import { readCopyrightCaseLifecycleClock } from '@voucha/test-helpers/copyright-lifecycle-clock'
 import { admitCopyrightEmailCorrespondence } from './email-correspondence-admission.mts'
-import { claimCopyrightActionIntent } from './action-delivery-state.mts'
 
 describe('copyright correspondence and another intake association', () => {
   beforeEach(() => {
@@ -32,205 +35,156 @@ describe('copyright correspondence and another intake association', () => {
     vi.unstubAllEnvs()
   })
   it.each(['admission', 'association'] as const)(
-    'commits only %s when its overlapping transaction writes first',
+    'keeps complete legal stages when %s starts the overlapping writers',
     async first => {
+      expect.hasAssertions()
       const currentUser = await createTestUser({ extraRoles: ['moderator'] })
       const noticeId = await createCopyrightNoticeForManualAssociation()
-      const admitted = await recordThreadedCopyrightEmail({
-        messageId: copyrightEmailMessageId(),
-        replyReferences: [copyrightEmailMessageId()],
-      })
-      const associated = await recordThreadedCopyrightEmail({
-        messageId: copyrightEmailMessageId(),
-        replyReferences: [copyrightEmailMessageId()],
-      })
+      const admitted = await createCopyrightAdmissionReply()
+      const associated = await createCopyrightAdmissionReply()
       await linkCopyrightEmailIntakeToNotice({
         noticeId,
         intakeId: admitted.intakeId,
         linkKind: 'thread',
       })
+      const admission = {
+        currentUser,
+        intakeId: admitted.intakeId,
+        kind: 'supplement',
+        targetIds: [],
+        structuredSubmission: { summary: 'Additional evidence.' },
+        rationale: 'Verified supplemental evidence.',
+        recommendationId: null,
+        manualFallbackReason: 'Agent unavailable.',
+      } satisfies Parameters<typeof admitCopyrightEmailCorrespondence>[0]
+      const before = await readCopyrightAdmissionAssociationState(
+        noticeId,
+        admitted.intakeId,
+        associated.intakeId,
+      )
       const result = await admitAndAssociateCopyrightEmail(
-        {
-          currentUser,
-          intakeId: admitted.intakeId,
-          kind: 'supplement',
-          targetIds: [],
-          structuredSubmission: { summary: 'Additional evidence.' },
-          rationale: 'Verified supplemental evidence.',
-          recommendationId: null,
-          manualFallbackReason: 'Agent unavailable.',
-        },
+        admission,
         noticeId,
         associated.intakeId,
         first,
       )
-      const winner = first === 'admission' ? result.admission : result.association
-      const loser = first === 'admission' ? result.association : result.admission
-      expect(winner).toMatchObject({ status: 'fulfilled' })
-      expect(loser).toMatchObject({
-        status: 'rejected',
-        reason: {
-          status: 409,
-          code: first === 'association' ? 'CONFLICT' : 'copyright_email_thread_changed',
-          cause: { code: '40001' },
-        },
+      await assertCopyrightAdmissionAssociationRace({
+        admission,
+        associatedId: associated.intakeId,
+        before,
+        result,
       })
-      const admittedWon = first === 'admission'
-      expect(result.admission).toMatchObject(
-        admittedWon
-          ? { status: 'fulfilled', value: { noticeId, isDuplicate: false } }
-          : { status: 'rejected' },
-      )
-      expect(result.association).toMatchObject(
-        admittedWon
-          ? { status: 'rejected' }
-          : {
-              status: 'fulfilled',
-              value: {
-                copyright_notice: { id: noticeId },
-                copyright_email_intake: { id: associated.intakeId },
-              },
-            },
-      )
-      expect(await readCopyrightEmailIntakeNoticeLinks(associated.intakeId)).toEqual(
-        admittedWon ? [] : [{ copyright_notice_id: noticeId, link_kind: 'thread' }],
-      )
-      expect(await readCopyrightEmailManualAssociationReview(associated.intakeId)).toEqual(
-        admittedWon ? [] : [{ copyright_notice_id: noticeId, action: 'pending' }],
-      )
-      expect(await readCopyrightEmailManualAssociationEvent(associated.intakeId)).toEqual(
-        admittedWon
-          ? []
-          : [
-              {
-                copyright_notice_id: noticeId,
-                changed_by_id: currentUser.id,
-                copyright_notice_email_intake_id: associated.intakeId,
-              },
-            ],
-      )
-      const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
-      expect(aggregate?.emailCorrespondenceReviews).toHaveLength(Number(admittedWon))
-      expect(aggregate?.submissions.filter(row => row.kind === 'supplement')).toHaveLength(
-        Number(admittedWon),
-      )
-      expect(
-        aggregate?.lifecycleEvents.filter(
-          row => row.change_type === 'email_correspondence_admitted',
-        ),
-      ).toHaveLength(Number(admittedWon))
-      expect(await readCopyrightEmailManualAssociationReview(admitted.intakeId)).toEqual([
-        { copyright_notice_id: noticeId, action: admittedWon ? 'admitted' : 'pending' },
-      ])
     },
   )
-  it('preempts an active restoration and rejects overlapping association when court admission commits first', async () => {
+  it('couples court preemption and association to their complete overlapping outcomes', async () => {
+    expect.hasAssertions()
     const { notice, moderator, restore } = await openHeldCounterNoticeRestore()
-    const admitted = await recordThreadedCopyrightEmail({
-      messageId: copyrightEmailMessageId(),
-      replyReferences: [copyrightEmailMessageId()],
-    })
-    const associated = await recordThreadedCopyrightEmail({
-      messageId: copyrightEmailMessageId(),
-      replyReferences: [copyrightEmailMessageId()],
-    })
+    const admitted = await createCopyrightAdmissionReply()
+    const associated = await createCopyrightAdmissionReply()
     await linkCopyrightEmailIntakeToNotice({
       noticeId: notice.id,
       intakeId: admitted.intakeId,
       linkKind: 'thread',
     })
+    const admission = {
+      currentUser: moderator,
+      intakeId: admitted.intakeId,
+      kind: 'court_or_ccb_hold',
+      targetIds: [],
+      structuredSubmission: { summary: 'Verified court filing.' },
+      rationale: 'Court filing received.',
+      recommendationId: null,
+      manualFallbackReason: 'Agent unavailable.',
+    } satisfies Parameters<typeof admitCopyrightEmailCorrespondence>[0]
+    const before = await readCopyrightAdmissionAssociationState(
+      notice.id,
+      admitted.intakeId,
+      associated.intakeId,
+    )
+    expect(before.aggregate.actionIntents.find(row => row.id === restore.id)?.state).toBe('pending')
     const result = await admitAndAssociateCopyrightEmail(
-      {
-        currentUser: moderator,
-        intakeId: admitted.intakeId,
-        kind: 'court_or_ccb_hold',
-        targetIds: [],
-        structuredSubmission: { summary: 'Verified court filing.' },
-        rationale: 'Court filing received.',
-        recommendationId: null,
-        manualFallbackReason: 'Agent unavailable.',
-      },
+      admission,
       notice.id,
       associated.intakeId,
       'admission',
     )
-    expect(result.admission).toMatchObject({
-      status: 'fulfilled',
-      value: { noticeId: notice.id, isDuplicate: false },
+    await assertCopyrightAdmissionAssociationRace({
+      admission,
+      associatedId: associated.intakeId,
+      before,
+      result,
     })
-    expect(result.association).toMatchObject({
-      status: 'rejected',
-      reason: { status: 409, code: 'copyright_email_thread_changed', cause: { code: '40001' } },
-    })
-    expect(await readCopyrightEmailIntakeNoticeLinks(associated.intakeId)).toEqual([])
-    expect(await readCopyrightEmailManualAssociationReview(associated.intakeId)).toEqual([])
-    expect(await readCopyrightEmailManualAssociationEvent(associated.intakeId)).toEqual([])
-    const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
-    expect(aggregate?.actionIntents.find(row => row.id === restore.id)?.state).toBe('blocked')
-    expect(
-      aggregate?.lifecycleEvents.filter(row => row.change_type === 'email_correspondence_admitted'),
-    ).toHaveLength(1)
   })
-
-  it('retains worker failure and rolls back an overlapping filing when failure commits first', async () => {
-    const { notice, moderator, restore, restorationAt } = await openHeldCounterNoticeRestore()
-    const claimed = await claimCopyrightActionIntent(restore.id, restorationAt)
-    expect(claimed).not.toBeNull()
-    const reply = await recordThreadedCopyrightEmail({
-      messageId: copyrightEmailMessageId(),
-      replyReferences: [copyrightEmailMessageId()],
-    })
+  it('retains only the complete worker failure or court filing stage', async () => {
+    const { notice, moderator, restore } = await openHeldCounterNoticeRestore()
+    const claimed = await claimCopyrightAdmissionRestoreFixture(restore.id)
+    const reply = await createCopyrightAdmissionReply()
     await linkCopyrightEmailIntakeToNotice({
       noticeId: notice.id,
       intakeId: reply.intakeId,
       linkKind: 'thread',
     })
-    const result = await failRestorationAndAdmitCopyrightEmail(
-      {
-        currentUser: moderator,
-        intakeId: reply.intakeId,
-        kind: 'court_or_ccb_hold',
-        targetIds: [],
-        structuredSubmission: { summary: 'Court filing.' },
-        rationale: 'Verified filing.',
-        recommendationId: null,
-        manualFallbackReason: 'Agent unavailable.',
-      },
-      notice.id,
-      {
-        intentId: restore.id,
-        leaseToken: claimed!.lease_token,
-        failedAt: new Date(),
-        failureMessage: 'Owned provider failure.',
-      },
-    )
-    expect(result.outcome).toEqual({ status: 'fulfilled', value: 'retrying' })
-    expect(result.admission).toMatchObject({
-      status: 'rejected',
-      reason: { status: 409, code: 'CONFLICT', cause: { code: '40001' } },
+    const admission = {
+      currentUser: moderator,
+      intakeId: reply.intakeId,
+      kind: 'court_or_ccb_hold',
+      targetIds: [],
+      structuredSubmission: { summary: 'Court filing.' },
+      rationale: 'Verified filing.',
+      recommendationId: null,
+      manualFallbackReason: 'Agent unavailable.',
+    } satisfies Parameters<typeof admitCopyrightEmailCorrespondence>[0]
+    const failure = {
+      intentId: restore.id,
+      leaseToken: claimed.lease_token,
+      failedAt: new Date(),
+      failureMessage: 'Owned provider failure.',
+    }
+    const before = await readCopyrightAdmissionAssociationState(notice.id, reply.intakeId)
+    expect(before.aggregate.actionIntents.find(row => row.id === restore.id)?.state).toBe('claimed')
+    const result = await failRestorationAndAdmitCopyrightEmail(admission, notice.id, failure)
+    await assertCopyrightFailureAdmissionRace({
+      admission,
+      restoreId: restore.id,
+      failure,
+      before,
+      result,
     })
-    const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
-    expect(aggregate?.actionIntents.find(row => row.id === restore.id)).toMatchObject({
-      state: 'pending',
-      failure_message: 'Owned provider failure.',
-      lease_token: null,
+  })
+
+  it('keeps a separately committed court preemption intact on nonwriting admission replay', async () => {
+    const { notice, moderator, restore } = await openHeldCounterNoticeRestore()
+    const reply = await createCopyrightAdmissionReply()
+    await linkCopyrightEmailIntakeToNotice({
+      noticeId: notice.id,
+      intakeId: reply.intakeId,
+      linkKind: 'thread',
     })
-    expect(aggregate?.submissions.filter(row => row.kind === 'court_or_ccb_hold')).toHaveLength(0)
-    expect(aggregate?.emailCorrespondenceReviews).toHaveLength(0)
-    expect(
-      aggregate?.lifecycleEvents.filter(row => row.change_type === 'email_correspondence_admitted'),
-    ).toHaveLength(0)
-    expect(await readCopyrightEmailManualAssociationReview(reply.intakeId)).toEqual([
-      { copyright_notice_id: notice.id, action: 'pending' },
-    ])
+    const input = {
+      currentUser: moderator,
+      intakeId: reply.intakeId,
+      kind: 'court_or_ccb_hold',
+      targetIds: [],
+      structuredSubmission: { summary: 'Committed court filing.' },
+      rationale: 'Verified court filing.',
+      recommendationId: null,
+      manualFallbackReason: 'Agent unavailable.',
+    } satisfies Parameters<typeof admitCopyrightEmailCorrespondence>[0]
+    const before = await readCopyrightAdmissionAssociationState(notice.id, reply.intakeId)
+    expect(before.aggregate.actionIntents.find(row => row.id === restore.id)?.state).toBe('pending')
+    const committed = await seedCommittedCopyrightCourtAdmission(input)
+    const after = await readCopyrightAdmissionAssociationState(notice.id, reply.intakeId)
+    expect(after).toEqual(expectedCopyrightAdmissionState(before, after, input))
+    await expect(admitCopyrightEmailCorrespondence(input)).resolves.toEqual({
+      ...committed,
+      isDuplicate: true,
+    })
+    expect(await readCopyrightAdmissionAssociationState(notice.id, reply.intakeId)).toEqual(after)
   })
 
   it('rolls back preemption, the earlier event and its clock when later target validation fails', async () => {
     const { notice, moderator, restore } = await openHeldCounterNoticeRestore()
-    const reply = await recordThreadedCopyrightEmail({
-      messageId: copyrightEmailMessageId(),
-      replyReferences: [copyrightEmailMessageId()],
-    })
+    const reply = await createCopyrightAdmissionReply()
     await linkCopyrightEmailIntakeToNotice({
       noticeId: notice.id,
       intakeId: reply.intakeId,
@@ -238,7 +192,7 @@ describe('copyright correspondence and another intake association', () => {
     })
     const before = await getCopyrightNoticePrivateAggregate(notice.id)
     const clock = await readCopyrightCaseLifecycleClock(notice.id)
-    await expect(
+    const [attempt] = await Promise.allSettled([
       admitCopyrightEmailCorrespondence({
         currentUser: moderator,
         intakeId: reply.intakeId,
@@ -249,8 +203,36 @@ describe('copyright correspondence and another intake association', () => {
         recommendationId: null,
         manualFallbackReason: 'Agent unavailable.',
       }),
-    ).rejects.toMatchObject({ status: 422 })
+    ])
     const after = await getCopyrightNoticePrivateAggregate(notice.id)
+    expect([
+      {
+        result: {
+          status: 'rejected',
+          statusCode: 422,
+          code: undefined,
+          message: 'Correspondence target is not in this case',
+          causeCode: undefined,
+        },
+        aggregate: before,
+        clock,
+      },
+      {
+        result: {
+          status: 'rejected',
+          statusCode: 409,
+          code: 'CONFLICT',
+          message: 'Conflicting copyright case change',
+          causeCode: '40001',
+        },
+        aggregate: before,
+        clock,
+      },
+    ]).toContainEqual({
+      result: copyrightRaceResult(attempt!),
+      aggregate: after,
+      clock: await readCopyrightCaseLifecycleClock(notice.id),
+    })
     expect(after?.actionIntents.find(row => row.id === restore.id)?.state).toBe('pending')
     expect(after?.submissions).toEqual(before?.submissions)
     expect(after?.emailCorrespondenceReviews).toEqual(before?.emailCorrespondenceReviews)

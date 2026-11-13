@@ -1,12 +1,14 @@
+import type { CopyrightOperationalScope } from '../services/copyright-notices/operational-retention-cursor.mts'
 import { createRetentionMinimalCase } from './services/copyright-notices/retention-minimal-case.mts'
 import { createRetentionParsedEmail } from './services/copyright-notices/retention-parsed-email.mts'
 import { linkTestCopyrightEmailIntake } from './copyright-operational-email-retention.mts'
-import { positionCopyrightOperationalCursor } from './copyright-operational-retention.mts'
+import { createCopyrightOperationalScope } from './copyright-operational-retention.mts'
 import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 /** An owned later child page: references have drained, but its token binding or edges remain. */
 export async function enterOwnedCopyrightThreadChildPhase(
+  scope: CopyrightOperationalScope,
   noticeId: string,
   intakeId: string,
   phase: 'references' | 'reply_edges' | 'ancestor_edges',
@@ -19,15 +21,15 @@ export async function enterOwnedCopyrightThreadChildPhase(
   if (drainReferences)
     await query(sql`/* drainOwnedCopyrightThreadReferences */
     DELETE FROM copyright_notice_email_thread_references WHERE copyright_notice_email_intake_id = ${intakeId}`)
-  await query(sql`/* enterOwnedCopyrightThreadChildPhase */
-    UPDATE copyright_notice_operational_retention_cursors SET cursor_phase = ${phase},
-      cursor_child_id = (SELECT previous.id FROM copyright_notice_email_intake_notice_links previous
-        WHERE previous.copyright_notice_id = ${noticeId}
-          AND previous.id < (SELECT id FROM copyright_notice_email_intake_notice_links
-            WHERE copyright_notice_id = ${noticeId} AND copyright_notice_email_intake_id = ${intakeId})
-        ORDER BY previous.id DESC LIMIT 1)
-    WHERE kind = 'email_thread_references'`)
+  const { rows } = await query<{ id: string }>(sql`/* enterOwnedCopyrightThreadChildPhase */
+    SELECT previous.id FROM copyright_notice_email_intake_notice_links previous
+    WHERE previous.copyright_notice_id = ${noticeId}
+      AND previous.id < (SELECT id FROM copyright_notice_email_intake_notice_links
+        WHERE copyright_notice_id = ${noticeId} AND copyright_notice_email_intake_id = ${intakeId})
+    ORDER BY previous.id DESC LIMIT 1`)
   await query.commit()
+  scope.cursor.cursor_phase = phase
+  scope.cursor.cursor_child_id = rows[0]?.id ?? null
 }
 
 export async function readOwnedCopyrightThreadChildren(intakeId: string) {
@@ -71,7 +73,7 @@ export async function createCopyrightThreadMarkerScene() {
   const candidate = await createRetentionParsedEmail('marker-candidate', { reply: true })
   await linkTestCopyrightEmailIntake(initial.id, notice.noticeId)
   await linkTestCopyrightEmailIntake(reply.id, notice.noticeId, 'thread', notice.moderator.id)
-  await positionCopyrightOperationalCursor('email_thread_references', notice.noticeId)
-  await enterOwnedCopyrightThreadChildPhase(notice.noticeId, reply.id, 'references', false)
-  return { notice, reply, candidate }
+  const scope = createCopyrightOperationalScope([notice.noticeId])
+  await enterOwnedCopyrightThreadChildPhase(scope, notice.noticeId, reply.id, 'references', false)
+  return { notice, reply, candidate, scope }
 }

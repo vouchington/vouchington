@@ -1,3 +1,4 @@
+import { createCommittedCopyrightEmailCase } from '@voucha/test-helpers/copyright-committed-email-case'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -107,8 +108,11 @@ describe('a copyright email intake recorded as legal process', () => {
 
   it('cannot be recorded after an approval', async () => {
     const moderator = await createModerator()
-    const intake = await createParsedCopyrightEmailIntake()
-    const approved = await promoteCopyrightEmailIntake(await approvalInput(moderator, intake.id))
+    const approved = await createCommittedCopyrightEmailCase({
+      moderator,
+      messageId: `<${crypto.randomUUID()}@example.test>`,
+    })
+    const intake = { id: approved.intakeId }
 
     await expect(
       recordCopyrightEmailIntakeLegalProcess({

@@ -1,10 +1,6 @@
-import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
+import { seedCompletedTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
 import { describe, expect, it } from 'vitest'
-import { createTestUser } from '@voucha/test-helpers'
-import {
-  countCopyrightActiveRestrictionsForNotice,
-  readCopyrightNoticeTargetIds,
-} from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
+import { createSignedInCopyrightForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import {
   createTestCopyrightFormIntakeReview,
   liftTestCopyrightRestriction,
@@ -13,79 +9,40 @@ import {
 import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
-  enforceCopyrightAssessment,
-  recoverRejectedCopyrightFormReviewEffect,
   searchPendingCopyrightEnforcementAssessmentIds,
   searchRecoverableCopyrightFormReviewIntakeIds,
 } from './index.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
-import { appendCopyrightSubmissionAssessment } from './compliance.mts'
-import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
-import {
-  createClearScreenedForm,
-  createSignedInCopyrightForm,
-} from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-
-async function expectFormEffect(submissionId: string): Promise<void> {
-  await expect(readTestPendingCopyrightAgentDispatches(submissionId)).resolves.toEqual([
-    { kind: 'form-effect', submissionId },
-  ])
-}
-
-async function expectNoFormEffect(submissionId: string): Promise<void> {
-  await expect(readTestPendingCopyrightAgentDispatches(submissionId)).resolves.toEqual([])
-}
-
-async function expectRecoverableFormReview(intakeId: string): Promise<void> {
-  await expect(
-    readTestOwnedCopyrightSweepIds(searchRecoverableCopyrightFormReviewIntakeIds, intakeId),
-  ).resolves.toEqual([intakeId])
-}
-
-async function expectNoRecoverableFormReview(intakeId: string): Promise<void> {
-  await expect(
-    readTestOwnedCopyrightSweepIds(searchRecoverableCopyrightFormReviewIntakeIds, intakeId),
-  ).resolves.toEqual([])
-}
-
-async function replayRejectedReview(screenFirst: boolean) {
-  const [{ notice }, moderator] = await Promise.all([createClearScreenedForm(), createTestUser()])
-  if (screenFirst) {
-    await applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id)
-  }
-  await createTestCopyrightFormIntakeReview({
-    intakeId: notice.intake.id,
-    moderatorId: moderator.id,
-    is_accepted: false,
-  })
-  await expectRecoverableFormReview(notice.intake.id)
-  await recoverRejectedCopyrightFormReviewEffect(notice.intake.id)
-  await expectNoRecoverableFormReview(notice.intake.id)
-  const aggregate = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
-  return { notice, moderator, aggregate }
-}
+import { seedCopyrightSubmissionAssessment } from '@voucha/test-helpers/copyright-notice-submissions'
+import {
+  createScreenRecoveryScene,
+  seedScreenRecoveryAssessment,
+  seedScreenRecoveryRestriction,
+  seedScreenRecoveryRejectedEffect,
+} from '@voucha/test-helpers/copyright-screen-recovery-fixtures'
+import {
+  assertScreenEffectRecovery,
+  assertRejectedScreenRecovery,
+} from '@voucha/test-helpers/copyright-screen-recovery-subjects'
+import { readScreenRecoveryState } from '@voucha/test-helpers/copyright-screen-recovery-state'
 
 describe('copyright form-screening recovery', () => {
   useAutomaticProvisionalWithholding()
 
-  it('repairs a saved clear screen through its effect, without another screening run', async () => {
-    const { notice } = await createClearScreenedForm()
-    await expectFormEffect(notice.intake.copyright_notice_submission_id)
-
-    await applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id)
-
-    await expect(
-      countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
-    ).resolves.toBe(1)
-    await expectNoFormEffect(notice.intake.copyright_notice_submission_id)
+  it('repairs a saved clear screen through its durable effect without another screening run', async () => {
+    expect.hasAssertions()
+    const scene = await createScreenRecoveryScene()
+    expect((await readScreenRecoveryState(scene)).formEffects).toEqual([
+      { kind: 'form-effect', submissionId: scene.notice.intake.copyright_notice_submission_id },
+    ])
+    await assertScreenEffectRecovery(scene)
   })
 
   it('does not recover an invalid initial screen', async () => {
     const { intake } = await createSignedInCopyrightForm()
-    await appendTestCopyrightFormScreening({
+    await seedCompletedTestCopyrightFormScreening({
       intakeId: intake.id,
       inputSha256: Buffer.alloc(32, 99),
       recommendation: 'invalid_or_spam',
@@ -97,112 +54,128 @@ describe('copyright form-screening recovery', () => {
     await expect(readTestLatestCopyrightFormScreeningRecommendation(intake.id)).resolves.toBe(
       'invalid_or_spam',
     )
-    await expectNoFormEffect(intake.copyright_notice_submission_id)
-  })
-
-  it('repairs an unprocessed target while retaining a lifted target', async () => {
-    const { notice, screeningId } = await createClearScreenedForm(2)
-    const assessment = await appendCopyrightSubmissionAssessment({
-      submissionId: notice.intake.copyright_notice_submission_id,
-      assessedAt: new Date(),
-      currentUser: null,
-      substantiallyCompliant: true,
-      copyrightFormScreeningId: screeningId,
-    })
-    const [firstTarget, secondTarget] = await readCopyrightNoticeTargetIds(
-      notice.intake.copyright_notice_id,
-    )
-    await acceptCopyrightNoticeAndImposeRestriction({
-      noticeId: notice.intake.copyright_notice_id,
-      targetId: firstTarget!,
-      assessmentId: assessment.id,
-      imposedAt: new Date(),
-      imposedById: null,
-    })
-    const partial = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
-    await liftTestCopyrightRestriction(partial!.restrictions[0]!.id)
-
-    await expectFormEffect(notice.intake.copyright_notice_submission_id)
-    await applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id)
-
     await expect(
-      countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
-    ).resolves.toBe(1)
-    const recovered = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
-    expect(recovered?.restrictions).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          copyright_notice_target_id: firstTarget,
-          lifted_at: expect.any(Date),
-        }),
-        expect.objectContaining({ copyright_notice_target_id: secondTarget, lifted_at: null }),
-      ]),
-    )
-  })
-
-  it('keeps a rejected review authoritative after its downstream crash window', async () => {
-    const { moderator, aggregate, notice } = await replayRejectedReview(true)
-    expect(aggregate?.assessments.at(-1)).toMatchObject({
-      assessed_by_id: moderator.id,
-      is_substantially_compliant: false,
-    })
-    expect(aggregate?.restrictions).toEqual(
-      expect.arrayContaining([expect.objectContaining({ human_review_action: 'reverse' })]),
-    )
-    await expectNoFormEffect(notice.intake.copyright_notice_submission_id)
-  })
-
-  it('lists an owned assessment with unrestricted targets until it is enforced', async () => {
-    const { notice, screeningId } = await createClearScreenedForm()
-    const assessment = await appendCopyrightSubmissionAssessment({
-      submissionId: notice.intake.copyright_notice_submission_id,
-      assessedAt: new Date(),
-      currentUser: null,
-      substantiallyCompliant: true,
-      copyrightFormScreeningId: screeningId,
-    })
-    await expect(
-      readTestOwnedCopyrightSweepIds(searchPendingCopyrightEnforcementAssessmentIds, assessment.id),
-    ).resolves.toEqual([assessment.id])
-
-    await enforceCopyrightAssessment(assessment.id)
-
-    await expect(
-      countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
-    ).resolves.toBe(1)
-    await expect(
-      readTestOwnedCopyrightSweepIds(searchPendingCopyrightEnforcementAssessmentIds, assessment.id),
+      readTestPendingCopyrightAgentDispatches(intake.copyright_notice_submission_id),
     ).resolves.toEqual([])
   })
 
-  it('recovers a rejection committed before any assessment', async () => {
-    const { moderator, aggregate, notice } = await replayRejectedReview(false)
-    expect(aggregate?.assessments).toEqual([
-      expect.objectContaining({
-        assessed_by_id: moderator.id,
-        is_substantially_compliant: false,
-      }),
+  it('repairs an unprocessed target while retaining a lifted target', async () => {
+    expect.hasAssertions()
+    const scene = await createScreenRecoveryScene(2)
+    const assessment = await seedScreenRecoveryAssessment(scene)
+    const restriction = await seedScreenRecoveryRestriction(scene, assessment.id)
+    await liftTestCopyrightRestriction(restriction.id)
+    const before = await readScreenRecoveryState(scene)
+    expect(before.formEffects).toEqual([
+      { kind: 'form-effect', submissionId: scene.notice.intake.copyright_notice_submission_id },
     ])
-    await expectNoFormEffect(notice.intake.copyright_notice_submission_id)
+    expect(before.effective.state.restrictions).toEqual([
+      expect.objectContaining({ id: restriction.id, lifted: expect.any(Date) }),
+    ])
+    await assertScreenEffectRecovery(scene, { assessmentId: assessment.id, index: 1 })
+  })
+
+  it.each([true, false])(
+    'recovers a durable rejection after automatic imposition: %s',
+    async screenFirst => {
+      expect.hasAssertions()
+      const scene = await createScreenRecoveryScene()
+      if (screenFirst) {
+        const assessment = await seedScreenRecoveryAssessment(scene)
+        await seedScreenRecoveryRestriction(scene, assessment.id)
+      }
+      await createTestCopyrightFormIntakeReview({
+        intakeId: scene.notice.intake.id,
+        moderatorId: scene.moderator.id,
+        is_accepted: false,
+      })
+      await expect(
+        readTestOwnedCopyrightSweepIds(
+          searchRecoverableCopyrightFormReviewIntakeIds,
+          scene.notice.intake.id,
+        ),
+      ).resolves.toEqual([scene.notice.intake.id])
+      await assertRejectedScreenRecovery(scene)
+    },
+  )
+
+  it.each([true, false])(
+    'keeps the committed rejection authoritative across projection and replay, previously screened: %s',
+    async screenFirst => {
+      const scene = await createScreenRecoveryScene()
+      if (screenFirst) {
+        const assessment = await seedScreenRecoveryAssessment(scene)
+        await seedScreenRecoveryRestriction(scene, assessment.id)
+      }
+      await createTestCopyrightFormIntakeReview({
+        intakeId: scene.notice.intake.id,
+        moderatorId: scene.moderator.id,
+        is_accepted: false,
+      })
+      await seedScreenRecoveryRejectedEffect(scene)
+      const before = await readScreenRecoveryState(scene)
+      expect(before.assessments.at(-1)).toMatchObject({
+        reviewer: scene.moderator.id,
+        screening: null,
+      })
+      expect(before.effective.state.assessments.at(-1)).toMatchObject({ compliant: false })
+      expect(before.formEffects).toEqual([])
+      expect(before.reviewRecovery).toEqual([])
+      const restrictions = screenFirst ? [{ review: 'reverse', lifted: null }] : []
+      const retained = before.effective.state.restrictions.map(({ review, lifted }) => ({
+        review,
+        lifted,
+      }))
+      expect(retained).toEqual(restrictions)
+      await assertRejectedScreenRecovery(scene, true)
+    },
+  )
+
+  it('lists an owned assessment with unrestricted targets until its enforcement commit', async () => {
+    expect.hasAssertions()
+    const scene = await createScreenRecoveryScene()
+    const assessment = await seedScreenRecoveryAssessment(scene)
+    await expect(
+      readTestOwnedCopyrightSweepIds(searchPendingCopyrightEnforcementAssessmentIds, assessment.id),
+    ).resolves.toEqual([assessment.id])
+    await assertScreenEffectRecovery(scene, { assessmentId: assessment.id, enforcementOnly: true })
+  })
+
+  it('removes a committed fulfilled assessment from the enforcement and form-effect queues', async () => {
+    const scene = await createScreenRecoveryScene()
+    const assessment = await seedScreenRecoveryAssessment(scene)
+    await seedScreenRecoveryRestriction(scene, assessment.id)
+    const state = await readScreenRecoveryState(scene)
+    expect(state.enforcement).toEqual([])
+    expect(state.formEffects).toEqual([])
+    expect(state.effective.state.restrictions).toEqual([expect.objectContaining({ lifted: null })])
+  })
+
+  it('retains both the historical lifted target and independently committed current target', async () => {
+    const scene = await createScreenRecoveryScene(2)
+    const assessment = await seedScreenRecoveryAssessment(scene)
+    const first = await seedScreenRecoveryRestriction(scene, assessment.id)
+    await liftTestCopyrightRestriction(first.id)
+    const second = await seedScreenRecoveryRestriction(scene, assessment.id, 1)
+    const aggregate = await getCopyrightNoticePrivateAggregate(
+      scene.notice.intake.copyright_notice_id,
+    )
+    expect(aggregate!.restrictions).toEqual([
+      expect.objectContaining({ id: first.id, lifted_at: expect.any(Date) }),
+      expect.objectContaining({ id: second.id, lifted_at: null }),
+    ])
+    expect((await readScreenRecoveryState(scene)).formEffects).toEqual([])
   })
 
   it('does not overwrite a current human rejection with automated screening', async () => {
-    const [{ notice }, moderatorRecord] = await Promise.all([
-      createClearScreenedForm(),
-      createTestUser(),
-    ])
-    const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
-    await appendCopyrightSubmissionAssessment({
-      submissionId: notice.intake.copyright_notice_submission_id,
+    expect.hasAssertions()
+    const scene = await createScreenRecoveryScene()
+    await seedCopyrightSubmissionAssessment({
+      submissionId: scene.notice.intake.copyright_notice_submission_id,
       assessedAt: new Date(),
-      currentUser: moderator,
+      currentUser: scene.moderator,
       substantiallyCompliant: false,
     })
-
-    await applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id)
-
-    await expect(
-      countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
-    ).resolves.toBe(0)
+    await assertScreenEffectRecovery(scene, { noop: true })
   })
 })

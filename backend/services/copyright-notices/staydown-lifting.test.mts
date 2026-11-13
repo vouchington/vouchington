@@ -1,15 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import * as imageEnqueues from '@queues/content-analysis/enqueues/image-jobs'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { readCopyrightStaydownEntries } from '@voucha/test-helpers/data-stores/psql/copyright-staydown'
-import { createRestrictedStaydownCase } from '@voucha/test-helpers/services/copyright-notices/staydown-fixture'
-import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
+import { createEffectiveStaydownNotice } from '@voucha/test-helpers/copyright-effective-review-fixtures'
+import { seedEffectiveConfirmation } from '@voucha/test-helpers/copyright-effective-review-decisions'
+import { assertEffectiveAppeal } from '@voucha/test-helpers/copyright-effective-review-subjects'
 import { useStaydownMatching } from '@voucha/test-helpers/services/copyright-notices/staydown-matching'
-import {
-  createCopyrightAppeal,
-  processCopyrightActionIntent,
-  reviewCopyrightAppeal,
-} from './index.mts'
+import { processCopyrightActionIntent } from './index.mts'
 import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 
 describe('copyright staydown entries when a restriction is lifted', () => {
@@ -17,7 +13,6 @@ describe('copyright staydown entries when a restriction is lifted', () => {
 
   beforeEach(() => {
     installTestMediaDeliveryEdge()
-    vi.spyOn(imageEnqueues, 'enqueueStaydownHash').mockResolvedValue(undefined as never)
   })
 
   afterEach(() => {
@@ -41,33 +36,18 @@ describe('copyright staydown entries when a restriction is lifted', () => {
   })
 
   it('removes the entry as soon as staff reverse the restriction on appeal', async () => {
-    const staydownCase = await createRestrictedStaydownCase()
-    const [target] = staydownCase.targets
-    const [restriction] = staydownCase.restrictions
+    const staydownCase = await createEffectiveStaydownNotice()
+    const restriction = staydownCase.restrictions[0]!
+    await seedEffectiveConfirmation(staydownCase.noticeId, restriction.id, staydownCase.moderator)
     expect(await readCopyrightStaydownEntries(staydownCase.noticeId)).toHaveLength(1)
-    const appeal = await createCopyrightAppeal(
+    // The coupled state matrix requires immediate staydown removal and a still-unlifted
+    // restriction with a pending restore; no delivery saga runs during this staff decision.
+    await assertEffectiveAppeal(
+      staydownCase,
       staydownCase.claimant,
-      staydownCase.noticeId,
-      crypto.randomUUID(),
-      { reason: 'I created this image.', targetIds: [target!.id] },
+      staydownCase.moderator,
+      'reverse',
+      { [staydownCase.claimant.id]: false },
     )
-
-    await reviewCopyrightAppeal({
-      submissionId: appeal.submission.id,
-      currentUser: staydownCase.moderator,
-      recommendationId: null,
-      manualFallbackReason: 'No automated recommendation was available.',
-      rationale: 'The supplied record supports reversal.',
-      decisions: [{ restrictionId: restriction!.id, action: 'reverse' }],
-    })
-
-    // The restore saga has not been delivered, so the restriction is still unlifted: the entry
-    // went with the reversal itself, not with the later lift.
-    const reviewed = await getCopyrightNoticePrivateAggregate(staydownCase.noticeId)
-    expect(reviewed?.restrictions[0]).toMatchObject({ lifted_at: null })
-    expect(reviewed?.actionIntents).toEqual(
-      expect.arrayContaining([expect.objectContaining({ action: 'restore', state: 'pending' })]),
-    )
-    expect(await readCopyrightStaydownEntries(staydownCase.noticeId)).toEqual([])
   })
 })

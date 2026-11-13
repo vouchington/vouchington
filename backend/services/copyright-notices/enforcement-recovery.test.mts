@@ -1,135 +1,126 @@
+import { encodeCursor } from '@modules/pagination'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
-import { createTestCopyrightFormIntakeReview } from '@voucha/test-helpers/data-stores/psql/copyright-form-reviews'
+import { createCommittedCopyrightEmailCase } from '@voucha/test-helpers/copyright-committed-email-case'
+import { copyrightEmailMessageId } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
 import { encodeUuidCursorBefore } from '@voucha/test-helpers/modules/pagination/uuid-cursors'
-import { createCopyrightFormFixture } from '@voucha/test-helpers/copyright-route-fixtures'
-import { createCopyrightFormIntake } from './form-intakes.mts'
-import { recoverMissingDecisionAssessments } from './enforcement-recovery.mts'
-import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { appendTestCopyrightAssessmentWhileRecoveryWaits } from '@voucha/test-helpers/copyright-recovery-concurrency'
 import {
-  copyrightEmailMessageId,
-  promoteInitialCopyrightEmail,
-} from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
-import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
+  appendTestCopyrightNoticeSubmission,
+  seedCopyrightSubmissionAssessment,
+} from '@voucha/test-helpers/copyright-notice-submissions'
+import { appendTestCopyrightAssessmentWhileRecoveryWaits } from '@voucha/test-helpers/copyright-recovery-concurrency'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
+import {
+  createDecisionRecoveryCohort,
+  readDecisionRecoveryState,
+  expectedDecisionRecoveryState,
+  recoveredDecisionPage,
+  decisionRecoveryOutcome,
+  nativeDecisionRecoveryConflict,
+  assertDecisionRecoveryClocks,
+} from '@voucha/test-helpers/copyright-decision-recovery-fixtures'
+import { recoverMissingDecisionAssessments } from './enforcement-recovery.mts'
 
 describe('durable copyright decision recovery', () => {
   useCopyrightIntakeEnvironment()
-  it('mutates only one page and resumes after the recovered submission without replaying it', async () => {
-    const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const submissionIds: string[] = []
-    const noticeIds: string[] = []
-    for (let index = 0; index < 5; index++) {
-      const fixture = await createCopyrightFormFixture()
-      const { intake } = await createCopyrightFormIntake({
-        currentUser: fixture.claimant,
-        requesterIdentity: `user:${fixture.claimant.id}`,
-        idempotencyKey: crypto.randomUUID(),
-        request: {
-          jurisdiction: 'us_dmca',
-          claimantDisplayName: fixture.form.claimant_display_name,
-          claimantContact: fixture.form.claimant_contact,
-          claimantEmail: fixture.form.claimant_email,
-          workDescription: fixture.form.work_description,
-          goodFaithBelief: fixture.form.has_good_faith_belief,
-          accuracyAuthorityUnderPenaltyOfPerjury:
-            fixture.form.has_accuracy_authority_under_penalty_of_perjury,
-          electronicSignature: fixture.form.electronic_signature,
-          claimantTargets: fixture.form.targets.map(target => ({
-            surfaceKind: 'post-image' as const,
-            postId: target.post_id,
-            imageId: target.image_id,
-            hostedUseUrl: target.target_url,
-          })),
-        },
-      })
-      await createTestCopyrightFormIntakeReview({
-        intakeId: intake.id,
-        moderatorId: moderator.id,
-        is_accepted: true,
-      })
-      submissionIds.push(intake.copyright_notice_submission_id)
-      noticeIds.push(intake.copyright_notice_id)
-    }
-    const emptyScope = await recoverMissingDecisionAssessments({
-      ids: [],
-      limit: 1,
-      after: encodeUuidCursorBefore(submissionIds[0]!),
+  it('commits at most one owned page or leaves all authority and caller progress unchanged', async () => {
+    const cohort = await createDecisionRecoveryCohort(6)
+    const ids = cohort.submissionIds.slice(0, 5)
+    const options = { ids, limit: 1, after: encodeUuidCursorBefore(ids[0]!) }
+    const optionsBefore = structuredClone(options)
+    const before = await readDecisionRecoveryState(cohort.noticeIds)
+    const empty = await recoverMissingDecisionAssessments({ ...options, ids: [] })
+    expect(empty).toEqual({
+      results: [],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
     })
-    expect(emptyScope.results).toEqual([])
-    const raced = await appendTestCopyrightAssessmentWhileRecoveryWaits(
+    const [result] = await Promise.allSettled([recoverMissingDecisionAssessments(options)])
+    const after = await readDecisionRecoveryState(cohort.noticeIds)
+    expect([
       {
-        submissionId: submissionIds[4]!,
-        assessedAt: new Date(),
-        currentUser: moderator,
-        substantiallyCompliant: true,
+        outcome: recoveredDecisionPage(ids[0]!, true),
+        state: expectedDecisionRecoveryState(before, after, [ids[0]!], cohort.moderator.id),
       },
-      () =>
-        recoverMissingDecisionAssessments({
-          limit: 1,
-          ids: submissionIds,
-          after: encodeUuidCursorBefore(submissionIds[4]!),
-        }),
-    )
-    expect(raced.results).toEqual([])
-    expect(raced.page_info).toMatchObject({ has_next_page: false, end_cursor: null })
-    // Sequential fixtures prove cap/resume independently of concurrent scheduling.
-    const first = await recoverMissingDecisionAssessments({
-      limit: 1,
-      ids: submissionIds,
-      after: encodeUuidCursorBefore(submissionIds[0]!),
-    })
-    expect(first.results).toEqual([submissionIds[0]])
-    expect(first.page_info.has_next_page).toBe(true)
-    const second = await recoverMissingDecisionAssessments({
-      limit: 1,
-      ids: submissionIds,
-      after: first.page_info.end_cursor!,
-    })
-    expect(second.results).toEqual([submissionIds[1]])
-    const concurrent = await Promise.all(
-      Array.from({ length: 2 }, () =>
-        recoverMissingDecisionAssessments({
-          limit: 1,
-          ids: submissionIds,
-          after: encodeUuidCursorBefore(submissionIds[2]!),
-        }),
-      ),
-    )
-    const recovered = concurrent.flatMap(page => page.results)
-    expect(recovered).toContain(submissionIds[2])
-    for (const page of concurrent) expect(page.results.length).toBeLessThanOrEqual(1)
-    expect(recovered.every(id => [submissionIds[2], submissionIds[3]].includes(id))).toBe(true)
-    // The second call may legitimately start after the first commits and consume the next row.
-    const remaining = await recoverMissingDecisionAssessments({
-      limit: 1,
-      ids: submissionIds,
-      after: encodeUuidCursorBefore(submissionIds[3]!),
-    })
-    const expectedRemaining = recovered.includes(submissionIds[3]!) ? [] : [submissionIds[3]]
-    expect(remaining.results).toEqual(expectedRemaining)
-    const replay = await recoverMissingDecisionAssessments({
-      limit: 1,
-      ids: submissionIds,
-      after: encodeUuidCursorBefore(submissionIds[0]!),
-    })
-    expect(replay.results).not.toContain(submissionIds[0])
-    expect(replay.results).not.toContain(submissionIds[1])
-    expect(replay.results).not.toContain(submissionIds[2])
-    expect(replay.results).not.toContain(submissionIds[3])
-    for (const noticeId of noticeIds) {
-      const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
-      expect(aggregate?.assessments).toHaveLength(1)
-      expect(
-        aggregate?.lifecycleEvents.filter(event => event.change_type === 'submission_assessed'),
-      ).toHaveLength(1)
-    }
+      { outcome: nativeDecisionRecoveryConflict, state: before },
+    ]).toContainEqual({ outcome: decisionRecoveryOutcome(result!), state: after })
+    expect(options).toEqual(optionsBefore)
+    assertDecisionRecoveryClocks(before, after)
   })
 
-  it('owns both actual submissions before case activity when a same-case writer owns the second', async () => {
+  it('resumes beyond committed assessments and never replays those decisions', async () => {
+    const cohort = await createDecisionRecoveryCohort(5)
+    for (const submissionId of cohort.submissionIds.slice(0, 2)) {
+      await seedCopyrightSubmissionAssessment({
+        submissionId,
+        currentUser: cohort.moderator,
+        assessedAt: new Date(),
+        substantiallyCompliant: true,
+      })
+    }
+    const options = {
+      ids: cohort.submissionIds.slice(0, 4),
+      limit: 1,
+      after: encodeCursor({ id: cohort.submissionIds[1]! }),
+    }
+    const before = await readDecisionRecoveryState(cohort.noticeIds)
+    const [result] = await Promise.allSettled([recoverMissingDecisionAssessments(options)])
+    const after = await readDecisionRecoveryState(cohort.noticeIds)
+    expect([
+      {
+        outcome: recoveredDecisionPage(cohort.submissionIds[2]!, true),
+        state: expectedDecisionRecoveryState(
+          before,
+          after,
+          [cohort.submissionIds[2]!],
+          cohort.moderator.id,
+        ),
+      },
+      { outcome: nativeDecisionRecoveryConflict, state: before },
+    ]).toContainEqual({ outcome: decisionRecoveryOutcome(result!), state: after })
+    const replay = await recoverMissingDecisionAssessments({
+      ids: cohort.submissionIds.slice(0, 2),
+      limit: 1,
+    })
+    expect(replay).toEqual({
+      results: [],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    })
+    expect(await readDecisionRecoveryState(cohort.noticeIds)).toEqual(after)
+    assertDecisionRecoveryClocks(before, after)
+  })
+
+  it('binds both concurrent page results to the complete committed assessment set', async () => {
+    const cohort = await createDecisionRecoveryCohort(3)
+    const [first, second] = cohort.submissionIds
+    const options = { ids: [first!, second!], limit: 1, after: encodeUuidCursorBefore(first!) }
+    const before = await readDecisionRecoveryState(cohort.noticeIds)
+    const results = await Promise.allSettled([
+      recoverMissingDecisionAssessments(options),
+      recoverMissingDecisionAssessments(options),
+    ])
+    const after = await readDecisionRecoveryState(cohort.noticeIds)
+    const firstPage = recoveredDecisionPage(first!, true)
+    const secondPage = recoveredDecisionPage(second!, false)
+    const one = expectedDecisionRecoveryState(before, after, [first!], cohort.moderator.id)
+    const both = expectedDecisionRecoveryState(
+      before,
+      after,
+      [first!, second!],
+      cohort.moderator.id,
+    )
+    expect([
+      { outcomes: [firstPage, secondPage], state: both },
+      { outcomes: [secondPage, firstPage], state: both },
+      { outcomes: [firstPage, nativeDecisionRecoveryConflict], state: one },
+      { outcomes: [nativeDecisionRecoveryConflict, firstPage], state: one },
+      { outcomes: [nativeDecisionRecoveryConflict, nativeDecisionRecoveryConflict], state: before },
+    ]).toContainEqual({ outcomes: results.map(decisionRecoveryOutcome), state: after })
+    assertDecisionRecoveryClocks(before, after)
+  })
+
+  it('rolls back the entire recovery page when its owned second submission changes after the snapshot', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const { noticeId } = await promoteInitialCopyrightEmail({
+    const { noticeId } = await createCommittedCopyrightEmailCase({
       moderator,
       messageId: copyrightEmailMessageId(),
     })
@@ -149,30 +140,25 @@ describe('durable copyright decision recovery', () => {
       receivedAt: new Date(),
       bodyCiphertext: 'Second owned durable notice.',
     })
-    const result = await appendTestCopyrightAssessmentWhileRecoveryWaits(
-      {
-        submissionId: second.id,
-        currentUser: moderator,
-        substantiallyCompliant: true,
-        assessedAt: new Date(),
-      },
-      () => recoverMissingDecisionAssessments({ ids: [first.id, second.id], limit: 2 }),
-    )
-    expect(result.results).toEqual([first.id])
-    const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
-    for (const submission of [first, second]) {
-      const assessments = aggregate!.assessments.filter(
-        row => row.copyright_notice_submission_id === submission.id,
-      )
-      expect(assessments).toHaveLength(1)
-      expect(aggregate!.submissions.find(row => row.id === submission.id)).toMatchObject({
-        current_assessment_identity_id: assessments[0]!.id,
-      })
-      expect(
-        aggregate!.lifecycleEvents.filter(
-          event => event.copyright_notice_submission_assessment_identity_id === assessments[0]!.id,
-        ),
-      ).toHaveLength(1)
-    }
+    const options = { ids: [first.id, second.id], limit: 2 }
+    const before = await readDecisionRecoveryState([noticeId])
+    const [result] = await Promise.allSettled([
+      appendTestCopyrightAssessmentWhileRecoveryWaits(
+        {
+          submissionId: second.id,
+          currentUser: moderator,
+          substantiallyCompliant: true,
+          assessedAt: new Date(),
+        },
+        () => recoverMissingDecisionAssessments(options),
+      ),
+    ])
+    const after = await readDecisionRecoveryState([noticeId])
+    expect({ outcome: decisionRecoveryOutcome(result!), state: after }).toEqual({
+      outcome: nativeDecisionRecoveryConflict,
+      state: expectedDecisionRecoveryState(before, after, [second.id], moderator.id, null),
+    })
+    expect(options).toEqual({ ids: [first.id, second.id], limit: 2 })
+    assertDecisionRecoveryClocks(before, after)
   })
 })

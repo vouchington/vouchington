@@ -9,7 +9,6 @@ import {
   readExistingCopyrightRationaleIds,
   readCopyrightCasePurgeFixture,
   settleCopyrightCasePurgeFixtureActions,
-  useCopyrightCasePurgePageSize,
 } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-fixture'
 import {
   createReplayableCopyrightCasePurgeForm,
@@ -22,6 +21,8 @@ import {
   insertTestCopyrightDecisionRationaleForCase,
   insertTestCopyrightDecisionRationaleForIntake,
 } from '@voucha/test-helpers/data-stores/psql/copyright-decision-rationale'
+
+const pageSize = 20
 
 const PURGE_NOW = new Date('2100-01-01T12:00:00.000Z')
 
@@ -39,7 +40,7 @@ function firstPage(noticeId: string): CopyrightCasePurgeJobData {
 async function runToPointerCut(noticeId: string): Promise<CopyrightCasePurgeJobData> {
   let data = firstPage(noticeId)
   for (let page = 0; page < 1_000; page += 1) {
-    const result = await runCopyrightCasePurgePage(data, PURGE_NOW)
+    const result = await runCopyrightCasePurgePage(data, PURGE_NOW, pageSize)
     if (!result.hasMore)
       throw new Error(`Copyright purge stopped before pointer cuts at ${data.phase}`)
     data = result.data
@@ -51,7 +52,7 @@ async function runToPointerCut(noticeId: string): Promise<CopyrightCasePurgeJobD
 async function finishCase(data: CopyrightCasePurgeJobData): Promise<void> {
   let current = data
   for (let page = 0; page < 1_000; page += 1) {
-    const result = await runCopyrightCasePurgePage(current, PURGE_NOW)
+    const result = await runCopyrightCasePurgePage(current, PURGE_NOW, pageSize)
     if (!result.hasMore) {
       const state = await readCopyrightCasePurgeFixture(current.noticeId)
       if (state.live || state.retained)
@@ -66,18 +67,16 @@ async function finishCase(data: CopyrightCasePurgeJobData): Promise<void> {
 describe('initial copyright submission replay during case purge', () => {
   useAutomaticProvisionalWithholding()
   const bucket = useCopyrightEvidenceBucket()
-  const setPageSize = useCopyrightCasePurgePageSize()
 
   // no-mistakes-timeout-reason: reviewed form fixture and bounded case purge pages through final root deletion
   it('replays the original form through pointer cuts, then accepts a new case after the root is gone', async () => {
-    await setPageSize(20)
     const form = await createReplayableCopyrightCasePurgeForm()
     await publishCopyrightCasePurgeCoverage(form.noticeId)
     const before = await createCopyrightFormIntake(form.input)
     expect(before).toMatchObject({ isDuplicate: true, intake: { id: form.intakeId } })
 
     const pointer = await runToPointerCut(form.noticeId)
-    const during = await runCopyrightCasePurgePage(pointer, PURGE_NOW)
+    const during = await runCopyrightCasePurgePage(pointer, PURGE_NOW, pageSize)
     expect(during.data.phase).toBe('pointers')
     await expect(createCopyrightFormIntake(form.input)).resolves.toMatchObject({
       isDuplicate: true,
@@ -91,7 +90,6 @@ describe('initial copyright submission replay during case purge', () => {
 
   // no-mistakes-timeout-reason: reviewed email fixture, versioned evidence deletion, and bounded case purge pages
   it('replays the original email before evidence deletion and rejects the same SES message after erasure', async () => {
-    await setPageSize(20)
     const email = await createRetentionEmailCase()
     const aged = new Date(Date.UTC(new Date().getUTCFullYear() - 8, 0, 15))
     const agedCaseRationale = await insertTestCopyrightDecisionRationaleForCase(
@@ -111,7 +109,7 @@ describe('initial copyright submission replay during case purge', () => {
     await expect(createCopyrightEmailIntake(input)).resolves.toMatchObject({ isNew: false })
 
     const pointer = await runToPointerCut(email.noticeId)
-    const during = await runCopyrightCasePurgePage(pointer, PURGE_NOW)
+    const during = await runCopyrightCasePurgePage(pointer, PURGE_NOW, pageSize)
     expect(during.data.phase).toBe('pointers')
     await expect(createCopyrightEmailIntake(input)).rejects.toBeInstanceOf(
       ErasedCopyrightEmailIntakeReplay,

@@ -19,7 +19,6 @@ import {
   publishCopyrightCasePurgeCoverage,
   readCopyrightCasePurgeFixture,
   settleCopyrightCasePurgeFixtureActions,
-  useCopyrightCasePurgePageSize,
 } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-fixture'
 import { placeCopyrightCasePreservationHold } from './retention-review-closures.mts'
 import { runCopyrightCasePurgePage } from './retention-case-purge-page.mts'
@@ -27,6 +26,8 @@ import { COPYRIGHT_CASE_PURGE_PHASES } from '@data-stores/psql/copyright-case-pu
 import { processCopyrightCasePurge } from '../../workers/psql/processors/copyright-case-purge.mts'
 
 // PostgreSQL fixtures use clock_timestamp(), so only the service's injected clock moves forward.
+const pageSize = 1
+
 const PURGE_NOW = new Date('2100-01-01T12:00:00.000Z')
 
 function firstPage(noticeId: string): CopyrightCasePurgeJobData {
@@ -95,7 +96,8 @@ async function finishResidualWithNativeWorker(data: CopyrightCasePurgeJobData): 
   const worker = await startRealGlideBackgroundLifecycle({
     queueNamePrefix: 'copyright_case_purge',
     connection: { connection: workerQueueConnection, prefix: workerQueuePrefix },
-    processor: job => processCopyrightCasePurge(job as Job<CopyrightCasePurgeJobData>),
+    processor: job =>
+      processCopyrightCasePurge(job as Job<CopyrightCasePurgeJobData>, { pageSize }),
     workerOptions: { promotionInterval: 50 },
   })
   try {
@@ -118,12 +120,10 @@ async function finishResidualWithNativeWorker(data: CopyrightCasePurgeJobData): 
 describe('copyright case purge pages', () => {
   useAutomaticProvisionalWithholding()
   const bucket = useCopyrightEvidenceBucket()
-  const setPageSize = useCopyrightCasePurgePageSize()
 
   // no-mistakes-timeout-reason: reviewed email fixture, bounded PostgreSQL pages, and native worker continuation
   it('carries a durable proof across bounded pages, deletes every evidence version, then removes the case', async () => {
     expect.hasAssertions()
-    await setPageSize(1)
     const entry = await createRetentionEmailCase()
     await settleCopyrightCasePurgeFixtureActions(entry.noticeId)
     await publishCopyrightCasePurgeCoverage(entry.noticeId)
@@ -139,14 +139,14 @@ describe('copyright case purge pages', () => {
       if (!proofRestartVerified && data.phase === 'parties' && data.phaseIndex >= 2) {
         const previousProof = data.proofVersion
         await advanceCopyrightCasePurgeFixtureClock(entry.noticeId)
-        const restarted = await runCopyrightCasePurgePage(data, PURGE_NOW)
+        const restarted = await runCopyrightCasePurgePage(data, PURGE_NOW, pageSize)
         assertRestartedProof(restarted, previousProof)
         data = restarted.data
         proofRestartVerified = true
       }
       let result: Awaited<ReturnType<typeof runCopyrightCasePurgePage>>
       try {
-        result = await runCopyrightCasePurgePage(data, PURGE_NOW)
+        result = await runCopyrightCasePurgePage(data, PURGE_NOW, pageSize)
       } catch (err) {
         throw new Error(
           `Copyright purge page failed at ${data.phase}:${data.phaseIndex} ${COPYRIGHT_CASE_PURGE_PHASES[data.phaseIndex]?.[0] ?? ''}`,
@@ -174,7 +174,11 @@ describe('copyright case purge pages', () => {
         // The root DELETE can commit before the job saves its next payload. The
         // native worker must recover from the original payload and drain the links.
         await finishResidualWithNativeWorker(firstPage(entry.noticeId))
-        const repeated = await runCopyrightCasePurgePage(firstPage(entry.noticeId), PURGE_NOW)
+        const repeated = await runCopyrightCasePurgePage(
+          firstPage(entry.noticeId),
+          PURGE_NOW,
+          pageSize,
+        )
         if (repeated.hasMore) throw new Error('Completed purge was readmitted from its old payload')
         await assertPurgeFinished({
           noticeId: entry.noticeId,
@@ -199,15 +203,14 @@ describe('copyright case purge pages', () => {
 
   // no-mistakes-timeout-reason: reviewed email fixture and PostgreSQL preservation transaction
   it('stops the next page when a case preservation hold lands between pages', async () => {
-    await setPageSize(1)
     const entry = await createRetentionEmailCase()
     await publishCopyrightCasePurgeCoverage(entry.noticeId)
-    const first = await runCopyrightCasePurgePage(firstPage(entry.noticeId), PURGE_NOW)
+    const first = await runCopyrightCasePurgePage(firstPage(entry.noticeId), PURGE_NOW, pageSize)
     expect(first.hasMore).toBe(true)
     expect(first.data.proofVersion).not.toBeNull()
 
     await placeCopyrightCasePreservationHold(entry.moderator, entry.noticeId, 'litigation_threat')
-    const afterHold = await runCopyrightCasePurgePage(first.data, PURGE_NOW)
+    const afterHold = await runCopyrightCasePurgePage(first.data, PURGE_NOW, pageSize)
     expect(afterHold.hasMore).toBe(false)
     expect(await readCopyrightCasePurgeFixture(entry.noticeId)).toMatchObject({ live: true })
   }, 30_000)
@@ -215,10 +218,9 @@ describe('copyright case purge pages', () => {
   // A persisted queue payload can be truncated or corrupted between activations.
   // no-mistakes-timeout-reason: real case eligibility and bounded PostgreSQL traversal
   it('fails closed on corrupt child traversal cursors without deleting the case', async () => {
-    await setPageSize(1)
     const entry = await createRetentionEmailCase()
     await publishCopyrightCasePurgeCoverage(entry.noticeId)
-    const first = await runCopyrightCasePurgePage(firstPage(entry.noticeId), PURGE_NOW)
+    const first = await runCopyrightCasePurgePage(firstPage(entry.noticeId), PURGE_NOW, pageSize)
     const pathIndex = COPYRIGHT_CASE_PURGE_PHASES.findIndex(([, path]) => path.length > 1)
     if (pathIndex < 0) throw new Error('Expected a nested copyright child path')
     const path = COPYRIGHT_CASE_PURGE_PHASES[pathIndex]![1]
@@ -230,7 +232,7 @@ describe('copyright case purge pages', () => {
       phaseIndex: pathIndex,
       childFrames: [{ values: { id: entry.noticeId }, after: { [cursorColumn]: null } }],
     } as unknown as CopyrightCasePurgeJobData
-    await expect(runCopyrightCasePurgePage(invalidCursor, PURGE_NOW)).rejects.toThrow(
+    await expect(runCopyrightCasePurgePage(invalidCursor, PURGE_NOW, pageSize)).rejects.toThrow(
       'Invalid copyright purge child cursor',
     )
 
@@ -243,7 +245,7 @@ describe('copyright case purge pages', () => {
         { values: {}, after: null },
       ],
     } as CopyrightCasePurgeJobData
-    await expect(runCopyrightCasePurgePage(invalidAncestor, PURGE_NOW)).rejects.toThrow(
+    await expect(runCopyrightCasePurgePage(invalidAncestor, PURGE_NOW, pageSize)).rejects.toThrow(
       'Invalid copyright purge child path',
     )
     expect(await readCopyrightCasePurgeFixture(entry.noticeId)).toMatchObject({ live: true })

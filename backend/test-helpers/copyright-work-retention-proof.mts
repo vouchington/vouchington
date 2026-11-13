@@ -35,3 +35,20 @@ export async function prepareCopyrightLastActionAttempt(intentId: string, restri
   await transaction.commit()
   return claimed!
 }
+
+/** Committed terminal failure for a sweep subject; the failure writer is tested separately. */
+export async function prepareCopyrightFailedWorkProof(intentId: string, restrictionId: string) {
+  await using transaction = await beginTransaction()
+  for (let attempt = 0; attempt < 5; attempt++) {
+    await transaction(sql`/* prepareCopyrightFailedWorkProof:claim */
+      UPDATE copyright_notice_action_work_items SET attempt_count = attempt_count + 1,
+        leased_at = clock_timestamp(), lease_token = uuidv7(), lease_expires_at = NULL
+      WHERE id = ${intentId}`)
+  }
+  await transaction(sql`/* prepareCopyrightFailedWorkProof */
+    UPDATE copyright_notice_action_work_items SET completed_at = clock_timestamp(),
+      completed_at_reason = 'failed', failure_message = 'Committed terminal provider failure.',
+      available_at = NULL WHERE id = ${intentId}`)
+  await liftCopyrightRestrictionInTransaction(restrictionId, new Date(), transaction)
+  await transaction.commit()
+}

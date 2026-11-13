@@ -1,18 +1,23 @@
+import { prepublishCopyrightImagePlacementDenial } from '../services/copyright-notices/action-delivery-edge.mts'
 import { createTestUserDirect } from '@voucha/test-helpers'
 import {
   createFixtureTargets,
   currentSharedTarget,
   type SharedPlacement,
 } from './copyright-restoration-hold-targets.mts'
-import {
+import type {
   createCopyrightCounterNotice,
-  processCopyrightActionIntent,
   reviewCopyrightCounterNotice,
 } from '../services/copyright-notices/index.mts'
+import { beginTransaction } from '@data-stores/psql'
+import sql from 'sql-template-strings'
+import { seedRestorationSceneWithhold } from './copyright-withhold-scene-fixture.mts'
+import { seedRestorationCounterNotice } from './copyright-restoration-counter-notice-fixture.mts'
+import { seedRestorationCounterApproval } from './copyright-restoration-counter-approval-fixture.mts'
+import { seedCommittedRestorationIntent } from './copyright-restoration-intent-fixture.mts'
 import { seedCopyrightSubmissionAssessment } from './copyright-notice-submissions.mts'
 import { createCopyrightDeliveryIntent } from '../services/copyright-notices/delivery-intents.mts'
-import { createEligibleCopyrightRestoreIntent } from '../services/copyright-notices/restoration.mts'
-import { createOutboundCopyrightCorrespondence } from '../services/copyright-notices/correspondence.mts'
+import { createDeterministicCopyrightCorrespondenceInTransaction } from '../services/copyright-notices/correspondence.mts'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
@@ -43,18 +48,7 @@ export async function createCopyrightRestorationHoldFixture(
   })
   const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
   if (!aggregate) throw new Error('fixture notice disappeared')
-  const { assessment, receipt } = await createAssessmentAndReceipt(aggregate, moderator, notice.id)
-  await createCopyrightDeliveryIntent({
-    noticeId: notice.id,
-    submissionId: aggregate.submissions[0].id,
-    correspondenceId: receipt.id,
-    recipientUserId: null,
-    recipientRole: 'claimant',
-    deliveryKind: 'claimant_receipt',
-    channel: 'email',
-    idempotencyKey: `copyright-hold-receipt-${crypto.randomUUID()}`,
-    recipientEmail: `tests+copyright-${crypto.randomUUID()}@voucha.ai`,
-  })
+  const { assessment } = await createAssessmentAndReceipt(aggregate, moderator, notice.id)
   return { aggregate, assessment, claimant, moderator, notice }
 }
 
@@ -69,42 +63,51 @@ async function createAssessmentAndReceipt(
     currentUser: moderator,
     substantiallyCompliant: true,
   })
-  const receipt = await createOutboundCopyrightCorrespondence({
-    noticeId,
-    submissionId: aggregate.submissions[0].id,
-    correspondenceKind: 'receipt',
-    compositionKind: 'deterministic_template',
-    bodyCiphertext: `receipt-${crypto.randomUUID()}`,
-    draftedById: null,
-  })
+  await using transaction = await beginTransaction()
+  const receipt = await createDeterministicCopyrightCorrespondenceInTransaction(
+    {
+      noticeId,
+      submissionId: aggregate.submissions[0].id,
+      correspondenceKind: 'receipt',
+      bodyText: `receipt-${crypto.randomUUID()}`,
+    },
+    transaction,
+  )
+  await transaction(sql`/* createAssessmentAndReceipt:event */
+    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, copyright_notice_correspondence_id)
+    VALUES (${noticeId}, 'outbound_correspondence_created', ${receipt.id})`)
+  await createCopyrightDeliveryIntent(
+    {
+      noticeId,
+      submissionId: aggregate.submissions[0].id,
+      correspondenceId: receipt.id,
+      recipientUserId: null,
+      recipientRole: 'claimant',
+      deliveryKind: 'claimant_receipt',
+      channel: 'email',
+      idempotencyKey: `copyright-hold-receipt-${crypto.randomUUID()}`,
+      recipientEmail: `tests+copyright-${crypto.randomUUID()}@voucha.ai`,
+    },
+    transaction,
+  )
+  await transaction.commit()
   return { assessment, receipt }
 }
 
 export async function deliverInitialCopyrightWithhold(noticeId: string): Promise<void> {
-  const withhold = (await getCopyrightNoticePrivateAggregate(noticeId))?.actionIntents.find(
-    intent => intent.action === 'withhold',
+  const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
+  const withhold = aggregate?.actionIntents.find(intent => intent.action === 'withhold')
+  const restriction = aggregate?.restrictions.find(
+    row => row.id === withhold?.copyright_restriction_id,
   )
-  if (!withhold) throw new Error('initial withhold intent disappeared')
-  const result = await processCopyrightActionIntent(withhold.id, new Date())
-  if (result !== 'applied') throw new Error(`Initial withhold was not applied: ${result}`)
-}
-
-/** Accepts a counter-notice through the production moderator review and returns its deadline row. */
-export async function acceptCounterNoticeForRestoration(input: {
-  noticeId: string
-  submissionId: string
-  moderator: Parameters<typeof reviewCopyrightCounterNotice>[0]['currentUser']
-}) {
-  const { assessmentId, deadlineId } = await reviewCopyrightCounterNotice({
-    submissionId: input.submissionId,
-    currentUser: input.moderator,
-    is_accepted: true,
-    rationale: 'The structured counter-notice is formally complete.',
+  const target = aggregate?.targets.find(row => row.id === restriction?.copyright_notice_target_id)
+  if (!withhold || !target) throw new Error('initial withhold intent disappeared')
+  await prepublishCopyrightImagePlacementDenial({
+    placementId: target.placement_id,
+    revision: withhold.expected_placement_revision,
+    imageId: target.image_id,
   })
-  const aggregate = await getCopyrightNoticePrivateAggregate(input.noticeId)
-  const deadline = aggregate?.deadlines.find(row => row.id === deadlineId)
-  if (!deadline) throw new Error('accepted counter-notice deadline disappeared')
-  return { assessmentId, deadline }
+  await seedRestorationSceneWithhold(withhold.id)
 }
 
 export async function createCompliantCounterNoticeDeadline(input: {
@@ -113,22 +116,12 @@ export async function createCompliantCounterNoticeDeadline(input: {
   moderator: Parameters<typeof reviewCopyrightCounterNotice>[0]['currentUser']
   targetIds: string[]
 }) {
-  const counterNotice = await createCopyrightCounterNotice(
+  const counterNotice = await seedRestorationCounterNotice(
     input.claimant,
     input.noticeId,
-    crypto.randomUUID(),
-    {
-      name: 'Poster',
-      address: '1 Main Street',
-      telephone: '555-0100',
-      consentToFederalJurisdiction: true,
-      consentToServiceOfProcess: true,
-      goodFaithMisidentificationUnderPenaltyOfPerjury: true,
-      electronicSignature: 'Poster',
-      targetIds: input.targetIds,
-    },
+    input.targetIds,
   )
-  const { deadline } = await acceptCounterNoticeForRestoration({
+  const { deadline } = await seedRestorationCounterApproval({
     noticeId: input.noticeId,
     submissionId: counterNotice.submission.id,
     moderator: input.moderator,
@@ -152,7 +145,7 @@ export async function createCounterNoticeRestoreIntent(input: {
     targetIds: [input.targetId],
   })
   const now = new Date(deadline.earliest_restoration_at.getTime() + (input.offsetMs ?? 60_000))
-  const restore = await createEligibleCopyrightRestoreIntent({
+  const restore = await seedCommittedRestorationIntent({
     noticeId: input.noticeId,
     targetId: input.targetId,
     restrictionId: input.restrictionId,

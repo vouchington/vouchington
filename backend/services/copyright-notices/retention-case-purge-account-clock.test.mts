@@ -4,16 +4,14 @@ import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyri
 import {
   addCopyrightCasePurgeFixtureParty,
   readCopyrightCasePurgeFixtureAccountClock,
-  useCopyrightCasePurgePageSize,
 } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-fixture'
 import { placeUserPreservationHold } from '../users/preservation-holds.mts'
 import { runCopyrightAccountClockSyncPage } from './retention-account-clock-sync.mts'
 
-describe('copyright case account clock fan-out', () => {
-  const setPageSize = useCopyrightCasePurgePageSize()
+const pageSize = 2
 
+describe('copyright case account clock fan-out', () => {
   it('signals only a party account, then advances its case clock and clears the signal', async () => {
-    await setPageSize(2)
     const [admin, unrelated, entry] = await Promise.all([
       createTestUser({ administrator: true }),
       createTestUserDirect(),
@@ -33,11 +31,14 @@ describe('copyright case account clock fan-out', () => {
     expect(await readCopyrightCasePurgeFixtureAccountClock(entry.posterId)).toMatchObject({
       pending: true,
     })
-    const sync = await runCopyrightAccountClockSyncPage({
-      accountUserId: entry.posterId,
-      afterNoticeId: null,
-      sourceVersion: null,
-    })
+    const sync = await runCopyrightAccountClockSyncPage(
+      {
+        accountUserId: entry.posterId,
+        afterNoticeId: null,
+        sourceVersion: null,
+      },
+      pageSize,
+    )
     expect(sync.hasMore).toBe(false)
     const after = await readCopyrightCasePurgeFixtureAccountClock(entry.posterId)
     expect(after.pending).toBe(false)

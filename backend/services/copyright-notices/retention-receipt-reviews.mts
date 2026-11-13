@@ -1,3 +1,4 @@
+import type { CopyrightOperationalScope } from './operational-retention-cursor.mts'
 import { beginBoundedTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -6,6 +7,7 @@ export async function sweepCopyrightReceiptReviews(options: {
   batchSize: number
   maxBatches: number
   now?: Date
+  scope?: CopyrightOperationalScope
 }): Promise<{ scanned: number; retired: number; hasMore: boolean }> {
   if (!Number.isInteger(options.batchSize) || options.batchSize < 1 || options.batchSize > 5_000)
     throw new RangeError('Receipt review page size must be between 1 and 5,000')
@@ -17,7 +19,7 @@ export async function sweepCopyrightReceiptReviews(options: {
   const candidateBefore = options.now ?? new Date()
   for (let batch = 0; batch < options.maxBatches; batch += 1) {
     // oxlint-disable-next-line no-await-in-loop -- each raw page commits before the next bounded tick.
-    const page = await sweepReceiptReviewPage(options.batchSize, candidateBefore) // no-mistakes-disable-line query-reached-per-item: one bounded transactional page commits before the next capped page.
+    const page = await sweepReceiptReviewPage(options.batchSize, candidateBefore, options.scope) // no-mistakes-disable-line query-reached-per-item: one bounded transactional page commits before the next capped page.
     scanned += page.scanned
     retired += page.retired
     hasMore = page.scanned === options.batchSize
@@ -29,20 +31,22 @@ export async function sweepCopyrightReceiptReviews(options: {
 async function sweepReceiptReviewPage(
   batchSize: number,
   candidateBefore: Date,
+  scope?: CopyrightOperationalScope,
 ): Promise<{ scanned: number; retired: number }> {
   await using transaction = await beginBoundedTransaction({
     connectionTimeoutMs: 5_000,
     statementTimeoutMs: 20_000,
   })
-  const { rows: candidates } = await transaction<{
-    id: string
-  }>(sql`/* pageCopyrightReceiptReviewRetirement */
+  const candidateQuery = sql`/* pageCopyrightReceiptReviewRetirement */
     SELECT id FROM copyright_notice_email_intake_receipts
     WHERE review_decision IS NOT NULL
       AND review_retirement_check_at <= ${candidateBefore}
       AND reviewed_at <= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - make_interval(years => 6)) AT TIME ZONE 'UTC'
-    ORDER BY review_retirement_check_at, reviewed_at, id
+    `
+  if (scope) candidateQuery.append(sql` AND id = ANY(${scope.recordIds}::uuid[])`)
+  candidateQuery.append(sql` ORDER BY review_retirement_check_at, reviewed_at, id
     LIMIT ${batchSize} FOR UPDATE SKIP LOCKED`)
+  const { rows: candidates } = await transaction<{ id: string }>(candidateQuery)
   if (candidates.length === 0) {
     await transaction.commit()
     return { scanned: 0, retired: 0 }

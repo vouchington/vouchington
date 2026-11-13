@@ -4,32 +4,29 @@ import {
 } from '@voucha/test-helpers/copyright-attempt-history'
 import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { interceptCopyrightImpositionForTest } from '@voucha/test-helpers/copyright-imposition-intercept'
 import {
-  completeTestCopyrightActionClaim,
   createTestUnreadableCopyrightResponse,
   readTestCopyrightResponseFailure,
   createTestRejectedCopyrightResponse,
 } from '@voucha/test-helpers/copyright-lease-fencing'
 import { expireTestCopyrightDeliveryIntentClaim } from '@voucha/test-helpers/data-stores/psql/copyright-delivery-claims'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
-import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import {
-  createCounterNoticeRestoreIntent,
-  createCopyrightRestorationHoldFixture,
-} from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
+import { createCopyrightRestorationHoldFixture } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
 import {
   markCopyrightDeliveryIntentSent,
   markCopyrightDeliveryIntentFailed,
   prepareCopyrightEmailDelivery,
-  enforceCopyrightAssessment,
 } from './index.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 import { claimCopyrightDeliveryIntent, createCopyrightDeliveryIntent } from './delivery-intents.mts'
-import { claimCopyrightActionIntent, failCopyrightActionIntent } from './action-delivery-state.mts'
-import { compensateCopyrightActionFailure } from './action-delivery-compensation.mts'
-import { executeCopyrightActionIntent } from './action-delivery-execution.mts'
-import { getCopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
+import { createReclaimedActionFixture } from '@voucha/test-helpers/copyright-reclaimed-action-fixtures'
+import {
+  assertActionReclaim,
+  assertReclaimedActionGuards,
+} from '@voucha/test-helpers/copyright-reclaimed-action-subjects'
+import {
+  assertEnforcerCompletedSibling,
+  assertOwedEnforcerFailure,
+} from '@voucha/test-helpers/copyright-enforcer-lease-subjects'
 
 // Form screening's reclaimed-owner regression is owned by form-screening-executions.test.mts.
 describe('copyright queue lease fencing', () => {
@@ -140,102 +137,30 @@ describe('copyright queue lease fencing', () => {
     )
   })
 
+  it('reclaims an expired action lease atomically before granting the new owner authority', async () => {
+    expect.hasAssertions()
+    installTestMediaDeliveryEdge()
+    await assertActionReclaim(await createReclaimedActionFixture(false))
+  })
+
   it('rejects reclaimed action completion, failure, and execution before side effects', async () => {
     const edge = installTestMediaDeliveryEdge()
-    const { notice, intent } = await createActionClaimFixture()
-    const now = new Date()
-    const old = (await claimCopyrightActionIntent(intent.id, now))!
-    const later = new Date(now.getTime() + 16 * 60 * 1000)
-    const current = (await claimCopyrightActionIntent(intent.id, later))!
-    expect(current.lease_token).not.toBe(old.lease_token)
-    await expect(
-      completeTestCopyrightActionClaim(intent.id, old.lease_token, later),
-    ).rejects.toThrow('lease expired')
-    expect(
-      await failCopyrightActionIntent({
-        intentId: intent.id,
-        leaseToken: old.lease_token,
-        failedAt: later,
-        failureMessage: 'late',
-      }),
-    ).toBe('not_claimed')
-    expect(
-      await executeCopyrightActionIntent(old, later, getCopyrightActionDeliveryDependencies({})),
-    ).toBe('not_claimed')
-    const failure = new Error('expired worker failed')
-    await expect(
-      compensateCopyrightActionFailure(
-        old,
-        later,
-        {
-          placementId: old.placement_id,
-          revision: old.expected_placement_revision,
-          imageId: old.image_id,
-        },
-        failure,
-      ),
-    ).rejects.toBe(failure)
+    await assertReclaimedActionGuards(await createReclaimedActionFixture())
     expect(edge.put).not.toHaveBeenCalled()
-    expect((await getCopyrightNoticePrivateAggregate(notice.id))!.actionIntents[0]!.state).toBe(
-      'claimed',
-    )
-    await completeTestCopyrightActionClaim(intent.id, current.lease_token, later)
-    expect((await getCopyrightNoticePrivateAggregate(notice.id))!.actionIntents[0]!.state).toBe(
-      'completed',
-    )
   })
 
   it.each(['complete', 'fail'])(
-    'keeps the concurrent enforcer result when the first enforcer then %ss',
+    'keeps the committed sibling enforcer result when the first enforcer then %ss',
     async outcome => {
-      const { assessment, notice } = await createCopyrightRestorationHoldFixture()
-      interceptCopyrightImpositionForTest(notice.id, async () => {
-        await enforceCopyrightAssessment(assessment.id)
-        if (outcome === 'fail') throw new Error('stalled owner resumed')
-      })
-      await expect(enforceCopyrightAssessment(assessment.id)).resolves.toBeUndefined()
-      expect(await countCopyrightActiveRestrictionsForNotice(notice.id)).toBe(1)
-      await enforceCopyrightAssessment(assessment.id)
-      expect(await countCopyrightActiveRestrictionsForNotice(notice.id)).toBe(1)
+      expect.hasAssertions()
+      const scene = await createCopyrightRestorationHoldFixture()
+      await assertEnforcerCompletedSibling(scene, outcome === 'fail')
+      expect(await countCopyrightActiveRestrictionsForNotice(scene.notice.id)).toBe(1)
     },
   )
 
   it('rethrows an imposition failure that leaves the target owed', async () => {
-    const { assessment, notice } = await createCopyrightRestorationHoldFixture()
-    interceptCopyrightImpositionForTest(notice.id, async () => {
-      throw new Error('provider outage')
-    })
-    await expect(enforceCopyrightAssessment(assessment.id)).rejects.toThrow('provider outage')
-    expect(await countCopyrightActiveRestrictionsForNotice(notice.id)).toBe(0)
-    await enforceCopyrightAssessment(assessment.id)
-    expect(await countCopyrightActiveRestrictionsForNotice(notice.id)).toBe(1)
+    expect.hasAssertions()
+    await assertOwedEnforcerFailure(await createCopyrightRestorationHoldFixture())
   })
 })
-
-async function createActionClaimFixture(action: 'withhold' | 'restore' = 'withhold') {
-  const { notice, aggregate, assessment, claimant, moderator } =
-    await createCopyrightRestorationHoldFixture()
-  const restriction = await acceptCopyrightNoticeAndImposeRestriction({
-    noticeId: notice.id,
-    targetId: aggregate.targets[0]!.id,
-    assessmentId: assessment.id,
-    imposedAt: new Date('2026-07-01T12:00:00.000Z'),
-    imposedById: moderator.id,
-  })
-  let now = new Date()
-  if (action === 'restore') {
-    const opened = await createCounterNoticeRestoreIntent({
-      claimant,
-      noticeId: notice.id,
-      moderator,
-      targetId: aggregate.targets[0]!.id,
-      restrictionId: restriction.id,
-      placementRevision: aggregate.targets[0]!.placement_revision,
-    })
-    now = opened.now
-  }
-  const intent = (await getCopyrightNoticePrivateAggregate(notice.id))!.actionIntents.find(
-    record => record.action === action,
-  )!
-  return { notice, intent, now }
-}

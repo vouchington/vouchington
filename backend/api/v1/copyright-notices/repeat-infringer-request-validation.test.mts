@@ -1,3 +1,9 @@
+import { readApiRepeatState } from '@voucha/test-helpers/copyright-api-repeat-state'
+import {
+  assertApiRepeatDisposition,
+  assertApiRepeatNoAction,
+} from '@voucha/test-helpers/copyright-api-repeat-outcomes'
+import { seedApiRepeatDisposition } from '@voucha/test-helpers/copyright-api-repeat-disposition-fixture'
 import { describe, expect, it } from 'vitest'
 import { encodeScopedTierPreciseUuidCursor } from '@modules/pagination'
 import { copyrightStaffQueueCursorScope } from '@services/copyright-notices/read-models-staff'
@@ -25,14 +31,27 @@ async function repeatInfringerFixture() {
     createTestUser({ administrator: true }),
   ])
   const noticeId = await confirmTestRepeatInfringerNotice(poster.id, moderator, 'repeat contract')
-  await confirmTestRepeatInfringerNotice(poster.id, moderator, 'repeat contract')
+  const secondNoticeId = await confirmTestRepeatInfringerNotice(
+    poster.id,
+    moderator,
+    'repeat contract',
+  )
   const staff = createRequest()
   await staff.authenticateAs(moderator)
   const administrator = createRequest()
   await administrator.authenticateAs(admin)
   const account = await readAccount(staff, noticeId)
   if (!account.is_operative || !account.open_review_id) throw new Error('repeat infringer fixture')
-  return { poster, noticeId, account, reviewId: account.open_review_id, staff, administrator }
+  return {
+    poster,
+    moderator,
+    noticeId,
+    noticeIds: [noticeId, secondNoticeId],
+    account,
+    reviewId: account.open_review_id,
+    staff,
+    administrator,
+  }
 }
 
 describe('repeat-infringer request contracts', () => {
@@ -53,7 +72,9 @@ describe('repeat-infringer request contracts', () => {
   })
 
   it('rejects an unknown key or malformed id on a disposition before recording it', async () => {
-    const { noticeId, account, staff } = await repeatInfringerFixture()
+    const { noticeId, noticeIds, poster, moderator, account, staff } =
+      await repeatInfringerFixture()
+    const before = await readApiRepeatState(poster.id, noticeIds)
     const url = `${INCIDENTS}/${account.incident_id}/dispositions`
     const body = { disposition: 'abusive', rationale: 'The notice was filed in bad faith.' }
 
@@ -66,12 +87,31 @@ describe('repeat-infringer request contracts', () => {
     expect(missing.body.message).toBe('rationale is required')
     expect((await readAccount(staff, noticeId)).is_operative).toBe(true)
 
-    await staff.post(url).send(body).expect(200)
-    expect((await readAccount(staff, noticeId)).is_operative).toBe(false)
+    expect(await readApiRepeatState(poster.id, noticeIds)).toEqual(before)
+    await assertApiRepeatDisposition({
+      staff,
+      actorId: moderator.id,
+      accountId: poster.id,
+      noticeIds,
+      noticeId,
+      incidentId: account.incident_id,
+      rationale: body.rationale,
+    })
+    // The account-list read also always proves the committed non-operative disposition.
+    const listed = await repeatInfringerFixture()
+    await seedApiRepeatDisposition({
+      noticeId: listed.noticeId,
+      incidentId: listed.account.incident_id,
+      actorId: listed.moderator.id,
+      rationale: body.rationale,
+    })
+    expect((await readAccount(listed.staff, listed.noticeId)).is_operative).toBe(false)
   })
 
   it('rejects an unknown key or malformed id on an outcome before recording it', async () => {
-    const { noticeId, reviewId, staff } = await repeatInfringerFixture()
+    const { noticeId, noticeIds, poster, moderator, reviewId, staff } =
+      await repeatInfringerFixture()
+    const before = await readApiRepeatState(poster.id, noticeIds)
     const url = `${REVIEWS}/${reviewId}/outcomes`
     const body = { outcome: 'no_action', rationale: 'One incident no longer counts.' }
 
@@ -87,12 +127,21 @@ describe('repeat-infringer request contracts', () => {
     expect(unknown.body.message).toBe('outcome must be warning, no_action, restrict, or terminate')
     expect((await readAccount(staff, noticeId)).open_review_id).toBe(reviewId)
 
-    await staff.post(url).send(body).expect(200)
+    expect(await readApiRepeatState(poster.id, noticeIds)).toEqual(before)
+    await assertApiRepeatNoAction({
+      staff,
+      actorId: moderator.id,
+      accountId: poster.id,
+      noticeIds,
+      reviewId,
+      rationale: body.rationale,
+    })
     expect((await readAccount(staff, noticeId)).open_review_id).toBeNull()
   })
 
   it('rejects an unknown key or malformed id on a reinstatement before the service runs', async () => {
-    const { poster, administrator } = await repeatInfringerFixture()
+    const { poster, administrator, noticeIds } = await repeatInfringerFixture()
+    const before = await readApiRepeatState(poster.id, noticeIds)
     const url = `${ACCOUNTS}/${poster.id}/reinstatements`
     const body = { rationale: 'No termination is in effect.' }
 
@@ -104,13 +153,16 @@ describe('repeat-infringer request contracts', () => {
 
     // The service rejects a reinstatement with no termination in effect, so 409 proves a
     // well-formed request reached it.
-    await administrator.post(url).send(body).expect(409)
+    const rejected = await administrator.post(url).send(body).expect(409)
+    expect(rejected.body.message).toBe('Copyright termination is not in effect')
+    expect(await readApiRepeatState(poster.id, noticeIds)).toEqual(before)
   })
 
   // A JSON `null` used to throw a TypeError (500) when a handler read `rationale` from it.
   it.each(['null', '[]'])('answers 422 on the body %s for every decision route', async raw => {
-    const { poster, noticeId, account, reviewId, staff, administrator } =
+    const { poster, noticeId, noticeIds, account, reviewId, staff, administrator } =
       await repeatInfringerFixture()
+    const before = await readApiRepeatState(poster.id, noticeIds)
     const routes = [
       [staff, `${INCIDENTS}/${account.incident_id}/dispositions`],
       [staff, `${REVIEWS}/${reviewId}/outcomes`],
@@ -126,15 +178,18 @@ describe('repeat-infringer request contracts', () => {
       expect(response.body.message).toBe('Invalid request body')
     }
     expect(await readAccount(staff, noticeId)).toEqual(account)
+    expect(await readApiRepeatState(poster.id, noticeIds)).toEqual(before)
   })
 
   it('shows a moderator the schema 422 before the administrator-only 403', async () => {
-    const { reviewId, staff } = await repeatInfringerFixture()
+    const { reviewId, staff, poster, noticeIds } = await repeatInfringerFixture()
+    const before = await readApiRepeatState(poster.id, noticeIds)
     const url = `${REVIEWS}/${reviewId}/outcomes`
     const rationale = 'Repeat infringement.'
 
     await staff.post(url).send({ outcome: 'restrict', rationale, injected: true }).expect(422)
     await staff.post(url).send({ outcome: 'restrict', rationale }).expect(403)
+    expect(await readApiRepeatState(poster.id, noticeIds)).toEqual(before)
   })
 
   describe('GET /copyright-notices/review-queue', () => {

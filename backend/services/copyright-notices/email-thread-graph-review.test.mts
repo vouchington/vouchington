@@ -1,15 +1,16 @@
+import { seedCopyrightPromotionThreadEmail } from '@voucha/test-helpers/copyright-promotion-thread-fixtures'
+import {
+  seedCommittedCopyrightPromotion,
+  ownedCopyrightEmailPromotionInput,
+} from '@voucha/test-helpers/copyright-promotion-committed-fixtures'
+import { seedCopyrightAssociationInTransaction } from '@voucha/test-helpers/copyright-manual-association-prerequisite'
+import { assertCommittedCopyrightGraphReplay } from '@voucha/test-helpers/copyright-committed-graph-replay'
+import { createCommittedCopyrightEmailCase } from '@voucha/test-helpers/copyright-committed-email-case'
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import { createCopyrightNoticeForManualAssociation } from '@voucha/test-helpers/copyright-email-manual-association'
 import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
-import {
-  copyrightEmailMessageId,
-  copyrightEmailPromotionInput,
-  promoteInitialCopyrightEmail,
-  recordThreadedCopyrightEmail,
-} from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
+import { copyrightEmailMessageId } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
 import { describe, expect, it } from 'vitest'
-import { associateCopyrightEmailIntakeWithNotice } from './email-manual-association.mts'
-import { promoteCopyrightEmailIntake } from './email-promotion.mts'
 import {
   readCopyrightEmailGraphTokens,
   readCopyrightEmailThreadGraph,
@@ -23,23 +24,23 @@ describe('copyright email graph review boundaries', () => {
     const rootMessageId = copyrightEmailMessageId()
     const middleMessageId = copyrightEmailMessageId()
     const outsideMessageId = copyrightEmailMessageId()
-    const outside = await recordThreadedCopyrightEmail({
+    const outside = await seedCopyrightPromotionThreadEmail({
       messageId: outsideMessageId,
       replyReferences: [],
     })
-    const middle = await recordThreadedCopyrightEmail({
+    const middle = await seedCopyrightPromotionThreadEmail({
       messageId: middleMessageId,
       replyReferences: [outsideMessageId],
     })
-    const root = await promoteInitialCopyrightEmail({ moderator, messageId: rootMessageId })
-    const reply = await recordThreadedCopyrightEmail({
+    const root = await createCommittedCopyrightEmailCase({ moderator, messageId: rootMessageId })
+    const reply = await seedCopyrightPromotionThreadEmail({
       messageId: copyrightEmailMessageId(),
       replyReferences: [rootMessageId, middleMessageId],
     })
     expect(reply.match).toBeNull()
-    await associateCopyrightEmailIntakeWithNotice(moderator, middle.intakeId, root.noticeId)
-    await promoteCopyrightEmailIntake(
-      await copyrightEmailPromotionInput(moderator, outside.intakeId),
+    await seedCopyrightAssociationInTransaction(moderator, middle.intakeId, root.noticeId)
+    const outsideCase = await seedCommittedCopyrightPromotion(
+      await ownedCopyrightEmailPromotionInput(moderator, outside.intakeId),
     )
 
     await using transaction = await beginTransaction()
@@ -50,7 +51,14 @@ describe('copyright email graph review boundaries', () => {
     expect(over.overflow).toBe(true)
     expect(graph.intakeIds).toContain(outside.intakeId)
 
-    await promoteCopyrightEmailIntake(await copyrightEmailPromotionInput(moderator, root.intakeId))
+    await assertCommittedCopyrightGraphReplay(
+      {
+        input: await ownedCopyrightEmailPromotionInput(moderator, root.intakeId),
+        intakeIds: [root.intakeId, outside.intakeId, middle.intakeId, reply.intakeId],
+        parentNoticeIds: [root.noticeId, outsideCase.noticeId],
+      },
+      root.noticeId,
+    )
     expect(await readCopyrightEmailIntakeNoticeLinks(reply.intakeId)).toEqual([])
     const queue = await searchCopyrightStaffEmailIntakes(moderator, {
       limit: 1,
@@ -66,21 +74,21 @@ describe('copyright email graph review boundaries', () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const rootMessageId = copyrightEmailMessageId()
     const replyMessageId = copyrightEmailMessageId()
-    const root = await recordThreadedCopyrightEmail({
+    const root = await seedCopyrightPromotionThreadEmail({
       messageId: rootMessageId,
       replyReferences: [],
     })
-    const reply = await recordThreadedCopyrightEmail({
+    const reply = await seedCopyrightPromotionThreadEmail({
       messageId: replyMessageId,
       replyReferences: [rootMessageId],
     })
-    const secondClaimant = await recordThreadedCopyrightEmail({
+    const secondClaimant = await seedCopyrightPromotionThreadEmail({
       messageId: replyMessageId,
       replyReferences: [],
     })
 
-    const promoted = await promoteCopyrightEmailIntake(
-      await copyrightEmailPromotionInput(moderator, root.intakeId),
+    const promoted = await seedCommittedCopyrightPromotion(
+      await ownedCopyrightEmailPromotionInput(moderator, root.intakeId),
     )
     expect(await readCopyrightEmailIntakeNoticeLinks(reply.intakeId)).toEqual([
       { copyright_notice_id: promoted.noticeId, link_kind: 'thread' },
@@ -105,7 +113,7 @@ describe('copyright email graph review boundaries', () => {
   })
 
   it('caps the combined unique reference and matched-link token set', async () => {
-    const intake = await recordThreadedCopyrightEmail({
+    const intake = await seedCopyrightPromotionThreadEmail({
       messageId: copyrightEmailMessageId(),
       replyReferences: [],
     })

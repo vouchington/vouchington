@@ -10,13 +10,19 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
-import { createCopyrightCounterNotice, processCopyrightActionIntent } from './index.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
-import { appendCopyrightSubmissionAssessment } from './compliance.mts'
+import { processCopyrightActionIntent } from './index.mts'
+import { seedCopyrightSubmissionAssessment } from '@voucha/test-helpers/copyright-notice-submissions'
 import {
-  acceptCounterNoticeForRestoration,
-  createCopyrightRestorationHoldFixture,
-} from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
+  seedCopyrightUnreviewedRestriction,
+  seedCopyrightRaceCounterDeadline,
+} from '@voucha/test-helpers/copyright-assessment-race-fixtures'
+import {
+  copyrightRaceResult,
+  nativeCopyrightSerializationConflict,
+  readCopyrightAssessmentRaceState,
+} from '@voucha/test-helpers/copyright-assessment-race-outcomes'
+import { isCopyrightStaydownMatchingEnabled } from './config.mts'
+import { createCopyrightRestorationHoldFixture } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
@@ -84,19 +90,19 @@ describe('copyright restriction concurrency', () => {
     })
     const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
     if (!aggregate) throw new Error('fixture notice disappeared')
-    const assessment = await appendCopyrightSubmissionAssessment({
+    const assessment = await seedCopyrightSubmissionAssessment({
       submissionId: aggregate.submissions[0].id,
       assessedAt: new Date('2026-07-01T11:00:00.000Z'),
       currentUser: moderator,
       substantiallyCompliant: true,
     })
 
-    await acceptCopyrightNoticeAndImposeRestriction({
+    // Acceptance races are covered independently; this processor subject starts committed.
+    await seedCopyrightUnreviewedRestriction({
       noticeId: notice.id,
       targetId: aggregate.targets[0].id,
       assessmentId: assessment.id,
-      imposedAt: new Date('2026-07-01T12:00:00.000Z'),
-      imposedById: moderator.id,
+      revision: targetPlacement.placement_revision,
     })
 
     const restricted = await getCopyrightNoticePrivateAggregate(notice.id)
@@ -149,33 +155,20 @@ describe('copyright restriction concurrency', () => {
       assessment: noticeAssessment,
     } = await createCopyrightRestorationHoldFixture()
     const target = aggregate.targets[0]!
-    const restriction = await acceptCopyrightNoticeAndImposeRestriction({
+    const restriction = await seedCopyrightUnreviewedRestriction({
       noticeId: notice.id,
       targetId: target.id,
       assessmentId: noticeAssessment.id,
-      imposedAt: new Date('2026-07-01T12:00:00.000Z'),
-      imposedById: null,
+      revision: target.placement_revision,
     })
-    const counterNotice = await createCopyrightCounterNotice(
-      claimant,
-      notice.id,
-      crypto.randomUUID(),
-      {
-        name: 'Claimant',
-        address: '1 Main Street',
-        telephone: '555-0100',
-        consentToFederalJurisdiction: true,
-        consentToServiceOfProcess: true,
-        goodFaithMisidentificationUnderPenaltyOfPerjury: true,
-        electronicSignature: 'Claimant',
-        targetIds: [target.id],
-      },
-    )
-    const { deadline } = await acceptCounterNoticeForRestoration({
+    const deadline = await seedCopyrightRaceCounterDeadline({
       noticeId: notice.id,
-      submissionId: counterNotice.submission.id,
+      targetId: target.id,
+      claimantId: claimant.id,
       moderator,
     })
+    const before = await readCopyrightAssessmentRaceState(notice.id)
+    const staydown = await isCopyrightStaydownMatchingEnabled()
     const result = await reviewAndRestoreCopyrightRestriction(
       {
         noticeId: notice.id,
@@ -191,30 +184,78 @@ describe('copyright restriction concurrency', () => {
         restrictionId: restriction.id,
         deadlineId: deadline.id,
         expectedPlacementRevision: target.placement_revision,
-        now: new Date('2026-07-16T12:00:00.000Z'),
+        now: new Date(deadline.earliest_restoration_at.getTime() + 60_000),
       },
     )
-    expect(result.review).toMatchObject({
-      status: 'fulfilled',
-      value: {
-        id: restriction.id,
-        human_review_action: 'confirm',
+    const after = await readCopyrightAssessmentRaceState(notice.id)
+    const reviewed = {
+      ...before,
+      restrictions: before.restrictions.map(row => ({
+        ...row,
+        review: 'confirm',
+        reviewer: moderator.id,
+      })),
+      events: [...before.events, 'mandatory_human_review_completed'].toSorted(),
+      deliveries: [
+        ...before.deliveries,
+        `poster_review_notice:email:${claimant.id}`,
+        `poster_review_notice:in_app:${claimant.id}`,
+        `claimant_decision_notice:in_app:${claimant.id}`,
+        `claimant_decision_notice:email:${claimant.id}`,
+      ].toSorted(),
+      correspondence: [...before.correspondence, 'decision_notice', 'decision_notice'].toSorted(),
+      incidents: 1,
+      staydown: staydown ? 1 : 0,
+    }
+    const abortedReview = {
+      status: 'rejected',
+      statusCode: 409,
+      code: 'CONFLICT',
+      message: 'Conflicting copyright case change',
+      causeCode: '40001',
+    }
+    const ineligible = {
+      status: 'rejected',
+      statusCode: 409,
+      code: undefined,
+      message: 'Copyright restoration is not eligible',
+      causeCode: undefined,
+    }
+    // With no committed review, restoration is ineligible; SSI may also reject its snapshot.
+    expect([
+      {
+        review: {
+          status: 'fulfilled',
+          id: restriction.id,
+          target: target.id,
+          assessment: noticeAssessment.id,
+          imposedBy: null,
+          review: 'confirm',
+          reviewer: moderator.id,
+        },
+        restoration: nativeCopyrightSerializationConflict,
+        state: reviewed,
       },
+      {
+        review: {
+          status: 'fulfilled',
+          id: restriction.id,
+          target: target.id,
+          assessment: noticeAssessment.id,
+          imposedBy: null,
+          review: 'confirm',
+          reviewer: moderator.id,
+        },
+        restoration: ineligible,
+        state: reviewed,
+      },
+      { review: abortedReview, restoration: nativeCopyrightSerializationConflict, state: before },
+      { review: abortedReview, restoration: ineligible, state: before },
+    ]).toContainEqual({
+      review: copyrightRaceResult(result.review),
+      restoration: copyrightRaceResult(result.restoration),
+      state: after,
     })
-    expect(result.restoration).toMatchObject({ status: 'rejected', reason: { code: '40001' } })
-    const after = await getCopyrightNoticePrivateAggregate(notice.id)
-    expect(after?.restrictions.find(row => row.id === restriction.id)).toMatchObject({
-      lifted_at: null,
-      human_review_action: 'confirm',
-      human_reviewed_by_id: moderator.id,
-    })
-    expect(after?.actionIntents.filter(row => row.action === 'restore')).toEqual([])
-    expect(
-      after?.lifecycleEvents.filter(row => row.change_type === 'mandatory_human_review_completed'),
-    ).toHaveLength(1)
-    expect(
-      after?.lifecycleEvents.filter(row => row.change_type === 'restore_intent_created'),
-    ).toEqual([])
   })
 })
 

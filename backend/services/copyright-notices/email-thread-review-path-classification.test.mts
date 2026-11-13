@@ -1,33 +1,36 @@
+import { seedCopyrightPromotionThreadEmail } from '@voucha/test-helpers/copyright-promotion-thread-fixtures'
+import {
+  ownedCopyrightEmailPromotionInput,
+  seedCommittedCopyrightPromotion,
+} from '@voucha/test-helpers/copyright-promotion-committed-fixtures'
+import {
+  assertCopyrightPromotionOutcome,
+  assertCopyrightPromotionGuard,
+} from '@voucha/test-helpers/copyright-email-promotion-outcomes'
+import { createCommittedCopyrightEmailCase } from '@voucha/test-helpers/copyright-committed-email-case'
 import { createTestUser } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import {
-  copyrightEmailMessageId,
-  copyrightEmailPromotionInput,
-  promoteInitialCopyrightEmail,
-  recordThreadedCopyrightEmail,
-} from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
+import { copyrightEmailMessageId } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
 import { describe, expect, it } from 'vitest'
 import { copyrightConfig } from './config.mts'
-import { promoteCopyrightEmailIntake } from './email-promotion.mts'
 import { getCopyrightStaffEmailIntake } from './read-models-staff-email-intake.mts'
 import { searchCopyrightStaffEmailIntakes } from './read-models-staff-email-intakes.mts'
 
 describe('copyright email review path after separate-case approval', () => {
   it('reports an approved ambiguous reply as its own initial notice', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const duplicatedMessageId = copyrightEmailMessageId()
-    await recordThreadedCopyrightEmail({ messageId: duplicatedMessageId, replyReferences: [] })
-    await recordThreadedCopyrightEmail({ messageId: duplicatedMessageId, replyReferences: [] })
-    const reply = await recordThreadedCopyrightEmail({
-      messageId: copyrightEmailMessageId(),
-      replyReferences: [duplicatedMessageId],
+    const attempted = await ambiguousScene(moderator)
+    expect(attempted.reply.match).toBeNull()
+    await assertCopyrightPromotionOutcome({
+      input: attempted.input,
+      intakeIds: attempted.intakeIds,
     })
-    expect(reply.match).toBeNull()
-
-    const promoted = await promoteCopyrightEmailIntake(
-      await copyrightEmailPromotionInput(moderator, reply.intakeId),
-    )
-    await expect(getCopyrightStaffEmailIntake(reply.intakeId, moderator)).resolves.toMatchObject({
+    // Classification always runs against its own complete committed approval, even if the actor aborted.
+    const committed = await ambiguousScene(moderator)
+    const promoted = await seedCommittedCopyrightPromotion(committed.input)
+    await expect(
+      getCopyrightStaffEmailIntake(committed.reply.intakeId, moderator),
+    ).resolves.toMatchObject({
       review_path: 'initial',
       linked_notice: { id: promoted.noticeId },
     })
@@ -37,9 +40,12 @@ describe('copyright email review path after separate-case approval', () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const firstMessageId = copyrightEmailMessageId()
     const secondMessageId = copyrightEmailMessageId()
-    await promoteInitialCopyrightEmail({ moderator, messageId: firstMessageId })
-    await promoteInitialCopyrightEmail({ moderator, messageId: secondMessageId })
-    const reply = await recordThreadedCopyrightEmail({
+    const first = await createCommittedCopyrightEmailCase({ moderator, messageId: firstMessageId })
+    const second = await createCommittedCopyrightEmailCase({
+      moderator,
+      messageId: secondMessageId,
+    })
+    const reply = await seedCopyrightPromotionThreadEmail({
       messageId: copyrightEmailMessageId(),
       replyReferences: [firstMessageId, secondMessageId],
     })
@@ -66,11 +72,37 @@ describe('copyright email review path after separate-case approval', () => {
         review_path: 'unresolved_thread',
         linked_notice_id: null,
       })
-      await expect(
-        promoteCopyrightEmailIntake(await copyrightEmailPromotionInput(moderator, reply.intakeId)),
-      ).rejects.toMatchObject({ status: 409 })
+      await assertCopyrightPromotionGuard(
+        {
+          input: await ownedCopyrightEmailPromotionInput(moderator, reply.intakeId),
+          intakeIds: [reply.intakeId],
+          parentNoticeIds: [first.noticeId, second.noticeId],
+        },
+        'Unresolved reply email must wait for its root case',
+      )
     } finally {
       restoreOverflow()
     }
   })
 })
+
+async function ambiguousScene(moderator: Awaited<ReturnType<typeof createTestUser>>) {
+  const duplicatedMessageId = copyrightEmailMessageId()
+  const first = await seedCopyrightPromotionThreadEmail({
+    messageId: duplicatedMessageId,
+    replyReferences: [],
+  })
+  const second = await seedCopyrightPromotionThreadEmail({
+    messageId: duplicatedMessageId,
+    replyReferences: [],
+  })
+  const reply = await seedCopyrightPromotionThreadEmail({
+    messageId: copyrightEmailMessageId(),
+    replyReferences: [duplicatedMessageId],
+  })
+  return {
+    reply,
+    input: await ownedCopyrightEmailPromotionInput(moderator, reply.intakeId),
+    intakeIds: [first.intakeId, second.intakeId, reply.intakeId],
+  }
+}

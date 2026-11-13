@@ -11,7 +11,7 @@ import {
   rewriteTestEuDisputeSettlementOutcome,
   rewriteTestEuDisputeSettlementReferral,
 } from '@voucha/test-helpers/copyright-eu-dispute-settlement'
-import { recordEuCopyrightStatementOfReasons } from './eu-reasons.mts'
+import { seedDsaProjectionDecision } from '@voucha/test-helpers/copyright-dsa-projection-prerequisites'
 import {
   recordEuDisputeSettlementReferral,
   recordEuDisputeSettlementOutcome,
@@ -20,7 +20,7 @@ import {
 
 async function decidedScene() {
   const scene = await createTestTerritorialRestrictionScene('eu_dsa')
-  await recordEuCopyrightStatementOfReasons(scene.staff, scene.noticeId, {
+  await seedDsaProjectionDecision('eu_dsa', scene.staff, scene.noticeId, {
     text: 'The photographed work is reproduced on this post.',
     publicExplanation: 'The image reproduces the protected photograph.',
     outcome: 'restrict',
@@ -97,7 +97,7 @@ describe('EU out-of-court dispute settlement record', () => {
         referralInput(scene.posts[0]!.poster.id),
       ),
     ).rejects.toMatchObject({ status: 404 })
-    await recordEuCopyrightStatementOfReasons(scene.staff, scene.noticeId, {
+    await seedDsaProjectionDecision('eu_dsa', scene.staff, scene.noticeId, {
       text: 'The photograph is reproduced on this post.',
       publicExplanation: 'The image reproduces the protected photograph.',
       outcome: 'restrict',

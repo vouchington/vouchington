@@ -1,3 +1,11 @@
+import { seedCopyrightGuestCapabilities } from '@voucha/test-helpers/copyright-staff-case-states'
+import { readApiGuestState } from '@voucha/test-helpers/copyright-api-guest-state'
+import {
+  assertApiGuestCapabilityIssue,
+  assertApiGuestCapabilityRevoke,
+} from '@voucha/test-helpers/copyright-api-guest-capability-outcomes'
+import { assertApiGuestFiling } from '@voucha/test-helpers/copyright-api-guest-filing-outcome'
+import { assertApiGuestInformation } from '@voucha/test-helpers/copyright-api-guest-information-outcome'
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
@@ -15,17 +23,21 @@ function expiry(): string {
 async function staffFixture() {
   const noticeId = await openTestGuestCopyrightNotice()
   const staff = createRequest()
-  await staff.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
-  return { noticeId, staff }
+  const actor = await createTestUser({ extraRoles: ['moderator'] })
+  await staff.authenticateAs(actor)
+  return { noticeId, staff, actor }
 }
 
 async function issuedCapability() {
   const fixture = await staffFixture()
-  const issued = await fixture.staff
-    .post(`${NOTICES}/${fixture.noticeId}/guest-capabilities`)
-    .send({ expires_at: expiry() })
-    .expect(201)
-  const capability = issued.body.copyright_guest_capability as { id: string; token: string }
+  const capabilities = await seedCopyrightGuestCapabilities({
+    noticeId: fixture.noticeId,
+    issuedById: fixture.actor.id,
+    expiresAt: new Date(expiry()),
+    count: 1,
+  })
+  const capability = capabilities[0]
+  if (!capability) throw new Error('Committed guest capability missing')
   return { ...fixture, capability }
 }
 
@@ -41,9 +53,10 @@ describe('copyright guest capability request contracts', () => {
     })
 
     it('rejects an unknown key, a bad expiry, and a malformed id without issuing', async () => {
-      const { noticeId, staff } = await staffFixture()
+      const { noticeId, staff, actor } = await staffFixture()
       const url = `${NOTICES}/${noticeId}/guest-capabilities`
 
+      const before = await readApiGuestState(noticeId)
       await staff.post(url).send({ expires_at: expiry(), injected: true }).expect(422)
       const badExpiry = await staff.post(url).send({ expires_at: 5 }).expect(422)
       expect(badExpiry.body.message).toBe('expires_at must be a future instant')
@@ -54,15 +67,17 @@ describe('copyright guest capability request contracts', () => {
 
       const listed = await staff.get(url).expect(200)
       expect(listed.body.copyright_guest_capabilities).toEqual([])
-      await staff.post(url).send({ expires_at: expiry() }).expect(201)
+      expect(await readApiGuestState(noticeId)).toEqual(before)
+      await assertApiGuestCapabilityIssue(staff, noticeId, actor.id, expiry())
     })
   })
 
   describe('POST /copyright-notices/:id/guest-capabilities/:capabilityId/revocation', () => {
     it('rejects a malformed path id before revoking, then revokes', async () => {
-      const { noticeId, staff, capability } = await issuedCapability()
+      const { noticeId, staff, capability, actor } = await issuedCapability()
       const base = `${NOTICES}/${noticeId}/guest-capabilities`
 
+      const before = await readApiGuestState(noticeId)
       await staff.post(`${base}/not-a-uuid/revocation`).expect(422)
       await staff
         .post(`${NOTICES}/not-a-uuid/guest-capabilities/${capability.id}/revocation`)
@@ -70,17 +85,19 @@ describe('copyright guest capability request contracts', () => {
       const listed = await staff.get(base).expect(200)
       expect(listed.body.copyright_guest_capabilities[0].revoked_at).toBeNull()
 
-      await staff.post(`${base}/${capability.id}/revocation`).expect(200)
+      expect(await readApiGuestState(noticeId)).toEqual(before)
+      await assertApiGuestCapabilityRevoke(staff, noticeId, capability.id, actor.id)
     })
   })
 
   describe('POST /copyright-notices/:id/guest-capabilities/:capabilityId/information-requests', () => {
     it('rejects an unknown key, a bad statement, and a malformed id, then records', async () => {
-      const { noticeId, staff, capability } = await issuedCapability()
+      const { noticeId, staff, capability, actor } = await issuedCapability()
       await recordTestClaimantEmailReceipt(noticeId)
       const url = `${NOTICES}/${noticeId}/guest-capabilities/${capability.id}/information-requests`
       const statement = 'Send the registration number.'
 
+      const before = await readApiGuestState(noticeId)
       await staff.post(url).send({ statement, injected: true }).expect(422)
       const badStatement = await staff.post(url).send({ statement: 5 }).expect(422)
       expect(badStatement.body.message).toBe('statement is required')
@@ -89,7 +106,14 @@ describe('copyright guest capability request contracts', () => {
         .send({ statement })
         .expect(422)
 
-      await staff.post(url).send({ statement }).expect(201)
+      expect(await readApiGuestState(noticeId)).toEqual(before)
+      await assertApiGuestInformation({
+        staff,
+        noticeId,
+        capabilityId: capability.id,
+        actorId: actor.id,
+        statement,
+      })
     })
   })
 
@@ -104,24 +128,34 @@ describe('copyright guest capability request contracts', () => {
       const url = `${NOTICES}/${noticeId}/guest-filings`
       const filing = { kind: 'court_or_ccb_hold', statement: 'A court action was filed.' }
 
+      const before = await readApiGuestState(noticeId)
       await guest
         .post(url)
         .set(GUEST_HEADER, capability.token)
         .send({ ...filing, ...extra })
         .expect(422)
 
-      // A court or CCB hold is single-use: a 409 here would mean the 422 request had written.
-      await guest.post(url).set(GUEST_HEADER, capability.token).send(filing).expect(201)
+      expect(await readApiGuestState(noticeId)).toEqual(before)
+      // The actual same-capability writer remains non-duplicate or atomically aborts on SSI.
+      await assertApiGuestFiling({
+        noticeId,
+        capability,
+        kind: 'court_or_ccb_hold',
+        statement: filing.statement,
+      })
     })
 
     it('accepts the optional CAPTCHA token as a string', async () => {
       const { noticeId, capability } = await issuedCapability()
 
-      await createRequest()
-        .post(`${NOTICES}/${noticeId}/guest-filings`)
-        .set(GUEST_HEADER, capability.token)
-        .send({ kind: 'supplement', statement: 'A correction.', cf_turnstile_response: 'token' })
-        .expect(201)
+      expect.hasAssertions()
+      await assertApiGuestFiling({
+        noticeId,
+        capability,
+        kind: 'supplement',
+        statement: 'A correction.',
+        captcha: 'token',
+      })
     })
 
     it('keeps the capability 403 and the field-named 422 ahead of the schema diagnostic', async () => {
@@ -129,6 +163,7 @@ describe('copyright guest capability request contracts', () => {
       const guest = createRequest()
       const url = `${NOTICES}/${noticeId}/guest-filings`
 
+      const before = await readApiGuestState(noticeId)
       await guest.post(url).send({ kind: 'supplement', statement: 'x', injected: true }).expect(403)
       const kind = await guest
         .post(url)
@@ -136,16 +171,18 @@ describe('copyright guest capability request contracts', () => {
         .send({ kind: 'poem', statement: 'x', injected: true })
         .expect(422)
       expect(kind.body.message).toBe('kind is not a guest filing')
+      expect(await readApiGuestState(noticeId)).toEqual(before)
     })
 
     it('rejects a malformed notice id', async () => {
-      const { capability } = await issuedCapability()
-
+      const { capability, noticeId } = await issuedCapability()
+      const before = await readApiGuestState(noticeId)
       await createRequest()
         .post(`${NOTICES}/not-a-uuid/guest-filings`)
         .set(GUEST_HEADER, capability.token)
         .send({ kind: 'supplement', statement: 'x' })
         .expect(422)
+      expect(await readApiGuestState(noticeId)).toEqual(before)
     })
 
     // Rejections below 500 are never logged by the API error hook, so the response body is the
@@ -153,6 +190,7 @@ describe('copyright guest capability request contracts', () => {
     it('never echoes the capability in a rejection body', async () => {
       const { noticeId, capability } = await issuedCapability()
 
+      const before = await readApiGuestState(noticeId)
       const response = await createRequest()
         .post(`${NOTICES}/${noticeId}/guest-filings`)
         .set(GUEST_HEADER, capability.token)
@@ -160,6 +198,7 @@ describe('copyright guest capability request contracts', () => {
         .expect(422)
 
       expect(response.text).not.toContain(capability.token)
+      expect(await readApiGuestState(noticeId)).toEqual(before)
     })
   })
 
@@ -170,11 +209,13 @@ describe('copyright guest capability request contracts', () => {
       const { noticeId, staff } = await staffFixture()
       const url = `${NOTICES}/${noticeId}/guest-capabilities`
 
+      const before = await readApiGuestState(noticeId)
       await staff.get(`${NOTICES}/not-a-uuid/guest-capabilities`).expect(422)
       await staff.get(`${url}?limit=0`).expect(400)
       await staff.get(`${url}?after=a&after=b`).expect(400)
       await staff.get(`${url}?limit=1&injected=1`).expect(200)
       await createRequest().get(`${url}?limit=0`).expect(401)
+      expect(await readApiGuestState(noticeId)).toEqual(before)
     })
   })
 })

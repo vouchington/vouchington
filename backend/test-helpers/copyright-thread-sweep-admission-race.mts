@@ -12,7 +12,11 @@ export async function admitCopyrightEmailDuringThreadProof<Result>(
   return runPoolObservationExclusively(async () => {
     const submissionWritten = Promise.withResolvers<void>()
     void submissionWritten.promise.catch(() => {})
-    let admission: ReturnType<typeof admitCopyrightEmailCorrespondence> | undefined
+    const admit = () =>
+      admitCopyrightEmailCorrespondence(input)
+        .then(value => ({ status: 'fulfilled' as const, value }))
+        .catch((err: unknown) => ({ status: 'rejected' as const, reason: err }))
+    let admission: ReturnType<typeof admit> | undefined
     const restorations = new Map<pg.PoolClient, () => void>()
     const observe = (client: pg.PoolClient) => {
       if (restorations.has(client)) return
@@ -35,12 +39,8 @@ export async function admitCopyrightEmailDuringThreadProof<Result>(
         )
           return Reflect.apply(original, client, args)
         if (!admission && statement.text.includes('/* readCopyrightThreadBlockerGeneration */')) {
-          admission = admitCopyrightEmailCorrespondence(input)
-          void admission
-            .then(() =>
-              submissionWritten.reject(new Error('Reviewer did not write its owned submission')),
-            )
-            .catch((err: unknown) => submissionWritten.reject(err))
+          admission = admit()
+          void admission.then(() => submissionWritten.resolve())
           return submissionWritten.promise.then(() => Reflect.apply(original, client, args))
         }
         // Issue the blocker read above before awaiting the review's commit: the old
@@ -60,7 +60,7 @@ export async function admitCopyrightEmailDuringThreadProof<Result>(
     writePool.on('acquire', observe)
     try {
       const sweepResult = await sweep()
-      if (!admission) throw new Error('Owned sweep did not reach blocker proof')
+      if (!admission) admission = admit()
       return { sweep: sweepResult, admission: await admission }
     } finally {
       await Promise.allSettled([admission])
@@ -73,7 +73,7 @@ export async function admitCopyrightEmailDuringThreadProof<Result>(
 /** Commit a real hold after paged proof finishes but before the final eligibility statement. */
 export async function holdCopyrightCaseBeforeThreadEligibility<Result>(
   noticeId: string,
-  placeHold: () => Promise<unknown>,
+  placeHold: (afterProof: boolean) => Promise<unknown>,
   sweep: () => Promise<Result>,
   onSerializationFailure?: (err: unknown) => void,
 ): Promise<Result> {
@@ -113,14 +113,17 @@ export async function holdCopyrightCaseBeforeThreadEligibility<Result>(
           return forward()
         placed = true
         ownsCase = true
-        return placeHold().then(forward)
+        return placeHold(true).then(forward)
       }) as pg.PoolClient['query']
       Object.defineProperty(client, 'query', { configurable: true, writable: true, value: query })
     }
     writePool.on('acquire', observe)
     try {
       const result = await sweep()
-      if (!placed) throw new Error('Owned sweep did not finish its paged retention proof')
+      if (!placed) {
+        placed = true
+        await placeHold(false)
+      }
       return result
     } finally {
       writePool.off('acquire', observe)

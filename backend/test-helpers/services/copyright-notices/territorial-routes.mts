@@ -1,12 +1,9 @@
+import { seedCommittedTerritorialNoAction } from '../../copyright-territorial-determined-fixture.mts'
 import type { PrivateUser } from '../../../services/users/types.mts'
 import {
-  acknowledgeEuCopyrightNotice,
-  acknowledgeUkCopyrightNotice,
   receiveEuCopyrightNotice,
   receiveUkCopyrightNotice,
   recordCopyrightJurisdictionPolicyApproval,
-  recordEuCopyrightStatementOfReasons,
-  recordUkCopyrightReview,
 } from '../../../services/copyright-notices/index.mts'
 import { createRequest } from '../../api/server.mts'
 import { createTestUser } from '../../entities/users.mts'
@@ -49,19 +46,6 @@ export const TERRITORIAL_SURFACES: TerritorialSurface[] = [
     determinationCount: 'uk_review_count',
   },
 ]
-
-const SERVICES = {
-  eu_dsa: {
-    receive: receiveEuCopyrightNotice,
-    acknowledge: acknowledgeEuCopyrightNotice,
-    determine: recordEuCopyrightStatementOfReasons,
-  },
-  uk: {
-    receive: receiveUkCopyrightNotice,
-    acknowledge: acknowledgeUkCopyrightNotice,
-    determine: recordUkCopyrightReview,
-  },
-} as const
 
 export function territorialNoticeBody(jurisdiction: TerritorialJurisdiction = 'uk') {
   const suffix = crypto.randomUUID()
@@ -173,14 +157,7 @@ export async function seedDeterminedTerritorialNotice(
   jurisdiction: TerritorialJurisdiction,
   actors: Pick<TerritorialActors, 'claimant' | 'staff'>,
 ): Promise<string> {
-  const services = SERVICES[jurisdiction]
   const noticeId = await seedPendingTerritorialNotice(jurisdiction, actors.claimant)
-  await services.acknowledge(actors.claimant, noticeId)
-  await services.determine(actors.staff, noticeId, {
-    text: `Staff reasons ${crypto.randomUUID()}`,
-    publicExplanation: 'We reviewed the notice and took no action.',
-    outcome: 'no_action',
-    targets: [],
-  })
+  await seedCommittedTerritorialNoAction(jurisdiction, noticeId, actors.staff.id)
   return noticeId
 }

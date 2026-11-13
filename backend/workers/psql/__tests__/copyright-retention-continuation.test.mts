@@ -7,7 +7,6 @@ import {
   createCopyrightRetentionContinuationFixture,
   createCopyrightInactiveRetentionFixture,
 } from '@voucha/test-helpers/copyright-retention-continuation'
-import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
 import {
   readCopyrightExecutionResult,
   readCopyrightOperationalRow,
@@ -16,7 +15,6 @@ import { loseNextPsqlJobAddReplyForTest } from '@voucha/test-helpers/injected-fa
 import processPsql from '../processors.mts'
 
 describe('copyright retention continuation', () => {
-  useCopyrightOperationalCursorReservation()
   it('reuses an admitted child after enqueue failure and drains only pending families', async () => {
     const fixture = await createCopyrightRetentionContinuationFixture()
     expect(fixture.firstId.localeCompare(fixture.outsideId)).toBeLessThan(0)
@@ -31,8 +29,7 @@ describe('copyright retention continuation', () => {
     ])
     const options = {
       copyright: {
-        formScreeningAttemptIds: [],
-        actionAttemptIds: [fixture.firstId, fixture.secondId],
+        scopes: fixture.scopes,
         now: fixture.now,
         limits: { batchSize: 1, maxBatches: 1 },
       },

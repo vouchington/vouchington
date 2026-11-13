@@ -3,115 +3,88 @@ import {
   readCopyrightGuestCapabilityState,
 } from '@voucha/test-helpers/data-stores/psql/copyright-guest-lifecycle'
 import {
-  admitTestCopyrightEmailWithdrawal,
-  createTestCopyrightStaff,
-  openTestGuestCopyrightNotice,
-} from '@voucha/test-helpers/services/copyright-notices/guest-capability'
-import { describe, expect, it } from 'vitest'
+  createWithdrawalCapabilityScene,
+  seedCommittedGuestWithdrawal,
+} from '@voucha/test-helpers/copyright-withdrawal-capability-fixture'
+import { createWithdrawalEmailSource } from '@voucha/test-helpers/copyright-withdrawal-email-source'
+import { seedCommittedEmailWithdrawal } from '@voucha/test-helpers/copyright-withdrawal-email-seed'
 import {
-  appendCopyrightGuestFiling,
-  issueCopyrightGuestCapability,
-  revokeCopyrightGuestCapability,
-} from './index.mts'
-
-const dayMs = 24 * 60 * 60 * 1000
+  assertEmailWithdrawal,
+  withdrawalEmailInput,
+} from '@voucha/test-helpers/copyright-withdrawal-email-outcome'
+import { assertGuestWithdrawalFiling } from '@voucha/test-helpers/copyright-withdrawal-guest-outcomes'
+import { readWithdrawalState } from '@voucha/test-helpers/copyright-withdrawal-state'
+import { describe, expect, it } from 'vitest'
+import { appendCopyrightGuestFiling } from './index.mts'
 
 describe('copyright guest capability revocation on withdrawal', () => {
   it('revokes every live token on the case when a guest files a withdrawal', async () => {
-    const noticeId = await openTestGuestCopyrightNotice()
-    const otherNoticeId = await openTestGuestCopyrightNotice()
-    const staff = await createTestCopyrightStaff()
-    const expiresAt = new Date(Date.now() + 7 * dayMs)
-    const issue = (id: string) =>
-      issueCopyrightGuestCapability({
-        issuedAt: new Date(),
-        currentUser: staff,
-        noticeId: id,
-        expiresAt,
-      })
-    const [filer, sibling, alreadyRevoked, otherCase] = await Promise.all([
-      issue(noticeId),
-      issue(noticeId),
-      issue(noticeId),
-      issue(otherNoticeId),
-    ])
-    const staffRevokedAt = new Date(Date.now() - 60_000)
-    await revokeCopyrightGuestCapability({
-      currentUser: staff,
-      noticeId,
-      capabilityId: alreadyRevoked.id,
-      revokedAt: staffRevokedAt,
-    })
-    const now = new Date()
-    await appendCopyrightGuestFiling({
-      noticeId,
-      token: filer.token,
-      now,
-      kind: 'withdrawal',
-      statement: `withdrawal-${crypto.randomUUID()}`,
-    })
-    for (const capability of [filer, sibling]) {
+    const actor = await createWithdrawalCapabilityScene()
+    await assertGuestWithdrawalFiling(actor, 'withdrawal')
+    // Post-decision guards and the unrelated-case actor run even if the first subject loses SSI.
+    const scene = await createWithdrawalCapabilityScene()
+    const now = await seedCommittedGuestWithdrawal(scene)
+    const before = await readWithdrawalState([scene.noticeId, scene.otherNoticeId])
+    for (const capability of [scene.filer, scene.sibling]) {
       expect(await readCopyrightGuestCapabilityState(capability.id)).toEqual({
-        issued_by_id: staff.id,
+        issued_by_id: scene.staff.id,
         revoked_at: now,
       })
       expect(await listCopyrightGuestCapabilityEvents(capability.id)).toEqual([
-        { change_type: 'guest_capability_issued', changed_by_id: staff.id },
+        { change_type: 'guest_capability_issued', changed_by_id: scene.staff.id },
         { change_type: 'guest_capability_revoked_by_withdrawal', changed_by_id: null },
       ])
       await expect(
         appendCopyrightGuestFiling({
-          noticeId,
+          noticeId: scene.noticeId,
           token: capability.token,
           now,
           kind: 'supplement',
           statement: `revoked-${crypto.randomUUID()}`,
         }),
-      ).rejects.toMatchObject({ status: 403 })
+      ).rejects.toMatchObject({
+        status: 403,
+        message: 'Copyright guest capability is not valid for this notice',
+      })
     }
-    expect((await readCopyrightGuestCapabilityState(alreadyRevoked.id)).revoked_at).toEqual(
-      staffRevokedAt,
+    expect((await readCopyrightGuestCapabilityState(scene.alreadyRevoked.id)).revoked_at).toEqual(
+      scene.staffRevokedAt,
     )
-    expect(await listCopyrightGuestCapabilityEvents(alreadyRevoked.id)).toEqual([
-      { change_type: 'guest_capability_issued', changed_by_id: staff.id },
-      { change_type: 'guest_capability_revoked', changed_by_id: staff.id },
+    expect(await listCopyrightGuestCapabilityEvents(scene.alreadyRevoked.id)).toEqual([
+      { change_type: 'guest_capability_issued', changed_by_id: scene.staff.id },
+      { change_type: 'guest_capability_revoked', changed_by_id: scene.staff.id },
     ])
-    await expect(
-      appendCopyrightGuestFiling({
-        noticeId: otherNoticeId,
-        token: otherCase.token,
-        now,
-        kind: 'supplement',
-        statement: `other-case-${crypto.randomUUID()}`,
-      }),
-    ).resolves.toMatchObject({ kind: 'supplement' })
+    expect(await readWithdrawalState([scene.noticeId, scene.otherNoticeId])).toEqual(before)
+    await assertGuestWithdrawalFiling(scene, 'supplement')
   })
 
   it('revokes the case tokens when staff admit an emailed withdrawal', async () => {
-    const noticeId = await openTestGuestCopyrightNotice()
-    const staff = await createTestCopyrightStaff()
-    const capability = await issueCopyrightGuestCapability({
-      issuedAt: new Date(),
-      currentUser: staff,
-      noticeId,
-      expiresAt: new Date(Date.now() + 7 * dayMs),
-    })
-    await admitTestCopyrightEmailWithdrawal({ noticeId, moderator: staff })
-    expect((await readCopyrightGuestCapabilityState(capability.id)).revoked_at).toEqual(
+    const actor = await createWithdrawalCapabilityScene()
+    const actorEmail = await createWithdrawalEmailSource(actor.noticeId, 'claimant@example.test')
+    await assertEmailWithdrawal(actor, actorEmail)
+    const scene = await createWithdrawalCapabilityScene()
+    const email = await createWithdrawalEmailSource(scene.noticeId, 'claimant@example.test')
+    await seedCommittedEmailWithdrawal(withdrawalEmailInput(scene, email.id))
+    expect((await readCopyrightGuestCapabilityState(scene.filer.id)).revoked_at).toEqual(
       expect.any(Date),
     )
-    expect(await listCopyrightGuestCapabilityEvents(capability.id)).toEqual([
-      { change_type: 'guest_capability_issued', changed_by_id: staff.id },
+    expect(await listCopyrightGuestCapabilityEvents(scene.filer.id)).toEqual([
+      { change_type: 'guest_capability_issued', changed_by_id: scene.staff.id },
       { change_type: 'guest_capability_revoked_by_withdrawal', changed_by_id: null },
     ])
+    const before = await readWithdrawalState([scene.noticeId, scene.otherNoticeId])
     await expect(
       appendCopyrightGuestFiling({
-        noticeId,
-        token: capability.token,
+        noticeId: scene.noticeId,
+        token: scene.filer.token,
         now: new Date(),
         kind: 'supplement',
         statement: `withdrawn-${crypto.randomUUID()}`,
       }),
-    ).rejects.toMatchObject({ status: 403 })
+    ).rejects.toMatchObject({
+      status: 403,
+      message: 'Copyright guest capability is not valid for this notice',
+    })
+    expect(await readWithdrawalState([scene.noticeId, scene.otherNoticeId])).toEqual(before)
   })
 })

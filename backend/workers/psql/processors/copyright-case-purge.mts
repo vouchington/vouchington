@@ -6,16 +6,17 @@ import type { Job } from 'glide-mq'
 /** Native updateData and moveToDelayed preserve the active job id across bounded pages. */
 export function processCopyrightCasePurge(
   job: Pick<Job<CopyrightCasePurgeJobData>, 'data' | 'updateData' | 'moveToDelayed'>,
+  options: { pageSize?: number } = {},
 ) {
-  const options = { resumeAt: Date.now() }
+  const continuation = { resumeAt: Date.now() }
   return processRetainedSweep(
     job,
     async save => {
-      const result = await runCopyrightCasePurgePage(job.data)
-      if (result.deferred) options.resumeAt = Date.now() + 5 * 60_000
+      const result = await runCopyrightCasePurgePage(job.data, undefined, options.pageSize)
+      if (result.deferred) continuation.resumeAt = Date.now() + 5 * 60_000
       if (result.hasMore) await save(result.data)
       return result
     },
-    options,
+    continuation,
   )
 }

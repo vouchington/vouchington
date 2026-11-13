@@ -1,3 +1,4 @@
+import type { CopyrightOperationalCursor } from './operational-retention-cursor.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import {
   checkCopyrightThreadBlockerPage,
@@ -24,6 +25,7 @@ export async function checkCopyrightThreadProofPage(
   batchSize: number,
   upperBound: string,
   cursor: ThreadProofCursor,
+  progress?: CopyrightOperationalCursor,
 ): Promise<{ blocker: BlockerPage } | null> {
   const blocker = await checkCopyrightThreadBlockerPage(transaction, noticeId, now, batchSize, {
     phase: cursor.cursor_blocker_phase,
@@ -32,9 +34,9 @@ export async function checkCopyrightThreadProofPage(
     generation: cursor.cursor_blocker_generation,
   })
   if (blocker.blocked) {
-    await advanceCopyrightThreadCaseCursor(transaction, noticeId, upperBound)
+    await advanceCopyrightThreadCaseCursor(transaction, noticeId, upperBound, progress)
     return null
   }
-  await saveCopyrightThreadBlockerProof(transaction, blocker, upperBound)
+  await saveCopyrightThreadBlockerProof(transaction, blocker, upperBound, progress)
   return blocker.done ? { blocker } : null
 }

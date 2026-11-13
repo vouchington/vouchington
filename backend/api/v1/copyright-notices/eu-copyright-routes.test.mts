@@ -1,3 +1,24 @@
+import {
+  assertApiTerritorialAcknowledgmentFailure,
+  assertApiNoActionRedressDecision,
+} from '@voucha/test-helpers/copyright-api-territorial-staff-writes'
+import {
+  assertApiTerritorialRedress,
+  seedApiTerritorialRedress,
+} from '@voucha/test-helpers/copyright-api-territorial-redress'
+import { assertTerritorialHttpDecisionOutcome } from '@voucha/test-helpers/copyright-territorial-http-decision-outcome'
+import {
+  seedDeterminedTerritorialNoticeForValidation,
+  seedTerritorialRedress,
+} from '@voucha/test-helpers/copyright-territorial-redress-seed'
+import {
+  readCopyrightApiTerritorialState,
+  assertCopyrightApiEuComplaint,
+} from '@voucha/test-helpers/copyright-api-territorial-request-outcomes'
+import {
+  seedApiEuComplaint,
+  assertApiEuComplaintReplay,
+} from '@voucha/test-helpers/copyright-api-eu-complaint-replay'
 import { describe, expect, it } from 'vitest'
 import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
 import { receiveEuCopyrightNotice } from '@services/copyright-notices'
@@ -58,14 +79,7 @@ describe('EU copyright notice routes', () => {
       crypto.randomUUID(),
       noticeRequest(noticeBody()),
     )
-    const failure = await staffRequest
-      .post(`/api/v1/copyright-eu-notices/${pending.notice_id}/acknowledgment-failures`)
-      .expect(200)
-    expect(failure.body.acknowledgment).toMatchObject({
-      attempt_count: 1,
-      acknowledged_at: null,
-      escalated: false,
-    })
+    await assertApiTerritorialAcknowledgmentFailure(staffRequest, 'eu_dsa', pending.notice_id)
     await staffRequest
       .post(`/api/v1/copyright-eu-notices/${crypto.randomUUID()}/statements-of-reasons`)
       .send({ statement: 1 })
@@ -87,89 +101,134 @@ describe('EU copyright notice routes', () => {
       .post('/api/v1/copyright-eu-reports')
       .send({ period_start: periodStart, period_end: 1 })
       .expect(422)
+    const createdBody = noticeBody()
     const created = await claimantRequest
       .post('/api/v1/copyright-eu-notices')
       .set('Idempotency-Key', crypto.randomUUID())
-      .send(noticeBody())
+      .send(createdBody)
       .expect(201)
-    const noticeId = created.body.copyright_eu_notice.notice_id as string
-    const statement = await staffRequest
-      .post(`/api/v1/copyright-eu-notices/${noticeId}/statements-of-reasons`)
-      .send({
-        statement: 'Staff statement of reasons',
-        public_explanation: 'The notice did not establish infringement.',
+    const createdId = created.body.copyright_eu_notice.notice_id as string
+    await assertTerritorialHttpDecisionOutcome(
+      'eu_dsa',
+      {
+        staff,
+        claimant,
+        claimantContact: createdBody.contact,
+        noticeId: createdId,
+        posts: [],
+        targets: [],
+      },
+      {
+        text: 'Staff statement of reasons',
+        publicExplanation: 'The notice did not establish infringement.',
         outcome: 'no_action',
-      })
-      .expect(201)
-    expect(statement.body.copyright_eu_statement_of_reasons.automation_disclosure).toBe('human')
-    const redressKey = crypto.randomUUID()
-    const redress = await claimantRequest
-      .post(`/api/v1/copyright-eu-notices/${noticeId}/redress-requests`)
-      .set('Idempotency-Key', redressKey)
-      .send({ explanation: 'Please review the restriction' })
-      .expect(201)
-    expect(redress.body.copyright_eu_redress_request.is_duplicate).toBe(false)
-    const replay = await claimantRequest
-      .post(`/api/v1/copyright-eu-notices/${noticeId}/redress-requests`)
-      .set('Idempotency-Key', redressKey)
-      .send({ explanation: 'Please review the restriction' })
-      .expect(200)
-    expect(replay.body.copyright_eu_redress_request).toMatchObject({
-      id: redress.body.copyright_eu_redress_request.id,
-      is_duplicate: true,
+        targets: [],
+      },
+      staffRequest,
+    )
+
+    const noticeId = await seedDeterminedTerritorialNoticeForValidation('eu_dsa', {
+      claimant,
+      staff,
     })
-    const other = await claimantRequest
-      .post('/api/v1/copyright-eu-notices')
-      .set('Idempotency-Key', crypto.randomUUID())
-      .send(noticeBody())
-      .expect(201)
-    const otherNoticeId = other.body.copyright_eu_notice.notice_id as string
-    await staffRequest
-      .post(`/api/v1/copyright-eu-notices/${otherNoticeId}/statements-of-reasons`)
-      .send({
-        statement: 'Second staff statement',
-        public_explanation: 'The notice did not establish infringement.',
-        outcome: 'no_action',
-      })
-      .expect(201)
-    await claimantRequest
+    await assertApiTerritorialRedress({
+      request: claimantRequest,
+      jurisdiction: 'eu_dsa',
+      noticeId,
+      actorId: claimant.id,
+      key: crypto.randomUUID(),
+      explanation: 'Please review the restriction',
+      filedBy: 'notifier',
+    })
+    // Exact replay and changed-owner guards always start from independently committed key facts.
+    const replayNoticeId = await seedDeterminedTerritorialNoticeForValidation('eu_dsa', {
+      claimant,
+      staff,
+    })
+    const redressKey = crypto.randomUUID()
+    const replayInput = {
+      jurisdiction: 'eu_dsa' as const,
+      noticeId: replayNoticeId,
+      actorId: claimant.id,
+      key: redressKey,
+      explanation: 'Please review the restriction',
+      filedBy: 'notifier' as const,
+    }
+    await seedApiTerritorialRedress(replayInput)
+    await assertApiTerritorialRedress({ ...replayInput, request: claimantRequest, replay: true })
+    const otherNoticeId = await seedDeterminedTerritorialNoticeForValidation('eu_dsa', {
+      claimant,
+      staff,
+    })
+    const beforeReuse = await readCopyrightApiTerritorialState(otherNoticeId)
+    const originalKeyState = await readCopyrightApiTerritorialState(replayNoticeId)
+    const reused = await claimantRequest
       .post(`/api/v1/copyright-eu-notices/${otherNoticeId}/redress-requests`)
       .set('Idempotency-Key', redressKey)
       .send({ explanation: 'Reuse the first key' })
       .expect(409)
-    const decision = await staffRequest
-      .post(
-        `/api/v1/copyright-eu-notices/${noticeId}/redress-requests/${redress.body.copyright_eu_redress_request.id}/decisions`,
-      )
-      .send({ staff_disposition: 'revoke', rationale: 'Staff redress rationale' })
-      .expect(201)
-    expect(decision.body.copyright_eu_redress_decision.staff_disposition).toBe('revoke')
+    expect(reused.body.message).toBe('Idempotency-Key was reused')
+    expect(await readCopyrightApiTerritorialState(otherNoticeId)).toEqual(beforeReuse)
+    expect(await readCopyrightApiTerritorialState(replayNoticeId)).toEqual(originalKeyState)
+
+    const decision = await seedTerritorialRedress('eu_dsa', { claimant, staff })
+    await assertApiNoActionRedressDecision({
+      request: staffRequest,
+      jurisdiction: 'eu_dsa',
+      noticeId: decision.noticeId,
+      redressId: decision.redressId,
+      actorId: staff.id,
+      claimantId: claimant.id,
+      disposition: 'revoke',
+      rationale: 'Staff redress rationale',
+    })
     const complaintUrl = `/api/v1/copyright-eu-notices/${noticeId}/supervised-complaints`
     const complaintBody = {
       authority_reference: `dsc-${crypto.randomUUID()}`,
       explanation: 'Complaint filed with the authority',
     }
+    const beforeMissingKey = await readCopyrightApiTerritorialState(noticeId)
     await claimantRequest.post(complaintUrl).send(complaintBody).expect(400)
+    expect(await readCopyrightApiTerritorialState(noticeId)).toEqual(beforeMissingKey)
+    await assertCopyrightApiEuComplaint({
+      request: claimantRequest,
+      noticeId,
+      actorId: claimant.id,
+      key: crypto.randomUUID(),
+      body: complaintBody,
+    })
+
+    const replayComplaintNoticeId = await seedDeterminedTerritorialNoticeForValidation('eu_dsa', {
+      claimant,
+      staff,
+    })
     const complaintKey = crypto.randomUUID()
-    const complaint = await claimantRequest
-      .post(complaintUrl)
-      .set('Idempotency-Key', complaintKey)
-      .send(complaintBody)
-      .expect(201)
-    expect(complaint.body.copyright_eu_supervised_complaint.escalation_id).toEqual(
-      expect.any(String),
-    )
-    const complaintReplay = await claimantRequest
-      .post(complaintUrl)
-      .set('Idempotency-Key', complaintKey)
-      .send(complaintBody)
-      .expect(200)
-    expect(complaintReplay.body).toEqual(complaint.body)
-    await claimantRequest
-      .post(complaintUrl)
+    const expectedComplaint = await seedApiEuComplaint({
+      noticeId: replayComplaintNoticeId,
+      actorId: claimant.id,
+      key: complaintKey,
+      authorityReference: complaintBody.authority_reference,
+      explanation: complaintBody.explanation,
+    })
+    await assertApiEuComplaintReplay({
+      request: claimantRequest,
+      noticeId: replayComplaintNoticeId,
+      key: complaintKey,
+      body: complaintBody,
+      expected: expectedComplaint,
+    })
+    const beforeChangedComplaint = await readCopyrightApiTerritorialState(replayComplaintNoticeId)
+    const changedComplaint = await claimantRequest
+      .post(`/api/v1/copyright-eu-notices/${replayComplaintNoticeId}/supervised-complaints`)
       .set('Idempotency-Key', complaintKey)
       .send({ ...complaintBody, explanation: 'A different complaint' })
       .expect(409)
+    expect(changedComplaint.body.message).toBe(
+      'Idempotency-Key was reused or that supervised complaint is already recorded',
+    )
+    expect(await readCopyrightApiTerritorialState(replayComplaintNoticeId)).toEqual(
+      beforeChangedComplaint,
+    )
     const report = await staffRequest
       .post('/api/v1/copyright-eu-reports')
       .send({

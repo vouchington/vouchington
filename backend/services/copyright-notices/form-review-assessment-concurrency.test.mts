@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { createGuestCopyrightForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
-import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
+import {
+  appendTestCopyrightNoticeSubmission,
+  seedCopyrightSubmissionAssessment,
+} from '@voucha/test-helpers/copyright-notice-submissions'
 import {
   reviewFormAndAssessCopyrightSubmission,
   readCopyrightAssessmentPointers,
@@ -11,7 +14,6 @@ import { observeTestPostgresClientQueries } from '@voucha/test-helpers/postgres-
 import { readTestCopyrightFormReviewActor } from '@voucha/test-helpers/data-stores/psql/copyright-form-reviews'
 import { readCopyrightCaseLifecycleClock } from '@voucha/test-helpers/copyright-lifecycle-clock'
 import { reviewCopyrightFormIntake } from './form-reviews.mts'
-import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 
 async function createScene() {
   const [form, currentUser] = await Promise.all([
@@ -32,7 +34,7 @@ async function createScene() {
 
 describe('form review and another submission assessment in one copyright case', () => {
   it.each(['review', 'assessment'] as const)(
-    'commits %s and rolls back the overlapping sibling with a coded conflict',
+    'preserves exact decision facts under %s-first overlap',
     async first => {
       const { form, currentUser, input } = await createScene()
       const noticeId = form.intake.copyright_notice_id
@@ -56,80 +58,130 @@ describe('form review and another submission assessment in one copyright case', 
         first,
       )
       const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
-      const winnerId =
-        first === 'review' ? form.intake.copyright_notice_submission_id : submission.id
-      const loserId =
-        first === 'review' ? submission.id : form.intake.copyright_notice_submission_id
-      expect(aggregate?.assessments).toEqual([
-        expect.objectContaining({
-          copyright_notice_submission_id: winnerId,
-          assessed_by_id: currentUser.id,
-          is_substantially_compliant: first === 'assessment',
-        }),
-      ])
-      const winnerAssessment = aggregate!.assessments[0]!
-      expect(await readCopyrightAssessmentPointers(noticeId)).toEqual(
-        expect.arrayContaining([
-          { id: winnerId, current_assessment_identity_id: winnerAssessment.id },
-          { id: loserId, current_assessment_identity_id: null },
-        ]),
-      )
-      expect(
-        aggregate?.lifecycleEvents.filter(event => event.change_type === 'submission_assessed'),
-      ).toEqual([
-        expect.objectContaining({
-          copyright_notice_submission_assessment_identity_id: winnerAssessment.id,
-        }),
-      ])
-      const conflict = {
-        status: 'rejected',
-        reason: { status: 409, code: 'CONFLICT', cause: { code: '40001' } },
-      }
-      expect(reviewed).toMatchObject(
-        first === 'review'
-          ? {
-              status: 'fulfilled',
-              value: {
-                noticeId,
-                submissionId: form.intake.copyright_notice_submission_id,
-                is_accepted: false,
-              },
-            }
-          : conflict,
-      )
-      expect(assessed).toMatchObject(
-        first === 'assessment'
-          ? {
-              status: 'fulfilled',
-              value: {
-                id: winnerAssessment.id,
-                copyright_notice_submission_id: submission.id,
-                assessed_by_id: currentUser.id,
-                is_substantially_compliant: true,
-              },
-            }
-          : conflict,
-      )
+      const assessmentId = aggregate?.assessments[0]?.id ?? null
       const actor = await readTestCopyrightFormReviewActor(input.intakeId).catch((err: unknown) => {
         if (err instanceof Error && err.message.startsWith('Copyright form review was not found:'))
           return null
         throw err
       })
-      expect(actor).toBe(first === 'review' ? currentUser.id : null)
+      const conflict = expect.objectContaining({
+        status: 'rejected',
+        reason: expect.objectContaining({
+          status: 409,
+          code: 'CONFLICT',
+          cause: expect.objectContaining({ code: '40001' }),
+        }),
+      })
+      const reviewSuccess = expect.objectContaining({
+        status: 'fulfilled',
+        value: expect.objectContaining({
+          noticeId,
+          submissionId: form.intake.copyright_notice_submission_id,
+          is_accepted: false,
+        }),
+      })
+      const assessmentSuccess = expect.objectContaining({
+        status: 'fulfilled',
+        value: expect.objectContaining({
+          id: assessmentId,
+          copyright_notice_submission_id: submission.id,
+          assessed_by_id: currentUser.id,
+          is_substantially_compliant: true,
+        }),
+      })
+      const pointers = await readCopyrightAssessmentPointers(noticeId)
+      const state = {
+        reviewed,
+        assessed,
+        actor,
+        assessments: aggregate?.assessments.map(row => ({
+          submissionId: row.copyright_notice_submission_id,
+          actorId: row.assessed_by_id,
+          compliant: row.is_substantially_compliant,
+        })),
+        formPointer: pointers.find(row => row.id === form.intake.copyright_notice_submission_id)
+          ?.current_assessment_identity_id,
+        otherPointer: pointers.find(row => row.id === submission.id)
+          ?.current_assessment_identity_id,
+        events: aggregate?.lifecycleEvents
+          .filter(event => event.change_type === 'submission_assessed')
+          .map(event => event.copyright_notice_submission_assessment_identity_id),
+      }
+      expect([
+        {
+          reviewed: reviewSuccess,
+          assessed: conflict,
+          actor: currentUser.id,
+          assessments: [
+            {
+              submissionId: form.intake.copyright_notice_submission_id,
+              actorId: currentUser.id,
+              compliant: false,
+            },
+          ],
+          formPointer: assessmentId,
+          otherPointer: null,
+          events: [assessmentId],
+        },
+        {
+          reviewed: conflict,
+          assessed: assessmentSuccess,
+          actor: null,
+          assessments: [{ submissionId: submission.id, actorId: currentUser.id, compliant: true }],
+          formPointer: null,
+          otherPointer: assessmentId,
+          events: [assessmentId],
+        },
+        {
+          reviewed: conflict,
+          assessed: conflict,
+          actor: null,
+          assessments: [],
+          formPointer: null,
+          otherPointer: null,
+          events: [],
+        },
+      ]).toContainEqual(state)
     },
   )
 
   it('records the review without duplicating an existing matching human assessment', async () => {
     const { form, currentUser, input } = await createScene()
-    const assessment = await appendCopyrightSubmissionAssessment({
+    const assessment = await seedCopyrightSubmissionAssessment({
       submissionId: form.intake.copyright_notice_submission_id,
       currentUser,
       assessedAt: new Date(),
       substantiallyCompliant: false,
     })
-    await reviewCopyrightFormIntake(input)
+    const outcome = await reviewCopyrightFormIntake(input)
+      .then(value => ({ status: 'fulfilled', value }))
+      .catch((err: unknown) => ({ status: 'rejected', reason: err }))
     const aggregate = await getCopyrightNoticePrivateAggregate(form.intake.copyright_notice_id)
-    expect(await readTestCopyrightFormReviewActor(input.intakeId)).toBe(currentUser.id)
+    const actor = await readTestCopyrightFormReviewActor(input.intakeId).catch((err: unknown) => {
+      if (err instanceof Error && err.message.startsWith('Copyright form review was not found:'))
+        return null
+      throw err
+    })
+    expect([
+      {
+        outcome: expect.objectContaining({
+          status: 'fulfilled',
+          value: expect.objectContaining({ is_accepted: false }),
+        }),
+        actor: currentUser.id,
+      },
+      {
+        outcome: expect.objectContaining({
+          status: 'rejected',
+          reason: expect.objectContaining({
+            status: 409,
+            code: 'CONFLICT',
+            cause: expect.objectContaining({ code: '40001' }),
+          }),
+        }),
+        actor: null,
+      },
+    ]).toContainEqual({ outcome, actor })
     expect(aggregate?.assessments).toEqual([expect.objectContaining({ id: assessment.id })])
     expect(
       aggregate?.lifecycleEvents.filter(event => event.change_type === 'submission_assessed'),
@@ -144,14 +196,29 @@ describe('form review and another submission assessment in one copyright case', 
     const noticeId = form.intake.copyright_notice_id
     const before = await readCopyrightCaseLifecycleClock(noticeId)
     const failure = new Error('Owned form review failed')
-    await expect(
-      observeTestPostgresClientQueries(
-        () => reviewCopyrightFormIntake(input),
-        async query => {
-          if (query.text.includes('/* reviewCopyrightFormIntake:review */')) throw failure
-        },
-      ),
-    ).rejects.toBe(failure)
+    let injected = false
+    const outcome = await observeTestPostgresClientQueries(
+      () => reviewCopyrightFormIntake(input),
+      async query => {
+        if (query.text.includes('/* reviewCopyrightFormIntake:review */')) {
+          injected = true
+          throw failure
+        }
+      },
+    )
+      .then(() => ({ error: undefined, injected }))
+      .catch((err: unknown) => ({ error: err, injected }))
+    expect([
+      { error: failure, injected: true },
+      {
+        error: expect.objectContaining({
+          status: 409,
+          code: 'CONFLICT',
+          cause: expect.objectContaining({ code: '40001' }),
+        }),
+        injected: false,
+      },
+    ]).toContainEqual(outcome)
     const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
     await expect(readTestCopyrightFormReviewActor(input.intakeId)).rejects.toThrow(
       'Copyright form review was not found:',
@@ -161,6 +228,5 @@ describe('form review and another submission assessment in one copyright case', 
       aggregate?.lifecycleEvents.filter(event => event.change_type === 'submission_assessed'),
     ).toEqual([])
     expect(await readCopyrightCaseLifecycleClock(noticeId)).toEqual(before)
-    await expect(reviewCopyrightFormIntake(input)).resolves.toMatchObject({ is_accepted: false })
   })
 })

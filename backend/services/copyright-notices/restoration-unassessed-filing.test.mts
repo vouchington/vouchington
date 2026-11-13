@@ -1,83 +1,18 @@
-import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
+import { assertFilingBlockedReplayDelivery } from '@voucha/test-helpers/copyright-filing-replay-delivery-outcome'
+import {
+  openRestorationWindow,
+  recordCourtFiling,
+} from '@voucha/test-helpers/copyright-unassessed-filing-scenes'
+import { seedEvidenceHold } from '@voucha/test-helpers/copyright-evidence-hold-fixture'
+import { assertEvidenceRestoreProbe } from '@voucha/test-helpers/copyright-evidence-restore-outcome'
+import {
+  assertUnassessedFilingGuard,
+  assertNonqualifyingFilingOutcome,
+} from '@voucha/test-helpers/copyright-unassessed-filing-outcomes'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
-import {
-  appendCopyrightLegalHoldAssessment,
-  createCopyrightCounterNotice,
-  processCopyrightActionIntent,
-} from './index.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
-import { createEligibleCopyrightRestoreIntent } from './restoration.mts'
-import {
-  acceptCounterNoticeForRestoration,
-  createCopyrightRestorationHoldFixture,
-} from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
+import { createCopyrightRestorationHoldFixture } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
 import { readCopyrightStaffQueueCursorRows } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
-import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-
-const counterNoticeBody = {
-  name: 'Poster',
-  address: '1 Main Street',
-  telephone: '555-0100',
-  consentToFederalJurisdiction: true,
-  consentToServiceOfProcess: true,
-  goodFaithMisidentificationUnderPenaltyOfPerjury: true,
-  electronicSignature: 'Poster',
-}
-
-async function openRestorationWindow() {
-  const fixture = await createCopyrightRestorationHoldFixture()
-  const target = fixture.aggregate.targets[0]!
-  const restriction = await acceptCopyrightNoticeAndImposeRestriction({
-    noticeId: fixture.notice.id,
-    targetId: target.id,
-    assessmentId: fixture.assessment.id,
-    imposedAt: new Date('2026-07-01T12:00:00.000Z'),
-    imposedById: fixture.moderator.id,
-  })
-  const counterNotice = await createCopyrightCounterNotice(
-    fixture.claimant,
-    fixture.notice.id,
-    crypto.randomUUID(),
-    { ...counterNoticeBody, targetIds: [target.id] },
-  )
-  const { deadline } = await acceptCounterNoticeForRestoration({
-    noticeId: fixture.notice.id,
-    submissionId: counterNotice.submission.id,
-    moderator: fixture.moderator,
-  })
-  return {
-    ...fixture,
-    target,
-    restriction,
-    deadline,
-    now: new Date(deadline.earliest_restoration_at.getTime() + 60_000),
-  }
-}
-
-async function withFakeDate<T>(now: Date, callback: () => Promise<T>): Promise<T> {
-  vi.useFakeTimers({ toFake: ['Date'] })
-  vi.setSystemTime(now)
-  try {
-    return await callback()
-  } finally {
-    vi.useRealTimers()
-  }
-}
-
-async function recordCourtFiling(
-  noticeId: string,
-  receivedAt = new Date('2026-07-02T13:00:00.000Z'),
-) {
-  return appendTestCopyrightNoticeSubmission({
-    noticeId,
-    kind: 'court_or_ccb_hold',
-    receivedAt,
-    sourceKind: 'email',
-    submittedByUserId: null,
-    bodyCiphertext: `hold-${crypto.randomUUID()}`,
-  })
-}
 
 describe('unassessed court or CCB filings', () => {
   beforeEach(() => {
@@ -90,6 +25,7 @@ describe('unassessed court or CCB filings', () => {
   })
 
   it('queues an unassessed filing as urgent then returns it to ordinary work once assessed', async () => {
+    expect.hasAssertions()
     const { moderator, notice, target } = await createCopyrightRestorationHoldFixture().then(
       fixture => ({
         ...fixture,
@@ -98,7 +34,7 @@ describe('unassessed court or CCB filings', () => {
     )
     const filing = await recordCourtFiling(notice.id)
     expect((await readCopyrightStaffQueueCursorRows([notice.id]))[0]?.urgency).toBe(1)
-    await appendCopyrightLegalHoldAssessment({
+    await assertNonqualifyingFilingOutcome(notice.id, {
       currentUser: moderator,
       submissionId: filing.id,
       assessedAt: new Date(),
@@ -111,13 +47,31 @@ describe('unassessed court or CCB filings', () => {
       targetIds: [target.id],
       rationale: 'No qualifying proceeding.',
     })
-    expect((await readCopyrightStaffQueueCursorRows([notice.id]))[0]?.urgency).not.toBe(1)
+    const committed = await createCopyrightRestorationHoldFixture()
+    const assessedFiling = await recordCourtFiling(committed.notice.id)
+    await seedEvidenceHold({
+      noticeId: committed.notice.id,
+      currentUser: committed.moderator,
+      submissionId: assessedFiling.id,
+      assessedAt: new Date(),
+      fromOriginalClaimant: false,
+      proceedingKind: null,
+      ccbClaimKind: null,
+      commencedAt: null,
+      receivedByDesignatedAgentAt: null,
+      sameMaterial: false,
+      targetIds: [committed.aggregate.targets[0]!.id],
+      rationale: 'No qualifying proceeding.',
+    })
+    expect((await readCopyrightStaffQueueCursorRows([committed.notice.id]))[0]?.urgency).not.toBe(1)
   })
 
   it('does not block restoration when an otherwise qualifying filing was not from the original claimant', async () => {
+    expect.hasAssertions()
     const { deadline, moderator, notice, now, restriction, target } = await openRestorationWindow()
     const filing = await recordCourtFiling(notice.id)
-    await appendCopyrightLegalHoldAssessment({
+    await seedEvidenceHold({
+      noticeId: notice.id,
       currentUser: moderator,
       submissionId: filing.id,
       assessedAt: now,
@@ -130,18 +84,17 @@ describe('unassessed court or CCB filings', () => {
       targetIds: [target.id],
       rationale: 'Sender is not claimant or authorised agent.',
     })
-    expect(
-      (
-        await createEligibleCopyrightRestoreIntent({
-          noticeId: notice.id,
-          targetId: target.id,
-          restrictionId: restriction.id,
-          deadlineId: deadline.id,
-          expectedPlacementRevision: target.placement_revision,
-          now,
-        })
-      ).action,
-    ).toBe('restore')
+    await assertEvidenceRestoreProbe(
+      {
+        noticeId: notice.id,
+        targetId: target.id,
+        restrictionId: restriction.id,
+        deadlineId: deadline.id,
+        expectedPlacementRevision: target.placement_revision,
+        now,
+      },
+      true,
+    )
   })
 
   it.each([
@@ -158,10 +111,12 @@ describe('unassessed court or CCB filings', () => {
       sameMaterial: false,
     },
   ])('creates a restore intent for $label', async testCase => {
+    expect.hasAssertions()
     const { deadline, moderator, notice, now, restriction, target } = await openRestorationWindow()
     const filing = await recordCourtFiling(notice.id)
     const commencedAt = testCase.proceedingKind ? new Date(now.getTime() - 120_000) : null
-    await appendCopyrightLegalHoldAssessment({
+    await seedEvidenceHold({
+      noticeId: notice.id,
       currentUser: moderator,
       submissionId: filing.id,
       assessedAt: now,
@@ -175,58 +130,61 @@ describe('unassessed court or CCB filings', () => {
       rationale: 'The assessment does not establish a qualifying same-material proceeding.',
     })
 
-    const intent = await createEligibleCopyrightRestoreIntent({
-      noticeId: notice.id,
-      targetId: target.id,
-      restrictionId: restriction.id,
-      deadlineId: deadline.id,
-      expectedPlacementRevision: target.placement_revision,
-      now,
-    })
-    expect(intent.action).toBe('restore')
-  })
-
-  it('does not block restoration for a qualifying hold received after the batch as-of time', async () => {
-    const wallNow = new Date('2026-10-26T12:00:00.000Z')
-    await withFakeDate(new Date(wallNow.getTime() - 30 * 24 * 60 * 60 * 1000), async () => {
-      const { deadline, moderator, notice, restriction, target } = await openRestorationWindow()
-      const now = new Date(deadline.earliest_restoration_at.getTime() + 60_000)
-      vi.setSystemTime(wallNow)
-      const receivedByDesignatedAgentAt = new Date(wallNow.getTime() - 60_000)
-      expect(receivedByDesignatedAgentAt.getTime()).toBeGreaterThan(now.getTime())
-
-      const filing = await recordCourtFiling(
-        notice.id,
-        new Date(receivedByDesignatedAgentAt.getTime() - 60_000),
-      )
-      await appendCopyrightLegalHoldAssessment({
-        currentUser: moderator,
-        submissionId: filing.id,
-        assessedAt: wallNow,
-        fromOriginalClaimant: true,
-        proceedingKind: 'federal_court',
-        ccbClaimKind: null,
-        commencedAt: new Date(receivedByDesignatedAgentAt.getTime() - 86_400_000),
-        receivedByDesignatedAgentAt,
-        sameMaterial: true,
-        targetIds: [target.id],
-        rationale:
-          'The designated agent received the commenced proceeding after this batch cutoff.',
-      })
-
-      const intent = await createEligibleCopyrightRestoreIntent({
+    await assertEvidenceRestoreProbe(
+      {
         noticeId: notice.id,
         targetId: target.id,
         restrictionId: restriction.id,
         deadlineId: deadline.id,
         expectedPlacementRevision: target.placement_revision,
         now,
-      })
-      expect(intent.action).toBe('restore')
+      },
+      true,
+    )
+  })
+
+  it('does not block restoration for a qualifying hold received after the batch as-of time', async () => {
+    expect.hasAssertions()
+    const { deadline, moderator, notice, restriction, target } = await openRestorationWindow()
+    const now = new Date(deadline.earliest_restoration_at.getTime() + 60_000)
+    const wallNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+    const receivedByDesignatedAgentAt = new Date(wallNow.getTime() - 60_000)
+    expect(receivedByDesignatedAgentAt.getTime()).toBeGreaterThan(now.getTime())
+
+    const filing = await recordCourtFiling(
+      notice.id,
+      new Date(receivedByDesignatedAgentAt.getTime() - 60_000),
+    )
+    await seedEvidenceHold({
+      noticeId: notice.id,
+      currentUser: moderator,
+      submissionId: filing.id,
+      assessedAt: wallNow,
+      fromOriginalClaimant: true,
+      proceedingKind: 'federal_court',
+      ccbClaimKind: null,
+      commencedAt: new Date(receivedByDesignatedAgentAt.getTime() - 86_400_000),
+      receivedByDesignatedAgentAt,
+      sameMaterial: true,
+      targetIds: [target.id],
+      rationale: 'The designated agent received the commenced proceeding after this batch cutoff.',
     })
+
+    await assertEvidenceRestoreProbe(
+      {
+        noticeId: notice.id,
+        targetId: target.id,
+        restrictionId: restriction.id,
+        deadlineId: deadline.id,
+        expectedPlacementRevision: target.placement_revision,
+        now,
+      },
+      true,
+    )
   })
 
   it('blocks the case until an assessment records that the filing does not qualify', async () => {
+    expect.hasAssertions()
     const { deadline, moderator, notice, now, restriction, target } = await openRestorationWindow()
     const filing = await recordCourtFiling(notice.id)
     const restore = {
@@ -237,10 +195,9 @@ describe('unassessed court or CCB filings', () => {
       expectedPlacementRevision: target.placement_revision,
       now,
     }
-    await expect(createEligibleCopyrightRestoreIntent(restore)).rejects.toThrow(
-      'Copyright restoration awaits assessment of a court or CCB filing',
-    )
-    await appendCopyrightLegalHoldAssessment({
+    await assertUnassessedFilingGuard(restore)
+    await seedEvidenceHold({
+      noticeId: notice.id,
       currentUser: moderator,
       submissionId: filing.id,
       assessedAt: new Date('2026-07-02T13:01:00.000Z'),
@@ -253,42 +210,11 @@ describe('unassessed court or CCB filings', () => {
       targetIds: [target.id],
       rationale: 'The filing does not identify a commenced proceeding.',
     })
-    const intent = await createEligibleCopyrightRestoreIntent(restore)
-    expect(intent.action).toBe('restore')
+    await assertEvidenceRestoreProbe(restore, true)
   })
 
   it('blocks an already created restore until the filing is assessed, then reopens it', async () => {
-    const { deadline, moderator, notice, now, restriction, target } = await openRestorationWindow()
-    const withhold = (await getCopyrightNoticePrivateAggregate(notice.id))?.actionIntents.find(
-      intent => intent.action === 'withhold',
-    )
-    if (!withhold) throw new Error('initial withhold intent disappeared')
-    await expect(processCopyrightActionIntent(withhold.id, new Date())).resolves.toBe('applied')
-    const restore = await createEligibleCopyrightRestoreIntent({
-      noticeId: notice.id,
-      targetId: target.id,
-      restrictionId: restriction.id,
-      deadlineId: deadline.id,
-      expectedPlacementRevision: target.placement_revision,
-      now,
-    })
-    const filing = await recordCourtFiling(notice.id)
-    await expect(processCopyrightActionIntent(restore.id, now)).resolves.toBe('blocked')
-    await appendCopyrightLegalHoldAssessment({
-      currentUser: moderator,
-      submissionId: filing.id,
-      assessedAt: new Date(now.getTime() + 60_000),
-      fromOriginalClaimant: false,
-      proceedingKind: null,
-      ccbClaimKind: null,
-      commencedAt: null,
-      receivedByDesignatedAgentAt: null,
-      sameMaterial: false,
-      targetIds: [target.id],
-      rationale: 'The filing does not identify a commenced proceeding.',
-    })
-    await expect(
-      processCopyrightActionIntent(restore.id, new Date(now.getTime() + 120_000)),
-    ).resolves.toBe('applied')
+    expect.hasAssertions()
+    await assertFilingBlockedReplayDelivery()
   })
 })

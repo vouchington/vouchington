@@ -1,13 +1,12 @@
+import { seedCommittedEuParticipantDecision } from './copyright-eu-committed-decision.mts'
 import { withTransactionOptions } from '@data-stores/psql'
 import { selectStaffTerritorialCases } from '../services/copyright-notices/read-models-staff-territorial.mts'
 import { createTestUser } from './entities/users.mts'
 import { createHostedImagePost } from './services/copyright-notices/hosted-post-audience.mts'
 import {
-  acknowledgeEuCopyrightNotice,
   receiveEuCopyrightNotice,
   recordCopyrightJurisdictionPolicyApproval,
   recordEuCopyrightRedressDecision,
-  recordEuCopyrightStatementOfReasons,
   submitEuCopyrightRedress,
 } from '../services/copyright-notices/index.mts'
 
@@ -46,8 +45,7 @@ export async function createTestEuParticipantCase(
     },
   )
   if (outcome !== 'pending') {
-    await acknowledgeEuCopyrightNotice(notifier, receipt.notice_id)
-    await recordEuCopyrightStatementOfReasons(staff, receipt.notice_id, {
+    await seedCommittedEuParticipantDecision(staff, receipt.notice_id, {
       text: `Staff-only rationale ${suffix}`,
       publicExplanation: `Public explanation ${suffix}`,
       outcome,

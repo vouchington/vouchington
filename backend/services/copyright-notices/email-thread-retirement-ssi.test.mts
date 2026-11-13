@@ -1,9 +1,10 @@
+import type { CopyrightOperationalScope } from './operational-retention-cursor.mts'
 import { randomUUID } from 'node:crypto'
 import { COPYRIGHT_EMAIL_THREAD_CHANGED } from '@modules/on-error/error-codes'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
 import {
-  positionCopyrightOperationalCursor,
+  createCopyrightOperationalScope,
+  createCopyrightRetentionScopes,
   readCopyrightThreadOperationalCursor,
 } from '@voucha/test-helpers/copyright-operational-retention'
 import {
@@ -78,10 +79,11 @@ async function assertAbortedThreadPage(
   intakeId: string,
   references: Awaited<ReturnType<typeof readCopyrightThreadReferenceState>>,
   cursor: Awaited<ReturnType<typeof readCopyrightThreadOperationalCursor>>,
+  scope: CopyrightOperationalScope,
 ): Promise<void> {
   expect(await readCopyrightThreadRetirementBound(noticeId)).toBeNull()
   expect(await readCopyrightThreadReferenceState(intakeId)).toEqual(references)
-  expect(await readCopyrightThreadOperationalCursor()).toEqual(cursor)
+  expect(await readCopyrightThreadOperationalCursor(scope)).toEqual(cursor)
 }
 
 async function assertCommittedThreadPage(noticeId: string, intakeId: string): Promise<void> {
@@ -106,8 +108,6 @@ function assertCommittedWriterReferenceCount(previousCount: number, currentCount
 }
 
 describe('copyright email reference and retirement SSI', () => {
-  useCopyrightOperationalCursorReservation()
-
   it.each(['40001', '40P01'])(
     'ends a retention run after a %s abort without advancing its page',
     async code => {
@@ -117,9 +117,9 @@ describe('copyright email reference and retirement SSI', () => {
         messageId: `<seed-${randomUUID()}@example.test>`,
       })
       await linkTestCopyrightEmailIntake(intake.id, notice.noticeId)
-      await positionCopyrightOperationalCursor('email_thread_references', notice.noticeId)
+      const scope1 = createCopyrightOperationalScope([notice.noticeId])
       const beforeReferences = await readCopyrightThreadReferenceState(intake.id)
-      const beforeCursor = await readCopyrightThreadOperationalCursor()
+      const beforeCursor = await readCopyrightThreadOperationalCursor(scope1)
       const failure = Object.assign(new Error('retirement serialization conflict'), {
         code,
       })
@@ -134,13 +134,20 @@ describe('copyright email reference and retirement SSI', () => {
       onTestFinished(restore)
       try {
         const result = await runCopyrightOperationalRetentionCleanup({
+          scopes: { ...createCopyrightRetentionScopes(), copyrightCaseThreads: scope1 },
           activeFamilies: ['copyrightCaseThreads'],
           now: new Date(Date.now() + 181 * DAY_MS),
           limits: { batchSize: 10, maxBatches: 1 },
         })
         expect(reachedProofPage).toBe(true)
         expect(result.copyrightCaseThreads).toEqual({ scanned: 0, deleted: 0, hasMore: false })
-        await assertAbortedThreadPage(notice.noticeId, intake.id, beforeReferences, beforeCursor)
+        await assertAbortedThreadPage(
+          notice.noticeId,
+          intake.id,
+          beforeReferences,
+          beforeCursor,
+          scope1,
+        )
         expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([
           { copyright_notice_id: notice.noticeId, link_kind: 'initial' },
         ])
@@ -159,7 +166,7 @@ describe('copyright email reference and retirement SSI', () => {
     await linkTestCopyrightEmailIntake(intake.id, notice.noticeId)
     const before = await readCopyrightThreadReferenceState(intake.id)
     expect(before.referenceCount).toBe(1)
-    await positionCopyrightOperationalCursor('email_thread_references', notice.noticeId)
+    const scope2 = createCopyrightOperationalScope([notice.noticeId])
     const atInsert = Promise.withResolvers<void>()
     const releaseInsert = Promise.withResolvers<void>()
     const restore = runBeforePostgresStatementForTest(
@@ -182,6 +189,7 @@ describe('copyright email reference and retirement SSI', () => {
     try {
       await atInsert.promise
       const retired = await sweepCopyrightCaseThreads({
+        scope: scope2,
         now: new Date(Date.now() + 181 * DAY_MS),
         replyDays: 180,
         batchSize: 10,
@@ -217,21 +225,22 @@ describe('copyright email reference and retirement SSI', () => {
       messageId: `<seed-${randomUUID()}@example.test>`,
     })
     await linkTestCopyrightEmailIntake(intake.id, notice.noticeId)
-    await positionCopyrightOperationalCursor('email_thread_references', notice.noticeId)
+    const scope3 = createCopyrightOperationalScope([notice.noticeId])
     const before = await readCopyrightThreadReferenceState(intake.id)
-    let beforeCursor = await readCopyrightThreadOperationalCursor()
+    let beforeCursor = await readCopyrightThreadOperationalCursor(scope3)
     const atProof = Promise.withResolvers<void>()
     const releaseProof = Promise.withResolvers<void>()
     const restore = runBeforePostgresStatementForTest(
       '/* readCopyrightThreadRetirementAdmission */',
       async () => {
-        beforeCursor = await readCopyrightThreadOperationalCursor()
+        beforeCursor = await readCopyrightThreadOperationalCursor(scope3)
         atProof.resolve()
         await releaseProof.promise
       },
     )
     onTestFinished(restore)
     const options = {
+      scopes: { ...createCopyrightRetentionScopes(), copyrightCaseThreads: scope3 },
       activeFamilies: ['copyrightCaseThreads'] as const,
       now: new Date(Date.now() + 181 * DAY_MS),
       limits: { batchSize: 10, maxBatches: 100 },
@@ -267,12 +276,12 @@ describe('copyright email reference and retirement SSI', () => {
       const first = firstTick.value.copyrightCaseThreads!
       if (afterWriter.referenceCount > before.referenceCount) {
         assertAbortedThreadStats(first, true)
-        await assertAbortedThreadPage(notice.noticeId, intake.id, afterWriter, beforeCursor)
+        await assertAbortedThreadPage(notice.noticeId, intake.id, afterWriter, beforeCursor, scope3)
       } else if (first.deleted > 0) {
         await assertCommittedThreadPage(notice.noticeId, intake.id)
       } else {
         assertAbortedThreadStats(first, true)
-        await assertAbortedThreadPage(notice.noticeId, intake.id, afterWriter, beforeCursor)
+        await assertAbortedThreadPage(notice.noticeId, intake.id, afterWriter, beforeCursor, scope3)
       }
     } finally {
       releaseProof.resolve()

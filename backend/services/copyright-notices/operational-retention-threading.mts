@@ -1,3 +1,9 @@
+import {
+  readCopyrightOperationalCursor,
+  commitCopyrightOperationalCursor,
+  type CopyrightOperationalScope,
+  type CopyrightOperationalCursor,
+} from './operational-retention-cursor.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
@@ -21,37 +27,26 @@ async function sweepPage(
   cutoff: Date,
   cutoffId: string,
   batchSize: number,
+  scope?: CopyrightOperationalScope,
 ): Promise<PageResult> {
   await using transaction = await beginTransaction({ serializable: true })
-  await transaction(sql`/* seedCopyrightThreadRetentionCursor */
-    INSERT INTO copyright_notice_operational_retention_cursors (kind)
-    VALUES ('email_thread_references') ON CONFLICT DO NOTHING`)
-  const { rows: cursorRows } = await transaction<
-    ThreadProofCursor & {
-      cursor_record_id: string | null
-      sweep_upper_bound_record_id: string | null
-      cursor_child_id: string | null
-      cursor_edge_id: string | null
-      cursor_phase: ThreadPhase | null
-    }
-  >(sql`/* lockCopyrightThreadRetentionCursor */
-    SELECT cursor_record_id, sweep_upper_bound_record_id,
-      cursor_child_id, cursor_edge_id, cursor_phase,
-      cursor_blocker_phase, cursor_blocker_child_id, cursor_blocker_assessment_identity_id,
-      cursor_blocker_generation
-    FROM copyright_notice_operational_retention_cursors
-    WHERE kind = 'email_thread_references' FOR UPDATE`)
-  const cursor = cursorRows[0]!
+  const cursor = await readCopyrightOperationalCursor<
+    CopyrightOperationalCursor & ThreadProofCursor & { cursor_phase: ThreadPhase | null }
+  >(transaction, 'email_thread_references', scope)
+  const progress = scope ? cursor : undefined
   const upperBound = cursor.sweep_upper_bound_record_id ?? cutoffId
-  const { rows: candidates } = await transaction<{ id: string }>(sql`/* scanCopyrightThreadCase */
+  const candidatesQuery = sql`/* scanCopyrightThreadCase */
     SELECT id FROM copyright_notices
     WHERE id > COALESCE(${cursor.cursor_record_id}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
       AND id < LEAST(${upperBound}::uuid, ${cutoffId}::uuid)
-    ORDER BY id LIMIT 1`)
+    `
+  if (scope) candidatesQuery.append(sql` AND id = ANY(${scope.recordIds}::uuid[])`)
+  candidatesQuery.append(' ORDER BY id LIMIT 1')
+  const { rows: candidates } = await transaction<{ id: string }>(candidatesQuery)
   const noticeId = candidates[0]?.id
   if (!noticeId) {
-    await resetCopyrightThreadRetentionCursor(transaction)
-    await transaction.commit()
+    await resetCopyrightThreadRetentionCursor(transaction, progress)
+    await commitCopyrightOperationalCursor(transaction, cursor, scope)
     return { scanned: 0, deleted: 0, hasMore: false }
   }
 
@@ -74,8 +69,8 @@ async function sweepPage(
     ) link`)
   const link = links[0]
   if (!link) {
-    await advanceCopyrightThreadCaseCursor(transaction, noticeId, upperBound)
-    await transaction.commit()
+    await advanceCopyrightThreadCaseCursor(transaction, noticeId, upperBound, progress)
+    await commitCopyrightOperationalCursor(transaction, cursor, scope)
     return { scanned: 1, deleted: 0, hasMore: true }
   }
 
@@ -100,9 +95,10 @@ async function sweepPage(
     batchSize,
     upperBound,
     cursor,
+    progress,
   )
   if (!proof) {
-    await transaction.commit()
+    await commitCopyrightOperationalCursor(transaction, cursor, scope)
     return { scanned: 1, deleted: 0, hasMore: true }
   }
   const { rows: admissions } = await transaction<{
@@ -115,13 +111,13 @@ async function sweepPage(
   )
   if (!admissions[0]?.proof_is_current) {
     // Keep this case selected; the next page observes changed generations and restarts proof.
-    await transaction.commit()
+    await commitCopyrightOperationalCursor(transaction, cursor, scope)
     return { scanned: 1, deleted: 0, hasMore: true }
   }
   if (!admissions[0]?.is_eligible) {
     // The next fixed sweep rechecks this case if the blocker later clears.
-    await advanceCopyrightThreadCaseCursor(transaction, noticeId, upperBound)
-    await transaction.commit()
+    await advanceCopyrightThreadCaseCursor(transaction, noticeId, upperBound, progress)
+    await commitCopyrightOperationalCursor(transaction, cursor, scope)
     return { scanned: 1, deleted: 0, hasMore: true }
   }
   // Retirement and its destructive page commit together. Evidence admission checks this
@@ -146,14 +142,19 @@ async function sweepPage(
     references.map(row => row.id),
     link.matched_token_id,
   )
-  await transaction(sql`/* advanceCopyrightThreadRetentionCursor */
-    UPDATE copyright_notice_operational_retention_cursors
-    SET cursor_child_id = ${result.phase === null ? link.id : cursor.cursor_child_id}::uuid,
-      cursor_edge_id = ${result.edgeCursor}::uuid,
-      cursor_phase = ${result.phase},
-      sweep_upper_bound_record_id = ${upperBound}::uuid
-    WHERE kind = 'email_thread_references'`)
-  await transaction.commit()
+  cursor.cursor_child_id = result.phase === null ? link.id : cursor.cursor_child_id
+  cursor.cursor_edge_id = result.edgeCursor
+  cursor.cursor_phase = result.phase
+  cursor.sweep_upper_bound_record_id = upperBound
+  if (!scope)
+    await transaction(sql`/* advanceCopyrightThreadRetentionCursor */
+      UPDATE copyright_notice_operational_retention_cursors
+      SET cursor_child_id = ${cursor.cursor_child_id}::uuid,
+        cursor_edge_id = ${cursor.cursor_edge_id}::uuid,
+        cursor_phase = ${cursor.cursor_phase},
+        sweep_upper_bound_record_id = ${upperBound}::uuid
+      WHERE kind = 'email_thread_references'`)
+  await commitCopyrightOperationalCursor(transaction, cursor, scope)
   return { scanned: 1, deleted: result.deleted, hasMore: true }
 }
 
@@ -162,6 +163,7 @@ export async function sweepCopyrightCaseThreads(options: {
   replyDays: number
   batchSize: number
   maxBatches: number
+  scope?: CopyrightOperationalScope
 }): Promise<PageResult> {
   const now = options.now ?? new Date()
   const cutoff = new Date(now.getTime() - options.replyDays * DAY_MS)
@@ -173,7 +175,7 @@ export async function sweepCopyrightCaseThreads(options: {
     let page: PageResult
     try {
       // oxlint-disable-next-line no-await-in-loop -- each transaction advances the durable keyset.
-      page = await sweepPage(now, cutoff, cutoffId, options.batchSize) // no-mistakes-disable-line query-reached-per-item: each fixed-budget transaction commits its durable cursor before the next page.
+      page = await sweepPage(now, cutoff, cutoffId, options.batchSize, options.scope) // no-mistakes-disable-line query-reached-per-item: each fixed-budget transaction commits its durable cursor before the next page.
     } catch (err) {
       if (!isCopyrightEmailTokenGcConflict(err)) throw err
       return { scanned, deleted, hasMore: false }

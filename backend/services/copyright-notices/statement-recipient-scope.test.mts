@@ -6,7 +6,6 @@ import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
 import { DELETED_USER_ID } from '@services/users/constants'
 import { createCopyrightStatementDeliveriesInTransaction } from './statement-delivery.mts'
 import {
-  createMultiOwnerStatementFixture,
   markStatementPosterDeleted,
   reassignStatementTargetToTombstone,
 } from '@voucha/test-helpers/copyright-statement-recipient-fixture'
@@ -16,9 +15,14 @@ import {
   readTestCopyrightStatementIntents,
   replayTestCopyrightStatementNotices,
   createTestCopyrightLiftStatement,
+  replayTestCopyrightClaimantDecision,
 } from '@voucha/test-helpers/copyright-statement-notices'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { reviewCopyrightFormIntake } from './form-reviews.mts'
+import { seedServiceFormDecision } from '@voucha/test-helpers/copyright-service-review-prerequisites'
+import {
+  createCommittedRecipientScopeScene,
+  readRecipientScopeRetainedEmail,
+} from '@voucha/test-helpers/copyright-recipient-scope-scenes'
 import { getCopyrightParticipantNoticeDetail } from './read-models-participant.mts'
 
 describe('statement recipient scope and lifecycle', () => {
@@ -48,7 +52,7 @@ describe('statement recipient scope and lifecycle', () => {
     },
   )
   it('never leaks another owner target or a non-public URL into stored poster text', async () => {
-    const { notice, targets } = await createMultiOwnerStatementFixture()
+    const { notice, targets } = await createCommittedRecipientScopeScene()
     const [publicTarget, privateTarget] = targets
     const intents = await readTestCopyrightStatementIntents(notice.id)
     const publicStatement = intents.find(
@@ -74,7 +78,7 @@ describe('statement recipient scope and lifecycle', () => {
     const poster = await createTestUser()
     const notice = await createSignedInCopyrightForm(1, { poster })
     const noticeId = notice.intake.copyright_notice_id
-    await reviewCopyrightFormIntake({
+    await seedServiceFormDecision({
       intakeId: notice.intake.id,
       currentUser: await createTestUser({ extraRoles: ['moderator'] }),
       is_accepted: true,
@@ -101,7 +105,7 @@ describe('statement recipient scope and lifecycle', () => {
     ).toEqual(initial)
   })
   it('projects terminal failed delivery without changing immutable statement text', async () => {
-    const { notice, targets } = await createMultiOwnerStatementFixture()
+    const { notice, targets } = await createCommittedRecipientScopeScene()
     const poster = targets[0].owner
     const before = (await getCopyrightParticipantNoticeDetail(notice.id, poster))!.statements[0]!
     expect(before.state).toBe('pending')
@@ -114,17 +118,24 @@ describe('statement recipient scope and lifecycle', () => {
   it('retains claimant email while suppressing new deleted-account in-app delivery', async () => {
     const claimant = await createTestUser()
     const notice = await createSignedInCopyrightForm(1, { claimant })
+    const retainedEmail = await readRecipientScopeRetainedEmail(notice.intake.copyright_notice_id)
+    expect(retainedEmail).toEqual(expect.any(String))
     await markStatementPosterDeleted(claimant.id)
-    await reviewCopyrightFormIntake({
+    await seedServiceFormDecision({
       intakeId: notice.intake.id,
       currentUser: await createTestUser({ extraRoles: ['moderator'] }),
       is_accepted: false,
       rationale: 'Incomplete notice.',
     })
+    await replayTestCopyrightClaimantDecision(notice.intake.copyright_notice_id, 'not_accepted')
     const intents = (
       await readTestCopyrightStatementIntents(notice.intake.copyright_notice_id)
     ).filter(row => row.recipient_role === 'claimant')
     expect(intents).toHaveLength(1)
-    expect(intents[0]).toMatchObject({ channel: 'email', recipient_user_id: null })
+    expect(intents[0]).toMatchObject({
+      channel: 'email',
+      recipient_user_id: null,
+      email: retainedEmail,
+    })
   })
 })

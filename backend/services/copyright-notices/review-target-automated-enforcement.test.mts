@@ -11,7 +11,7 @@ import {
 import { createCopyrightNoticeSchemaFixture } from '@voucha/test-helpers/data-stores/psql/copyright-notice-schema'
 import { automatedAssessmentSql } from './automated-assessment-sql.mts'
 import { readCopyrightReviewTargetBreaches } from './index.mts'
-import { appendCopyrightSubmissionAssessment } from './compliance.mts'
+import { seedCopyrightSubmissionAssessment } from '@voucha/test-helpers/copyright-notice-submissions'
 
 const HOUR_MS = 60 * 60 * 1000
 const oldReceipt = new Date('2024-06-01T12:00:00.000Z')
@@ -21,7 +21,7 @@ async function oldForm(receivedAt = oldReceipt) {
 }
 async function automatedPendingRequest(receivedAt?: Date) {
   const { notice, screeningId } = await oldForm(receivedAt)
-  await appendCopyrightSubmissionAssessment({
+  await seedCopyrightSubmissionAssessment({
     submissionId: notice.intake.copyright_notice_submission_id,
     currentUser: null,
     assessedAt: new Date(),
@@ -77,7 +77,7 @@ describe('automated enforcement paging age', () => {
     const noticeId = notice.intake.copyright_notice_id
     const submissionId = notice.intake.copyright_notice_submission_id
     await insertReviewedCopyrightFormIntake({ noticeId, reviewerUserId: staff.id })
-    await appendCopyrightSubmissionAssessment({
+    await seedCopyrightSubmissionAssessment({
       submissionId,
       currentUser: staff,
       assessedAt: new Date(Date.now() - 2 * HOUR_MS),
@@ -101,7 +101,7 @@ describe('automated enforcement paging age', () => {
     const staff = await createTestCopyrightStaff()
     const noticeId = notice.intake.copyright_notice_id
     await insertReviewedCopyrightFormIntake({ noticeId, reviewerUserId: staff.id })
-    await appendCopyrightSubmissionAssessment({
+    await seedCopyrightSubmissionAssessment({
       submissionId: notice.intake.copyright_notice_submission_id,
       currentUser: staff,
       assessedAt: new Date(),

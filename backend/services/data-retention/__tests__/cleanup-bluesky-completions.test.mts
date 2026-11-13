@@ -12,7 +12,7 @@ import {
 } from '@voucha/test-helpers'
 import { v7 } from 'uuid'
 import { acquirePaymentOperationRetentionTestLock } from '@voucha/test-helpers/payment-operation-retention'
-import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
+import { createCopyrightRetentionScopes } from '@voucha/test-helpers/copyright-operational-retention'
 import { reserveTestAiUsageRetentionSweep } from '@voucha/test-helpers/entities/ai-usage-rollups'
 import {
   cleanupAbandonedBlueskyLinkSessions,
@@ -23,7 +23,6 @@ import { runDataRetentionCleanup } from '../cleanup.mts'
 const DAY_MS = 24 * 60 * 60 * 1000
 
 describe('runDataRetentionCleanup', () => {
-  useCopyrightOperationalCursorReservation()
   // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('returns per-cleanup deletion summaries', async () => {
     const moderationLock = await acquireModerationOperationRetentionTestLock()
@@ -40,6 +39,7 @@ describe('runDataRetentionCleanup', () => {
     }
 
     const result = await runDataRetentionCleanup(limits, {
+      copyrightScopes: createCopyrightRetentionScopes(),
       voteBallotIdsByTable: {},
       userAgentStringIds: [],
       voteIntegrityFlagIds: [],

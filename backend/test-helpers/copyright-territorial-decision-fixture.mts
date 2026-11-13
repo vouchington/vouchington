@@ -81,6 +81,7 @@ export async function createTerritorialConstraintDecision(
     assessmentId?: string | null
     predecessorId?: string | null
     explanation?: string | null
+    rationaleCiphertext?: string
   },
 ): Promise<string> {
   const decisionId = uuidv7()
@@ -98,7 +99,7 @@ export async function createTerritorialConstraintDecision(
       automation_disclosure, rationale_ciphertext, public_explanation_ciphertext
     ) VALUES (
       ${decisionId}, ${input.noticeId}, ${input.jurisdiction}, ${input.actorId}, ${input.outcome},
-      ${input.assessmentId === undefined ? null : input.assessmentId}, ${input.predecessorId === undefined ? null : input.predecessorId}, 'human', 'rationale',
+      ${input.assessmentId === undefined ? null : input.assessmentId}, ${input.predecessorId === undefined ? null : input.predecessorId}, 'human', ${input.rationaleCiphertext ?? 'rationale'},
       ${input.explanation === undefined ? 'Public explanation' : input.explanation}
     ) RETURNING id`)
   if (!rows[0]) throw new Error('Missing decision fixture')
@@ -108,7 +109,7 @@ export async function createTerritorialConstraintDecision(
       territorial_decision_outcome = ${input.outcome},
       territorial_decided_at = CURRENT_TIMESTAMP, territorial_decided_by_id = ${input.actorId},
       territorial_authorizing_assessment_identity_id = ${input.assessmentId === undefined ? null : input.assessmentId},
-      territorial_rationale_ciphertext = 'rationale',
+      territorial_rationale_ciphertext = ${input.rationaleCiphertext ?? 'rationale'},
       territorial_public_explanation_ciphertext = ${input.explanation === undefined ? 'Public explanation' : input.explanation}
     WHERE id = ${input.noticeId}`)
   return rows[0].id

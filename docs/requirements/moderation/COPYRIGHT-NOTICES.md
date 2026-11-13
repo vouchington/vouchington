@@ -130,8 +130,9 @@ not bypass the counter-notice deadline or the human reversal requirement.
 
 US timing does not govern EU or UK cases. The US form and email intake accept `us_dmca`; EU and UK
 intake stay unavailable until an operator records a jurisdiction approval, and never before the
-staff territorial screen ships. Withdrawing approval stops only new intake; a received notice
-remains decidable. EU and UK decisions are human: a statement of reasons or review exists only when
+staff territorial screen ships. Intake availability is determined when the receipt reads its
+jurisdiction approval. A withdrawal visible at that read blocks intake; a receipt already admitted
+by that read may commit after an overlapping withdrawal. A received notice remains decidable. EU and UK decisions are human: a statement of reasons or review exists only when
 an identified staff user supplies it, with a required public explanation kept separate from the
 internal rationale. A member-visible case records an allegation and, where applicable, a
 provisional restriction or reviewed outcome. It never describes the claimant as the proven owner or

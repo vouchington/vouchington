@@ -1,10 +1,16 @@
+import { assertCopyrightApiManualAssociation } from '@voucha/test-helpers/copyright-api-submission-outcomes'
+import { assertCopyrightEmailApprovalAdmission } from '@voucha/test-helpers/copyright-api-admission-outcomes'
+import {
+  createCopyrightApiRecommendedIntake as createRecommendedMcpCopyrightEmailIntake,
+  seedCopyrightApiManualAssociation,
+} from '@voucha/test-helpers/copyright-api-admission-fixtures'
+import { seedUnmatchedCopyrightEmailReply } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js'
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { randomUUID } from 'node:crypto'
 import {
-  createRecommendedMcpCopyrightEmailIntake,
   publishTestHostedPostImageDelivery,
   useCopyrightMcpDecisionTools,
 } from '@voucha/test-helpers/copyright-mcp-write-fixtures'
@@ -14,21 +20,16 @@ import {
   readCopyrightEmailIntakeReview,
 } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
-import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { createCommittedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-committed-intake'
 import {
   createCopyrightNoticeForManualAssociation,
   readCopyrightEmailManualAssociationEvent,
 } from '@voucha/test-helpers/copyright-email-manual-association'
 import { createCopyrightFormFixture } from '@voucha/test-helpers/copyright-route-fixtures'
-import {
-  copyrightEmailMessageId,
-  recordThreadedCopyrightEmail,
-} from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
 import { callMcpTool } from './call-tool.mts'
 import { LEGAL_MCP_SERVER_CONFIG } from './config.mts'
 
-type Outcome = { status: number; message?: string; noticeId?: string }
+type Outcome = { status: number; code?: string; message?: string; noticeId?: string }
 type Approve = (intakeId: string, body: Record<string, unknown>) => Promise<Outcome>
 
 const rationale = 'Staff read the raw email and stated each declaration.'
@@ -42,6 +43,7 @@ async function restSurface(): Promise<Approve> {
       .send(body)
     return {
       status: response.status,
+      code: response.status === 409 ? response.body.code : undefined,
       message: response.body.message,
       noticeId: response.body.copyright_notice?.id,
     }
@@ -66,7 +68,11 @@ async function mcpSurface(): Promise<Approve> {
     const block = result.content[0]
     if (block?.type !== 'text') throw new Error('Expected a typed MCP error')
     const { error } = JSON.parse(block.text)
-    return { status: error.status, message: error.message }
+    return {
+      status: error.status,
+      code: error.status === 409 ? error.code : undefined,
+      message: error.message,
+    }
   }
 }
 
@@ -132,18 +138,11 @@ describe('copyright email approval parity between REST and MCP', () => {
   it.each(['REST', 'MCP'] as const)(
     '%s associates one unresolved intake and returns the same case/intake pair',
     async surface => {
-      const intake = await recordThreadedCopyrightEmail({
-        messageId: copyrightEmailMessageId(),
-        replyReferences: [copyrightEmailMessageId()],
-      })
+      const intake = await seedUnmatchedCopyrightEmailReply()
       const noticeId = await createCopyrightNoticeForManualAssociation()
-      const outcome = await associateSurface(surface, intake.intakeId, noticeId)
-      expect(outcome.status).toBe(201)
-      expect(outcome.body).toMatchObject({
-        copyright_notice: { id: noticeId },
-        copyright_email_intake: { id: intake.intakeId },
-      })
-      expect(await readCopyrightEmailManualAssociationEvent(intake.intakeId)).toHaveLength(1)
+      const outcome = await associateSurface(surface, intake.id, noticeId)
+      expect.hasAssertions()
+      await assertCopyrightApiManualAssociation(outcome, intake.id, noticeId)
     },
   )
 
@@ -167,19 +166,16 @@ describe('copyright email approval parity between REST and MCP', () => {
   it.each(['REST', 'MCP'] as const)(
     '%s returns 404 for a missing case and 409 for an intake already linked by staff',
     async surface => {
-      const intake = await recordThreadedCopyrightEmail({
-        messageId: copyrightEmailMessageId(),
-        replyReferences: [copyrightEmailMessageId()],
-      })
+      const intake = await seedUnmatchedCopyrightEmailReply()
       const noticeId = await createCopyrightNoticeForManualAssociation()
-      const missing = await associateSurface(surface, intake.intakeId, crypto.randomUUID())
+      const missing = await associateSurface(surface, intake.id, crypto.randomUUID())
       expect(missing.status).toBe(404)
-      expect(await readCopyrightEmailIntakeNoticeLinks(intake.intakeId)).toEqual([])
-      expect((await associateSurface(surface, intake.intakeId, noticeId)).status).toBe(201)
-      const conflict = await associateSurface(surface, intake.intakeId, noticeId)
+      expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([])
+      await seedCopyrightApiManualAssociation(intake.id, noticeId)
+      const conflict = await associateSurface(surface, intake.id, noticeId)
       expect(conflict.status).toBe(409)
       expect(conflict.body.code).toBe('copyright_email_thread_changed')
-      expect(await readCopyrightEmailManualAssociationEvent(intake.intakeId)).toHaveLength(1)
+      expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toHaveLength(1)
     },
   )
 
@@ -193,23 +189,13 @@ describe('copyright email approval parity between REST and MCP', () => {
 
       const outcome = await approve(intake.id, body)
 
-      expect(outcome).toMatchObject({ status: 201, noticeId: expect.any(String) })
-      const noticeId = outcome.noticeId!
-      await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([
-        { decision: 'approved', promoted_copyright_notice_id: noticeId },
-      ])
-      await expect(readCopyrightEmailIntakeNoticeLinks(intake.id)).resolves.toEqual([
-        { copyright_notice_id: noticeId, link_kind: 'initial' },
-      ])
-      const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
-      expect(aggregate?.notice.claimant_display_name).toBe('Caller stated name')
-      expect(aggregate?.evidenceArtifacts).toEqual([
-        expect.objectContaining({
-          storage_object_id: intake.raw_storage_object_id,
-          sha256: intake.raw_sha256,
-          mime_type: 'message/rfc822',
-        }),
-      ])
+      expect.hasAssertions()
+      await assertCopyrightEmailApprovalAdmission(
+        outcome,
+        intake,
+        'Caller stated name',
+        body.targets[0]!.image_id,
+      )
     },
   )
 
@@ -271,9 +257,13 @@ describe('copyright email approval parity between REST and MCP', () => {
 
     const outcome = await approve(intake.id, body)
 
-    expect(outcome.status).toBe(201)
-    const aggregate = await getCopyrightNoticePrivateAggregate(outcome.noticeId!)
-    expect(aggregate?.notice.claimant_display_name).toBe('Moderator corrected name')
+    expect.hasAssertions()
+    await assertCopyrightEmailApprovalAdmission(
+      outcome,
+      intake,
+      'Moderator corrected name',
+      body.targets[0]!.image_id,
+    )
   })
 
   it('keeps the tool hidden and rejected while copyright.mcpDecisionTools is off', async () => {

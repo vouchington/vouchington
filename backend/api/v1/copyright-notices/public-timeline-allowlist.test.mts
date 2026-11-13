@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
+import { useTestMediaDeliveryReplayProviders } from '@voucha/test-helpers/copyright-route-replay-setup'
+import { createCommittedCopyrightReplayFixture } from '@voucha/test-helpers/copyright-api-replay-scene'
 import {
-  createCopyrightReplayFixture,
-  useTestMediaDeliveryReplayProviders,
-} from '@voucha/test-helpers/copyright-route-replay-setup'
-import { exhaustCopyrightActionIntent } from '@voucha/test-helpers/copyright-route-replay-fixtures'
+  seedFailedTimelineAction,
+  seedTimelineInternalFacts,
+} from '@voucha/test-helpers/copyright-api-timeline-fixture'
+import { assertApiActionReplay } from '@voucha/test-helpers/copyright-api-action-replay-outcome'
 
 type TimelineEvent = { event_type: string }
 
@@ -26,33 +28,20 @@ describe('copyright case timeline audiences', () => {
   useTestMediaDeliveryReplayProviders()
 
   it('gives members and case participants only case-facing events while staff keep the full timeline', async () => {
-    const fixture = await createCopyrightReplayFixture()
+    const actor = await createCommittedCopyrightReplayFixture()
+    const actorStaff = createRequest()
+    await actorStaff.authenticateAs(actor.moderator)
+    await seedFailedTimelineAction(actor.intentId)
+    await assertApiActionReplay({
+      staff: actorStaff,
+      noticeId: actor.noticeId,
+      intentId: actor.intentId,
+      actorId: actor.moderator.id,
+    })
+    const fixture = await createCommittedCopyrightReplayFixture()
     const staff = createRequest()
     await staff.authenticateAs(fixture.moderator)
-    await exhaustCopyrightActionIntent(fixture.intentId)
-    await staff
-      .post(
-        `/api/v1/copyright-notices/${fixture.noticeId}/action-intents/${fixture.intentId}/replays`,
-      )
-      .expect(200)
-    const capability = (
-      await staff
-        .post(`/api/v1/copyright-notices/${fixture.noticeId}/guest-capabilities`)
-        .send({ expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() })
-        .expect(201)
-    ).body.copyright_guest_capability
-    for (const kind of ['supplement', 'court_or_ccb_hold']) {
-      await createRequest()
-        .post(`/api/v1/copyright-notices/${fixture.noticeId}/guest-filings`)
-        .set('Copyright-Guest-Capability', capability.token)
-        .send({ kind, statement: `A ${kind} filing.` })
-        .expect(201)
-    }
-    await staff
-      .post(
-        `/api/v1/copyright-notices/${fixture.noticeId}/guest-capabilities/${capability.id}/revocation`,
-      )
-      .expect(200)
+    await seedTimelineInternalFacts(fixture)
     const recorded = (await getCopyrightNoticePrivateAggregate(fixture.noticeId))?.lifecycleEvents
     expect(recorded?.map(event => event.change_type)).toEqual(
       expect.arrayContaining(withheldEventTypes),

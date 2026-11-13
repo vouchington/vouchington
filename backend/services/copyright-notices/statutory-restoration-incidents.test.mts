@@ -9,119 +9,110 @@ import { readCopyrightStaydownEntries } from '@voucha/test-helpers/data-stores/p
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
 import { useStaydownMatching } from '@voucha/test-helpers/services/copyright-notices/staydown-matching'
-import type { PrivateUser } from '@services/users/types'
-import { processCopyrightActionIntent, resolveCopyrightLegalHold } from './index.mts'
 import { readTestClaimantMisuseSummary } from '@voucha/test-helpers/services/copyright-notices/claimant-abuse-fixtures'
 import {
   readTestRepeatInfringerIncidents,
   readTestRepeatInfringerOpenReviewIds,
 } from '@voucha/test-helpers/copyright-repeat-infringer'
+import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 import {
-  openHeldCounterNoticeRestore,
-  recordOrdinaryCopyrightHold,
-} from '@voucha/test-helpers/copyright-restoration-hold-scene'
+  seedCompletedStatutoryContract,
+  seedStatutoryContractHold,
+  seedStatutoryContractHoldResolution,
+} from '@voucha/test-helpers/copyright-statutory-contract-fixtures'
+import { assertStatutoryContractJob } from '@voucha/test-helpers/copyright-statutory-contract-job'
+
 const noReversalSource = {
   reversal_authorized: false,
   reversal_by_review: false,
   reversal_by_appeal: false,
   reversal_by_administrator_lift: false,
 }
-
-type Scene = Awaited<ReturnType<typeof openHeldCounterNoticeRestore>>
-
-async function readIncident(accountUserId: string, noticeId: string) {
-  const account = await readTestRepeatInfringerIncidents(accountUserId)
-  return account.find(incident => incident.copyright_notice_id === noticeId)
-}
-
-async function readRestoreState(noticeId: string): Promise<string | undefined> {
-  const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
-  return aggregate?.actionIntents.find(intent => intent.action === 'restore')?.state
-}
-
-function applyRestore(scene: Scene) {
-  return processCopyrightActionIntent(scene.restore.id, scene.restorationAt)
+async function readIncident(accountId: string, noticeId: string) {
+  return (await readTestRepeatInfringerIncidents(accountId)).find(
+    row => row.copyright_notice_id === noticeId,
+  )
 }
 
 describe('statutory restoration and repeat-infringer incidents', () => {
   beforeEach(() => {
     installTestMediaDeliveryEdge()
   })
-
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllEnvs()
   })
 
-  it('stops counting the incident when the restoration completes, leaving the reversal sources and ledger alone', async () => {
+  it('completes the statutory incident change as one legal phase while leaving reversal sources and ledger alone', async () => {
     const scene = await openHeldCounterNoticeRestore()
-    const accountId = scene.claimant.id
-    expect((await readIncident(accountId, scene.notice.id))?.is_operative).toBe(true)
-    const ledgerBefore = await readTestClaimantMisuseSummary(accountId)
-
-    await expect(applyRestore(scene)).resolves.toBe('applied')
-
-    await expect(readRestoreState(scene.notice.id)).resolves.toBe('completed')
-    expect((await readIncident(accountId, scene.notice.id))?.is_operative).toBe(false)
+    expect((await readIncident(scene.claimant.id, scene.notice.id))?.is_operative).toBe(true)
+    const ledger = await readTestClaimantMisuseSummary(scene.claimant.id)
+    await assertStatutoryContractJob(scene)
     await expect(readTestLiftSourceFlags(scene.restriction.id)).resolves.toEqual(noReversalSource)
     await expect(readTestLiftReversalFacts(scene.restriction.id)).resolves.toMatchObject(
       noReversalSource,
     )
-    await expect(readTestClaimantMisuseSummary(accountId)).resolves.toEqual(ledgerBefore)
+    await expect(readTestClaimantMisuseSummary(scene.claimant.id)).resolves.toEqual(ledger)
+  })
+
+  it('stops counting an independently committed statutory completion without inventing a reversal', async () => {
+    const scene = await openHeldCounterNoticeRestore()
+    const ledger = await readTestClaimantMisuseSummary(scene.claimant.id)
+    await seedCompletedStatutoryContract(scene)
+    expect((await readIncident(scene.claimant.id, scene.notice.id))?.is_operative).toBe(false)
+    const aggregate = await getCopyrightNoticePrivateAggregate(scene.notice.id)
+    expect(aggregate!.actionIntents.find(row => row.id === scene.restore.id)!.state).toBe(
+      'completed',
+    )
+    await expect(readTestLiftSourceFlags(scene.restriction.id)).resolves.toEqual(noReversalSource)
+    await expect(readTestLiftReversalFacts(scene.restriction.id)).resolves.toMatchObject(
+      noReversalSource,
+    )
+    await expect(readTestClaimantMisuseSummary(scene.claimant.id)).resolves.toEqual(ledger)
   })
 
   it('opens no repeat-infringer review when one of two incidents was restored this way', async () => {
     const scene = await openHeldCounterNoticeRestore()
-    const accountId = scene.claimant.id
-    await expect(applyRestore(scene)).resolves.toBe('applied')
-
+    await seedCompletedStatutoryContract(scene)
     const secondNoticeId = await confirmTestRepeatInfringerNotice(
-      accountId,
-      scene.moderator as PrivateUser,
+      scene.claimant.id,
+      scene.moderator,
       'statutory restoration',
     )
-
-    const account = await readTestRepeatInfringerIncidents(accountId)
-    expect(
-      account.filter(incident => incident.is_operative).map(i => i.copyright_notice_id),
-    ).toEqual([secondNoticeId])
-    expect(await readTestRepeatInfringerOpenReviewIds(accountId)).toEqual([])
+    const account = await readTestRepeatInfringerIncidents(scene.claimant.id)
+    expect(account.flatMap(row => (row.is_operative ? [row.copyright_notice_id] : []))).toEqual([
+      secondNoticeId,
+    ])
+    expect(await readTestRepeatInfringerOpenReviewIds(scene.claimant.id)).toEqual([])
   })
 
-  it('keeps counting the incident while a court hold blocks the restoration', async () => {
+  it('keeps counting a court-blocked incident and then runs the reopened restore once', async () => {
     const scene = await openHeldCounterNoticeRestore()
-    const accountId = scene.claimant.id
-    const hold = await recordOrdinaryCopyrightHold(scene)
-
-    await expect(applyRestore(scene)).resolves.toBe('not_claimed')
-    await expect(readRestoreState(scene.notice.id)).resolves.toBe('blocked')
-    // A blocked intent also carries `completed_at`; only a `completed` restore ends the incident.
+    const hold = await seedStatutoryContractHold(scene)
+    await assertStatutoryContractJob(scene, true)
+    const blocked = await getCopyrightNoticePrivateAggregate(scene.notice.id)
+    expect(blocked!.actionIntents.find(row => row.id === scene.restore.id)!.state).toBe('blocked')
     await replayTestLiftConfirmationConsequences(scene.notice.id)
-    expect((await readIncident(accountId, scene.notice.id))?.is_operative).toBe(true)
-
-    await resolveCopyrightLegalHold({
-      currentUser: scene.moderator,
-      assessmentId: hold.id,
-      resolvedAt: scene.restorationAt,
-      resolutionKind: 'dismissed',
-      rationale: 'The proceeding ended.',
-    })
-    await expect(applyRestore(scene)).resolves.toBe('applied')
-    expect((await readIncident(accountId, scene.notice.id))?.is_operative).toBe(false)
+    expect((await readIncident(scene.claimant.id, scene.notice.id))?.is_operative).toBe(true)
+    await seedStatutoryContractHoldResolution(scene, hold.id)
+    await assertStatutoryContractJob(scene)
   })
 
   describe('staydown registration', () => {
     useStaydownMatching()
-
-    it('holds no entry for a statutorily restored image and does not register it again', async () => {
+    it('holds no entry for an independently completed statutory restoration and never registers it again', async () => {
       const scene = await openHeldCounterNoticeRestore()
       expect(await readCopyrightStaydownEntries(scene.notice.id)).toHaveLength(1)
-
-      await expect(applyRestore(scene)).resolves.toBe('applied')
+      await seedCompletedStatutoryContract(scene)
       expect(await readCopyrightStaydownEntries(scene.notice.id)).toEqual([])
-
       await replayTestLiftConfirmationConsequences(scene.notice.id)
       expect(await readCopyrightStaydownEntries(scene.notice.id)).toEqual([])
+    })
+    it('keeps the real restore job staydown changes coupled to its complete legal phase', async () => {
+      expect.hasAssertions()
+      const scene = await openHeldCounterNoticeRestore()
+      expect(await readCopyrightStaydownEntries(scene.notice.id)).toHaveLength(1)
+      await assertStatutoryContractJob(scene)
     })
   })
 })

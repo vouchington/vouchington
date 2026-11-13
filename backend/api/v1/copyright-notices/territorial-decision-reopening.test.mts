@@ -1,10 +1,22 @@
+import {
+  assertTerritorialInitialStaffCase,
+  findQueuedCase,
+} from '@voucha/test-helpers/copyright-territorial-reopening-projection'
+import { seedCommittedTerritorialDecision } from '@voucha/test-helpers/copyright-territorial-committed-decision'
+import {
+  seedCommittedTerritorialRedress,
+  seedCommittedTerritorialRedressDecision,
+} from '@voucha/test-helpers/copyright-territorial-committed-redress'
+import { seedCommittedTerritorialAcknowledgment } from '@voucha/test-helpers/copyright-territorial-acknowledged-fixture'
+import { assertTerritorialHttpDecisionOutcome } from '@voucha/test-helpers/copyright-territorial-http-decision-outcome'
+import { createTestTerritorialRestrictionScene } from '@voucha/test-helpers/copyright-territorial-restriction-fixtures'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { describe, expect, it } from 'vitest'
 import { createHostedImagePost } from '@voucha/test-helpers/services/copyright-notices/hosted-post-audience'
 import {
   approveJurisdictionPolicy,
   createTerritorialActors,
   TERRITORIAL_SURFACES,
-  type TerritorialActors,
 } from '@voucha/test-helpers/services/copyright-notices/territorial-routes'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import {
@@ -12,21 +24,51 @@ import {
   readTerritorialDecisionReopeningQueueReasons,
   receiveTestTerritorialDecisionNotice,
 } from '@voucha/test-helpers/territorial-decision-reopening'
-import { readCopyrightStaffQueueCursorBefore } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
-import { readTestCopyrightStaffCase } from '@voucha/test-helpers/services/copyright-notices/staff-case'
-import {
-  acknowledgeEuCopyrightNotice,
-  acknowledgeUkCopyrightNotice,
-} from '@services/copyright-notices'
-
-const queuePath = '/api/v1/copyright-notices/review-queue'
-
-type QueueResponse = {
-  copyright_notices: Array<{ id: string; reasons: string[] }>
-}
 
 describe.each(TERRITORIAL_SURFACES)('$label decision reopening', surface => {
   useCopyrightIntakeEnvironment()
+
+  it.each(['initial', 'successor'] as const)(
+    '%s decision HTTP writer commits complete scoped authority or a precise conflict stage',
+    async phase => {
+      expect.hasAssertions()
+      const scene = await createTestTerritorialRestrictionScene(surface.jurisdiction)
+      if (phase === 'successor') {
+        await seedCommittedTerritorialDecision(surface.jurisdiction, scene.staff, scene.noticeId, {
+          text: 'No restriction was warranted.',
+          publicExplanation: 'The notice does not support restriction.',
+          outcome: 'no_action',
+          targets: [],
+        })
+        const complaint = await seedCommittedTerritorialRedress(
+          surface.jurisdiction,
+          scene.noticeId,
+          scene.claimant,
+          'Reconsider the initial decision.',
+        )
+        await seedCommittedTerritorialRedressDecision(
+          surface.jurisdiction,
+          scene.noticeId,
+          complaint.id,
+          scene.staff,
+          { disposition: 'revoke', rationale: 'A fresh restriction review is warranted.' },
+        )
+      }
+      const staff = createRequest()
+      await staff.authenticateAs(scene.staff)
+      await assertTerritorialHttpDecisionOutcome(
+        surface.jurisdiction,
+        scene,
+        {
+          text: 'Staff-only reason for the decision.',
+          publicExplanation: 'Public explanation for the decision.',
+          outcome: phase === 'initial' ? 'no_action' : 'restrict',
+          targets: phase === 'initial' ? [] : scene.targets,
+        },
+        staff,
+      )
+    },
+  )
 
   it('reopens no_action for a restricting successor without carrying over its revocation', async () => {
     const actors = await createTerritorialActors()
@@ -47,60 +89,27 @@ describe.each(TERRITORIAL_SURFACES)('$label decision reopening', surface => {
       hostedUseUrl,
     )
     const noticeId = notice.noticeId
-    const acknowledgment =
-      surface.jurisdiction === 'eu_dsa'
-        ? await acknowledgeEuCopyrightNotice(actors.claimant, noticeId)
-        : await acknowledgeUkCopyrightNotice(actors.claimant, noticeId)
+    const acknowledgment = await seedCommittedTerritorialAcknowledgment(
+      surface.jurisdiction,
+      noticeId,
+    )
     const initialQueueItem = await findQueuedCase(actors.staffRequest, noticeId)
     expect(initialQueueItem.reasons).toContain('territorial_notice_review')
-    const staffCase = await readTestCopyrightStaffCase(noticeId)
-    expect(staffCase).toMatchObject({
-      id: noticeId,
-      jurisdiction: surface.jurisdiction,
-      claimant: { contact: notice.contact },
-      work_description: notice.contentDescription,
-      form_review: null,
-      targets: [],
-      evidence: [],
-      restrictions: [],
-      appeals: [],
-      counter_notices: [],
-      legal_holds: [],
-      action_intents: [],
-      staydown_matches: [],
-      email_correspondence: [],
-      territorial: {
-        hosted_use_url: hostedUseUrl,
-        grounds: notice.grounds,
-        acknowledgment: {
-          attempt_count: acknowledgment.attempt_count,
-          acknowledged_at: acknowledgment.acknowledged_at,
-          escalated: false,
-        },
-        reopened_at: null,
-        decision: null,
-      },
-    })
-    expect(
-      (staffCase?.delivery_intents ?? [])
-        .filter(intent => intent.delivery_kind === 'claimant_receipt')
-        .map(intent => intent.channel)
-        .toSorted(),
-    ).toEqual(surface.jurisdiction === 'eu_dsa' ? ['email', 'in_app'] : [])
-    expect(staffCase?.territorial?.acknowledgment.acknowledged_at).toEqual(
-      acknowledgment.acknowledged_at,
+    await assertTerritorialInitialStaffCase(
+      surface.jurisdiction,
+      notice,
+      hostedUseUrl,
+      acknowledgment,
     )
     const decisionUrl = `${surface.base}/${noticeId}/${surface.determinationPath}`
     const redressUrl = `${surface.base}/${noticeId}/redress-requests`
 
-    await actors.staffRequest
-      .post(decisionUrl)
-      .send({
-        [surface.determinationField]: 'The notice does not support a restriction.',
-        public_explanation: noActionExplanation,
-        outcome: 'no_action',
-      })
-      .expect(201)
+    await seedCommittedTerritorialDecision(surface.jurisdiction, actors.staff, noticeId, {
+      text: 'The notice does not support a restriction.',
+      publicExplanation: noActionExplanation,
+      outcome: 'no_action',
+      targets: [],
+    })
 
     expect(await readTerritorialDecisionReopeningQueueReasons(noticeId)).not.toContain(
       'territorial_notice_review',
@@ -132,19 +141,22 @@ describe.each(TERRITORIAL_SURFACES)('$label decision reopening', surface => {
       ),
     ).toBe(true)
 
-    // UK redress has no participant route: staff record a complaint received by another channel.
-    const redressRequest =
-      surface.jurisdiction === 'eu_dsa' ? actors.claimantRequest : actors.staffRequest
-    const redressResponse = await redressRequest
-      .post(redressUrl)
-      .set('Idempotency-Key', crypto.randomUUID())
-      .send({ explanation: 'Please reconsider the no-action decision.' })
-      .expect(201)
-    const redressId = redressResponse.body[surface.redressField].id as string
-    await actors.staffRequest
-      .post(`${redressUrl}/${redressId}/decisions`)
-      .send({ staff_disposition: 'revoke', rationale: 'Reopen for a fresh review.' })
-      .expect(201)
+    // UK staff record the externally received complaint; EU notifiers file their own complaint.
+    const redress = await seedCommittedTerritorialRedress(
+      surface.jurisdiction,
+      noticeId,
+      surface.jurisdiction === 'eu_dsa' ? actors.claimant : actors.staff,
+      'Please reconsider the no-action decision.',
+      surface.jurisdiction === 'eu_dsa' ? 'notifier' : 'reviewer',
+    )
+    const redressId = redress.id
+    await seedCommittedTerritorialRedressDecision(
+      surface.jurisdiction,
+      noticeId,
+      redressId,
+      actors.staff,
+      { disposition: 'revoke', rationale: 'Reopen for a fresh review.' },
+    )
 
     const reopenedItem = await findQueuedCase(actors.staffRequest, noticeId)
     expect(reopenedItem.reasons).toContain('territorial_decision_reopened')
@@ -168,14 +180,17 @@ describe.each(TERRITORIAL_SURFACES)('$label decision reopening', surface => {
     )
     const neverRevokedNoticeId = neverRevokedNotice.noticeId
     const neverRevokedUrl = `${surface.base}/${neverRevokedNoticeId}/${surface.determinationPath}`
-    await actors.staffRequest
-      .post(neverRevokedUrl)
-      .send({
-        [surface.determinationField]: 'The evidence does not support restriction.',
-        public_explanation: 'No restriction is warranted on this notice.',
+    await seedCommittedTerritorialDecision(
+      surface.jurisdiction,
+      actors.staff,
+      neverRevokedNoticeId,
+      {
+        text: 'The evidence does not support restriction.',
+        publicExplanation: 'No restriction is warranted on this notice.',
         outcome: 'no_action',
-      })
-      .expect(201)
+        targets: [],
+      },
+    )
     await actors.staffRequest
       .post(neverRevokedUrl)
       .send({
@@ -186,15 +201,14 @@ describe.each(TERRITORIAL_SURFACES)('$label decision reopening', surface => {
       })
       .expect(409)
 
-    await actors.staffRequest
-      .post(decisionUrl)
-      .send({
-        [surface.determinationField]: 'The post-image violates the applicable copyright law.',
-        public_explanation: explanation,
-        outcome: 'restrict',
-        targets: [target],
-      })
-      .expect(201)
+    await seedCommittedTerritorialDecision(surface.jurisdiction, actors.staff, noticeId, {
+      text: 'The post-image violates the applicable copyright law.',
+      publicExplanation: explanation,
+      outcome: 'restrict',
+      targets: [
+        { surfaceKind: 'post-image', postId: post.postId, imageId: post.imageId, hostedUseUrl },
+      ],
+    })
 
     expect(await readTerritorialDecisionReopeningQueueReasons(noticeId)).not.toContain(
       'territorial_decision_reopened',
@@ -273,24 +287,3 @@ describe.each(TERRITORIAL_SURFACES)('$label decision reopening', surface => {
     expect(finalFacts.operative_incident_count).toBe(1)
   })
 })
-
-async function findQueuedCase(
-  request: TerritorialActors['staffRequest'],
-  noticeId: string,
-): Promise<{ id: string; reasons: string[] }> {
-  let after = await readCopyrightStaffQueueCursorBefore([noticeId])
-  for (;;) {
-    const response = await request
-      .get(`${queuePath}?limit=100&after=${encodeURIComponent(after)}`)
-      .expect(200)
-    const page = response.body as QueueResponse & {
-      page_info: { has_next_page: boolean; end_cursor: string | null }
-    }
-    const item = page.copyright_notices.find(candidate => candidate.id === noticeId)
-    if (item) return item
-    if (!page.page_info.has_next_page || !page.page_info.end_cursor) {
-      throw new Error(`Territorial notice ${noticeId} is not queued`)
-    }
-    after = page.page_info.end_cursor
-  }
-}

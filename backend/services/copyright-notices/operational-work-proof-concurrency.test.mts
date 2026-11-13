@@ -1,10 +1,11 @@
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
+import { readCopyrightThreadRetirementBound } from '@voucha/test-helpers/copyright-thread-retention'
 import { describe, expect, it } from 'vitest'
 import {
   completeCopyrightRestrictionHumanReview,
   createCopyrightNoticeSchemaFixture,
 } from '@voucha/test-helpers/data-stores/psql/copyright-notice-schema'
-import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
-import { positionCopyrightOperationalCursor } from '@voucha/test-helpers/copyright-operational-retention'
+import { createCopyrightOperationalScope } from '@voucha/test-helpers/copyright-operational-retention'
 import {
   linkTestCopyrightEmailIntake,
   readCopyrightThreadReferenceState,
@@ -13,6 +14,7 @@ import { createRetentionParsedEmail } from '@voucha/test-helpers/services/copyri
 import { holdCopyrightCaseBeforeThreadEligibility } from '@voucha/test-helpers/copyright-thread-sweep-admission-race'
 import {
   prepareCopyrightLastActionAttempt,
+  prepareCopyrightFailedWorkProof,
   prepareCopyrightBlockedWorkProof,
   reopenCopyrightWorkProof,
 } from '@voucha/test-helpers/copyright-work-retention-proof'
@@ -24,8 +26,6 @@ import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import { isTestCopyrightCaseEvidenceErased } from '@voucha/test-helpers/copyright-email-manual-association'
 
 describe('copyright work blockers introduced after a paged negative proof', () => {
-  useCopyrightOperationalCursorReservation()
-
   it('retains thread evidence when a terminal action failure commits before final eligibility', async () => {
     const initial = await createRetentionParsedEmail('work-proof-initial')
     const scene = await createCopyrightNoticeSchemaFixture({
@@ -52,29 +52,121 @@ describe('copyright work blockers introduced after a paged negative proof', () =
       proof = await readTestCopyrightThreadBlockerPage(scene.noticeId, new Date(), proof)
     }
     expect(proof).toMatchObject({ done: true, blocked: false })
-    await positionCopyrightOperationalCursor('email_thread_references', scene.noticeId)
+    const scope1 = createCopyrightOperationalScope([scene.noticeId])
+    const beforeWork = (await getCopyrightNoticePrivateAggregate(
+      scene.noticeId,
+    ))!.actionIntents.find(row => row.id === scene.actionIntentId)!
+    let failureOutcome: unknown = { status: 'not_started' }
+    let failureAt: Date | undefined
     const result = await holdCopyrightCaseBeforeThreadEligibility(
       scene.noticeId,
-      async () => {
-        await expect(
-          failCopyrightActionIntent({
-            intentId: scene.actionIntentId,
-            leaseToken: claimed!.lease_token,
-            failedAt: new Date(),
-            failureMessage: 'Terminal provider failure after the blocker proof.',
-          }),
-        ).resolves.toBe('failed')
+      async afterProof => {
+        if (!afterProof) return
+        failureAt = new Date()
+        failureOutcome = await failCopyrightActionIntent({
+          intentId: scene.actionIntentId,
+          leaseToken: claimed!.lease_token,
+          failedAt: failureAt,
+          failureMessage: 'Terminal provider failure after the blocker proof.',
+        })
+          .then(value => ({ status: 'fulfilled', value }))
+          .catch((err: unknown) => ({ status: 'rejected', reason: err }))
       },
       () =>
         sweepCopyrightCaseThreads({
+          scope: scope1,
           now: new Date(Date.now() + 181 * 24 * 60 * 60 * 1000),
           replyDays: 180,
           batchSize: 10,
           maxBatches: 100,
         }),
     )
+    const afterWork = (await getCopyrightNoticePrivateAggregate(
+      scene.noticeId,
+    ))!.actionIntents.find(row => row.id === scene.actionIntentId)!
+    const native = expect.objectContaining({
+      status: 'rejected',
+      reason: expect.objectContaining({ code: '40001' }),
+    })
+    const referenceState = await readCopyrightThreadReferenceState(reply.id)
+    expect([
+      {
+        failure: { status: 'fulfilled', value: 'failed' },
+        deleted: false,
+        references: before,
+        work: {
+          ...beforeWork,
+          state: 'failed',
+          completed_at: failureAt,
+          completed_at_reason: 'failed',
+          failure_message: 'Terminal provider failure after the blocker proof.',
+          available_at: expect.any(Date),
+          leased_at: null,
+          lease_token: null,
+          lease_expires_at: null,
+          updated_at: expect.any(Date),
+        },
+        retired: false,
+      },
+      { failure: native, deleted: false, references: before, work: beforeWork, retired: false },
+      {
+        failure: { status: 'not_started' },
+        deleted: false,
+        references: before,
+        work: beforeWork,
+        retired: false,
+      },
+      {
+        failure: native,
+        deleted: true,
+        references: { tokenId: null, referenceCount: 0 },
+        work: beforeWork,
+        retired: true,
+      },
+    ]).toContainEqual({
+      failure: failureOutcome,
+      deleted: result.deleted > 0,
+      references: referenceState,
+      work: afterWork,
+      retired: (await readCopyrightThreadRetirementBound(scene.noticeId)) !== null,
+    })
+  })
+
+  it('keeps references and work unchanged when the terminal failure was already committed', async () => {
+    const initial = await createRetentionParsedEmail('committed-work-proof-initial')
+    const scene = await createCopyrightNoticeSchemaFixture({
+      initialEmailSesMessageId: initial.amazon_ses_message_id,
+    })
+    await completeCopyrightRestrictionHumanReview(scene)
+    const reply = await createRetentionParsedEmail('committed-work-proof-reply', { reply: true })
+    await linkTestCopyrightEmailIntake(initial.id, scene.noticeId)
+    await linkTestCopyrightEmailIntake(reply.id, scene.noticeId, 'thread', scene.actorUserId)
+    await prepareCopyrightFailedWorkProof(scene.actionIntentId, scene.restrictionId)
+    const beforeWork = (await getCopyrightNoticePrivateAggregate(
+      scene.noticeId,
+    ))!.actionIntents.find(row => row.id === scene.actionIntentId)!
+    expect(beforeWork).toMatchObject({
+      state: 'failed',
+      attempt_count: 5,
+      completed_at_reason: 'failed',
+    })
+    const before = await readCopyrightThreadReferenceState(reply.id)
+    expect(before.referenceCount).toBeGreaterThan(0)
+    const result = await sweepCopyrightCaseThreads({
+      scope: createCopyrightOperationalScope([scene.noticeId]),
+      now: new Date(Date.now() + 181 * 24 * 60 * 60 * 1000),
+      replyDays: 180,
+      batchSize: 10,
+      maxBatches: 100,
+    })
     expect(result.deleted).toBe(0)
     expect(await readCopyrightThreadReferenceState(reply.id)).toEqual(before)
+    expect(await readCopyrightThreadRetirementBound(scene.noticeId)).toBeNull()
+    expect(
+      (await getCopyrightNoticePrivateAggregate(scene.noticeId))!.actionIntents.find(
+        row => row.id === scene.actionIntentId,
+      ),
+    ).toEqual(beforeWork)
   })
 
   it('restarts a completed negative case proof when blocked work is reopened between pages', async () => {

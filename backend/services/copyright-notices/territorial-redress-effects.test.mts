@@ -1,3 +1,11 @@
+import { seedCommittedTerritorialDecision } from '@voucha/test-helpers/copyright-territorial-committed-decision'
+import {
+  seedCommittedTerritorialRedress,
+  seedCommittedTerritorialRedressDecision,
+} from '@voucha/test-helpers/copyright-territorial-committed-redress'
+import { assertTerritorialReviewOutcome } from '@voucha/test-helpers/copyright-territorial-review-outcome'
+import { seedRestorationSceneWithhold } from '@voucha/test-helpers/copyright-withhold-scene-fixture'
+import { assertSurfaceRestoreOutcome } from '@voucha/test-helpers/copyright-surface-restore-outcome'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { createTestTerritorialRestrictionScene } from '@voucha/test-helpers/copyright-territorial-restriction-fixtures'
@@ -7,29 +15,7 @@ import { readTestCopyrightStatementFacts } from '@voucha/test-helpers/copyright-
 import { useStaydownMatching } from '@voucha/test-helpers/services/copyright-notices/staydown-matching'
 import { readTestRepeatInfringerIncidents } from '@voucha/test-helpers/copyright-repeat-infringer'
 import { buildCopyrightStatementOfReasons } from './statement-of-reasons.mts'
-import {
-  processCopyrightActionIntent,
-  recordEuCopyrightRedressDecision,
-  recordEuCopyrightStatementOfReasons,
-  recordUkCopyrightRedressDecision,
-  recordUkCopyrightReview,
-  submitEuCopyrightRedress,
-  submitUkCopyrightRedress,
-} from './index.mts'
-
 const jurisdictions = ['eu_dsa', 'uk'] as const
-const determine = {
-  eu_dsa: recordEuCopyrightStatementOfReasons,
-  uk: recordUkCopyrightReview,
-}
-const submit = {
-  eu_dsa: submitEuCopyrightRedress,
-  uk: submitUkCopyrightRedress,
-}
-const decideComplaint = {
-  eu_dsa: recordEuCopyrightRedressDecision,
-  uk: recordUkCopyrightRedressDecision,
-}
 
 describe('territorial complaint effects on a confirmed restriction', () => {
   useStaydownMatching()
@@ -38,11 +24,48 @@ describe('territorial complaint effects on a confirmed restriction', () => {
     vi.unstubAllEnvs()
   })
 
+  describe.each(jurisdictions)('%s atomic complaint decision', jurisdiction => {
+    it.each(['maintain', 'revoke'] as const)(
+      '%s commits all decision consequences or none',
+      async disposition => {
+        expect.hasAssertions()
+        const scene = await createTestTerritorialRestrictionScene(jurisdiction)
+        await seedCommittedTerritorialDecision(jurisdiction, scene.staff, scene.noticeId, {
+          text: 'The hosted image reproduces the protected photograph.',
+          publicExplanation: 'The image reproduces the photograph.',
+          outcome: 'restrict',
+          targets: scene.targets,
+        })
+        const aggregate = await getCopyrightNoticePrivateAggregate(scene.noticeId)
+        const withhold = aggregate?.actionIntents.find(row => row.action === 'withhold')
+        if (!withhold) throw new Error('Committed territorial withhold missing')
+        installTestMediaDeliveryEdge()
+        await seedRestorationSceneWithhold(withhold.id)
+        const complaint = await seedCommittedTerritorialRedress(
+          jurisdiction,
+          scene.noticeId,
+          scene.claimant,
+          'Review the restriction.',
+        )
+        await assertTerritorialReviewOutcome({
+          jurisdiction,
+          noticeId: scene.noticeId,
+          redressId: complaint.id,
+          staff: scene.staff,
+          claimantId: scene.claimant.id,
+          posterId: scene.posts[0]!.poster.id,
+          disposition,
+          rationale: 'The evidence establishes this complaint outcome.',
+        })
+      },
+    )
+  })
+
   it.each(jurisdictions)('%s statement facts exclude private staff reasons', async jurisdiction => {
     const scene = await createTestTerritorialRestrictionScene(jurisdiction)
     const privateReason = `Private staff reason ${crypto.randomUUID()}`
     const publicExplanation = `Public explanation ${crypto.randomUUID()}`
-    await determine[jurisdiction](scene.staff, scene.noticeId, {
+    await seedCommittedTerritorialDecision(jurisdiction, scene.staff, scene.noticeId, {
       text: privateReason,
       publicExplanation,
       outcome: 'restrict',
@@ -68,7 +91,7 @@ describe('territorial complaint effects on a confirmed restriction', () => {
     async jurisdiction => {
       installTestMediaDeliveryEdge()
       const scene = await createTestTerritorialRestrictionScene(jurisdiction)
-      await determine[jurisdiction](scene.staff, scene.noticeId, {
+      await seedCommittedTerritorialDecision(jurisdiction, scene.staff, scene.noticeId, {
         text: 'The hosted image reproduces the claimed photograph.',
         publicExplanation: 'This post image reproduces the protected photograph.',
         outcome: 'restrict',
@@ -77,7 +100,7 @@ describe('territorial complaint effects on a confirmed restriction', () => {
       const before = await getCopyrightNoticePrivateAggregate(scene.noticeId)
       const withhold = before?.actionIntents.find(intent => intent.action === 'withhold')
       if (!withhold) throw new Error('Withhold intent missing')
-      await expect(processCopyrightActionIntent(withhold.id)).resolves.toBe('applied')
+      await seedRestorationSceneWithhold(withhold.id)
       const posterId = scene.posts[0]!.poster.id
       expect(await readTestRepeatInfringerIncidents(posterId)).toEqual(
         expect.arrayContaining([
@@ -86,16 +109,22 @@ describe('territorial complaint effects on a confirmed restriction', () => {
       )
       expect(await readCopyrightStaydownEntries(scene.noticeId)).toHaveLength(1)
 
-      const complaint = await submit[jurisdiction](
-        scene.claimant,
+      const complaint = await seedCommittedTerritorialRedress(
+        jurisdiction,
         scene.noticeId,
-        crypto.randomUUID(),
+        scene.claimant,
         'I ask for the restriction to be reversed.',
       )
-      await decideComplaint[jurisdiction](scene.staff, scene.noticeId, complaint.id, {
-        disposition: 'revoke',
-        rationale: 'The complaint demonstrates the restriction was unfounded.',
-      })
+      await seedCommittedTerritorialRedressDecision(
+        jurisdiction,
+        scene.noticeId,
+        complaint.id,
+        scene.staff,
+        {
+          disposition: 'revoke',
+          rationale: 'The complaint demonstrates the restriction was unfounded.',
+        },
+      )
       const reversed = await getCopyrightNoticePrivateAggregate(scene.noticeId)
       const restore = reversed?.actionIntents.find(intent => intent.action === 'restore')
       if (!restore) throw new Error('Complaint restore intent missing')
@@ -105,10 +134,19 @@ describe('territorial complaint effects on a confirmed restriction', () => {
         ]),
       )
       expect(await readCopyrightStaydownEntries(scene.noticeId)).toEqual([])
-      await expect(processCopyrightActionIntent(restore.id)).resolves.toBe('applied')
-      expect(
-        (await getCopyrightNoticePrivateAggregate(scene.noticeId))?.restrictions[0]?.lifted_at,
-      ).toBeInstanceOf(Date)
+      const target = before!.targets[0]!
+      await assertSurfaceRestoreOutcome({
+        noticeId: scene.noticeId,
+        restrictionId: restore.copyright_restriction_id,
+        placementId: target.placement_id,
+        restoreId: restore.id,
+        outcome: 'visible',
+        incidentAccountIds: [posterId],
+        deliveries: [
+          `poster_restoration_notice:email:${posterId}`,
+          `poster_restoration_notice:in_app:${posterId}`,
+        ],
+      })
     },
   )
 
@@ -116,7 +154,7 @@ describe('territorial complaint effects on a confirmed restriction', () => {
     '%s maintain leaves restriction, incident, and staydown in place',
     async jurisdiction => {
       const scene = await createTestTerritorialRestrictionScene(jurisdiction)
-      await determine[jurisdiction](scene.staff, scene.noticeId, {
+      await seedCommittedTerritorialDecision(jurisdiction, scene.staff, scene.noticeId, {
         text: 'The hosted image reproduces the claimed photograph.',
         publicExplanation: 'This post image reproduces the protected photograph.',
         outcome: 'restrict',
@@ -124,16 +162,22 @@ describe('territorial complaint effects on a confirmed restriction', () => {
       })
       const before = await getCopyrightNoticePrivateAggregate(scene.noticeId)
       expect(await readCopyrightStaydownEntries(scene.noticeId)).toHaveLength(1)
-      const complaint = await submit[jurisdiction](
-        scene.claimant,
+      const complaint = await seedCommittedTerritorialRedress(
+        jurisdiction,
         scene.noticeId,
-        crypto.randomUUID(),
+        scene.claimant,
         'Please review the restriction.',
       )
-      await decideComplaint[jurisdiction](scene.staff, scene.noticeId, complaint.id, {
-        disposition: 'maintain',
-        rationale: 'The restriction remains justified.',
-      })
+      await seedCommittedTerritorialRedressDecision(
+        jurisdiction,
+        scene.noticeId,
+        complaint.id,
+        scene.staff,
+        {
+          disposition: 'maintain',
+          rationale: 'The restriction remains justified.',
+        },
+      )
       const after = await getCopyrightNoticePrivateAggregate(scene.noticeId)
       expect(after?.actionIntents).toEqual(before?.actionIntents)
       expect(after?.restrictions[0]?.lifted_at).toBeNull()

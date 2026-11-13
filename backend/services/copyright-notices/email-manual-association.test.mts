@@ -1,3 +1,7 @@
+import { createRetentionParsedEmail } from '@voucha/test-helpers/services/copyright-notices/retention-parsed-email'
+import { createCommittedCopyrightOverflowReply } from '@voucha/test-helpers/copyright-owned-email-replies'
+import { assertOwnedCopyrightManualAssociation } from '@voucha/test-helpers/copyright-manual-association-outcome'
+import { seedCopyrightAssociationInTransaction } from '@voucha/test-helpers/copyright-manual-association-prerequisite'
 import { seedUnmatchedCopyrightEmailReply as createManualReply } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import {
@@ -9,12 +13,7 @@ import {
   associateAndThreadCopyrightEmail,
 } from '@voucha/test-helpers/copyright-email-manual-association'
 import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import {
-  copyrightEmailMessageId,
-  copyrightEmailPromotionInput,
-  recordThreadedCopyrightEmail,
-} from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
+import { copyrightEmailMessageId } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
 import { describe, expect, it } from 'vitest'
 import {
   eraseTestCopyrightEmailIntakeOriginal,
@@ -22,8 +21,6 @@ import {
 } from '@voucha/test-helpers/copyright-email-intake-retention'
 import { associateCopyrightEmailIntakeWithNotice } from './email-manual-association.mts'
 import { searchCopyrightNoticeAssociationTargets } from './association-search.mts'
-import { copyrightConfig } from './config.mts'
-import { promoteCopyrightEmailIntake } from './email-promotion.mts'
 
 describe('manual copyright email association', () => {
   it('does not strand a reply on a UK notice that cannot admit correspondence', async () => {
@@ -64,10 +61,10 @@ describe('manual copyright email association', () => {
 
   it('rejects an ordinary initial intake so its statutory case approval is not bypassed', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const initial = await recordThreadedCopyrightEmail({
+    const initialRecord = await createRetentionParsedEmail('owned-initial-association', {
       messageId: copyrightEmailMessageId(),
-      replyReferences: [],
     })
+    const initial = { intakeId: initialRecord.id }
     const noticeId = await createCopyrightNoticeForManualAssociation()
 
     await expect(
@@ -111,25 +108,8 @@ describe('manual copyright email association', () => {
     const intake = await createManualReply()
     const noticeId = await createCopyrightNoticeForManualAssociation()
 
-    await expect(
-      associateCopyrightEmailIntakeWithNotice(moderator, intake.id, noticeId),
-    ).resolves.toEqual({
-      copyright_notice: { id: noticeId },
-      copyright_email_intake: { id: intake.id },
-    })
-    expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([
-      { copyright_notice_id: noticeId, link_kind: 'thread' },
-    ])
-    expect(await readCopyrightEmailManualAssociationReview(intake.id)).toEqual([
-      { copyright_notice_id: noticeId, action: 'pending' },
-    ])
-    expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toEqual([
-      {
-        copyright_notice_id: noticeId,
-        changed_by_id: moderator.id,
-        copyright_notice_email_intake_id: intake.id,
-      },
-    ])
+    expect.hasAssertions()
+    await assertOwnedCopyrightManualAssociation(moderator, intake.id, noticeId)
   })
 
   it('requires the real link pair and a retained staff actor for the lifecycle event', async () => {
@@ -140,7 +120,7 @@ describe('manual copyright email association', () => {
     await expect(
       insertCopyrightEmailManualAssociationEvent(noticeId, intake.id, moderator.id),
     ).rejects.toMatchObject({ code: '23503' })
-    await associateCopyrightEmailIntakeWithNotice(moderator, intake.id, noticeId)
+    await seedCopyrightAssociationInTransaction(moderator, intake.id, noticeId)
     await expect(
       insertCopyrightEmailManualAssociationEvent(noticeId, intake.id, null),
     ).rejects.toMatchObject({ code: '23514' })
@@ -157,107 +137,105 @@ describe('manual copyright email association', () => {
     expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toEqual([])
   })
 
-  it('rejects staff association when the competing thread link commits first', async () => {
-    const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const intake = await createManualReply()
-    const noticeId = await createCopyrightNoticeForManualAssociation()
-    const result = await associateAndThreadCopyrightEmail(moderator, intake.id, noticeId, 'thread')
-    expect(result).toMatchObject({
-      threaded: true,
-      manual: {
-        status: 'rejected',
-        reason: { status: 409, code: 'copyright_email_thread_changed' },
-      },
-    })
-    expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([
-      { copyright_notice_id: noticeId, link_kind: 'thread' },
-    ])
-    expect(await readCopyrightEmailManualAssociationReview(intake.id)).toEqual([
-      { copyright_notice_id: noticeId, action: 'pending' },
-    ])
-    expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toEqual([])
-  })
-
-  it('retains one staff audit when manual association commits before the competing thread link', async () => {
-    const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const intake = await createManualReply()
-    const noticeId = await createCopyrightNoticeForManualAssociation()
-    const result = await associateAndThreadCopyrightEmail(moderator, intake.id, noticeId, 'manual')
-    expect(result).toEqual({
-      threaded: true,
-      manual: {
-        status: 'fulfilled',
-        value: { copyright_notice: { id: noticeId }, copyright_email_intake: { id: intake.id } },
-      },
-    })
-    expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([
-      { copyright_notice_id: noticeId, link_kind: 'thread' },
-    ])
-    expect(await readCopyrightEmailManualAssociationReview(intake.id)).toEqual([
-      { copyright_notice_id: noticeId, action: 'pending' },
-    ])
-    expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toEqual([
-      {
+  it.each(['thread', 'manual'] as const)(
+    'preserves one link and its exact audit under %s-first overlap',
+    async first => {
+      const moderator = await createTestUser({ extraRoles: ['moderator'] })
+      const intake = await createManualReply()
+      const noticeId = await createCopyrightNoticeForManualAssociation()
+      const result = await associateAndThreadCopyrightEmail(moderator, intake.id, noticeId, first)
+      const link = { copyright_notice_id: noticeId, link_kind: 'thread' }
+      const review = { copyright_notice_id: noticeId, action: 'pending' }
+      const audit = {
         copyright_notice_id: noticeId,
         changed_by_id: moderator.id,
         copyright_notice_email_intake_id: intake.id,
-      },
-    ])
-  })
+      }
+      const manualSuccess = {
+        status: 'fulfilled',
+        value: { copyright_notice: { id: noticeId }, copyright_email_intake: { id: intake.id } },
+      }
+      const threadSuccess = { status: 'fulfilled', value: true }
+      const threadAbort = expect.objectContaining({
+        status: 'rejected',
+        reason: expect.objectContaining({ code: '40001' }),
+      })
+      const manualAbort = expect.objectContaining({
+        status: 'rejected',
+        reason: expect.objectContaining({
+          status: 409,
+          code: 'copyright_email_thread_changed',
+          cause: expect.objectContaining({ code: '40001' }),
+        }),
+      })
+      const manualGuard = expect.objectContaining({
+        status: 'rejected',
+        reason: expect.objectContaining({
+          status: 409,
+          code: 'copyright_email_thread_changed',
+          cause: undefined,
+        }),
+      })
+      const state = {
+        ...result,
+        links: await readCopyrightEmailIntakeNoticeLinks(intake.id),
+        reviews: await readCopyrightEmailManualAssociationReview(intake.id),
+        audits: await readCopyrightEmailManualAssociationEvent(intake.id),
+      }
+      expect([
+        {
+          manual: manualSuccess,
+          threaded: threadSuccess,
+          links: [link],
+          reviews: [review],
+          audits: [audit],
+        },
+        {
+          manual: manualSuccess,
+          threaded: threadAbort,
+          links: [link],
+          reviews: [review],
+          audits: [audit],
+        },
+        {
+          manual: manualAbort,
+          threaded: threadSuccess,
+          links: [link],
+          reviews: [review],
+          audits: [],
+        },
+        {
+          manual: manualGuard,
+          threaded: threadSuccess,
+          links: [link],
+          reviews: [review],
+          audits: [],
+        },
+        { manual: manualAbort, threaded: threadAbort, links: [], reviews: [], audits: [] },
+      ]).toContainEqual(state)
+    },
+  )
 
   it('lets staff associate an unlinked reply after graph overflow, then use the existing review', async () => {
+    expect.hasAssertions()
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const messageId = copyrightEmailMessageId()
-    const root = await recordThreadedCopyrightEmail({ messageId, replyReferences: [] })
-    const reply = await recordThreadedCopyrightEmail({
-      messageId: copyrightEmailMessageId(),
-      replyReferences: [messageId],
-    })
-    const restore = overrideDynamicConfigFieldsForTest(copyrightConfig, {
-      emailThreadGraphMaxRows: 2,
-    })
-    let noticeId: string
-    try {
-      const promoted = await promoteCopyrightEmailIntake(
-        await copyrightEmailPromotionInput(moderator, root.intakeId),
-      )
-      noticeId = promoted.noticeId
-    } finally {
-      restore()
-    }
-    expect(await readCopyrightEmailIntakeNoticeLinks(reply.intakeId)).toEqual([])
-
-    await associateCopyrightEmailIntakeWithNotice(moderator, reply.intakeId, noticeId)
-    expect(await readCopyrightEmailIntakeNoticeLinks(reply.intakeId)).toEqual([
-      { copyright_notice_id: noticeId, link_kind: 'thread' },
-    ])
-    expect(await readCopyrightEmailManualAssociationReview(reply.intakeId)).toEqual([
-      { copyright_notice_id: noticeId, action: 'pending' },
-    ])
+    const { noticeId, replyId } = await createCommittedCopyrightOverflowReply(moderator)
+    expect(await readCopyrightEmailIntakeNoticeLinks(replyId)).toEqual([])
+    await assertOwnedCopyrightManualAssociation(moderator, replyId, noticeId)
   })
 
   it('lets staff associate a reply whose referenced Message-ID has two owners', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const messageId = copyrightEmailMessageId()
-    await recordThreadedCopyrightEmail({ messageId, replyReferences: [] })
-    await recordThreadedCopyrightEmail({ messageId, replyReferences: [] })
-    const reply = await recordThreadedCopyrightEmail({
-      messageId: copyrightEmailMessageId(),
+    await createRetentionParsedEmail('duplicate-owner-one', { messageId })
+    await createRetentionParsedEmail('duplicate-owner-two', { messageId })
+    const replyRecord = await createRetentionParsedEmail('duplicate-owner-reply', {
       replyReferences: [messageId],
     })
+    const reply = { intakeId: replyRecord.id }
     const noticeId = await createCopyrightNoticeForManualAssociation()
     expect(await readCopyrightEmailIntakeNoticeLinks(reply.intakeId)).toEqual([])
 
-    await associateCopyrightEmailIntakeWithNotice(moderator, reply.intakeId, noticeId)
-    expect(await readCopyrightEmailIntakeNoticeLinks(reply.intakeId)).toEqual([
-      { copyright_notice_id: noticeId, link_kind: 'thread' },
-    ])
-    expect(await readCopyrightEmailManualAssociationEvent(reply.intakeId)).toEqual([
-      {
-        copyright_notice_id: noticeId,
-        changed_by_id: moderator.id,
-        copyright_notice_email_intake_id: reply.intakeId,
-      },
-    ])
+    await assertOwnedCopyrightManualAssociation(moderator, reply.intakeId, noticeId)
   })
 })

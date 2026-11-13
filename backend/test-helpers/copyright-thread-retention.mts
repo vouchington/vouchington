@@ -1,7 +1,17 @@
 import { randomBytes } from 'node:crypto'
-import { beginTransaction, read, write, type TransactionQuery } from '@data-stores/psql'
+import {
+  beginTransaction,
+  read,
+  readPool,
+  writePool,
+  write,
+  type PoolClient,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
+
+import { observeTestPostgresClientQueries } from './postgres-query-pool-observer.mts'
 
 type Token = { id: string; lookup_digest: string }
 
@@ -108,4 +118,44 @@ export async function readCopyrightThreadDigestUsage(digest: string) {
         WHERE link.matched_token_id = token.id) AS matched_links
     FROM copyright_notice_email_thread_tokens token WHERE lookup_digest = ${digest}`)
   return rows[0] ?? null
+}
+
+/** Exercise reused page checkouts and verify observation leaves subsequent real reads untouched. */
+export async function observeCopyrightPageCheckoutRestoration<Result>(
+  operation: () => Promise<Result>,
+  tokenId: string,
+) {
+  const originals = [readPool.connect, writePool.connect]
+  const clients = new Map<PoolClient, { query: PoolClient['query']; checkouts: number }>()
+  const acquired = (client: PoolClient) => {
+    const previous = clients.get(client)
+    if (previous) previous.checkouts += 1
+    else clients.set(client, { query: client.query, checkouts: 1 })
+  }
+  let callbacks = 0
+  readPool.on('acquire', acquired)
+  writePool.on('acquire', acquired)
+  try {
+    const observed = await observeTestPostgresClientQueries(operation, async () => {
+      callbacks += 1
+    })
+    const before = callbacks
+    const token = await readCopyrightThreadTokenById(tokenId)
+    return {
+      result: observed.result,
+      scans: observed.queries.filter(query =>
+        query.text.includes('/* scanCopyrightOperationalRetentionPage */'),
+      ).length,
+      reused: [...clients.values()].some(client => client.checkouts > 1),
+      restored:
+        readPool.connect === originals[0] &&
+        writePool.connect === originals[1] &&
+        [...clients].every(([client, original]) => client.query === original.query),
+      callbacksAfterTeardown: callbacks - before,
+      token,
+    }
+  } finally {
+    readPool.off('acquire', acquired)
+    writePool.off('acquire', acquired)
+  }
 }

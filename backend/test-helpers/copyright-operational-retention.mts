@@ -1,3 +1,12 @@
+import {
+  COPYRIGHT_RETENTION_FAMILIES,
+  type CopyrightRetentionScopes,
+  type CopyrightRetentionFamily,
+} from '../services/data-retention/cleanup-copyright-operational.mts'
+import {
+  createCopyrightOperationalCursor,
+  type CopyrightOperationalScope,
+} from '../services/copyright-notices/operational-retention-cursor.mts'
 import { randomUUID } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -33,60 +42,34 @@ function operationalTable(kind: OperationalKind | 'email_thread_tokens'): string
   }
 }
 
-function offsetUuid(id: string, offset: bigint): string {
-  const value = BigInt(`0x${id.replaceAll('-', '')}`) + offset
-  if (value < 0n || value >= 1n << 128n) throw new Error('Invalid copyright cursor window')
-  const hex = value.toString(16).padStart(32, '0')
-  return [
-    hex.slice(0, 8),
-    hex.slice(8, 12),
-    hex.slice(12, 16),
-    hex.slice(16, 20),
-    hex.slice(20),
-  ].join('-')
+/** An explicit owned set; pagination lives only in this caller's progress DTO. */
+export function createCopyrightOperationalScope(
+  recordIds: readonly string[],
+): CopyrightOperationalScope {
+  return { recordIds: [...recordIds], cursor: createCopyrightOperationalCursor() }
 }
 
-/** Constrains a real persisted pass to exactly the owned UUID or explicit owned interval. */
-export async function positionCopyrightOperationalCursor(
-  kind: OperationalKind,
-  firstId: string,
-  lastId = firstId,
-): Promise<void> {
-  const lower = offsetUuid(firstId, -1n)
-  const upper = offsetUuid(lastId, 1n)
-  if (lower >= upper) throw new Error('Invalid copyright cursor window order')
-  await write(sql`/* positionCopyrightOperationalCursor */
-    INSERT INTO copyright_notice_operational_retention_cursors
-      (kind, cursor_record_id, sweep_upper_bound_record_id)
-    VALUES (${kind}::copyright_notice_operational_retention_kinds,
-      ${lower}::uuid, ${upper}::uuid)
-    ON CONFLICT (kind) DO UPDATE SET
-      cursor_record_id = EXCLUDED.cursor_record_id,
-      sweep_upper_bound_record_id = EXCLUDED.sweep_upper_bound_record_id,
-      cursor_child_id = NULL, cursor_edge_id = NULL, cursor_phase = NULL,
-      cursor_blocker_phase = NULL, cursor_blocker_child_id = NULL,
-      cursor_blocker_assessment_identity_id = NULL,
-      cursor_blocker_generation = NULL`)
+/** Every cleanup family gets a distinct owned pass, including empty families. */
+export function createCopyrightRetentionScopes(
+  records: Partial<Record<CopyrightRetentionFamily, readonly string[]>> = {},
+): CopyrightRetentionScopes {
+  return Object.fromEntries(
+    COPYRIGHT_RETENTION_FAMILIES.map(family => [
+      family,
+      createCopyrightOperationalScope(records[family] ?? []),
+    ]),
+  )
 }
 
-/** Read the reserved thread cursor so a serialization abort proves page rollback. */
-export async function readCopyrightThreadOperationalCursor(): Promise<{
+/** Observe only this pass's committed thread progress. */
+export function readCopyrightThreadOperationalCursor(scope: CopyrightOperationalScope): Promise<{
   cursor_record_id: string | null
   cursor_child_id: string | null
   cursor_phase: string | null
   cursor_blocker_phase: string | null
 }> {
-  const { rows } = await read<{
-    cursor_record_id: string | null
-    cursor_child_id: string | null
-    cursor_phase: string | null
-    cursor_blocker_phase: string | null
-  }>(sql`/* readCopyrightThreadOperationalCursor */
-    SELECT cursor_record_id, cursor_child_id, cursor_phase, cursor_blocker_phase
-    FROM copyright_notice_operational_retention_cursors
-    WHERE kind = 'email_thread_references'`)
-  if (!rows[0]) throw new Error('Reserved copyright thread cursor was not found')
-  return rows[0]
+  const { cursor_record_id, cursor_child_id, cursor_phase, cursor_blocker_phase } = scope.cursor
+  return Promise.resolve({ cursor_record_id, cursor_child_id, cursor_phase, cursor_blocker_phase })
 }
 
 export async function seedCopyrightExecutionAttemptPair(

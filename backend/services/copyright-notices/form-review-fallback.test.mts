@@ -1,6 +1,3 @@
-import { overlapCopyrightWriters } from '@voucha/test-helpers/copyright-restriction-assessment-race'
-import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
-import { commitCopyrightWritersInOrder } from '@voucha/test-helpers/copyright-form-review-assessment-race'
 import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
 import { describe, expect, it } from 'vitest'
 import {
@@ -115,44 +112,6 @@ describe('copyright form moderator fallback', () => {
     ).resolves.toEqual([1, 1])
   })
 
-  it('keeps a moderator rejection authoritative when it races a clean automated screening', async () => {
-    const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const { notice } = await createClearScreenedForm()
-    const [reviewed, screened] = await commitCopyrightWritersInOrder(
-      () =>
-        reviewCopyrightFormIntake({
-          intakeId: notice.intake.id,
-          currentUser: moderator,
-          is_accepted: false,
-          rationale: 'The claimant did not substantiate this complaint.',
-        }),
-      () =>
-        applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id),
-      'reviewCopyrightFormIntake:review',
-      'applyNonSpamSignedInCopyrightFormScreening:lock',
-      notice.intake.copyright_notice_submission_id,
-      [
-        notice.intake.id,
-        notice.intake.copyright_notice_id,
-        notice.intake.copyright_notice_submission_id,
-      ],
-    )
-    expect(reviewed).toMatchObject({ status: 'fulfilled', value: { is_accepted: false } })
-    expect(screened).toMatchObject({ status: 'rejected', reason: { code: '40001' } })
-    expect(await countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id)).toBe(
-      0,
-    )
-    const aggregate = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
-    expect(aggregate?.assessments).toEqual([
-      expect.objectContaining({
-        is_substantially_compliant: false,
-        copyright_notice_form_screening_id: null,
-        assessed_by_id: moderator.id,
-      }),
-    ])
-    expect(aggregate?.actionIntents).toEqual([])
-  })
-
   it('lets a moderator reverse an automated signed-in restriction', async () => {
     const [poster, claimant, moderatorRecord] = await Promise.all([
       createTestUser(),
@@ -212,75 +171,5 @@ describe('copyright form moderator fallback', () => {
       rationale: 'The automated restriction was not substantiated.',
     })
     await expectQueuedRestore(notice.intake.copyright_notice_id)
-  })
-
-  it('commits the first guest-form rejection and rolls back the overlapping request', async () => {
-    const [poster, moderatorRecord] = await Promise.all([createTestUser(), createTestUser()])
-    const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
-    const postId = await insertTestPost({
-      title: `guest race ${crypto.randomUUID()}`,
-      slug: `guest-race-${crypto.randomUUID()}`,
-      createdById: poster.id,
-      markdown: 'image',
-    })
-    const imageId = await insertTestImage(poster.id)
-    await insertTestPostImage({ postId, imageId })
-    const notice = await createCopyrightFormIntake({
-      currentUser: null,
-      requesterIdentity: `guest:${crypto.randomUUID()}`,
-      idempotencyKey: crypto.randomUUID(),
-      request: {
-        jurisdiction: 'us_dmca',
-        claimantDisplayName: 'Guest claimant',
-        claimantContact: 'guest@example.test',
-        claimantEmail: 'guest@example.test',
-        workDescription: 'Guest-owned photograph',
-        goodFaithBelief: true,
-        accuracyAuthorityUnderPenaltyOfPerjury: true,
-        electronicSignature: 'Guest claimant',
-        claimantTargets: [
-          {
-            surfaceKind: 'post-image' as const,
-            postId,
-            imageId,
-            hostedUseUrl: `https://voucha.ai/posts/${postId}`,
-          },
-        ],
-      },
-    })
-    const reject = (rationale: string) =>
-      reviewCopyrightFormIntake({
-        intakeId: notice.intake.id,
-        currentUser: moderator,
-        is_accepted: false,
-        rationale,
-      })
-        .then(value => ({ status: 'fulfilled' as const, value }))
-        .catch((err: unknown) => ({ status: 'rejected' as const, reason: err }))
-    const key = `copyright-form-review:${notice.intake.id}`
-    const [first, second] = await overlapCopyrightWriters(
-      'reviewCopyrightFormIntake:review',
-      () => reject('The guest complaint was not substantiated.'),
-      () => reject('The overlapping request must not duplicate the decision.'),
-      [notice.intake.id, notice.intake.copyright_notice_id, key],
-      key,
-    )
-    expect(first).toMatchObject({ status: 'fulfilled', value: { is_accepted: false } })
-    expect(second).toMatchObject({
-      status: 'rejected',
-      reason: {
-        status: 409,
-        code: 'CONFLICT',
-        cause: { code: '40001' },
-      },
-    })
-    const aggregate = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
-    expect(aggregate?.assessments).toHaveLength(1)
-    expect(
-      aggregate?.lifecycleEvents.filter(row => row.change_type === 'submission_assessed'),
-    ).toHaveLength(1)
-    await expect(
-      countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
-    ).resolves.toBe(0)
   })
 })

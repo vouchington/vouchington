@@ -1,9 +1,7 @@
+import { assertCommittedEuWithdrawalContinuity as assertTestEuWithdrawalContinuity } from '@voucha/test-helpers/copyright-eu-withdrawal-subject'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
-import {
-  assertTestEuWithdrawalContinuity,
-  prepareTestEuWithdrawalGuestCase,
-} from '@voucha/test-helpers/copyright-eu-withdrawal-continuity'
+import { prepareTestEuWithdrawalGuestCase } from '@voucha/test-helpers/copyright-eu-withdrawal-continuity'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { createHostedImagePost } from '@voucha/test-helpers/services/copyright-notices/hosted-post-audience'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -28,7 +26,6 @@ import {
 } from './index.mts'
 import { receiveTerritorialCopyrightNoticeInTransaction } from './territorial-notice-receipt.mts'
 import {
-  concealJurisdictionPolicyApprovals,
   readCopyrightTerritorialContractShape,
   withRolledBackTerritorialTransaction,
 } from '@voucha/test-helpers/data-stores/psql/copyright-eu-uk-contracts'
@@ -152,7 +149,9 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
     )
     const euGuest = await prepareTestEuWithdrawalGuestCase()
     await withRolledBackTerritorialTransaction(async transaction => {
-      await concealJurisdictionPolicyApprovals(transaction, 'eu_dsa', administrator.id)
+      await withdrawCopyrightJurisdictionPolicyApproval(administrator, euApproval.id, {
+        query: transaction,
+      })
       await expect(
         receiveTerritorialCopyrightNoticeInTransaction(
           { user: claimant, identity: `user:${claimant.id}` },
@@ -160,6 +159,7 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
           crypto.randomUUID(),
           euNoticeRequest(),
           transaction,
+          [euApproval.id],
         ),
       ).rejects.toMatchObject({ status: 403, message: 'EU copyright notices are not available' })
     })
@@ -246,7 +246,9 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
     expect((await getCopyrightNoticePrivateAggregate(euD.notice_id))?.restrictions).toHaveLength(1)
 
     await withRolledBackTerritorialTransaction(async transaction => {
-      await concealJurisdictionPolicyApprovals(transaction, 'uk', administrator.id)
+      await withdrawCopyrightJurisdictionPolicyApproval(administrator, ukApproval.id, {
+        query: transaction,
+      })
       await expect(
         receiveTerritorialCopyrightNoticeInTransaction(
           { user: claimant, identity: `user:${claimant.id}` },
@@ -254,6 +256,7 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
           crypto.randomUUID(),
           noticeRequest(),
           transaction,
+          [ukApproval.id],
         ),
       ).rejects.toMatchObject({ status: 403, message: 'UK copyright notices are not available' })
     })

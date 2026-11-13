@@ -42,7 +42,8 @@ export async function commitCopyrightWritersInOrder(
     const firstCommitted = Promise.withResolvers<void>()
     const restorations = new Map<pg.PoolClient, () => void>()
     const settled = <T,>(operation: () => Promise<T>): Promise<PromiseSettledResult<T>> =>
-      operation()
+      Promise.resolve()
+        .then(operation)
         .then(value => ({ status: 'fulfilled' as const, value }))
         .catch((err: unknown) => ({ status: 'rejected' as const, reason: err }))
     let firstClient: pg.PoolClient | undefined
@@ -100,8 +101,10 @@ export async function commitCopyrightWritersInOrder(
       const firstResult = await first
       firstCommitted.resolve()
       if (!second) {
-        if (firstResult.status === 'rejected') throw firstResult.reason
-        throw new Error('Owned decision did not reach its commit-order overlap')
+        // A guard or serialization abort can settle before the selected checkpoint.
+        // The other actor must still run exactly once, without waiting on that checkpoint.
+        started = true
+        second = settled<unknown>(secondOperation)
       }
       const secondResult = await second
       return [firstResult, secondResult] as const

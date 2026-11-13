@@ -2,22 +2,21 @@ import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyri
 import { describe, expect, it } from 'vitest'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import { encodeUuidCursorBefore } from '../../test-helpers/modules/pagination/uuid-cursors.mts'
-import { appendCopyrightLegalHoldAssessment } from './index.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
+import { seedActionDeliveryRestriction } from '@voucha/test-helpers/copyright-action-delivery-contract-fixtures'
+import { seedEvidenceHold } from '@voucha/test-helpers/copyright-evidence-hold-fixture'
+import { assertStatutoryScheduleMaterialization } from '@voucha/test-helpers/copyright-statutory-schedule-subject'
+import { seedCommittedRestorationIntent } from '@voucha/test-helpers/copyright-restoration-intent-fixture'
 import {
   createCompliantCounterNoticeDeadline,
   createCopyrightRestorationHoldFixture,
 } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
-import {
-  createDueStatutoryCopyrightRestoreIntentsForDeadline,
-  searchDueStatutoryCopyrightRestorationDeadlineIds,
-} from './statutory-restoration-schedule.mts'
+import { searchDueStatutoryCopyrightRestorationDeadlineIds } from './statutory-restoration-schedule.mts'
 
 async function createCounterNoticedRestriction() {
   const fixture = await createCopyrightRestorationHoldFixture()
   const { aggregate, assessment, claimant, moderator, notice } = fixture
   const target = aggregate.targets[0]!
-  await acceptCopyrightNoticeAndImposeRestriction({
+  const restriction = await seedActionDeliveryRestriction({
     noticeId: notice.id,
     targetId: target.id,
     assessmentId: assessment.id,
@@ -25,25 +24,12 @@ async function createCounterNoticedRestriction() {
     imposedById: moderator.id,
   })
   const deadline = await createCompliantCounterNoticeDeadline({
-    claimant: claimant as never,
+    claimant,
     noticeId: notice.id,
     moderator,
     targetIds: [target.id],
   })
-  return { deadline, moderator, notice, target }
-}
-
-async function materializeListedDeadline(deadlineId: string, now: Date): Promise<number> {
-  const page = await searchDueStatutoryCopyrightRestorationDeadlineIds({
-    now,
-    after: encodeUuidCursorBefore(deadlineId),
-    limit: 1,
-  })
-  expect(page.results).toEqual([deadlineId])
-  return createDueStatutoryCopyrightRestoreIntentsForDeadline(
-    page.candidates[deadlineId] ?? [],
-    now,
-  )
+  return { deadline, moderator, notice, target, restriction, claimant }
 }
 
 function readDueDeadlineIds(deadlineId: string, now: Date): Promise<string[]> {
@@ -91,14 +77,39 @@ describe('statutory copyright restoration schedule', () => {
   })
 
   it('materializes a due restore intent and stops listing its deadline', async () => {
-    const { deadline } = await createCounterNoticedRestriction()
-    const now = new Date(deadline.restoration_deadline_at.getTime() + 1)
-    await expect(materializeListedDeadline(deadline.id, now)).resolves.toBe(1)
-    await expect(readDueDeadlineIds(deadline.id, now)).resolves.toEqual([])
+    expect.hasAssertions()
+    const scene = await createCounterNoticedRestriction()
+    const now = new Date(scene.deadline.restoration_deadline_at.getTime() + 1)
+    await assertStatutoryScheduleMaterialization(
+      {
+        noticeId: scene.notice.id,
+        restrictionId: scene.restriction.id,
+        placementId: scene.target.placement_id,
+        accountId: scene.claimant.id,
+        deadlineId: scene.deadline.id,
+      },
+      now,
+    )
+  })
+
+  it('removes an independently committed materialization from the due deadline list', async () => {
+    const scene = await createCounterNoticedRestriction()
+    const now = new Date(scene.deadline.restoration_deadline_at.getTime() + 1)
+    await seedCommittedRestorationIntent({
+      noticeId: scene.notice.id,
+      targetId: scene.target.id,
+      restrictionId: scene.restriction.id,
+      deadlineId: scene.deadline.id,
+      expectedPlacementRevision: scene.target.placement_revision,
+      now,
+    })
+    await expect(readDueDeadlineIds(scene.deadline.id, now)).resolves.toEqual([])
   })
 
   it('fails closed when a due restoration is blocked by a qualifying legal hold', async () => {
-    const { deadline, moderator, notice, target } = await createCounterNoticedRestriction()
+    expect.hasAssertions()
+    const scene = await createCounterNoticedRestriction()
+    const { deadline, moderator, notice, target } = scene
     const holdSubmission = await appendTestCopyrightNoticeSubmission({
       noticeId: notice.id,
       kind: 'court_or_ccb_hold',
@@ -107,7 +118,8 @@ describe('statutory copyright restoration schedule', () => {
       submittedByUserId: null,
       bodyCiphertext: `hold-${crypto.randomUUID()}`,
     })
-    await appendCopyrightLegalHoldAssessment({
+    await seedEvidenceHold({
+      noticeId: notice.id,
       currentUser: moderator,
       submissionId: holdSubmission.id,
       assessedAt: new Date('2026-07-02T13:01:00.000Z'),
@@ -121,8 +133,16 @@ describe('statutory copyright restoration schedule', () => {
       rationale: 'Verified qualifying CCB filing.',
     })
     const now = new Date(deadline.earliest_restoration_at.getTime() + 60_000)
-    await expect(materializeListedDeadline(deadline.id, now)).rejects.toThrow(
-      /Failed to materialize one or more due copyright restoration intents/,
+    await assertStatutoryScheduleMaterialization(
+      {
+        noticeId: notice.id,
+        restrictionId: scene.restriction.id,
+        placementId: target.placement_id,
+        accountId: scene.claimant.id,
+        deadlineId: deadline.id,
+      },
+      now,
+      true,
     )
   })
 })

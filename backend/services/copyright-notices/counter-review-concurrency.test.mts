@@ -1,13 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { createCopyrightNoticeForManualAssociation } from '@voucha/test-helpers/copyright-email-manual-association'
-import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
-import { appendTestCopyrightAssessmentWhileRecoveryWaits } from '@voucha/test-helpers/copyright-recovery-concurrency'
+import {
+  seedCopyrightSubmissionAssessment,
+  appendTestCopyrightNoticeSubmission,
+} from '@voucha/test-helpers/copyright-notice-submissions'
+import { interleaveCopyrightOwnedRead } from '@voucha/test-helpers/copyright-owned-read-interleave'
+import {
+  copyrightRaceResult,
+  readCopyrightAssessmentRaceState,
+} from '@voucha/test-helpers/copyright-assessment-race-outcomes'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { reviewCopyrightCounterNotice } from './counter-notice-reviews.mts'
 
 describe('normal assessment and counter-notice review concurrency', () => {
-  it('commits both assessments and publishes the later counter-review result', async () => {
+  it('keeps the committed assessment and rolls back a stale counter-review snapshot', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const noticeId = await createCopyrightNoticeForManualAssociation()
     const submission = await appendTestCopyrightNoticeSubmission({
@@ -18,36 +25,51 @@ describe('normal assessment and counter-notice review concurrency', () => {
       receivedAt: new Date(),
       bodyCiphertext: 'Owned counter-notice.',
     })
-    const review = await appendTestCopyrightAssessmentWhileRecoveryWaits(
-      {
-        submissionId: submission.id,
-        currentUser: moderator,
-        substantiallyCompliant: false,
-        assessedAt: new Date(),
-      },
-      () =>
+    const before = await readCopyrightAssessmentRaceState(noticeId)
+    const race = await interleaveCopyrightOwnedRead({
+      ownedId: submission.id,
+      marker: 'reviewCopyrightCounterNotice:notice',
+      first: () =>
         reviewCopyrightCounterNotice({
           currentUser: moderator,
           submissionId: submission.id,
           is_accepted: false,
           rationale: 'Missing statutory declarations.',
         }),
-      'reviewCopyrightCounterNotice:submission',
-    )
-    const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
-    expect(
-      aggregate?.assessments.filter(row => row.copyright_notice_submission_id === submission.id),
-    ).toHaveLength(2)
-    expect(aggregate?.submissions.find(row => row.id === submission.id)).toMatchObject({
-      current_assessment_identity_id: review.assessmentId,
-      current_assessment_is_substantially_compliant: false,
+      second: () =>
+        seedCopyrightSubmissionAssessment({
+          submissionId: submission.id,
+          currentUser: moderator,
+          substantiallyCompliant: false,
+          assessedAt: new Date(),
+        }),
     })
-    expect(aggregate?.counterNoticeReviews).toHaveLength(1)
-    expect(
-      aggregate?.lifecycleEvents.filter(row => row.change_type === 'submission_assessed'),
-    ).toHaveLength(1)
-    expect(
-      aggregate?.lifecycleEvents.filter(row => row.change_type === 'counter_notice_reviewed'),
-    ).toHaveLength(1)
+    expect(race.observerErrors).toEqual([])
+    expect(race.second.status).toBe('fulfilled')
+    const assessmentId = race.second.status === 'fulfilled' ? race.second.value.id : undefined
+    expect([
+      {
+        review: {
+          status: 'rejected',
+          statusCode: 409,
+          code: 'CONFLICT',
+          message: 'Conflicting copyright case change',
+          causeCode: '40001',
+        },
+        state: {
+          ...before,
+          assessments: [{ id: assessmentId, supersedes: null, compliant: false }],
+          identities: [assessmentId],
+          pointers: [{ id: submission.id, assessment: assessmentId, compliant: false }],
+          events: [...before.events, 'submission_assessed'].toSorted(),
+        },
+      },
+    ]).toContainEqual({
+      review: copyrightRaceResult(race.first),
+      state: await readCopyrightAssessmentRaceState(noticeId),
+    })
+    const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
+    expect(aggregate?.counterNoticeReviews).toEqual([])
+    expect(aggregate?.deadlines).toEqual([])
   })
 })

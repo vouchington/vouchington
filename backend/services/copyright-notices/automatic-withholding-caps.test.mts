@@ -1,3 +1,12 @@
+import {
+  seedCommittedAutomaticWithholding,
+  seedCommittedAutomaticRefusal,
+} from '@voucha/test-helpers/copyright-automatic-withholding-fixtures'
+import {
+  assertAutomaticWithholdingOutcome,
+  assertModeratorAcceptsAutomaticRefusal,
+  assertConcurrentAutomaticClaimantCap,
+} from '@voucha/test-helpers/copyright-automatic-withholding-outcomes'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { checkTestAutomaticWithholdingCaps } from '@voucha/test-helpers/services/copyright-notices/claimant-abuse-fixtures'
@@ -8,19 +17,12 @@ import {
   createClearScreenedForm,
   type FormPeople,
 } from '@voucha/test-helpers/services/copyright-notices/screened-form'
-import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
-import { reviewCopyrightFormIntake } from './index.mts'
 
 async function createForm(people: FormPeople = {}) {
   return (await createClearScreenedForm(1, people)).notice
 }
 
-function screen(notice: Awaited<ReturnType<typeof createForm>>) {
-  return applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id)
-}
-
 const withheld = { refusal: null, assessments: 1, restrictions: 1 }
-const refusedFor = (refusal: string) => ({ refusal, assessments: 0, restrictions: 0 })
 const DAY_MS = 24 * 60 * 60 * 1000
 
 describe('automatic withholding caps', () => {
@@ -31,24 +33,17 @@ describe('automatic withholding caps', () => {
     const claimant = await createTestUser()
     const [first, second] = [await createForm({ claimant }), await createForm({ claimant })]
 
-    await screen(first)
-    await screen(second)
+    await seedCommittedAutomaticWithholding(first)
+    await assertAutomaticWithholdingOutcome(second, 'claimant_daily_cap')
 
     await expect(readTestAutomaticWithholdingOutcome(first)).resolves.toEqual(withheld)
-    await expect(readTestAutomaticWithholdingOutcome(second)).resolves.toEqual(
-      refusedFor('claimant_daily_cap'),
-    )
-
-    const moderator = { ...(await createTestUser()), roles: ['moderator'] }
-    await reviewCopyrightFormIntake({
-      intakeId: second.intake.id,
-      currentUser: moderator as Awaited<ReturnType<typeof createTestUser>>,
+    // Moderator override always runs on a committed over-cap refusal, independent of the actor above.
+    const refused = await createForm({ claimant })
+    await seedCommittedAutomaticRefusal(refused, 'claimant_daily_cap')
+    await assertModeratorAcceptsAutomaticRefusal(refused, {
+      currentUser: await createTestUser({ extraRoles: ['moderator'] }),
       is_accepted: true,
       rationale: 'The over-cap notice is complete.',
-    })
-    await expect(readTestAutomaticWithholdingOutcome(second)).resolves.toMatchObject({
-      refusal: 'claimant_daily_cap',
-      restrictions: 1,
     })
   })
 
@@ -57,52 +52,38 @@ describe('automatic withholding caps', () => {
     const poster = await createTestUser()
     const [first, second] = [await createForm({ poster }), await createForm({ poster })]
 
-    await screen(first)
-    await screen(second)
+    await seedCommittedAutomaticWithholding(first)
+    await assertAutomaticWithholdingOutcome(second, 'poster_daily_cap')
 
     await expect(readTestAutomaticWithholdingOutcome(first)).resolves.toEqual(withheld)
-    await expect(readTestAutomaticWithholdingOutcome(second)).resolves.toEqual(
-      refusedFor('poster_daily_cap'),
-    )
   })
 
   it.each([
     ['automaticWithholdingClaimantDailyCap', 'claimant_daily_cap'],
     ['automaticWithholdingPosterDailyCap', 'poster_daily_cap'],
-  ])('refuses every notice when %s is zero', async (field, reason) => {
+  ] as const)('refuses every notice when %s is zero', async (field, reason) => {
     await switchOn({ [field]: 0 })
     const notice = await createForm()
 
-    await screen(notice)
-
-    await expect(readTestAutomaticWithholdingOutcome(notice)).resolves.toEqual(refusedFor(reason))
+    expect.hasAssertions()
+    await assertAutomaticWithholdingOutcome(notice, reason)
   })
 
-  it('admits exactly one of two concurrent notices at a cap of one', async () => {
+  it('commits at most one automated assessment for two concurrent notices at a cap of one', async () => {
+    expect.hasAssertions()
     await switchOn({ automaticWithholdingClaimantDailyCap: 1 })
     const claimant = await createTestUser()
-    const notices = [await createForm({ claimant }), await createForm({ claimant })]
-
-    await Promise.all(notices.map(screen))
-
-    const outcomes = await Promise.all(notices.map(readTestAutomaticWithholdingOutcome))
-    expect(
-      outcomes
-        .map(outcome => outcome.restrictions)
-        .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
-    ).toEqual([0, 1])
-    expect(
-      outcomes
-        .map(outcome => outcome.refusal)
-        .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
-    ).toEqual(['claimant_daily_cap', null])
+    const first = await createForm({ claimant })
+    const second = await createForm({ claimant })
+    // The SERIAL assessment consumes the slot even when its later enforcement TX aborts.
+    await assertConcurrentAutomaticClaimantCap([first, second])
   })
 
   it('counts only automated assessments from the last 24 hours', async () => {
     await switchOn({ automaticWithholdingClaimantDailyCap: 1 })
     const claimant = await createTestUser()
     const notice = await createForm({ claimant })
-    await screen(notice)
+    await seedCommittedAutomaticWithholding(notice)
     const next = await createForm({ claimant })
     const thresholds = { claimantDailyCap: 1, posterDailyCap: 1000 }
     const check = (now: Date) =>
@@ -129,7 +110,7 @@ describe('automatic withholding caps', () => {
       })
       const [claimant, poster] = await Promise.all([createTestUser(), createTestUser()])
       const first = await createForm({ claimant, poster })
-      await screen(first)
+      await seedCommittedAutomaticWithholding(first)
       const otherClaimant = kind === 'poster' ? await createTestUser() : claimant
       const next = await createForm(
         kind === 'poster' ? { claimant: otherClaimant, poster } : { claimant },

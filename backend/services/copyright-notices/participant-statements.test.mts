@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
-import { createSignedInCopyrightForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
+import { createCommittedCopyrightStatementScene } from '@voucha/test-helpers/copyright-statement-scene'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
-import { reviewCopyrightFormIntake } from './form-reviews.mts'
 import { getCopyrightParticipantNoticeDetail } from './read-models-participant.mts'
 
 describe('private participant statement projection', () => {
@@ -14,13 +13,7 @@ describe('private participant statement projection', () => {
       createTestUser(),
       createTestUser({ extraRoles: ['moderator'] }),
     ])
-    const notice = await createSignedInCopyrightForm(1, { poster, claimant })
-    await reviewCopyrightFormIntake({
-      intakeId: notice.intake.id,
-      currentUser: moderator,
-      is_accepted: true,
-      rationale: 'Complete notice.',
-    })
+    const { notice } = await createCommittedCopyrightStatementScene({ poster, claimant })
     const caseId = notice.intake.copyright_notice_id
     expect((await getCopyrightParticipantNoticeDetail(caseId, poster))?.statements).toEqual([
       expect.objectContaining({
@@ -37,28 +30,19 @@ describe('private participant statement projection', () => {
   })
   it('never opens an unaccepted notice case for its notifier', async () => {
     const claimant = await createTestUser()
-    const notice = await createSignedInCopyrightForm(1, { claimant })
-    await reviewCopyrightFormIntake({
-      intakeId: notice.intake.id,
-      currentUser: await createTestUser({ extraRoles: ['moderator'] }),
-      is_accepted: false,
-      rationale: 'Incomplete notice.',
-    })
+    const { notice } = await createCommittedCopyrightStatementScene(
+      { claimant },
+      { accepted: false },
+    )
     expect(
       await getCopyrightParticipantNoticeDetail(notice.intake.copyright_notice_id, claimant),
     ).toBeNull()
   })
   it('includes both roles addressed to a claimant who also owns the reported post', async () => {
     const participant = await createTestUser()
-    const notice = await createSignedInCopyrightForm(1, {
+    const { notice } = await createCommittedCopyrightStatementScene({
       claimant: participant,
       poster: participant,
-    })
-    await reviewCopyrightFormIntake({
-      intakeId: notice.intake.id,
-      currentUser: await createTestUser({ extraRoles: ['moderator'] }),
-      is_accepted: true,
-      rationale: 'Complete notice.',
     })
     const detail = await getCopyrightParticipantNoticeDetail(
       notice.intake.copyright_notice_id,

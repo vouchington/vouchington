@@ -1,6 +1,16 @@
+import { seedCommittedTerritorialDecision } from '@voucha/test-helpers/copyright-territorial-committed-decision'
+import {
+  seedCommittedTerritorialRedress,
+  seedCommittedTerritorialRedressDecision,
+} from '@voucha/test-helpers/copyright-territorial-committed-redress'
+import {
+  assertTerritorialInterruptedDecision,
+  assertTerritorialDecisionHttpRace,
+} from '@voucha/test-helpers/copyright-territorial-decision-outcomes'
+import { readTerritorialDecisionState } from '@voucha/test-helpers/copyright-territorial-decision-state'
+import { assertTerritorialOwedEnforcement } from '@voucha/test-helpers/copyright-territorial-owed-enforcement'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { interceptCopyrightImpositionForTest } from '@voucha/test-helpers/copyright-imposition-intercept'
-import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestTerritorialRestrictionScene,
   readTestTerritorialDecisions,
@@ -8,10 +18,6 @@ import {
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
-  recordEuCopyrightRedressDecision,
-  recordUkCopyrightRedressDecision,
-  submitEuCopyrightRedress,
-  submitUkCopyrightRedress,
   enforceCopyrightAssessment,
   recordEuCopyrightStatementOfReasons,
   recordUkCopyrightReview,
@@ -23,11 +29,6 @@ const determine = {
   uk: recordUkCopyrightReview,
 }
 const jurisdictions = ['eu_dsa', 'uk'] as const
-const submit = { eu_dsa: submitEuCopyrightRedress, uk: submitUkCopyrightRedress }
-const decideComplaint = {
-  eu_dsa: recordEuCopyrightRedressDecision,
-  uk: recordUkCopyrightRedressDecision,
-}
 
 function restrictionInput(
   targets: Awaited<ReturnType<typeof createTestTerritorialRestrictionScene>>['targets'],
@@ -50,15 +51,28 @@ describe('territorial restriction commitment and enforcement', () => {
       interceptCopyrightImpositionForTest(scene.noticeId, async () => {
         throw new Error('temporary enforcement interruption')
       })
-      await expect(
-        determine[jurisdiction](scene.staff, scene.noticeId, restrictionInput(scene.targets)),
-      ).rejects.toThrow('temporary enforcement interruption')
-      const decisions = await readTestTerritorialDecisions(scene.noticeId)
+      await assertTerritorialInterruptedDecision(
+        jurisdiction,
+        scene,
+        restrictionInput(scene.targets),
+        'temporary enforcement interruption',
+        0,
+      )
+      // Owed enforcement runs from its own committed decision even if admission above aborted.
+      const owed = await createTestTerritorialRestrictionScene(jurisdiction)
+      await seedCommittedTerritorialDecision(
+        jurisdiction,
+        owed.staff,
+        owed.noticeId,
+        restrictionInput(owed.targets),
+        0,
+      )
+      const decisions = await readTestTerritorialDecisions(owed.noticeId)
       expect(decisions).toHaveLength(1)
       const assessmentId = decisions[0]?.copyright_notice_submission_assessment_identity_id
       if (!assessmentId) throw new Error('Decision assessment was not committed')
-      expect((await getCopyrightNoticePrivateAggregate(scene.noticeId))?.targets).toHaveLength(1)
-      expect((await getCopyrightNoticePrivateAggregate(scene.noticeId))?.restrictions).toHaveLength(
+      expect((await getCopyrightNoticePrivateAggregate(owed.noticeId))?.targets).toHaveLength(1)
+      expect((await getCopyrightNoticePrivateAggregate(owed.noticeId))?.restrictions).toHaveLength(
         0,
       )
       await expect(
@@ -67,14 +81,21 @@ describe('territorial restriction commitment and enforcement', () => {
           assessmentId,
         ),
       ).resolves.toEqual([assessmentId])
-      await enforceCopyrightAssessment(assessmentId)
-      expect((await getCopyrightNoticePrivateAggregate(scene.noticeId))?.restrictions).toHaveLength(
-        1,
+      await assertTerritorialOwedEnforcement(jurisdiction, owed)
+      const completed = await createTestTerritorialRestrictionScene(jurisdiction)
+      await seedCommittedTerritorialDecision(
+        jurisdiction,
+        completed.staff,
+        completed.noticeId,
+        restrictionInput(completed.targets),
       )
+      const completedAssessment = (await readTestTerritorialDecisions(completed.noticeId))[0]!
+        .copyright_notice_submission_assessment_identity_id
+      if (!completedAssessment) throw new Error('Committed completed decision missing assessment')
       await expect(
         readTestOwnedCopyrightSweepIds(
           searchPendingCopyrightEnforcementAssessmentIds,
-          assessmentId,
+          completedAssessment,
         ),
       ).resolves.toEqual([])
     },
@@ -84,10 +105,12 @@ describe('territorial restriction commitment and enforcement', () => {
     '%s rolls back every decision fact for an unknown image',
     async jurisdiction => {
       const scene = await createTestTerritorialRestrictionScene(jurisdiction)
+      const fullBefore = await readTerritorialDecisionState(jurisdiction, scene)
       const invalid = { ...scene.targets[0]!, imageId: crypto.randomUUID() }
       await expect(
         determine[jurisdiction](scene.staff, scene.noticeId, restrictionInput([invalid])),
-      ).rejects.toMatchObject({ status: 422 })
+      ).rejects.toMatchObject({ status: 422, message: 'Hosted image placement was not found' })
+      expect(await readTerritorialDecisionState(jurisdiction, scene)).toEqual(fullBefore)
       expect(await readTestTerritorialDecisions(scene.noticeId)).toEqual([])
       const aggregate = await getCopyrightNoticePrivateAggregate(scene.noticeId)
       expect(aggregate?.targets).toEqual([])
@@ -98,36 +121,9 @@ describe('territorial restriction commitment and enforcement', () => {
   )
 
   it.each(jurisdictions)('%s serializes two staff decisions on one receipt', async jurisdiction => {
+    expect.hasAssertions()
     const scene = await createTestTerritorialRestrictionScene(jurisdiction)
-    const staffRequest = createRequest()
-    await staffRequest.authenticateAs(scene.staff)
-    const url =
-      jurisdiction === 'eu_dsa'
-        ? `/api/v1/copyright-eu-notices/${scene.noticeId}/statements-of-reasons`
-        : `/api/v1/copyright-uk-notices/${scene.noticeId}/reviews`
-    const body = {
-      [jurisdiction === 'eu_dsa' ? 'statement' : 'rationale']:
-        'The hosted image reproduces the work identified by the claimant.',
-      public_explanation: 'The listed post image reproduces the protected photograph.',
-      outcome: 'restrict',
-      targets: scene.targets.map(target => ({
-        surface: 'post-image',
-        post_id: target.postId,
-        image_id: target.imageId,
-        target_url: target.hostedUseUrl,
-      })),
-    }
-    const responses = await Promise.all([
-      staffRequest.post(url).send(body),
-      staffRequest.post(url).send(body),
-    ])
-    expect(
-      responses
-        .map(response => response.status)
-        .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
-    ).toEqual([201, 409])
-    expect(await readTestTerritorialDecisions(scene.noticeId)).toHaveLength(1)
-    expect((await getCopyrightNoticePrivateAggregate(scene.noticeId))?.restrictions).toHaveLength(1)
+    await assertTerritorialDecisionHttpRace(jurisdiction, scene, restrictionInput(scene.targets))
   })
 
   it.each(jurisdictions)(
@@ -141,29 +137,49 @@ describe('territorial restriction commitment and enforcement', () => {
         },
         2,
       )
-      await expect(
-        determine[jurisdiction](scene.staff, scene.noticeId, restrictionInput(scene.targets)),
-      ).rejects.toThrow('second target still owed')
-      const decision = (await readTestTerritorialDecisions(scene.noticeId))[0]
-      const assessmentId = decision?.copyright_notice_submission_assessment_identity_id
-      if (!assessmentId) throw new Error('Decision assessment was not committed')
-      const before = await getCopyrightNoticePrivateAggregate(scene.noticeId)
-      expect(before?.targets).toHaveLength(2)
-      expect(before?.restrictions).toHaveLength(1)
-      const redress = await submit[jurisdiction](
-        scene.claimant,
-        scene.noticeId,
-        crypto.randomUUID(),
-        'The restriction was mistaken.',
-      )
-      await decideComplaint[jurisdiction](scene.staff, scene.noticeId, redress.id, {
-        disposition: 'revoke',
-        rationale: 'The complaint shows the restriction was mistaken.',
-      })
-      await enforceCopyrightAssessment(assessmentId)
-      expect((await getCopyrightNoticePrivateAggregate(scene.noticeId))?.restrictions).toHaveLength(
+      await assertTerritorialInterruptedDecision(
+        jurisdiction,
+        scene,
+        restrictionInput(scene.targets),
+        'second target still owed',
         1,
       )
+      const committed = await createTestTerritorialRestrictionScene(jurisdiction, 2)
+      await seedCommittedTerritorialDecision(
+        jurisdiction,
+        committed.staff,
+        committed.noticeId,
+        restrictionInput(committed.targets),
+        1,
+      )
+      const decision = (await readTestTerritorialDecisions(committed.noticeId))[0]
+      const assessmentId = decision?.copyright_notice_submission_assessment_identity_id
+      if (!assessmentId) throw new Error('Decision assessment was not committed')
+      const before = await getCopyrightNoticePrivateAggregate(committed.noticeId)
+      expect(before?.targets).toHaveLength(2)
+      expect(before?.restrictions).toHaveLength(1)
+      const redress = await seedCommittedTerritorialRedress(
+        jurisdiction,
+        committed.noticeId,
+        committed.claimant,
+        'The restriction was mistaken.',
+      )
+      await seedCommittedTerritorialRedressDecision(
+        jurisdiction,
+        committed.noticeId,
+        redress.id,
+        committed.staff,
+        {
+          disposition: 'revoke',
+          rationale: 'The complaint shows the restriction was mistaken.',
+        },
+      )
+      const fullRevoked = await readTerritorialDecisionState(jurisdiction, committed)
+      await enforceCopyrightAssessment(assessmentId)
+      expect(await readTerritorialDecisionState(jurisdiction, committed)).toEqual(fullRevoked)
+      expect(
+        (await getCopyrightNoticePrivateAggregate(committed.noticeId))?.restrictions,
+      ).toHaveLength(1)
       await expect(
         readTestOwnedCopyrightSweepIds(
           searchPendingCopyrightEnforcementAssessmentIds,

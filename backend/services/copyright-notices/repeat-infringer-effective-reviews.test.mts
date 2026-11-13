@@ -1,261 +1,264 @@
+import { readEffectiveReviewState } from '@voucha/test-helpers/copyright-effective-review-state'
 import { describe, expect, it } from 'vitest'
 import { createTestUser, createTestUserDirect, softDeleteUser } from '@voucha/test-helpers'
 import {
-  createTestRepeatInfringerNotice,
   readTestRepeatInfringerIncidents,
   readTestRepeatInfringerOpenReviewIds,
 } from '@voucha/test-helpers/copyright-repeat-infringer'
-import type { PrivateUser } from '@services/users/types'
+import { createEffectiveReviewNotice } from '@voucha/test-helpers/copyright-effective-review-fixtures'
 import {
-  createCopyrightAppeal,
-  reviewCopyrightAppeal,
-  completeCopyrightMandatoryHumanReview,
-  recordCopyrightRepeatInfringerReviewOutcome,
-} from './index.mts'
+  seedEffectiveConfirmation,
+  seedEffectiveReviewAppeal,
+  seedEffectiveAppealDecision,
+  seedEffectiveDisposition,
+} from '@voucha/test-helpers/copyright-effective-review-decisions'
+import {
+  assertEffectiveAppeal,
+  assertEffectiveConfirmation,
+  assertEffectiveDisposition,
+} from '@voucha/test-helpers/copyright-effective-review-subjects'
+import { recordCopyrightRepeatInfringerReviewOutcome } from './repeat-infringer-outcomes.mts'
 import { recordCopyrightRepeatInfringerDisposition } from './repeat-infringer-dispositions.mts'
+import type { PrivateUser } from '@services/users/types'
+
 async function createActors() {
   const [poster, otherPoster, moderator] = await Promise.all([
     createTestUserDirect(),
     createTestUserDirect(),
     createTestUser({ administrator: true }),
   ])
-  return {
-    poster,
-    otherPoster,
-    moderator,
-  }
+  return { poster, otherPoster, moderator }
 }
+
 describe('copyright effective incident authority', () => {
   it('opens one review after two distinct confirmations commit', async () => {
+    expect.hasAssertions()
     const { poster, moderator } = await createActors()
-    const [first, second] = await Promise.all([
-      createTestRepeatInfringerNotice([poster.id], moderator),
-      createTestRepeatInfringerNotice([poster.id], moderator),
-    ])
-    await confirmTestRepeatInfringerRestriction(first, moderator, 0)
-    await confirmTestRepeatInfringerRestriction(second, moderator, 0)
-    const account = await readTestRepeatInfringerIncidents(poster.id)
-    expect(account.filter(row => row.is_operative)).toHaveLength(2)
-    expect(await readTestRepeatInfringerOpenReviewIds(poster.id)).toEqual([expect.any(String)])
+    const first = await createEffectiveReviewNotice([poster.id], moderator)
+    const second = await createEffectiveReviewNotice([poster.id], moderator)
+    await seedEffectiveConfirmation(first.noticeId, first.restrictions[0]!.id, moderator)
+    await assertEffectiveConfirmation(second, poster, moderator, { [poster.id]: true })
   })
+
   it('reverses only the deleted appealed account in a multi-owner notice', async () => {
+    expect.hasAssertions()
     const { poster, otherPoster, moderator } = await createActors()
-    const fixture = await createTestRepeatInfringerNotice([poster.id, otherPoster.id], moderator)
-    await confirmTestRepeatInfringerRestriction(fixture, moderator, 0)
-    await confirmTestRepeatInfringerRestriction(fixture, moderator, 1)
-    const appealedRestriction = fixture.restrictions[0]!
-    const appeal = await createCopyrightAppeal(poster, fixture.noticeId, crypto.randomUUID(), {
-      reason: 'Please review the restriction.',
-      targetIds: [appealedRestriction.targetId],
-    })
+    const fixture = await createEffectiveReviewNotice([poster.id, otherPoster.id], moderator)
+    await confirmAll(fixture, moderator)
+    const appeal = await seedEffectiveReviewAppeal(
+      fixture.noticeId,
+      poster.id,
+      fixture.restrictions[0]!.targetId,
+    )
     await softDeleteUser(poster.id)
-    await reviewCopyrightAppeal({
-      submissionId: appeal.submission.id,
-      currentUser: moderator,
-      recommendationId: null,
-      manualFallbackReason: 'The retained record supports a manual review.',
-      rationale: 'The retained evidence was reviewed.',
-      decisions: [{ restrictionId: appealedRestriction.id, action: 'reverse' }],
-    })
-    expect(await readTestRepeatInfringerIncidents(poster.id)).toEqual([
-      expect.objectContaining({ copyright_notice_id: fixture.noticeId, is_operative: false }),
-    ])
-    expect(await readTestRepeatInfringerIncidents(otherPoster.id)).toEqual([
-      expect.objectContaining({ copyright_notice_id: fixture.noticeId, is_operative: true }),
-    ])
+    await assertEffectiveAppeal(
+      fixture,
+      poster,
+      moderator,
+      'reverse',
+      { [poster.id]: false },
+      0,
+      appeal.submission.id,
+    )
   })
+
   it('creates an incident from a confirming appeal', async () => {
+    expect.hasAssertions()
     const { poster, moderator } = await createActors()
-    const fixture = await createTestRepeatInfringerNotice([poster.id], moderator)
-    await reviewTestRepeatInfringerAppeal(fixture, poster, moderator, 'confirm')
-    expect(await readTestRepeatInfringerIncidents(poster.id)).toEqual([
-      expect.objectContaining({ copyright_notice_id: fixture.noticeId, is_operative: true }),
-    ])
+    const fixture = await createEffectiveReviewNotice([poster.id], moderator)
+    await assertEffectiveAppeal(fixture, poster, moderator, 'confirm', { [poster.id]: true })
   })
+
   it('keeps reversal dominant over later confirmation', async () => {
+    expect.hasAssertions()
     const { poster, moderator } = await createActors()
-    const fixture = await createTestRepeatInfringerNotice([poster.id], moderator)
-    await confirmTestRepeatInfringerRestriction(fixture, moderator)
-    await reviewTestRepeatInfringerAppeal(fixture, poster, moderator, 'reverse')
-    await reviewTestRepeatInfringerAppeal(fixture, poster, moderator, 'confirm')
-    expect(await readTestRepeatInfringerIncidents(poster.id)).toEqual([
-      expect.objectContaining({ is_operative: false }),
-    ])
+    const fixture = await createEffectiveReviewNotice([poster.id], moderator)
+    await confirmAll(fixture, moderator)
+    await commitAppeal(fixture, poster, moderator, 'reverse')
+    await assertEffectiveAppeal(fixture, poster, moderator, 'confirm', { [poster.id]: false })
   })
+
   it('does not create an is_operative incident for a deleted author', async () => {
+    expect.hasAssertions()
     const { poster, moderator } = await createActors()
-    const fixture = await createTestRepeatInfringerNotice([poster.id], moderator)
+    const fixture = await createEffectiveReviewNotice([poster.id], moderator)
     await softDeleteUser(poster.id)
-    await confirmTestRepeatInfringerRestriction(fixture, moderator)
-    expect(await readTestRepeatInfringerIncidents(poster.id)).toEqual([])
+    await assertEffectiveConfirmation(fixture, poster, moderator, { [poster.id]: null })
   })
-  it('excludes only the chosen incident and rejects duplicate or missing dispositions', async () => {
+
+  it('excludes only the chosen incident', async () => {
+    expect.hasAssertions()
     const { poster, otherPoster, moderator } = await createActors()
-    const fixture = await createTestRepeatInfringerNotice([poster.id, otherPoster.id], moderator)
-    await confirmTestRepeatInfringerRestriction(fixture, moderator, 0)
-    await confirmTestRepeatInfringerRestriction(fixture, moderator, 1)
-    const before = await readTestRepeatInfringerIncidents(poster.id)
-    const incident = before[0]!
+    const fixture = await createEffectiveReviewNotice([poster.id, otherPoster.id], moderator)
+    await confirmAll(fixture, moderator)
+    const [incident] = await readTestRepeatInfringerIncidents(poster.id)
+    await assertEffectiveDisposition(fixture, poster, moderator, incident!.id)
+  })
+
+  it('rejects duplicate or missing dispositions after the decision commits', async () => {
+    const { poster, moderator } = await createActors()
+    const fixture = await createEffectiveReviewNotice([poster.id], moderator)
+    await confirmAll(fixture, moderator)
+    const [incident] = await readTestRepeatInfringerIncidents(poster.id)
+    await seedEffectiveDisposition(incident!.id, fixture.noticeId, moderator)
+    const before = await readEffectiveReviewState(fixture.noticeId, [poster.id])
     const input = {
       currentUser: moderator,
-      incidentId: incident.id,
+      incidentId: incident!.id,
       disposition: 'duplicate' as const,
       rationale: 'The case duplicates an earlier notice.',
       recordedAt: new Date(),
     }
-    await recordCopyrightRepeatInfringerDisposition(input)
-    expect(await readTestRepeatInfringerIncidents(poster.id)).toEqual([
-      expect.objectContaining({ id: incident.id, is_operative: false }),
-    ])
-    expect(await readTestRepeatInfringerIncidents(otherPoster.id)).toEqual([
-      expect.objectContaining({ copyright_notice_id: fixture.noticeId, is_operative: true }),
-    ])
     await expect(recordCopyrightRepeatInfringerDisposition(input)).rejects.toMatchObject({
       status: 409,
+      message: 'Copyright repeat-infringer incident already has a disposition',
     })
     await expect(
       recordCopyrightRepeatInfringerDisposition({ ...input, incidentId: crypto.randomUUID() }),
-    ).rejects.toMatchObject({ status: 404 })
+    ).rejects.toMatchObject({
+      status: 404,
+      message: 'Copyright repeat-infringer incident not found',
+    })
+    expect(await readEffectiveReviewState(fixture.noticeId, [poster.id])).toEqual(before)
   })
+
   it('preserves an account incident supported by another confirmed target', async () => {
+    expect.hasAssertions()
     const { poster, moderator } = await createActors()
-    const fixture = await createTestRepeatInfringerNotice([poster.id, poster.id], moderator)
-    await confirmTestRepeatInfringerRestriction(fixture, moderator, 0)
-    await confirmTestRepeatInfringerRestriction(fixture, moderator, 1)
-    await reviewTestRepeatInfringerAppeal(fixture, poster, moderator, 'reverse', 0)
-    expect(await readTestRepeatInfringerIncidents(poster.id)).toEqual([
-      expect.objectContaining({ copyright_notice_id: fixture.noticeId, is_operative: true }),
-    ])
+    const fixture = await createEffectiveReviewNotice([poster.id, poster.id], moderator)
+    await confirmAll(fixture, moderator)
+    await assertEffectiveAppeal(fixture, poster, moderator, 'reverse', { [poster.id]: true })
   })
+
   it('keeps an initial reversal dominant over a confirming appeal', async () => {
+    expect.hasAssertions()
     const { poster, moderator } = await createActors()
-    const fixture = await createTestRepeatInfringerNotice([poster.id], moderator)
-    await completeCopyrightMandatoryHumanReview({
-      currentUser: moderator,
-      noticeId: fixture.noticeId,
-      restrictionId: fixture.restrictions[0]!.id,
-      action: 'reverse',
-      rationale: 'The initial review reverses the restriction.',
-      reviewedAt: new Date(),
-    })
-    await reviewTestRepeatInfringerAppeal(fixture, poster, moderator, 'confirm')
-    expect(await readTestRepeatInfringerIncidents(poster.id)).toEqual([])
+    const fixture = await createEffectiveReviewNotice([poster.id], moderator)
+    await seedEffectiveConfirmation(
+      fixture.noticeId,
+      fixture.restrictions[0]!.id,
+      moderator,
+      'reverse',
+    )
+    await assertEffectiveAppeal(fixture, poster, moderator, 'confirm', { [poster.id]: null })
   })
+
   it('evaluates the threshold even when synchronization does not change an incident', async () => {
+    expect.hasAssertions()
     const { poster, moderator } = await createActors()
-    const first = await createTestRepeatInfringerNotice([poster.id], moderator)
-    const second = await createTestRepeatInfringerNotice([poster.id], moderator)
-    await confirmTestRepeatInfringerRestriction(first, moderator)
-    await confirmTestRepeatInfringerRestriction(second, moderator)
-    const before = await readTestRepeatInfringerIncidents(poster.id)
-    const [beforeReviewId] = await readTestRepeatInfringerOpenReviewIds(poster.id)
-    await recordCopyrightRepeatInfringerReviewOutcome({
-      currentUser: moderator,
-      reviewId: beforeReviewId!,
-      outcome: 'warning',
-      rationale: 'The first account review records a warning.',
-      recordedAt: new Date(),
-    })
-    await reviewTestRepeatInfringerAppeal(second, poster, moderator, 'confirm')
-    const after = await readTestRepeatInfringerIncidents(poster.id)
-    expect(after).toEqual(before)
-    const afterReviewIds = await readTestRepeatInfringerOpenReviewIds(poster.id)
-    expect(afterReviewIds).toEqual([expect.any(String)])
-    const [afterReviewId] = afterReviewIds
-    expect(afterReviewId).not.toBe(beforeReviewId)
+    const { second } = await completedWarning(poster, moderator)
+    await assertEffectiveAppeal(second, poster, moderator, 'confirm', { [poster.id]: true })
   })
+
   it('does not reopen a completed review after the account is deleted', async () => {
+    expect.hasAssertions()
     const { poster, moderator } = await createActors()
-    const first = await createTestRepeatInfringerNotice([poster.id], moderator)
-    const second = await createTestRepeatInfringerNotice([poster.id], moderator)
-    await confirmTestRepeatInfringerRestriction(first, moderator)
-    await confirmTestRepeatInfringerRestriction(second, moderator)
-    const restriction = first.restrictions[0]!
-    const appeal = await createCopyrightAppeal(poster, first.noticeId, crypto.randomUUID(), {
-      reason: 'Please confirm the retained restriction.',
-      targetIds: [restriction.targetId],
-    })
-    const [beforeReviewId] = await readTestRepeatInfringerOpenReviewIds(poster.id)
+    const first = await createEffectiveReviewNotice([poster.id], moderator)
+    const second = await createEffectiveReviewNotice([poster.id], moderator)
+    await confirmAll(first, moderator)
+    await confirmAll(second, moderator)
+    const appeal = await seedEffectiveReviewAppeal(
+      first.noticeId,
+      poster.id,
+      first.restrictions[0]!.targetId,
+    )
+    const [reviewId] = await readTestRepeatInfringerOpenReviewIds(poster.id)
     await softDeleteUser(poster.id)
     await recordCopyrightRepeatInfringerReviewOutcome({
       currentUser: moderator,
-      reviewId: beforeReviewId!,
+      reviewId: reviewId!,
       outcome: 'warning',
       rationale: 'The retained review is complete.',
       recordedAt: new Date(),
     })
-
-    await reviewCopyrightAppeal({
-      submissionId: appeal.submission.id,
-      currentUser: moderator,
-      recommendationId: null,
-      manualFallbackReason: 'The retained record supports a manual review.',
-      rationale: 'The restriction remains appropriate.',
-      decisions: [{ restrictionId: restriction.id, action: 'confirm' }],
-    })
-
-    expect(await readTestRepeatInfringerOpenReviewIds(poster.id)).toEqual([])
+    await assertEffectiveAppeal(
+      first,
+      poster,
+      moderator,
+      'confirm',
+      { [poster.id]: true },
+      0,
+      appeal.submission.id,
+    )
   })
-  it('retains the open review but rejects enforcement after reversal drops below two', async () => {
+
+  it('retains the open review when reversal drops below two incidents', async () => {
+    expect.hasAssertions()
     const { poster, moderator } = await createActors()
-    const first = await createTestRepeatInfringerNotice([poster.id], moderator)
-    const second = await createTestRepeatInfringerNotice([poster.id], moderator)
-    await confirmTestRepeatInfringerRestriction(first, moderator)
-    await confirmTestRepeatInfringerRestriction(second, moderator)
-    const [beforeReviewId] = await readTestRepeatInfringerOpenReviewIds(poster.id)
-    await reviewTestRepeatInfringerAppeal(first, poster, moderator, 'reverse')
-    const after = await readTestRepeatInfringerIncidents(poster.id)
-    expect(await readTestRepeatInfringerOpenReviewIds(poster.id)).toEqual([beforeReviewId])
-    expect(after.filter(row => row.is_operative)).toHaveLength(1)
+    const first = await createEffectiveReviewNotice([poster.id], moderator)
+    const second = await createEffectiveReviewNotice([poster.id], moderator)
+    await confirmAll(first, moderator)
+    await confirmAll(second, moderator)
+    await assertEffectiveAppeal(first, poster, moderator, 'reverse', { [poster.id]: false })
+  })
+
+  it('rejects enforcement after a committed reversal drops below two incidents', async () => {
+    const { poster, moderator } = await createActors()
+    const first = await createEffectiveReviewNotice([poster.id], moderator)
+    const second = await createEffectiveReviewNotice([poster.id], moderator)
+    await confirmAll(first, moderator)
+    await confirmAll(second, moderator)
+    const [reviewId] = await readTestRepeatInfringerOpenReviewIds(poster.id)
+    await commitAppeal(first, poster, moderator, 'reverse')
+    const before = await readEffectiveReviewState(first.noticeId, [poster.id])
     await expect(
       recordCopyrightRepeatInfringerReviewOutcome({
         currentUser: moderator,
-        reviewId: beforeReviewId!,
+        reviewId: reviewId!,
         outcome: 'restrict',
         rationale: 'The threshold must be checked again.',
         recordedAt: new Date(),
       }),
-    ).rejects.toMatchObject({ status: 409 })
+    ).rejects.toMatchObject({
+      status: 409,
+      message: 'Restrict and terminate require two is_operative incidents',
+    })
+    expect(await readTestRepeatInfringerOpenReviewIds(poster.id)).toEqual([reviewId])
+    expect(await readEffectiveReviewState(first.noticeId, [poster.id])).toEqual(before)
   })
 })
 
-async function confirmTestRepeatInfringerRestriction(
-  fixture: Awaited<ReturnType<typeof createTestRepeatInfringerNotice>>,
+async function confirmAll(
+  fixture: Awaited<ReturnType<typeof createEffectiveReviewNotice>>,
   moderator: PrivateUser,
-  index = 0,
-  transactionOptions: Parameters<typeof completeCopyrightMandatoryHumanReview>[1] = {},
 ) {
-  return completeCopyrightMandatoryHumanReview(
-    {
-      currentUser: moderator,
-      noticeId: fixture.noticeId,
-      restrictionId: fixture.restrictions[index]!.id,
-      action: 'confirm',
-      rationale: 'The reviewed restriction is appropriate.',
-      reviewedAt: new Date(),
-    },
-    transactionOptions,
-  )
+  for (const restriction of fixture.restrictions)
+    await seedEffectiveConfirmation(fixture.noticeId, restriction.id, moderator)
 }
 
-async function reviewTestRepeatInfringerAppeal(
-  fixture: Awaited<ReturnType<typeof createTestRepeatInfringerNotice>>,
+async function commitAppeal(
+  fixture: Awaited<ReturnType<typeof createEffectiveReviewNotice>>,
   poster: PrivateUser,
   moderator: PrivateUser,
   action: 'confirm' | 'reverse',
-  index = 0,
 ) {
-  const restriction = fixture.restrictions[index]!
-  const appeal = await createCopyrightAppeal(poster, fixture.noticeId, crypto.randomUUID(), {
-    reason: 'Please review the restriction.',
-    targetIds: [restriction.targetId],
-  })
-  return reviewCopyrightAppeal({
-    submissionId: appeal.submission.id,
+  const restriction = fixture.restrictions[0]!
+  const appeal = await seedEffectiveReviewAppeal(fixture.noticeId, poster.id, restriction.targetId)
+  await seedEffectiveAppealDecision(
+    {
+      submissionId: appeal.submission.id,
+      currentUser: moderator,
+      recommendationId: null,
+      manualFallbackReason: 'The record supports a manual review.',
+      rationale: 'The evidence was reviewed.',
+      decisions: [{ restrictionId: restriction.id, action }],
+    },
+    fixture.noticeId,
+  )
+}
+
+async function completedWarning(poster: PrivateUser, moderator: PrivateUser) {
+  const first = await createEffectiveReviewNotice([poster.id], moderator)
+  const second = await createEffectiveReviewNotice([poster.id], moderator)
+  await confirmAll(first, moderator)
+  await confirmAll(second, moderator)
+  const [reviewId] = await readTestRepeatInfringerOpenReviewIds(poster.id)
+  await recordCopyrightRepeatInfringerReviewOutcome({
     currentUser: moderator,
-    recommendationId: null,
-    manualFallbackReason: 'The record supports a manual review.',
-    rationale: 'The evidence was reviewed.',
-    decisions: [{ restrictionId: restriction.id, action }],
+    reviewId: reviewId!,
+    outcome: 'warning',
+    rationale: 'The first account review records a warning.',
+    recordedAt: new Date(),
   })
+  return { first, second }
 }

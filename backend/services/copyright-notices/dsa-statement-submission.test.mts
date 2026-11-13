@@ -1,10 +1,7 @@
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import Sentry from '@modules/on-error/sentry'
 import { createTestUser } from '@voucha/test-helpers'
-import {
-  createTestCopyrightImageFixture,
-  createTestCopyrightRestrictionForImage,
-} from '@voucha/test-helpers/copyright-surface-target-fixtures'
+import { createCopyrightNoticeSchemaFixture } from '@voucha/test-helpers/data-stores/psql/copyright-notice-schema'
 import {
   DSA_TEST_UUID,
   dsaTestPayload,
@@ -18,7 +15,6 @@ import {
   readTestDsaSubmission,
   seedTestDsaFailureRound,
   seedTestDsaSubmission,
-  createTestDsaSubmission,
 } from '@voucha/test-helpers/dsa-statement-submission-fixtures'
 import { processDsaStatementSubmission } from './dsa-statement-submission.mts'
 import { replayDsaStatementSubmission } from './dsa-statement-submission-replay.mts'
@@ -42,7 +38,7 @@ describe('durable DSA statement submission', () => {
   })
 
   it('reports a fifth expired worker lease without sending again', async () => {
-    const id = await createTestDsaSubmission()
+    const id = await createCommittedDsaSubmission()
     await configureSubmission()
     await seedTestDsaFailureRound(id, 1, 4)
     expect((await claimDsaStatementSubmission(id, from)).kind).toBe('claimed')
@@ -67,7 +63,7 @@ describe('durable DSA statement submission', () => {
   })
 
   it('records a permanent 422 once and will not claim it again', async () => {
-    const id = await createTestDsaSubmission()
+    const id = await createCommittedDsaSubmission()
     await configureSubmission()
     const provider = stubDsaTransparencyDatabaseProvider(() => ({
       statusCode: 422,
@@ -95,9 +91,7 @@ describe('durable DSA statement submission', () => {
   })
 
   it('sends the frozen payload with the bearer token and records one success', async () => {
-    const { restrictionId } = await createTestCopyrightRestrictionForImage(
-      await createTestCopyrightImageFixture('post-image'),
-    )
+    const { restrictionId } = await createCopyrightNoticeSchemaFixture()
     const id = await seedTestDsaSubmission(restrictionId)
     await configureSubmission()
     const provider = stubDsaTransparencyDatabaseProvider()
@@ -126,7 +120,7 @@ describe('durable DSA statement submission', () => {
   })
 
   it('treats the duplicate PUID response as idempotent success', async () => {
-    const id = await createTestDsaSubmission()
+    const id = await createCommittedDsaSubmission()
     await configureSubmission()
     const provider = stubDsaTransparencyDatabaseProvider(() => ({
       statusCode: 422,
@@ -145,7 +139,7 @@ describe('durable DSA statement submission', () => {
   })
 
   it('dead-letters after five retryable failures and starts a fresh round on replay', async () => {
-    const id = await createTestDsaSubmission()
+    const id = await createCommittedDsaSubmission()
     await configureSubmission()
     let succeed = false
     const provider = stubDsaTransparencyDatabaseProvider(() =>
@@ -204,7 +198,7 @@ describe('durable DSA statement submission', () => {
   })
 
   it('records a network failure as a retryable attempt', async () => {
-    const id = await createTestDsaSubmission()
+    const id = await createCommittedDsaSubmission()
     await configureSubmission()
     stubDsaTransparencyDatabaseProvider(() => ({ error: new Error('synthetic socket reset') }))
     await expect(processDsaStatementSubmission(id)).resolves.toMatchObject({
@@ -218,7 +212,7 @@ describe('durable DSA statement submission', () => {
   })
 
   it('counts expired worker leases and dead-letters the fifth crash', async () => {
-    const id = await createTestDsaSubmission()
+    const id = await createCommittedDsaSubmission()
     expect((await claimDsaStatementSubmission(id, from)).kind).toBe('claimed')
     for (let attempt = 1; attempt <= 5; attempt += 1) {
       await expireTestDsaSubmissionLease(id)
@@ -231,3 +225,9 @@ describe('durable DSA statement submission', () => {
     )
   })
 })
+
+/** The worker's subject starts with committed legal authority, not another SERIAL request. */
+async function createCommittedDsaSubmission() {
+  const { restrictionId } = await createCopyrightNoticeSchemaFixture()
+  return seedTestDsaSubmission(restrictionId)
+}
