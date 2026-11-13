@@ -55,7 +55,8 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-CREATE TRIGGER trigger_record_copyright_guest_capability_activity
+-- Advance the actually written case before its blocker generation, matching other case writers.
+CREATE TRIGGER trigger_advance_copyright_guest_capability_activity
 AFTER INSERT OR UPDATE OR DELETE ON copyright_notice_guest_capabilities
 FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_guest_capability_activity();
 

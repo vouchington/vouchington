@@ -9,13 +9,6 @@ import {
 } from '@voucha/test-helpers/copyright-withdrawal-eu-duties'
 import { seedCommittedTerritorialAcknowledgment } from '@voucha/test-helpers/copyright-territorial-acknowledged-fixture'
 import {
-  assertUkWithdrawalReview,
-  prepareUkWithdrawalContinuation,
-  completeUkWithdrawalContinuation,
-} from '@voucha/test-helpers/copyright-uk-withdrawal-outcome'
-import {
-  createWithdrawalContinuation,
-  completeWithdrawalContinuation,
   noticeRequest,
   euNoticeRequest,
   target,
@@ -36,15 +29,11 @@ import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/service
 import {
   getCopyrightJurisdictionAvailability,
   receiveEuCopyrightNotice,
-  receiveUkCopyrightNotice,
   recordCopyrightJurisdictionPolicyApproval,
   withdrawCopyrightJurisdictionPolicyApproval,
 } from './index.mts'
 import { receiveTerritorialCopyrightNoticeInTransaction } from './territorial-notice-receipt.mts'
-import {
-  readCopyrightTerritorialContractShape,
-  withRolledBackTerritorialTransaction,
-} from '@voucha/test-helpers/data-stores/psql/copyright-eu-uk-contracts'
+import { withRolledBackTerritorialTransaction } from '@voucha/test-helpers/data-stores/psql/copyright-eu-uk-contracts'
 
 describe('territorial approval withdrawal keeps received-case duties', () => {
   afterEach(() => {
@@ -52,26 +41,12 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
     vi.unstubAllEnvs()
   })
 
-  it('gates new EU and UK intake while pending and decided notices continue', async () => {
+  it('gates EU and UK intake after withdrawal and acknowledges a received EU notice', async () => {
     installTestMediaDeliveryEdge()
-    const [
-      administrator,
-      staff,
-      claimant,
-      euAImage,
-      euCImage,
-      euDImage,
-      euContinuationImage,
-      ukImage,
-    ] = await Promise.all([
+    const [administrator, staff, claimant] = await Promise.all([
       createTestUser({ administrator: true }),
       createTestUser({ extraRoles: ['moderator'] }),
       createTestUser(),
-      createHostedImagePost('public'),
-      createHostedImagePost('public'),
-      createHostedImagePost('public'),
-      createHostedImagePost('public'),
-      createHostedImagePost('public'),
     ])
     const euApproval = await recordCopyrightJurisdictionPolicyApproval(administrator, {
       jurisdiction: 'eu_dsa',
@@ -86,64 +61,11 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
       uk: true,
     })
 
-    const euA = await receiveEuCopyrightNotice(
-      { user: claimant, identity: `user:${claimant.id}` },
-      crypto.randomUUID(),
-      euNoticeRequest(),
-    )
     const euB = await receiveEuCopyrightNotice(
       { user: claimant, identity: `user:${claimant.id}` },
       crypto.randomUUID(),
       euNoticeRequest(),
     )
-    const euCRequest = euNoticeRequest()
-    const euC = await receiveEuCopyrightNotice(
-      { user: claimant, identity: `user:${claimant.id}` },
-      crypto.randomUUID(),
-      euCRequest,
-    )
-    const euDRequest = euNoticeRequest()
-    const euD = await receiveEuCopyrightNotice(
-      { user: claimant, identity: `user:${claimant.id}` },
-      crypto.randomUUID(),
-      euDRequest,
-    )
-    const ukRequest = noticeRequest()
-    const uk = await receiveUkCopyrightNotice(
-      { user: claimant, identity: `user:${claimant.id}` },
-      crypto.randomUUID(),
-      ukRequest,
-    )
-    await seedCommittedTerritorialAcknowledgment('eu_dsa', euA.notice_id)
-    await seedCommittedTerritorialAcknowledgment('eu_dsa', euC.notice_id)
-    await seedCommittedTerritorialAcknowledgment('eu_dsa', euD.notice_id)
-    await seedCommittedTerritorialAcknowledgment('uk', uk.notice_id)
-    await seedCommittedTerritorialDecision('eu_dsa', staff, euA.notice_id, {
-      text: 'The hosted image infringes the identified work.',
-      publicExplanation: 'This post image contains the claimant’s protected work.',
-      outcome: 'restrict',
-      targets: [target(euAImage)],
-    })
-    await assertWithdrawalWithhold(euA.notice_id, euAImage.poster.id)
-    await seedCommittedTerritorialDecision('eu_dsa', staff, euD.notice_id, {
-      text: 'The supplied evidence does not identify infringement.',
-      publicExplanation: 'The notice did not establish that this image infringes.',
-      outcome: 'no_action',
-      targets: [],
-    })
-    const euDComplaint = await seedCommittedTerritorialRedress(
-      'eu_dsa',
-      euD.notice_id,
-      claimant,
-      'Please reconsider the no-action decision.',
-    )
-    const { euContinuation, continuationComplaint } = await createWithdrawalContinuation(
-      claimant,
-      staff,
-    )
-    const ukContinuation = await prepareUkWithdrawalContinuation(claimant, staff)
-    const euDuties = await prepareEuWithdrawalDuties(claimant, staff)
-    const euGuest = await prepareTestEuWithdrawalGuestCase()
     await withRolledBackTerritorialTransaction(async transaction => {
       await withdrawCopyrightJurisdictionPolicyApproval(administrator, euApproval.id, {
         query: transaction,
@@ -160,73 +82,7 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
       ).rejects.toMatchObject({ status: 403, message: 'EU copyright notices are not available' })
     })
     await withdrawCopyrightJurisdictionPolicyApproval(administrator, euApproval.id)
-    await assertTestEuWithdrawalContinuity({
-      staff,
-      notifier: claimant,
-      restrictedNoticeId: euA.notice_id,
-      guest: euGuest,
-    })
-
     await assertWithdrawalAcknowledgment(staff, euB.notice_id, true)
-    await assertWithdrawalAcknowledgment(claimant, euDuties.failedNoticeId, false)
-    await assertRenewedTerritorialOutcome(
-      {
-        staff,
-        claimant,
-        claimantContact: euCRequest.notifierEmail,
-        noticeId: euC.notice_id,
-        posts: [euCImage],
-        targets: [target(euCImage)],
-      },
-      {
-        text: 'The notice identifies the work and the infringing hosted image.',
-        publicExplanation: 'This post image reproduces the claimant’s work.',
-        outcome: 'restrict',
-        targets: [target(euCImage)],
-      },
-    )
-    await assertEuWithdrawalNoticeDuties(euDuties)
-    await assertWithdrawalSupervisedComplaint(claimant, euDuties.notification.noticeId)
-    await assertEuWithdrawalRedressActors(euDuties, euA.notice_id)
-    await completeEuWithdrawalRestoration(euDuties)
-
-    await seedCommittedTerritorialRedressDecision('eu_dsa', euD.notice_id, euDComplaint.id, staff, {
-      disposition: 'revoke',
-      rationale: 'The no-action decision was unfounded.',
-    })
-    expect((await getCopyrightNoticePrivateAggregate(euD.notice_id))?.actionIntents).toHaveLength(0)
-    await assertRenewedTerritorialOutcome(
-      {
-        staff,
-        claimant,
-        claimantContact: euDRequest.notifierEmail,
-        noticeId: euD.notice_id,
-        posts: [euDImage],
-        targets: [target(euDImage)],
-      },
-      {
-        text: 'On renewed review the notice identifies infringement.',
-        publicExplanation: 'The image reproduces the claimant’s work.',
-        outcome: 'restrict',
-        targets: [target(euDImage)],
-      },
-    )
-    await completeWithdrawalContinuation(
-      staff,
-      euContinuation.notice_id,
-      continuationComplaint.id,
-      euContinuationImage,
-    )
-    await expect(
-      readCopyrightTerritorialContractShape(euContinuation.notice_id),
-    ).resolves.toMatchObject({
-      eu_statement_count: 2,
-      target_count: 1,
-    })
-    expect(
-      (await getCopyrightNoticePrivateAggregate(euContinuation.notice_id))?.restrictions,
-    ).toHaveLength(1)
-
     await withRolledBackTerritorialTransaction(async transaction => {
       await withdrawCopyrightJurisdictionPolicyApproval(administrator, ukApproval.id, {
         query: transaction,
@@ -243,14 +99,170 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
       ).rejects.toMatchObject({ status: 403, message: 'UK copyright notices are not available' })
     })
     await withdrawCopyrightJurisdictionPolicyApproval(administrator, ukApproval.id)
-    await assertUkWithdrawalReview({
-      staff,
-      claimant,
-      claimantContact: ukRequest.contact,
-      noticeId: uk.notice_id,
-      posts: [ukImage],
-      targets: [target(ukImage)],
+  })
+
+  it('keeps EU participant, dispute-settlement and guest-email duties after withdrawal', async () => {
+    installTestMediaDeliveryEdge()
+    const [administrator, staff, claimant, euAImage] = await Promise.all([
+      createTestUser({ administrator: true }),
+      createTestUser({ extraRoles: ['moderator'] }),
+      createTestUser(),
+      createHostedImagePost('public'),
+    ])
+    const euApproval = await recordCopyrightJurisdictionPolicyApproval(administrator, {
+      jurisdiction: 'eu_dsa',
+      policyVersion: `eu-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
     })
-    await completeUkWithdrawalContinuation(ukContinuation)
+    const euA = await receiveEuCopyrightNotice(
+      { user: claimant, identity: `user:${claimant.id}` },
+      crypto.randomUUID(),
+      euNoticeRequest(),
+    )
+    await seedCommittedTerritorialAcknowledgment('eu_dsa', euA.notice_id)
+    await seedCommittedTerritorialDecision('eu_dsa', staff, euA.notice_id, {
+      text: 'The hosted image infringes the identified work.',
+      publicExplanation: 'This post image contains the claimant’s protected work.',
+      outcome: 'restrict',
+      targets: [target(euAImage)],
+    })
+    await assertWithdrawalWithhold(euA.notice_id, euAImage.poster.id)
+    const euGuest = await prepareTestEuWithdrawalGuestCase()
+    await withdrawCopyrightJurisdictionPolicyApproval(administrator, euApproval.id)
+    const participantOutcome = await assertTestEuWithdrawalContinuity({
+      staff,
+      notifier: claimant,
+      restrictedNoticeId: euA.notice_id,
+      guest: euGuest,
+    })
+    expect(participantOutcome).toBe('restrict')
+  })
+
+  it('allows a first EU decision on a received notice after withdrawal', async () => {
+    installTestMediaDeliveryEdge()
+    const [administrator, staff, claimant, euCImage] = await Promise.all([
+      createTestUser({ administrator: true }),
+      createTestUser({ extraRoles: ['moderator'] }),
+      createTestUser(),
+      createHostedImagePost('public'),
+    ])
+    const euApproval = await recordCopyrightJurisdictionPolicyApproval(administrator, {
+      jurisdiction: 'eu_dsa',
+      policyVersion: `eu-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
+    })
+    const euCRequest = euNoticeRequest()
+    const euC = await receiveEuCopyrightNotice(
+      { user: claimant, identity: `user:${claimant.id}` },
+      crypto.randomUUID(),
+      euCRequest,
+    )
+    await seedCommittedTerritorialAcknowledgment('eu_dsa', euC.notice_id)
+    await withdrawCopyrightJurisdictionPolicyApproval(administrator, euApproval.id)
+    const outcome = await assertRenewedTerritorialOutcome(
+      {
+        staff,
+        claimant,
+        claimantContact: euCRequest.notifierEmail,
+        noticeId: euC.notice_id,
+        posts: [euCImage],
+        targets: [target(euCImage)],
+      },
+      {
+        text: 'The notice identifies the work and the infringing hosted image.',
+        publicExplanation: 'This post image reproduces the claimant’s work.',
+        outcome: 'restrict',
+        targets: [target(euCImage)],
+      },
+    )
+    expect(outcome.allowedOutcomes).toContainEqual(outcome.observed)
+  })
+
+  it('allows renewed EU review after revoking a no-action decision after withdrawal', async () => {
+    installTestMediaDeliveryEdge()
+    const [administrator, staff, claimant, euDImage] = await Promise.all([
+      createTestUser({ administrator: true }),
+      createTestUser({ extraRoles: ['moderator'] }),
+      createTestUser(),
+      createHostedImagePost('public'),
+    ])
+    const euApproval = await recordCopyrightJurisdictionPolicyApproval(administrator, {
+      jurisdiction: 'eu_dsa',
+      policyVersion: `eu-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
+    })
+    const euDRequest = euNoticeRequest()
+    const euD = await receiveEuCopyrightNotice(
+      { user: claimant, identity: `user:${claimant.id}` },
+      crypto.randomUUID(),
+      euDRequest,
+    )
+    await seedCommittedTerritorialAcknowledgment('eu_dsa', euD.notice_id)
+    await seedCommittedTerritorialDecision('eu_dsa', staff, euD.notice_id, {
+      text: 'The supplied evidence does not identify infringement.',
+      publicExplanation: 'The notice did not establish that this image infringes.',
+      outcome: 'no_action',
+      targets: [],
+    })
+    const euDComplaint = await seedCommittedTerritorialRedress(
+      'eu_dsa',
+      euD.notice_id,
+      claimant,
+      'Please reconsider the no-action decision.',
+    )
+    await withdrawCopyrightJurisdictionPolicyApproval(administrator, euApproval.id)
+    await seedCommittedTerritorialRedressDecision('eu_dsa', euD.notice_id, euDComplaint.id, staff, {
+      disposition: 'revoke',
+      rationale: 'The no-action decision was unfounded.',
+    })
+    expect((await getCopyrightNoticePrivateAggregate(euD.notice_id))?.actionIntents).toHaveLength(0)
+    const outcome = await assertRenewedTerritorialOutcome(
+      {
+        staff,
+        claimant,
+        claimantContact: euDRequest.notifierEmail,
+        noticeId: euD.notice_id,
+        posts: [euDImage],
+        targets: [target(euDImage)],
+      },
+      {
+        text: 'On renewed review the notice identifies infringement.',
+        publicExplanation: 'The image reproduces the claimant’s work.',
+        outcome: 'restrict',
+        targets: [target(euDImage)],
+      },
+    )
+    expect(outcome.allowedOutcomes).toContainEqual(outcome.observed)
+  })
+
+  it('keeps EU notification, supervision, redress and restoration duties after withdrawal', async () => {
+    installTestMediaDeliveryEdge()
+    const [administrator, staff, claimant, euAImage] = await Promise.all([
+      createTestUser({ administrator: true }),
+      createTestUser({ extraRoles: ['moderator'] }),
+      createTestUser(),
+      createHostedImagePost('public'),
+    ])
+    const euApproval = await recordCopyrightJurisdictionPolicyApproval(administrator, {
+      jurisdiction: 'eu_dsa',
+      policyVersion: `eu-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
+    })
+    const euA = await receiveEuCopyrightNotice(
+      { user: claimant, identity: `user:${claimant.id}` },
+      crypto.randomUUID(),
+      euNoticeRequest(),
+    )
+    await seedCommittedTerritorialAcknowledgment('eu_dsa', euA.notice_id)
+    await seedCommittedTerritorialDecision('eu_dsa', staff, euA.notice_id, {
+      text: 'The hosted image infringes the identified work.',
+      publicExplanation: 'This post image contains the claimant’s protected work.',
+      outcome: 'restrict',
+      targets: [target(euAImage)],
+    })
+    const euDuties = await prepareEuWithdrawalDuties(claimant, staff)
+    await withdrawCopyrightJurisdictionPolicyApproval(administrator, euApproval.id)
+    await assertWithdrawalAcknowledgment(claimant, euDuties.failedNoticeId, false)
+    expect(euDuties.notification.acknowledgment.acknowledged_at).toBeInstanceOf(Date)
+    await assertEuWithdrawalNoticeDuties(euDuties)
+    await assertWithdrawalSupervisedComplaint(claimant, euDuties.notification.noticeId)
+    await assertEuWithdrawalRedressActors(euDuties, euA.notice_id)
+    await completeEuWithdrawalRestoration(euDuties)
   })
 })

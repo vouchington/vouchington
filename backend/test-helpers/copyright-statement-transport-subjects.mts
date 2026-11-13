@@ -148,5 +148,10 @@ export async function assertStatementEmailTransport(intentId: string) {
     state: after.state,
   })
   assertTransportClocks(before.state, after.state, before.now, after.now)
-  return { subject: copyrightEmailSubject(kind), text: rendered.bodyText, recipientEmail }
+  return {
+    deliveryKind: kind,
+    subject: copyrightEmailSubject(kind),
+    text: rendered.bodyText,
+    recipientEmail,
+  }
 }

@@ -82,8 +82,7 @@ export async function prepareEuWithdrawalDuties(claimant: PrivateUser, staff: Pr
 type Duties = Awaited<ReturnType<typeof prepareEuWithdrawalDuties>>
 /** Committed facts keep the original receipt, target, recipient and channel assertions unconditional. */
 export async function assertEuWithdrawalNoticeDuties(scene: Duties) {
-  const { noticeId, post, acknowledgment } = scene.notification
-  expect(acknowledgment.acknowledged_at).toBeInstanceOf(Date)
+  const { noticeId, post } = scene.notification
   expect(scene.supervised).toEqual({ id: expect.any(String), escalation_id: expect.any(String) })
   const supervision = await readCopyrightApiTerritorialState(noticeId)
   expect(supervision.complaints).toEqual([

@@ -39,6 +39,14 @@ export async function createAcceptedCopyrightNotice(
       })),
     },
   })
+  return acceptCopyrightFormIntakeFixture(intake, 'The notice is complete.')
+}
+
+/** Commits the complete accepted-intake prerequisite for read and privacy subjects. */
+export async function acceptCopyrightFormIntakeFixture(
+  intake: Awaited<ReturnType<typeof createCopyrightFormIntake>>,
+  rationale: string,
+): Promise<string> {
   const moderator = await createTestUser({ extraRoles: ['moderator'] })
   const noticeId = intake.intake.copyright_notice_id
   await using transaction = await beginTransaction()
@@ -55,7 +63,7 @@ export async function createAcceptedCopyrightNotice(
     INSERT INTO copyright_notice_form_intake_reviews
       (copyright_notice_form_intake_id, reviewed_at, reviewed_by_id, is_accepted, rationale_ciphertext)
     VALUES (${intake.intake.id}, ${new Date()}, ${moderator.id}, true,
-      ${encryptSecret('The notice is complete.', `copyright-form-review:${intake.intake.id}`)})`)
+      ${encryptSecret(rationale, `copyright-form-review:${intake.intake.id}`)})`)
   await transaction.commit()
   const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
   if (!aggregate || aggregate.targets.length === 0)

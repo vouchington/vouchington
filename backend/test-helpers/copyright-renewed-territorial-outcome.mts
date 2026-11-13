@@ -37,7 +37,7 @@ export async function assertRenewedTerritorialOutcome(
     message: 'Conflicting copyright case change',
     causeCode: '40001',
   }
-  expect([
+  const allowedOutcomes = [
     { outcome: abort, state: before },
     ...stages.slice(0, -1).map(state => ({ outcome: abort, state })),
     ...(stages.length
@@ -56,8 +56,12 @@ export async function assertRenewedTerritorialOutcome(
           },
         ]
       : []),
-  ]).toContainEqual({
-    outcome: result!.status === 'fulfilled' ? result : copyrightRaceResult(result!),
-    state: after,
-  })
+  ]
+  return {
+    allowedOutcomes,
+    observed: {
+      outcome: result!.status === 'fulfilled' ? result : copyrightRaceResult(result!),
+      state: after,
+    },
+  }
 }

@@ -50,4 +50,5 @@ export async function assertEuWithdrawalSettlementContinuity(input: {
   expect(implementation.body.copyright_eu_dispute_settlement_implementation.implemented_at).toBe(
     implementedAt.toISOString(),
   )
+  return detail.body.copyright_notice.eu.outcome
 }

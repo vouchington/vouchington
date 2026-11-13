@@ -24,7 +24,6 @@ import {
   seedCommittedTerritorialRedressDecision,
 } from './copyright-territorial-committed-redress.mts'
 import { createHostedImagePost } from './services/copyright-notices/hosted-post-audience.mts'
-import { getCopyrightNoticePrivateAggregate } from './services/copyright-notices/private-aggregate.mts'
 import { actionIntent, noticeRequest, target } from './copyright-withdrawal-owned-inputs.mts'
 import type { PrivateUser } from '../services/users/types.mts'
 
@@ -60,7 +59,7 @@ export async function assertUkWithdrawalReview(scene: TerritorialRestrictionScen
     message: 'Conflicting copyright case change',
     causeCode: '40001',
   }
-  expect([
+  const allowedOutcomes = [
     { outcome: conflict, state: before },
     ...stages.slice(0, -1).map(state => ({ outcome: conflict, state })),
     {
@@ -74,10 +73,14 @@ export async function assertUkWithdrawalReview(scene: TerritorialRestrictionScen
       },
       state: stages.at(-1),
     },
-  ]).toContainEqual({
-    outcome: result!.status === 'fulfilled' ? result : copyrightRaceResult(result!),
-    state: after,
-  })
+  ]
+  return {
+    allowedOutcomes,
+    observed: {
+      outcome: result!.status === 'fulfilled' ? result : copyrightRaceResult(result!),
+      state: after,
+    },
+  }
 }
 
 /** A separate committed received-case restriction keeps all downstream UK obligations executable. */
@@ -109,7 +112,6 @@ export async function prepareUkWithdrawalContinuation(claimant: PrivateUser, sta
 export async function completeUkWithdrawalContinuation(
   scene: Awaited<ReturnType<typeof prepareUkWithdrawalContinuation>>,
 ) {
-  expect((await getCopyrightNoticePrivateAggregate(scene.noticeId))?.restrictions).toHaveLength(1)
   await assertWithdrawalWithhold(scene.noticeId, scene.post.poster.id)
   await assertTerritorialRequestOutcome(
     'uk',

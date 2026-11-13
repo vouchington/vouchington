@@ -12,7 +12,7 @@ export async function assertCommittedEuWithdrawalContinuity(input: {
   restrictedNoticeId: string
   guest: Awaited<ReturnType<typeof prepareTestEuWithdrawalGuestCase>>
 }) {
-  await assertEuWithdrawalSettlementContinuity(input)
+  const participantOutcome = await assertEuWithdrawalSettlementContinuity(input)
 
   const email = await createTestThreadedTerritorialComplaintEmail({
     noticeId: input.guest.noticeId,
@@ -23,4 +23,5 @@ export async function assertCommittedEuWithdrawalContinuity(input: {
     noticeId: input.guest.noticeId,
     intakeId: email.intake.id,
   })
+  return participantOutcome
 }
