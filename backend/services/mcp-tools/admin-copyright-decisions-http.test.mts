@@ -1,3 +1,4 @@
+import { assertCopyrightMcpReplayBatch } from '@voucha/test-helpers/copyright-mcp-replay-batch-outcome'
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
@@ -116,13 +117,19 @@ describe('copyright decision tools on POST /api/v1/legal/mcp', () => {
       mcpDecisionTools: true,
     })
     try {
-      const response = await postAdminMcp(token, [
-        toolCall({ ...replayArgs, rationale: RATIONALE_A }, 1),
-        toolCall({ ...replayArgs, rationale: RATIONALE_B }, 2),
-        toolCall({ ...replayArgs, rationale: '   ' }, 3),
-        toolCall({ ...replayArgs, rationale: RATIONALE_A, injected: 'private-extra' }, 4),
-        { jsonrpc: '2.0', id: 5, method: 'tools/list' },
-      ]).expect(200)
+      const { response, errorCount } = await assertCopyrightMcpReplayBatch(
+        fixture.noticeId,
+        fixture.intentId,
+        user.id,
+        () =>
+          postAdminMcp(token, [
+            toolCall({ ...replayArgs, rationale: RATIONALE_A }, 1),
+            toolCall({ ...replayArgs, rationale: RATIONALE_B }, 2),
+            toolCall({ ...replayArgs, rationale: '   ' }, 3),
+            toolCall({ ...replayArgs, rationale: RATIONALE_A, injected: 'private-extra' }, 4),
+            { jsonrpc: '2.0', id: 5, method: 'tools/list' },
+          ]).expect(200),
+      )
       expect(response.body).toHaveLength(5)
       const rows = await readTestCopyrightMcpAuditRows(user.id)
       expect(rows.map(row => row.outcome)).toEqual([
@@ -131,8 +138,16 @@ describe('copyright decision tools on POST /api/v1/legal/mcp', () => {
         'invalid_arguments',
         'invalid_arguments',
         'accepted',
+        ...Array.from({ length: errorCount }, () => 'tool_error'),
       ])
-      expect(rows.map(row => row.tool_name)).toEqual([TOOL, TOOL, TOOL, TOOL, null])
+      expect(rows.map(row => row.tool_name)).toEqual([
+        TOOL,
+        TOOL,
+        TOOL,
+        TOOL,
+        null,
+        ...Array.from({ length: errorCount }, () => TOOL),
+      ])
       expect(rows.every(row => row.correlation_id === response.headers['x-correlation-id'])).toBe(
         true,
       )

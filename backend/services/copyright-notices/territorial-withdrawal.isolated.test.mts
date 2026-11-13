@@ -1,3 +1,9 @@
+import { seedCommittedTerritorialAcknowledgment } from '@voucha/test-helpers/copyright-territorial-acknowledged-fixture'
+import {
+  assertUkWithdrawalReview,
+  prepareUkWithdrawalContinuation,
+  completeUkWithdrawalContinuation,
+} from '@voucha/test-helpers/copyright-uk-withdrawal-outcome'
 import {
   actionIntent,
   createWithdrawalContinuation,
@@ -19,7 +25,6 @@ import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/service
 import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
 import {
   acknowledgeEuCopyrightNotice,
-  acknowledgeUkCopyrightNotice,
   processCopyrightActionIntent,
   getCopyrightJurisdictionAvailability,
   receiveEuCopyrightNotice,
@@ -28,12 +33,9 @@ import {
   recordEuCopyrightRedressDecision,
   recordEuCopyrightStatementOfReasons,
   recordEuCopyrightSupervisedComplaint,
-  recordUkCopyrightRedressDecision,
-  recordUkCopyrightReview,
   recordCopyrightJurisdictionPolicyApproval,
   withdrawCopyrightJurisdictionPolicyApproval,
   submitEuCopyrightRedress,
-  submitUkCopyrightRedress,
 } from './index.mts'
 import { receiveTerritorialCopyrightNoticeInTransaction } from './territorial-notice-receipt.mts'
 import {
@@ -102,16 +104,17 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
       crypto.randomUUID(),
       euDRequest,
     )
+    const ukRequest = noticeRequest()
     const uk = await receiveUkCopyrightNotice(
       { user: claimant, identity: `user:${claimant.id}` },
       crypto.randomUUID(),
-      noticeRequest(),
+      ukRequest,
     )
-    await acknowledgeEuCopyrightNotice(claimant, euA.notice_id)
-    await acknowledgeEuCopyrightNotice(claimant, euC.notice_id)
-    await acknowledgeEuCopyrightNotice(claimant, euD.notice_id)
-    await acknowledgeUkCopyrightNotice(claimant, uk.notice_id)
-    await recordEuCopyrightStatementOfReasons(staff, euA.notice_id, {
+    await seedCommittedTerritorialAcknowledgment('eu_dsa', euA.notice_id)
+    await seedCommittedTerritorialAcknowledgment('eu_dsa', euC.notice_id)
+    await seedCommittedTerritorialAcknowledgment('eu_dsa', euD.notice_id)
+    await seedCommittedTerritorialAcknowledgment('uk', uk.notice_id)
+    await seedCommittedTerritorialDecision('eu_dsa', staff, euA.notice_id, {
       text: 'The hosted image infringes the identified work.',
       publicExplanation: 'This post image contains the claimant’s protected work.',
       outcome: 'restrict',
@@ -136,6 +139,7 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
       claimant,
       staff,
     )
+    const ukContinuation = await prepareUkWithdrawalContinuation(claimant, staff)
     const euGuest = await prepareTestEuWithdrawalGuestCase()
     await withRolledBackTerritorialTransaction(async transaction => {
       await withdrawCopyrightJurisdictionPolicyApproval(administrator, euApproval.id, {
@@ -270,31 +274,14 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
       ).rejects.toMatchObject({ status: 403, message: 'UK copyright notices are not available' })
     })
     await withdrawCopyrightJurisdictionPolicyApproval(administrator, ukApproval.id)
-    await recordUkCopyrightReview(staff, uk.notice_id, {
-      text: 'The UK notice identifies an infringing image.',
-      publicExplanation: 'This post image reproduces the protected work.',
-      outcome: 'restrict',
+    await assertUkWithdrawalReview({
+      staff,
+      claimant,
+      claimantContact: ukRequest.contact,
+      noticeId: uk.notice_id,
+      posts: [ukImage],
       targets: [target(ukImage)],
     })
-    expect((await getCopyrightNoticePrivateAggregate(uk.notice_id))?.restrictions).toHaveLength(1)
-    await expect(
-      processCopyrightActionIntent((await actionIntent(uk.notice_id, 'withhold')).id),
-    ).resolves.toBe('applied')
-    const ukComplaint = await submitUkCopyrightRedress(
-      claimant,
-      uk.notice_id,
-      crypto.randomUUID(),
-      'The UK restriction should be reversed.',
-    )
-    await recordUkCopyrightRedressDecision(staff, uk.notice_id, ukComplaint.id, {
-      disposition: 'revoke',
-      rationale: 'The UK restriction is reversed.',
-    })
-    await expect(
-      processCopyrightActionIntent((await actionIntent(uk.notice_id, 'restore')).id),
-    ).resolves.toBe('applied')
-    expect(
-      (await getCopyrightNoticePrivateAggregate(uk.notice_id))?.restrictions[0]?.lifted_at,
-    ).toBeInstanceOf(Date)
+    await completeUkWithdrawalContinuation(ukContinuation)
   })
 })
