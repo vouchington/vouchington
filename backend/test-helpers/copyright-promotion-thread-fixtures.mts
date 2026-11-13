@@ -4,6 +4,7 @@ import sql from 'sql-template-strings'
 import {
   createCopyrightEmailIntake,
   copyrightEmailIntakePurpose,
+  type CopyrightEmailIntake,
 } from '../services/copyright-notices/email-intakes.mts'
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from './services/copyright-notices/email-ses-verdicts.mts'
 import {
@@ -26,30 +27,37 @@ import { createCopyrightEmailIntakeResponseInTransaction } from '../services/cop
 import { isCopyrightIntakeEnabled } from '../services/copyright-notices/activation.mts'
 
 /** Complete ordinary parsed/reference/derived setup; promotion and receipt actors remain real subjects. */
-export async function seedCopyrightPromotionThreadSource(input: {
-  messageId: string | null
-  inReplyTo?: string[]
-  replyReferences?: string[]
-  bodyText?: string
-}) {
+export async function seedCopyrightPromotionThreadSource(
+  input: {
+    messageId: string | null
+    inReplyTo?: string[]
+    replyReferences?: string[]
+    bodyText?: string
+  },
+  source?: { intake: CopyrightEmailIntake; fromEmail: string; subject: string },
+) {
   const sesMessageId = `ses-thread-${crypto.randomUUID()}`
-  const { intake } = await createCopyrightEmailIntake({
-    sesMessageId,
-    receivedAt: new Date(),
-    rawStorageKey: `email/${sesMessageId}/original.eml`,
-    rawSha256: Buffer.alloc(32, 4),
-    rawMimeType: 'message/rfc822',
-    rawByteSize: 24,
-    sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
-  })
+  const intake =
+    source?.intake ??
+    (
+      await createCopyrightEmailIntake({
+        sesMessageId,
+        receivedAt: new Date(),
+        rawStorageKey: `email/${sesMessageId}/original.eml`,
+        rawSha256: Buffer.alloc(32, 4),
+        rawMimeType: 'message/rfc822',
+        rawByteSize: 24,
+        sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
+      })
+    ).intake
   const purpose = copyrightEmailIntakePurpose(intake.amazon_ses_message_id)
-  const sender = `claimant-${crypto.randomUUID()}@example.test`
+  const sender = source?.fromEmail ?? `claimant-${crypto.randomUUID()}@example.test`
   const headers = { inReplyTo: input.inReplyTo ?? [], references: input.replyReferences ?? [] }
   await using transaction = await beginTransaction()
   await transaction(sql`/* seedCopyrightPromotionThreadEmail:parse */
     INSERT INTO copyright_notice_email_intake_parses (copyright_notice_email_intake_id, status,
       sender_email_ciphertext, subject_ciphertext, body_ciphertext, message_id_ciphertext, reply_references_ciphertext)
-    VALUES (${intake.id}, 'succeeded', ${encryptSecret(sender, purpose)}, ${encryptSecret('Copyright notice', purpose)},
+    VALUES (${intake.id}, 'succeeded', ${encryptSecret(sender, purpose)}, ${encryptSecret(source?.subject ?? 'Copyright notice', purpose)},
       ${encryptSecret(input.bodyText ?? 'Threaded copyright email.', purpose)},
       ${input.messageId ? encryptSecret(input.messageId, purpose) : null}, ${encryptCopyrightEmailReplyHeaders(headers, purpose)})`)
   if (

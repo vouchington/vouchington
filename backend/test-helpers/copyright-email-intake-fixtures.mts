@@ -1,3 +1,4 @@
+import { seedCopyrightPromotionThreadSource } from './copyright-promotion-thread-fixtures.mts'
 import { linkCopyrightEmailIntakeToNotice } from './copyright-email-intake-link.mts'
 import { seedCopyrightThreadTokenAtForTest } from './copyright-thread-retention.mts'
 // Test-only email intake setup uses the real copyright service paths.
@@ -14,10 +15,7 @@ import {
   resolveCopyrightEmailThreadTokenIds,
 } from '../services/copyright-notices/email-thread-ancestors.mts'
 import sql from 'sql-template-strings'
-import {
-  createCopyrightEmailIntake,
-  recordCopyrightEmailParse,
-} from '../services/copyright-notices/index.mts'
+import { createCopyrightEmailIntake } from '../services/copyright-notices/index.mts'
 
 // A received copyright email whose parse was never recorded, as when the SES worker keeps failing.
 export async function createUnparsedCopyrightEmailIntake(
@@ -43,15 +41,13 @@ export async function createParsedCopyrightEmailIntake(
   sesMessageId?: string,
 ) {
   const intake = await createUnparsedCopyrightEmailIntake(receivedAt, sesMessageId)
-  await recordCopyrightEmailParse(intake, {
-    status: 'succeeded',
-    fromEmail,
-    subject: 'Copyright complaint',
-    bodyText: 'This is a copyright complaint.',
-    messageId: `<${crypto.randomUUID()}@example.test>`,
-    replyReferences: [],
-    attachments: [],
-  })
+  await seedCopyrightPromotionThreadSource(
+    {
+      messageId: `<${crypto.randomUUID()}@example.test>`,
+      bodyText: 'This is a copyright complaint.',
+    },
+    { intake, fromEmail, subject: 'Copyright complaint' },
+  )
   return intake
 }
 
