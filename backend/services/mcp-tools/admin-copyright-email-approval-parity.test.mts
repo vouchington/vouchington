@@ -19,6 +19,7 @@ import { createCommittedCopyrightEmailIntake } from '@voucha/test-helpers/copyri
 import {
   createCopyrightNoticeForManualAssociation,
   readCopyrightEmailManualAssociationEvent,
+  seedCopyrightApiManualAssociation,
 } from '@voucha/test-helpers/copyright-email-manual-association'
 import { createCopyrightFormFixture } from '@voucha/test-helpers/copyright-route-fixtures'
 import {
@@ -175,11 +176,15 @@ describe('copyright email approval parity between REST and MCP', () => {
       const missing = await associateSurface(surface, intake.intakeId, crypto.randomUUID())
       expect(missing.status).toBe(404)
       expect(await readCopyrightEmailIntakeNoticeLinks(intake.intakeId)).toEqual([])
-      expect((await associateSurface(surface, intake.intakeId, noticeId)).status).toBe(201)
+      expect(await readCopyrightEmailManualAssociationEvent(intake.intakeId)).toEqual([])
+      const { links, events } = await seedCopyrightApiManualAssociation(intake.intakeId, noticeId)
+      expect(await readCopyrightEmailIntakeNoticeLinks(intake.intakeId)).toEqual(links)
+      expect(await readCopyrightEmailManualAssociationEvent(intake.intakeId)).toEqual(events)
       const conflict = await associateSurface(surface, intake.intakeId, noticeId)
       expect(conflict.status).toBe(409)
       expect(conflict.body.code).toBe('copyright_email_thread_changed')
-      expect(await readCopyrightEmailManualAssociationEvent(intake.intakeId)).toHaveLength(1)
+      expect(await readCopyrightEmailIntakeNoticeLinks(intake.intakeId)).toEqual(links)
+      expect(await readCopyrightEmailManualAssociationEvent(intake.intakeId)).toEqual(events)
     },
   )
 

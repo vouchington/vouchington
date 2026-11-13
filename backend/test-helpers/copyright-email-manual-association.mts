@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { createTestUser } from './index.mts'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
@@ -27,6 +28,31 @@ export async function createCopyrightNoticeForManualAssociation(
     ) RETURNING id
   `)
   return rows[0]!.id
+}
+
+/** Commit the staff association prerequisite before exercising an already-linked rejection. */
+export async function seedCopyrightApiManualAssociation(intakeId: string, noticeId: string) {
+  const reviewer = await createTestUser({ extraRoles: ['moderator'] })
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* seedCopyrightApiManualAssociation:link */
+    INSERT INTO copyright_notice_email_intake_notice_links (
+      copyright_notice_email_intake_id, copyright_notice_id, link_kind, correspondence_action
+    ) VALUES (${intakeId}, ${noticeId}, 'thread', 'pending')`)
+  await transaction(sql`/* seedCopyrightApiManualAssociation:event */
+    INSERT INTO copyright_notice_lifecycle_changes (
+      copyright_notice_id, change_type, copyright_notice_email_intake_id, changed_by_id
+    ) VALUES (${noticeId}, 'email_intake_manually_associated', ${intakeId}, ${reviewer.id})`)
+  await transaction.commit()
+  return {
+    links: [{ copyright_notice_id: noticeId, link_kind: 'thread' }],
+    events: [
+      {
+        copyright_notice_id: noticeId,
+        changed_by_id: reviewer.id,
+        copyright_notice_email_intake_id: intakeId,
+      },
+    ],
+  }
 }
 
 /** Read only the immutable staff association event for this intake. */
