@@ -26,6 +26,9 @@ export const nativeModerationExportEndpointRegistry: Record<string, ManifestEndp
     path: `${community}/members/${banUserId}`,
     requestBody: { role: 'moderator' },
   },
+  'native.communities.moderator-stats.placement': endpoint(`${community}/moderator-stats`, {
+    window: '30',
+  }),
   'native.moderation.mod-notes.default': endpoint(`${modNotesPath}/mod-notes`, { limit: '20' }),
   'native.moderation.mod-notes.create.default': {
     method: 'POST',

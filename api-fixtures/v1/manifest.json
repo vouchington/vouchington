@@ -107652,6 +107652,34 @@
     },
     {
       "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/communities/:communitySlug/moderator-stats",
+      "bodyFile": "responses/native.communities.moderator-stats.placement.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.communities.moderator-stats.placement",
+      "method": "GET",
+      "migratedFrom": [],
+      "path": "/api/v1/communities/test-community/moderator-stats",
+      "pending": true,
+      "query": {
+        "window": "30"
+      },
+      "responseSchema": {
+        "hash": "854cff06b9ab0f62bdc2b63ea223d06fb43068b04f9de91dd75e61a30eb6b89f",
+        "key": "native.communities.moderator-stats.placement"
+      },
+      "route": {
+        "pathParams": {
+          "communitySlug": "test-community"
+        },
+        "routeTemplate": "/api/v1/communities/:communitySlug/moderator-stats"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/communities/:communitySlug/moderator-vacation",
       "bodyFile": "responses/web.communities.moderator-vacation.default.json",
       "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],

@@ -1,0 +1,31 @@
+{
+  "stats": [
+    {
+      "actor_user_id": "user-1",
+      "counts": {
+        "approve": 12,
+        "remove": 4
+      },
+      "total": 16
+    }
+  ],
+  "users": {
+    "user-1": {
+      "__entity_type": "user",
+      "account_type": null,
+      "created_at": "2026-01-01T00:00:00Z",
+      "id": "user-1",
+      "name": "Mara Moderator",
+      "profile_image_id": "00000000-0000-7000-8000-000000000299",
+      "profile_image_placement": {
+        "image_id": "00000000-0000-7000-8000-000000000299",
+        "placement_id": "00000000-0000-7000-8000-000000000399",
+        "placement_revision": 3
+      },
+      "roles": [],
+      "updated_at": "2026-01-01T00:00:00Z",
+      "username": "mara_mod"
+    }
+  },
+  "window": 30
+}
