@@ -18,6 +18,7 @@ const backendDataStoreTestDefaults = {
     './test-helpers/vitest.setup.shared-db-scope-guard.mts',
     './test-helpers/vitest.setup.psql-pool-metrics.mts',
     './test-helpers/vitest.setup.dynamic-config-isolation.mts',
+    './backend/test-helpers/vitest.setup.shared-valkey-clients.mts',
     './test-helpers/vitest.setup.glide-mq-workers.mts',
     './backend/test-helpers/vitest.setup.captcha-skip.mts',
     './backend/test-helpers/vitest.setup.server-error-responses.mts',
