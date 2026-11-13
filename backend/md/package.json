@@ -31,7 +31,6 @@
     "@services/search-params": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/api": "workspace:^",
-    "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^"
   },
   "devDependencies": {

@@ -139,7 +139,7 @@ export async function checkTrendingHttpContracts(): Promise<void> {
       for (const timeRange of ['week', 'month']) {
         const unscoped = await getTrending({ time_range: timeRange })
         assert.ok(Array.isArray(unscoped.body.results))
-        assert.ok(unscoped.headers.get('cache-control')?.includes('public'))
+        assert.equal(unscoped.headers.get('cache-control'), 'public')
         const owned = await getTrending({ time_range: timeRange, after: boundaryAfter(trendingId) })
         assert.equal(owned.body.results[0]?.id, trendingId)
       }
@@ -149,7 +149,7 @@ export async function checkTrendingHttpContracts(): Promise<void> {
       const largeIds = large.body.results.map(row => row.id)
       assert.ok(largeIds.includes(trendingId))
       assert.ok(!largeIds.includes(hiddenId))
-      assert.equal(large.headers.get('cache-control'), null)
+      assert.equal(large.headers.get('cache-control'), 'private, no-store')
       const enabled = await getTrending({ limit: 1, after: ownedBoundary }, true)
       assert.equal(enabled.body.results[0]?.id, trendingId)
       const hidden = await getTrending({ limit: 1, after: boundaryAfter(hiddenId) }, true)
