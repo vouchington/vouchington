@@ -1,12 +1,26 @@
+import { malformedTerritorialTargetBodies } from '@voucha/test-helpers/copyright-territorial-malformed-targets'
+import {
+  assertApiTerritorialAcknowledgmentFailure,
+  assertApiNoActionRedressDecision,
+} from '@voucha/test-helpers/copyright-api-territorial-staff-writes'
+import { readCopyrightApiTerritorialState } from '@voucha/test-helpers/copyright-api-territorial-request-outcomes'
+import { readTerritorialReviewState } from '@voucha/test-helpers/copyright-territorial-review-state'
+import { seedCommittedTerritorialRedressDecision } from '@voucha/test-helpers/copyright-territorial-committed-redress'
+import { createTestTerritorialRestrictionScene } from '@voucha/test-helpers/copyright-territorial-restriction-fixtures'
+import { readTerritorialDecisionState } from '@voucha/test-helpers/copyright-territorial-decision-state'
+import { assertTerritorialHttpDecisionOutcome } from '@voucha/test-helpers/copyright-territorial-http-decision-outcome'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { describe, expect, it } from 'vitest'
 import { readCopyrightTerritorialContractShape } from '@voucha/test-helpers/data-stores/psql/copyright-eu-uk-contracts'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
-import { seedTerritorialRedress } from '@voucha/test-helpers/copyright-territorial-redress-seed'
+import {
+  seedTerritorialRedress,
+  seedDeterminedTerritorialNoticeForValidation,
+} from '@voucha/test-helpers/copyright-territorial-redress-seed'
 import {
   TERRITORIAL_SURFACES,
   approveJurisdictionPolicy,
   createTerritorialActors,
-  seedDeterminedTerritorialNotice,
   seedPendingTerritorialNotice,
 } from '@voucha/test-helpers/services/copyright-notices/territorial-routes'
 
@@ -31,13 +45,16 @@ describe.each(TERRITORIAL_SURFACES)('$label staff request contracts', surface =>
       await approveJurisdictionPolicy(actors.administrator, surface.jurisdiction)
       const noticeId = await seedPendingTerritorialNotice(surface.jurisdiction, actors.claimant)
 
+      const before = await readCopyrightApiTerritorialState(noticeId)
       await actors.staffRequest
         .post(`${surface.base}/not-a-uuid/acknowledgment-failures`)
         .expect(422)
-      const failure = await actors.staffRequest
-        .post(`${surface.base}/${noticeId}/acknowledgment-failures`)
-        .expect(200)
-      expect(failure.body.acknowledgment).toMatchObject({ attempt_count: 1, acknowledged_at: null })
+      expect(await readCopyrightApiTerritorialState(noticeId)).toEqual(before)
+      await assertApiTerritorialAcknowledgmentFailure(
+        actors.staffRequest,
+        surface.jurisdiction,
+        noticeId,
+      )
     })
   })
 
@@ -55,23 +72,32 @@ describe.each(TERRITORIAL_SURFACES)('$label staff request contracts', surface =>
     })
 
     it('rejects an unknown key before recording the reasons', async () => {
-      const actors = await createTerritorialActors()
-      await approveJurisdictionPolicy(actors.administrator, surface.jurisdiction)
-      const noticeId = await seedPendingTerritorialNotice(surface.jurisdiction, actors.claimant)
+      const scene = await createTestTerritorialRestrictionScene(surface.jurisdiction)
+      const staffRequest = createRequest()
+      await staffRequest.authenticateAs(scene.staff)
+      const noticeId = scene.noticeId
       const url = `${surface.base}/${noticeId}/${surface.determinationPath}`
       const body = territorialDecisionBody(surface)
-
-      await actors.staffRequest
+      const before = await readTerritorialDecisionState(surface.jurisdiction, scene)
+      await staffRequest
         .post(url)
         .send({ ...body, injected: true })
         .expect(422)
+      expect(await readTerritorialDecisionState(surface.jurisdiction, scene)).toEqual(before)
       expect(
         (await readCopyrightTerritorialContractShape(noticeId))[surface.determinationCount],
       ).toBe(0)
-      await actors.staffRequest.post(url).send(body).expect(201)
-      expect(
-        (await readCopyrightTerritorialContractShape(noticeId))[surface.determinationCount],
-      ).toBe(1)
+      await assertTerritorialHttpDecisionOutcome(
+        surface.jurisdiction,
+        scene,
+        {
+          text: 'Staff internal rationale',
+          publicExplanation: 'The identified post-image is unavailable in this territory.',
+          outcome: 'no_action',
+          targets: [],
+        },
+        staffRequest,
+      )
     })
 
     it.each([
@@ -90,75 +116,7 @@ describe.each(TERRITORIAL_SURFACES)('$label staff request contracts', surface =>
       expect(rejected.body.message).not.toMatch(/not found/i)
     })
 
-    const duplicatePostId = crypto.randomUUID()
-    const duplicateImageId = crypto.randomUUID()
-    const malformedTargetOverrides: [string, Record<string, unknown>][] = [
-      ['targets on no_action', { targets: [] }],
-      [
-        'a valid target on no_action',
-        {
-          targets: [
-            {
-              surface: 'post-image',
-              post_id: crypto.randomUUID(),
-              image_id: crypto.randomUUID(),
-              target_url: 'https://example.test/posts/one',
-            },
-          ],
-        },
-      ],
-      ['missing targets on restrict', { outcome: 'restrict', targets: undefined }],
-      ['empty targets on restrict', { outcome: 'restrict', targets: [] }],
-      [
-        'target without a surface discriminator',
-        {
-          outcome: 'restrict',
-          targets: [
-            {
-              post_id: crypto.randomUUID(),
-              image_id: crypto.randomUUID(),
-              target_url: 'https://example.test/posts/one',
-            },
-          ],
-        },
-      ],
-      [
-        'non-post target',
-        {
-          outcome: 'restrict',
-          targets: [
-            {
-              surface: 'community-profile-image',
-              community_id: crypto.randomUUID(),
-              image_id: crypto.randomUUID(),
-              target_url: 'https://example.test/communities/one',
-            },
-          ],
-        },
-      ],
-      [
-        'duplicate target pair',
-        {
-          outcome: 'restrict',
-          targets: [
-            {
-              surface: 'post-image',
-              post_id: duplicatePostId,
-              image_id: duplicateImageId,
-              target_url: 'https://example.test/posts/one',
-            },
-            {
-              surface: 'post-image',
-              post_id: duplicatePostId,
-              image_id: duplicateImageId,
-              target_url: 'https://example.test/posts/one',
-            },
-          ],
-        },
-      ],
-    ]
-
-    it.each(malformedTargetOverrides)(
+    it.each(malformedTerritorialTargetBodies())(
       'rejects %s before service lookup',
       async (_label, override) => {
         const { staffRequest } = await createTerritorialActors()
@@ -217,18 +175,46 @@ describe.each(TERRITORIAL_SURFACES)('$label staff request contracts', surface =>
       const { noticeId, redressId } = await seedTerritorialRedress(surface.jurisdiction, actors)
       const url = `${surface.base}/${noticeId}/redress-requests/${redressId}/decisions`
 
+      const before = await readTerritorialReviewState(surface.jurisdiction, noticeId, [])
       await actors.staffRequest
         .post(url)
         .send({ ...decisionBody, injected: true })
         .expect(422)
-      // A recorded decision would make this retry a 409.
-      await actors.staffRequest.post(url).send(decisionBody).expect(201)
-      // Once recorded, the service's 409 sits behind a malformed body's 422.
+      expect(await readTerritorialReviewState(surface.jurisdiction, noticeId, [])).toEqual(before)
+      await assertApiNoActionRedressDecision({
+        request: actors.staffRequest,
+        jurisdiction: surface.jurisdiction,
+        noticeId,
+        redressId,
+        actorId: actors.staff.id,
+        claimantId: actors.claimant.id,
+        disposition: 'maintain',
+        rationale: decisionBody.rationale,
+      })
+      // Both guard endpoints run against an independently committed decision.
+      const guard = await seedTerritorialRedress(surface.jurisdiction, actors)
+      await seedCommittedTerritorialRedressDecision(
+        surface.jurisdiction,
+        guard.noticeId,
+        guard.redressId,
+        actors.staff,
+        { disposition: 'maintain', rationale: decisionBody.rationale },
+      )
+      const guardUrl = `${surface.base}/${guard.noticeId}/redress-requests/${guard.redressId}/decisions`
+      const committed = await readTerritorialReviewState(surface.jurisdiction, guard.noticeId, [])
       await actors.staffRequest
-        .post(url)
+        .post(guardUrl)
         .send({ ...decisionBody, injected: true })
         .expect(422)
-      await actors.staffRequest.post(url).send(decisionBody).expect(409)
+      const duplicate = await actors.staffRequest.post(guardUrl).send(decisionBody).expect(409)
+      expect(duplicate.body.message).toBe(
+        surface.jurisdiction === 'eu_dsa'
+          ? 'EU redress decision already exists'
+          : 'UK redress decision already exists',
+      )
+      expect(await readTerritorialReviewState(surface.jurisdiction, guard.noticeId, [])).toEqual(
+        committed,
+      )
     })
 
     it.each([
@@ -271,7 +257,10 @@ describe.each(TERRITORIAL_SURFACES)('$label staff request contracts', surface =>
   it('keeps the staff 403 ahead of the schema diagnostic for the notice claimant', async () => {
     const actors = await createTerritorialActors()
     await approveJurisdictionPolicy(actors.administrator, surface.jurisdiction)
-    const noticeId = await seedDeterminedTerritorialNotice(surface.jurisdiction, actors)
+    const noticeId = await seedDeterminedTerritorialNoticeForValidation(
+      surface.jurisdiction,
+      actors,
+    )
 
     await actors.claimantRequest
       .post(`${surface.base}/${noticeId}/redress-requests/${crypto.randomUUID()}/decisions`)

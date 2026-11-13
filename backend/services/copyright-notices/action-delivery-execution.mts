@@ -1,3 +1,4 @@
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction } from '@data-stores/psql'
 import { assertMediaDeliveryLegalEnforcementEnabled } from '@modules/aws'
 import {
@@ -61,6 +62,11 @@ export async function executeCopyrightActionIntent(
     }
     return finalized ? 'applied' : 'stale'
   } catch (err) {
+    if ((err as { code?: string } | null)?.code === '40001') {
+      if (restorePublishedTuple)
+        await prepublishCopyrightImagePlacementDenial(restorePublishedTuple)
+      throw err
+    }
     return compensateCopyrightActionFailure(intent, now, restorePublishedTuple, err)
   }
 }
@@ -80,9 +86,10 @@ async function prepareCopyrightAction(
       mediaDeliveryRegistryRecordId: string | null
     }
 > {
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction({ serializable: true })
   const legal = await lockCopyrightActionDelivery(intent.id, intent.lease_token, transaction)
   if (!legal) return await commitOutcome(transaction, 'not_claimed')
+  await readCopyrightThreadRetirement(transaction, [legal.copyright_notice_id])
   if (legal.action === 'withhold' && legal.restriction_lifted_at !== null) {
     await completeCopyrightActionIntentInTransaction({
       intentId: intent.id,

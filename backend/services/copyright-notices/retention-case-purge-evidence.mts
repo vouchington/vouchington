@@ -1,4 +1,5 @@
-import type { TransactionQuery } from '@data-stores/psql'
+import { copyrightCasePurgePreservationAllowedSql } from './retention-case-purge-eligibility.mts'
+import { write, type TransactionQuery } from '@data-stores/psql'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import sql from 'sql-template-strings'
 import { deleteCopyrightEvidenceObjectVersionPage } from './evidence-object-version-page.mts'
@@ -18,6 +19,7 @@ type EvidencePage = {
   nextSourceIndex: number
   hasMore: boolean
   evidenceOwner?: OwnerCursor
+  deferred?: boolean
 }
 
 /** One source, one bounded ownership proof page or one physical S3 version page. */
@@ -117,14 +119,35 @@ export async function eraseCopyrightCaseEvidencePage(
     await query(sql`/* scopeCopyrightCaseEvidenceClaim */
       SELECT set_config('app.copyright_case_purge_notice_id', ${noticeId}, true),
         set_config('app.copyright_case_purge_table', 'copyright_notice_storage_objects', true)`)
-    await query(sql`/* claimCopyrightCaseEvidenceObjectDeletion */
+    const claim = sql`/* claimCopyrightCaseEvidenceObjectDeletion */
       UPDATE copyright_notice_storage_objects SET is_deletion_claimed = true
       WHERE id = ${object.id}::uuid AND NOT is_deletion_claimed
-        AND reference_generation = ${object.reference_generation}::bigint`)
+        AND reference_generation = ${object.reference_generation}::bigint AND `
+    claim.append(copyrightCasePurgePreservationAllowedSql(noticeId))
+    const { rowCount } = await query(claim)
+    if (rowCount !== 1)
+      return { nextId: afterId, nextSourceIndex: sourceIndex, hasMore: true, deferred: true }
     return { nextId: afterId, nextSourceIndex: sourceIndex, hasMore: true }
   }
 
-  const page = await deleteCopyrightEvidenceObjectVersionPage(object.storage_key, workLimit)
+  const preservationCheck = sql`/* readCopyrightEvidenceDeletionPreservation */ SELECT `
+  preservationCheck.append(copyrightCasePurgePreservationAllowedSql(noticeId))
+  preservationCheck.append(sql` AS is_allowed`)
+  const { rows: preservation } = await query<{ is_allowed: boolean }>(preservationCheck)
+  if (!preservation[0]?.is_allowed)
+    return { nextId: afterId, nextSourceIndex: sourceIndex, hasMore: true, deferred: true }
+
+  const page = await deleteCopyrightEvidenceObjectVersionPage(
+    object.storage_key,
+    workLimit,
+    async () => {
+      // This primary autocommit SELECT has a fresh READ COMMITTED snapshot after S3 listing.
+      const { rows } = await write<{ is_allowed: boolean }>(preservationCheck)
+      return rows.length === 1 && rows[0]!.is_allowed
+    },
+  )
+  if (page.deferred)
+    return { nextId: afterId, nextSourceIndex: sourceIndex, hasMore: true, deferred: true }
   if (page.hasMore) return { nextId: afterId, nextSourceIndex: sourceIndex, hasMore: true }
   await query(sql`/* scopeCopyrightCaseEvidenceUnlink */
     SET LOCAL app.copyright_retention_erasure = 'on'`)

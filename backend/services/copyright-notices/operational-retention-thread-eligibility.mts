@@ -1,3 +1,4 @@
+import { copyrightThreadCurrentPreservationAllowedSql } from './operational-retention-current-holds.mts'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 
@@ -23,4 +24,23 @@ export function copyrightOperationalThreadEligibleSql(cutoff: Date, noticeId: st
       AND EXISTS (SELECT 1 FROM copyright_notice_thread_retention_activities activity
         WHERE activity.copyright_notice_id = notice.id
           AND activity.last_activity_at <= ${cutoff})`
+}
+
+/** Read current proof versions and retirement eligibility in the same fresh statement. */
+export function copyrightOperationalThreadAdmissionSql(
+  cutoff: Date,
+  noticeId: string,
+  proof: {
+    blockerGeneration: string | null
+  },
+) {
+  const query = sql`/* readCopyrightThreadRetirementAdmission */
+    SELECT COALESCE((SELECT generation FROM copyright_notice_thread_blocker_generations
+        WHERE copyright_notice_id = ${noticeId}::uuid), 0) = ${proof.blockerGeneration}::bigint
+      AS proof_is_current, EXISTS (`
+  query.append(copyrightOperationalThreadEligibleSql(cutoff, noticeId))
+  query.append(sql` AND `)
+  query.append(copyrightThreadCurrentPreservationAllowedSql(noticeId))
+  query.append(sql`) AS is_eligible`)
+  return query
 }

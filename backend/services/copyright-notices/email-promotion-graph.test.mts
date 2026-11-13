@@ -1,18 +1,27 @@
+import { createCopyrightPromotionRootReplyScene } from '@voucha/test-helpers/copyright-promotion-graph-fixtures'
+import {
+  seedCopyrightPromotionThreadEmail,
+  seedCopyrightPromotionThreadSource,
+} from '@voucha/test-helpers/copyright-promotion-thread-fixtures'
+import {
+  ownedCopyrightEmailPromotionInput,
+  seedCommittedCopyrightPromotion,
+} from '@voucha/test-helpers/copyright-promotion-committed-fixtures'
+import {
+  assertCopyrightPromotionOutcome,
+  assertCopyrightPromotionReplay,
+} from '@voucha/test-helpers/copyright-email-promotion-outcomes'
+import { assertOverBudgetCopyrightReceipt } from '@voucha/test-helpers/copyright-promotion-receipt-outcome'
+import { createCommittedCopyrightEmailCase } from '@voucha/test-helpers/copyright-committed-email-case'
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import { readCopyrightEmailPromotionEffects } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { seedTestCopyrightAncestorEdge } from '@voucha/test-helpers/copyright-operational-email-retention'
 import { createRetentionParsedEmail } from '@voucha/test-helpers/services/copyright-notices/retention-parsed-email'
-import {
-  copyrightEmailMessageId,
-  copyrightEmailPromotionInput,
-  promoteInitialCopyrightEmail,
-  recordThreadedCopyrightEmail,
-} from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
+import { copyrightEmailMessageId } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
 import { describe, expect, it, vi } from 'vitest'
 import { copyrightConfig } from './config.mts'
-import { promoteCopyrightEmailIntake } from './email-promotion.mts'
 import { readBoundedCopyrightEmailAncestorIds } from './email-thread-ancestor-graph.mts'
 import { readCopyrightEmailThreadGraph } from './email-thread-graph.mts'
 import { searchCopyrightStaffEmailIntakes } from './read-models-staff-email-intakes.mts'
@@ -24,8 +33,8 @@ describe('copyright email promotion graph bound', () => {
   ])('at cap $cap links only when the whole graph fits', async ({ cap, linked }) => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const messageId = copyrightEmailMessageId()
-    const root = await recordThreadedCopyrightEmail({ messageId, replyReferences: [] })
-    const reply = await recordThreadedCopyrightEmail({
+    const root = await seedCopyrightPromotionThreadEmail({ messageId, replyReferences: [] })
+    const reply = await seedCopyrightPromotionThreadEmail({
       messageId: copyrightEmailMessageId(),
       replyReferences: [messageId],
     })
@@ -34,30 +43,33 @@ describe('copyright email promotion graph bound', () => {
     })
     const log = vi.spyOn(console, 'info').mockImplementation(() => {})
     try {
-      const promoted = await promoteCopyrightEmailIntake(
-        await copyrightEmailPromotionInput(moderator, root.intakeId),
+      await assertCopyrightPromotionOutcome(
+        {
+          input: await ownedCopyrightEmailPromotionInput(moderator, root.intakeId),
+          intakeIds: [root.intakeId, reply.intakeId],
+        },
+        {
+          linkedDescendantIds: linked ? [reply.intakeId] : [],
+          logs: () => log.mock.calls,
+          ...(linked
+            ? {}
+            : { overflow: { event: 'copyright_email_thread_graph_overflow', observedRows: 3 } }),
+        },
       )
+      // An independent committed graph always exercises the queue classification after a decision.
+      const committed = await createCopyrightPromotionRootReplyScene(moderator)
+      const promoted = await seedCommittedCopyrightPromotion(committed.input)
       const queue = await searchCopyrightStaffEmailIntakes(moderator, {
         limit: 1,
-        intakeIds: [reply.intakeId],
+        intakeIds: [committed.reply.intakeId],
       })
       expect(queue.intakes).toEqual([
         expect.objectContaining({
-          id: reply.intakeId,
+          id: committed.reply.intakeId,
           linked_notice_id: linked ? promoted.noticeId : null,
           review_path: linked ? 'matched_thread' : 'unresolved_thread',
         }),
       ])
-      expect(log.mock.calls).toEqual(
-        linked
-          ? []
-          : [
-              [
-                'copyright_email_thread_graph_overflow',
-                { noticeId: promoted.noticeId, observedRows: 3 },
-              ],
-            ],
-      )
     } finally {
       restore()
       log.mockRestore()
@@ -67,8 +79,8 @@ describe('copyright email promotion graph bound', () => {
   it('keeps the same case and unlinked reply when an over-budget promotion is replayed', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const messageId = copyrightEmailMessageId()
-    const root = await recordThreadedCopyrightEmail({ messageId, replyReferences: [] })
-    const reply = await recordThreadedCopyrightEmail({
+    const root = await seedCopyrightPromotionThreadEmail({ messageId, replyReferences: [] })
+    const reply = await seedCopyrightPromotionThreadEmail({
       messageId: copyrightEmailMessageId(),
       replyReferences: [messageId, copyrightEmailMessageId(), copyrightEmailMessageId()],
     })
@@ -77,24 +89,34 @@ describe('copyright email promotion graph bound', () => {
     })
     const log = vi.spyOn(console, 'info').mockImplementation(() => {})
     try {
-      const input = await copyrightEmailPromotionInput(moderator, root.intakeId)
-      const promoted = await promoteCopyrightEmailIntake(input)
+      const input = await ownedCopyrightEmailPromotionInput(moderator, root.intakeId)
+      await assertCopyrightPromotionOutcome(
+        { input, intakeIds: [root.intakeId, reply.intakeId] },
+        {
+          logs: () => log.mock.calls,
+          overflow: { event: 'copyright_email_thread_token_overflow', observedRows: 4 },
+        },
+      )
+      const replayLogStart = log.mock.calls.length
+      const committed = await createCopyrightPromotionRootReplyScene(moderator, true)
+      const promoted = await seedCommittedCopyrightPromotion(committed.input)
       const before = await readCopyrightEmailPromotionEffects(
-        root.intakeId,
-        input.targets[0]!.placementId,
+        committed.root.intakeId,
+        committed.input.targets[0]!.placementId,
       )
-      const replayed = await promoteCopyrightEmailIntake(input)
-      const after = await readCopyrightEmailPromotionEffects(
-        root.intakeId,
-        input.targets[0]!.placementId,
+      await assertCopyrightPromotionReplay(
+        { input: committed.input, intakeIds: [committed.root.intakeId, committed.reply.intakeId] },
+        promoted,
+        () => log.mock.calls.slice(replayLogStart),
+        { event: 'copyright_email_thread_token_overflow', observedRows: 4 },
       )
-      expect(replayed).toEqual(promoted)
-      expect(after).toEqual(before)
-      expect(await readCopyrightEmailIntakeNoticeLinks(reply.intakeId)).toEqual([])
-      expect(log.mock.calls).toEqual([
-        ['copyright_email_thread_token_overflow', { noticeId: promoted.noticeId, observedRows: 4 }],
-        ['copyright_email_thread_token_overflow', { noticeId: promoted.noticeId, observedRows: 4 }],
-      ])
+      expect(
+        await readCopyrightEmailPromotionEffects(
+          committed.root.intakeId,
+          committed.input.targets[0]!.placementId,
+        ),
+      ).toEqual(before)
+      expect(await readCopyrightEmailIntakeNoticeLinks(committed.reply.intakeId)).toEqual([])
     } finally {
       restore()
       log.mockRestore()
@@ -121,8 +143,15 @@ describe('copyright email promotion graph bound', () => {
     })
     const log = vi.spyOn(console, 'info').mockImplementation(() => {})
     try {
-      const promoted = await promoteCopyrightEmailIntake(
-        await copyrightEmailPromotionInput(moderator, root.id),
+      await assertCopyrightPromotionOutcome(
+        {
+          input: await ownedCopyrightEmailPromotionInput(moderator, root.id),
+          intakeIds: [root.id, ...replies.map(reply => reply.id)],
+        },
+        {
+          logs: () => log.mock.calls,
+          overflow: { event: 'copyright_email_thread_graph_overflow', observedRows: 5 },
+        },
       )
       const queue = await searchCopyrightStaffEmailIntakes(moderator, {
         limit: 2,
@@ -131,9 +160,6 @@ describe('copyright email promotion graph bound', () => {
       expect(queue.intakes.map(row => [row.linked_notice_id, row.review_path])).toEqual([
         [null, 'unresolved_thread'],
         [null, 'unresolved_thread'],
-      ])
-      expect(log.mock.calls).toEqual([
-        ['copyright_email_thread_graph_overflow', { noticeId: promoted.noticeId, observedRows: 5 }],
       ])
     } finally {
       restore()
@@ -144,11 +170,11 @@ describe('copyright email promotion graph bound', () => {
   it('counts a cycle once per intake and edge, without revisiting the same intake', async () => {
     const firstMessageId = copyrightEmailMessageId()
     const secondMessageId = copyrightEmailMessageId()
-    const first = await recordThreadedCopyrightEmail({
+    const first = await seedCopyrightPromotionThreadEmail({
       messageId: firstMessageId,
       replyReferences: [secondMessageId],
     })
-    const second = await recordThreadedCopyrightEmail({
+    const second = await seedCopyrightPromotionThreadEmail({
       messageId: secondMessageId,
       replyReferences: [firstMessageId],
     })
@@ -163,15 +189,15 @@ describe('copyright email promotion graph bound', () => {
   it('counts a descendant’s outside ancestor before its notice can be linked', async () => {
     const rootMessageId = copyrightEmailMessageId()
     const outsideMessageId = copyrightEmailMessageId()
-    const root = await recordThreadedCopyrightEmail({
+    const root = await seedCopyrightPromotionThreadEmail({
       messageId: rootMessageId,
       replyReferences: [],
     })
-    const outside = await recordThreadedCopyrightEmail({
+    const outside = await seedCopyrightPromotionThreadEmail({
       messageId: outsideMessageId,
       replyReferences: [],
     })
-    const reply = await recordThreadedCopyrightEmail({
+    const reply = await seedCopyrightPromotionThreadEmail({
       messageId: copyrightEmailMessageId(),
       replyReferences: [rootMessageId, outsideMessageId],
     })
@@ -190,15 +216,15 @@ describe('copyright email promotion graph bound', () => {
   it('reads a chain in two graph queries and bounds the reverse ancestor walk', async () => {
     const rootMessageId = copyrightEmailMessageId()
     const childMessageId = copyrightEmailMessageId()
-    const root = await recordThreadedCopyrightEmail({
+    const root = await seedCopyrightPromotionThreadEmail({
       messageId: rootMessageId,
       replyReferences: [],
     })
-    const child = await recordThreadedCopyrightEmail({
+    const child = await seedCopyrightPromotionThreadEmail({
       messageId: childMessageId,
       replyReferences: [rootMessageId],
     })
-    const grandchild = await recordThreadedCopyrightEmail({
+    const grandchild = await seedCopyrightPromotionThreadEmail({
       messageId: copyrightEmailMessageId(),
       replyReferences: [childMessageId],
     })
@@ -229,8 +255,8 @@ describe('copyright email promotion graph bound', () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const rootMessageId = copyrightEmailMessageId()
     const childMessageId = copyrightEmailMessageId()
-    const root = await promoteInitialCopyrightEmail({ moderator, messageId: rootMessageId })
-    const child = await recordThreadedCopyrightEmail({
+    const root = await createCommittedCopyrightEmailCase({ moderator, messageId: rootMessageId })
+    const child = await seedCopyrightPromotionThreadEmail({
       messageId: childMessageId,
       replyReferences: [rootMessageId],
     })
@@ -239,11 +265,19 @@ describe('copyright email promotion graph bound', () => {
       emailThreadGraphMaxRows: 4,
     })
     try {
-      const grandchild = await recordThreadedCopyrightEmail({
+      const grandchild = await seedCopyrightPromotionThreadSource({
         messageId: copyrightEmailMessageId(),
         replyReferences: [childMessageId],
       })
-      expect(grandchild.match).toBeNull()
+      await assertOverBudgetCopyrightReceipt(
+        {
+          input: await ownedCopyrightEmailPromotionInput(moderator, grandchild.intakeId),
+          intakeIds: [root.intakeId, child.intakeId, grandchild.intakeId],
+          parentNoticeIds: [root.noticeId],
+        },
+        grandchild,
+        child.intakeId,
+      )
       const queue = await searchCopyrightStaffEmailIntakes(moderator, {
         limit: 1,
         intakeIds: [grandchild.intakeId],

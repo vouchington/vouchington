@@ -151,10 +151,7 @@ BEGIN
   IF TG_OP = 'INSERT' AND NEW.link_kind = 'thread' THEN
     SELECT review_decision IS NOT NULL INTO terminal_review
       FROM copyright_notice_email_intake_receipts WHERE id = intake_id;
-    IF COALESCE(terminal_review, false) THEN
-      RAISE EXCEPTION 'reviewed copyright email intake cannot be linked as thread correspondence'
-        USING ERRCODE = 'check_violation';
-    END IF;
+    IF COALESCE(terminal_review, false) THEN RETURN NULL; END IF;
   END IF;
   IF TG_OP = 'INSERT' THEN
     PERFORM 1 FROM copyright_notices notice
@@ -170,7 +167,7 @@ BEGIN
   END IF;
   IF TG_OP = 'INSERT' THEN
     PERFORM 1 FROM copyright_notice_storage_objects
-      WHERE id = object_id AND NOT is_deletion_claimed FOR UPDATE;
+      WHERE id = object_id AND NOT is_deletion_claimed;
     IF NOT FOUND THEN
       RAISE EXCEPTION 'copyright evidence object deletion has started'
         USING ERRCODE = 'check_violation';
@@ -179,7 +176,7 @@ BEGIN
   END IF;
   -- A claimed object must keep its case link until physical deletion has cleared the intake FK.
   PERFORM 1 FROM copyright_notice_storage_objects
-    WHERE id = object_id AND NOT is_deletion_claimed FOR UPDATE;
+    WHERE id = object_id AND NOT is_deletion_claimed;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'claimed copyright evidence cannot lose its case link'
       USING ERRCODE = 'check_violation';
@@ -195,7 +192,15 @@ BEGIN
   ELSE intake_id := OLD.copyright_notice_email_intake_id; END IF;
   UPDATE copyright_notice_storage_objects object SET reference_generation = reference_generation + 1
   FROM copyright_notice_email_intakes intake
-  WHERE intake.id = intake_id AND object.id = intake.raw_storage_object_id;
+  WHERE intake.id = intake_id AND object.id = intake.raw_storage_object_id
+    AND NOT object.is_deletion_claimed;
+  IF NOT FOUND AND EXISTS (
+    SELECT 1 FROM copyright_notice_email_intakes
+    WHERE id = intake_id AND raw_storage_object_id IS NOT NULL
+  ) THEN
+    RAISE EXCEPTION 'copyright evidence object deletion has started'
+      USING ERRCODE = 'check_violation';
+  END IF;
   IF TG_OP = 'INSERT' THEN RETURN NEW; END IF;
   RETURN OLD;
 END;
@@ -208,7 +213,7 @@ BEGIN
     WHERE id = NEW.copyright_notice_id AND evidence_erased_at IS NULL;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'erased copyright case cannot acquire an email intake'
-      USING ERRCODE = 'check_violation';
+      USING ERRCODE = 'check_violation', CONSTRAINT = 'copyright_email_link_active_case';
   END IF;
   RETURN NEW;
 END;
@@ -397,7 +402,6 @@ COMMENT ON COLUMN copyright_notice_thread_retention_activities.last_activity_at 
 CREATE FUNCTION fn_copyright_touch_thread_retention_activity(case_id uuid, activity_at timestamptz)
 RETURNS void LANGUAGE plpgsql AS $$
 BEGIN
-  PERFORM 1 FROM copyright_notices WHERE id = case_id FOR KEY SHARE;
   INSERT INTO copyright_notice_thread_retention_activities (copyright_notice_id, last_activity_at)
   VALUES (case_id, COALESCE(activity_at, CURRENT_TIMESTAMP))
   ON CONFLICT (copyright_notice_id) DO UPDATE

@@ -1,4 +1,4 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
 
 export async function holdTestFinalPurgeUserLifecycle(userId: string) {
@@ -32,4 +32,12 @@ export async function setReciprocalTestUserDeletionActors(
     WHERE id IN ($1::uuid, $2::uuid)`,
     [firstUserId, secondUserId, deletedAt],
   )
+}
+
+export async function readReciprocalTestUserDeletionActor(userId: string) {
+  const { rows } = await read<{ deleted_by_id: string | null }>(
+    '/* readReciprocalTestUserDeletionActor */ SELECT deleted_by_id FROM users WHERE id = $1',
+    [userId],
+  )
+  return rows[0]?.deleted_by_id
 }

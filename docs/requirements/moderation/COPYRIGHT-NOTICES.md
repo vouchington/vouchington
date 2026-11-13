@@ -26,8 +26,10 @@ obligations. The runbook owns the activation procedure.
 Email thread assignment uses the references known when an intake is admitted. A later arriving
 message may extend or make that graph ambiguous without rewriting an immutable case link. The
 retained receipt prevents erased private evidence from being admitted again on replay.
-Reference digests are admitted against the live receipt and case retirement boundary before
-thread ancestry and case matching are derived from committed references. An interrupted derivation
+The digest dictionary resolves independently before reference admission. An unsuccessful admission
+may leave an unreferenced digest for ordinary token cleanup; that dictionary entry grants no case
+link or evidence authority. References are admitted against the live receipt and case retirement
+boundary before thread ancestry and case matching are derived from committed references. An interrupted derivation
 may leave hash-only references for replay; they do not authorize a case link or private evidence
 processing.
 
@@ -128,8 +130,9 @@ not bypass the counter-notice deadline or the human reversal requirement.
 
 US timing does not govern EU or UK cases. The US form and email intake accept `us_dmca`; EU and UK
 intake stay unavailable until an operator records a jurisdiction approval, and never before the
-staff territorial screen ships. Withdrawing approval stops only new intake; a received notice
-remains decidable. EU and UK decisions are human: a statement of reasons or review exists only when
+staff territorial screen ships. Intake availability is determined when the receipt reads its
+jurisdiction approval. A withdrawal visible at that read blocks intake; a receipt already admitted
+by that read may commit after an overlapping withdrawal. A received notice remains decidable. EU and UK decisions are human: a statement of reasons or review exists only when
 an identified staff user supplies it, with a required public explanation kept separate from the
 internal rationale. A member-visible case records an allegation and, where applicable, a
 provisional restriction or reviewed outcome. It never describes the claimant as the proven owner or
@@ -214,6 +217,41 @@ keep records while repeat-infringer review, restoration, limitation, or litigati
 The approved case clock retains each jurisdiction for six calendar years after its latest legal
 activity, including the final decision's complaint window. A new legal fact or hold release advances
 that clock. Detailed history has its own guarded partition retirement until the case is purged.
+
+Case SQL pointer cuts, child deletion and final removal share a serializable preservation boundary.
+Account and case hold placement read the affected legal-record families through their case foreign
+keys, including current pointer values. A conflicting destructive page rolls back without advancing
+its cursor; the next scheduled page sees the committed hold. The page does not retry within its run.
+
+Case evidence deletion checks current preservation again on the primary immediately before each
+physical S3 deletion batch, after listing its versions. Completion is checked again before clearing
+evidence pointers, including when no versions remain. A hold visible at either admission stops the
+page and retains its evidence pointer. A hold committed afterward protects later pages; it does
+not cancel the already-admitted external request. A database rollback cannot restore object
+versions that S3 has already deleted.
+
+Operational thread retirement admits only records without a current account or case preservation
+hold. Hold placement inventories the records it protects in the same serializable transaction;
+retirement reads those holds before deleting the records. A serialization conflict rolls back the
+losing operation: staff receive a conflict response, and a sweep stops until its next scheduled
+run. Neither operation retries within that run. Releasing a hold permits operational thread
+cleanup; the separate case and standalone legal-record clocks still advance on release.
+
+Writers that can introduce retention blockers read the case's existing thread-retirement state
+in the same serializable transaction. Adding or relinking thread references, ancestry or reply
+links to a retired graph returns a conflict and rolls back those additions in their owning transaction.
+Reference admission and graph derivation commit separately; a later conflict does not undo already
+admitted reference facts. Pure duplicate graph replays remain no-ops. This does not
+bar legal decisions or account erasure: final account deletion still clears a form requester while
+retaining the case and its identities. PostgreSQL may also reject transactions on different cases
+because its physical predicate locks can cover more than one case; the same conflict boundary
+applies, without an internal retry.
+
+Proof invalidation protects against obligations introduced behind a bounded cursor. It does not
+serve as a transaction mutex: renewing a worker lease or removing a blocker need not invalidate a
+negative proof. Case activity and its referenced legal source commit atomically; checking that
+reference at commit lets their substantive writes follow the same dependency direction as delivery
+work without adding a parent fence.
 
 - Staff may preserve a case for overlapping written litigation threats or court and regulator
   requests, including after evidence deletion has started. Each page checks the current hold and

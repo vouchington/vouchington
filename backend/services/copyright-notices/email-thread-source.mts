@@ -1,3 +1,4 @@
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -22,9 +23,5 @@ export async function hasRetiredCopyrightEmailCaseLink(
     SELECT copyright_notice_id FROM copyright_notice_email_intake_notice_links
     WHERE copyright_notice_email_intake_id = ${intakeId}`)
   if (!links[0]) return false
-  const { rows: retired } = await transaction(sql`/* recordCopyrightEmailThreadReferences:retired */
-    SELECT 1 FROM copyright_notice_email_thread_retirements
-    WHERE copyright_notice_id = ${links[0].copyright_notice_id}
-      AND retired_before_intake_bound > ${intakeId}::uuid LIMIT 1`)
-  return retired.length > 0
+  return readCopyrightThreadRetirement(transaction, [links[0].copyright_notice_id])
 }

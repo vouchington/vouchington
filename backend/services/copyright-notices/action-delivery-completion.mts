@@ -1,6 +1,6 @@
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import type { CopyrightActionIntentRecord } from './types.mts'
 
 const MAX_ATTEMPTS = 5
 const RETRY_BASE_MS = 60 * 1000
@@ -12,10 +12,10 @@ export async function failCopyrightActionIntent(input: {
   failureMessage: string
   beforeRelease?: () => Promise<void>
 }): Promise<'retrying' | 'failed' | 'not_claimed'> {
-  await using transaction = await beginTransaction()
-  const { rows } = await transaction<Pick<CopyrightActionIntentRecord, 'attempt_count'>>(
+  await using transaction = await beginTransaction({ serializable: true })
+  const { rows } = await transaction<{ attempt_count: number; copyright_notice_id: string }>(
     sql`/* failCopyrightActionIntent:lock */
-      SELECT attempt_count
+      SELECT attempt_count, copyright_notice_id
       FROM copyright_notice_action_work_items
       WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken} AND lease_expires_at > clock_timestamp()
     `,
@@ -25,6 +25,7 @@ export async function failCopyrightActionIntent(input: {
   // The lease-conditional UPDATE below rejects a worker whose lease lapsed during compensation.
   await input.beforeRelease?.()
   const failed = intent.attempt_count >= MAX_ATTEMPTS
+  if (failed) await readCopyrightThreadRetirement(transaction, [intent.copyright_notice_id])
   const { rows: released } = await transaction(sql`/* failCopyrightActionIntent */
     UPDATE copyright_notice_action_work_items
     SET

@@ -5,9 +5,10 @@ import type { Job } from 'glide-mq'
 
 export function processCopyrightAccountClockSync(
   job: Pick<Job<CopyrightAccountClockSyncJobData>, 'data' | 'updateData' | 'moveToDelayed'>,
+  options: { pageSize?: number } = {},
 ) {
   return processRetainedSweep(job, async save => {
-    const result = await runCopyrightAccountClockSyncPage(job.data)
+    const result = await runCopyrightAccountClockSyncPage(job.data, options.pageSize)
     if (result.hasMore) await save(result.data)
     return result
   })

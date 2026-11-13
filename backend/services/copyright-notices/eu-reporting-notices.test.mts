@@ -10,26 +10,28 @@ import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/service
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
-import { readCopyrightNoticeTargetIds } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { deleteTestUser } from '@voucha/test-helpers/data-stores/psql/moderation-admission-relations'
 import { createTestTimedDsaReportAction } from '@voucha/test-helpers/dsa-report-timed-action'
 import {
   COPYRIGHT_LEGAL_HOLD_GUIDANCE_CRITERIA,
   type CopyrightLegalHoldGuidance,
 } from '@ts-shared/utils/copyright-submission-guidance'
+import { seedDsaProjectionDecision } from '@voucha/test-helpers/copyright-dsa-projection-prerequisites'
 import {
-  processCopyrightActionIntent,
-  recordEuCopyrightRedressDecision,
-  recordUkCopyrightReview,
-  submitEuCopyrightRedress,
-} from './index.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
-import { appendCopyrightSubmissionAssessment } from './compliance.mts'
+  seedDsaAutomatedReportingTarget,
+  seedDsaReportingWithhold,
+} from '@voucha/test-helpers/copyright-dsa-reporting-prerequisites'
+import { seedCompletedReversalStatement } from '@voucha/test-helpers/copyright-restored-statement-fixture'
+import {
+  seedCompletedStatutoryContract,
+  seedStatutoryContractHold,
+} from '@voucha/test-helpers/copyright-statutory-contract-fixtures'
+import {
+  seedCommittedTerritorialRedress,
+  seedCommittedTerritorialRedressDecision,
+} from '@voucha/test-helpers/copyright-territorial-committed-redress'
 import { appendCopyrightSubmissionGuidance } from './submission-guidance.mts'
-import {
-  openHeldCounterNoticeRestore,
-  recordOrdinaryCopyrightHold,
-} from '@voucha/test-helpers/copyright-restoration-hold-scene'
+import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 import { readDsaCopyrightNoticeFigures } from './eu-reporting-notices.mts'
 
 const period = () => ({
@@ -71,7 +73,7 @@ describe('DSA copyright notice aggregates', () => {
       await createTestCopyrightImageFixture('post-image'),
     )
     const ownedIds = [us.noticeId, inArea.noticeId, outOfArea.noticeId, uk.noticeId]
-    await recordUkCopyrightReview(uk.staff, uk.noticeId, {
+    await seedDsaProjectionDecision('uk', uk.staff, uk.noticeId, {
       text: 'The identified image reproduces the protected photograph.',
       publicExplanation: 'The hosted image matches the notified work.',
       outcome: 'restrict',
@@ -80,7 +82,7 @@ describe('DSA copyright notice aggregates', () => {
     const aggregate = await getCopyrightNoticePrivateAggregate(inArea.noticeId)
     const withhold = aggregate?.actionIntents.find(intent => intent.action === 'withhold')
     if (!withhold) throw new Error('EU restriction did not create a withhold intent')
-    await processCopyrightActionIntent(withhold.id)
+    await seedDsaReportingWithhold(inArea.noticeId, withhold.id)
     const after = await readDsaCopyrightNoticeFigures(start, end, ownedIds)
     expect(ownedIds).not.toContain(foreign.noticeId)
     expect(after.notices_received_count).toBe(4)
@@ -102,21 +104,27 @@ describe('DSA copyright notice aggregates', () => {
     expect(afterErasure.restrictions_imposed_by_automated_means_count).toBe(
       after.restrictions_imposed_by_automated_means_count,
     )
-    const complaint = await submitEuCopyrightRedress(
-      inArea.claimant,
+    const complaint = await seedCommittedTerritorialRedress(
+      'eu_dsa',
       inArea.noticeId,
-      crypto.randomUUID(),
+      inArea.claimant,
       'Please reverse this restriction.',
     )
-    await recordEuCopyrightRedressDecision(inArea.staff, inArea.noticeId, complaint.id, {
-      disposition: 'revoke',
-      rationale: 'The reported material should be restored.',
-    })
+    await seedCommittedTerritorialRedressDecision(
+      'eu_dsa',
+      inArea.noticeId,
+      complaint.id,
+      inArea.staff,
+      {
+        disposition: 'revoke',
+        rationale: 'The reported material should be restored.',
+      },
+    )
     const restored = (
       await getCopyrightNoticePrivateAggregate(inArea.noticeId)
     )?.actionIntents.find(intent => intent.action === 'restore')
     if (!restored) throw new Error('EU reversal did not create a restore intent')
-    await processCopyrightActionIntent(restored.id)
+    await seedCompletedReversalStatement(restored.id)
     const afterRestore = await readDsaCopyrightNoticeFigures(start, end, ownedIds)
     expect(afterRestore.median_hours_to_action_trusted_flagger).toBe(
       after.median_hours_to_action_trusted_flagger,
@@ -126,24 +134,9 @@ describe('DSA copyright notice aggregates', () => {
 
   it('counts durable automated assessment provenance rather than nullable staff identity', async () => {
     const { start, end } = period()
-    const { notice, screeningId } = await createClearScreenedForm(2)
-    const noticeId = notice.intake.copyright_notice_id
-    const assessment = await appendCopyrightSubmissionAssessment({
-      submissionId: notice.intake.copyright_notice_submission_id,
-      assessedAt: new Date(),
-      currentUser: null,
-      substantiallyCompliant: true,
-      copyrightFormScreeningId: screeningId,
-    })
-    const [targetId] = await readCopyrightNoticeTargetIds(notice.intake.copyright_notice_id)
-    if (!targetId) throw new Error('Screened notice target missing')
-    await acceptCopyrightNoticeAndImposeRestriction({
-      noticeId: notice.intake.copyright_notice_id,
-      targetId,
-      assessmentId: assessment.id,
-      imposedAt: new Date(),
-      imposedById: null,
-    })
+    const screened = await createClearScreenedForm(2)
+    const noticeId = screened.notice.intake.copyright_notice_id
+    await seedDsaAutomatedReportingTarget(screened)
     const foreign = await createTestCopyrightRestrictionForImage(
       await createTestCopyrightImageFixture('post-image'),
     )
@@ -202,9 +195,7 @@ describe('DSA copyright notice aggregates', () => {
 
   it('includes a court-hold reimposition as a separate law action', async () => {
     const scene = await openHeldCounterNoticeRestore()
-    await expect(processCopyrightActionIntent(scene.restore.id, scene.restorationAt)).resolves.toBe(
-      'applied',
-    )
+    await seedCompletedStatutoryContract(scene)
     const { start, end } = period()
     const foreign = await createTestCopyrightRestrictionForImage(
       await createTestCopyrightImageFixture('post-image'),
@@ -212,7 +203,7 @@ describe('DSA copyright notice aggregates', () => {
     const ownedIds = [scene.notice.id]
     expect(ownedIds).not.toContain(foreign.noticeId)
     const before = await readDsaCopyrightNoticeFigures(start, end, ownedIds)
-    await recordOrdinaryCopyrightHold(scene)
+    await seedStatutoryContractHold(scene)
     const after = await readDsaCopyrightNoticeFigures(start, end, ownedIds)
     expect(after.actions_on_law_count - before.actions_on_law_count).toBe(1)
     expect(after.actions_on_terms_count).toBe(0)

@@ -3,7 +3,7 @@ import sql from 'sql-template-strings'
 import { createCopyrightNoticeSchemaFixture } from './data-stores/psql/copyright-notice-schema.mts'
 import { createRetentionSignedInForm } from './services/copyright-notices/retention-signed-in-form.mts'
 import {
-  positionCopyrightOperationalCursor,
+  createCopyrightRetentionScopes,
   seedCopyrightExecutionAttemptPair,
   seedCopyrightFormScreeningAttemptPair,
 } from './copyright-operational-retention.mts'
@@ -23,9 +23,10 @@ export async function createCopyrightRetentionContinuationFixture() {
       (SELECT failed_at FROM copyright_notice_form_screening_attempts WHERE id = ${form.priorId})
     ) AS terminal_at
   `)
-  await positionCopyrightOperationalCursor('action_attempts', first.priorId, second.priorId)
-  await positionCopyrightOperationalCursor('form_screening_attempts', form.priorId)
   return {
+    scopes: createCopyrightRetentionScopes({
+      copyrightActionAttempts: [first.priorId, second.priorId],
+    }),
     firstId: first.priorId,
     secondId: second.priorId,
     outsideId: outside.priorId,

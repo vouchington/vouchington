@@ -1,3 +1,6 @@
+import { associateCopyrightEmailIntakeWithNotice } from './email-manual-association.mts'
+import { readCopyrightEmailManualAssociationEvent } from '@voucha/test-helpers/copyright-email-manual-association'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { randomUUID } from 'node:crypto'
 import { beginTransaction } from '@voucha/test-helpers'
 import { COPYRIGHT_EMAIL_THREAD_CHANGED } from '@modules/on-error/error-codes'
@@ -58,7 +61,10 @@ describe('copyright email notice link write order', () => {
     const second = await createRetentionParsedEmail(`link-second-${randomUUID()}`)
     const bothPrechecked = Promise.withResolvers<void>()
     const release = Promise.withResolvers<void>()
-    onTestFinished(() => release.resolve())
+    onTestFinished(() => {
+      bothPrechecked.reject(new Error('Owned thread-link preflight was not observed'))
+      release.resolve()
+    })
     let prechecked = 0
     const link = async (intakeId: string) => {
       await using transaction = await beginTransaction()
@@ -86,7 +92,11 @@ describe('copyright email notice link write order', () => {
         }
       },
       async query => {
-        if (!query.text.includes('linkCopyrightEmailIntakeToNotice:retired')) return
+        if (
+          !query.text.includes('/* readCopyrightThreadRetirement */') ||
+          !query.values.some(value => Array.isArray(value) && value.includes(notice.noticeId))
+        )
+          return
         prechecked += 1
         if (prechecked === 2) bothPrechecked.resolve()
         await release.promise
@@ -94,7 +104,11 @@ describe('copyright email notice link write order', () => {
     )
     expect(prechecked).toBe(2)
     expect(
-      queries.filter(query => query.text.includes('linkCopyrightEmailIntakeToNotice:retired')),
+      queries.filter(
+        query =>
+          query.text.includes('/* readCopyrightThreadRetirement */') &&
+          query.values.some(value => Array.isArray(value) && value.includes(notice.noticeId)),
+      ),
     ).toHaveLength(2)
     expect(outcomes).toEqual([
       { status: 'fulfilled', value: true },
@@ -140,5 +154,43 @@ describe('copyright email notice link write order', () => {
     expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([
       { copyright_notice_id: notice.noticeId, link_kind: 'thread' },
     ])
+  })
+  it('keeps a conflicting retained pair and preserves the manual domain guard', async () => {
+    const first = await createRetentionMinimalCase()
+    const other = await createRetentionMinimalCase()
+    const intake = await createRetentionParsedEmail(`retained-link-${randomUUID()}`, {
+      reply: true,
+    })
+    await using transaction = await beginTransaction()
+    expect(
+      await insertCopyrightEmailIntakeNoticeLink(transaction, {
+        intakeId: intake.id,
+        noticeId: first.noticeId,
+        linkKind: 'thread',
+      }),
+    ).toBe(true)
+    await transaction.commit()
+    const before = await getCopyrightNoticePrivateAggregate(other.noticeId)
+    await using replay = await beginTransaction()
+    expect(
+      await insertCopyrightEmailIntakeNoticeLink(replay, {
+        intakeId: intake.id,
+        noticeId: other.noticeId,
+        linkKind: 'thread',
+      }),
+    ).toBe(false)
+    await replay.commit()
+    await expect(
+      associateCopyrightEmailIntakeWithNotice(other.moderator, intake.id, other.noticeId),
+    ).rejects.toMatchObject({
+      status: 409,
+      code: COPYRIGHT_EMAIL_THREAD_CHANGED,
+      cause: undefined,
+    })
+    expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([
+      { copyright_notice_id: first.noticeId, link_kind: 'thread' },
+    ])
+    expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toEqual([])
+    expect(await getCopyrightNoticePrivateAggregate(other.noticeId)).toEqual(before)
   })
 })

@@ -1,32 +1,31 @@
+import { createOwnedRepeatThresholdScene } from '@voucha/test-helpers/copyright-repeat-threshold-scenes'
+import { readOwnedRepeatAtomicState } from '@voucha/test-helpers/copyright-repeat-atomic-state'
+import { seedEffectiveAppealDecision } from '@voucha/test-helpers/copyright-effective-review-decisions'
+import { assertEffectiveAppeal } from '@voucha/test-helpers/copyright-effective-review-subjects'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
   getModeratorActionRowsForTest,
   withFailingTransactionQueryOptionsForTest,
 } from '@voucha/test-helpers'
-import {
-  confirmTestRepeatInfringerNotice,
-  createTestRepeatInfringerRestriction,
-} from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
+import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
 import { getPrivateUserByAny } from '@services/users/get'
 import { unsuspendUser } from '@services/users/suspension'
 import {
   listCopyrightRepeatInfringerAccountsForNotice,
-  createCopyrightAppeal,
   recordCopyrightRepeatInfringerReinstatement,
   recordCopyrightRepeatInfringerReviewOutcome,
-  reviewCopyrightAppeal,
 } from './index.mts'
 
 describe('atomic copyright repeat-infringer outcomes', () => {
-  it('rolls back a restricting outcome when its final moderator action write fails, then retries once', async () => {
+  it('rolls back a restricting outcome when its final moderator action write fails and commits an independent decision', async () => {
     const [poster, moderator, admin] = await Promise.all([
       createTestUser(),
       createTestUser({ extraRoles: ['moderator'] }),
       createTestUser({ administrator: true }),
     ])
     const firstNoticeId = await confirmTestRepeatInfringerNotice(poster.id, moderator)
-    await confirmTestRepeatInfringerNotice(poster.id, moderator)
+    const secondNoticeId = await confirmTestRepeatInfringerNotice(poster.id, moderator)
     const reviewId = (
       await listCopyrightRepeatInfringerAccountsForNotice(moderator, firstNoticeId)
     )[0]?.open_review_id
@@ -39,11 +38,15 @@ describe('atomic copyright repeat-infringer outcomes', () => {
       recordedAt: new Date('2026-07-04T12:00:00.000Z'),
     }
 
+    const before = await readOwnedRepeatAtomicState(poster.id, [firstNoticeId, secondNoticeId])
     await expect(
       withFailingTransactionQueryOptionsForTest('recordModeratorAction', options =>
         recordCopyrightRepeatInfringerReviewOutcome(input, options),
       ),
     ).rejects.toThrow('Injected query failure for recordModeratorAction')
+    expect(await readOwnedRepeatAtomicState(poster.id, [firstNoticeId, secondNoticeId])).toEqual(
+      before,
+    )
     await expect(getPrivateUserByAny(poster.id)).resolves.toEqual(
       expect.objectContaining({ suspended_at: null }),
     )
@@ -52,14 +55,19 @@ describe('atomic copyright repeat-infringer outcomes', () => {
       (await listCopyrightRepeatInfringerAccountsForNotice(moderator, firstNoticeId))[0],
     ).toEqual(expect.objectContaining({ open_review_id: reviewId }))
 
-    await expect(recordCopyrightRepeatInfringerReviewOutcome(input)).resolves.toEqual(
-      expect.objectContaining({ outcome: 'restrict' }),
-    )
-    await expect(getPrivateUserByAny(poster.id)).resolves.toEqual(
+    const independent = await createOwnedRepeatThresholdScene()
+    await expect(
+      recordCopyrightRepeatInfringerReviewOutcome(independent.enforcement),
+    ).resolves.toEqual({
+      id: independent.reviewId,
+      account_user_id: independent.poster.id,
+      outcome: 'restrict',
+    })
+    await expect(getPrivateUserByAny(independent.poster.id)).resolves.toEqual(
       expect.objectContaining({ suspended_at: expect.any(Date) }),
     )
-    expect(await getModeratorActionRowsForTest({ targetUserId: poster.id })).toEqual([
-      expect.objectContaining({ action_type: 'suspend', actor_user_id: admin.id }),
+    expect(await getModeratorActionRowsForTest({ targetUserId: independent.poster.id })).toEqual([
+      expect.objectContaining({ action_type: 'suspend', actor_user_id: independent.admin.id }),
     ])
   })
 
@@ -129,62 +137,50 @@ describe('atomic copyright repeat-infringer outcomes', () => {
   })
 
   it('does not suspend when reversal commits before enforcement', async () => {
-    const { poster, moderator, admin, reviewId, reverse, enforce } = await thresholdFixture()
-    await reverse(moderator)
-    await expect(enforce(admin, reviewId)).rejects.toMatchObject({ status: 409 })
-    await expect(getPrivateUserByAny(poster.id)).resolves.toEqual(
+    const scene = await createOwnedRepeatThresholdScene()
+    await seedEffectiveAppealDecision(scene.reversal, scene.first.noticeId)
+    const before = await readOwnedRepeatAtomicState(scene.poster.id, [
+      scene.first.noticeId,
+      scene.second.noticeId,
+    ])
+    await expect(
+      recordCopyrightRepeatInfringerReviewOutcome(scene.enforcement),
+    ).rejects.toMatchObject({
+      status: 409,
+      message: 'Restrict and terminate require two is_operative incidents',
+    })
+    expect(
+      await readOwnedRepeatAtomicState(scene.poster.id, [
+        scene.first.noticeId,
+        scene.second.noticeId,
+      ]),
+    ).toEqual(before)
+    await expect(getPrivateUserByAny(scene.poster.id)).resolves.toEqual(
       expect.objectContaining({ suspended_at: null }),
     )
   })
 
   it('suspends when enforcement commits before reversal', async () => {
-    const { poster, moderator, admin, reviewId, reverse, enforce } = await thresholdFixture()
-    await enforce(admin, reviewId)
-    await reverse(moderator)
-    await expect(getPrivateUserByAny(poster.id)).resolves.toEqual(
+    const actual = await createOwnedRepeatThresholdScene()
+    await recordCopyrightRepeatInfringerReviewOutcome(actual.enforcement)
+    await assertEffectiveAppeal(
+      actual.first,
+      actual.poster,
+      actual.moderator,
+      'reverse',
+      { [actual.poster.id]: false },
+      0,
+      actual.appeal.submission.id,
+    )
+    await expect(getPrivateUserByAny(actual.poster.id)).resolves.toEqual(
+      expect.objectContaining({ suspended_at: expect.any(Date) }),
+    )
+    // An independent committed reversal also preserves the already imposed suspension.
+    const committed = await createOwnedRepeatThresholdScene()
+    await recordCopyrightRepeatInfringerReviewOutcome(committed.enforcement)
+    await seedEffectiveAppealDecision(committed.reversal, committed.first.noticeId)
+    await expect(getPrivateUserByAny(committed.poster.id)).resolves.toEqual(
       expect.objectContaining({ suspended_at: expect.any(Date) }),
     )
   })
 })
-
-async function thresholdFixture() {
-  const [poster, moderator, admin] = await Promise.all([
-    createTestUser(),
-    createTestUser({ extraRoles: ['moderator'] }),
-    createTestUser({ administrator: true }),
-  ])
-  const first = await createTestRepeatInfringerRestriction(poster.id, moderator)
-  await createTestRepeatInfringerRestriction(poster.id, moderator)
-  const account = (
-    await listCopyrightRepeatInfringerAccountsForNotice(moderator, first.noticeId)
-  )[0]
-  const reviewId = account?.open_review_id
-  if (!reviewId) throw new Error('open review disappeared')
-  const appeal = await createCopyrightAppeal(poster, first.noticeId, crypto.randomUUID(), {
-    reason: 'Please review.',
-    targetIds: [first.targetId],
-  })
-  return {
-    poster,
-    moderator,
-    admin,
-    reviewId,
-    reverse: (actor: typeof moderator) =>
-      reviewCopyrightAppeal({
-        submissionId: appeal.submission.id,
-        currentUser: actor,
-        recommendationId: null,
-        manualFallbackReason: 'Manual review.',
-        rationale: 'The evidence was reviewed.',
-        decisions: [{ restrictionId: first.restrictionId, action: 'reverse' }],
-      }),
-    enforce: (actor: typeof admin, openReviewId: string) =>
-      recordCopyrightRepeatInfringerReviewOutcome({
-        currentUser: actor,
-        reviewId: openReviewId,
-        outcome: 'restrict',
-        rationale: 'Two confirmed notices remain.',
-        recordedAt: new Date(),
-      }),
-  }
-}

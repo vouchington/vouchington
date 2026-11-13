@@ -1,3 +1,4 @@
+import type { CopyrightOperationalScope } from '@services/copyright-notices/operational-retention-cursor'
 import {
   sweepCopyrightOperationalRetention,
   sweepUnlinkedCopyrightEmailIntakes,
@@ -11,15 +12,20 @@ import {
 } from './config.mts'
 import type { DataRetentionCleanupResult } from './cleanup-run-result.mts'
 
-export type CopyrightRetentionFamily =
-  | 'copyrightFormScreeningAttempts'
-  | 'copyrightActionAttempts'
-  | 'copyrightDeliveryAttempts'
-  | 'copyrightGuestCapabilities'
-  | 'copyrightUnlinkedEmailIntakes'
-  | 'copyrightReceiptReviews'
-  | 'copyrightCaseThreads'
-  | 'copyrightOrphanEmailThreadTokens'
+export const COPYRIGHT_RETENTION_FAMILIES = [
+  'copyrightFormScreeningAttempts',
+  'copyrightActionAttempts',
+  'copyrightDeliveryAttempts',
+  'copyrightGuestCapabilities',
+  'copyrightUnlinkedEmailIntakes',
+  'copyrightReceiptReviews',
+  'copyrightCaseThreads',
+  'copyrightOrphanEmailThreadTokens',
+] as const
+export type CopyrightRetentionFamily = (typeof COPYRIGHT_RETENTION_FAMILIES)[number]
+export type CopyrightRetentionScopes = Partial<
+  Record<CopyrightRetentionFamily, CopyrightOperationalScope>
+>
 
 type CopyrightRetentionCleanupResult = Partial<
   Pick<DataRetentionCleanupResult, CopyrightRetentionFamily>
@@ -30,8 +36,7 @@ export async function runCopyrightOperationalRetentionCleanup(
   options: {
     activeFamilies?: readonly CopyrightRetentionFamily[]
     limits?: DataRetentionLimits
-    formScreeningAttemptIds?: readonly string[]
-    actionAttemptIds?: readonly string[]
+    scopes?: CopyrightRetentionScopes
     now?: Date
   } = {},
 ): Promise<CopyrightRetentionCleanupResult> {
@@ -45,7 +50,7 @@ export async function runCopyrightOperationalRetentionCleanup(
       {
         ...limits,
         retentionDays: readDataRetentionField('copyright_form_screening_attempt_days'),
-        recordIds: options.formScreeningAttemptIds,
+        scope: options.scopes?.copyrightFormScreeningAttempts,
         now: options.now,
       },
     )
@@ -53,7 +58,7 @@ export async function runCopyrightOperationalRetentionCleanup(
     result.copyrightActionAttempts = await sweepCopyrightOperationalRetention('action_attempts', {
       ...limits,
       retentionDays: readDataRetentionField('copyright_action_attempt_days'),
-      recordIds: options.actionAttemptIds,
+      scope: options.scopes?.copyrightActionAttempts,
       now: options.now,
     })
   if (active('copyrightDeliveryAttempts'))
@@ -62,6 +67,7 @@ export async function runCopyrightOperationalRetentionCleanup(
       {
         ...limits,
         retentionDays: readDataRetentionField('copyright_delivery_attempt_days'),
+        scope: options.scopes?.copyrightDeliveryAttempts,
       },
     )
   if (active('copyrightGuestCapabilities'))
@@ -70,6 +76,7 @@ export async function runCopyrightOperationalRetentionCleanup(
       {
         ...limits,
         retentionDays: readDataRetentionField('copyright_guest_capability_days'),
+        scope: options.scopes?.copyrightGuestCapabilities,
       },
     )
   if (active('copyrightUnlinkedEmailIntakes'))
@@ -77,14 +84,19 @@ export async function runCopyrightOperationalRetentionCleanup(
       childLimit: limits.batchSize,
       maxBatches: limits.maxBatches,
       retentionDays: readDataRetentionField('copyright_unlinked_email_intake_days'),
+      scope: options.scopes?.copyrightUnlinkedEmailIntakes,
     })
   if (active('copyrightReceiptReviews'))
-    result.copyrightReceiptReviews = await sweepCopyrightReceiptReviews(limits)
+    result.copyrightReceiptReviews = await sweepCopyrightReceiptReviews({
+      ...limits,
+      scope: options.scopes?.copyrightReceiptReviews,
+    })
   if (active('copyrightCaseThreads'))
     result.copyrightCaseThreads = await sweepCopyrightCaseThreads({
       batchSize: limits.batchSize,
       maxBatches: limits.maxBatches,
       replyDays: readDataRetentionField('copyright_email_thread_reply_days'),
+      scope: options.scopes?.copyrightCaseThreads,
       now: options.now,
     })
   if (active('copyrightOrphanEmailThreadTokens'))
@@ -93,6 +105,7 @@ export async function runCopyrightOperationalRetentionCleanup(
       {
         ...limits,
         retentionDays: readDataRetentionField('copyright_unlinked_email_intake_days'),
+        scope: options.scopes?.copyrightOrphanEmailThreadTokens,
       },
     )
   return result

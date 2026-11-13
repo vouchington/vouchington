@@ -1,3 +1,4 @@
+import { seedTestCopyrightInformationRequest } from '@voucha/test-helpers/copyright-information-request-seed'
 import { beginTransaction } from '@voucha/test-helpers'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as ses from '@modules/aws/ses'
@@ -7,10 +8,7 @@ import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/service
 import { processSendCopyrightNoticeEmail } from '../copyright-notice.mts'
 import { captureTestLogOutput } from '@voucha/test-helpers/services/copyright-notices/capture-log-output'
 import { readTestInformationRequestIntents } from '@voucha/test-helpers/services/copyright-notices/claimant-delivery'
-import {
-  fileTestCopyrightFormNotice,
-  requestTestCopyrightInformation,
-} from '@voucha/test-helpers/services/copyright-notices/information-request-fixture'
+import { fileTestCopyrightFormNotice } from '@voucha/test-helpers/services/copyright-notices/information-request-fixture'
 
 describe('copyright staff information request email', () => {
   beforeEach(() => {
@@ -23,7 +21,7 @@ describe('copyright staff information request email', () => {
   ])('sends the request to the $label claimant and records the delivery', async ({ signedIn }) => {
     const { noticeId, claimantEmail } = await fileTestCopyrightFormNotice(signedIn)
     const statement = `Send the registration number ${crypto.randomUUID()}`
-    await requestTestCopyrightInformation(noticeId, statement)
+    await seedTestCopyrightInformationRequest(noticeId, statement)
     const [intent] = await readTestInformationRequestIntents(noticeId)
     vi.spyOn(ses, 'sendEmail').mockResolvedValue({
       MessageId: `ses-${crypto.randomUUID()}`,
@@ -58,7 +56,10 @@ describe('copyright staff information request email', () => {
 
   it('shows a bounced request on the staff case once SES reports the bounce', async () => {
     const { noticeId, claimantEmail } = await fileTestCopyrightFormNotice(false)
-    await requestTestCopyrightInformation(noticeId, `Send the registration ${crypto.randomUUID()}`)
+    await seedTestCopyrightInformationRequest(
+      noticeId,
+      `Send the registration ${crypto.randomUUID()}`,
+    )
     const [intent] = await readTestInformationRequestIntents(noticeId)
     const sesMessageId = `ses-${crypto.randomUUID()}`
     vi.spyOn(ses, 'sendEmail').mockResolvedValue({ MessageId: sesMessageId } as never)

@@ -565,14 +565,6 @@
 - `proceeding_ended`
 - `superseded`
 
-## `copyright_notice_legal_retention_phases`
-
-- `claimant`
-- `submissions`
-- `incidents`
-- `targets`
-- `done`
-
 ## `copyright_notice_lifecycle_change_recovery_sources`
 
 - `durable_review`

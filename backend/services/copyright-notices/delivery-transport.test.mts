@@ -1,4 +1,5 @@
-import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
+import { assertStatementEmailTransport } from '@voucha/test-helpers/copyright-statement-transport-subjects'
+import { seedCompletedTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -14,11 +15,11 @@ import {
   readTestLiftDeliveryIntents,
 } from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
 import { createCopyrightFormIntake, prepareCopyrightEmailDelivery } from './index.mts'
-import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
+import { seedCommittedAutomaticWithholding } from '@voucha/test-helpers/copyright-automatic-withholding-fixtures'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
+import { seedCopyrightStaffReceiptDelivery } from '@voucha/test-helpers/copyright-staff-receipt-delivery'
 
 async function createRestrictedNotice(poster: Awaited<ReturnType<typeof createTestUser>>) {
   const claimant = await createTestUser()
@@ -54,7 +55,7 @@ async function createRestrictedNotice(poster: Awaited<ReturnType<typeof createTe
       ],
     },
   })
-  await appendTestCopyrightFormScreening({
+  await seedCompletedTestCopyrightFormScreening({
     intakeId: intake.intake.id,
     inputSha256: Buffer.alloc(32, 4),
     recommendation: 'not_obviously_invalid',
@@ -63,7 +64,7 @@ async function createRestrictedNotice(poster: Awaited<ReturnType<typeof createTe
     promptVersion: 'copyright-form-screening-v2',
     model: 'test-model',
   })
-  await applyNonSpamSignedInCopyrightFormScreening(intake.intake.copyright_notice_submission_id)
+  await seedCommittedAutomaticWithholding(intake)
   const aggregate = await getCopyrightNoticePrivateAggregate(intake.intake.copyright_notice_id)
   const intent = aggregate?.deliveryIntents.find(
     item => item.delivery_kind === 'poster_restriction_notice' && item.channel === 'email',
@@ -92,7 +93,7 @@ describe('copyright email delivery transport', () => {
     const poster = await createTestUser()
     const { intentId } = await createRestrictedNotice(poster)
 
-    await expect(prepareCopyrightEmailDelivery(intentId)).resolves.toMatchObject({
+    await expect(assertStatementEmailTransport(intentId)).resolves.toMatchObject({
       subject: 'Your image was restricted after a copyright notice',
       recipientEmail: expect.stringMatching(/@/),
     })
@@ -102,7 +103,7 @@ describe('copyright email delivery transport', () => {
     const poster = await createTestUser()
     const { claimantReceiptIntentId, claimantEmail } = await createRestrictedNotice(poster)
 
-    await expect(prepareCopyrightEmailDelivery(claimantReceiptIntentId)).resolves.toMatchObject({
+    await expect(assertStatementEmailTransport(claimantReceiptIntentId)).resolves.toMatchObject({
       deliveryKind: 'claimant_receipt',
       recipientEmail: claimantEmail,
       text: expect.any(String),
@@ -113,7 +114,7 @@ describe('copyright email delivery transport', () => {
     const poster = await createTestUser()
     const { noticeId, submissionId, claimantReceiptCorrespondenceId } =
       await createRestrictedNotice(poster)
-    const intent = await createCopyrightDeliveryIntent({
+    const intent = await seedCopyrightStaffReceiptDelivery({
       noticeId,
       submissionId,
       correspondenceId: claimantReceiptCorrespondenceId,
@@ -158,7 +159,7 @@ describe('copyright email delivery transport', () => {
     if (!intent) throw new Error('informed community owner email intent missing')
     const ownerEmail = owner.email_address
     if (!ownerEmail) throw new Error('Community owner fixture missing verified email')
-    await expect(prepareCopyrightEmailDelivery(intent.id)).resolves.toMatchObject({
+    await expect(assertStatementEmailTransport(intent.id)).resolves.toMatchObject({
       deliveryKind: 'owner_information_notice',
       recipientEmail: ownerEmail,
     })

@@ -1718,14 +1718,6 @@ CREATE OR REPLACE FUNCTION public.fn_update_copyright_guest_capability_activity(
  LANGUAGE plpgsql
 ```
 
-## `fn_update_copyright_preservation_generation`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_update_copyright_preservation_generation()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_update_copyright_storage_reference_generation`
 
 ```sql

@@ -1,4 +1,7 @@
-import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
+import {
+  appendTestCopyrightNoticeSubmission,
+  seedCopyrightSubmissionAssessment,
+} from '@voucha/test-helpers/copyright-notice-submissions'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -9,10 +12,11 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 
-import { acceptCopyrightNoticeAndImposeRestriction } from '@services/copyright-notices/restrictions'
-import { appendCopyrightSubmissionAssessment } from '@services/copyright-notices/compliance'
-import { createCopyrightDeliveryIntent } from '@services/copyright-notices/delivery-intents'
-import { createOutboundCopyrightCorrespondence } from '@services/copyright-notices/correspondence'
+import { seedCopyrightStatementRestriction } from '@voucha/test-helpers/copyright-statement-restriction-fixture'
+import {
+  seedCopyrightStaffReceiptDelivery,
+  seedCopyrightStaffReceiptCorrespondence,
+} from '@voucha/test-helpers/copyright-staff-receipt-delivery'
 import { failTestCopyrightDeliveryIntent } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -150,20 +154,21 @@ async function createAcceptedNoticeFixture() {
   const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
   if (!aggregate?.submissions[0] || !aggregate.targets[0])
     throw new Error('staff route notice disappeared')
-  const assessment = await appendCopyrightSubmissionAssessment({
+  const assessment = await seedCopyrightSubmissionAssessment({
     submissionId: aggregate.submissions[0].id,
     assessedAt: new Date('2026-07-01T11:30:00.000Z'),
     currentUser: moderator,
     substantiallyCompliant: true,
   })
-  await acceptCopyrightNoticeAndImposeRestriction({
+  await seedCopyrightStatementRestriction({
     noticeId: notice.id,
     targetId: aggregate.targets[0].id,
     assessmentId: assessment.id,
     imposedAt: new Date('2026-07-01T12:00:00.000Z'),
-    imposedById: moderator.id,
+    moderatorId: moderator.id,
+    revision: placement.placement_revision,
   })
-  const receipt = await createOutboundCopyrightCorrespondence({
+  const receipt = await seedCopyrightStaffReceiptCorrespondence({
     noticeId: notice.id,
     submissionId: aggregate.submissions[0].id,
     correspondenceKind: 'receipt',
@@ -171,7 +176,7 @@ async function createAcceptedNoticeFixture() {
     bodyCiphertext: `receipt-${crypto.randomUUID()}`,
     draftedById: null,
   })
-  const delivery = await createCopyrightDeliveryIntent({
+  const delivery = await seedCopyrightStaffReceiptDelivery({
     noticeId: notice.id,
     submissionId: aggregate.submissions[0].id,
     correspondenceId: receipt.id,

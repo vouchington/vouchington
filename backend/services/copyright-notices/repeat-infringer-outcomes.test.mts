@@ -14,7 +14,7 @@ import {
   recordCopyrightRepeatInfringerReviewOutcome,
   resolveCopyrightLegalHold,
 } from './index.mts'
-import { recordCopyrightRepeatInfringerDisposition } from './repeat-infringer-incidents.mts'
+import { recordCopyrightRepeatInfringerDisposition } from './repeat-infringer-dispositions.mts'
 
 describe('copyright repeat-infringer review outcomes', () => {
   it('suspends only for an administrator and blocks unsuspend until reinstatement', async () => {

@@ -4,7 +4,7 @@ import { encodeScopedUuidCursor } from '@modules/pagination'
 import { getPendingCopyrightStaffCases } from '@services/copyright-notices/read-models-staff-case'
 import { readClaimantMisuseSummaryPage } from '@services/copyright-notices/claimant-misuse-summary'
 import { verifyCopyrightCaseChildPage } from '@services/copyright-notices/retention-case-purge-children'
-import { COPYRIGHT_CASE_PURGE_PHASES } from '@services/copyright-notices/retention-case-purge-order'
+import { COPYRIGHT_CASE_PURGE_PHASES } from '@data-stores/psql/copyright-case-purge-order'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import {

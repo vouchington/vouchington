@@ -13,7 +13,7 @@ import { createSyntheticFixture } from './data-stores/psql/classifier-runs/synth
 import { createCopyrightNoticeSchemaFixture } from './data-stores/psql/copyright-notice-schema.mts'
 import { createRetentionSignedInForm } from './services/copyright-notices/retention-signed-in-form.mts'
 import {
-  positionCopyrightOperationalCursor,
+  createCopyrightRetentionScopes,
   seedCopyrightFormScreeningAttemptPair,
 } from './copyright-operational-retention.mts'
 
@@ -93,12 +93,10 @@ export async function createDailyCopyrightContinuationFixture() {
   const { rows } = await read<{ terminal_at: Date }>(sql`/* dailyCopyrightContinuationClock */
     SELECT max(failed_at) AS terminal_at FROM copyright_notice_form_screening_attempts
     WHERE id = ANY(${[first.priorId, first.latestId, second.priorId, second.latestId, outside.priorId, outside.latestId]}::uuid[])`)
-  await positionCopyrightOperationalCursor(
-    'form_screening_attempts',
-    first.priorId,
-    outside.priorId,
-  )
   return {
+    copyrightScopes: createCopyrightRetentionScopes({
+      copyrightFormScreeningAttempts: [first.priorId, second.priorId],
+    }),
     ids: [first.priorId, second.priorId],
     outsideId: outside.priorId,
     now: new Date(rows[0]!.terminal_at.getTime() + 181 * 86_400_000),

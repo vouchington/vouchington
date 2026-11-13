@@ -69,6 +69,8 @@ describe('trusted-flagger staff queue priority', () => {
       'other',
     )
     const outOfArea = await seedPendingTerritorialNotice('eu_dsa', outOfAreaClaimant)
+    const trailingClaimant = await createTestUser()
+    const trailingControl = await seedPendingTerritorialNotice('eu_dsa', trailingClaimant)
 
     expect(await readTestCopyrightTrustedFlaggerMatch(boosted)).toEqual({
       flaggerId: inAreaFlagger.id,
@@ -121,7 +123,7 @@ describe('trusted-flagger staff queue priority', () => {
           trustedFlaggerPriority: false,
         })
         await assertInterleaving(unmatched, interleavingControl, boosted, false)
-        const off = await read(ownedIds, false, 100)
+        const off = await read(ownedIds, false, 100, trailingControl)
         expect(off.copyright_notices.map(item => item.id)).toEqual([
           missed,
           unmatched,
@@ -133,7 +135,7 @@ describe('trusted-flagger staff queue priority', () => {
         restoreConfig = overrideDynamicConfigFieldsForTest(copyrightConfig, {
           trustedFlaggerPriority: true,
         })
-        const on = await read(ownedIds, true, 100)
+        const on = await read(ownedIds, true, 100, trailingControl)
         expect(on.copyright_notices.map(item => item.id)).toEqual([
           missed,
           boosted,
@@ -153,11 +155,12 @@ describe('trusted-flagger staff queue priority', () => {
           })
         }
 
-        const walk = await read(ownedIds, true, 1)
-        const walked = walk.copyright_notices.map(item => item.id)
-        expect(walked).toEqual([missed, boosted, unmatched, outOfArea])
-        expect(new Set(walked).size).toBe(walked.length)
-        expect(walk.observedIds).toContain(interleavingControl)
+        const anchored = await read(ownedIds, true, 1, trailingControl)
+        const anchoredIds = anchored.copyright_notices.map(item => item.id)
+        expect(anchoredIds).toEqual([missed, boosted, unmatched, outOfArea])
+        expect(new Set(anchoredIds).size).toBe(anchoredIds.length)
+        expect(anchored.observedIds).toContain(interleavingControl)
+        expect(anchored.observedIds).not.toContain(trailingControl)
 
         const priorCursor = encodeScopedTierPreciseUuidCursor(
           '2026-01-01T00:00:00.000000Z',

@@ -69,8 +69,8 @@ export {
   markCopyrightDeliveryIntentFailed,
   markCopyrightDeliveryIntentSent,
   markCopyrightDeliveryIntentEmailSent,
-  markCopyrightDeliveryIntentBouncedBySesMessageId,
 } from './delivery-intents.mts'
+export { markCopyrightDeliveryIntentBouncedBySesMessageId } from './delivery-bounces.mts'
 export { searchRecoverableCopyrightDeliveryIntentIds } from './delivery-intent-recovery.mts'
 export {
   deliverCopyrightInAppNotification,

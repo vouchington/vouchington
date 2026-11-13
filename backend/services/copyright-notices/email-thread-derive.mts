@@ -1,10 +1,8 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { recordCopyrightEmailAncestorEdges } from './email-thread-ancestors.mts'
 import {
   copyrightEmailMessageIdIsAmbiguous,
-  recordCopyrightEmailAncestorEdges,
-} from './email-thread-ancestors.mts'
-import {
   findCopyrightEmailThreadMatch,
   type CopyrightEmailThreadMatch,
 } from './email-thread-match.mts'
@@ -42,10 +40,7 @@ async function deriveCopyrightEmailThreadInTransaction(
     await transaction.commit()
     return null
   }
-  if (await hasRetiredCopyrightEmailCaseLink(transaction, input.intakeId)) {
-    await transaction.commit()
-    return null
-  }
+  const wasRetired = await hasRetiredCopyrightEmailCaseLink(transaction, input.intakeId)
   const { rows: currentTokens } = await transaction<{ id: string; lookup_digest: string }>(sql`
     /* recordCopyrightEmailThreadReferences:currentTokens */
     SELECT DISTINCT token.id, token.lookup_digest
@@ -80,5 +75,5 @@ async function deriveCopyrightEmailThreadInTransaction(
     }
   }
   await transaction.commit()
-  return match
+  return wasRetired ? null : match
 }

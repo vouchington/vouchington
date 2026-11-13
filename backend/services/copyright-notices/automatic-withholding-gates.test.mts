@@ -1,3 +1,5 @@
+import { assertAutomaticWithholdingOutcome } from '@voucha/test-helpers/copyright-automatic-withholding-outcomes'
+import { seedCommittedAutomaticRefusal } from '@voucha/test-helpers/copyright-automatic-withholding-fixtures'
 import { describe, expect, it } from 'vitest'
 import { createTestUser, createTestUserWithAge } from '@voucha/test-helpers'
 import {
@@ -12,33 +14,36 @@ import {
   type FormPeople,
 } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { suspendUser } from '@services/users/suspension'
-import { checkAutomaticWithholdingEligibility } from './automatic-withholding-gates.mts'
+import {
+  checkAutomaticWithholdingEligibility,
+  type AutomaticWithholdingRefusalReason,
+} from './automatic-withholding-gates.mts'
 import { getAutomaticWithholdingWindow } from './automatic-withholding-since.mts'
-import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-async function fileAndScreen(people: FormPeople = {}) {
+async function fileAndScreen(
+  expected: AutomaticWithholdingRefusalReason | 'off' | null,
+  people: FormPeople = {},
+) {
   const { notice } = await createClearScreenedForm(1, people)
-  await applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id)
-  return { notice, outcome: await readTestAutomaticWithholdingOutcome(notice) }
+  await assertAutomaticWithholdingOutcome(notice, expected)
 }
 
-const withheld = { refusal: null, assessments: 1, restrictions: 1 }
 const refusedFor = (refusal: string) => ({ refusal, assessments: 0, restrictions: 0 })
 
 describe('automatic withholding gates', () => {
   const switchOn = useAutomaticWithholdingSwitch()
 
   it('records nothing while the switch is off, whatever the gates say', async () => {
-    const { outcome } = await fileAndScreen()
-    expect(outcome).toEqual({ refusal: null, assessments: 0, restrictions: 0 })
+    expect.hasAssertions()
+    await fileAndScreen('off')
   })
 
   it('withholds when every approved gate passes', async () => {
     await switchOn()
-    const { outcome } = await fileAndScreen()
-    expect(outcome).toEqual(withheld)
+    expect.hasAssertions()
+    await fileAndScreen(null)
   })
 
   it.each([
@@ -89,8 +94,8 @@ describe('automatic withholding gates', () => {
       'automaticWithholdingPosterDailyCap',
     ])('refuses and queues the notice when %s is unset', async field => {
       await switchOn({ [field]: -1 })
-      const { outcome } = await fileAndScreen()
-      expect(outcome).toEqual(refusedFor('thresholds_unset'))
+      expect.hasAssertions()
+      await fileAndScreen('thresholds_unset')
     })
   })
 
@@ -99,10 +104,9 @@ describe('automatic withholding gates', () => {
     const young = await createTestUserWithAge(2 * DAY_MS)
     const settled = await createTestUserWithAge(30 * DAY_MS)
 
-    expect((await fileAndScreen({ claimant: young })).outcome).toEqual(
-      refusedFor('account_too_new'),
-    )
-    expect((await fileAndScreen({ claimant: settled })).outcome).toEqual(withheld)
+    expect.hasAssertions()
+    await fileAndScreen('account_too_new', { claimant: young })
+    await fileAndScreen(null, { claimant: settled })
   })
 
   it('refuses a claimant below the approved trust tier', async () => {
@@ -110,10 +114,9 @@ describe('automatic withholding gates', () => {
     const newer = await createTestUserWithAge(2 * DAY_MS)
     const established = await createTestUserWithAge(200 * DAY_MS)
 
-    expect((await fileAndScreen({ claimant: newer })).outcome).toEqual(
-      refusedFor('trust_below_minimum'),
-    )
-    expect((await fileAndScreen({ claimant: established })).outcome).toEqual(withheld)
+    expect.hasAssertions()
+    await fileAndScreen('trust_below_minimum', { claimant: newer })
+    await fileAndScreen(null, { claimant: established })
   })
 
   it('refuses a claimant who is suspended', async () => {
@@ -124,16 +127,19 @@ describe('automatic withholding gates', () => {
     ])
     await suspendUser(admin, claimant.id, 'allow', 'Repeated notices that were withdrawn.')
 
-    const { outcome } = await fileAndScreen({ claimant })
-    expect(outcome).toEqual(refusedFor('claimant_suspended'))
+    expect.hasAssertions()
+    await fileAndScreen('claimant_suspended', { claimant })
   })
 
   it('never retries a refused notice once the cause clears, so a moderator keeps it', async () => {
     await switchOn({ automaticWithholdingMinAccountAgeDays: 7 })
-    const { notice } = await fileAndScreen({ claimant: await createTestUserWithAge(DAY_MS) })
+    const { notice } = await createClearScreenedForm(1, {
+      claimant: await createTestUserWithAge(DAY_MS),
+    })
+    await seedCommittedAutomaticRefusal(notice, 'account_too_new')
     await switchOn({ automaticWithholdingMinAccountAgeDays: 0 })
 
-    await applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id)
+    await assertAutomaticWithholdingOutcome(notice, 'sticky')
 
     await expect(readTestAutomaticWithholdingOutcome(notice)).resolves.toEqual(
       refusedFor('account_too_new'),
@@ -142,6 +148,7 @@ describe('automatic withholding gates', () => {
 
   it('stops redispatching a refused notice to the automation workflow', async () => {
     await switchOn({ automaticWithholdingMinAccountAgeDays: 7 })
+    await fileAndScreen('account_too_new', { claimant: await createTestUserWithAge(DAY_MS) })
     const { notice } = await createClearScreenedForm(1, {
       claimant: await createTestUserWithAge(DAY_MS),
     })
@@ -150,7 +157,8 @@ describe('automatic withholding gates', () => {
       { kind: 'form-effect', submissionId },
     ])
 
-    await applyNonSpamSignedInCopyrightFormScreening(submissionId)
+    // The dispatch read always observes committed refusal, independently of an SSI-aborted actor.
+    await seedCommittedAutomaticRefusal(notice, 'account_too_new')
 
     await expect(readTestPendingCopyrightAgentDispatches(submissionId)).resolves.toEqual([])
   })

@@ -1,3 +1,5 @@
+import { assertGuestCapabilityAndAssociation } from '@voucha/test-helpers/copyright-guest-association-outcome'
+import { seedCopyrightGuestCapabilities } from '@voucha/test-helpers/copyright-staff-case-states'
 import {
   countCopyrightUrgentFilings,
   listCopyrightGuestCapabilityEvents,
@@ -66,6 +68,13 @@ async function openNotice() {
 const expiresAt = new Date('2026-07-03T12:00:00.000Z')
 
 describe('copyright guest capabilities', () => {
+  it.each(['capability', 'association'] as const)(
+    'preserves complete same-case facts with %s scheduled first',
+    async first => {
+      expect.hasAssertions()
+      await assertGuestCapabilityAndAssociation(first)
+    },
+  )
   it('accepts a live case token and rejects another case, expiry, and revocation', async () => {
     const first = await openNotice()
     const second = await openNotice()
@@ -203,16 +212,13 @@ describe('copyright guest capabilities', () => {
     const held = await openNotice()
     const other = await openNotice()
     const staff = await createTestCopyrightStaff()
-    const issueInput = {
-      currentUser: staff,
+    const [capability, secondCapability] = await seedCopyrightGuestCapabilities({
       noticeId: held.notice.id,
+      issuedById: staff.id,
       expiresAt,
-      issuedAt: new Date(),
-    }
-    const [capability, secondCapability] = await Promise.all([
-      issueCopyrightGuestCapability(issueInput),
-      issueCopyrightGuestCapability(issueInput),
-    ])
+      count: 2,
+    })
+    if (!capability || !secondCapability) throw new Error('Owned filing capabilities missing')
     const courtFiling = (token: string, now: string) =>
       appendCopyrightGuestFiling({
         noticeId: held.notice.id,

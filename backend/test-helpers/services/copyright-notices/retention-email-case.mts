@@ -1,7 +1,7 @@
 import { readTestRepeatInfringerIncidents } from '../../copyright-repeat-infringer.mts'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { promoteCopyrightEmailIntake } from '../../../services/copyright-notices/email-promotion.mts'
-import { recordCopyrightRepeatInfringerDisposition } from '../../../services/copyright-notices/repeat-infringer-incidents.mts'
+import { recordCopyrightRepeatInfringerDisposition } from '../../../services/copyright-notices/repeat-infringer-dispositions.mts'
 import { appendCopyrightEmailIntakeRecommendation } from '../../../services/copyright-notices/email-recommendations.mts'
 import { liftTestCopyrightRestriction } from '../../data-stores/psql/copyright-form-reviews.mts'
 import { insertTestCopyrightDecisionRationaleForCase } from '../../data-stores/psql/copyright-decision-rationale.mts'

@@ -1,10 +1,8 @@
 import { createTestUser } from '../../index.mts'
 import { createParsedCopyrightEmailIntake } from '../../copyright-email-intake-fixtures.mts'
 import { rejectCopyrightEmailIntake } from '../../../services/copyright-notices/email-rejection.mts'
-import {
-  markCopyrightDeliveryIntentBouncedBySesMessageId,
-  markCopyrightDeliveryIntentSent,
-} from '../../../services/copyright-notices/delivery-intents.mts'
+import { markCopyrightDeliveryIntentSent } from '../../../services/copyright-notices/delivery-intents.mts'
+import { markCopyrightDeliveryIntentBouncedBySesMessageId } from '../../../services/copyright-notices/delivery-bounces.mts'
 import { prepareCopyrightEmailDelivery } from '../../../services/copyright-notices/delivery-transport.mts'
 
 /** A staff-declined email intake and the one reply queued to its sender. */

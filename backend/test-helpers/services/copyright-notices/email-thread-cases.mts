@@ -7,7 +7,6 @@ import {
 import type { PrivateUser } from '../../../services/users/types.mts'
 import { createCopyrightEmailIntake } from '../../../services/copyright-notices/email-intakes.mts'
 import { recordCopyrightEmailParse } from '../../../services/copyright-notices/email-intake-parses.mts'
-import { promoteCopyrightEmailIntake } from '../../../services/copyright-notices/email-promotion.mts'
 import type { CopyrightEmailThreadMatch } from '../../../services/copyright-notices/email-threading.mts'
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from './email-ses-verdicts.mts'
 
@@ -83,19 +82,4 @@ export async function copyrightEmailPromotionInput(moderator: PrivateUser, intak
     ],
     rationale: 'The root email is a complete statutory notice.',
   }
-}
-
-/** Admits an initial intake as its own case so later replies can resolve to it. */
-export async function promoteInitialCopyrightEmail(input: {
-  moderator: PrivateUser
-  messageId: string
-}): Promise<{ intakeId: string; noticeId: string }> {
-  const { intakeId } = await recordThreadedCopyrightEmail({
-    messageId: input.messageId,
-    replyReferences: [],
-  })
-  const promoted = await promoteCopyrightEmailIntake(
-    await copyrightEmailPromotionInput(input.moderator, intakeId),
-  )
-  return { intakeId, noticeId: promoted.noticeId }
 }

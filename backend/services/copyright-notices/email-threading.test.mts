@@ -1,3 +1,4 @@
+import { createCommittedCopyrightEmailCase } from '@voucha/test-helpers/copyright-committed-email-case'
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import { describe, expect, it } from 'vitest'
 import {
@@ -12,7 +13,6 @@ import { rejectCopyrightEmailIntake } from './email-rejection.mts'
 import { createOutboundCopyrightCorrespondence } from './correspondence.mts'
 import { claimCopyrightDeliveryIntent, createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
-import { promoteInitialCopyrightEmail } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
 import { markTestCopyrightNoticeErasedAndCommit } from '@voucha/test-helpers/copyright-email-manual-association'
 import { parseOrAssertSerializableRollback } from '@voucha/test-helpers/copyright-email-thread-serialization'
 
@@ -232,7 +232,7 @@ describe('copyright email threading', () => {
     if (replyBResult.conflict) return
     expect(replyBResult.match).toMatchObject({ noticeId: notice.id })
     const promoter = await createTestUser({ extraRoles: ['moderator'] })
-    const promotedA = await promoteInitialCopyrightEmail({
+    const promotedA = await createCommittedCopyrightEmailCase({
       moderator: promoter,
       messageId: messageA,
     })

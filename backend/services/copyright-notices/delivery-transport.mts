@@ -73,6 +73,7 @@ export async function deliverCopyrightInAppNotification(intentId: string): Promi
     })
     return await markCopyrightDeliveryIntentSent({ intentId, leaseToken: intent.lease_token })
   } catch (err) {
+    if ((err as { code?: string } | null)?.code === '40001') throw err
     await markCopyrightDeliveryIntentFailed({
       intentId,
       leaseToken: intent.lease_token,
@@ -109,6 +110,7 @@ export async function prepareCopyrightEmailDelivery(intentId: string): Promise<{
       text,
     }
   } catch (err) {
+    if ((err as { code?: string } | null)?.code === '40001') throw err
     await markCopyrightDeliveryIntentFailed({
       intentId,
       leaseToken: intent.lease_token,

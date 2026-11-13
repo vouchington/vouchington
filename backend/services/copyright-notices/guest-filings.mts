@@ -1,3 +1,6 @@
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { CONFLICT } from '@modules/on-error/error-codes'
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -64,49 +67,57 @@ export async function appendCopyrightGuestFiling(input: {
       ? JSON.stringify({ summary: input.statement })
       : input.statement
   const submissionId = uuidv7()
-  await using transaction = await beginTransaction()
-  const capabilityId = await lockGuestCapability(transaction, input)
-  if (input.kind === 'court_or_ccb_hold') await assertNoGuestCourtHold(transaction, capabilityId)
-  // Preempt before the filing writes anything the delivery worker also writes: the worker takes
-  // the work item row, then the case's blocker generation, so this order cannot form a cycle.
-  if (input.kind === 'court_or_ccb_hold')
-    await preemptCopyrightRestorations(input.noticeId, transaction)
-  const { rows } = await transaction<{ id: string; kind: GuestFilingKind; received_at: Date }>(
-    sql`/* appendCopyrightGuestFiling */
-    INSERT INTO copyright_notice_submissions (
-      id, copyright_notice_id, kind, received_at, source_kind, submitted_by_id,
-      body_ciphertext, copyright_notice_guest_capability_id
-    ) VALUES (
-      ${submissionId}, ${input.noticeId}, ${input.kind}, ${input.now}, 'guest_form', NULL,
-      ${encryptSecret(submissionBody, copyrightSubmissionPurpose(submissionId))}, ${capabilityId}
-    )
-    RETURNING id, kind, received_at
-  `,
-  )
-  const submission = rows[0]
-  assert(submission, 500, 'Copyright guest filing was not created')
-  await transaction(sql`/* appendCopyrightGuestFiling:event */
-    INSERT INTO copyright_notice_lifecycle_changes (
-      copyright_notice_id, change_type, copyright_notice_submission_id
-    ) VALUES (${input.noticeId}, ${guestFilingEvent(input.kind)}, ${submission.id})
-  `)
-  if (input.kind === 'court_or_ccb_hold') {
-    await transaction(sql`/* appendCopyrightGuestFiling:urgent */
-      INSERT INTO copyright_notice_urgent_filings (copyright_notice_submission_id, classified_at)
-      VALUES (${submission.id}, ${input.now})
+  return conflictOnSerializationFailure(
+    async () => {
+      await using transaction = await beginTransaction({ serializable: true })
+      const capabilityId = await lockGuestCapability(transaction, input)
+      if (input.kind === 'court_or_ccb_hold')
+        await assertNoGuestCourtHold(transaction, capabilityId)
+      // Preempt before case activity: delivery completion writes its owned work item before the case.
+      if (input.kind === 'court_or_ccb_hold')
+        await preemptCopyrightRestorations(input.noticeId, transaction)
+      await transaction(sql`/* appendCopyrightGuestFiling:event */
+      INSERT INTO copyright_notice_lifecycle_changes (
+        copyright_notice_id, change_type, copyright_notice_submission_id
+      ) VALUES (${input.noticeId}, ${guestFilingEvent(input.kind)}, ${submissionId})
     `)
-  }
-  if (input.kind === 'withdrawal') {
-    await recordClaimantMisuseEvent(transaction, {
-      noticeId: input.noticeId,
-      recordedAt: input.now,
-      event: { outcome: 'notice_withdrawn', submissionId: submission.id },
-    })
-    await revokeCopyrightGuestCapabilitiesForWithdrawal(transaction, {
-      noticeId: input.noticeId,
-      revokedAt: input.now,
-    })
-  }
-  await transaction.commit()
-  return submission
+      const { rows } = await transaction<{ id: string; kind: GuestFilingKind; received_at: Date }>(
+        sql`/* appendCopyrightGuestFiling */
+      INSERT INTO copyright_notice_submissions (
+        id, copyright_notice_id, kind, received_at, source_kind, submitted_by_id,
+        body_ciphertext, copyright_notice_guest_capability_id
+      ) VALUES (
+        ${submissionId}, ${input.noticeId}, ${input.kind}, ${input.now}, 'guest_form', NULL,
+        ${encryptSecret(submissionBody, copyrightSubmissionPurpose(submissionId))}, ${capabilityId}
+      )
+      RETURNING id, kind, received_at
+    `,
+      )
+      const submission = rows[0]
+      assert(submission, 500, 'Copyright guest filing was not created')
+
+      if (input.kind === 'court_or_ccb_hold') {
+        await transaction(sql`/* appendCopyrightGuestFiling:urgent */
+        INSERT INTO copyright_notice_urgent_filings (copyright_notice_submission_id, classified_at)
+        VALUES (${submission.id}, ${input.now})
+      `)
+      }
+      if (input.kind === 'withdrawal') {
+        await recordClaimantMisuseEvent(transaction, {
+          noticeId: input.noticeId,
+          recordedAt: input.now,
+          event: { outcome: 'notice_withdrawn', submissionId: submission.id },
+        })
+        await revokeCopyrightGuestCapabilitiesForWithdrawal(transaction, {
+          noticeId: input.noticeId,
+          revokedAt: input.now,
+        })
+      }
+      await readCopyrightThreadRetirement(transaction, [input.noticeId])
+      await transaction.commit()
+      return submission
+    },
+    'Conflicting copyright case change',
+    CONFLICT,
+  )
 }

@@ -1,3 +1,4 @@
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createCopyrightClaimantDecisionNoticeInTransaction } from './claimant-decision-notices.mts'
@@ -30,7 +31,8 @@ export function searchRecoverableCopyrightFormReviewIntakeIds(
       ON intake.id = review.copyright_notice_form_intake_id
     JOIN copyright_notice_submissions submission
       ON submission.id = intake.copyright_notice_submission_id
-    WHERE NOT review.is_accepted
+    JOIN copyright_notices notice ON notice.id = submission.copyright_notice_id
+    WHERE NOT review.is_accepted AND notice.evidence_erased_at IS NULL
       AND (
         review.reviewed_by_id IS NOT NULL AND (
           NOT (submission.current_assessment_is_substantially_compliant IS NOT DISTINCT FROM false
@@ -59,7 +61,7 @@ export function searchRecoverableCopyrightFormReviewIntakeIds(
 
 /** Replays the durable effects of one moderator rejection after a post-commit interruption. */
 export async function recoverRejectedCopyrightFormReviewEffect(intakeId: string): Promise<void> {
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction({ serializable: true })
   await transaction(sql`/* recoverRejectedCopyrightFormReviewEffect:lock */
     SELECT pg_advisory_xact_lock(hashtextextended(${`copyright-form-review:${intakeId}`}, 0))
   `)
@@ -84,8 +86,8 @@ export async function recoverRejectedCopyrightFormReviewEffect(intakeId: string)
     JOIN copyright_notice_form_intake_reviews review
       ON review.copyright_notice_form_intake_id = intake.id
       AND NOT review.is_accepted
-    WHERE intake.id = ${intakeId}
-    FOR UPDATE OF notice, submission, intake, review
+    WHERE intake.id = ${intakeId} AND notice.evidence_erased_at IS NULL
+    FOR UPDATE OF notice, submission
   `)
   const state = rows[0]
   if (!state) {
@@ -114,6 +116,7 @@ export async function recoverRejectedCopyrightFormReviewEffect(intakeId: string)
     { noticeId: state.notice_id, event: 'not_accepted' },
     transaction,
   )
+  await readCopyrightThreadRetirement(transaction, [state.notice_id])
   await transaction.commit()
   await reverseAutomatedCopyrightRestrictions(
     state.notice_id,

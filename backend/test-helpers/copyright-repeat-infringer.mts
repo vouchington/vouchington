@@ -2,7 +2,7 @@ import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '../services/users/types.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
-import { appendCopyrightSubmissionAssessment } from '../services/copyright-notices/compliance.mts'
+import { seedCopyrightSubmissionAssessment } from './copyright-notice-submissions.mts'
 import {
   getTestPostImagePlacement,
   insertTestImage,
@@ -54,7 +54,7 @@ export async function createTestRepeatInfringerNotice(
   })
   const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
   if (!aggregate) throw new Error('Test notice missing')
-  const assessment = await appendCopyrightSubmissionAssessment({
+  const assessment = await seedCopyrightSubmissionAssessment({
     submissionId: aggregate.submissions[0]!.id,
     assessedAt: new Date(),
     currentUser: moderator,

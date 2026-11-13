@@ -1,3 +1,14 @@
+import { seedRestorationSceneWithhold } from '@voucha/test-helpers/copyright-withhold-scene-fixture'
+import { seedCommittedAdministratorLift } from '@voucha/test-helpers/copyright-reversal-scene'
+import { seedCompletedReversalStatement } from '@voucha/test-helpers/copyright-restored-statement-fixture'
+import {
+  assertSurfaceLiftOutcome,
+  assertSurfaceLiftGuard,
+} from '@voucha/test-helpers/copyright-surface-lift-outcome'
+import {
+  assertSurfaceRestoreOutcome,
+  assertSurfaceRestoreReplay,
+} from '@voucha/test-helpers/copyright-surface-restore-outcome'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createTestUserDirect, insertTestCommunityMember } from '@voucha/test-helpers'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
@@ -13,8 +24,6 @@ import {
   readTestRepeatInfringerIncidents,
   readTestRepeatInfringerOpenReviewIds,
 } from '@voucha/test-helpers/copyright-repeat-infringer'
-import { liftCopyrightRestrictionWithoutSetter } from './restriction-lifts.mts'
-import { processCopyrightActionIntent } from './index.mts'
 
 function restorationIntents(noticeId: string) {
   return readTestLiftDeliveryIntents(noticeId).then(rows =>
@@ -28,7 +37,8 @@ async function applyRestore(noticeId: string, restrictionId: string) {
     row => row.copyright_restriction_id === restrictionId && row.action === 'restore',
   )
   if (!intent) throw new Error('Administrator restore intent missing')
-  return processCopyrightActionIntent(intent.id)
+  await seedCompletedReversalStatement(intent.id)
+  return intent.id
 }
 
 describe('administrator lift for images without a live responder', () => {
@@ -60,24 +70,18 @@ describe('administrator lift for images without a live responder', () => {
     const restriction = restrictions[0]!
     const withhold = actionIntents.find(row => row.action === 'withhold')
     if (!withhold) throw new Error('Withhold intent missing')
-    await expect(processCopyrightActionIntent(withhold.id)).resolves.toBe('applied')
+    await seedRestorationSceneWithhold(withhold.id)
     const beforeIncidents = await readTestRepeatInfringerIncidents(fixture.actorUserId)
     const beforeOpenReviewIds = await readTestRepeatInfringerOpenReviewIds(fixture.actorUserId)
     const administrator = await createTestUserDirect({ administrator: true })
-    await liftCopyrightRestrictionWithoutSetter({
-      currentUser: administrator,
-      noticeId,
-      restrictionId: restriction.id,
-      rationale: 'Verified provider-owned image should be restored.',
-      liftedAt: new Date(),
-    })
+    await seedCommittedAdministratorLift(noticeId, restriction.id, administrator)
     expect(await restorationIntents(noticeId)).toEqual([])
     const reversed = (await readTestCopyrightStatementIntents(noticeId)).filter(
       row => row.delivery_kind === 'claimant_decision_notice' && row.text?.includes('reversed'),
     )
     expect(reversed).toHaveLength(2)
     expect(new Set(reversed.map(row => row.channel))).toEqual(new Set(['in_app', 'email']))
-    await expect(applyRestore(noticeId, restriction.id)).resolves.toBe('applied')
+    const restoreId = await applyRestore(noticeId, restriction.id)
     const restoration = await restorationIntents(noticeId)
     expect(restoration).toHaveLength(2)
     expect(restoration).toEqual(
@@ -105,7 +109,12 @@ describe('administrator lift for images without a live responder', () => {
     )
     expect(statement?.text).toContain('administrator')
     expect(statement?.text).toContain('visible')
-    await expect(applyRestore(noticeId, restriction.id)).resolves.toBe('not_claimed')
+    await assertSurfaceRestoreReplay({
+      noticeId,
+      restrictionId: restriction.id,
+      placementId: fixture.placementId,
+      restoreId,
+    })
     expect(await restorationIntents(noticeId)).toHaveLength(2)
   })
 
@@ -117,16 +126,10 @@ describe('administrator lift for images without a live responder', () => {
       const { noticeId, restrictions, actionIntents } = await createTestLiftNotice([fixture])
       const withhold = actionIntents.find(row => row.action === 'withhold')
       if (!withhold) throw new Error('Withhold intent missing')
-      await expect(processCopyrightActionIntent(withhold.id)).resolves.toBe('applied')
+      await seedRestorationSceneWithhold(withhold.id)
       const administrator = await createTestUserDirect({ administrator: true })
-      await liftCopyrightRestrictionWithoutSetter({
-        currentUser: administrator,
-        noticeId,
-        restrictionId: restrictions[0]!.id,
-        rationale: 'Provider-owned topic art can return.',
-        liftedAt: new Date(),
-      })
-      await expect(applyRestore(noticeId, restrictions[0]!.id)).resolves.toBe('applied')
+      await seedCommittedAdministratorLift(noticeId, restrictions[0]!.id, administrator)
+      await applyRestore(noticeId, restrictions[0]!.id)
       expect(await restorationIntents(noticeId)).toEqual([])
     },
   )
@@ -144,16 +147,10 @@ describe('administrator lift for images without a live responder', () => {
     const { noticeId, restrictions, actionIntents } = await createTestLiftNotice([fixture])
     const withhold = actionIntents.find(row => row.action === 'withhold')
     if (!withhold) throw new Error('Withhold intent missing')
-    await expect(processCopyrightActionIntent(withhold.id)).resolves.toBe('applied')
+    await seedRestorationSceneWithhold(withhold.id)
     const administrator = await createTestUserDirect({ administrator: true })
-    await liftCopyrightRestrictionWithoutSetter({
-      currentUser: administrator,
-      noticeId,
-      restrictionId: restrictions[0]!.id,
-      rationale: 'No subscriber can respond.',
-      liftedAt: new Date(),
-    })
-    await expect(applyRestore(noticeId, restrictions[0]!.id)).resolves.toBe('applied')
+    await seedCommittedAdministratorLift(noticeId, restrictions[0]!.id, administrator)
+    await applyRestore(noticeId, restrictions[0]!.id)
     expect(await restorationIntents(noticeId)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ recipient_user_id: owner.id, recipient_role: 'informed_owner' }),
@@ -161,7 +158,82 @@ describe('administrator lift for images without a live responder', () => {
     )
   })
 
+  it.each([
+    { kind: 'community-profile-image', unbound: false },
+    { kind: 'community-banner-image', unbound: false },
+    { kind: 'topic-logo-image', unbound: false },
+    { kind: 'topic-hero-image', unbound: false },
+    { kind: 'community-banner-image', unbound: true },
+  ] as const)(
+    'atomically decides and delivers an administrator reversal for $kind (unbound: $unbound)',
+    async ({ kind, unbound }) => {
+      expect.hasAssertions()
+      installTestMediaDeliveryEdge()
+      const fixture = await createTestCopyrightImageFixture(kind, { actorAdministrator: true })
+      if (unbound) await reactivateTestCommunityImageWithoutBinder(fixture)
+      const administrator = await createTestUserDirect({ administrator: true })
+      const claimant = await createTestUserDirect({ withEmail: true })
+      const create = () =>
+        createTestLiftNotice([fixture], {
+          claimantUserId: claimant.id,
+          claimantEmail: `lift-${crypto.randomUUID()}@example.test`,
+        })
+      const decision = await create()
+      await assertSurfaceLiftOutcome(
+        {
+          currentUser: administrator,
+          noticeId: decision.noticeId,
+          restrictionId: decision.restrictions[0]!.id,
+          rationale: 'Provider-owned image can return.',
+          liftedAt: new Date(),
+        },
+        decision.targets[0]!.placement_id,
+        [
+          `claimant_decision_notice:email:${claimant.id}`,
+          `claimant_decision_notice:in_app:${claimant.id}`,
+        ],
+      )
+      // A separate committed decision always exercises the worker, even if the decision above aborted.
+      const deliveryFixture = await createTestCopyrightImageFixture(kind, {
+        actorAdministrator: true,
+      })
+      if (unbound) await reactivateTestCommunityImageWithoutBinder(deliveryFixture)
+      const owner = await createTestUserDirect()
+      const community = kind === 'community-profile-image' || kind === 'community-banner-image'
+      if (community)
+        await insertTestCommunityMember({
+          communityId: deliveryFixture.ownerId,
+          userId: owner.id,
+          role: 'owner',
+        })
+      const delivery = await createTestLiftNotice([deliveryFixture])
+      await seedRestorationSceneWithhold(delivery.actionIntents[0]!.id)
+      await seedCommittedAdministratorLift(
+        delivery.noticeId,
+        delivery.restrictions[0]!.id,
+        administrator,
+      )
+      const restore = (await getCopyrightNoticePrivateAggregate(
+        delivery.noticeId,
+      ))!.actionIntents.find(row => row.action === 'restore')!
+      await assertSurfaceRestoreOutcome({
+        noticeId: delivery.noticeId,
+        restrictionId: delivery.restrictions[0]!.id,
+        placementId: delivery.targets[0]!.placement_id,
+        restoreId: restore.id,
+        deliveries: community
+          ? [
+              `poster_restoration_notice:email:${owner.id}`,
+              `poster_restoration_notice:in_app:${owner.id}`,
+            ]
+          : [],
+        outcome: 'visible',
+      })
+    },
+  )
+
   it('refuses both a live community setter and a moderator without recording a lift', async () => {
+    expect.hasAssertions()
     const fixture = await createTestCopyrightImageFixture('community-banner-image')
     const { noticeId, restrictions, moderator } = await createTestLiftNotice([fixture])
     const input = {
@@ -171,11 +243,17 @@ describe('administrator lift for images without a live responder', () => {
       liftedAt: new Date(),
     }
     const administrator = await createTestUserDirect({ administrator: true })
-    await expect(
-      liftCopyrightRestrictionWithoutSetter({ currentUser: administrator, ...input }),
-    ).rejects.toMatchObject({ status: 409 })
-    await expect(
-      liftCopyrightRestrictionWithoutSetter({ currentUser: moderator, ...input }),
-    ).rejects.toMatchObject({ status: 403 })
+    await assertSurfaceLiftGuard(
+      { currentUser: administrator, ...input },
+      fixture.placementId,
+      409,
+      'A live account can respond to this restriction',
+    )
+    await assertSurfaceLiftGuard(
+      { currentUser: moderator, ...input },
+      fixture.placementId,
+      403,
+      'Forbidden',
+    )
   })
 })

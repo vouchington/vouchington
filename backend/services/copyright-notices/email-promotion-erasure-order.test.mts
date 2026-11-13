@@ -1,22 +1,20 @@
-import { beginTransaction, createTestUser } from '@voucha/test-helpers'
+import { createCommittedCopyrightPendingReply } from '@voucha/test-helpers/copyright-owned-email-replies'
+import { interleaveCopyrightOwnedRead } from '@voucha/test-helpers/copyright-owned-read-interleave'
+import { readCopyrightThreadReferenceState } from '@voucha/test-helpers/copyright-operational-email-retention'
+import { createTestUser } from '@voucha/test-helpers'
 import { COPYRIGHT_EMAIL_THREAD_CHANGED } from '@modules/on-error/error-codes'
 import {
   createUnparsedCopyrightEmailIntake,
   readCopyrightEmailPromotionEffects,
 } from '@voucha/test-helpers/copyright-email-intake-fixtures'
-import { markTestCopyrightNoticeErased } from '@voucha/test-helpers/copyright-email-manual-association'
-import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
-import { getTestPostgresBackendProcessId } from '@voucha/test-helpers/postgres-lock-wait'
-import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import {
-  copyrightEmailMessageId,
-  copyrightEmailPromotionInput,
-  recordThreadedCopyrightEmail,
-} from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
+  markTestCopyrightNoticeErasedAndCommit,
+  isTestCopyrightCaseEvidenceErased,
+} from '@voucha/test-helpers/copyright-email-manual-association'
+import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
+import { copyrightEmailPromotionInput } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { copyrightConfig } from './config.mts'
 import { promoteCopyrightEmailIntake } from './email-promotion.mts'
 
 describe('copyright email promotion replay and case erasure', () => {
@@ -50,66 +48,73 @@ describe('copyright email promotion replay and case erasure', () => {
     ).toMatchObject({ reviews: 0, evidence: 0, notice_targets: 0 })
   })
 
-  it('rejects a replayed pending reply link when case erasure commits first', async () => {
+  it('rolls back a pending reply link when erasure commits after the replay snapshot', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const messageId = copyrightEmailMessageId()
-    const root = await recordThreadedCopyrightEmail({ messageId, replyReferences: [] })
-    const reply = await recordThreadedCopyrightEmail({
-      messageId: copyrightEmailMessageId(),
-      replyReferences: [messageId],
+    const { input, noticeId, rootId, replyId } =
+      await createCommittedCopyrightPendingReply(moderator)
+    expect(await readCopyrightEmailIntakeNoticeLinks(replyId)).toEqual([])
+    const effects = await readCopyrightEmailPromotionEffects(rootId, input.targets[0]!.placementId)
+    const references = await readCopyrightThreadReferenceState(replyId)
+    const race = await interleaveCopyrightOwnedRead({
+      marker: 'promoteCopyrightEmailIntake:priorPromotion',
+      ownedId: rootId,
+      first: () => promoteCopyrightEmailIntake(input),
+      second: () => markTestCopyrightNoticeErasedAndCommit(noticeId),
     })
-    const input = await copyrightEmailPromotionInput(moderator, root.intakeId)
-    const restoreCap = overrideDynamicConfigFieldsForTest(copyrightConfig, {
-      emailThreadGraphMaxRows: 2,
-    })
-    let promoted: Awaited<ReturnType<typeof promoteCopyrightEmailIntake>>
-    try {
-      promoted = await promoteCopyrightEmailIntake(input)
-    } finally {
-      restoreCap()
-    }
-    expect(await readCopyrightEmailIntakeNoticeLinks(reply.intakeId)).toEqual([])
-    const effects = await readCopyrightEmailPromotionEffects(
-      root.intakeId,
-      input.targets[0]!.placementId,
-    )
-    await using erasure = await beginTransaction()
-    await markTestCopyrightNoticeErased(promoted.noticeId, erasure)
-    const holderProcessId = await getTestPostgresBackendProcessId(erasure)
-    let erasureCommit: Promise<void> | undefined
-    const commitErasure = () => (erasureCommit ??= erasure.commit())
-    const replay = await withTestOwnedPostgresWait(
+    expect(race.observerErrors).toEqual([])
+    expect(race.second).toEqual({ status: 'fulfilled', value: undefined })
+    expect([
+      ...['40001', '40P01'].map(code => ({
+        status: 'rejected',
+        reason: expect.objectContaining({
+          status: 409,
+          code: COPYRIGHT_EMAIL_THREAD_CHANGED,
+          cause: expect.objectContaining({ code }),
+        }),
+      })),
       {
-        holderProcessId,
-        pool: 'write',
-        lock: { kind: 'transaction' },
-        queryMarker: '/* linkPendingCopyrightEmailRepliesInTransaction:links */',
-        releaseHolder: commitErasure,
+        status: 'rejected',
+        reason: expect.objectContaining({
+          status: 409,
+          code: COPYRIGHT_EMAIL_THREAD_CHANGED,
+          cause: expect.objectContaining({
+            code: '23514',
+            message: 'erased copyright case cannot acquire an email intake',
+          }),
+        }),
       },
-      async waitForLock => {
-        const attempt = promoteCopyrightEmailIntake(input)
-        await waitForLock(attempt)
-        await commitErasure()
-        return (await Promise.allSettled([attempt]))[0]!
-      },
-    )
-    expect(replay).toMatchObject({
-      status: 'rejected',
-      reason: {
-        status: 409,
-        code: COPYRIGHT_EMAIL_THREAD_CHANGED,
-        cause: {
-          code: '23514',
-          message: 'erased copyright case cannot acquire an email intake',
-        },
-      },
-    })
-    expect(await readCopyrightEmailIntakeNoticeLinks(root.intakeId)).toEqual([
-      { copyright_notice_id: promoted.noticeId, link_kind: 'initial' },
+    ]).toContainEqual(race.first)
+    expect(await isTestCopyrightCaseEvidenceErased(noticeId)).toBe(true)
+    expect(await readCopyrightEmailIntakeNoticeLinks(rootId)).toEqual([
+      { copyright_notice_id: noticeId, link_kind: 'initial' },
     ])
-    expect(await readCopyrightEmailIntakeNoticeLinks(reply.intakeId)).toEqual([])
-    expect(
-      await readCopyrightEmailPromotionEffects(root.intakeId, input.targets[0]!.placementId),
-    ).toEqual(effects)
+    expect(await readCopyrightEmailIntakeNoticeLinks(replyId)).toEqual([])
+    expect(await readCopyrightThreadReferenceState(replyId)).toEqual(references)
+    expect(await readCopyrightEmailPromotionEffects(rootId, input.targets[0]!.placementId)).toEqual(
+      effects,
+    )
+  })
+
+  it('rejects a separately committed erased case replay without attaching its pending reply', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const { input, noticeId, rootId, replyId } =
+      await createCommittedCopyrightPendingReply(moderator)
+    await markTestCopyrightNoticeErasedAndCommit(noticeId)
+    const effects = await readCopyrightEmailPromotionEffects(rootId, input.targets[0]!.placementId)
+    const references = await readCopyrightThreadReferenceState(replyId)
+    await expect(promoteCopyrightEmailIntake(input)).rejects.toMatchObject({
+      status: 409,
+      code: COPYRIGHT_EMAIL_THREAD_CHANGED,
+      cause: { code: '23514', message: 'erased copyright case cannot acquire an email intake' },
+    })
+    expect(await isTestCopyrightCaseEvidenceErased(noticeId)).toBe(true)
+    expect(await readCopyrightEmailIntakeNoticeLinks(rootId)).toEqual([
+      { copyright_notice_id: noticeId, link_kind: 'initial' },
+    ])
+    expect(await readCopyrightEmailIntakeNoticeLinks(replyId)).toEqual([])
+    expect(await readCopyrightThreadReferenceState(replyId)).toEqual(references)
+    expect(await readCopyrightEmailPromotionEffects(rootId, input.targets[0]!.placementId)).toEqual(
+      effects,
+    )
   })
 })

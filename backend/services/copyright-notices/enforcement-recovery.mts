@@ -1,3 +1,7 @@
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
+import { runSequentially } from '@modules/utils/run-sequentially'
+import { v7 as uuidv7 } from 'uuid'
+import createHttpError from 'http-errors'
 import { getCopyrightSweepLimits } from './work-limits.mts'
 import { buildPageInfo } from '@modules/pagination'
 import {
@@ -19,7 +23,7 @@ export async function recoverMissingDecisionAssessments(
     { ...options, limit: options.limit ?? getCopyrightSweepLimits().batchSize },
     'Invalid decision assessment cursor',
   )
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction({ serializable: true })
   const candidateQuery = sql`/* recoverMissingCopyrightDecisionAssessments */
     WITH candidate_page AS (
       SELECT DISTINCT ON (submission_id)
@@ -32,7 +36,7 @@ export async function recoverMissingDecisionAssessments(
           ON intake.id = review.copyright_notice_form_intake_id
         JOIN copyright_notice_submissions submission
           ON submission.id = intake.copyright_notice_submission_id
-        WHERE review.is_accepted
+        WHERE review.is_accepted AND submission.kind = 'notice'
         UNION ALL
         SELECT submission.id AS submission_id, submission.copyright_notice_id,
           receipt.reviewed_by_id AS assessed_by_id, NULL::uuid AS screening_id, 2 AS priority
@@ -48,6 +52,10 @@ export async function recoverMissingDecisionAssessments(
   if (options.ids !== undefined)
     candidateQuery.append(sql` AND submission_id = ANY(${options.ids}::uuid[])`)
   candidateQuery.append(sql`
+        AND EXISTS (
+          SELECT 1 FROM copyright_notices notice
+          WHERE notice.id = durable_decisions.copyright_notice_id AND notice.evidence_erased_at IS NULL
+        )
         AND NOT EXISTS (
         SELECT 1 FROM copyright_notice_submissions submission
         WHERE submission.id = durable_decisions.submission_id
@@ -59,9 +67,7 @@ export async function recoverMissingDecisionAssessments(
     SELECT submission.id, candidate.assessed_by_id, candidate.screening_id
     FROM candidate_page candidate
     JOIN copyright_notice_submissions submission ON submission.id = candidate.submission_id
-    JOIN copyright_notices notice ON notice.id = submission.copyright_notice_id
     ORDER BY submission.id LIMIT ${limit + 1}
-    FOR UPDATE OF notice, submission
   `)
   const { rows } = await transaction<{
     id: string
@@ -69,25 +75,58 @@ export async function recoverMissingDecisionAssessments(
     screening_id: string | null
   }>(candidateQuery)
   const page = rows.slice(0, limit)
-  // Parent locks match normal assessment writers; this separate statement observes their commits.
-  await transaction(sql`/* recoverMissingCopyrightDecisionAssessments:insert */
+  // Await the complete result before case events: every owned submission is written below.
+  const { rows: owned } = await transaction<{
+    submission_id: string
+    copyright_notice_id: string
+    assessed_by_id: string
+    screening_id: string | null
+  }>(sql`/* recoverMissingCopyrightDecisionAssessments:ownedSubmissions */
+    SELECT submission.id AS submission_id, submission.copyright_notice_id,
+      candidate.assessed_by_id, candidate.screening_id
+    FROM unnest(${page.map(row => row.id)}::uuid[],
+      ${page.map(row => row.assessed_by_id)}::uuid[], ${page.map(row => row.screening_id)}::uuid[])
+      AS candidate(submission_id, assessed_by_id, screening_id)
+    JOIN copyright_notice_submissions submission ON submission.id = candidate.submission_id
+    WHERE submission.current_assessment_identity_id IS NULL
+    ORDER BY submission.id LIMIT ${limit}
+    FOR UPDATE OF submission
+  `)
+  const admitted = owned.map(row => ({ ...row, assessment_id: uuidv7() }))
+  await runSequentially([
+    () =>
+      transaction(sql`/* recoverMissingCopyrightDecisionAssessments:events */
+      INSERT INTO copyright_notice_lifecycle_changes (
+        copyright_notice_id, change_type, changed_by_id,
+        copyright_notice_submission_assessment_identity_id, recovery_source
+      ) SELECT candidate.copyright_notice_id, 'submission_assessed', candidate.assessed_by_id,
+        candidate.assessment_id, 'durable_decision'
+      FROM unnest(${admitted.map(row => row.copyright_notice_id)}::uuid[],
+        ${admitted.map(row => row.assessed_by_id)}::uuid[],
+        ${admitted.map(row => row.assessment_id)}::uuid[])
+        AS candidate(copyright_notice_id, assessed_by_id, assessment_id)
+      ORDER BY candidate.copyright_notice_id, candidate.assessment_id LIMIT ${limit}
+    `).catch((err: unknown) => {
+        if (
+          (err as { constraint?: string } | null)?.constraint === 'copyright_assessment_active_case'
+        )
+          throw createHttpError(410, 'Copyright case evidence was erased', { cause: err })
+        throw err
+      }),
+    () =>
+      transaction(sql`/* recoverMissingCopyrightDecisionAssessments:insert */
     WITH candidates AS (
-      SELECT * FROM unnest(${page.map(row => row.id)}::uuid[],
-        ${page.map(row => row.assessed_by_id)}::uuid[], ${page.map(row => row.screening_id)}::uuid[])
-        AS candidate(submission_id, assessed_by_id, screening_id)
-      WHERE NOT EXISTS (
-        SELECT 1 FROM copyright_notice_submissions submission
-        WHERE submission.id = candidate.submission_id
-          AND submission.current_assessment_identity_id IS NOT NULL
-      )
+      SELECT * FROM unnest(${admitted.map(row => row.submission_id)}::uuid[],
+        ${admitted.map(row => row.assessment_id)}::uuid[],
+        ${admitted.map(row => row.copyright_notice_id)}::uuid[],
+        ${admitted.map(row => row.assessed_by_id)}::uuid[],
+        ${admitted.map(row => row.screening_id)}::uuid[])
+        AS candidate(submission_id, assessment_id, copyright_notice_id, assessed_by_id, screening_id)
       ORDER BY submission_id LIMIT ${limit}
     ), identities AS (
       INSERT INTO copyright_notice_submission_assessment_identities (
-        copyright_notice_id, copyright_notice_submission_id
-      )
-      SELECT submission.copyright_notice_id, candidate.submission_id
-      FROM candidates candidate
-      JOIN copyright_notice_submissions submission ON submission.id = candidate.submission_id
+        id, copyright_notice_id, copyright_notice_submission_id
+      ) SELECT assessment_id, copyright_notice_id, submission_id FROM candidates
       RETURNING id, copyright_notice_submission_id
     ), inserted AS (
       INSERT INTO copyright_notice_submission_assessments (
@@ -100,28 +139,22 @@ export async function recoverMissingDecisionAssessments(
       JOIN identities identity ON identity.copyright_notice_submission_id = candidate.submission_id
       RETURNING id, copyright_notice_submission_id, assessed_by_id,
         assessed_at, copyright_notice_form_screening_id
-    ), current_results AS (
-      UPDATE copyright_notice_submissions submission
-      SET current_assessment_identity_id = inserted.id,
-        current_assessment_is_substantially_compliant = true,
-        current_assessed_at = inserted.assessed_at,
-        current_assessed_by_id = inserted.assessed_by_id,
-        current_assessment_form_screening_id = inserted.copyright_notice_form_screening_id
-      FROM inserted WHERE submission.id = inserted.copyright_notice_submission_id
-      RETURNING submission.copyright_notice_id, inserted.id, inserted.assessed_by_id
     )
-    INSERT INTO copyright_notice_lifecycle_changes (
-      copyright_notice_id, change_type, changed_by_id,
-      copyright_notice_submission_assessment_identity_id, recovery_source
-    )
-    SELECT current_results.copyright_notice_id, 'submission_assessed', current_results.assessed_by_id,
-      current_results.id, 'durable_decision'
-    FROM current_results
-    LIMIT ${limit}
-  `)
+    UPDATE copyright_notice_submissions submission
+    SET current_assessment_identity_id = inserted.id,
+      current_assessment_is_substantially_compliant = true,
+      current_assessed_at = inserted.assessed_at,
+      current_assessed_by_id = inserted.assessed_by_id,
+      current_assessment_form_screening_id = inserted.copyright_notice_form_screening_id
+    FROM inserted WHERE submission.id = inserted.copyright_notice_submission_id
+    `),
+  ])
+  await readCopyrightThreadRetirement(transaction, [
+    ...new Set(admitted.map(row => row.copyright_notice_id)),
+  ])
   await transaction.commit()
   return {
-    results: page.map(row => row.id),
+    results: admitted.map(row => row.submission_id),
     page_info: buildPageInfo(page, {
       hasNextPage: rows.length > limit,
       getCursor: row => ({ id: row.id }),

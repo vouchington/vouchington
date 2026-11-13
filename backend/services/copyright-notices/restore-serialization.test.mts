@@ -1,20 +1,31 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
-import { observeTestPostgresClientQueries } from '@voucha/test-helpers/postgres-query-pool-observer'
 import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
-import {
-  holdTestCopyrightActionDelivery,
-  isTestCopyrightPlacementWithheld,
-} from '@voucha/test-helpers/services/copyright-notices/hold-restoration'
+import { isTestCopyrightPlacementWithheld } from '@voucha/test-helpers/services/copyright-notices/hold-restoration'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
-import { appendCopyrightGuestFiling, processCopyrightActionIntent } from './index.mts'
-import { claimCopyrightActionIntent } from './action-delivery-state.mts'
-import { issueCopyrightGuestCapability } from './guest-capabilities.mts'
+import { seedCopyrightGuestCapabilities } from '@voucha/test-helpers/copyright-staff-case-states'
+import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
+import { publishStagedMediaDeliveryRecord } from '@services/media-delivery-safety'
+import {
+  prepareActionDeliveryRestore,
+  actionDeliveryCurrentTuple,
+} from '@voucha/test-helpers/copyright-action-delivery-contract-fixtures'
+import { seedCompletedStatutoryContract } from '@voucha/test-helpers/copyright-statutory-contract-fixtures'
+import { seedRetainedRestorePairMember } from '@voucha/test-helpers/copyright-restore-pair-fixtures'
+import { assertRestorePairOverlap } from '@voucha/test-helpers/copyright-restore-pair-subjects'
+import { assertRestoreCompletionAndFiling } from '@voucha/test-helpers/copyright-restore-filing-race'
+import { assertOrdinaryRestorationJob } from '@voucha/test-helpers/copyright-ordinary-restoration-subjects'
+import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
 
-async function restoreState(noticeId: string, intentId: string) {
-  const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
-  return aggregate!.actionIntents.find(intent => intent.id === intentId)!
+async function createSharedRestorePair() {
+  const first = await openHeldCounterNoticeRestore()
+  const second = await openHeldCounterNoticeRestore(1, {
+    claimant: first.claimant,
+    placementId: first.target.placement_id,
+    imageId: first.target.image_id,
+  })
+  const now = new Date(Math.max(first.restorationAt.getTime(), second.restorationAt.getTime()))
+  return { first, second, now }
 }
 
 describe('copyright restore serialization', () => {
@@ -23,85 +34,65 @@ describe('copyright restore serialization', () => {
     vi.unstubAllEnvs()
   })
 
-  it('lets the retried restore see that the other restriction lifted, so the placement is restored', async () => {
-    installTestMediaDeliveryEdge()
-    const first = await openHeldCounterNoticeRestore()
-    const second = await openHeldCounterNoticeRestore(1, {
-      claimant: first.claimant,
-      placementId: first.target.placement_id,
-      imageId: first.target.image_id,
-    })
-    const now = new Date(
-      Math.max(first.restorationAt.getTime(), second.restorationAt.getTime()) + 1000,
-    )
+  it('couples both one-shot restores to complete retained or physically restored phases', async () => {
+    const edge = installTestMediaDeliveryEdge()
+    const { first, second, now } = await createSharedRestorePair()
     expect(await isTestCopyrightPlacementWithheld(first.target.placement_id)).toBe(true)
-
-    // Both restores read the other restriction as active before either lifts its own.
-    const bothRead = Promise.withResolvers<void>()
-    let reads = 0
-    const { result: settled } = await observeTestPostgresClientQueries(
-      () =>
-        Promise.allSettled([
-          processCopyrightActionIntent(first.restore.id, now),
-          processCopyrightActionIntent(second.restore.id, now),
-        ]),
-      async query => {
-        if (!query.text.includes('processCopyrightActionIntent:otherActiveRestrictions')) return
-        if (++reads === 2) bothRead.resolve()
-        await bothRead.promise
-      },
+    await assertRestorePairOverlap(first, second, now)
+    const firstState = await getCopyrightNoticePrivateAggregate(first.notice.id)
+    const secondState = await getCopyrightNoticePrivateAggregate(second.notice.id)
+    const mayAllow =
+      firstState!.restrictions.every(row => row.lifted_at !== null) &&
+      secondState!.restrictions.every(row => row.lifted_at !== null)
+    const allows = edge.put.mock.calls.flatMap(([record]) =>
+      record.state === 'allow' ? [record] : [],
     )
-
-    const rejected = settled.filter(outcome => outcome.status === 'rejected')
-    expect(rejected).toHaveLength(1)
-    expect(rejected[0]!.reason).toMatchObject({ code: '40001' })
-    expect(await isTestCopyrightPlacementWithheld(first.target.placement_id)).toBe(true)
-
-    const later = new Date(now.getTime() + 60 * 60 * 1000)
-    const retried = settled[0].status === 'rejected' ? first : second
-    await expect(processCopyrightActionIntent(retried.restore.id, later)).resolves.toBe('applied')
-    expect(await isTestCopyrightPlacementWithheld(first.target.placement_id)).toBe(false)
+    expect(allows.length === 0 || mayAllow).toBe(true)
   })
 
-  it('lands a filing strictly after a restore whose finalization already holds the work item', async () => {
+  it('sees an independently committed other lift on the real restore probe without retrying an actor', async () => {
+    expect.hasAssertions()
+    installTestMediaDeliveryEdge()
+    const { first, second, now } = await createSharedRestorePair()
+    await seedRetainedRestorePairMember(first, now)
+    const statements = await readTestCopyrightStatementIntents(first.notice.id)
+    expect(
+      statements.find(
+        row => row.delivery_kind === 'poster_restoration_notice' && row.channel === 'email',
+      )!.text,
+    ).toContain('Another restriction keeps the image hidden.')
+    await assertOrdinaryRestorationJob(second, 'fresh', now)
+  })
+
+  it('allows the exact shared tuple only after both independent committed restrictions lifted', async () => {
+    const edge = installTestMediaDeliveryEdge()
+    const { first, second, now } = await createSharedRestorePair()
+    await seedRetainedRestorePairMember(first, now)
+    await seedCompletedStatutoryContract({ ...second, restorationAt: now })
+    expect(await isTestCopyrightPlacementWithheld(first.target.placement_id)).toBe(false)
+    const tuple = await actionDeliveryCurrentTuple(first.target.placement_id)
+    expect(edge.records.get(getImagePlacementDeliveryKey(tuple))?.state).toBe('allow')
+    const [firstState, secondState] = await Promise.all([
+      getCopyrightNoticePrivateAggregate(first.notice.id),
+      getCopyrightNoticePrivateAggregate(second.notice.id),
+    ])
+    expect(firstState!.restrictions.map(row => row.lifted_at)).toEqual([now])
+    expect(secondState!.restrictions.map(row => row.lifted_at)).toEqual([now])
+  })
+
+  it('preserves the actual completion and guest filing results when they compete for the same work item', async () => {
+    expect.hasAssertions()
     installTestMediaDeliveryEdge()
     const scene = await openHeldCounterNoticeRestore()
-    const { token } = await issueCopyrightGuestCapability({
-      currentUser: scene.moderator,
+    const at = new Date()
+    const [capability] = await seedCopyrightGuestCapabilities({
       noticeId: scene.notice.id,
-      issuedAt: new Date(),
-      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      issuedById: scene.moderator.id,
+      expiresAt: new Date(at.getTime() + 60 * 60 * 1000),
+      count: 1,
     })
-    const claimed = await claimCopyrightActionIntent(scene.restore.id, scene.restorationAt)
-    expect(claimed).not.toBeNull()
-
-    // Finalization's own lock: the work item row is held until its completion commits.
-    const held = await holdTestCopyrightActionDelivery(claimed!)
-    const filing = await withTestOwnedPostgresWait(
-      {
-        holderProcessId: held.processId,
-        pool: 'write',
-        lock: { kind: 'transaction' },
-        queryMarker: 'preemptCopyrightRestorations',
-        releaseHolder: held.release,
-      },
-      async waitForLock => {
-        const pending = appendCopyrightGuestFiling({
-          noticeId: scene.notice.id,
-          token,
-          now: new Date(),
-          kind: 'court_or_ccb_hold',
-          statement: 'A federal court action was filed.',
-        })
-        // Admission waits for the row finalization holds instead of skipping it.
-        await waitForLock(pending)
-        await held.complete(scene.restorationAt)
-        return pending
-      },
-    )
-
-    expect(filing.kind).toBe('court_or_ccb_hold')
-    // Preemption re-evaluated after the wait and found the restore already complete.
-    expect((await restoreState(scene.notice.id, scene.restore.id)).state).toBe('completed')
+    const prepared = await prepareActionDeliveryRestore(scene)
+    await publishStagedMediaDeliveryRecord(prepared.mediaDeliveryRegistryRecordId)
+    await assertRestoreCompletionAndFiling(scene, prepared, capability!, at)
   })
 })

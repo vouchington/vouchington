@@ -1,3 +1,5 @@
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { CONFLICT } from '@modules/on-error/error-codes'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
@@ -18,90 +20,98 @@ export async function reviewCopyrightFormIntake(input: {
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
   assert(input.rationale.trim() && input.rationale.length <= 10_000, 422, 'rationale is required')
   const automationSince = await getAutomaticEnforcementSince()
-  await using transaction = await beginTransaction()
-  await transaction(sql`/* reviewCopyrightFormIntake:lock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${`copyright-form-review:${input.intakeId}`}, 0))
-  `)
-  const { rows } = await transaction<{
-    notice_id: string
-    submission_id: string
-    source_kind: string
-    current_screening_authority: boolean
-    received_at: Date
-    automatic_withholding_refused: boolean
-  }>(sql`/* reviewCopyrightFormIntake:intake */
-    SELECT intake.copyright_notice_id AS notice_id,
-      intake.copyright_notice_submission_id AS submission_id, submission.source_kind,
-      submission.received_at,
-      EXISTS (SELECT 1 FROM copyright_notice_form_screening_attempts execution
-        WHERE execution.copyright_notice_form_intake_id = intake.id
-          AND fn_current_copyright_form_screening(submission.id,
-            execution.copyright_notice_form_screening_id)) AS current_screening_authority,
-      EXISTS (SELECT 1 FROM copyright_automatic_withholding_refusals refusal
-        WHERE refusal.copyright_notice_submission_id = submission.id) AS automatic_withholding_refused
-    FROM copyright_notice_form_intakes intake
-    JOIN copyright_notice_submissions submission
-      ON submission.id = intake.copyright_notice_submission_id
-    WHERE intake.id = ${input.intakeId}
-  `)
-  const intake = rows[0]
-  assert(intake, 404, 'Copyright form intake not found')
-  // A review must enter the case before thread cleanup rechecks its blocker proof.
-  await transaction(sql`/* reviewCopyrightFormIntake:lockNotice */
-    SELECT id FROM copyright_notices WHERE id = ${intake.notice_id} FOR KEY SHARE`)
-  const { rows: reviewRows } = await transaction<{ is_accepted: boolean }>(
-    sql`/* reviewCopyrightFormIntake:existing */
-      SELECT is_accepted FROM copyright_notice_form_intake_reviews
-      WHERE copyright_notice_form_intake_id = ${input.intakeId}`,
-  )
-  const existing = reviewRows[0]
-  assert(
-    !existing || existing.is_accepted === input.is_accepted,
-    409,
-    'Form intake was already reviewed',
-  )
-  if (!existing) {
-    assert(
-      intake.source_kind === 'guest_form' ||
-        (intake.source_kind === 'signed_in_form' &&
-          (!input.is_accepted ||
-            !automationSince ||
-            intake.received_at < automationSince ||
-            !intake.current_screening_authority ||
-            intake.automatic_withholding_refused)),
-      422,
-      'Only guest forms and signed-in forms without a clear anti-spam result require moderator review',
-    )
-    await transaction(sql`/* reviewCopyrightFormIntake:review */
-      INSERT INTO copyright_notice_form_intake_reviews (
-        copyright_notice_form_intake_id, reviewed_at, reviewed_by_id, is_accepted, rationale_ciphertext
-      ) VALUES (
-        ${input.intakeId}, ${new Date()}, ${input.currentUser.id}, ${input.is_accepted},
-        ${encryptSecret(input.rationale, `copyright-form-review:${input.intakeId}`)}
-      )
+  return conflictOnSerializationFailure(
+    async () => {
+      await using transaction = await beginTransaction({ serializable: true })
+      await transaction(sql`/* reviewCopyrightFormIntake:lock */
+      SELECT pg_advisory_xact_lock(hashtextextended(${`copyright-form-review:${input.intakeId}`}, 0))
     `)
-  }
-  const assessmentId = await getOrCreateHumanAssessment(
-    intake.submission_id,
-    input.currentUser,
-    input.is_accepted,
-    transaction,
+      const { rows } = await transaction<{
+        notice_id: string
+        submission_id: string
+        source_kind: string
+        current_screening_authority: boolean
+        received_at: Date
+        automatic_withholding_refused: boolean
+        is_thread_retired: boolean
+      }>(sql`/* reviewCopyrightFormIntake:intake */
+      SELECT intake.copyright_notice_id AS notice_id,
+        intake.copyright_notice_submission_id AS submission_id, submission.source_kind,
+        submission.received_at,
+        EXISTS (SELECT 1 FROM copyright_notice_form_screening_attempts execution
+          WHERE execution.copyright_notice_form_intake_id = intake.id
+            AND fn_current_copyright_form_screening(submission.id,
+              execution.copyright_notice_form_screening_id)) AS current_screening_authority,
+        EXISTS (SELECT 1 FROM copyright_automatic_withholding_refusals refusal
+          WHERE refusal.copyright_notice_submission_id = submission.id) AS automatic_withholding_refused,
+        EXISTS (SELECT 1 FROM copyright_notice_email_thread_retirements retirement
+          WHERE retirement.copyright_notice_id = intake.copyright_notice_id) AS is_thread_retired
+      FROM copyright_notice_form_intakes intake
+      JOIN copyright_notice_submissions submission
+        ON submission.id = intake.copyright_notice_submission_id
+      WHERE intake.id = ${input.intakeId}
+    `)
+      const intake = rows[0]
+      assert(intake, 404, 'Copyright form intake not found')
+      const { rows: reviewRows } = await transaction<{ is_accepted: boolean }>(
+        sql`/* reviewCopyrightFormIntake:existing */
+        SELECT is_accepted FROM copyright_notice_form_intake_reviews
+        WHERE copyright_notice_form_intake_id = ${input.intakeId}`,
+      )
+      const existing = reviewRows[0]
+      assert(
+        !existing || existing.is_accepted === input.is_accepted,
+        409,
+        'Form intake was already reviewed',
+      )
+      if (!existing) {
+        assert(
+          intake.source_kind === 'guest_form' ||
+            (intake.source_kind === 'signed_in_form' &&
+              (!input.is_accepted ||
+                !automationSince ||
+                intake.received_at < automationSince ||
+                !intake.current_screening_authority ||
+                intake.automatic_withholding_refused)),
+          422,
+          'Only guest forms and signed-in forms without a clear anti-spam result require moderator review',
+        )
+      }
+      const assessmentId = await getOrCreateHumanAssessment(
+        intake.submission_id,
+        input.currentUser,
+        input.is_accepted,
+        transaction,
+      )
+      if (!existing) {
+        await transaction(sql`/* reviewCopyrightFormIntake:review */
+        INSERT INTO copyright_notice_form_intake_reviews (
+          copyright_notice_form_intake_id, reviewed_at, reviewed_by_id, is_accepted, rationale_ciphertext
+        ) VALUES (
+          ${input.intakeId}, ${new Date()}, ${input.currentUser.id}, ${input.is_accepted},
+          ${encryptSecret(input.rationale, `copyright-form-review:${input.intakeId}`)}
+        )
+      `)
+      }
+      await transaction.commit()
+      if (input.is_accepted) {
+        await enforceCopyrightAssessment(assessmentId)
+      } else {
+        await reverseAutomatedCopyrightRestrictions(
+          intake.notice_id,
+          intake.submission_id,
+          input.currentUser.id,
+        )
+      }
+      return {
+        noticeId: intake.notice_id,
+        submissionId: intake.submission_id,
+        is_accepted: input.is_accepted,
+      }
+    },
+    'Conflicting copyright case change',
+    CONFLICT,
   )
-  await transaction.commit()
-  if (input.is_accepted) {
-    await enforceCopyrightAssessment(assessmentId)
-  } else {
-    await reverseAutomatedCopyrightRestrictions(
-      intake.notice_id,
-      intake.submission_id,
-      input.currentUser.id,
-    )
-  }
-  return {
-    noticeId: intake.notice_id,
-    submissionId: intake.submission_id,
-    is_accepted: input.is_accepted,
-  }
 }
 
 async function getOrCreateHumanAssessment(

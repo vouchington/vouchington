@@ -1,12 +1,13 @@
+import { assertClaimantDecisionOverlap } from '@voucha/test-helpers/copyright-claimant-decision-overlap-outcome'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
-import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
+import {
+  seedServiceFormDecision,
+  seedServiceReviewRestriction,
+} from '@voucha/test-helpers/copyright-service-review-prerequisites'
 import { listNotifications } from '@services/notifications'
 import { deliverCopyrightInAppNotification } from './delivery-transport.mts'
 import { describe, expect, it } from 'vitest'
-import { beginTransaction, createTestUser } from '@voucha/test-helpers'
-import { getTestPostgresBackendProcessId } from '@voucha/test-helpers/postgres-lock-wait'
-import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
-import { createCopyrightClaimantDecisionNoticeInTransaction } from './claimant-decision-notices.mts'
+import { createTestUser } from '@voucha/test-helpers'
 import {
   createClearScreenedForm,
   createGuestCopyrightForm,
@@ -18,8 +19,7 @@ import {
   readTestCopyrightStatementIntents,
   replayTestCopyrightClaimantDecision,
 } from '@voucha/test-helpers/copyright-statement-notices'
-import { reviewCopyrightFormIntake } from './form-reviews.mts'
-import { recoverRejectedCopyrightFormReviewEffect } from './form-reviews-recovery.mts'
+import { assertServiceRejectedRecoveryReplay } from '@voucha/test-helpers/copyright-service-review-replay'
 
 describe('claimant copyright decision notices', () => {
   useCopyrightIntakeEnvironment()
@@ -27,7 +27,7 @@ describe('claimant copyright decision notices', () => {
   it('accepts two targets but sends one claimant decision with the receipt address', async () => {
     const notice = await createSignedInCopyrightForm(2)
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    await reviewCopyrightFormIntake({
+    await seedServiceFormDecision({
       intakeId: notice.intake.id,
       currentUser: moderator,
       is_accepted: true,
@@ -50,7 +50,7 @@ describe('claimant copyright decision notices', () => {
   })
   it('sends a guest form decision only to the retained notice email', async () => {
     const notice = await createGuestCopyrightForm()
-    await reviewCopyrightFormIntake({
+    await seedServiceFormDecision({
       intakeId: notice.intake.id,
       currentUser: await createTestUser({ extraRoles: ['moderator'] }),
       is_accepted: true,
@@ -70,17 +70,20 @@ describe('claimant copyright decision notices', () => {
     expect(decision[0].text).toContain('judicial redress through a court')
   })
   it('adds one reversed notifier decision when staff reject an automatically restricted notice', async () => {
-    const { notice } = await createClearScreenedForm()
+    const { notice, screeningId } = await createClearScreenedForm()
     const caseId = notice.intake.copyright_notice_id
-    await applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id)
-    await reviewCopyrightFormIntake({
+    await seedServiceReviewRestriction(
+      notice,
+      await createTestUser({ extraRoles: ['moderator'] }),
+      screeningId,
+    )
+    await seedServiceFormDecision({
       intakeId: notice.intake.id,
       currentUser: await createTestUser({ extraRoles: ['moderator'] }),
       is_accepted: false,
       rationale: 'Incomplete notice after review.',
     })
-    await recoverRejectedCopyrightFormReviewEffect(notice.intake.id)
-    await recoverRejectedCopyrightFormReviewEffect(notice.intake.id)
+    await assertServiceRejectedRecoveryReplay(notice.intake.id, notice.intake.copyright_notice_id)
     const decisions = (await readTestCopyrightStatementIntents(caseId)).filter(
       row => row.delivery_kind === 'claimant_decision_notice',
     )
@@ -92,7 +95,7 @@ describe('claimant copyright decision notices', () => {
   it('sends reversed after a restricted claimant notice even when no restriction remains active', async () => {
     const notice = await createSignedInCopyrightForm()
     const caseId = notice.intake.copyright_notice_id
-    await reviewCopyrightFormIntake({
+    await seedServiceFormDecision({
       intakeId: notice.intake.id,
       currentUser: await createTestUser({ extraRoles: ['moderator'] }),
       is_accepted: false,
@@ -113,13 +116,13 @@ describe('claimant copyright decision notices', () => {
   })
   it('rejects a form once and recovery does not duplicate the decision', async () => {
     const notice = await createSignedInCopyrightForm()
-    await reviewCopyrightFormIntake({
+    await seedServiceFormDecision({
       intakeId: notice.intake.id,
       currentUser: await createTestUser({ extraRoles: ['moderator'] }),
       is_accepted: false,
       rationale: 'Incomplete notice.',
     })
-    await recoverRejectedCopyrightFormReviewEffect(notice.intake.id)
+    await assertServiceRejectedRecoveryReplay(notice.intake.id, notice.intake.copyright_notice_id)
     const decision = (
       await readTestCopyrightStatementIntents(notice.intake.copyright_notice_id)
     ).filter(row => row.delivery_kind === 'claimant_decision_notice')
@@ -142,30 +145,20 @@ describe('claimant copyright decision notices', () => {
       'A person made this decision',
     )
   })
-  it('reads the decision flags after the notice lock, so a waiting reversal sees the committed rejection', async () => {
+  it('keeps a competing rejection and reversal atomic without a stale claimant decision', async () => {
+    expect.hasAssertions()
+    const claimant = await createTestUser()
+    const notice = await createSignedInCopyrightForm(1, { claimant })
+    await assertClaimantDecisionOverlap(notice.intake.copyright_notice_id, claimant.id)
+  })
+  it('keeps concurrent rejection replays and reversal at one committed rejection per channel', async () => {
     const notice = await createSignedInCopyrightForm()
     const caseId = notice.intake.copyright_notice_id
-    await using holder = await beginTransaction()
-    const holderProcessId = await getTestPostgresBackendProcessId(holder)
-    await createCopyrightClaimantDecisionNoticeInTransaction(
-      { noticeId: caseId, event: 'not_accepted' },
-      holder,
-    )
-    await withTestOwnedPostgresWait(
-      {
-        holderProcessId,
-        pool: 'write',
-        lock: { kind: 'transaction' },
-        queryMarker: 'createCopyrightClaimantDecisionNoticeInTransaction:recipient',
-        releaseHolder: () => holder[Symbol.asyncDispose](),
-      },
-      async waitForLock => {
-        const reversal = replayTestCopyrightClaimantDecision(caseId, 'reversed')
-        await waitForLock(reversal)
-        await holder.commit()
-        await reversal
-      },
-    )
+    await replayTestCopyrightClaimantDecision(caseId, 'not_accepted')
+    await Promise.all([
+      replayTestCopyrightClaimantDecision(caseId, 'not_accepted'),
+      replayTestCopyrightClaimantDecision(caseId, 'reversed'),
+    ])
     const decisions = (await readTestCopyrightStatementIntents(caseId)).filter(
       row => row.delivery_kind === 'claimant_decision_notice',
     )

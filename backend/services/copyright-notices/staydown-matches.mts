@@ -1,4 +1,7 @@
-import { write } from '@data-stores/psql'
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { CONFLICT } from '@modules/on-error/error-codes'
+import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
 import { enqueueStaydownHash } from '@queues/content-analysis/enqueues/image-jobs'
 import sql from 'sql-template-strings'
 import { isCopyrightStaydownMatchingEnabled } from './config.mts'
@@ -25,18 +28,32 @@ export async function recordCopyrightStaydownExactMatch(input: {
   uploadedById: string
 }): Promise<number> {
   if (!(await isCopyrightStaydownMatchingEnabled())) return 0
-  const { rowCount } = await write(sql`/* recordCopyrightStaydownExactMatch */
-    INSERT INTO copyright_staydown_matches (
-      copyright_staydown_entry_id, image_id, uploaded_by_id, match_kind, hamming_distance
-    )
-    SELECT entry.id, image.id, ${input.uploadedById}::uuid AS uploaded_by_id, 'exact', 0
-    FROM images image
-    JOIN copyright_staydown_entries entry ON entry.sha_256 = image.sha_256
-    WHERE image.id = ${input.imageId} AND image.deleted_at IS NULL
-    ORDER BY entry.id ASC NULLS LAST, image.id ASC NULLS LAST, uploaded_by_id ASC NULLS LAST
-    ON CONFLICT (copyright_staydown_entry_id, image_id, uploaded_by_id) DO NOTHING
-  `)
-  return rowCount ?? 0
+  return conflictOnSerializationFailure(
+    async () => {
+      await using query = await beginTransaction({ serializable: true })
+      const { rows } = await query<{
+        copyright_staydown_entry_id: string
+      }>(sql`/* recordCopyrightStaydownExactMatch */
+      INSERT INTO copyright_staydown_matches (
+        copyright_staydown_entry_id, image_id, uploaded_by_id, match_kind, hamming_distance
+      )
+      SELECT entry.id, image.id, ${input.uploadedById}::uuid AS uploaded_by_id, 'exact', 0
+      FROM images image
+      JOIN copyright_staydown_entries entry ON entry.sha_256 = image.sha_256
+      WHERE image.id = ${input.imageId} AND image.deleted_at IS NULL
+      ORDER BY entry.id ASC NULLS LAST, image.id ASC NULLS LAST, uploaded_by_id ASC NULLS LAST
+      ON CONFLICT (copyright_staydown_entry_id, image_id, uploaded_by_id) DO NOTHING RETURNING copyright_staydown_entry_id
+    `)
+      await readStaydownMatchedCaseCoverage(
+        query,
+        rows.map(row => row.copyright_staydown_entry_id),
+      )
+      await query.commit()
+      return rows.length
+    },
+    'Conflicting copyright upload match',
+    CONFLICT,
+  )
 }
 
 /**
@@ -65,7 +82,10 @@ export async function recordCopyrightStaydownPerceptualMatches(input: {
   perceptualHash: string
 }): Promise<number> {
   if (!(await isCopyrightStaydownMatchingEnabled())) return 0
-  const { rowCount } = await write(sql`/* recordCopyrightStaydownPerceptualMatches */
+  await using query = await beginTransaction({ serializable: true })
+  const { rows } = await query<{
+    copyright_staydown_entry_id: string
+  }>(sql`/* recordCopyrightStaydownPerceptualMatches */
     INSERT INTO copyright_staydown_matches (
       copyright_staydown_entry_id, image_id, uploaded_by_id, match_kind, hamming_distance
     )
@@ -78,7 +98,21 @@ export async function recordCopyrightStaydownPerceptualMatches(input: {
       AND bit_count(entry.perceptual_hash # ${input.perceptualHash}::bit(64))
         <= ${copyrightStaydownMaxHammingDistance}
     ORDER BY entry.id ASC NULLS LAST, image.id ASC NULLS LAST, image.created_by_id ASC NULLS LAST
-    ON CONFLICT (copyright_staydown_entry_id, image_id, uploaded_by_id) DO NOTHING
+    ON CONFLICT (copyright_staydown_entry_id, image_id, uploaded_by_id) DO NOTHING RETURNING copyright_staydown_entry_id
   `)
-  return rowCount ?? 0
+  await readStaydownMatchedCaseCoverage(
+    query,
+    rows.map(row => row.copyright_staydown_entry_id),
+  )
+  await query.commit()
+  return rows.length
+}
+
+async function readStaydownMatchedCaseCoverage(query: QueryExecutor, entryIds: string[]) {
+  const { rows } = await query<{ copyright_notice_id: string }>(sql`
+    /* readStaydownMatchedCaseCoverage */ SELECT restriction.copyright_notice_id
+    FROM copyright_staydown_entries entry
+    JOIN copyright_restrictions restriction ON restriction.id = entry.copyright_restriction_id
+    WHERE entry.id = ANY(${entryIds}::uuid[])`)
+  await readCopyrightThreadRetirement(query, [...new Set(rows.map(row => row.copyright_notice_id))])
 }

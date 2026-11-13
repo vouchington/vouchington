@@ -2,100 +2,30 @@ import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyrigh
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { getImagePlacementForCopyright } from '@services/images/placements'
+import { createQueuedReversalScene } from '@voucha/test-helpers/copyright-queued-reversal-scenes'
 import {
-  createTestUserDirect,
-  getTestPostImagePlacement,
-  insertTestImage,
-  insertTestPost,
-  insertTestPostImage,
-} from '@voucha/test-helpers'
-import { completeCopyrightMandatoryHumanReview, processCopyrightActionIntent } from './index.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
-import { appendCopyrightSubmissionAssessment } from './compliance.mts'
-import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
-import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
+  assertQueuedReversalRestore,
+  assertQueuedReversalWithhold,
+} from '@voucha/test-helpers/copyright-queued-reversal-subjects'
+import { seedCompletedQueuedReversal } from '@voucha/test-helpers/copyright-queued-reversal-completion'
 
 describe('copyright restriction reversal concurrency', () => {
   beforeEach(() => {
     installTestMediaDeliveryEdge()
   })
-
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllEnvs()
   })
 
   it('cancels a queued withhold after reversal restores the placement', async () => {
-    const [poster, moderatorRecord] = await Promise.all([
-      createTestUserDirect(),
-      createTestUserDirect(),
-    ])
-    const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
-    const postId = await insertTestPost({
-      title: `copyright stale withhold ${crypto.randomUUID()}`,
-      slug: `copyright-stale-withhold-${crypto.randomUUID()}`,
-      createdById: poster.id,
-      markdown: 'image',
-    })
-    const imageId = await insertTestImage(poster.id)
-    await insertTestPostImage({ postId, imageId })
-    const placement = await requireTestPostImagePlacement(postId, imageId)
-    const notice = await createCopyrightNoticeAggregate({
-      jurisdiction: 'us_dmca',
-      receivedAt: new Date('2026-07-01T12:00:00.000Z'),
-      claimantUserId: null,
-      claimantDisplayName: null,
-      claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
-      workDescription: `work-${crypto.randomUUID()}`,
-      policyVersion: 'test-v1',
-      initialSubmission: {
-        kind: 'notice',
-        sourceKind: 'signed_in_form',
-        bodyCiphertext: `notice-${crypto.randomUUID()}`,
-      },
-      targets: [
-        {
-          placementId: placement.placement_id,
-          placementRevision: placement.placement_revision,
-          imageId,
-          bindingFamily: 'post',
-          hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
-        },
-      ],
-    })
-    const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
-    if (!aggregate) throw new Error('fixture notice disappeared')
-    const assessment = await appendCopyrightSubmissionAssessment({
-      submissionId: aggregate.submissions[0]!.id,
-      assessedAt: new Date('2026-07-01T12:01:00.000Z'),
-      currentUser: moderator,
-      substantiallyCompliant: true,
-    })
-    const restriction = await acceptCopyrightNoticeAndImposeRestriction({
-      noticeId: notice.id,
-      targetId: aggregate.targets[0]!.id,
-      assessmentId: assessment.id,
-      imposedAt: new Date('2026-07-01T12:02:00.000Z'),
-      imposedById: null,
-    })
-    await completeCopyrightMandatoryHumanReview({
-      noticeId: notice.id,
-      restrictionId: restriction.id,
-      currentUser: moderator,
-      action: 'reverse',
-      rationale: 'The automated restriction was incorrect.',
-      reviewedAt: new Date('2026-07-01T12:03:00.000Z'),
-    })
-    const reversed = await getCopyrightNoticePrivateAggregate(notice.id)
-    const restoreIntent = reversed?.actionIntents.find(intent => intent.action === 'restore')
-    const withholdIntent = reversed?.actionIntents.find(intent => intent.action === 'withhold')
-    if (!restoreIntent || !withholdIntent) throw new Error('reversal intents disappeared')
-    await expect(processCopyrightActionIntent(restoreIntent.id, new Date())).resolves.toBe(
-      'applied',
-    )
-    await expect(processCopyrightActionIntent(withholdIntent.id, new Date())).resolves.toBe('stale')
-
-    const statements = await readTestCopyrightStatementIntents(notice.id)
+    const actual = await createQueuedReversalScene()
+    await assertQueuedReversalRestore(actual)
+    // Its separate committed restore always reaches the stale-withhold and statement consumers.
+    const committed = await createQueuedReversalScene()
+    await seedCompletedQueuedReversal(committed.restore.id)
+    await assertQueuedReversalWithhold(committed)
+    const statements = await readTestCopyrightStatementIntents(committed.noticeId)
     expect(statements.filter(row => row.delivery_kind === 'poster_review_notice')).toHaveLength(2)
     expect(
       statements.filter(row => row.delivery_kind === 'poster_restoration_notice'),
@@ -105,14 +35,8 @@ describe('copyright restriction reversal concurrency', () => {
         row => row.delivery_kind === 'poster_restoration_notice' && row.channel === 'email',
       )?.text,
     ).toContain('human review reversed the decision')
-    await expect(getImagePlacementForCopyright(placement.placement_id)).resolves.toEqual(
+    await expect(getImagePlacementForCopyright(committed.placementId)).resolves.toEqual(
       expect.objectContaining({ withheld: false }),
     )
   })
 })
-
-async function requireTestPostImagePlacement(postId: string, imageId: string) {
-  const placement = await getTestPostImagePlacement(postId, imageId)
-  if (!placement) throw new Error(`Missing image placement for ${postId}`)
-  return placement
-}

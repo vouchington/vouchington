@@ -2,40 +2,23 @@ import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { copyrightStaffQueueKeysSql } from '../services/copyright-notices/read-models-staff-queue-sql.mts'
 
-type Key = { id: string; tier: number; timestamp: string; before: string }
-
-export async function firstOwnedKey(ids: readonly string[], boost: boolean): Promise<Key> {
-  const { rows } = await write<Key>(
-    sql`/* firstOwnedCopyrightQueueKey */`.append(
-      copyrightStaffQueueKeysSql({ trustedFlaggerBoost: boost }),
-    ).append(sql` SELECT id, tier,
-      to_char(waiting_since AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS timestamp,
-      to_char((waiting_since - interval '1 microsecond') AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS before
-      FROM queue_key WHERE id = ANY(${[...ids]}::uuid[])
-      ORDER BY tier, waiting_since, id LIMIT 1`),
-  )
-  if (!rows[0]) throw new Error('Owned queue fixture has no native start key')
-  return rows[0]
+export type QueueAnchor = {
+  id: string
+  tier: number
+  timestamp: string
 }
 
-/** Native key ids from just before the first owned key through the last required key. */
-export async function nativeWindowIds(
-  key: Key,
-  requiredIds: readonly string[],
-  boost: boolean,
-): Promise<string[]> {
-  const { rows } = await write<{ id: string }>(
-    sql`/* readCopyrightQueueNativeWindow */`.append(
+/** Exact native tuples for committed owned cases and controls; no shared queue walk. */
+export async function copyrightQueueAnchors(ids: readonly string[], boost: boolean) {
+  const { rows } = await write<QueueAnchor>(
+    sql`/* copyrightQueueAnchors */`.append(
       copyrightStaffQueueKeysSql({ trustedFlaggerBoost: boost }),
-    ).append(sql` SELECT id FROM queue_key
-      WHERE (tier, waiting_since, id) > (${key.tier}, ${key.before}::timestamptz, ${key.id}::uuid)
-        AND (tier, waiting_since, id) <= (
-          SELECT tier, waiting_since, id FROM queue_key
-          WHERE id = ANY(${[...requiredIds]}::uuid[])
-          ORDER BY tier DESC, waiting_since DESC, id DESC LIMIT 1
-        )
-      ORDER BY tier, waiting_since, id`),
+    ).append(sql` SELECT owned.id, owned.tier,
+      to_char(owned.waiting_since AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS timestamp
+      FROM queue_key owned
+      WHERE owned.id = ANY(${[...ids]}::uuid[])
+      ORDER BY owned.tier, owned.waiting_since, owned.id`),
   )
-  if (rows.length < 1) throw new Error('Owned queue window is empty')
-  return rows.map(row => row.id)
+  if (rows.length !== new Set(ids).size) throw new Error('Owned queue anchor disappeared')
+  return rows
 }

@@ -1,15 +1,9 @@
+import { createExportBothRolesScene as createBothRolesScene } from '@voucha/test-helpers/copyright-export-both-roles-scene'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { COPYRIGHT_CASE_TIMELINE_EVENT_TYPES } from '@services/account-data-requests/stream-copyright-cases'
 import { getCopyrightPublicNoticeDetail } from '@services/copyright-notices/read-models'
-import {
-  createCopyrightAppeal,
-  createCopyrightCounterNotice,
-  createCopyrightFormIntake,
-  reviewCopyrightFormIntake,
-} from '@services/copyright-notices'
 import { copyrightTimelineEventTypesFor } from '@services/copyright-notices/timeline-visibility'
-import { createCopyrightFormFixture } from '@voucha/test-helpers/copyright-route-fixtures'
-import { createTestUser, hardDeleteTestUser } from '@voucha/test-helpers'
+import { hardDeleteTestUser } from '@voucha/test-helpers'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { readAccountExport } from '@voucha/test-helpers/services/copyright-notices/read-account-export'
@@ -169,85 +163,3 @@ describe('copyright records in the account data export', () => {
     expect(posterExport.serialized).not.toContain(scene.claimant.id)
   })
 })
-
-async function createBothRolesScene() {
-  const fixture = await createCopyrightFormFixture()
-  const tag = crypto.randomUUID()
-  const claimantPii = {
-    legalName: `Claimant Legal Name ${tag}`,
-    address: `${tag} Claimant Boulevard, Claimant City`,
-    email: `claimant-${tag}@legal.example.test`,
-    signature: `/s/ Claimant Signature ${tag}`,
-    work: `Claimant work description ${tag}`,
-  }
-  const posterPii = {
-    legalName: `Poster Legal Name ${tag}`,
-    address: `${tag} Poster Avenue, Poster Town`,
-    telephone: `+1-555-${tag.slice(0, 8)}`,
-    signature: `/s/ Poster Signature ${tag}`,
-    appealReason: `Poster appeal reason ${tag}`,
-  }
-  const hostedUseUrl = fixture.form.targets[0]!.target_url
-  const intake = await createCopyrightFormIntake({
-    currentUser: fixture.claimant,
-    requesterIdentity: `user:${fixture.claimant.id}`,
-    idempotencyKey: crypto.randomUUID(),
-    request: {
-      jurisdiction: 'us_dmca',
-      claimantDisplayName: claimantPii.legalName,
-      claimantContact: claimantPii.address,
-      claimantEmail: claimantPii.email,
-      workDescription: claimantPii.work,
-      goodFaithBelief: true,
-      accuracyAuthorityUnderPenaltyOfPerjury: true,
-      electronicSignature: claimantPii.signature,
-      claimantTargets: fixture.form.targets.map(target => ({
-        surfaceKind: 'post-image' as const,
-        postId: target.post_id,
-        imageId: target.image_id,
-        hostedUseUrl: target.target_url,
-      })),
-    },
-  })
-  const noticeId = intake.intake.copyright_notice_id
-  const moderator = await createTestUser({ extraRoles: ['moderator'] })
-  await reviewCopyrightFormIntake({
-    intakeId: intake.intake.id,
-    currentUser: moderator,
-    is_accepted: true,
-    rationale: 'Internal moderator rationale that no participant may read.',
-  })
-  const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
-  const targetId = aggregate!.targets[0]!.id
-  const counterNotice = await createCopyrightCounterNotice(
-    fixture.poster,
-    noticeId,
-    crypto.randomUUID(),
-    {
-      name: posterPii.legalName,
-      address: posterPii.address,
-      telephone: posterPii.telephone,
-      consentToFederalJurisdiction: true,
-      consentToServiceOfProcess: true,
-      goodFaithMisidentificationUnderPenaltyOfPerjury: true,
-      electronicSignature: posterPii.signature,
-      targetIds: [targetId],
-    },
-  )
-  await createCopyrightAppeal(fixture.poster, noticeId, crypto.randomUUID(), {
-    reason: posterPii.appealReason,
-    targetIds: [targetId],
-  })
-  return {
-    claimant: fixture.claimant,
-    poster: fixture.poster,
-    noticeId,
-    targetId,
-    hostedUseUrl,
-    counterNoticeId: counterNotice.submission.id,
-    claimantPii,
-    posterPii,
-    claimantSecrets: Object.values(claimantPii),
-    posterSecrets: Object.values(posterPii),
-  }
-}

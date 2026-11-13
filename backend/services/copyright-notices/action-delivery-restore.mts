@@ -1,3 +1,4 @@
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction } from '@data-stores/psql'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import sql from 'sql-template-strings'
@@ -21,6 +22,13 @@ export async function completeUnavailableRestore(input: {
 }): Promise<void> {
   await runSequentially([
     () =>
+      insertCopyrightActionLifecycleEvent(
+        input.legal,
+        input.intentId,
+        'restoration_unavailable',
+        input.query,
+      ),
+    () =>
       clearUnavailableImagePlacementCopyrightWithholding(input.legal.placement_id, {
         query: input.query,
       }),
@@ -37,13 +45,6 @@ export async function completeUnavailableRestore(input: {
         query: input.query,
       }),
     () => syncCopyrightIncidentsAfterStatutoryRestoreInTransaction(input.legal, input.query),
-    () =>
-      insertCopyrightActionLifecycleEvent(
-        input.legal,
-        input.intentId,
-        'restoration_unavailable',
-        input.query,
-      ),
   ])
 }
 
@@ -56,6 +57,7 @@ export async function retainRestoreWhenOtherRestrictionsActive(input: {
   now: Date
 }): Promise<boolean> {
   await using query = await beginTransaction({ serializable: true })
+  await readCopyrightThreadRetirement(query, [input.legal.copyright_notice_id])
   const retained = await completeRestoreRetainingPlacement({ ...input, query })
   await query.commit()
   return retained
@@ -82,6 +84,13 @@ async function completeRestoreRetainingPlacement(input: {
   if (!rows[0]?.blocked) return false
   await runSequentially([
     () =>
+      insertCopyrightActionLifecycleEvent(
+        input.legal,
+        input.intentId,
+        'restriction_lifted_placement_retained',
+        input.query,
+      ),
+    () =>
       liftCopyrightRestrictionAndResolveDeadline({ ...input, restorationOutcome: 'still_hidden' }),
     () =>
       completeCopyrightActionIntentInTransaction({
@@ -92,13 +101,6 @@ async function completeRestoreRetainingPlacement(input: {
         query: input.query,
       }),
     () => syncCopyrightIncidentsAfterStatutoryRestoreInTransaction(input.legal, input.query),
-    () =>
-      insertCopyrightActionLifecycleEvent(
-        input.legal,
-        input.intentId,
-        'restriction_lifted_placement_retained',
-        input.query,
-      ),
   ])
   return true
 }
@@ -109,13 +111,13 @@ export async function authorizeRestoreBeforeDelivery(input: {
   now: Date
   query: Awaited<ReturnType<typeof beginTransaction>>
 }): Promise<void> {
-  await liftCopyrightRestrictionAndResolveDeadline({ ...input, restorationOutcome: 'visible' })
   await insertCopyrightActionLifecycleEvent(
     input.legal,
     input.intentId,
     'restoration_authorized_pending_delivery',
     input.query,
   )
+  await liftCopyrightRestrictionAndResolveDeadline({ ...input, restorationOutcome: 'visible' })
 }
 
 async function liftCopyrightRestrictionAndResolveDeadline(input: {

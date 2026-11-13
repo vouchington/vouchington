@@ -23,6 +23,7 @@ export async function getOrCreateEmailAssessment(
       substantiallyCompliant: true,
     })
   } catch (err) {
+    if ((err as { cause?: { code?: unknown } } | null)?.cause?.code === '40001') throw err
     if (!isConflict(err)) throw err
     const { rows: concurrent } = await write<{ id: string }>(
       sql`/* getOrCreateEmailAssessment:concurrent */

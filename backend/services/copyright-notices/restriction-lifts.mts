@@ -1,3 +1,6 @@
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { CONFLICT } from '@modules/on-error/error-codes'
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
@@ -20,84 +23,91 @@ export async function liftCopyrightRestrictionWithoutSetter(input: {
 }): Promise<{ id: string }> {
   assert(currentUserCanLiftCopyrightRestriction(input.currentUser), 403, 'Forbidden')
   assert(input.rationale.trim() && input.rationale.length <= 10_000, 422, 'rationale is required')
-  await using transaction = await beginTransaction()
-  const { rows: placementRows } = await transaction<{ placement_id: string }>(sql`
-    /* liftCopyrightRestrictionWithoutSetter:findPlacement */
-    SELECT target.placement_id FROM copyright_restrictions restriction
-    JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-    WHERE restriction.id = ${input.restrictionId} AND target.copyright_notice_id = ${input.noticeId}
-  `)
-  const placement = placementRows[0]
-  assert(placement, 404, 'Copyright restriction not found')
-  const { rows: locked } = await transaction<{
-    target_id: string
-    lifted_at: Date | null
-    administrator_lift_decided_at: Date | null
-  }>(sql`
-    /* liftCopyrightRestrictionWithoutSetter:lock */
-    SELECT target.id AS target_id, restriction.lifted_at,
-      restriction.administrator_lift_decided_at
-    FROM copyright_notices notice
-    JOIN copyright_notice_targets target ON target.copyright_notice_id = notice.id
-    JOIN copyright_restrictions restriction ON restriction.copyright_notice_target_id = target.id
-    WHERE notice.id = ${input.noticeId} AND restriction.id = ${input.restrictionId}
-    FOR UPDATE OF notice, target, restriction
-  `)
-  const restriction = locked[0]
-  assert(restriction, 404, 'Copyright restriction not found')
-  assert(
-    restriction.lifted_at === null && restriction.administrator_lift_decided_at === null,
-    409,
-    'Copyright restriction is already lifted',
+  return conflictOnSerializationFailure(
+    async () => {
+      await using transaction = await beginTransaction({ serializable: true })
+      const { rows: placementRows } = await transaction<{ placement_id: string }>(sql`
+      /* liftCopyrightRestrictionWithoutSetter:findPlacement */
+      SELECT target.placement_id FROM copyright_restrictions restriction
+      JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
+      WHERE restriction.id = ${input.restrictionId} AND target.copyright_notice_id = ${input.noticeId}
+    `)
+      const placement = placementRows[0]
+      assert(placement, 404, 'Copyright restriction not found')
+      const { rows: locked } = await transaction<{
+        target_id: string
+        lifted_at: Date | null
+        administrator_lift_decided_at: Date | null
+      }>(sql`
+      /* liftCopyrightRestrictionWithoutSetter:lock */
+      SELECT target.id AS target_id, restriction.lifted_at,
+        restriction.administrator_lift_decided_at
+      FROM copyright_notices notice
+      JOIN copyright_notice_targets target ON target.copyright_notice_id = notice.id
+      JOIN copyright_restrictions restriction ON restriction.copyright_notice_target_id = target.id
+      WHERE notice.id = ${input.noticeId} AND restriction.id = ${input.restrictionId}
+      FOR UPDATE OF notice, target, restriction
+    `)
+      const restriction = locked[0]
+      assert(restriction, 404, 'Copyright restriction not found')
+      assert(
+        restriction.lifted_at === null && restriction.administrator_lift_decided_at === null,
+        409,
+        'Copyright restriction is already lifted',
+      )
+      const respondersSql = sql`/* liftCopyrightRestrictionWithoutSetter:responders */
+      SELECT EXISTS (SELECT 1 FROM copyright_notice_targets target
+        CROSS JOIN LATERAL `
+        .append(copyrightPlacementPartiesSql('respond'))
+        .append(sql` party WHERE target.id = ${restriction.target_id}) AS has_responder`)
+      const { rows: responders } = await transaction<{ has_responder: boolean }>(respondersSql)
+      assert(!responders[0]?.has_responder, 409, 'A live account can respond to this restriction')
+      const rationaleCiphertext = encryptSecret(
+        input.rationale,
+        `copyright-restriction-lift:${input.restrictionId}`,
+      )
+      await transaction(sql`/* liftCopyrightRestrictionWithoutSetter:current */
+      UPDATE copyright_restrictions
+      SET administrator_lift_decided_at = ${input.liftedAt},
+        administrator_lift_decided_by_id = ${input.currentUser.id},
+        administrator_lift_rationale_ciphertext = ${rationaleCiphertext}
+      WHERE id = ${input.restrictionId} AND administrator_lift_decided_at IS NULL
+    `)
+      const { rows: lifts } = await transaction<{ id: string }>(sql`
+      /* liftCopyrightRestrictionWithoutSetter:insert */
+      INSERT INTO copyright_restriction_administrator_lifts (
+        copyright_restriction_id, lifted_at, lifted_by_id, rationale_ciphertext
+      ) VALUES (
+        ${input.restrictionId}, ${input.liftedAt}, ${input.currentUser.id},
+        ${rationaleCiphertext}
+      ) RETURNING id
+    `)
+      const lift = lifts[0]
+      assert(lift, 500, 'Copyright restriction lift was not recorded')
+      // ast-grep-ignore: no-three-sequential-awaits -- record the restriction-lift event before restore intent and claimant notice writes; apply confirmation effects after those reversal obligations complete
+      await transaction(sql`/* liftCopyrightRestrictionWithoutSetter:event */
+      INSERT INTO copyright_notice_lifecycle_changes (
+        copyright_notice_id, change_type, changed_by_id, copyright_restriction_id
+      ) VALUES (
+        ${input.noticeId}, 'restriction_lifted_by_administrator', ${input.currentUser.id},
+        ${input.restrictionId}
+      )
+    `)
+      const intent = await createCopyrightRestoreIntentForReversalInTransaction(
+        input.restrictionId,
+        transaction,
+      )
+      await createCopyrightClaimantDecisionNoticeInTransaction(
+        { noticeId: input.noticeId, event: 'reversed' },
+        transaction,
+      )
+      await applyCopyrightConfirmationConsequencesInTransaction(input.noticeId, transaction)
+      await readCopyrightThreadRetirement(transaction, [input.noticeId])
+      await transaction.commit()
+      void enqueueApplyCopyrightAction(intent.id)
+      return lift
+    },
+    'Conflicting copyright case change',
+    CONFLICT,
   )
-  const respondersSql = sql`/* liftCopyrightRestrictionWithoutSetter:responders */
-    SELECT EXISTS (SELECT 1 FROM copyright_notice_targets target
-      CROSS JOIN LATERAL `
-    .append(copyrightPlacementPartiesSql('respond'))
-    .append(sql` party WHERE target.id = ${restriction.target_id}) AS has_responder`)
-  const { rows: responders } = await transaction<{ has_responder: boolean }>(respondersSql)
-  assert(!responders[0]?.has_responder, 409, 'A live account can respond to this restriction')
-  const rationaleCiphertext = encryptSecret(
-    input.rationale,
-    `copyright-restriction-lift:${input.restrictionId}`,
-  )
-  await transaction(sql`/* liftCopyrightRestrictionWithoutSetter:current */
-    UPDATE copyright_restrictions
-    SET administrator_lift_decided_at = ${input.liftedAt},
-      administrator_lift_decided_by_id = ${input.currentUser.id},
-      administrator_lift_rationale_ciphertext = ${rationaleCiphertext}
-    WHERE id = ${input.restrictionId} AND administrator_lift_decided_at IS NULL
-  `)
-  const { rows: lifts } = await transaction<{ id: string }>(sql`
-    /* liftCopyrightRestrictionWithoutSetter:insert */
-    INSERT INTO copyright_restriction_administrator_lifts (
-      copyright_restriction_id, lifted_at, lifted_by_id, rationale_ciphertext
-    ) VALUES (
-      ${input.restrictionId}, ${input.liftedAt}, ${input.currentUser.id},
-      ${rationaleCiphertext}
-    ) RETURNING id
-  `)
-  const lift = lifts[0]
-  assert(lift, 500, 'Copyright restriction lift was not recorded')
-  // ast-grep-ignore: no-three-sequential-awaits -- record the restriction-lift event before restore intent and claimant notice writes; apply confirmation effects after those reversal obligations complete
-  await transaction(sql`/* liftCopyrightRestrictionWithoutSetter:event */
-    INSERT INTO copyright_notice_lifecycle_changes (
-      copyright_notice_id, change_type, changed_by_id, copyright_restriction_id
-    ) VALUES (
-      ${input.noticeId}, 'restriction_lifted_by_administrator', ${input.currentUser.id},
-      ${input.restrictionId}
-    )
-  `)
-  const intent = await createCopyrightRestoreIntentForReversalInTransaction(
-    input.restrictionId,
-    transaction,
-  )
-  await createCopyrightClaimantDecisionNoticeInTransaction(
-    { noticeId: input.noticeId, event: 'reversed' },
-    transaction,
-  )
-  await applyCopyrightConfirmationConsequencesInTransaction(input.noticeId, transaction)
-  await transaction.commit()
-  void enqueueApplyCopyrightAction(intent.id)
-  return lift
 }

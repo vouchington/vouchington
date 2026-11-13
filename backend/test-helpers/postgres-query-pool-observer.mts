@@ -81,18 +81,30 @@ async function observePoolQueries<Result>(
 export async function observeTestPostgresClientQueries<Result>(
   operation: () => Promise<Result>,
   onQueryComplete?: (query: ObservedClientQuery) => Promise<void>,
-): Promise<{ result: Result; queries: ObservedClientQuery[] }> {
+  onQueryError?: (query: ObservedClientQuery, err: unknown) => void,
+): Promise<{ result: Result; queries: ObservedClientQuery[]; observerErrors?: unknown[] }> {
   return runPoolObservationExclusively(async () => {
     const queries: ObservedClientQuery[] = []
     let active = true
     const completed = async (query: ObservedClientQuery) => {
       if (active) await onQueryComplete?.(query)
     }
-    const restoreRead = tapClientQueries(readPool, 'read', queries, completed)
-    const restoreWrite = tapClientQueries(writePool, 'write', queries, completed)
+    const observerErrors: unknown[] = []
+    const failed = onQueryError
+      ? (query: ObservedClientQuery, err: unknown) => {
+          if (!active) return
+          try {
+            onQueryError(query, err)
+          } catch (err_) {
+            observerErrors.push(err_)
+          }
+        }
+      : undefined
+    const restoreRead = tapClientQueries(readPool, 'read', queries, completed, failed)
+    const restoreWrite = tapClientQueries(writePool, 'write', queries, completed, failed)
     try {
       const result = await operation()
-      return { result, queries }
+      return { result, queries, ...(onQueryError ? { observerErrors } : {}) }
     } finally {
       active = false
       restoreWrite()

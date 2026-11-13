@@ -1,16 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { createTestEuParticipantCase } from '@voucha/test-helpers/copyright-eu-participant-cases'
 import {
-  createTestEuParticipantCase,
-  createTestEuParticipantComplaint,
-} from '@voucha/test-helpers/copyright-eu-participant-cases'
-import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
+  createCommittedEuParticipantComplaint as createTestEuParticipantComplaint,
+  seedInformedEuParticipants,
+} from '@voucha/test-helpers/copyright-eu-participant-committed-facts'
+import { seedCommittedTerritorialDecision } from '@voucha/test-helpers/copyright-territorial-committed-decision'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
-import {
-  claimCopyrightDeliveryIntent,
-  markCopyrightDeliveryIntentSent,
-} from './delivery-intents.mts'
-import { recordEuCopyrightStatementOfReasons } from './eu-reasons.mts'
 import { getCopyrightParticipantNoticeDetail } from './read-models-participant.mts'
 
 describe('EU participant read model', () => {
@@ -66,6 +62,7 @@ describe('EU participant read model', () => {
     await createTestEuParticipantComplaint({
       noticeId: scene.receipt.notice_id,
       actor: scene.poster,
+      filedBy: 'poster',
       staff: scene.staff,
       explanation: posterExplanation,
       rationale: posterRationale,
@@ -106,22 +103,7 @@ describe('EU participant read model', () => {
     expect(notifier?.eu?.complaint).toMatchObject({ can_submit: true, window_ends_at: null })
     expect(poster?.eu?.complaint).toMatchObject({ can_submit: true, window_ends_at: null })
 
-    const intents = await readTestCopyrightStatementIntents(scene.receipt.notice_id)
-    for (const intent of intents.filter(
-      row =>
-        (row.recipient_role === 'claimant' && row.delivery_kind === 'claimant_decision_notice') ||
-        (row.recipient_role === 'poster' && row.delivery_kind === 'poster_restriction_notice'),
-    )) {
-      // The lease and sent transition are a single delivery attempt for each recipient intent.
-      const claim = await claimCopyrightDeliveryIntent(intent.id)
-      expect(claim).not.toBeNull()
-      expect(
-        await markCopyrightDeliveryIntentSent({
-          intentId: intent.id,
-          leaseToken: claim!.lease_token,
-        }),
-      ).toBe(true)
-    }
+    await seedInformedEuParticipants(scene.receipt.notice_id)
     const informedNotifier = await getCopyrightParticipantNoticeDetail(
       scene.receipt.notice_id,
       scene.notifier,
@@ -153,7 +135,7 @@ describe('EU participant read model', () => {
       complaint: { can_submit: false, window_ends_at: null },
     })
 
-    await recordEuCopyrightStatementOfReasons(scene.staff, scene.receipt.notice_id, {
+    await seedCommittedTerritorialDecision('eu_dsa', scene.staff, scene.receipt.notice_id, {
       text: `Successor rationale ${scene.suffix}`,
       publicExplanation: `Successor public explanation ${scene.suffix}`,
       outcome: 'restrict',

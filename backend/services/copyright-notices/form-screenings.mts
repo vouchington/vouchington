@@ -1,3 +1,4 @@
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { appendCopyrightSubmissionAssessmentInTransaction } from './compliance.mts'
@@ -18,7 +19,7 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
   const window = await getAutomaticWithholdingWindow()
   if (!window.enabled) return
   const eligibility = await checkAutomaticWithholdingEligibility(submissionId, window)
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction({ serializable: true })
   const { rows: intakeIdRows } = await transaction<{ id: string }>(
     sql`/* applyNonSpamSignedInCopyrightFormScreening:intakeId */
       SELECT id FROM copyright_notice_form_intakes
@@ -113,6 +114,7 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
       },
       transaction,
     ))
+  await readCopyrightThreadRetirement(transaction, [intake.notice_id])
   await transaction.commit()
   await enforceCopyrightAssessment(assessment.id)
 }

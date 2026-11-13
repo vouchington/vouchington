@@ -1,3 +1,6 @@
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { CONFLICT } from '@modules/on-error/error-codes'
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import {
   advanceCopyrightLastLegalActivityAt,
   lockCopyrightNoticeForLegalWrite,
@@ -13,10 +16,7 @@ import type { PrivateUser } from '@services/users/types'
 import type { CopyrightNoticeSubmissionRecord } from './types.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 
-export type CopyrightAppealInput = {
-  reason: string
-  targetIds: string[]
-}
+export type CopyrightAppealInput = { reason: string; targetIds: string[] }
 
 export type CopyrightCounterNoticeInput = {
   name: string
@@ -87,104 +87,111 @@ async function createAuthenticatedCopyrightSubmission(
   const requestSha256 = createHash('sha256').update(JSON.stringify({ kind, input })).digest()
   const canonicalIdempotencyKey = idempotencyKey.toLowerCase()
   const idempotencyKeySha256 = createHash('sha256').update(canonicalIdempotencyKey).digest()
-  await using transaction = await beginTransaction()
-  await transaction(sql`/* createCopyrightSubmission:idempotencyLock */
-    SELECT pg_advisory_xact_lock(
-      hashtextextended(${`copyright-submission:${currentUser.id}:${canonicalIdempotencyKey}`}, 0)
-    )
-  `)
-  const { rows: existingRows } = await transaction<
-    CopyrightNoticeSubmissionRecord & {
-      request_sha256: Buffer
-    }
-  >(sql`/* createCopyrightSubmission:existing */
-    SELECT submission.id, submission.copyright_notice_id, submission.kind, submission.received_at,
-      submission.source_kind, submission.submitted_by_id, submission.body_ciphertext,
-      request.request_sha256
-    FROM copyright_notice_submission_requests request
-    JOIN copyright_notice_submissions submission ON submission.id = request.copyright_notice_submission_id
-    WHERE request.requester_user_id = ${currentUser.id}
-      AND request.idempotency_key_sha256 = ${idempotencyKeySha256}
-    FOR UPDATE OF request
-  `)
-  const existing = existingRows[0]
-  if (existing) {
-    assert(
-      existing.request_sha256.equals(requestSha256),
-      409,
-      'Idempotency-Key was reused for a different request',
-    )
-    await transaction.commit()
-    return { submission: existing, isDuplicate: true }
-  }
-  const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
-  assert(lockedNotice, 404, 'Copyright notice not found')
-  assert(lockedNotice.jurisdiction === 'us_dmca', 422, 'Use the territorial complaint process')
-  const ownershipStatement = sql`/* createCopyrightSubmission:posterTargets */
-    SELECT target.id
-    FROM copyright_notice_targets target
-    CROSS JOIN LATERAL `
-  ownershipStatement.append(copyrightPlacementPartiesSql('respond'))
-  ownershipStatement.append(sql` party
-    WHERE target.copyright_notice_id = ${noticeId} AND target.id = ANY(${input.targetIds})
-      AND party.user_id = ${currentUser.id}
-    ORDER BY target.id
-    FOR UPDATE OF target
-  `)
-  const { rows: ownedTargetRows } = await transaction<{ id: string }>(ownershipStatement)
-  assert(
-    ownedTargetRows.length === input.targetIds.length,
-    403,
-    'You may only submit for your affected hosted material',
-  )
-  const submissionId = uuidv7()
-  const purpose = copyrightSubmissionPurpose(submissionId)
-  const now = new Date()
-  const { rows } =
-    await transaction<CopyrightNoticeSubmissionRecord>(sql`/* createCopyrightSubmission */
-    INSERT INTO copyright_notice_submissions (
-      id, copyright_notice_id, kind, received_at, source_kind, submitted_by_id, body_ciphertext
-    ) VALUES (${submissionId}, ${noticeId}, ${kind}, ${now}, 'signed_in_form', ${currentUser.id},
-      ${encryptSecret(JSON.stringify(input), purpose)})
-    RETURNING id, copyright_notice_id, kind, received_at, source_kind, submitted_by_id, body_ciphertext
-  `)
-  const submission = rows[0]
-  assert(submission, 500, 'Copyright submission was not created')
-  // ast-grep-ignore: no-three-sequential-awaits -- write submission targets, request receipt, and received event before sampling legal activity; create delivery intent after those case facts complete
-  await transaction(sql`/* createCopyrightSubmission:scopeAndReceipt */
-    WITH inserted_targets AS (
-      INSERT INTO copyright_notice_submission_targets (
-        copyright_notice_submission_id, copyright_notice_target_id
+  return conflictOnSerializationFailure(
+    async () => {
+      await using transaction = await beginTransaction({ serializable: true })
+      await transaction(sql`/* createCopyrightSubmission:idempotencyLock */
+      SELECT pg_advisory_xact_lock(
+        hashtextextended(${`copyright-submission:${currentUser.id}:${canonicalIdempotencyKey}`}, 0)
       )
-      SELECT ${submission.id}, target.id FROM copyright_notice_targets target
+    `)
+      const { rows: existingRows } = await transaction<
+        CopyrightNoticeSubmissionRecord & {
+          request_sha256: Buffer
+        }
+      >(sql`/* createCopyrightSubmission:existing */
+      SELECT submission.id, submission.copyright_notice_id, submission.kind, submission.received_at,
+        submission.source_kind, submission.submitted_by_id, submission.body_ciphertext,
+        request.request_sha256
+      FROM copyright_notice_submission_requests request
+      JOIN copyright_notice_submissions submission ON submission.id = request.copyright_notice_submission_id
+      WHERE request.requester_user_id = ${currentUser.id}
+        AND request.idempotency_key_sha256 = ${idempotencyKeySha256}
+      FOR UPDATE OF request
+    `)
+      const existing = existingRows[0]
+      if (existing) {
+        assert(
+          existing.request_sha256.equals(requestSha256),
+          409,
+          'Idempotency-Key was reused for a different request',
+        )
+        await transaction.commit()
+        return { submission: existing, isDuplicate: true }
+      }
+      const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
+      assert(lockedNotice, 404, 'Copyright notice not found')
+      assert(lockedNotice.jurisdiction === 'us_dmca', 422, 'Use the territorial complaint process')
+      const ownershipStatement = sql`/* createCopyrightSubmission:posterTargets */
+      SELECT target.id
+      FROM copyright_notice_targets target
+      CROSS JOIN LATERAL `
+      ownershipStatement.append(copyrightPlacementPartiesSql('respond'))
+      ownershipStatement.append(sql` party
       WHERE target.copyright_notice_id = ${noticeId} AND target.id = ANY(${input.targetIds})
-    ), inserted_request AS (
-      INSERT INTO copyright_notice_submission_requests (
-        copyright_notice_submission_id, requester_user_id, idempotency_key_sha256,
-        request_sha256
-      ) VALUES (${submission.id}, ${currentUser.id}, ${idempotencyKeySha256},
-        ${requestSha256})
-    )
-    INSERT INTO copyright_notice_lifecycle_changes (
-      copyright_notice_id, change_type, changed_by_id, copyright_notice_submission_id
-    ) VALUES (${noticeId}, ${`${kind}_received`}, ${currentUser.id}, ${submission.id})
-  `)
-  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
-  await createCopyrightDeliveryIntent(
-    {
-      noticeId,
-      submissionId: submission.id,
-      correspondenceId: null,
-      recipientUserId: currentUser.id,
-      recipientRole: 'poster',
-      deliveryKind: 'status_update',
-      channel: 'in_app',
-      idempotencyKey: `copyright-submission:${submission.id}:poster-receipt`,
+        AND party.user_id = ${currentUser.id}
+      ORDER BY target.id
+      FOR UPDATE OF target
+    `)
+      const { rows: ownedTargetRows } = await transaction<{ id: string }>(ownershipStatement)
+      assert(
+        ownedTargetRows.length === input.targetIds.length,
+        403,
+        'You may only submit for your affected hosted material',
+      )
+      const submissionId = uuidv7()
+      const purpose = copyrightSubmissionPurpose(submissionId)
+      const now = new Date()
+      const { rows } =
+        await transaction<CopyrightNoticeSubmissionRecord>(sql`/* createCopyrightSubmission */
+      INSERT INTO copyright_notice_submissions (
+        id, copyright_notice_id, kind, received_at, source_kind, submitted_by_id, body_ciphertext
+      ) VALUES (${submissionId}, ${noticeId}, ${kind}, ${now}, 'signed_in_form', ${currentUser.id},
+        ${encryptSecret(JSON.stringify(input), purpose)})
+      RETURNING id, copyright_notice_id, kind, received_at, source_kind, submitted_by_id, body_ciphertext
+    `)
+      const submission = rows[0]
+      assert(submission, 500, 'Copyright submission was not created')
+      // ast-grep-ignore: no-three-sequential-awaits -- write submission targets, request receipt, and received event before sampling legal activity; create delivery intent after those case facts complete
+      await transaction(sql`/* createCopyrightSubmission:scopeAndReceipt */
+      WITH inserted_targets AS (
+        INSERT INTO copyright_notice_submission_targets (
+          copyright_notice_submission_id, copyright_notice_target_id
+        )
+        SELECT ${submission.id}, target.id FROM copyright_notice_targets target
+        WHERE target.copyright_notice_id = ${noticeId} AND target.id = ANY(${input.targetIds})
+      ), inserted_request AS (
+        INSERT INTO copyright_notice_submission_requests (
+          copyright_notice_submission_id, requester_user_id, idempotency_key_sha256,
+          request_sha256
+        ) VALUES (${submission.id}, ${currentUser.id}, ${idempotencyKeySha256},
+          ${requestSha256})
+      )
+      INSERT INTO copyright_notice_lifecycle_changes (
+        copyright_notice_id, change_type, changed_by_id, copyright_notice_submission_id
+      ) VALUES (${noticeId}, ${`${kind}_received`}, ${currentUser.id}, ${submission.id})
+    `)
+      await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
+      await createCopyrightDeliveryIntent(
+        {
+          noticeId,
+          submissionId: submission.id,
+          correspondenceId: null,
+          recipientUserId: currentUser.id,
+          recipientRole: 'poster',
+          deliveryKind: 'status_update',
+          channel: 'in_app',
+          idempotencyKey: `copyright-submission:${submission.id}:poster-receipt`,
+        },
+        transaction,
+      )
+      await readCopyrightThreadRetirement(transaction, [noticeId])
+      await transaction.commit()
+      return { submission, isDuplicate: false }
     },
-    transaction,
+    'Conflicting copyright case change',
+    CONFLICT,
   )
-  await transaction.commit()
-  return { submission, isDuplicate: false }
 }
 
 export function copyrightSubmissionPurpose(submissionId: string): string {

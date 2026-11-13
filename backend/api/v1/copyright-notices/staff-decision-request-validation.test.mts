@@ -1,12 +1,14 @@
+import { createCopyrightApiUnreviewedCase } from '@voucha/test-helpers/copyright-api-review-fixtures'
+import { assertCopyrightApiConfirmation } from '@voucha/test-helpers/copyright-api-confirmation-outcomes'
+import { assertCopyrightApiHoldResolution } from '@voucha/test-helpers/copyright-api-hold-outcomes'
+import { seedEvidenceHold } from '@voucha/test-helpers/copyright-evidence-hold-fixture'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { insertEncryptedCopyrightHoldSubmission } from '@voucha/test-helpers/data-stores/psql/copyright-hold-submission'
-import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { createRetentionSignedInForm } from '@voucha/test-helpers/services/copyright-notices/retention-signed-in-form'
 
 const INVALID_BODY = 'Invalid request body'
 const RATIONALE = 'The staff decision stands after review.'
@@ -24,20 +26,10 @@ function restrictionUrl(noticeId: string, restrictionId: string) {
   return `/api/v1/copyright-notices/${noticeId}/restrictions/${restrictionId}/reviews`
 }
 
-async function createStaff() {
+async function createStaff(user?: Awaited<ReturnType<typeof createTestUser>>) {
   const staff = createRequest()
-  await staff.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
+  await staff.authenticateAs(user ?? (await createTestUser({ extraRoles: ['moderator'] })))
   return staff
-}
-
-/** A notice whose provisional restriction still awaits its mandatory human review. */
-async function createRestrictedCase() {
-  const { copyright_notice_id: noticeId } = await createRetentionSignedInForm(
-    (await createTestUser()).id,
-  )
-  const restrictionId = (await getCopyrightNoticePrivateAggregate(noticeId))?.restrictions[0]?.id
-  if (!restrictionId) throw new Error('fixture restriction missing')
-  return { noticeId, restrictionId, targetId: await readCopyrightNoticeTargetId(noticeId) }
 }
 
 describe('copyright staff decision request contracts', () => {
@@ -164,16 +156,17 @@ describe('copyright staff decision request contracts', () => {
     })
 
     it('confirms the restriction for a valid request and records nothing for a rejected one', async () => {
-      const { noticeId, restrictionId } = await createRestrictedCase()
-      const staff = await createStaff()
+      const fixture = await createCopyrightApiUnreviewedCase()
+      const { noticeId, restrictionId } = fixture
+      const staff = await createStaff(fixture.moderator)
       const url = restrictionUrl(noticeId, restrictionId)
-
+      const before = await getCopyrightNoticePrivateAggregate(noticeId)
       await staff
         .post(url)
         .send({ ...RESTRICTION_REVIEW, injected: true })
         .expect(422)
-      const reviewed = await staff.post(url).send(RESTRICTION_REVIEW).expect(200)
-      expect(reviewed.body.copyright_restriction).toMatchObject({ id: restrictionId })
+      expect(await getCopyrightNoticePrivateAggregate(noticeId)).toEqual(before)
+      await assertCopyrightApiConfirmation(staff, fixture, url, RESTRICTION_REVIEW)
     })
   })
 
@@ -208,32 +201,37 @@ describe('copyright staff decision request contracts', () => {
     })
 
     it('resolves the hold for a valid request and records nothing for a rejected one', async () => {
-      const { noticeId, targetId } = await createRestrictedCase()
-      const staff = await createStaff()
+      const fixture = await createCopyrightApiUnreviewedCase()
+      const { noticeId, targetId } = fixture
+      const staff = await createStaff(fixture.moderator)
       const holdId = await insertEncryptedCopyrightHoldSubmission(noticeId)
-      const assessed = await staff
-        .post(`/api/v1/copyright-submissions/${holdId}/legal-hold-assessments`)
-        .send({
-          rationale: 'Verified qualifying CCB filing.',
-          is_from_original_claimant: true,
-          is_same_material: true,
-          proceeding_kind: 'ccb',
-          ccb_claim_kind: 'claim',
-          commenced_at: '2026-07-01T12:00:00.000Z',
-          received_by_designated_agent_at: '2026-07-01T12:30:00.000Z',
-          target_ids: [targetId],
-        })
-        .expect(201)
-      const url = resolutionUrl(assessed.body.copyright_legal_hold_assessment.id)
-
+      const assessed = await seedEvidenceHold({
+        noticeId,
+        currentUser: fixture.moderator,
+        submissionId: holdId,
+        assessedAt: new Date(),
+        fromOriginalClaimant: true,
+        sameMaterial: true,
+        proceedingKind: 'ccb',
+        ccbClaimKind: 'claim',
+        commencedAt: new Date('2026-07-01T12:00:00.000Z'),
+        receivedByDesignatedAgentAt: new Date('2026-07-01T12:30:00.000Z'),
+        targetIds: [targetId],
+        rationale: 'Verified qualifying CCB filing.',
+      })
+      const url = resolutionUrl(assessed.id)
+      const before = await getCopyrightNoticePrivateAggregate(noticeId)
       await staff
         .post(url)
         .send({ ...RESOLUTION, injected: true })
         .expect(422)
-      const resolved = await staff.post(url).send(RESOLUTION).expect(201)
-      expect(resolved.body.copyright_legal_hold_resolution).toMatchObject({
-        copyright_notice_legal_hold_assessment_id: assessed.body.copyright_legal_hold_assessment.id,
-        resolution_kind: 'dismissed',
+      expect(await getCopyrightNoticePrivateAggregate(noticeId)).toEqual(before)
+      await assertCopyrightApiHoldResolution({
+        staff,
+        noticeId,
+        assessmentId: assessed.id,
+        reviewerId: fixture.moderator.id,
+        body: RESOLUTION,
       })
     })
   })

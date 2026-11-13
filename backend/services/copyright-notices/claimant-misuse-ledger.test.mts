@@ -1,3 +1,10 @@
+import { seedServiceReviewAppeal } from '@voucha/test-helpers/copyright-service-appeal-prerequisite'
+import {
+  seedServiceFormDecision,
+  seedServiceReviewRestriction,
+} from '@voucha/test-helpers/copyright-service-review-prerequisites'
+import { seedEffectiveAppealDecision } from '@voucha/test-helpers/copyright-effective-review-decisions'
+import { assertServiceFormDecisionReplay } from '@voucha/test-helpers/copyright-service-review-replay'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { createTestUser } from '@voucha/test-helpers'
@@ -15,14 +22,7 @@ import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/service
 import { getPrivateUserByAny } from '@services/users/get'
 import { readTestClaimantMisuseSummary } from '@voucha/test-helpers/services/copyright-notices/claimant-abuse-fixtures'
 import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
-import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
-import {
-  appendCopyrightGuestFiling,
-  createCopyrightAppeal,
-  issueCopyrightGuestCapability,
-  reviewCopyrightAppeal,
-  reviewCopyrightFormIntake,
-} from './index.mts'
+import { appendCopyrightGuestFiling, issueCopyrightGuestCapability } from './index.mts'
 
 const none = {
   notice_withdrawn: 0,
@@ -42,19 +42,10 @@ type ScreenedForm = Awaited<ReturnType<typeof createClearScreenedForm>>['notice'
 async function restrict(
   notice: ScreenedForm,
   moderator: Awaited<ReturnType<typeof createTestCopyrightStaff>>,
-  on: boolean,
+  screeningId?: string,
 ) {
   const noticeId = notice.intake.copyright_notice_id
-  if (on) {
-    await applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id)
-  } else {
-    await reviewCopyrightFormIntake({
-      intakeId: notice.intake.id,
-      currentUser: moderator,
-      is_accepted: true,
-      rationale: 'The notice is complete.',
-    })
-  }
+  await seedServiceReviewRestriction(notice, moderator, screeningId)
   const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
   if (!aggregate?.restrictions[0]) throw new Error('fixture restriction missing')
   return {
@@ -83,11 +74,11 @@ describe.each(switchStates)('claimant misuse ledger with the switch %s', (_state
   it('records a notice that staff reject', async () => {
     await setSwitch()
     const claimant = await createTestUser()
-    const { notice } = await createClearScreenedForm(1, { claimant })
+    const { notice, screeningId } = await createClearScreenedForm(1, { claimant })
     if (on)
-      await applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id)
+      await seedServiceReviewRestriction(notice, await createTestCopyrightStaff(), screeningId)
 
-    await reviewCopyrightFormIntake({
+    await seedServiceFormDecision({
       intakeId: notice.intake.id,
       currentUser: await createTestCopyrightStaff(),
       is_accepted: false,
@@ -136,21 +127,28 @@ describe.each(switchStates)('claimant misuse ledger with the switch %s', (_state
     const claimant = await createTestUser()
     const poster = await createTestUser()
     const moderator = await createTestCopyrightStaff()
-    const { notice } = await createClearScreenedForm(1, { claimant, poster })
-    const { noticeId, targetId, restrictionId } = await restrict(notice, moderator, on)
-    const appeal = await createCopyrightAppeal(poster, noticeId, crypto.randomUUID(), {
+    const { notice, screeningId } = await createClearScreenedForm(1, { claimant, poster })
+    const { noticeId, targetId, restrictionId } = await restrict(
+      notice,
+      moderator,
+      on ? screeningId : undefined,
+    )
+    const appeal = await seedServiceReviewAppeal(poster, noticeId, crypto.randomUUID(), {
       reason: 'I created this image.',
       targetIds: [targetId],
     })
 
-    await reviewCopyrightAppeal({
-      submissionId: appeal.submission.id,
-      currentUser: moderator,
-      recommendationId: null,
-      manualFallbackReason: 'The record is sufficient without a recommendation.',
-      rationale: 'The supplied record supports reversal.',
-      decisions: [{ restrictionId, action: 'reverse' }],
-    })
+    await seedEffectiveAppealDecision(
+      {
+        submissionId: appeal.submission.id,
+        currentUser: moderator,
+        recommendationId: null,
+        manualFallbackReason: 'The record is sufficient without a recommendation.',
+        rationale: 'The supplied record supports reversal.',
+        decisions: [{ restrictionId, action: 'reverse' }],
+      },
+      noticeId,
+    )
 
     await expect(readTestClaimantMisuseSummary(claimant.id)).resolves.toEqual({
       ...none,
@@ -186,7 +184,7 @@ describe('claimant misuse ledger scope', () => {
       [1, 2, 3, 4].map(() => createClearScreenedForm(1, { claimant })),
     )
     const review = (form: NonNullable<typeof accepted>, isAccepted: boolean) =>
-      reviewCopyrightFormIntake({
+      seedServiceFormDecision({
         intakeId: form.notice.intake.id,
         currentUser: moderator,
         is_accepted: isAccepted,
@@ -208,7 +206,7 @@ describe('claimant misuse ledger scope', () => {
     const moderator = await createTestCopyrightStaff()
     const { notice } = await createClearScreenedForm(1, { claimant })
     const reject = () =>
-      reviewCopyrightFormIntake({
+      seedServiceFormDecision({
         intakeId: notice.intake.id,
         currentUser: moderator,
         is_accepted: false,
@@ -216,7 +214,16 @@ describe('claimant misuse ledger scope', () => {
       })
 
     await reject()
-    await reject()
+    await assertServiceFormDecisionReplay(
+      {
+        intakeId: notice.intake.id,
+        currentUser: moderator,
+        is_accepted: false,
+        rationale: 'Not a complete notice.',
+      },
+      notice.intake.copyright_notice_id,
+      claimant.id,
+    )
 
     await expect(readTestClaimantMisuseSummary(other.id)).resolves.toEqual(none)
     await expect(readTestClaimantMisuseSummary(claimant.id)).resolves.toEqual({

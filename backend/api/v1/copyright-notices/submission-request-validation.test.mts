@@ -5,15 +5,16 @@ import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/ps
 import {
   counterNoticeBody,
   createCopyrightFormFixture,
-  createNotice,
 } from '@voucha/test-helpers/copyright-route-fixtures'
+import { createCopyrightApiNotice } from '@voucha/test-helpers/copyright-api-admission-fixtures'
+import { assertCopyrightSubmissionAdmission } from '@voucha/test-helpers/copyright-api-submission-outcomes'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 
 const NOTICES = '/api/v1/copyright-notices'
 
 async function createAppealFixture() {
   const fixture = await createCopyrightFormFixture()
-  const noticeId = await createNotice(fixture)
+  const noticeId = await createCopyrightApiNotice(fixture)
   const targetId = await readCopyrightNoticeTargetId(noticeId)
   const poster = createRequest()
   await poster.authenticateAs(fixture.poster)
@@ -206,8 +207,7 @@ describe('copyright submission request contracts', () => {
         .post(`${NOTICES}/${noticeId}/appeals`)
         .set('Idempotency-Key', key)
         .send(body)
-        .expect(201)
-      expect(accepted.body.is_duplicate).toBe(false)
+      await assertCopyrightSubmissionAdmission(accepted, noticeId, 'appeal', key)
     })
   })
 
@@ -235,8 +235,7 @@ describe('copyright submission request contracts', () => {
         .post(`${NOTICES}/${noticeId}/counter-notices`)
         .set('Idempotency-Key', key)
         .send(counterNoticeBody(targetId))
-        .expect(201)
-      expect(accepted.body.is_duplicate).toBe(false)
+      await assertCopyrightSubmissionAdmission(accepted, noticeId, 'counter_notice', key)
     })
 
     it.each([

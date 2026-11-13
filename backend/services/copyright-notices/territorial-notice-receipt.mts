@@ -6,7 +6,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
 import { isEmailAddress } from '@ts-shared/utils/validation-core'
-import { lockCurrentCopyrightJurisdictionPolicy } from './jurisdiction-policy.mts'
+import { requireCurrentCopyrightJurisdictionPolicy } from './jurisdiction-policy.mts'
 import {
   assertBoundedText,
   assertIdempotencyKey,
@@ -64,6 +64,7 @@ export async function receiveTerritorialCopyrightNoticeInTransaction(
   idempotencyKey: string,
   request: TerritorialNoticeRequest | EuTerritorialNoticeRequest,
   transaction: TransactionQuery,
+  approvalIds?: readonly string[],
 ): Promise<TerritorialCopyrightNoticeReceipt> {
   assertIdempotencyKey(idempotencyKey)
   const fields = noticeFields(request, jurisdiction)
@@ -90,7 +91,11 @@ export async function receiveTerritorialCopyrightNoticeInTransaction(
       is_duplicate: true,
     }
   }
-  const approval = await lockCurrentCopyrightJurisdictionPolicy(jurisdiction, transaction)
+  const approval = await requireCurrentCopyrightJurisdictionPolicy(
+    jurisdiction,
+    transaction,
+    approvalIds,
+  )
   const labels = territorialLabels(jurisdiction)
   const purpose = `${labels.noticePurpose}:${idempotencyKey}`
   const failure = labels.noticeFailed

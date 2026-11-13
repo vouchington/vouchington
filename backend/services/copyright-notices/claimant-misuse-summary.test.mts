@@ -8,7 +8,7 @@ import {
   readClaimantMisuseSummaries,
   readClaimantMisuseSummaryPage,
 } from './claimant-misuse-summary.mts'
-import { reviewCopyrightFormIntake } from './index.mts'
+import { seedServiceFormDecision } from '@voucha/test-helpers/copyright-service-review-prerequisites'
 
 describe('claimant misuse notice windows', () => {
   let restore: (() => void) | undefined
@@ -54,7 +54,7 @@ describe('claimant misuse notice windows', () => {
     const claimant = await createTestUser()
     const other = await createTestUser()
     const oldest = await createClearScreenedForm(1, { claimant })
-    await reviewCopyrightFormIntake({
+    await seedServiceFormDecision({
       intakeId: oldest.notice.intake.id,
       currentUser: await createTestCopyrightStaff(),
       is_accepted: false,

@@ -1,3 +1,4 @@
+import { assertSurfaceRestoreOutcome } from '@voucha/test-helpers/copyright-surface-restore-outcome'
 import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -26,8 +27,9 @@ describe('copyright notice overlapping legal holds', () => {
       'applied',
     )
 
+    const initialNotices = await readTestCopyrightStatementIntents(notice.id)
     expect(
-      (await readTestCopyrightStatementIntents(notice.id)).filter(
+      initialNotices.filter(
         row => row.delivery_kind === 'poster_restoration_notice' && row.channel === 'email',
       ),
     ).toEqual([
@@ -79,12 +81,34 @@ describe('copyright notice overlapping legal holds', () => {
       resolutionKind: 'dismissed',
       rationale: `resolution-${crypto.randomUUID()}`,
     })
-    await expect(
-      processCopyrightActionIntent(holdRestore.id, new Date(restorationAt.getTime() + 360_000)),
-    ).resolves.toBe('applied')
-    await expect(getImagePlacementForCopyright(target.placement_id)).resolves.toEqual(
-      expect.objectContaining({ withheld: false }),
+    const resolved = await getCopyrightNoticePrivateAggregate(notice.id)
+    expect(resolved?.holdResolutions).toEqual(
+      expect.arrayContaining(
+        [firstHold, secondHold].map(hold =>
+          expect.objectContaining({
+            copyright_notice_legal_hold_assessment_id: hold.id,
+            resolved_by_id: moderator.id,
+            resolution_kind: 'dismissed',
+          }),
+        ),
+      ),
     )
+    const posterId = initialNotices.find(
+      row => row.delivery_kind === 'poster_restoration_notice' && row.channel === 'email',
+    )?.recipient_user_id
+    if (!posterId) throw new Error('Committed restoration recipient disappeared')
+    await assertSurfaceRestoreOutcome({
+      noticeId: notice.id,
+      restrictionId: holdRestore.copyright_restriction_id,
+      placementId: target.placement_id,
+      restoreId: holdRestore.id,
+      now: new Date(restorationAt.getTime() + 360_000),
+      outcome: 'visible',
+      deliveries: [
+        `poster_restoration_notice:email:${posterId}`,
+        `poster_restoration_notice:in_app:${posterId}`,
+      ],
+    })
   })
 })
 

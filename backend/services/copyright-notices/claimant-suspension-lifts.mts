@@ -1,3 +1,4 @@
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction, read } from '@data-stores/psql'
 import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
 import sql, { type SQLStatement } from 'sql-template-strings'
@@ -56,19 +57,22 @@ export async function liftSuspendedClaimantAutomaticRestrictions(
   noticeId: string,
   reversedAt = new Date(),
 ): Promise<void> {
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction({ serializable: true })
   // The shared lock keeps the suspension in force until this reversal commits.
-  const { rows } = await transaction<{ submission_id: string; suspended_by_id: string }>(
-    sql`/* liftSuspendedClaimantAutomaticRestrictions:find */
+  const [{ rows }] = await Promise.all([
+    transaction<{ submission_id: string; suspended_by_id: string }>(
+      sql`/* liftSuspendedClaimantAutomaticRestrictions:find */
       SELECT assessment.copyright_notice_submission_id AS submission_id, suspension.suspended_by_id `
-      .append(suspendedClaimantPendingRestrictionSql())
-      .append(
-        sql`
+        .append(suspendedClaimantPendingRestrictionSql())
+        .append(
+          sql`
       AND notice.id = ${noticeId}
     ORDER BY suspension.id, assessment.id LIMIT 1
     FOR SHARE OF suspension`,
-      ),
-  )
+        ),
+    ),
+    readCopyrightThreadRetirement(transaction, [noticeId]),
+  ])
   const found = rows[0]
   if (!found) return
   const { restrictionIds, intentIds } = await reverseAutomatedCopyrightRestrictionsInTransaction(

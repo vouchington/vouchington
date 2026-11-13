@@ -1,22 +1,20 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
-import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
-import { createRetentionEmailCase } from '@voucha/test-helpers/services/copyright-notices/retention-email-case'
 import { useCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
 import {
   addRetentionArtifact,
   createRetentionMinimalCase,
 } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
-import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import {
   publishCopyrightCasePurgeCoverage,
   readCopyrightCasePurgeFixture,
   readCopyrightCasePurgeFixtureObject,
   settleCopyrightCasePurgeFixtureActions,
-  useCopyrightCasePurgePageSize,
 } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-fixture'
 import { runCopyrightCasePurgePage } from './retention-case-purge-page.mts'
+
+const pageSize = 2
 
 const PURGE_NOW = new Date('2100-01-01T12:00:00.000Z')
 
@@ -34,7 +32,7 @@ function firstPage(noticeId: string): CopyrightCasePurgeJobData {
 async function finishCase(data: CopyrightCasePurgeJobData): Promise<void> {
   let current = data
   for (let page = 0; page < 1_000; page += 1) {
-    const result = await runCopyrightCasePurgePage(current, PURGE_NOW)
+    const result = await runCopyrightCasePurgePage(current, PURGE_NOW, pageSize)
     if (!result.hasMore) {
       const state = await readCopyrightCasePurgeFixture(current.noticeId)
       if (state.live || state.retained)
@@ -62,23 +60,23 @@ async function assertKeyReused(key: string): Promise<void> {
 }
 
 describe('copyright case purge shared evidence ownership', () => {
-  useAutomaticProvisionalWithholding()
   const bucket = useCopyrightEvidenceBucket()
-  const setPageSize = useCopyrightCasePurgePageSize()
 
   // no-mistakes-timeout-reason: two reviewed email cases and their bounded PostgreSQL and S3 pages
   it('keeps a shared object for its other owner, then resumes a claimed deletion after a page boundary', async () => {
-    await setPageSize(2)
     const sharedKey = `copyright-inbound/${randomUUID()}.pdf`
-    const [first, second] = await Promise.all([
-      createRetentionEmailCase(),
-      createRetentionEmailCase(),
-    ])
+    const first = await createRetentionMinimalCase({
+      artifacts: 1,
+      sourceKind: 'email',
+      substantiallyCompliant: false,
+    })
+    const second = await createRetentionMinimalCase({
+      artifacts: 1,
+      sourceKind: 'email',
+      substantiallyCompliant: false,
+    })
     for (const entry of [first, second]) {
-      const aggregate = await getCopyrightNoticePrivateAggregate(entry.noticeId)
-      const submissionId = aggregate?.submissions[0]?.id
-      if (!submissionId) throw new Error('Email purge fixture submission is missing')
-      await addRetentionArtifact(submissionId, sharedKey)
+      await addRetentionArtifact(entry.submissionId, sharedKey)
       await settleCopyrightCasePurgeFixtureActions(entry.noticeId)
       await publishCopyrightCasePurgeCoverage(entry.noticeId)
       for (const key of entry.evidenceKeys) await bucket.put(key)
@@ -99,7 +97,7 @@ describe('copyright case purge shared evidence ownership', () => {
 
     let data = firstPage(second.noticeId)
     for (let page = 0; page < 1_000; page += 1) {
-      const result = await runCopyrightCasePurgePage(data, PURGE_NOW)
+      const result = await runCopyrightCasePurgePage(data, PURGE_NOW, pageSize)
       if (!result.hasMore) throw new Error('Second case stopped before claiming shared object')
       data = result.data
       if (

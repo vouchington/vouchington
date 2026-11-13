@@ -13,13 +13,19 @@ const MAX_PSQL_PENDING = 1_000
 type CopyrightCasePurgeAdmissionCursor = NonNullable<CopyrightCasePurgeAdmissionData['after']>
 
 /** Owners whose case row is gone and whose party cleanup is pending, found by the partial index. */
-export function copyrightResidualRecoveryStatement(afterId: string | undefined, pageSize: number) {
+export function copyrightResidualRecoveryStatement(
+  afterId: string | undefined,
+  pageSize: number,
+  noticeIds?: readonly string[],
+) {
   // Only owners carrying the marker are read, so a run is bounded by unfinished purges and never
   // by the number of cases ever created.
   const cursor = afterId ? sql` AND id > ${afterId}::uuid` : sql``
   return sql`/* admitCopyrightResidualCaseRecoveryPage */
     SELECT id FROM retained_copyright_notice_identities
-    WHERE case_deleted_at IS NOT NULL`.append(cursor).append(sql`
+    WHERE case_deleted_at IS NOT NULL`
+    .append(noticeIds ? sql` AND id = ANY(${noticeIds}::uuid[])` : sql``)
+    .append(cursor).append(sql`
     ORDER BY id LIMIT ${pageSize}`)
 }
 
@@ -27,6 +33,7 @@ export function copyrightResidualRecoveryStatement(afterId: string | undefined, 
 export function copyrightCasePurgeAdmissionStatement(
   after: CopyrightCasePurgeAdmissionCursor | undefined,
   pageSize: number,
+  noticeIds?: readonly string[],
 ) {
   const cursor = after
     ? sql`AND (notice.jurisdiction, notice.last_legal_activity_at, notice.id) >
@@ -39,15 +46,21 @@ export function copyrightCasePurgeAdmissionStatement(
     WHERE notice.jurisdiction IN ('us_dmca', 'eu_dsa', 'uk')
       AND notice.last_legal_activity_at <=
         ((transaction_timestamp() AT TIME ZONE 'UTC')
-          - make_interval(months => ${COPYRIGHT_CASE_RETENTION_MONTHS})) AT TIME ZONE 'UTC' `.append(
-    cursor,
-  ).append(sql`
+          - make_interval(months => ${COPYRIGHT_CASE_RETENTION_MONTHS})) AT TIME ZONE 'UTC' `
+    .append(noticeIds ? sql` AND notice.id = ANY(${noticeIds}::uuid[]) ` : sql``)
+    .append(cursor).append(sql`
     ORDER BY notice.jurisdiction, notice.last_legal_activity_at, notice.id
     LIMIT ${pageSize}`)
 }
 
 /** One index-ordered admission page; blockers are checked under the case worker's legal gates. */
-export async function admitCopyrightCasePurgePage(data: CopyrightCasePurgeAdmissionData): Promise<{
+export async function admitCopyrightCasePurgePage(
+  data: CopyrightCasePurgeAdmissionData,
+  options: {
+    pageSize?: number
+    scope?: { accountIds: readonly string[]; noticeIds: readonly string[] }
+  } = {},
+): Promise<{
   hasMore: boolean
   next: CopyrightCasePurgeAdmissionData
   admitted: number
@@ -56,7 +69,7 @@ export async function admitCopyrightCasePurgePage(data: CopyrightCasePurgeAdmiss
   if (!(await isCopyrightEvidenceRetentionDeletionEnabled()))
     return { hasMore: false, next: data, admitted: 0, stalled: false }
   const counts = await psql.getJobCounts()
-  const pageSize = getCopyrightCasePurgePageSize()
+  const pageSize = getCopyrightCasePurgePageSize(options.pageSize)
   const depth = (counts.waiting ?? 0) + (counts.active ?? 0) + (counts.delayed ?? 0)
   if (depth >= MAX_PSQL_PENDING) return { hasMore: true, next: data, admitted: 0, stalled: true }
   if (!data.pendingAccountsComplete) {
@@ -67,7 +80,9 @@ export async function admitCopyrightCasePurgePage(data: CopyrightCasePurgeAdmiss
       sql`
       /* admitCopyrightAccountClockSyncPage */
       SELECT id FROM retained_user_identities
-      WHERE is_copyright_case_clock_sync_pending `.append(accountCursor).append(sql`
+      WHERE is_copyright_case_clock_sync_pending `
+        .append(options.scope ? sql` AND id = ANY(${options.scope.accountIds}::uuid[]) ` : sql``)
+        .append(accountCursor).append(sql`
       ORDER BY id LIMIT ${pageSize}`),
     )
     const page = accounts
@@ -88,7 +103,7 @@ export async function admitCopyrightCasePurgePage(data: CopyrightCasePurgeAdmiss
     // Only owners whose case row is gone and whose party cleanup is pending carry the marker, so
     // this read is bounded by unfinished purges, never by the number of cases ever created.
     const { rows: owners } = await read<{ id: string }>(
-      copyrightResidualRecoveryStatement(data.orphanAfterId, pageSize),
+      copyrightResidualRecoveryStatement(data.orphanAfterId, pageSize, options.scope?.noticeIds),
     )
     if (owners.length > 0) await enqueueCopyrightCasePurgeBatch(owners.map(owner => owner.id))
     return {
@@ -103,7 +118,7 @@ export async function admitCopyrightCasePurgePage(data: CopyrightCasePurgeAdmiss
     id: string
     jurisdiction: CopyrightCasePurgeAdmissionCursor['jurisdiction']
     last_legal_activity_at: Date
-  }>(copyrightCasePurgeAdmissionStatement(after, pageSize))
+  }>(copyrightCasePurgeAdmissionStatement(after, pageSize, options.scope?.noticeIds))
   const page = rows
   if (page.length > 0) await enqueueCopyrightCasePurgeBatch(page.map(row => row.id))
   const last = page.at(-1)

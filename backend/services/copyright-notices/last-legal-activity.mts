@@ -3,7 +3,7 @@ import sql from 'sql-template-strings'
 
 declare const lockedNotice: unique symbol
 
-/** Proof that this transaction took the notice row lock before any child-row lock or insert. */
+/** Ownership of the notice row that this transaction writes. */
 export type LockedCopyrightNotice = {
   readonly noticeId: string
   readonly jurisdiction: string
@@ -11,9 +11,8 @@ export type LockedCopyrightNotice = {
 }
 
 /**
- * Take the notice row lock first in every transaction that writes a legal fact. Holds, closures
- * and purges lock the notice with FOR UPDATE, so a writer that locked children first and upgraded
- * to the notice at the end would deadlock against them.
+ * Own the notice for a transaction that writes its legal clock or current legal result.
+ * Callers that preempt existing restoration work perform that substantive write first.
  */
 export async function lockCopyrightNoticeForLegalWrite(
   query: TransactionQuery,
@@ -27,17 +26,17 @@ export async function lockCopyrightNoticeForLegalWrite(
 }
 
 /**
- * Called in the transaction that writes a substantive case fact, after the notice lock. Only the
+ * Called in the transaction that writes a substantive case fact. Only the
  * database clock moves the retention clock; caller-supplied dates must never reach it.
  */
 export async function advanceCopyrightLastLegalActivityAt(
   query: TransactionQuery,
-  locked: LockedCopyrightNotice,
+  notice: { readonly noticeId: string },
 ): Promise<void> {
   await query(sql`/* advanceCopyrightLastLegalActivityAt */
     UPDATE copyright_notices
     SET last_legal_activity_at = GREATEST(last_legal_activity_at, clock_timestamp())
-    WHERE id = ${locked.noticeId}`)
+    WHERE id = ${notice.noticeId}`)
 }
 
 /** Locks the case that owns a restriction, for writers that only know the restriction. */

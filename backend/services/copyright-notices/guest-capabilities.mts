@@ -1,3 +1,6 @@
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { CONFLICT } from '@modules/on-error/error-codes'
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { randomBytes } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
@@ -31,33 +34,40 @@ export async function issueCopyrightGuestCapability(input: {
   // The id's timestamp is the issue instant that the database expiry cap measures from.
   const id = uuidv7({ msecs: issuedAtMs })
   const token = randomBytes(32).toString('base64url')
-  await using transaction = await beginTransaction()
-  const { rows: identities } = await transaction<{
-    id: string
-  }>(sql`/* reserveCopyrightGuestCapabilityIdentity */
-    INSERT INTO copyright_notice_guest_capability_identities (id, copyright_notice_id)
-    SELECT ${id}, notice.id FROM copyright_notices notice
-    WHERE notice.id = ${input.noticeId}
-    RETURNING id`)
-  assert(identities[0], 404, 'Copyright notice was not found')
-  const { rows } = await transaction<{ id: string }>(sql`/* issueCopyrightGuestCapability */
-    INSERT INTO copyright_notice_guest_capabilities (
-      id, copyright_notice_id, token_hash, issued_by_id, expires_at
-    )
-    SELECT ${id}, notice.id, ${hashToken(copyrightGuestCapabilityPurpose, token)},
-      ${input.currentUser.id}, ${input.expiresAt}
-    FROM copyright_notices notice
-    WHERE notice.id = ${input.noticeId}
-    RETURNING id
-  `)
-  assert(rows[0], 404, 'Copyright notice was not found')
-  await transaction(sql`/* issueCopyrightGuestCapability:event */
-    INSERT INTO copyright_notice_lifecycle_changes (
-      copyright_notice_id, change_type, changed_by_id, copyright_notice_guest_capability_id
-    ) VALUES (${input.noticeId}, 'guest_capability_issued', ${input.currentUser.id}, ${id})
-  `)
-  await transaction.commit()
-  return { id, token }
+  return conflictOnSerializationFailure(
+    async () => {
+      await using transaction = await beginTransaction({ serializable: true })
+      const { rows: identities } = await transaction<{
+        id: string
+      }>(sql`/* reserveCopyrightGuestCapabilityIdentity */
+      INSERT INTO copyright_notice_guest_capability_identities (id, copyright_notice_id)
+      SELECT ${id}, notice.id FROM copyright_notices notice
+      WHERE notice.id = ${input.noticeId}
+      RETURNING id`)
+      assert(identities[0], 404, 'Copyright notice was not found')
+      const { rows } = await transaction<{ id: string }>(sql`/* issueCopyrightGuestCapability */
+      INSERT INTO copyright_notice_guest_capabilities (
+        id, copyright_notice_id, token_hash, issued_by_id, expires_at
+      )
+      SELECT ${id}, notice.id, ${hashToken(copyrightGuestCapabilityPurpose, token)},
+        ${input.currentUser.id}, ${input.expiresAt}
+      FROM copyright_notices notice
+      WHERE notice.id = ${input.noticeId}
+      RETURNING id
+    `)
+      assert(rows[0], 404, 'Copyright notice was not found')
+      await transaction(sql`/* issueCopyrightGuestCapability:event */
+      INSERT INTO copyright_notice_lifecycle_changes (
+        copyright_notice_id, change_type, changed_by_id, copyright_notice_guest_capability_id
+      ) VALUES (${input.noticeId}, 'guest_capability_issued', ${input.currentUser.id}, ${id})
+    `)
+      await readCopyrightThreadRetirement(transaction, [input.noticeId])
+      await transaction.commit()
+      return { id, token }
+    },
+    'Conflicting copyright case change',
+    CONFLICT,
+  )
 }
 
 export async function revokeCopyrightGuestCapability(input: {
@@ -71,22 +81,29 @@ export async function revokeCopyrightGuestCapability(input: {
     403,
     'Only copyright staff can revoke guest capabilities',
   )
-  await using transaction = await beginTransaction()
-  const { rows } = await transaction<{ id: string }>(sql`/* revokeCopyrightGuestCapability */
-    UPDATE copyright_notice_guest_capabilities
-    SET revoked_at = ${input.revokedAt}
-    WHERE id = ${input.capabilityId}
-      AND copyright_notice_id = ${input.noticeId}
-      AND revoked_at IS NULL
-    RETURNING id
-  `)
-  assert(rows[0], 404, 'Copyright guest capability was not found')
-  await transaction(sql`/* revokeCopyrightGuestCapability:event */
-    INSERT INTO copyright_notice_lifecycle_changes (
-      copyright_notice_id, change_type, changed_by_id, copyright_notice_guest_capability_id
-    ) VALUES (
-      ${input.noticeId}, 'guest_capability_revoked', ${input.currentUser.id}, ${input.capabilityId}
-    )
-  `)
-  await transaction.commit()
+  return conflictOnSerializationFailure(
+    async () => {
+      await using transaction = await beginTransaction({ serializable: true })
+      const { rows } = await transaction<{ id: string }>(sql`/* revokeCopyrightGuestCapability */
+      UPDATE copyright_notice_guest_capabilities
+      SET revoked_at = ${input.revokedAt}
+      WHERE id = ${input.capabilityId}
+        AND copyright_notice_id = ${input.noticeId}
+        AND revoked_at IS NULL
+      RETURNING id
+    `)
+      assert(rows[0], 404, 'Copyright guest capability was not found')
+      await transaction(sql`/* revokeCopyrightGuestCapability:event */
+      INSERT INTO copyright_notice_lifecycle_changes (
+        copyright_notice_id, change_type, changed_by_id, copyright_notice_guest_capability_id
+      ) VALUES (
+        ${input.noticeId}, 'guest_capability_revoked', ${input.currentUser.id}, ${input.capabilityId}
+      )
+    `)
+      await readCopyrightThreadRetirement(transaction, [input.noticeId])
+      await transaction.commit()
+    },
+    'Conflicting copyright case change',
+    CONFLICT,
+  )
 }

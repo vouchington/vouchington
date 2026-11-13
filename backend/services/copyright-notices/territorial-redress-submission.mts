@@ -1,3 +1,6 @@
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { CONFLICT } from '@modules/on-error/error-codes'
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction } from '@data-stores/psql'
 import {
   advanceCopyrightLastLegalActivityAt,
@@ -34,85 +37,92 @@ export async function submitTerritorialCopyrightRedress(
   const labels = territorialLabels(jurisdiction)
   assertIdempotencyKey(idempotencyKey)
   const text = assertBoundedText(explanation, 50_000, 'explanation is required')
-  await using transaction = await beginTransaction()
-  const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
-  assert(lockedNotice, 404, labels.decisionNotFound)
-  const { rows: parents } = await transaction<{
-    id: string
-    decided_at: Date
-    outcome: 'restrict' | 'no_action'
-    authorizing_assessment_identity_id: string | null
-    requester_user_id: string | null
-  }>(selectTerritorialRedressParent(jurisdiction, noticeId))
-  const parent = parents[0]
-  assert(parent, 404, labels.decisionNotFound)
+  return conflictOnSerializationFailure(
+    async () => {
+      await using transaction = await beginTransaction({ serializable: true })
+      const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
+      assert(lockedNotice, 404, labels.decisionNotFound)
+      const { rows: parents } = await transaction<{
+        id: string
+        decided_at: Date
+        outcome: 'restrict' | 'no_action'
+        authorizing_assessment_identity_id: string | null
+        requester_user_id: string | null
+      }>(selectTerritorialRedressParent(jurisdiction, noticeId))
+      const parent = parents[0]
+      assert(parent, 404, labels.decisionNotFound)
 
-  const notifier = actor.id === parent.requester_user_id
-  const posterSql = sql`/* submitTerritorialCopyrightRedress:poster */
-    SELECT EXISTS (
-      SELECT 1 FROM copyright_notice_targets target
-      CROSS JOIN LATERAL `
-  posterSql.append(copyrightPlacementPartiesSql('respond'))
-  posterSql.append(sql` party
-      WHERE target.copyright_notice_id = ${noticeId}
-        AND party.user_id = ${actor.id}
-    ) AS poster`)
-  const { rows: posterRows } = await transaction<{ poster: boolean }>(posterSql)
-  const poster = parent.outcome === 'restrict' && (posterRows[0]?.poster ?? false)
-  const reviewer = currentUserCanReviewCopyrightNotices(actor)
-  assert(notifier || poster || reviewer, 403, 'Forbidden')
+      const notifier = actor.id === parent.requester_user_id
+      const posterSql = sql`/* submitTerritorialCopyrightRedress:poster */
+      SELECT EXISTS (
+        SELECT 1 FROM copyright_notice_targets target
+        CROSS JOIN LATERAL `
+      posterSql.append(copyrightPlacementPartiesSql('respond'))
+      posterSql.append(sql` party
+        WHERE target.copyright_notice_id = ${noticeId}
+          AND party.user_id = ${actor.id}
+      ) AS poster`)
+      const { rows: posterRows } = await transaction<{ poster: boolean }>(posterSql)
+      const poster = parent.outcome === 'restrict' && (posterRows[0]?.poster ?? false)
+      const reviewer = currentUserCanReviewCopyrightNotices(actor)
+      assert(notifier || poster || reviewer, 403, 'Forbidden')
 
-  const { rows: existing } = await transaction<{
-    id: string
-    copyright_notice_id: string
-    copyright_territorial_decision_id: string
-  }>(selectExistingTerritorialRedressRequest(jurisdiction, parent.id, actor.id, idempotencyKey))
-  if (existing[0]) {
-    assert(
-      existing[0].copyright_notice_id === noticeId &&
-        existing[0].copyright_territorial_decision_id === parent.id,
-      409,
-      'Idempotency-Key was reused',
-    )
-    await transaction.commit()
-    return { id: existing[0].id, is_duplicate: true }
-  }
+      const { rows: existing } = await transaction<{
+        id: string
+        copyright_notice_id: string
+        copyright_territorial_decision_id: string
+      }>(selectExistingTerritorialRedressRequest(jurisdiction, parent.id, actor.id, idempotencyKey))
+      if (existing[0]) {
+        assert(
+          existing[0].copyright_notice_id === noticeId &&
+            existing[0].copyright_territorial_decision_id === parent.id,
+          409,
+          'Idempotency-Key was reused',
+        )
+        await transaction.commit()
+        return { id: existing[0].id, is_duplicate: true }
+      }
 
-  if (!reviewer) {
-    const window = await getTerritorialInformedWindow(
-      {
-        noticeId,
-        decidedAt: parent.decided_at,
-        notifier,
-        posterUserId: poster ? actor.id : undefined,
-      },
-      transaction,
-    )
-    const { rows: clocks } = await transaction<{ now: Date }>(
-      sql`/* submitTerritorialCopyrightRedress:clock */ SELECT CURRENT_TIMESTAMP AS now`,
-    )
-    assert(
-      !window.window_ends_at || clocks[0]!.now <= window.window_ends_at,
-      422,
-      'The complaint period for this decision has ended',
-    )
-  }
-  const { rows } = await transaction<{ id: string }>(
-    insertTerritorialRedressRequest(
-      jurisdiction,
-      noticeId,
-      parent.id,
-      parent.outcome,
-      parent.authorizing_assessment_identity_id,
-      actor.id,
-      notifier ? 'notifier' : poster ? 'poster' : 'reviewer',
-      idempotencyKey,
-      encryptSecret(text, `${labels.redressPurpose}:${idempotencyKey}`),
-    ),
+      if (!reviewer) {
+        const window = await getTerritorialInformedWindow(
+          {
+            noticeId,
+            decidedAt: parent.decided_at,
+            notifier,
+            posterUserId: poster ? actor.id : undefined,
+          },
+          transaction,
+        )
+        const { rows: clocks } = await transaction<{ now: Date }>(
+          sql`/* submitTerritorialCopyrightRedress:clock */ SELECT CURRENT_TIMESTAMP AS now`,
+        )
+        assert(
+          !window.window_ends_at || clocks[0]!.now <= window.window_ends_at,
+          422,
+          'The complaint period for this decision has ended',
+        )
+      }
+      const { rows } = await transaction<{ id: string }>(
+        insertTerritorialRedressRequest(
+          jurisdiction,
+          noticeId,
+          parent.id,
+          parent.outcome,
+          parent.authorizing_assessment_identity_id,
+          actor.id,
+          notifier ? 'notifier' : poster ? 'poster' : 'reviewer',
+          idempotencyKey,
+          encryptSecret(text, `${labels.redressPurpose}:${idempotencyKey}`),
+        ),
+      )
+      const created = rows[0]
+      assert(created, 500, labels.redressFailed)
+      await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
+      await readCopyrightThreadRetirement(transaction, [noticeId])
+      await transaction.commit()
+      return { id: created.id, is_duplicate: false }
+    },
+    'Conflicting copyright case change',
+    CONFLICT,
   )
-  const created = rows[0]
-  assert(created, 500, labels.redressFailed)
-  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
-  await transaction.commit()
-  return { id: created.id, is_duplicate: false }
 }

@@ -1,3 +1,4 @@
+import { seedCopyrightSubmissionAssessment } from '../../copyright-notice-submissions.mts'
 import { randomBytes, randomUUID } from 'node:crypto'
 import type { PrivateUser } from '../../../services/users/types.mts'
 import { insertCopyrightEvidenceArtifact } from '../../data-stores/psql/copyright-evidence-artifacts.mts'
@@ -44,7 +45,13 @@ export type MinimalRetentionCase = RetentionCase & {
  * `claimant` the notice is filed by a signed-in account instead of an anonymous claimant.
  */
 export async function createRetentionMinimalCase(
-  options: { artifacts?: number; sharedKey?: string; claimant?: boolean } = {},
+  options: {
+    artifacts?: number
+    sharedKey?: string
+    claimant?: boolean
+    sourceKind?: 'email' | 'signed_in_form'
+    substantiallyCompliant?: boolean
+  } = {},
 ): Promise<MinimalRetentionCase> {
   const [poster, moderatorRecord, claimant] = await Promise.all([
     createTestUserDirect(),
@@ -73,7 +80,7 @@ export async function createRetentionMinimalCase(
     policyVersion: 'test-v1',
     initialSubmission: {
       kind: 'notice',
-      sourceKind: 'signed_in_form',
+      sourceKind: options.sourceKind ?? 'signed_in_form',
       bodyCiphertext: `notice-${randomUUID()}`,
     },
     targets: [
@@ -90,6 +97,13 @@ export async function createRetentionMinimalCase(
   const submissionId = aggregate?.submissions[0]?.id
   const targetId = aggregate?.targets[0]?.id
   if (!submissionId || !targetId) throw new Error('fixture notice disappeared')
+  if (options.substantiallyCompliant !== undefined)
+    await seedCopyrightSubmissionAssessment({
+      submissionId,
+      currentUser: moderator,
+      assessedAt: new Date(),
+      substantiallyCompliant: options.substantiallyCompliant,
+    })
   const evidenceKeys = await Promise.all(
     Array.from({ length: options.artifacts ?? 0 }, () =>
       addRetentionArtifact(submissionId, options.sharedKey),

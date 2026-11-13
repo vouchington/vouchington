@@ -1,3 +1,8 @@
+import {
+  assertApiTerritorialRedress,
+  seedApiTerritorialRedress,
+} from '@voucha/test-helpers/copyright-api-territorial-redress'
+import { readCopyrightApiTerritorialState } from '@voucha/test-helpers/copyright-api-territorial-request-outcomes'
 import { describe, expect, it } from 'vitest'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import {
@@ -23,7 +28,9 @@ describe('UK staff-recorded redress requests', () => {
   useCopyrightIntakeEnvironment()
 
   it('turns away anonymous callers, the notifier and other members ahead of the schema check', async () => {
-    const { anonymousRequest, claimantRequest, strangerRequest, url } = await determinedUkNotice()
+    const { anonymousRequest, claimantRequest, strangerRequest, url, noticeId } =
+      await determinedUkNotice()
+    const before = await readCopyrightApiTerritorialState(noticeId)
 
     const anonymous = await anonymousRequest
       .post(url)
@@ -41,40 +48,64 @@ describe('UK staff-recorded redress requests', () => {
         expect(rejected.body.message).not.toMatch(SCHEMA_DIAGNOSTIC)
       }
     }
+    expect(await readCopyrightApiTerritorialState(noticeId)).toEqual(before)
   })
 
   it('records the complaint for staff once and replays the same key', async () => {
-    const { staffRequest, url } = await determinedUkNotice()
-    const key = crypto.randomUUID()
-
-    const created = await staffRequest.post(url).set('Idempotency-Key', key).send(body).expect(201)
-    expect(created.body.copyright_uk_redress_request.is_duplicate).toBe(false)
-    const replay = await staffRequest.post(url).set('Idempotency-Key', key).send(body).expect(200)
-    expect(replay.body.copyright_uk_redress_request).toMatchObject({
-      id: created.body.copyright_uk_redress_request.id,
-      is_duplicate: true,
+    expect.hasAssertions()
+    const first = await determinedUkNotice()
+    await assertApiTerritorialRedress({
+      request: first.staffRequest,
+      jurisdiction: 'uk',
+      noticeId: first.noticeId,
+      actorId: first.staff.id,
+      key: crypto.randomUUID(),
+      explanation: body.explanation,
+      filedBy: 'reviewer',
     })
+    // Replay has its own committed source, so it runs even if the real initial writer aborted.
+    const replay = await determinedUkNotice()
+    const key = crypto.randomUUID()
+    const input = {
+      jurisdiction: 'uk' as const,
+      noticeId: replay.noticeId,
+      actorId: replay.staff.id,
+      key,
+      explanation: body.explanation,
+      filedBy: 'reviewer' as const,
+    }
+    await seedApiTerritorialRedress(input)
+    await assertApiTerritorialRedress({ ...input, request: replay.staffRequest, replay: true })
   })
 
   it.each([
     ['an unknown key', { injected: true }],
     ['a CAPTCHA token, which a staff entry never carries', { cf_turnstile_response: 'token' }],
   ])('rejects %s before recording the complaint', async (_label, extra) => {
-    const { staffRequest, url } = await determinedUkNotice()
+    const { staffRequest, url, noticeId, staff } = await determinedUkNotice()
     const key = crypto.randomUUID()
+    const before = await readCopyrightApiTerritorialState(noticeId)
 
     await staffRequest
       .post(url)
       .set('Idempotency-Key', key)
       .send({ ...body, ...extra })
       .expect(422)
-    // Nothing was recorded, so the same key creates the complaint instead of replaying one.
-    const created = await staffRequest.post(url).set('Idempotency-Key', key).send(body).expect(201)
-    expect(created.body.copyright_uk_redress_request.is_duplicate).toBe(false)
+    expect(await readCopyrightApiTerritorialState(noticeId)).toEqual(before)
+    await assertApiTerritorialRedress({
+      request: staffRequest,
+      jurisdiction: 'uk',
+      noticeId,
+      actorId: staff.id,
+      key,
+      explanation: body.explanation,
+      filedBy: 'reviewer',
+    })
   })
 
   it('keeps the explanation message and the path id check', async () => {
-    const { staffRequest, url } = await determinedUkNotice()
+    const { staffRequest, url, noticeId } = await determinedUkNotice()
+    const before = await readCopyrightApiTerritorialState(noticeId)
 
     const rejected = await staffRequest
       .post(url)
@@ -87,6 +118,7 @@ describe('UK staff-recorded redress requests', () => {
       .set('Idempotency-Key', crypto.randomUUID())
       .send(body)
       .expect(422)
+    expect(await readCopyrightApiTerritorialState(noticeId)).toEqual(before)
   })
 
   it('leaves the missing-notice 404 to the service behind a malformed body', async () => {

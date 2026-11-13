@@ -1,6 +1,9 @@
 import { beginTransaction, read } from '@data-stores/psql'
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import type { TransactionQuery } from '@data-stores/psql/types'
+import { CONFLICT } from '@modules/on-error/error-codes'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
@@ -132,10 +135,17 @@ export async function createOutboundCopyrightCorrespondence(
   transaction?: TransactionQuery,
 ): Promise<CopyrightCorrespondenceRecord> {
   if (transaction) return insertOutboundCopyrightCorrespondence(input, transaction)
-  await using owned = await beginTransaction()
-  const correspondence = await insertOutboundCopyrightCorrespondence(input, owned)
-  await owned.commit()
-  return correspondence
+  return conflictOnSerializationFailure(
+    async () => {
+      await using owned = await beginTransaction({ serializable: true })
+      await readCopyrightThreadRetirement(owned, [input.noticeId])
+      const correspondence = await insertOutboundCopyrightCorrespondence(input, owned)
+      await owned.commit()
+      return correspondence
+    },
+    'Conflicting copyright case change',
+    CONFLICT,
+  )
 }
 
 async function insertOutboundCopyrightCorrespondence(

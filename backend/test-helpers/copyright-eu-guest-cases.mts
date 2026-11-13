@@ -1,10 +1,10 @@
+import { seedCommittedTerritorialAcknowledgment } from './copyright-territorial-acknowledged-fixture.mts'
+import { seedCommittedTerritorialDecision } from './copyright-territorial-committed-decision.mts'
 import { createTestUser } from './entities/users.mts'
 import {
-  acknowledgeEuCopyrightNotice,
   createCopyrightGuestIdentity,
   receiveEuCopyrightNotice,
   recordCopyrightJurisdictionPolicyApproval,
-  recordEuCopyrightStatementOfReasons,
 } from '../services/copyright-notices/index.mts'
 
 export async function createTestGuestEuCase(state: 'pending' | 'decided' = 'decided') {
@@ -32,8 +32,8 @@ export async function createTestGuestEuCase(state: 'pending' | 'decided' = 'deci
     },
   )
   if (state === 'decided') {
-    await acknowledgeEuCopyrightNotice(null, receipt.notice_id)
-    await recordEuCopyrightStatementOfReasons(staff, receipt.notice_id, {
+    await seedCommittedTerritorialAcknowledgment('eu_dsa', receipt.notice_id)
+    await seedCommittedTerritorialDecision('eu_dsa', staff, receipt.notice_id, {
       text: `Decision ${suffix}`,
       publicExplanation: `Public explanation ${suffix}`,
       outcome: 'no_action',

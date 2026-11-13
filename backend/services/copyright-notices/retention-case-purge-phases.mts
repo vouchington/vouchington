@@ -1,3 +1,5 @@
+import { COPYRIGHT_CASE_POINTER_PHASE_COUNT } from '@data-stores/psql/copyright-case-purge-pointers'
+import { copyrightCasePurgePreservationAllowedSql } from './retention-case-purge-eligibility.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import sql from 'sql-template-strings'
@@ -7,22 +9,16 @@ import {
 } from './retention-case-purge-parties.mts'
 import { verifyCopyrightCaseReportCoveragePage } from './retention-case-purge-coverage.mts'
 import { eraseCopyrightCaseEvidencePage } from './retention-case-purge-evidence.mts'
-import {
-  hasBlockedCopyrightCaseParty,
-  verifyCopyrightCasePartyPage,
-} from './retention-case-purge-verify-parties.mts'
-import {
-  COPYRIGHT_CASE_POINTER_PHASE_COUNT,
-  cutCopyrightCasePointerPage,
-} from './retention-case-purge-pointers.mts'
+import { verifyCopyrightCasePartyPage } from './retention-case-purge-verify-parties.mts'
+import { cutCopyrightCasePointerPage } from './retention-case-purge-pointers.mts'
 import {
   COPYRIGHT_CASE_CHILD_PHASE_COUNT,
   deleteCopyrightCaseChildPage,
   verifyCopyrightCaseChildPage,
 } from './retention-case-purge-children.mts'
-import { deleteCopyrightCaseFinalTail } from './retention-case-purge-final.mts'
+import { runCopyrightCaseFinalPage } from './retention-case-purge-final.mts'
 import { deleteCopyrightCaseEmailThreadLinkPage } from './retention-case-purge-email-links.mts'
-import { COPYRIGHT_CASE_EMAIL_LINK_PHASE_INDEX } from './retention-case-purge-order.mts'
+import { COPYRIGHT_CASE_EMAIL_LINK_PHASE_INDEX } from '@data-stores/psql/copyright-case-purge-order'
 import { enterCopyrightCasePurgePhase } from './retention-case-purge-phase-state.mts'
 
 type PageResult = { data: CopyrightCasePurgeJobData; hasMore: boolean; deferred?: boolean }
@@ -96,9 +92,17 @@ export async function runLockedPage(
       return verifyCopyrightCaseReportCoveragePage(query, data, notice.jurisdiction, pageSize)
     case 'evidence': {
       if (data.phaseIndex > 1) {
-        await query(sql`/* finishCopyrightCaseEvidenceErasure */
+        const marker = sql`/* finishCopyrightCaseEvidenceErasure */
           UPDATE copyright_notices SET evidence_erased_at = COALESCE(evidence_erased_at, clock_timestamp())
-          WHERE id = ${data.noticeId}::uuid`)
+          WHERE id = ${data.noticeId}::uuid AND `
+        marker.append(copyrightCasePurgePreservationAllowedSql(data.noticeId))
+        const { rowCount } = await query(marker)
+        if (rowCount !== 1)
+          return {
+            data: enterCopyrightCasePurgePhase(data, 'parties'),
+            hasMore: true,
+            deferred: true,
+          }
         return { data: enterCopyrightCasePurgePhase(data, 'pointers'), hasMore: true }
       }
       const page = await eraseCopyrightCaseEvidencePage(
@@ -109,6 +113,12 @@ export async function runLockedPage(
         data.evidenceOwner,
         pageSize,
       )
+      if (page.deferred)
+        return {
+          data: enterCopyrightCasePurgePhase(data, 'parties'),
+          hasMore: true,
+          deferred: true,
+        }
       return {
         data: {
           ...data,
@@ -159,6 +169,12 @@ export async function runLockedPage(
         data.childFrames,
         pageSize,
       )
+      if (page.deferred)
+        return {
+          data: enterCopyrightCasePurgePhase(data, 'parties'),
+          hasMore: true,
+          deferred: true,
+        }
       return {
         data: {
           ...data,
@@ -170,12 +186,7 @@ export async function runLockedPage(
       }
     }
     case 'final':
-      if (await hasBlockedCopyrightCaseParty(query, data.noticeId)) return { data, hasMore: false }
-      await deleteCopyrightCaseFinalTail(query, data.noticeId)
-      return {
-        data: enterCopyrightCasePurgePhase(data, 'residual_parties'),
-        hasMore: true,
-      }
+      return runCopyrightCaseFinalPage(query, data)
     case 'residual_parties':
       throw new Error('Residual case parties are handled after the live notice is gone')
   }

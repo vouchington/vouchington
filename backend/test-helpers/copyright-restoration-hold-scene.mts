@@ -1,6 +1,8 @@
+import { read } from '@data-stores/psql'
+import sql from 'sql-template-strings'
 import { appendTestCopyrightNoticeSubmission } from './copyright-notice-submissions.mts'
 import { appendCopyrightLegalHoldAssessment } from '../services/copyright-notices/index.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
+import { seedCopyrightStatementRestriction } from './copyright-statement-restriction-fixture.mts'
 import {
   createCopyrightRestorationHoldFixture,
   createCounterNoticeRestoreIntent,
@@ -16,12 +18,13 @@ export async function openHeldCounterNoticeRestore(
   const { aggregate, assessment, claimant, moderator, notice } =
     await createCopyrightRestorationHoldFixture(targetCount, shared)
   const target = aggregate.targets[0]!
-  const restriction = await acceptCopyrightNoticeAndImposeRestriction({
+  const restriction = await seedCopyrightStatementRestriction({
     noticeId: notice.id,
     targetId: target.id,
     assessmentId: assessment.id,
     imposedAt: new Date('2026-07-01T12:00:00.000Z'),
-    imposedById: moderator.id,
+    moderatorId: moderator.id,
+    revision: target.placement_revision,
   })
   const initialWithhold = (await getCopyrightNoticePrivateAggregate(notice.id))?.actionIntents.find(
     intent => intent.action === 'withhold',
@@ -29,12 +32,13 @@ export async function openHeldCounterNoticeRestore(
   if (!initialWithhold) throw new Error('initial withhold intent disappeared')
   if (!shared) await deliverInitialCopyrightWithhold(notice.id)
   for (const other of aggregate.targets.slice(1)) {
-    await acceptCopyrightNoticeAndImposeRestriction({
+    await seedCopyrightStatementRestriction({
       noticeId: notice.id,
       targetId: other.id,
       assessmentId: assessment.id,
       imposedAt: new Date('2026-07-01T12:00:00.000Z'),
-      imposedById: moderator.id,
+      moderatorId: moderator.id,
+      revision: other.placement_revision,
     })
   }
   const opened = await createCounterNoticeRestoreIntent({
@@ -83,4 +87,19 @@ export async function recordOrdinaryCopyrightHold(
     targetIds,
     rationale: 'Verified original claimant proceeding on this target.',
   })
+}
+
+/** Every durable late-hold binding in one owned case. */
+export async function readCopyrightLateHoldBindings(noticeId: string) {
+  const { rows } = await read<{
+    assessment_id: string
+    restriction_id: string
+  }>(sql`/* readCopyrightLateHoldBindings */
+    SELECT binding.copyright_notice_legal_hold_assessment_id AS assessment_id,
+      binding.copyright_restriction_id AS restriction_id
+    FROM copyright_legal_hold_restrictions binding
+    JOIN copyright_restrictions restriction ON restriction.id = binding.copyright_restriction_id
+    JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
+    WHERE target.copyright_notice_id = ${noticeId}`)
+  return rows
 }

@@ -1,3 +1,4 @@
+import { runBeforePostgresStatementForTest } from './injected-failures.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createTestUser } from './index.mts'
@@ -11,7 +12,7 @@ import {
   openHeldCounterNoticeRestore,
   recordOrdinaryCopyrightHold,
 } from './copyright-restoration-hold-scene.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
+import { seedCopyrightStatementRestriction } from './copyright-statement-restriction-fixture.mts'
 import { processCopyrightActionIntent } from '../services/copyright-notices/index.mts'
 import { getCopyrightNoticePrivateAggregate } from './services/copyright-notices/private-aggregate.mts'
 import { enableAutomaticProvisionalWithholdingForTest } from './services/copyright-notices/automatic-withholding.mts'
@@ -23,6 +24,20 @@ import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import { readAllQueueJobs } from './queue-jobs.mts'
 import { forgetDedupEntries, removeQueuedJobsById } from './shared-queue-cleanup.mts'
 
+/** Raise a native PostgreSQL serialization failure in the owned recovery transaction. */
+export function rejectCopyrightActionDecisionRecoveryForTest() {
+  return runBeforePostgresStatementForTest(
+    'recoverMissingCopyrightDecisionAssessments',
+    async transaction => {
+      await transaction(sql`/* rejectCopyrightActionDecisionRecoveryForTest */
+        DO $$ BEGIN
+          RAISE EXCEPTION 'owned copyright decision recovery serialization fault'
+            USING ERRCODE = '40001';
+        END $$`)
+    },
+  )
+}
+
 /** A committed review whose assessment has not yet been recovered. */
 export async function createCopyrightActionSweepReview(accepted: boolean) {
   const [{ notice }, moderator] = await Promise.all([createClearScreenedForm(), createTestUser()])
@@ -31,7 +46,7 @@ export async function createCopyrightActionSweepReview(accepted: boolean) {
     moderatorId: moderator.id,
     is_accepted: accepted,
   })
-  return notice.intake
+  return { ...notice.intake, reviewedById: moderator.id }
 }
 
 export async function createCopyrightActionSweepEnforcement() {
@@ -41,12 +56,13 @@ export async function createCopyrightActionSweepEnforcement() {
 
 export async function createCopyrightActionSweepRestricted() {
   const fixture = await createCopyrightRestorationHoldFixture()
-  await acceptCopyrightNoticeAndImposeRestriction({
+  await seedCopyrightStatementRestriction({
     noticeId: fixture.notice.id,
     targetId: fixture.aggregate.targets[0]!.id,
     assessmentId: fixture.assessment.id,
     imposedAt: new Date(),
-    imposedById: fixture.moderator.id,
+    moderatorId: fixture.moderator.id,
+    revision: fixture.aggregate.targets[0]!.placement_revision,
   })
   const aggregate = await getCopyrightNoticePrivateAggregate(fixture.notice.id)
   const intent = aggregate!.actionIntents.find(item => item.action === 'withhold')!

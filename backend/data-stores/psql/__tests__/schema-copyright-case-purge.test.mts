@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { COPYRIGHT_CASE_PURGE_PHASES } from '../../../services/copyright-notices/retention-case-purge-order.mts'
-import { COPYRIGHT_CASE_POINTER_CUTS } from '../../../services/copyright-notices/retention-case-purge-pointers.mts'
+import { COPYRIGHT_CASE_PURGE_PHASES } from '@data-stores/psql/copyright-case-purge-order'
+import { COPYRIGHT_CASE_POINTER_CUTS } from '../copyright-case-purge-pointers.mts'
 import { COPYRIGHT_CASE_FINAL_TAIL_DELETE_ORDER } from '../../../services/copyright-notices/retention-case-purge-final.mts'
 import { COPYRIGHT_CASE_EMAIL_LINK_DELETE_TABLE } from '../../../services/copyright-notices/retention-case-purge-email-links.mts'
 import {

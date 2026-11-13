@@ -1,3 +1,7 @@
+import { readCopyrightCaseChildPreservationCoverage } from '@data-stores/psql/copyright-preservation-child-coverage'
+import { CONFLICT } from '@modules/on-error/error-codes'
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { readCopyrightCasePreservationCoverage } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import type { PrivateUser } from '@services/users/types'
@@ -83,15 +87,25 @@ export async function placeCopyrightCasePreservationHold(
     422,
     'Invalid preservation reason',
   )
-  await using query = await beginTransaction()
-  const locked = await lockWritableCase(query, noticeId)
-  const { rows } = await query<{ id: string }>(sql`/* placeCopyrightCasePreservationHold */
-    INSERT INTO copyright_case_preservation_holds (copyright_notice_id, kind, placed_by_id)
-    VALUES (${noticeId}, ${kind}::copyright_case_preservation_kinds, ${currentUser.id}) RETURNING id`)
-  assert(rows[0], 500, 'Copyright preservation hold was not recorded')
-  await advanceCopyrightLastLegalActivityAt(query, locked)
-  await query.commit()
-  return rows[0]
+  return conflictOnSerializationFailure(
+    async () => {
+      await using query = await beginTransaction({ serializable: true })
+      await Promise.all([
+        readCopyrightCasePreservationCoverage(query, [noticeId]),
+        readCopyrightCaseChildPreservationCoverage(query, [noticeId]),
+      ])
+      const locked = await lockWritableCase(query, noticeId)
+      const { rows } = await query<{ id: string }>(sql`/* placeCopyrightCasePreservationHold */
+      INSERT INTO copyright_case_preservation_holds (copyright_notice_id, kind, placed_by_id)
+      VALUES (${noticeId}, ${kind}::copyright_case_preservation_kinds, ${currentUser.id}) RETURNING id`)
+      assert(rows[0], 500, 'Copyright preservation hold was not recorded')
+      await advanceCopyrightLastLegalActivityAt(query, locked)
+      await query.commit()
+      return rows[0]
+    },
+    'Conflicting copyright case preservation hold',
+    CONFLICT,
+  )
 }
 
 export async function releaseCopyrightCasePreservationHold(

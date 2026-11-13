@@ -1,4 +1,14 @@
-import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
+import { assertServiceCounterReview } from '@voucha/test-helpers/copyright-service-counter-review-outcome'
+import { seedRestorationCounterApproval } from '@voucha/test-helpers/copyright-restoration-counter-approval-fixture'
+import {
+  assertServiceAppealReview,
+  assertServiceIncompleteAppeal,
+} from '@voucha/test-helpers/copyright-service-appeal-outcome'
+import { seedEffectiveAppealDecision } from '@voucha/test-helpers/copyright-effective-review-decisions'
+import { seedServiceReviewRestriction } from '@voucha/test-helpers/copyright-service-review-prerequisites'
+import { seedServiceReviewAppeal } from '@voucha/test-helpers/copyright-service-appeal-prerequisite'
+import { seedRestorationCounterNotice } from '@voucha/test-helpers/copyright-restoration-counter-notice-fixture'
+import { seedCompletedTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -13,15 +23,10 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import {
   copyrightAppealRecommendations,
-  createCopyrightAppeal,
-  createCopyrightCounterNotice,
   createCopyrightFormIntake,
   getCopyrightParticipantNoticeDetail,
   prepareCopyrightEmailDelivery,
-  reviewCopyrightAppeal,
-  reviewCopyrightCounterNotice,
 } from './index.mts'
-import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -64,7 +69,7 @@ async function createRestrictedFixture(targetCount = 1, detachBeforeScreening = 
       })),
     },
   })
-  await appendTestCopyrightFormScreening({
+  const screeningId = await seedCompletedTestCopyrightFormScreening({
     intakeId: intake.intake.id,
     inputSha256: Buffer.alloc(32, 4),
     recommendation: 'not_obviously_invalid',
@@ -78,7 +83,7 @@ async function createRestrictedFixture(targetCount = 1, detachBeforeScreening = 
       await removeTestPostImage(postId, imageId)
     }
   }
-  await applyNonSpamSignedInCopyrightFormScreening(intake.intake.copyright_notice_submission_id)
+  await seedServiceReviewRestriction(intake, moderator, screeningId)
   const aggregate = await getCopyrightNoticePrivateAggregate(intake.intake.copyright_notice_id)
   if (!aggregate?.restrictions[0]) throw new Error('fixture restriction missing')
   return {
@@ -117,7 +122,7 @@ describe('copyright submission moderator reviews', () => {
 
   it('loads a signed-in appeal from its submission-bound encrypted payload', async () => {
     const fixture = await createRestrictedFixture()
-    const appeal = await createCopyrightAppeal(
+    const appeal = await seedServiceReviewAppeal(
       fixture.poster,
       fixture.noticeId,
       crypto.randomUUID(),
@@ -131,8 +136,9 @@ describe('copyright submission moderator reviews', () => {
   })
 
   it('records advisory provenance and reverses an appealed restriction only by moderator action', async () => {
+    expect.hasAssertions()
     const fixture = await createRestrictedFixture()
-    const appeal = await createCopyrightAppeal(
+    const appeal = await seedServiceReviewAppeal(
       fixture.poster,
       fixture.noticeId,
       crypto.randomUUID(),
@@ -150,64 +156,70 @@ describe('copyright submission moderator reviews', () => {
     const recommendation = aggregate?.appealRecommendations[0]
     if (!recommendation) throw new Error('fixture recommendation missing')
 
-    const result = await reviewCopyrightAppeal({
+    const input = {
       submissionId: appeal.submission.id,
       currentUser: fixture.moderator,
       recommendationId: recommendation.id,
       manualFallbackReason: null,
       rationale: 'The supplied record supports reversal.',
-      decisions: [{ restrictionId: fixture.restrictionId, action: 'reverse' }],
-    })
-    expect(result.reviewIds).toHaveLength(1)
-    const reviewed = await getCopyrightNoticePrivateAggregate(fixture.noticeId)
-    expect(reviewed?.restrictions[0]).toMatchObject({
-      human_review_action: 'reverse',
-      lifted_at: null,
-    })
-    expect(reviewed?.actionIntents).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          copyright_restriction_id: fixture.restrictionId,
-          action: 'restore',
-          state: 'pending',
-        }),
-      ]),
+      decisions: [{ restrictionId: fixture.restrictionId, action: 'reverse' as const }],
+    }
+    await assertServiceAppealReview(input, fixture)
+  })
+
+  it('replays a committed appeal with its advisory provenance and no extra effects', async () => {
+    expect.hasAssertions()
+    const fixture = await createRestrictedFixture()
+    const appeal = await seedServiceReviewAppeal(
+      fixture.poster,
+      fixture.noticeId,
+      crypto.randomUUID(),
+      {
+        reason: 'I created this image.',
+        targetIds: [fixture.targetId],
+      },
     )
-    expect(reviewed?.appealReviews).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ id: result.reviewIds[0], action: 'reverse' }),
-      ]),
-    )
-    await expect(
-      reviewCopyrightAppeal({
-        submissionId: appeal.submission.id,
-        currentUser: fixture.moderator,
-        recommendationId: recommendation.id,
-        manualFallbackReason: null,
-        rationale: 'The same completed review may be safely replayed.',
-        decisions: [{ restrictionId: fixture.restrictionId, action: 'reverse' }],
-      }),
-    ).resolves.toEqual(result)
+    await copyrightAppealRecommendations.append({
+      submissionId: appeal.submission.id,
+      inputSha256: Buffer.alloc(32, 8),
+      promptVersion: 'copyright-appeal-v1',
+      model: 'test-model',
+      recommendation: 'reverse',
+      rationale: 'The appeal warrants human review.',
+    })
+    const aggregate = await getCopyrightNoticePrivateAggregate(fixture.noticeId)
+    const input = {
+      submissionId: appeal.submission.id,
+      currentUser: fixture.moderator,
+      recommendationId: aggregate!.appealRecommendations[0]!.id,
+      manualFallbackReason: null,
+      rationale: 'The same completed review may be safely replayed.',
+      decisions: [{ restrictionId: fixture.restrictionId, action: 'reverse' as const }],
+    }
+    await seedEffectiveAppealDecision(input, fixture.noticeId)
+    await assertServiceAppealReview(input, fixture, { replay: true })
   })
 
   it('requires one decision for every active restriction named by an appeal', async () => {
     const fixture = await createRestrictedFixture(2)
-    const appeal = await createCopyrightAppeal(
+    const appeal = await seedServiceReviewAppeal(
       fixture.poster,
       fixture.noticeId,
       crypto.randomUUID(),
       { reason: 'I created both images.', targetIds: fixture.targetIds },
     )
-    await expect(
-      reviewCopyrightAppeal({
+    await assertServiceIncompleteAppeal(
+      {
         submissionId: appeal.submission.id,
         currentUser: fixture.moderator,
         recommendationId: null,
         manualFallbackReason: 'The record is sufficient without an agent recommendation.',
         rationale: 'All appealed restrictions require a single complete decision.',
         decisions: [{ restrictionId: fixture.restrictionIds[0]!, action: 'reverse' }],
-      }),
-    ).rejects.toMatchObject({ status: 422 })
+      },
+      fixture.noticeId,
+      fixture.poster.id,
+    )
     const aggregate = await getCopyrightNoticePrivateAggregate(fixture.noticeId)
     expect(aggregate?.restrictions).toEqual(
       expect.arrayContaining([
@@ -218,45 +230,33 @@ describe('copyright submission moderator reviews', () => {
   })
 
   it('starts the statutory clock only after a moderator accepts the counter-notice', async () => {
+    expect.hasAssertions()
     const fixture = await createRestrictedFixture()
-    const counter = await createCopyrightCounterNotice(
-      fixture.poster,
-      fixture.noticeId,
-      crypto.randomUUID(),
+    const counter = await seedRestorationCounterNotice(fixture.poster, fixture.noticeId, [
+      fixture.targetId,
+    ])
+    await assertServiceCounterReview(
       {
-        name: 'Poster',
-        address: '1 Main Street',
-        telephone: '555-0100',
-        consentToFederalJurisdiction: true,
-        consentToServiceOfProcess: true,
-        goodFaithMisidentificationUnderPenaltyOfPerjury: true,
-        electronicSignature: 'Poster',
-        targetIds: [fixture.targetId],
+        submissionId: counter.submission.id,
+        currentUser: fixture.moderator,
+        is_accepted: true,
+        rationale: 'The structured counter-notice is formally complete.',
       },
+      fixture,
     )
-    const result = await reviewCopyrightCounterNotice({
+  })
+
+  it('forwards a committed accepted counter-notice and replays its clock without extra effects', async () => {
+    const fixture = await createRestrictedFixture()
+    const counter = await seedRestorationCounterNotice(fixture.poster, fixture.noticeId, [
+      fixture.targetId,
+    ])
+    await seedRestorationCounterApproval({
+      noticeId: fixture.noticeId,
       submissionId: counter.submission.id,
-      currentUser: fixture.moderator,
-      is_accepted: true,
-      rationale: 'The structured counter-notice is formally complete.',
+      moderator: fixture.moderator,
     })
-    expect(result.deadlineId).not.toBeNull()
     const aggregate = await getCopyrightNoticePrivateAggregate(fixture.noticeId)
-    expect(aggregate?.deadlines).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          qualifying_counter_notice_assessment_identity_id: result.assessmentId,
-        }),
-      ]),
-    )
-    expect(aggregate?.counterNoticeReviews).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          copyright_notice_submission_assessment_identity_id: result.assessmentId,
-          is_accepted: true,
-        }),
-      ]),
-    )
     const forwarding = aggregate?.deliveryIntents.find(
       intent =>
         intent.copyright_notice_submission_id === counter.submission.id &&
@@ -276,13 +276,15 @@ describe('copyright submission moderator reviews', () => {
     expect(delivery.text).toContain('if my address is outside the United States')
     expect(delivery.text).toContain('Consent to service of process:')
     expect(delivery.text).toContain('Electronic signature: Poster')
-    await expect(
-      reviewCopyrightCounterNotice({
+    await assertServiceCounterReview(
+      {
         submissionId: counter.submission.id,
         currentUser: fixture.moderator,
         is_accepted: true,
         rationale: 'The completed review may be safely replayed.',
-      }),
-    ).resolves.toEqual(result)
+      },
+      fixture,
+      { replay: true },
+    )
   })
 })

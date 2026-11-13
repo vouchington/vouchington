@@ -1,3 +1,4 @@
+import { readCopyrightScreeningCoverage } from '@data-stores/psql/copyright-preservation-coverage'
 import { getCopyrightNoticesWorkLimit } from './work-limits.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
@@ -33,7 +34,10 @@ async function startCopyrightFormScreeningInTransaction(
   intakeId: string,
   transaction: Transaction,
 ): Promise<CopyrightFormScreeningAttempt> {
-  await lockCopyrightFormReview(intakeId, transaction)
+  await Promise.all([
+    readCopyrightScreeningCoverage(transaction, intakeId),
+    lockCopyrightFormReview(intakeId, transaction),
+  ])
   await transaction(sql`/* startCopyrightFormScreening:finishPrior */
     UPDATE copyright_notice_form_screening_attempts SET failed_at = clock_timestamp()
     WHERE copyright_notice_form_intake_id = ${intakeId} AND state = 'pending'
@@ -55,8 +59,11 @@ export async function claimCopyrightFormScreening(
   intakeId: string,
   claimBefore = new Date(),
 ): Promise<CopyrightFormScreeningAttempt | null> {
-  await using transaction = await beginTransaction()
-  await lockCopyrightFormReview(intakeId, transaction)
+  await using transaction = await beginTransaction({ serializable: true })
+  await Promise.all([
+    readCopyrightScreeningCoverage(transaction, intakeId),
+    lockCopyrightFormReview(intakeId, transaction),
+  ])
   const { rows: currentRows } = await transaction<{
     attempt_number: number
     execution_token: string
@@ -108,13 +115,15 @@ export async function completeCopyrightFormScreening(
 ): Promise<string | null> {
   if (attempt.intakeId !== input.intakeId) throw new TypeError('Screening attempt intake mismatch')
   const guidance = parseCopyrightFormGuidance(input.guidance)
-  await using transaction = await beginTransaction()
-  await lockCopyrightFormReview(attempt.intakeId, transaction)
-  await transaction(sql`/* completeCopyrightFormScreening:lockNotice */
+  await using transaction = await beginTransaction({ serializable: true })
+  await Promise.all([
+    readCopyrightScreeningCoverage(transaction, attempt.intakeId),
+    lockCopyrightFormReview(attempt.intakeId, transaction),
+  ])
+  await transaction(sql`/* completeCopyrightFormScreening:notice */
     SELECT notice.id FROM copyright_notice_form_intakes intake
     JOIN copyright_notices notice ON notice.id = intake.copyright_notice_id
-    WHERE intake.id = ${attempt.intakeId}
-    FOR KEY SHARE OF notice`)
+    WHERE intake.id = ${attempt.intakeId}`)
   const { rows: executions } = await transaction<{
     state: string
     copyright_notice_form_screening_id: string | null
@@ -172,8 +181,11 @@ export async function completeCopyrightFormScreening(
 export async function failCopyrightFormScreening(
   attempt: CopyrightFormScreeningAttempt,
 ): Promise<void> {
-  await using transaction = await beginTransaction()
-  await lockCopyrightFormReview(attempt.intakeId, transaction)
+  await using transaction = await beginTransaction({ serializable: true })
+  await Promise.all([
+    readCopyrightScreeningCoverage(transaction, attempt.intakeId),
+    lockCopyrightFormReview(attempt.intakeId, transaction),
+  ])
   await transaction(sql`/* failCopyrightFormScreening */
     UPDATE copyright_notice_form_screening_attempts
     SET failed_at = clock_timestamp()

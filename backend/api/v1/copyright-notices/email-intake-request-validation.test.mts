@@ -1,5 +1,6 @@
+import { assertCopyrightEmailApprovalAdmission } from '@voucha/test-helpers/copyright-api-admission-outcomes'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
+import { createCopyrightApiParsedIntake as createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-api-admission-fixtures'
 import { createCopyrightFormFixture } from '@voucha/test-helpers/copyright-route-fixtures'
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
@@ -129,10 +130,18 @@ describe('copyright email intake request contracts', () => {
       expect(unknownTargetKey.body.message).toBe(INVALID_BODY)
       await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([])
 
-      await staff.post(url).send(body).expect(201)
-      await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([
-        { decision: 'approved', promoted_copyright_notice_id: expect.any(String) },
-      ])
+      const accepted = await staff.post(url).send(body)
+      await assertCopyrightEmailApprovalAdmission(
+        {
+          status: accepted.status,
+          code: accepted.body.code,
+          message: accepted.body.message,
+          noticeId: accepted.body.copyright_notice?.id,
+        },
+        intake,
+        body.claimant_display_name,
+        body.targets[0]!.image_id,
+      )
     })
 
     it('keeps the field-named parser message ahead of the schema diagnostic', async () => {

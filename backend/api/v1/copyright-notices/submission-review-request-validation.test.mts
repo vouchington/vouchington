@@ -1,40 +1,26 @@
+import { createCopyrightApiUnreviewedCase } from '@voucha/test-helpers/copyright-api-review-fixtures'
+import { assertCopyrightApiConfirmation } from '@voucha/test-helpers/copyright-api-confirmation-outcomes'
+import { assertCopyrightApiHoldAssessment } from '@voucha/test-helpers/copyright-api-hold-outcomes'
+import { assertCopyrightApiCounterRejection } from '@voucha/test-helpers/copyright-api-counter-review-outcome'
+import { seedEffectiveReviewAppeal } from '@voucha/test-helpers/copyright-effective-review-decisions'
+import { seedRestorationCounterNotice } from '@voucha/test-helpers/copyright-restoration-counter-notice-fixture'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { counterNoticeBody } from '@voucha/test-helpers/copyright-route-fixtures'
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { insertEncryptedCopyrightHoldSubmission } from '@voucha/test-helpers/data-stores/psql/copyright-hold-submission'
-import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { createRetentionSignedInForm } from '@voucha/test-helpers/services/copyright-notices/retention-signed-in-form'
 
 const SUBMISSIONS = '/api/v1/copyright-submissions'
 const INVALID_BODY = 'Invalid request body'
 const ROUTES = ['appeal-reviews', 'counter-notice-reviews', 'legal-hold-assessments']
 const FALLBACK = 'No recommendation is available.'
 
-async function createStaff() {
+async function createStaff(user?: Awaited<ReturnType<typeof createTestUser>>) {
   const staff = createRequest()
-  await staff.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
+  await staff.authenticateAs(user ?? (await createTestUser({ extraRoles: ['moderator'] })))
   return staff
-}
-
-/** A restricted notice whose poster is signed in, plus the ids a review decision names. */
-async function createRestrictedCase() {
-  const poster = await createTestUser()
-  const { copyright_notice_id: noticeId } = await createRetentionSignedInForm(poster.id)
-  const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
-  const restrictionId = aggregate?.restrictions[0]?.id
-  if (!restrictionId) throw new Error('fixture restriction missing')
-  const posterRequest = createRequest()
-  await posterRequest.authenticateAs(poster)
-  return {
-    noticeId,
-    restrictionId,
-    posterRequest,
-    targetId: await readCopyrightNoticeTargetId(noticeId),
-  }
 }
 
 function appealReview(restrictionId: string) {
@@ -145,25 +131,24 @@ describe('copyright submission review request contracts', () => {
     })
 
     it('confirms the restriction for a valid request and records nothing for a rejected one', async () => {
-      const { noticeId, restrictionId, targetId, posterRequest } = await createRestrictedCase()
-      const appeal = await posterRequest
-        .post(`/api/v1/copyright-notices/${noticeId}/appeals`)
-        .set('Idempotency-Key', crypto.randomUUID())
-        .send({ reason: 'This is my hosted material.', target_ids: [targetId] })
-        .expect(201)
-      const staff = await createStaff()
-      const url = `${SUBMISSIONS}/${appeal.body.copyright_submission.id}/appeal-reviews`
-
+      const fixture = await createCopyrightApiUnreviewedCase()
+      const { noticeId, restrictionId, targetId } = fixture
+      const appeal = await seedEffectiveReviewAppeal(noticeId, fixture.poster.id, targetId)
+      const staff = await createStaff(fixture.moderator)
+      const url = `${SUBMISSIONS}/${appeal.submission.id}/appeal-reviews`
+      const before = await getCopyrightNoticePrivateAggregate(noticeId)
       await staff
         .post(url)
         .send({ ...appealReview(restrictionId), injected: true })
         .expect(422)
-      expect((await getCopyrightNoticePrivateAggregate(noticeId))?.appealReviews).toEqual([])
-
-      const reviewed = await staff.post(url).send(appealReview(restrictionId)).expect(200)
-      expect(reviewed.body.copyright_notice).toEqual({ id: noticeId })
-      expect(reviewed.body.review_ids).toHaveLength(1)
-      expect((await getCopyrightNoticePrivateAggregate(noticeId))?.appealReviews).toHaveLength(1)
+      expect(await getCopyrightNoticePrivateAggregate(noticeId)).toEqual(before)
+      await assertCopyrightApiConfirmation(
+        staff,
+        fixture,
+        url,
+        appealReview(restrictionId),
+        appeal.submission.id,
+      )
     })
   })
 
@@ -199,26 +184,25 @@ describe('copyright submission review request contracts', () => {
     })
 
     it('reviews a counter-notice for a valid request and records nothing for a rejected one', async () => {
-      const { noticeId, targetId, posterRequest } = await createRestrictedCase()
-      const counter = await posterRequest
-        .post(`/api/v1/copyright-notices/${noticeId}/counter-notices`)
-        .set('Idempotency-Key', crypto.randomUUID())
-        .send(counterNoticeBody(targetId))
-        .expect(201)
-      const staff = await createStaff()
-      const url = `${SUBMISSIONS}/${counter.body.copyright_submission.id}/counter-notice-reviews`
-
+      const fixture = await createCopyrightApiUnreviewedCase()
+      const { noticeId, targetId } = fixture
+      const counter = await seedRestorationCounterNotice(fixture.poster, noticeId, [targetId])
+      const staff = await createStaff(fixture.moderator)
+      const url = `${SUBMISSIONS}/${counter.submission.id}/counter-notice-reviews`
+      const before = await getCopyrightNoticePrivateAggregate(noticeId)
       await staff
         .post(url)
         .send({ ...counterReview, injected: true })
         .expect(422)
-      expect((await getCopyrightNoticePrivateAggregate(noticeId))?.counterNoticeReviews).toEqual([])
-
-      const reviewed = await staff.post(url).send(counterReview).expect(200)
-      expect(reviewed.body.copyright_notice).toEqual({ id: noticeId })
-      expect(
-        (await getCopyrightNoticePrivateAggregate(noticeId))?.counterNoticeReviews,
-      ).toHaveLength(1)
+      expect(await getCopyrightNoticePrivateAggregate(noticeId)).toEqual(before)
+      await assertCopyrightApiCounterRejection({
+        staff,
+        noticeId,
+        submissionId: counter.submission.id,
+        reviewerId: fixture.moderator.id,
+        posterId: fixture.poster.id,
+        body: counterReview,
+      })
     })
   })
 
@@ -260,12 +244,14 @@ describe('copyright submission review request contracts', () => {
     })
 
     it('records the assessment for a valid request and nothing for a rejected one', async () => {
-      const { noticeId, targetId } = await createRestrictedCase()
-      const staff = await createStaff()
+      const fixture = await createCopyrightApiUnreviewedCase()
+      const { noticeId, targetId } = fixture
+      const staff = await createStaff(fixture.moderator)
       // The helper encrypts the statement, so the staff queue can still read this case.
       const holdId = await insertEncryptedCopyrightHoldSubmission(noticeId)
       const url = `${SUBMISSIONS}/${holdId}/legal-hold-assessments`
 
+      const before = await getCopyrightNoticePrivateAggregate(noticeId)
       await staff
         .post(url)
         .send({ ...legalHold(targetId), injected: true })
@@ -275,10 +261,13 @@ describe('copyright submission review request contracts', () => {
         .send({ ...legalHold(targetId), target_ids: [targetId, targetId] })
         .expect(422)
 
-      const created = await staff.post(url).send(legalHold(targetId)).expect(201)
-      expect(created.body.copyright_legal_hold_assessment).toMatchObject({
-        copyright_notice_submission_id: holdId,
-        target_ids: [targetId],
+      expect(await getCopyrightNoticePrivateAggregate(noticeId)).toEqual(before)
+      await assertCopyrightApiHoldAssessment({
+        staff,
+        noticeId,
+        submissionId: holdId,
+        reviewerId: fixture.moderator.id,
+        body: legalHold(targetId),
       })
     })
   })

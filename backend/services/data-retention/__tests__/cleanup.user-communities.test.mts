@@ -18,6 +18,12 @@ import { getCommunity } from '../../communities/get.mts'
 import { getCommunityMember } from '../../communities/members/get.mts'
 import { listNotifications } from '../../notifications/list.mts'
 import { cleanupSoftDeletedUser } from '../cleanup-soft-deleted-user.mts'
+import { cleanupSoftDeletedUserBatch } from '../cleanup-batches.mts'
+import {
+  commitCommunityPurgeSelection,
+  readCommunityFinalPurgeState,
+  completedCommunityFinalPurgeState,
+} from '@voucha/test-helpers/community-purge-committed-selection'
 import { dataRetentionConfig } from '../config.mts'
 import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
 import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
@@ -112,18 +118,69 @@ describe('community preservation during final user purge', () => {
       community_purge_batch_size: 1,
     })
     try {
-      await expect(cleanupSoftDeletedUser(owner.id, window.upperBoundDate)).resolves.toMatchObject({
-        deleted: 0,
-        hasMore: true,
-      })
+      await commitCommunityPurgeSelection(owner.id)
       await expect(getCommunityMember(community.id, selected.user_id)).resolves.toMatchObject({
         role: 'owner',
       })
-      await expect(cleanupSoftDeletedUser(owner.id, window.upperBoundDate)).resolves.toMatchObject({
-        deleted: 1,
-        hasMore: false,
+      await expect(getCommunityMember(community.id, owner.id)).resolves.toMatchObject({
+        role: 'moderator',
       })
-      await expect(getTestUserRaw(owner.id)).resolves.toBeNull()
+      const participants = [
+        owner.id,
+        first!.id,
+        second!.id,
+        newer!.id,
+        removed!.id,
+        deleted!.id,
+        suspended!.id,
+        member!.id,
+      ]
+      const before = await readCommunityFinalPurgeState(owner.id, community.id, participants)
+      expect(before.classifierPrompts).toEqual([])
+      expect(
+        before.members.map(row => ({
+          user: row.user_id,
+          role: row.role,
+          removed: row.removed_at !== null,
+        })),
+      ).toEqual(
+        expect.arrayContaining([
+          { user: removed!.id, role: 'moderator', removed: true },
+          { user: deleted!.id, role: 'moderator', removed: false },
+          { user: suspended!.id, role: 'moderator', removed: false },
+          { user: member!.id, role: 'member', removed: false },
+          { user: newer!.id, role: 'moderator', removed: false },
+          ...[first!, second!].map(user => ({
+            user: user.id,
+            role: user.id === selected.user_id ? 'owner' : 'moderator',
+            removed: false,
+          })),
+        ]),
+      )
+      expect(before.notifications).toEqual([
+        expect.objectContaining({
+          user_id: selected.user_id,
+          entity_type: 'community_ownership_transfer',
+          title: `You now own ${community.name}`,
+          body: `Ownership of ${community.name} was transferred to you.`,
+        }),
+      ])
+      const result = await cleanupSoftDeletedUserBatch(
+        window.upperBoundDate,
+        1000,
+        window.lowerBoundDate,
+        undefined,
+        [owner.id],
+      )
+      const state = await readCommunityFinalPurgeState(owner.id, community.id, participants)
+      // The real final account transaction either commits every cascade or rolls back its whole page.
+      expect([
+        { result: { deleted: 0, hasMore: false }, state: before },
+        {
+          result: { deleted: 1, hasMore: false },
+          state: completedCommunityFinalPurgeState(before, owner.id),
+        },
+      ]).toContainEqual({ result, state })
       await expect(getCommunity(community.id)).resolves.toMatchObject({
         id: community.id,
         created_by_id: owner.id,

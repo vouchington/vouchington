@@ -62,11 +62,11 @@ export async function getTestExpiredCopyrightScreeningClaimTime(intakeId: string
   return rows[0]!.cutoff
 }
 
-/** Retains actual form authority until PostgreSQL confirms admission is waiting behind it. */
+/** Commit the owned screening retry before the overlapping restriction can leave its gate. */
 export async function startTestCopyrightScreeningBeforeAdmission<T>(
   intakeId: string,
   admit: () => Promise<T>,
-): Promise<T> {
+) {
   await using transaction = await beginTransaction()
   await transaction(sql`/* startTestCopyrightScreeningBeforeAdmission:holdAttempt */
     SELECT id FROM copyright_notice_form_screening_attempts
@@ -112,9 +112,5 @@ export async function startTestCopyrightScreeningBeforeAdmission<T>(
       ? screeningResult.error
       : new Error('Copyright screening operation failed', { cause: screeningResult.error })
   if (!screeningResult.value) throw new Error('Copyright screening retry was not claimed')
-  if (result.error)
-    throw result.error instanceof Error
-      ? result.error
-      : new Error('Copyright screening admission failed', { cause: result.error })
-  return result.value as T
+  return { screening: screeningResult.value, admission: result }
 }

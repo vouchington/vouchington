@@ -18,15 +18,12 @@ import {
   liftTestCopyrightRestriction,
 } from '@voucha/test-helpers/dsa-statement-submission-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
+import { seedDsaProjectionDecision } from '@voucha/test-helpers/copyright-dsa-projection-prerequisites'
 import {
-  processCopyrightActionIntent,
-  recordEuCopyrightStatementOfReasons,
-  recordUkCopyrightReview,
-} from './index.mts'
-import {
-  openHeldCounterNoticeRestore,
-  recordOrdinaryCopyrightHold,
-} from '@voucha/test-helpers/copyright-restoration-hold-scene'
+  seedCompletedStatutoryContract,
+  seedStatutoryContractHold,
+} from '@voucha/test-helpers/copyright-statutory-contract-fixtures'
+import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 import { prepareDsaStatementSubmissionSweep } from './dsa-statement-submission-sweep.mts'
 
 async function configureSweep(
@@ -130,24 +127,22 @@ describe('DSA statement submission materialization', () => {
     await liftTestCopyrightRestriction(lifted.restrictionId)
 
     const eu = await createTestDsaApprovalWithdrawalScene('eu_dsa')
-    await recordEuCopyrightStatementOfReasons(eu.staff, eu.noticeId, {
+    await seedDsaProjectionDecision('eu_dsa', eu.staff, eu.noticeId, {
       text: 'Private EU statement.',
       publicExplanation: 'Copyright was shown.',
       outcome: 'restrict',
       targets: eu.targets,
     })
     const uk = await createTestDsaApprovalWithdrawalScene('uk')
-    await recordUkCopyrightReview(uk.staff, uk.noticeId, {
+    await seedDsaProjectionDecision('uk', uk.staff, uk.noticeId, {
       text: 'Private UK review.',
       publicExplanation: 'Copyright was shown.',
       outcome: 'restrict',
       targets: uk.targets,
     })
     const court = await openHeldCounterNoticeRestore()
-    await expect(processCopyrightActionIntent(court.restore.id, court.restorationAt)).resolves.toBe(
-      'applied',
-    )
-    await recordOrdinaryCopyrightHold(court)
+    await seedCompletedStatutoryContract(court)
+    await seedStatutoryContractHold(court)
     const courtRestrictions =
       (await getCopyrightNoticePrivateAggregate(court.notice.id))?.restrictions ?? []
     expect(courtRestrictions).toHaveLength(2)
@@ -211,7 +206,7 @@ describe('DSA statement submission materialization', () => {
 
   it('materializes a restriction linked to a withdrawn receipt approval before the first sweep', async () => {
     const scene = await createTestDsaApprovalWithdrawalScene()
-    await recordEuCopyrightStatementOfReasons(scene.staff, scene.noticeId, {
+    await seedDsaProjectionDecision('eu_dsa', scene.staff, scene.noticeId, {
       text: 'Private EU statement.',
       publicExplanation: 'Copyright was shown.',
       outcome: 'restrict',

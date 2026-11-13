@@ -117,49 +117,54 @@ describe('copyright staff queue urgency', () => {
       now: new Date(decisionNow.getTime() + 1),
     })
     const ownedIds = [missed, due, filingCase, olderIntake]
-    // A later unrelated intake sorts beyond the owned span, exposing any walk
-    // that scans the shared queue tail instead of stopping after owned cases.
+    // A later unrelated intake lies outside every required single-row anchor.
     await createGuestNotice(decisionNow)
     const unreadable = await insertUnreadableCopyrightQueueCase(
       new Date(decisionNow.getTime() - 31 * day),
     )
-    await withCopyrightStaffQueueHttp(moderator, async ({ read, assertInterleaving }) => {
-      await assertInterleaving(due, interleavingControl, filingCase, false)
-      const first = await read(ownedIds, false, 100)
-      expect(first.copyright_notices.map(item => item.id)).toEqual(ownedIds)
-      const walked = await read(ownedIds, false, 1)
-      const owned = walked.copyright_notices
-      expect(new Set(owned.map(item => item.id)).size).toBe(owned.length)
-      expect(walked.observedIds).toContain(interleavingControl)
-      expect(walked.observedIds).not.toContain(trailingControl)
-      expect(walked.observedIds).not.toContain(unreadable)
-      expect(walked.rawObservedIds).toContain(unreadable)
-      expect(walked.page_info.has_next_page).toBe(true)
-      expect(walked.page_info.end_cursor).toEqual(expect.any(String))
-      expect(owned.map(notice => notice.id)).toEqual(ownedIds)
-      const [missedCase, dueCase, unassessedCase, intakeCase] = owned
-      expect(missedCase).toMatchObject({
-        reasons: ['deadline_missed'],
-        next_deadline: {
-          escalation_at: expect.any(String),
-          restoration_deadline_at: expect.any(String),
-        },
-      })
-      expect(Date.parse(missedCase!.next_deadline!.restoration_deadline_at)).toBeLessThan(
-        decisionNow.getTime(),
-      )
-      expect(dueCase).toMatchObject({ reasons: ['deadline_due'] })
-      expect(Date.parse(dueCase!.next_deadline!.escalation_at)).toBeLessThan(decisionNow.getTime())
-      expect(Date.parse(dueCase!.next_deadline!.restoration_deadline_at)).toBeGreaterThan(
-        decisionNow.getTime(),
-      )
-      expect(dueCase!.waiting_since).toBe(dueCase!.next_deadline!.escalation_at)
-      expect(unassessedCase).toMatchObject({ id: filingCase, next_deadline: null })
-      expect(unassessedCase!.reasons).toContain('legal_hold_review')
-      expect(intakeCase).toMatchObject({ reasons: ['form_intake_review'], next_deadline: null })
-      expect(Date.parse(intakeCase!.waiting_since)).toBeLessThan(
-        Date.parse(missedCase!.waiting_since),
-      )
-    })
+    await withCopyrightStaffQueueHttp(
+      moderator,
+      async ({ read, assertInterleaving, assertUnreadableInterleaving }) => {
+        await assertInterleaving(due, interleavingControl, filingCase, false)
+        await assertUnreadableInterleaving(due, unreadable, olderIntake, false)
+        const first = await read(ownedIds, false, 100, trailingControl)
+        expect(first.copyright_notices.map(item => item.id)).toEqual(ownedIds)
+        const anchored = await read(ownedIds, false, 1, trailingControl)
+        const owned = anchored.copyright_notices
+        expect(new Set(owned.map(item => item.id)).size).toBe(owned.length)
+        expect(anchored.observedIds).toContain(interleavingControl)
+        expect(anchored.observedIds).not.toContain(trailingControl)
+        expect(anchored.observedIds).not.toContain(unreadable)
+        expect(anchored.rawObservedIds).toContain(unreadable)
+        expect(anchored.page_info.has_next_page).toBe(true)
+        expect(anchored.page_info.end_cursor).toEqual(expect.any(String))
+        expect(owned.map(notice => notice.id)).toEqual(ownedIds)
+        const [missedCase, dueCase, unassessedCase, intakeCase] = owned
+        expect(missedCase).toMatchObject({
+          reasons: ['deadline_missed'],
+          next_deadline: {
+            escalation_at: expect.any(String),
+            restoration_deadline_at: expect.any(String),
+          },
+        })
+        expect(Date.parse(missedCase!.next_deadline!.restoration_deadline_at)).toBeLessThan(
+          decisionNow.getTime(),
+        )
+        expect(dueCase).toMatchObject({ reasons: ['deadline_due'] })
+        expect(Date.parse(dueCase!.next_deadline!.escalation_at)).toBeLessThan(
+          decisionNow.getTime(),
+        )
+        expect(Date.parse(dueCase!.next_deadline!.restoration_deadline_at)).toBeGreaterThan(
+          decisionNow.getTime(),
+        )
+        expect(dueCase!.waiting_since).toBe(dueCase!.next_deadline!.escalation_at)
+        expect(unassessedCase).toMatchObject({ id: filingCase, next_deadline: null })
+        expect(unassessedCase!.reasons).toContain('legal_hold_review')
+        expect(intakeCase).toMatchObject({ reasons: ['form_intake_review'], next_deadline: null })
+        expect(Date.parse(intakeCase!.waiting_since)).toBeLessThan(
+          Date.parse(missedCase!.waiting_since),
+        )
+      },
+    )
   })
 })

@@ -24,7 +24,7 @@ export async function checkCopyrightThreadBlockerPage(
   const { rows: generations } = await transaction<{ generation: string }>(sql`
     /* readCopyrightThreadBlockerGeneration */
     SELECT generation FROM copyright_notice_thread_blocker_generations
-    WHERE copyright_notice_id = ${noticeId} FOR UPDATE`)
+    WHERE copyright_notice_id = ${noticeId}`)
   const generation = generations[0]?.generation ?? '0'
   const changed = generation !== cursor.generation
   const current: BlockerCursor = changed

@@ -21,7 +21,10 @@ export function currentUserCanApproveCopyrightJurisdictionPolicy(
   return currentUser?.roles?.includes('administrator') === true
 }
 
-function currentCopyrightJurisdictionPolicySql(jurisdiction: TerritorialCopyrightJurisdiction) {
+function currentCopyrightJurisdictionPolicySql(
+  jurisdiction: TerritorialCopyrightJurisdiction,
+  approvalIds?: readonly string[],
+) {
   return sql`/* currentCopyrightJurisdictionPolicy */
     SELECT approval.id, approval.jurisdiction, approval.policy_version
     FROM copyright_jurisdiction_policy_approvals approval
@@ -30,36 +33,17 @@ function currentCopyrightJurisdictionPolicySql(jurisdiction: TerritorialCopyrigh
         SELECT 1 FROM copyright_jurisdiction_policy_withdrawals withdrawal
         WHERE withdrawal.copyright_jurisdiction_policy_approval_id = approval.id
       )
-    ORDER BY approval.approved_at DESC, approval.id DESC
-    LIMIT 1
-  `
-}
-
-/** Read committed lets a policy insert land between two statements of a transaction that has
- * already concealed every approval it could see. Hold this lock from that concealment until the
- * transaction ends, and take it before every insert that commits. */
-function copyrightJurisdictionPolicyLockKey(
-  jurisdiction: TerritorialCopyrightJurisdiction,
-): string {
-  return `copyright-jurisdiction-policy:${jurisdiction}`
-}
-
-async function lockCopyrightJurisdictionPolicy(
-  jurisdiction: TerritorialCopyrightJurisdiction,
-  query: TransactionQuery,
-): Promise<void> {
-  const lockKey = copyrightJurisdictionPolicyLockKey(jurisdiction)
-  await query(sql`/* lockCopyrightJurisdictionPolicy */
-    SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))
-  `)
+  `.append(approvalIds ? sql` AND approval.id = ANY(${approvalIds}::uuid[])` : sql``).append(sql`
+    ORDER BY approval.approved_at DESC, approval.id DESC LIMIT 1`)
 }
 
 export async function findCurrentCopyrightJurisdictionPolicy(
   jurisdiction: TerritorialCopyrightJurisdiction,
   query: QueryExecutor = read,
+  approvalIds?: readonly string[],
 ): Promise<CopyrightJurisdictionPolicyApproval | null> {
   const { rows } = await query<CopyrightJurisdictionPolicyApproval>(
-    currentCopyrightJurisdictionPolicySql(jurisdiction),
+    currentCopyrightJurisdictionPolicySql(jurisdiction, approvalIds),
   )
   return rows[0] ?? null
 }
@@ -85,12 +69,13 @@ export async function getCopyrightJurisdictionAvailability(): Promise<{
   return { eu_dsa: available.has('eu_dsa'), uk: available.has('uk') }
 }
 
-export async function lockCurrentCopyrightJurisdictionPolicy(
+export async function requireCurrentCopyrightJurisdictionPolicy(
   jurisdiction: TerritorialCopyrightJurisdiction,
   transaction: TransactionQuery,
+  approvalIds?: readonly string[],
 ): Promise<CopyrightJurisdictionPolicyApproval> {
   const { rows } = await transaction<CopyrightJurisdictionPolicyApproval>(
-    currentCopyrightJurisdictionPolicySql(jurisdiction).append(sql`FOR UPDATE OF approval`),
+    currentCopyrightJurisdictionPolicySql(jurisdiction, approvalIds),
   )
   const approval = rows[0]
   assert(approval, 403, territorialCopyrightUnavailableMessage(jurisdiction))
@@ -104,14 +89,6 @@ export async function recordCopyrightJurisdictionPolicyApproval(
   assert(currentUserCanApproveCopyrightJurisdictionPolicy(currentUser), 403, 'Forbidden')
   const policyVersion = assertPolicyVersion(input.policyVersion)
   await using transaction = await beginTransaction()
-  await lockCopyrightJurisdictionPolicy(input.jurisdiction, transaction)
-  const { rows: existing } = await transaction<{ id: string }>(
-    sql`/* recordCopyrightJurisdictionPolicyApproval:existing */
-    SELECT id FROM copyright_jurisdiction_policy_approvals
-    WHERE jurisdiction = ${input.jurisdiction} AND policy_version = ${policyVersion}
-  `,
-  )
-  assert(!existing[0], 409, 'That policy version is already recorded')
   const { rows } = await transaction<CopyrightJurisdictionPolicyApproval>(
     sql`/* recordCopyrightJurisdictionPolicyApproval */
     INSERT INTO copyright_jurisdiction_policy_approvals (
@@ -119,11 +96,12 @@ export async function recordCopyrightJurisdictionPolicyApproval(
     ) VALUES (
       ${input.jurisdiction}, ${policyVersion}, ${currentUser.id}
     )
+    ON CONFLICT (jurisdiction, policy_version) DO NOTHING
     RETURNING id, jurisdiction, policy_version
   `,
   )
   const approval = rows[0]
-  assert(approval, 500, 'Failed to record copyright policy approval')
+  assert(approval, 409, 'That policy version is already recorded')
   await transaction.commit()
   return approval
 }
@@ -142,31 +120,24 @@ export async function withdrawCopyrightJurisdictionPolicyApproval(
 
   async function execute(transaction: TransactionQuery) {
     const { rows: approvals } = await transaction<{ id: string }>(
-      sql`/* withdrawCopyrightJurisdictionPolicyApproval:lock */
+      sql`/* withdrawCopyrightJurisdictionPolicyApproval:approval */
     SELECT approval.id
     FROM copyright_jurisdiction_policy_approvals approval
     WHERE approval.id = ${approvalId}
-    FOR NO KEY UPDATE
   `,
     )
     assert(approvals[0], 404, 'Copyright policy approval not found')
-    const { rows: withdrawals } = await transaction<{ id: string }>(
-      sql`/* withdrawCopyrightJurisdictionPolicyApproval:existing */
-    SELECT id FROM copyright_jurisdiction_policy_withdrawals
-    WHERE copyright_jurisdiction_policy_approval_id = ${approvalId}
-  `,
-    )
-    assert(!withdrawals[0], 409, 'Copyright policy approval is already withdrawn')
     const { rows } = await transaction<{ id: string }>(
       sql`/* withdrawCopyrightJurisdictionPolicyApproval */
     INSERT INTO copyright_jurisdiction_policy_withdrawals (
       copyright_jurisdiction_policy_approval_id, withdrawn_by_id
     ) VALUES (${approvalId}, ${currentUser.id})
+    ON CONFLICT (copyright_jurisdiction_policy_approval_id) DO NOTHING
     RETURNING id
   `,
     )
     const withdrawal = rows[0]
-    assert(withdrawal, 500, 'Failed to withdraw copyright policy approval')
+    assert(withdrawal, 409, 'Copyright policy approval is already withdrawn')
     return withdrawal
   }
 }

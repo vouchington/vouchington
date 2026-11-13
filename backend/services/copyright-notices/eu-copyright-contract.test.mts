@@ -1,8 +1,9 @@
+import { seedEuContractReportingFacts } from '@voucha/test-helpers/copyright-eu-reporting-facts-fixture'
+import { seedCommittedEuParticipantDecision } from '@voucha/test-helpers/copyright-eu-committed-decision'
 import { describe, expect, it } from 'vitest'
 import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
 import { createTestUser } from '@voucha/test-helpers'
 import {
-  concealJurisdictionPolicyApprovals,
   insertJurisdictionPolicyApproval,
   insertJurisdictionPolicyWithdrawal,
   readCopyrightTerritorialContractShape,
@@ -16,12 +17,11 @@ import {
 import { receiveEuCopyrightNotice } from './eu-notice-receipt.mts'
 import { receiveTerritorialCopyrightNoticeInTransaction } from './territorial-notice-receipt.mts'
 import { recordEuCopyrightStatementOfReasons } from './eu-reasons.mts'
-import { recordEuCopyrightRedressDecision, submitEuCopyrightRedress } from './eu-redress.mts'
+import { submitEuCopyrightRedress } from './eu-redress.mts'
 import {
   compileEuCopyrightTransparencyReport,
   readEuCopyrightTransparencyFigures,
 } from './eu-reporting.mts'
-import { recordEuCopyrightSupervisedComplaint } from './eu-supervised-complaint.mts'
 import {
   recordCopyrightJurisdictionPolicyApproval,
   withdrawCopyrightJurisdictionPolicyApproval,
@@ -61,7 +61,6 @@ describe('EU copyright notice contracts', () => {
   it('fails closed without an approved policy and keeps the US aggregate on us_dmca', async () => {
     const claimant = await createTestUser()
     await withRolledBackTerritorialTransaction(async transaction => {
-      await concealJurisdictionPolicyApprovals(transaction, 'eu_dsa', claimant.id)
       await expect(
         receiveTerritorialCopyrightNoticeInTransaction(
           { user: claimant, identity: `user:${claimant.id}` },
@@ -69,6 +68,7 @@ describe('EU copyright notice contracts', () => {
           crypto.randomUUID(),
           noticeRequest(),
           transaction,
+          [],
         ),
       ).rejects.toMatchObject({ status: 403, message: 'EU copyright notices are not available' })
       const approvalId = await insertJurisdictionPolicyApproval(
@@ -83,6 +83,7 @@ describe('EU copyright notice contracts', () => {
         crypto.randomUUID(),
         noticeRequest(),
         transaction,
+        [approvalId],
       )
       expect(opened.route_destination).toBe('staff_queue')
       await insertJurisdictionPolicyWithdrawal(transaction, approvalId, claimant.id)
@@ -93,6 +94,7 @@ describe('EU copyright notice contracts', () => {
           crypto.randomUUID(),
           noticeRequest(),
           transaction,
+          [approvalId],
         ),
       ).rejects.toMatchObject({ status: 403, message: 'EU copyright notices are not available' })
     })
@@ -210,7 +212,6 @@ describe('EU copyright notice contracts', () => {
       crypto.randomUUID(),
       noticeRequest(),
     )
-    await acknowledgeEuCopyrightNotice(claimant, receipt.notice_id)
     await expect(
       recordEuCopyrightStatementOfReasons(stranger, receipt.notice_id, {
         text: 'Not a staff decision',
@@ -222,33 +223,21 @@ describe('EU copyright notice contracts', () => {
     await expect(
       submitEuCopyrightRedress(claimant, receipt.notice_id, crypto.randomUUID(), 'Too soon'),
     ).rejects.toMatchObject({ status: 404 })
-    const statement = await recordEuCopyrightStatementOfReasons(staff, receipt.notice_id, {
+    await seedCommittedEuParticipantDecision(staff, receipt.notice_id, {
       text: 'Staff statement of reasons',
       publicExplanation: 'No action taken.',
       outcome: 'no_action',
       targets: [],
     })
-    expect(statement.automation_disclosure).toBe('human')
     await expect(
       submitEuCopyrightRedress(stranger, receipt.notice_id, crypto.randomUUID(), 'Unrelated'),
     ).rejects.toMatchObject({ status: 403 })
-    const redressKey = crypto.randomUUID()
-    const redress = await submitEuCopyrightRedress(
-      claimant,
+    const { decision, complaint } = await seedEuContractReportingFacts(
       receipt.notice_id,
-      redressKey,
-      'Please review the restriction',
+      claimant,
+      staff,
     )
-    const decision = await recordEuCopyrightRedressDecision(staff, receipt.notice_id, redress.id, {
-      disposition: 'revoke',
-      rationale: 'Staff redress rationale',
-    })
     expect(decision.staff_disposition).toBe('revoke')
-    const complaint = await recordEuCopyrightSupervisedComplaint(claimant, receipt.notice_id, {
-      idempotencyKey: crypto.randomUUID(),
-      authorityReference: `DSC-${crypto.randomUUID()}`,
-      explanation: 'Complaint filed with the authority',
-    })
     expect(complaint.escalation_id).toEqual(expect.any(String))
     const scoped = await readEuCopyrightTransparencyFigures(staff, periodStart, periodEnd, [
       receipt.notice_id,

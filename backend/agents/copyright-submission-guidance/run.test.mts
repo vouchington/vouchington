@@ -1,3 +1,6 @@
+import { seedExportPosterFiling } from '@voucha/test-helpers/copyright-export-canonical-writes'
+import { seedCopyrightGuestCapabilities } from '@voucha/test-helpers/copyright-staff-case-states'
+import { seedAgentGuidanceHold } from '@voucha/test-helpers/copyright-agent-guidance-hold-fixture'
 import { createHash } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -14,12 +17,7 @@ import { createSignedInCopyrightForm } from '@voucha/test-helpers/services/copyr
 import { createTestCopyrightStaff } from '@voucha/test-helpers/services/copyright-notices/guest-capability'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { readTestCopyrightSubmissionGuidanceRecords } from '@voucha/test-helpers/copyright-submission-guidance-records'
-import {
-  appendCopyrightGuestFiling,
-  createCopyrightCounterNotice,
-  createCopyrightFormIntake,
-  issueCopyrightGuestCapability,
-} from '@services/copyright-notices'
+import { createCopyrightFormIntake } from '@services/copyright-notices'
 import {
   COPYRIGHT_COUNTER_NOTICE_GUIDANCE_ELEMENTS,
   COPYRIGHT_LEGAL_HOLD_GUIDANCE_CRITERIA,
@@ -85,7 +83,7 @@ describe('copyright submission guidance agent', () => {
     const noticeId = intake.copyright_notice_id
     const targetId = (await getCopyrightNoticePrivateAggregate(noticeId))?.targets[0]?.id
     if (!targetId) throw new Error('Counter-notice target missing')
-    const submission = await createCopyrightCounterNotice(poster, noticeId, crypto.randomUUID(), {
+    const submission = await seedExportPosterFiling(poster, noticeId, 'counter_notice', {
       name: 'Sentinel Name',
       address: '742 Sentinel Terrace',
       telephone: '+1 (555) 010-0100',
@@ -136,35 +134,27 @@ describe('copyright submission guidance agent', () => {
     const noticeId = intake.copyright_notice_id
     const staff = await createTestCopyrightStaff()
     const now = new Date()
-    const [firstCapability, secondCapability] = await Promise.all([
-      issueCopyrightGuestCapability({
-        issuedAt: new Date(),
-        currentUser: staff,
-        noticeId,
-        expiresAt: new Date(now.getTime() + 60_000),
-      }),
-      issueCopyrightGuestCapability({
-        issuedAt: new Date(),
-        currentUser: staff,
-        noticeId,
-        expiresAt: new Date(now.getTime() + 60_000),
-      }),
-    ])
+    const [firstCapability, secondCapability] = await seedCopyrightGuestCapabilities({
+      noticeId,
+      issuedById: staff.id,
+      expiresAt: new Date(now.getTime() + 60_000),
+      count: 2,
+    })
+    if (!firstCapability || !secondCapability)
+      throw new Error('Guidance hold capabilities were not created')
     const statement = (email: string) =>
       `Court case 1:26-cv-01234 filed 2026-07-02. Contact ${email} and +1 (555) 010-0100. Lives at 12 Elm Street, Springfield, IL 62701 (DOB 04/15/1980). 17 U.S.C. § 512(g).`
     const [first, second] = await Promise.all([
-      appendCopyrightGuestFiling({
+      seedAgentGuidanceHold({
         noticeId,
-        token: firstCapability.token,
+        capabilityId: firstCapability.id,
         now,
-        kind: 'court_or_ccb_hold',
         statement: statement('alpha@example.test'),
       }),
-      appendCopyrightGuestFiling({
+      seedAgentGuidanceHold({
         noticeId,
-        token: secondCapability.token,
+        capabilityId: secondCapability.id,
         now,
-        kind: 'court_or_ccb_hold',
         statement: statement('beta@example.test'),
       }),
     ])

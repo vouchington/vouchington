@@ -8,7 +8,10 @@ import {
 } from '@voucha/test-helpers/copyright-territorial-complaint-email'
 import { createTestEuParticipantCase } from '@voucha/test-helpers/copyright-eu-participant-cases'
 import { createTestGuestEuCase } from '@voucha/test-helpers/copyright-eu-guest-cases'
-import { createTestHistoricalEuDecisionWindow } from '@voucha/test-helpers/copyright-territorial-historical-window'
+import {
+  assertTimelyHistoricalComplaint,
+  assertLateHistoricalComplaint,
+} from '@voucha/test-helpers/copyright-complaint-cutoff-outcomes'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { admitCopyrightEmailCorrespondence } from './email-correspondence-admission.mts'
 import { rejectCopyrightEmailCorrespondence } from './email-correspondence-rejection.mts'
@@ -54,36 +57,10 @@ describe('territorial complaint email admission', () => {
   })
 
   it('uses inbound received_at at the six-month cutoff even when staff admits it later', async () => {
+    expect.hasAssertions()
     const staff = await createTestUser({ extraRoles: ['moderator'] })
-    const timelyCase = await createTestHistoricalEuDecisionWindow()
-    const { email: timelyEmail, admitted } = await admitTestGuestTerritorialComplaintEmail({
-      currentUser: staff,
-      noticeId: timelyCase.noticeId,
-      senderEmail: timelyCase.notifierEmail,
-      receivedAt: new Date(timelyCase.windowEndsAt.getTime() - 1_000),
-    })
-    const timelyRecords = await readTestTerritorialComplaintEmailRecords(timelyCase.noticeId)
-    expect(timelyRecords.requests).toMatchObject([
-      { submitted_by_id: null, received_at: timelyEmail.receivedAt },
-    ])
-    expect(timelyRecords.submissions).toMatchObject([
-      { id: admitted.submissionId, kind: 'complaint', received_at: timelyEmail.receivedAt },
-    ])
-
-    const lateCase = await createTestHistoricalEuDecisionWindow()
-    const lateReceivedAt = new Date(lateCase.windowEndsAt.getTime() + 1_000)
-    await expect(
-      admitTestGuestTerritorialComplaintEmail({
-        currentUser: staff,
-        noticeId: lateCase.noticeId,
-        senderEmail: lateCase.notifierEmail,
-        receivedAt: lateReceivedAt,
-      }),
-    ).rejects.toMatchObject({ status: 422 })
-    await expect(readTestTerritorialComplaintEmailRecords(lateCase.noticeId)).resolves.toEqual({
-      requests: [],
-      submissions: [],
-    })
+    await assertTimelyHistoricalComplaint(staff)
+    await assertLateHistoricalComplaint(staff)
   })
 
   it('rejects account, non-EU, and undecided cases and records no complaint for a rejected email', async () => {

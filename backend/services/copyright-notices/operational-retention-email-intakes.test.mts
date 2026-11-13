@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/index'
-import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
 import { rejectQuery } from '@voucha/test-helpers/injected-failures'
-import { positionCopyrightOperationalCursor } from '@voucha/test-helpers/copyright-operational-retention'
+import { createCopyrightOperationalScope } from '@voucha/test-helpers/copyright-operational-retention'
 import {
   linkTestCopyrightEmailIntake,
   readCopyrightIntakeLegalDelivery,
@@ -25,15 +24,15 @@ const DAY_MS = 24 * 60 * 60 * 1_000
 const future = (days: number) => new Date(Date.now() + days * DAY_MS)
 
 describe('copyright operational email intake retention', () => {
-  useCopyrightOperationalCursorReservation()
   const bucket = useCopyrightEvidenceBucket()
   it('preserves private intake evidence while its standalone final review is held', async () => {
     const reviewer = await createTestUserDirect({ extraRoles: ['moderator'] })
     const intake = await createRetentionParsedEmail('held-standalone-receipt')
     await seedCopyrightIntakeAuditReview(intake.id)
     await placeCopyrightEmailReceiptPreservationHold(reviewer, intake.id, 'court_request')
-    await positionCopyrightOperationalCursor('unlinked_email_intakes', intake.id)
+    const scope1 = createCopyrightOperationalScope([intake.id])
     await sweepUnlinkedCopyrightEmailIntakes({
+      scope: scope1,
       now: future(91),
       retentionDays: 90,
       childLimit: 2,
@@ -48,11 +47,12 @@ describe('copyright operational email intake retention', () => {
   it('keeps the replay fence if a database child write fails after S3 deletion', async () => {
     const intake = await createRetentionParsedEmail('post-s3-database-failure')
     await bucket.put(intake.raw_storage_key)
-    await positionCopyrightOperationalCursor('unlinked_email_intakes', intake.id)
+    const scope2 = createCopyrightOperationalScope([intake.id])
     const options = { now: future(91), retentionDays: 90, childLimit: 2, maxBatches: 1 }
-    await sweepUnlinkedCopyrightEmailIntakes(options) // commits erasure intent before S3
+    await sweepUnlinkedCopyrightEmailIntakes({ ...options, scope: scope2 }) // commits erasure intent before S3
     await expect(
       sweepUnlinkedCopyrightEmailIntakes({
+        scope: scope2,
         ...options,
         queryAfterStorage: transaction =>
           rejectQuery(
@@ -92,15 +92,17 @@ describe('copyright operational email intake retention', () => {
     const legalDelivery = await readCopyrightIntakeLegalDelivery(deliveryId)
     await bucket.put(linked.raw_storage_key)
     await bucket.put(legal.raw_storage_key, { versions: 2 })
-    await positionCopyrightOperationalCursor('unlinked_email_intakes', linked.id)
+    const scope3 = createCopyrightOperationalScope([linked.id])
     await sweepUnlinkedCopyrightEmailIntakes({
+      scope: scope3,
       now: future(91),
       retentionDays: 90,
       childLimit: 20,
       maxBatches: 10,
     })
-    await positionCopyrightOperationalCursor('unlinked_email_intakes', legal.id)
+    const scope4 = createCopyrightOperationalScope([legal.id])
     await sweepUnlinkedCopyrightEmailIntakes({
+      scope: scope4,
       now: future(91),
       retentionDays: 90,
       childLimit: 20,
@@ -135,8 +137,9 @@ describe('copyright operational email intake retention', () => {
     await seedTestCopyrightAncestorEdge(linked.id, unlinked.id)
     await seedTestCopyrightAncestorEdge(unlinked.id, other.id)
     await bucket.put(unlinked.raw_storage_key)
-    await positionCopyrightOperationalCursor('unlinked_email_intakes', unlinked.id)
+    const scope5 = createCopyrightOperationalScope([unlinked.id])
     await sweepUnlinkedCopyrightEmailIntakes({
+      scope: scope5,
       now: future(91),
       retentionDays: 90,
       childLimit: 1,
@@ -156,8 +159,9 @@ describe('copyright operational email intake retention', () => {
     const legalReview = await readCopyrightIntakeAuditReview(reviewId)
     const referencedRecommendation = await readCopyrightIntakeAuditRecommendation(recommendationId)
     await bucket.put(intake.raw_storage_key)
-    await positionCopyrightOperationalCursor('unlinked_email_intakes', intake.id)
+    const scope6 = createCopyrightOperationalScope([intake.id])
     await sweepUnlinkedCopyrightEmailIntakes({
+      scope: scope6,
       now: future(91),
       retentionDays: 90,
       childLimit: 20,

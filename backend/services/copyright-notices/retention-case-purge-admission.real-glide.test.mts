@@ -8,10 +8,10 @@ import {
   addCopyrightCasePurgeFixtureParty,
   readCopyrightCasePurgeFixture,
   readCopyrightCasePurgeFixtureAccountClock,
-  useCopyrightCasePurgePageSize,
 } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-fixture'
 import {
   deleteCopyrightPurgeOrphanForTest,
+  seedCopyrightPurgeAccountHold,
   insertCopyrightPurgeOrphanForTest,
   readCopyrightCaseClocksForTest,
 } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-admission-fixture'
@@ -37,15 +37,14 @@ import type {
 import type { CopyrightCasePurgeAdmissionData } from '../../queues/background/enqueues/notifications-domain.mts'
 import { processCopyrightAccountClockSync } from '../../workers/psql/processors/copyright-account-clock-sync.mts'
 import { processCopyrightCasePurge } from '../../workers/psql/processors/copyright-case-purge.mts'
-import { placeUserPreservationHold } from '../users/preservation-holds.mts'
+import { releaseUserPreservationHold } from '../users/preservation-holds.mts'
 import { runCopyrightAccountClockSyncPage } from './retention-account-clock-sync.mts'
 import { admitCopyrightCasePurgePage } from './retention-case-purge-admission.mts'
 
-describe('copyright purge admission and clock sync', () => {
-  const setPageSize = useCopyrightCasePurgePageSize()
+const pageSize = 1
 
+describe('copyright purge admission and clock sync', () => {
   it('admits pending party accounts one page at a time with stable clock-sync jobs', async () => {
-    await setPageSize(1)
     const beforeAccounts = v7()
     const [admin, firstCase, secondCase] = await Promise.all([
       createTestUser({ administrator: true }),
@@ -58,7 +57,12 @@ describe('copyright purge admission and clock sync', () => {
       addCopyrightCasePurgeFixtureParty(secondCase.noticeId, secondCase.posterId),
     ])
     await Promise.all(
-      accountIds.map(accountId => placeUserPreservationHold(admin, accountId, `admission-${v7()}`)),
+      accountIds.map(async accountId => {
+        await seedCopyrightPurgeAccountHold(accountId, admin.id)
+        onTestFinished(async () => {
+          await releaseUserPreservationHold(admin, accountId)
+        })
+      }),
     )
     onTestFinished(async () => {
       await Promise.all(
@@ -75,7 +79,10 @@ describe('copyright purge admission and clock sync', () => {
       pageIndex < 10 && admittedIds.size < accountIds.length;
       pageIndex += 1
     ) {
-      const page = await admitCopyrightCasePurgePage(cursor)
+      const page = await admitCopyrightCasePurgePage(cursor, {
+        pageSize,
+        scope: { accountIds, noticeIds: [firstCase.noticeId, secondCase.noticeId] },
+      })
       expect(page.stalled).toBe(false)
       expect(page.admitted).toBeLessThanOrEqual(1)
       if (page.admitted === 1 && page.next.pendingAccountAfterId)
@@ -95,16 +102,22 @@ describe('copyright purge admission and clock sync', () => {
         copyrightAccountClockSyncJobId(accountId),
       )
     for (const accountId of accountIds) {
-      const first = await runCopyrightAccountClockSyncPage({
-        accountUserId: accountId,
-        afterNoticeId: null,
-        sourceVersion: null,
-      })
+      const first = await runCopyrightAccountClockSyncPage(
+        {
+          accountUserId: accountId,
+          afterNoticeId: null,
+          sourceVersion: null,
+        },
+        pageSize,
+      )
       expect(first.hasMore).toBe(true)
-      const second = await runCopyrightAccountClockSyncPage(first.data)
+      const second = await runCopyrightAccountClockSyncPage(first.data, pageSize)
       expect(second.hasMore).toBe(false)
     }
-    const candidates = await admitCopyrightCasePurgePage({ pendingAccountsComplete: true })
+    const candidates = await admitCopyrightCasePurgePage(
+      { pendingAccountsComplete: true },
+      { pageSize, scope: { accountIds, noticeIds: [firstCase.noticeId, secondCase.noticeId] } },
+    )
     expect(candidates.stalled).toBe(false)
     for (const noticeId of [firstCase.noticeId, secondCase.noticeId])
       expect(await psql.getJob(copyrightCasePurgeJobId(noticeId))).toBeNull()
@@ -112,7 +125,6 @@ describe('copyright purge admission and clock sync', () => {
 
   // no-mistakes-timeout-reason: two real PostgreSQL cases and native worker continuation across bounded pages
   it('continues a native clock-sync job across two cases and clears the account signal', async () => {
-    await setPageSize(1)
     const [admin, account, firstCase, secondCase] = await Promise.all([
       createTestUser({ administrator: true }),
       createTestUserDirect(),
@@ -123,14 +135,19 @@ describe('copyright purge admission and clock sync', () => {
     await Promise.all(
       noticeIds.map(noticeId => addCopyrightCasePurgeFixtureParty(noticeId, account.id)),
     )
-    const hold = await placeUserPreservationHold(admin, account.id, `clock-sync-${v7()}`)
+    const hold = await seedCopyrightPurgeAccountHold(account.id, admin.id)
+    onTestFinished(async () => {
+      await releaseUserPreservationHold(admin, account.id)
+    })
     expect((await readCopyrightCasePurgeFixtureAccountClock(account.id)).pending).toBe(true)
 
     const worker = await startRealGlideBackgroundLifecycle({
       queueNamePrefix: 'copyright_account_clock_sync',
       connection: { connection: workerQueueConnection, prefix: workerQueuePrefix },
       processor: job =>
-        processCopyrightAccountClockSync(job as Job<CopyrightAccountClockSyncJobData>),
+        processCopyrightAccountClockSync(job as Job<CopyrightAccountClockSyncJobData>, {
+          pageSize,
+        }),
     })
     try {
       const job = await worker.add(
@@ -149,11 +166,14 @@ describe('copyright purge admission and clock sync', () => {
       for (const clock of clocks)
         expect(clock.getTime()).toBeGreaterThanOrEqual(hold.placed_at.getTime())
       await expect(
-        runCopyrightAccountClockSyncPage({
-          accountUserId: account.id,
-          afterNoticeId: null,
-          sourceVersion: null,
-        }),
+        runCopyrightAccountClockSyncPage(
+          {
+            accountUserId: account.id,
+            afterNoticeId: null,
+            sourceVersion: null,
+          },
+          pageSize,
+        ),
       ).resolves.toMatchObject({ hasMore: false })
     } finally {
       await worker.close()
@@ -162,7 +182,6 @@ describe('copyright purge admission and clock sync', () => {
 
   // no-mistakes-timeout-reason: real queue admission and native worker drain after a retained-owner crash boundary
   it('recovers a retained orphan through stable admission and drains it with a native purge job', async () => {
-    await setPageSize(1)
     const beforeOrphan = v7()
     const noticeId = v7()
     await insertCopyrightPurgeOrphanForTest(noticeId)
@@ -170,11 +189,14 @@ describe('copyright purge admission and clock sync', () => {
       await deleteCopyrightPurgeOrphanForTest(noticeId)
       await (await psql.getJob(copyrightCasePurgeJobId(noticeId)))?.remove()
     })
-    const page = await admitCopyrightCasePurgePage({
-      pendingAccountsComplete: true,
-      caseCandidatesComplete: true,
-      orphanAfterId: beforeOrphan,
-    })
+    const page = await admitCopyrightCasePurgePage(
+      {
+        pendingAccountsComplete: true,
+        caseCandidatesComplete: true,
+        orphanAfterId: beforeOrphan,
+      },
+      { pageSize, scope: { accountIds: [], noticeIds: [noticeId] } },
+    )
     expect(page.stalled).toBe(false)
     expect(page.admitted).toBe(1)
     const queued = await psql.getJob(copyrightCasePurgeJobId(noticeId))
@@ -185,7 +207,8 @@ describe('copyright purge admission and clock sync', () => {
     const worker = await startRealGlideBackgroundLifecycle({
       queueNamePrefix: 'copyright_case_purge_orphan',
       connection: { connection: workerQueueConnection, prefix: workerQueuePrefix },
-      processor: job => processCopyrightCasePurge(job as Job<CopyrightCasePurgeJobData>),
+      processor: job =>
+        processCopyrightCasePurge(job as Job<CopyrightCasePurgeJobData>, { pageSize }),
     })
     try {
       const job = await worker.add(

@@ -6,8 +6,8 @@ import { createCopyrightNoticeAggregate } from './services/copyright-notices/cre
 import { getCopyrightNoticePrivateAggregate } from './services/copyright-notices/private-aggregate.mts'
 import { createTestCopyrightImageFixture } from './copyright-surface-target-fixtures.mts'
 import { resolveCopyrightImagePlacement } from '../services/copyright-notices/placement-resolution.mts'
-import { appendCopyrightSubmissionAssessment } from '../services/copyright-notices/compliance.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
+import { seedCopyrightSubmissionAssessment } from './copyright-notice-submissions.mts'
+import { seedCopyrightStatementRestriction } from './copyright-statement-restriction-fixture.mts'
 import { createCopyrightStatementDeliveriesInTransaction } from '../services/copyright-notices/statement-delivery.mts'
 import { copyrightActionDeliveryFacts } from '../services/copyright-notices/action-delivery-facts.mts'
 import { applyCopyrightConfirmationConsequencesInTransaction } from '../services/copyright-notices/staydown-registration.mts'
@@ -49,7 +49,7 @@ export async function createTestLiftNotice(
     await createTestLiftClaimantReceipt(notice.id, options.claimantEmail, options.claimantUserId)
   const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
   if (!aggregate) throw new Error('Notice fixture disappeared')
-  const assessment = await appendCopyrightSubmissionAssessment({
+  const assessment = await seedCopyrightSubmissionAssessment({
     submissionId: aggregate.submissions[0]!.id,
     assessedAt: new Date(),
     currentUser: moderator,
@@ -57,12 +57,13 @@ export async function createTestLiftNotice(
   })
   const restrictions = []
   for (const target of aggregate.targets) {
-    const restriction = await acceptCopyrightNoticeAndImposeRestriction({
+    const restriction = await seedCopyrightStatementRestriction({
       noticeId: notice.id,
       targetId: target.id,
       assessmentId: assessment.id,
       imposedAt: new Date(),
-      imposedById: moderator.id,
+      moderatorId: moderator.id,
+      revision: target.placement_revision,
     })
     restrictions.push(restriction)
   }

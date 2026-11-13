@@ -1,3 +1,6 @@
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { CONFLICT } from '@modules/on-error/error-codes'
 import { beginTransaction } from '@data-stores/psql'
 import {
   advanceCopyrightLastLegalActivityAt,
@@ -27,11 +30,17 @@ type ResolveCopyrightLegalHoldInput = {
 export async function resolveCopyrightLegalHold(
   input: ResolveCopyrightLegalHoldInput,
 ): Promise<CopyrightLegalHoldResolutionRecord> {
-  await using transaction = await beginTransaction()
-  const result = await resolveCopyrightLegalHoldInTransaction(input, transaction)
-  await transaction.commit()
-  void enqueueBulkApplyCopyrightActions(result.intentIds)
-  return result.resolution
+  return conflictOnSerializationFailure(
+    async () => {
+      await using transaction = await beginTransaction({ serializable: true })
+      const result = await resolveCopyrightLegalHoldInTransaction(input, transaction)
+      await transaction.commit()
+      void enqueueBulkApplyCopyrightActions(result.intentIds)
+      return result.resolution
+    },
+    'Conflicting copyright case change',
+    CONFLICT,
+  )
 }
 
 /** The owner's legal record, exact replay and audit commit together; no external effects here. */
@@ -47,16 +56,16 @@ async function resolveCopyrightLegalHoldInTransaction(
     WHERE assessment.id = ${input.assessmentId}
   `)
   assert(identities[0], 404, 'Copyright legal hold assessment not found')
+  await readCopyrightThreadRetirement(transaction, [identities[0].copyright_notice_id])
   const lockedNotice = await lockCopyrightNoticeForLegalWrite(
     transaction,
     identities[0].copyright_notice_id,
   )
   assert(lockedNotice, 404, 'Copyright legal hold assessment not found')
   const { rows: assessmentRows } = await transaction<{ id: string }>(sql`
-    /* resolveCopyrightLegalHold:lockAssessment */
+    /* resolveCopyrightLegalHold:assessment */
     SELECT id FROM copyright_notice_legal_hold_assessments
     WHERE id = ${input.assessmentId}
-    FOR UPDATE
   `)
   assert(assessmentRows[0], 404, 'Copyright legal hold assessment not found')
   const assessment = { copyright_notice_id: lockedNotice.noticeId }
@@ -90,6 +99,12 @@ async function resolveCopyrightLegalHoldInTransaction(
     JOIN media_placements placement ON placement.id = target.placement_id
     WHERE source.copyright_notice_legal_hold_assessment_id = ${input.assessmentId}
       AND restriction.lifted_at IS NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM copyright_notice_action_work_items existing
+        WHERE existing.copyright_restriction_id = restriction.id
+          AND existing.expected_placement_revision = placement.revision
+          AND existing.action = 'restore'
+      )
     ORDER BY restriction.id, placement.revision
     ON CONFLICT (copyright_restriction_id, expected_placement_revision, action) DO NOTHING
   `)

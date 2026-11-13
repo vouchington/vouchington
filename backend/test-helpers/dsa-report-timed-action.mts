@@ -1,15 +1,13 @@
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
 import { createTestUser } from './entities/users.mts'
 import { getTestPostImagePlacement } from './entities/post-images.mts'
 import { createHostedImagePost } from './services/copyright-notices/hosted-post-audience.mts'
 import { createCopyrightNoticeAggregate } from './services/copyright-notices/create-notice-aggregate.mts'
 import { getCopyrightNoticePrivateAggregate } from './services/copyright-notices/private-aggregate.mts'
-import { processCopyrightActionIntent } from '../services/copyright-notices/index.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
-import { appendCopyrightSubmissionAssessment } from '../services/copyright-notices/compliance.mts'
+import { seedRestorationSceneWithhold } from './copyright-withhold-scene-fixture.mts'
+import { seedCopyrightStatementRestriction } from './copyright-statement-restriction-fixture.mts'
+import { seedCopyrightSubmissionAssessment } from './copyright-notice-submissions.mts'
 
-/** Controlled clocks enter the real notice, assessment, restriction, and action service boundaries. */
+/** Canonical committed action dependency preserves the reporting subject’s controlled legal clocks. */
 export async function createTestTimedDsaReportAction(input: {
   receivedAt: Date
   imposedAt: Date
@@ -48,28 +46,23 @@ export async function createTestTimedDsaReportAction(input: {
   const submissionId = aggregate?.submissions[0]?.id
   const targetId = aggregate?.targets[0]?.id
   if (!submissionId || !targetId) throw new Error('Timed report case is incomplete')
-  const assessment = await appendCopyrightSubmissionAssessment({
+  const assessment = await seedCopyrightSubmissionAssessment({
     submissionId,
     assessedAt: new Date(input.imposedAt.getTime() - 1_000),
     currentUser: moderator,
     substantiallyCompliant: true,
   })
-  await acceptCopyrightNoticeAndImposeRestriction({
+  await seedCopyrightStatementRestriction({
     noticeId: notice.id,
     targetId,
     assessmentId: assessment.id,
     imposedAt: input.imposedAt,
-    imposedById: moderator.id,
+    moderatorId: moderator.id,
+    revision: placement.placement_revision,
   })
   const restricted = await getCopyrightNoticePrivateAggregate(notice.id)
   const withholdId = restricted?.actionIntents.find(intent => intent.action === 'withhold')?.id
   if (!withholdId) throw new Error('Timed report withhold intent missing')
-  // This historical reporting fixture queues the owned work at its controlled legal clock.
-  await write(sql`/* createTestTimedDsaReportAction:availability */
-    UPDATE copyright_notice_action_work_items SET available_at = ${input.imposedAt}
-    WHERE id = ${withholdId} AND state = 'pending' AND attempt_count = 0
-  `)
-  const result = await processCopyrightActionIntent(withholdId, input.completedAt)
-  if (result !== 'applied') throw new Error(`Timed report action was ${result}`)
+  await seedRestorationSceneWithhold(withholdId, input.completedAt)
   return notice.id
 }

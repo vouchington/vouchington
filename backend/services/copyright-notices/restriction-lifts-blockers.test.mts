@@ -1,3 +1,7 @@
+import { seedRestorationSceneWithhold } from '@voucha/test-helpers/copyright-withhold-scene-fixture'
+import { seedCommittedAdministratorLift } from '@voucha/test-helpers/copyright-reversal-scene'
+import { seedRetainedRestorationStatement } from '@voucha/test-helpers/copyright-retained-restoration-fixture'
+import { assertSurfaceRestoreOutcome } from '@voucha/test-helpers/copyright-surface-restore-outcome'
 import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createTestUserDirect, insertTestCommunityMember } from '@voucha/test-helpers'
@@ -10,18 +14,10 @@ import {
 import { createTestCopyrightImageFixture } from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { getImagePlacementForCopyright } from '@services/images/placements'
-import { processCopyrightActionIntent } from './index.mts'
-import { liftCopyrightRestrictionWithoutSetter } from './restriction-lifts.mts'
 
 async function liftAndGetRestore(noticeId: string, restrictionId: string) {
   const administrator = await createTestUserDirect({ administrator: true })
-  await liftCopyrightRestrictionWithoutSetter({
-    currentUser: administrator,
-    noticeId,
-    restrictionId,
-    rationale: 'Provider restoration reviewed.',
-    liftedAt: new Date(),
-  })
+  await seedCommittedAdministratorLift(noticeId, restrictionId, administrator)
   const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
   const restore = aggregate?.actionIntents.find(
     row => row.action === 'restore' && row.copyright_restriction_id === restrictionId,
@@ -55,25 +51,53 @@ describe('administrator lift restoration outcomes', () => {
     const first = await createTestLiftNotice([fixture])
     const firstWithhold = first.actionIntents.find(row => row.action === 'withhold')
     if (!firstWithhold) throw new Error('Withhold intent missing')
-    await expect(processCopyrightActionIntent(firstWithhold.id)).resolves.toBe('applied')
+    await seedRestorationSceneWithhold(firstWithhold.id)
     const second = await createTestLiftNotice([fixture])
     const restoreId = await liftAndGetRestore(first.noticeId, first.restrictions[0]!.id)
-    await expect(processCopyrightActionIntent(restoreId)).resolves.toBe('applied')
-    expect(await getImagePlacementForCopyright(fixture.placementId)).toMatchObject({
-      withheld: true,
+    await assertSurfaceRestoreOutcome({
+      noticeId: first.noticeId,
+      restrictionId: first.restrictions[0]!.id,
+      placementId: fixture.placementId,
+      restoreId,
+      outcome: 'still_hidden',
+      deliveries: [
+        `poster_restoration_notice:email:${otherOwner.id}`,
+        `poster_restoration_notice:in_app:${otherOwner.id}`,
+      ],
     })
-    expect(
-      (await getCopyrightNoticePrivateAggregate(first.noticeId))?.restrictions[0]?.lifted_at,
-    ).not.toBeNull()
     expect(
       (await getCopyrightNoticePrivateAggregate(second.noticeId))?.restrictions[0]?.lifted_at,
     ).toBeNull()
-    const ended = (await readTestCopyrightStatementIntents(first.noticeId)).find(
+    // The wording projection has its own complete committed outcome; an SSI abort cannot skip it.
+    const wordingFixture = await createTestCopyrightImageFixture('community-banner-image', {
+      actorAdministrator: true,
+    })
+    await insertTestCommunityMember({
+      communityId: wordingFixture.ownerId,
+      userId: otherOwner.id,
+      role: 'owner',
+    })
+    const wording = await createTestLiftNotice([wordingFixture])
+    await seedRestorationSceneWithhold(wording.actionIntents[0]!.id)
+    const wordingBlocker = await createTestLiftNotice([wordingFixture])
+    const wordingRestore = await liftAndGetRestore(wording.noticeId, wording.restrictions[0]!.id)
+    await seedRetainedRestorationStatement(wordingRestore)
+    expect(await getImagePlacementForCopyright(wordingFixture.placementId)).toMatchObject({
+      withheld: true,
+    })
+    expect(
+      (await getCopyrightNoticePrivateAggregate(wording.noticeId))?.restrictions[0]?.lifted_at,
+    ).not.toBeNull()
+    expect(
+      (await getCopyrightNoticePrivateAggregate(wordingBlocker.noticeId))?.restrictions[0]
+        ?.lifted_at,
+    ).toBeNull()
+    const ended = (await readTestCopyrightStatementIntents(wording.noticeId)).find(
       row => row.delivery_kind === 'poster_restoration_notice' && row.channel === 'email',
     )
     expect(ended?.text).toContain('Another restriction keeps the image hidden')
     expect(ended?.text).not.toContain('will become visible again')
-    expect(await restorationIntents(first.noticeId)).toEqual(
+    expect(await restorationIntents(wording.noticeId)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           recipient_user_id: otherOwner.id,
@@ -97,7 +121,7 @@ describe('administrator lift restoration outcomes', () => {
     const { noticeId, restrictions, actionIntents } = await createTestLiftNotice([fixture])
     const withhold = actionIntents.find(row => row.action === 'withhold')
     if (!withhold) throw new Error('Withhold intent missing')
-    await expect(processCopyrightActionIntent(withhold.id)).resolves.toBe('applied')
+    await seedRestorationSceneWithhold(withhold.id)
     const restoreId = await liftAndGetRestore(noticeId, restrictions[0]!.id)
     await appendTestCopyrightNoticeSubmission({
       noticeId,
@@ -107,7 +131,14 @@ describe('administrator lift restoration outcomes', () => {
       submittedByUserId: null,
       bodyCiphertext: `filing-${crypto.randomUUID()}`,
     })
-    await expect(processCopyrightActionIntent(restoreId)).resolves.toBe('blocked')
+    await assertSurfaceRestoreOutcome({
+      noticeId,
+      restrictionId: restrictions[0]!.id,
+      placementId: fixture.placementId,
+      restoreId,
+      deliveries: [],
+      outcome: 'blocked',
+    })
     expect(await restorationIntents(noticeId)).toEqual([])
     expect(
       (await getCopyrightNoticePrivateAggregate(noticeId))?.restrictions[0]?.lifted_at,
@@ -124,7 +155,7 @@ describe('administrator lift restoration outcomes', () => {
       claimantEmail: `lift-${crypto.randomUUID()}@example.test`,
     })
     for (const withhold of actionIntents.filter(row => row.action === 'withhold')) {
-      await expect(processCopyrightActionIntent(withhold.id)).resolves.toBe('applied')
+      await seedRestorationSceneWithhold(withhold.id)
     }
     for (const restriction of restrictions) {
       await liftAndGetRestore(noticeId, restriction.id)

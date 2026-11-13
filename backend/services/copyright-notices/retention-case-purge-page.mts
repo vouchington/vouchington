@@ -3,7 +3,10 @@ import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { FINAL_USER_PURGE_LOCK_KEY } from '@services/users/final-purge-lock'
 import { isCopyrightEvidenceRetentionDeletionEnabled } from './config.mts'
-import { copyrightCasePurgeEligibilitySql } from './retention-case-purge-eligibility.mts'
+import {
+  copyrightCasePurgeEligibilitySql,
+  copyrightCasePurgePreservationAllowedSql,
+} from './retention-case-purge-eligibility.mts'
 import { getCopyrightCasePurgePageSize } from '@queues/psql/enqueues/ordering-config'
 import { runLockedPage } from './retention-case-purge-phases.mts'
 import { enterCopyrightCasePurgePhase } from './retention-case-purge-phase-state.mts'
@@ -56,22 +59,26 @@ function proofVersion(row: LockedNotice): string {
   ])
 }
 
-/** Each page starts a fresh transaction and rechecks the notice after the shared legal gates. */
+/** Destructive pages recheck current preservation after their older eligibility proof. */
 export async function runCopyrightCasePurgePage(
   data: CopyrightCasePurgeJobData,
   now: Date = new Date(),
+  requestedPageSize?: number,
 ): Promise<PageResult> {
-  if (data.phase === 'residual_parties') return deleteCopyrightCaseResidualPartyPage(data)
+  if (data.phase === 'residual_parties')
+    return deleteCopyrightCaseResidualPartyPage(data, requestedPageSize)
   if (!(await isCopyrightEvidenceRetentionDeletionEnabled())) return { data, hasMore: false }
   await using query = await beginBoundedTransaction({
     connectionTimeoutMs: 5_000,
     statementTimeoutMs: 20_000,
+    isolationLevel:
+      data.phase === 'pointers' || data.phase === 'children' || data.phase === 'final'
+        ? 'serializable'
+        : undefined,
   })
   if (data.phase === 'final')
     await query(sql`/* lockCopyrightCasePurgeAccountFinalization */
       SELECT pg_advisory_xact_lock(hashtextextended(${FINAL_USER_PURGE_LOCK_KEY}, 0))`)
-  await query(sql`/* lockCopyrightCasePurgePreservation */
-    SELECT pg_advisory_xact_lock_shared(hashtextextended('copyright-preservation-retention', 0))`)
   const { rows: dirtyAccounts } = await query<{ id: string }>(sql`
     /* readPendingCopyrightAccountClockSync */
     SELECT identity.id FROM copyright_notice_party_identities party
@@ -84,12 +91,16 @@ export async function runCopyrightCasePurgePage(
     return { data, hasMore: true, deferred: true }
   }
   const { rows: locked } = await query<LockedNotice>(
-    copyrightCasePurgeProofSql(data.noticeId, true),
+    copyrightCasePurgeProofSql(
+      data.noticeId,
+      data.phase !== 'pointers' && data.phase !== 'children',
+    ),
   )
   if (locked.length === 0) {
     await query.commit()
     return await deleteCopyrightCaseResidualPartyPage(
       enterCopyrightCasePurgePhase(data, 'residual_parties'),
+      requestedPageSize,
     )
   }
   const { rows: eligible } = await query<EligibleNotice>(
@@ -99,7 +110,7 @@ export async function runCopyrightCasePurgePage(
   const lock = locked[0]!
   const clock = lock.legal_clock
   const beforeVersion = proofVersion(lock)
-  const pageSize = getCopyrightCasePurgePageSize()
+  const pageSize = getCopyrightCasePurgePageSize(requestedPageSize)
   const changed = data.proofVersion !== null && data.proofVersion !== beforeVersion
   const current: CopyrightCasePurgeJobData = changed
     ? {
@@ -108,6 +119,20 @@ export async function runCopyrightCasePurgePage(
         proofVersion: beforeVersion,
       }
     : { ...data, legalClockAt: clock, proofVersion: beforeVersion }
+  if (current.phase === 'pointers' || current.phase === 'children' || current.phase === 'final') {
+    const admission = sql`/* readCopyrightCaseDestructionPreservation */ SELECT `
+      .append(copyrightCasePurgePreservationAllowedSql(data.noticeId))
+      .append(sql` AS is_allowed`)
+    const { rows: preservation } = await query<{ is_allowed: boolean }>(admission)
+    if (!preservation[0]?.is_allowed) {
+      await query.commit()
+      return {
+        data: enterCopyrightCasePurgePhase(current, 'parties'),
+        hasMore: true,
+        deferred: true,
+      }
+    }
+  }
   const result = await runLockedPage(query, current, eligible[0]!, pageSize)
   const { rows: after } = await query<LockedNotice>(
     copyrightCasePurgeProofSql(data.noticeId, false),

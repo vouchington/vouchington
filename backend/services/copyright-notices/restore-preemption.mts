@@ -8,8 +8,7 @@ const PREEMPTED_MESSAGE = 'A court or CCB filing or legal hold preempted this re
  * completion write. Admission preempting first makes that completion match no row; the worker
  * completing first makes this UPDATE re-evaluate after the wait, see `completed_at` set, and
  * preempt nothing, so the filing commits strictly after the restore and an unassessed filing
- * then reaches the placement through its assessment (late-hold activation). Callers lock the
- * notice with FOR NO KEY UPDATE so the worker's foreign-key checks on it never wait on them.
+ * then reaches the placement through its assessment (late-hold activation).
  * Without target ids the whole case is preempted, as an unassessed filing has no target scope. */
 export async function preemptCopyrightRestorations(
   noticeId: string,

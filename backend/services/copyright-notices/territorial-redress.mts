@@ -1,3 +1,6 @@
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { CONFLICT } from '@modules/on-error/error-codes'
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction } from '@data-stores/psql'
 import {
   advanceCopyrightLastLegalActivityAt,
@@ -52,90 +55,99 @@ export async function recordTerritorialCopyrightRedressDecision(
   assert(currentUserCanReviewCopyrightNotices(actor), 403, 'Forbidden')
   const disposition = assertStaffDisposition(input.disposition)
   const rationale = assertBoundedText(input.rationale, 50_000, 'rationale is required')
-  await using transaction = await beginTransaction()
-  const { rows: requests } = await transaction<{ id: string; decision_is_live: boolean }>(
-    selectTerritorialRedressRequest(jurisdiction, redressId, noticeId),
-  )
-  assert(requests[0], 404, labels.redressNotFound)
-  assert(requests[0].decision_is_live, 409, 'The decision was superseded')
-  const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
-  assert(lockedNotice, 404, labels.noticeNotFound)
-  const { rows: currentRequests } = await transaction<{ decision_is_live: boolean }>(
-    selectTerritorialRedressRequest(jurisdiction, redressId, noticeId),
-  )
-  assert(currentRequests[0]?.decision_is_live, 409, 'The decision was superseded')
-  const { rows: existing } = await transaction<{ id: string }>(
-    selectExistingTerritorialRedressDecision(redressId),
-  )
-  assert(!existing[0], 409, labels.redressDecisionExists)
-  const rationaleCiphertext = encryptSecret(
-    rationale,
-    `${labels.redressDecisionPurpose}:${redressId}`,
-  )
-  const { rows: identities } = await transaction<{ id: string }>(sql`
-    /* recordTerritorialCopyrightRedressDecision:identity */
-    INSERT INTO copyright_territorial_redress_decision_identities
-      (copyright_territorial_redress_request_id)
-    VALUES (${redressId}) RETURNING id`)
-  const decisionId = identities[0]?.id
-  assert(decisionId, 500, labels.redressDecisionFailed)
-  const { rows } = await transaction<TerritorialCopyrightRedressDecision>(
-    insertTerritorialRedressDecision(
-      decisionId,
-      redressId,
-      actor.id,
-      disposition,
-      rationaleCiphertext,
-    ),
-  )
-  const created = rows[0]
-  assert(created, 500, labels.redressDecisionFailed)
-  await transaction(sql`/* recordTerritorialCopyrightRedressDecision:current */
-    UPDATE copyright_territorial_redress_requests SET
-      current_staff_decision_identity_id = ${created.id},
-      staff_disposition = ${created.staff_disposition}, decided_at = ${created.decided_at},
-      decided_by_id = ${actor.id}, rationale_ciphertext = ${rationaleCiphertext}
-    WHERE id = ${redressId}`)
-  const restoreIntentIds: string[] = []
-  const deliveries: CopyrightStatementDeliveryInput[] = []
-  let staydownImageIds: string[] = []
-  if (disposition === 'revoke') {
-    const { rows: restrictions } = await transaction<{ id: string }>(sql`
-      /* recordTerritorialCopyrightRedressDecision:restrictions */
-      SELECT restriction.id
-      FROM copyright_territorial_redress_requests request
-      JOIN copyright_restrictions restriction
-        ON restriction.authorizing_assessment_id = request.authorizing_assessment_identity_id
-      WHERE request.id = ${redressId} AND restriction.lifted_at IS NULL
-      ORDER BY restriction.id
-    `)
-    for (const restriction of restrictions) {
-      // oxlint-disable-next-line no-await-in-loop -- one transaction owns each durable restore intent.
-      const intent = await createCopyrightRestoreIntentForReversalInTransaction(
-        restriction.id,
+  return conflictOnSerializationFailure(
+    async () => {
+      await using transaction = await beginTransaction({ serializable: true })
+      const { rows: requests } = await transaction<{ id: string; decision_is_live: boolean }>(
+        selectTerritorialRedressRequest(jurisdiction, redressId, noticeId),
+      )
+      assert(requests[0], 404, labels.redressNotFound)
+      assert(requests[0].decision_is_live, 409, 'The decision was superseded')
+      const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
+      assert(lockedNotice, 404, labels.noticeNotFound)
+      const { rows: currentRequests } = await transaction<{ decision_is_live: boolean }>(
+        selectTerritorialRedressRequest(jurisdiction, redressId, noticeId),
+      )
+      assert(currentRequests[0]?.decision_is_live, 409, 'The decision was superseded')
+      const { rows: existing } = await transaction<{ id: string }>(
+        selectExistingTerritorialRedressDecision(redressId),
+      )
+      assert(!existing[0], 409, labels.redressDecisionExists)
+      const rationaleCiphertext = encryptSecret(
+        rationale,
+        `${labels.redressDecisionPurpose}:${redressId}`,
+      )
+      const { rows: identities } = await transaction<{ id: string }>(sql`
+      /* recordTerritorialCopyrightRedressDecision:identity */
+      INSERT INTO copyright_territorial_redress_decision_identities
+        (copyright_territorial_redress_request_id)
+      VALUES (${redressId}) RETURNING id`)
+      const decisionId = identities[0]?.id
+      assert(decisionId, 500, labels.redressDecisionFailed)
+      const { rows } = await transaction<TerritorialCopyrightRedressDecision>(
+        insertTerritorialRedressDecision(
+          decisionId,
+          redressId,
+          actor.id,
+          disposition,
+          rationaleCiphertext,
+        ),
+      )
+      const created = rows[0]
+      assert(created, 500, labels.redressDecisionFailed)
+      await transaction(sql`/* recordTerritorialCopyrightRedressDecision:current */
+      UPDATE copyright_territorial_redress_requests SET
+        current_staff_decision_identity_id = ${created.id},
+        staff_disposition = ${created.staff_disposition}, decided_at = ${created.decided_at},
+        decided_by_id = ${actor.id}, rationale_ciphertext = ${rationaleCiphertext}
+      WHERE id = ${redressId}`)
+      const restoreIntentIds: string[] = []
+      const deliveries: CopyrightStatementDeliveryInput[] = []
+      let staydownImageIds: string[] = []
+      if (disposition === 'revoke') {
+        const { rows: restrictions } = await transaction<{ id: string }>(sql`
+        /* recordTerritorialCopyrightRedressDecision:restrictions */
+        SELECT restriction.id
+        FROM copyright_territorial_redress_requests request
+        JOIN copyright_restrictions restriction
+          ON restriction.authorizing_assessment_id = request.authorizing_assessment_identity_id
+        WHERE request.id = ${redressId} AND restriction.lifted_at IS NULL
+        ORDER BY restriction.id
+      `)
+        for (const restriction of restrictions) {
+          // oxlint-disable-next-line no-await-in-loop -- one transaction owns each durable restore intent.
+          const intent = await createCopyrightRestoreIntentForReversalInTransaction(
+            restriction.id,
+            transaction,
+          )
+          restoreIntentIds.push(intent.id)
+        }
+        staydownImageIds = await applyCopyrightConfirmationConsequencesInTransaction(
+          noticeId,
+          transaction,
+        )
+        const claimantNotice = await buildCopyrightClaimantDecisionDelivery(
+          { noticeId, event: 'reversed' },
+          transaction,
+        )
+        if (claimantNotice) deliveries.push(claimantNotice)
+      }
+      const redressNotice = await buildTerritorialRedressDecisionDelivery(
+        { noticeId, redressId, disposition, rationale },
         transaction,
       )
-      restoreIntentIds.push(intent.id)
-    }
-    staydownImageIds = await applyCopyrightConfirmationConsequencesInTransaction(
-      noticeId,
-      transaction,
-    )
-    const claimantNotice = await buildCopyrightClaimantDecisionDelivery(
-      { noticeId, event: 'reversed' },
-      transaction,
-    )
-    if (claimantNotice) deliveries.push(claimantNotice)
-  }
-  const redressNotice = await buildTerritorialRedressDecisionDelivery(
-    { noticeId, redressId, disposition, rationale },
-    transaction,
+      if (redressNotice) deliveries.push(redressNotice)
+      await createCopyrightStatementDeliveriesInTransaction(deliveries, transaction)
+      await Promise.all([
+        advanceCopyrightLastLegalActivityAt(transaction, lockedNotice),
+        readCopyrightThreadRetirement(transaction, [noticeId]),
+      ])
+      await transaction.commit()
+      void enqueueBulkApplyCopyrightActions(restoreIntentIds)
+      enqueueCopyrightStaydownHashes(staydownImageIds)
+      return created
+    },
+    'Conflicting copyright case change',
+    CONFLICT,
   )
-  if (redressNotice) deliveries.push(redressNotice)
-  await createCopyrightStatementDeliveriesInTransaction(deliveries, transaction)
-  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
-  await transaction.commit()
-  void enqueueBulkApplyCopyrightActions(restoreIntentIds)
-  enqueueCopyrightStaydownHashes(staydownImageIds)
-  return created
 }

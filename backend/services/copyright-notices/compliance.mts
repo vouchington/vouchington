@@ -1,3 +1,5 @@
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { CONFLICT } from '@modules/on-error/error-codes'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { appendCopyrightSubmissionAssessmentInTransaction } from './compliance-assessment.mts'
@@ -7,11 +9,17 @@ export { appendCopyrightSubmissionAssessmentInTransaction } from './compliance-a
 export async function appendCopyrightSubmissionAssessment(
   input: AssessmentInput,
 ): Promise<CopyrightNoticeSubmissionAssessmentRecord> {
-  await using transaction = await beginTransaction()
-  await lockAssessmentForm(input.submissionId, transaction)
-  const assessment = await appendCopyrightSubmissionAssessmentInTransaction(input, transaction)
-  await transaction.commit()
-  return assessment
+  return conflictOnSerializationFailure(
+    async () => {
+      await using transaction = await beginTransaction({ serializable: true })
+      await lockAssessmentForm(input.submissionId, transaction)
+      const assessment = await appendCopyrightSubmissionAssessmentInTransaction(input, transaction)
+      await transaction.commit()
+      return assessment
+    },
+    'Conflicting copyright assessment',
+    CONFLICT,
+  )
 }
 
 export async function lockAssessmentForm(

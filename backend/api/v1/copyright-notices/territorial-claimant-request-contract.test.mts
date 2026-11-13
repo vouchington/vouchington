@@ -1,3 +1,8 @@
+import {
+  readCopyrightApiTerritorialState,
+  assertCopyrightApiEuRedress,
+  assertCopyrightApiEuComplaint,
+} from '@voucha/test-helpers/copyright-api-territorial-request-outcomes'
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
@@ -115,18 +120,21 @@ describe('EU redress request contracts', () => {
       const url = `${surface.base}/${noticeId}/redress-requests`
       const key = crypto.randomUUID()
       const body = { explanation: 'Please review this restriction' }
+      const before = await readCopyrightApiTerritorialState(noticeId)
 
       await actors.claimantRequest
         .post(url)
         .set('Idempotency-Key', key)
         .send({ ...body, ...extra })
         .expect(422)
-      const created = await actors.claimantRequest
-        .post(url)
-        .set('Idempotency-Key', key)
-        .send(body)
-        .expect(201)
-      expect(created.body[surface.redressField].is_duplicate).toBe(false)
+      expect(await readCopyrightApiTerritorialState(noticeId)).toEqual(before)
+      await assertCopyrightApiEuRedress({
+        request: actors.claimantRequest,
+        noticeId,
+        actorId: actors.claimant.id,
+        key,
+        explanation: body.explanation,
+      })
     },
   )
 
@@ -198,7 +206,7 @@ describe('EU supervised complaint request contract', () => {
     const actors = await createTerritorialActors()
     await approveJurisdictionPolicy(actors.administrator, 'eu_dsa')
     const noticeId = await seedDeterminedTerritorialNotice('eu_dsa', actors)
-    return { ...actors, url: `${eu!.base}/${noticeId}/supervised-complaints` }
+    return { ...actors, noticeId, url: `${eu!.base}/${noticeId}/supervised-complaints` }
   }
 
   it('keeps 401 ahead of the schema diagnostic', async () => {
@@ -210,24 +218,27 @@ describe('EU supervised complaint request contract', () => {
   })
 
   it('rejects an unknown key before recording the complaint', async () => {
-    const { claimantRequest, url } = await complaintFixture()
+    const { claimantRequest, claimant, noticeId, url } = await complaintFixture()
     const body = {
       authority_reference: `dsc-${crypto.randomUUID()}`,
       explanation: 'Complaint filed with the authority',
     }
 
+    const before = await readCopyrightApiTerritorialState(noticeId)
     await claimantRequest
       .post(url)
       .set('Idempotency-Key', crypto.randomUUID())
       .send({ ...body, injected: true })
       .expect(422)
-    // A recorded complaint would make the same reference a 409 instead of a 201.
-    const created = await claimantRequest
-      .post(url)
-      .set('Idempotency-Key', crypto.randomUUID())
-      .send(body)
-      .expect(201)
-    expect(created.body.copyright_eu_supervised_complaint.escalation_id).toEqual(expect.any(String))
+    expect(await readCopyrightApiTerritorialState(noticeId)).toEqual(before)
+    // The same authority reference must still be free after rejection, even if SSI rejects the real admission.
+    await assertCopyrightApiEuComplaint({
+      request: claimantRequest,
+      noticeId,
+      actorId: claimant.id,
+      key: crypto.randomUUID(),
+      body,
+    })
   })
 
   it.each([

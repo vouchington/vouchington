@@ -1,3 +1,7 @@
+import type {
+  CopyrightRetentionScopes,
+  CopyrightRetentionFamily,
+} from './cleanup-copyright-operational.mts'
 import type { AgentModerationCleanupContinuation } from './cleanup-agent-moderations.mts'
 import type { AiRerunOutcomeCleanupOptions } from './cleanup-ai-rerun-outcomes.mts'
 import type { MembershipOperationalCleanupOptions } from './cleanup-membership-operational.mts'
@@ -9,7 +13,6 @@ import type { DataRetentionLimits } from './config.mts'
 import type { PostModerationRetentionKind } from './cleanup-post-moderation-ledger.mts'
 import type { RetainedIdentityFamily } from './cleanup-retained-identities.mts'
 import type { RetainedRelationIdentityKey } from './cleanup-retained-relation-identities.mts'
-import type { CopyrightRetentionFamily } from './cleanup-copyright-operational.mts'
 import type { VoteRetentionCleanupOptions } from './cleanup-vote-retention.mts'
 import type {
   CleanupOptions,
@@ -24,7 +27,7 @@ import type { DataRetentionCleanupFamily } from './cleanup-run-family.mts'
 export type DataRetentionCleanupOptions = {
   /** Omitted runs every family; selected families keep their normal ordering and page limits. */
   families?: readonly DataRetentionCleanupFamily[]
-  copyrightFormScreeningAttemptIds?: readonly string[]
+  copyrightScopes?: CopyrightRetentionScopes
   copyrightNow?: Date
   /** Continuations name the membership families that exceeded the previous run's cap. */
   activeMembershipFamilies?: readonly string[]

@@ -1,7 +1,9 @@
 // Test-only staff case states for browser specs: each helper adds one real piece of case state.
 import { randomBytes } from 'node:crypto'
-import { write } from '@data-stores/psql'
-import { encryptSecret } from '@modules/token-secrets'
+import { beginTransaction, write } from '@data-stores/psql'
+import { v7 as uuidv7 } from 'uuid'
+import { copyrightGuestCapabilityPurpose } from '../services/copyright-notices/guest-capabilities.mts'
+import { encryptSecret, hashToken } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '../services/users/types.mts'
 import { insertTestImage } from './entities/images-insert.mts'
@@ -15,7 +17,6 @@ import {
   createCopyrightCounterNotice,
   copyrightSubmissionPurpose,
 } from '../services/copyright-notices/submissions.mts'
-import { issueCopyrightGuestCapability } from '../services/copyright-notices/guest-capabilities.mts'
 
 type CaseFixture = {
   poster: PrivateUser
@@ -100,18 +101,43 @@ export async function addCopyrightStaydownMatch(fixture: CaseFixture) {
   `)
 }
 
-/** Issues enough guest access to a case that the staff list pages. */
+/** Seeds the real capability rows used by staff pagination; issuance is not the browser subject. */
 export async function issueManyCopyrightGuestCapabilities(fixture: CaseFixture, count: number) {
-  const issuedAt = new Date()
-  const expiresAt = new Date(issuedAt.getTime() + 24 * 60 * 60 * 1000)
-  await Promise.all(
-    Array.from({ length: count }, () =>
-      issueCopyrightGuestCapability({
-        currentUser: fixture.moderator,
-        noticeId: fixture.noticeId,
-        issuedAt,
-        expiresAt,
-      }),
-    ),
-  )
+  await seedCopyrightGuestCapabilities({
+    noticeId: fixture.noticeId,
+    issuedById: fixture.moderator.id,
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    count,
+  })
+}
+
+/** Batch fixture for filing/pagination subjects, with genuine token hashes and canonical triggers. */
+export async function seedCopyrightGuestCapabilities(input: {
+  noticeId: string
+  issuedById: string
+  expiresAt: Date
+  count: number
+}) {
+  const capabilities = Array.from({ length: input.count }, () => ({
+    id: uuidv7(),
+    token: randomBytes(32).toString('base64url'),
+  }))
+  const ids = capabilities.map(row => row.id)
+  const hashes = capabilities.map(row => hashToken(copyrightGuestCapabilityPurpose, row.token))
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* seedStaffCopyrightGuestCapabilityIdentities */
+    INSERT INTO copyright_notice_guest_capability_identities (id, copyright_notice_id)
+    SELECT id, ${input.noticeId} FROM unnest(${ids}::uuid[]) AS id`)
+  await transaction(sql`/* seedStaffCopyrightGuestCapabilities */
+    INSERT INTO copyright_notice_guest_capabilities
+      (id, copyright_notice_id, token_hash, issued_by_id, expires_at)
+    SELECT id, ${input.noticeId}, token_hash, ${input.issuedById}, ${input.expiresAt}
+    FROM unnest(${ids}::uuid[], ${hashes}::text[]) AS item(id, token_hash)`)
+  await transaction(sql`/* seedStaffCopyrightGuestCapabilityEvents */
+    INSERT INTO copyright_notice_lifecycle_changes
+      (copyright_notice_id, change_type, changed_by_id, copyright_notice_guest_capability_id)
+    SELECT ${input.noticeId}, 'guest_capability_issued', ${input.issuedById}, id
+    FROM unnest(${ids}::uuid[]) AS id ORDER BY id`)
+  await transaction.commit()
+  return capabilities
 }

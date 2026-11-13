@@ -20,16 +20,21 @@ export async function cleanupSoftDeletedUserBatch(
   userIds?: readonly string[],
 ): Promise<UserPurgeResult> {
   if (cursor) {
-    const result = await cleanupSoftDeletedUser(
-      cursor.userId,
-      cutoffDate,
-      lowerBoundDate,
-      batchSize,
-      { remainingRows: batchSize },
-      cursor,
-    )
-    // Completion or eligibility loss resumes global discovery on a fresh job.
-    return { ...result, hasMore: true }
+    try {
+      const result = await cleanupSoftDeletedUser(
+        cursor.userId,
+        cutoffDate,
+        lowerBoundDate,
+        batchSize,
+        { remainingRows: batchSize },
+        cursor,
+      )
+      return { ...result, hasMore: true }
+    } catch (err) {
+      if ((err as { code?: string } | null)?.code !== '40001') throw err
+      // The aborted page did not consume its continuation; the next scheduled run resumes it.
+      return { deleted: 0, hasMore: false, userPurge: cursor }
+    }
   }
   const targetQuery = sql`/* cleanupSoftDeletedUserBatch */
     SELECT id FROM users
@@ -68,20 +73,16 @@ export async function cleanupSoftDeletedUserBatch(
   let deleted = 0
   let hasMore = targetRows.length === batchSize
   for (const { id: targetId } of targetRows) {
-    if (budget.remainingRows === 0) {
-      hasMore = true
-      break
-    }
+    if (budget.remainingRows === 0) return { deleted, hasMore: true }
     const before = budget.remainingRows
-    // oxlint-disable-next-line no-await-in-loop -- each independently selected user commits before the next may block.
-    const result = await cleanupSoftDeletedUser(
-      targetId,
-      cutoffDate,
-      lowerBoundDate,
-      batchSize,
-      budget,
-    )
-    // An eligibility loss or empty attempt still consumes one bounded user attempt.
+    let result: UserPurgeResult
+    try {
+      // oxlint-disable-next-line no-await-in-loop -- each independently selected user commits before the next may block.
+      result = await cleanupSoftDeletedUser(targetId, cutoffDate, lowerBoundDate, batchSize, budget)
+    } catch (err) {
+      if ((err as { code?: string } | null)?.code !== '40001') throw err
+      return { deleted, hasMore: false }
+    }
     if (before === budget.remainingRows) budget.remainingRows--
     deleted += result.deleted
     if (result.userPurge) return { deleted, hasMore: true, userPurge: result.userPurge }

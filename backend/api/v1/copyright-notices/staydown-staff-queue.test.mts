@@ -1,10 +1,12 @@
+import {
+  createCommittedApiStaydownCase,
+  seedCopyrightApiStaydownMatch,
+} from '@voucha/test-helpers/copyright-api-staydown-fixtures'
+import { assertCopyrightApiStaydownReview } from '@voucha/test-helpers/copyright-api-staydown-review-outcome'
+import { assertCopyrightApiFormAcceptance } from '@voucha/test-helpers/copyright-api-form-acceptance-outcome'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as imageEnqueues from '@queues/content-analysis/enqueues/image-jobs'
-import {
-  fillCopyrightStaydownEntryHash,
-  recordCopyrightStaydownPerceptualMatches,
-  recordCopyrightStaydownExactMatch,
-} from '@services/copyright-notices/staydown-matches'
+import { fillCopyrightStaydownEntryHash } from '@services/copyright-notices/staydown-matches'
 import {
   createTestUser,
   insertTestImage,
@@ -13,15 +15,12 @@ import {
   softDeleteUser,
 } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { deliverInitialCopyrightWithhold } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
 import { readCopyrightStaffQueueCursorBefore } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import {
   readCopyrightStaydownEntries,
   readCopyrightStaydownMatches,
 } from '@voucha/test-helpers/data-stores/psql/copyright-staydown'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
-import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { useStaydownMatching } from '@voucha/test-helpers/services/copyright-notices/staydown-matching'
 
 type StaffRequest = ReturnType<typeof createRequest>
@@ -45,44 +44,20 @@ type QueueCase = {
   staydown_matches_has_more: boolean
 }
 
-/**
- * A form case a moderator accepted over HTTP, which registers its image for staydown, then
- * re-uploaded by another member: the case staff see when staydown finds a match.
- */
+/** Read/review/preview subjects always have a complete committed accepted/matched prerequisite. */
 async function createMatchedCase() {
-  const { notice } = await createClearScreenedForm()
-  const noticeId = notice.intake.copyright_notice_id
-  const moderator = await createTestUser({ extraRoles: ['moderator'] })
+  const scene = await createCommittedApiStaydownCase()
   const staff = createRequest()
-  await staff.authenticateAs(moderator)
-  await staff
-    .post(`/api/v1/copyright-form-intakes/${notice.intake.id}/reviews`)
-    .send({ is_accepted: true, rationale: 'The signed notice is complete.' })
-    .expect(200)
-  // Acceptance records an intent; execute its normal delivery path before asserting withheld media.
-  await deliverInitialCopyrightWithhold(noticeId)
-  const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
-  const imageId = aggregate!.targets[0]!.image_id
-  const uploader = await createTestUser()
-  await recordCopyrightStaydownExactMatch({ imageId, uploadedById: uploader.id })
-  const [match] = await readCopyrightStaydownMatches(noticeId)
-  return {
-    noticeId,
-    moderator,
-    staff,
-    imageId,
-    uploader,
-    targetId: aggregate!.targets[0]!.id,
-    matchId: match!.id,
-  }
+  await staff.authenticateAs(scene.moderator)
+  return { ...scene, staff }
 }
 
-async function readQueuedCase(staff: StaffRequest, noticeId: string) {
-  const after = await readCopyrightStaffQueueCursorBefore([noticeId])
+async function readQueuedCase(staff: StaffRequest, noticeId: string, priorCursor?: string) {
+  const after = priorCursor ?? (await readCopyrightStaffQueueCursorBefore([noticeId]))
   const page = await staff
     .get(`/api/v1/copyright-notices/review-queue?limit=1&after=${encodeURIComponent(after)}`)
     .expect(200)
-  return (page.body.copyright_notices as QueueCase[])[0]
+  return (page.body.copyright_notices as QueueCase[]).find(row => row.id === noticeId)
 }
 
 describe('copyright staydown staff review', () => {
@@ -98,6 +73,11 @@ describe('copyright staydown staff review', () => {
   })
 
   it('registers the image a moderator confirms over HTTP and lists a re-upload on the staff queue', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const staff = createRequest()
+    await staff.authenticateAs(moderator)
+    await assertCopyrightApiFormAcceptance(staff, moderator.id)
+    // Queue projection always runs, even when the independent acceptance writer lost SSI.
     const matched = await createMatchedCase()
 
     expect(await readCopyrightStaydownEntries(matched.noticeId)).toEqual([
@@ -131,7 +111,12 @@ describe('copyright staydown staff review', () => {
     const imageId = await insertTestImage(matched.uploader.id)
     const hash = '01'.repeat(32)
     await fillCopyrightStaydownEntryHash({ imageId: matched.imageId, perceptualHash: hash })
-    await recordCopyrightStaydownPerceptualMatches({ imageId, perceptualHash: hash })
+    await seedCopyrightApiStaydownMatch({
+      noticeId: matched.noticeId,
+      imageId,
+      uploaderId: matched.uploader.id,
+      perceptualHash: hash,
+    })
     await setTestUserProfileImage(matched.uploader.id, imageId)
     const [placement] = await getTestImageSurfacePlacements({ userId: matched.uploader.id })
 
@@ -170,9 +155,10 @@ describe('copyright staydown staff review', () => {
     const matched = await createMatchedCase()
     for (let index = 0; index < 25; index++) {
       const uploader = await createTestUser()
-      await recordCopyrightStaydownExactMatch({
+      await seedCopyrightApiStaydownMatch({
+        noticeId: matched.noticeId,
         imageId: matched.imageId,
-        uploadedById: uploader.id,
+        uploaderId: uploader.id,
       })
     }
 
@@ -183,21 +169,14 @@ describe('copyright staydown staff review', () => {
 
   it('drops the match from the case once staff mark it reviewed, and only once', async () => {
     const matched = await createMatchedCase()
-    const reviewPath = `/api/v1/copyright-notices/${matched.noticeId}/staydown-matches/${matched.matchId}/reviews`
-
-    const first = await matched.staff.post(reviewPath).expect(200)
-    const second = await matched.staff.post(reviewPath).expect(200)
-
-    expect(first.body).toEqual({ reviewed: true })
-    expect(second.body).toEqual({ reviewed: false })
-    expect(await readCopyrightStaydownMatches(matched.noticeId)).toEqual([
-      expect.objectContaining({
-        id: matched.matchId,
-        reviewed_at: expect.any(Date),
-        reviewed_by_id: matched.moderator.id,
-      }),
-    ])
-    const queued = await readQueuedCase(matched.staff, matched.noticeId).catch(() => undefined)
+    const beforeCursor = await readCopyrightStaffQueueCursorBefore([matched.noticeId])
+    await assertCopyrightApiStaydownReview({
+      staff: matched.staff,
+      noticeId: matched.noticeId,
+      matchId: matched.matchId,
+      reviewerId: matched.moderator.id,
+    })
+    const queued = await readQueuedCase(matched.staff, matched.noticeId, beforeCursor)
     expect(queued?.reasons ?? []).not.toContain('staydown_review')
     expect(queued?.staydown_matches ?? []).toEqual([])
   })

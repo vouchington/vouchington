@@ -574,16 +574,19 @@ CREATE TABLE copyright_notice_lifecycle_changes (
   ),
   CONSTRAINT fk_copyright_lifecycle_events__submission_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id)
-    REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE RESTRICT,
+    REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE RESTRICT
+    DEFERRABLE INITIALLY DEFERRED,
   CONSTRAINT fk_copyright_lifecycle_events__correspondence_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_correspondence_id)
-    REFERENCES copyright_notice_correspondence_messages(copyright_notice_id, id) ON DELETE RESTRICT,
+    REFERENCES copyright_notice_correspondence_messages(copyright_notice_id, id) ON DELETE RESTRICT
+    DEFERRABLE INITIALLY DEFERRED,
   CONSTRAINT fk_copyright_lifecycle_events__deadline_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_deadline_id)
     REFERENCES copyright_notice_deadlines(copyright_notice_id, id) ON DELETE RESTRICT,
   CONSTRAINT fk_copyright_lifecycle_events__assessment_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_submission_assessment_identity_id)
-    REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_id, id) ON DELETE RESTRICT,
+    REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_id, id) ON DELETE RESTRICT
+    DEFERRABLE INITIALLY DEFERRED,
   CONSTRAINT fk_copyright_lifecycle_events__artifact_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_evidence_artifact_id)
     REFERENCES copyright_notice_evidence_artifacts(copyright_notice_id, id) ON DELETE RESTRICT,
@@ -1585,7 +1588,12 @@ BEGIN
     -- Virtual generated columns are absent from trigger NEW records; derive the same event clock.
     SET last_lifecycle_activity_at = GREATEST(notice.last_lifecycle_activity_at, uuid_extract_timestamp(NEW.id)),
       last_legal_activity_at = GREATEST(notice.last_legal_activity_at, uuid_extract_timestamp(NEW.id), clock_timestamp())
-    WHERE notice.id = NEW.copyright_notice_id;
+    WHERE notice.id = NEW.copyright_notice_id
+      AND (NEW.change_type <> 'submission_assessed' OR notice.evidence_erased_at IS NULL);
+    IF NOT FOUND AND NEW.change_type = 'submission_assessed' THEN
+      RAISE EXCEPTION 'copyright case evidence was erased'
+        USING ERRCODE = 'check_violation', CONSTRAINT = 'copyright_assessment_active_case';
+    END IF;
   END IF;
   RETURN NEW;
 END;

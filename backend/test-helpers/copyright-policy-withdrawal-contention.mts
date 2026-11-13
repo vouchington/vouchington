@@ -2,8 +2,7 @@ import { beginTransaction, read } from '@data-stores/psql'
 import type { QueryExecutor } from '@data-stores/psql/types'
 import type { PrivateUser } from '../services/users/types.mts'
 import sql from 'sql-template-strings'
-import { onTestFinished } from 'vitest'
-import { withdrawCopyrightJurisdictionPolicyApproval } from '../services/copyright-notices/jurisdiction-policy.mts'
+import { receiveTerritorialCopyrightNoticeInTransaction } from '../services/copyright-notices/territorial-notice-receipt.mts'
 
 export async function readOwnedPolicyWithdrawals(approvalId: string) {
   const { rows } = await read<{ id: string }>(sql`
@@ -14,98 +13,69 @@ export async function readOwnedPolicyWithdrawals(approvalId: string) {
   return rows
 }
 
-/** Real production lock, real FK insertion, then rollback before durable withdrawal commits. */
-export async function exercisePolicyWithdrawalReservation(
-  administrator: PrivateUser,
+export async function readOwnedPolicyApprovals(policyVersion: string) {
+  const { rows } = await read<{ id: string }>(sql`
+    /* readOwnedPolicyApprovals */
+    SELECT id FROM copyright_jurisdiction_policy_approvals
+    WHERE jurisdiction = 'eu_dsa' AND policy_version = ${policyVersion}
+  `)
+  return rows
+}
+
+/** The actual receipt guard, restricted to this fixture's approval cohort. */
+export async function receiveOwnedCopyrightPolicyReceipt(
+  claimant: PrivateUser,
   approvalId: string,
+  afterApprovalRead?: () => Promise<void>,
 ) {
-  await using withdrawalTransaction = await beginTransaction()
-  await using reservation = await beginTransaction()
-  const locked = Promise.withResolvers<void>()
-  const resume = Promise.withResolvers<void>()
-  const insertIssued = Promise.withResolvers<void>()
-  void locked.promise.catch(() => {})
-  void insertIssued.promise.catch(() => {})
-  const query = new Proxy(withdrawalTransaction, {
-    apply(target, thisArgument, argumentsList: Parameters<QueryExecutor>) {
-      const [input] = argumentsList
-      const text = typeof input === 'string' ? input : input.text
-      const pending: ReturnType<QueryExecutor> = Reflect.apply(target, thisArgument, argumentsList)
-      if (text.includes('/* withdrawCopyrightJurisdictionPolicyApproval:lock */')) {
-        return pending.then(async result => {
-          locked.resolve()
-          await resume.promise
-          return result
-        })
-      }
-      if (text.includes('/* withdrawCopyrightJurisdictionPolicyApproval */')) insertIssued.resolve()
-      return pending
+  await using transaction = await beginTransaction()
+  let observed = false
+  const query = new Proxy(transaction, {
+    apply(target, thisArgument, args: Parameters<QueryExecutor>) {
+      const [statement] = args
+      const text = typeof statement === 'string' ? statement : statement.text
+      const result: ReturnType<QueryExecutor> = Reflect.apply(target, thisArgument, args)
+      if (
+        !afterApprovalRead ||
+        observed ||
+        !text.includes('/* currentCopyrightJurisdictionPolicy */')
+      )
+        return result
+      return result.then(async value => {
+        if (value.rows.length !== 1 || value.rows[0]?.id !== approvalId)
+          throw new Error('Owned approval admission checkpoint did not select its approval')
+        observed = true
+        await afterApprovalRead()
+        return value
+      })
     },
   })
-  const production = (async () => {
-    const value = await withdrawCopyrightJurisdictionPolicyApproval(administrator, approvalId, {
-      query,
-    })
-    await withdrawalTransaction.commit()
-    return value
-  })()
-  void production.catch((err: unknown) => {
-    locked.reject(err)
-    insertIssued.reject(err)
-  })
-  // Register before the contending statement. Release the gate before independent drains.
-  let cleanupPromise: Promise<void> | undefined
-  function cleanup() {
-    return (cleanupPromise ??= (async () => {
-      resume.resolve()
-      const outcomes = await Promise.allSettled([production, reservation.rollback()])
-      const errors: unknown[] = []
-      for (const outcome of outcomes) {
-        if (outcome.status === 'rejected') errors.push(outcome.reason)
-      }
-      if (errors.length)
-        throw new AggregateError(errors, 'Withdrawal contention cleanup failed', {
-          cause: errors[0],
-        })
-    })())
-  }
-  onTestFinished(cleanup)
-  const errors: unknown[] = []
-  let result:
-    | {
-        reserved: { id: string; approval_id: string }
-        withdrawal: { id: string }
-        rows: { id: string }[]
-      }
-    | undefined
-  try {
-    await locked.promise
-    const { rows } = await reservation<{ id: string; approval_id: string }>(sql`
-      /* reserveOwnedPolicyWithdrawal */
-      INSERT INTO copyright_jurisdiction_policy_withdrawals (
-        copyright_jurisdiction_policy_approval_id, withdrawn_by_id
-      ) VALUES (${approvalId}, ${administrator.id})
-      RETURNING id, copyright_jurisdiction_policy_approval_id AS approval_id
-    `)
-    const reserved = rows[0]
-    if (!reserved) throw new Error('Native reservation returned no receipt')
-    resume.resolve()
-    await insertIssued.promise
-    await reservation.rollback()
-    const withdrawal = await production
-    result = { reserved, withdrawal, rows: await readOwnedPolicyWithdrawals(approvalId) }
-  } catch (err) {
-    errors.push(err)
-  } finally {
-    try {
-      await cleanup()
-    } catch (err) {
-      errors.push(err)
-    }
-  }
-  if (errors.length === 1) throw errors[0]
-  if (errors.length > 1)
-    throw new AggregateError(errors, 'Withdrawal and cleanup failed', { cause: errors[0] })
-  if (!result) throw new Error('Missing native withdrawal contention result')
-  return result
+  const suffix = crypto.randomUUID()
+  const receipt = await receiveTerritorialCopyrightNoticeInTransaction(
+    { user: claimant, identity: `user:${claimant.id}` },
+    'eu_dsa',
+    suffix,
+    {
+      notifierName: `Notifier ${suffix}`,
+      notifierEmail: `notifier-${suffix}@example.test`,
+      goodFaithStatement: true,
+      contact: `Contact ${suffix}`,
+      contentDescription: `Work ${suffix}`,
+      grounds: `Grounds ${suffix}`,
+      hostedUseUrl: `https://example.test/${suffix}`,
+    },
+    query,
+    [approvalId],
+  )
+  if (afterApprovalRead && !observed) throw new Error('Owned approval checkpoint was not reached')
+  await transaction.commit()
+  return receipt
+}
+
+export async function readOwnedCopyrightPolicyReceipt(noticeId: string) {
+  const { rows } = await read<{ approval_id: string }>(sql`
+    /* readOwnedCopyrightPolicyReceipt */
+    SELECT copyright_jurisdiction_policy_approval_id AS approval_id
+    FROM copyright_territorial_notice_receipts WHERE copyright_notice_id = ${noticeId}`)
+  return rows
 }

@@ -1,3 +1,8 @@
+import {
+  readCopyrightOperationalCursor,
+  commitCopyrightOperationalCursor,
+  type CopyrightOperationalScope,
+} from './operational-retention-cursor.mts'
 import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { getMinUUIDv7ForDate } from '@modules/utils'
@@ -64,26 +69,16 @@ async function sweepPage(
   cutoffId: string,
   cutoff: Date,
   tokenGcCutoffId: string,
-  recordIds?: readonly string[],
+  scope?: CopyrightOperationalScope,
 ): Promise<SweepResult> {
   await using transaction = await beginTransaction()
-  await transaction(sql`/* seedCopyrightOperationalRetentionCursor */
-    INSERT INTO copyright_notice_operational_retention_cursors (kind)
-    VALUES (${kind}::copyright_notice_operational_retention_kinds) ON CONFLICT DO NOTHING`)
-  const { rows: cursorRows } = await transaction<{
-    cursor_record_id: string | null
-    sweep_upper_bound_record_id: string | null
-  }>(sql`/* lockCopyrightOperationalRetentionCursor */
-    SELECT cursor_record_id, sweep_upper_bound_record_id
-    FROM copyright_notice_operational_retention_cursors
-    WHERE kind = ${kind}::copyright_notice_operational_retention_kinds FOR UPDATE`)
-  const cursor = cursorRows[0]!
+  const cursor = await readCopyrightOperationalCursor(transaction, kind, scope)
   const upperBound = cursor.sweep_upper_bound_record_id ?? cutoffId
   const statement: SQLStatement =
     sql`/* scanCopyrightOperationalRetentionPage */ SELECT id FROM `.append(TABLES[kind])
       .append(sql` WHERE id > COALESCE(${cursor.cursor_record_id}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
       AND id < LEAST(${upperBound}::uuid, ${cutoffId}::uuid)`)
-  if (recordIds !== undefined) statement.append(sql` AND id = ANY(${recordIds}::uuid[])`)
+  if (scope) statement.append(sql` AND id = ANY(${scope.recordIds}::uuid[])`)
   statement.append(sql`
       ORDER BY id LIMIT ${batchSize}`)
   const { rows: rawRows } = await transaction<{ id: string }>(statement)
@@ -108,12 +103,15 @@ async function sweepPage(
     deleted = await deleteSelected(transaction, kind, ids, cutoff, tokenGcCutoffId)
   }
   const hasMore = rawIds.length === batchSize
-  await transaction(sql`/* advanceCopyrightOperationalRetentionCursor */
-    UPDATE copyright_notice_operational_retention_cursors
-    SET cursor_record_id = ${hasMore ? rawIds.at(-1)! : null}::uuid,
-      sweep_upper_bound_record_id = ${hasMore ? upperBound : null}::uuid
-    WHERE kind = ${kind}::copyright_notice_operational_retention_kinds`)
-  await transaction.commit()
+  cursor.cursor_record_id = hasMore ? rawIds.at(-1)! : null
+  cursor.sweep_upper_bound_record_id = hasMore ? upperBound : null
+  if (!scope)
+    await transaction(sql`/* advanceCopyrightOperationalRetentionCursor */
+      UPDATE copyright_notice_operational_retention_cursors
+      SET cursor_record_id = ${cursor.cursor_record_id}::uuid,
+        sweep_upper_bound_record_id = ${cursor.sweep_upper_bound_record_id}::uuid
+      WHERE kind = ${kind}::copyright_notice_operational_retention_kinds`)
+  await commitCopyrightOperationalCursor(transaction, cursor, scope)
   return { scanned: rawIds.length, deleted, hasMore }
 }
 
@@ -125,7 +123,7 @@ export async function sweepCopyrightOperationalRetention(
     retentionDays: number
     batchSize: number
     maxBatches: number
-    recordIds?: readonly string[]
+    scope?: CopyrightOperationalScope
   },
 ): Promise<SweepResult> {
   const now = options.now ?? new Date()
@@ -146,7 +144,7 @@ export async function sweepCopyrightOperationalRetention(
         cutoffId,
         cutoff,
         tokenGcCutoffId,
-        options.recordIds,
+        options.scope,
       )
     } catch (err) {
       if (kind !== 'orphan_email_thread_tokens' || !isCopyrightEmailTokenGcConflict(err)) throw err

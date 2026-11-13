@@ -1,174 +1,133 @@
-import { readTestCopyrightDeliveryAttempts } from '@voucha/test-helpers/copyright-attempt-history'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
+import { failTestCopyrightDeliveryIntent } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import {
-  readTestCopyrightDeliveryIntentReplayEvents,
-  readTestCopyrightDeliveryIntentReplayFacts,
-} from '@voucha/test-helpers/data-stores/psql/copyright-email-intake-reply-replays'
+  createOwnedCopyrightReplyFixture,
+  seedOwnedCopyrightReplyReplay,
+  seedOwnedCopyrightReplyClaim,
+} from '@voucha/test-helpers/copyright-reply-replay-fixtures'
 import {
-  countCopyrightStaffQueueKeysWithoutNotice,
-  failTestCopyrightDeliveryIntent,
-} from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
+  assertOwnedCopyrightReplyReplay,
+  assertOwnedCopyrightReplyResend,
+  copyrightReplyReplayConflict,
+  expectedOwnedCopyrightReplyReset,
+} from '@voucha/test-helpers/copyright-reply-replay-outcomes'
 import {
-  bounceTestCopyrightEmailIntakeReply,
-  declineTestCopyrightEmailIntake,
-} from '@voucha/test-helpers/services/copyright-notices/declined-email-intake'
-import { markCopyrightDeliveryIntentSent, prepareCopyrightEmailDelivery } from './index.mts'
+  readOwnedCopyrightReplyState,
+  countOwnedCopyrightReplyQueueKeys,
+} from '@voucha/test-helpers/copyright-reply-replay-state'
+import { copyrightRaceResult } from '@voucha/test-helpers/copyright-assessment-race-outcomes'
 import { replayFailedCopyrightEmailIntakeReply } from './email-intake-reply-replay.mts'
 
-async function createStaff(role = 'moderator') {
-  const user = await createTestUser()
-  return { ...user, roles: [role] } as typeof user
-}
-
-async function declineWithFailedReply() {
-  const declined = await declineTestCopyrightEmailIntake()
-  await failTestCopyrightDeliveryIntent(declined.intentId)
-  return declined
-}
-
 describe('replaying the failed reply to a declined email intake', () => {
-  it('resets it once, resends the exact stored text, and audits the staff actor', async () => {
-    const declined = await declineTestCopyrightEmailIntake()
-    const firstSend = await prepareCopyrightEmailDelivery(declined.intentId)
-    await failTestCopyrightDeliveryIntent(declined.intentId)
-    const failed = await readTestCopyrightDeliveryIntentReplayFacts(declined.intentId)
-    const staff = await createStaff()
+  it('atomically resets the failed reply with its exact stored body and authenticated actor audit', async () => {
+    expect.hasAssertions()
+    const declined = await createOwnedCopyrightReplyFixture()
+    const staff = await createTestUser({ extraRoles: ['moderator'] })
+    await assertOwnedCopyrightReplyReplay(declined, staff)
+  })
 
-    await expect(
-      replayFailedCopyrightEmailIntakeReply({ currentUser: staff, intakeId: declined.intakeId }),
-    ).resolves.toBe(declined.intentId)
+  it('resends a separately committed replay using the exact stored recipient, subject and text', async () => {
+    expect.hasAssertions()
+    const declined = await createOwnedCopyrightReplyFixture()
+    const staff = await createTestUser({ extraRoles: ['moderator'] })
+    await seedOwnedCopyrightReplyReplay(declined.intentId, staff.id)
+    await assertOwnedCopyrightReplyResend(declined)
+  })
 
-    const replayed = await readTestCopyrightDeliveryIntentReplayFacts(declined.intentId)
-    expect(failed).toMatchObject({ state: 'failed', attempt_count: 5 })
-    expect(replayed).toMatchObject({
-      state: 'pending',
-      attempt_count: 0,
-      failed_at: null,
-      body_ciphertext: failed.body_ciphertext,
+  it.each(['pending', 'sent', 'bounced'] as const)(
+    'leaves a committed %s reply untouched and unaudited',
+    async state => {
+      const declined = await createOwnedCopyrightReplyFixture(state)
+      const staff = await createTestUser({ extraRoles: ['moderator'] })
+      const before = await readOwnedCopyrightReplyState(declined.intakeId, declined.intentId)
+      expect(before.work.state).toBe(state)
+      await expect(
+        replayFailedCopyrightEmailIntakeReply({ currentUser: staff, intakeId: declined.intakeId }),
+      ).resolves.toBeNull()
+      expect(await readOwnedCopyrightReplyState(declined.intakeId, declined.intentId)).toEqual(
+        before,
+      )
+      expect(before.events).toEqual([])
+    },
+  )
+
+  it('never commits two resets or an unaudited reset when two staff replay together', async () => {
+    const declined = await createOwnedCopyrightReplyFixture()
+    const first = await createTestUser({ extraRoles: ['moderator'] })
+    const second = await createTestUser({ administrator: true })
+    const before = await readOwnedCopyrightReplyState(declined.intakeId, declined.intentId)
+    const [a, b] = await Promise.allSettled([
+      replayFailedCopyrightEmailIntakeReply({ currentUser: first, intakeId: declined.intakeId }),
+      replayFailedCopyrightEmailIntakeReply({ currentUser: second, intakeId: declined.intakeId }),
+    ])
+    const success = { status: 'fulfilled', value: declined.intentId }
+    const noop = { status: 'fulfilled', value: null }
+    expect([
+      { first: success, second: noop, state: expectedOwnedCopyrightReplyReset(before, first.id) },
+      {
+        first: success,
+        second: copyrightReplyReplayConflict,
+        state: expectedOwnedCopyrightReplyReset(before, first.id),
+      },
+      { first: noop, second: success, state: expectedOwnedCopyrightReplyReset(before, second.id) },
+      {
+        first: copyrightReplyReplayConflict,
+        second: success,
+        state: expectedOwnedCopyrightReplyReset(before, second.id),
+      },
+      { first: copyrightReplyReplayConflict, second: copyrightReplyReplayConflict, state: before },
+    ]).toContainEqual({
+      first: a.status === 'fulfilled' ? a : copyrightRaceResult(a),
+      second: b.status === 'fulfilled' ? b : copyrightRaceResult(b),
+      state: await readOwnedCopyrightReplyState(declined.intakeId, declined.intentId),
     })
-    await expect(readTestCopyrightDeliveryIntentReplayEvents(declined.intentId)).resolves.toEqual([
+  })
+
+  it('can reset a reply that failed after a separately committed earlier replay', async () => {
+    expect.hasAssertions()
+    const declined = await createOwnedCopyrightReplyFixture()
+    const staff = await createTestUser({ extraRoles: ['moderator'] })
+    await seedOwnedCopyrightReplyReplay(declined.intentId, staff.id)
+    await seedOwnedCopyrightReplyClaim(declined.intentId)
+    await failTestCopyrightDeliveryIntent(declined.intentId)
+    const before = await readOwnedCopyrightReplyState(declined.intakeId, declined.intentId)
+    expect(before.events).toEqual([
       {
         copyright_notice_id: null,
         change_type: 'delivery_intent_replayed',
         changed_by_id: staff.id,
       },
     ])
-    const resend = await prepareCopyrightEmailDelivery(declined.intentId)
-    expect(await readTestCopyrightDeliveryAttempts(declined.intentId)).toEqual([
-      { attempt_number: 1, generation: '1', sent: false, failed: true, abandoned: false },
-      { attempt_number: 2, generation: '2', sent: false, failed: false, abandoned: false },
-    ])
-    expect(resend).toMatchObject({
-      text: firstSend.text,
-      subject: firstSend.subject,
-      recipientEmail: firstSend.recipientEmail,
-    })
-    // It is back to pending, so a second replay finds nothing failed and records nothing more.
-    await expect(
-      replayFailedCopyrightEmailIntakeReply({ currentUser: staff, intakeId: declined.intakeId }),
-    ).resolves.toBeNull()
-    await expect(
-      readTestCopyrightDeliveryIntentReplayEvents(declined.intentId),
-    ).resolves.toHaveLength(1)
-  })
-
-  it('leaves a reply that is pending, sent, or bounced untouched and unaudited', async () => {
-    const pending = await declineTestCopyrightEmailIntake()
-    const sent = await declineTestCopyrightEmailIntake()
-    const { leaseToken } = await prepareCopyrightEmailDelivery(sent.intentId)
-    await markCopyrightDeliveryIntentSent({
-      intentId: sent.intentId,
-      leaseToken,
-      sesMessageId: `ses-sent-${crypto.randomUUID()}`,
-    })
-    const bounced = await declineTestCopyrightEmailIntake()
-    await bounceTestCopyrightEmailIntakeReply(bounced.intentId)
-    const staff = await createStaff()
-
-    for (const [declined, state] of [
-      [pending, 'pending'],
-      [sent, 'sent'],
-      [bounced, 'bounced'],
-    ] as const) {
-      const before = await readTestCopyrightDeliveryIntentReplayFacts(declined.intentId)
-      await expect(
-        replayFailedCopyrightEmailIntakeReply({ currentUser: staff, intakeId: declined.intakeId }),
-      ).resolves.toBeNull()
-      await expect(readTestCopyrightDeliveryIntentReplayFacts(declined.intentId)).resolves.toEqual(
-        before,
-      )
-      expect(before.state).toBe(state)
-      await expect(readTestCopyrightDeliveryIntentReplayEvents(declined.intentId)).resolves.toEqual(
-        [],
-      )
-    }
-  })
-
-  it('resets and audits exactly once when two staff replay the same failed reply together', async () => {
-    const declined = await declineWithFailedReply()
-    const [first, second] = await Promise.all([createStaff(), createStaff('administrator')])
-
-    const outcomes = await Promise.all([
-      replayFailedCopyrightEmailIntakeReply({ currentUser: first, intakeId: declined.intakeId }),
-      replayFailedCopyrightEmailIntakeReply({ currentUser: second, intakeId: declined.intakeId }),
-    ])
-
-    expect(outcomes.filter(Boolean)).toEqual([declined.intentId])
-    const events = await readTestCopyrightDeliveryIntentReplayEvents(declined.intentId)
-    expect(events).toHaveLength(1)
-    expect([first.id, second.id]).toContain(events[0]!.changed_by_id)
-    await expect(
-      readTestCopyrightDeliveryIntentReplayFacts(declined.intentId),
-    ).resolves.toMatchObject({ state: 'pending', attempt_count: 0 })
-  })
-
-  it('retries a reply that failed again, because the guard is the failed state and not a count', async () => {
-    const declined = await declineWithFailedReply()
-    const staff = await createStaff()
-    const replay = () =>
-      replayFailedCopyrightEmailIntakeReply({ currentUser: staff, intakeId: declined.intakeId })
-
-    await expect(replay()).resolves.toBe(declined.intentId)
-    await failTestCopyrightDeliveryIntent(declined.intentId)
-    await expect(replay()).resolves.toBe(declined.intentId)
-
-    await expect(
-      readTestCopyrightDeliveryIntentReplayEvents(declined.intentId),
-    ).resolves.toHaveLength(2)
+    await assertOwnedCopyrightReplyReplay(declined, staff)
   })
 
   it('refuses a user who cannot review copyright notices and changes nothing', async () => {
-    const declined = await declineWithFailedReply()
+    const declined = await createOwnedCopyrightReplyFixture()
     const member = await createTestUser()
-
+    const before = await readOwnedCopyrightReplyState(declined.intakeId, declined.intentId)
     await expect(
       replayFailedCopyrightEmailIntakeReply({ currentUser: member, intakeId: declined.intakeId }),
     ).rejects.toMatchObject({ status: 403 })
-
-    await expect(
-      readTestCopyrightDeliveryIntentReplayFacts(declined.intentId),
-    ).resolves.toMatchObject({ state: 'failed' })
-    await expect(readTestCopyrightDeliveryIntentReplayEvents(declined.intentId)).resolves.toEqual(
-      [],
-    )
+    expect(await readOwnedCopyrightReplyState(declined.intakeId, declined.intentId)).toEqual(before)
   })
 
-  it('never creates a case or a staff queue key', async () => {
-    const declined = await declineWithFailedReply()
-    const staff = await createStaff()
-    const before = await countCopyrightStaffQueueKeysWithoutNotice()
-
-    await replayFailedCopyrightEmailIntakeReply({ currentUser: staff, intakeId: declined.intakeId })
-
-    expect(before).toBe(0)
-    await expect(countCopyrightStaffQueueKeysWithoutNotice()).resolves.toBe(0)
+  it('creates no case or staff queue key for its owned declined intake', async () => {
+    const declined = await createOwnedCopyrightReplyFixture()
+    const staff = await createTestUser({ extraRoles: ['moderator'] })
+    expect(await countOwnedCopyrightReplyQueueKeys(declined.intakeId)).toBe(0)
+    await assertOwnedCopyrightReplyReplay(declined, staff)
+    const after = await readOwnedCopyrightReplyState(declined.intakeId, declined.intentId)
+    expect(after.links).toEqual([])
+    expect(after.work).toMatchObject({ copyright_notice_id: null })
+    expect(after.events.every(event => event.copyright_notice_id === null)).toBe(true)
+    expect(await countOwnedCopyrightReplyQueueKeys(declined.intakeId)).toBe(0)
   })
 
   it('finds nothing to replay for an unknown intake', async () => {
     await expect(
       replayFailedCopyrightEmailIntakeReply({
-        currentUser: await createStaff(),
+        currentUser: await createTestUser({ extraRoles: ['moderator'] }),
         intakeId: crypto.randomUUID(),
       }),
     ).resolves.toBeNull()

@@ -1,89 +1,17 @@
+import {
+  createTwoTargetFixture,
+  seedEvidenceCounterDeadline,
+} from '@voucha/test-helpers/copyright-evidence-scene'
+import { seedCopyrightStatementRestriction } from '@voucha/test-helpers/copyright-statement-restriction-fixture'
+import {
+  seedEvidenceHold,
+  seedEvidenceHoldResolution,
+} from '@voucha/test-helpers/copyright-evidence-hold-fixture'
+import { assertEvidenceRestoreProbe } from '@voucha/test-helpers/copyright-evidence-restore-outcome'
 import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { describe, expect, it } from 'vitest'
-import {
-  createTestUserDirect,
-  getTestPostImagePlacement,
-  insertTestImage,
-  insertTestPost,
-  insertTestPostImage,
-} from '@voucha/test-helpers'
 import { insertCopyrightEvidenceArtifact } from '@voucha/test-helpers/data-stores/psql/copyright-evidence-artifacts'
-import { appendCopyrightLegalHoldAssessment, resolveCopyrightLegalHold } from './index.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
-import { appendCopyrightSubmissionAssessment } from './compliance.mts'
-import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
-import { createOutboundCopyrightCorrespondence } from './correspondence.mts'
-import { createEligibleCopyrightRestoreIntent } from './restoration.mts'
-import { createCompliantCounterNoticeDeadline } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
-import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-
-async function createTwoTargetFixture() {
-  const [claimant, moderatorRecord] = await Promise.all([
-    createTestUserDirect(),
-    createTestUserDirect(),
-  ])
-  const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
-  const imageIds = await Promise.all([insertTestImage(claimant.id), insertTestImage(claimant.id)])
-  const postId = await insertTestPost({
-    title: `copyright evidence ${crypto.randomUUID()}`,
-    slug: `copyright-evidence-${crypto.randomUUID()}`,
-    createdById: claimant.id,
-    markdown: 'images',
-  })
-  await Promise.all(imageIds.map(imageId => insertTestPostImage({ postId, imageId })))
-  const notice = await createCopyrightNoticeAggregate({
-    jurisdiction: 'us_dmca',
-    receivedAt: new Date('2026-06-30T16:00:00.000Z'),
-    claimantUserId: claimant.id,
-    claimantDisplayName: null,
-    claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
-    workDescription: `work-${crypto.randomUUID()}`,
-    policyVersion: 'test-v1',
-    initialSubmission: { kind: 'notice', sourceKind: 'signed_in_form', bodyCiphertext: 'notice' },
-    targets: await Promise.all(
-      imageIds.map(async imageId => {
-        const placement = await getTestPostImagePlacement(postId, imageId)
-        if (!placement) throw new Error('fixture image placement disappeared')
-        return {
-          placementId: placement.placement_id,
-          placementRevision: placement.placement_revision,
-          imageId,
-          bindingFamily: 'post',
-          hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
-        }
-      }),
-    ),
-  })
-  const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
-  if (!aggregate) throw new Error('fixture notice disappeared')
-  const noticeAssessment = await appendCopyrightSubmissionAssessment({
-    submissionId: aggregate.submissions[0].id,
-    assessedAt: new Date('2026-07-01T11:00:00.000Z'),
-    currentUser: moderator,
-    substantiallyCompliant: true,
-  })
-  const receipt = await createOutboundCopyrightCorrespondence({
-    noticeId: notice.id,
-    submissionId: aggregate.submissions[0].id,
-    correspondenceKind: 'receipt',
-    compositionKind: 'deterministic_template',
-    bodyCiphertext: `receipt-${crypto.randomUUID()}`,
-    draftedById: null,
-  })
-  await createCopyrightDeliveryIntent({
-    noticeId: notice.id,
-    submissionId: aggregate.submissions[0].id,
-    correspondenceId: receipt.id,
-    recipientUserId: null,
-    recipientRole: 'claimant',
-    deliveryKind: 'claimant_receipt',
-    channel: 'email',
-    idempotencyKey: `copyright-evidence-receipt-${crypto.randomUUID()}`,
-    recipientEmail: `tests+copyright-${crypto.randomUUID()}@voucha.ai`,
-  })
-  return { aggregate, claimant, moderator, notice, noticeAssessment }
-}
 
 describe('copyright notice evidence and holds', () => {
   it('retains evidence and scopes a qualifying hold to only its identified target', async () => {
@@ -99,17 +27,18 @@ describe('copyright notice evidence and holds', () => {
     })
     const restrictions = await Promise.all(
       [heldTarget, otherTarget].map(target =>
-        acceptCopyrightNoticeAndImposeRestriction({
+        seedCopyrightStatementRestriction({
           noticeId: notice.id,
           targetId: target.id,
           assessmentId: noticeAssessment.id,
+          revision: target.placement_revision,
           imposedAt: new Date('2026-07-01T12:00:00.000Z'),
-          imposedById: moderator.id,
+          moderatorId: moderator.id,
         }),
       ),
     )
-    const deadline = await createCompliantCounterNoticeDeadline({
-      claimant,
+    const deadline = await seedEvidenceCounterDeadline({
+      claimantId: claimant.id,
       noticeId: notice.id,
       moderator,
       targetIds: [heldTarget.id, otherTarget.id],
@@ -123,7 +52,8 @@ describe('copyright notice evidence and holds', () => {
       submittedByUserId: null,
       bodyCiphertext: `hold-${crypto.randomUUID()}`,
     })
-    const hold = await appendCopyrightLegalHoldAssessment({
+    const hold = await seedEvidenceHold({
+      noticeId: notice.id,
       currentUser: moderator,
       submissionId: holdSubmission.id,
       assessedAt: new Date('2026-07-01T12:01:00.000Z'),
@@ -136,43 +66,49 @@ describe('copyright notice evidence and holds', () => {
       targetIds: [heldTarget.id],
       rationale: 'Verified qualifying CCB filing.',
     })
-    await expect(
-      createEligibleCopyrightRestoreIntent({
+    await assertEvidenceRestoreProbe(
+      {
         noticeId: notice.id,
         targetId: heldTarget.id,
         restrictionId: restrictions[0].id,
         deadlineId: deadline.id,
         expectedPlacementRevision: heldTarget.placement_revision,
         now: restorationNow,
-      }),
-    ).rejects.toThrow('Copyright restoration is not eligible')
-    const intent = await createEligibleCopyrightRestoreIntent({
+      },
+      false,
+    )
+    await assertEvidenceRestoreProbe(
+      {
+        noticeId: notice.id,
+        targetId: otherTarget.id,
+        restrictionId: restrictions[1].id,
+        deadlineId: deadline.id,
+        expectedPlacementRevision: otherTarget.placement_revision,
+        now: restorationNow,
+      },
+      true,
+    )
+    const resolution = await seedEvidenceHoldResolution({
       noticeId: notice.id,
-      targetId: otherTarget.id,
-      restrictionId: restrictions[1].id,
-      deadlineId: deadline.id,
-      expectedPlacementRevision: otherTarget.placement_revision,
-      now: restorationNow,
-    })
-    const resolution = await resolveCopyrightLegalHold({
       currentUser: moderator,
       assessmentId: hold.id,
       resolvedAt: new Date(restorationNow.getTime() + 60_000),
       resolutionKind: 'dismissed',
       rationale: `resolution-${crypto.randomUUID()}`,
     })
-    const heldIntent = await createEligibleCopyrightRestoreIntent({
-      noticeId: notice.id,
-      targetId: heldTarget.id,
-      restrictionId: restrictions[0].id,
-      deadlineId: deadline.id,
-      expectedPlacementRevision: heldTarget.placement_revision,
-      now: new Date(restorationNow.getTime() + 120_000),
-    })
+    await assertEvidenceRestoreProbe(
+      {
+        noticeId: notice.id,
+        targetId: heldTarget.id,
+        restrictionId: restrictions[0].id,
+        deadlineId: deadline.id,
+        expectedPlacementRevision: heldTarget.placement_revision,
+        now: new Date(restorationNow.getTime() + 120_000),
+      },
+      true,
+    )
     const refreshed = await getCopyrightNoticePrivateAggregate(notice.id)
 
-    expect(intent.action).toBe('restore')
-    expect(heldIntent.action).toBe('restore')
     expect(resolution.copyright_notice_legal_hold_assessment_id).toBe(hold.id)
     expect(hold.target_ids).toEqual([heldTarget.id])
     expect(refreshed?.evidenceArtifacts).toContainEqual(

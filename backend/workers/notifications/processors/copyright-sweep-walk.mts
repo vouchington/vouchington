@@ -27,6 +27,7 @@ export async function runCopyrightSweepStage(
   try {
     tally.errors.push(...(await stage()))
   } catch (err) {
+    if ((err as { code?: string } | null)?.code === '40001') throw err
     tally.errors.push(err)
   }
 }
@@ -47,6 +48,7 @@ export async function walkCopyrightSweep<TPage extends CopyrightSweepIdPage>(
       // oxlint-disable-next-line no-await-in-loop -- one selected stage consumes one shared page allowance.
       page = await searchPage({ ...(cursor ? { after: cursor } : {}), limit: budget.batchSize })
     } catch (err) {
+      if ((err as { code?: string } | null)?.code === '40001') throw err
       options.onMore?.(cursor)
       options.onPageReadError?.()
       throw err
@@ -71,6 +73,7 @@ export async function settleCopyrightSweepSequentially(
       // oxlint-disable-next-line no-await-in-loop -- each item takes its own row and advisory locks.
       await settle(id)
     } catch (err) {
+      if ((err as { code?: string } | null)?.code === '40001') throw err
       errors.push(err)
     }
   }
@@ -96,6 +99,7 @@ export async function enqueueBulkCopyrightSweepPages(
         try {
           await enqueueBulk([...ids])
         } catch (err) {
+          if ((err as { code?: string } | null)?.code === '40001') throw err
           return [err]
         }
         tally.enqueued += ids.length

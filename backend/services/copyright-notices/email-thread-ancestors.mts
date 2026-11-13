@@ -1,3 +1,5 @@
+import { hasRetiredCopyrightEmailCaseLink } from './email-thread-source.mts'
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { copyrightEmailThreadChangedError } from './email-thread-graph.mts'
@@ -34,6 +36,8 @@ export async function insertResolvedCopyrightEmailThreadReferences(
       ORDER BY intake_id, reference.token_id, reference.reference_kind
       ON CONFLICT (copyright_notice_email_intake_id, token_id, reference_kind) DO NOTHING
     `)
+    if (rowCount && (await hasRetiredCopyrightEmailCaseLink(transaction, intakeId)))
+      throw copyrightEmailThreadChangedError()
     if (rowCount === 0) {
       const { rows: live } = await transaction(sql`/* insertCopyrightEmailThreadReferences:live */
         SELECT 1 FROM copyright_notice_email_intakes intake
@@ -76,7 +80,10 @@ export async function recordCopyrightEmailAncestorEdges(
   transaction: TransactionQuery,
   intakeId: string,
 ): Promise<void> {
-  await transaction(sql`/* recordCopyrightEmailAncestorEdges */
+  const { rows: inserted } = await transaction<{
+    reply_message_intake_receipt_id: string
+    ancestor_message_intake_receipt_id: string
+  }>(sql`/* recordCopyrightEmailAncestorEdges */
     INSERT INTO copyright_notice_email_message_ancestors (
       reply_message_intake_receipt_id, ancestor_message_intake_receipt_id, reference_kind
     )
@@ -149,24 +156,27 @@ export async function recordCopyrightEmailAncestorEdges(
     SELECT edges.reply_id, edges.ancestor_id, edges.reference_kind
     FROM edges ORDER BY edges.reply_id, edges.ancestor_id
     ON CONFLICT (reply_message_intake_receipt_id, ancestor_message_intake_receipt_id) DO NOTHING
+    RETURNING reply_message_intake_receipt_id, ancestor_message_intake_receipt_id
   `)
-}
-
-/** True when this intake's own Message-ID is already claimed by another intake. */
-export async function copyrightEmailMessageIdIsAmbiguous(
-  transaction: TransactionQuery,
-  intakeId: string,
-): Promise<boolean> {
-  const { rows } = await transaction(sql`/* copyrightEmailMessageIdIsAmbiguous */
-    SELECT 1
-    FROM copyright_notice_email_thread_references own_message
-    JOIN copyright_notice_email_thread_references other_message
-      ON other_message.token_id = own_message.token_id
-     AND other_message.reference_kind = 'message_id'
-     AND other_message.copyright_notice_email_intake_id <> own_message.copyright_notice_email_intake_id
-    WHERE own_message.copyright_notice_email_intake_id = ${intakeId}
-      AND own_message.reference_kind = 'message_id'
-    LIMIT 1
-  `)
-  return rows.length > 0
+  if (inserted.length > 0) {
+    const intakeIds = [
+      ...new Set(
+        inserted.flatMap(row => [
+          row.reply_message_intake_receipt_id,
+          row.ancestor_message_intake_receipt_id,
+        ]),
+      ),
+    ]
+    const { rows: cases } = await transaction<{ copyright_notice_id: string }>(sql`
+      /* recordCopyrightEmailAncestorEdges:cases */ SELECT DISTINCT copyright_notice_id
+      FROM copyright_notice_email_intake_notice_links
+      WHERE copyright_notice_email_intake_id = ANY(${intakeIds}::uuid[])`)
+    if (
+      await readCopyrightThreadRetirement(
+        transaction,
+        cases.map(row => row.copyright_notice_id),
+      )
+    )
+      throw copyrightEmailThreadChangedError()
+  }
 }

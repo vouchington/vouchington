@@ -11,9 +11,8 @@ import type {
 } from './email-correspondence-guards.mts'
 import { createGuestTerritorialComplaintFromEmail } from './territorial-complaint-email.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
-import { preemptCopyrightRestorations } from './restore-preemption.mts'
 
-type AdmittedEmailCorrespondencePending = {
+export type AdmittedEmailCorrespondencePending = {
   id: string
   amazon_ses_message_id: string
   received_at: Date
@@ -37,12 +36,9 @@ export async function insertAdmittedCopyrightEmailSubmission(
       | CopyrightEmailOtherSubmission
   },
   pending: AdmittedEmailCorrespondencePending,
+  correspondenceId: string,
 ): Promise<{ submissionId: string; correspondenceId: string }> {
   const submissionId = uuidv7()
-  // Preempt before anything the delivery worker also writes: the worker takes the work item row,
-  // then the case's blocker generation, so this order cannot form a cycle.
-  if (input.kind === 'court_or_ccb_hold')
-    await preemptCopyrightRestorations(pending.notice_id, transaction)
   const { rows: submissions } = await transaction<{
     id: string
   }>(sql`/* admitCopyrightEmailCorrespondence:submission */
@@ -92,9 +88,9 @@ export async function insertAdmittedCopyrightEmailSubmission(
     id: string
   }>(sql`/* admitCopyrightEmailCorrespondence:correspondence */
     INSERT INTO copyright_notice_correspondence_messages (
-      copyright_notice_id, copyright_notice_submission_id, copyright_notice_email_intake_id,
+      id, copyright_notice_id, copyright_notice_submission_id, copyright_notice_email_intake_id,
       direction, composition_kind, correspondence_kind, body_ciphertext
-    ) VALUES (${pending.notice_id}, ${submission.id}, ${input.intakeId}, 'inbound', 'inbound', 'inbound_message', ${pending.body_ciphertext})
+    ) VALUES (${correspondenceId}, ${pending.notice_id}, ${submission.id}, ${input.intakeId}, 'inbound', 'inbound', 'inbound_message', ${pending.body_ciphertext})
     RETURNING id
   `)
   const correspondence = correspondenceRows[0]

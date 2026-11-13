@@ -1,3 +1,4 @@
+import { assertCopyrightThreadAcceptsEvidence } from './thread-retirement-admission.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
@@ -25,7 +26,7 @@ export async function insertCopyrightEmailIntakeNoticeLink(
     const { rows: live } = await transaction<{
       raw_storage_object_id: string | null
       reviewed: boolean
-    }>(sql`/* linkCopyrightEmailIntakeToNotice:liveThreadIntake */
+    }>(sql`/* linkCopyrightEmailIntakeToNotice:threadIntake */
       SELECT intake.raw_storage_object_id, receipt.review_decision IS NOT NULL AS reviewed
       FROM copyright_notice_email_intakes intake
       JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = intake.id
@@ -51,21 +52,15 @@ export async function insertCopyrightEmailIntakeNoticeLink(
       SELECT id FROM copyright_notices
       WHERE id = ${input.noticeId} AND evidence_erased_at IS NULL LIMIT 1`)
     if (!notices[0]) return false
-    const { rows: retired } = await transaction(sql`/* linkCopyrightEmailIntakeToNotice:retired */
-      SELECT 1 FROM copyright_notice_email_thread_retirements
-      WHERE copyright_notice_id = ${input.noticeId}
-        AND retired_before_intake_bound > ${input.intakeId}::uuid LIMIT 1`)
-    if (retired[0]) return false
+    await assertCopyrightThreadAcceptsEvidence(transaction, input.noticeId)
   } else {
-    // The initial link keeps its KEY SHARE fence against a competing promotion.
     const { rows: live } = await transaction<{
       raw_storage_object_id: string | null
-    }>(sql`/* linkCopyrightEmailIntakeToNotice:lockIntake */
+    }>(sql`/* linkCopyrightEmailIntakeToNotice:intake */
       SELECT raw_storage_object_id FROM copyright_notice_email_intakes
       WHERE id = ${input.intakeId}
         AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
           WHERE receipt.id = ${input.intakeId} AND receipt.erased_at IS NULL)
-      FOR KEY SHARE
     `)
     if (live.length === 0) return false
     if (live[0]!.raw_storage_object_id === null) {
@@ -93,7 +88,7 @@ export async function insertCopyrightEmailIntakeNoticeLink(
       ) VALUES (
         ${input.intakeId}, ${input.noticeId}, ${input.linkKind},
         ${matchedTokenId}, ${input.linkKind === 'thread' ? 'pending' : null}
-      ) ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
+      ) ON CONFLICT DO NOTHING
       RETURNING copyright_notice_id, link_kind
     `)
     inserted = result.rows

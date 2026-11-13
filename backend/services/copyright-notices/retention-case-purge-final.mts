@@ -1,3 +1,6 @@
+import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
+import { hasBlockedCopyrightCaseParty } from './retention-case-purge-verify-parties.mts'
+import { enterCopyrightCasePurgePhase } from './retention-case-purge-phase-state.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -84,4 +87,14 @@ export async function deleteCopyrightCaseFinalTail(
     SELECT set_config('app.copyright_case_purge_table', ${COPYRIGHT_CASE_FINAL_TAIL_DELETE_ORDER[6]}, true)`)
   await query(sql`/* deleteCopyrightCaseFinalNotice */
     DELETE FROM copyright_notices WHERE id = ${noticeId}::uuid`)
+}
+
+/** Complete the final live-owner page only after its current party preservation check. */
+export async function runCopyrightCaseFinalPage(
+  query: TransactionQuery,
+  data: CopyrightCasePurgeJobData,
+) {
+  if (await hasBlockedCopyrightCaseParty(query, data.noticeId)) return { data, hasMore: false }
+  await deleteCopyrightCaseFinalTail(query, data.noticeId)
+  return { data: enterCopyrightCasePurgePhase(data, 'residual_parties'), hasMore: true }
 }

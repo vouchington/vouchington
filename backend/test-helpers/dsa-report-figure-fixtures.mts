@@ -1,11 +1,10 @@
+import { seedCommittedEuParticipantDecision } from './copyright-eu-committed-decision.mts'
 import { createTestUser } from './entities/users.mts'
 import { createHostedImagePost } from './services/copyright-notices/hosted-post-audience.mts'
 import { createTestCopyrightTrustedFlagger } from './copyright-trusted-flaggers.mts'
 import {
-  acknowledgeEuCopyrightNotice,
   receiveEuCopyrightNotice,
   recordCopyrightJurisdictionPolicyApproval,
-  recordEuCopyrightStatementOfReasons,
 } from '../services/copyright-notices/index.mts'
 
 /** An actual EU receipt whose claimant designation is captured before filing. */
@@ -37,8 +36,7 @@ export async function createTestReportingTrustedEuCase(
       hostedUseUrl: `https://example.test/work/${suffix}`,
     },
   )
-  await acknowledgeEuCopyrightNotice(post.claimant, receipt.notice_id)
-  await recordEuCopyrightStatementOfReasons(staff, receipt.notice_id, {
+  await seedCommittedEuParticipantDecision(staff, receipt.notice_id, {
     text: `Private assessment ${suffix}`,
     publicExplanation: `The identified image was reviewed ${suffix}.`,
     outcome,

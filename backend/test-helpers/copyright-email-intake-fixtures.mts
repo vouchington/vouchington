@@ -1,11 +1,21 @@
+import { seedCopyrightPromotionThreadSource } from './copyright-promotion-thread-fixtures.mts'
+import { linkCopyrightEmailIntakeToNotice } from './copyright-email-intake-link.mts'
+import { seedCopyrightThreadTokenAtForTest } from './copyright-thread-retention.mts'
 // Test-only email intake setup uses the real copyright service paths.
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { beginTransaction, write } from '@data-stores/psql'
+import { encryptSecret } from '@modules/token-secrets'
+import { copyrightEmailIntakePurpose } from '../services/copyright-notices/email-intakes.mts'
 import {
-  createCopyrightEmailIntake,
-  recordCopyrightEmailParse,
-} from '../services/copyright-notices/index.mts'
+  buildCopyrightEmailThreadReferenceRows,
+  encryptCopyrightEmailReplyHeaders,
+} from '../services/copyright-notices/email-thread-references.mts'
+import {
+  insertResolvedCopyrightEmailThreadReferences,
+  resolveCopyrightEmailThreadTokenIds,
+} from '../services/copyright-notices/email-thread-ancestors.mts'
+import sql from 'sql-template-strings'
+import { createCopyrightEmailIntake } from '../services/copyright-notices/index.mts'
 
 // A received copyright email whose parse was never recorded, as when the SES worker keeps failing.
 export async function createUnparsedCopyrightEmailIntake(
@@ -31,15 +41,13 @@ export async function createParsedCopyrightEmailIntake(
   sesMessageId?: string,
 ) {
   const intake = await createUnparsedCopyrightEmailIntake(receivedAt, sesMessageId)
-  await recordCopyrightEmailParse(intake, {
-    status: 'succeeded',
-    fromEmail,
-    subject: 'Copyright complaint',
-    bodyText: 'This is a copyright complaint.',
-    messageId: `<${crypto.randomUUID()}@example.test>`,
-    replyReferences: [],
-    attachments: [],
-  })
+  await seedCopyrightPromotionThreadSource(
+    {
+      messageId: `<${crypto.randomUUID()}@example.test>`,
+      bodyText: 'This is a copyright complaint.',
+    },
+    { intake, fromEmail, subject: 'Copyright complaint' },
+  )
   return intake
 }
 
@@ -68,4 +76,46 @@ export async function readCopyrightEmailPromotionEffects(intakeId: string, place
        WHERE placement_id = ${placementId}) AS notice_targets
   `)
   return rows[0]!
+}
+
+/** Owned unmatched reply state for UI tests; ingestion is not their subject. */
+export async function seedUnmatchedCopyrightEmailReply() {
+  const intake = await createUnparsedCopyrightEmailIntake()
+  const purpose = copyrightEmailIntakePurpose(intake.amazon_ses_message_id)
+  const messageId = `<${crypto.randomUUID()}@example.test>`
+  const headers = { inReplyTo: [`<${crypto.randomUUID()}@example.test>`], references: [] }
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* seedUnmatchedCopyrightEmailReply:parse */
+    INSERT INTO copyright_notice_email_intake_parses (
+      copyright_notice_email_intake_id, status, sender_email_ciphertext,
+      subject_ciphertext, body_ciphertext, message_id_ciphertext, reply_references_ciphertext
+    ) VALUES (${intake.id}, 'succeeded', ${encryptSecret('claimant@example.test', purpose)},
+      ${encryptSecret('Copyright reply', purpose)}, ${encryptSecret('Owned reply.', purpose)},
+      ${encryptSecret(messageId, purpose)}, ${encryptCopyrightEmailReplyHeaders(headers, purpose)})`)
+  const references = buildCopyrightEmailThreadReferenceRows({ messageId, ...headers })
+  const tokenIds = await resolveCopyrightEmailThreadTokenIds(
+    transaction,
+    references.map(row => row.lookup_digest),
+  )
+  await insertResolvedCopyrightEmailThreadReferences(transaction, intake.id, references, tokenIds)
+  await transaction.commit()
+  return intake
+}
+
+/** Committed message identity for a case; promotion is not the threading/erasure subject. */
+export async function seedCopyrightEmailInitialThreadSource(noticeId: string, messageId: string) {
+  const intake = await createUnparsedCopyrightEmailIntake()
+  const [reference] = buildCopyrightEmailThreadReferenceRows({
+    messageId,
+    inReplyTo: [],
+    references: [],
+  })
+  if (!reference) throw new Error('Owned message identity is missing')
+  await seedCopyrightThreadTokenAtForTest({
+    createdAt: new Date(),
+    intakeId: intake.id,
+    lookupDigest: reference.lookup_digest,
+  })
+  await linkCopyrightEmailIntakeToNotice({ intakeId: intake.id, noticeId, linkKind: 'initial' })
+  return intake
 }

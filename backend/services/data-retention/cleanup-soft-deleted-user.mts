@@ -1,3 +1,4 @@
+import { readUserCopyrightThreadProtectedRecords } from '@data-stores/psql/copyright-preservation-coverage'
 import type { UserPurgeCursor, UserPurgeResult } from './user-purge-types.mts'
 import type { RetentionWorkBudget } from './work-budget.mts'
 import { getDataRetentionLimits } from './config.mts'
@@ -20,7 +21,7 @@ export async function cleanupSoftDeletedUser(
   cursor?: UserPurgeCursor,
 ): Promise<UserPurgeResult> {
   if (budget.remainingRows === 0) return { deleted: 0, hasMore: true }
-  await using query = await beginTransaction()
+  await using query = await beginTransaction({ serializable: true })
   await lockFinalUserPurge(query, targetId)
   if (
     !(await lockEligibleSoftDeletedUserForFinalPurge(query, targetId, cutoffDate, lowerBoundDate))
@@ -57,10 +58,6 @@ export async function cleanupSoftDeletedUser(
       ...(preserved.userPurge ? { userPurge: preserved.userPurge } : {}),
     }
   }
-  // Account finalization changes the legal clock of every linked copyright case. The gate
-  // serializes its dirty signal with each bounded case purge page.
-  await query(sql`/* lockCopyrightCaseClockSyncAtFinalUserPurge */
-    SELECT pg_advisory_xact_lock(hashtextextended('copyright-preservation-retention', 0))`)
   const deleted = await deletePurgedUser(query, targetId)
   budget.remainingRows -= deleted
   await query.commit()
@@ -68,6 +65,7 @@ export async function cleanupSoftDeletedUser(
 }
 
 async function deletePurgedUser(query: TransactionQuery, targetId: string): Promise<number> {
+  await readUserCopyrightThreadProtectedRecords(query, targetId)
   await assertAuthorDeletionDrainedPosts(query, targetId)
   const { rows } = await query<{ deleted: number }>(sql`/* cleanupSoftDeletedUserBatch:delete */
     WITH removed AS (

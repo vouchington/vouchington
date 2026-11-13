@@ -1,16 +1,16 @@
 import { createCommittedWaitingCopyrightEmailThread } from '@voucha/test-helpers/copyright-email-committed-intake'
 import { createUnparsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { parseOrAssertSerializableRollback } from '@voucha/test-helpers/copyright-email-thread-serialization'
+import { seedCopyrightPromotionThreadEmail } from '@voucha/test-helpers/copyright-promotion-thread-fixtures'
+import {
+  seedCommittedCopyrightPromotion,
+  ownedCopyrightEmailPromotionInput,
+} from '@voucha/test-helpers/copyright-promotion-committed-fixtures'
+import { createCommittedCopyrightEmailCase } from '@voucha/test-helpers/copyright-committed-email-case'
 import { createTestUser } from '@voucha/test-helpers'
 import { readCopyrightEmailAncestorIds } from '@voucha/test-helpers/copyright-email-ancestor-edges'
-import {
-  copyrightEmailMessageId,
-  copyrightEmailPromotionInput,
-  promoteInitialCopyrightEmail,
-  recordThreadedCopyrightEmail,
-} from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
+import { copyrightEmailMessageId } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
 import { describe, expect, it } from 'vitest'
-import { promoteCopyrightEmailIntake } from './email-promotion.mts'
 import { getCopyrightStaffEmailIntake } from './read-models-staff-email-intake.mts'
 import { searchCopyrightStaffEmailIntakes } from './read-models-staff-email-intakes.mts'
 
@@ -18,12 +18,15 @@ describe('copyright email review path', () => {
   it('leaves a linked reply in place when a later intake duplicates the parent Message-ID', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const parentMessageId = copyrightEmailMessageId()
-    const parent = await promoteInitialCopyrightEmail({ moderator, messageId: parentMessageId })
-    const reply = await recordThreadedCopyrightEmail({
+    const parent = await createCommittedCopyrightEmailCase({
+      moderator,
+      messageId: parentMessageId,
+    })
+    const reply = await seedCopyrightPromotionThreadEmail({
       messageId: copyrightEmailMessageId(),
       replyReferences: [parentMessageId],
     })
-    await recordThreadedCopyrightEmail({ messageId: parentMessageId, replyReferences: [] })
+    await seedCopyrightPromotionThreadEmail({ messageId: parentMessageId, replyReferences: [] })
 
     await expect(getCopyrightStaffEmailIntake(reply.intakeId, moderator)).resolves.toMatchObject({
       review_path: 'matched_thread',
@@ -34,9 +37,9 @@ describe('copyright email review path', () => {
   it('sends a reply that arrives after a duplicated Message-ID to manual review', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const parentMessageId = copyrightEmailMessageId()
-    await promoteInitialCopyrightEmail({ moderator, messageId: parentMessageId })
-    await recordThreadedCopyrightEmail({ messageId: parentMessageId, replyReferences: [] })
-    const reply = await recordThreadedCopyrightEmail({
+    await createCommittedCopyrightEmailCase({ moderator, messageId: parentMessageId })
+    await seedCopyrightPromotionThreadEmail({ messageId: parentMessageId, replyReferences: [] })
+    const reply = await seedCopyrightPromotionThreadEmail({
       messageId: copyrightEmailMessageId(),
       replyReferences: [parentMessageId],
     })
@@ -48,17 +51,17 @@ describe('copyright email review path', () => {
   it('does not backfill a pending reply when both Message-ID claimants preceded its edge', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const parentMessageId = copyrightEmailMessageId()
-    const firstParent = await recordThreadedCopyrightEmail({
+    const firstParent = await seedCopyrightPromotionThreadEmail({
       messageId: parentMessageId,
       replyReferences: [],
     })
-    await recordThreadedCopyrightEmail({ messageId: parentMessageId, replyReferences: [] })
-    const reply = await recordThreadedCopyrightEmail({
+    await seedCopyrightPromotionThreadEmail({ messageId: parentMessageId, replyReferences: [] })
+    const reply = await seedCopyrightPromotionThreadEmail({
       messageId: copyrightEmailMessageId(),
       replyReferences: [parentMessageId],
     })
-    await promoteCopyrightEmailIntake(
-      await copyrightEmailPromotionInput(moderator, firstParent.intakeId),
+    await seedCommittedCopyrightPromotion(
+      await ownedCopyrightEmailPromotionInput(moderator, firstParent.intakeId),
     )
 
     expect(reply.match).toBeNull()
@@ -69,17 +72,17 @@ describe('copyright email review path', () => {
   it('keeps a resolved waiting reply edge after its parent Message-ID is claimed twice', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const parentMessageId = copyrightEmailMessageId()
-    const reply = await recordThreadedCopyrightEmail({
+    const reply = await seedCopyrightPromotionThreadEmail({
       messageId: copyrightEmailMessageId(),
       replyReferences: [parentMessageId],
     })
-    const firstParent = await recordThreadedCopyrightEmail({
+    const firstParent = await seedCopyrightPromotionThreadEmail({
       messageId: parentMessageId,
       replyReferences: [],
     })
-    await recordThreadedCopyrightEmail({ messageId: parentMessageId, replyReferences: [] })
-    const promoted = await promoteCopyrightEmailIntake(
-      await copyrightEmailPromotionInput(moderator, firstParent.intakeId),
+    await seedCopyrightPromotionThreadEmail({ messageId: parentMessageId, replyReferences: [] })
+    const promoted = await seedCommittedCopyrightPromotion(
+      await ownedCopyrightEmailPromotionInput(moderator, firstParent.intakeId),
     )
 
     expect(promoted.noticeId).toEqual(expect.any(String))
@@ -92,8 +95,8 @@ describe('copyright email review path', () => {
   it('sends the second Message-ID claimant to manual review', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const parentMessageId = copyrightEmailMessageId()
-    await promoteInitialCopyrightEmail({ moderator, messageId: parentMessageId })
-    const second = await recordThreadedCopyrightEmail({
+    await createCommittedCopyrightEmailCase({ moderator, messageId: parentMessageId })
+    const second = await seedCopyrightPromotionThreadEmail({
       messageId: parentMessageId,
       replyReferences: [],
     })
@@ -106,9 +109,9 @@ describe('copyright email review path', () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const parentMessageId = copyrightEmailMessageId()
     const duplicateMessageId = copyrightEmailMessageId()
-    await promoteInitialCopyrightEmail({ moderator, messageId: parentMessageId })
-    await recordThreadedCopyrightEmail({ messageId: duplicateMessageId, replyReferences: [] })
-    const second = await recordThreadedCopyrightEmail({
+    await createCommittedCopyrightEmailCase({ moderator, messageId: parentMessageId })
+    await seedCopyrightPromotionThreadEmail({ messageId: duplicateMessageId, replyReferences: [] })
+    const second = await seedCopyrightPromotionThreadEmail({
       messageId: duplicateMessageId,
       replyReferences: [parentMessageId],
     })
@@ -121,8 +124,8 @@ describe('copyright email review path', () => {
   it('links a reply through References when In-Reply-To names an unknown message', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const rootMessageId = copyrightEmailMessageId()
-    const root = await promoteInitialCopyrightEmail({ moderator, messageId: rootMessageId })
-    const reply = await recordThreadedCopyrightEmail({
+    const root = await createCommittedCopyrightEmailCase({ moderator, messageId: rootMessageId })
+    const reply = await seedCopyrightPromotionThreadEmail({
       messageId: copyrightEmailMessageId(),
       inReplyTo: [copyrightEmailMessageId()],
       replyReferences: [rootMessageId],
@@ -182,27 +185,27 @@ describe('copyright email review path', () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const firstMessageId = copyrightEmailMessageId()
     const secondMessageId = copyrightEmailMessageId()
-    const reply = await recordThreadedCopyrightEmail({
+    const reply = await seedCopyrightPromotionThreadEmail({
       messageId: copyrightEmailMessageId(),
       inReplyTo: [firstMessageId],
       replyReferences: [secondMessageId],
     })
-    const firstParent = await recordThreadedCopyrightEmail({
+    const firstParent = await seedCopyrightPromotionThreadEmail({
       messageId: firstMessageId,
       replyReferences: [],
     })
-    const secondParent = await recordThreadedCopyrightEmail({
+    const secondParent = await seedCopyrightPromotionThreadEmail({
       messageId: secondMessageId,
       replyReferences: [],
     })
-    await promoteCopyrightEmailIntake(
-      await copyrightEmailPromotionInput(moderator, firstParent.intakeId),
+    await seedCommittedCopyrightPromotion(
+      await ownedCopyrightEmailPromotionInput(moderator, firstParent.intakeId),
     )
     await expect(getCopyrightStaffEmailIntake(reply.intakeId, moderator)).resolves.toMatchObject({
       linked_notice: null,
     })
-    await promoteCopyrightEmailIntake(
-      await copyrightEmailPromotionInput(moderator, secondParent.intakeId),
+    await seedCommittedCopyrightPromotion(
+      await ownedCopyrightEmailPromotionInput(moderator, secondParent.intakeId),
     )
 
     await expectManualReview(moderator, reply.intakeId, 'ancestor_notice_conflict')
@@ -213,16 +216,16 @@ describe('copyright email review path', () => {
     const firstMessageId = copyrightEmailMessageId()
     const secondMessageId = copyrightEmailMessageId()
     const ownMessageId = copyrightEmailMessageId()
-    await promoteInitialCopyrightEmail({ moderator, messageId: firstMessageId })
-    await promoteInitialCopyrightEmail({ moderator, messageId: secondMessageId })
-    const reply = await recordThreadedCopyrightEmail({
+    await createCommittedCopyrightEmailCase({ moderator, messageId: firstMessageId })
+    await createCommittedCopyrightEmailCase({ moderator, messageId: secondMessageId })
+    const reply = await seedCopyrightPromotionThreadEmail({
       messageId: ownMessageId,
       inReplyTo: [firstMessageId],
       replyReferences: [secondMessageId],
     })
     expect(reply.match).toBeNull()
     await expectManualReview(moderator, reply.intakeId, 'ancestor_notice_conflict')
-    await recordThreadedCopyrightEmail({ messageId: ownMessageId, replyReferences: [] })
+    await seedCopyrightPromotionThreadEmail({ messageId: ownMessageId, replyReferences: [] })
 
     await expectManualReview(moderator, reply.intakeId, 'duplicate_message_id')
   })
@@ -231,9 +234,9 @@ describe('copyright email review path', () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const linkedMessageId = copyrightEmailMessageId()
     const waitingMessageId = copyrightEmailMessageId()
-    await promoteInitialCopyrightEmail({ moderator, messageId: linkedMessageId })
-    await recordThreadedCopyrightEmail({ messageId: waitingMessageId, replyReferences: [] })
-    const reply = await recordThreadedCopyrightEmail({
+    await createCommittedCopyrightEmailCase({ moderator, messageId: linkedMessageId })
+    await seedCopyrightPromotionThreadEmail({ messageId: waitingMessageId, replyReferences: [] })
+    const reply = await seedCopyrightPromotionThreadEmail({
       messageId: copyrightEmailMessageId(),
       inReplyTo: [linkedMessageId],
       replyReferences: [waitingMessageId],
@@ -247,13 +250,13 @@ describe('copyright email review path', () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const parentMessageId = copyrightEmailMessageId()
     const ambiguousMessageId = copyrightEmailMessageId()
-    const parent = await recordThreadedCopyrightEmail({
+    const parent = await seedCopyrightPromotionThreadEmail({
       messageId: parentMessageId,
       replyReferences: [],
     })
-    await recordThreadedCopyrightEmail({ messageId: ambiguousMessageId, replyReferences: [] })
-    await recordThreadedCopyrightEmail({ messageId: ambiguousMessageId, replyReferences: [] })
-    const reply = await recordThreadedCopyrightEmail({
+    await seedCopyrightPromotionThreadEmail({ messageId: ambiguousMessageId, replyReferences: [] })
+    await seedCopyrightPromotionThreadEmail({ messageId: ambiguousMessageId, replyReferences: [] })
+    const reply = await seedCopyrightPromotionThreadEmail({
       messageId: copyrightEmailMessageId(),
       inReplyTo: [parentMessageId],
       replyReferences: [ambiguousMessageId],
@@ -261,8 +264,8 @@ describe('copyright email review path', () => {
 
     expect(reply.match).toBeNull()
     await expectManualReview(moderator, reply.intakeId, 'duplicate_message_id')
-    await promoteCopyrightEmailIntake(
-      await copyrightEmailPromotionInput(moderator, parent.intakeId),
+    await seedCommittedCopyrightPromotion(
+      await ownedCopyrightEmailPromotionInput(moderator, parent.intakeId),
     )
     await expectManualReview(moderator, reply.intakeId, 'duplicate_message_id')
   })

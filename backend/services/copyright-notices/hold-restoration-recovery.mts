@@ -1,3 +1,4 @@
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { replayEligibleCopyrightRestoreIntentsInTransaction } from './court-hold-restore-replay.mts'
@@ -42,7 +43,7 @@ export async function recoverBlockedCopyrightHoldRestoration(
   intentId: string,
   now: Date,
 ): Promise<number> {
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction({ serializable: true })
   const { rows } = await transaction<{ notice_id: string }>(sql`
     /* recoverBlockedCopyrightHoldRestoration:notice */
     SELECT target.copyright_notice_id AS notice_id
@@ -53,9 +54,7 @@ export async function recoverBlockedCopyrightHoldRestoration(
   `)
   const noticeId = rows[0]?.notice_id
   if (!noticeId) return 0
-  await transaction(sql`/* recoverBlockedCopyrightHoldRestoration:noticeLock */
-    SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
-  `)
+  await readCopyrightThreadRetirement(transaction, [noticeId])
   const reopened = await replayEligibleCopyrightRestoreIntentsInTransaction({
     noticeId,
     intentIds: [intentId],
