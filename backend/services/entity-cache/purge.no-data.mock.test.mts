@@ -80,6 +80,21 @@ describe('purgeCacheTags', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
+  it('confirms deployed legal-removal purges through the configured Worker', async () => {
+    vi.stubEnv('ENVIRONMENT', 'staging')
+    fetchSpy.mockResolvedValue({ ok: true })
+
+    await expect(purgeLegalRemovalCacheTag()).resolves.toBeUndefined()
+
+    expect(fetchSpy).toHaveBeenCalledExactlyOnceWith(
+      'https://staging.voucha.ai/infra/cache-purge',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ tags: ['legal-removal'] }),
+      }),
+    )
+  })
+
   it('POSTs tags to the configured worker route with the shared secret header', async () => {
     fetchSpy.mockResolvedValue({ ok: true })
     await purgeCacheTags(['post:abc', 'user:bob'])

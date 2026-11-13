@@ -116,22 +116,26 @@ describe('user deletion provider work', () => {
     ])
   })
 
-  it('completes cache-tag work through the cache purge', async () => {
-    const user = await createTestUser()
-    const request = await createUserDeletionRequest(user.id, user.id)
-    await addUserDeletionExternalWorks(request.id, 'cloudflare-cache-tag', ['legal-removal'])
-    await markUserDeletionAttemptStartedForTest(request.id, request.processingAttemptId)
-    const purge = vi.spyOn(cachePurge, 'purgeCacheTags')
+  it.each(['legal-removal', 'precise-user'] as const)(
+    'completes %s cache-tag work through the cache purge',
+    async tagKind => {
+      const user = await createTestUser()
+      const request = await createUserDeletionRequest(user.id, user.id)
+      const cacheTag = tagKind === 'legal-removal' ? tagKind : `user:${user.id}`
+      await addUserDeletionExternalWorks(request.id, 'cloudflare-cache-tag', [cacheTag])
+      await markUserDeletionAttemptStartedForTest(request.id, request.processingAttemptId)
+      const purge = vi.spyOn(cachePurge, 'purgeCacheTags')
 
-    await expect(
-      processUserDeletionExternalWork(request.id, request.processingAttemptId),
-    ).resolves.toEqual({ hasMore: true })
-    await expect(isTestUserDeletionExternalWorkCompleted(request.id)).resolves.toBe(true)
-    await expect(
-      processUserDeletionExternalWork(request.id, request.processingAttemptId),
-    ).resolves.toEqual({ hasMore: false })
-    expect(purge).toHaveBeenCalledExactlyOnceWith(['legal-removal'])
-  })
+      await expect(
+        processUserDeletionExternalWork(request.id, request.processingAttemptId),
+      ).resolves.toEqual({ hasMore: true })
+      await expect(isTestUserDeletionExternalWorkCompleted(request.id)).resolves.toBe(true)
+      await expect(
+        processUserDeletionExternalWork(request.id, request.processingAttemptId),
+      ).resolves.toEqual({ hasMore: false })
+      expect(purge).toHaveBeenCalledExactlyOnceWith([cacheTag])
+    },
+  )
 
   it('processes the legal purge after sibling work and retries its failure', async () => {
     const user = await createTestUser()
