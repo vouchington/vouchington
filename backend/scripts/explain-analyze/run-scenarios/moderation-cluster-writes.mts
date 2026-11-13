@@ -6,6 +6,7 @@ import { runAndCapture } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import {
   clusterFixturePostIds,
+  loadModerationClusterWriterPostId,
   MODERATION_CLUSTER_HOT_POST_ID,
   MODERATION_CLUSTER_REPORT_COUNT,
 } from '../seed-data/moderation-cluster-pages.mts'
@@ -47,6 +48,7 @@ export async function runModerationClusterWriteScenarios(): Promise<void> {
     entity => entity.entityType === 'rss_feed_item',
   )
   assert(rssItem, 'The moderation context fixture needs an RSS item')
+  const writerPostId = await loadModerationClusterWriterPostId()
   registerScenarioContract('moderation-cluster-writer-targets', {
     seededRows: {
       moderation_reports: REPORT_CONTEXT_SEED_ROW_COUNT + MODERATION_CLUSTER_REPORT_COUNT,
@@ -69,12 +71,12 @@ export async function runModerationClusterWriteScenarios(): Promise<void> {
       await captureTarget({
         name: LOOKUP_NAMES[0],
         action: null,
-        ids: [MODERATION_CLUSTER_HOT_POST_ID, null, null, null],
+        ids: [writerPostId, null, null, null],
       })
       await captureTarget({
         name: LOOKUP_NAMES[1],
         action: 'reviewed',
-        ids: [clusterFixturePostIds(0)[0]!, null, null, null],
+        ids: [writerPostId, null, null, null],
       })
       await captureTarget({
         name: LOOKUP_NAMES[2],
