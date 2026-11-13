@@ -13,7 +13,7 @@ if (!workerOrigin || !traceOrigin || !artifactsDir) {
 }
 
 describe('worker authentication cache transition', () => {
-  it('keeps post details private across an anonymous-to-authenticated transition', async () => {
+  it('applies the anonymous TTL and bypasses cache after authentication', async () => {
     const client = new WebIntegrationClient(workerOrigin, traceOrigin, artifactsDir)
 
     const requestPath = `/api/v1/posts/${SEEDED_IDS.discussion}?cache-transition=${randomUUID()}`
@@ -24,7 +24,9 @@ describe('worker authentication cache transition', () => {
 
     expect(anonymousResponse.status).toBe(200)
     expect(anonymousResponse.headers.get('x-voucha-cache')).toBe('DISPATCHED')
-    expect(anonymousResponse.headers.get('cache-control')).toBe('private, no-store')
+    expect(anonymousResponse.headers.get('cache-control')).toBe(
+      'public, max-age=30, stale-while-revalidate=60, stale-if-error=86400',
+    )
     expect(anonymousBody).not.toHaveProperty('election_vote')
 
     const authCookies = await createTestAuthCookies(TEST_USER_ID, PLAYWRIGHT_CHROME_UA)
@@ -40,6 +42,7 @@ describe('worker authentication cache transition', () => {
 
     expect(authenticatedResponse.status).toBe(200)
     expect(authenticatedResponse.headers.get('x-voucha-cache')).toBe('BYPASS')
+    expect(authenticatedResponse.headers.get('cache-control')).toBe('private, no-store')
     expect(authenticatedBody).toHaveProperty('election_vote')
     const authenticatedOriginRequest = tracedRequests.find(request => request.path === requestPath)
     expect(authenticatedOriginRequest).toBeDefined()

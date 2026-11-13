@@ -86,7 +86,9 @@ describe('web worker routing tests', () => {
       const apiResponse = await client.request(`/api/v1/posts?anonymous-cache=${cacheKey}`)
       expect(apiResponse.status).toBe(200)
       expect(apiResponse.headers.get('x-voucha-cache')).toBe('DISPATCHED')
-      expect(apiResponse.headers.get('cache-control')).toBe('private, no-store')
+      expect(apiResponse.headers.get('cache-control')).toBe(
+        'public, max-age=30, stale-while-revalidate=60, stale-if-error=86400',
+      )
 
       const publicResponse = await client.request('/api/v1/topics')
       expect(publicResponse.status).toBe(200)
