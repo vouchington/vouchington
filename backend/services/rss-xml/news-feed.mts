@@ -1,7 +1,6 @@
-import { searchRssFeedItems } from '@services/rss-feed-items/search'
-import { getRssFeedItemByIdCachedBatch } from '@services/entity-fetch'
-import { getTopicsByAnyBatch } from '@services/topics/get-batch'
-import { searchPrimaryEnabledRssFeedIdsByTopicIds } from '@services/rss-feeds/search-by-topic-ids'
+import { searchRssFeedItemsCached } from '@services/entity-fetch/search-caches'
+import { getRssFeedItemByIdCachedBatch, getTopicByAnyCachedBatch } from '@services/entity-fetch'
+import { searchPrimaryEnabledRssFeedIdsByTopicIdsCached } from '@services/rss-feeds/search-by-topic-ids'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import { sanitizeRssHtml } from '@jongleberry/vurst-html'
 import onError from '@modules/on-error'
@@ -67,7 +66,7 @@ export async function buildNewsFeed(options: NewsFeedOptions): Promise<string> {
   const topicIds: string[] = []
   const topicNames: string[] = []
   if (topicSlugs && topicSlugs.length > 0) {
-    const topicLookups = await getTopicsByAnyBatch(topicSlugs)
+    const topicLookups = await getTopicByAnyCachedBatch(topicSlugs)
     for (const topic of topicLookups) {
       if (topic) {
         topicIds.push(topic.id)
@@ -79,7 +78,7 @@ export async function buildNewsFeed(options: NewsFeedOptions): Promise<string> {
   // Look up category topics if categoryTopicSlugs provided
   const categoryTopicIds: string[] = []
   if (categoryTopicSlugs && categoryTopicSlugs.length > 0) {
-    const categoryTopicLookups = await getTopicsByAnyBatch(categoryTopicSlugs)
+    const categoryTopicLookups = await getTopicByAnyCachedBatch(categoryTopicSlugs)
     for (const topic of categoryTopicLookups) {
       if (topic) {
         categoryTopicIds.push(topic.id)
@@ -91,15 +90,15 @@ export async function buildNewsFeed(options: NewsFeedOptions): Promise<string> {
   // Look up RSS feed IDs from source topic slugs
   const rssFeedIds: string[] = []
   if (sourceTopicSlugs && sourceTopicSlugs.length > 0) {
-    const sourceTopicLookups = await getTopicsByAnyBatch(sourceTopicSlugs)
+    const sourceTopicLookups = await getTopicByAnyCachedBatch(sourceTopicSlugs)
     const sourceTopicIds = sourceTopicLookups.flatMap(t => (t ? [t.id] : []))
     if (sourceTopicIds.length > 0) {
-      rssFeedIds.push(...(await searchPrimaryEnabledRssFeedIdsByTopicIds(sourceTopicIds)))
+      rssFeedIds.push(...(await searchPrimaryEnabledRssFeedIdsByTopicIdsCached(sourceTopicIds)))
     }
   }
 
   // Search for RSS feed items
-  const { results } = await searchRssFeedItems({
+  const { results } = await searchRssFeedItemsCached({
     topic_ids: topicIds.length > 0 ? topicIds : undefined,
     category_topic_ids: categoryTopicIds.length > 0 ? categoryTopicIds : undefined,
     rss_feed_ids: rssFeedIds.length > 0 ? rssFeedIds : undefined,

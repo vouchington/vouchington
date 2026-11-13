@@ -1,5 +1,5 @@
 import { randomBytes, createHash } from 'node:crypto'
-import { describe, expect, it, beforeAll } from 'vitest'
+import { describe, expect, it, beforeEach } from 'vitest'
 import {
   createTestUserDirect,
   insertTestTopic,
@@ -25,7 +25,7 @@ describe('news feed sanitization', () => {
   let topicId: string
   let feedId: string
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     const user = await createTestUserDirect({ username: `rssnews${randomHex()}` })
     sourceTopicSlug = `rss-news-test-${randomHex()}`
     topicId = await insertTestTopic({

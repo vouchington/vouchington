@@ -1,3 +1,4 @@
+import { createSearchCache } from '@services/entity-cache/search-cache'
 import { read } from '@data-stores/psql'
 import { maskHashtagBearingUrls } from '@modules/utils'
 import { normalizeHashtag } from '@ts-shared/utils'
@@ -17,6 +18,32 @@ type HashtagTopicSearchResult = {
   textSearchQuery?: string
   topicIds: string[]
 }
+
+const getHashtagTopicsCached = createSearchCache(
+  'hashtag_topics_anon',
+  async ({ keys }: { keys: string[] }) => {
+    const { rows } = await read<{ id: string | null; alias: string; topic_id: string | null }>(
+      `/* resolveHashtagTopicSearch */
+    SELECT keys.alias,
+      CASE WHEN alias_topic.id IS NOT NULL THEN topic_aliases.id
+           WHEN direct_topic.id IS NOT NULL THEN NULL
+           ELSE topic_aliases.id END AS id,
+      COALESCE(alias_topic.id, direct_topic.id) AS topic_id
+    FROM unnest($1::text[]) AS keys(alias)
+    LEFT JOIN topic_aliases ON topic_aliases.alias = keys.alias
+    LEFT JOIN topics alias_topic
+      ON alias_topic.id = topic_aliases.topic_id
+      AND alias_topic.deleted_at IS NULL
+      AND alias_topic.merged_into_topic_id IS NULL
+    LEFT JOIN topics direct_topic
+      ON direct_topic.slug = keys.alias
+      AND direct_topic.deleted_at IS NULL
+      AND direct_topic.merged_into_topic_id IS NULL`,
+      [keys],
+    )
+    return rows
+  },
+)
 
 /** Bounds raw topic inputs before deduplication or reference resolution. */
 export function validateTopicSearchTerms(
@@ -59,25 +86,8 @@ export async function resolveHashtagTopicSearch(
     if (!normalized) throw createHttpError(422, `Invalid hashtag: ${raw}`)
     return normalized
   })
-  const { rows } = await read<{ id: string | null; alias: string; topic_id: string | null }>(
-    `/* resolveHashtagTopicSearch */
-    SELECT keys.alias,
-      CASE WHEN alias_topic.id IS NOT NULL THEN topic_aliases.id
-           WHEN direct_topic.id IS NOT NULL THEN NULL
-           ELSE topic_aliases.id END AS id,
-      COALESCE(alias_topic.id, direct_topic.id) AS topic_id
-    FROM unnest($1::text[]) AS keys(alias)
-    LEFT JOIN topic_aliases ON topic_aliases.alias = keys.alias
-    LEFT JOIN topics alias_topic
-      ON alias_topic.id = topic_aliases.topic_id
-      AND alias_topic.deleted_at IS NULL
-      AND alias_topic.merged_into_topic_id IS NULL
-    LEFT JOIN topics direct_topic
-      ON direct_topic.slug = keys.alias
-      AND direct_topic.deleted_at IS NULL
-      AND direct_topic.merged_into_topic_id IS NULL`,
-    [[...new Set(tags.map(tag => tag.key))]],
-  )
+  const keys = [...new Set(tags.map(tag => tag.key))].toSorted()
+  const rows = await getHashtagTopicsCached({ keys })
   const aliases = new Map(rows.map(row => [row.alias, row]))
   const filters: HashtagSearchFilter[] = []
   let hasUnknown = false

@@ -1,3 +1,4 @@
+import { createSearchCache } from '@services/entity-cache/search-cache'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -27,3 +28,8 @@ export async function searchPrimaryEnabledRssFeedIdsByTopicIds(
   `)
   return rows.map(row => row.id as string)
 }
+
+export const searchPrimaryEnabledRssFeedIdsByTopicIdsCached = createSearchCache(
+  'rss_primary_enabled_feed_ids_anon',
+  (topicIds: string[]) => searchPrimaryEnabledRssFeedIdsByTopicIds(topicIds),
+)

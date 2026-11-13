@@ -1,10 +1,24 @@
+import { createSearchCache } from '@services/entity-cache/search-cache'
 import onError from '@modules/on-error'
 import { getAdminUserIdsFromPosts } from '@services/markdown/admin-users'
 import { renderMarkdownToHtmlBatch } from '@services/markdown'
 import { sanitizeRssHtml } from '@jongleberry/vurst-html'
 import type { Post } from '@services/posts/types'
 
-export async function renderPostDescriptions(posts: Post[]): Promise<string[]> {
+type DescriptionPost = Pick<Post, 'markdown' | 'created_by_id'>
+
+const renderPostDescriptionsCached = createSearchCache(
+  'rss_post_descriptions_anon',
+  ({ posts }: { posts: DescriptionPost[] }) => renderPostDescriptionsUncached(posts),
+)
+
+export function renderPostDescriptions(posts: DescriptionPost[]): Promise<string[]> {
+  return renderPostDescriptionsCached({
+    posts: posts.map(({ markdown, created_by_id }) => ({ markdown, created_by_id })),
+  })
+}
+
+async function renderPostDescriptionsUncached(posts: DescriptionPost[]): Promise<string[]> {
   if (posts.length === 0) return []
 
   const adminUserIds = await getAdminUserIdsFromPosts(posts)
@@ -23,7 +37,7 @@ export async function renderPostDescriptions(posts: Post[]): Promise<string[]> {
 }
 
 async function renderMixedTrustPostDescriptions(
-  posts: Post[],
+  posts: DescriptionPost[],
   adminUserIds: Set<string>,
 ): Promise<string[]> {
   const adminPosts: Array<{ index: number; markdown: string }> = []
