@@ -18,6 +18,7 @@ export function ShareLandingPageBanner({ username }: ShareLandingPageBannerProps
   const [copied, setCopied] = useState(false)
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const landingPath = landingPageHref(username)
+  const referralPath = `${landingPath}?${new URLSearchParams({ referrer: username })}`
 
   useEffect(() => {
     return () => {
@@ -27,7 +28,7 @@ export function ShareLandingPageBanner({ username }: ShareLandingPageBannerProps
 
   async function handleCopy() {
     try {
-      const fullUrl = `${window.location.origin}${landingPath}`
+      const fullUrl = `${window.location.origin}${referralPath}`
       await navigator.clipboard.writeText(appendUtm(fullUrl, SHARE_UTM))
       setCopied(true)
       if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current)
@@ -47,7 +48,7 @@ export function ShareLandingPageBanner({ username }: ShareLandingPageBannerProps
           {t('extracted.users.shareLandingPageBanner.shareYourPage_79c6d0f5')}
         </span>
         <Link
-          href={landingPath}
+          href={referralPath}
           prefetch={false}
           className='text-muted-foreground underline transition-colors hover:text-foreground'
         >
