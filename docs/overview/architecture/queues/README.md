@@ -427,9 +427,9 @@ the retained evidence rather than treating provider timestamps as a global commi
 
 ## Legal cache removal
 
-Copyright withhold purges use a separate admission identity per canonical legal action. A purge
-already in flight may have run before a later removal, so coalescing those actions would lose a
-required eviction. Admission participates in the existing action completion and retry boundary;
-the purge queue owns outbound retries. Account deletion keeps its own durable external-work
-receipts. See the [caching strategy](../reference-caching-strategy-client-side-personalization.md#cache-invalidation)
+Copyright withholds await legal cache eviction within their durable action completion boundary,
+so losing a cache-purge queue job cannot leave a completed action without its purge. Failures
+retain the action's existing retry and explicit operator-replay path. Account deletion keeps its
+own durable external-work receipts. See the
+[caching strategy](../reference-caching-strategy-client-side-personalization.md#cache-invalidation)
 for why legal removal uses broad eviction while ordinary freshness follows the Worker TTL.

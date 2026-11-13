@@ -4,7 +4,7 @@ import sql from 'sql-template-strings'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import { prepublishCopyrightImagePlacementDenial } from './action-delivery-edge.mts'
 import { invalidateCopyrightPlacementCache } from './action-delivery-cache.mts'
-import { enqueueLegalRemovalPurgeCacheTag } from '@services/entity-cache/legal-removal'
+import { purgeLegalRemovalCacheTag } from '@services/entity-cache/legal-removal'
 import {
   completeCopyrightActionIntentInTransaction,
   hasCopyrightActionBlocker,
@@ -121,7 +121,7 @@ async function completeCopyrightActionAndInvalidate(input: {
       ),
     () => invalidateCopyrightPlacementCache(input.legal.placement_id, input.transaction),
     async () => {
-      if (input.action === 'withhold') await enqueueLegalRemovalPurgeCacheTag(input.intentId)
+      if (input.action === 'withhold') await purgeLegalRemovalCacheTag()
     },
   ])
 }

@@ -41,10 +41,10 @@ client must revalidate or apply its own HTTP caching policy rather than assume t
   before streaming. The staging canary keeps its separate override tag.
   Account deletion attempts an immediate purge after the privacy fence commits, but keeps the
   coarse purge owed until erasure and sibling external work finish. Its final durable purge must
-  complete before deletion is acknowledged. Successful copyright withholds admit a purge under the canonical action's identity;
-  an older active purge must not coalesce a later legal removal. Failed admission leaves action
-  completion retryable. This intentionally evicts broadly after legal removal, with an
-  unmeasured cache-warmup cost.
+  complete before deletion is acknowledged. Copyright withholds await successful eviction before
+  their durable action completes. Purge failure retains the action's existing retry and explicit
+  operator-replay path; it cannot disappear with a lost or exhausted cache-purge queue job. This
+  intentionally evicts broadly after legal removal, with an unmeasured cache-warmup cost.
 
 ## What is NOT Cached
 
