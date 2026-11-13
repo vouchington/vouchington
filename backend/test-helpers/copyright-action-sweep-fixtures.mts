@@ -1,3 +1,4 @@
+import { runBeforePostgresStatementForTest } from './injected-failures.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createTestUser } from './index.mts'
@@ -23,6 +24,20 @@ import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import { readAllQueueJobs } from './queue-jobs.mts'
 import { forgetDedupEntries, removeQueuedJobsById } from './shared-queue-cleanup.mts'
 
+/** Raise a native PostgreSQL serialization failure in the owned recovery transaction. */
+export function rejectCopyrightActionDecisionRecoveryForTest() {
+  return runBeforePostgresStatementForTest(
+    'recoverMissingCopyrightDecisionAssessments',
+    async transaction => {
+      await transaction(sql`/* rejectCopyrightActionDecisionRecoveryForTest */
+        DO $$ BEGIN
+          RAISE EXCEPTION 'owned copyright decision recovery serialization fault'
+            USING ERRCODE = '40001';
+        END $$`)
+    },
+  )
+}
+
 /** A committed review whose assessment has not yet been recovered. */
 export async function createCopyrightActionSweepReview(accepted: boolean) {
   const [{ notice }, moderator] = await Promise.all([createClearScreenedForm(), createTestUser()])
@@ -31,7 +46,7 @@ export async function createCopyrightActionSweepReview(accepted: boolean) {
     moderatorId: moderator.id,
     is_accepted: accepted,
   })
-  return notice.intake
+  return { ...notice.intake, reviewedById: moderator.id }
 }
 
 export async function createCopyrightActionSweepEnforcement() {

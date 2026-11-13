@@ -1,4 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import { seedCommittedTerritorialDecision } from '@voucha/test-helpers/copyright-territorial-committed-decision'
+import {
+  seedCommittedTerritorialRedress,
+  seedCommittedTerritorialRedressDecision,
+} from '@voucha/test-helpers/copyright-territorial-committed-redress'
+import { assertTerritorialInterruptedDecision } from '@voucha/test-helpers/copyright-territorial-decision-outcomes'
+import { assertTerritorialReviewOutcome } from '@voucha/test-helpers/copyright-territorial-review-outcome'
+import { readTerritorialReviewState } from '@voucha/test-helpers/copyright-territorial-review-state'
 import { beginTransaction } from '@voucha/test-helpers'
 import { interceptCopyrightImpositionForTest } from '@voucha/test-helpers/copyright-imposition-intercept'
 import { createAssessedUsDmcaCopyrightNoticeFixture } from '@voucha/test-helpers/copyright-us-dmca-notice-fixture'
@@ -16,11 +24,6 @@ import {
   readTestCopyrightThreadEnforcementPage,
 } from '@voucha/test-helpers/copyright-thread-blocker-retention'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
-import {
-  recordEuCopyrightRedressDecision,
-  recordEuCopyrightStatementOfReasons,
-  submitEuCopyrightRedress,
-} from './index.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 import type { BlockerCursor } from './operational-retention-thread-blockers-state.mts'
 import { readCopyrightThreadBusinessPage } from './operational-retention-thread-blockers-business.mts'
@@ -178,27 +181,82 @@ describe('bounded copyright thread blocker proof', () => {
     interceptCopyrightImpositionForTest(scene.noticeId, async () => {
       throw new Error('temporary enforcement interruption')
     })
-    await expect(
-      recordEuCopyrightStatementOfReasons(scene.staff, scene.noticeId, {
-        text: 'The hosted image reproduces the claimed work.',
-        publicExplanation: 'The hosted image reproduces the claimed work.',
-        outcome: 'restrict',
-        targets: scene.targets,
-      }),
-    ).rejects.toThrow('temporary enforcement interruption')
-    expect((await walkEnforcement(scene.noticeId)).blocked).toBe(true)
+    const input = {
+      text: 'The hosted image reproduces the claimed work.',
+      publicExplanation: 'The hosted image reproduces the claimed work.',
+      outcome: 'restrict' as const,
+      targets: scene.targets,
+    }
+    await assertTerritorialInterruptedDecision(
+      'eu_dsa',
+      scene,
+      input,
+      'temporary enforcement interruption',
+      0,
+    )
 
-    const complaint = await submitEuCopyrightRedress(
-      scene.claimant,
-      scene.noticeId,
-      crypto.randomUUID(),
+    // The blocker subject starts committed even if the interrupted actor aborted admission.
+    const pending = await createTestTerritorialRestrictionScene('eu_dsa')
+    await seedCommittedTerritorialDecision(
+      'eu_dsa',
+      pending.staff,
+      pending.noticeId,
+      { ...input, targets: pending.targets },
+      0,
+    )
+    expect((await walkEnforcement(pending.noticeId)).blocked).toBe(true)
+    const complaint = await seedCommittedTerritorialRedress(
+      'eu_dsa',
+      pending.noticeId,
+      pending.claimant,
       'Please reverse the restriction.',
     )
-    await recordEuCopyrightRedressDecision(scene.staff, scene.noticeId, complaint.id, {
+    const rationale = 'The claim did not support restriction.'
+    await assertTerritorialReviewOutcome({
+      jurisdiction: 'eu_dsa',
+      noticeId: pending.noticeId,
+      redressId: complaint.id,
+      staff: pending.staff,
+      claimantId: pending.claimant.id,
+      posterId: pending.posts[0]!.poster.id,
       disposition: 'revoke',
-      rationale: 'The claim did not support restriction.',
+      rationale,
     })
-    expect(await walkEnforcement(scene.noticeId)).toMatchObject({
+    const reviewed = await readTerritorialReviewState('eu_dsa', pending.noticeId, [
+      pending.posts[0]!.poster.id,
+    ])
+    const revoked =
+      reviewed.history.find(decision => decision.request === complaint.id)?.disposition === 'revoke'
+    expect(await walkEnforcement(pending.noticeId)).toMatchObject(
+      revoked
+        ? { phase: 'deadlines', blocked: false }
+        : { phase: 'enforcement_targets', blocked: true },
+    )
+
+    // A committed revocation must clear the proof even when the actual review above aborts.
+    const committed = await createTestTerritorialRestrictionScene('eu_dsa')
+    await seedCommittedTerritorialDecision(
+      'eu_dsa',
+      committed.staff,
+      committed.noticeId,
+      { ...input, targets: committed.targets },
+      0,
+    )
+    expect((await walkEnforcement(committed.noticeId)).blocked).toBe(true)
+    const committedComplaint = await seedCommittedTerritorialRedress(
+      'eu_dsa',
+      committed.noticeId,
+      committed.claimant,
+      'Please reverse the restriction.',
+    )
+    await seedCommittedTerritorialRedressDecision(
+      'eu_dsa',
+      committed.noticeId,
+      committedComplaint.id,
+      committed.staff,
+      { disposition: 'revoke', rationale },
+    )
+    expect(await walkEnforcement(committed.noticeId)).toMatchObject({
       phase: 'deadlines',
       blocked: false,
     })

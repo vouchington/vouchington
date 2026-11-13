@@ -1,4 +1,17 @@
-import { describe, expect, it } from 'vitest'
+import { assertUkRouteReview } from '@voucha/test-helpers/copyright-uk-route-review-outcome'
+import { assertUkRouteIntake } from '@voucha/test-helpers/copyright-uk-route-intake-outcome'
+import {
+  assertUkRouteAcknowledgmentFailure,
+  assertUkRouteRedress,
+  assertUkRouteRedressReplay,
+} from '@voucha/test-helpers/copyright-uk-route-request-outcomes'
+import { assertUkRouteRedressDecision } from '@voucha/test-helpers/copyright-uk-route-decision-outcome'
+import {
+  createUkRouteAcknowledgedCase,
+  createUkRouteDecidedCase,
+  createUkRouteRedressCase,
+} from '@voucha/test-helpers/copyright-uk-route-fixtures'
+import { describe, it } from 'vitest'
 import { receiveUkCopyrightNotice } from '@services/copyright-notices'
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
@@ -46,90 +59,63 @@ describe('UK copyright notice routes', () => {
         hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
       },
     )
-    const failure = await staffRequest
-      .post(`/api/v1/copyright-uk-notices/${pending.notice_id}/acknowledgment-failures`)
-      .expect(200)
-    expect(failure.body.acknowledgment).toMatchObject({
-      attempt_count: 1,
-      acknowledged_at: null,
-      escalated: false,
-    })
+    await assertUkRouteAcknowledgmentFailure(staffRequest, pending.notice_id)
     const body = noticeBody()
     const key = crypto.randomUUID()
-    const created = await claimantRequest
-      .post('/api/v1/copyright-uk-notices')
-      .set('Idempotency-Key', key)
-      .send(body)
-      .expect(201)
-    expect(created.body.copyright_uk_notice.route_destination).toBe('staff_queue')
-    expect(created.body.acknowledgment.acknowledged_at).toEqual(expect.any(String))
-    const replay = await claimantRequest
-      .post('/api/v1/copyright-uk-notices')
-      .set('Idempotency-Key', key)
-      .send(body)
-      .expect(200)
-    expect(replay.body.copyright_uk_notice.is_duplicate).toBe(true)
-    expect(replay.body.acknowledgment.acknowledged_at).toEqual(expect.any(String))
-    const noticeId = created.body.copyright_uk_notice.notice_id as string
-    const review = await staffRequest
-      .post(`/api/v1/copyright-uk-notices/${noticeId}/reviews`)
-      .send({
-        rationale: 'Staff review rationale',
-        public_explanation: 'The notice did not establish infringement.',
-        outcome: 'no_action',
-      })
-      .expect(201)
-    expect(review.body.copyright_uk_review.automation_disclosure).toBe('human')
+    await assertUkRouteIntake({
+      request: claimantRequest,
+      claimantId: claimant.id,
+      key,
+      body,
+      duplicate: false,
+    })
+    await assertUkRouteIntake({
+      request: claimantRequest,
+      claimantId: claimant.id,
+      key,
+      body,
+      duplicate: true,
+    })
+    const reviewNoticeId = await createUkRouteAcknowledgedCase(claimant)
+    await assertUkRouteReview({
+      noticeId: reviewNoticeId,
+      claimant,
+      staff,
+      claimantContact: body.contact,
+      request: staffRequest,
+    })
+    const redressNoticeId = await createUkRouteDecidedCase(claimant, staff)
     const redressKey = crypto.randomUUID()
     const member = await createTestUser()
     const memberRequest = createRequest()
     await memberRequest.authenticateAs(member)
     for (const request of [claimantRequest, memberRequest])
       await request
-        .post(`/api/v1/copyright-uk-notices/${noticeId}/redress-requests`)
+        .post(`/api/v1/copyright-uk-notices/${redressNoticeId}/redress-requests`)
         .set('Idempotency-Key', redressKey)
         .send({ explanation: 'Please review this notice' })
         .expect(403)
-    const redress = await staffRequest
-      .post(`/api/v1/copyright-uk-notices/${noticeId}/redress-requests`)
-      .set('Idempotency-Key', redressKey)
-      .send({ explanation: 'Please review this notice' })
-      .expect(201)
-    expect(redress.body.copyright_uk_redress_request.is_duplicate).toBe(false)
-    const redressReplay = await staffRequest
-      .post(`/api/v1/copyright-uk-notices/${noticeId}/redress-requests`)
-      .set('Idempotency-Key', redressKey)
-      .send({ explanation: 'Please review this notice' })
-      .expect(200)
-    expect(redressReplay.body.copyright_uk_redress_request).toMatchObject({
-      id: redress.body.copyright_uk_redress_request.id,
-      is_duplicate: true,
+    await assertUkRouteRedress({
+      request: staffRequest,
+      noticeId: redressNoticeId,
+      staffId: staff.id,
+      key: redressKey,
     })
-    const other = await claimantRequest
-      .post('/api/v1/copyright-uk-notices')
-      .set('Idempotency-Key', crypto.randomUUID())
-      .send(noticeBody())
-      .expect(201)
-    const otherNoticeId = other.body.copyright_uk_notice.notice_id as string
-    await staffRequest
-      .post(`/api/v1/copyright-uk-notices/${otherNoticeId}/reviews`)
-      .send({
-        rationale: 'Second staff review',
-        public_explanation: 'The notice did not establish infringement.',
-        outcome: 'no_action',
-      })
-      .expect(201)
-    await staffRequest
-      .post(`/api/v1/copyright-uk-notices/${otherNoticeId}/redress-requests`)
-      .set('Idempotency-Key', redressKey)
-      .send({ explanation: 'Reuse the first key' })
-      .expect(409)
-    const decision = await staffRequest
-      .post(
-        `/api/v1/copyright-uk-notices/${noticeId}/redress-requests/${redress.body.copyright_uk_redress_request.id}/decisions`,
-      )
-      .send({ staff_disposition: 'maintain', rationale: 'Staff kept the recorded review' })
-      .expect(201)
-    expect(decision.body.copyright_uk_redress_decision.staff_disposition).toBe('maintain')
+    const continuation = await createUkRouteRedressCase(claimant, staff)
+    await assertUkRouteRedressReplay({ request: staffRequest, ...continuation })
+    const otherNoticeId = await createUkRouteDecidedCase(claimant, staff)
+    await assertUkRouteRedressReplay({
+      request: staffRequest,
+      noticeId: otherNoticeId,
+      key: continuation.key,
+      redressId: continuation.redressId,
+      crossNotice: true,
+    })
+    await assertUkRouteRedressDecision({
+      request: staffRequest,
+      noticeId: continuation.noticeId,
+      redressId: continuation.redressId,
+      staffId: staff.id,
+    })
   })
 })

@@ -31,6 +31,7 @@ import {
  * decision assessments, pending enforcement, suspended claimants' pending automatic restrictions,
  * blocked hold restorations, due statutory restorations, then recoverable action intents. A failed item, page read, or stage does not stop the rest; the
  * job fails afterwards with every error so its retry covers what is still pending.
+ * A native serialization failure stops the run immediately while preserving earlier faults.
  */
 export async function processReconcileCopyrightActionIntents(
   data: CopyrightSweepContinuation = {},
@@ -150,13 +151,21 @@ export async function processReconcileCopyrightActionIntents(
     'actions',
   ]
   const pending = [...(data.pending ?? names)]
-  while (budget.remainingPages > 0 && pending.length > 0) {
-    const name = pending.shift()!
-    const index = names.indexOf(name)
-    if (index < 0) throw new Error(`Unknown copyright sweep stage: ${name}`)
-    // oxlint-disable-next-line no-await-in-loop -- rotate after each page under one shared job allowance.
-    await stages[index]!()
-    if (cursors.has(name) && !deferred.has(name)) pending.push(name)
+  try {
+    while (budget.remainingPages > 0 && pending.length > 0) {
+      const name = pending.shift()!
+      const index = names.indexOf(name)
+      if (index < 0) throw new Error(`Unknown copyright sweep stage: ${name}`)
+      // oxlint-disable-next-line no-await-in-loop -- rotate after each page under one shared job allowance.
+      await stages[index]!()
+      if (cursors.has(name) && !deferred.has(name)) pending.push(name)
+    }
+  } catch (err) {
+    if ((err as { code?: string } | null)?.code === '40001' && tally.errors.length > 0)
+      throw new AggregateError([...tally.errors, err], 'Copyright action reconciliation failed', {
+        cause: err,
+      })
+    throw err
   }
   pending.push(...deferred)
   if (pending.length > 0)
