@@ -6,6 +6,11 @@ export const accountAndFeedsEndpointRegistry = {
     path: '/api/v1/referral-links',
     query: { limit: '25' },
   },
+  'native.referral-links.user.public': {
+    method: 'GET',
+    path: '/api/v1/referral-links',
+    query: { user_id: 'user-2', limit: '25' },
+  },
   'native.referral-clicks.mine.default': {
     method: 'GET',
     path: '/api/v1/my/referral-clicks',

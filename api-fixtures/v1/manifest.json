@@ -46341,6 +46341,182 @@
       "source": "backend/api/v1/referral-links/links.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/referral-links#public": {
+      "bodyKind": "content",
+      "hash": "6e9b3ab1be00ace6fc8a2716e78189d2e75b9377900c277e8e82144309c0bfd5",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/referral-links",
+      "schema": {
+        "definitions": {
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "UserReferralLink": {
+            "additionalProperties": false,
+            "properties": {
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "deleted_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "parent_link_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "referral_program_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "updated_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "url_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "user_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "page_info": {
+              "required": true,
+              "schema": {
+                "name": "PageInfo",
+                "type": "ref"
+              }
+            },
+            "results": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "type": "intersection",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "referral_program_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "referral_program_slug": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "url": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "name": "UserReferralLink",
+                      "type": "ref"
+                    }
+                  ]
+                },
+                "type": "array"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/referral-links/links.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/report-integrity/flags": {
       "bodyKind": "content",
       "hash": "d4e8c5ff93376c6efb58f45c02d938eec63fad0497fd7298904021911607319f",
@@ -108804,6 +108980,31 @@
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/native-tags-bookmarks-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/referral-links#public",
+      "bodyFile": "responses/native.referral-links.user.public.json",
+      "consumers": ["swift-core", "dotnet-core"],
+      "id": "native.referral-links.user.public",
+      "method": "GET",
+      "migratedFrom": ["web/lib/api/client/referral-links.ts"],
+      "path": "/api/v1/referral-links",
+      "query": {
+        "limit": "25",
+        "user_id": "user-2"
+      },
+      "responseSchema": {
+        "hash": "5c36e85b9c7bf1a6e39fa625d4f782c2ab8ca1759de1b46999a7d475256f0aaf",
+        "key": "native.referral-links.user.public"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/referral-links"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/referral-cases.mts"
       },
       "status": 200
     },

@@ -864,6 +864,10 @@
       "fixtureIds": ["native.referral-links.mine.default", "web.referral-links.mine.default"],
       "hash": "41810af6f931915a482b21867a7e80f95e4fb574382909ba77501769a0a72655"
     },
+    "GET:/api/v1/referral-links#public": {
+      "fixtureIds": ["native.referral-links.user.public"],
+      "hash": "6e9b3ab1be00ace6fc8a2716e78189d2e75b9377900c277e8e82144309c0bfd5"
+    },
     "GET:/api/v1/report-integrity/flags": {
       "fixtureIds": [
         "native.moderation.report-integrity.default",
@@ -3073,6 +3077,10 @@
     "native.posts.topic-recommendation.create": {
       "fixtureIds": ["native.posts.topic-recommendation.create"],
       "hash": "927c03e60e3df14ab8e4a092f008c7f4aa9137e600114e48568c3bbdaf942040"
+    },
+    "native.referral-links.user.public": {
+      "fixtureIds": ["native.referral-links.user.public"],
+      "hash": "5c36e85b9c7bf1a6e39fa625d4f782c2ab8ca1759de1b46999a7d475256f0aaf"
     },
     "native.rewards-program-status-topics.search.default": {
       "fixtureIds": ["native.rewards-program-status-topics.search.default"],
