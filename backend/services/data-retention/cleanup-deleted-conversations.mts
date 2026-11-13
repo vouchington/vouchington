@@ -134,6 +134,7 @@ export async function cleanupDeletedConversationPage(
   }
 
   for (const stage of CHILD_STAGES) {
+    // no-mistakes-disable-next-line query-reached-per-item: CHILD_STAGES is a fixed two-stage constant, run sequentially on the transaction client
     const deleted = await stage.deletion(query, candidate.id, batchSize)
     if ((deleted.rowCount ?? 0) > 0) {
       // no-mistakes-disable-next-line query-reached-per-item: checkpoint must follow the bounded child deletion in the same transaction
@@ -141,6 +142,7 @@ export async function cleanupDeletedConversationPage(
       return { deleted: 0, hasMore: true, continuation: null, stalled: false }
     }
     // A locked child keeps the parent until next run, preventing unbounded CASCADE work.
+    // no-mistakes-disable-next-line query-reached-per-item: CHILD_STAGES is a fixed two-stage constant, run sequentially on the transaction client
     const remains = await stage.remaining(query, candidate.id)
     if (remains.rows[0]?.remaining) {
       // no-mistakes-disable-next-line query-reached-per-item: a skipped locked child keeps the parent and checkpoint together
