@@ -4,7 +4,7 @@ import { GlideClient } from '@valkey/valkey-glide'
 import { vi } from 'vitest'
 import { primaryCacheValkeyClient } from '@data-stores/valkey/clients'
 import { ValkeyCache } from '@data-stores/valkey/cache'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
+import { SEARCH_CACHE_TTL_SECONDS } from '../services/entity-cache/search-cache-ttl.mts'
 
 const GENERATION_KEY = 'rss_public_post_snapshots:legal_generation'
 const scopes = new AsyncLocalStorage<GenerationScope>()
@@ -37,7 +37,7 @@ export async function withIsolatedRssSnapshotGeneration<T>(
   const set = GlideClient.prototype.set
   const snapshotCache = new ValkeyCache({
     prefix: 'rss_public_post_snapshots_anon',
-    ttlSeconds: HTTP_CACHE_SHORT_MAX_AGE_SECONDS,
+    ttlSeconds: SEARCH_CACHE_TTL_SECONDS,
     client: primaryCacheValkeyClient,
   })
   const snapshots = new Set<string>()
