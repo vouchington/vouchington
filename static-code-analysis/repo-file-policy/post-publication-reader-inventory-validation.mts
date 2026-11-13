@@ -35,6 +35,7 @@ export function validateRows(
             'descendants-boundary',
             'mixed-discovery-sql',
             'public-boundary',
+            'public-snapshot-boundary',
             'public-sql',
             'public-view',
             'story-posts-boundary',

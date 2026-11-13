@@ -1,3 +1,4 @@
+import { invalidateCopyrightPlacementCache } from './action-delivery-cache.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { assertMediaDeliveryLegalEnforcementEnabled } from '@modules/aws'
 import {
@@ -49,6 +50,9 @@ export async function executeCopyrightActionIntent(
     if (mediaDeliveryRegistryRecordId)
       await dependencies.publishStagedMediaDeliveryRecord(mediaDeliveryRegistryRecordId)
     else await prepublishCopyrightImagePlacementDenial({ ...tuple })
+    // prepareCopyrightAction committed the legal placement mutation. Evict backend snapshots
+    // before edge purging, while a failed eviction can still retry this incomplete intent.
+    await invalidateCopyrightPlacementCache(legal.placement_id)
     const finalized = await finalizeCopyrightActionAfterDelivery(
       intent.id,
       intent.lease_token,

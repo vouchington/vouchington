@@ -1,3 +1,4 @@
+import { invalidateRssSnapshotsForLegalRemoval } from '@services/entity-cache/rss-snapshot-generation'
 import { sanitizeStripeCustomer } from '@modules/stripe/customers'
 import { deleteExportFromS3 } from '@services/account-data-requests'
 import { purgeCacheTags } from '@services/entity-cache/purge'
@@ -37,8 +38,10 @@ export async function executeUserDeletionExternalWork(
   processRelationEffects: (requestId: string, impactId: string) => Promise<void>,
 ): Promise<void> {
   if (work.work_kind === 'cloudflare-cache-tag') {
-    if (work.work_key === LEGAL_REMOVAL_TAG) await purgeLegalRemovalCacheTag()
-    else await purgeCacheTags([work.work_key])
+    if (work.work_key === LEGAL_REMOVAL_TAG) {
+      await invalidateRssSnapshotsForLegalRemoval()
+      await purgeLegalRemovalCacheTag()
+    } else await purgeCacheTags([work.work_key])
   } else if (work.work_kind === 's3-export') {
     await deleteExportFromS3(work.work_key)
   } else if (work.work_kind === 'stripe-customer') {

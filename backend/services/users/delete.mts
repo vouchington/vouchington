@@ -1,3 +1,4 @@
+import { invalidateRssSnapshotsForLegalRemoval } from '@services/entity-cache/rss-snapshot-generation'
 import { settleUserDeletionOperations } from './settle-deletion-operations.mts'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import assert from 'http-assert'
@@ -96,6 +97,7 @@ async function attemptImmediateUserDeletionCacheEviction(
 ): Promise<void> {
   const tags = getUserDeletionCacheTags(target)
   try {
+    await invalidateRssSnapshotsForLegalRemoval()
     await purgeCacheTags(tags)
     await settleUserDeletionOperations(
       [

@@ -1,6 +1,10 @@
+import { getRssSnapshotLegalGeneration } from '@services/entity-cache/rss-snapshot-generation'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { valkeyEvents } from 'valkyries'
+import { makeTestRssPostPrivate } from '@voucha/test-helpers/rss-private-edit'
+import { getPostByAnyCachedBatch } from '@services/entity-fetch'
+import { VALID_RSS_POST_TYPES } from '@ts-shared/feed-capabilities'
 import { caches } from '@services/entity-cache/caches'
 import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
 import { createTestTopic, createTestUserDirect, insertTestPost } from '@voucha/test-helpers'
@@ -25,11 +29,18 @@ async function expectCachedRead<T>(prefix: string | string[], run: () => Promise
   }
   valkeyEvents.on('cache:set', onSet)
   try {
+    const generation = await getRssSnapshotLegalGeneration()
     const first = await run()
     await stored.promise
     const { result, queries } = await withCapturedTestQueries(run)
     expect(result).toEqual(first)
-    expect(queries).toEqual([])
+    const legalEviction = generation !== (await getRssSnapshotLegalGeneration())
+    // Other files may complete legal removals concurrently; only their snapshot refill is allowed.
+    expect(
+      queries.filter(
+        query => !legalEviction || !query.text.includes('/* getPublicRssPostSnapshots */'),
+      ),
+    ).toEqual([])
     return result
   } finally {
     valkeyEvents.off('cache:set', onSet)
@@ -105,7 +116,7 @@ describe('anonymous read caches', () => {
     const xml = await expectCachedRead(
       [
         caches.users_public.prefix,
-        caches.posts.prefix,
+        'rss_public_post_snapshots_anon',
         POST_IDS_ANON_CACHE,
         'rss_post_descriptions_anon',
       ],
@@ -116,5 +127,64 @@ describe('anonymous read caches', () => {
         ),
     )
     expect(xml).toContain('<item>')
+  })
+  it('never hydrates a retained public search ID with a private edit on snapshot miss', async () => {
+    const user = await createTestUserDirect()
+    const id = await insertTestPost({
+      title: 'Public before private edit',
+      slug: `rss-private-${randomUUID()}`,
+      createdById: user.id,
+      markdown: `public-${randomUUID()}`,
+    })
+    const options = {
+      post_types: [...VALID_RSS_POST_TYPES],
+      user_id: user.id,
+      time_range: 'all' as const,
+      sort: 'new' as const,
+      limit: 25,
+    }
+    const page = await expectCachedRead(POST_IDS_ANON_CACHE, () => getPostIdsCached(options))
+    expect(page.results.map(post => post.id)).toContain(id)
+    const secret = `never-public-${randomUUID()}`
+    await makeTestRssPostPrivate(id, secret)
+    await caches.posts.delete(id)
+    const raw = await getPostByAnyCachedBatch([id])
+    expect(raw[0]?.markdown).toBe(secret)
+
+    const xml = await buildPostsRssFeed({ username: user.username! })
+    expect(xml).not.toContain(secret)
+    expect(xml).not.toContain('<item>')
+  })
+
+  it('retains the public content snapshot after raw entity invalidation and a private edit', async () => {
+    const user = await createTestUserDirect()
+    const publicText = `once-public-${randomUUID()}`
+    const id = await insertTestPost({
+      title: 'Cached public snapshot',
+      slug: `rss-snapshot-${randomUUID()}`,
+      createdById: user.id,
+      markdown: publicText,
+    })
+    const generation = await getRssSnapshotLegalGeneration()
+    await expectCachedRead('rss_post_descriptions_anon', () =>
+      buildPostsRssFeed({ username: user.username! }),
+    )
+    const secret = `never-public-${randomUUID()}`
+    await makeTestRssPostPrivate(id, secret)
+    await caches.posts.delete(id)
+    const raw = await getPostByAnyCachedBatch([id])
+    expect(raw[0]?.markdown).toBe(secret)
+
+    const { result: xml, queries } = await withCapturedTestQueries(() =>
+      buildPostsRssFeed({ username: user.username! }),
+    )
+    expect(xml).not.toContain(secret)
+    const legalEviction = generation !== (await getRssSnapshotLegalGeneration())
+    expect(xml.includes(publicText) || legalEviction).toBe(true)
+    expect(
+      queries.filter(
+        query => !legalEviction || !query.text.includes('/* getPublicRssPostSnapshots */'),
+      ),
+    ).toEqual([])
   })
 })

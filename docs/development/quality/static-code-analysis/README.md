@@ -55,6 +55,11 @@ Nested Oxlint configs do not inherit ancestor `overrides` or `plugins`: they res
 
 ## Enforcement Policy
 
+Publication-reader enforcement distinguishes live eligibility checks from cached public-content
+boundaries. The snapshot boundary requires the dedicated public accessor, whose fill query is
+checked against canonical public eligibility. This prevents mutable entity hydration from replacing
+a public snapshot without requiring database checks on cache hits.
+
 Community membership mutations must use the shared writer so cache invalidation follows the
 owning transaction's commit. The application-specific AST-grep guard rejects direct mutation SQL,
 including mutations inside CTEs and appended fragments. Bootstrap seeds and test fixtures have

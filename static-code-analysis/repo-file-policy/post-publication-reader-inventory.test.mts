@@ -3,6 +3,28 @@ import { runInventoryReaderCase } from '../test-helpers/post-publication-reader-
 
 const cases = [
   {
+    title: 'accepts a cached public content snapshot boundary',
+    classification: 'public-snapshot-boundary',
+    direct:
+      "import { getPublicRssPostSnapshotsCached } from '@services/posts/public-rss-snapshots'\nconst posts = await getPublicRssPostSnapshotsCached({ postIds })\nreturn posts",
+    expected: null,
+  },
+  {
+    title: 'rejects raw entity hydration at a cached public snapshot boundary',
+    classification: 'public-snapshot-boundary',
+    direct:
+      "import { getPostByAnyCachedBatch } from '@services/entity-fetch'\nreturn await getPostByAnyCachedBatch(postIds)",
+    expected: 'must compose getPublicRssPostSnapshotsCached',
+  },
+  {
+    title: 'rejects an unrelated homonymous cached snapshot helper',
+    classification: 'public-snapshot-boundary',
+    direct:
+      "import { getPublicRssPostSnapshotsCached } from '@services/unrelated'\nreturn await getPublicRssPostSnapshotsCached({ postIds })",
+    expected: 'must compose getPublicRssPostSnapshotsCached',
+  },
+
+  {
     title: 'accepts a tracked, classified completed inventory',
     classification: 'direct-sql',
     expected: null,

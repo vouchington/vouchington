@@ -1,3 +1,4 @@
+import { invalidateCopyrightPlacementCache } from './action-delivery-cache.mts'
 import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
 import { closeServer, listen } from '@voucha/test-helpers/api/http-boundary'
 import type { AddressInfo } from 'node:net'
@@ -29,6 +30,12 @@ describe('copyright action delivery branches', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllEnvs()
+  })
+
+  it('rejects a missing cache owner so legal delivery can retry eviction', async () => {
+    await expect(invalidateCopyrightPlacementCache(crypto.randomUUID())).rejects.toThrow(
+      'Copyright placement owner unavailable after committed legal mutation',
+    )
   })
 
   it('marks a withhold stale when the placement transition is no longer current', async () => {

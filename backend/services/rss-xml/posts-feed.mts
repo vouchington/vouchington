@@ -1,9 +1,6 @@
+import { getPublicRssPostSnapshotsCached } from '@services/posts/public-rss-snapshots'
 import { getPostIdsCached } from '@services/entity-fetch/search-caches'
-import {
-  getPostByAnyCachedBatch,
-  getTopicByAnyCachedBatch,
-  getAnonymousUserPublicByAnyCached,
-} from '@services/entity-fetch'
+import { getTopicByAnyCachedBatch, getAnonymousUserPublicByAnyCached } from '@services/entity-fetch'
 import { getPostRouteSegment } from '@services/entity-links/routes'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import { buildRssXml, type RssChannel, type RssItem } from './xml-builder.mts'
@@ -141,10 +138,8 @@ async function buildPostsRssFeedImpl(options: PostsFeedOptions): Promise<string>
     return buildRssXml(channel, [])
   }
 
-  // Fetch full post data
-  const postIds = results.map(r => r.id)
-  const posts = await getPostByAnyCachedBatch(postIds)
-  const validPosts = posts.filter((post): post is NonNullable<typeof post> => !!post)
+  // Public content and eligibility stay together even when the raw entity cache changes.
+  const validPosts = await getPublicRssPostSnapshotsCached({ postIds: results.map(r => r.id) })
 
   // Render markdown to HTML, partitioned by admin status
   const descriptions = await renderPostDescriptions(validPosts)

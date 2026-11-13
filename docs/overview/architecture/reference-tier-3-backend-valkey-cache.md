@@ -57,3 +57,11 @@ RSS description caching includes the author-role lookup used to render trusted H
 Cached publication state is served without a request-time database recheck, including when
 filtering Hacker News references. The Worker owns edge TTL policy; Cache-Tag purging is
 reserved for legal copyright and user deletion, never freshness.
+
+RSS post snapshots bind public eligibility and response content in one database read on cache
+miss. They are isolated from the mutable entity cache: retained search IDs cannot hydrate a
+private edit, while a warm RSS snapshot can continue serving its previously public content.
+Legal removal advances the RSS snapshot namespace before edge purging. The generation is
+read from Valkey's primary and is never advanced for an ordinary edit. User deletion retries
+repeat this step; copyright delivery evicts after its placement mutation commits and before
+marking its durable intent complete. Retired snapshots expire naturally without a key scan.
