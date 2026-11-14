@@ -1,6 +1,7 @@
 import { LEGAL_REMOVAL_TAG } from '@ts-shared/cache/cache-tags'
 import { isDeployedEnvironment } from '@ts-shared/deploy-environment'
 import { purgeCacheTags } from './purge.mts'
+import { invalidateRssSnapshotsForLegalRemoval } from './rss-snapshot-generation.mts'
 
 export { LEGAL_REMOVAL_TAG }
 
@@ -11,4 +12,14 @@ export async function purgeLegalRemovalCacheTag(): Promise<void> {
     return
   }
   await purgeCacheTags([LEGAL_REMOVAL_TAG])
+}
+
+/**
+ * Legal-removal surfaces shared by copyright and user deletion. Snapshots retire before the
+ * edge purge so a refill cannot repopulate the edge from a removed snapshot. Callers record
+ * completion only after this resolves, so a failure is retried.
+ */
+export async function purgeLegalRemovalSurfaces(): Promise<void> {
+  await invalidateRssSnapshotsForLegalRemoval()
+  await purgeLegalRemovalCacheTag()
 }

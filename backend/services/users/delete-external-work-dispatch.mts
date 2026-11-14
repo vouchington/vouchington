@@ -1,8 +1,7 @@
-import { invalidateRssSnapshotsForLegalRemoval } from '@services/entity-cache/rss-snapshot-generation'
 import { sanitizeStripeCustomer } from '@modules/stripe/customers'
 import { deleteExportFromS3 } from '@services/account-data-requests'
 import { purgeCacheTags } from '@services/entity-cache/purge'
-import { LEGAL_REMOVAL_TAG, purgeLegalRemovalCacheTag } from '@services/entity-cache/legal-removal'
+import { LEGAL_REMOVAL_TAG, purgeLegalRemovalSurfaces } from '@services/entity-cache/legal-removal'
 import type { UserDeletionExternalWorkKind } from '@services/user-deletions'
 
 export type PendingExternalWork =
@@ -38,10 +37,10 @@ export async function executeUserDeletionExternalWork(
   processRelationEffects: (requestId: string, impactId: string) => Promise<void>,
 ): Promise<void> {
   if (work.work_kind === 'cloudflare-cache-tag') {
-    if (work.work_key === LEGAL_REMOVAL_TAG) {
-      await invalidateRssSnapshotsForLegalRemoval()
-      await purgeLegalRemovalCacheTag()
-    } else await purgeCacheTags([work.work_key])
+    // The legal-removal row completes only after every legal surface is retired, so a
+    // failure leaves it owed to recovery.
+    if (work.work_key === LEGAL_REMOVAL_TAG) await purgeLegalRemovalSurfaces()
+    else await purgeCacheTags([work.work_key])
   } else if (work.work_kind === 's3-export') {
     await deleteExportFromS3(work.work_key)
   } else if (work.work_kind === 'stripe-customer') {

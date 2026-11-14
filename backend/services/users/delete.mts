@@ -1,5 +1,4 @@
 import { runSequentially } from '@modules/utils/run-sequentially'
-import { invalidateRssSnapshotsForLegalRemoval } from '@services/entity-cache/rss-snapshot-generation'
 import { settleUserDeletionOperations } from './settle-deletion-operations.mts'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import assert from 'http-assert'
@@ -10,6 +9,7 @@ import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enq
 import { invalidate } from '@services/entity-cache/invalidate'
 import { purgeCacheTags } from '@services/entity-cache/purge'
 import { LEGAL_REMOVAL_TAG } from '@services/entity-cache/legal-removal'
+import { invalidateRssSnapshotsForLegalRemoval } from '@services/entity-cache/rss-snapshot-generation'
 import {
   addUserDeletionExternalWorks,
   completeUserDeletionExternalWorks,
