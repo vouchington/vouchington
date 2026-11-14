@@ -1,5 +1,6 @@
 import { withIsolatedRssSnapshotGeneration } from '@voucha/test-helpers/rss-snapshot-generation-scope'
-import { stableSerialize } from '@services/entity-cache/search-cache'
+import { serializeSearchCacheKey } from '@services/entity-cache/search-cache'
+import { getAnonymousCacheGeneration } from '@services/entity-cache/anonymous-cache-generation'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { valkeyEvents } from 'valkyries'
@@ -72,16 +73,31 @@ describe('legal RSS snapshot eviction', () => {
       })
       const generation = await getRssSnapshotLegalGeneration()
       const options = { postIds: [id] }
-      const oldKey = stableSerialize({ ...options, legalGeneration: generation })
-      const stored = Promise.withResolvers<void>()
+      // Snapshot keys also carry the anonymous legal generation, which concurrent legal
+      // removals may advance during the fill, so accept the key from either side of it.
+      const keyFor = async () =>
+        serializeSearchCacheKey({
+          generation: await getAnonymousCacheGeneration(),
+          options: { ...options, legalGeneration: generation },
+        })
+      const candidates = new Set([await keyFor()])
+      const storedKeys = new Set<string>()
+      const stored = Promise.withResolvers<string>()
+      const settle = () => {
+        const match = [...candidates].find(key => storedKeys.has(key))
+        if (match) stored.resolve(match)
+      }
       const onSet = (event: { cacheName: string; keys: string[] }) => {
-        if (event.cacheName === 'rss_public_post_snapshots_anon' && event.keys.includes(oldKey))
-          stored.resolve()
+        if (event.cacheName !== 'rss_public_post_snapshots_anon') return
+        for (const key of event.keys) storedKeys.add(key)
+        settle()
       }
       valkeyEvents.on('cache:set', onSet)
       try {
         expect((await getPublicRssPostSnapshotsCached(options))[0]?.markdown).toBe(markdown)
-        await stored.promise
+        candidates.add(await keyFor())
+        settle()
+        const oldKey = await stored.promise
         await makeTestRssPostPrivate(id, `never-public-${randomUUID()}`)
         await scope.evict()
 
