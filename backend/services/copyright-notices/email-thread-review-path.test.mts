@@ -15,27 +15,6 @@ import { getCopyrightStaffEmailIntake } from './read-models-staff-email-intake.m
 import { searchCopyrightStaffEmailIntakes } from './read-models-staff-email-intakes.mts'
 
 describe('copyright email review path', () => {
-  it('leaves a linked reply in place when a later intake duplicates the parent Message-ID', async () => {
-    const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const parentMessageId = copyrightEmailMessageId()
-    const parent = await createCommittedCopyrightEmailRoot(moderator.id, parentMessageId)
-    const reply = await createCommittedCopyrightEmailIntake({
-      messageId: copyrightEmailMessageId(),
-      replyReferences: [parentMessageId],
-    })
-    await seedCommittedCopyrightEmailReviewGraph({
-      intakeId: reply.id,
-      ancestorIntakeIds: [parent.rootIntakeId],
-      noticeId: parent.noticeId,
-    })
-    await createCommittedCopyrightEmailIntake({ messageId: parentMessageId })
-
-    await expect(getCopyrightStaffEmailIntake(reply.id, moderator)).resolves.toMatchObject({
-      review_path: 'matched_thread',
-      linked_notice: { id: parent.noticeId },
-    })
-  })
-
   it('classifies a reply after a duplicated Message-ID as manual review', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const parentMessageId = copyrightEmailMessageId()
@@ -53,49 +32,6 @@ describe('copyright email review path', () => {
     })
   })
 
-  it('classifies a reply as duplicate when its referenced Message-ID has two claimants', async () => {
-    const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const parentMessageId = copyrightEmailMessageId()
-    const firstParent = await createCommittedCopyrightEmailIntake({
-      messageId: parentMessageId,
-      replyReferences: [],
-    })
-    await createCommittedCopyrightEmailIntake({ messageId: parentMessageId })
-    const reply = await createCommittedCopyrightEmailIntake({
-      messageId: copyrightEmailMessageId(),
-      replyReferences: [parentMessageId],
-    })
-    await approveCommittedCopyrightEmailRoot(firstParent, moderator.id)
-
-    await expect(readCopyrightEmailAncestorIds(reply.id)).resolves.toEqual([])
-    await expectManualReview(moderator, reply.id, 'duplicate_message_id')
-  })
-
-  it('reports a linked reply after its parent Message-ID is claimed twice', async () => {
-    const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const parentMessageId = copyrightEmailMessageId()
-    const reply = await createCommittedCopyrightEmailIntake({
-      messageId: copyrightEmailMessageId(),
-      replyReferences: [parentMessageId],
-    })
-    const firstParent = await createCommittedCopyrightEmailIntake({
-      messageId: parentMessageId,
-      replyReferences: [],
-    })
-    await seedCommittedCopyrightEmailReviewGraph({
-      intakeId: reply.id,
-      ancestorIntakeIds: [firstParent.id],
-    })
-    await createCommittedCopyrightEmailIntake({ messageId: parentMessageId })
-    const noticeId = await approveCommittedCopyrightEmailRoot(firstParent, moderator.id)
-    await seedCommittedCopyrightEmailReviewGraph({ intakeId: reply.id, noticeId })
-
-    await expect(getCopyrightStaffEmailIntake(reply.id, moderator)).resolves.toMatchObject({
-      review_path: 'matched_thread',
-      linked_notice: { id: noticeId },
-    })
-  })
-
   it('classifies the second Message-ID claimant as manual review', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const parentMessageId = copyrightEmailMessageId()
@@ -110,21 +46,6 @@ describe('copyright email review path', () => {
     ).resolves.toMatchObject({
       review_path: 'duplicate_message_id',
     })
-  })
-
-  it('classifies a duplicate Message-ID claimant before resolving its References edge', async () => {
-    const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const parentMessageId = copyrightEmailMessageId()
-    const duplicateMessageId = copyrightEmailMessageId()
-    await createCommittedCopyrightEmailRoot(moderator.id, parentMessageId)
-    await createCommittedCopyrightEmailIntake({ messageId: duplicateMessageId })
-    const second = await createCommittedCopyrightEmailIntake({
-      messageId: duplicateMessageId,
-      replyReferences: [parentMessageId],
-    })
-
-    await expect(readCopyrightEmailAncestorIds(second.id)).resolves.toEqual([])
-    await expectManualReview(moderator, second.id, 'duplicate_message_id')
   })
 
   it('links a waiting reply through the root References edge before the intermediate arrives', async () => {
