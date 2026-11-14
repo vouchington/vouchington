@@ -87,7 +87,10 @@ export async function prepareHackerNewsLookupReadmissionWindow(
   }
 }
 
-/** The leading timestamp predicate and tuple key use the existing freshness index. */
+/**
+ * The leading timestamp predicate and tuple key use the existing freshness index.
+ * The explain-analyze scenarios read this annotated statement; keep its head in sync with readmitHackerNewsLookupPage.
+ */
 export function buildHackerNewsReadmissionPageQuery(
   window: LookupReadmissionWindow,
   after?: LookupReadmissionKey,
