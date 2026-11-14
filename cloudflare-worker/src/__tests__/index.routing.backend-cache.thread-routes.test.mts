@@ -40,13 +40,23 @@ describe('worker fetch handler — embedded thread route caching', () => {
       }
       const anonymousContext = createContext(env)
       const anonymousDispatch = vi.spyOn(anonymousContext.exports.CachedOrigin, 'fetch')
+      const anonymousDid = mintUUIDv7()
+      const anonymousDeviceToken = await createSignedDeviceJwt({ did: anonymousDid })
+      const anonymousSessionToken = await createSignedSessionJwt({
+        did: anonymousDid,
+        uid: null,
+        sid: mintUUIDv7(),
+      })
       const anonymousResponse = await worker.fetch(
-        new Request(`https://voucha.ai${pathname}`),
+        new Request(`https://voucha.ai${pathname}`, {
+          headers: { cookie: `dt=${anonymousDeviceToken}; st=${anonymousSessionToken}` },
+        }),
         env,
         anonymousContext,
       )
 
       expect(anonymousResponse.headers.get('x-voucha-cache')).toBe('DISPATCHED')
+      expect(anonymousResponse.headers.get('set-cookie')).toBeNull()
       expect(anonymousResponse.headers.get('cache-control')).toBe(
         'public, max-age=30, stale-while-revalidate=60, stale-if-error=86400',
       )

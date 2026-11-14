@@ -179,9 +179,10 @@ export async function dispatchToCachedOrigin(input: CacheDispatchInput): Promise
   // The platform cache (Workers Cache) is the caching layer for this response, not the
   // browser: it's one shared entry per anon/bot audience, rewritten per-request (nonce,
   // Set-Cookie) on the way out here — the client must never cache that per-request-rewritten
-  // body. Backend JSON is not rewritten per-request. Optional-auth GET endpoints keep their
-  // origin Cache-Control, while the outer gateway adds Cookie/Authorization to Vary so a
-  // browser cannot reuse anonymous bytes after authentication state changes.
+  // body. Cookie-free optional-auth JSON keeps the Worker-selected Cache-Control, while the
+  // outer gateway adds Cookie/Authorization to Vary so a browser cannot reuse anonymous bytes
+  // after authentication state changes. Newly minted cookies make only the final response
+  // no-store in withEdgeSessionCookies below.
   const isSessionSensitive = isHtml
   const responseForClient = withHeaders(withFailureNoStoreHeaders(rewritten), {
     'server-timing': `origin;dur=${dispatchDuration}`,

@@ -59,7 +59,7 @@ describe('worker fetch handler — RSS referrer-policy preservation (#8006)', ()
     expect(firstResponse.headers.get('referrer-policy')).toBe('no-referrer')
     expect(secondResponse.headers.get('referrer-policy')).toBe('no-referrer')
     // Never shared-cached: the response stays disqualified from shared caching end-to-end.
-    expect(firstResponse.headers.get('cache-control')).toContain('private')
+    expect(firstResponse.headers.get('cache-control')).toBe('no-store, max-age=0, must-revalidate')
     expect(firstResponse.headers.get('x-voucha-cache')).toBe('DISPATCHED')
     expect(secondResponse.headers.get('x-voucha-cache')).toBe('DISPATCHED')
     expect(fetchSpy).toHaveBeenCalledTimes(2)

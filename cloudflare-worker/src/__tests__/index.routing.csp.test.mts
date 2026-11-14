@@ -235,7 +235,7 @@ describe('worker fetch handler — routing and caching', () => {
     // (defense-in-depth against the platform's own default cache heuristics —
     // see NON_CACHEABLE_HEADERS in cached-origin.mts) rather than leaving it
     // absent as the old caches.default gateway did.
-    expect(firstResponse.headers.get('cache-control')).toBe('private, no-store')
+    expect(firstResponse.headers.get('cache-control')).toBe('no-store, max-age=0, must-revalidate')
     expect(secondResponse.headers.get('x-voucha-cache')).toBe('DISPATCHED')
     expect(fetchSpy).toHaveBeenCalledTimes(2)
   })

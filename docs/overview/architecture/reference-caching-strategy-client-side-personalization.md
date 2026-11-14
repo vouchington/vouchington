@@ -15,8 +15,11 @@ All user preferences are stored in `localStorage` -- no cookies, no server-side 
 Architecture: `web/lib/preferences/` -- shared types/defaults, localStorage read/write, React context providers, and a blocking theme script to prevent flash of wrong theme.
 
 HTTP API responses are a separate concern from preference storage. Anonymous optional-auth JSON is
-publicly cacheable, but its outer response varies on `Cookie` and `Authorization`. After login, the
-same browser URL is fetched as an authenticated variant and the Worker bypasses its shared cache.
+shared at the edge, and cookie-free client responses remain publicly cacheable with `Cookie` and
+`Authorization` in their outer `Vary`. When the gateway delivers newly minted session cookies, only
+that final client response becomes no-store; the cookie-free shared entry remains reusable. After
+login, the same browser URL is fetched as an authenticated variant and the Worker bypasses its
+shared cache.
 
 The Cloudflare Worker owns HTTP cache lifetimes. Origins signal cacheability with plain `public`
 for cacheable anonymous responses and `private, no-store` for authenticated responses; they do not
@@ -69,7 +72,10 @@ despite the per-request CSP nonce. What's still excluded from the edge cache:
   would replay a previous provider's callback params to the client-side relay script
 - **Admin routes**: bypass unconditionally regardless of auth state, to prevent cross-user leakage
   if JWT verification is temporarily unavailable
-- **Responses with `Set-Cookie`**: Not safe to cache publicly
+- **Responses with `Set-Cookie`**: Origin cookies exclude a response from the shared edge cache.
+  Gateway-minted session cookies are appended after the shared lookup, and their final response is
+  no-store for browsers and downstream intermediaries. Cookie delivery does not bypass anonymous
+  edge caching or change its lifetime.
 - **Non-2xx responses**: Only successful responses are cached; 4xx/5xx responses are also marked
   no-store before returning to the client
 - **Write operations**: POST, PATCH, PUT, DELETE requests

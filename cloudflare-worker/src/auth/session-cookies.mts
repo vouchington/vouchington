@@ -3,7 +3,7 @@ import {
   serializeSessionCookie,
   sessionCookieAttributes,
 } from '@ts-shared/session-jwt'
-import { appendHeaders } from '@vouchington/edge'
+import { appendHeaders, NO_STORE_HEADERS, withHeaders } from '@vouchington/edge'
 import type { EnsuredSession } from './session-mint.mts'
 
 export function withEdgeSessionCookies(
@@ -25,5 +25,7 @@ export function withEdgeSessionCookies(
       serializeSessionCookie('st', edgeSession.st, sessionCookieAttributes(secure, edgeSession.dc)),
     ])
   }
-  return appendHeaders(response, setCookies)
+  if (setCookies.length === 0) return response
+  // The shared cache entry stays public; only this visitor's cookie-bearing response is no-store.
+  return withHeaders(appendHeaders(response, setCookies), NO_STORE_HEADERS)
 }
