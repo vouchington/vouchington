@@ -1,21 +1,24 @@
 import { expect, it, describe } from 'vitest'
-import { buildTopicSearchQuery } from './query-builder.mts'
+import { buildTopicSearchQueryBody } from './query-builder.mts'
 
 describe('query-builder', () => {
   const testEmbedding = Array.from({ length: 1024 }, (_, i) => ((i % 7) + 1) / 10)
 
-  it('buildTopicSearchQuery includes relevance_tier in SELECT only for sort=relevance with text search', () => {
-    const relevanceWithSearch = buildTopicSearchQuery({ text_search_query: 'amex' }, 'relevance')
-    const relevanceWithoutSearch = buildTopicSearchQuery({}, 'relevance')
-    const bestWithSearch = buildTopicSearchQuery({ text_search_query: 'amex' }, 'best')
+  it('buildTopicSearchQueryBody includes relevance_tier in SELECT only for sort=relevance with text search', () => {
+    const relevanceWithSearch = buildTopicSearchQueryBody(
+      { text_search_query: 'amex' },
+      'relevance',
+    )
+    const relevanceWithoutSearch = buildTopicSearchQueryBody({}, 'relevance')
+    const bestWithSearch = buildTopicSearchQueryBody({ text_search_query: 'amex' }, 'best')
 
     expect(relevanceWithSearch.sql).toContain('tier_calc.relevance_tier')
     expect(relevanceWithoutSearch.sql).not.toContain('tier_calc.relevance_tier')
     expect(bestWithSearch.sql).not.toContain('tier_calc.relevance_tier')
   })
 
-  it('buildTopicSearchQuery supports semantic-only relevance search', () => {
-    const query = buildTopicSearchQuery(
+  it('buildTopicSearchQueryBody supports semantic-only relevance search', () => {
+    const query = buildTopicSearchQueryBody(
       {
         semantic_search_query: 'amex',
         semanticSearchEmbedding: testEmbedding,
@@ -34,8 +37,8 @@ describe('query-builder', () => {
     expect(query.sql).toContain('ORDER BY ranking_score DESC, t.id DESC')
   })
 
-  it('buildTopicSearchQuery supports similar_post_id and similar_topic_id filters', () => {
-    const query = buildTopicSearchQuery(
+  it('buildTopicSearchQueryBody supports similar_post_id and similar_topic_id filters', () => {
+    const query = buildTopicSearchQueryBody(
       {
         similar_post_id: 'post-123',
         similar_topic_id: 'topic-123',
@@ -56,9 +59,9 @@ describe('query-builder', () => {
     expect(query.sql).toContain('t.id <> ?')
   })
 
-  it('buildTopicSearchQuery supports similar_rss_feed_item_id filters', () => {
+  it('buildTopicSearchQueryBody supports similar_rss_feed_item_id filters', () => {
     const rssFeedItemId = '123e4567-e89b-12d3-a456-426614174000'
-    const query = buildTopicSearchQuery(
+    const query = buildTopicSearchQueryBody(
       {
         similar_rss_feed_item_id: rssFeedItemId,
       },
@@ -73,8 +76,8 @@ describe('query-builder', () => {
     expect(query.values).toContain(rssFeedItemId)
   })
 
-  it('buildTopicSearchQuery supports hybrid text + semantic search and keeps tier relevance ordering', () => {
-    const query = buildTopicSearchQuery(
+  it('buildTopicSearchQueryBody supports hybrid text + semantic search and keeps tier relevance ordering', () => {
+    const query = buildTopicSearchQueryBody(
       {
         text_search_query: 'amex',
         semantic_search_query: 'amex',
@@ -95,26 +98,29 @@ describe('query-builder', () => {
     expect(query.sql).not.toContain('ORDER BY ranking_score DESC, t.id DESC')
   })
 
-  it('buildTopicSearchQuery includes LATERAL tier join only for sort=relevance with text search', () => {
-    const relevanceWithSearch = buildTopicSearchQuery({ text_search_query: 'amex' }, 'relevance')
-    const relevanceWithoutSearch = buildTopicSearchQuery({}, 'relevance')
-    const bestWithSearch = buildTopicSearchQuery({ text_search_query: 'amex' }, 'best')
+  it('buildTopicSearchQueryBody includes LATERAL tier join only for sort=relevance with text search', () => {
+    const relevanceWithSearch = buildTopicSearchQueryBody(
+      { text_search_query: 'amex' },
+      'relevance',
+    )
+    const relevanceWithoutSearch = buildTopicSearchQueryBody({}, 'relevance')
+    const bestWithSearch = buildTopicSearchQueryBody({ text_search_query: 'amex' }, 'best')
 
     expect(relevanceWithSearch.sql).toContain('CROSS JOIN LATERAL')
     expect(relevanceWithoutSearch.sql).not.toContain('CROSS JOIN LATERAL')
     expect(bestWithSearch.sql).not.toContain('CROSS JOIN LATERAL')
   })
 
-  it('buildTopicSearchQuery ignores whitespace-only text_search_query', () => {
-    const query = buildTopicSearchQuery({ text_search_query: '   ' }, 'relevance')
+  it('buildTopicSearchQueryBody ignores whitespace-only text_search_query', () => {
+    const query = buildTopicSearchQueryBody({ text_search_query: '   ' }, 'relevance')
 
     expect(query.sql).not.toContain('CROSS JOIN LATERAL')
     expect(query.sql).not.toContain('ILIKE')
     expect(query.sql).toContain('ORDER BY t.id DESC')
   })
 
-  it('buildTopicSearchQuery trims text_search_query for LATERAL relevance tier classification', () => {
-    const query = buildTopicSearchQuery({ text_search_query: ' apple ' }, 'relevance')
+  it('buildTopicSearchQueryBody trims text_search_query for LATERAL relevance tier classification', () => {
+    const query = buildTopicSearchQueryBody({ text_search_query: ' apple ' }, 'relevance')
 
     const escapedPrefix = 'apple'
     const escapedContains = '%apple%'
@@ -125,16 +131,16 @@ describe('query-builder', () => {
     expect(query.values.filter(value => value === escapedContains).length).toBe(2)
   })
 
-  it('buildTopicSearchQuery tier-1 prefix classification includes slug prefix matches', () => {
-    const query = buildTopicSearchQuery({ text_search_query: 'amex' }, 'relevance')
+  it('buildTopicSearchQueryBody tier-1 prefix classification includes slug prefix matches', () => {
+    const query = buildTopicSearchQueryBody({ text_search_query: 'amex' }, 'relevance')
 
     expect(query.sql).toContain("OR t.slug ILIKE ? || '%'")
   })
 
-  it('buildTopicSearchQuery adds composite keyset WHERE clause for sort=relevance (tier/id)', () => {
+  it('buildTopicSearchQueryBody adds composite keyset WHERE clause for sort=relevance (tier/id)', () => {
     const tier = 1
     const id = '123e4567-e89b-12d3-a456-426614174000'
-    const query = buildTopicSearchQuery(
+    const query = buildTopicSearchQueryBody(
       {
         text_search_query: 'amex',
         tier_after: tier,
@@ -149,10 +155,10 @@ describe('query-builder', () => {
     expect(query.values).toContain(id)
   })
 
-  it('buildTopicSearchQuery adds composite keyset WHERE clause for sort=best (score/id)', () => {
+  it('buildTopicSearchQueryBody adds composite keyset WHERE clause for sort=best (score/id)', () => {
     const score = 0.42
     const id = '123e4567-e89b-12d3-a456-426614174000'
-    const query = buildTopicSearchQuery(
+    const query = buildTopicSearchQueryBody(
       {
         score_lt: score,
         id_lt: id,
@@ -165,12 +171,12 @@ describe('query-builder', () => {
     expect(query.values).toContain(id)
   })
 
-  it('buildTopicSearchQuery escapes LIKE metacharacters in all generated patterns', () => {
+  it('buildTopicSearchQueryBody escapes LIKE metacharacters in all generated patterns', () => {
     const textSearchQuery = '100%_\\cards'
     const escaped = '100\\%\\_\\\\cards'
     const escapedContains = `%${escaped}%`
     const unescapedContains = `%${textSearchQuery}%`
-    const query = buildTopicSearchQuery({ text_search_query: textSearchQuery }, 'relevance')
+    const query = buildTopicSearchQueryBody({ text_search_query: textSearchQuery }, 'relevance')
 
     const escapedPrefixCount = query.values.filter(value => value === escaped).length
     const escapedContainsCount = query.values.filter(value => value === escapedContains).length
@@ -181,17 +187,20 @@ describe('query-builder', () => {
     expect(query.values).not.toContain(unescapedContains)
   })
 
-  it('buildTopicSearchQuery applies hashtag_topic_ids as direct id filter', () => {
-    const query = buildTopicSearchQuery({ hashtag_topic_ids: ['id-one', 'id-two'] }, 'new')
+  it('buildTopicSearchQueryBody applies hashtag_topic_ids as direct id filter', () => {
+    const query = buildTopicSearchQueryBody({ hashtag_topic_ids: ['id-one', 'id-two'] }, 'new')
     expect(query.sql).toContain('t.id = ANY(?)')
     expect(query.values).toContainEqual(['id-one', 'id-two'])
   })
 
-  it('buildTopicSearchQuery ORDER BY changes based on sort mode', () => {
-    const relevanceWithSearch = buildTopicSearchQuery({ text_search_query: 'amex' }, 'relevance')
-    const relevanceWithoutSearch = buildTopicSearchQuery({}, 'relevance')
-    const newest = buildTopicSearchQuery({}, 'new')
-    const best = buildTopicSearchQuery({}, 'best')
+  it('buildTopicSearchQueryBody ORDER BY changes based on sort mode', () => {
+    const relevanceWithSearch = buildTopicSearchQueryBody(
+      { text_search_query: 'amex' },
+      'relevance',
+    )
+    const relevanceWithoutSearch = buildTopicSearchQueryBody({}, 'relevance')
+    const newest = buildTopicSearchQueryBody({}, 'new')
+    const best = buildTopicSearchQueryBody({}, 'best')
 
     expect(relevanceWithSearch.sql).toContain('ORDER BY')
     expect(relevanceWithSearch.sql).toContain('tier_calc.relevance_tier ASC')

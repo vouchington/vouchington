@@ -9,11 +9,11 @@ import type { PostFeedPageQueryOptions } from './page-options.mts'
 const CURSOR_TIME_FORMAT = `'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'`
 
 /** Inspect sort keys first; membership and viewer eligibility probe only those delivery rows. */
-export function buildTopicPostFeedPageQuery(
+export function buildTopicPostFeedPageQueryBody(
   options: PostFeedPageQueryOptions,
   inspectedRowCap: number,
 ): SQLStatement {
-  const query = sql`/* getPostFeedIds */ WITH `
+  const query = sql`WITH `
   appendPostFeedRelationCTEs(query, options)
   // Both the result page and continuation tail consume this same independently bounded walk.
   query.append(sql`, inspected_deliveries AS MATERIALIZED (`)

@@ -10,7 +10,7 @@ import type { PostFeedPageQueryOptions } from './page-options.mts'
 const BEFORE_FIRST_DELIVERY_ID = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
 
 /** Walk raw delivery keys in rank order; eligibility never expands the bounded input. */
-export function buildRankedPostFeedPageQuery(
+export function buildRankedPostFeedPageQueryBody(
   options: PostFeedPageQueryOptions,
   inspectedRowCap: number,
 ): SQLStatement {
@@ -26,7 +26,7 @@ export function buildRankedPostFeedPageQuery(
   const shareRecipient = options.includeSharedPosts
     ? sql`share.recipient_user_id = ${options.currentUserId}`
     : sql`FALSE`
-  const query = sql`/* getPostFeedIds */ WITH RECURSIVE `
+  const query = sql`WITH RECURSIVE `
   appendPostFeedRelationCTEs(query, options)
   query
     .append(sql`, ranked_delivery_walk AS (

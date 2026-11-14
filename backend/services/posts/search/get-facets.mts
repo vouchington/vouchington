@@ -11,7 +11,7 @@ import {
   toCappedCount,
   type CappedCount,
 } from '@services/users/profile-count-cap'
-import sql, { type SQLStatement } from 'sql-template-strings'
+import sql from 'sql-template-strings'
 
 type PostSearchFacets = {
   total_count: number
@@ -71,60 +71,53 @@ function profileCountOptions(
 }
 
 /** Review count. The type literal is fixed in this statement so its partial index can be proved. */
-function buildReviewProfileCount(
+async function readReviewProfileCount(
   userId: string,
   currentUser: PrivateUser | undefined,
   cap: number,
-): SQLStatement {
+): Promise<CappedCount> {
   const query = sql`/* getUserPostTypeFacetsReview */
     -- cross-partition: a profile total counts this author's reviews across id ranges
     SELECT COUNT(*)::int AS review_count FROM (`
   query.append(buildPostSearchQuery(currentUser, profileCountOptions(userId, 'review', cap)))
   query.append(sql`) AS review_posts`)
-  return query
+  const { rows } = await read(query)
+  return toCappedCount(countFrom(rows, 'review_count'), cap)
 }
 
 /** Discussion count. The type literal is fixed in this statement so its partial index can be proved. */
-function buildDiscussionProfileCount(
+async function readDiscussionProfileCount(
   userId: string,
   currentUser: PrivateUser | undefined,
   cap: number,
-): SQLStatement {
+): Promise<CappedCount> {
   const query = sql`/* getUserPostTypeFacetsDiscussion */
     -- cross-partition: a profile total counts this author's discussions across id ranges
     SELECT COUNT(*)::int AS discussion_count FROM (`
   query.append(buildPostSearchQuery(currentUser, profileCountOptions(userId, 'discussion', cap)))
   query.append(sql`) AS discussion_posts`)
-  return query
+  const { rows } = await read(query)
+  return toCappedCount(countFrom(rows, 'discussion_count'), cap)
 }
 
 /** Comment count. The type literal is fixed in this statement so its partial index can be proved. */
-function buildCommentProfileCount(
+async function readCommentProfileCount(
   userId: string,
   currentUser: PrivateUser | undefined,
   cap: number,
-): SQLStatement {
+): Promise<CappedCount> {
   const query = sql`/* getUserPostTypeFacetsComment */
     -- cross-partition: a profile total counts this author's comments across id ranges
     SELECT COUNT(*)::int AS comment_count FROM (`
   query.append(buildPostSearchQuery(currentUser, profileCountOptions(userId, 'comment', cap)))
   query.append(sql`) AS comment_posts`)
-  return query
+  const { rows } = await read(query)
+  return toCappedCount(countFrom(rows, 'comment_count'), cap)
 }
 
 function countFrom(rows: readonly Record<string, unknown>[], column: string): number {
   const value = rows[0]?.[column]
   return typeof value === 'number' || typeof value === 'string' ? Number(value) : 0
-}
-
-/** Each type has its own author-index scan; read() preserves an active primary-read scope. */
-async function readProfileCount(
-  statement: SQLStatement,
-  column: string,
-  cap: number,
-): Promise<CappedCount> {
-  const { rows } = await read(statement)
-  return toCappedCount(countFrom(rows, column), cap)
 }
 
 export async function getUserPostTypeFacets(
@@ -134,13 +127,9 @@ export async function getUserPostTypeFacets(
   // The three types fix the fanout at three pooled reads, regardless of the author's post count.
   const cap = getProfileCountCap()
   const [review, discussion, comment] = await Promise.all([
-    readProfileCount(buildReviewProfileCount(userId, currentUser, cap), 'review_count', cap),
-    readProfileCount(
-      buildDiscussionProfileCount(userId, currentUser, cap),
-      'discussion_count',
-      cap,
-    ),
-    readProfileCount(buildCommentProfileCount(userId, currentUser, cap), 'comment_count', cap),
+    readReviewProfileCount(userId, currentUser, cap),
+    readDiscussionProfileCount(userId, currentUser, cap),
+    readCommentProfileCount(userId, currentUser, cap),
   ])
   return { review, discussion, comment }
 }

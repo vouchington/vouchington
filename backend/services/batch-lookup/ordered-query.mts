@@ -21,9 +21,9 @@ type OrderedBatchRow = {
 type OrderedIdentifierBatchSpec<TResult, TType extends BatchIdentifierType, TOptions> = {
   normalize: (input: string, index: number) => Omit<NormalizedBatchIdentifier<TType>, 'index'>
   partitions: readonly OrderedBatchPartition<TType>[]
-  statement: (inputCtes: string) => string
+  statementBody: (inputCtes: string) => string
   readRows: (
-    sql: string,
+    statementBody: string,
     values: unknown[],
     options: TOptions,
   ) => Promise<readonly (TResult & OrderedBatchRow)[]>
@@ -51,7 +51,7 @@ export async function queryOrderedIdentifierBatch<
       inputs: grouped.get(partition.type) ?? [],
     })),
   )
-  const rows = await spec.readRows(spec.statement(inputCtes.ctes), inputCtes.values, options)
+  const rows = await spec.readRows(spec.statementBody(inputCtes.ctes), inputCtes.values, options)
 
   return scatterOrderedRows(identifiers.length, rows, row => {
     const { input_order: _inputOrder, ...data } = row
