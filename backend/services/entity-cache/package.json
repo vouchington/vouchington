@@ -28,7 +28,6 @@
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/bloom-filters": "workspace:^",
-    "@queues/cache-purge": "workspace:^",
     "@services/batch-lookup": "workspace:^",
     "@services/bloom-filter-config": "workspace:^",
     "@ts-shared/cache": "workspace:^",

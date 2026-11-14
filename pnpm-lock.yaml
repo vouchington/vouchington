@@ -6851,9 +6851,6 @@ importers:
       '@queues/bloom-filters':
         specifier: workspace:^
         version: link:../../queues/bloom-filters
-      '@queues/cache-purge':
-        specifier: workspace:^
-        version: link:../../queues/cache-purge
       '@services/batch-lookup':
         specifier: workspace:^
         version: link:../batch-lookup
