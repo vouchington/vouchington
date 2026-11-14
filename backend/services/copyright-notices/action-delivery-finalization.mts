@@ -14,8 +14,9 @@ import {
 import { syncCopyrightIncidentsAfterStatutoryRestoreInTransaction } from './statutory-restoration-incidents.mts'
 
 /**
- * Completes a delivered action. `denied` means a restore was denied again here, with its
- * legal-removal eviction receipted; `stale` and `not_claimed` leave any denial to the caller.
+ * Completes a delivered action: true when applied. `denied` means a restore was denied again
+ * here, with its legal-removal eviction receipted; false (stale or lease lost) leaves any
+ * denial to the caller.
  */
 export async function finalizeCopyrightActionAfterDelivery(
   intentId: string,
@@ -23,12 +24,12 @@ export async function finalizeCopyrightActionAfterDelivery(
   action: 'withhold' | 'restore',
   now: Date,
   deliveredTuple: { placementId: string; revision: number; imageId: string },
-): Promise<'applied' | 'denied' | 'stale' | 'not_claimed'> {
+): Promise<boolean | 'denied'> {
   await using transaction = await beginTransaction()
   const legal = await lockCopyrightActionDelivery(intentId, leaseToken, transaction)
   if (!legal) {
     await transaction.commit()
-    return 'not_claimed'
+    return false
   }
   const current = await getImagePlacementForCopyright(legal.placement_id, {
     query: transaction,
@@ -44,7 +45,7 @@ export async function finalizeCopyrightActionAfterDelivery(
       query: transaction,
     })
     await transaction.commit()
-    return 'stale'
+    return false
   }
   const deny = (outcome: 'blocked' | 'stale', failureMessage: string, tuple = deliveredTuple) =>
     denyRestoreThenComplete({
@@ -55,7 +56,7 @@ export async function finalizeCopyrightActionAfterDelivery(
       completedAt: now,
       failureMessage,
       transaction,
-    }).then(result => (result === 'completed' ? 'denied' : 'not_claimed'))
+    }).then(result => (result === 'completed' ? ('denied' as const) : false))
   if (
     !current ||
     current.deleted ||
@@ -75,7 +76,7 @@ export async function finalizeCopyrightActionAfterDelivery(
       query: transaction,
     })
     await transaction.commit()
-    return 'stale'
+    return false
   }
   if (action === 'restore' && (await restoreIsBlocked(legal, now, transaction))) {
     return await deny(
@@ -92,7 +93,7 @@ export async function finalizeCopyrightActionAfterDelivery(
     transaction,
   })
   await transaction.commit()
-  return 'applied'
+  return true
 }
 
 async function completeCopyrightActionAndInvalidate(input: {
