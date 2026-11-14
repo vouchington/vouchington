@@ -12,11 +12,10 @@ const getSnapshotsCached = createSearchCache(
     // Primary reads prevent a lagging replica from resurrecting content after legal eviction.
     const { rows } = await write<Post>(sql`/* getPublicRssPostSnapshots */
       SELECT snapshot.*
-      FROM posts candidate
-      JOIN view_public_post_eligibility eligibility ON eligibility.post_id = candidate.id
-      JOIN view_posts snapshot ON snapshot.id = candidate.id
-      WHERE candidate.id = ANY(${postIds}::uuid[])
-      ORDER BY array_position(${postIds}::uuid[], candidate.id)
+      FROM view_posts snapshot
+      JOIN view_public_post_eligibility eligibility ON eligibility.post_id = snapshot.id
+      WHERE snapshot.id = ANY(${postIds}::uuid[])
+      ORDER BY array_position(${postIds}::uuid[], snapshot.id)
     `)
     return rows
   },

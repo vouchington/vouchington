@@ -10,6 +10,7 @@ import { runFeedAndMetricScenarios } from './run-scenarios/feed-and-metrics.mts'
 import { runModerationRerunOutcomeScenarios } from './run-scenarios/moderation-rerun-outcomes.mts'
 import { runHeavyFollowScenarios } from './run-scenarios/heavy-follows.mts'
 import { runHotPathLoaderScenarios } from './run-scenarios/hot-path-loaders.mts'
+import { runPublicRssPostSnapshotScenarios } from './run-scenarios/public-rss-post-snapshots.mts'
 import { runStorySearchScenarios } from './run-scenarios/story-search.mts'
 import { runMembershipWorkSelectionScenarios } from './run-scenarios/membership-work-selection.mts'
 import { runEngagementEmailRecipientScenarios } from './run-scenarios/engagement-email-recipients.mts'
@@ -64,6 +65,7 @@ export const EARLY_RUNNERS: readonly (() => Promise<unknown>)[] = [
   seedAndAnalyzeAgentModerationRetention,
   runAgentModerationRetentionScenarios,
   runHotPathLoaderScenarios,
+  runPublicRssPostSnapshotScenarios,
   // Hidden-feed story search leaves 240 story_posts rows. Profile collection pages join
   // that table, and the generic plan sorts once those rows exist.
   runStorySearchScenarios,
