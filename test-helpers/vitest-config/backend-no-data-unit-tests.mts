@@ -1,6 +1,7 @@
 // Dependency-injected unit tests need neither database bootstrap nor module mocking.
 export const backendNoDataUnitTestFiles = [
   'backend/queues/content-analysis/payload/upload-cleanup.test.mts',
+  'backend/services/localization/compile-catalog.no-data.test.mts',
   'backend/services/jwt-session/client-binding.test.mts',
   'backend/services/jwt-session/verify-request-memo.test.mts',
   'backend/services/sitemaps/generation-page.no-data.test.mts',
