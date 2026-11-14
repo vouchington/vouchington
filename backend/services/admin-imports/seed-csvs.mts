@@ -121,14 +121,15 @@ async function importSeedRows(
 }
 
 /** The seed script imports the shipped catalog; callers may supply an actor and a bounded batch. */
-export async function seedTopicsFromCsvs(
-  options: { actor?: PrivateUser; rows?: Record<string, string>[] } = {},
-): Promise<SeedCsvsResult> {
+export async function seedTopicsFromCsvs(options: {
+  actor?: PrivateUser
+  rows: Record<string, string>[]
+}): Promise<SeedCsvsResult> {
   let actor: PrivateUser | null | undefined = options.actor
   if (!actor) {
     const systemUser = await upsertSystemUser('system')
     actor = await getPrivateUserByAny(systemUser.id, { readOnly: false })
     if (!actor) throw new Error('BUG: system seed actor not found after upsert')
   }
-  return seedTopicsFromRows(actor, options.rows ?? readSeedCsvRows())
+  return seedTopicsFromRows(actor, options.rows)
 }

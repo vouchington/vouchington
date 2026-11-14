@@ -71,7 +71,11 @@ describe('renderPsqlDocs', () => {
     using root = mkdtempDisposableSync(join(tmpdir(), 'render-psql-docs-'))
 
     await expect(
-      renderPsqlDocs({ outputDir: join(root.path, 'out'), schemaDir: join(root.path, 'missing') }),
+      renderPsqlDocs({
+        outputDir: join(root.path, 'out'),
+        schemaDir: join(root.path, 'missing'),
+        schemaJsonPath: join(root.path, 'schema.json'),
+      }),
     ).rejects.toThrow('Cannot read PostgreSQL schema Markdown directory')
   })
 
@@ -88,7 +92,13 @@ describe('renderPsqlDocs', () => {
   })
 
   it('returns exit code 2 and prints usage when no output directory is given', async () => {
-    await expect(main([])).resolves.toBe(2)
+    using root = mkdtempDisposableSync(join(tmpdir(), 'render-psql-docs-'))
+    const schemaPaths = {
+      schemaDir: join(root.path, 'schema-snapshot'),
+      schemaJsonPath: join(root.path, 'schema.json'),
+    }
+
+    await expect(main([], schemaPaths)).resolves.toBe(2)
   })
 })
 

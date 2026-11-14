@@ -76,14 +76,14 @@ async function schemaMarkdownFiles(schemaDir: string): Promise<Map<string, strin
 
 type RenderPsqlDocsOptions = {
   outputDir: string
-  schemaDir?: string
-  schemaJsonPath?: string
+  schemaDir: string
+  schemaJsonPath: string
 }
 
 export async function renderPsqlDocs({
   outputDir,
-  schemaDir = DEFAULT_SCHEMA_DIR,
-  schemaJsonPath = DEFAULT_SCHEMA_JSON,
+  schemaDir,
+  schemaJsonPath,
 }: RenderPsqlDocsOptions): Promise<void> {
   const markdownFiles = await schemaMarkdownFiles(schemaDir)
   const json = await readSchemaSnapshotFile(schemaJsonPath)
@@ -134,17 +134,22 @@ export async function renderPsqlDocs({
 
 export function main(
   argv: string[],
-  schemaPaths: Pick<RenderPsqlDocsOptions, 'schemaDir' | 'schemaJsonPath'> = {},
+  schemaPaths: Pick<RenderPsqlDocsOptions, 'schemaDir' | 'schemaJsonPath'>,
 ): Promise<number> {
   return runRenderDocsCli(argv, 'Usage: render-psql-docs.mts <output-dir>', outputDir =>
     renderPsqlDocs({
       outputDir,
-      schemaDir: schemaPaths.schemaDir ?? DEFAULT_SCHEMA_DIR,
-      schemaJsonPath: schemaPaths.schemaJsonPath ?? DEFAULT_SCHEMA_JSON,
+      schemaDir: schemaPaths.schemaDir,
+      schemaJsonPath: schemaPaths.schemaJsonPath,
     }),
   )
 }
 
 if (import.meta.main) {
-  process.exit(await main(process.argv.slice(2)))
+  process.exit(
+    await main(process.argv.slice(2), {
+      schemaDir: DEFAULT_SCHEMA_DIR,
+      schemaJsonPath: DEFAULT_SCHEMA_JSON,
+    }),
+  )
 }

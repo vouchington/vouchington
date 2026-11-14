@@ -2,7 +2,7 @@
 // vote-backed relation writes below (topic tagging) depend on it.
 import '@backend/service-registrations'
 import { refreshMaterializedView } from '@data-stores/psql/migration-runner/refresh-materialized-view'
-import { seedTopicsFromCsvs } from '@services/admin-imports/seed-csvs'
+import { readSeedCsvRows, seedTopicsFromCsvs } from '@services/admin-imports/seed-csvs'
 import { seedArticles } from './articles.mts'
 import { seedCopyright } from './copyright.mts'
 
@@ -10,7 +10,7 @@ import { seedCopyright } from './copyright.mts'
 // seeded by config-driven generators that run on every `db:migrate`, including in
 // production. Only sample/dev data belongs here.
 export default async function main() {
-  await seedTopicsFromCsvs()
+  await seedTopicsFromCsvs({ rows: readSeedCsvRows() })
   await seedArticles()
   await seedCopyright()
   // Trending topics are served from a view that the scheduled refresh normally fills.
