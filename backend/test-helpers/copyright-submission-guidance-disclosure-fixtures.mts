@@ -2,11 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import { createTestCopyrightImageFixture } from './copyright-surface-target-fixtures.mts'
 import { createTestLiftNotice } from './copyright-administrator-lift-fixtures.mts'
 import { getTestPrivateUserById } from './entities/users.mts'
-import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from './services/copyright-notices/email-ses-verdicts.mts'
-import {
-  createCopyrightEmailIntake,
-  recordCopyrightEmailParse,
-} from '../services/copyright-notices/index.mts'
+import { createCommittedCopyrightEmailIntake } from './copyright-email-committed-intake.mts'
 import { admitCopyrightEmailCorrespondence } from '../services/copyright-notices/email-correspondence-admission.mts'
 import { linkCopyrightEmailIntakeToNotice } from './copyright-email-intake-link.mts'
 import { createCopyrightPosterNoticesInTransaction } from '../services/copyright-notices/restriction-poster-notices.mts'
@@ -35,24 +31,10 @@ export async function admitTestSubmissionGuidanceEmailCounter() {
   const scene = await createTestSubmissionGuidanceCounterCase({
     claimantEmail: `claimant-${crypto.randomUUID()}@example.test`,
   })
-  const sesMessageId = `guidance-counter-${crypto.randomUUID()}`
-  const { intake } = await createCopyrightEmailIntake({
-    sesMessageId,
-    receivedAt: new Date(),
-    rawStorageKey: `email/${sesMessageId}/original.eml`,
-    rawSha256: Buffer.alloc(32, 7),
-    rawMimeType: 'message/rfc822',
-    rawByteSize: 128,
-    sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
-  })
-  await recordCopyrightEmailParse(intake, {
-    status: 'succeeded',
+  const intake = await createCommittedCopyrightEmailIntake({
     fromEmail: `poster-${crypto.randomUUID()}@example.test`,
     subject: 'Counter-notice',
     bodyText: 'Please review my counter-notice.',
-    messageId: `<${sesMessageId}@example.test>`,
-    replyReferences: [],
-    attachments: [],
   })
   await linkCopyrightEmailIntakeToNotice({
     intakeId: intake.id,

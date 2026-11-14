@@ -2,7 +2,10 @@ import { randomUUID } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
-import { copyrightEmailIntakePurpose } from '../services/copyright-notices/email-intakes.mts'
+import {
+  copyrightEmailIntakePurpose,
+  type CopyrightEmailIntake,
+} from '../services/copyright-notices/email-intakes.mts'
 import {
   buildCopyrightEmailThreadReferenceRows,
   encryptCopyrightEmailReplyHeaders,
@@ -16,10 +19,16 @@ export async function createCommittedCopyrightEmailIntake({
   messageId = `<${randomUUID()}@example.test>`,
   inReplyTo = [],
   replyReferences = [],
+  fromEmail = `claimant-${randomUUID()}@example.test`,
+  subject = 'Copyright complaint',
+  bodyText = 'This is a copyright complaint.',
 }: {
   messageId?: string
   inReplyTo?: string[]
   replyReferences?: string[]
+  fromEmail?: string
+  subject?: string
+  bodyText?: string
 } = {}) {
   const intake = await createUnparsedCopyrightEmailIntake()
   const purpose = copyrightEmailIntakePurpose(intake.amazon_ses_message_id)
@@ -32,9 +41,9 @@ export async function createCommittedCopyrightEmailIntake({
       copyright_notice_email_intake_id, status, sender_email_ciphertext,
       subject_ciphertext, body_ciphertext, message_id_ciphertext, reply_references_ciphertext
     ) VALUES (
-      ${intake.id}, 'succeeded', ${encryptSecret(`claimant-${randomUUID()}@example.test`, purpose)},
-      ${encryptSecret('Copyright complaint', purpose)},
-      ${encryptSecret('This is a copyright complaint.', purpose)},
+      ${intake.id}, 'succeeded', ${encryptSecret(fromEmail, purpose)},
+      ${encryptSecret(subject, purpose)},
+      ${encryptSecret(bodyText, purpose)},
       ${encryptSecret(messageId, purpose)},
       ${encryptCopyrightEmailReplyHeaders({ inReplyTo, references: replyReferences }, purpose)}
     )`)
@@ -55,18 +64,22 @@ export async function createCommittedCopyrightEmailIntake({
   return intake
 }
 
-/** The root was approved and its waiting reply linked before the intermediate writer arrives. */
-export async function createCommittedWaitingCopyrightEmailThread(reviewedById: string) {
-  const rootMessageId = `<${randomUUID()}@example.test>`
-  const intermediateMessageId = `<${randomUUID()}@example.test>`
-  const [reply, root, noticeId] = await Promise.all([
-    createCommittedCopyrightEmailIntake({
-      inReplyTo: [intermediateMessageId],
-      replyReferences: [rootMessageId],
-    }),
-    createCommittedCopyrightEmailIntake({ messageId: rootMessageId }),
-    createCopyrightNoticeForManualAssociation(),
-  ])
+/** Commit the approved root without exercising an unrelated SERIALIZABLE promotion. */
+export async function createCommittedCopyrightEmailRoot(
+  reviewedById: string,
+  rootMessageId = `<${randomUUID()}@example.test>`,
+) {
+  const root = await createCommittedCopyrightEmailIntake({ messageId: rootMessageId })
+  const noticeId = await approveCommittedCopyrightEmailRoot(root, reviewedById)
+  return { rootMessageId, rootIntakeId: root.id, noticeId }
+}
+
+/** Attach the committed approval prerequisite to an existing owned parse fixture. */
+export async function approveCommittedCopyrightEmailRoot(
+  root: CopyrightEmailIntake,
+  reviewedById: string,
+) {
+  const noticeId = await createCopyrightNoticeForManualAssociation()
   const rationale = encryptSecret(
     'The root email is a complete statutory notice.',
     copyrightEmailIntakePurpose(root.amazon_ses_message_id),
@@ -86,17 +99,34 @@ export async function createCommittedWaitingCopyrightEmailThread(reviewedById: s
   await transaction(sql`/* seedCommittedCopyrightEmailRootLinks */
     INSERT INTO copyright_notice_email_intake_notice_links (
       copyright_notice_email_intake_id, copyright_notice_id, link_kind, correspondence_action
-    ) VALUES (${root.id}, ${noticeId}, 'initial', NULL),
-      (${reply.id}, ${noticeId}, 'thread', 'pending')`)
+    ) VALUES (${root.id}, ${noticeId}, 'initial', NULL)`)
+  await transaction.commit()
+  return noticeId
+}
+
+/** The root was approved and its waiting reply linked before the intermediate writer arrives. */
+export async function createCommittedWaitingCopyrightEmailThread(reviewedById: string) {
+  const { rootMessageId, rootIntakeId, noticeId } =
+    await createCommittedCopyrightEmailRoot(reviewedById)
+  const intermediateMessageId = `<${randomUUID()}@example.test>`
+  const reply = await createCommittedCopyrightEmailIntake({
+    inReplyTo: [intermediateMessageId],
+    replyReferences: [rootMessageId],
+  })
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* seedCommittedCopyrightEmailWaitingLink */
+    INSERT INTO copyright_notice_email_intake_notice_links (
+      copyright_notice_email_intake_id, copyright_notice_id, link_kind, correspondence_action
+    ) VALUES (${reply.id}, ${noticeId}, 'thread', 'pending')`)
   await transaction(sql`/* seedCommittedCopyrightEmailWaitingEdge */
     INSERT INTO copyright_notice_email_message_ancestors (
       reply_message_intake_receipt_id, ancestor_message_intake_receipt_id, reference_kind
-    ) VALUES (${reply.id}, ${root.id}, 'references')`)
+    ) VALUES (${reply.id}, ${rootIntakeId}, 'references')`)
   await transaction.commit()
   return {
     rootMessageId,
     intermediateMessageId,
-    rootIntakeId: root.id,
+    rootIntakeId,
     replyIntakeId: reply.id,
     noticeId,
   }
