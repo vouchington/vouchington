@@ -2236,16 +2236,22 @@
           "uiEvidence": [
             "swift-clients/ui/Sources/VouchaFeatures/Settings/SettingsSurface+Membership.swift"
           ],
-          "behaviorTests": []
+          "behaviorTests": [
+            "swift-clients/core/Tests/VouchaCoreTests/NativeMembershipOverviewTests.swift",
+            "swift-clients/core/Tests/VouchaCoreTests/MembershipPurchaseSessionTests.swift"
+          ]
         },
         "dotnet": {
           "status": "present",
           "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/SettingsPage.xaml"],
-          "behaviorTests": []
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Settings/SettingsViewModel.NativeMembershipTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Membership/MembershipPurchaseSessionTests.cs"
+          ]
         }
       },
       "gap": {
-        "summary": "Native clients present plan status but lack store billing and management. Swift and .NET must drop next_processing_at from membership overview models and fixture expectations and accept the provider_unavailable verification reason."
+        "summary": "Native clients present plan status but lack store billing and management."
       }
     },
     {

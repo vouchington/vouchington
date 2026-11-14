@@ -126,8 +126,8 @@ claim.
 ## Membership verification outcomes
 
 The billing feature's verification-outcomes row in `client-feature-parity.json` tracks native adoption.
-Web drops `next_processing_at` from its response type and shared fixtures; Swift and .NET must drop
-it from response models and fixture expectations and accept the `provider_unavailable` reason for
+Web, Swift, and .NET omit `next_processing_at` from their response models and fixture expectations,
+poll pending verifications with client-side backoff, and accept the `provider_unavailable` reason for
 rejected verifications.
 
 REST membership overview and verification reads expose domain outcomes. Queue retry timing is internal;
