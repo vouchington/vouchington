@@ -134,7 +134,7 @@ describe('crawl cleanup retained work', () => {
     const restoreLimits = overrideDynamicConfigFieldsForTest(crawlDispatchConfig, {
       cleanup_batch_size: 1,
       cleanup_max_batches_per_run: 1,
-      cleanup_age_days: 30,
+      cleanup_age_days: 1,
     })
     const fixtureIds: string[] = []
     let queue: Queue | undefined
@@ -194,10 +194,10 @@ describe('crawl cleanup retained work', () => {
       } finally {
         try {
           await queue?.close()
+          await deleteOldInvalidCrawls({ ids: fixtureIds, limit: 3 })
         } finally {
           restoreLimits()
         }
-        await deleteOldInvalidCrawls({ ids: fixtureIds, limit: 3 })
       }
     }
   })

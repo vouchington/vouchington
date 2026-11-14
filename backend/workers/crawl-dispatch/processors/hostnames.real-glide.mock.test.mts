@@ -7,6 +7,8 @@ import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-co
 import { getMaxUUIDv7ForDate } from '@modules/utils'
 import { BACKGROUND_CPU_QUEUE_NAME as QUEUE_NAME } from '@queues/background-cpu/config'
 import { deleteOldInvalidCrawls } from '@services/crawls/cleanup'
+import { crawlDispatchConfig } from '@services/crawls/work-limits'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { addUrl } from '@services/urls/upsert'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
 import {
@@ -219,6 +221,10 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
     expect(await childCount('crawl.crawl_url', { url_id: ids[0] })).toBeGreaterThan(0)
   })
   it('deletes an owned old invalid crawl from PostgreSQL', async () => {
+    const restoreLimits = overrideDynamicConfigFieldsForTest(crawlDispatchConfig, {
+      cleanup_age_days: 1,
+    })
+    onTestFinished(restoreLimits)
     const { url } = await crawlableUrl('old-invalid')
     const { url: otherUrl } = await crawlableUrl('old-invalid-neighbor')
     const crawlId = await insertOldInvalidCrawlForTest(url.id)
@@ -238,6 +244,10 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
     expect(await getCrawlData(otherUrl.id, otherCrawlId)).toEqual(neighbor)
   })
   it('rejects cleanup on a PostgreSQL failure without changing eligible crawls', async () => {
+    const restoreLimits = overrideDynamicConfigFieldsForTest(crawlDispatchConfig, {
+      cleanup_age_days: 1,
+    })
+    onTestFinished(restoreLimits)
     const { url } = await crawlableUrl('invalid-write-failure')
     const { url: otherUrl } = await crawlableUrl('invalid-write-failure-neighbor')
     const crawlId = await insertOldInvalidCrawlForTest(url.id)
