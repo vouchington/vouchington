@@ -16,6 +16,6 @@
     "@voucha/test-helpers": "workspace:^",
     "@vouchington/utils": "^0.12.0",
     "vitest": "^5.1.0",
-    "vouchington-tooling": "^2.0.0"
+    "vouchington-tooling": "^2.0.1"
   }
 }
