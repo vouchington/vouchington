@@ -29,8 +29,8 @@
     "@vouchington/localization-compiler": "^0.3.0"
   },
   "devDependencies": {
-    "@react-email/render": "^2.3.0",
-    "@react-email/ui": "^6.11.10",
+    "@react-email/render": "^2.3.1",
+    "@react-email/ui": "^6.11.11",
     "@ts-shared/languages": "workspace:^",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
@@ -39,7 +39,7 @@
     "esbuild": "^0.28.2",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "react-email": "^6.11.10",
+    "react-email": "^6.11.11",
     "vitest": "^5.1.0"
   }
 }
