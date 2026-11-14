@@ -56,7 +56,7 @@
     "@queues/content-analysis": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/psql": "workspace:^",
-    "@sentry/node": "^11.11.0",
+    "@sentry/node": "^11.12.0",
     "@smithy/core": "^3.40.0",
     "@ts-shared/money": "workspace:^",
     "@ts-shared/url-signing": "workspace:^",
