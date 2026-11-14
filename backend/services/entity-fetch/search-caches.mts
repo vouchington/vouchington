@@ -22,32 +22,20 @@ import {
 } from '@services/entity-cache/anonymous-search-prefixes'
 import { createSearchCache } from '@services/entity-cache/search-cache'
 
-const cachedPostIds = createSearchCache(POST_IDS_ANON_CACHE, (options: PostSearchOptions) =>
-  getPostIds(undefined, options),
+export const getPostIdsCached = createSearchCache(
+  POST_IDS_ANON_CACHE,
+  (options: PostSearchOptions) => getPostIds(undefined, options),
 )
-
-/** HN visibility can change without invalidating an existing anonymous cache entry. */
-export function getPostIdsCached(options: PostSearchOptions) {
-  return options.has_hacker_news_references === undefined
-    ? cachedPostIds(options)
-    : getPostIds(undefined, options)
-}
 
 export const getTopicIdsCached = createSearchCache(
   TOPIC_IDS_ANON_CACHE,
   (options: TopicSearchOptions) => getTopicIds(options),
 )
 
-const cachedRssFeedItems = createSearchCache(
+export const searchRssFeedItemsCached = createSearchCache(
   RSS_FEED_ITEMS_ANON_CACHE,
   (options: SearchRssFeedItemsOptions) => searchRssFeedItems(options),
 )
-
-export function searchRssFeedItemsCached(options: SearchRssFeedItemsOptions) {
-  return options.has_hacker_news_references === undefined
-    ? cachedRssFeedItems(options)
-    : searchRssFeedItems(options)
-}
 
 export const searchCommunitiesCached = createSearchCache(
   COMMUNITIES_ANON_CACHE,

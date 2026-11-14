@@ -30,6 +30,9 @@ const getUserPublicByAnyFromCache = caches.users_public.cacheGetByAny(getPublicU
 const getUserPublicByAnyBatchFromCache =
   caches.users_public.cacheGetByAnyBatch(getPublicUsersByAnyBatch)
 
+// Anonymous reads use the cached public snapshot without a live deletion recheck.
+export const getAnonymousUserPublicByAnyCached = getUserPublicByAnyFromCache
+
 export async function getUserPrivateByAnyCached(identifier: string) {
   return returnActiveCachedUser(await getUserPrivateByAnyFromCache(identifier))
 }

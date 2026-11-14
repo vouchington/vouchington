@@ -24,6 +24,7 @@
     "@jongleberry/vurst-html": "^0.4.3",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@services/entity-cache": "workspace:^",
     "@services/entity-fetch": "workspace:^",
     "@services/entity-links": "workspace:^",
     "@services/markdown": "workspace:^",
@@ -31,7 +32,6 @@
     "@services/rss-feed-items": "workspace:^",
     "@services/rss-feeds": "workspace:^",
     "@services/search-params": "workspace:^",
-    "@services/topics": "workspace:^",
     "@services/users": "workspace:^",
     "@ts-shared/feed-capabilities": "workspace:^",
     "@voucha/config": "workspace:^",
@@ -40,7 +40,9 @@
   },
   "devDependencies": {
     "@services/urls": "workspace:^",
+    "@services/web-search": "workspace:^",
     "@types/http-errors": "^2.0.5",
-    "@voucha/test-helpers": "workspace:^"
+    "@voucha/test-helpers": "workspace:^",
+    "valkyries": "^0.15.0"
   }
 }

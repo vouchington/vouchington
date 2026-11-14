@@ -130,6 +130,7 @@ function validateImplementedComposition(
       'buildViewerPostDiscoveryEligibilityFilter',
     ],
     'public-boundary': ['getPublicPostIds'],
+    'public-snapshot-boundary': ['getPublicRssPostSnapshotsCached'],
     'public-sql': ['buildPublicPostEligibilityFilter'],
     'public-view': [],
     'story-posts-boundary': ['getVisiblePostStoryIdsByStoryIds'],

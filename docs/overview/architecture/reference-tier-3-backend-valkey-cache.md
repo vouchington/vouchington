@@ -51,3 +51,20 @@ Anonymous search entries expire naturally. Playwright global setup clears its te
 browser runs so seeded pages do not see results from an earlier run. `GET /api/v1/urls` requires
 authentication and has no anonymous search cache; single URL and URL hostname entity caches use
 the entity TTL above.
+
+Anonymous RSS, web search, and hashtag resolution reuse backend caches across edge misses.
+RSS description caching includes the author-role lookup used to render trusted HTML.
+Cached publication state is served without a request-time database recheck, including when
+filtering Hacker News references. The Worker owns edge TTL policy; Cache-Tag purging is
+reserved for legal copyright and user deletion, never freshness.
+
+RSS post snapshots bind public eligibility and response content in one database read on cache
+miss. They are isolated from the mutable entity cache: retained search IDs cannot hydrate a
+private edit, while a warm RSS snapshot can continue serving its previously public content.
+Legal removal advances the RSS snapshot namespace before edge purging. The generation is
+read from Valkey's primary and is never advanced for an ordinary edit or a completed restore.
+Copyright withholds and restore denials share one legal-removal hook. It runs only after the
+public projection change has committed and before the intent outcome commits, so that commit
+is the eviction receipt and a failure leaves the intent owed. User deletion runs the same
+surfaces from its durable legal-removal work row, which recovery retries until it succeeds.
+Retired snapshots expire naturally without a key scan.

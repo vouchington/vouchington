@@ -26,7 +26,7 @@ import {
 } from './action-delivery-mutation.mts'
 import {
   prepublishWithholdIfNeeded,
-  publishRestoreBlockerWithhold,
+  completeBlockedCopyrightAction,
 } from './action-delivery-withhold.mts'
 
 export async function executeCopyrightActionIntent(
@@ -54,12 +54,14 @@ export async function executeCopyrightActionIntent(
       intent.lease_token,
       legal.action,
       now,
+      tuple,
     )
-    if (legal.action === 'restore' && !finalized) {
+    if (finalized === true) return 'applied'
+    // Finalization already denied and evicted a live restored placement. A lost lease or a
+    // deleted placement still gets the edge denial; the lease owner or deletion owns eviction.
+    if (legal.action === 'restore' && finalized !== 'denied')
       await prepublishCopyrightImagePlacementDenial({ ...tuple })
-      return 'stale'
-    }
-    return finalized ? 'applied' : 'stale'
+    return 'stale'
   } catch (err) {
     return compensateCopyrightActionFailure(intent, now, restorePublishedTuple, err)
   }
@@ -120,21 +122,14 @@ async function prepareCopyrightAction(
   }
   assertMediaDeliveryLegalEnforcementEnabled()
   if (await hasCopyrightActionBlocker(legal, now, transaction)) {
-    await publishRestoreBlockerWithhold({
-      legal,
-      placement: current,
-      query: transaction,
-    })
-    await completeCopyrightActionIntentInTransaction({
+    return await completeBlockedCopyrightAction({
       intentId: intent.id,
       leaseToken: intent.lease_token,
-      outcome: 'blocked',
-      completedAt: now,
-      failureMessage:
-        'A current copyright restriction, review, deadline, or legal hold blocks this transition.',
+      legal,
+      placement: current,
+      now,
       query: transaction,
     })
-    return await commitOutcome(transaction, 'blocked')
   }
   await prepublishWithholdIfNeeded({ legal, placement: current, query: transaction })
   if (legal.action === 'restore' && !retainChecked) {

@@ -1,3 +1,4 @@
+import { invalidateCopyrightLegalRemovalSurfaces } from './action-delivery-cache.mts'
 import { repairFailedImageDeliveryMutation } from '@services/media-delivery-safety'
 import { prepublishCopyrightImagePlacementDenial } from './action-delivery-edge.mts'
 import {
@@ -23,6 +24,12 @@ export async function compensateCopyrightActionFailure(
       if (restorePublishedTuple) {
         await prepublishCopyrightImagePlacementDenial({
           ...restorePublishedTuple,
+        })
+        // The denial committed in its own transaction, so eviction sees it. A failed eviction
+        // leaves the intent claimed until lease recovery retries it.
+        await invalidateCopyrightLegalRemovalSurfaces({
+          placement_id: restorePublishedTuple.placementId,
+          action: 'withhold',
         })
       }
     },

@@ -24,6 +24,7 @@ vi.mock<typeof import('@modules/stripe/client')>(
 
 import { S3Buckets } from '@modules/aws'
 import * as cachePurge from '@services/entity-cache/purge'
+import * as rssSnapshotGeneration from '@services/entity-cache/rss-snapshot-generation'
 import { addUserDeletionExternalWorks, createUserDeletionRequest } from '@services/user-deletions'
 import {
   createTestUser,
@@ -145,6 +146,7 @@ describe('user deletion provider work', () => {
     await addUserDeletionExternalWorks(request.id, 's3-export', [exportKey])
     await markUserDeletionAttemptStartedForTest(request.id, request.processingAttemptId)
     mockS3Send.mockResolvedValue({})
+    const generation = await rssSnapshotGeneration.getRssSnapshotLegalGeneration()
     const purge = vi.spyOn(cachePurge, 'purgeCacheTags')
 
     await expect(
@@ -152,6 +154,7 @@ describe('user deletion provider work', () => {
     ).resolves.toEqual({ hasMore: true })
     expect(sentS3Inputs()).toEqual([{ Bucket: S3Buckets.userExports, Key: exportKey }])
     expect(purge).not.toHaveBeenCalled()
+    expect(await rssSnapshotGeneration.getRssSnapshotLegalGeneration()).toBe(generation)
 
     vi.stubEnv('CF_WORKER_ROUTE', 'https://127.0.0.1:9')
     vi.stubEnv('CF_WORKER_SECRET', 'test-secret')
@@ -185,6 +188,7 @@ describe('user deletion provider work', () => {
         )?.completedAt,
       ).toBeInstanceOf(Date)
       expect(purge).toHaveBeenCalledTimes(3)
+      expect(await rssSnapshotGeneration.getRssSnapshotLegalGeneration()).not.toBe(generation)
     } finally {
       vi.unstubAllEnvs()
     }

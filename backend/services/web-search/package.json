@@ -27,6 +27,7 @@
     "@data-stores/valkey": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@services/entity-cache": "workspace:^",
     "@services/pagination": "workspace:^",
     "@services/urls": "workspace:^",
     "@voucha/types": "workspace:^",

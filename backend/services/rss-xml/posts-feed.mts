@@ -1,7 +1,6 @@
-import { getPostIds } from '@services/posts/search/get-ids'
-import { getPostByAnyCachedBatch } from '@services/entity-fetch'
-import { getTopicsByAnyBatch } from '@services/topics/get-batch'
-import { getPublicUserByAny } from '@services/users/get'
+import { getPublicRssPostSnapshotsCached } from '@services/posts/public-rss-snapshots'
+import { getPostIdsCached } from '@services/entity-fetch/search-caches'
+import { getTopicByAnyCachedBatch, getAnonymousUserPublicByAnyCached } from '@services/entity-fetch'
 import { getPostRouteSegment } from '@services/entity-links/routes'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import { buildRssXml, type RssChannel, type RssItem } from './xml-builder.mts'
@@ -10,7 +9,6 @@ import type { Post } from '@services/posts/types'
 import createHttpError from 'http-errors'
 import onError from '@modules/on-error'
 import { VALID_RSS_POST_TYPES, isCatalogValue } from '@ts-shared/feed-capabilities'
-import { getPublicPostIds } from '@services/posts'
 import { decodePostSearchCursor } from '@services/posts/search/get-ids-page-info'
 import { validateTopicSearchTerms } from '@services/search-params'
 
@@ -73,7 +71,7 @@ async function buildPostsRssFeedImpl(options: PostsFeedOptions): Promise<string>
   // Look up user if username provided
   let userId: string | undefined
   if (username) {
-    const user = await getPublicUserByAny(username)
+    const user = await getAnonymousUserPublicByAnyCached(username)
     if (!user) {
       const channel: RssChannel = {
         title: `Posts by @${username}`,
@@ -89,7 +87,7 @@ async function buildPostsRssFeedImpl(options: PostsFeedOptions): Promise<string>
   const topicIds: string[] = []
   const topicNames: string[] = []
   if (topicSlugs && topicSlugs.length > 0) {
-    const topicLookups = await getTopicsByAnyBatch(topicSlugs)
+    const topicLookups = await getTopicByAnyCachedBatch(topicSlugs)
     for (const topic of topicLookups) {
       if (topic) {
         topicIds.push(topic.id)
@@ -115,7 +113,7 @@ async function buildPostsRssFeedImpl(options: PostsFeedOptions): Promise<string>
       : ([...VALID_RSS_POST_TYPES] as Post['post_type'][])
 
   // Search for post IDs
-  const { results, page_info } = await getPostIds(undefined, {
+  const { results, page_info } = await getPostIdsCached({
     related_topic_ids: topicIds.length > 0 ? topicIds : undefined,
     post_types: postTypes,
     user_id: userId,
@@ -140,16 +138,8 @@ async function buildPostsRssFeedImpl(options: PostsFeedOptions): Promise<string>
     return buildRssXml(channel, [])
   }
 
-  // Fetch full post data
-  const postIds = results.map(r => r.id)
-  const posts = await getPostByAnyCachedBatch(postIds)
-  const publicPostIds = await getPublicPostIds(postIds)
-
-  // Search IDs and cached rows can straddle a state change, so verify the
-  // canonical publication predicate again immediately before serialization.
-  const validPosts = posts.filter(
-    (post): post is NonNullable<typeof post> => !!post && publicPostIds.has(post.id),
-  )
+  // Public content and eligibility stay together even when the raw entity cache changes.
+  const validPosts = await getPublicRssPostSnapshotsCached({ postIds: results.map(r => r.id) })
 
   // Render markdown to HTML, partitioned by admin status
   const descriptions = await renderPostDescriptions(validPosts)

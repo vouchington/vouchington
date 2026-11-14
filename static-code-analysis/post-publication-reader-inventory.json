@@ -40,7 +40,11 @@
     },
     {
       "path": "backend/services/rss-xml/posts-feed.mts",
-      "classification": "public-boundary"
+      "classification": "public-snapshot-boundary"
+    },
+    {
+      "path": "backend/services/posts/public-rss-snapshots.mts",
+      "classification": "public-view"
     },
     {
       "path": "backend/services/posts/public-ids.mts",

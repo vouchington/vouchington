@@ -2,9 +2,8 @@ import { beginTransaction } from '@data-stores/psql'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import sql from 'sql-template-strings'
 import { getImagePlacementForCopyright } from '@services/images/placements'
-import { prepublishCopyrightImagePlacementDenial } from './action-delivery-edge.mts'
-import { invalidateCopyrightPlacementCache } from './action-delivery-cache.mts'
-import { purgeLegalRemovalCacheTag } from '@services/entity-cache/legal-removal'
+import { invalidateCopyrightLegalRemovalSurfaces } from './action-delivery-cache.mts'
+import { denyRestoreThenComplete } from './action-delivery-denial.mts'
 import {
   completeCopyrightActionIntentInTransaction,
   hasCopyrightActionBlocker,
@@ -14,12 +13,18 @@ import {
 } from './action-delivery-state.mts'
 import { syncCopyrightIncidentsAfterStatutoryRestoreInTransaction } from './statutory-restoration-incidents.mts'
 
+/**
+ * Completes a delivered action: true when applied. `denied` means a restore was denied again
+ * here, with its legal-removal eviction receipted; false (stale or lease lost) leaves any
+ * denial to the caller.
+ */
 export async function finalizeCopyrightActionAfterDelivery(
   intentId: string,
   leaseToken: string,
   action: 'withhold' | 'restore',
   now: Date,
-): Promise<boolean> {
+  deliveredTuple: { placementId: string; revision: number; imageId: string },
+): Promise<boolean | 'denied'> {
   await using transaction = await beginTransaction()
   const legal = await lockCopyrightActionDelivery(intentId, leaseToken, transaction)
   if (!legal) {
@@ -42,47 +47,43 @@ export async function finalizeCopyrightActionAfterDelivery(
     await transaction.commit()
     return false
   }
+  const deny = (outcome: 'blocked' | 'stale', failureMessage: string, tuple = deliveredTuple) =>
+    denyRestoreThenComplete({
+      intentId,
+      leaseToken,
+      tuple,
+      outcome,
+      completedAt: now,
+      failureMessage,
+      transaction,
+    }).then(result => (result === 'completed' ? ('denied' as const) : false))
   if (
     !current ||
     current.deleted ||
     current.imageId !== legal.image_id ||
     current.withheld !== (action === 'withhold')
   ) {
+    const failureMessage = 'Placement changed while its exact delivery tuple was being projected.'
+    // A live placement could have been refilled from the restored tuple before it changed.
+    if (action === 'restore' && current && !current.deleted)
+      return await deny('stale', failureMessage)
     await completeCopyrightActionIntentInTransaction({
       intentId,
       leaseToken,
       outcome: 'stale',
       completedAt: now,
-      failureMessage: 'Placement changed while its exact delivery tuple was being projected.',
+      failureMessage,
       query: transaction,
     })
     await transaction.commit()
     return false
   }
   if (action === 'restore' && (await restoreIsBlocked(legal, now, transaction))) {
-    await runSequentially([
-      () =>
-        prepublishCopyrightImagePlacementDenial(
-          {
-            placementId: current.placementId,
-            revision: current.revision,
-            imageId: current.imageId,
-          },
-          { query: transaction },
-        ),
-      () =>
-        completeCopyrightActionIntentInTransaction({
-          intentId,
-          leaseToken,
-          outcome: 'blocked',
-          completedAt: now,
-          failureMessage:
-            'A current copyright blocker was admitted before restore delivery completed.',
-          query: transaction,
-        }),
-      () => transaction.commit(),
-    ])
-    return false
+    return await deny(
+      'blocked',
+      'A current copyright blocker was admitted before restore delivery completed.',
+      { placementId: current.placementId, revision: current.revision, imageId: current.imageId },
+    )
   }
   await completeCopyrightActionAndInvalidate({
     intentId,
@@ -119,10 +120,11 @@ async function completeCopyrightActionAndInvalidate(input: {
         input.action === 'withhold' ? 'placement_withheld' : 'placement_restored',
         input.transaction,
       ),
-    () => invalidateCopyrightPlacementCache(input.legal.placement_id, input.transaction),
-    async () => {
-      if (input.action === 'withhold') await purgeLegalRemovalCacheTag()
-    },
+    () =>
+      invalidateCopyrightLegalRemovalSurfaces(
+        { placement_id: input.legal.placement_id, action: input.action },
+        input.transaction,
+      ),
   ])
 }
 

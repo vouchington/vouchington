@@ -1,7 +1,7 @@
 import { setAnonymousPublicCacheHeaders } from '../../cache-headers.mts'
 import { clampAnonLimit, clampLimit } from '@services/pagination'
 import app from '../../app.mts'
-import { searchWeb, type WebSearchResult } from '@services/web-search'
+import { searchWeb, searchWebCached, type WebSearchResult } from '@services/web-search'
 import { toPublicViewHostname } from '@services/urls-hostnames'
 import {
   EMPTY_PAGE_INFO,
@@ -40,7 +40,11 @@ app.route('/api/v1/web-search').get(async ctx => {
   }
 
   const after = typeof ctx.query.after === 'string' ? ctx.query.after : undefined
-  const { results, page_info } = await searchWeb({ query, limit, after })
+  const { results, page_info } = await (currentUser ? searchWeb : searchWebCached)({
+    query,
+    limit,
+    after,
+  })
 
   const publicResults = results.map((r: WebSearchResult) => ({
     ...r,

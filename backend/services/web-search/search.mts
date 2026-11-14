@@ -1,3 +1,4 @@
+import { createSearchCache } from '@services/entity-cache/search-cache'
 import { clampLimit } from '@services/pagination'
 import { read } from '@data-stores/psql'
 import { sliceRawKeysetPage } from '@modules/pagination'
@@ -76,3 +77,5 @@ function toCursor(row: WebSearchRow): WebSearchCursor {
     ? { tier: 'content', score: row.cursor_score, id: row.id }
     : { tier: 'url', id: row.id }
 }
+
+export const searchWebCached = createSearchCache('web_search_anon', searchWeb)

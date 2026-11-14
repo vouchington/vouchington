@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { describe, expect, it, beforeAll } from 'vitest'
+import { describe, expect, it, beforeEach } from 'vitest'
 import {
   createTestTopic,
   createTestUserDirect,
@@ -28,7 +28,7 @@ describe('buildPostsRssFeed', () => {
   let adminUsername: string
   let adminSlugPrefix: string
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     testUsername = `rsspost${randomHex()}`
     testUser = await createTestUserDirect({ username: testUsername })
     uniqueSlugPrefix = `rss-post-test-${randomHex()}`
