@@ -19,10 +19,16 @@ export async function createCommittedCopyrightEmailIntake({
   messageId = `<${randomUUID()}@example.test>`,
   inReplyTo = [],
   replyReferences = [],
+  fromEmail = `claimant-${randomUUID()}@example.test`,
+  subject = 'Copyright complaint',
+  bodyText = 'This is a copyright complaint.',
 }: {
   messageId?: string
   inReplyTo?: string[]
   replyReferences?: string[]
+  fromEmail?: string
+  subject?: string
+  bodyText?: string
 } = {}) {
   const intake = await createUnparsedCopyrightEmailIntake()
   const purpose = copyrightEmailIntakePurpose(intake.amazon_ses_message_id)
@@ -35,9 +41,9 @@ export async function createCommittedCopyrightEmailIntake({
       copyright_notice_email_intake_id, status, sender_email_ciphertext,
       subject_ciphertext, body_ciphertext, message_id_ciphertext, reply_references_ciphertext
     ) VALUES (
-      ${intake.id}, 'succeeded', ${encryptSecret(`claimant-${randomUUID()}@example.test`, purpose)},
-      ${encryptSecret('Copyright complaint', purpose)},
-      ${encryptSecret('This is a copyright complaint.', purpose)},
+      ${intake.id}, 'succeeded', ${encryptSecret(fromEmail, purpose)},
+      ${encryptSecret(subject, purpose)},
+      ${encryptSecret(bodyText, purpose)},
       ${encryptSecret(messageId, purpose)},
       ${encryptCopyrightEmailReplyHeaders({ inReplyTo, references: replyReferences }, purpose)}
     )`)
