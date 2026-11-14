@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 import worker from '../index.mts'
+import { createSignedDeviceJwt, createSignedSessionJwt } from '../../test-helpers/jwt-fixtures.mts'
 import {
   createContext,
   restoreGlobals,
@@ -220,12 +222,18 @@ describe('worker fetch handler — bot headers, rate limiting, noindex, and cach
       ANON_CACHE_TTL_SECONDS: '30',
     }
 
+    const did = mintUUIDv7()
+    const deviceToken = await createSignedDeviceJwt({ did })
+    const sessionToken = await createSignedSessionJwt({ did, uid: null, sid: mintUUIDv7() })
     const response = await worker.fetch(
-      new Request('https://voucha.ai/api/v1/posts'),
+      new Request('https://voucha.ai/api/v1/posts', {
+        headers: { cookie: `dt=${deviceToken}; st=${sessionToken}` },
+      }),
       env,
       createContext(env),
     )
 
+    expect(response.headers.get('set-cookie')).toBeNull()
     expect(response.headers.get('cache-control')).toBe(
       'public, max-age=30, stale-while-revalidate=60, stale-if-error=86400',
     )

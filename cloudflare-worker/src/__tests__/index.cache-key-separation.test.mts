@@ -180,8 +180,14 @@ describe('worker fetch handler — cache key separation', () => {
     }
 
     // Anon request — check max-age=30
-    const anonRequest = new Request('https://voucha.ai/api/v1/posts')
+    const did = mintUUIDv7()
+    const deviceToken = await createSignedDeviceJwt({ did })
+    const sessionToken = await createSignedSessionJwt({ did, uid: null, sid: mintUUIDv7() })
+    const anonRequest = new Request('https://voucha.ai/api/v1/posts', {
+      headers: { cookie: `dt=${deviceToken}; st=${sessionToken}` },
+    })
     const anonResponse = await worker.fetch(anonRequest, env, createContext(env))
+    expect(anonResponse.headers.get('set-cookie')).toBeNull()
     expect(anonResponse.headers.get('cache-control')).toContain('max-age=30')
 
     // Bot request dispatches independently (see the dual-write-removed test

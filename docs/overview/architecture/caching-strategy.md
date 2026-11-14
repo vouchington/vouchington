@@ -1,5 +1,8 @@
 # Caching Strategy
 
+Shared edge entries and visitor-specific client responses have separate cacheability boundaries;
+see [What is NOT Cached](reference-caching-strategy-client-side-personalization.md#what-is-not-cached).
+
 ## Contents
 
 - <a id="architecture-overview"></a>[Architecture Overview](reference-caching-strategy-architecture-overview.md)

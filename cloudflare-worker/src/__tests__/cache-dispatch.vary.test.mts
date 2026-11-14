@@ -94,4 +94,56 @@ describe('dispatchToCachedOrigin Vary restoration', () => {
     expect(response.headers.get('vary')).toBe('Cookie, Authorization')
     expect(response.headers.get('x-voucha-cache-vary')).toBeNull()
   })
+
+  it('keeps the shared anonymous JSON cacheable while minted cookies make only the outer response no-store', async () => {
+    const sharedResponse = new Response('{"posts":[]}', {
+      headers: {
+        'content-type': 'application/json',
+        'cache-control': 'public, max-age=30',
+        'cdn-cache-control': 'public, max-age=30',
+        'cloudflare-cdn-cache-control': 'public, max-age=30',
+      },
+    })
+    const response = await dispatchToCachedOrigin(
+      baseInput({
+        context: buildContext(() => Promise.resolve(sharedResponse)),
+        edgeSession: {
+          kind: 'anon-minted',
+          dt: 'device-token',
+          st: 'session-token',
+          mintedDt: true,
+          mintedSt: true,
+        },
+      }),
+    )
+
+    expect(response.headers.get('cache-control')).toBe('no-store, max-age=0, must-revalidate')
+    expect(response.headers.get('cdn-cache-control')).toBe('no-store')
+    expect(response.headers.get('cloudflare-cdn-cache-control')).toBe('no-store')
+    expect(response.headers.get('vary')).toBe('Cookie, Authorization')
+    expect(response.headers.get('set-cookie')).toContain('st=session-token')
+    expect(await response.json()).toEqual({ posts: [] })
+    expect(sharedResponse.headers.get('cache-control')).toBe('public, max-age=30')
+    expect(sharedResponse.headers.get('set-cookie')).toBeNull()
+  })
+
+  it('preserves the Worker TTL for anonymous JSON without minted cookies', async () => {
+    const response = await dispatchToCachedOrigin(
+      baseInput({
+        context: buildContext(() =>
+          Promise.resolve(
+            new Response('{"posts":[]}', {
+              headers: {
+                'content-type': 'application/json',
+                'cache-control': 'public, max-age=30',
+              },
+            }),
+          ),
+        ),
+      }),
+    )
+
+    expect(response.headers.get('cache-control')).toBe('public, max-age=30')
+    expect(response.headers.get('set-cookie')).toBeNull()
+  })
 })
