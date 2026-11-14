@@ -17,6 +17,23 @@ describe('worker authentication cache transition', () => {
     const client = new WebIntegrationClient(workerOrigin, traceOrigin, artifactsDir)
 
     const requestPath = `/api/v1/posts/${SEEDED_IDS.discussion}?cache-transition=${randomUUID()}`
+    const firstVisitResponse = await client.request(requestPath, {
+      userAgent: PLAYWRIGHT_CHROME_UA,
+    })
+    const firstVisitBody = (await firstVisitResponse.json()) as Record<string, unknown>
+
+    expect(firstVisitResponse.status).toBe(200)
+    expect(firstVisitResponse.headers.get('x-voucha-cache')).toBe('DISPATCHED')
+    expect(firstVisitResponse.headers.get('cache-control')).toBe(
+      'no-store, max-age=0, must-revalidate',
+    )
+    expect(firstVisitResponse.headers.getSetCookie()).toEqual(
+      expect.arrayContaining([expect.stringMatching(/^dt=.+;/), expect.stringMatching(/^st=.+;/)]),
+    )
+    expect(client.getCookie('dt')).toBeTruthy()
+    expect(client.getCookie('st')).toBeTruthy()
+    expect(firstVisitBody).not.toHaveProperty('election_vote')
+
     const anonymousResponse = await client.request(requestPath, {
       userAgent: PLAYWRIGHT_CHROME_UA,
     })
@@ -27,6 +44,7 @@ describe('worker authentication cache transition', () => {
     expect(anonymousResponse.headers.get('cache-control')).toBe(
       'public, max-age=30, stale-while-revalidate=60, stale-if-error=86400',
     )
+    expect(anonymousResponse.headers.get('set-cookie')).toBeNull()
     expect(anonymousBody).not.toHaveProperty('election_vote')
 
     const authCookies = await createTestAuthCookies(TEST_USER_ID, PLAYWRIGHT_CHROME_UA)

@@ -26,6 +26,6 @@ export function withEdgeSessionCookies(
     ])
   }
   if (setCookies.length === 0) return response
-  // The shared cache entry stays public; only this visitor's cookie-bearing response is private.
+  // The shared cache entry stays public; only this visitor's cookie-bearing response is no-store.
   return withHeaders(appendHeaders(response, setCookies), NO_STORE_HEADERS)
 }
