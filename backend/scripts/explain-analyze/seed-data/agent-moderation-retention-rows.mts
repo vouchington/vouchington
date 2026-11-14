@@ -154,6 +154,9 @@ export async function insertAgentModerationRetentionBulk(
         batch.map(row => row.inputVersion),
       ],
     )
+    // Refresh predecessor lookup estimates before the next bounded batch fires insert triggers.
+    // no-mistakes-disable-next-line query-reached-per-item: each finite fixture batch refreshes statistics for the following batch's trigger queries.
+    await write('/* analyzeAgentModerationRetentionBulk */ ANALYZE agent_moderations')
   }
 }
 
@@ -179,4 +182,5 @@ export async function insertAgentModerationRetentionRows(
       rows.map(row => row.deletedAt ?? null),
     ],
   )
+  await write('/* analyzeAgentModerationRetentionSpecial */ ANALYZE agent_moderations')
 }

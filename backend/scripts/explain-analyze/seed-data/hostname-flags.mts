@@ -40,6 +40,11 @@ export async function seedHostnameCacheInvalidationWork(): Promise<void> {
     ) seed
     ON CONFLICT (url_hostname_id) DO NOTHING`,
   )
+  // The refresh joins the newly populated work table to the hostname cohort. Analyze before
+  // planning that UPDATE, rather than relying on autoanalyze during initial seed or restoration.
+  await write(
+    '/* analyzeHostnameCacheInvalidationBeforeRefresh */ ANALYZE url_hostname_cache_invalidation_work_items, url_hostnames',
+  )
   // The archived seed can spend a day in transit before this scenario runs. Restore the future
   // half by its known hostname cohort; the due half remains due and captured drains reinsert it.
   await write(

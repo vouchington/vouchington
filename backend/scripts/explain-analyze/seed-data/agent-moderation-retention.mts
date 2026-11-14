@@ -32,6 +32,12 @@ export async function seedAgentModerationRetention(): Promise<void> {
   const bulkStartMs = oldMs - 5 * 60_000 + 100
 
   await seedRetentionIdentities(new Date(oldMs - DAY_MS))
+  // Insert triggers read parent identities, post scope, and transparency cohorts before the
+  // final fixture ANALYZE. Prime those dependencies before loading the retention backlog.
+  await write(`/* analyzeAgentModerationRetentionTriggerDependencies */
+    ANALYZE posts, agents, agent_prompts, community_agent_prompts, communities,
+      agent_moderations, moderation_transparency_daily_rollups,
+      moderation_transparency_released_daily_rollups`)
   await insertModerationRows(oldMs, newMs, bulkStartMs, 15_000)
   await seedDeletedLiveLookupTail()
   await insertAgentModerationRetentionReferenceNoise(
