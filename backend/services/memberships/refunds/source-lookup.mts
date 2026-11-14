@@ -119,10 +119,20 @@ export async function getMembershipRefundTargetByStripeSubscriptionId(
             source.upper_change_id,
             'ffffffff-ffff-ffff-ffff-ffffffffffff'::uuid
           )
-          AND uuid_extract_timestamp(membership_change.id) >= source.bound_at
+          -- Binding writers use CURRENT_TIMESTAMP, which can retain microseconds. UUIDv7
+          -- timestamp extraction has millisecond precision, so both bounds require a ceiling.
+          AND membership_change.id >= fn_min_uuidv7(
+            date_trunc('milliseconds', source.bound_at) + CASE
+              WHEN source.bound_at > date_trunc('milliseconds', source.bound_at)
+              THEN INTERVAL '1 millisecond' ELSE INTERVAL '0' END
+          )
           AND (
             source.released_at IS NULL
-            OR uuid_extract_timestamp(membership_change.id) < source.released_at
+            OR membership_change.id < fn_min_uuidv7(
+              date_trunc('milliseconds', source.released_at) + CASE
+                WHEN source.released_at > date_trunc('milliseconds', source.released_at)
+                THEN INTERVAL '1 millisecond' ELSE INTERVAL '0' END
+            )
           )
       ) source_target
       ORDER BY target_priority, target_id DESC
