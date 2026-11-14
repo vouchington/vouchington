@@ -24,7 +24,6 @@ import { hashCapturedPublicationKeys } from '@services/post-publication/captured
 import { postPublicationWorkConfig } from '@services/post-publication/work-limits'
 import { caches } from '@services/entity-cache/caches'
 import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
-import { communityTag } from '../../../../ts-shared/cache/index.mts'
 import { processApplyPostPublicationEffects } from './direct-effects.mts'
 
 function payload(changeId: string, postId: string): PostPublicationEffectsJobData {
@@ -171,11 +170,6 @@ describe('runtime publication scope and key bounds', () => {
     for (const user of authors) {
       expect(await caches.user_metrics.get(user.id)).not.toBe('old user')
       expect(await caches.user_metrics.get(user.username!)).not.toBe('old username')
-    }
-    for (const community of communities) {
-      const tags = admitted.flatMap(job => (job.data as { tags?: string[] }).tags ?? [])
-      expect(tags).toContain(communityTag(community.id))
-      expect(tags).toContain(communityTag(community.slug))
     }
     for (const topic of topics) {
       expect(await caches.topic_metrics.get(topic.id)).not.toBe('old topic')

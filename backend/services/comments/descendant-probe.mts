@@ -3,7 +3,7 @@ import {
   buildDirectPostEligibilityFilter,
   type DirectPostEligibilityOptions,
 } from '@modules/feed-query-builders'
-import sql from 'sql-template-strings'
+import sql, { type SQLStatement } from 'sql-template-strings'
 import { getCommentLookDownLimits } from './placeholder-config.mts'
 import { buildCommentIsValidSql, buildLookDownKeepLateral } from './placeholder-sql.mts'
 
@@ -29,6 +29,19 @@ export async function readCommentHeads(
     eligibility: DirectPostEligibilityOptions
   },
 ): Promise<CommentCandidate[]> {
+  const statement = buildCommentHeadsStatement(input)
+  const { rows } = await query<CommentCandidate>(statement.text, statement.values)
+  return rows
+}
+
+function buildCommentHeadsStatement(input: {
+  rootId: string
+  parentId: string
+  limit: number
+  afterId?: string
+  currentUserId: string | null
+  eligibility: DirectPostEligibilityOptions
+}): SQLStatement {
   const { rootId, parentId, limit, afterId, currentUserId, eligibility } = input
   const statement = sql`/* getVisibleCommentDescendantIdsPage:heads */ /* bounded-parent */
     WITH candidate AS MATERIALIZED (
@@ -61,8 +74,7 @@ export async function readCommentHeads(
   statement.append(sql` AS is_hidden, `)
   statement.append(buildCommentIsValidSql('candidate', eligibility))
   statement.append(sql` AS is_valid FROM candidate ORDER BY candidate.id`)
-  const { rows } = await query<CommentCandidate>(statement.text, statement.values)
-  return rows
+  return statement
 }
 
 /** One indexed, limited lateral slice per allocated parent in the BFS frontier. */

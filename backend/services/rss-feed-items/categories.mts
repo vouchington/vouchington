@@ -18,7 +18,7 @@ import {
 import { recordCategoryPublicationChanges } from './category-publication-changes.mts'
 import { createCategoryRelations } from './category-relations.mts'
 import { reconcileRssFeedItemCategorySnapshots } from './reconcile-categories.mts'
-import { invalidateRssFeedItemsAndWaitForPurge } from '@services/entity-cache/invalidate-rss-feed-items'
+import { invalidateRssFeedItemsStrict } from '@services/entity-cache/invalidate-rss-feed-items'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { normalizeHashtag } from '@ts-shared/utils'
 import createHttpError from 'http-errors'
@@ -166,7 +166,7 @@ async function upsertRssFeedItemCategorySnapshots(
   ]
   for (const chunk of chunkArray(changedItemIds, INVALIDATION_CHUNK_SIZE)) {
     // oxlint-disable-next-line no-await-in-loop -- purge chunks settle sequentially to bound Valkey pressure and vararg size
-    await invalidateRssFeedItemsAndWaitForPurge(...chunk)
+    await invalidateRssFeedItemsStrict(...chunk)
   }
   if (changedItemIds.length > 0) void enqueueRefreshTopHashtags()
 }

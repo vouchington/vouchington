@@ -9,29 +9,6 @@ import { getCacheKeys } from './classify-cache-keys.mts'
 export { getUrlCacheKeys, getUrlLookupKeys, getUrlHostnameCacheKeys } from './url-keys.mts'
 export { getCacheKeys } from './classify-cache-keys.mts'
 
-export const getCommunityCacheKeys = async (...keys: unknown[]): Promise<string[]> => {
-  const { ids, slugs } = getCacheKeys(keys)
-  if (!(ids.size > 0 || slugs.size > 0)) return []
-  const filters = []
-  const values = []
-  if (ids.size > 0) filters.push(`id = ANY($${values.push([...ids])})`)
-  if (slugs.size > 0)
-    filters.push(`LOWER(slug) = ANY($${values.push([...slugs].map(slug => slug.toLowerCase()))})`)
-  const { rows } = await read<{ id: string; slug: string | null }>(
-    `/* getCommunityCacheKeys */
-    SELECT id, slug
-    FROM communities
-    WHERE ${filters.join(' OR ')}
-  `,
-    values,
-  )
-  for (const row of rows) {
-    ids.add(normalizeKey(row.id))
-    if (row.slug) slugs.add(normalizeKey(row.slug))
-  }
-  return [...ids, ...slugs]
-}
-
 export const getUserCacheKeys = async (...keys: unknown[]): Promise<string[]> => {
   const { ids, slugs } = getCacheKeys(keys)
   if (!(ids.size > 0 || slugs.size > 0)) return []
@@ -132,16 +109,6 @@ export const getPostCacheKeys = (...keys: unknown[]): Promise<string[]> =>
   getPostCacheKeysWithOptions({}, ...keys)
 
 export const getElectionCacheKeys = (...keys: unknown[]): Promise<string[]> => {
-  const { ids } = getCacheKeys(keys)
-  return Promise.resolve([...ids])
-}
-
-export const getListCacheKeys = (...keys: unknown[]): Promise<string[]> => {
-  const { ids } = getCacheKeys(keys)
-  return Promise.resolve([...ids])
-}
-
-export const getStoryCacheKeys = (...keys: unknown[]): Promise<string[]> => {
   const { ids } = getCacheKeys(keys)
   return Promise.resolve([...ids])
 }

@@ -15,13 +15,15 @@ Workers Cache; on a platform HIT, `CachedOrigin` never runs. Direct-origin reque
 origin-specified freshness lifetime. See [the caching strategy](../../architecture/caching-strategy.md)
 for the tier boundaries and [anonymous HTML caching](../../architecture/anon-html-edge-caching-csp.md)
 for the CSP nonce design.
+Routine publication changes do not issue server-to-CDN freshness purges. Explicit copyright and
+account deletion retain legal Cache-Tag purging after the anonymous origin namespace has advanced.
 
 `CachedOrigin` keeps the path-derived entity tag and appends one valid `Cache-Tag` supplied by a
 trusted origin response. The backend post detail supplies its visible author's `user:<id>` tag.
 For a post-detail HTML cache fill, the web proxy makes a lightweight HEAD request to read the same
 backend dependency header and places it on the HTML response, so a required legal user-deletion purge can evict both cached API
 and HTML details. Tags are reserved for legal removal obligations, not freshness; ordinary changes
-wait for the Worker-owned TTL. A failed dependency lookup marks the HTML response `Vary: *`; the Worker declines
+wait for the Worker-owned TTL (bio-language changes included). A failed dependency lookup marks the HTML response `Vary: *`; the Worker declines
 to cache it while the page can still render. Missing, malformed, duplicate, or multi-tag origin
 values leave the path-derived tag intact. Anonymous posts supply no author tag.
 

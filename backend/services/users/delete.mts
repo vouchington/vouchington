@@ -1,11 +1,12 @@
-import { runSequentially } from '@modules/utils/run-sequentially'
 import { settleUserDeletionOperations } from './settle-deletion-operations.mts'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import onError from '@modules/on-error'
+import { runSequentially } from '@modules/utils/run-sequentially'
 import { enqueueUserDeletion } from '@queues/account-lifecycle/enqueues/user-deletions'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
+import { advanceAnonymousCacheGeneration } from '@services/entity-cache/anonymous-cache-generation'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { purgeCacheTags } from '@services/entity-cache/purge'
 import { LEGAL_REMOVAL_TAG } from '@services/entity-cache/legal-removal'
@@ -98,8 +99,10 @@ async function attemptImmediateUserDeletionCacheEviction(
 ): Promise<void> {
   const tags = getUserDeletionCacheTags(target)
   try {
+    // Best effort: the durable legal-removal row repeats both namespace advances until it succeeds.
     await runSequentially([
       () => invalidateRssSnapshotsForLegalRemoval(),
+      () => advanceAnonymousCacheGeneration(),
       () => purgeCacheTags(tags),
       () =>
         settleUserDeletionOperations(

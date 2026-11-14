@@ -4,6 +4,7 @@ import { getPostByAnyCachedBatch, getPostMetricsByAnyCachedBatch } from '@servic
 import { getPostIdsByUrlIds } from '@services/posts/search/get-posts-by-url-ids'
 import { labelAndMaskPosts } from '@services/content-provenance'
 import { getVisiblePostStoryIdsByStoryIds } from './get-post-stories.mts'
+import { getAnonymousPostRowsByIdsCached } from '@services/posts/anonymous-snapshot'
 
 export async function getStoryPageRelatedPosts(
   currentUser: PrivateUser | null,
@@ -21,13 +22,31 @@ export async function getStoryPageRelatedPosts(
     ]),
   ]
   const [posts, metrics] = await Promise.all([
-    getPostByAnyCachedBatch(postIds),
+    currentUser
+      ? getPostByAnyCachedBatch(postIds)
+      : getAnonymousPostRowsByIdsCached(postIds, 'discovery').then(rows =>
+          rows.map(row => row.post),
+        ),
     getPostMetricsByAnyCachedBatch(postIds),
   ])
+  const visiblePostIds = new Set(posts.flatMap(post => (post ? [post.id] : [])))
   return {
-    related_posts_by_url_id,
-    story_post_ids,
+    related_posts_by_url_id: currentUser
+      ? related_posts_by_url_id
+      : Object.fromEntries(
+          Object.entries(related_posts_by_url_id).map(([urlId, ids]) => [
+            urlId,
+            ids.filter(id => visiblePostIds.has(id)),
+          ]),
+        ),
+    story_post_ids: currentUser
+      ? story_post_ids
+      : Object.fromEntries(
+          Object.entries(story_post_ids).filter(([, postId]) => visiblePostIds.has(postId)),
+        ),
     posts: indexById(await labelAndMaskPosts(posts, currentUser)),
-    posts_metrics: indexById(metrics),
+    posts_metrics: indexById(
+      currentUser ? metrics : metrics.filter(metric => metric && visiblePostIds.has(metric.id)),
+    ),
   }
 }

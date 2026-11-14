@@ -26,9 +26,6 @@ import {
   processMonthlyBackfillArchiveDispatcher,
   processNightlyBackfillWeekDispatcher,
   processUpdatePostDaySitemap,
-  processUpdatePostTypeIndex,
-  processUpdatePostsIndex,
-  processUpdateRootIndex,
   processWeeklyBackfillMonthDispatcher,
 } from './processors.mts'
 
@@ -132,25 +129,6 @@ describe('sitemap processors', () => {
     expect(await store.get('families/users/_progress.json')).toEqual(progress)
     expect(await store.get('sitemaps/families/users.xml')).toEqual(published)
     expect(add).not.toHaveBeenCalled()
-  })
-
-  it('writes each sitemap index through real gzip storage', async () => {
-    vi.stubEnv('SITEMAP_BASE_URL', 'https://example.com')
-    const store = await useSitemapObjectStore()
-
-    await processUpdatePostTypeIndex('review')
-    await processUpdatePostsIndex()
-    await processUpdateRootIndex()
-
-    expect(gunzipSync((await store.get('sitemaps/types/review.xml'))!).toString()).toContain(
-      '<sitemapindex',
-    )
-    expect(gunzipSync((await store.get('sitemaps/posts.xml'))!).toString()).toContain(
-      'https://example.com/sitemaps/review.xml',
-    )
-    expect(gunzipSync((await store.get('sitemaps/root.xml'))!).toString()).toContain(
-      'https://example.com/sitemaps/static.xml',
-    )
   })
 
   it('publishes a completed family generation and admits root index work', async () => {

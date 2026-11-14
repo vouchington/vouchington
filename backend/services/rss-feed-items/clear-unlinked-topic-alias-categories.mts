@@ -1,7 +1,7 @@
 import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
 import { registerPostCommitAction } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
-import { invalidateRssFeedItemsAndWaitForPurge } from '@services/entity-cache/invalidate-rss-feed-items'
+import { invalidateRssFeedItemsStrict } from '@services/entity-cache/invalidate-rss-feed-items'
 import {
   publishEntityRelationElectionVoteStats,
   updateEntityRelationElectionVoteStatsFromPrimaryBatch,
@@ -118,6 +118,6 @@ async function invalidateRssFeedItemChunks(itemIds: string[]): Promise<void> {
   const INVALIDATION_CHUNK_SIZE = getRssFeedItemsWorkLimit('backfill_invalidation_chunk_size')
   const [chunk, ...remaining] = chunkArray(itemIds, INVALIDATION_CHUNK_SIZE)
   if (!chunk) return
-  await invalidateRssFeedItemsAndWaitForPurge(...chunk)
+  await invalidateRssFeedItemsStrict(...chunk)
   return invalidateRssFeedItemChunks(remaining.flat())
 }

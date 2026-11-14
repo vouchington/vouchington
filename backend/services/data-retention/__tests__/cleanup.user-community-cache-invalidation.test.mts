@@ -8,8 +8,8 @@ import {
 import { invalidate } from '@services/entity-cache/invalidate'
 import { cleanupUserOwnedCommunities } from '../cleanup-user-communities.mts'
 
-describe('community purge cache invalidation', () => {
-  it('invalidates archived and transferred communities together only after commit', async () => {
+describe('community cleanup cache effects', () => {
+  it('invalidates successor metrics only after commit', async () => {
     const owner = await createTestUserDirect()
     const successor = await createTestUserDirect()
     const [archived, transferred] = await Promise.all([
@@ -28,26 +28,16 @@ describe('community purge cache invalidation', () => {
       userId: successor.id,
       role: 'moderator',
     })
-    const communities = vi.spyOn(invalidate, 'communities').mockResolvedValue()
     const userMetrics = vi.spyOn(invalidate, 'user_metrics').mockResolvedValue()
     try {
       await using query = await beginTransaction()
       const page = await cleanupUserOwnedCommunities(query, owner.id, 2)
-      expect(communities).not.toHaveBeenCalled()
       await query.commit()
-      expect(communities).not.toHaveBeenCalled()
 
       await Promise.all(page.afterCommit.map(effect => effect()))
 
-      expect(communities).toHaveBeenCalledTimes(1)
-      expect(
-        [...communities.mock.calls[0]!].toSorted(
-          (a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b)),
-        ),
-      ).toEqual([archived.id, transferred.id].toSorted())
       expect(userMetrics).toHaveBeenCalledExactlyOnceWith(successor.id)
     } finally {
-      communities.mockRestore()
       userMetrics.mockRestore()
     }
   })

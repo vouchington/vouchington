@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   extractStaticSqlTemplateQuasis,
-  sourceImportsAndUsesBoundaryAny,
+  sourceImportsAndComposesAny,
 } from './post-publication-reader-inventory-source.mts'
 
 describe('publication reader SQL configuration', () => {
@@ -28,17 +28,12 @@ describe('publication reader canonical imports', () => {
     ['buildDirectPostAccessFilter', './direct-access-filter.mts'],
     ['buildPublicPostEligibilityFilter', './post-publication-eligibility.mts'],
     ['buildViewerPostDiscoveryEligibilityFilter', '@modules/feed-query-builders'],
-    ['getPublicPostIds', '@services/posts'],
-    ['getCommentDescendantsPage', '@services/comments'],
-    ['getVisibleCommentDescendantIdsPage', './descendant-ids.mts'],
-    ['getVisiblePostStoryIdsByStoryIds', '@services/stories'],
-    ['canViewPostsBatch', '@services/posts/check-privacy-access'],
   ] as const)('recognizes %s from %s through a local alias', (symbol, module) => {
     const source = `import { ${symbol} as boundary } from '${module}'
-return boundary()`
-    expect(sourceImportsAndUsesBoundaryAny(source, [symbol])).toBe(true)
-    expect(
-      sourceImportsAndUsesBoundaryAny(source.replace(module, './unrelated.mts'), [symbol]),
-    ).toBe(false)
+query.append(boundary())`
+    expect(sourceImportsAndComposesAny(source, [symbol])).toBe(true)
+    expect(sourceImportsAndComposesAny(source.replace(module, './unrelated.mts'), [symbol])).toBe(
+      false,
+    )
   })
 })

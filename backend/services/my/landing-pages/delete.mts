@@ -16,7 +16,5 @@ export async function deleteMyLandingPage(userId: string, pageId: string): Promi
     await promoteOldestRemainingLandingPage(userId, query)
   }
   await query.commit()
-  // Public landing-page GET responses are edge-cached and tagged user:<username> (see
-  // ts-shared/cache/cache-tags.mts), so a deleted page must purge that tag.
   await invalidate.users(userId)
 }

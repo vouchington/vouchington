@@ -2,7 +2,6 @@ import { write } from '@data-stores/psql'
 import { buildObjectPostAccessFilter } from '@services/entity-relations/post-access'
 import { BLOCKED_POST_TYPES } from '@voucha/types/entities/post'
 import type { EntityRelationViewer } from '@services/entity-relations/viewer'
-import { invalidate } from '@services/entity-cache/invalidate'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { ManageableList } from './manage.mts'
 import { getCommunityListFeedLimit, getListImportLimit } from './import-config.mts'
@@ -130,6 +129,5 @@ export async function importCommunityList(
   )
 
   const imported = { posts: postsCount ?? 0, items: itemsCount ?? 0 }
-  if (imported.posts > 0 || imported.items > 0) await invalidate.lists(targetListId)
   return imported
 }

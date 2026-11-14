@@ -3,6 +3,7 @@ import { purgeCacheTags } from './purge.mts'
 import { purgeLegalRemovalCacheTag } from './legal-removal.mts'
 import { getExternalRequestDispatcher } from '@modules/utils/http'
 import { CACHE_PURGE_SECRET_HEADER, MAX_TAGS_PER_REQUEST } from '@ts-shared/cache'
+import { primaryCacheValkeyClient } from '@data-stores/valkey'
 
 const fetchSpy = vi.hoisted(() => vi.fn<VitestLooseMock>())
 vi.mock<typeof import('undici')>(import('undici'), async () => {
@@ -13,12 +14,14 @@ vi.mock<typeof import('undici')>(import('undici'), async () => {
 describe('purgeCacheTags', () => {
   beforeEach(() => {
     fetchSpy.mockReset()
+    vi.spyOn(primaryCacheValkeyClient, 'set').mockResolvedValue('OK')
     vi.stubEnv('CF_WORKER_SECRET', 'test-secret')
     vi.stubEnv('CF_WORKER_ROUTE', 'https://staging.voucha.ai')
     delete process.env.SKIP_CACHE_PURGE
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
     vi.unstubAllEnvs()
   })
 
@@ -80,12 +83,21 @@ describe('purgeCacheTags', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
+  it('leaves the legal purge owed when the anonymous generation cannot advance', async () => {
+    vi.stubEnv('ENVIRONMENT', 'staging')
+    vi.mocked(primaryCacheValkeyClient.set).mockRejectedValueOnce(new Error('valkey unavailable'))
+
+    await expect(purgeLegalRemovalCacheTag()).rejects.toThrow('valkey unavailable')
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
   it('confirms deployed legal-removal purges through the configured Worker', async () => {
     vi.stubEnv('ENVIRONMENT', 'staging')
     fetchSpy.mockResolvedValue({ ok: true })
 
     await expect(purgeLegalRemovalCacheTag()).resolves.toBeUndefined()
 
+    expect(primaryCacheValkeyClient.set).toHaveBeenCalledOnce()
     expect(fetchSpy).toHaveBeenCalledExactlyOnceWith(
       'https://staging.voucha.ai/infra/cache-purge',
       expect.objectContaining({

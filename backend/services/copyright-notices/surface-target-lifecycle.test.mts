@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
-import * as cachePurgeEnqueues from '../../queues/cache-purge/enqueues.mts'
 import * as cachePurgeRequest from '@services/entity-cache/purge'
 import { backgroundQueue as cachePurge } from '@voucha/test-helpers/shared-background-queue'
 import { caches } from '@services/entity-cache/caches'
@@ -210,20 +209,15 @@ describe('copyright surface target lifecycle', () => {
         id: fixture.ownerId,
       })
 
-      const purgeEnqueue = vi.spyOn(cachePurgeEnqueues, 'enqueueBulkPurgeCacheTags')
       const legalPurge = vi.spyOn(cachePurgeRequest, 'purgeCacheTags')
-      const matchingPurgeCalls = () =>
-        purgeEnqueue.mock.calls.filter(([tags]) => tags.includes(`community:${fixture.ownerId}`))
-          .length
       await expect(processCopyrightActionIntent(caseRecord.withholdIntentId)).resolves.toBe(
         'applied',
       )
       expect(cache ? (await cache.get(fixture.ownerId)) === null : true).toBe(true)
       if (cache) await seedOwnerCache(fixture)
       expect(cache ? (await cache.get(fixture.ownerId)) !== null : true).toBe(true)
-      const purgeQueued = cache ? true : await communityPurgeWasQueued(fixture.ownerId)
-      expect(purgeQueued).toBe(true)
-      expect(matchingPurgeCalls()).toBe(cache ? 0 : 1)
+      // Community owners have no origin entity cache; the legal-removal tag is their only purge.
+      await expect(communityPurgeWasQueued(fixture.ownerId)).resolves.toBe(false)
       expect(legalPurge).toHaveBeenCalledExactlyOnceWith(['legal-removal'])
       expect(await publicImageIsProjected(fixture)).toBe(false)
       const withheld = await getImagePlacementForCopyright(fixture.placementId)
@@ -247,7 +241,7 @@ describe('copyright surface target lifecycle', () => {
       const restoreIntent = aggregate?.actionIntents.find(intent => intent.action === 'restore')
       if (!restoreIntent) throw new Error('Copyright restore intent missing')
       await expect(processCopyrightActionIntent(restoreIntent.id)).resolves.toBe('applied')
-      expect(matchingPurgeCalls()).toBe(cache ? 0 : 2)
+      await expect(communityPurgeWasQueued(fixture.ownerId)).resolves.toBe(false)
       expect(legalPurge).toHaveBeenCalledExactlyOnceWith(['legal-removal'])
       expect(cache ? (await cache.get(fixture.ownerId)) === null : true).toBe(true)
       expect(await publicImageIsProjected(fixture)).toBe(true)

@@ -8,15 +8,11 @@ export type ReaderInventory = {
   implemented: Array<{
     path: string
     classification:
-      | 'direct-boundary'
+      | 'anonymous-snapshot-sql'
       | 'direct-sql'
-      | 'descendants-boundary'
       | 'mixed-discovery-sql'
-      | 'public-boundary'
-      | 'public-snapshot-boundary'
       | 'public-sql'
       | 'public-view'
-      | 'story-posts-boundary'
       | 'viewer-discovery-sql'
   }>
   pr2_baseline: Array<{ path: string; classification: 'public-reader' }>
@@ -29,7 +25,7 @@ export type ReaderInventory = {
       | 'raw-hydrator'
       | 'staff-reader'
     reason: string
-    owner_path: string
-    owner_classification: string
+    owner_path?: string
+    owner_classification?: string
   }>
 }

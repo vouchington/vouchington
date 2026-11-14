@@ -29,22 +29,30 @@ import app from '../../../app.mts'
 import { setPublicCacheHeaders } from '../../../cache-headers.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
 import { getRouteAccessPost, getRoutePostByAnyCached } from '@services/posts/route-access'
+import { getAnonymousPostSnapshotByAnyCached } from '@services/posts/anonymous-snapshot'
 
 app.route('/api/v1/posts/:idOrSlug').get(async (ctx: Context) => {
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/posts/:idOrSlug')
   validateRequestContract(ctx, 'GET:/api/v1/posts/:idOrSlug', { path: ctx.params })
-  const { post, root } = await getRoutePostByAnyCached(ctx.params.idOrSlug!, {
-    includeDeleted: true,
-  })
+  const { post, readState } = currentUser
+    ? await (async () => {
+        const { post: loadedPost, root } = await getRoutePostByAnyCached(ctx.params.idOrSlug!, {
+          includeDeleted: true,
+        })
+        if (!loadedPost || !(await getRouteAccessPost(loadedPost, root)))
+          return { post: null, root: null, readState: null }
+        return {
+          post: loadedPost,
+          root,
+          readState: await getRequestedPostReadState(
+            currentUser,
+            loadedPost,
+            loadedPost.root_post_id ? root : null,
+          ),
+        }
+      })()
+    : await getAnonymousPostSnapshotByAnyCached(ctx.params.idOrSlug!)
   ctx.assert(post, 404, 'Post not found')
-
-  const privacyPost = await getRouteAccessPost(post, root)
-  ctx.assert(privacyPost, 404, 'Post not found')
-  const readState = await getRequestedPostReadState(
-    currentUser,
-    post,
-    post.root_post_id ? root : null,
-  )
   ctx.assert(readState, 404, 'Post not found')
 
   ctx.set('Cache-Control', 'private, no-store')

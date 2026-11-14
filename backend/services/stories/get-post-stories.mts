@@ -3,6 +3,7 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { PostStory } from './types.mts'
 import type { BasicUser } from '@services/users/types'
+import { createSearchCache } from '@services/entity-cache/search-cache'
 import {
   buildPublicPostEligibilityFilter,
   buildViewerPostDiscoveryEligibilityFilter,
@@ -30,12 +31,28 @@ export async function getPostStoryIdsByStoryIds(
   return result
 }
 
+const cachedAnonymousStoryPostIds = createSearchCache(
+  'visible_story_post_ids_anon_v1',
+  ({ storyIds }: { storyIds: string[] }) => readVisiblePostStoryIdsByStoryIds(null, storyIds),
+)
+
 export async function getVisiblePostStoryIdsByStoryIds(
   currentUser: BasicUser | null,
   storyIds: string[],
   options: QueryOptions = {},
 ): Promise<Record<string, string>> {
   if (storyIds.length === 0) return {}
+  if (!currentUser && options.query === undefined && options.readOnly !== false) {
+    return cachedAnonymousStoryPostIds({ storyIds: [...new Set(storyIds)].toSorted() })
+  }
+  return readVisiblePostStoryIdsByStoryIds(currentUser, storyIds, options)
+}
+
+async function readVisiblePostStoryIdsByStoryIds(
+  currentUser: BasicUser | null,
+  storyIds: string[],
+  options: QueryOptions = {},
+): Promise<Record<string, string>> {
   const eligibility = currentUser
     ? buildViewerPostDiscoveryEligibilityFilter('candidate_post', 'root_post', {
         currentUserId: currentUser.id,

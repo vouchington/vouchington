@@ -25,13 +25,8 @@ export async function finalizePostUpdateAndDeliver({
       start: () => addEntityBloomKeys('posts', [normalizeKey(slug)]),
     })
   }
-  let cacheOperation: ReturnType<typeof startPostCacheInvalidation> | undefined
   operations.push({
-    start: () => {
-      cacheOperation = startPostCacheInvalidation(previousPost, updatedPost)
-      return cacheOperation.completion
-    },
-    isRejectionReported: () => cacheOperation?.rejectionReported ?? false,
+    start: () => startPostCacheInvalidation(previousPost, updatedPost),
   })
   if (shouldEnqueuePostUpdated) {
     operations.push({

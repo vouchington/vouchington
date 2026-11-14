@@ -1,16 +1,18 @@
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { cacheValkeyClient } from '@data-stores/valkey/clients'
 import { SEARCH_CACHE_TTL_SECONDS } from '../services/entity-cache/search-cache-ttl.mts'
-import { stableSerialize } from '../services/entity-cache/search-cache.mts'
+import { getAnonymousCacheGeneration } from '../services/entity-cache/anonymous-cache-generation.mts'
+import { serializeSearchCacheKey } from '../services/entity-cache/search-cache.mts'
 
 /** Own conditional cache commands for the isolated Stats Valkey instance. */
-export function observePlatformStatsCache() {
-  const cache = new ValkeyCache<Record<string, never>>({
+export async function observePlatformStatsCache() {
+  const input = { generation: await getAnonymousCacheGeneration(), options: {} }
+  const cache = new ValkeyCache<typeof input>({
     prefix: 'platform_stats_anon',
     ttlSeconds: SEARCH_CACHE_TTL_SECONDS,
-    keySerializer: stableSerialize,
+    keySerializer: serializeSearchCacheKey,
   })
-  const key = cache.getKey({})
+  const key = cache.getKey(input)
   const original = cacheValkeyClient.invokeScript
   const pending: Promise<PromiseSettledResult<unknown>>[] = []
   let markerKey: string | undefined
@@ -29,8 +31,9 @@ export function observePlatformStatsCache() {
   }
   cacheValkeyClient.invokeScript = wrapped
   return {
+    cacheKey: serializeSearchCacheKey(input),
     async clear() {
-      await cache.delete({})
+      await cache.delete(input)
       if (!markerKey) throw new Error('Stats cache invalidation marker was not observed')
       await cacheValkeyClient.unlink([key, markerKey])
     },

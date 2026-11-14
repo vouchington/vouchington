@@ -44,6 +44,8 @@ describe('buildDirectPostEligibilityFilter', () => {
 
     expect(statement.text).toContain('candidate_post.deleted_at IS NULL')
     expect(statement.text).toContain('access_post.deleted_at IS NULL')
+    expect(statement.text).toContain('publication_candidate_author.deleted_at IS NULL')
+    expect(statement.text).toContain('publication_root_author.deleted_at IS NULL')
     expect(statement.text).not.toContain('approved_at')
     expect(statement.text).not.toContain('story_posts')
   })
@@ -64,6 +66,8 @@ describe('buildPublicPostEligibilityFilter', () => {
 
     expect(statement.text).toContain('candidate_post.deleted_at IS NULL')
     expect(statement.text).toContain('access_post.deleted_at IS NULL')
+    expect(statement.text).toContain('publication_candidate_author.deleted_at IS NULL')
+    expect(statement.text).toContain('publication_root_author.deleted_at IS NULL')
     expect(statement.text).toContain('candidate_post.approved_at IS NOT NULL')
     expect(statement.text).toContain('access_post.approved_at IS NOT NULL')
     expect(statement.text).toContain('candidate_post.archived_at IS NULL')

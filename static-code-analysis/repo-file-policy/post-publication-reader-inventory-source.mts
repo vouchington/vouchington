@@ -2,8 +2,6 @@ import type { SharedContext } from 'vouchington-tooling/shared-context'
 import {
   extractStaticSqlTemplateQuasis as extractSqlTemplateQuasis,
   sourceImportsAndComposesAny as importsAndComposes,
-  sourceImportsAndUsesBoundaryAny as importsAndUsesBoundary,
-  sourceFiltersWithPublicBoundary as filtersWithPublicBoundary,
 } from 'vouchington-tooling/post-publication-inventory'
 
 import {
@@ -24,8 +22,8 @@ const PUBLIC_READER_SCOPES = [
   'backend/services/posts/search/',
   'backend/services/posts/metrics.mts',
   'backend/services/posts/metrics-batch.mts',
-  'backend/services/posts/public-ids.mts',
   'backend/services/posts/public-rss-snapshots.mts',
+  'backend/services/posts/anonymous-snapshot-query.mts',
   'backend/services/platform-stats/',
   'backend/services/stories/get-post-stories.mts',
   'backend/services/prioritized-referral-links/',
@@ -71,12 +69,4 @@ export function extractStaticSqlTemplateQuasis(content: string): string[] {
 
 export function sourceImportsAndComposesAny(content: string, symbols: string[]): boolean {
   return importsAndComposes(content, symbols, readerSourceOptions(symbols))
-}
-
-export function sourceImportsAndUsesBoundaryAny(content: string, symbols: string[]): boolean {
-  return importsAndUsesBoundary(content, symbols, readerSourceOptions(symbols))
-}
-
-export function sourceFiltersWithPublicBoundary(content: string, symbols: string[]): boolean {
-  return filtersWithPublicBoundary(content, symbols, readerSourceOptions(symbols))
 }

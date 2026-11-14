@@ -3,16 +3,12 @@ import {
   ENTITY_LISTENERS_POST_CREATED_JOB,
   ENTITY_LISTENERS_POST_UPDATED_JOB,
 } from '@queues/background/enqueues/entity-listeners-jobs'
-import {
-  backgroundQueue as entitiesListeners,
-  backgroundQueue as cachePurge,
-} from '@voucha/test-helpers/shared-background-queue'
+import { backgroundQueue as entitiesListeners } from '@voucha/test-helpers/shared-background-queue'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { caches } from '@services/entity-cache/caches'
 import { applyPostCommitSideEffects } from '../create/post-commit-side-effects.mts'
 import { finalizePostUpdateAndDeliver } from '../update/post-commit-delivery.mts'
 import { createPostCompletionFixture } from '../../../test-helpers/post-commit-completion.mts'
-import { postTag } from '@ts-shared/cache'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 
@@ -116,47 +112,6 @@ describe('post-commit failure reporting ownership', () => {
       ])
       expect(sentryCaptureExceptionMock.mock.calls.filter(([err]) => err === failure)).toHaveLength(
         1,
-      )
-    } finally {
-      spy.mockRestore()
-    }
-  })
-
-  it('retains a default purge admission failure without duplicating its factory report', async () => {
-    const { post } = await createPostCompletionFixture()
-    const failure = new Error('Owned purge admission failure')
-    const original = cachePurge.addBulk
-    const spy = vi.spyOn(cachePurge, 'addBulk')
-    spy.mockImplementation(jobs => {
-      if (
-        jobs.some(
-          job =>
-            typeof job.data === 'object' &&
-            job.data &&
-            'tags' in job.data &&
-            Array.isArray(job.data.tags) &&
-            job.data.tags.includes(postTag(post.id)),
-        )
-      )
-        return Promise.reject(failure)
-      return original.call(cachePurge, jobs)
-    })
-    try {
-      await expect(
-        finalizePostUpdateAndDeliver({
-          changes: {},
-          contentChanged: false,
-          previousPost: post,
-          updatedPost: post,
-          shouldEnqueuePostUpdated: false,
-        }),
-      ).resolves.toBe(post)
-      expect(sentryCaptureExceptionMock.mock.calls.filter(([err]) => err === failure)).toHaveLength(
-        1,
-      )
-      await expect(invalidate.posts(post)).resolves.toBeUndefined()
-      expect(sentryCaptureExceptionMock.mock.calls.filter(([err]) => err === failure)).toHaveLength(
-        2,
       )
     } finally {
       spy.mockRestore()

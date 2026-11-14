@@ -42,19 +42,6 @@ export function assertBackendRowContracts(program: Program): void {
     )
   }
 
-  const projectedReads = getCallRowTypeFacts({
-    program,
-    typescript: ts,
-    fileName: fileName('backend/services/posts/public-ids.mts'),
-    calleeText: 'read',
-    rowSource: 'awaitedRows',
-    typeArgumentText: '{ id: string }',
-    propertyNames: ['id'],
-  })
-  assert.equal(projectedReads.length, 1, 'Expected one getPublicPostIds projected read')
-  assert.equal(projectedReads[0]?.isAny, false)
-  assert.equal(projectedReads[0]?.properties.id, 'string')
-
   const consumed = {
     id: 'string',
     title: 'string',

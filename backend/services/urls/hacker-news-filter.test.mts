@@ -1,5 +1,6 @@
 import { valkeyEvents } from 'valkyries'
-import { stableSerialize } from '@services/entity-cache/search-cache'
+import { serializeSearchCacheKey } from '@services/entity-cache/search-cache'
+import { getAnonymousCacheGeneration } from '@services/entity-cache/anonymous-cache-generation'
 import {
   POST_IDS_ANON_CACHE,
   RSS_FEED_ITEMS_ANON_CACHE,
@@ -34,14 +35,23 @@ async function readStoredSnapshot<T>(
   options: object,
   read: () => Promise<T>,
 ): Promise<T> {
-  const key = stableSerialize(options)
+  // Search snapshots are keyed by the anonymous legal generation, which a concurrent legal
+  // removal may advance during the read, so accept the key from either side of it.
+  const keys = new Set([
+    serializeSearchCacheKey({ generation: await getAnonymousCacheGeneration(), options }),
+  ])
+  const storedKeys = new Set<string>()
   const stored = Promise.withResolvers<void>()
   const onSet = (event: { cacheName: string; keys: string[] }) => {
-    if (event.cacheName === prefix && event.keys.includes(key)) stored.resolve()
+    if (event.cacheName !== prefix) return
+    for (const key of event.keys) storedKeys.add(key)
+    if (event.keys.some(key => keys.has(key))) stored.resolve()
   }
   valkeyEvents.on('cache:set', onSet)
   try {
     const result = await read()
+    keys.add(serializeSearchCacheKey({ generation: await getAnonymousCacheGeneration(), options }))
+    if ([...keys].some(key => storedKeys.has(key))) stored.resolve()
     await stored.promise
     return result
   } finally {

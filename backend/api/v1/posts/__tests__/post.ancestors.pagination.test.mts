@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, deleteTestPost, insertTestPost } from '@voucha/test-helpers'
 import { caches } from '@services/entity-cache/caches'
+import { getAnonymousCacheGeneration } from '@services/entity-cache/anonymous-cache-generation'
 import type { PrivateUser } from '@services/users/types'
 
 describe('post.ancestors pagination', () => {
@@ -177,9 +178,10 @@ describe('post.ancestors pagination', () => {
       .expect(400)
   })
 
-  it('rechecks target access before serving a continuation window', async () => {
+  it('keeps a cached anonymous continuation coherent while authenticated access checks stay live', async () => {
     const { ids } = await createCommentChain(8)
     const targetId = ids.at(-1)!
+    const generation = await getAnonymousCacheGeneration()
     const first = await createRequest()
       .get(`/api/v1/posts/${targetId}/ancestors?limit=5`)
       .expect(200)
@@ -187,11 +189,13 @@ describe('post.ancestors pagination', () => {
     // The delete flow drops the cached post; the SQL helper does not.
     await caches.posts.delete(targetId)
 
-    await createRequest()
-      .get(
-        `/api/v1/posts/${targetId}/ancestors?limit=5&after=${encodeURIComponent(first.body.page_info.end_cursor as string)}`,
-      )
-      .expect(404)
+    const continuation = `/api/v1/posts/${targetId}/ancestors?limit=5&after=${encodeURIComponent(first.body.page_info.end_cursor as string)}`
+    const anonymous = await createRequest().get(continuation)
+    const stableGeneration = generation === (await getAnonymousCacheGeneration())
+    expect(stableGeneration ? [200] : [200, 404]).toContain(anonymous.status)
+    const authenticated = createRequest()
+    await authenticated.authenticateAs(creator)
+    await authenticated.get(continuation).expect(404)
   })
 
   it('keeps comment creation unlimited when the parent chain is already deeper than five', async () => {

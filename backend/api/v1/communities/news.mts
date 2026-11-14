@@ -14,7 +14,7 @@ import {
   getRssFeedItemByIdCachedBatch,
   getRssFeedItemElectionByIdCachedBatch,
 } from '@services/entity-fetch'
-import { getPostIdsByUrlIds } from '@services/posts/search/get-posts-by-url-ids'
+import { loadNewsRelatedPosts } from '@services/stories/news-related-posts'
 import { labelAndMaskPosts } from '@services/content-provenance'
 import { getBookmarksForEntityGroups } from '@services/bookmarks/get'
 import { getRssFeedItemElectionVotesByUser } from '@services/elections-votes/rss-feed-item'
@@ -112,16 +112,9 @@ app.route('/api/v1/communities/:idOrSlug/news').get(async (ctx: Context) => {
   const usersPromise =
     sharedByUserIds.length > 0 ? getPublicUsersByAnyBatch(sharedByUserIds) : Promise.resolve([])
 
-  const relatedPostsPromise = itemsPromise.then(async items => {
-    const urlIds = [...new Set(items.flatMap(item => (item?.url?.id ? [item.url.id] : [])))]
-    const storyPostIdValues = Object.values(storyPostIds)
-    if (urlIds.length === 0) return { related_posts_by_url_id: {}, postIds: storyPostIdValues }
-    const related_posts_by_url_id = await getPostIdsByUrlIds(currentUser, urlIds)
-    const postIds = [
-      ...new Set([...Object.values(related_posts_by_url_id).flat(), ...storyPostIdValues]),
-    ]
-    return { related_posts_by_url_id, postIds }
-  })
+  const relatedPostsPromise = itemsPromise.then(items =>
+    loadNewsRelatedPosts(currentUser, items, storyPostIds),
+  )
 
   const stories: Record<string, unknown> = {}
   for (const story of storiesArr) {
@@ -133,7 +126,7 @@ app.route('/api/v1/communities/:idOrSlug/news').get(async (ctx: Context) => {
     page_info: result.page_info,
     stories,
     story_member_pages: storyMemberPages,
-    story_post_ids: storyPostIds,
+    story_post_ids: relatedPostsPromise.then(r => r.story_post_ids),
     rss_feed_items: itemsPromise.then(items =>
       indexById(items.map(item => (item == null ? item : proxyRssFeedItemCoverArt(item)))),
     ),
@@ -152,11 +145,13 @@ app.route('/api/v1/communities/:idOrSlug/news').get(async (ctx: Context) => {
     rss_feed_item_elections: getRssFeedItemElectionByIdCachedBatch(allItemIds).then(indexById),
     related_posts_by_url_id: relatedPostsPromise.then(r => r.related_posts_by_url_id),
     posts: relatedPostsPromise.then(r =>
-      r.postIds.length > 0
-        ? getPostByAnyCachedBatch(r.postIds)
-            .then(posts => labelAndMaskPosts(posts, currentUser))
-            .then(indexById)
-        : {},
+      r.anonymousPosts
+        ? labelAndMaskPosts(r.anonymousPosts, currentUser).then(indexById)
+        : r.postIds.length > 0
+          ? getPostByAnyCachedBatch(r.postIds)
+              .then(posts => labelAndMaskPosts(posts, currentUser))
+              .then(indexById)
+          : {},
     ),
     posts_metrics: relatedPostsPromise.then(r =>
       r.postIds.length > 0 ? getPostMetricsByAnyCachedBatch(r.postIds).then(indexById) : {},

@@ -17,7 +17,13 @@ export const CACHE_GROUPS = [
   },
   {
     name: 'posts',
-    prefixes: ['posts', 'posts_lookup', 'post_metrics', 'post_elections'],
+    prefixes: [
+      'posts',
+      'anonymous_post_snapshots',
+      'posts_lookup',
+      'post_metrics',
+      'post_elections',
+    ],
   },
   { name: 'rss', prefixes: ['rss_feeds', 'rss_feed_items', 'rss_feed_item_elections'] },
   {

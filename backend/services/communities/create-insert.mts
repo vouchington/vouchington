@@ -8,7 +8,6 @@ import onError from '@modules/on-error'
 import { enqueueLanguageDetection } from '@queues/content-analysis/enqueues'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
-import { invalidate } from '@services/entity-cache/invalidate'
 import {
   assertImagesReadyForSurface,
   syncImageSurfacePlacement,
@@ -134,10 +133,7 @@ export async function insertCommunity(
       normalizeKey(community.id),
       normalizeKey(community.slug),
     ])
-    await Promise.all([
-      invalidate.communities(community),
-      invalidateCommunityMemberUserMetrics(currentUserId),
-    ])
+    await invalidateCommunityMemberUserMetrics(currentUserId)
     // Language detection is asynchronous enrichment; the committed community remains durable.
     void enqueueLanguageDetection('community', community.id).catch(onError)
   })

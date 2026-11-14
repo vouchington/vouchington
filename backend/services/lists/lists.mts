@@ -4,7 +4,6 @@ import { buildPageInfo, decodeUuidCursor, isSimpleCursor } from '@modules/pagina
 import type { PageInfo } from '@voucha/types/pagination'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { List, ListVisibility } from './types.mts'
-import { invalidate } from '@services/entity-cache/invalidate'
 
 function rowToList(row: Record<string, unknown>): List {
   return {
@@ -48,7 +47,6 @@ export async function createList(
   )
   await query.commit()
   const list = rowToList(rows[0]!)
-  await invalidate.lists(list.id)
   return list
 }
 
@@ -104,7 +102,6 @@ export async function updateList(
   await query.commit()
   assert(rows.length > 0, 404, 'List not found')
   const list = rowToList(rows[0]!)
-  await invalidate.lists(list.id)
   return list
 }
 
@@ -121,7 +118,6 @@ export async function softDeleteList(currentUserId: string, listId: string): Pro
     [listId, currentUserId],
   )
   assert(rows.length > 0, 404, 'List not found')
-  await invalidate.lists(listId)
 }
 
 export async function searchUserLists(

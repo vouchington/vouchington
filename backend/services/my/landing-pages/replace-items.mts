@@ -131,8 +131,6 @@ export async function replaceMyLandingPageItems(
     selections: { profileLinksById, reviewsById, referralLinksById },
   })
   await query.commit()
-  // Public landing-page GET responses are edge-cached and tagged user:<username> (see
-  // ts-shared/cache/cache-tags.mts), so a reorder/replace of items must purge that tag.
   await invalidate.urls(...urls.records.flatMap(url => [url.id, url.url]))
   await invalidate.users(userId)
   return result

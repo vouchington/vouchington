@@ -5,7 +5,7 @@
 ## Cache Tiers
 
 The read path below traces a request across all three tiers, plus where the invalidation/purge
-path re-enters at Tier 1 for legal removals. The Worker alone chooses HTTP cache lifetimes;
+path re-enters at Tier 1 for legal removal. The Worker alone chooses HTTP cache lifetimes;
 Valkey cache lifetimes are independent.
 
 ```mermaid
@@ -27,8 +27,9 @@ flowchart TD
     VHit --> Headers["Tier 2: origin signals public or private, no-store"]
     PG --> Headers
     Headers --> EdgeWrite["CF Worker applies its TTL policy, writes Workers Cache"]
-    Mutation["Mutation"] --> Invalidate["Invalidate Valkey entity keys"]
-    Legal["Legal removal: copyright or user deletion"] --> Purge["Cache-Tag purge through authenticated worker endpoint"]
+    Mutation["Routine mutation"] --> Invalidate["Evict affected origin entity caches"]
+    Legal["Copyright or account deletion"] --> Fence["Advance anonymous origin namespace"]
+    Fence --> Purge["Legal Cache-Tag purge at CachedOrigin"]
 ```
 
 ### Contents

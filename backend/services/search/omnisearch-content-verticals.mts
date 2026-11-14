@@ -1,9 +1,9 @@
 import { getPaginationLimits } from '@services/pagination'
 import { indexById } from '@modules/utils'
 import { getPostByAnyCachedBatch, getRssFeedItemByIdCachedBatch } from '@services/entity-fetch'
+import { getAnonymousPostRowsByIdsCached } from '@services/posts/anonymous-snapshot'
 import { getPostIdsCached, searchRssFeedItemsCached } from '@services/entity-fetch/search-caches'
 import { getPostIds } from '@services/posts/search/get-ids'
-import { getPublicPostIds } from '@services/posts'
 import { searchRssFeedItems } from '@services/rss-feed-items/search'
 import type { OmnisearchNewsItem, OmnisearchOptions, OmnisearchPost } from './omnisearch-types.mts'
 
@@ -39,15 +39,17 @@ export async function searchPostsVertical(options: OmnisearchOptions): Promise<P
     ? await getPostIds(currentUser, params)
     : await getPostIdsCached(params)
   if (results.length === 0) return { results: [], page_info }
-  const visibleResults = currentUser
-    ? results
-    : await getPublicPostIds(results.map(result => result.id)).then(publicPostIds =>
-        results.filter(result => publicPostIds.has(result.id)),
-      )
   const postsById = indexById(
-    await getPostByAnyCachedBatch(visibleResults.map(result => result.id)),
+    currentUser
+      ? await getPostByAnyCachedBatch(results.map(result => result.id))
+      : (
+          await getAnonymousPostRowsByIdsCached(
+            results.map(result => result.id),
+            'discovery',
+          )
+        ).map(row => row.post),
   )
-  const posts = visibleResults.flatMap(result => {
+  const posts = results.flatMap(result => {
     const post = postsById[result.id]
     if (!post) return []
     const authoredTitle = post.title.trim() || null

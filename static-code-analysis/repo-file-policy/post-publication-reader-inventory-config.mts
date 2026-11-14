@@ -33,14 +33,5 @@ function allowedImportSources(symbol: string): Set<string> {
   if (symbol === 'buildViewerPostDiscoveryEligibilityFilter') {
     return new Set(['@modules/feed-query-builders', './post-publication-eligibility.mts'])
   }
-  if (symbol === 'getPublicRssPostSnapshotsCached') {
-    return new Set(['@services/posts/public-rss-snapshots'])
-  }
-  if (symbol === 'getPublicPostIds') return new Set(['@services/posts'])
-  if (symbol === 'getCommentDescendantsPage') return new Set(['@services/comments'])
-  if (symbol === 'getVisibleCommentDescendantIdsPage') {
-    return new Set(['@services/comments', './descendant-ids.mts'])
-  }
-  if (symbol === 'getVisiblePostStoryIdsByStoryIds') return new Set(['@services/stories'])
-  return new Set(['@services/posts', '@services/posts/check-privacy-access'])
+  return new Set()
 }

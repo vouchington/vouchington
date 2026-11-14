@@ -4,7 +4,6 @@ import { closeAndUnregisterGlideMQInstance } from '@data-stores/valkey-glide-mq'
 import { CACHE_PURGE_TAGS_JOB } from '@queues/background/enqueues/cache-purge-jobs'
 import { getBackgroundDomainDefinition } from '@queues/background/enqueues/registry'
 import { background } from '@queues/background/queues'
-import { enqueueBulkPurgeCacheTags } from '@queues/cache-purge/enqueues'
 import { BACKGROUND_HANDLERS } from '../processors/handlers.mts'
 import { createBackgroundWorker } from '../workers/create-worker.mts'
 
@@ -35,29 +34,11 @@ describe('cache-purge background domain', () => {
     })
   })
 
-  it('forwards an enqueued purge job to the cache-purge boundary', async () => {
-    const tag = `post:${crypto.randomUUID()}`
-    await enqueueBulkPurgeCacheTags([tag])
+  it('forwards a queued purge job to the cache-purge boundary', async () => {
+    const tags = [`post:${crypto.randomUUID()}`]
+    await background.add(CACHE_PURGE_TAGS_JOB.name, { tags }, CACHE_PURGE_TAGS_JOB.options)
 
-    expect(purgeCacheTags).toHaveBeenCalledWith([tag])
-  })
-
-  it('forwards a prioritized purge job to the cache-purge boundary', async () => {
-    const tag = `post:${crypto.randomUUID()}`
-    await enqueueBulkPurgeCacheTags([tag], 5)
-
-    expect(purgeCacheTags).toHaveBeenCalledWith([tag])
-  })
-
-  it('chunks 35 tags into two jobs (30 + 5), forwarding each tag array', async () => {
-    const runId = crypto.randomUUID()
-    const tags = Array.from({ length: 35 }, (_, i) => `post:${runId}-${i}`)
-
-    await enqueueBulkPurgeCacheTags(tags)
-
-    expect(purgeCacheTags).toHaveBeenCalledTimes(2)
-    expect(purgeCacheTags).toHaveBeenCalledWith(tags.slice(0, 30))
-    expect(purgeCacheTags).toHaveBeenCalledWith(tags.slice(30))
+    expect(purgeCacheTags).toHaveBeenCalledWith(tags)
   })
 
   it('rejects the retired single-tag queue payload', async () => {
@@ -76,36 +57,5 @@ describe('cache-purge background domain', () => {
       ),
     ).rejects.toThrow('Cache purge job requires tags')
     expect(purgeCacheTags).not.toHaveBeenCalled()
-  })
-
-  // The shim does not enforce production dedup/debounce semantics, so the sorted-chunk dedup id
-  // shape is verified against the enqueue's addBulk arguments instead of a collapsed duplicate.
-  it('derives the dedup id from the sorted chunk content, not from tag order', async () => {
-    const addBulkSpy = vi.spyOn(background, 'addBulk')
-    try {
-      const tags = [`topic:${crypto.randomUUID()}`, `post:${crypto.randomUUID()}`]
-
-      await enqueueBulkPurgeCacheTags(tags)
-
-      const jobs = addBulkSpy.mock.calls
-        .map(
-          ([entries]) =>
-            entries as Array<{ name: string; data: unknown; opts?: Record<string, unknown> }>,
-        )
-        .find(entries => entries[0]?.name === CACHE_PURGE_TAGS_JOB.name)
-      expect(
-        addBulkSpy.mock.calls.filter(
-          ([entries]) =>
-            (entries as Array<{ name: string }>)[0]?.name === CACHE_PURGE_TAGS_JOB.name,
-        ),
-      ).toHaveLength(1)
-      expect(jobs).toHaveLength(1)
-      expect(jobs![0]!.data).toEqual({ tags })
-      expect((jobs![0]!.opts?.deduplication as { id?: string } | undefined)?.id).toBe(
-        `cache-purge.processPurgeCacheTag__${tags.toSorted().join(',')}`,
-      )
-    } finally {
-      addBulkSpy.mockRestore()
-    }
   })
 })

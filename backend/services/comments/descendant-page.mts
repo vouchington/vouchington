@@ -2,6 +2,7 @@ import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/paginat
 import type { PrivateUser } from '@services/users/types'
 import type { PageInfo } from '@voucha/types/pagination'
 import { getVisibleCommentDescendantIdsPage } from './descendant-ids.mts'
+import { createSearchCache } from '@services/entity-cache/search-cache'
 
 /** The page size contract of `GET /api/v1/posts/:idOrSlug/descendants` and its MCP twin. */
 export const COMMENT_DESCENDANTS_LIMIT = { min: 1, max: 200, default: 100 } as const
@@ -42,4 +43,22 @@ export async function getCommentDescendantsPage(
         : null,
     },
   }
+}
+
+const cachedAnonymousPage = createSearchCache(
+  'comment_descendants_anon_v1',
+  (input: { post: { id: string; root_post_id: string | null }; limit: number; after?: string }) =>
+    getCommentDescendantsPage(null, input.post, { limit: input.limit, after: input.after }),
+)
+
+/** The page's canonical root and child SQL runs on cache fill, including cursor pages. */
+export function getAnonymousCommentDescendantsPageCached(
+  post: { id: string; root_post_id: string | null },
+  options: { limit: number; after?: string },
+): Promise<CommentDescendantsPage> {
+  return cachedAnonymousPage({
+    post: { id: post.id, root_post_id: post.root_post_id },
+    limit: options.limit,
+    after: options.after,
+  })
 }

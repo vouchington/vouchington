@@ -7,6 +7,7 @@ import {
   type EntityRelationElectionCacheKey,
 } from './entity-relation-election-key.mts'
 import { EntityBloomCache } from './entity-bloom-cache.mts'
+import { SEARCH_CACHE_TTL_SECONDS } from './search-cache-ttl.mts'
 
 const PUBLIC_USER_SHAPE_CACHE_VERSION = 'v2'
 const TOPIC_PLACEMENT_SHAPE_CACHE_VERSION = 'v3'
@@ -60,6 +61,10 @@ export const caches = {
   posts: new EntityBloomCache('posts', {
     prefix: `posts:${PUBLIC_USER_SHAPE_CACHE_VERSION}`,
     ttlSeconds: CACHE_TTLS_SECONDS.posts,
+  }),
+  anonymous_post_snapshots: new ValkeyCache<string>({
+    prefix: 'anonymous_post_snapshots:v1',
+    ttlSeconds: SEARCH_CACHE_TTL_SECONDS,
   }),
   posts_lookup: new ValkeyCache({
     prefix: 'posts_lookup',

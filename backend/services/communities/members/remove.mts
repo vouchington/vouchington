@@ -6,7 +6,6 @@ import { getActiveCommunityMembersForUsers } from './batch.mts'
 import type { Community } from '../types.mts'
 import { enqueueOnCommunityAgentPromptsDeactivated } from '@queues/entity-listeners/enqueues'
 import { recordModeratorAction } from '@services/moderator-actions'
-import { invalidate } from '@services/entity-cache/invalidate'
 import { invalidateCommunityMemberUserMetrics } from './invalidate-user-metrics.mts'
 
 export async function removeMember(
@@ -66,10 +65,7 @@ export async function removeMember(
       communityId,
       targetUserId,
     })
-    await Promise.all([
-      invalidate.communities(communityId),
-      invalidateCommunityMemberUserMetrics(targetUserId),
-    ])
+    await invalidateCommunityMemberUserMetrics(targetUserId)
   }
 
   // Free any agent prompt slots when removing an owner or moderator

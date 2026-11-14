@@ -2994,15 +2994,6 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
-  backend/queues/cache-purge:
-    dependencies:
-      '@queues/background':
-        specifier: workspace:^
-        version: link:../background
-      '@ts-shared/cache':
-        specifier: workspace:^
-        version: link:../../../ts-shared/cache
-
   backend/queues/content-analysis:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -5184,6 +5175,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../entity-cache
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -6848,9 +6842,6 @@ importers:
       '@queues/bloom-filters':
         specifier: workspace:^
         version: link:../../queues/bloom-filters
-      '@queues/cache-purge':
-        specifier: workspace:^
-        version: link:../../queues/cache-purge
       '@services/batch-lookup':
         specifier: workspace:^
         version: link:../batch-lookup
@@ -6958,9 +6949,6 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
     devDependencies:
-      '@data-stores/valkey':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background
@@ -6976,9 +6964,6 @@ importers:
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
-      valkyries:
-        specifier: ^0.15.0
-        version: 0.15.0
 
   backend/services/entity-links:
     dependencies:
@@ -7880,9 +7865,6 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
-      '@services/entity-cache':
-        specifier: workspace:^
-        version: link:../entity-cache
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
@@ -8811,12 +8793,6 @@ importers:
         specifier: ^0.15.0
         version: 0.15.0
     devDependencies:
-      '@queues/background':
-        specifier: workspace:^
-        version: link:../../queues/background
-      '@queues/cache-purge':
-        specifier: workspace:^
-        version: link:../../queues/cache-purge
       '@services/images':
         specifier: workspace:^
         version: link:../images
@@ -9948,9 +9924,6 @@ importers:
       '@services/web-risk':
         specifier: workspace:^
         version: link:../web-risk
-      '@ts-shared/cache':
-        specifier: workspace:^
-        version: link:../../../ts-shared/cache
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
@@ -13443,9 +13416,6 @@ importers:
       '@queues/admin-imports':
         specifier: workspace:^
         version: link:../../queues/admin-imports
-      '@queues/cache-purge':
-        specifier: workspace:^
-        version: link:../../queues/cache-purge
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
@@ -14900,9 +14870,6 @@ importers:
       '@queues/sitemaps':
         specifier: workspace:^
         version: link:../../queues/sitemaps
-      '@services/entity-cache':
-        specifier: workspace:^
-        version: link:../../services/entity-cache
       '@services/sitemaps':
         specifier: workspace:^
         version: link:../../services/sitemaps

@@ -2,7 +2,6 @@ import sql from 'sql-template-strings'
 import { write } from '@data-stores/psql'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
-import { invalidate } from '@services/entity-cache/invalidate'
 import type { CommunityAutomodAction, CommunityMember } from './types.mts'
 import { getCommunity, type CommunityWithOwner } from './get.mts'
 import { currentUserCanModerateCommunity } from './authorization.mts'
@@ -53,6 +52,5 @@ export async function updateCommunityAutomodSettings(
     assert(await getCommunity(communityId, { readOnly: false }), 404, 'Community not found')
     assert(false, 403, 'Cannot update archived community')
   }
-  await invalidate.communities(community, updated)
   return updated
 }

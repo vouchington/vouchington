@@ -12,6 +12,11 @@ import {
   setPostAiSummaryMarkdownForTest,
   suspendTestUser,
 } from '@voucha/test-helpers'
+import {
+  countCapturedQueriesByAnnotation,
+  enableQueryCapture,
+  stopTestQueryCapture,
+} from '@voucha/test-helpers/query-capture'
 
 describe('posts', () => {
   let user: PrivateUser
@@ -31,6 +36,32 @@ describe('posts', () => {
   })
 
   describe('GET /md/posts', () => {
+    it('serves warm list and detail without a live public-post recheck', async () => {
+      const slug = `md-public-cache-${crypto.randomUUID()}`
+      const postId = await insertTestPost({
+        title: 'Markdown public cache',
+        slug,
+        createdById: user.id,
+        markdown: 'Markdown public body',
+      })
+      await setMarkdownPostVotesForTest({ postId, countUp: 1 })
+      const request = createRequest()
+      const listPath = `/md/posts?creator=${user.id}`
+      const detailPath = `/md/posts/${postId}`
+      expect((await request.get(listPath).expect(200)).text).toContain('Markdown public cache')
+      expect((await request.get(detailPath).expect(200)).text).toContain('Markdown public body')
+
+      enableQueryCapture()
+      let queries: ReturnType<typeof stopTestQueryCapture>
+      try {
+        expect((await request.get(listPath).expect(200)).text).toContain('Markdown public cache')
+        expect((await request.get(detailPath).expect(200)).text).toContain('Markdown public body')
+      } finally {
+        queries = stopTestQueryCapture()
+      }
+      expect(countCapturedQueriesByAnnotation(queries, 'getPublicPostIds')).toBe(0)
+    })
+
     it('should return markdown with frontmatter', async () => {
       const request = createRequest()
       const response = await request.get('/md/posts').expect(200)

@@ -112,7 +112,7 @@ read(query)`
       makeContext({
         version: 1,
         canonical_builder: canonicalBuilder,
-        implemented: [{ path: 'backend/direct.mts', classification: 'direct-boundary' }],
+        implemented: [{ path: 'backend/direct.mts', classification: 'direct-sql' }],
         pr2_baseline: [
           { path: 'backend/missing.mts', classification: 'public-reader' },
           { path: 'backend/missing.mts', classification: 'public-reader' },
@@ -127,7 +127,7 @@ read(query)`
     expect(errors).toContain(`${inventoryPath}: pr2_baseline duplicates backend/missing.mts`)
   })
 
-  it('rejects a classified exception without a structured owning classification', () => {
+  it('rejects a classified exception without a rationale', () => {
     const errors: string[] = []
     checkPostPublicationReaderInventory(
       makeContext({
@@ -146,7 +146,51 @@ read(query)`
       errors,
     )
     expect(errors).toContain(
-      `${inventoryPath}: classified_exceptions requires a reason and structured owner`,
+      `${inventoryPath}: classified_exceptions requires a reason and classified owner`,
+    )
+  })
+
+  it('accepts a non-reader mutation exception without a reader owner', () => {
+    const errors: string[] = []
+    checkPostPublicationReaderInventory(
+      makeContext({
+        version: 1,
+        canonical_builder: canonicalBuilder,
+        implemented: [{ path: 'backend/direct.mts', classification: 'direct-sql' }],
+        pr2_baseline: [],
+        classified_exceptions: [
+          {
+            path: 'backend/reader.mts',
+            classification: 'mutation',
+            reason: 'Mutation work does not serialize public post rows.',
+          },
+        ],
+      }),
+      errors,
+    )
+    expect(errors).toEqual([])
+  })
+
+  it('requires a classified owner for a newly added exception', () => {
+    const errors: string[] = []
+    checkPostPublicationReaderInventory(
+      makeContext({
+        version: 1,
+        canonical_builder: canonicalBuilder,
+        implemented: [{ path: 'backend/direct.mts', classification: 'direct-sql' }],
+        pr2_baseline: [],
+        classified_exceptions: [
+          {
+            path: 'backend/reader.mts',
+            classification: 'raw-hydrator',
+            reason: 'A new SQL reader cannot claim an unreviewed ownerless exception.',
+          },
+        ],
+      }),
+      errors,
+    )
+    expect(errors).toContain(
+      `${inventoryPath}: classified_exceptions requires a reason and classified owner`,
     )
   })
 
