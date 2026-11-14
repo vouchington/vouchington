@@ -2994,15 +2994,6 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
-  backend/queues/cache-purge:
-    dependencies:
-      '@queues/background':
-        specifier: workspace:^
-        version: link:../background
-      '@ts-shared/cache':
-        specifier: workspace:^
-        version: link:../../../ts-shared/cache
-
   backend/queues/content-analysis:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -13425,9 +13416,6 @@ importers:
       '@queues/admin-imports':
         specifier: workspace:^
         version: link:../../queues/admin-imports
-      '@queues/cache-purge':
-        specifier: workspace:^
-        version: link:../../queues/cache-purge
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications

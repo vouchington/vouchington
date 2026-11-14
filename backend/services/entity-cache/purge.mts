@@ -16,9 +16,9 @@ function getConfiguredWorkerRoute(route: string | undefined): string | undefined
 }
 
 // Sends entity Cache-Tags to the worker's POST /infra/cache-purge route so the platform cache
-// evicts every response tagged with them (see @ts-shared/cache/cache-tags.mts). Most callers enqueue
-// through @queues/cache-purge. Privacy-boundary callers may await it directly after first recording
-// durable retry work. This throws so either the queue retry policy or the caller's durable-work
+// evicts every response tagged with them (see @ts-shared/cache/cache-tags.mts). Only legal removal
+// purges the edge; callers await it directly after first recording durable retry work, and the
+// cache-purge worker drains any jobs queued before routine freshness purges were retired. This throws so either the queue retry policy or the caller's durable-work
 // policy owns failures rather than silently swallowing them.
 /* no-mistakes: integration=http */
 export async function purgeCacheTags(
