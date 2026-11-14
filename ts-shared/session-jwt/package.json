@@ -23,7 +23,7 @@
   "dependencies": {
     "@vouchington/session-jwt": "^0.0.3",
     "@vouchington/utils": "^0.12.0",
-    "jose": "^6.2.16",
+    "jose": "^6.2.17",
     "uuid": "^14.0.3"
   }
 }
