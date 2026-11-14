@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import { isUUID } from '@modules/utils'
 import {
   buildDirectPostEligibilityFilter,
@@ -92,7 +92,9 @@ export async function getAnonymousPostRowsByAnyBatch(
     LEFT JOIN projected candidate_view ON candidate_view.id = candidate_post.id
     LEFT JOIN projected root_view ON root_view.id = eligible.root_id
   `)
-  const { rows } = await read<SnapshotRow>(statement)
+  // Fill from the primary: a replica that has not replayed a legal deletion would otherwise
+  // persist pre-removal content into the freshly advanced anonymous generation.
+  const { rows } = await write<SnapshotRow>(statement)
   for (const row of rows) {
     const post =
       row.candidate_json ?? (row.stub_post_type === 'comment' ? makeCommentStub(row) : null)
