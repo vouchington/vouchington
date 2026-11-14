@@ -514,16 +514,8 @@
         }
       # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: the loop advances chunks of insert_chunk_size (getAdminImportsWorkLimit) rows, one INSERT per chunk.
       - { file: backend/services/admin-imports/create-batch.mts, callee: 'write', line: 57 }
-      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: the loop advances chunks of import_insert_chunk_size (getUserImportExportConfig) urls, one INSERT per chunk.
-      - {
-          file: backend/services/user-import-export/rss-feed-import-records.mts,
-          callee: 'write',
-          line: 47,
-        }
       # no-mistakes FP jonathanong/no-mistakes#3110; remove when fixed: Promise.all over claim-token groups of one claim call; each group completes its whole id batch with one UPDATE.
       - { file: backend/services/memberships/entitlement-effects.mts, callee: 'query', line: 90 }
-      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: ordered lock loops advance chunks of capture_batch_size (getPostPublicationWorkLimit), one unnest ORDER BY statement per chunk.
-      - { file: backend/services/post-publication/capture-posts.mts, callee: 'query', line: 73 }
       # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: ordered lock loop advances chunks of story_lifecycle_lock_batch_size (getPostPublicationWorkLimit), one unnest ORDER BY statement per chunk.
       - {
           file: backend/services/post-publication/story-lifecycle-lock.mts,
@@ -4500,7 +4492,8 @@
   options:
     importSpecifier: '@data-stores/psql'
     executorFactoryNames: [beginTransaction, beginBoundedTransaction]
-    executorTypeNames: [TransactionQuery, QueryExecutor, PoolClient, QueryOptions, OwnedTransaction]
+    executorTypeNames:
+      [TransactionQuery, QueryExecutor, PoolClient, QueryOptions, OwnedTransaction, Pool]
     testGlobs:
       - '**/*.test.{ts,tsx,mts}'
       - '**/*.spec.{ts,tsx,mts}'
