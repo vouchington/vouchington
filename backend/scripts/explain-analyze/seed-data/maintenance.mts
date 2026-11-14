@@ -79,6 +79,9 @@ export const SEEDED_ROW_COUNT_TARGETS: readonly TableInfo[] = [
 export const ANALYZE_TARGETS = [
   ...new Set([
     ...SEEDED_ROW_COUNT_TARGETS.map(({ table }) => table),
+    'conversation_participants',
+    'post_moderation_versions',
+    'post_moderation_dispositions',
     'community_agent_prompts',
     'agent_prompts',
     'agent_moderation_votes',
