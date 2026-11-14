@@ -64,7 +64,8 @@ export async function finalizeCopyrightActionAfterDelivery(
   ) {
     const failureMessage = 'Placement changed while its exact delivery tuple was being projected.'
     // A live placement could have been refilled from the restored tuple before it changed.
-    if (action === 'restore' && current && !current.deleted) return deny('stale', failureMessage)
+    if (action === 'restore' && current && !current.deleted)
+      return await deny('stale', failureMessage)
     await completeCopyrightActionIntentInTransaction({
       intentId,
       leaseToken,
@@ -77,7 +78,7 @@ export async function finalizeCopyrightActionAfterDelivery(
     return 'stale'
   }
   if (action === 'restore' && (await restoreIsBlocked(legal, now, transaction))) {
-    return deny(
+    return await deny(
       'blocked',
       'A current copyright blocker was admitted before restore delivery completed.',
       { placementId: current.placementId, revision: current.revision, imageId: current.imageId },
