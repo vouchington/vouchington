@@ -52,6 +52,7 @@ import { NATIVE_CONSUMER_MANIFEST_CLAIMS_45_REAUTH_ERROR_CODES } from './native-
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_47_ENGINEERING_RANGES } from './native-consumer-manifest/claims-47-engineering-ranges.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_48_RELATION_LIMITS } from './native-consumer-manifest/claims-48-relation-limits.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_50_HOUSEHOLD_INVITATION_NOTIFICATION } from './native-consumer-manifest/claims-50-household-invitation-notification.mts'
+import { NATIVE_CONSUMER_MANIFEST_CLAIMS_51_PENALTY_REVIEWS } from './native-consumer-manifest/claims-51-penalty-reviews.mts'
 import type { NativeConsumerManifestEntry } from './native-consumer-manifest/types.mts'
 
 export type {
@@ -115,6 +116,7 @@ const NATIVE_CONSUMER_MANIFEST_CLAIM_SLICES: readonly (readonly NativeConsumerMa
   NATIVE_CONSUMER_MANIFEST_CLAIMS_47_ENGINEERING_RANGES,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_48_RELATION_LIMITS,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_50_HOUSEHOLD_INVITATION_NOTIFICATION,
+  NATIVE_CONSUMER_MANIFEST_CLAIMS_51_PENALTY_REVIEWS,
 ]
 
 export const NATIVE_CONSUMER_MANIFEST =
