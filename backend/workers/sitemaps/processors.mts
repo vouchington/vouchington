@@ -6,12 +6,7 @@ import {
   getWeeklyBackfillEntries,
 } from '@services/sitemaps/backfill-utils'
 import { generateSitemapFamilyFiles } from '@services/sitemaps/family-generation'
-import {
-  generatePostDaySitemapFiles,
-  generatePostTypeIndex,
-  generatePostsIndex,
-  generateRootIndex,
-} from '@services/sitemaps/generation'
+import { generatePostDaySitemapFiles } from '@services/sitemaps/generation'
 import {
   enqueueBulkUpdatePostDaySitemaps,
   enqueueFamilySitemapContinuation,
@@ -21,7 +16,6 @@ import {
   enqueueUpdatePostsIndex,
   enqueueUpdateRootIndex,
 } from '@queues/sitemaps/enqueues'
-import { invalidate } from '@services/entity-cache/invalidate'
 
 export async function processUpdatePostDaySitemap({
   postType,
@@ -42,24 +36,11 @@ export async function processUpdatePostDaySitemap({
     )
     return
   }
-  await invalidate.sitemaps()
   await Promise.all([
     enqueueUpdatePostTypeIndex(postType),
     enqueueUpdatePostsIndex(),
     enqueueUpdateRootIndex(),
   ])
-}
-
-export async function processUpdatePostTypeIndex(
-  postType: (typeof SITEMAP_CONFIG.POST_TYPES)[number],
-): Promise<void> {
-  await generatePostTypeIndex(postType)
-  await invalidate.sitemaps()
-}
-
-export async function processUpdatePostsIndex(): Promise<void> {
-  await generatePostsIndex()
-  await invalidate.sitemaps()
 }
 
 export async function processUpdateFamilySitemap({
@@ -76,12 +57,7 @@ export async function processUpdateFamilySitemap({
     await enqueueFamilySitemapContinuation(family, result.generationId, result.continuationId)
     return
   }
-  await Promise.all([invalidate.sitemaps(), enqueueUpdateRootIndex()])
-}
-
-export async function processUpdateRootIndex(): Promise<void> {
-  await generateRootIndex()
-  await invalidate.sitemaps()
+  await enqueueUpdateRootIndex()
 }
 
 export async function processNightlyBackfillWeekDispatcher(now = new Date()): Promise<void> {

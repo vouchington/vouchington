@@ -9,7 +9,6 @@ import { createCodedError } from '@vouchington/sentry'
 import { COMMUNITY_BANNED } from '@modules/on-error/error-codes'
 import { deletePendingInvitesForMember } from '../invites/delete-pending-for-member.mts'
 import type { Community, CommunityMember } from '../types.mts'
-import { invalidate } from '@services/entity-cache/invalidate'
 import { invalidateCommunityMemberUserMetrics } from './invalidate-user-metrics.mts'
 import { assertCommunityMembershipCapacity } from '../membership-limits.mts'
 
@@ -33,10 +32,7 @@ export async function joinCommunity(
   await query.commit()
 
   // Fire-and-forget: detect ban evasion after join (skips early if user has no posts)
-  await Promise.all([
-    invalidate.communities(communityId),
-    invalidateCommunityMemberUserMetrics(currentUserId),
-  ])
+  await invalidateCommunityMemberUserMetrics(currentUserId)
   void enqueueDetectBanEvasionOnJoin(communityId, currentUserId).catch(onError)
 
   return member

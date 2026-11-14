@@ -38,6 +38,7 @@ describe('getCacheGroups', () => {
     expect(postsGroup).toBeDefined()
     expect(postsGroup!.prefixes).toEqual([
       'posts',
+      'anonymous_post_snapshots',
       'posts_lookup',
       'post_metrics',
       'post_elections',
@@ -67,6 +68,17 @@ describe('cache clearing', () => {
     expect(invalidateManyMock).toHaveBeenCalledTimes(1)
     expect(invalidateManyMock).toHaveBeenCalledWith(
       ['users_private', 'users_public', 'users_lookup', 'user_metrics'],
+      cacheValkeyClient,
+    )
+  })
+
+  it('flushes anonymous post snapshots with the posts group', async () => {
+    invalidateManyMock.mockResolvedValue(undefined)
+
+    await clearCacheGroup('posts')
+
+    expect(invalidateManyMock).toHaveBeenCalledExactlyOnceWith(
+      ['posts', 'anonymous_post_snapshots', 'posts_lookup', 'post_metrics', 'post_elections'],
       cacheValkeyClient,
     )
   })

@@ -3,8 +3,6 @@ import app from '@voucha/api/app'
 import type { Context } from '@jongleberry/api-server'
 import { getPostIdByAnyCached } from '@services/entity-cache'
 import {
-  getPostByAnyCached,
-  getPostByAnyCachedBatch,
   getPostElectionByIdCached,
   getPostElectionByIdCachedBatch,
   getPostMetricsByAnyCachedBatch,
@@ -13,7 +11,10 @@ import { getPostIdsCached } from '@services/entity-fetch/search-caches'
 import { parsePostsSearchParams } from '@services/search-params'
 
 import { toFrontmatter } from '@modules/utils'
-import { getPublicPostIds } from '@services/posts'
+import {
+  getAnonymousPostRowsByIdsCached,
+  getAnonymousPostSnapshotByAnyCached,
+} from '@services/posts/anonymous-snapshot'
 import type { Post } from '@services/posts/types'
 import type { ViewPostElection } from '@services/elections-votes/post/types'
 
@@ -80,19 +81,17 @@ app.route('/md/posts').get(async (ctx: Context) => {
   const result = await getPostIdsCached(searchOptions)
   const postIds = result.results.map((r: { id: string }) => r.id)
 
-  const [posts, metrics, elections] = await Promise.all([
-    getPostByAnyCachedBatch(postIds),
+  const [postRows, metrics, elections] = await Promise.all([
+    getAnonymousPostRowsByIdsCached(postIds, 'discovery'),
     getPostMetricsByAnyCachedBatch(postIds),
     getPostElectionByIdCachedBatch(postIds),
   ])
+  const posts = postRows.map(row => row.post)
 
   const metricsMap = new Map(metrics.flatMap(m => (m ? [[m.id, m] as const] : [])))
   const electionMap = new Map(elections.flatMap(e => (e ? [[e.id, e] as const] : [])))
-  const publicPostIds = await getPublicPostIds(posts.flatMap(post => (post ? [post.id] : [])))
   const indexablePosts = posts.flatMap(post =>
-    post && publicPostIds.has(post.id) && canIndexMarkdownPost(post, electionMap.get(post.id))
-      ? [post]
-      : [],
+    post && canIndexMarkdownPost(post, electionMap.get(post.id)) ? [post] : [],
   )
 
   const frontmatter = toFrontmatter({
@@ -122,7 +121,7 @@ app.route('/md/posts').get(async (ctx: Context) => {
 app.route('/md/posts/:idOrSlug').get(async (ctx: Context) => {
   const postId = await getPostIdByAnyCached(ctx.params.idOrSlug!)
   ctx.assert(postId, 404, 'Post not found')
-  const post = await getPostByAnyCached(postId)
+  const { post } = await getAnonymousPostSnapshotByAnyCached(postId, 'discovery')
   ctx.assert(post, 404, 'Post not found')
   const postTypes = parseTypeConstraint(ctx.query.post_types)
   ctx.assert(
@@ -131,12 +130,7 @@ app.route('/md/posts/:idOrSlug').get(async (ctx: Context) => {
     'Post not found',
   )
   const election = await getPostElectionByIdCached(post.id)
-  const publicPostIds = await getPublicPostIds([post.id])
-  ctx.assert(
-    publicPostIds.has(post.id) && canIndexMarkdownPost(post, election),
-    404,
-    'Post not found',
-  )
+  ctx.assert(canIndexMarkdownPost(post, election), 404, 'Post not found')
 
   ctx.set('Cache-Control', 'public')
 

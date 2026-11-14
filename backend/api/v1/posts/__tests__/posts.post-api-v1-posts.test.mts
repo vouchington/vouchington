@@ -13,6 +13,7 @@ import {
 
 import type { PrivateUser } from '@services/users/types'
 import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
+import { getAnonymousCacheGeneration } from '@services/entity-cache/anonymous-cache-generation'
 
 describe('posts', () => {
   describe('Posts Collection Routes', () => {
@@ -232,7 +233,7 @@ describe('posts', () => {
     describe('archived post filtering', () => {
       // Use a dedicated user per test to avoid Valkey search cache collisions from earlier tests
       // that also query ?creator=${user.id} (unauthenticated path uses getPostIdsCached)
-      it('excludes archived posts when filtering by creator', async () => {
+      it('retains a warm anonymous archive snapshot until expiry while authenticated discovery is fresh', async () => {
         const archiveUser = await createTestUser()
         const postId = await insertTestPost({
           title: `Archived Creator Profile ${Date.now()}`,
@@ -246,15 +247,26 @@ describe('posts', () => {
           .get(`/api/v1/posts?creator=${archiveUser.id}`)
           .expect(200)
         expect(beforeArchive.body.results.map((r: { id: string }) => r.id)).toContain(postId)
+        const generation = await getAnonymousCacheGeneration()
 
         const archiveRequest = createRequest()
         await archiveRequest.authenticateAs(archiveUser)
         await archiveRequest.patch(`/api/v1/posts/${postId}`).send({ archive: true }).expect(200)
 
-        const response = await request.get(`/api/v1/posts?creator=${archiveUser.id}`).expect(200)
-        const resultIds = response.body.results.map((r: { id: string }) => r.id)
-        expect(resultIds).not.toContain(postId)
-        expect(response.body.posts).not.toHaveProperty(postId)
+        const anonymous = await request.get(`/api/v1/posts?creator=${archiveUser.id}`).expect(200)
+        const stableGeneration = generation === (await getAnonymousCacheGeneration())
+        const cachedIds = anonymous.body.results.map((r: { id: string }) => r.id)
+        expect(stableGeneration ? cachedIds.includes(postId) : true).toBe(true)
+        expect(stableGeneration ? anonymous.body.posts[postId]?.markdown : 'archived content').toBe(
+          'archived content',
+        )
+
+        const viewer = await createTestUser()
+        const authenticated = createRequest()
+        await authenticated.authenticateAs(viewer)
+        const fresh = await authenticated.get(`/api/v1/posts?creator=${archiveUser.id}`).expect(200)
+        expect(fresh.body.results.map((r: { id: string }) => r.id)).not.toContain(postId)
+        expect(fresh.body.posts).not.toHaveProperty(postId)
       })
 
       it('ignores the removed include_archived query parameter', async () => {

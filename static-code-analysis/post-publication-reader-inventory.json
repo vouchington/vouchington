@@ -15,48 +15,12 @@
       "classification": "direct-sql"
     },
     {
-      "path": "backend/api/v1/posts/post-routes/comment-descendants-route.mts",
-      "classification": "direct-boundary"
-    },
-    {
-      "path": "backend/services/posts/vote-handler-options.mts",
-      "classification": "direct-boundary"
-    },
-    {
-      "path": "backend/api/v1/posts/post-routes/clearance-route.mts",
-      "classification": "descendants-boundary"
-    },
-    {
-      "path": "backend/api/v1/posts/posts-routes/posts-get.mts",
-      "classification": "public-boundary"
-    },
-    {
-      "path": "backend/services/comments/descendant-page.mts",
-      "classification": "descendants-boundary"
-    },
-    {
-      "path": "backend/md/posts.mts",
-      "classification": "public-boundary"
-    },
-    {
-      "path": "backend/services/rss-xml/posts-feed.mts",
-      "classification": "public-snapshot-boundary"
-    },
-    {
       "path": "backend/services/posts/public-rss-snapshots.mts",
       "classification": "public-view"
     },
     {
-      "path": "backend/services/posts/public-ids.mts",
-      "classification": "public-sql"
-    },
-    {
       "path": "backend/services/posts/metrics-batch.mts",
       "classification": "public-sql"
-    },
-    {
-      "path": "backend/services/search/omnisearch-content-verticals.mts",
-      "classification": "public-boundary"
     },
     {
       "path": "backend/services/stories/get-post-stories.mts",
@@ -73,18 +37,6 @@
     {
       "path": "backend/services/communities/list-items/item-type-sql.mts",
       "classification": "mixed-discovery-sql"
-    },
-    {
-      "path": "backend/api/v1/communities/news.mts",
-      "classification": "story-posts-boundary"
-    },
-    {
-      "path": "backend/api/v1/feeds/index-routes/feeds-rss-feed-items-by-feed-type-get.mts",
-      "classification": "story-posts-boundary"
-    },
-    {
-      "path": "backend/api/v1/rss-feed-items/rss-feed-items.mts",
-      "classification": "story-posts-boundary"
     },
     {
       "path": "backend/services/feeds/posts/get-ids/eligible-posts-cte.mts",
@@ -141,6 +93,14 @@
     {
       "path": "backend/services/topics/merge-metrics-reviews.mts",
       "classification": "public-view"
+    },
+    {
+      "path": "backend/services/posts/anonymous-snapshot-query.mts",
+      "classification": "anonymous-snapshot-sql"
+    },
+    {
+      "path": "backend/services/comments/descendant-probe.mts",
+      "classification": "direct-sql"
     }
   ],
   "pr2_baseline": [],
@@ -148,44 +108,37 @@
     {
       "path": "backend/services/comments/query-builder.mts",
       "classification": "raw-hydrator",
-      "reason": "The explain-only query builder has no public serializer; comment routes batch-filter candidates before output.",
-      "owner_path": "backend/api/v1/posts/post-routes/comment-descendants-route.mts",
-      "owner_classification": "direct-boundary"
+      "reason": "The explain-only query builder has no public serializer and returns candidate rows to its caller.",
+      "owner_path": "backend/services/posts/anonymous-snapshot-query.mts",
+      "owner_classification": "anonymous-snapshot-sql"
     },
     {
       "path": "backend/services/comments/ancestors.mts",
       "classification": "raw-hydrator",
-      "reason": "The public ancestors route validates every returned ancestor with canViewPostsBatch before serialization.",
-      "owner_path": "backend/api/v1/posts/post-routes/comment-descendants-route.mts",
-      "owner_classification": "direct-boundary"
+      "reason": "Returns ancestor candidates to its caller and does not serialize a public response.",
+      "owner_path": "backend/services/posts/anonymous-snapshot-query.mts",
+      "owner_classification": "anonymous-snapshot-sql"
     },
     {
       "path": "backend/services/comments/ancestor-page.mts",
       "classification": "raw-hydrator",
-      "reason": "The bounded ancestor reader returns candidates to the public ancestors route, which re-fetches and validates every page member with canViewPostsBatch before serialization.",
-      "owner_path": "backend/api/v1/posts/post-routes/comment-descendants-route.mts",
-      "owner_classification": "direct-boundary"
-    },
-    {
-      "path": "backend/services/comments/descendant-probe.mts",
-      "classification": "raw-hydrator",
-      "reason": "Returns only comment ids, parent ids, and placeholder-validity flags. The page service always starts with canonical root eligibility on its head probe before nested previews reuse that root-scoped transaction. REST and MCP authorize the requested thread and hydrate and mask returned content at their public boundaries.",
-      "owner_path": "backend/services/comments/descendant-page.mts",
-      "owner_classification": "descendants-boundary"
+      "reason": "The bounded ancestor reader returns candidate rows to its caller and does not serialize a public response.",
+      "owner_path": "backend/services/posts/anonymous-snapshot-query.mts",
+      "owner_classification": "anonymous-snapshot-sql"
     },
     {
       "path": "backend/services/comments/placeholder-sql.mts",
       "classification": "raw-hydrator",
       "reason": "SQL fragment builders for comment validity and the placeholder look-down; they select no post columns for output and only decide, for a comment under an already authorized root, whether a placeholder row is kept. The descendants walk composes them behind its root check.",
       "owner_path": "backend/services/comments/descendant-probe.mts",
-      "owner_classification": "raw-hydrator"
+      "owner_classification": "direct-sql"
     },
     {
       "path": "backend/services/comments/placeholder-state.mts",
       "classification": "raw-hydrator",
-      "reason": "Returns only a boolean (a valid reply sits below this placeholder) and no post content. Its public caller, the ancestors route, checks canViewPost on the thread root before asking.",
-      "owner_path": "backend/api/v1/posts/post-routes/comment-descendants-route.mts",
-      "owner_classification": "direct-boundary"
+      "reason": "Returns only whether a valid reply sits below a placeholder; it does not return post content.",
+      "owner_path": "backend/services/posts/anonymous-snapshot-query.mts",
+      "owner_classification": "anonymous-snapshot-sql"
     },
     {
       "path": "backend/services/feeds/posts/get-ids/ranked-walk-query.mts",
@@ -316,16 +269,12 @@
     {
       "path": "backend/services/rss-feed-items/story-publication-change.mts",
       "classification": "mutation",
-      "reason": "Mutation-boundary scope resolver that records durable story publication work and never serializes post rows.",
-      "owner_path": "backend/api/v1/rss-feed-items/rss-feed-items.mts",
-      "owner_classification": "story-posts-boundary"
+      "reason": "Mutation-boundary scope resolver that records durable story publication work and never serializes post rows."
     },
     {
       "path": "backend/services/rss-feed-items/story-post-related-url-projections.mts",
       "classification": "mutation",
-      "reason": "RSS URL revision mutation restarts durable related-URL projection work for existing story posts and never serializes post rows.",
-      "owner_path": "backend/api/v1/rss-feed-items/rss-feed-items.mts",
-      "owner_classification": "story-posts-boundary"
+      "reason": "RSS URL revision mutation restarts durable related-URL projection work for existing story posts and never serializes post rows."
     },
     {
       "path": "backend/services/communities/publications/list-user-removed-query.mts",

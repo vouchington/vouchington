@@ -3,7 +3,6 @@ import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { LoadedCommunity } from '../load-with-viewer.mts'
-import { invalidate } from '@services/entity-cache/invalidate'
 import { invalidateCommunityMemberUserMetrics } from './invalidate-user-metrics.mts'
 import { getActiveCommunityMembersForUsers } from './batch.mts'
 
@@ -50,8 +49,5 @@ export async function leaveCommunity(
     'Owners cannot leave a community. Transfer ownership first or delete the community.',
   )
   await query.commit()
-  await Promise.all([
-    invalidate.communities(communityId),
-    invalidateCommunityMemberUserMetrics(currentUserId),
-  ])
+  await invalidateCommunityMemberUserMetrics(currentUserId)
 }

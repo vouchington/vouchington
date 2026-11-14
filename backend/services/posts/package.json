@@ -84,7 +84,6 @@
   "devDependencies": {
     "@services/entity-listener-reconciliation": "workspace:^",
     "@services/web-risk": "workspace:^",
-    "@ts-shared/cache": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",
     "undici": "^8.12.3",

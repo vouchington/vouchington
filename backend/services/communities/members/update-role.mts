@@ -7,7 +7,6 @@ import { enqueueOnCommunityAgentPromptsDeactivated } from '@queues/entity-listen
 import { enqueueSendCommunityRoleChangeEmail } from '@queues/emails/enqueues'
 import type { Community, CommunityMemberRole } from '../types.mts'
 import { recordModeratorAction } from '@services/moderator-actions'
-import { invalidate } from '@services/entity-cache/invalidate'
 import { getPrivateUserByAny } from '@services/users/get'
 import type { PrivateUser } from '@services/users/types'
 import { getSiteUrl } from '@modules/utils'
@@ -92,14 +91,13 @@ export async function updateMemberRole(
   let roleChangeEmailEnqueue: ReturnType<typeof enqueueSendCommunityRoleChangeEmail> | null = null
   // Only log when the role actually changed — PostgreSQL reports rowCount=1 even for no-ops
   if (updated && previousRole !== role) {
-    const [, , , targetUser] = await Promise.all([
+    const [, , targetUser] = await Promise.all([
       recordModeratorAction(currentUserId, {
         actionType: 'change_role',
         communityId,
         targetUserId,
         metadata: { role, previous_role: previousRole },
       }),
-      invalidate.communities(communityId),
       invalidateCommunityMemberUserMetrics(targetUserId),
       getPrivateUserByAny(targetUserId),
     ])

@@ -16,11 +16,13 @@ import {
   processNightlyBackfillWeekDispatcher,
   processUpdateFamilySitemap,
   processUpdatePostDaySitemap,
-  processUpdatePostTypeIndex,
-  processUpdatePostsIndex,
-  processUpdateRootIndex,
   processWeeklyBackfillMonthDispatcher,
 } from './processors.mts'
+import {
+  generatePostTypeIndex,
+  generatePostsIndex,
+  generateRootIndex,
+} from '@services/sitemaps/generation'
 import {
   optionalGenerationId,
   requireJobFamily,
@@ -38,16 +40,16 @@ export const sitemapsHandlers = [
     }),
   ),
   backgroundHandler(SITEMAPS_POST_TYPE_INDEX_JOB, job =>
-    processUpdatePostTypeIndex(requireJobPostType(job.data?.postType)),
+    generatePostTypeIndex(requireJobPostType(job.data?.postType)),
   ),
-  backgroundHandler(SITEMAPS_POSTS_INDEX_JOB, () => processUpdatePostsIndex()),
+  backgroundHandler(SITEMAPS_POSTS_INDEX_JOB, () => generatePostsIndex()),
   backgroundHandler(SITEMAPS_FAMILY_JOB, job =>
     processUpdateFamilySitemap({
       family: requireJobFamily(job.data?.family),
       ...optionalGenerationId(job.data?.generationId),
     }),
   ),
-  backgroundHandler(SITEMAPS_ROOT_INDEX_JOB, () => processUpdateRootIndex()),
+  backgroundHandler(SITEMAPS_ROOT_INDEX_JOB, () => generateRootIndex()),
   backgroundHandler(SITEMAPS_NIGHTLY_BACKFILL_JOB, () => processNightlyBackfillWeekDispatcher()),
   backgroundHandler(SITEMAPS_WEEKLY_BACKFILL_JOB, () => processWeeklyBackfillMonthDispatcher()),
   backgroundHandler(SITEMAPS_MONTHLY_BACKFILL_JOB, job =>

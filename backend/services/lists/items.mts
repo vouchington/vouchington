@@ -11,7 +11,6 @@ import type { PageInfo } from '@voucha/types/pagination'
 import sql from 'sql-template-strings'
 import { getListItemStorageConfig } from './catalog.mts'
 import type { ListItem, ListItemType } from './types.mts'
-import { invalidate } from '@services/entity-cache/invalidate'
 import { rowToListItem } from './item-row.mts'
 import { listPostDiscoveryFilter } from './listable.mts'
 import { postItemFactsSql } from './item-facts.mts'
@@ -46,7 +45,6 @@ export async function removeListItem(
     [listId, entityId],
   )
   assert(rows.length > 0, 404, 'List item not found')
-  await invalidate.lists(listId)
 }
 
 export async function searchListItems(

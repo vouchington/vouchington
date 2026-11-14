@@ -4,7 +4,6 @@ import {
   transferCommunitiesOwnershipForUserPurge,
 } from '@services/communities/ownership-transfer-user-purge'
 import { invalidateCommunityMemberUserMetrics } from '@services/communities/members/invalidate-user-metrics'
-import { invalidate } from '@services/entity-cache/invalidate'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import sql from 'sql-template-strings'
 import { archiveUserOwnedCommunities } from './archive-user-owned-communities.mts'
@@ -100,12 +99,9 @@ export async function cleanupUserOwnedCommunities(
     const successorIds = transfers.flatMap(({ community, successorId }) =>
       transfer.transferred.includes(community.id) ? [successorId] : [],
     )
-    // The purge transaction bypasses the interactive wrappers' invalidation, so settle it once per page.
+    // Settle the successor metrics effects once after the ownership page commits.
     result.afterCommit.push(async () => {
-      await Promise.all([
-        invalidate.communities(...touchedIds),
-        invalidateCommunityMemberUserMetrics(...successorIds),
-      ])
+      await invalidateCommunityMemberUserMetrics(...successorIds)
     })
   }
   return continuation ? { ...result, userPurge: continuation } : result

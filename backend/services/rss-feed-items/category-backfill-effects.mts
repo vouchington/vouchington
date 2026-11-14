@@ -1,5 +1,5 @@
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
-import { invalidateRssFeedItemsAndWaitForPurge } from '@services/entity-cache/invalidate-rss-feed-items'
+import { invalidateRssFeedItemsStrict } from '@services/entity-cache/invalidate-rss-feed-items'
 import { publishEntityRelationElectionVoteStats } from '@services/elections-votes/entity-relation/vote-stats-batch'
 import { chunkArray } from './processing-limits.mts'
 import { getRssFeedItemsWorkLimit } from './work-limits.mts'
@@ -16,6 +16,6 @@ async function invalidateRssFeedItemChunks(itemIds: string[]): Promise<void> {
   const INVALIDATION_CHUNK_SIZE = getRssFeedItemsWorkLimit('backfill_invalidation_chunk_size')
   const [chunk, ...remaining] = chunkArray(itemIds, INVALIDATION_CHUNK_SIZE)
   if (!chunk) return
-  await invalidateRssFeedItemsAndWaitForPurge(...chunk)
+  await invalidateRssFeedItemsStrict(...chunk)
   return invalidateRssFeedItemChunks(remaining.flat())
 }

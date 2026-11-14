@@ -9,7 +9,6 @@ import type { CommunityMember } from './types.mts'
 import { communityUpdateReturning } from './community-update-returning.mts'
 import { mapCommunityWithOwner, type CommunityRowWithOwner } from './get-mapping.mts'
 import { updateCommunity, type UpdateCommunityInput } from './update.mts'
-import { invalidate } from '@services/entity-cache/invalidate'
 import { enqueueCommunityMemberMetricInvalidationBestEffort } from './members/invalidate-user-metrics.mts'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import {
@@ -100,7 +99,6 @@ export async function setCommunityArchiveState(
   if (!options?.query && !options?.client) {
     const archiveChanged = Boolean(currentCommunity.archived_at) !== Boolean(updated.archived_at)
     await Promise.all([
-      invalidate.communities(currentCommunity, updated),
       archiveChanged
         ? enqueueCommunityMemberMetricInvalidationBestEffort(communityId)
         : Promise.resolve(),
@@ -138,7 +136,6 @@ export async function updateCommunityAndSetArchiveState(
   )
   await transaction.commit()
   await Promise.all([
-    invalidate.communities(currentCommunity, updated),
     input.visibility !== undefined ||
     input.member_roster_visibility !== undefined ||
     Boolean(currentCommunity.archived_at) !== Boolean(updated.archived_at)

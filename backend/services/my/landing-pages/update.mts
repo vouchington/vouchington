@@ -38,8 +38,6 @@ export async function updateMyLandingPage(
     `)
 
     assert(rows[0], 404, 'Landing page not found')
-    // Public landing-page GET responses are edge-cached and tagged user:<username> (see
-    // ts-shared/cache/cache-tags.mts), so a slug/title/subtitle edit must purge that tag.
     await invalidate.users(userId)
     return rows[0] as LandingPage
   } catch (err: unknown) {

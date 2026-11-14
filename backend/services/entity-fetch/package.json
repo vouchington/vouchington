@@ -46,12 +46,10 @@
     "http-errors": "^2.0.1"
   },
   "devDependencies": {
-    "@data-stores/valkey": "workspace:^",
     "@queues/background": "workspace:^",
     "@queues/bloom-filters": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",
-    "uuid": "^14.0.3",
-    "valkyries": "^0.15.0"
+    "uuid": "^14.0.3"
   }
 }

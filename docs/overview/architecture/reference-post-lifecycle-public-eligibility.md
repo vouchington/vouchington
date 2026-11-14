@@ -5,16 +5,24 @@
 Public eligibility is persisted state, separate from an individual viewer's authorization. The
 canonical SQL owner is
 [`buildPublicPostEligibilityFilter`](../../../backend/modules/feed-query-builders/post-publication-eligibility.mts).
-Readers join a candidate post to `COALESCE(candidate.root_post_id, candidate.id)` and compose that
-predicate; callers must not restate a partial publication check.
+SQL readers join a candidate post to `COALESCE(candidate.root_post_id, candidate.id)` and
+compose the canonical predicate for their access mode; callers must not restate a partial
+publication check. Anonymous requests
+consume cached public responses without checking each candidate against current publication state
+at request time. The Cloudflare Worker owns edge cache freshness TTLs; anonymous origin snapshots
+expire through their own cache TTL. Cache tags and server/CDN purges are reserved for legal,
+copyright, and user-deletion events. Those events advance an origin cache namespace before edge
+purge, so later origin cache lookups cannot reuse pre-removal snapshots.
 
 After a producer commits a public-state change, it queues the previous identity keys and affected
 entities captured inside the transaction. The worker reads current identities in bounded pages and
-applies cache, sitemap, rating, metrics, and notification effects to both sets. Repeated jobs are
-safe because these effects invalidate or recompute current state. A process failure between commit
-and enqueue can leave a cache entry stale until its TTL, a sitemap entry until its next rebuild, or
-a notification until its next reconciliation. The capture and application boundary is owned by
-`backend/services/post-publication` and `backend/workers/post-publication`.
+applies sitemap, rating, metrics, and notification effects to both sets. It still evicts affected
+origin entity caches, while anonymous response snapshots age out through TTL. Repeated jobs are
+safe because these effects recompute current state. A process failure between commit and enqueue can
+leave a cache entry stale until its TTL, a
+sitemap entry until its next rebuild, or a notification until its next reconciliation. The capture
+and application boundary is owned by `backend/services/post-publication` and
+`backend/workers/post-publication`.
 
 Author and community eligibility also affects inherited visibility in comment threads. Scope
 discovery therefore follows affected posts downward to their descendants, while captured previous
@@ -23,7 +31,7 @@ starts scope discovery once even when its previous identities require multiple p
 
 ## Predicates
 
-- **Core public state**: candidate and root are not deleted and are approved; the root has
+- **Core public state**: candidate and root are not deleted, have no deleted author, and are approved; the root has
   `privacy='public'`, `broadcast='everyone'`, an eligible visible community publication when scoped,
   and a discoverable RSS source when it is a story.
 - **Public discovery**: core public state plus candidate and root are not archived and neither
@@ -78,9 +86,11 @@ ORDER BY post.created_at, post.id;
 classifies every reader found in the registered public-reader scopes in
 [`post-publication-reader-inventory-source.mts`](../../../static-code-analysis/repo-file-policy/post-publication-reader-inventory-source.mts).
 Adding a public service namespace therefore also requires registering its scope. Implemented public
-SQL readers must import and call the canonical public predicate; boundary readers must revalidate
-IDs through `getPublicPostIds`; direct readers must compose the canonical direct predicate or batch
-access gate. Explicit exceptions record a structured rationale and an inventory-validated owning
-classification; this metadata is review evidence, not static proof of a transitive consumer edge.
+SQL readers compose the canonical predicate for their classification. Direct SQL readers compose
+the canonical direct predicate or the established access wrapper; anonymous snapshot SQL composes
+both direct and public predicates for its two modes. Anonymous response boundaries do not
+perform a second publication check after reading cached candidates. Explicit exceptions record a
+rationale; raw hydrators and projection owners require an inventory-validated owner. This metadata
+is review evidence, not static proof of a transitive consumer edge.
 The repository guard rejects a nonempty `pr2_baseline`, unclassified readers inside registered
 scopes, duplicate classifications, untracked paths, and bypassed canonical imports.

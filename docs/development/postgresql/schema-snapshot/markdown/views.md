@@ -991,7 +991,11 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
      JOIN posts root_post ON ((root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id))))
      LEFT JOIN user_suspensions root_suspension ON (((root_suspension.user_id = root_post.created_by_id) AND (root_suspension.lifted_at IS NULL))))
      LEFT JOIN user_suspensions candidate_suspension ON (((candidate_suspension.user_id = candidate_post.created_by_id) AND (candidate_suspension.lifted_at IS NULL))))
-  WHERE ((candidate_post.deleted_at IS NULL) AND (candidate_post.approved_at IS NOT NULL) AND (candidate_post.archived_at IS NULL) AND (candidate_suspension.user_id IS NULL) AND (root_post.deleted_at IS NULL) AND (root_post.approved_at IS NOT NULL) AND (root_post.archived_at IS NULL) AND (root_post.privacy = 'public'::privacy_types) AND (root_post.broadcast = 'everyone'::broadcast_types) AND ((root_post.community_id IS NULL) OR (EXISTS ( WITH publication AS MATERIALIZED (
+  WHERE ((candidate_post.deleted_at IS NULL) AND COALESCE(( SELECT (publication_candidate_author.deleted_at IS NULL)
+           FROM users publication_candidate_author
+          WHERE (publication_candidate_author.id = candidate_post.created_by_id)), true) AND COALESCE(( SELECT (publication_root_author.deleted_at IS NULL)
+           FROM users publication_root_author
+          WHERE (publication_root_author.id = root_post.created_by_id)), true) AND (candidate_post.approved_at IS NOT NULL) AND (candidate_post.archived_at IS NULL) AND (candidate_suspension.user_id IS NULL) AND (root_post.deleted_at IS NULL) AND (root_post.approved_at IS NOT NULL) AND (root_post.archived_at IS NULL) AND (root_post.privacy = 'public'::privacy_types) AND (root_post.broadcast = 'everyone'::broadcast_types) AND ((root_post.community_id IS NULL) OR (EXISTS ( WITH publication AS MATERIALIZED (
                  SELECT 1 AS "?column?"
                    FROM (communities publication_community
                      JOIN community_post_reviews publication_review ON (((publication_review.community_id = publication_community.id) AND (publication_review.post_id = root_post.id) AND (publication_review.approved_at IS NOT NULL) AND (publication_review.rejected_at IS NULL) AND (publication_review.unpublished_at IS NULL))))

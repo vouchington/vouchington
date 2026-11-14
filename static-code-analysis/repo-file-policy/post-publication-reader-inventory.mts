@@ -1,9 +1,7 @@
 import type { SharedContext } from 'vouchington-tooling/shared-context'
 import {
   discoverPublicPostReaders,
-  sourceFiltersWithPublicBoundary,
   sourceImportsAndComposesAny,
-  sourceImportsAndUsesBoundaryAny,
 } from './post-publication-reader-inventory-source.mts'
 import { composesPublicEligibilityView } from './post-publication-reader-inventory-public-view.mts'
 import { isInventory, validateRows } from './post-publication-reader-inventory-validation.mts'
@@ -82,12 +80,7 @@ function validateExceptionOwners(inventory: ReaderInventory, errors: string[]): 
   )
   const implemented = new Map(inventory.implemented.map(row => [row.path, row.classification]))
   for (const exception of inventory.classified_exceptions) {
-    if (!exception.owner_path || !exception.owner_classification) {
-      errors.push(
-        `${INVENTORY_PATH}: classified_exceptions requires an owner path and classification`,
-      )
-      continue
-    }
+    if (!exception.owner_path || !exception.owner_classification) continue
     if (
       exception.owner_path === CANONICAL_BUILDER &&
       exception.owner_classification === 'canonical-builder'
@@ -122,18 +115,17 @@ function validateImplementedComposition(
   const content = ctx.readTrackedFile?.(row.path)
   if (content === null || content === undefined) return
   const requiredSymbolGroups = {
-    'direct-boundary': ['canViewPost', 'canViewPostsBatch'],
+    'anonymous-snapshot-sql': [
+      'buildDirectPostEligibilityFilter',
+      'buildPublicPostEligibilityFilter',
+    ],
     'direct-sql': ['buildDirectPostEligibilityFilter', 'buildDirectPostAccessFilter'],
-    'descendants-boundary': ['getCommentDescendantsPage', 'getVisibleCommentDescendantIdsPage'],
     'mixed-discovery-sql': [
       'buildPublicPostEligibilityFilter',
       'buildViewerPostDiscoveryEligibilityFilter',
     ],
-    'public-boundary': ['getPublicPostIds'],
-    'public-snapshot-boundary': ['getPublicRssPostSnapshotsCached'],
     'public-sql': ['buildPublicPostEligibilityFilter'],
     'public-view': [],
-    'story-posts-boundary': ['getVisiblePostStoryIdsByStoryIds'],
     'viewer-discovery-sql': ['buildViewerPostDiscoveryEligibilityFilter'],
   }[row.classification]
   if (row.classification === 'public-view') {
@@ -146,26 +138,12 @@ function validateImplementedComposition(
     return
   }
   const composesRequiredSymbols =
-    row.classification === 'mixed-discovery-sql'
+    row.classification === 'mixed-discovery-sql' || row.classification === 'anonymous-snapshot-sql'
       ? requiredSymbolGroups.every(symbol => sourceImportsAndComposesAny(content, [symbol]))
-      : row.classification === 'public-boundary'
-        ? sourceFiltersWithPublicBoundary(content, requiredSymbolGroups)
-        : isSqlCompositionClassification(row.classification)
-          ? sourceImportsAndComposesAny(content, requiredSymbolGroups)
-          : sourceImportsAndUsesBoundaryAny(content, requiredSymbolGroups)
+      : sourceImportsAndComposesAny(content, requiredSymbolGroups)
   if (!composesRequiredSymbols) {
     errors.push(
       `${INVENTORY_PATH}: implemented ${row.path} must compose ${requiredSymbolGroups.join(', ')}`,
     )
   }
-}
-
-function isSqlCompositionClassification(
-  classification: ReaderInventory['implemented'][number]['classification'],
-): boolean {
-  return (
-    classification === 'direct-sql' ||
-    classification === 'public-sql' ||
-    classification === 'viewer-discovery-sql'
-  )
 }

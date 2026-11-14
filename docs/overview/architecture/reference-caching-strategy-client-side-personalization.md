@@ -29,6 +29,8 @@ client must revalidate or apply its own HTTP caching policy rather than assume t
 
 - **Entity cache**: Invalidated on mutations via job queue (`invalidate.*` from `@services/entity-cache`). Lookup caches and entity caches are invalidated separately when identifiers change (username, slug, aliases, URL).
 - **Search cache**: Natural expiry under its own Valkey TTL, independent of HTTP caching. No explicit invalidation.
+- **Anonymous origin snapshots and search caches**: Natural TTL expiry. Content and eligibility
+  belong to the same snapshot, so a cached public identity cannot authorize a newly private body.
 - **CF Worker edge cache**: Freshness comes from the Worker's audience and route TTL policy.
   Anonymous readers may observe a cached response until it expires, including after a public post
   changes visibility. Requests must not query the origin merely to re-check whether cached posts
@@ -44,6 +46,8 @@ client must revalidate or apply its own HTTP caching policy rather than assume t
   complete before deletion is acknowledged. Copyright withholds await successful eviction before
   their durable action completes. Purge failure retains the action's existing retry and explicit
   operator-replay path; it cannot disappear with a lost or exhausted cache-purge queue job.
+  Before that edge purge, legal removal advances the anonymous origin cache namespace, so
+  old in-flight origin fills cannot repopulate the edge from the current namespace.
   Deployed copyright completion also fails if legal purging is disabled or its target is missing;
   local and undeployed environments retain their explicit no-cache opt-out. This intentionally
   evicts broadly after legal removal, with an unmeasured cache-warmup cost.

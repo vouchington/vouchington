@@ -4,7 +4,6 @@ import {
   invalidatePostStrict,
   invalidateUserStrict,
   invalidateTopicStrict,
-  invalidateCommunityStrict,
 } from '@services/entity-cache/invalidate-strict'
 import { purgeLegalRemovalSurfaces } from '@services/entity-cache/legal-removal'
 import { getImagePlacementCopyrightOwner } from '@services/images/placements'
@@ -40,7 +39,7 @@ async function invalidateCopyrightPlacementCache(
       await invalidateTopicStrict(owner.id)
       break
     case 'community':
-      await invalidateCommunityStrict(owner.id)
+      // Community pages hold no Valkey entity cache; the legal-removal edge tag covers them.
       break
   }
 }

@@ -3,12 +3,9 @@ import {
   getUserCacheKeys,
   getTopicCacheKeys,
   getPostCacheKeys,
-  getCommunityCacheKeys,
   getElectionCacheKeys,
   getRssFeedItemCacheKeys,
   getRssFeedCacheKeys,
-  getListCacheKeys,
-  getStoryCacheKeys,
   getUrlCacheKeys,
   getUrlLookupKeys,
   getUrlHostnameCacheKeys,
@@ -18,22 +15,8 @@ import { ValkeyCache } from '@data-stores/valkey/cache'
 import { retrySaturationError } from 'valkyries'
 import { caches } from './caches.mts'
 import onError from '@modules/on-error'
-import { enqueueBulkPurgeCacheTagsBestEffort } from '@queues/cache-purge/enqueues'
 import type { EntityRelationElectionCacheKey } from './entity-relation-election-key.mts'
-import { createPostCacheInvalidator, invalidateAndPurge } from './post-invalidation.mts'
-import {
-  topicTag,
-  userTag,
-  communityTag,
-  listTag,
-  storyTag,
-  hostnameTag,
-  rssFeedTag,
-  rssFeedItemTag,
-  SITEMAP_TAG,
-  HTML_TAG,
-} from '@ts-shared/cache'
-
+import { createPostCacheInvalidator } from './post-invalidation.mts'
 type InvalidateFunction<Keys extends unknown[] = unknown[]> = (...keys: Keys) => Promise<void>
 type CacheDeleteGroups = Parameters<typeof ValkeyCache.deleteFromCaches>[0]
 
@@ -63,31 +46,12 @@ export const invalidate = {
     await deleteFromCachesInChunks([{ cache: caches.entity_relation_elections, keys }])
   }),
   posts: async (...keys: unknown[]): Promise<void> => {
-    const operation = startPostCacheInvalidation(...keys)
     try {
-      await operation.completion
+      await startPostCacheInvalidation(...keys)
     } catch (err) {
-      if (!operation.rejectionReported) onError(err as Error)
+      onError(err as Error)
     }
   },
-  communities: wrap(async (...keys: unknown[]): Promise<void> => {
-    const communityKeys = await getCommunityCacheKeys(...keys)
-    await enqueueBulkPurgeCacheTagsBestEffort([...communityKeys.map(communityTag), HTML_TAG])
-  }),
-  lists: wrap(async (...keys: unknown[]): Promise<void> => {
-    const listKeys = await getListCacheKeys(...keys)
-    await enqueueBulkPurgeCacheTagsBestEffort([...listKeys.map(listTag), HTML_TAG])
-  }),
-  stories: wrap(async (...keys: unknown[]): Promise<void> => {
-    const storyKeys = await getStoryCacheKeys(...keys)
-    await enqueueBulkPurgeCacheTagsBestEffort(storyKeys.map(storyTag))
-  }),
-  sitemaps: wrap(async (): Promise<void> => {
-    await enqueueBulkPurgeCacheTagsBestEffort([SITEMAP_TAG])
-  }),
-  html: wrap(async (): Promise<void> => {
-    await enqueueBulkPurgeCacheTagsBestEffort([HTML_TAG])
-  }),
   post_metrics: wrap(async (...keys: unknown[]): Promise<void> => {
     const postKeys = await getPostCacheKeys(...keys)
     await caches.post_metrics.invalidateCacheGetByAny(...postKeys)
@@ -104,7 +68,7 @@ export const invalidate = {
   rss_feed_items: wrap(async (...keys: unknown[]): Promise<void> => {
     const rssFeedItemKeys = await getRssFeedItemCacheKeys(...keys)
     const invalidation = caches.rss_feed_items.invalidateCacheGetByAny(...rssFeedItemKeys)
-    await invalidateAndPurge(invalidation, rssFeedItemKeys.map(rssFeedItemTag))
+    await invalidation
   }),
   rss_feed_item_elections: wrap(async (...keys: unknown[]): Promise<void> => {
     const rssFeedItemKeys = await getRssFeedItemCacheKeys(...keys)
@@ -113,7 +77,7 @@ export const invalidate = {
   rss_feeds: wrap(async (...keys: unknown[]): Promise<void> => {
     const rssFeedKeys = await getRssFeedCacheKeys(...keys)
     const invalidation = caches.rss_feeds.invalidateCacheGetByAny(...rssFeedKeys)
-    await invalidateAndPurge(invalidation, rssFeedKeys.map(rssFeedTag))
+    await invalidation
   }),
   // Current callers (e.g. upsert.mts) pass URL strings, so urls_lookup is correctly invalidated.
   // New UUIDs have no cache entry; URL strings intentionally map to no UUID cache keys.
@@ -131,7 +95,7 @@ export const invalidate = {
   url_hostnames: wrap(async (...keys: unknown[]): Promise<void> => {
     const urlHostnameKeys = await getUrlHostnameCacheKeys(...keys)
     const invalidation = caches.url_hostnames.invalidateCacheGetByAny(...urlHostnameKeys)
-    await invalidateAndPurge(invalidation, urlHostnameKeys.map(hostnameTag))
+    await invalidation
   }),
   hostname_elections: wrap(async (...keys: unknown[]): Promise<void> => {
     const urlHostnameKeys = await getUrlHostnameCacheKeys(...keys)
@@ -148,7 +112,7 @@ async function invalidateUserCaches(keys: unknown[], includeMetrics: boolean): P
     { cache: caches.users_lookup, keys: [...getCacheKeys(userKeys).slugs] },
     ...(includeMetrics ? [{ cache: caches.user_metrics, keys: userKeys }] : []),
   ])
-  await invalidateAndPurge(invalidation, userKeys.map(userTag))
+  await invalidation
 }
 
 async function invalidateTopicCaches(keys: unknown[], includeMetrics: boolean): Promise<void> {
@@ -165,7 +129,7 @@ async function invalidateTopicCaches(keys: unknown[], includeMetrics: boolean): 
         ]
       : []),
   ])
-  await invalidateAndPurge(invalidation, topicKeys.map(topicTag))
+  await invalidation
 }
 
 /** Publication reconciliation cannot acknowledge best-effort cache work. */

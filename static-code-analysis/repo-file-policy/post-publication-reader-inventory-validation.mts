@@ -21,24 +21,23 @@ export function validateRows(
     }
     if (
       label === 'classified_exceptions' &&
-      (!row.reason || !row.owner_path || !row.owner_classification)
+      (!row.reason ||
+        Boolean(row.owner_path) !== Boolean(row.owner_classification) ||
+        (!row.owner_path &&
+          (row.classification === 'raw-hydrator' || row.classification === 'projection-owner')))
     ) {
-      errors.push(`${INVENTORY_PATH}: classified_exceptions requires a reason and structured owner`)
+      errors.push(`${INVENTORY_PATH}: classified_exceptions requires a reason and classified owner`)
     }
     if (paths.has(row.path)) errors.push(`${INVENTORY_PATH}: ${label} duplicates ${row.path}`)
     paths.add(row.path)
     const expectedClassification =
       label === 'implemented'
         ? [
-            'direct-boundary',
+            'anonymous-snapshot-sql',
             'direct-sql',
-            'descendants-boundary',
             'mixed-discovery-sql',
-            'public-boundary',
-            'public-snapshot-boundary',
             'public-sql',
             'public-view',
-            'story-posts-boundary',
             'viewer-discovery-sql',
           ]
         : label === 'pr2_baseline'
@@ -46,6 +45,7 @@ export function validateRows(
           : ['mutation', 'private-reader', 'projection-owner', 'raw-hydrator', 'staff-reader']
     if (!expectedClassification.includes(row.classification)) {
       errors.push(`${INVENTORY_PATH}: ${label} has invalid classification ${row.classification}`)
+      isValid = false
     }
     if (!ctx.trackedFileSet.has(row.path)) {
       errors.push(`${INVENTORY_PATH}: ${label} references untracked path ${row.path}`)

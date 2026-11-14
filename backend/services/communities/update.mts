@@ -11,7 +11,6 @@ import { getCommunity, type CommunityWithOwner } from './get.mts'
 import { currentUserCanUpdateCommunity } from './authorization.mts'
 import type { CommunityMember } from './types.mts'
 import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
-import { invalidate } from '@services/entity-cache/invalidate'
 import { enqueueCommunityMemberMetricInvalidationBestEffort } from './members/invalidate-user-metrics.mts'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
@@ -74,12 +73,8 @@ export async function updateCommunity(
   assert(updated, 404, 'Community not found after update')
   void addEntityBloomKeys('communities', [normalizeKey(updated.id), normalizeKey(updated.slug)])
   if (!options?.query && !options?.client) {
-    await Promise.all([
-      invalidate.communities(community, priorCommunity, updated),
-      invalidatesMemberMetrics
-        ? enqueueCommunityMemberMetricInvalidationBestEffort(communityId)
-        : Promise.resolve(),
-    ])
+    if (invalidatesMemberMetrics)
+      await enqueueCommunityMemberMetricInvalidationBestEffort(communityId)
     if ((priorCommunity?.visibility ?? community.visibility) !== updated.visibility)
       void enqueueRefreshTopHashtags()
   }

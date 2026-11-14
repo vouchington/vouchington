@@ -3,8 +3,6 @@ import { CACHE_TTLS_SECONDS } from './config.mts'
 import { caches } from './caches.mts'
 import { deleteFromCachesInChunks } from './invalidate.mts'
 import { entityCacheWorkConfig, getEntityCacheWorkLimit } from './work-limits.mts'
-import { enqueueBulkPurgeCacheTags } from '@queues/cache-purge/enqueues'
-import { hostnameTag } from '@ts-shared/cache'
 
 type ClaimedHostname = {
   url_hostname_id: string
@@ -165,7 +163,6 @@ async function evictHostnamePolicyCaches(items: ClaimedHostname[]): Promise<void
     { cache: caches.url_hostnames, keys },
     { cache: caches.email_domain_validation, keys: items.map(item => item.hostname) },
   ])
-  await enqueueBulkPurgeCacheTags(keys.map(hostnameTag))
 }
 
 async function pruneExpiredHostnameCacheInvalidationWork(

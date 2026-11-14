@@ -4,7 +4,6 @@ import type { PrivateUser } from '@services/users/types'
 import { getCommunity } from './get.mts'
 import { currentUserCanDeleteCommunity } from './authorization.mts'
 import type { CommunityMember } from './types.mts'
-import { invalidate } from '@services/entity-cache/invalidate'
 import { enqueueCommunityMemberMetricInvalidationBestEffort } from './members/invalidate-user-metrics.mts'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { recordPostPublicationChange } from '@services/post-publication'
@@ -40,9 +39,6 @@ export async function deleteCommunity(
   }
 
   await query.commit()
-  await Promise.all([
-    invalidate.communities(community),
-    changed ? enqueueCommunityMemberMetricInvalidationBestEffort(communityId) : Promise.resolve(),
-  ])
+  if (changed) await enqueueCommunityMemberMetricInvalidationBestEffort(communityId)
   void enqueueRefreshTopHashtags()
 }

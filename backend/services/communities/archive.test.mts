@@ -6,18 +6,8 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
-import { CACHE_PURGE_TAGS_JOB } from '@queues/background/enqueues/cache-purge-jobs'
-import { backgroundQueue as cachePurge } from '@voucha/test-helpers/shared-background-queue'
 import { getCommunity } from './get.mts'
 import { setCommunityArchiveState, updateCommunityAndSetArchiveState } from './archive.mts'
-
-async function getCachePurgeTagsForCommunityKeys(keys: string[]): Promise<string[]> {
-  const expectedTags = new Set(keys.map(key => `community:${key}`))
-  const jobs = await cachePurge.searchJobs({ name: CACHE_PURGE_TAGS_JOB.name })
-  return jobs
-    .flatMap(job => (job.data as { tags?: unknown[] } | undefined)?.tags ?? [])
-    .filter((tag): tag is string => typeof tag === 'string' && expectedTags.has(tag))
-}
 
 describe('setCommunityArchiveState', () => {
   afterEach(() => {
@@ -81,7 +71,7 @@ describe('updateCommunityAndSetArchiveState', () => {
     vi.restoreAllMocks()
   })
 
-  it('commits the update and archive before invalidating every community cache key', async () => {
+  it('commits the community update and archive together', async () => {
     const owner = await createTestUser()
     const community = await insertTestCommunity({ createdById: owner.id })
     const membership = await insertTestCommunityMember({
@@ -90,41 +80,18 @@ describe('updateCommunityAndSetArchiveState', () => {
       role: 'owner',
     })
     const newSlug = `updated-${uuidv7()}`
-    let committedAtPurge: Awaited<ReturnType<typeof getCommunity>> | undefined
-    const originalAddBulk = cachePurge.addBulk
-    const addBulkSpy = vi.spyOn(cachePurge, 'addBulk').mockImplementation(async jobs => {
-      const ownedTag = `community:${community.id}`
-      const purgesOwnedCommunity = jobs.some(
-        job =>
-          job.name === CACHE_PURGE_TAGS_JOB.name &&
-          (job.data as { tags?: string[] }).tags?.includes(ownedTag),
-      )
-      if (purgesOwnedCommunity) {
-        committedAtPurge = await getCommunity(community.id)
-      }
-      return originalAddBulk.call(cachePurge, jobs)
-    })
-
-    try {
-      const updated = await updateCommunityAndSetArchiveState(
-        owner,
-        community.id,
-        { slug: newSlug },
-        true,
-        membership,
-      )
-
-      expect(committedAtPurge).toMatchObject({ slug: newSlug, archived_by_id: owner.id })
-      expect(committedAtPurge?.archived_at).not.toBeNull()
-      expect(updated).toMatchObject({ slug: newSlug, archived_by_id: owner.id })
-      expect(updated.archived_at).not.toBeNull()
-
-      const communityKeys = [community.id, community.slug, newSlug]
-      const cachePurgeTags = await getCachePurgeTagsForCommunityKeys(communityKeys)
-      expect(new Set(cachePurgeTags)).toEqual(new Set(communityKeys.map(key => `community:${key}`)))
-    } finally {
-      addBulkSpy.mockRestore()
-    }
+    const updated = await updateCommunityAndSetArchiveState(
+      owner,
+      community.id,
+      { slug: newSlug },
+      true,
+      membership,
+    )
+    const committed = await getCommunity(community.id)
+    expect(updated).toMatchObject({ slug: newSlug, archived_by_id: owner.id })
+    expect(updated.archived_at).not.toBeNull()
+    expect(committed).toMatchObject({ slug: newSlug, archived_by_id: owner.id })
+    expect(committed?.archived_at).not.toBeNull()
   })
 
   it('enqueues one refresh when its transaction changes visibility and archive state', async () => {

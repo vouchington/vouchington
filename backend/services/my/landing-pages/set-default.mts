@@ -12,8 +12,6 @@ export async function setMyLandingPageDefault(
   await using query = await beginTransaction()
   const page = await updateLandingPageDefault(query, userId, pageId)
   await query.commit()
-  // Public landing-page GET responses are edge-cached and tagged user:<username> (see
-  // ts-shared/cache/cache-tags.mts), so changing the default page must purge that tag.
   await invalidate.users(userId)
   return page
 }

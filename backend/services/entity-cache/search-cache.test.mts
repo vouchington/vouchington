@@ -1,6 +1,10 @@
 import { it, expect, describe } from 'vitest'
 import { randomBytes } from 'node:crypto'
 import { createSearchCache, stableSerialize } from './search-cache.mts'
+import {
+  advanceAnonymousCacheGeneration,
+  getAnonymousCacheGeneration,
+} from './anonymous-cache-generation.mts'
 
 // ─── stableSerialize ─────────────────────────────────────────────────────────
 
@@ -90,14 +94,39 @@ describe('createSearchCache', () => {
       return Promise.resolve(opts.a + opts.b)
     })
 
+    const generation = await getAnonymousCacheGeneration()
     const r1 = await cached({ a: 1, b: 2 })
     const r2 = await cached({ b: 2, a: 1 })
     expect(r1).toBe(3)
     expect(r2).toBe(3)
-    // Both calls should resolve to the same value (cache key is order-independent)
     expect(r1).toBe(r2)
-    // callCount could be 1 (cache hit on second call) or 2 (both miss) depending on timing
-    // but results must be identical — just verify correctness
-    expect(callCount).toBeGreaterThanOrEqual(1)
+    const stableGeneration = generation === (await getAnonymousCacheGeneration())
+    expect(callCount).toBeLessThanOrEqual(stableGeneration ? 1 : 2)
+  })
+
+  it('keeps a pre-revocation in-flight fill out of the new legal namespace', async () => {
+    const prefix = `test_sc_legal_${randomBytes(4).toString('hex')}`
+    const entered = Promise.withResolvers<void>()
+    const release = Promise.withResolvers<void>()
+    let calls = 0
+    const cached = createSearchCache(prefix, async (_opts: { id: string }) => {
+      calls++
+      if (calls === 1) {
+        entered.resolve()
+        await release.promise
+        return 'old'
+      }
+      return 'current'
+    })
+    const first = cached({ id: 'post' })
+    try {
+      await entered.promise
+      await advanceAnonymousCacheGeneration()
+      expect(await cached({ id: 'post' })).toBe('current')
+    } finally {
+      release.resolve()
+    }
+    expect(await first).toBe('old')
+    expect(await cached({ id: 'post' })).toBe('current')
   })
 })

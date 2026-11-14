@@ -5,7 +5,6 @@ import type { PrivateUser } from '@services/users/types'
 import type { Community, CommunityMember } from './types.mts'
 import { getCommunity, type CommunityWithOwner } from './get.mts'
 import { currentUserCanModerateCommunity } from './authorization.mts'
-import { invalidate } from '@services/entity-cache/invalidate'
 import { communityUpdateReturning } from './community-update-returning.mts'
 import { mapCommunityWithOwner, type CommunityRowWithOwner } from './get-mapping.mts'
 
@@ -84,6 +83,5 @@ export async function updateCommunityPostTypeSettings(
     assert(await getCommunity(communityId, { readOnly: false }), 404, 'Community not found')
     assert(false, 403, 'Cannot update archived community')
   }
-  await invalidate.communities(community, updated)
   return updated
 }

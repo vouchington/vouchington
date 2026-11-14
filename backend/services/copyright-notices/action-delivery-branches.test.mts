@@ -18,6 +18,7 @@ import {
 } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import * as cachePurge from '@services/entity-cache/purge'
+import * as anonymousCacheGeneration from '@services/entity-cache/anonymous-cache-generation'
 
 describe('copyright action delivery branches', () => {
   let edge: ReturnType<typeof installTestMediaDeliveryEdge>
@@ -57,6 +58,7 @@ describe('copyright action delivery branches', () => {
     ).resolves.toMatchObject({ status: 'applied' })
     edge.put.mockClear()
     const purge = vi.spyOn(cachePurge, 'purgeCacheTags')
+    const advanceGeneration = vi.spyOn(anonymousCacheGeneration, 'advanceAnonymousCacheGeneration')
 
     await expect(processCopyrightActionIntent(withhold.id, new Date())).resolves.toBe('stale')
 
@@ -66,6 +68,7 @@ describe('copyright action delivery branches', () => {
     })
     expect(edge.put).not.toHaveBeenCalled()
     expect(purge).not.toHaveBeenCalled()
+    expect(advanceGeneration).not.toHaveBeenCalled()
   })
 
   it('keeps a withhold owed until its legal cache purge succeeds', async () => {
@@ -80,6 +83,8 @@ describe('copyright action delivery branches', () => {
     })
     const withhold = (await getActionIntent(notice.id, 'withhold'))!
     const purge = vi.spyOn(cachePurge, 'purgeCacheTags')
+    const advanceGeneration = vi.spyOn(anonymousCacheGeneration, 'advanceAnonymousCacheGeneration')
+    const initialGeneration = await anonymousCacheGeneration.getAnonymousCacheGeneration()
     const now = new Date()
     let requests = 0
     const server = await listen((_request, response) => {
@@ -100,12 +105,19 @@ describe('copyright action delivery branches', () => {
         completed_at: null,
         failure_message: 'Cache purge request failed',
       })
+      const failedAttemptGeneration = await anonymousCacheGeneration.getAnonymousCacheGeneration()
+      expect(failedAttemptGeneration).not.toBe(initialGeneration)
+      expect(advanceGeneration).toHaveBeenCalledOnce()
 
       await expect(
         processCopyrightActionIntent(withhold.id, new Date(now.getTime() + 61_000)),
       ).resolves.toBe('applied')
       expect(requests).toBe(2)
       expect(purge).toHaveBeenCalledTimes(2)
+      expect(advanceGeneration).toHaveBeenCalledTimes(2)
+      await expect(anonymousCacheGeneration.getAnonymousCacheGeneration()).resolves.not.toBe(
+        failedAttemptGeneration,
+      )
       expect(await getActionIntent(notice.id, 'withhold')).toMatchObject({
         state: 'completed',
         completed_at: expect.any(Date),

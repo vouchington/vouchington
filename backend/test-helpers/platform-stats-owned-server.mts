@@ -11,7 +11,7 @@ type TrackWork = <Result>(run: () => Promise<Result>) => Promise<Result>
 
 /** Own actual Stats responses, SDK handlers, and conditional cache commands. */
 export async function withOwnedPlatformStatsServer<Result>(
-  run: (address: StatsAddress, trackWork: TrackWork) => Promise<Result>,
+  run: (address: StatsAddress, trackWork: TrackWork, cacheKey: string) => Promise<Result>,
   registerCleanup: (cleanup: () => Promise<void>) => void,
 ): Promise<Result> {
   const settle = (task: Promise<unknown>) =>
@@ -68,7 +68,7 @@ export async function withOwnedPlatformStatsServer<Result>(
     ownedWork.push(settle(task))
     return task
   }
-  let cache: ReturnType<typeof observePlatformStatsCache> | undefined
+  let cache: Awaited<ReturnType<typeof observePlatformStatsCache>> | undefined
   let startup: Promise<StatsAddress | undefined> | undefined
   let cleanupTask: Promise<void> | undefined
   const closeAndDrain = () => {
@@ -123,14 +123,16 @@ export async function withOwnedPlatformStatsServer<Result>(
   const errors: unknown[] = []
   let value: Result | undefined
   try {
-    cache = observePlatformStatsCache()
-    startup = cache.clear().then(() => {
+    startup = (async () => {
+      cache = await observePlatformStatsCache()
+      await cache.clear()
       if (!accepting) return undefined
       return listenOnLoopbackEphemeralPort(server)
-    })
+    })()
     const address = await startup
     if (!address || !accepting) throw new Error('Stats server closed during startup')
-    value = await run(address, trackWork)
+    if (!cache) throw new Error('Stats cache was not initialized')
+    value = await run(address, trackWork, cache.cacheKey)
   } catch (err) {
     errors.push(err)
   } finally {

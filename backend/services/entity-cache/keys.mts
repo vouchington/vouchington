@@ -136,16 +136,6 @@ export const getElectionCacheKeys = (...keys: unknown[]): Promise<string[]> => {
   return Promise.resolve([...ids])
 }
 
-export const getListCacheKeys = (...keys: unknown[]): Promise<string[]> => {
-  const { ids } = getCacheKeys(keys)
-  return Promise.resolve([...ids])
-}
-
-export const getStoryCacheKeys = (...keys: unknown[]): Promise<string[]> => {
-  const { ids } = getCacheKeys(keys)
-  return Promise.resolve([...ids])
-}
-
 export const getRssFeedItemCacheKeys = (...keys: unknown[]): Promise<string[]> => {
   // RSS feed items can only be looked up by ID, so just normalize the IDs
   const { ids } = getCacheKeys(keys)

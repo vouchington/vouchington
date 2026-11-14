@@ -3,27 +3,27 @@ import { runInventoryReaderCase } from '../test-helpers/post-publication-reader-
 
 const cases = [
   {
-    title: 'accepts a cached public content snapshot boundary',
-    classification: 'public-snapshot-boundary',
-    direct:
-      "import { getPublicRssPostSnapshotsCached } from '@services/posts/public-rss-snapshots'\nconst posts = await getPublicRssPostSnapshotsCached({ postIds })\nreturn posts",
+    title: 'accepts a snapshot SQL reader composing direct and public predicates',
+    classification: 'anonymous-snapshot-sql',
+    direct: `import { buildDirectPostEligibilityFilter, buildPublicPostEligibilityFilter } from '@modules/feed-query-builders'
+query.append(buildDirectPostEligibilityFilter())
+query.append(buildPublicPostEligibilityFilter())`,
     expected: null,
   },
   {
-    title: 'rejects raw entity hydration at a cached public snapshot boundary',
-    classification: 'public-snapshot-boundary',
-    direct:
-      "import { getPostByAnyCachedBatch } from '@services/entity-fetch'\nreturn await getPostByAnyCachedBatch(postIds)",
-    expected: 'must compose getPublicRssPostSnapshotsCached',
+    title: 'rejects a snapshot SQL reader that drops direct eligibility',
+    classification: 'anonymous-snapshot-sql',
+    direct: `import { buildPublicPostEligibilityFilter } from '@modules/feed-query-builders'
+query.append(buildPublicPostEligibilityFilter())`,
+    expected: 'must compose buildDirectPostEligibilityFilter, buildPublicPostEligibilityFilter',
   },
   {
-    title: 'rejects an unrelated homonymous cached snapshot helper',
-    classification: 'public-snapshot-boundary',
-    direct:
-      "import { getPublicRssPostSnapshotsCached } from '@services/unrelated'\nreturn await getPublicRssPostSnapshotsCached({ postIds })",
-    expected: 'must compose getPublicRssPostSnapshotsCached',
+    title: 'rejects a snapshot SQL reader that drops public eligibility',
+    classification: 'anonymous-snapshot-sql',
+    direct: `import { buildDirectPostEligibilityFilter } from '@modules/feed-query-builders'
+query.append(buildDirectPostEligibilityFilter())`,
+    expected: 'must compose buildDirectPostEligibilityFilter, buildPublicPostEligibilityFilter',
   },
-
   {
     title: 'accepts a tracked, classified completed inventory',
     classification: 'direct-sql',
@@ -85,19 +85,6 @@ filters.push(buildPublicPostEligibilityFilter())
 const query = sql\`SELECT * FROM posts\`
 read(query)`,
     expected: 'must compose buildPublicPostEligibilityFilter',
-  },
-  {
-    title: 'accepts an awaited authorization boundary without requiring SQL composition',
-    classification: 'public-boundary',
-    direct:
-      "import { getPublicPostIds } from '@services/posts'\nconst ids = await getPublicPostIds()\nreturn ids",
-    expected: null,
-  },
-  {
-    title: 'rejects an unused boundary helper decoy',
-    classification: 'public-boundary',
-    direct: "import { getPublicPostIds } from '@services/posts'\ngetPublicPostIds([])",
-    expected: 'must compose getPublicPostIds',
   },
   {
     title: 'rejects a canonical binding that is reassigned before the query appends it',

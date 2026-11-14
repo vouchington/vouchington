@@ -1,7 +1,4 @@
-import {
-  awaitReportedEnqueueAdmission,
-  createBackgroundBulkEnqueue,
-} from '@queues/background/enqueues'
+import { createBackgroundBulkEnqueue } from '@queues/background/enqueues'
 import { CACHE_PURGE_TAGS_JOB } from '@queues/background/enqueues/cache-purge-jobs'
 import { MAX_TAGS_PER_REQUEST } from '@ts-shared/cache'
 import { DEDUPLICATION_TAG_SEPARATOR } from './config.mts'
@@ -34,10 +31,4 @@ const enqueue = createBackgroundBulkEnqueue(CACHE_PURGE_TAGS_JOB, (chunk: string
 export function enqueueBulkPurgeCacheTags(tags: string[], priority?: number): Promise<unknown> {
   const chunks = chunkTags(tags, MAX_TAGS_PER_REQUEST)
   return enqueue(chunks, priority === undefined ? {} : { priority })
-}
-
-export function enqueueBulkPurgeCacheTagsBestEffort(tags: string[]): Promise<void> {
-  return awaitReportedEnqueueAdmission(() => {
-    return enqueueBulkPurgeCacheTags(tags)
-  })
 }

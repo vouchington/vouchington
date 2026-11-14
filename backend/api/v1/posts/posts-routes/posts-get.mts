@@ -1,7 +1,6 @@
 import { getRecommendationReviewerUsers } from '@services/topic-recommendations/reviewer-users'
 import { clampAnonLimit, getPaginationLimits } from '@services/pagination'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
-
 import { indexById } from '@modules/utils'
 import { getBookmarkMapsForEntityGroups } from '@services/bookmarks/get'
 import { maybeSanitizeElections } from '@services/elections-votes/shared/sanitize-election'
@@ -11,7 +10,8 @@ import { getPostIdsCached } from '@services/entity-fetch/search-caches'
 import { getAdminUserIdsFromPosts } from '@services/markdown/admin-users'
 import { renderMarkdownBatch } from '@services/markdown/batch-render'
 import { labelAndMaskPosts } from '@services/content-provenance'
-import { getPostIds, getPublicPostIds } from '@services/posts'
+import { getPostIds } from '@services/posts'
+import { getAnonymousPostRowsByIdsCached } from '@services/posts/anonymous-snapshot'
 import { similarSeedRejected } from '@services/posts/public-similar-seed'
 import {
   parsePostsSearchParams,
@@ -86,12 +86,18 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
         exclude_for_user_id: currentUser.id,
       })
     : await getPostIdsCached(searchOptions)
-  if (!currentUser) {
-    const publicPostIds = await getPublicPostIds(result.results.map(postResult => postResult.id))
-    result.results = result.results.filter(postResult => publicPostIds.has(postResult.id))
-  }
+  const candidateIds = result.results.map(row => row.id)
+  const anonymousRows = currentUser
+    ? null
+    : await getAnonymousPostRowsByIdsCached(candidateIds, 'discovery')
+  if (anonymousRows) result.results = result.results.filter((_, i) => anonymousRows[i]?.post)
   const postIds = result.results.map((r: { id: string }) => r.id)
-  const postsAndRootsPromise = getPostsWithRootsByAnyCached(postIds)
+  const postsAndRootsPromise = currentUser
+    ? getPostsWithRootsByAnyCached(postIds)
+    : Promise.resolve({
+        posts: anonymousRows!.flatMap(row => (row.post ? [row.post] : [])),
+        roots: anonymousRows!.flatMap(row => (row.root ? [row.root] : [])),
+      })
   const rawPostsPromise = postsAndRootsPromise.then(postsAndRoots => postsAndRoots.posts)
   // Page posts and their roots are labelled together in one read of the provenance facts.
   const labelledPostsPromise = postsAndRootsPromise.then(async ({ posts, roots }) => {

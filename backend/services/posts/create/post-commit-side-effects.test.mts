@@ -1,14 +1,9 @@
 import { WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createPost } from '../create-post.mts'
 import { describe, expect, it, vi, onTestFinished } from 'vitest'
-import {
-  backgroundQueue as entitiesListeners,
-  backgroundQueue as cachePurge,
-} from '@voucha/test-helpers/shared-background-queue'
+import { backgroundQueue as entitiesListeners } from '@voucha/test-helpers/shared-background-queue'
 import { ENTITY_LISTENERS_POST_CREATED_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
 import { entityCacheBloomFilters } from '@services/entity-cache/bloom-filter-instances'
-import { postTag } from '@ts-shared/cache'
-import { invalidate } from '@services/entity-cache/invalidate'
 import { applyPostCommitSideEffects } from './post-commit-side-effects.mts'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import {
@@ -152,42 +147,5 @@ describe('applyPostCommitSideEffects', () => {
       },
     )
     expect(sentryCaptureExceptionMock.mock.calls.filter(([err]) => err === error)).toHaveLength(1)
-  })
-
-  it('includes owned purge-tag admission in post cache invalidation completion', async () => {
-    const input = await fixture()
-    const admitted = Promise.withResolvers<void>()
-    const release = Promise.withResolvers<void>()
-    const originalAdd = cachePurge.addBulk
-    const spy = vi.spyOn(cachePurge, 'addBulk').mockImplementation(jobs => {
-      if (
-        !jobs.some(
-          job =>
-            job.data &&
-            typeof job.data === 'object' &&
-            'tags' in job.data &&
-            Array.isArray(job.data.tags) &&
-            job.data.tags.includes(postTag(input.post.id)),
-        )
-      )
-        return originalAdd.call(cachePurge, jobs)
-      admitted.resolve()
-      return release.promise.then(() => originalAdd.call(cachePurge, jobs))
-    })
-    onTestFinished(() => spy.mockRestore())
-    let completed = false
-    await drainOwnedTestAction(
-      () =>
-        invalidate.posts(input.post).then(() => {
-          completed = true
-          return undefined
-        }),
-      () => release.resolve(),
-      async () => {
-        await admitted.promise
-        expect(completed).toBe(false)
-      },
-    )
-    expect(completed).toBe(true)
   })
 })

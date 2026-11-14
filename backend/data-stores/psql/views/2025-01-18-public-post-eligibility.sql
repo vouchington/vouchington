@@ -31,6 +31,16 @@ CREATE OR REPLACE VIEW view_public_post_eligibility AS
     ON candidate_suspension.user_id = candidate_post.created_by_id
    AND candidate_suspension.lifted_at IS NULL
   WHERE candidate_post.deleted_at IS NULL
+  AND COALESCE((
+    SELECT publication_candidate_author.deleted_at IS NULL
+    FROM users publication_candidate_author
+    WHERE publication_candidate_author.id = candidate_post.created_by_id
+  ), TRUE)
+  AND COALESCE((
+    SELECT publication_root_author.deleted_at IS NULL
+    FROM users publication_root_author
+    WHERE publication_root_author.id = root_post.created_by_id
+  ), TRUE)
   AND candidate_post.approved_at IS NOT NULL
   AND candidate_post.archived_at IS NULL
   AND candidate_suspension.user_id IS NULL

@@ -30,6 +30,7 @@
     "@modules/search-utils": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@services/entity-cache": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",
     "http-errors": "^2.0.1",

@@ -1,6 +1,5 @@
 import { write } from '@data-stores/psql'
 import { isUUID } from '@modules/utils'
-import { invalidate } from '@services/entity-cache/invalidate'
 import assert from 'http-assert'
 import { getListItemStorageConfig } from './catalog.mts'
 import { itemFactsSql } from './item-facts.mts'
@@ -76,7 +75,6 @@ export async function addListItems(
     for (const row of rows) items.set(row.entity_id as string, rowToListItem(row, itemType))
   }
 
-  if (items.size > 0) await invalidate.lists(listId)
   return items
 }
 

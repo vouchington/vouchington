@@ -28,7 +28,6 @@
     "@modules/feed-query-builders": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/utils": "workspace:^",
-    "@services/entity-cache": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/pagination": "workspace:^",
     "@voucha/types": "workspace:^",

@@ -1,4 +1,9 @@
 import { randomUUID, createHash } from 'node:crypto'
+import { getAnonymousCacheGeneration } from '@services/entity-cache/anonymous-cache-generation'
+import {
+  countCapturedQueriesByAnnotation,
+  withCapturedTestQueries,
+} from '@voucha/test-helpers/query-capture'
 import { it, expect, beforeAll, describe } from 'vitest'
 import { getStoryById } from '@services/feeds/rss-feed-items/get-story-by-id'
 import { getStoryItemIds, getStoriesByIdBatch, getStoryItemSummaries } from './get.mts'
@@ -205,5 +210,47 @@ describe('getPostStoryIdsByStoryIds', () => {
     await archivePostForTopHashtagTest(postId, testUser!.id)
 
     await expect(getVisiblePostStoryIdsByStoryIds(null, [story.id])).resolves.toEqual({})
+  })
+
+  it('uses a cached anonymous mapping and a live authenticated query', async () => {
+    const user = await createTestUserDirect()
+    const story = await insertTestStory({ title: `Cached story mapping ${randomUUID()}` })
+    await insertItemForStory(story.id)
+    const postId = await insertTestPost({
+      title: `Cached story post ${randomUUID()}`,
+      slug: randomUUID(),
+      createdById: user.id,
+      markdown: '',
+      postType: 'story',
+    })
+    await createPostStory(postId, story.id, user.id)
+
+    const generationBefore = await getAnonymousCacheGeneration()
+    const first = await withCapturedTestQueries(() =>
+      getVisiblePostStoryIdsByStoryIds(null, [story.id]),
+    )
+    const second = await withCapturedTestQueries(() =>
+      getVisiblePostStoryIdsByStoryIds(null, [story.id]),
+    )
+    const generationAfter = await getAnonymousCacheGeneration()
+    const authenticated = await withCapturedTestQueries(() =>
+      getVisiblePostStoryIdsByStoryIds(user, [story.id]),
+    )
+
+    expect(first.result).toEqual({ [story.id]: postId })
+    expect(second.result).toEqual({ [story.id]: postId })
+    expect(authenticated.result).toEqual({ [story.id]: postId })
+    expect(
+      countCapturedQueriesByAnnotation(first.queries, 'getVisiblePostStoryIdsByStoryIds'),
+    ).toBeGreaterThan(0)
+    const stableGeneration = generationBefore === generationAfter
+    const anonymousMappingQueries = countCapturedQueriesByAnnotation(
+      second.queries,
+      'getVisiblePostStoryIdsByStoryIds',
+    )
+    expect(stableGeneration ? anonymousMappingQueries : 0).toBe(0)
+    expect(
+      countCapturedQueriesByAnnotation(authenticated.queries, 'getVisiblePostStoryIdsByStoryIds'),
+    ).toBeGreaterThan(0)
   })
 })

@@ -6,7 +6,6 @@ import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
 import { cacheValkeyClient } from '@data-stores/valkey/clients'
 import { valkeyEvents } from 'valkyries'
-import { stableSerialize } from '@services/entity-cache/search-cache'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { countCapturedQueriesByAnnotation, createTestUser } from '@voucha/test-helpers'
 import { getPlatformStatsCached } from '@services/entity-fetch/search-caches'
@@ -26,14 +25,13 @@ describe('platform-stats', () => {
 
   it('shares one cold platform aggregate with two authenticated viewers and preserves HTTP headers', async () => {
     const lifecycle = await createPlatformStatsLifecycle()
-    const key = stableSerialize({})
-    const written = Promise.withResolvers<void>()
-    void written.promise.catch(() => undefined)
-    const onWrite = ({ cacheName, keys }: { cacheName: string; keys: string[] }) => {
-      if (cacheName === 'platform_stats_anon' && keys.includes(key)) written.resolve()
-    }
     const responses: Response[] = []
-    await lifecycle.withServer(async (address, trackWork) => {
+    await lifecycle.withServer(async (address, trackWork, key) => {
+      const written = Promise.withResolvers<void>()
+      void written.promise.catch(() => undefined)
+      const onWrite = ({ cacheName, keys }: { cacheName: string; keys: string[] }) => {
+        if (cacheName === 'platform_stats_anon' && keys.includes(key)) written.resolve()
+      }
       const requestStats = (request: ReturnType<typeof createRequest>) =>
         request.get('/api/v1/platform-stats').expect(200)
       const anonymous = createRequest(address)

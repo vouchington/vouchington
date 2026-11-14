@@ -1,6 +1,9 @@
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { indexById } from '@modules/utils'
-import { getCommentDescendantsPage } from '@services/comments'
+import {
+  getAnonymousCommentDescendantsPageCached,
+  getCommentDescendantsPage,
+} from '@services/comments'
 import { maybeSanitizeElections } from '@services/elections-votes/shared/sanitize-election'
 import { getPostMetricsByAnyCachedBatch } from '@services/entity-fetch'
 import { getAdminUserIdsFromPosts } from '@services/markdown/admin-users'
@@ -33,6 +36,10 @@ import {
 } from '../admin-moderation-data.mts'
 import { getRouteAccessPost, getRoutePostByAnyCached } from '@services/posts/route-access'
 import {
+  getAnonymousPostSnapshotByAnyCached,
+  getAnonymousPostRowsByIdsCached,
+} from '@services/posts/anonymous-snapshot'
+import {
   commentDescendantPaginationParser as descendantsParser,
   parseCommentDescendantPagination,
 } from '@services/search-params/comment-descendant-pagination'
@@ -43,19 +50,31 @@ app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
     ctx,
     'GET:/api/v1/posts/:idOrSlug/descendants',
   )
-  const { post, root } = await getRoutePostByAnyCached(ctx.params.idOrSlug!, {
-    includeDeleted: true,
-  })
+  const { post, root, readState } = currentUser
+    ? await (async () => {
+        const { post: loadedPost, root: loadedRoot } = await getRoutePostByAnyCached(
+          ctx.params.idOrSlug!,
+          {
+            includeDeleted: true,
+          },
+        )
+        if (!loadedPost) return { post: null, root: null, readState: null }
+        return {
+          post: loadedPost,
+          root: loadedRoot,
+          readState: await getRequestedPostReadState(
+            currentUser,
+            loadedPost,
+            loadedPost.root_post_id ? loadedRoot : null,
+          ),
+        }
+      })()
+    : await getAnonymousPostSnapshotByAnyCached(ctx.params.idOrSlug!)
   ctx.assert(post, 404, 'Post not found')
 
   // A placeholder comment can start a walk, so a collapsed one can be expanded.
   const rootPost = await getRouteAccessPost(post, root)
   ctx.assert(rootPost, 404, 'Post not found')
-  const readState = await getRequestedPostReadState(
-    currentUser,
-    post,
-    post.root_post_id ? root : null,
-  )
   ctx.assert(readState, 404, 'Post not found')
 
   const pagination = parseCommentDescendantPagination(ctx.query)
@@ -71,10 +90,10 @@ app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
     path: ctx.params,
     query: validationQuery,
   })
-  const { ids: commentIds, pageInfo } = await getCommentDescendantsPage(currentUser, post, {
-    limit: pagination.limit,
-    after: pagination.after,
-  })
+  const pageOptions = { limit: pagination.limit, after: pagination.after }
+  const { ids: commentIds, pageInfo } = currentUser
+    ? await getCommentDescendantsPage(currentUser, post, pageOptions)
+    : await getAnonymousCommentDescendantsPageCached(post, pageOptions)
   const results = commentIds.map(id => ({
     id,
     __entity_type: 'post' as const,
@@ -91,9 +110,13 @@ app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
     communityMemberRole = membership?.role ?? null
   }
 
-  const postsPromise = getPostsOrDeletedCommentStubs(commentIds).then(posts =>
-    labelAndMaskPosts(posts, currentUser),
-  )
+  const postsPromise = (
+    currentUser
+      ? getPostsOrDeletedCommentStubs(commentIds)
+      : getAnonymousPostRowsByIdsCached(commentIds, 'direct-body').then(rows =>
+          rows.map(row => row.post),
+        )
+  ).then(posts => labelAndMaskPosts(posts, currentUser))
   const { moderations: moderationsPromise, elections: electionsPromise } = getPostElectionSidecars(
     currentUser,
     commentIds,

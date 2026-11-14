@@ -3,13 +3,8 @@ import { itemHasDiscoverableSourceSql } from './discoverability-sql.mts'
 
 const SAFE_SQL_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/
 
-export function buildNonDeletedClause(candidateAlias: string, rootAlias: string): SQLStatement {
-  return sql`(`
-    .append(`${candidateAlias}.deleted_at IS NULL`)
-    .append(sql` AND `)
-    .append(`${rootAlias}.deleted_at IS NULL`)
-    .append(sql`)`)
-}
+export { buildNonDeletedClause } from './post-publication-live-author-clause.mts'
+
 export function buildClearanceClause(alias: string, currentUserId: string | null): SQLStatement {
   return sql`(`
     .append(`${alias}.approved_at IS NOT NULL OR ${alias}.created_by_id = `)

@@ -36,3 +36,8 @@ export async function makeTestPostPrivate(postId: string): Promise<void> {
   await write(sql`/* makeTestPostPrivate */
     UPDATE posts SET privacy = 'private', broadcast = 'users' WHERE id = ${postId}`)
 }
+
+export async function setTestPostMarkdown(postId: string, markdown: string): Promise<void> {
+  await write(sql`/* setTestPostMarkdown */
+    UPDATE posts SET markdown = ${markdown} WHERE id = ${postId}`)
+}

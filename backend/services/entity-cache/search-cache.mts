@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import type { ValkeyCacheOptions } from '@data-stores/valkey/types'
 import { SEARCH_CACHE_TTL_SECONDS } from './search-cache-ttl.mts'
+import { getAnonymousCacheGeneration } from './anonymous-cache-generation.mts'
 
 /**
  * Creates a Valkey-cached wrapper for a search/list function used by logged-out users.
@@ -12,17 +13,30 @@ export function createSearchCache<O extends object, R>(
   prefix: string,
   fn: (options: O) => Promise<R>,
 ): (options: O) => Promise<R> {
-  const cache = new ValkeyCache<O>({
+  const cache = new ValkeyCache<{ generation: string; options: O }>({
     prefix,
     ttlSeconds: SEARCH_CACHE_TTL_SECONDS,
-    keySerializer: stableSerialize,
-  } as unknown as ValkeyCacheOptions<O>)
+    keySerializer: serializeSearchCacheKey,
+  } as unknown as ValkeyCacheOptions<{ generation: string; options: O }>)
 
-  const cached = cache.cacheGetByAny(fn)
+  const cached = cache.cacheGetByAny(({ options }: { generation: string; options: O }) =>
+    fn(options),
+  )
 
   // Search functions never return null, so cached never returns null in practice.
   // Cast away the null from cacheGetByAny's return type.
-  return async (options: O): Promise<R> => (await cached(options)) as R
+  return async (options: O): Promise<R> =>
+    (await cached({ generation: await getAnonymousCacheGeneration(), options })) as R
+}
+
+export function serializeSearchCacheKey({
+  generation,
+  options,
+}: {
+  generation: string
+  options: object
+}): string {
+  return stableSerialize({ generation, optionsKey: stableSerialize(options) })
 }
 
 export function stableSerialize(options: object): string {

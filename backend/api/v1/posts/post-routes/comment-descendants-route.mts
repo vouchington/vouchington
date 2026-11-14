@@ -27,6 +27,10 @@ import app from '../../../app.mts'
 import { setPublicCacheHeaders } from '../../../cache-headers.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
 import { getRouteAccessPost } from '@services/posts/route-access'
+import {
+  getAnonymousPostRowsByIdsCached,
+  getAnonymousPostSnapshotByAnyCached,
+} from '@services/posts/anonymous-snapshot'
 import { apiResponse } from '@vouchington/utils/api-response-contract'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { apiQuery } from '../../../api-query-contract.mts'
@@ -65,16 +69,27 @@ app.route('/api/v1/posts/:idOrSlug/ancestors').get(async (ctx: Context) => {
   const accessIds = [...new Set([...ancestorIds, targetId])]
   // The root is the first ancestor, so the page batch is the root read. A separate
   // getPostByAnyCached would add a round trip and then repeat that id in the batch.
-  const fetchedPosts = await getPostsOrDeletedCommentStubs(accessIds)
+  const fetchedPosts = currentUser
+    ? await getPostsOrDeletedCommentStubs(accessIds)
+    : (await getAnonymousPostRowsByIdsCached(accessIds, 'direct-body')).map(row => row.post)
   const fetchedPostsById = new Map(
     fetchedPosts.filter(post => post != null).map(post => [post.id, post]),
   )
+  const anonymousTargetSnapshot = currentUser
+    ? null
+    : await getAnonymousPostSnapshotByAnyCached(targetId)
+  if (anonymousTargetSnapshot?.post)
+    fetchedPostsById.set(anonymousTargetSnapshot.post.id, anonymousTargetSnapshot.post)
   const rootPost = rootAncestor ? fetchedPostsById.get(rootAncestor.id) : undefined
   ctx.assert(rootPost, 404, 'Post not found')
   ctx.assert(await getRouteAccessPost(rootPost), 404, 'Post not found')
   // Nothing below an unreadable root is served, not even a placeholder: every comment in the
   // thread, placeholder or not, is only as readable as its root.
-  ctx.assert(await canViewPost(currentUser, rootPost), 404, 'Post not found')
+  ctx.assert(
+    currentUser ? await canViewPost(currentUser, rootPost) : rootPost.post_type !== 'comment',
+    404,
+    'Post not found',
+  )
   const posts = ancestorIds.flatMap(id => {
     const post = fetchedPostsById.get(id)
     return post ? [post] : []
@@ -91,8 +106,10 @@ app.route('/api/v1/posts/:idOrSlug/ancestors').get(async (ctx: Context) => {
   ctx.assert(targetPost, 404, 'Post not found')
   // The root was checked above, so a comment is only classified by its own state.
   ctx.assert(
-    targetPost.post_type !== 'comment' ||
-      (await getCommentReadStateUnderReadableRoot(currentUser, targetPost, rootPost.id)),
+    currentUser
+      ? targetPost.post_type !== 'comment' ||
+          (await getCommentReadStateUnderReadableRoot(currentUser, targetPost, rootPost.id))
+      : anonymousTargetSnapshot?.readState,
     404,
     'Post not found',
   )

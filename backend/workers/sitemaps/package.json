@@ -24,7 +24,6 @@
   "dependencies": {
     "@queues/background": "workspace:^",
     "@queues/sitemaps": "workspace:^",
-    "@services/entity-cache": "workspace:^",
     "@services/sitemaps": "workspace:^",
     "@voucha/config": "workspace:^",
     "glide-mq": "^0.20.0"
