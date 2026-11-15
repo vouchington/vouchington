@@ -94,10 +94,10 @@ onto `origin/main`; never run the non-stack form on a mid-stack branch.
   sender's login, shepherds the PR, and is the only agent that merges, within its grant.
 
 - Load the [pr-shepherd plugin](https://github.com/jonathanong/pr-shepherd) for its action contract.
-  Resolve the workspace version with `pnpm exec pr-shepherd`, never a global binary.
-- Use `pnpm exec pr-shepherd <pr> --until-terminal --quiet-status` for an intentional long phase.
-  For a bounded wait use `pnpm exec pr-shepherd <pr> --timeout 4.5m --quiet-status`; one tick uses
-  `pnpm exec pr-shepherd iterate <pr>`. Cadence comes from `.pr-shepherdrc.yml`.
+  Use the per-machine `pr-shepherd` CLI on PATH; the repo does not pin its own copy.
+- Use `pr-shepherd <pr> --until-terminal --quiet-status` for an intentional long phase.
+  For a bounded wait use `pr-shepherd <pr> --timeout 4.5m --quiet-status`; one tick uses
+  `pr-shepherd iterate <pr>`. Cadence comes from `.pr-shepherdrc.yml`.
 - Follow the CLI's printed instructions and terminal actions. Stop for human overrides or external
   out-of-scope blockers; do not emulate polling with repeated forced ticks or Stop hooks.
 - A harness-killed `run_in_background` process is not a shepherd terminal action: confirm the last

@@ -1441,8 +1441,6 @@
         reason: First-party no-mistakes native package for Linux x64 with glibc.
       - name: no-mistakes-win32-x64-msvc
         reason: First-party no-mistakes native package for Windows x64 with MSVC.
-      - name: pr-shepherd
-        reason: First-party PR management tool published by the repo author.
       - name: ssrf-guard
         reason: First-party SSRF protection utility published by the repo author.
       - name: valkyries

@@ -19,7 +19,7 @@ tracked `AGENTS.md` files, and closed issue bodies. Read PR and issue comments o
 caller asks; no collector flag enables them.
 
 Collectors may fetch PR bodies in parallel, but they return their body-file paths to the main agent
-without parsing them. The main agent runs each `pnpm exec pr-shepherd journal extract --body-file <path>`
+without parsing them. The main agent runs each `pr-shepherd journal extract --body-file <path>`
 serially; workspace-write agents must not run concurrent `pnpm exec` processes. Keep
 collection/mechanical parsing separate from actionability triage. Consume each one-line typed JSON
 result: `ok: false` fails collection for that body, `journal: null` has no Journal candidate, and a

@@ -30,8 +30,7 @@
       ],
       // Extracted workflow scripts run `pnpm exec coverage-check`; Knip does not read sourced
       // shell bodies, so the policy check follows each workflow's script for the evidence.
-      // `pr-shepherd` is run as `pnpm exec pr-shepherd` by agent hooks and skills, not imported.
-      "ignoreDependencies": ["coverage-check", "pr-shepherd"],
+      "ignoreDependencies": ["coverage-check"],
       // Hook modules are loaded by the harness outside the import graph.
       "includeEntryExports": false,
     },

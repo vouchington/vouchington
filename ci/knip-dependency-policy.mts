@@ -31,11 +31,6 @@ export const allowedWorkspaceIgnoreDependencies = new Map<
         ],
         evidencePattern: /\bpnpm exec coverage-check\b/,
       },
-      {
-        dependency: 'pr-shepherd',
-        evidenceFiles: ['.claude/settings.json'],
-        evidencePattern: /\bpnpm exec pr-shepherd\b/,
-      },
     ],
   ],
   [

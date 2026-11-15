@@ -25,7 +25,7 @@ After `gh stack submit --auto`, update each draft with the `vouchington-tooling`
 tool from that layer's worktree. The `Agent:` line stamped by `pr_create` or `pr_update` supplies
 the session ownership signal in the canonical `stacked-prs/references/drain.md`.
 The parent does not run another shepherd poll for the same stack. Run
-`pnpm exec pr-shepherd stack <pr> --until-terminal --quiet-status` for the owned stack, following
+`pr-shepherd stack <pr> --until-terminal --quiet-status` for the owned stack, following
 the printed instructions. A fix on a lower layer uses `./dev/rebase-onto-main --stack` or the
 appropriate canonical `gh stack` operation; serialize Git mutations in its one worktree.
 Once lower layers merge and one open layer remains, the wrapper runs
