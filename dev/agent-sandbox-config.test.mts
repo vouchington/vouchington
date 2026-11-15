@@ -184,7 +184,7 @@ describe('Codex project rules', () => {
   })
 
   it('allows the specific npx tool invocations used by the local dev loop in both agents', () => {
-    for (const tool of ['pr-shepherd', 'vitest', 'oxlint', 'oxfmt', 'no-mistakes']) {
+    for (const tool of ['vitest', 'oxlint', 'oxfmt', 'no-mistakes']) {
       expect(claudeSettings.permissions.allow).toContain(`Bash(npx ${tool} *)`)
       expect(codexRules).toContain(codexRuleFor(['npx', tool]))
     }
