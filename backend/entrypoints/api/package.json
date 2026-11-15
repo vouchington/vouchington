@@ -46,7 +46,6 @@
     "@services/post-classifier": "workspace:^",
     "@services/post-writes": "workspace:^",
     "@services/queue-monitoring": "workspace:^",
-    "@services/reporting-daily-rollups": "workspace:^",
     "@services/urls": "workspace:^",
     "@services/users": "workspace:^",
     "@services/valkey-admin": "workspace:^",

@@ -44,6 +44,7 @@ COMMENT ON COLUMN growth_metrics_daily_post_authors.author_user_id IS 'Live post
 
 CREATE TABLE moderator_workload_daily_totals (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   day DATE NOT NULL,
   community_id UUID REFERENCES communities(id) ON DELETE CASCADE,
   actor_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -58,6 +59,7 @@ CREATE INDEX idx_moderator_workload_daily_totals__actor_user_id
   ON moderator_workload_daily_totals(actor_user_id, day);
 COMMENT ON TABLE moderator_workload_daily_totals IS 'Daily moderator-action reporting cohorts; NULL-community global cohorts survive community purge, scoped cohorts cascade, and bounded cleanup retires days outside the analytics window.';
 COMMENT ON COLUMN moderator_workload_daily_totals.id IS 'Identity of this daily reporting cohort.';
+COMMENT ON COLUMN moderator_workload_daily_totals.created_at IS 'UUIDv7-derived creation time of this daily reporting cohort.';
 COMMENT ON COLUMN moderator_workload_daily_totals.day IS 'UTC creation day of the source moderator actions.';
 COMMENT ON COLUMN moderator_workload_daily_totals.community_id IS 'Live community scope, or NULL for the independent global aggregate.';
 COMMENT ON COLUMN moderator_workload_daily_totals.actor_user_id IS 'Live actor required by the existing workload reader; physical user purge removes this cohort.';
@@ -80,6 +82,9 @@ CREATE TABLE reporting_source_changes (
   source_day DATE NOT NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 ) PARTITION BY RANGE (id);
+CREATE TRIGGER trigger_reporting_source_changes_append_only
+  BEFORE UPDATE OR DELETE ON reporting_source_changes
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 COMMENT ON TABLE reporting_source_changes IS 'Anonymous atomic lifecycle snapshots of vanished reporting-day inputs; existing entity reconciliation consumes the UUIDv7 event window and cleanupPartitions retires the monthly history.';
 COMMENT ON COLUMN reporting_source_changes.id IS 'Monotonic event cursor, not a relationship to a source row.';
 COMMENT ON COLUMN reporting_source_changes.source_type IS 'Concrete source lifecycle represented by the immutable snapshot.';
