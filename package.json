@@ -150,7 +150,7 @@
     "agent-blackboard": "^0.7.0",
     "coverage-check": "^0.18.0",
     "dependency-cruiser": "^18.7.2",
-    "eslint-plugin-no-mistakes": "^0.109.55",
+    "eslint-plugin-no-mistakes": "^0.109.56",
     "eslint-plugin-playwright": "^2.12.1",
     "eslint-plugin-react-you-might-not-need-an-effect": "^1.1.0",
     "eslint-plugin-vouchington": "^0.2.0",

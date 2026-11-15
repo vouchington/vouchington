@@ -95,8 +95,8 @@ importers:
         specifier: ^18.7.2
         version: 18.7.2
       eslint-plugin-no-mistakes:
-        specifier: ^0.109.55
-        version: 0.109.55(@typescript-eslint/parser@8.72.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
+        specifier: ^0.109.56
+        version: 0.109.56(@typescript-eslint/parser@8.72.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint-plugin-playwright:
         specifier: ^2.12.1
         version: 2.12.1(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
@@ -21828,8 +21828,8 @@ packages:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
 
-  eslint-plugin-no-mistakes@0.109.55:
-    resolution: {integrity: sha512-cwZiCDet8WGOrrd+vz41j3QdpIW92glkMMnZBR3/cDsLV+ZlOYHVgtW4j3lYrg4Yvm6QnwAxU8xLBYSk0fQEEw==}
+  eslint-plugin-no-mistakes@0.109.56:
+    resolution: {integrity: sha512-NXYJpey06Vz9Y7CwCIrk49kz5d/LbvIXV3rSCX7d3ZIQ4SUtK3rVauhMR8hSIKn8VyhUPSjFiIAXDx9Yh1aMkQ==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
     peerDependencies:
       '@typescript-eslint/parser': '>=8'
@@ -30843,7 +30843,7 @@ snapshots:
 
   escape-string-regexp@5.0.0: {}
 
-  eslint-plugin-no-mistakes@0.109.55(@typescript-eslint/parser@8.72.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
+  eslint-plugin-no-mistakes@0.109.56(@typescript-eslint/parser@8.72.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
     dependencies:
       eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
     optionalDependencies:
