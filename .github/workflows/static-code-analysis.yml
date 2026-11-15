@@ -89,7 +89,7 @@ jobs:
         run: pnpm exec tsc --noEmit --project cloudflare-worker/tsconfig.json
         timeout-minutes: 2
       - name: Install CI tools via mise
-        uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
         # Keep mise-action's implicit cache disabled under the hosted CI cache policy.
         with:
           cache: false
@@ -177,7 +177,7 @@ jobs:
         with:
           deadline-seconds: '270'
       - name: Install CI tools via mise
-        uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
         # Keep mise-action's implicit cache disabled under the hosted CI cache policy.
         with:
           cache: false
