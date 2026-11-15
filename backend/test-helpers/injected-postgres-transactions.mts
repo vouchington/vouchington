@@ -52,19 +52,18 @@ export function rewritePostgresTransactionRowsForTest(
  * returns the restore.
  */
 export function afterNextPostgresCommitForTest(effect: () => void): () => void {
-  return interceptPostgresTransactionsForTest(
-    transaction =>
-      new Proxy(transaction, {
-        get(target, property) {
-          if (property !== 'commit') return Reflect.get(target, property)
-          return async () => {
-            await target.commit()
-            effect()
-          }
-        },
-      }),
-    true,
-  )
+  const realBegin = psql.beginTransaction
+  const spy = vi.spyOn(psql, 'beginTransaction')
+  spy.mockImplementationOnce(async options => {
+    const transaction = await realBegin(options)
+    const commit = transaction.commit
+    transaction.commit = async () => {
+      await commit()
+      effect()
+    }
+    return transaction
+  })
+  return () => spy.mockRestore()
 }
 
 /** Run an owned real effect after a matching SQL result was observed, without rewriting its rows. */
