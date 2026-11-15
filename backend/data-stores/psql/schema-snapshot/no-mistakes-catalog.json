@@ -101489,6 +101489,38 @@
           "unique": false,
           "valid": true
         },
+        "idx_posts__updated_at_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__updated_at_id ON ONLY public.posts USING btree (updated_at, ((id)::text))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": null,
+              "descending": false,
+              "expression": "(id::text)",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_posts__updated_by_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -167565,10 +167597,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_users__updated_at_id_active": {
+        "idx_users__updated_at_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_users__updated_at_id_active ON public.users USING btree (updated_at, ((id)::text)) WHERE (deleted_at IS NULL)",
+          "definition": "CREATE INDEX idx_users__updated_at_id ON public.users USING btree (updated_at, ((id)::text))",
           "immediate": true,
           "keys": [
             {
@@ -167591,7 +167623,7 @@
             }
           ],
           "live": true,
-          "predicate": "(deleted_at IS NULL)",
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
