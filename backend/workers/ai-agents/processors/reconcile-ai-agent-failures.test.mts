@@ -1,5 +1,7 @@
 import '@voucha/test-helpers/vitest.setup.sentry-mock'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { getReviewDisputeRunStatus } from '@voucha/test-helpers'
+import { createTestReviewDisputeWithRun } from '@voucha/test-helpers/review-dispute-run-fixture'
 import { ai_agents } from '@queues/ai-agents/queues'
 import { processReconcileAIAgentFailures } from './reconcile-ai-agent-failures.mts'
 
@@ -71,5 +73,22 @@ describe('processReconcileAIAgentFailures bounded windows', () => {
     expect(removeReport).not.toHaveBeenCalled()
     expect(removeAppeal).not.toHaveBeenCalled()
     expect(result).toMatchObject({ terminalized: 0, removed: 0, hasMore: true })
+  })
+
+  it('terminalizes a failed dispute run before removing its job', async () => {
+    const { disputeId, runId } = await createTestReviewDisputeWithRun()
+    const remove = vi.fn<() => Promise<void>>(async () => {})
+    const data = { dispute_id: disputeId, run_id: runId }
+    stubFailedWindow(
+      1,
+      [fakeJob(`dispute_resolution_${runId}`, 'dispute-resolution', data, remove)],
+      [],
+    )
+
+    const result = await processReconcileAIAgentFailures({ batchSize: 2, historyLimit: 0 })
+
+    expect(result).toMatchObject({ terminalized: 1, removed: 1 })
+    expect(remove).toHaveBeenCalledOnce()
+    expect(await getReviewDisputeRunStatus(runId)).toBe('failed')
   })
 })
