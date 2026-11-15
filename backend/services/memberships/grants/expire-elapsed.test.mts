@@ -26,9 +26,11 @@ describe('expireElapsedMembershipsForUsers', () => {
     const admin = await createTestUser({ administrator: true })
     const members = await Promise.all([createTestUser(), createTestUser()])
     const sku = await createTestSku({ plan: 'plus' })
-    const memberships = await Promise.all(
-      members.map(member => grantMembership(admin.id, member.id, 'plus', sku.id, 30)),
-    )
+    // This tests expiry's shared budget; grant creation is setup, so avoid incidental grant contention.
+    const memberships = [
+      await grantMembership(admin.id, members[0]!.id, 'plus', sku.id, 30),
+      await grantMembership(admin.id, members[1]!.id, 'plus', sku.id, 30),
+    ]
     await Promise.all(
       memberships.map(membership =>
         updateTestMembershipExpiresAt(membership.id, new Date('2020-01-01')),
