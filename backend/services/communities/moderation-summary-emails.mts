@@ -37,9 +37,16 @@ async function dispatchModerationSummary(
   let sendKey: string | null = null
   try {
     if (!isModerationEmailDue(recipient, now)) return
+    const periodKey = buildModerationSendKey(recipient, now)
+    const { rows } = await read(sql`/* hasModerationEmailClaim */
+      SELECT 1 FROM user_moderation_email_sends
+      WHERE user_id = ${recipient.id} AND send_key = ${periodKey}
+      LIMIT 1
+    `)
+    if (rows.length > 0) return
 
     const windowStart = getModerationActivityWindowStart(recipient.moderation_email_cadence, now)
-    sendKey = buildModerationSendKey(recipient, now)
+    sendKey = periodKey
     if (!(await claimModerationEmailSend(recipient.id, sendKey))) return
 
     const props = {

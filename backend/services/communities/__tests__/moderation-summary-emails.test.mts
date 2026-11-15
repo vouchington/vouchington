@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { runWithCapturedQueries } from '@data-stores/psql/query-capture'
 import {
   createTestUser,
   clearTestUserModerationEmailTimezone,
@@ -18,6 +19,7 @@ import { updateUserFields } from '@services/users/update-fields'
 import {
   dispatchCommunityModerationSummaryEmails,
   isModerationEmailsEnabled,
+  markModerationEmailSent,
   releaseUnsentModerationEmailClaim,
 } from '../moderation-summary-emails.mts'
 import { formatLocalDate } from '../moderation-summary-schedule.mts'
@@ -37,7 +39,7 @@ async function findQueuedModerationSummary(userId: string) {
 }
 
 describe('moderation summary dispatch', () => {
-  it('does not enqueue a summary for a window that is already claimed', async () => {
+  it.each([false, true])('skips summary reads for an existing claim (sent=%s)', async sent => {
     const user = await createTestUser()
     const now = pinnedNow()
     await seedDueModerator(user!.id, {
@@ -48,11 +50,19 @@ describe('moderation summary dispatch', () => {
     })
     const sendKey = `daily:${now.toISOString().slice(0, 10)}`
     await expect(claimTestModerationEmailSend(user!.id, sendKey)).resolves.toBe(true)
+    if (sent) await markModerationEmailSent(user!.id, sendKey)
 
-    await dispatchCommunityModerationSummaryEmails(
-      now,
-      getTestModerationSummaryRecipientCursor(user!.id),
+    const capture = await runWithCapturedQueries(() =>
+      dispatchCommunityModerationSummaryEmails(
+        now,
+        getTestModerationSummaryRecipientCursor(user!.id),
+      ),
     )
+    const ownedQueries = capture.queries.filter(query => query.values.includes(user!.id))
+    expect(
+      ownedQueries.some(query => query.text.includes('getCommunityModerationSummaryCommunities')),
+    ).toBe(false)
+    expect(ownedQueries.some(query => query.text.includes('hasModerationEmailClaim'))).toBe(true)
 
     expect(await findQueuedModerationSummary(user!.id)).toBeUndefined()
   })

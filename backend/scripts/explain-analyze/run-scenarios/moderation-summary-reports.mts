@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { beginTransaction, write } from '@data-stores/psql'
+import { dispatchCommunityModerationSummaryEmails } from '@services/communities/moderation-summary-emails'
 import { getModerationSummaryRecipients } from '@services/communities/moderation-summary-recipients'
 import { getCommunitiesWorkLimit } from '@services/communities/work-limits'
 import { registerScenarioContract } from '../plan-expectations.mts'
@@ -12,6 +13,7 @@ const NOISE_COMMUNITY_ID = '019d0000-0000-7000-8000-000000000003'
 
 /** A moderator with only report work must not scan reports from other communities. */
 export async function runModerationSummaryReportScenario(): Promise<void> {
+  const now = new Date()
   const pageSize = getCommunitiesWorkLimit('summary_email_batch_size')
   const reportNoise = pageSize * 4 + 1
   const postIds = Array.from({ length: reportNoise + 1 }, (_, index) =>
@@ -26,8 +28,8 @@ export async function runModerationSummaryReportScenario(): Promise<void> {
     await using transaction = await beginTransaction()
     await transaction(
       `/* seedSummaryReportRecipient */ INSERT INTO users
-       (id, username, moderation_email_time_of_day, moderation_email_timezone)
-       VALUES ($1, 'explain-summary-reports', '00:00', 'UTC')`,
+       (id, username, moderation_email_time_of_day, moderation_email_timezone, moderation_email_cadence)
+       VALUES ($1, 'explain-summary-reports', '00:00', 'UTC', 'daily')`,
       [RECIPIENT_ID],
     )
     const { rows: emails } = await transaction<{ user_id: string }>(
@@ -72,6 +74,10 @@ export async function runModerationSummaryReportScenario(): Promise<void> {
        ORDER BY target.ordinal`,
       [postIds, seedUser.id, reportIds],
     )
+    await transaction(
+      '/* seedSummaryExistingClaim */ INSERT INTO user_moderation_email_sends(user_id,send_key) VALUES($1,$2)',
+      [RECIPIENT_ID, `daily:${now.toISOString().slice(0, 10)}`],
+    )
     await transaction.commit()
     seeded = true
     await write(
@@ -79,6 +85,13 @@ export async function runModerationSummaryReportScenario(): Promise<void> {
     )
     registerScenarioContract('moderation-summary-report-work', {
       expectations: [
+        {
+          kind: 'usesIndexes',
+          indexes: ['user_moderation_email_sends_user_id_send_key_key'],
+          queryContains: 'hasModerationEmailClaim',
+          noSort: true,
+        },
+        { kind: 'maxProcessedRows', relation: 'user_moderation_email_sends', max: 1 },
         { kind: 'maxProcessedRows', relation: 'moderation_reports', max: pageSize + 1 },
         { kind: 'maxProcessedRows', relation: 'posts', max: pageSize * 2 + 1 },
       ],
@@ -86,14 +99,20 @@ export async function runModerationSummaryReportScenario(): Promise<void> {
         posts: 'The moderation summary probes reported posts by community across post partitions.',
       },
     })
-    await runAndCapture('moderation-summary-report-work', async () => {
-      const recipients = await getModerationSummaryRecipients(new Date())
-      assert.ok(
-        recipients.recipients.some(({ id }) => id === RECIPIENT_ID),
-        'A report on a deleted post remains moderator work',
-      )
-      return recipients
-    })
+    await runAndCapture(
+      'moderation-summary-report-work',
+      async () => {
+        const recipients = await getModerationSummaryRecipients(new Date())
+        assert.ok(
+          recipients.recipients.some(({ id }) => id === RECIPIENT_ID),
+          'A report on a deleted post remains moderator work',
+        )
+        await dispatchCommunityModerationSummaryEmails(now, '019d0000-0000-7000-8000-000000000000')
+        return recipients
+      },
+      undefined,
+      ['getModerationSummaryRecipients', 'hasModerationEmailClaim'],
+    )
   } finally {
     if (seeded)
       await write('/* cleanupSummaryReportPosts */ DELETE FROM posts WHERE id = ANY($1::uuid[])', [
