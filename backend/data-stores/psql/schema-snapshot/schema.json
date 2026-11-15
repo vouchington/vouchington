@@ -18035,6 +18035,7 @@
     },
     "community_application_questions": {
       "checkConstraints": {
+        "community_application_questions_order_index_range": "CHECK (((order_index >= 0) AND (order_index <= 999)))",
         "community_application_questions_question_check": "CHECK ((question = TRIM(BOTH FROM question)))",
         "community_application_questions_question_check1": "CHECK (((char_length(question) >= 1) AND (char_length(question) <= 500)))"
       },

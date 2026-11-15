@@ -19222,6 +19222,10 @@
     },
     "community_application_questions": {
       "checkConstraints": {
+        "community_application_questions_order_index_range": {
+          "definition": "CHECK (((order_index >= 0) AND (order_index <= 999)))",
+          "validated": true
+        },
         "community_application_questions_question_check": {
           "definition": "CHECK ((question = TRIM(BOTH FROM question)))",
           "validated": true
