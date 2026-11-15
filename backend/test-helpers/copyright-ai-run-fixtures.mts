@@ -131,8 +131,6 @@ export const readLatestTestGuidanceRunId = (submissionId: string) =>
     submissionId,
   )
 
-export const readActiveTestGuidanceRunId = readLatestTestGuidanceRunId
-
 export const readLatestTestEmailRunId = (intakeId: string) =>
   readLatestTestRunId(
     COPYRIGHT_AI_RUN_TABLES.email,

@@ -10,7 +10,7 @@ import {
   createNotice,
 } from '@voucha/test-helpers/copyright-route-fixtures'
 import { ai_agents } from '@queues/ai-agents/queues'
-import { readActiveTestGuidanceRunId } from '@voucha/test-helpers/copyright-ai-run-fixtures'
+import { readLatestTestGuidanceRunId } from '@voucha/test-helpers/copyright-ai-run-fixtures'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 
 const jobId = (runId: string) => `copyright_submission_guidance_${runId}`
@@ -33,7 +33,7 @@ async function signedIn(user: Awaited<ReturnType<typeof createTestUser>>) {
 }
 
 async function expectGuidanceJob(submissionId: string) {
-  const runId = await readActiveTestGuidanceRunId(submissionId)
+  const runId = await readLatestTestGuidanceRunId(submissionId)
   expect(runId).toBeDefined()
   const job = await ai_agents.getJob(jobId(runId!))
   expect(job?.name).toBe('copyright-submission-guidance')
@@ -43,7 +43,7 @@ async function expectGuidanceJob(submissionId: string) {
 
 async function removeGuidanceJob(submissionId: string | undefined) {
   if (!submissionId) return
-  const runId = await readActiveTestGuidanceRunId(submissionId)
+  const runId = await readLatestTestGuidanceRunId(submissionId)
   if (!runId) return
   const job = await ai_agents.getJob(jobId(runId))
   if (job) await job.remove()
