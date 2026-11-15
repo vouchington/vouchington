@@ -77,7 +77,8 @@ export async function pendingAppeal() {
 /** The queued job (without its run id, which is asserted to match the admitted run), or null. */
 export async function jobFor(id: string) {
   const resolved = await resolveJobId(id)
-  const job = resolved ? await ai_agents.getJob(resolved) : null
+  if (!resolved) return null
+  const job = await ai_agents.getJob(resolved)
   if (!job) return null
   const { run_id: runId, ...data } = job.data as { run_id?: string }
   if (id !== resolved && runId !== resolved.split('_').at(-1))
