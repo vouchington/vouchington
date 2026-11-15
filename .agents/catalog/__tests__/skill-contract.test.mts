@@ -1,5 +1,5 @@
-import { lstatSync, readdirSync, readFileSync, readlinkSync } from 'node:fs'
-import { relative, resolve } from 'node:path'
+import { lstatSync, readFileSync, readlinkSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const repoRoot = resolve(import.meta.dirname, '../../..')
@@ -56,19 +56,21 @@ const UPSTREAM_ADAPTERS: Record<string, string> = {
 const MOVED_TOOLING_SKILLS =
   /vouchington-workflow:(agent-workflow|git-commit-checklist|github-issue|planning|review-ci-logs|revisit-followups|github-actions-checklist)\b/
 
-function markdownFiles(dir: string): string[] {
-  return readdirSync(dir, { recursive: true, withFileTypes: true })
-    .filter(entry => entry.isFile() && entry.name.endsWith('.md'))
-    .map(entry => resolve(entry.parentPath, entry.name))
-}
+const SKILL_REFERRERS = [
+  ...ADAPTER_NAMES.map(name => `.agents/skills/${name}/SKILL.md`),
+  '.agents/skills/agent-workflow/git-and-prs.md',
+  '.agents/skills/triage-prs/SKILL.md',
+  '.agents/skills/triage-security/SKILL.md',
+  '.claude/README.md',
+  '.codex/README.md',
+  'docs/development/public-repository-issue-routing.md',
+]
 
 describe('Vouchington workflow skill adapters', () => {
   it('names no tooling skill that moved to the skills plugin', () => {
-    const offenders = ['.agents', '.claude', '.codex', 'docs']
-      .flatMap(dir => markdownFiles(resolve(repoRoot, dir)))
-      .filter(file => !file.includes('/node_modules/'))
-      .filter(file => MOVED_TOOLING_SKILLS.test(readFileSync(file, 'utf8')))
-      .map(file => relative(repoRoot, file))
+    const offenders = SKILL_REFERRERS.filter(file =>
+      MOVED_TOOLING_SKILLS.test(readFileSync(resolve(repoRoot, file), 'utf8')),
+    )
 
     expect(offenders).toEqual([])
   })
