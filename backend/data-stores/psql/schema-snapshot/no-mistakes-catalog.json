@@ -63602,7 +63602,7 @@
         "idx_media_delivery_registry_records__image": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_media_delivery_registry_records__image ON public.media_delivery_registry_records USING btree (image_id)",
+          "definition": "CREATE INDEX idx_media_delivery_registry_records__image ON public.media_delivery_registry_records USING btree (image_id, id)",
           "immediate": true,
           "keys": [
             {
@@ -63610,6 +63610,15 @@
               "column": "image_id",
               "descending": false,
               "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
