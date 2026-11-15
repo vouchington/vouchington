@@ -93,15 +93,16 @@ async function admitPageRuns(pending: readonly CopyrightAgentDispatch[]): Promis
 async function dispatchCopyrightAgentPage(
   pending: readonly CopyrightAgentDispatch[],
 ): Promise<unknown[]> {
-  const runs = await admitPageRuns(pending)
+  const errors: unknown[] = []
+  // A failed admission keeps its page's other dispatches and later pages moving; the next sweep retries.
+  const runs = await admitPageRuns(pending).catch((err: unknown) => {
+    errors.push(err)
+    return undefined
+  })
   const enqueues = await Promise.allSettled(
     pending.flatMap(item => (item.kind === 'form-effect' ? [] : [enqueueDispatch(item, runs)])),
   )
-  const errors: unknown[] = enqueues.flatMap((result): unknown[] => {
-    if (result.status !== 'rejected') return []
-    const reason: unknown = result.reason
-    return [reason]
-  })
+  for (const result of enqueues) if (result.status === 'rejected') errors.push(result.reason)
   for (const item of pending) {
     if (item.kind !== 'form-effect') continue
     try {
@@ -117,19 +118,19 @@ async function dispatchCopyrightAgentPage(
 /** A pending subject has no result; its admitted (or already active) run is what gets enqueued. */
 async function enqueueDispatch(
   item: Exclude<CopyrightAgentDispatch, { kind: 'form-effect' }>,
-  runs: RunAdmissions,
+  runs: RunAdmissions | undefined,
 ): Promise<void> {
   if (item.kind === 'form-screening') return enqueueOrRetryCopyrightFormScreening(item.submissionId)
   if (item.kind === 'email') {
-    const runId = runs.email.get(item.intakeId)
+    const runId = runs?.email.get(item.intakeId)
     if (runId) await enqueueOrRetryCopyrightEmailIntake(item.intakeId, runId)
     return
   }
   if (item.kind === 'submission-guidance') {
-    const runId = runs.guidance.get(item.submissionId)
+    const runId = runs?.guidance.get(item.submissionId)
     if (runId) await enqueueOrRetryCopyrightSubmissionGuidance(item.submissionId, runId)
     return
   }
-  const runId = runs.appeal.get(item.submissionId)
+  const runId = runs?.appeal.get(item.submissionId)
   if (runId) await enqueueOrRetryCopyrightAppealRecommendation(item.submissionId, runId)
 }
