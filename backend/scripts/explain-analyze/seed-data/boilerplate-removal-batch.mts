@@ -113,7 +113,8 @@ async function seedBoilerplateRemovalBatch(): Promise<void> {
        html_snapshot_uploaded_at)
     SELECT crawl_id, url_id, '', 200, uuid_extract_timestamp(crawl_id),
       sha256(url_id::text::bytea), uuid_extract_timestamp(crawl_id)
-    FROM jsonb_to_recordset($1::jsonb) AS seed(crawl_id uuid, url_id uuid)`,
+    FROM jsonb_to_recordset($1::jsonb) AS seed(crawl_id uuid, url_id uuid)
+    ON CONFLICT DO NOTHING`,
     [JSON.stringify(history)],
   )
   const oldPrefix = getMinUUIDv7ForDate(new Date(Date.now() - 40 * 86_400_000)).slice(0, 24)
