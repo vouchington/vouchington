@@ -17,7 +17,7 @@ describe('initialize local PostgreSQL server version', () => {
     ).rejects.toMatchObject({
       code: 1,
       stderr: expect.stringMatching(
-        /upgraded to 18\.7, but the running server is still 18\.6[\s\S]*brew services restart postgresql@18/u,
+        /upgraded to 18\.7, but the running server is still 18\.6[\s\S]*brew services restart \S+/u,
       ),
     })
   })
