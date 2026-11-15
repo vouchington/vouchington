@@ -10,13 +10,15 @@ export async function listReviewSuccessionGroupPage(
   afterId: string | null,
   limit: number,
 ): Promise<{ groups: ReviewSuccessionGroup[]; nextCursor: string | null }> {
+  // Keep the parent as a leading range so generic plans retain the ordered composite walk.
   const { rows: history } = await query<GroupRow & { id: string }>(
     `/* listReviewSuccessionHistoryPage */
     SELECT succession.id, succession.author_user_id,
       ARRAY(SELECT topic.topic_id FROM review_succession_topics topic
         WHERE topic.review_succession_id = succession.id ORDER BY topic.topic_id) AS topic_ids
     FROM review_successions succession
-    WHERE (succession.successor_post_id, succession.id) > ($1::uuid, $2::uuid)
+    WHERE succession.successor_post_id BETWEEN $1::uuid AND $1::uuid
+      AND (succession.successor_post_id, succession.id) > ($1::uuid, $2::uuid)
       AND (succession.successor_post_id, succession.id) <= ($1::uuid, 'ffffffff-ffff-ffff-ffff-ffffffffffff'::uuid)
       AND succession.automatically_restored_at IS NULL AND succession.manual_override_at IS NULL
     ORDER BY succession.successor_post_id, succession.id LIMIT $3`,

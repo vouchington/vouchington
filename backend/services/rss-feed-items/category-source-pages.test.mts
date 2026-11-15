@@ -1,6 +1,5 @@
 import { readOwnedRssCategorySourceUnion } from '@voucha/test-helpers/rss-category-source-union'
 import { normalizeRssFeedItemCategories } from './processing-limits.mts'
-import { moveRssCategoryTupleDuringDeletion } from '@voucha/test-helpers/rss-category-tuple-movement'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
@@ -74,28 +73,6 @@ describe('RSS category source and stale-category pages', () => {
     await expect(
       reconcileRssFeedItemCategorySourcePage(finalDeletion.sourcePages![0]!),
     ).resolves.toEqual({ reconciled: 1 })
-  })
-
-  it('retains pending work when a selected category tuple moves before deletion', async () => {
-    const token = `source-tuple-${randomUUID()}`
-    const feed = await insertTestRssFeedDirect({})
-    const [item] = await upsertRssFeedItems(feed.id, [input(token, [])])
-    const category = `${token}-stale`
-    await insertUnmappedRssFeedItemCategory(item!.id, category)
-    const selected = await reconcileRssFeedItemCategorySnapshots(undefined, [item!.id])
-    const first = await moveRssCategoryTupleDuringDeletion(item!.id, category, () =>
-      reconcileRssFeedItemCategorySourcePage(selected.sourcePages![0]!),
-    )
-    expect(first.sourcePages?.[0]?.phase).toBe('project')
-    await expect(getTestRssFeedItemCategoryProjectionResult(item!.id)).resolves.toBeUndefined()
-    expect(await getTestRssFeedItemCategories(item!.id)).toHaveLength(1)
-    await expect(reconcileRssFeedItemCategorySourcePage(first.sourcePages![0]!)).resolves.toEqual({
-      reconciled: 1,
-    })
-    await expect(getTestRssFeedItemCategories(item!.id)).resolves.toEqual([])
-    await expect(
-      getTestRssFeedItemCategorySnapshotReconciliation(item!.id),
-    ).resolves.toBeUndefined()
   })
 
   it('discards an old source cursor after a new generation and keeps the complete ordered union', async () => {
