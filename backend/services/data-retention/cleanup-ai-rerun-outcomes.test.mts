@@ -12,6 +12,7 @@ import {
   insertTestReportJudgement,
   insertTestUserWarning,
   setTestReviewDisputeDraftRun,
+  setTestReviewDisputeRequestedRun,
 } from '@voucha/test-helpers'
 import {
   getTestAppealResolutionRunStatus,
@@ -183,6 +184,7 @@ describe('durable AI rerun retention', () => {
       old,
       'failed',
     )
+    await setTestReviewDisputeRequestedRun(otherDisputeId, oldLatestFailed)
 
     const result = await runDataRetentionCleanup(
       { batchSize: 10, maxBatches: 1 },

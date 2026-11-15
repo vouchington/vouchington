@@ -66,13 +66,8 @@ export const DISPUTE_JOINS = sql`
     ORDER BY ps.id DESC
     LIMIT 1
   ) post_slug ON true
-  LEFT JOIN LATERAL (
-    SELECT run.id, run.status
-    FROM review_dispute_resolution_runs run
-    WHERE run.review_dispute_id = rd.id
-    ORDER BY run.id DESC
-    LIMIT 1
-  ) requested_run ON true
+  LEFT JOIN review_dispute_resolution_runs requested_run
+    ON requested_run.id = rd.ai_draft_requested_run_id
 `
 
 /**

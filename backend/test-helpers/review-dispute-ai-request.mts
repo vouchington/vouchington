@@ -25,9 +25,16 @@ export async function getReviewDisputeRunStatus(runId: string): Promise<string |
 export async function admitTestReviewDisputeRun(disputeId: string): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`
     /* admitTestReviewDisputeRun */
-    INSERT INTO review_dispute_resolution_runs (review_dispute_id)
-    VALUES (${disputeId})
-    RETURNING id
+    WITH inserted AS (
+      INSERT INTO review_dispute_resolution_runs (review_dispute_id)
+      VALUES (${disputeId})
+      RETURNING id, review_dispute_id
+    ), requested AS (
+      UPDATE review_disputes rd SET ai_draft_requested_run_id = inserted.id
+      FROM inserted WHERE rd.id = inserted.review_dispute_id
+      RETURNING rd.id
+    )
+    SELECT id FROM inserted
   `)
   if (!rows[0]) throw new Error('Expected admitted dispute resolution run')
   return rows[0].id
@@ -40,5 +47,15 @@ export async function setTestReviewDisputeDraftRun(
 ): Promise<void> {
   await write(sql`/* setTestReviewDisputeDraftRun */
     UPDATE review_disputes SET ai_draft_run_id = ${runId}::uuid WHERE id = ${disputeId}::uuid
+  `)
+}
+
+/** Points a dispute's latest request at a run, as an admission does. */
+export async function setTestReviewDisputeRequestedRun(
+  disputeId: string,
+  runId: string,
+): Promise<void> {
+  await write(sql`/* setTestReviewDisputeRequestedRun */
+    UPDATE review_disputes SET ai_draft_requested_run_id = ${runId}::uuid WHERE id = ${disputeId}::uuid
   `)
 }

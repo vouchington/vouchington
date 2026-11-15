@@ -81,7 +81,7 @@ async function deleteAppealResolutionRunBatch(
   return rowCount ?? 0
 }
 
-/** Only terminal runs retire; an active run, a dispute's latest run, and the run behind its saved draft stay. */
+/** Only terminal runs retire; an active run, the run a dispute last requested, and the run behind its saved draft stay. */
 async function deleteReviewDisputeResolutionRunBatch(
   cutoffId: string,
   batchSize: number,
@@ -93,11 +93,7 @@ async function deleteReviewDisputeResolutionRunBatch(
       WHERE id < ${cutoffId}::uuid
         AND (completed_at IS NOT NULL OR failed_at IS NOT NULL OR expired_at IS NOT NULL)
         AND NOT EXISTS (SELECT 1 FROM review_disputes rd WHERE rd.ai_draft_run_id = review_dispute_resolution_runs.id)
-        AND EXISTS (
-          SELECT 1 FROM review_dispute_resolution_runs newer
-          WHERE newer.review_dispute_id = review_dispute_resolution_runs.review_dispute_id
-            AND newer.id > review_dispute_resolution_runs.id
-        )`
+        AND NOT EXISTS (SELECT 1 FROM review_disputes rd WHERE rd.ai_draft_requested_run_id = review_dispute_resolution_runs.id)`
   if (runIds) query.append(sql` AND id = ANY(${runIds}::uuid[])`)
   query.append(sql`
       ORDER BY id LIMIT ${batchSize}
@@ -107,10 +103,7 @@ async function deleteReviewDisputeResolutionRunBatch(
       AND run.id < ${cutoffId}::uuid
       AND (run.completed_at IS NOT NULL OR run.failed_at IS NOT NULL OR run.expired_at IS NOT NULL)
       AND NOT EXISTS (SELECT 1 FROM review_disputes rd WHERE rd.ai_draft_run_id = run.id)
-      AND EXISTS (
-        SELECT 1 FROM review_dispute_resolution_runs newer
-        WHERE newer.review_dispute_id = run.review_dispute_id AND newer.id > run.id
-      )
+      AND NOT EXISTS (SELECT 1 FROM review_disputes rd WHERE rd.ai_draft_requested_run_id = run.id)
     RETURNING run.id`)
   const { rowCount } = await write(query)
   return rowCount ?? 0

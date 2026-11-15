@@ -8,15 +8,24 @@ export type ReviewDisputeResolutionRunStatus = 'active' | 'succeeded' | 'failed'
 async function insertRun(query: QueryExecutor, disputeId: string): Promise<string | undefined> {
   const { rows } = await query<{ id: string }>(sql`
     /* admitReviewDisputeResolutionRun */
-    INSERT INTO review_dispute_resolution_runs (review_dispute_id)
-    SELECT rd.id
-    FROM review_disputes rd
-    WHERE rd.id = ${disputeId}::uuid
-      AND rd.approved_at IS NULL
-      AND rd.sent_at IS NULL
-      AND rd.resolved_at IS NULL
-    ON CONFLICT DO NOTHING
-    RETURNING id
+    WITH inserted AS (
+      INSERT INTO review_dispute_resolution_runs (review_dispute_id)
+      SELECT rd.id
+      FROM review_disputes rd
+      WHERE rd.id = ${disputeId}::uuid
+        AND rd.approved_at IS NULL
+        AND rd.sent_at IS NULL
+        AND rd.resolved_at IS NULL
+      ON CONFLICT DO NOTHING
+      RETURNING id, review_dispute_id
+    ), requested AS (
+      UPDATE review_disputes rd
+      SET ai_draft_requested_run_id = inserted.id
+      FROM inserted
+      WHERE rd.id = inserted.review_dispute_id
+      RETURNING rd.id
+    )
+    SELECT id FROM inserted
   `)
   return rows[0]?.id
 }

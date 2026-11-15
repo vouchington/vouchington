@@ -59,6 +59,8 @@ CREATE TABLE IF NOT EXISTS review_disputes (
   ai_drafted_at timestamptz,
   -- Run that saved this draft; retention keeps a run while a dispute still references it.
   ai_draft_run_id uuid,
+  -- Latest admitted AI draft request; retention keeps a run while a dispute still references it.
+  ai_draft_requested_run_id uuid,
 
   -- Human-owned outbound message (the ONLY thing ever delivered to the disputant)
   public_response text,
@@ -151,8 +153,7 @@ CREATE TABLE IF NOT EXISTS review_dispute_lifecycle_changes (
   -- guardrails-disable-next-line uuid-must-be-key
   changed_by_id uuid REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   metadata jsonb NOT NULL DEFAULT '{}',
-  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  UNIQUE (review_dispute_id, id)
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -188,7 +189,7 @@ CREATE TABLE IF NOT EXISTS review_dispute_resolution_runs (
   expired_at timestamptz,
   ai_drafted_at timestamptz,
   -- guardrails-disable-next-line uuid-must-be-key
-  latest_lifecycle_change_id uuid,
+  latest_lifecycle_change_id uuid REFERENCES review_dispute_lifecycle_changes (id) ON DELETE SET NULL,
   status moderation_ai_rerun_statuses GENERATED ALWAYS AS (
     CASE WHEN completed_at IS NOT NULL THEN 'succeeded'::moderation_ai_rerun_statuses
          WHEN failed_at IS NOT NULL THEN 'failed'::moderation_ai_rerun_statuses
@@ -198,9 +199,6 @@ CREATE TABLE IF NOT EXISTS review_dispute_resolution_runs (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (review_dispute_id, id),
-  FOREIGN KEY (review_dispute_id, latest_lifecycle_change_id)
-    REFERENCES review_dispute_lifecycle_changes (review_dispute_id, id)
-    ON DELETE SET NULL (latest_lifecycle_change_id),
   CHECK ((completed_at IS NULL) = (ai_drafted_at IS NULL))
 );
 CREATE OR REPLACE TRIGGER trigger_review_dispute_resolution_runs_updated_at
@@ -228,11 +226,24 @@ ALTER TABLE review_disputes
 ALTER TABLE review_disputes
   VALIDATE CONSTRAINT fk_review_disputes__ai_draft_run_id;
 
+ALTER TABLE review_disputes
+  ADD CONSTRAINT fk_review_disputes__ai_draft_requested_run_id
+  FOREIGN KEY (id, ai_draft_requested_run_id)
+  REFERENCES review_dispute_resolution_runs (review_dispute_id, id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE review_disputes
+  VALIDATE CONSTRAINT fk_review_disputes__ai_draft_requested_run_id;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_review_disputes__ai_draft_requested_run_id
+  ON review_disputes (ai_draft_requested_run_id)
+  WHERE ai_draft_requested_run_id IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_review_disputes__ai_draft_run_id
   ON review_disputes (ai_draft_run_id)
   WHERE ai_draft_run_id IS NOT NULL;
 
+COMMENT ON COLUMN review_disputes.ai_draft_requested_run_id IS 'Latest admitted AI draft request; its outcome is read from that run, which retention keeps while referenced.';
 COMMENT ON TABLE review_dispute_resolution_runs IS 'Durable AI draft requests for review disputes and their terminal outcomes; one active run per dispute, retired by bounded AI rerun retention once terminal.';
 COMMENT ON COLUMN review_dispute_resolution_runs.id IS 'Request identity: only this run may save an AI draft, independent of queue job IDs.';
 COMMENT ON COLUMN review_dispute_resolution_runs.review_dispute_id IS 'Dispute owning this exact admitted request.';
