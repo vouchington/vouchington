@@ -1,4 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
+import { getMaxUUIDv7ForDate } from '@modules/utils/ids'
 
 const NIL_UUID = '00000000-0000-0000-0000-000000000000'
 const MAX_UUID = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
@@ -49,9 +50,10 @@ export async function readAliasCategoryRawPage(
     throw new RangeError('Invalid category page size')
   if (cursor.phase === 'completed') return { rows: [], cursor, hasMore: false }
 
-  const upperItemId =
-    cursor.sweep_upper_bound_item_id ?? (await readUpperId(query, 'rss_feed_items'))
-  const upperFeedId = cursor.sweep_upper_bound_feed_id ?? (await readUpperId(query, 'rss_feeds'))
+  // The sweep's id bounds come from its start time; later rows fall to the next sweep.
+  const sweepUpperId = getMaxUUIDv7ForDate(new Date())
+  const upperItemId = cursor.sweep_upper_bound_item_id ?? sweepUpperId
+  const upperFeedId = cursor.sweep_upper_bound_feed_id ?? sweepUpperId
   let rows: AliasCategoryRawRow[]
   const textIdentityId =
     cursor.phase === 'rss_item_categories' ? null : await readCategoryIdentityId(query, alias)
@@ -134,14 +136,4 @@ async function readCategoryIdentityId(
     [categoryText],
   )
   return rows[0]?.id ?? null
-}
-
-async function readUpperId(
-  query: TransactionQuery,
-  relation: 'rss_feed_items' | 'rss_feeds',
-): Promise<string> {
-  const { rows } = await query<{ id: string }>(
-    `/* readAliasCategoryRawPage upper */ SELECT id FROM ${relation} ORDER BY id DESC LIMIT 1`,
-  )
-  return rows[0]?.id ?? NIL_UUID
 }
