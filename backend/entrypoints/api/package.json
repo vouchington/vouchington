@@ -25,6 +25,7 @@
   "dependencies": {
     "@backend/md": "workspace:^",
     "@backend/service-registrations": "workspace:^",
+    "@data-stores/analytics": "workspace:^",
     "@data-stores/graceful-shutdown": "workspace:^",
     "@data-stores/psql": "workspace:^",
     "@glidemq/dashboard": "^0.4.3",

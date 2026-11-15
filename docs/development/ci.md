@@ -114,7 +114,9 @@ events and merge groups, and their names are the Main ruleset's required gates (
 analysis on every change, docs-only included. Every other area starts with a `changes` job that
 selects it from shared path filters, and the job named after the area is the required check and
 passes when the area is skipped. Credentialed suites skip on untrusted pull requests, and
-Storybook skips on them unless a dependency bot opened the PR.
+Storybook skips on them unless a dependency bot opened the PR. Backend native image validation
+stays credential-free so dependency bots can verify the shipped binary and native-library pairing
+without receiving cloud credentials. Cloud boot checks retain their separate trust boundary.
 
 Backend Bun compatibility runs as its own job so Node declarations continue to define production
 type safety, while the required backend gate also fails on Bun declaration differences so the

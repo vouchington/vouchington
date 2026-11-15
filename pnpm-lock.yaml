@@ -1581,6 +1581,9 @@ importers:
       '@backend/service-registrations':
         specifier: workspace:^
         version: link:../../service-registrations
+      '@data-stores/analytics':
+        specifier: workspace:^
+        version: link:../../data-stores/analytics
       '@data-stores/graceful-shutdown':
         specifier: workspace:^
         version: link:../../data-stores/graceful-shutdown
@@ -1696,6 +1699,9 @@ importers:
       '@backend/worker-runtime':
         specifier: workspace:^
         version: link:../../worker-runtime
+      '@data-stores/analytics':
+        specifier: workspace:^
+        version: link:../../data-stores/analytics
       '@data-stores/graceful-shutdown':
         specifier: workspace:^
         version: link:../../data-stores/graceful-shutdown
@@ -1796,6 +1802,9 @@ importers:
       '@backend/worker-runtime':
         specifier: workspace:^
         version: link:../../worker-runtime
+      '@data-stores/analytics':
+        specifier: workspace:^
+        version: link:../../data-stores/analytics
       '@data-stores/graceful-shutdown':
         specifier: workspace:^
         version: link:../../data-stores/graceful-shutdown

@@ -118,10 +118,11 @@ jobs:
       contents: read
 
   backend-smoke:
-    needs: [static-backend, prepare-postgres]
+    needs: [changes, static-backend, prepare-postgres]
     uses: ./.github/workflows/checks-backend-smoke.yml
     with:
       prepared_database: true
+      validate_native_images: ${{ needs.changes.outputs.build-backend-infra == 'true' || needs.changes.outputs.workflow-action-changes == 'true' }}
     permissions:
       actions: read
       contents: read

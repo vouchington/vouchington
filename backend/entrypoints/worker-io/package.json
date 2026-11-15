@@ -23,6 +23,7 @@
   "dependencies": {
     "@backend/service-registrations": "workspace:^",
     "@backend/worker-runtime": "workspace:^",
+    "@data-stores/analytics": "workspace:^",
     "@data-stores/graceful-shutdown": "workspace:^",
     "@modules/child-process": "workspace:^",
     "@modules/on-error": "workspace:^",
