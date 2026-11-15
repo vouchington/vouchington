@@ -4,30 +4,14 @@ import { runWithRequestContext } from '@modules/utils/request-context'
 import createHttpError, { isHttpError } from 'http-errors'
 import {
   CONFLICT,
-  RELATION_LIMIT_REACHED,
-  IMAGE_PLACEMENT_LIMIT_REACHED,
-  POST_IMAGE_LIMIT_REACHED,
-  TAG_LIMIT_REACHED,
   FORBIDDEN,
   INVALID_INPUT,
   NOT_FOUND,
   CONTRIBUTION_ADMISSION_IN_PROGRESS,
-  COPYRIGHT_EMAIL_THREAD_CHANGED,
-  COMMUNITY_APPLICATION_LIMIT_CODES,
-  COMMUNITY_MEMBERSHIP_LIMIT_REACHED,
-  COMMUNITY_MODERATOR_LIMIT_REACHED,
-  COMMUNITY_BAN_LIFT_ALL_FORBIDDEN,
   COMMUNITY_BAN_LIFT_ALL_LIMIT_REACHED,
-  HOUSEHOLD_LIMIT_REACHED,
-  HOUSEHOLD_MEMBER_LIMIT_REACHED,
-  INDIVIDUAL_HOUSEHOLD_LIMIT_REACHED,
   CONTRIBUTION_QUOTA_EXCEEDED,
-  IDEMPOTENCY_KEY_REUSED,
-  NEUTRAL_REQUIRES_EXISTING_BALLOT,
-  OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN,
-  EMAIL_VERIFICATION_REQUIRED,
-  FEED_NOT_DISCOVERABLE,
 } from '@modules/on-error/error-codes'
+import { MCP_DOMAIN_ERROR_CODES } from './domain-error-codes.mts'
 import type { BasicUser } from '@services/users/types'
 import type { McpServerConfig } from './config.mts'
 import type { ApiScope } from '@modules/scopes'
@@ -106,7 +90,9 @@ export async function callMcpTool(
       await rateLimitContext?.onRateLimited()
       return buildRateLimitedToolResult(err.retryAfterSeconds)
     }
-    // Preserve coded contribution capacity; record other shared REST 429s as tool limits.
+    // Services shared with REST can reject through http-assert (vote and follower distribution
+    // limits do this). Treat their 429s like typed tool limits so the MCP audit records the
+    // refusal. Contribution capacity is a distinct, coded domain outcome.
     if (isHttpError(err) && err.status === 429 && err['code'] !== CONTRIBUTION_QUOTA_EXCEEDED) {
       await rateLimitContext?.onRateLimited()
       const retryAfterSeconds = err['retryAfterSeconds']
@@ -127,30 +113,10 @@ export async function callMcpTool(
             : err.status === 403
               ? FORBIDDEN
               : INVALID_INPUT
-      const domainCodes = [
-        IMAGE_PLACEMENT_LIMIT_REACHED,
-        POST_IMAGE_LIMIT_REACHED,
-        TAG_LIMIT_REACHED,
-        RELATION_LIMIT_REACHED,
-        CONTRIBUTION_ADMISSION_IN_PROGRESS,
-        CONTRIBUTION_QUOTA_EXCEEDED,
-        IDEMPOTENCY_KEY_REUSED,
-        NEUTRAL_REQUIRES_EXISTING_BALLOT,
-        OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN,
-        EMAIL_VERIFICATION_REQUIRED,
-        FEED_NOT_DISCOVERABLE,
-        COPYRIGHT_EMAIL_THREAD_CHANGED,
-        ...COMMUNITY_APPLICATION_LIMIT_CODES,
-        COMMUNITY_MEMBERSHIP_LIMIT_REACHED,
-        COMMUNITY_MODERATOR_LIMIT_REACHED,
-        COMMUNITY_BAN_LIFT_ALL_FORBIDDEN,
-        COMMUNITY_BAN_LIFT_ALL_LIMIT_REACHED,
-        HOUSEHOLD_LIMIT_REACHED,
-        HOUSEHOLD_MEMBER_LIMIT_REACHED,
-        INDIVIDUAL_HOUSEHOLD_LIMIT_REACHED,
-      ]
       const domainCode =
-        typeof err['code'] === 'string' && domainCodes.includes(err['code']) ? err['code'] : null
+        typeof err['code'] === 'string' && MCP_DOMAIN_ERROR_CODES.has(err['code'])
+          ? err['code']
+          : null
       const retryAfterSeconds = err['retryAfterSeconds']
       const cap = err['cap']
       const error = {
