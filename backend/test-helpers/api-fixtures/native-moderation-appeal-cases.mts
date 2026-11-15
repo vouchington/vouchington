@@ -25,6 +25,7 @@ export const nativeModerationAppealApiFixtureCases = [
   }),
   fixtureCase({
     id: 'native.moderation.appeals.update.default',
+    pending: true,
     backendResponseContractKey: 'PATCH:/api/v1/appeals/:id#staff',
     method: 'PATCH',
     path: `/api/v1/appeals/${appealId}`,
@@ -37,6 +38,7 @@ export const nativeModerationAppealApiFixtureCases = [
   }),
   fixtureCase({
     id: 'native.moderation.appeals.approval.default',
+    pending: true,
     backendResponseContractKey: 'POST:/api/v1/appeals/:id/approval#staff',
     method: 'POST',
     path: `/api/v1/appeals/${appealId}/approval`,
@@ -48,6 +50,7 @@ export const nativeModerationAppealApiFixtureCases = [
   }),
   fixtureCase({
     id: 'native.moderation.appeals.delivery.default',
+    pending: true,
     backendResponseContractKey: 'POST:/api/v1/appeals/:id/delivery#staff',
     method: 'POST',
     path: `/api/v1/appeals/${appealId}/delivery`,
@@ -59,6 +62,7 @@ export const nativeModerationAppealApiFixtureCases = [
   }),
   fixtureCase({
     id: 'native.moderation.appeals.resolution.accept',
+    pending: true,
     backendResponseContractKey: 'POST:/api/v1/appeals/:id/resolution#staff',
     method: 'POST',
     path: `/api/v1/appeals/${appealId}/resolution`,
@@ -71,6 +75,7 @@ export const nativeModerationAppealApiFixtureCases = [
   }),
   fixtureCase({
     id: 'native.moderation.appeals.resolution.reduce',
+    pending: true,
     backendResponseContractKey: 'POST:/api/v1/appeals/:id/resolution#staff',
     method: 'POST',
     path: `/api/v1/appeals/${appealId}/resolution`,
@@ -83,6 +88,7 @@ export const nativeModerationAppealApiFixtureCases = [
   }),
   fixtureCase({
     id: 'native.moderation.appeals.resolution.deny',
+    pending: true,
     backendResponseContractKey: 'POST:/api/v1/appeals/:id/resolution#staff',
     method: 'POST',
     path: `/api/v1/appeals/${appealId}/resolution`,
@@ -107,6 +113,7 @@ export const nativeModerationAppealApiFixtureCases = [
   }),
   fixtureCase({
     id: 'native.moderation.appeals.detail.default',
+    pending: true,
     backendResponseContractKey: 'GET:/api/v1/appeals/:id#staff',
     method: 'GET',
     path: `/api/v1/appeals/${appealId}`,

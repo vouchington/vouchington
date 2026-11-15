@@ -48,6 +48,7 @@ describe('native member appeal fixtures', () => {
     })
     for (const field of [
       'ai_draft_requested_run_id',
+      'ai_draft_requested_run_status',
       'ai_draft_run_id',
       'case_id',
       'appellant_user_id',
@@ -118,6 +119,7 @@ describe('native member appeal fixtures', () => {
       const schema = JSON.stringify(contract!.schema)
       for (const field of [
         'ai_draft_requested_run_id',
+        'ai_draft_requested_run_status',
         'ai_draft_run_id',
         'case_id',
         'appellant_user_id',

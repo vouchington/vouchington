@@ -1,4 +1,5 @@
 import type { ModerationAppeal } from './config.mts'
+import type { AppealResolutionRunStatus } from './rerun-outcomes.mts'
 
 /** Staff-only projection of the typed original-decision facts on moderation_appeals. */
 export type OriginalModerationDecision = {
@@ -48,6 +49,8 @@ export type ModerationAppealTargetContext =
     }
 
 export type ModerationAppealResponse = ModerationAppeal & {
+  /** Status of the exact requested run; null when no run row exists for the current request token. */
+  ai_draft_requested_run_status: AppealResolutionRunStatus | null
   target_context?: ModerationAppealTargetContext | null
   staff_context?: {
     appellant: ModerationActorSummary

@@ -2037,7 +2037,8 @@
       "user_suspension_id": null,
       "user_warning_id": null,
       "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
-      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
+      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+      "ai_draft_requested_run_status": "succeeded"
     }
   },
   "native.moderation.appeals.approval.default": {
@@ -2074,7 +2075,8 @@
       "user_suspension_id": null,
       "user_warning_id": null,
       "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
-      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
+      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+      "ai_draft_requested_run_status": "succeeded"
     }
   },
   "native.moderation.appeals.delivery.default": {
@@ -2111,7 +2113,8 @@
       "user_suspension_id": null,
       "user_warning_id": null,
       "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
-      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
+      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+      "ai_draft_requested_run_status": "succeeded"
     }
   },
   "native.moderation.appeals.resolution.accept": {
@@ -2148,7 +2151,8 @@
       "user_suspension_id": null,
       "user_warning_id": null,
       "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
-      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
+      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+      "ai_draft_requested_run_status": "succeeded"
     }
   },
   "native.moderation.appeals.resolution.reduce": {
@@ -2185,7 +2189,8 @@
       "user_suspension_id": null,
       "user_warning_id": null,
       "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
-      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
+      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+      "ai_draft_requested_run_status": "succeeded"
     }
   },
   "native.moderation.appeals.resolution.deny": {
@@ -2222,7 +2227,8 @@
       "user_suspension_id": null,
       "user_warning_id": null,
       "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
-      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
+      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+      "ai_draft_requested_run_status": "succeeded"
     }
   },
   "native.moderation.appeals.resolution-drafts.default": {
@@ -3551,7 +3557,8 @@
       "user_suspension_id": null,
       "user_warning_id": null,
       "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
-      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
+      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+      "ai_draft_requested_run_status": "succeeded"
     }
   },
   "web.admin.mq.queues.domains.default": {

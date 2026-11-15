@@ -36627,6 +36627,25 @@
                             },
                             "user_warning_id": {
                               "$ref": "#/$defs/S3"
+                            },
+                            "ai_draft_requested_run_status": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "const": "active"
+                                },
+                                {
+                                  "const": "succeeded"
+                                },
+                                {
+                                  "const": "failed"
+                                },
+                                {
+                                  "const": "expired"
+                                }
+                              ]
                             }
                           },
                           "required": [
@@ -36661,7 +36680,8 @@
                             "status",
                             "updated_at",
                             "user_suspension_id",
-                            "user_warning_id"
+                            "user_warning_id",
+                            "ai_draft_requested_run_status"
                           ],
                           "type": "object"
                         }
@@ -38236,6 +38256,25 @@
                         },
                         "user_warning_id": {
                           "$ref": "#/$defs/S1"
+                        },
+                        "ai_draft_requested_run_status": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "const": "active"
+                            },
+                            {
+                              "const": "succeeded"
+                            },
+                            {
+                              "const": "failed"
+                            },
+                            {
+                              "const": "expired"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -38270,7 +38309,8 @@
                         "status",
                         "updated_at",
                         "user_suspension_id",
-                        "user_warning_id"
+                        "user_warning_id",
+                        "ai_draft_requested_run_status"
                       ],
                       "type": "object"
                     }
@@ -38980,6 +39020,25 @@
                         },
                         "user_warning_id": {
                           "$ref": "#/$defs/S1"
+                        },
+                        "ai_draft_requested_run_status": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "const": "active"
+                            },
+                            {
+                              "const": "succeeded"
+                            },
+                            {
+                              "const": "failed"
+                            },
+                            {
+                              "const": "expired"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -39014,7 +39073,8 @@
                         "status",
                         "updated_at",
                         "user_suspension_id",
-                        "user_warning_id"
+                        "user_warning_id",
+                        "ai_draft_requested_run_status"
                       ],
                       "type": "object"
                     }
@@ -39724,6 +39784,25 @@
                         },
                         "user_warning_id": {
                           "$ref": "#/$defs/S1"
+                        },
+                        "ai_draft_requested_run_status": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "const": "active"
+                            },
+                            {
+                              "const": "succeeded"
+                            },
+                            {
+                              "const": "failed"
+                            },
+                            {
+                              "const": "expired"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -39758,7 +39837,8 @@
                         "status",
                         "updated_at",
                         "user_suspension_id",
-                        "user_warning_id"
+                        "user_warning_id",
+                        "ai_draft_requested_run_status"
                       ],
                       "type": "object"
                     }
@@ -40572,6 +40652,25 @@
                         },
                         "user_warning_id": {
                           "$ref": "#/$defs/S1"
+                        },
+                        "ai_draft_requested_run_status": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "const": "active"
+                            },
+                            {
+                              "const": "succeeded"
+                            },
+                            {
+                              "const": "failed"
+                            },
+                            {
+                              "const": "expired"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -40606,7 +40705,8 @@
                         "status",
                         "updated_at",
                         "user_suspension_id",
-                        "user_warning_id"
+                        "user_warning_id",
+                        "ai_draft_requested_run_status"
                       ],
                       "type": "object"
                     }
@@ -42741,13 +42841,17 @@
                                       "state": {
                                         "enum": ["completed", "failed", "pending"],
                                         "type": "string"
+                                      },
+                                      "attempt_id": {
+                                        "type": "string"
                                       }
                                     },
                                     "required": [
                                       "guidance",
                                       "rationale",
                                       "recommendation",
-                                      "state"
+                                      "state",
+                                      "attempt_id"
                                     ],
                                     "type": "object"
                                   },

@@ -9,6 +9,7 @@ import { sendApprovedModerationAppealResolution } from '@services/moderation-app
 
 const privateFields = [
   'ai_draft_requested_run_id',
+  'ai_draft_requested_run_status',
   'ai_draft_run_id',
   'case_id',
   'appellant_user_id',

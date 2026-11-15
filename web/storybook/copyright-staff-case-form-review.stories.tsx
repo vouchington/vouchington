@@ -25,6 +25,7 @@ const guidance: CopyrightFormGuidance = {
 }
 
 const screening = {
+  attempt_id: 'attempt-1',
   state: 'completed',
   recommendation: 'not_obviously_invalid',
   rationale: 'No obvious spam markers.',

@@ -51,6 +51,8 @@ export type CopyrightStaffCase = {
     intake_id: string
     source_kind: FiniteValue<'copyright_notice_submission_source_kinds'>
     screening: {
+      /** The latest screening attempt this state describes; poll it until terminal. */
+      attempt_id: string
       state: 'pending' | 'failed' | 'completed'
       recommendation: FiniteValue<'copyright_notice_form_screening_recommendations'> | null
       rationale: string | null

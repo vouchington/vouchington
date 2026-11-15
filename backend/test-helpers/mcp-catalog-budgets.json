@@ -204,9 +204,9 @@
       "all": {
         "on": {
           "count": 57,
-          "list": 197000,
+          "list": 198000,
           "core": 36000,
-          "output": 186000
+          "output": 187000
         }
       },
       "Reader": {
@@ -228,7 +228,7 @@
       "Reviewer": {
         "on": {
           "count": 9,
-          "list": 59000,
+          "list": 60000,
           "core": 7000,
           "output": 58000
         }

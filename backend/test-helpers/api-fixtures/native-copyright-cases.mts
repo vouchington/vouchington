@@ -54,6 +54,7 @@ export const nativeCopyrightApiFixtureCases: ApiFixtureCase[] = [
   },
   {
     id: 'web.copyright.staff-queue.default',
+    pending: true,
     method: 'GET',
     path: '/api/v1/copyright-notices/review-queue',
     route: { routeTemplate: '/api/v1/copyright-notices/review-queue' },
@@ -78,6 +79,7 @@ export const nativeCopyrightApiFixtureCases: ApiFixtureCase[] = [
             intake_id: '00000000-0000-7000-8000-000000000806',
             source_kind: 'guest_form',
             screening: {
+              attempt_id: '00000000-0000-7000-8000-000000000828',
               state: 'completed',
               recommendation: 'not_obviously_invalid',
               rationale: 'No obvious spam markers.',
