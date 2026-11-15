@@ -15,8 +15,8 @@ Claude Code and Codex load `vouchington-workflow:revisit-followups`; Grok, Curso
 
 Follow the canonical skill's "Scope and collection" for the lookback window, truncation splitting,
 scratch files, and body-first collection. Vouchington sources are merged PR Shepherd Journals,
-tracked `AGENTS.md` files, and closed issue bodies; PR and issue comments are opt-in
-(`--include-pr-comments`, `--include-issue-comments`).
+tracked `AGENTS.md` files, and closed issue bodies. Read PR and issue comments only when the
+caller asks; no collector flag enables them.
 
 Collectors may fetch PR bodies in parallel, but they return their body-file paths to the main agent
 without parsing them. The main agent runs each `pnpm exec pr-shepherd journal extract --body-file <path>`
@@ -40,11 +40,13 @@ batch confirmation, delegate creation to [github-issue](../github-issue/SKILL.md
 its routing, duplicate, taxonomy, or mutation logic. Clean up the scratch directory and report
 created, skipped, already-done, already-filed, and truncated-window counts.
 
-Every proposed issue is self-contained and contains exactly these sections: `## Problem`,
-`## Proposed fixes` (specific checkboxes), `## Files`, and `## Context`. Context preserves the
+Every proposed issue is self-contained and uses the section headings the
+[github-issue adapter](../github-issue/SKILL.md) prescribes for new issue bodies; this skill adds
+none. List the specific fixes as checkboxes under `## Suggested approach`. `## Context` preserves the
 source PR/Shepherd Journal, `AGENTS.md` path, or closed issue text; its current-state check on
 `origin/main`; and its covering issue/PR search. Do not put blackboard session IDs, retrospective
-filenames, or other session-private identifiers in an issue body.
+filenames, or other session-private identifiers in an issue body; in `## Originating session`
+cite the source PR, journal, or `AGENTS.md` path instead.
 
 Use the local [GitHub issue workflow](../github-issue/SKILL.md) for duplicate detection,
 classification, and creation. Treat Vouchington `docs/**`, `AGENTS.md`, and closed-issue comments as

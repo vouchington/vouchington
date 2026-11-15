@@ -67,8 +67,8 @@ role from the signed-in chrome and
 ## Email OTP
 
 Follow [AUTH.md](../../../docs/requirements/security/AUTH.md) email OTP and
-deep-link steps. Inbox for this operator:
-`https://mail.google.com/mail/u/1/#inbox` (default `jong@voucha.ai`).
+deep-link steps. Use the inbox of the operator's own staging test address; no repository config
+names it, so the caller supplies `<operator-email>`.
 
 Local chrome-qa’s test CAPTCHA exemption does **not** apply. Email login links still require
 a deliberate **Log in** click after the code is prefilled.
@@ -161,7 +161,7 @@ child agents to read this skill and the named matrix file. Do not paste those
 tables into the script.
 
 ```text
-/workflow staging-qa email=jong@voucha.ai scope=full
+/workflow staging-qa email=<operator-email> scope=full
 ```
 
 ## See Also

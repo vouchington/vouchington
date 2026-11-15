@@ -38,10 +38,10 @@ selection, parallel safety, and validation commands. Read
    wipes every concurrent fork's counters, not just yours. Prefer a fresh request/session/IP that
    needs no cleanup. For fixed identities, derive exact owned keys through the production key
    builder and delete only those keys; route tests use `deleteRouteRateLimitKeys()`. See
-   [tests.md § Rate-limiter cleanup](../../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md).
+   [parallel safety § Shared rows and locks](../../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#shared-rows-and-locks).
 7. Wrap a non-decaying (future-dated or permanently top-scoring) fixture in
    `withDominantPostFixtures()` so it is cleaned up even when the test fails. See
-   [tests.md § Persistent dominant fixtures](../../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md).
+   [parallel safety § Shared rows and locks](../../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#shared-rows-and-locks).
 8. A compiler-backed contract test must reuse the memoized `loadBackendProgram()` or build one
    `buildVirtualProgramMatrix(import.meta, sources)` per test file, and retain its
    reviewed explicit consuming-hook budget, never a new local timeout constant. Do not wrap matrix
@@ -51,12 +51,12 @@ selection, parallel safety, and validation commands. Read
    program while inputs are fresh and atomically invalidates all derived results after the tracked
    CompilerHost's source, config/root, package metadata, failed lookup, directory, or realpath graph
    changes. See
-   [tests.md § Compiler-backed contract tests](../../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#compiler-backed-contract-tests).
+   [parallel safety § Compiler-backed contract tests](../../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#compiler-backed-contract-tests).
 9. An EXPLAIN assertion against the shared `backend-data-stores` database must pass
    `explainCapturedTestQuery` a `PlanStatisticsRefresh` that `ANALYZE`s every relation in the plan,
    including join partners, not just the table under test; prefer the isolated `explain-analyze`
    scenario suite for new plan-shape gates. See
-   [tests.md § Query-plan (EXPLAIN) assertions](../../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md).
+   [parallel safety § Fixtures](../../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#fixtures).
 10. Apply the [Test Value and Safe Reduction](../../../docs/development/reference-tests-value-and-reduction.md) gate; do not duplicate an invariant already owned by a lower-cost realistic boundary.
-11. Follow the [suite rules](../../../docs/development/tests.md#test-suite-rules). Scope assertions to owned rows. Inject a write failure with a throwing `QueryExecutor`. Wait on the returned promise or queue event. Lower DynamicConfig limits instead of building a large fixture. Real network calls stay on the allowlisted hosts. Before asserting that nothing happened, complete the sibling event that would have caused it. Delete a redundant test only with the coverage comparison in R12.
+11. Follow the [suite rules](../../../docs/development/tests.md#test-suite-rules). Scope assertions to owned rows. Inject a write failure with a throwing `QueryExecutor`. Wait on the returned promise or queue event. Lower DynamicConfig limits instead of building a large fixture. Real network calls stay on the allowlisted hosts. Before asserting that nothing happened, complete the sibling event that would have caused it. Delete a redundant test only with the coverage comparison in suite rule [R12](../../../docs/development/tests.md#test-suite-rules).
 12. Exercise sweeps through the real processor with owned ids and a small batch size passed as plain parameters. Test-only parameters are allowed even without production callers; injected replacement sweep functions are not. Age owned timestamps, retain every query's bound, assert literal page results and `hasMore`, and prove an equally eligible row outside the ids stayed unchanged. Timestamps and page sizes alone are not ownership scopes; see [parallel safety](../../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md).

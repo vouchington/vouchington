@@ -15,11 +15,11 @@ owning Vitest project in `ci/vitest/project-ownership.mts`, matching what CI run
 
 Composite-action YAML can be runtime input to test setup, outside the TypeScript import graph.
 When changing `.github/actions/start-valkey/action.yml`, preserve the `VALKEY_IMAGE` configuration
-read by `test-helpers/vitest.global-setup.platform-stats-cache.mts` and include its existing consumer
+read by `test-helpers/vitest.platform-stats-cache-container.mts` and include its existing consumer
 test alongside the GitHub Actions checks:
 
 ```sh
-pnpm exec vitest run --project ci-tools test-helpers/vitest.global-setup.platform-stats-cache.mock.test.mts
+pnpm exec vitest run --project ci-tools test-helpers/vitest.platform-stats-cache-container.mock.test.mts
 ```
 
 The workflow test must also retain this configuration contract; testing only literal Docker command
@@ -58,7 +58,7 @@ it. `git grep` searches tracked dotfiles as well as ordinary source files.
    [One current contract](../../../AGENTS.md). Link the evidence to
    [Networking](../../../docs/overview/infrastructure/networking.md),
    [Security](../../../docs/requirements/security/SECURITY.md), and
-   [Deployment decoupling](../../../docs/overview/infrastructure/deployment.md#deploy-decoupling--independent-safety).
+   [Deployment decoupling](../../../docs/overview/infrastructure/reference-deployment-first-time-provisioning-checklist.md#deploy-decoupling--independent-safety).
    The endpoint change is complete when every current consumer uses the new contract.
 
 3. Before the first commit or push that changes endpoint or credential-shaped literals, run this

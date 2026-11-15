@@ -37,7 +37,7 @@ scoped rules under [`backend/queues/`](../../../backend/queues/AGENTS.md),
    queues, workers, services, or data stores.
 8. Update the domain README and queue inventory with the implementation.
 9. For effectful worker/RPC or financial (Stripe) operations, fill in the
-   [durable transition matrix](../../../docs/checklists/backend-queues.md#durable-transition-matrix).
+   [durable transition matrix](../../../docs/checklists/reference-backend-queues-durable-transition-matrix.md).
 
 For sweeps and cleanup jobs, apply [bounded-iteration](../bounded-iteration/SKILL.md).
 
