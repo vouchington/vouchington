@@ -1,3 +1,6 @@
+import { createModerationSummaryCollection } from '@queues/background/enqueues/moderation-summary-state'
+import { createHash } from 'node:crypto'
+import { getBackgroundOrderingConcurrency } from '@queues/background/config'
 import { createBackgroundEnqueue } from '@queues/background/enqueues'
 import {
   EMAIL_DIGESTS_DISPATCH_ENGAGEMENT_JOB,
@@ -53,9 +56,52 @@ export function enqueueSendFollowNewsSourcesEmail(
 
 export function enqueueSendCommunityModerationSummaryEmail(
   input: SendCommunityModerationSummaryEmailData['input'],
+  variables: Omit<ProcessSendCommunityModerationSummaryEmailVariables, 'collection'>,
+): EnqueueReturnType {
+  const collection = createModerationSummaryCollection()
+  return enqueueContinueCommunityModerationSummaryEmail(input, {
+    ...variables,
+    communities: [],
+    collection,
+  })
+}
+
+export function enqueueContinueCommunityModerationSummaryEmail(
+  input: SendCommunityModerationSummaryEmailData['input'],
   variables: ProcessSendCommunityModerationSummaryEmailVariables,
 ): EnqueueReturnType {
-  return enqueueModerationSummary({ input, variables })
+  const cursor = variables.collection
+  const identity = createHash('sha256')
+    .update(
+      JSON.stringify([
+        input.userId,
+        input.trackingKey,
+        cursor.eventId,
+        cursor.phase,
+        cursor.afterMembershipId,
+        cursor.discussionCommunityIndex,
+        cursor.scan && [
+          cursor.scan.communityId,
+          cursor.scan.stage,
+          cursor.scan.afterId,
+          cursor.scan.parentId,
+          cursor.scan.afterChildId,
+          cursor.scan.sourceUpperId,
+          cursor.scan.childUpperId,
+        ],
+      ]),
+    )
+    .digest('hex')
+  return enqueueModerationSummary(
+    { input, variables },
+    {
+      jobId: `moderation-summary-${identity}`,
+      ordering: {
+        key: `email-digests:moderation-summary:${input.userId}`,
+        concurrency: getBackgroundOrderingConcurrency('email-digests:moderation-summary'),
+      },
+    },
+  )
 }
 
 export function enqueueDispatchEngagementEmails(): EnqueueReturnType {

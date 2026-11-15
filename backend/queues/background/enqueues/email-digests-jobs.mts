@@ -50,6 +50,7 @@ export const EMAIL_DIGESTS_SEND_MODERATION_SUMMARY_JOB =
   defineBackgroundJob<SendCommunityModerationSummaryEmailData>(DOMAIN, {
     name: 'processSendCommunityModerationSummaryEmail',
     ...TASK,
+    ordering: { key: 'email-digests:moderation-summary', concurrency: 1 },
     sensitive: true,
   })
 export const EMAIL_DIGESTS_SEND_API_KEY_EXPIRY_JOB =

@@ -14,7 +14,6 @@ import {
   isModerationEmailDue,
   type ModerationRecipientRow,
 } from './moderation-summary-schedule.mts'
-import { getCommunityModerationSummaryCommunities } from './moderation-summary-communities.mts'
 
 export async function dispatchCommunityModerationSummaryEmails(now = new Date()): Promise<void> {
   const recipients = await getModerationSummaryRecipients(now)
@@ -33,14 +32,6 @@ async function dispatchModerationSummary(
     if (!isModerationEmailDue(recipient, now)) return
 
     const windowStart = getModerationActivityWindowStart(recipient.moderation_email_cadence, now)
-    const communities = await getCommunityModerationSummaryCommunities(
-      recipient.id,
-      windowStart,
-      now,
-      now,
-    )
-    if (communities.length === 0) return
-
     sendKey = buildModerationSendKey(recipient, now)
     if (!(await claimModerationEmailSend(recipient.id, sendKey))) return
 
@@ -51,7 +42,8 @@ async function dispatchModerationSummary(
       settingsUrl: getSiteUrl('/my/notification-settings'),
       unsubscribeUrl: createEmailUnsubscribeUrl(recipient.id, 'community_digest'),
       physicalAddress: getMarketingPostalAddress(),
-      communities,
+      communities: [],
+      remainingCommunityCount: 0,
     } satisfies CommunityModerationSummaryEmailProps & { dispatchTimeZone: string }
     await enqueueSendCommunityModerationSummaryEmail(
       {

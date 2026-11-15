@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseEmailDigestJob } from './job-payload.mts'
+import { moderationSummaryVariableDefaults } from '@voucha/test-helpers/moderation-summary-collection'
 
 const communityCountKeys = [
   'pendingPostReviews',
@@ -7,14 +8,14 @@ const communityCountKeys = [
   'pendingReports',
   'escalatedItems',
   'suspectedBanEvaders',
-  'netMemberChange',
+  'newMembers',
+  'departedMembers',
   'totalActiveMembers',
   'newDiscussionPosts',
   'newReviewPosts',
   'newDataPointPosts',
   'topDiscussionReplyCount',
   'activeMemberCount',
-  'activeMemberRate',
 ] as const
 
 const address = { emailAddress: 'owner@example.test' }
@@ -68,11 +69,15 @@ describe('engagement email payloads', () => {
           generatedForDate: '2026-09-27',
           dispatchTimeZone: 'UTC',
           uiLocale: null,
+          ...moderationSummaryVariableDefaults(),
           communities: [
             {
+              communityId: '01900000-0000-7000-8000-000000000001',
               name: 'Voucha',
               url: 'https://example.test/c',
               topDiscussionTitle: null,
+              netMemberChange: null,
+              activeMemberRate: null,
               ...Object.fromEntries(communityCountKeys.map(key => [key, 0])),
             },
           ],
@@ -82,7 +87,12 @@ describe('engagement email payloads', () => {
     expect(() =>
       parseEmailDigestJob('processSendCommunityModerationSummaryEmail', {
         input: moderationInput,
-        variables: { ...links, generatedForDate: '2026-09-27', communities: [] },
+        variables: {
+          ...links,
+          generatedForDate: '2026-09-27',
+          ...moderationSummaryVariableDefaults(),
+          communities: [],
+        },
       }),
     ).toThrow(/dispatchTimeZone/)
     expect(() =>
@@ -92,6 +102,7 @@ describe('engagement email payloads', () => {
           ...links,
           generatedForDate: '2026-09-27',
           dispatchTimeZone: 'UTC',
+          ...moderationSummaryVariableDefaults(),
           communities: [],
         },
       }),
@@ -157,6 +168,7 @@ describe('engagement email payloads', () => {
           ...links,
           generatedForDate: '2026-09-27',
           dispatchTimeZone: 'UTC',
+          ...moderationSummaryVariableDefaults(),
           communities: 'none',
         },
       }),
@@ -168,11 +180,15 @@ describe('engagement email payloads', () => {
           ...links,
           generatedForDate: '2026-09-27',
           dispatchTimeZone: 'UTC',
+          ...moderationSummaryVariableDefaults(),
           communities: [
             {
+              communityId: '01900000-0000-7000-8000-000000000001',
               name: 'Voucha',
               url: 'https://example.test/c',
               topDiscussionTitle: 1,
+              netMemberChange: null,
+              activeMemberRate: null,
               ...Object.fromEntries(communityCountKeys.map(key => [key, 0])),
             },
           ],
@@ -186,11 +202,15 @@ describe('engagement email payloads', () => {
           ...links,
           generatedForDate: '2026-09-27',
           dispatchTimeZone: 'UTC',
+          ...moderationSummaryVariableDefaults(),
           communities: [
             {
+              communityId: '01900000-0000-7000-8000-000000000001',
               name: 'Voucha',
               url: 'https://example.test/c',
               topDiscussionTitle: 'Hello',
+              netMemberChange: null,
+              activeMemberRate: null,
               ...Object.fromEntries(
                 communityCountKeys.map(key => [key, key === 'pendingPostReviews' ? Number.NaN : 0]),
               ),

@@ -29,7 +29,7 @@ export async function getModerationAnalytics(
     getQueueVolume(periodStartUuid, scope),
     getRuleViolations(periodStartUuid, scope),
     getAutomodPerformance(periodStartUuid, scope),
-    getModeratorWorkload(periodStartUuid, scope),
+    getModeratorWorkload(periodStart, scope),
     getAppeals(periodStart, scope),
     getNewUserFriction(periodStartUuid, scope),
   ])

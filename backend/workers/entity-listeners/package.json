@@ -47,6 +47,7 @@
     "@services/entity-relations": "workspace:^",
     "@services/post-clearance": "workspace:^",
     "@services/posts": "workspace:^",
+    "@services/reporting-daily-rollups": "workspace:^",
     "@services/stories": "workspace:^",
     "@services/topics": "workspace:^",
     "@services/urls": "workspace:^",

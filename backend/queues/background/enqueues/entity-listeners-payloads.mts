@@ -47,6 +47,8 @@ export type ReconcileEntityData = {
     | 'post_slug'
     | 'url_hostname'
     | 'topic_alias'
+    | 'reporting_growth'
+    | 'reporting_workload'
   entityId: string
   changedAtEpochUs: string
   changeId?: string

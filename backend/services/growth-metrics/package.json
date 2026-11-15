@@ -24,6 +24,7 @@
     "@data-stores/psql": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/memberships": "workspace:^",
+    "@services/reporting-daily-rollups": "workspace:^",
     "@ts-shared/money": "workspace:^",
     "@voucha/types": "workspace:^",
     "sql-template-strings": "^2.2.2"

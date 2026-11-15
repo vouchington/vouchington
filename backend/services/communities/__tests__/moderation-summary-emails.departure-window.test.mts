@@ -5,7 +5,7 @@ import {
   removeTestCommunityMember,
 } from '@voucha/test-helpers/entities/community-members'
 import { insertBackdatedModerationSummaryCommunity } from '@voucha/test-helpers/moderation-summary-activity-community'
-import { getCommunityModerationSummaryCommunities } from '../moderation-summary-communities.mts'
+import { collectTestModerationSummary as getCommunityModerationSummaryCommunities } from '@voucha/test-helpers/moderation-summary-collection'
 
 describe('moderation summary departed-member window', () => {
   it('counts an owned removal only in its persisted millisecond window', async () => {
@@ -34,7 +34,9 @@ describe('moderation summary departed-member window', () => {
       )
       const summary = communities.find(candidate => candidate.name === community.name)
       expect(summary?.pendingPostReviews).toBe(1)
-      return summary!.netMemberChange
+      const change = summary!.netMemberChange
+      if (change === null) throw new Error('Expected an uncapped fixture membership change')
+      return change
     }
 
     expect(await netChange(millis - 1, millis)).toBe(0)

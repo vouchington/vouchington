@@ -54,6 +54,8 @@ const entityTypes = {
   post_slug: true,
   url_hostname: true,
   topic_alias: true,
+  reporting_growth: true,
+  reporting_workload: true,
 } as const satisfies Record<ReconcileEntityData['entityType'], true>
 const topicIdKeys = [
   'homepage_url_id',

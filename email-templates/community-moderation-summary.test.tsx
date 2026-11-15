@@ -26,15 +26,19 @@ describe('renderCommunityModerationSummaryEmail', () => {
       settingsUrl: 'https://voucha.ai/communities/travel-hackers/settings/moderation',
       unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
       physicalAddress: '123 Placeholder St, Suite 100, San Francisco, CA 94105',
+      remainingCommunityCount: 0,
       communities: [
         {
+          communityId: 'travel-hackers',
           name: 'Travel Hackers',
-          url: 'https://voucha.ai/communities/travel-hackers',
+          url: 'https://voucha.ai/communities/travel-hackers/settings/moderation',
           pendingPostReviews: 2,
           pendingApplications: 1,
           pendingReports: 3,
           escalatedItems: 1,
           suspectedBanEvaders: 0,
+          newMembers: 7,
+          departedMembers: 2,
           netMemberChange: 5,
           totalActiveMembers: 128,
           newDiscussionPosts: 4,
@@ -49,7 +53,73 @@ describe('renderCommunityModerationSummaryEmail', () => {
     })
 
     expect(result.html).toContain('Pending reports:')
+    expect(result.html).toContain(
+      'href="https://voucha.ai/communities/travel-hackers/settings/moderation"',
+    )
     expect(result.text).toContain('Pending reports: 3')
+  })
+
+  it('caps count display and shows member counts and remaining communities when rates are unavailable', async () => {
+    const result = await renderCommunityModerationSummaryEmail({
+      generatedForDate: 'July 9, 2026',
+      settingsUrl: 'https://voucha.ai/my/notification-settings',
+      unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
+      physicalAddress: '123 Placeholder St, Suite 100, San Francisco, CA 94105',
+      remainingCommunityCount: 100,
+      communities: [
+        {
+          communityId: 'busy',
+          name: 'Busy Community',
+          url: 'https://voucha.ai/communities/busy/settings/moderation',
+          pendingPostReviews: 100,
+          pendingApplications: 1,
+          pendingReports: 0,
+          escalatedItems: 0,
+          suspectedBanEvaders: 0,
+          newMembers: 103,
+          departedMembers: 102,
+          netMemberChange: null,
+          totalActiveMembers: 200,
+          newDiscussionPosts: 0,
+          newReviewPosts: 0,
+          newDataPointPosts: 0,
+          topDiscussionTitle: 'Busy thread',
+          topDiscussionReplyCount: 100,
+          activeMemberCount: 100,
+          activeMemberRate: null,
+        },
+      ],
+    })
+
+    expect(result.html).toContain('99+')
+    expect(result.text).toContain('99+')
+    expect(result.text).toContain('Joined: 99+, Departed: 99+')
+    expect(result.text).toContain('Active members: 99+')
+    expect(result.text).not.toContain('Active members: 99+ (')
+    expect(result.text).toContain('And 99+ more communities')
+    expect(result.html).toContain('And 99+ more communities')
+    expect(result.html).not.toContain('href="https://voucha.ai/posts/review-queue"')
+
+    const oneRemaining = await renderCommunityModerationSummaryEmail({
+      generatedForDate: 'July 9, 2026',
+      settingsUrl: 'https://voucha.ai/my/notification-settings',
+      unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
+      physicalAddress: '123 Placeholder St, Suite 100, San Francisco, CA 94105',
+      remainingCommunityCount: 1,
+      communities: [],
+    })
+    expect(oneRemaining.text).toContain('And 1 more community')
+    expect(oneRemaining.html).toContain('And 1 more community')
+
+    const ninetyNineRemaining = await renderCommunityModerationSummaryEmail({
+      generatedForDate: 'July 9, 2026',
+      settingsUrl: 'https://voucha.ai/my/notification-settings',
+      unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
+      physicalAddress: '123 Placeholder St, Suite 100, San Francisco, CA 94105',
+      remainingCommunityCount: 99,
+      communities: [],
+    })
+    expect(ninetyNineRemaining.text).toContain('And 99 more communities')
   })
 
   it('renders the activity digest fields in a non-English locale', async () => {
@@ -59,16 +129,20 @@ describe('renderCommunityModerationSummaryEmail', () => {
       settingsUrl: 'https://voucha.ai/my/notification-settings',
       unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
       physicalAddress: '123 Placeholder St, Suite 100, San Francisco, CA 94105',
+      remainingCommunityCount: 0,
       uiLocale: 'fr',
       communities: [
         {
+          communityId: 'voyageurs-malins',
           name: 'Voyageurs Malins',
-          url: 'https://voucha.ai/communities/voyageurs-malins',
+          url: 'https://voucha.ai/communities/voyageurs-malins/settings/moderation',
           pendingPostReviews: 1,
           pendingApplications: 0,
           pendingReports: 0,
           escalatedItems: 0,
           suspectedBanEvaders: 0,
+          newMembers: 1,
+          departedMembers: 3,
           netMemberChange: -2,
           totalActiveMembers: 50,
           newDiscussionPosts: 3,
@@ -125,16 +199,20 @@ describe('renderCommunityModerationSummaryEmail', () => {
         settingsUrl: 'https://voucha.ai/my/notification-settings',
         unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
         physicalAddress: '123 Placeholder St, Suite 100, San Francisco, CA 94105',
+        remainingCommunityCount: 0,
         uiLocale,
         communities: [
           {
+            communityId: 'test',
             name: 'Test Community',
-            url: 'https://voucha.ai/communities/test',
+            url: 'https://voucha.ai/communities/test/settings/moderation',
             pendingPostReviews: 0,
             pendingApplications: 0,
             pendingReports: 0,
             escalatedItems: 0,
             suspectedBanEvaders: 0,
+            newMembers: 2,
+            departedMembers: 2,
             netMemberChange: 0,
             totalActiveMembers: 10,
             newDiscussionPosts: 0,
@@ -167,6 +245,7 @@ describe('renderCommunityModerationSummaryEmail', () => {
         settingsUrl: 'https://voucha.ai/my/notification-settings',
         unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
         physicalAddress: '123 Placeholder St, Suite 100, San Francisco, CA 94105',
+        remainingCommunityCount: 0,
         communities: [],
         uiLocale,
       })

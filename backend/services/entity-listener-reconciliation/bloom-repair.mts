@@ -40,6 +40,8 @@ export async function repairReconciledBloomKeys(
     case 'topic':
     case 'url':
     case 'user':
+    case 'reporting_growth':
+    case 'reporting_workload':
       break
   }
 }

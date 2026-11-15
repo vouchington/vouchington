@@ -32,4 +32,5 @@ _none_
 - `post_vote_retained_daily_counts_pkey`: `CREATE UNIQUE INDEX post_vote_retained_daily_counts_pkey ON public.post_vote_retained_daily_counts USING btree (id)`
 
 **Triggers:**
-_none_
+
+- `trigger_reporting_retained_vote_day`: `CREATE TRIGGER trigger_reporting_retained_vote_day AFTER INSERT OR DELETE OR UPDATE ON public.post_vote_retained_daily_counts FOR EACH ROW EXECUTE FUNCTION fn_register_vanished_reporting_day('retained_vote_change')`

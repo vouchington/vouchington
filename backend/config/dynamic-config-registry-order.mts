@@ -87,6 +87,8 @@ export const REGISTRY_ORDER = [
   'hostname-blocking-work-config',
   'moderation-reports-work-config',
   'communities-work-config',
+  'moderation-summary-work-config',
+  'reporting-rollup-work-config',
   'admin-imports-work-config',
   'follower-distributions-work-config',
   'spam-detection-work-config',

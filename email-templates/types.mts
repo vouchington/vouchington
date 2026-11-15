@@ -109,7 +109,9 @@ export type CommunityModerationSummaryEmailProps = LocalizedEmailProps & {
   settingsUrl: string
   unsubscribeUrl: string
   physicalAddress: string
+  remainingCommunityCount: number
   communities: {
+    communityId: string
     name: string
     url: string
     pendingPostReviews: number
@@ -117,7 +119,9 @@ export type CommunityModerationSummaryEmailProps = LocalizedEmailProps & {
     pendingReports: number
     escalatedItems: number
     suspectedBanEvaders: number
-    netMemberChange: number
+    newMembers: number
+    departedMembers: number
+    netMemberChange: number | null
     totalActiveMembers: number
     newDiscussionPosts: number
     newReviewPosts: number
@@ -125,6 +129,6 @@ export type CommunityModerationSummaryEmailProps = LocalizedEmailProps & {
     topDiscussionTitle: string | null
     topDiscussionReplyCount: number
     activeMemberCount: number
-    activeMemberRate: number
+    activeMemberRate: number | null
   }[]
 }

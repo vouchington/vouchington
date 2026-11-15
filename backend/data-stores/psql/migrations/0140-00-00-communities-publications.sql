@@ -240,7 +240,8 @@ CREATE INDEX IF NOT EXISTS idx_community_members__departed
 
 -- RI-usable indexes for FKs whose existing indexes above carry predicates on other columns
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_community_members__community_id ON community_members (community_id);
+CREATE INDEX IF NOT EXISTS idx_community_members__community_id_id ON community_members (community_id, id);
+COMMENT ON INDEX idx_community_members__community_id_id IS 'Ordered raw membership-history pages for bounded moderator digest activity collection, including removed members.';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_members__user_id_id ON community_members (user_id, id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

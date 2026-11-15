@@ -118,7 +118,7 @@ _none_
 - `idx_users__lingua_rs_pending`: `CREATE INDEX idx_users__lingua_rs_pending ON public.users USING btree (id) WHERE (lingua_rs_input_sha256 IS NULL)`
 - `idx_users__profile_image_id`: `CREATE INDEX idx_users__profile_image_id ON public.users USING btree (profile_image_id) WHERE (profile_image_id IS NOT NULL)`
 - `idx_users__referrer_id`: `CREATE INDEX idx_users__referrer_id ON public.users USING btree (referrer_user_id) WHERE (referrer_user_id IS NOT NULL)`
-- `idx_users__updated_at_id_active`: `CREATE INDEX idx_users__updated_at_id_active ON public.users USING btree (updated_at, ((id)::text)) WHERE (deleted_at IS NULL)`
+- `idx_users__updated_at_id`: `CREATE INDEX idx_users__updated_at_id ON public.users USING btree (updated_at, ((id)::text))`
 - `idx_users__username`: `CREATE UNIQUE INDEX idx_users__username ON public.users USING btree (lower(username)) WHERE (username IS NOT NULL)`
 - `idx_users__username__text_pattern_ops`: `CREATE INDEX idx_users__username__text_pattern_ops ON public.users USING btree (lower(username) text_pattern_ops) WHERE (username IS NOT NULL)`
 - `idx_users__vote_weight_age_milestone`: `CREATE INDEX idx_users__vote_weight_age_milestone ON public.users USING btree (id) WHERE ((deleted_at IS NULL) AND (vote_weight_admin_set_at IS NULL))`
@@ -131,6 +131,7 @@ _none_
 
 - `trigger_handoff_deleted_user_image_surfaces`: `CREATE TRIGGER trigger_handoff_deleted_user_image_surfaces BEFORE DELETE ON public.users FOR EACH ROW EXECUTE FUNCTION fn_project_handoff_deleted_user_image_surfaces()`
 - `trigger_register_retained_user_identity`: `CREATE TRIGGER trigger_register_retained_user_identity BEFORE INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('user')`
+- `trigger_reporting_deleted_user_day`: `CREATE TRIGGER trigger_reporting_deleted_user_day AFTER DELETE ON public.users REFERENCING OLD TABLE AS reporting_rows FOR EACH STATEMENT EXECUTE FUNCTION fn_register_reporting_statement_days('user_deletion')`
 - `trigger_retire_deleted_user_image_surfaces`: `CREATE TRIGGER trigger_retire_deleted_user_image_surfaces AFTER UPDATE OF deleted_at ON public.users FOR EACH ROW EXECUTE FUNCTION fn_project_retire_deleted_user_image_surfaces()`
 - `trigger_sync_user_profile_image_placement`: `CREATE TRIGGER trigger_sync_user_profile_image_placement AFTER INSERT OR UPDATE OF profile_image_id ON public.users FOR EACH ROW EXECUTE FUNCTION fn_project_user_profile_image_placement()`
 - `trigger_users_create_individual_household`: `CREATE TRIGGER trigger_users_create_individual_household AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_create_user_individual_household()`

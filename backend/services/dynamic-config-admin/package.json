@@ -102,6 +102,7 @@
     "@services/referral-link-unfurl": "workspace:^",
     "@services/remote-actors": "workspace:^",
     "@services/report-integrity": "workspace:^",
+    "@services/reporting-daily-rollups": "workspace:^",
     "@services/request-client-info": "workspace:^",
     "@services/route-rate-limits": "workspace:^",
     "@services/rss-feed-items": "workspace:^",

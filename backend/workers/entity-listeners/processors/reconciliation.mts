@@ -1,3 +1,8 @@
+import {
+  enqueueReportingChangedDays,
+  enqueueReportingJob,
+  enqueueReportingMaterialization,
+} from '@queues/background/enqueues/reporting'
 import { repairReconciledBloomKeys } from '@services/entity-listener-reconciliation/bloom-repair'
 import { getEntityReconciliationLimits } from '@services/entity-listener-reconciliation/work-limits'
 import {
@@ -59,6 +64,7 @@ export async function reconcileEntities(
     window: fixedWindow,
     ...(data.after && { after: data.after }),
   })
+  await enqueueReportingMaterialization(fixedWindow.end)
   const limits = getEntityReconciliationLimits()
   let hasMore = false
   const batches = streamEntityReconciliationCandidateBatches(window, {
@@ -72,7 +78,18 @@ export async function reconcileEntities(
     hasMore: () => hasMore,
     initialAfter: data.after,
     onMore: after => saveProgress({ window: fixedWindow, ...(after && { after }) }),
+    enqueueReportingDays: enqueueReconciledReportingDays,
   })
+}
+
+export async function enqueueReconciledReportingDays(candidates: ReconcileEntityData[]) {
+  await enqueueReportingChangedDays(
+    candidates.map(candidate => ({
+      kind: candidate.entityType === 'reporting_growth' ? 'growth' : 'moderator_workload',
+      day: candidate.entityId,
+      revision: `${candidate.changeId ?? ''}-${candidate.changedAtEpochUs}`,
+    })),
+  )
 }
 
 export async function reconcileEntity(
@@ -80,6 +97,14 @@ export async function reconcileEntity(
   dependencies = RECONCILE_ENTITY_DEPENDENCIES,
 ): Promise<void> {
   switch (data.entityType) {
+    case 'reporting_growth':
+    case 'reporting_workload':
+      await enqueueReportingJob({
+        kind: data.entityType === 'reporting_growth' ? 'growth' : 'moderator_workload',
+        day: data.entityId,
+        revision: `${data.changeId ?? ''}-${data.changedAtEpochUs}`,
+      })
+      return
     case 'user':
       // Candidates are selected by updated_at, and the vote-weight recalculation rewrites it, so
       // only an account created in the window replays creation effects; a replay of every update

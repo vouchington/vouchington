@@ -1,3 +1,4 @@
+import { recheckModerationSummaryCommunities } from '@services/communities/moderation-summary-eligibility'
 import type { ProcessSendCommunityModerationSummaryEmailVariables } from '@queues/background/enqueues/email-digests-domain'
 import type { EmailTemplateInput } from '@queues/emails/types'
 import { renderCommunityModerationSummaryEmail } from '@email-templates/core'
@@ -13,7 +14,8 @@ import {
   resetRejectedModerationEmailSend,
   releaseUnsentModerationEmailClaim,
 } from '@services/communities/moderation-summary-emails'
-import { getCommunityModerationSummaryCommunities } from '@services/communities/moderation-summary-communities'
+import { collectModerationSummaryPage } from '@services/communities/moderation-summary-collection'
+import { enqueueContinueCommunityModerationSummaryEmail } from '@queues/email-digests/enqueues'
 import {
   formatLocalDate,
   getModerationActivityWindowStart,
@@ -21,10 +23,10 @@ import {
 import { resolveEmailRecipient } from '@workers/emails/processors/recipient'
 import { isModerationSummaryJobCurrent } from '@services/communities/moderation-summary-retention'
 
-export const processSendCommunityModerationSummaryEmail = async (
+export async function processSendCommunityModerationSummaryEmail(
   input: EmailTemplateInput,
   variables: ProcessSendCommunityModerationSummaryEmailVariables,
-): Promise<unknown> => {
+): Promise<unknown> {
   const now = new Date()
   let renderVariables = variables
   const recipient = await resolveEmailRecipient(input)
@@ -52,16 +54,46 @@ export const processSendCommunityModerationSummaryEmail = async (
     const windowStart = input.windowStart
       ? new Date(input.windowStart)
       : getModerationActivityWindowStart(await getModerationEmailCadence(input.userId), windowEnd)
-    const communities = await getCommunityModerationSummaryCommunities(
+    const collected = await collectModerationSummaryPage(
       input.userId,
       windowStart,
       windowEnd,
       queuedWindowEnd,
+      variables.collection,
+      variables.communities,
     )
-    if (communities.length === 0) return null
+    const nextVariables = { ...variables, ...collected }
+    if (collected.collection.phase !== 'ready') {
+      await enqueueContinueCommunityModerationSummaryEmail(
+        {
+          userId: input.userId,
+          trackingKey: input.trackingKey!,
+          windowStart: windowStart.toISOString(),
+          windowEnd: queuedWindowEnd.toISOString(),
+          uiLocale: input.uiLocale,
+        },
+        nextVariables,
+      )
+      return { continued: true }
+    }
+    const communities = await recheckModerationSummaryCommunities(
+      input.userId,
+      collected.communities,
+      queuedWindowEnd,
+      collected.collection.top,
+    )
+    if (communities.length === 0) {
+      if (input.trackingKey)
+        await releaseUnsentModerationEmailClaim(input.userId, input.trackingKey)
+      return null
+    }
     renderVariables = {
-      ...variables,
+      ...nextVariables,
       communities,
+      remainingCommunityCount: Math.max(
+        0,
+        collected.collection.eligibleCount - collected.collection.top.length,
+      ),
       generatedForDate: formatLocalDate(queuedWindowEnd, timeZone),
     }
   }

@@ -61,6 +61,7 @@ const MARKETING_TEMPLATES: { name: string; render: () => EmailRenderResultPromis
       renderCommunityModerationSummaryEmail({
         userName: 'Alex',
         generatedForDate: 'July 9, 2026',
+        remainingCommunityCount: 0,
         settingsUrl: 'https://voucha.ai/my/notification-settings',
         unsubscribeUrl: UNSUBSCRIBE_URL_MARKER,
         physicalAddress: PHYSICAL_ADDRESS_MARKER,

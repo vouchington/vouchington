@@ -14,6 +14,8 @@ export type ReconciledEntityType =
   | 'post_slug'
   | 'url_hostname'
   | 'topic_alias'
+  | 'reporting_growth'
+  | 'reporting_workload'
 
 export type EntityReconciliationCandidate = {
   entityType: ReconciledEntityType

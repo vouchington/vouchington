@@ -8,3 +8,11 @@ React Email templates for all Voucha emails live in [`email-templates/`](../../.
 - Shared rendering, formatting, and catalog primitives come from `@vouchington/email`; Voucha owns the templates, brand tokens, supported locales, and catalog storage policy.
 - Account-change reauthentication uses dedicated security copy and a code-only template. It must not suggest that an unexpected sensitive change can be safely ignored.
 - Email delivery guarantees are described in the [queues map](../queues/README.md).
+
+Moderator summaries are assembled over time to keep each job bounded; their figures do not
+represent one atomic snapshot. Access and selected content may change during collection, so
+delivery checks current eligibility rather than relying on earlier membership.
+
+A saturated count is a lower bound. Derived member changes and activity percentages appear only
+when their inputs remain exact; otherwise the email shows the separate counts. This avoids
+implying an exact net change or percentage from capped inputs.

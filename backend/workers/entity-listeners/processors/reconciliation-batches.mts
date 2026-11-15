@@ -7,21 +7,36 @@ export async function reconcileEntityBatches(
     hasMore: () => boolean
     initialAfter?: ReconcileEntityData
     onMore: (after?: ReconcileEntityData) => Promise<unknown>
+    enqueueReportingDays: (candidates: ReconcileEntityData[]) => Promise<unknown>
   },
 ): Promise<{ reconciled: number; hasMore: boolean }> {
   let reconciled = 0
   let after = options.initialAfter
+  let lastProcessed = after
+  // The existing raw candidate-run cap also bounds this invocation-local map.
+  const reportingDays = new Map<string, ReconcileEntityData>()
   try {
     for await (const batch of batches) {
       for (const candidate of batch) {
-        // oxlint-disable-next-line no-await-in-loop -- the checkpoint must not outrun any entity side effect
-        await reconcileEntity(candidate)
-        after = candidate
+        if (
+          candidate.entityType === 'reporting_growth' ||
+          candidate.entityType === 'reporting_workload'
+        ) {
+          // The cursor stream is ordered, so the last tuple is this day's latest source revision.
+          reportingDays.set(`${candidate.entityType}:${candidate.entityId}`, candidate)
+        } else {
+          // oxlint-disable-next-line no-await-in-loop -- the checkpoint must not outrun any entity side effect
+          await reconcileEntity(candidate)
+        }
+        lastProcessed = candidate
+        if (reportingDays.size === 0) after = candidate
         reconciled += 1
       }
     }
+    if (reportingDays.size > 0) await options.enqueueReportingDays([...reportingDays.values()])
+    after = lastProcessed
   } catch (err) {
-    if (after) await options.onMore(after)
+    if (after || reportingDays.size > 0) await options.onMore(after)
     throw err
   }
   const hasMore = options.hasMore()

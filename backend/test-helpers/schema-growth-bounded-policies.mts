@@ -32,6 +32,10 @@ export const EXPLICIT_BOUNDED_TABLES = new Map<string, string>([
     'ai_usage_retention_cursors',
     'A checked singleton persists the cyclic UUIDv7 keyset position for AI usage folding.',
   ],
+  [
+    'reporting_daily_rollup_cursors',
+    'The closed two-value reporting_rollup_kinds enum and kind primary key allow at most two persisted daily projection cursors.',
+  ],
   ...PROVIDER_LOOKUP_BOUNDS,
   ...STATIC_IDENTITY_EXCEPTIONS,
   ...EXTRA_BOUNDED_TABLES,

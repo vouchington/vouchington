@@ -1,5 +1,3 @@
-import type { CommunityModerationSummaryEmailProps } from '@email-templates/core'
-
 export type ModerationRecipientRow = {
   id: string
   email_address: string
@@ -22,18 +20,6 @@ export function getModerationActivityWindowStart(
 ): Date {
   const hours = cadence === 'daily' ? 24 : 24 * 7
   return new Date(now.getTime() - hours * 60 * 60 * 1000)
-}
-
-export function hasModerationSummaryWork(
-  community: CommunityModerationSummaryEmailProps['communities'][number],
-): boolean {
-  return (
-    community.pendingPostReviews > 0 ||
-    community.pendingApplications > 0 ||
-    community.pendingReports > 0 ||
-    community.escalatedItems > 0 ||
-    community.suspectedBanEvaders > 0
-  )
 }
 
 export function isModerationEmailDue(recipient: ModerationRecipientRow, now: Date): boolean {

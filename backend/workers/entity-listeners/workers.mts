@@ -1,3 +1,4 @@
+import { reportingHandlers } from './processors/reporting.mts'
 import { backgroundHandler } from '@queues/background/enqueues/define-handler'
 import {
   ENTITY_LISTENERS_AUTO_FOLLOW_REFERRER_JOB,
@@ -49,6 +50,7 @@ function listener<TData>(job: BackgroundJobDefinition<TData>, run: (data: TData)
 }
 
 export const entityListenersHandlers = [
+  ...reportingHandlers,
   // Validates its own payload: the sweep persists its cursor through the job.
   backgroundHandler(ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB, job => processReconciliationJob(job)),
   listener(ENTITY_LISTENERS_RECONCILE_ENTITY_JOB, reconcileEntity),

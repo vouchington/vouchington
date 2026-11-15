@@ -1212,6 +1212,21 @@
     "report_integrity_resolutions": {
       "values": ["dismissed", "penalized"]
     },
+    "reporting_rollup_kinds": {
+      "values": ["growth", "moderator_workload"]
+    },
+    "reporting_source_day_event_types": {
+      "values": [
+        "user_follow",
+        "post_vote_deletion",
+        "moderator_action_deletion",
+        "user_deletion",
+        "post_deletion",
+        "retained_vote_change",
+        "post_vote_creation",
+        "moderator_action_creation"
+      ]
+    },
     "retained_identity_cleanup_families": {
       "values": [
         "user",
@@ -1787,6 +1802,10 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_register_released_user_agent_string_cleanup_candidate()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.user_agent_string_id IS NULL THEN\n    RETURN NULL;\n  END IF;\n  IF TG_OP = 'UPDATE' THEN\n    IF OLD.user_agent_string_id IS NOT DISTINCT FROM NEW.user_agent_string_id THEN\n      RETURN NULL;\n    END IF;\n  END IF;\n  -- Keep the parent locked through the releasing transaction even if the candidate already\n  -- exists. Cleanup must not consume that candidate while this release is uncommitted.\n  PERFORM 1 FROM user_agent_strings\n  WHERE id = OLD.user_agent_string_id FOR KEY SHARE;\n  INSERT INTO user_agent_string_cleanup_candidates (user_agent_string_id)\n  VALUES (OLD.user_agent_string_id) ON CONFLICT DO NOTHING;\n  RETURN NULL;\nEND $function$\n",
       "returnsSet": false
     },
+    "fn_register_reporting_statement_days()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_reporting_statement_days()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO reporting_source_day_events(source_type, source_on)\n    SELECT DISTINCT TG_ARGV[0]::reporting_source_day_event_types, source_on\n    FROM (\n      SELECT (uuid_extract_timestamp(id) AT TIME ZONE 'UTC')::date AS source_on\n      FROM reporting_rows\n    ) affected\n    WHERE source_on < (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date;\n  RETURN NULL;\nEND;\n$function$\n",
+      "returnsSet": false
+    },
     "fn_register_retained_copyright_notice_identity()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_register_retained_copyright_notice_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO retained_copyright_notice_identities (id) VALUES (NEW.id);\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
@@ -1797,6 +1816,10 @@
     },
     "fn_register_retained_image_identity()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_register_retained_image_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE pinned_uploader_id UUID;\nBEGIN\n  -- Cleanup may remove an unreferenced root between insertion and pinning.\n  LOOP\n    INSERT INTO retained_image_identities (id, created_by_id)\n    VALUES (NEW.id, NEW.created_by_id)\n    ON CONFLICT (id) DO NOTHING;\n    SELECT created_by_id INTO pinned_uploader_id\n    FROM retained_image_identities WHERE id = NEW.id FOR KEY SHARE;\n    EXIT WHEN pinned_uploader_id IS NOT NULL;\n  END LOOP;\n  IF pinned_uploader_id <> NEW.created_by_id THEN\n    RAISE EXCEPTION 'retained image uploader does not match the live image'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "returnsSet": false
+    },
+    "fn_register_vanished_reporting_day()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_vanished_reporting_day()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  old_day date;\n  source_kind reporting_source_day_event_types;\nBEGIN\n  CASE TG_ARGV[0]\n    WHEN 'user_follow' THEN\n      IF TG_OP = 'UPDATE' AND OLD.created_at IS NOT DISTINCT FROM NEW.created_at\n        AND OLD.deleted_at IS NOT DISTINCT FROM NEW.deleted_at THEN RETURN NULL; END IF;\n      old_day := (CASE WHEN TG_OP = 'INSERT' THEN NEW.created_at ELSE OLD.created_at END AT TIME ZONE 'UTC')::date;\n      source_kind := 'user_follow';\n    WHEN 'retained_vote_change' THEN\n      old_day := CASE WHEN TG_OP = 'DELETE' THEN OLD.day ELSE NEW.day END;\n      source_kind := 'retained_vote_change';\n    ELSE RAISE EXCEPTION 'Unknown reporting lifecycle source: %', TG_ARGV[0];\n  END CASE;\n  IF TG_ARGV[0] = 'user_follow' AND TG_OP = 'UPDATE'\n    AND (NEW.created_at AT TIME ZONE 'UTC')::date IS DISTINCT FROM old_day\n    AND (NEW.created_at AT TIME ZONE 'UTC')::date < (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date THEN\n    INSERT INTO reporting_source_day_events(source_type, source_on)\n      VALUES ('user_follow', (NEW.created_at AT TIME ZONE 'UTC')::date);\n  END IF;\n  IF old_day IS NULL OR old_day >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date THEN RETURN NULL; END IF;\n  INSERT INTO reporting_source_day_events(source_type, source_on) VALUES (source_kind, old_day);\n  RETURN NULL;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_reject_admin_import_deleted_rss_feed()": {
@@ -23074,10 +23097,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_community_members__community_id": {
+        "idx_community_members__community_id_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_members__community_id ON public.community_members USING btree (community_id)",
+          "definition": "CREATE INDEX idx_community_members__community_id_id ON public.community_members USING btree (community_id, id)",
           "immediate": true,
           "keys": [
             {
@@ -23085,6 +23108,15 @@
               "column": "community_id",
               "descending": false,
               "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -56766,6 +56798,388 @@
         }
       }
     },
+    "growth_metric_daily_post_authors": {
+      "checkConstraints": {},
+      "columns": {
+        "author_user_id": {
+          "comment": "Live post author, including the existing deleted-account identity when source posts are reassigned.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "growth_metric_daily_total_id": {
+          "comment": "Daily total cohort containing this eligible author membership.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        }
+      },
+      "comment": "Exact distinct-author membership for eligible posts on a completed day; recomputation removes memberships without eligible source posts and user purge cascades.",
+      "foreignKeys": {
+        "growth_metric_daily_post_auth_growth_metric_daily_total_id_fkey": {
+          "columns": ["growth_metric_daily_total_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "growth_metric_daily_totals",
+          "validated": true
+        },
+        "growth_metric_daily_post_authors_author_user_id_fkey": {
+          "columns": ["author_user_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "growth_metric_daily_post_authors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX growth_metric_daily_post_authors_pkey ON public.growth_metric_daily_post_authors USING btree (growth_metric_daily_total_id, author_user_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "growth_metric_daily_total_id",
+              "descending": false,
+              "expression": "growth_metric_daily_total_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "author_user_id",
+              "descending": false,
+              "expression": "author_user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_growth_metric_daily_post_authors__author_user_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_growth_metric_daily_post_authors__author_user_id ON public.growth_metric_daily_post_authors USING btree (author_user_id, growth_metric_daily_total_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "author_user_id",
+              "descending": false,
+              "expression": "author_user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "growth_metric_daily_total_id",
+              "descending": false,
+              "expression": "growth_metric_daily_total_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["growth_metric_daily_total_id", "author_user_id"]
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "growth_metric_daily_totals": {
+      "checkConstraints": {
+        "growth_metric_daily_totals_approved_count_check": {
+          "definition": "CHECK ((approved_count >= 0))",
+          "validated": true
+        },
+        "growth_metric_daily_totals_comment_count_check": {
+          "definition": "CHECK ((comment_count >= 0))",
+          "validated": true
+        },
+        "growth_metric_daily_totals_data_point_count_check": {
+          "definition": "CHECK ((data_point_count >= 0))",
+          "validated": true
+        },
+        "growth_metric_daily_totals_discussion_count_check": {
+          "definition": "CHECK ((discussion_count >= 0))",
+          "validated": true
+        },
+        "growth_metric_daily_totals_follow_count_check": {
+          "definition": "CHECK ((follow_count >= 0))",
+          "validated": true
+        },
+        "growth_metric_daily_totals_post_count_check": {
+          "definition": "CHECK ((post_count >= 0))",
+          "validated": true
+        },
+        "growth_metric_daily_totals_retained_vote_count_check": {
+          "definition": "CHECK ((retained_vote_count >= 0))",
+          "validated": true
+        },
+        "growth_metric_daily_totals_review_count_check": {
+          "definition": "CHECK ((review_count >= 0))",
+          "validated": true
+        },
+        "growth_metric_daily_totals_reviewed_count_check": {
+          "definition": "CHECK ((reviewed_count >= 0))",
+          "validated": true
+        },
+        "growth_metric_daily_totals_story_count_check": {
+          "definition": "CHECK ((story_count >= 0))",
+          "validated": true
+        },
+        "growth_metric_daily_totals_user_count_check": {
+          "definition": "CHECK ((user_count >= 0))",
+          "validated": true
+        },
+        "growth_metric_daily_totals_vote_count_check": {
+          "definition": "CHECK ((vote_count >= 0))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "approved_count": {
+          "comment": "Non-deleted posts from this day whose approval timestamp is present.",
+          "dataType": "bigint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11
+        },
+        "comment_count": {
+          "comment": "Non-deleted comments created on this day.",
+          "dataType": "bigint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9
+        },
+        "created_at": {
+          "comment": "UUIDv7-derived creation time of this reporting total.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "data_point_count": {
+          "comment": "Non-deleted data-point posts created on this day.",
+          "dataType": "bigint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7
+        },
+        "day": {
+          "comment": "UTC creation day of the counted source rows.",
+          "dataType": "date",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "discussion_count": {
+          "comment": "Non-deleted discussion posts created on this day.",
+          "dataType": "bigint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8
+        },
+        "follow_count": {
+          "comment": "Active user follows whose current creation timestamp belongs to this day.",
+          "dataType": "bigint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 13
+        },
+        "id": {
+          "comment": "Stable identity of this completed-day reporting total.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "post_count": {
+          "comment": "Non-deleted posts created on this day, including types outside the displayed breakdown.",
+          "dataType": "bigint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5
+        },
+        "retained_vote_count": {
+          "comment": "Anonymous qualifying ballot events already retained by the existing ballot cleanup tally.",
+          "dataType": "bigint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 15
+        },
+        "review_count": {
+          "comment": "Non-deleted review posts created on this day.",
+          "dataType": "bigint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6
+        },
+        "reviewed_count": {
+          "comment": "Non-deleted posts from this day with an approval or rejection timestamp.",
+          "dataType": "bigint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 12
+        },
+        "story_count": {
+          "comment": "Non-deleted story posts created on this day.",
+          "dataType": "bigint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10
+        },
+        "user_count": {
+          "comment": "Non-deleted users created on this day.",
+          "dataType": "bigint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        },
+        "vote_count": {
+          "comment": "Qualifying post ballots from this day still present in the raw vote source.",
+          "dataType": "bigint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 14
+        }
+      },
+      "comment": "Anonymous current-eligibility daily reporting totals, retained for the all-range growth report and replaced when that source day changes.",
+      "foreignKeys": {},
+      "indexes": {
+        "growth_metric_daily_totals_day_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX growth_metric_daily_totals_day_key ON public.growth_metric_daily_totals USING btree (day)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "day",
+              "descending": false,
+              "expression": "day",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.date_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "growth_metric_daily_totals_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX growth_metric_daily_totals_pkey ON public.growth_metric_daily_totals USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"]
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "growth_metric_daily_totals_day_key": {
+          "columns": ["day"]
+        }
+      }
+    },
     "history_retention_cursors": {
       "checkConstraints": {},
       "columns": {
@@ -84034,6 +84448,12 @@
         },
         "trigger_moderator_actions__agent_moderation_retention": {
           "definition": "CREATE TRIGGER trigger_moderator_actions__agent_moderation_retention AFTER DELETE OR UPDATE OF agent_moderation_post_id, agent_moderation_id ON public.moderator_actions FOR EACH ROW EXECUTE FUNCTION fn_update_agent_moderation_retention_reference('agent_moderation_post_id', 'agent_moderation_id')"
+        },
+        "trigger_reporting_deleted_action_day": {
+          "definition": "CREATE TRIGGER trigger_reporting_deleted_action_day AFTER DELETE ON public.moderator_actions REFERENCING OLD TABLE AS reporting_rows FOR EACH STATEMENT EXECUTE FUNCTION fn_register_reporting_statement_days('moderator_action_deletion')"
+        },
+        "trigger_reporting_historical_action_day": {
+          "definition": "CREATE TRIGGER trigger_reporting_historical_action_day AFTER INSERT ON public.moderator_actions REFERENCING NEW TABLE AS reporting_rows FOR EACH STATEMENT EXECUTE FUNCTION fn_register_reporting_statement_days('moderator_action_creation')"
         }
       },
       "uniqueConstraints": {}
@@ -84169,6 +84589,305 @@
       "uniqueConstraints": {
         "moderator_agents_slug_key": {
           "columns": ["slug"]
+        }
+      }
+    },
+    "moderator_workload_daily_totals": {
+      "checkConstraints": {
+        "moderator_workload_daily_totals_count_check": {
+          "definition": "CHECK ((count > 0))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "action_type": {
+          "comment": "Moderator action counted by this cohort; reader applies the current dashboard taxonomy.",
+          "dataType": "moderator_action_types",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6
+        },
+        "actor_user_id": {
+          "comment": "Live actor required by the existing workload reader; physical user purge removes this cohort.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5
+        },
+        "community_id": {
+          "comment": "Live community scope, or NULL for the independent global aggregate.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
+        },
+        "count": {
+          "comment": "Exact source actions in this cohort, replaced by a completed-day recomputation.",
+          "dataType": "bigint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7
+        },
+        "created_at": {
+          "comment": "UUIDv7-derived creation time of this daily reporting cohort.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "day": {
+          "comment": "UTC creation day of the source moderator actions.",
+          "dataType": "date",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "id": {
+          "comment": "Identity of this daily reporting cohort.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        }
+      },
+      "comment": "Daily moderator-action reporting cohorts; NULL-community global cohorts survive community purge, scoped cohorts cascade, and bounded cleanup retires days outside the analytics window.",
+      "foreignKeys": {
+        "moderator_workload_daily_totals_actor_user_id_fkey": {
+          "columns": ["actor_user_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "moderator_workload_daily_totals_community_id_fkey": {
+          "columns": ["community_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "communities",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "idx_moderator_workload_daily_totals__actor_user_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderator_workload_daily_totals__actor_user_id ON public.moderator_workload_daily_totals USING btree (actor_user_id, day)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "actor_user_id",
+              "descending": false,
+              "expression": "actor_user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "day",
+              "descending": false,
+              "expression": "day",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.date_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderator_workload_daily_totals__community_id_day": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderator_workload_daily_totals__community_id_day ON public.moderator_workload_daily_totals USING btree (community_id, day, actor_user_id, action_type)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "day",
+              "descending": false,
+              "expression": "day",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.date_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "actor_user_id",
+              "descending": false,
+              "expression": "actor_user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "action_type",
+              "descending": false,
+              "expression": "action_type",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.enum_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderator_workload_daily_totals__day_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderator_workload_daily_totals__day_id ON public.moderator_workload_daily_totals USING btree (day, id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "day",
+              "descending": false,
+              "expression": "day",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.date_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "moderator_workload_daily_totals_cohort": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX moderator_workload_daily_totals_cohort ON public.moderator_workload_daily_totals USING btree (day, community_id, actor_user_id, action_type) NULLS NOT DISTINCT",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "day",
+              "descending": false,
+              "expression": "day",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.date_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "actor_user_id",
+              "descending": false,
+              "expression": "actor_user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "action_type",
+              "descending": false,
+              "expression": "action_type",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.enum_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "moderator_workload_daily_totals_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX moderator_workload_daily_totals_pkey ON public.moderator_workload_daily_totals USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"]
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "moderator_workload_daily_totals_cohort": {
+          "columns": ["day", "community_id", "actor_user_id", "action_type"]
         }
       }
     },
@@ -97999,7 +98718,11 @@
         "columns": ["id"]
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_reporting_retained_vote_day": {
+          "definition": "CREATE TRIGGER trigger_reporting_retained_vote_day AFTER INSERT OR DELETE OR UPDATE ON public.post_vote_retained_daily_counts FOR EACH ROW EXECUTE FUNCTION fn_register_vanished_reporting_day('retained_vote_change')"
+        }
+      },
       "uniqueConstraints": {
         "post_vote_retained_daily_counts_day_key": {
           "columns": ["day"]
@@ -98527,6 +99250,12 @@
       "triggers": {
         "trigger_post_votes__ua_release": {
           "definition": "CREATE TRIGGER trigger_post_votes__ua_release AFTER DELETE ON public.post_votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        },
+        "trigger_reporting_deleted_ballot_day": {
+          "definition": "CREATE TRIGGER trigger_reporting_deleted_ballot_day AFTER DELETE ON public.post_votes REFERENCING OLD TABLE AS reporting_rows FOR EACH STATEMENT EXECUTE FUNCTION fn_register_reporting_statement_days('post_vote_deletion')"
+        },
+        "trigger_reporting_historical_ballot_day": {
+          "definition": "CREATE TRIGGER trigger_reporting_historical_ballot_day AFTER INSERT ON public.post_votes REFERENCING NEW TABLE AS reporting_rows FOR EACH STATEMENT EXECUTE FUNCTION fn_register_reporting_statement_days('post_vote_creation')"
         }
       },
       "uniqueConstraints": {}
@@ -100811,6 +101540,38 @@
           "unique": false,
           "valid": true
         },
+        "idx_posts__updated_at_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__updated_at_id ON ONLY public.posts USING btree (updated_at, ((id)::text))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": null,
+              "descending": false,
+              "expression": "(id::text)",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_posts__updated_by_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -101008,6 +101769,9 @@
         },
         "trigger_register_retained_post_identity": {
           "definition": "CREATE TRIGGER trigger_register_retained_post_identity BEFORE INSERT ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('post')"
+        },
+        "trigger_reporting_deleted_post_day": {
+          "definition": "CREATE TRIGGER trigger_reporting_deleted_post_day AFTER DELETE ON public.posts REFERENCING OLD TABLE AS reporting_rows FOR EACH STATEMENT EXECUTE FUNCTION fn_register_reporting_statement_days('post_deletion')"
         },
         "trigger_sync_posts_search_vector": {
           "definition": "CREATE TRIGGER trigger_sync_posts_search_vector BEFORE INSERT OR UPDATE OF title, markdown ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_update_posts_search_vector()"
@@ -123244,6 +124008,47 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__user__follow__user__reporting_created_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__follow__user__reporting_created_at ON public.relation__user__follow__user USING btree (created_at, subject_id, object_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "created_at",
+              "descending": false,
+              "expression": "created_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "object_id",
+              "descending": false,
+              "expression": "object_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__follow__user__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -123355,7 +124160,11 @@
         "columns": ["subject_id", "object_id"]
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_reporting_follow_day": {
+          "definition": "CREATE TRIGGER trigger_reporting_follow_day AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__follow__user FOR EACH ROW EXECUTE FUNCTION fn_register_vanished_reporting_day('user_follow')"
+        }
+      },
       "uniqueConstraints": {}
     },
     "relation__user__hide__post": {
@@ -129492,6 +130301,174 @@
       "triggers": {
         "trigger_report_integrity_flags_updated_at": {
           "definition": "CREATE TRIGGER trigger_report_integrity_flags_updated_at BEFORE UPDATE ON public.report_integrity_flags FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
+    "reporting_daily_rollup_cursors": {
+      "checkConstraints": {},
+      "columns": {
+        "cursor_rollup_on": {
+          "comment": "Next UTC source day due for scheduled computation; initialization claims no historical day was completed.",
+          "dataType": "date",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "kind": {
+          "comment": "Concrete daily reporting projection whose position this row owns.",
+          "dataType": "reporting_rollup_kinds",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "updated_at": {
+          "comment": "Last cursor progression time maintained by the canonical update trigger.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        }
+      },
+      "comment": "Transactional first-unmaterialized day for scheduled reporting; ordinary initialization discovers the earliest source day and every completed day writes explicit totals before advancing.",
+      "foreignKeys": {},
+      "indexes": {
+        "reporting_daily_rollup_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX reporting_daily_rollup_cursors_pkey ON public.reporting_daily_rollup_cursors USING btree (kind)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "kind",
+              "descending": false,
+              "expression": "kind",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.enum_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["kind"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_reporting_daily_rollup_cursors_updated_at": {
+          "definition": "CREATE TRIGGER trigger_reporting_daily_rollup_cursors_updated_at BEFORE UPDATE ON public.reporting_daily_rollup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
+    "reporting_source_day_events": {
+      "checkConstraints": {},
+      "columns": {
+        "created_at": {
+          "comment": "UUIDv7-derived creation time of this recovery event.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
+        },
+        "id": {
+          "comment": "Monotonic event cursor, not a relationship to a source row.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "occurred_at": {
+          "comment": "Source mutation occurrence time, equal to event creation because recovery events are inserted atomically with the mutation.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5
+        },
+        "source_on": {
+          "comment": "UTC source day whose old input vanished or retained tally changed; contains no entity identity or pending-work state.",
+          "dataType": "date",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "source_type": {
+          "comment": "Concrete source lifecycle represented by the immutable snapshot.",
+          "dataType": "reporting_source_day_event_types",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        }
+      },
+      "comment": "Anonymous atomic source-day recovery events; existing entity reconciliation consumes the UUIDv7 event window and cleanupPartitions retires the monthly history.",
+      "foreignKeys": {},
+      "indexes": {
+        "reporting_source_day_events_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX reporting_source_day_events_pkey ON ONLY public.reporting_source_day_events USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": {
+        "key": "RANGE (id)"
+      },
+      "primaryKey": {
+        "columns": ["id"]
+      },
+      "relationKind": "partitioned table",
+      "triggers": {
+        "trigger_reporting_source_day_events_append_only": {
+          "definition": "CREATE TRIGGER trigger_reporting_source_day_events_append_only BEFORE DELETE OR UPDATE ON public.reporting_source_day_events FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
         }
       },
       "uniqueConstraints": {}
@@ -166695,10 +167672,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_users__updated_at_id_active": {
+        "idx_users__updated_at_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_users__updated_at_id_active ON public.users USING btree (updated_at, ((id)::text)) WHERE (deleted_at IS NULL)",
+          "definition": "CREATE INDEX idx_users__updated_at_id ON public.users USING btree (updated_at, ((id)::text))",
           "immediate": true,
           "keys": [
             {
@@ -166721,7 +167698,7 @@
             }
           ],
           "live": true,
-          "predicate": "(deleted_at IS NULL)",
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
@@ -166918,6 +167895,9 @@
         },
         "trigger_register_retained_user_identity": {
           "definition": "CREATE TRIGGER trigger_register_retained_user_identity BEFORE INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('user')"
+        },
+        "trigger_reporting_deleted_user_day": {
+          "definition": "CREATE TRIGGER trigger_reporting_deleted_user_day AFTER DELETE ON public.users REFERENCING OLD TABLE AS reporting_rows FOR EACH STATEMENT EXECUTE FUNCTION fn_register_reporting_statement_days('user_deletion')"
         },
         "trigger_retire_deleted_user_image_surfaces": {
           "definition": "CREATE TRIGGER trigger_retire_deleted_user_image_surfaces AFTER UPDATE OF deleted_at ON public.users FOR EACH ROW EXECUTE FUNCTION fn_project_retire_deleted_user_image_surfaces()"

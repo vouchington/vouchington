@@ -1,4 +1,6 @@
 import { communityApplicationLimitsRegistryEntry } from './registry-community-application-limits-entry.mts'
+import { reportingRollupWorkRegistryEntry } from './registry-reporting-rollup-work-entry.mts'
+import { moderationSummaryWorkRegistryEntry } from './registry-moderation-summary-work-entry.mts'
 import { householdLimitsRegistryEntry } from './registry-household-limits-entry.mts'
 import { relationLimitsRegistryEntry } from './registry-relation-limits-entry.mts'
 import { profileCountRegistryEntry } from './registry-profile-count-entry.mts'
@@ -38,6 +40,8 @@ import type { DynamicConfigRegistryEntry } from '@vouchington/dynamic-config'
 import { orderDynamicConfigRegistryEntries } from './registry-order.mts'
 
 const unorderedRegistryEntries = [
+  moderationSummaryWorkRegistryEntry,
+  reportingRollupWorkRegistryEntry,
   sessionLimitsRegistryEntry,
   relationLimitsRegistryEntry,
   householdLimitsRegistryEntry,

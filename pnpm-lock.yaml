@@ -6533,6 +6533,9 @@ importers:
       '@services/report-integrity':
         specifier: workspace:^
         version: link:../report-integrity
+      '@services/reporting-daily-rollups':
+        specifier: workspace:^
+        version: link:../reporting-daily-rollups
       '@services/request-client-info':
         specifier: workspace:^
         version: link:../request-client-info
@@ -7434,6 +7437,9 @@ importers:
       '@services/memberships':
         specifier: workspace:^
         version: link:../memberships
+      '@services/reporting-daily-rollups':
+        specifier: workspace:^
+        version: link:../reporting-daily-rollups
       '@ts-shared/money':
         specifier: workspace:^
         version: link:../../../ts-shared/money
@@ -8365,6 +8371,9 @@ importers:
       '@services/memberships':
         specifier: workspace:^
         version: link:../memberships
+      '@services/reporting-daily-rollups':
+        specifier: workspace:^
+        version: link:../reporting-daily-rollups
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -10545,6 +10554,24 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+
+  backend/services/reporting-daily-rollups:
+    dependencies:
+      '@data-stores/psql':
+        specifier: workspace:^
+        version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
+      sql-template-strings:
+        specifier: ^2.2.2
+        version: 2.2.2
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
 
   backend/services/request-client-info:
     dependencies:
@@ -12779,6 +12806,9 @@ importers:
       '@sentry/node':
         specifier: ^11.12.0
         version: 11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
+      '@services/reporting-daily-rollups':
+        specifier: workspace:^
+        version: link:../services/reporting-daily-rollups
       '@smithy/core':
         specifier: ^3.40.0
         version: 3.40.0
@@ -14195,6 +14225,9 @@ importers:
       '@services/posts':
         specifier: workspace:^
         version: link:../../services/posts
+      '@services/reporting-daily-rollups':
+        specifier: workspace:^
+        version: link:../../services/reporting-daily-rollups
       '@services/stories':
         specifier: workspace:^
         version: link:../../services/stories

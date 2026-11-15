@@ -350,6 +350,10 @@ order. Empty eligibility pages retain their within-user position; emitting a use
 user's remaining memberships. Archived community history therefore cannot expand one activation
 or prevent later eligible moderators from receiving their digest.
 
+Moderator email digests assemble large moderation workloads incrementally so one recipient cannot
+monopolize shared workers. Because collection can outlive a membership or selected content,
+delivery revalidates current access and the references included in the email.
+
 Apple notification recovery fixes its sweep end before dispatch and advances by every inspected
 pending-evidence row, including evidence for another provider. Empty Apple pages therefore still
 continue on the same retained job. Recovery cursors preserve timestamp precision across queue

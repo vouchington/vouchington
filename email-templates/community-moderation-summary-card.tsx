@@ -5,6 +5,25 @@ import type { CommunityModerationSummaryEmailProps } from './types.mts'
 
 type Community = CommunityModerationSummaryEmailProps['communities'][number]
 
+function displayCount(count: number, t: EmailTranslator): string {
+  return count >= 100 ? t('countCapped') : String(count)
+}
+
+function displayMemberChange(community: Community, t: EmailTranslator): string {
+  if (community.netMemberChange === null) {
+    return `${t('newMembers')}: ${displayCount(community.newMembers, t)}, ${t('departedMembers')}: ${displayCount(community.departedMembers, t)}`
+  }
+  if (community.netMemberChange >= 100) return `+${t('countCapped')}`
+  if (community.netMemberChange <= -100) return `-${t('countCapped')}`
+  return community.netMemberChange > 0
+    ? `+${community.netMemberChange}`
+    : String(community.netMemberChange)
+}
+
+function displayTopDiscussionReplies(count: number, t: EmailTranslator): string {
+  return count >= 100 ? t('topDiscussionRepliesCapped') : t('topDiscussionReplies', { count })
+}
+
 const card = {
   backgroundColor: colors.muted,
   border: `1px solid ${colors.border}`,
@@ -51,52 +70,56 @@ export function CommunityModerationSummaryCard({
       <Text style={cardHeading}>{community.name}</Text>
       <Text style={statLine}>
         <strong style={statLabel}>{`${t('pendingPostReviews')}:`}</strong>{' '}
-        {community.pendingPostReviews}
+        {displayCount(community.pendingPostReviews, t)}
       </Text>
       <Text style={statLine}>
         <strong style={statLabel}>{`${t('pendingApplications')}:`}</strong>{' '}
-        {community.pendingApplications}
+        {displayCount(community.pendingApplications, t)}
       </Text>
       <Text style={statLine}>
-        <strong style={statLabel}>{`${t('pendingReports')}:`}</strong> {community.pendingReports}
+        <strong style={statLabel}>{`${t('pendingReports')}:`}</strong>{' '}
+        {displayCount(community.pendingReports, t)}
       </Text>
       <Text style={statLine}>
-        <strong style={statLabel}>{`${t('escalatedItems')}:`}</strong> {community.escalatedItems}
+        <strong style={statLabel}>{`${t('escalatedItems')}:`}</strong>{' '}
+        {displayCount(community.escalatedItems, t)}
       </Text>
       <Text style={statLine}>
         <strong style={statLabel}>{`${t('suspectedBanEvaders')}:`}</strong>{' '}
-        {community.suspectedBanEvaders}
+        {displayCount(community.suspectedBanEvaders, t)}
       </Text>
       <Text style={digestHeading}>{t('activityHeading')}</Text>
       <Text style={statLine}>
         <strong style={statLabel}>{`${t('memberChange')}:`}</strong>{' '}
-        {community.netMemberChange > 0
-          ? `+${community.netMemberChange}`
-          : community.netMemberChange}
+        {displayMemberChange(community, t)}
       </Text>
       <Text style={statLine}>
         <strong style={statLabel}>{`${t('totalActiveMembers')}:`}</strong>{' '}
-        {community.totalActiveMembers}
+        {displayCount(community.totalActiveMembers, t)}
       </Text>
       <Text style={statLine}>
         <strong style={statLabel}>{`${t('newDiscussions')}:`}</strong>{' '}
-        {community.newDiscussionPosts}
+        {displayCount(community.newDiscussionPosts, t)}
       </Text>
       <Text style={statLine}>
-        <strong style={statLabel}>{`${t('newReviews')}:`}</strong> {community.newReviewPosts}
+        <strong style={statLabel}>{`${t('newReviews')}:`}</strong>{' '}
+        {displayCount(community.newReviewPosts, t)}
       </Text>
       <Text style={statLine}>
-        <strong style={statLabel}>{`${t('newDataPoints')}:`}</strong> {community.newDataPointPosts}
+        <strong style={statLabel}>{`${t('newDataPoints')}:`}</strong>{' '}
+        {displayCount(community.newDataPointPosts, t)}
       </Text>
       {community.topDiscussionTitle !== null ? (
         <Text style={statLine}>
           <strong style={statLabel}>{`${t('topDiscussion')}:`}</strong>{' '}
-          {`${community.topDiscussionTitle} (${t('topDiscussionReplies', { count: community.topDiscussionReplyCount })})`}
+          {`${community.topDiscussionTitle} (${displayTopDiscussionReplies(community.topDiscussionReplyCount, t)})`}
         </Text>
       ) : null}
       <Text style={statLine}>
         <strong style={statLabel}>{`${t('activeMembers')}:`}</strong>{' '}
-        {`${community.activeMemberCount} (${Math.round(community.activeMemberRate * 100)}%)`}
+        {community.activeMemberRate === null
+          ? displayCount(community.activeMemberCount, t)
+          : `${displayCount(community.activeMemberCount, t)} (${Math.round(community.activeMemberRate * 100)}%)`}
       </Text>
       <Section style={styles.buttonContainer}>
         <Button

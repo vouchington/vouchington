@@ -18,6 +18,7 @@ export const BACKGROUND_ORDERING_CAPS = {
   // throttling elections.
   'vote-aggregation:topic-ratings': 10,
   'entity-listeners': 5,
+  'entity-listeners:reporting': 1,
   'account-lifecycle': 2,
   'article-sync': 1,
   'oauth-authorization-exchange': 4,
@@ -45,6 +46,7 @@ export const BACKGROUND_ORDERING_CAPS = {
   'sitemaps:dispatcher': 1,
   'cache-purge': 5,
   'email-digests': 5,
+  'email-digests:moderation-summary': 1,
   imports: 10,
   'moderation-signals': 10,
   'hostname-blocking': 2,
@@ -59,10 +61,11 @@ export function getBackgroundOrderingLimits(key: string): {
   defaultValue: number
   maxValue: number
 } {
-  const configKey =
-    key.startsWith('notifications:bulk:post:') ||
-    key.startsWith('notifications:bulk:rss:') ||
-    key.startsWith('notifications:bulk:critical-moderation-alert:')
+  const configKey = key.startsWith('email-digests:moderation-summary:')
+    ? 'email-digests:moderation-summary'
+    : key.startsWith('notifications:bulk:post:') ||
+        key.startsWith('notifications:bulk:rss:') ||
+        key.startsWith('notifications:bulk:critical-moderation-alert:')
       ? 'notifications:bulk'
       : key
   const defaultValue = BACKGROUND_ORDERING_CAPS[configKey as keyof typeof BACKGROUND_ORDERING_CAPS]
@@ -70,6 +73,9 @@ export function getBackgroundOrderingLimits(key: string): {
   return {
     configKey,
     defaultValue,
-    maxValue: configKey === 'notifications:bulk' ? 1 : orderingMaxValue(defaultValue),
+    maxValue:
+      configKey === 'notifications:bulk' || configKey === 'email-digests:moderation-summary'
+        ? 1
+        : orderingMaxValue(defaultValue),
   }
 }

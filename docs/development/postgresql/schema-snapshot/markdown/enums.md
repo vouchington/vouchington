@@ -1604,6 +1604,22 @@
 - `dismissed`
 - `penalized`
 
+## `reporting_rollup_kinds`
+
+- `growth`
+- `moderator_workload`
+
+## `reporting_source_day_event_types`
+
+- `user_follow`
+- `post_vote_deletion`
+- `moderator_action_deletion`
+- `user_deletion`
+- `post_deletion`
+- `retained_vote_change`
+- `post_vote_creation`
+- `moderator_action_creation`
+
 ## `retained_identity_cleanup_families`
 
 - `user`

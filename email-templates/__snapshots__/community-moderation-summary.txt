@@ -10,13 +10,13 @@ Escalated items: 1
 Suspected ban evaders: 0
 Community activity
 Member change: +5
-Total active members: 128
+Total active members: 99+
 New discussions: 4
 New reviews: 2
 New data points: 1
 Top discussion: Best credit card for a Japan trip? (12 replies)
 Active members: 41 (32%)
-Open Community: https://voucha.ai/communities/travel-hackers
+Open Community: https://voucha.ai/communities/travel-hackers/settings/moderation
 
 Card Pros
 Pending post reviews: 0
@@ -31,7 +31,7 @@ New discussions: 0
 New reviews: 0
 New data points: 0
 Active members: 6 (9%)
-Open Community: https://voucha.ai/communities/card-pros
+Open Community: https://voucha.ai/communities/card-pros/settings/moderation
 
 Open Moderation Settings: https://voucha.ai/my/notification-settings
 

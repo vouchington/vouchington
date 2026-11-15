@@ -18,7 +18,7 @@ projection rather than operational tables:
   output, or raw records.
 - A released cohort survives hard deletion of its source rows or community.
 - Access follows the member's current plan, including the paid period a cancelled membership
-  still holds. The staff-scoped analytics endpoints keep their raw operational views and do not
+  still holds. The staff-scoped analytics endpoints keep their operational results and do not
   use this projection.
 
 Moderation actions counted on the dashboard are the established moderation action families; the

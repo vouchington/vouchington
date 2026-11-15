@@ -19,8 +19,11 @@ import { SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE } from '@ts-shared/languages/ui
 
 import { emailCopy } from './catalog-copy.mts'
 import { CommunityModerationSummaryCard } from './community-moderation-summary-card.tsx'
+import {
+  renderCommunityModerationSummaryText,
+  remainingCommunitiesCopy,
+} from './community-moderation-summary-text.mts'
 import { MarketingFooter, VouchaHeader } from './components.tsx'
-import { getLocalizedSignoff } from './locale.mts'
 import { colors, styles } from './styles.mts'
 import type { CommunityModerationSummaryEmailProps } from './types.mts'
 
@@ -33,6 +36,7 @@ const CommunityModerationSummaryEmail: PreviewableEmailComponent<
   unsubscribeUrl,
   physicalAddress,
   communities,
+  remainingCommunityCount,
   uiLocale,
 }) =>
   (() => {
@@ -58,7 +62,7 @@ const CommunityModerationSummaryEmail: PreviewableEmailComponent<
               {communities.length > 0 ? (
                 communities.map(community => (
                   <CommunityModerationSummaryCard
-                    key={community.url}
+                    key={community.communityId}
                     community={community}
                     t={t}
                   />
@@ -66,6 +70,12 @@ const CommunityModerationSummaryEmail: PreviewableEmailComponent<
               ) : (
                 <Text style={styles.paragraph}>{t('empty')}</Text>
               )}
+
+              {remainingCommunityCount > 0 ? (
+                <Text style={styles.paragraph}>
+                  {remainingCommunitiesCopy(remainingCommunityCount, t)}
+                </Text>
+              ) : null}
 
               <Section style={styles.buttonContainer}>
                 <Button
@@ -103,13 +113,16 @@ CommunityModerationSummaryEmail.PreviewProps = {
   physicalAddress: '123 Placeholder St, Suite 100, San Francisco, CA 94105',
   communities: [
     {
+      communityId: 'travel-hackers',
       name: 'Travel Hackers',
-      url: 'https://voucha.ai/communities/travel-hackers',
+      url: 'https://voucha.ai/communities/travel-hackers/settings/moderation',
       pendingPostReviews: 2,
       pendingApplications: 1,
       pendingReports: 3,
       escalatedItems: 1,
       suspectedBanEvaders: 0,
+      newMembers: 7,
+      departedMembers: 2,
       netMemberChange: 5,
       totalActiveMembers: 128,
       newDiscussionPosts: 4,
@@ -121,13 +134,16 @@ CommunityModerationSummaryEmail.PreviewProps = {
       activeMemberRate: 0.32,
     },
     {
+      communityId: 'card-pros',
       name: 'Card Pros',
-      url: 'https://voucha.ai/communities/card-pros',
+      url: 'https://voucha.ai/communities/card-pros/settings/moderation',
       pendingPostReviews: 0,
       pendingApplications: 4,
       pendingReports: 1,
       escalatedItems: 0,
       suspectedBanEvaders: 2,
+      newMembers: 1,
+      departedMembers: 2,
       netMemberChange: -1,
       totalActiveMembers: 64,
       newDiscussionPosts: 0,
@@ -139,6 +155,7 @@ CommunityModerationSummaryEmail.PreviewProps = {
       activeMemberRate: 0.09,
     },
   ],
+  remainingCommunityCount: 0,
 }
 
 async function renderCommunityModerationSummaryEmail(
@@ -146,48 +163,11 @@ async function renderCommunityModerationSummaryEmail(
 ): EmailRenderResultPromise {
   const locale = resolveEmailLocale(props.uiLocale, SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE)
   const t = emailCopy(locale, 'community-moderation-summary')
-  const dateVars = { date: props.generatedForDate }
-  const communitySummaries = props.communities.flatMap(community => [
-    community.name,
-    `${t('pendingPostReviews')}: ${community.pendingPostReviews}`,
-    `${t('pendingApplications')}: ${community.pendingApplications}`,
-    `${t('pendingReports')}: ${community.pendingReports}`,
-    `${t('escalatedItems')}: ${community.escalatedItems}`,
-    `${t('suspectedBanEvaders')}: ${community.suspectedBanEvaders}`,
-    t('activityHeading'),
-    `${t('memberChange')}: ${community.netMemberChange > 0 ? `+${community.netMemberChange}` : community.netMemberChange}`,
-    `${t('totalActiveMembers')}: ${community.totalActiveMembers}`,
-    `${t('newDiscussions')}: ${community.newDiscussionPosts}`,
-    `${t('newReviews')}: ${community.newReviewPosts}`,
-    `${t('newDataPoints')}: ${community.newDataPointPosts}`,
-    ...(community.topDiscussionTitle !== null
-      ? [
-          `${t('topDiscussion')}: ${community.topDiscussionTitle} (${t('topDiscussionReplies', { count: community.topDiscussionReplyCount })})`,
-        ]
-      : []),
-    `${t('activeMembers')}: ${community.activeMemberCount} (${Math.round(community.activeMemberRate * 100)}%)`,
-    `${t('itemButton')}: ${community.url}`,
-    '',
-  ])
-
   return renderTemplateEmail({
-    subject: t('subject', dateVars),
+    subject: t('subject', { date: props.generatedForDate }),
     element: <CommunityModerationSummaryEmail {...props} />,
     pretty: true,
-    text: [
-      emailOptional(t, 'greeting', props.userName),
-      '',
-      t('bodyText', dateVars),
-      '',
-      ...communitySummaries,
-      `${t('settings')}: ${props.settingsUrl}`,
-      '',
-      getLocalizedSignoff(locale),
-      '',
-      `${t('unsubscribe')}: ${props.unsubscribeUrl}`,
-      '',
-      props.physicalAddress,
-    ].join('\n'),
+    text: renderCommunityModerationSummaryText(props, t, locale),
   })
 }
 
