@@ -117,6 +117,7 @@ export async function runHostnameCrawlSweepScenarios(): Promise<void> {
 }
 
 registerScenarioContract('boilerplate-removal-hostname-batch', {
+  seededRows: { crawls: 3_100 },
   expectations: [
     {
       kind: 'usesIndexes',
