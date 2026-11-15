@@ -13,7 +13,7 @@ Repo-scoped Claude Code configuration. Each subdirectory is loaded by Claude Cod
 
 The approved workflow skills are portable plugin skills with thin Vouchington adapters, not copied
 implementations. No repository file declares a plugin or marketplace: vouchington-machines enables
-the `skills`, workflow, security-triage, and pr-shepherd plugins and registers the
+the `skills`, workflow, and pr-shepherd plugins and registers the
 `vouchington`, `jonathanong`, and `jonathanong-skills` marketplaces in each machine's user settings (`./configure-agents.sh`,
 then `./diagnose-agents.sh --repo <worktree>`). Claude prompts for the required trust/install consent
 on first use, and installs a newly enabled plugin in the background, so the first session after
@@ -24,11 +24,10 @@ claude plugin marketplace list
 claude plugin list
 claude plugin details skills@jonathanong-skills
 claude plugin details vouchington-workflow@vouchington
-claude plugin details security-triage@vouchington
 claude plugin details pr-shepherd@jonathanong
 ```
 
-The commands must show all three marketplaces and all four installed plugins. The machine declarations
+The commands must show all three marketplaces and all three installed plugins. The machine declarations
 are intentionally unversioned; marketplace updates resolve the current plugin manifest. If any
 entry is missing or reports a load error, rerun the machine configuration, or install by hand into
 user scope, never project scope, which would write a declaration into this repository:
@@ -39,7 +38,6 @@ claude plugin marketplace add jonathanong/pr-shepherd --scope user
 claude plugin marketplace add jonathanong/skills --scope user
 claude plugin install skills@jonathanong-skills --scope user
 claude plugin install vouchington-workflow@vouchington --scope user
-claude plugin install security-triage@vouchington --scope user
 claude plugin install pr-shepherd@jonathanong --scope user
 ```
 

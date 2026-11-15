@@ -112,7 +112,7 @@ onto `origin/main`; never run the non-stack form on a mid-stack branch.
 
 ## Close-out
 
-- Follow the Close-out section of `vouchington-workflow:agent-workflow`
+- Follow the "Hand-off" section of `vouchington-workflow:retrospective`
   rules for validation reporting, the hand-off retrospective, and the merge note. A stack's
   retrospective uses its top PR's number in `handoff-pr<number>`. Close out after shepherding
   reaches its terminal action, or after posting `/shepherd` when delegating to the triage loop.

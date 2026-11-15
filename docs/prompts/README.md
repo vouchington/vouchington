@@ -30,9 +30,8 @@ These templates are Vitest fixtures, not docs-only markdown, so changes under th
 
 ## Agent-Authored PR Feedback Loop
 
-PR-triage skills use the canonical
-[agent-authored PR creation feedback](../../.agents/skills/agent-workflow/code-review.md#agent-authored-pr-creation-feedback)
-rubric to turn evidence from generated PRs into improvements to their verified
+PR-triage skills use the agent-authored PR creation feedback rubric
+(`references/feedback.md` of `vouchington-workflow:triage-prs`) to turn evidence from generated PRs into improvements to their verified
 source prompt, producing skill, or shared workflow. `/triage-prs` automatically combines actionable,
 verified `docs/prompts/**` findings from its batch into one draft feedback PR with its plan stored outside Git;
 other sources keep the normal human disposition. Individual scheduled prompt bodies change only when

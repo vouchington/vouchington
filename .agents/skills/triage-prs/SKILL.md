@@ -28,9 +28,9 @@ parameters after reading it:
 - **Provider-PR handoff:** [triage-security](../triage-security/SKILL.md) applies its own
   ready-and-label check; this skill never accepts that handoff.
 - **Feedback source and rubric:** only exact paths in `docs/prompts/**` can be
-  changed by the bounded feedback flow. Apply
-  [agent-authored PR creation feedback](../agent-workflow/code-review.md#agent-authored-pr-creation-feedback)
-  and persist results through [retrospective](../retrospective/SKILL.md).
+  changed by the bounded feedback flow. Apply the
+  agent-authored PR creation feedback procedure in `references/feedback.md` of
+  `vouchington-workflow:triage-prs` and persist results through [retrospective](../retrospective/SKILL.md).
   A feedback PR carries `<!-- pr-creation-feedback-origin: triage-prs -->`.
 - **Merge authority:** follow [Git and PRs](../agent-workflow/git-and-prs.md)
   and [merge authority](../../../docs/development/merge-authority.md).

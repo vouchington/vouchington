@@ -1,5 +1,5 @@
-import { lstatSync, readFileSync, readlinkSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { lstatSync, readdirSync, readFileSync, readlinkSync } from 'node:fs'
+import { relative, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const repoRoot = resolve(import.meta.dirname, '../../..')
@@ -53,7 +53,26 @@ const UPSTREAM_ADAPTERS: Record<string, string> = {
   'web-vitest-test-authoring': 'skills:test-authoring',
 }
 
+const MOVED_TOOLING_SKILLS =
+  /vouchington-workflow:(agent-workflow|git-commit-checklist|github-issue|planning|review-ci-logs|revisit-followups|github-actions-checklist)\b/
+
+function markdownFiles(dir: string): string[] {
+  return readdirSync(dir, { recursive: true, withFileTypes: true })
+    .filter(entry => entry.isFile() && entry.name.endsWith('.md'))
+    .map(entry => resolve(entry.parentPath, entry.name))
+}
+
 describe('Vouchington workflow skill adapters', () => {
+  it('names no tooling skill that moved to the skills plugin', () => {
+    const offenders = ['.agents', '.claude', '.codex', 'docs']
+      .flatMap(dir => markdownFiles(resolve(repoRoot, dir)))
+      .filter(file => !file.includes('/node_modules/'))
+      .filter(file => MOVED_TOOLING_SKILLS.test(readFileSync(file, 'utf8')))
+      .map(file => relative(repoRoot, file))
+
+    expect(offenders).toEqual([])
+  })
+
   it.each(Object.entries(UPSTREAM_ADAPTERS))(
     '%s names its canonical plugin skill and no node_modules fallback',
     (name, canonical) => {
