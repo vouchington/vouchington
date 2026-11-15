@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { read } from '@data-stores/psql'
+import { MODERATOR_CONFIGS } from '@voucha/types/entities/moderator-configs'
 import { searchPostModerationsByPostIds } from '@services/moderation/search-post-moderations'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
@@ -12,6 +13,8 @@ export async function runPostModerationHistoryPageScenarios(): Promise<void> {
   await seedPostModerationHistoryPage(postIds[0]!)
   let walkedIds: string[] = []
   registerScenarioContract('post-moderation-history-page', {
+    // The moderator slug join reads the whole migration-seeded moderator catalog.
+    seededRows: { moderator_agents: MODERATOR_CONFIGS.length },
     forbidSequentialScans: ['agent_moderations'],
     expectations: [],
   })

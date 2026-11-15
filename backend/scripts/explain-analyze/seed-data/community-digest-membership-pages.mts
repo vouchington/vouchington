@@ -27,8 +27,9 @@ export async function withArchivedDigestMemberships<T>(
        WHERE id = ANY($1::uuid[])`,
       [communityIds, seedUuid(0, '01')],
     )
-    await write(`/* analyzeDigestMembershipPage */
-      ANALYZE community_members, communities, users, user_suspensions`)
+    // Only communities changes. Re-analyzing untouched tables replaces seed-time statistics:
+    // the empty user_suspensions estimate then flips later moderation-recipient plans to a Sort.
+    await write('/* analyzeArchivedDigestCommunities */ ANALYZE communities')
     return await run(communityIds)
   } finally {
     await write(
