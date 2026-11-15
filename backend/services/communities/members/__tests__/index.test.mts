@@ -75,6 +75,12 @@ describe('index', () => {
         invitedById: owner.id,
         invitedUserId: user.id,
       })
+      const revoked = await insertTestCommunityInvite({
+        communityId: publicCommunity.id,
+        invitedById: owner.id,
+        invitedEmail: secondaryEmail,
+      })
+      await revokeInvite(owner.id, revoked.id)
       const byEmail = await insertTestCommunityInvite({
         communityId: publicCommunity.id,
         invitedById: owner.id,
@@ -83,14 +89,8 @@ describe('index', () => {
       const secondByEmail = await insertTestCommunityInvite({
         communityId: publicCommunity.id,
         invitedById: owner.id,
-        invitedEmail: secondaryEmail,
+        invitedEmail: user.email_address!,
       })
-      const revoked = await insertTestCommunityInvite({
-        communityId: publicCommunity.id,
-        invitedById: owner.id,
-        invitedEmail: secondaryEmail,
-      })
-      await revokeInvite(owner.id, revoked.id)
       const otherCommunity = await insertTestCommunity({ createdById: owner.id })
       const unrelated = await insertTestCommunityInvite({
         communityId: otherCommunity.id,

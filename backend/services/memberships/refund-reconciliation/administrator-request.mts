@@ -1,14 +1,11 @@
 import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
-import {
-  assertLocalStripeRefundCapacity,
-  resolveStripeRefundChargeId,
-} from '../refund-issuance.mts'
+import { resolveStripeRefundChargeId } from '../refund-issuance.mts'
+import { getLockedAdministratorRefundOperation } from './administrator-request-operation.mts'
 import type { AdministratorRefundRequest } from './types.mts'
 import {
   assertAdministratorRefundRequestMatches,
-  type AdministratorRefundOperation,
   type AdministratorRefundRequestRow,
 } from './administrator-request-matching.mts'
 export type { AdministratorRefundRequestRow } from './administrator-request-matching.mts'
@@ -16,22 +13,7 @@ export type { AdministratorRefundRequestRow } from './administrator-request-matc
 export async function claimAdministratorRefundRequest(
   request: AdministratorRefundRequest,
 ): Promise<{ id: string; completed: boolean }> {
-  try {
-    return await claimAdministratorRefundRequestInTransaction(request)
-  } catch (err) {
-    if (typeof err === 'object' && err !== null && 'code' in err && err.code === '40001')
-      throw createHttpError(409, 'Concurrent refund request', {
-        code: 'MEMBERSHIP_REFUND_CONFLICT',
-        cause: err,
-      })
-    throw err
-  }
-}
-
-async function claimAdministratorRefundRequestInTransaction(
-  request: AdministratorRefundRequest,
-): Promise<{ id: string; completed: boolean }> {
-  await using query = await beginTransaction({ serializable: true })
+  await using query = await beginTransaction()
   const existingRequest = await getAdministratorRefundRequestForMembershipKey(
     request.idempotencyKey,
     request.membershipId,
@@ -72,12 +54,10 @@ async function claimAdministratorRefundRequestInTransaction(
   if (!operation)
     throw new Error('Administrator refund membership source has no active provider binding')
 
-  const { rows: contexts } = await query<{
-    id: string
-    charge_id: string
-  }>(sql`/* claimAdministratorRefundRequest: target context */
-    SELECT membership_provider_context_id AS id, provider_charge_id AS charge_id FROM membership_operations WHERE id = ${operation.id}`)
-  await assertLocalStripeRefundCapacity(contexts[0]!.id, contexts[0]!.charge_id, query)
+  if (operation.refundLimitReached)
+    throw createHttpError(409, 'Local Stripe refund issuance limit reached', {
+      code: 'MEMBERSHIP_REFUND_LIMIT_REACHED',
+    })
 
   const { rows: insertedRequests } =
     await query<AdministratorRefundRequestRow>(sql`/* claimAdministratorRefundRequest:request */
@@ -114,29 +94,7 @@ async function claimAdministratorRefundRequestInTransaction(
   if (!savedRequest) throw new Error('Administrator refund request was not persisted')
   assertAdministratorRefundRequestMatches(savedRequest, request)
   await query.commit()
-  return operation
-}
-
-async function getLockedAdministratorRefundOperation(
-  idempotencyKey: string,
-  membershipId: string,
-  query: QueryExecutor,
-): Promise<AdministratorRefundOperation | null> {
-  const { rows } = await query(sql`/* getLockedAdministratorRefundOperation */
-    SELECT operation.id, operation.completed_at IS NOT NULL AS completed
-    FROM memberships membership
-    INNER JOIN membership_operations operation
-      ON operation.membership_source_id = membership.membership_source_id
-    INNER JOIN membership_sources source ON source.id = operation.membership_source_id
-    INNER JOIN membership_provider_lineages lineage
-      ON lineage.id = operation.membership_provider_lineage_id
-    WHERE membership.id = ${membershipId}
-      AND operation.operation_kind = 'administrator_refund'
-      AND operation.idempotency_key = ${idempotencyKey}
-      AND source.membership_provider_lineage_id = lineage.id
-      AND operation.membership_provider_lineage_id = lineage.id
-  `)
-  return (rows[0] as AdministratorRefundOperation | undefined) ?? null
+  return { id: operation.id, completed: operation.completed }
 }
 
 export async function getAdministratorRefundRequestByKey(

@@ -3,10 +3,11 @@ import { recordRefundRequestRejection } from './refund-request-rejection.mts'
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as stripeDisputes from '@modules/stripe/disputes'
-import { createTestSku } from '@voucha/test-helpers'
+import { beginTransaction, createTestSku } from '@voucha/test-helpers'
 import { createTestAdministratorRefundRequest } from '@voucha/test-helpers/membership-administrator-refund-request'
 import { getMembershipRefundEventFixtureForTest } from '@voucha/test-helpers/entities/membership-refund-reconciliation-state'
 import { claimTestIneligiblePurchaseReversalOperations } from '@voucha/test-helpers/membership-reversal-case-fixtures'
+import { getLockedAdministratorRefundOperation } from './refund-reconciliation/administrator-request-operation.mts'
 import { claimAdministratorRefundRequest } from './refund-reconciliation/administrator-request.mts'
 import { recordMembershipRefundEvent } from './refunds/index.mts'
 import {
@@ -27,15 +28,15 @@ describe('local Stripe refund issuance capacity', () => {
     const request = await createTestAdministratorRefundRequest({
       providerApplicationId: applicationId,
     })
+    let firstRequest
     let firstLease
     let metadataAttempt
     let metadataLease
     let firstAttempt
     for (let index = 0; index < MAX_LOCAL_STRIPE_REFUND_ISSUANCES_PER_CHARGE - 1; index++) {
-      const operation = await claimAdministratorRefundRequest({
-        ...request,
-        idempotencyKey: `refund-cap-${randomUUID()}`,
-      })
+      const scopedRequest = { ...request, idempotencyKey: `refund-cap-${randomUUID()}` }
+      const operation = await claimAdministratorRefundRequest(scopedRequest)
+      firstRequest ??= scopedRequest
       const lease = await leaseDueRefundReconciliation(operation.id)
       if (!lease) throw new Error('Expected a pending refund operation')
       const attempt = await recordRefundReconciliationAttempt(
@@ -129,6 +130,27 @@ describe('local Stripe refund issuance capacity', () => {
     await expect(
       recordRefundReconciliationAttempt(firstLease!, firstAttempt!.providerIdempotencyKey),
     ).resolves.toEqual(firstAttempt)
+    {
+      await using query = await beginTransaction()
+      await expect(
+        getLockedAdministratorRefundOperation(
+          firstRequest!.idempotencyKey,
+          firstRequest!.membershipId,
+          query,
+        ),
+      ).resolves.toMatchObject({
+        id: firstLease!.id,
+        refundLimitReached: false,
+      })
+    }
+    const replays = await Promise.all([
+      claimAdministratorRefundRequest(firstRequest!),
+      claimAdministratorRefundRequest(firstRequest!),
+    ])
+    expect(replays.map(replay => replay.id)).toEqual([firstLease!.id, firstLease!.id])
+    await expect(
+      claimAdministratorRefundRequest({ ...firstRequest!, note: 'Changed replay body' }),
+    ).rejects.toMatchObject({ statusCode: 409 })
     await recordRefundRequestRejection(firstAttempt!.id, rejectedRequest)
     await expect(
       claimAdministratorRefundRequest({ ...request, idempotencyKey: `eleventh-${randomUUID()}` }),

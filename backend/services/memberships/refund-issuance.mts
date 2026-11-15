@@ -15,66 +15,57 @@ export async function recordRefundReconciliationAttempt(
   lease: { id: string; leaseToken: string | null; attemptOrdinal?: number },
   providerIdempotencyKey: string,
 ): Promise<RefundReconciliationAttempt> {
-  try {
-    await using query = await beginTransaction({ serializable: true })
-    const existing = await getExistingAttempt(lease.id, providerIdempotencyKey, query)
-    if (existing && !existing.rejectedAt) {
-      if (!existing.providerRefundId)
-        await query(sql`/* recordRefundReconciliationAttempt: unresolved replay */
-          UPDATE membership_refund_operation_attempts SET outcome_unknown_at = ${new Date()}
-          WHERE id = ${existing.id} AND outcome_unknown_at IS NULL AND rejected_at IS NULL AND provider_refund_id IS NULL`)
-      await query.commit()
-      return mapAttempt(existing)
-    }
-    const admittedAt = new Date()
-    const { rows: targets } = await query<{
-      context_id: string
-      payment_reference: string
-    }>(sql`/* recordRefundReconciliationAttempt: target */
-      SELECT operation.membership_provider_context_id AS context_id,
-        operation.provider_charge_id AS payment_reference
-      FROM membership_operations operation
-      INNER JOIN membership_operation_execution_work_items work ON work.membership_operation_id = operation.id
-      WHERE operation.id = ${lease.id} AND operation.completed_at IS NULL
-        AND work.lease_token = ${lease.leaseToken} AND work.lease_expires_at > ${admittedAt}
-        AND operation.provider_charge_id IS NOT NULL`)
-    const target = targets[0]
-    if (!target)
-      throw createHttpError(409, 'Refund operation is no longer executable', {
-        code: 'MEMBERSHIP_REFUND_CONFLICT',
-      })
-    await assertLocalStripeRefundCapacity(target.context_id, target.payment_reference, query)
-    if (lease.attemptOrdinal === undefined || existing?.rejectedAt)
-      await query(sql`/* recordRefundReconciliationAttempt: automatic attempt ordinal */
-        UPDATE membership_operations SET reconciliation_attempt_ordinal = reconciliation_attempt_ordinal + 1
-        WHERE id = ${lease.id}`)
-    const { rows } =
-      await query<ReconciliationAttemptRow>(sql`/* recordRefundReconciliationAttempt: attempt */
-      INSERT INTO membership_refund_operation_attempts (
-        membership_operation_id, membership_provider_context_id, attempt_ordinal,
-        provider_idempotency_key, provider_request_original_attempt_id, amount_minor_units, currency_code
-      ) SELECT operation.id, operation.membership_provider_context_id, operation.reconciliation_attempt_ordinal,
-        ${providerIdempotencyKey}, ${existing ? (existing.providerRequestOriginalAttemptId ?? existing.id) : null}::uuid, COALESCE(${existing?.amountMinorUnits ?? null}::bigint, operation.remaining_refundable_minor_units), operation.currency_code
-      FROM membership_operations operation
-      WHERE operation.id = ${lease.id}
-        AND (${existing?.rejectedAt ? null : (lease.attemptOrdinal ?? null)}::integer IS NULL OR operation.reconciliation_attempt_ordinal = ${existing?.rejectedAt ? null : (lease.attemptOrdinal ?? null)})
-      RETURNING id, provider_request_original_attempt_id AS "providerRequestOriginalAttemptId", rejected_at AS "rejectedAt", membership_operation_id AS "membershipOperationId", attempt_ordinal AS "attemptOrdinal",
-        provider_idempotency_key AS "providerIdempotencyKey", provider_refund_id AS "providerRefundId",
-        amount_minor_units::text AS "amountMinorUnits", currency_code AS currency`)
-    if (!rows[0])
-      throw createHttpError(409, 'Refund operation attempt changed', {
-        code: 'MEMBERSHIP_REFUND_CONFLICT',
-      })
+  await using query = await beginTransaction()
+  const existing = await getExistingAttempt(lease.id, providerIdempotencyKey, query)
+  if (existing && !existing.rejectedAt) {
+    if (!existing.providerRefundId)
+      await query(sql`/* recordRefundReconciliationAttempt: unresolved replay */
+        UPDATE membership_refund_operation_attempts SET outcome_unknown_at = ${new Date()}
+        WHERE id = ${existing.id} AND outcome_unknown_at IS NULL AND rejected_at IS NULL AND provider_refund_id IS NULL`)
     await query.commit()
-    return mapAttempt(rows[0])
-  } catch (err) {
-    if (typeof err === 'object' && err !== null && 'code' in err && err.code === '40001')
-      throw createHttpError(409, 'Concurrent refund issuance', {
-        code: 'MEMBERSHIP_REFUND_CONFLICT',
-        cause: err,
-      })
-    throw err
+    return mapAttempt(existing)
   }
+  const admittedAt = new Date()
+  const { rows: targets } = await query<{
+    context_id: string
+    payment_reference: string
+  }>(sql`/* recordRefundReconciliationAttempt: target */
+    SELECT operation.membership_provider_context_id AS context_id,
+      operation.provider_charge_id AS payment_reference
+    FROM membership_operations operation
+    INNER JOIN membership_operation_execution_work_items work ON work.membership_operation_id = operation.id
+    WHERE operation.id = ${lease.id} AND operation.completed_at IS NULL
+      AND work.lease_token = ${lease.leaseToken} AND work.lease_expires_at > ${admittedAt}
+      AND operation.provider_charge_id IS NOT NULL`)
+  const target = targets[0]
+  if (!target)
+    throw createHttpError(409, 'Refund operation is no longer executable', {
+      code: 'MEMBERSHIP_REFUND_CONFLICT',
+    })
+  await assertLocalStripeRefundCapacity(target.context_id, target.payment_reference, query)
+  if (lease.attemptOrdinal === undefined || existing?.rejectedAt)
+    await query(sql`/* recordRefundReconciliationAttempt: automatic attempt ordinal */
+      UPDATE membership_operations SET reconciliation_attempt_ordinal = reconciliation_attempt_ordinal + 1
+      WHERE id = ${lease.id}`)
+  const { rows } =
+    await query<ReconciliationAttemptRow>(sql`/* recordRefundReconciliationAttempt: attempt */
+    INSERT INTO membership_refund_operation_attempts (
+      membership_operation_id, membership_provider_context_id, attempt_ordinal,
+      provider_idempotency_key, provider_request_original_attempt_id, amount_minor_units, currency_code
+    ) SELECT operation.id, operation.membership_provider_context_id, operation.reconciliation_attempt_ordinal,
+      ${providerIdempotencyKey}, ${existing ? (existing.providerRequestOriginalAttemptId ?? existing.id) : null}::uuid, COALESCE(${existing?.amountMinorUnits ?? null}::bigint, operation.remaining_refundable_minor_units), operation.currency_code
+    FROM membership_operations operation
+    WHERE operation.id = ${lease.id}
+      AND (${existing?.rejectedAt ? null : (lease.attemptOrdinal ?? null)}::integer IS NULL OR operation.reconciliation_attempt_ordinal = ${existing?.rejectedAt ? null : (lease.attemptOrdinal ?? null)})
+    RETURNING id, provider_request_original_attempt_id AS "providerRequestOriginalAttemptId", rejected_at AS "rejectedAt", membership_operation_id AS "membershipOperationId", attempt_ordinal AS "attemptOrdinal",
+      provider_idempotency_key AS "providerIdempotencyKey", provider_refund_id AS "providerRefundId",
+      amount_minor_units::text AS "amountMinorUnits", currency_code AS currency`)
+  if (!rows[0])
+    throw createHttpError(409, 'Refund operation attempt changed', {
+      code: 'MEMBERSHIP_REFUND_CONFLICT',
+    })
+  await query.commit()
+  return mapAttempt(rows[0])
 }
 
 export async function assertLocalStripeRefundCapacity(

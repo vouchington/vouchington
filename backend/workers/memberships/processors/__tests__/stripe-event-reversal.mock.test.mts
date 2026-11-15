@@ -1,3 +1,4 @@
+import { replayStripePaymentIntentCharges } from '@voucha/test-helpers/stripe-payment-intent-replay'
 import { claimTestIneligiblePurchaseReversalOperations } from '@voucha/test-helpers/membership-reversal-case-fixtures'
 import { randomUUID } from 'node:crypto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -188,6 +189,7 @@ describe('processStripeEvent InvoicePayment reversal reconciliation', () => {
     const subscriptionId = `sub_dispute_recovery_${randomUUID()}`
     const invoiceId = `in_dispute_recovery_${randomUUID()}`
     const chargeId = `ch_dispute_recovery_${randomUUID()}`
+    replayStripePaymentIntentCharges([{ paymentIntentId: 'pi_dispute_recovery', chargeId }])
     const claim = (await claimTestIneligiblePurchaseReversalOperations(
       {
         effectiveAt: undefined,

@@ -301,8 +301,11 @@ FOR EACH ROW EXECUTE FUNCTION fn_update_media_delivery_registry_generation();
 COMMENT ON COLUMN media_delivery_registry_records.generation IS
   'Database-assigned, nontransactional monotonic edge authority generation. It advances for a new record, effective desired-state change, or explicit republish, so a rolled-back prepublication cannot be reused.';
 
+-- Repair ownership probes constrain the image and the already bounded registry keys.
 CREATE INDEX idx_media_delivery_registry_records__image
-  ON media_delivery_registry_records (image_id);
+  ON media_delivery_registry_records (image_id, id);
+COMMENT ON INDEX idx_media_delivery_registry_records__image IS
+  'Serves image ownership lookups within the bounded registry keys selected for repair.';
 
 CREATE TRIGGER trigger_media_delivery_registry_records_updated_at
 BEFORE UPDATE ON media_delivery_registry_records

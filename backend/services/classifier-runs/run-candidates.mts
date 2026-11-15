@@ -25,12 +25,10 @@ export async function insertClassifierRunCandidates(
 export async function readClassifierRunCandidateTopicIds(
   query: QueryExecutor,
   runId: string,
-  limit: number | null,
 ): Promise<string[]> {
   const { rows } = await query<{ topic_id: string }>(sql`/* readClassifierRunCandidateTopicIds */
     SELECT topic_id FROM classifier_run_candidates
     WHERE run_id = ${runId} AND topic_id IS NOT NULL ORDER BY ordinal
-    LIMIT ${limit}
   `)
   return rows.map(row => row.topic_id)
 }

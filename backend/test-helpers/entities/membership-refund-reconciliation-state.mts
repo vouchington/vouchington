@@ -140,3 +140,16 @@ export async function ageRefundReconciliationLeaseForTest(operationId: string): 
     SET leased_at = clock_timestamp() - INTERVAL '6 minutes', lease_expires_at = clock_timestamp() - INTERVAL '1 minute'
     WHERE membership_operation_id = ${operationId}`)
 }
+
+export async function getRefundAttemptSnapshotForTest(attemptId: string) {
+  const { rows } = await read<{
+    amountMinorUnits: string
+    providerIdempotencyKey: string
+    providerRequestOriginalAttemptId: string | null
+    rejectedAt: Date | null
+  }>(sql`/* getRefundAttemptSnapshotForTest */
+    SELECT amount_minor_units::text AS "amountMinorUnits", provider_idempotency_key AS "providerIdempotencyKey",
+      provider_request_original_attempt_id AS "providerRequestOriginalAttemptId", rejected_at AS "rejectedAt"
+    FROM membership_refund_operation_attempts WHERE id = ${attemptId}`)
+  return rows[0]
+}

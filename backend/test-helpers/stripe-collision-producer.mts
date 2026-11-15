@@ -1,3 +1,4 @@
+import { createStripeRefundSdkMock } from './stripe-refund-sdk-mock.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { recordIneligibleStripePurchaseCollisionWork } from '../services/memberships/ineligible-stripe-purchase-reversal/collision-work.mts'
 import { randomUUID } from 'node:crypto'
@@ -54,7 +55,10 @@ export async function setupStripeCollisionProducer(
   const invoicesList = vi
     .fn<VitestLooseMock>()
     .mockResolvedValue({ data: history ? [oldInvoice, invoice] : [invoice], has_more: false })
+  const refundSdk = createStripeRefundSdkMock(createRefund)
   vi.spyOn(stripeClient, 'getStripeClient').mockReturnValue({
+    on: refundSdk.on,
+    off: refundSdk.off,
     invoices: {
       list: invoicesList,
       listLineItems: vi.fn<VitestLooseMock>().mockImplementation(async id => ({
@@ -64,7 +68,7 @@ export async function setupStripeCollisionProducer(
     },
     refunds: {
       list: vi.fn<VitestLooseMock>().mockResolvedValue({ data: [], has_more: false }),
-      create: createRefund,
+      create: refundSdk.create,
     },
     disputes: { list: vi.fn<VitestLooseMock>().mockResolvedValue({ data: [], has_more: false }) },
     subscriptions: { cancel },
