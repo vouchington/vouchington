@@ -13,23 +13,38 @@ export async function reconcileRssFeedItemCategorySnapshots(
   snapshots: readonly RssFeedItemCategorySnapshot[],
 ): Promise<{ changedItemIds: string[]; hasMore: boolean }> {
   if (snapshots.length === 0) return { changedItemIds: [], hasMore: false }
-  await using query = await beginTransaction()
-  const { staleCategories, hasMore } = await deleteStaleCategoriesAndRetractVotes(snapshots, query)
-  const targets = await getCategoryRelationTargetsForItems(query, snapshots, staleCategories)
-  const updatedTargets = await updateEntityRelationElectionVoteStatsFromPrimaryBatch(targets, {
-    query,
-    invalidateCache: false,
-    enqueueTopHashtagRefresh: false,
-  })
-  await query.commit()
+  const { updatedTargets, ...result } = await commitCategorySnapshotReconciliation(snapshots)
   await publishEntityRelationElectionVoteStats(updatedTargets, { enqueueTopHashtagRefresh: false })
+  return result
+}
+
+async function commitCategorySnapshotReconciliation(
+  snapshots: readonly RssFeedItemCategorySnapshot[],
+) {
+  await using query = await beginTransaction()
+  const result = await persistCategorySnapshotReconciliation(query, snapshots)
+  await query.commit()
+  return result
+}
+
+async function persistCategorySnapshotReconciliation(
+  query: TransactionQuery,
+  snapshots: readonly RssFeedItemCategorySnapshot[],
+) {
+  const { staleCategories, hasMore } = await deleteStaleCategoriesAndRetractVotes(snapshots, query)
+  const updatedTargets = await refreshCategoryRelationVoteStatsForItems(
+    query,
+    snapshots,
+    staleCategories,
+  )
   return {
+    updatedTargets,
     hasMore,
     changedItemIds: [...new Set(staleCategories.map(category => category.rss_feed_item_id))],
   }
 }
 
-async function getCategoryRelationTargetsForItems(
+async function refreshCategoryRelationVoteStatsForItems(
   query: TransactionQuery,
   snapshots: readonly RssFeedItemCategorySnapshot[],
   staleCategories: readonly StaleCategory[],
@@ -63,7 +78,12 @@ async function getCategoryRelationTargetsForItems(
       staleCategories.map(category => category.topic_alias_id),
     ],
   )
-  return [...new Map(rows.map(row => [row.id, row])).values()].map(row =>
+  const targets = [...new Map(rows.map(row => [row.id, row])).values()].map(row =>
     createEntityRelationElectionTarget(row.id, row.entity_relation),
   )
+  return updateEntityRelationElectionVoteStatsFromPrimaryBatch(targets, {
+    query,
+    invalidateCache: false,
+    enqueueTopHashtagRefresh: false,
+  })
 }
