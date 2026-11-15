@@ -431,6 +431,13 @@
 - `blocked`
 - `failed`
 
+## `copyright_notice_ai_run_statuses`
+
+- `active`
+- `succeeded`
+- `failed`
+- `expired`
+
 ## `copyright_notice_appeal_recommendation_outcomes`
 
 - `confirm`
