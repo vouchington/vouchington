@@ -10,8 +10,9 @@ export function interceptPostgresTransactionsForTest(
   wrap: (transaction: Awaited<ReturnType<typeof psql.beginTransaction>>) => QueryExecutor,
   once = false,
 ): () => void {
-  const realBegin = psql.beginTransaction
-  const spy = vi.spyOn(psql, 'beginTransaction')
+  // Intercept before the application wrapper registers transaction ownership for commit actions.
+  const realBegin = psql.psql.beginTransaction
+  const spy = vi.spyOn(psql.psql, 'beginTransaction')
   const intercept = async (options?: Parameters<typeof realBegin>[0]) =>
     wrap(await realBegin(options)) as Awaited<ReturnType<typeof realBegin>>
   if (once) spy.mockImplementationOnce(intercept)

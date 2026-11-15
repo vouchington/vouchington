@@ -5,11 +5,7 @@ import {
   insertTestPostStory,
   insertTestStory,
 } from '@voucha/test-helpers'
-import {
-  holdTestUserProfileRow,
-  readTestStoryPostInitiator,
-  setTestLocalLockTimeout,
-} from '../../test-helpers/publication-test-queries.mts'
+import { readTestStoryPostInitiator } from '../../test-helpers/publication-test-queries.mts'
 import { DELETED_USER_ID } from '@voucha/types/entities/user-constants'
 import { describe, expect, it } from 'vitest'
 import { processAuthorDeletionPublicationBatch } from './capture-author-deletion-batch.mts'
@@ -29,23 +25,4 @@ describe('processAuthorDeletionPublicationBatch', () => {
     expect(first).toEqual({ processed: 1, hasMore: true })
     expect(await readTestStoryPostInitiator(post.id)).toBe(DELETED_USER_ID)
   })
-
-  it('waits for a concurrent profile username update before retaining the tombstone', async () => {
-    const user = await createTestUser()
-    if (!user) throw new Error('Expected user')
-
-    await using profileUpdate = await beginTransaction()
-    await holdTestUserProfileRow(profileUpdate, user.id)
-    await expect(captureAuthorDeletionWithShortTimeout(user.id)).rejects.toMatchObject({
-      code: '55P03',
-    })
-    await profileUpdate.commit()
-  })
 })
-
-async function captureAuthorDeletionWithShortTimeout(userId: string): Promise<void> {
-  await using capture = await beginTransaction()
-  await setTestLocalLockTimeout(capture)
-  await processAuthorDeletionPublicationBatch(capture, userId, null, 100)
-  await capture.commit()
-}

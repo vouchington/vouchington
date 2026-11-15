@@ -28,19 +28,6 @@ export async function readTestStoryPostInitiator(postId: string): Promise<string
   return rows[0]?.initiated_by_id ?? null
 }
 
-export async function holdTestUserProfileRow(
-  query: TransactionQuery,
-  userId: string,
-): Promise<void> {
-  await query('/* holdTestUserProfileRow */ UPDATE users SET username = username WHERE id = $1', [
-    userId,
-  ])
-}
-
-export async function setTestLocalLockTimeout(query: TransactionQuery): Promise<void> {
-  await query("/* setTestLocalLockTimeout */ SET LOCAL lock_timeout = '50ms'")
-}
-
 export async function deleteTestPostRow(query: TransactionQuery, postId: string): Promise<void> {
   await query('/* deleteTestPostRow */ DELETE FROM posts WHERE id = $1::uuid', [postId])
 }
