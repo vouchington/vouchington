@@ -54,6 +54,7 @@ export function EmailManager({ initialData, initialEmailAddresses }: Props) {
     } catch (err) {
       onError(err, {
         fallback: t('extracted.my.emailManager.failedToSendVerificationCode_6401f8f4'),
+        displayMessageByCode: { EMAIL_ADDRESS_LIMIT_REACHED: t('settings.emailLimit') },
         tags: { form: 'my-email-add' },
       })
     } finally {
@@ -78,6 +79,7 @@ export function EmailManager({ initialData, initialEmailAddresses }: Props) {
     } catch (err) {
       onError(err, {
         fallback: t('extracted.my.emailManager.invalidOrExpiredVerificationCode_9b5b98fe'),
+        displayMessageByCode: { EMAIL_ADDRESS_LIMIT_REACHED: t('settings.emailLimit') },
         tags: { form: 'my-email-verify' },
       })
     } finally {

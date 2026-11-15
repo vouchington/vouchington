@@ -61,7 +61,7 @@ export async function getMatchedChargeRefundedReceiptForTest(options: {
         AND operation.operation_kind = 'administrator_refund' AND attempt.amount_minor_units = receipt.amount_minor_units
         AND attempt.currency_code::text = receipt.currency_code AND request.amount_minor_units = receipt.amount_minor_units
         AND request.currency_code::text = receipt.currency_code
-        AND request.provider_payment_reference IN (receipt.stripe_charge_id, receipt.stripe_payment_intent_id)) AS "contextMatches",
+        AND operation.provider_payment_reference IN (receipt.stripe_charge_id, receipt.stripe_payment_intent_id)) AS "contextMatches",
       (SELECT COUNT(*)::TEXT FROM membership_refunds WHERE stripe_refund_id = ${options.refundId}) AS "receiptCount"
     FROM membership_refund_operation_attempts attempt
     INNER JOIN membership_operations operation ON operation.id = attempt.membership_operation_id

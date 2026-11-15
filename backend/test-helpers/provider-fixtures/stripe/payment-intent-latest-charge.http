@@ -1,0 +1,6 @@
+HTTP/1.1 200 OK
+content-type: application/json
+request-id: req_replay_payment_intent
+stripe-version: 2026-09-30.endive
+
+{"id":"PAYMENT_INTENT_ID","object":"payment_intent","latest_charge":"CHARGE_ID"}

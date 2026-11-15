@@ -52,7 +52,8 @@ export async function redeemInviteCode(
   await assertCommunityMembershipCapacity(currentUserId, found.community_id, options)
 
   // Accepting the invite and adding the member are one statement: the member row is derived from
-  // the invite row this statement accepted, so a lost race inserts nothing and fails the count.
+  // the invite row this statement accepted. Recheck the code because reinviting rotates it on
+  // the same row; a lost race inserts nothing and fails the count.
   const { rows: acceptRows } = await writeCommunityMembershipMutation(
     sql`/* redeemInviteCode:accept */
     WITH accepted AS (
@@ -60,6 +61,7 @@ export async function redeemInviteCode(
       SET accepted_at = CURRENT_TIMESTAMP,
           accepted_by_id = ${currentUserId}
       WHERE id = ${found.id}
+        AND code_hash = ${codeHash}
         AND accepted_at IS NULL
         AND declined_at IS NULL
         AND revoked_at IS NULL

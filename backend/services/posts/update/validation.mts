@@ -10,7 +10,7 @@ import { createCodedError } from '@vouchington/sentry'
 import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
 import { isPlatformAccount } from '@services/users'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
-import { assertWithinTagAddLimit } from '@services/tag-limits'
+import { assertWithinTagAddLimit, assertManualCategoryInputLimit } from '@services/tag-limits'
 import type { ContributionLimitMembershipPlan } from '@services/contribution-gating/limit-types'
 import { validatePostCategories } from '../create/validation.mts'
 import { getPostHashtagKeys, getRetainedPostCategories } from '../hashtags.mts'
@@ -56,6 +56,7 @@ export function assertPostUpdatePreflight(
   hashtagIntent = false,
 ): void {
   assert(currentUserCanUpdatePost(creator, post), 403, 'Forbidden')
+  if (Array.isArray(changes.categories)) assertManualCategoryInputLimit(changes.categories.length)
   if (changes.ai_summary_markdown !== undefined) {
     assert(
       creator.roles.includes('administrator'),

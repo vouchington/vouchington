@@ -80,6 +80,10 @@ export async function createInvite(
     sql`/* createInvite */
     INSERT INTO community_invites (community_id, code_hash, invited_user_id, invited_email, invited_by_id)
     VALUES (${communityId}, ${codeHash}, ${invitedUserId}, ${invitedEmail}, ${currentUserId})
+    ON CONFLICT (community_id, invited_email)
+      WHERE accepted_at IS NULL AND declined_at IS NULL AND revoked_at IS NULL
+        AND invited_email IS NOT NULL
+    DO UPDATE SET code_hash = EXCLUDED.code_hash, invited_by_id = EXCLUDED.invited_by_id
     RETURNING 'community_invite'::text AS __entity_type,
       id, community_id, invited_user_id, invited_email, invited_by_id,
       accepted_at, accepted_by_id, declined_at, revoked_at, created_at

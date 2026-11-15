@@ -19,19 +19,20 @@ describe('dynamic-config-admin registry completeness', () => {
     }
   })
 
-  it('documents a maximum or exemption for every admin-exposed numeric field', () => {
+  it('defines a finite maximum above the default for every admin-exposed numeric field', () => {
     const missingMaxPolicy: string[] = []
 
     for (const entry of dynamicConfigRegistry.entries) {
       for (const [name, rawType] of Object.entries(entry.config.fieldTypes)) {
         if (rawType !== 'number') continue
-        const fields = entry.fields as Record<
-          string,
-          { maxValue?: number; maxValueExemption?: string } | undefined
-        >
+        const fields = entry.fields as Record<string, { maxValue?: number } | undefined>
         const metadata = fields[name]
-        if (metadata?.maxValue !== undefined) continue
-        if (metadata?.maxValueExemption?.trim()) continue
+        if (
+          typeof metadata?.maxValue === 'number' &&
+          Number.isFinite(metadata.maxValue) &&
+          Number(entry.config.defaultFields[name]) <= metadata.maxValue
+        )
+          continue
         missingMaxPolicy.push(`${entry.namespace}.${name}`)
       }
     }
@@ -60,7 +61,6 @@ function expectFieldMetadata(entry: DynamicConfigRegistryEntry): void {
       !entry.validate &&
       fieldMetadata?.minValue === undefined &&
       fieldMetadata?.maxValue === undefined &&
-      fieldMetadata?.maxValueExemption === undefined &&
       fieldMetadata?.integer !== true
     ) {
       numericFieldsMissingValidation.push(name)

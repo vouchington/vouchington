@@ -7,7 +7,11 @@ export async function insertClassifierRunCandidates(
   query: QueryExecutor,
   runId: string,
   topicIds: readonly string[],
+  limit: number | null,
 ): Promise<void> {
+  if (limit !== null && topicIds.length > limit) {
+    throw new Error(`Classifier captured topics exceed its limit (${limit})`)
+  }
   await query(sql`/* insertClassifierRunCandidates */
     INSERT INTO classifier_run_candidates (run_id, topic_id, ordinal)
     SELECT ${runId}, candidate.topic_id, (candidate.ordinal - 1)::int

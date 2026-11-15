@@ -1000,6 +1000,12 @@
 - `dispute`
 - `other`
 
+## `membership_refund_request_rejection_reasons`
+
+- `authentication`
+- `rate_limited`
+- `invalid_parameters`
+
 ## `membership_refund_sources`
 
 - `admin`

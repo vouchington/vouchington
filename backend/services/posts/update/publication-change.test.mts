@@ -1,3 +1,6 @@
+import { electionsVotesWorkConfig } from '@services/elections-votes/work-limits'
+import { postPublicationWorkConfig } from '@services/post-publication/work-limits'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { createPost, updatePost } from '@services/posts'
 import {
   CONTRIBUTING_USER_AGE_MS,
@@ -39,6 +42,17 @@ describe('post update publication capture', () => {
   })
 
   it('retains every prior topic in bounded captured pages during an admin edit', async () => {
+    const restoreCapture = overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, {
+      capture_batch_size: 10,
+      effect_payload_key_batch_size: 10,
+    })
+    const restoreVoteRefresh = overrideDynamicConfigFieldsForTest(electionsVotesWorkConfig, {
+      primary_refresh_batch_size: 10,
+    })
+    onTestFinished(() => {
+      restoreCapture()
+      restoreVoteRefresh()
+    })
     const administrator = await createTestUser({ administrator: true })
     const author = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     if (!administrator || !author) throw new Error('Expected administrator and author')
@@ -51,13 +65,14 @@ describe('post update publication capture', () => {
     // The author's own like arrives through the post-created listener; its recompute is the
     // `post_updated` capture, and it is debounced, so wait for it instead of reading too early.
     await onceElectionVoteStatsCompleted({ electionId: post.id, orderingKey: 'post' })
+    // Twenty valid manual categories still span two configured capture/vote-refresh pages.
     const topicIds = await insertTestTopicsAndExplicitPostCategories({
-      count: 1_001,
+      count: 20,
       createdById: administrator.id,
       postId: post.id,
       prefix: `publication-topic-footprint-${suffix}`,
     })
-    expect(topicIds).toHaveLength(1_001)
+    expect(topicIds).toHaveLength(20)
     onTestFinished(async () => {
       await hardDeleteTestPosts([post.id])
       await hardDeleteTestTopics(topicIds)
@@ -71,7 +86,7 @@ describe('post update publication capture', () => {
       )
     })
     const relationIds = new Set(await getTestPostCategoryRelationIds(post.id))
-    expect(relationIds.size).toBe(1_001)
+    expect(relationIds.size).toBe(20)
     // Other tests share this worker. Contextual capture drops their async contexts, and these
     // stats queries put the target relation id (or batch of ids) in the first parameter.
     const postQueries = queries.filter(query => {

@@ -1,3 +1,4 @@
+import { resolveStripeRefundChargeId } from '../refund-issuance.mts'
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getOrCreateProviderContextId } from '../provider-context.mts'
@@ -107,12 +108,12 @@ export async function claimWonStripeDisputeRecovery(
   await query(sql`/* claimWonStripeDisputeRecovery:insert */
     INSERT INTO membership_operations (
       membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
-      membership_provider_context_id, operation_kind, idempotency_key,
+      membership_provider_context_id, operation_kind, idempotency_key, provider_payment_reference, provider_charge_id,
       qualifying_allocation_minor_units, remaining_refundable_minor_units, currency_code,
       period_started_at, period_ends_at, collision_at
     ) VALUES (
       ${reversalCase.membershipSourceId}, ${reversalCase.membershipProviderLineageId},
-      ${reversalCase.membershipLineageBindingId}, ${providerContextId}, 'collision_resolution', ${idempotencyKey},
+      ${reversalCase.membershipLineageBindingId}, ${providerContextId}, 'collision_resolution', ${idempotencyKey}, ${target.chargeId ?? target.paymentIntentId}, ${await resolveStripeRefundChargeId(target.chargeId ?? target.paymentIntentId!)},
       ${amountMinorUnits}, ${amountMinorUnits}, ${reversalCase.currency},
       ${reversalCase.periodStartedAt}, ${reversalCase.periodEndsAt}, ${reversalCase.collisionAt}
     )

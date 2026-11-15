@@ -1,12 +1,6 @@
-export const SCORE_MAX_EXEMPTION =
-  'Net-score thresholds may span the current scoring model range; ordering validators enforce safe relationships.'
-export const RATE_LIMIT_MAX_EXEMPTION =
-  'Rate-limit ceilings intentionally remain operator-tunable; validators enforce positive finite numbers.'
-export const VOTE_WEIGHT_MAX_EXEMPTION =
-  'Vote-weight multipliers are operator policy values; ordering and positive-number validators constrain invalid edits.'
-export const TAG_LIMIT_MAX_EXEMPTION =
-  'Tag-add and autotagger topic caps are operator policy values with no natural ceiling; validators enforce non-negative integers.'
+export const MAX_RATE_LIMIT_REQUESTS = 1_000_000
+export const MAX_RATE_LIMIT_WINDOW_SECONDS = 31_536_000
 
 export function scoreField(description: string) {
-  return { description, maxValueExemption: SCORE_MAX_EXEMPTION }
+  return { description, maxValue: 1_000_000_000 }
 }

@@ -12,6 +12,7 @@ export type CreateTestSkuOptions = {
   price_minor_units?: number
   interval?: MembershipBillingInterval
   currency_code?: string
+  sku_id?: string
   stripe_price_id?: string
   provider_environment?: 'test' | 'production'
   provider_application_id?: string
@@ -37,8 +38,8 @@ export async function createTestSkuRecord(options: CreateTestSkuOptions = {}) {
   const product = await createOrGetActiveMembershipProduct(plan, interval, options.id)
   const { rows: providerProductRows } = await write(sql`/* createTestSku: Stripe product */
     INSERT INTO membership_provider_products (
-      membership_product_id, membership_provider_context_id, provider_product_id, price_minor_units, currency_code
-    ) VALUES (${product.id}, fn_upsert_membership_provider_context_id('stripe', ${provider_environment}, ${provider_application_id}), ${stripe_price_id}, ${price_minor_units}, ${currency_code})
+      membership_product_id, membership_provider_context_id, provider_product_id, sku_id, price_minor_units, currency_code
+    ) VALUES (${product.id}, fn_upsert_membership_provider_context_id('stripe', ${provider_environment}, ${provider_application_id}), ${stripe_price_id}, ${options.sku_id ?? null}, ${price_minor_units}, ${currency_code})
     ON CONFLICT (membership_provider_context_id, provider_product_id, base_plan_id, offer_id, sku_id)
     DO UPDATE SET price_minor_units = EXCLUDED.price_minor_units, currency_code = EXCLUDED.currency_code, retired_at = NULL
     RETURNING id

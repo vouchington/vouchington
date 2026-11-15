@@ -60,13 +60,13 @@ BEGIN
   IF ROW(
     NEW.id, NEW.membership_source_id, NEW.membership_provider_lineage_id,
     NEW.membership_lineage_binding_id, NEW.membership_provider_context_id,
-    NEW.operation_kind, NEW.idempotency_key,
+    NEW.operation_kind, NEW.idempotency_key, NEW.provider_payment_reference, NEW.provider_charge_id,
     NEW.qualifying_allocation_minor_units, NEW.currency_code, NEW.period_started_at,
     NEW.period_ends_at, NEW.collision_at, NEW.requested_at
   ) IS DISTINCT FROM ROW(
     OLD.id, OLD.membership_source_id, OLD.membership_provider_lineage_id,
     OLD.membership_lineage_binding_id, OLD.membership_provider_context_id,
-    OLD.operation_kind, OLD.idempotency_key,
+    OLD.operation_kind, OLD.idempotency_key, OLD.provider_payment_reference, OLD.provider_charge_id,
     OLD.qualifying_allocation_minor_units, OLD.currency_code, OLD.period_started_at,
     OLD.period_ends_at, OLD.collision_at, OLD.requested_at
   ) THEN

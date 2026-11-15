@@ -99,7 +99,8 @@ export async function recordMembershipRefundEvent(options: {
       SET provider_refund_id = receipt.stripe_refund_id
       FROM persisted_receipt receipt, membership_operations operation,
         membership_administrator_refund_operation_requests request
-      WHERE attempt.id = ${attemptId}
+      WHERE (attempt.id = ${attemptId} OR attempt.provider_request_original_attempt_id = ${attemptId})
+        AND attempt.rejected_at IS NULL
         AND attempt.membership_operation_id = ${operationId}
         AND operation.id = attempt.membership_operation_id
         AND request.membership_operation_id = operation.id
@@ -114,7 +115,7 @@ export async function recordMembershipRefundEvent(options: {
         AND attempt.currency_code::text = receipt.currency_code
         AND request.amount_minor_units = receipt.amount_minor_units
         AND request.currency_code::text = receipt.currency_code
-        AND request.provider_payment_reference IN (
+        AND operation.provider_payment_reference IN (
           receipt.stripe_charge_id, receipt.stripe_payment_intent_id
         )
       RETURNING attempt.membership_operation_id

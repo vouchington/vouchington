@@ -12,8 +12,9 @@ import { getTestPostImagePlacement } from '@voucha/test-helpers/entities/post-im
 import { getTestImageSurfacePlacements } from '@voucha/test-helpers/entities/image-surface-placements'
 import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import { syncPostImagePlacements } from './image-placements.mts'
+import { validatePostImageInputs } from './image-input-validation.mts'
 
-const limitError = { status: 409, code: 'IMAGE_PLACEMENT_LIMIT_REACHED' }
+const limitError = { status: 400, code: 'IMAGE_PLACEMENT_LIMIT_REACHED' }
 
 async function post(userId: string): Promise<string> {
   const suffix = randomUUID()
@@ -34,6 +35,24 @@ async function attach(postId: string, imageIds: string[]): Promise<void> {
 describe('image placement capacity', () => {
   beforeEach(async () => {
     await mediaDeliverySafetyWorkConfig.waitForInitialization()
+  })
+
+  it('rejects more than twenty images for a post before creating placements', async () => {
+    const user = await createTestUser()
+    const postId = await post(user.id)
+    const imageIds = Array.from({ length: 21 }, () => randomUUID())
+    await expect(
+      validatePostImageInputs(
+        imageIds.map((imageId, index) => ({ image_id: imageId, order_index: index })),
+        user.id,
+        false,
+      ),
+    ).rejects.toMatchObject({ status: 400, code: 'POST_IMAGE_LIMIT_REACHED' })
+    await expect(attach(postId, imageIds)).rejects.toMatchObject({
+      status: 400,
+      code: 'POST_IMAGE_LIMIT_REACHED',
+    })
+    expect(await getTestPostImagePlacement(postId, imageIds[0]!)).toBeNull()
   })
 
   it('allows the last slot, keeps active pairs idempotent, and rejects a new pair', async () => {

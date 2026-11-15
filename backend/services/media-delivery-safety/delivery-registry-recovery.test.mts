@@ -1,8 +1,17 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { mediaDeliverySafetyWorkConfig } from './work-limits.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { createTestDeliverySurface } from '@voucha/test-helpers/media-delivery-surface'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
+import { recordImageDeliveryRepairMarker } from './delivery-repair-markers.mts'
 import * as mediaDeliveryRegistryProvider from '@modules/aws/media-delivery-registry'
-import { getTestDeliveryRepairMarker } from '@voucha/test-helpers/entities/media-delivery-repair'
+import {
+  advanceTestDeliveryPlacementRevision,
+  getTestDeliveryRepairMarker,
+} from '@voucha/test-helpers/entities/media-delivery-repair'
 import {
   beginTransaction,
+  getTestMediaDeliveryRecord,
   createTestUserDirect,
   getTestImageSurfacePlacements,
   insertTestImage,
@@ -11,6 +20,7 @@ import {
 import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import {
   repairFailedImageDeliveryMutation,
+  reconcileMediaDeliveryRepairMarkers,
   processMediaDeliveryRegistryRecord,
   prepublishImagePlacementDenial,
   stageImagePlacementDeliveryRecord,
@@ -60,7 +70,10 @@ describe('media delivery rollback recovery', () => {
       records.push(record)
     }
     put.mockClear()
-    await repairFailedImageDeliveryMutation({ imageIds: [imageId] })
+    await repairFailedImageDeliveryMutation(
+      { imageIds: [imageId] },
+      records.map(record => record.mediaDeliveryRegistryRecordId),
+    )
     await expect(
       getTestDeliveryRepairMarker(records[0]!.mediaDeliveryRegistryRecordId),
     ).resolves.toBeNull()
@@ -78,5 +91,55 @@ describe('media delivery rollback recovery', () => {
         state: 'allow',
       }),
     )
+  })
+
+  it('leaves overflow history durable and finishes withholding it on the next bounded repair pass', async () => {
+    await mediaDeliverySafetyWorkConfig.waitForInitialization()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, { recovery_page_size: 1 }),
+    )
+    const historical = await createTestDeliverySurface()
+    const unrelated = await createTestDeliverySurface()
+    const edge = installTestMediaDeliveryEdge()
+    let revision: number
+    {
+      await using query = await beginTransaction()
+      revision = await advanceTestDeliveryPlacementRevision(query, historical.tuple.placementId)
+      await query.commit()
+    }
+    const currentTuple = { ...historical.tuple, revision }
+    const current = await stageImagePlacementDeliveryRecord({ ...currentTuple, state: 'allow' })
+    {
+      await using query = await beginTransaction()
+      await advanceTestDeliveryPlacementRevision(query, historical.tuple.placementId)
+      await query.commit()
+    }
+    const owned = [historical.mediaDeliveryRegistryRecordId, current.mediaDeliveryRegistryRecordId]
+    await recordImageDeliveryRepairMarker(historical.tuple)
+    await recordImageDeliveryRepairMarker(currentTuple)
+    await recordImageDeliveryRepairMarker(unrelated.tuple)
+    const unrelatedToken = await getTestDeliveryRepairMarker(
+      unrelated.mediaDeliveryRegistryRecordId,
+    )
+
+    await repairFailedImageDeliveryMutation({ imageIds: [historical.tuple.imageId] }, owned)
+    expect(await getTestDeliveryRepairMarker(historical.mediaDeliveryRegistryRecordId)).toBeNull()
+    expect(await getTestDeliveryRepairMarker(current.mediaDeliveryRegistryRecordId)).not.toBeNull()
+    expect(
+      await getTestMediaDeliveryRecord(historical.mediaDeliveryRegistryRecordId),
+    ).toMatchObject({
+      desired_state: 'withheld',
+    })
+    expect(await reconcileMediaDeliveryRepairMarkers(1, owned)).toBe(1)
+    await processMediaDeliveryRegistryRecord(current.mediaDeliveryRegistryRecordId)
+    expect(await getTestDeliveryRepairMarker(current.mediaDeliveryRegistryRecordId)).toBeNull()
+    expect(await getTestMediaDeliveryRecord(current.mediaDeliveryRegistryRecordId)).toMatchObject({
+      desired_state: 'withheld',
+    })
+    expect(edge.records.get(getImagePlacementDeliveryKey(currentTuple))?.state).toBe('withheld')
+    expect(await getTestDeliveryRepairMarker(unrelated.mediaDeliveryRegistryRecordId)).toBe(
+      unrelatedToken,
+    )
+    expect(await reconcileMediaDeliveryRepairMarkers(1, owned)).toBe(0)
   })
 })

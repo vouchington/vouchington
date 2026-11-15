@@ -18,7 +18,7 @@ import { backgroundQueue } from '@voucha/test-helpers/shared-background-queue'
 import { createPostImageRollbackFixture } from '@voucha/test-helpers/services/posts/images.fixtures'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { createPostModerationContent } from './content.mts'
-import { syncPostImagePlacements } from './image-placements.mts'
+import { syncPostImagePlacements, assertPostImagePlacementCapacity } from './image-placements.mts'
 import { rollbackPostImages } from './images-rollback.mts'
 import { getPostImages } from './images.mts'
 import { getPostModerationInput } from './moderation-input.mts'
@@ -107,6 +107,12 @@ describe('image rollback capacity refusal', () => {
     await removal.commit()
     await insertTestPostImage({ postId: competingPostId, imageId: oldImage! })
     await insertTestPostImage({ postId, imageId: currentImage! })
+    {
+      await using capacityProbe = await beginTransaction()
+      await expect(
+        assertPostImagePlacementCapacity(postId, [oldImage!], capacityProbe),
+      ).rejects.toMatchObject({ status: 400, code: 'IMAGE_PLACEMENT_LIMIT_REACHED' })
+    }
     const content = await getPostModerationInput(postId, { readOnly: false })
     const hash = createPostModerationContent(content!).content_sha256
     await setPostLLMModerationContentSha256(postId, hash)

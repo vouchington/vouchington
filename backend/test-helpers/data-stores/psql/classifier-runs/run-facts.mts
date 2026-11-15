@@ -1,4 +1,4 @@
-import { read, write, type QueryExecutor } from '@data-stores/psql'
+import { beginTransaction, read, write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { insertClassifierRunCandidates } from '../../../../services/classifier-runs/run-candidates.mts'
 import { insertClassifierRunCommunityPrompts } from '../../../../services/classifier-runs/run-community-prompts.mts'
@@ -104,7 +104,7 @@ export async function getClassifierRunCandidateTopicIdsForTest(runId: string): P
 
 /** Exercises production candidate capture with the shared test database query resource. */
 export function captureClassifierRunCandidatesForTest(runId: string, topicIds: readonly string[]) {
-  return insertClassifierRunCandidates(write, runId, topicIds)
+  return insertClassifierRunCandidates(write, runId, topicIds, null)
 }
 
 /** Exercises production community-prompt persistence with the shared test database query resource. */
@@ -174,4 +174,16 @@ export async function markClassifierRunTerminalForTest(runId: string, kind: stri
       lease_token = NULL, leased_at = NULL, lease_expires_at = NULL
     WHERE id = ${runId}
   `)
+}
+
+/** Restore an owned receipt's historical snapshot without routing it through today's admission cap. */
+export async function restoreClassifierRunCandidateSnapshotForTest(
+  runId: string,
+  topicIds: readonly string[],
+): Promise<void> {
+  await using query = await beginTransaction()
+  await query(sql`/* restoreClassifierRunCandidateSnapshotForTest */
+    DELETE FROM classifier_run_candidates WHERE run_id = ${runId}`)
+  await insertClassifierRunCandidates(query, runId, topicIds, null)
+  await query.commit()
 }

@@ -1,9 +1,11 @@
 import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
+import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
+import { resolveStripeRefundChargeId } from '../refund-issuance.mts'
+import { getLockedAdministratorRefundOperation } from './administrator-request-operation.mts'
 import type { AdministratorRefundRequest } from './types.mts'
 import {
   assertAdministratorRefundRequestMatches,
-  type AdministratorRefundOperation,
   type AdministratorRefundRequestRow,
 } from './administrator-request-matching.mts'
 export type { AdministratorRefundRequestRow } from './administrator-request-matching.mts'
@@ -25,13 +27,13 @@ export async function claimAdministratorRefundRequest(
   await query(sql`/* claimAdministratorRefundRequest:operation */
     INSERT INTO membership_operations (
       membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
-      membership_provider_context_id, operation_kind, idempotency_key,
+      membership_provider_context_id, operation_kind, idempotency_key, provider_payment_reference, provider_charge_id,
       qualifying_allocation_minor_units, remaining_refundable_minor_units, currency_code,
       period_started_at, period_ends_at
     )
     SELECT source.id, lineage.id, binding.id,
       lineage.membership_provider_context_id,
-      'administrator_refund', ${request.idempotencyKey}::text AS idempotency_key,
+      'administrator_refund', ${request.idempotencyKey}::text AS idempotency_key, ${request.providerPaymentReference}, ${await resolveStripeRefundChargeId(request.providerPaymentReference)},
       ${request.amount.amount}, ${request.amount.amount}, ${request.amount.currency},
       ${request.periodStartedAt}, ${request.periodEndsAt}
     FROM memberships membership
@@ -52,15 +54,20 @@ export async function claimAdministratorRefundRequest(
   if (!operation)
     throw new Error('Administrator refund membership source has no active provider binding')
 
+  if (operation.refundLimitReached)
+    throw createHttpError(409, 'Local Stripe refund issuance limit reached', {
+      code: 'MEMBERSHIP_REFUND_LIMIT_REACHED',
+    })
+
   const { rows: insertedRequests } =
     await query<AdministratorRefundRequestRow>(sql`/* claimAdministratorRefundRequest:request */
     INSERT INTO membership_administrator_refund_operation_requests (
-      membership_operation_id, membership_id, issued_by_id, provider_payment_reference, provider_subscription_reference,
+      membership_operation_id, membership_id, issued_by_id, provider_subscription_reference,
       amount_minor_units, currency_code, reason, is_cancel_requested, request_fingerprint,
       administrator_request_key, note
     ) VALUES (
       ${operation.id}, ${request.membershipId}, ${request.issuedById},
-      ${request.providerPaymentReference}, ${request.providerSubscriptionReference}, ${request.amount.amount}, ${request.amount.currency},
+      ${request.providerSubscriptionReference}, ${request.amount.amount}, ${request.amount.currency},
       ${request.reason}, ${request.cancelRequested}, ${request.requestFingerprint},
       ${request.idempotencyKey}, ${request.note}
     ) ON CONFLICT (membership_operation_id) DO NOTHING
@@ -68,7 +75,7 @@ export async function claimAdministratorRefundRequest(
       ${operation.completed} AS completed,
       membership_id AS "membershipId",
       issued_by_id AS "issuedById",
-      provider_payment_reference AS "providerPaymentReference",
+      ${request.providerPaymentReference}::text AS "providerPaymentReference",
       provider_subscription_reference AS "providerSubscriptionReference",
       amount_minor_units::TEXT AS "amountMinorUnits",
       currency_code AS currency,
@@ -87,29 +94,7 @@ export async function claimAdministratorRefundRequest(
   if (!savedRequest) throw new Error('Administrator refund request was not persisted')
   assertAdministratorRefundRequestMatches(savedRequest, request)
   await query.commit()
-  return operation
-}
-
-async function getLockedAdministratorRefundOperation(
-  idempotencyKey: string,
-  membershipId: string,
-  query: QueryExecutor,
-): Promise<AdministratorRefundOperation | null> {
-  const { rows } = await query(sql`/* getLockedAdministratorRefundOperation */
-    SELECT operation.id, operation.completed_at IS NOT NULL AS completed
-    FROM memberships membership
-    INNER JOIN membership_operations operation
-      ON operation.membership_source_id = membership.membership_source_id
-    INNER JOIN membership_sources source ON source.id = operation.membership_source_id
-    INNER JOIN membership_provider_lineages lineage
-      ON lineage.id = operation.membership_provider_lineage_id
-    WHERE membership.id = ${membershipId}
-      AND operation.operation_kind = 'administrator_refund'
-      AND operation.idempotency_key = ${idempotencyKey}
-      AND source.membership_provider_lineage_id = lineage.id
-      AND operation.membership_provider_lineage_id = lineage.id
-  `)
-  return (rows[0] as AdministratorRefundOperation | undefined) ?? null
+  return { id: operation.id, completed: operation.completed }
 }
 
 export async function getAdministratorRefundRequestByKey(
@@ -124,7 +109,7 @@ export async function getAdministratorRefundRequestByKey(
   const { rows } = await query(sql`/* assertAdministratorRefundRequestMatches */
     SELECT operation.id, operation.completed_at IS NOT NULL AS completed,
       request.membership_id AS "membershipId", request.issued_by_id AS "issuedById",
-      request.provider_payment_reference AS "providerPaymentReference",
+      operation.provider_payment_reference AS "providerPaymentReference",
       request.provider_subscription_reference AS "providerSubscriptionReference",
       request.amount_minor_units::TEXT AS "amountMinorUnits", request.currency_code AS currency,
       request.reason, request.is_cancel_requested AS "cancelRequested",
@@ -151,7 +136,7 @@ async function getAdministratorRefundRequestForMembershipKey(
   const { rows } = await query(sql`/* getAdministratorRefundRequestForMembershipKey */
     SELECT operation.id, operation.completed_at IS NOT NULL AS completed,
       request.membership_id AS "membershipId", request.issued_by_id AS "issuedById",
-      request.provider_payment_reference AS "providerPaymentReference",
+      operation.provider_payment_reference AS "providerPaymentReference",
       request.provider_subscription_reference AS "providerSubscriptionReference",
       request.amount_minor_units::TEXT AS "amountMinorUnits", request.currency_code AS currency,
       request.reason, request.is_cancel_requested AS "cancelRequested",

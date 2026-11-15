@@ -1,5 +1,6 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { getOutstandingMembershipGrantIds } from './outstanding.mts'
 
 /** Stops every active grant at an entitlement handoff boundary without spending its remaining time. */
 export async function pauseOpenGrantActivations(
@@ -7,6 +8,7 @@ export async function pauseOpenGrantActivations(
   pausedAt: Date,
   query: QueryExecutor,
 ): Promise<void> {
+  const grantIds = await getOutstandingMembershipGrantIds(userId, query)
   await query(sql`/* pauseOpenGrantActivations */
     WITH paused AS (
       UPDATE membership_grant_activation_periods activation
@@ -14,6 +16,7 @@ export async function pauseOpenGrantActivations(
       FROM membership_grants grant_row
       WHERE grant_row.id = activation.membership_grant_id
         AND grant_row.user_id = ${userId} AND grant_row.revoked_at IS NULL
+        AND grant_row.id = ANY(${grantIds}::uuid[])
         AND activation.ended_at IS NULL
       RETURNING grant_row.membership_source_id, activation.ended_at
     ) UPDATE membership_source_states source_state

@@ -1,3 +1,4 @@
+import { ApiError } from '@vouchington/api-client'
 import type { ReactNode } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -184,6 +185,26 @@ describe('MembershipsAdminPage', () => {
     })
     // User input should be reset
     expect((screen.getByLabelText('Search users') as unknown as HTMLInputElement).value).toBe('')
+  })
+
+  it('shows translated guidance when the outstanding grant cap is reached', async () => {
+    mockGrantMembership.mockRejectedValueOnce(
+      new ApiError('backend capacity detail', 409, { code: 'MEMBERSHIP_GRANT_LIMIT_REACHED' }),
+    )
+    render(<MembershipsAdminPage />)
+    fireEvent.change(screen.getByLabelText('Search users'), { target: { value: 'owned-user' } })
+    const [planSelect, skuSelect] = screen.getAllByRole('combobox')
+    fireEvent.change(planSelect!, { target: { value: 'plus' } })
+    await screen.findByRole('option', { name: /sku-plus-monthly/i })
+    fireEvent.change(skuSelect!, { target: { value: 'sku-plus-monthly' } })
+    fireEvent.change(screen.getByLabelText(/duration \(days\)/i), { target: { value: '30' } })
+    fireEvent.click(screen.getByRole('button', { name: /grant/i }))
+    expect(
+      await screen.findByText(
+        'This user has reached the outstanding membership grant limit. Review their existing grants before issuing another.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('backend capacity detail')).not.toBeInTheDocument()
   })
 
   it('shows a pending confirmation when the grant is queued', async () => {

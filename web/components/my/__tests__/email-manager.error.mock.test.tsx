@@ -31,9 +31,17 @@ vi.mock(
 )
 
 vi.mock(import('@/lib/on-error'), () => ({
-  default: (_err: unknown, options: { fallback: string }) => {
-    toastMock.error(options.fallback)
-    return options.fallback
+  default: (
+    err: unknown,
+    options: { fallback: string; displayMessageByCode?: Record<string, string> },
+  ) => {
+    const code =
+      err && typeof err === 'object' && 'code' in err && typeof err.code === 'string'
+        ? err.code
+        : undefined
+    const message = (code && options.displayMessageByCode?.[code]) || options.fallback
+    toastMock.error(message)
+    return message
   },
   onSuccess: (message: string) => {
     toastMock.success(message)
@@ -73,6 +81,23 @@ function makeEmailPage(results: EmailAddress[]) {
 describe('EmailManager error handling', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  it('shows translated recovery guidance when adding an email exceeds the cap', async () => {
+    mockRequest.mockRejectedValueOnce(
+      Object.assign(new Error('capacity'), { code: 'EMAIL_ADDRESS_LIMIT_REACHED' }),
+    )
+    render(<EmailManager initialEmailAddresses={[]} />)
+    fireEvent.click(screen.getByRole('button', { name: /add email address/i }))
+    fireEvent.change(screen.getByLabelText('New email address'), {
+      target: { value: 'owned@example.test' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /send verification code/i }))
+    await waitFor(() =>
+      expect(toastMock.error).toHaveBeenCalledWith(
+        'You can save up to 10 email addresses. Remove one before adding another.',
+      ),
+    )
   })
 
   it('reports request-verification failures via onError fallback', async () => {

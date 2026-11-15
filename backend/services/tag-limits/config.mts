@@ -1,8 +1,8 @@
 import { DynamicConfig } from '@data-stores/valkey'
 import type { ContributionLimitTier } from '@services/contribution-gating/limit-types'
 
-// Admin is intentionally excluded: unlimited is resolved in code (assert.mts short-circuits on
-// tier === 'admin') so "unlimited" can never drift from a misconfigured Valkey field.
+// Administrators use the fixed ceiling rather than an operator-configurable tier.
+export const MAX_MANUAL_TAGS = 20
 export type ManualTagLimitTier = Exclude<ContributionLimitTier, 'admin'>
 
 const DEFAULTS: Record<ManualTagLimitTier, number> = {
@@ -25,7 +25,10 @@ export const manualTagLimitConfig = new DynamicConfig({
   defaultFields: DEFAULTS,
 })
 
-export function getManualTagLimit(tier: ManualTagLimitTier): number {
+export function getManualTagLimit(tier: ContributionLimitTier): number {
+  if (tier === 'admin') return MAX_MANUAL_TAGS
   const value = manualTagLimitConfig.getFields()[tier]
-  return typeof value === 'number' ? value : DEFAULTS[tier]
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.min(MAX_MANUAL_TAGS, Math.max(0, Math.trunc(value)))
+    : DEFAULTS[tier]
 }

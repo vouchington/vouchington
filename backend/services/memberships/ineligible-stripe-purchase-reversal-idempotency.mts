@@ -45,6 +45,16 @@ export function createIneligiblePurchaseReversalRetryIdempotencyKey(
   return `voucha-membership-ineligible-reversal-retry:${digest}`
 }
 
+export function createRejectedIneligiblePurchaseReversalRequestKey(
+  rejectedAttemptId: string,
+  amountMinorUnits: number,
+): string {
+  const digest = createHash('sha256')
+    .update(JSON.stringify([rejectedAttemptId, amountMinorUnits]))
+    .digest('hex')
+  return `voucha-membership-ineligible-reversal-rejected:${digest}`
+}
+
 const WON_DISPUTE_RECOVERY_IDEMPOTENCY_PREFIX = 'voucha-membership-ineligible-reversal-won-dispute:'
 
 export function createWonDisputeRecoveryIdempotencyPrefix(originalOperationId: string): string {

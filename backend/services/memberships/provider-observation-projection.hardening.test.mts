@@ -1,3 +1,4 @@
+import { createStripeRefundSdkMock } from '@voucha/test-helpers/stripe-refund-sdk-mock'
 import { processMembershipJob } from '../../workers/memberships/processors/process-job.mts'
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
@@ -234,9 +235,12 @@ function createStripeCalls(fixture: Awaited<ReturnType<typeof createFixture>>) {
   }))
   const disputesList = vi.fn<VitestLooseMock>().mockResolvedValue({ data: [], has_more: false })
   const subscriptionCancel = vi.fn<VitestLooseMock>().mockResolvedValue({})
+  const refundSdk = createStripeRefundSdkMock(refundCreate)
   const client = {
+    on: refundSdk.on,
+    off: refundSdk.off,
     invoices: { list: invoicesList, listLineItems: invoiceLines },
-    refunds: { list: refundsList, create: refundCreate },
+    refunds: { list: refundsList, create: refundSdk.create },
     disputes: { list: disputesList },
     subscriptions: { cancel: subscriptionCancel },
   } as unknown as ReturnType<typeof stripeClient.getStripeClient>

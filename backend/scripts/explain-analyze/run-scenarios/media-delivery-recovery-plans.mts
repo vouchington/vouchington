@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { extractQueryName, getCapturedQueries, write } from '@data-stores/psql'
-import { repairFailedImageDeliveryMutation } from '@services/media-delivery-safety/delivery-registry-recovery'
+import { listFailedImageDeliveryRepairMarkers } from '@services/media-delivery-safety/delivery-registry-recovery'
 import {
   getMediaDeliverySafetyWorkLimit,
   mediaDeliverySafetyWorkConfig,
@@ -31,6 +31,35 @@ export async function captureRecovery(): Promise<void> {
   }
   process.env = { ...previous, ...env }
   try {
+    await resetTargetMarkers(true)
+    const pageRecords = ownedTargetRecords()
+      .toSorted((a, b) => a.localeCompare(b))
+      .slice(0, limit)
+    const seededRows = {
+      image_placements: NOISE_PER_FAMILY + TARGET_COUNT,
+      image_surface_placements: NOISE_PER_FAMILY,
+      media_delivery_registry_records: 2 * NOISE_PER_FAMILY + TARGET_COUNT,
+      media_delivery_repair_markers: 2 * NOISE_PER_FAMILY + TARGET_COUNT,
+    }
+    registerScenarioContract('media-delivery-recovery-markers', {
+      expectations: [
+        {
+          kind: 'usesIndexes',
+          indexes: ['idx_media_delivery_repair_markers__oldest'],
+          queryContains: 'repairFailedImageDeliveryMutation:markers',
+          noSort: true,
+        },
+        { kind: 'maxProcessedRows', relation: 'media_delivery_repair_markers', max: limit },
+        { kind: 'maxBitmapIndexRows', max: 0 },
+      ],
+      seededRows,
+    })
+    await runAndCapture(
+      'media-delivery-recovery-markers',
+      () => listFailedImageDeliveryRepairMarkers({ imageIds: [seedUuid(999_999, 'fd')] }),
+      undefined,
+      'repairFailedImageDeliveryMutation:markers',
+    )
     const cases = [
       {
         id: 'media-delivery-recovery-post',
@@ -66,24 +95,25 @@ export async function captureRecovery(): Promise<void> {
       },
     ] as const
     for (const scenario of cases) {
-      // no-mistakes-disable-next-line query-reached-per-item: each fixed scope begins with no selected markers, so the actual service cannot publish externally.
-      await resetTargetMarkers(false)
       registerScenarioContract(scenario.id, {
         allowEmptyResult: scenario.id === 'media-delivery-recovery-empty',
         expectations: [
-          ...(scenario.id === 'media-delivery-recovery-post' ||
-          scenario.id === 'media-delivery-recovery-mixed'
-            ? [{ kind: 'usesIndexes' as const, indexes: ['image_placements_post_id_image_id_key'] }]
-            : []),
           ...(scenario.id === 'media-delivery-recovery-image' ||
-          scenario.id === 'media-delivery-recovery-mixed'
+          scenario.id === 'media-delivery-recovery-empty'
             ? [
                 {
                   kind: 'usesIndexes' as const,
-                  indexes: ['idx_image_placements__image', 'idx_image_surface_placements__image'],
+                  indexes: ['idx_media_delivery_registry_records__image'],
+                  queryContains: '/* repairFailedImageDeliveryMutation */',
                 },
               ]
-            : []),
+            : [
+                {
+                  kind: 'usesIndexes' as const,
+                  indexes: ['media_delivery_registry_records_pkey', 'image_placements_pkey'],
+                  queryContains: '/* repairFailedImageDeliveryMutation */',
+                },
+              ]),
           { kind: 'maxProcessedRows', relation: 'image_placements', max: scenario.postBound },
           {
             kind: 'maxProcessedRows',
@@ -102,18 +132,13 @@ export async function captureRecovery(): Promise<void> {
           },
           { kind: 'maxBitmapIndexRows', max: (scenario.postBound + scenario.surfaceBound) * 3 },
         ],
-        seededRows: {
-          image_placements: NOISE_PER_FAMILY + TARGET_COUNT,
-          image_surface_placements: NOISE_PER_FAMILY,
-          media_delivery_registry_records: 2 * NOISE_PER_FAMILY + TARGET_COUNT,
-          media_delivery_repair_markers: 2 * NOISE_PER_FAMILY + TARGET_COUNT,
-        },
+        seededRows,
       })
       // no-mistakes-disable-next-line query-reached-per-item: four fixed scopes have independent captured plans.
       await runAndCapture(
         scenario.id,
         () =>
-          repairFailedImageDeliveryMutation({
+          listFailedImageDeliveryRepairMarkers({
             postIds: 'postIds' in scenario.input ? [...scenario.input.postIds] : undefined,
             imageIds: 'imageIds' in scenario.input ? [...scenario.input.imageIds] : undefined,
           }),
@@ -121,19 +146,39 @@ export async function captureRecovery(): Promise<void> {
         'repairFailedImageDeliveryMutation',
         {
           afterCapture: async () => {
-            await resetTargetMarkers(true)
             const captured = getCapturedQueries().find(
               query => extractQueryName(query.text) === 'repairFailedImageDeliveryMutation',
             )
             assert.ok(captured, 'The real recovery selector must be captured')
+            const markers = getCapturedQueries().find(
+              query => extractQueryName(query.text) === 'repairFailedImageDeliveryMutation:markers',
+            )
+            assert.ok(markers, 'The production marker walk must be captured')
+            const { rows: inspected } = await write<{ media_delivery_registry_record_id: string }>(
+              `/* captureRecovery:assertMarkers */ ${markers.text}`,
+              [...markers.values],
+            )
+            assert.deepEqual(
+              inspected.map(row => row.media_delivery_registry_record_id),
+              pageRecords,
+            )
+            assert.deepEqual(
+              captured.values['postIds' in scenario.input ? 0 : 1],
+              pageRecords,
+              'Ownership probes must use the actual bounded marker walk output',
+            )
             const { rows } = await write<{ media_delivery_registry_record_id: string }>(
               `/* captureRecovery:assertSelector */ ${captured.text}`,
               [...captured.values],
             )
             assert.deepEqual(
-              rows.map(row => row.media_delivery_registry_record_id),
-              scenario.expectedRecords.toSorted((a, b) => a.localeCompare(b)).slice(0, limit),
-              'Recovery must select the exact scoped marker page, in registry-id order',
+              rows
+                .map(row => row.media_delivery_registry_record_id)
+                .toSorted((a, b) => a.localeCompare(b)),
+              scenario.expectedRecords
+                .filter(id => pageRecords.includes(id))
+                .toSorted((a, b) => a.localeCompare(b)),
+              'Recovery must select exactly the owned records from the bounded oldest marker page',
             )
           },
         },

@@ -147,7 +147,7 @@ describe('assertWithinTagAddLimit', () => {
     }
   })
 
-  it('allows admin users unlimited adds regardless of existing usage', async () => {
+  it('caps administrators at the fixed ceiling regardless of configured tier limits', async () => {
     const restore = overrideDynamicConfigFieldsForTest(manualTagLimitConfig, { free: 1 })
     try {
       const postId = await makePost(adminUser.id)
@@ -157,8 +157,11 @@ describe('assertWithinTagAddLimit', () => {
       }
 
       await expect(
-        assertWithinTagAddLimit(adminUser, null, postTopicRelation, postId, 50),
+        assertWithinTagAddLimit(adminUser, null, postTopicRelation, postId, 15),
       ).resolves.toBeUndefined()
+      await expect(
+        assertWithinTagAddLimit(adminUser, null, postTopicRelation, postId, 16),
+      ).rejects.toMatchObject({ status: 403, code: TAG_LIMIT_REACHED })
     } finally {
       restore()
     }

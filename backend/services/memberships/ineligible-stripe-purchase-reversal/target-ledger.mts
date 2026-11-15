@@ -1,3 +1,4 @@
+import { resolveStripeRefundChargeId } from '../refund-issuance.mts'
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getOrCreateProviderContextId } from '../provider-context.mts'
@@ -54,12 +55,12 @@ async function claimIneligiblePurchaseReversal(options: {
   await options.query(sql`/* claimIneligiblePurchaseReversal:insert */
     INSERT INTO membership_operations (
       membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
-      membership_provider_context_id, operation_kind, idempotency_key,
+      membership_provider_context_id, operation_kind, idempotency_key, provider_payment_reference, provider_charge_id,
       qualifying_allocation_minor_units, remaining_refundable_minor_units, currency_code,
       period_started_at, period_ends_at, collision_at
     ) VALUES (
       ${options.membershipSourceId}, ${options.membershipProviderLineageId},
-      ${options.membershipLineageBindingId}, ${providerContextId}, 'ineligible_purchase_reversal', ${idempotencyKey},
+      ${options.membershipLineageBindingId}, ${providerContextId}, 'ineligible_purchase_reversal', ${idempotencyKey}, ${options.target.chargeId ?? options.target.paymentIntentId}, ${await resolveStripeRefundChargeId(options.target.chargeId ?? options.target.paymentIntentId!)},
       ${options.target.qualifyingAmountMinorUnits}, ${options.target.amountMinorUnits},
       ${options.target.currency}, ${options.periodStartedAt}, ${options.periodEndsAt},
       ${options.collisionAt}

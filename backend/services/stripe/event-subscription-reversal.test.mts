@@ -1,3 +1,4 @@
+import { createStripeRefundSdkMock } from '@voucha/test-helpers/stripe-refund-sdk-mock'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as stripeClientModule from '@modules/stripe/client'
 import { createStripeEventReversalCase } from '@voucha/test-helpers/services/stripe/reversal-case-event-fixtures'
@@ -31,7 +32,10 @@ describe('handleInvoicePaymentPaid', () => {
       status: 'succeeded',
     })
     const cancel = vi.fn<VitestLooseMock>().mockResolvedValue({})
+    const refundSdk = createStripeRefundSdkMock(createRefund)
     vi.spyOn(stripeClientModule, 'getStripeClient').mockReturnValue({
+      on: refundSdk.on,
+      off: refundSdk.off,
       invoices: {
         retrieve,
         list: vi.fn<VitestLooseMock>().mockResolvedValue({
@@ -59,7 +63,7 @@ describe('handleInvoicePaymentPaid', () => {
       },
       refunds: {
         list: vi.fn<VitestLooseMock>().mockResolvedValue({ data: [], has_more: false }),
-        create: createRefund,
+        create: refundSdk.create,
       },
       disputes: { list: vi.fn<VitestLooseMock>().mockResolvedValue({ data: [], has_more: false }) },
       subscriptions: { cancel },

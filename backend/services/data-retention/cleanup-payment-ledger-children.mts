@@ -26,6 +26,8 @@ export async function drainExpiredMembershipOperationChildren(
       WHERE attempt.membership_operation_id = ${operationId}
         AND NOT EXISTS (SELECT 1 FROM membership_refund_operation_attempt_metadata_scans scan
           WHERE scan.membership_refund_operation_attempt_id = attempt.id)
+        AND NOT EXISTS (SELECT 1 FROM membership_refund_operation_attempts replay
+          WHERE replay.provider_request_original_attempt_id = attempt.id)
       ORDER BY attempt.attempt_ordinal LIMIT ${remaining} FOR UPDATE OF attempt
     ) DELETE FROM membership_refund_operation_attempts attempt
     USING pending WHERE attempt.id = pending.id`)

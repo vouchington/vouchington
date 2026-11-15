@@ -1,5 +1,6 @@
 'use client'
 
+import { ApiError } from '@vouchington/api-client'
 import { useReducer, useRef } from 'react'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { useResolvedBreadcrumbs } from '@/lib/navigation/use-resolved-breadcrumbs'
@@ -66,9 +67,11 @@ export default function MembershipsAdminPage() {
     } catch (err) {
       dispatch({
         errorMessage:
-          err instanceof Error
-            ? err.message
-            : t('extracted.grants.membershipsAdminClient.unknownError_2c3d4e5f'),
+          err instanceof ApiError && err.code === 'MEMBERSHIP_GRANT_LIMIT_REACHED'
+            ? t('shared.membershipGrantLimit')
+            : err instanceof Error
+              ? err.message
+              : t('extracted.grants.membershipsAdminClient.unknownError_2c3d4e5f'),
       })
     } finally {
       dispatch({ loading: false })

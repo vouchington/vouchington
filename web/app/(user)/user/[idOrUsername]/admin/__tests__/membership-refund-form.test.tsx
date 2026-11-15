@@ -1,3 +1,4 @@
+import { ApiError } from '@vouchington/api-client'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -68,6 +69,20 @@ describe('MembershipRefundForm', () => {
     expect(screen.getByRole('button', { name: 'Reconciling Refund' })).toBeDisabled()
     expect(screen.getByPlaceholderText(/For example, 5\.00/)).toBeDisabled()
     expect(screen.getByRole('checkbox')).toBeChecked()
+  })
+
+  it('shows translated guidance when the local refund cap is reached', async () => {
+    mockCreateMembershipRefund.mockRejectedValueOnce(
+      new ApiError('backend capacity detail', 409, { code: 'MEMBERSHIP_REFUND_LIMIT_REACHED' }),
+    )
+    const { container } = renderRefundForm()
+    fireEvent.submit(container.querySelector('form')!)
+    await waitFor(() =>
+      expect(mockToastError).toHaveBeenCalledWith(
+        'This charge has reached the local refund limit. Review the charge with support before taking further action.',
+      ),
+    )
+    expect(mockToastError).not.toHaveBeenCalledWith('backend capacity detail')
   })
 
   it('shows error toast when the refund API call fails', async () => {

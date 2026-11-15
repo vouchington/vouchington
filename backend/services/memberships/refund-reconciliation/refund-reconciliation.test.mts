@@ -20,8 +20,10 @@ import {
 describe('refund reconciliation ledger', () => {
   it('claims one exact administrator request and leases its due operation', async () => {
     const request = await createRequest()
-    const first = await claimAdministratorRefundRequest(request)
-    const replay = await claimAdministratorRefundRequest(request)
+    const [first, replay] = await Promise.all([
+      claimAdministratorRefundRequest(request),
+      claimAdministratorRefundRequest(request),
+    ])
     expect(replay).toEqual(first)
     expect(first.completed).toBe(false)
     const lease = await leaseDueRefundReconciliation(first.id)

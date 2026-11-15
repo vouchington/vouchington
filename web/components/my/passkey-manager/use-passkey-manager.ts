@@ -63,6 +63,7 @@ export function usePasskeyManager(initialData: ListResponse<Passkey>, mfaStatus:
       } else {
         onError(err, {
           fallback: t('extracted.my.passkeyManager.failedToAddPasskey_ae611a4c'),
+          displayMessageByCode: { PASSKEY_LIMIT_REACHED: t('settings.passkeyLimit') },
           tags: { form: 'my-passkey' },
         })
       }

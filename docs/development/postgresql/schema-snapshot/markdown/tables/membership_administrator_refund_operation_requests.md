@@ -13,7 +13,6 @@ Not partitioned — growth: bounded.
 | `administrator_request_key`       | `text`                      | no       |                              |          |           |           | Administrator idempotency key bound to this immutable request.                                          |
 | `membership_id`                   | `uuid`                      | no       |                              |          |           |           | Membership selected by the administrator when the request was submitted.                                |
 | `issued_by_id`                    | `uuid`                      | no       |                              |          |           |           | Retained user identity of the requesting administrator; outlives the live account and never authorizes. |
-| `provider_payment_reference`      | `text`                      | no       |                              |          |           |           | Provider payment reference selected as the refund target.                                               |
 | `provider_subscription_reference` | `text`                      | yes      |                              |          |           |           | Provider subscription selected for cancellation when is_cancel_requested is true.                       |
 | `amount_minor_units`              | `bigint`                    | no       |                              |          |           |           | Requested refund amount in the provider currency minor unit.                                            |
 | `currency_code`                   | `currency_codes`            | no       |                              |          |           |           | ISO 4217 currency code requested for the refund.                                                        |
@@ -31,7 +30,6 @@ Not partitioned — growth: bounded.
 
 **Check constraints:**
 
-- `chk_membe_admin_refun_operat_reques__provider_payment_reference`: `CHECK ((((char_length(provider_payment_reference) >= 1) AND (char_length(provider_payment_reference) <= 255)) AND (provider_payment_reference = TRIM(BOTH FROM provider_payment_reference))))`
 - `chk_membe_admin_refund_operat_reques__administrator_request_key`: `CHECK ((((char_length(administrator_request_key) >= 1) AND (char_length(administrator_request_key) <= 255)) AND (administrator_request_key = TRIM(BOTH FROM administrator_request_key))))`
 - `chk_members_adminis_refund_operati_request__request_fingerprint`: `CHECK ((char_length(request_fingerprint) = 64))`
 - `chk_members_adminis_refund_operati_requests__amount_minor_units`: `CHECK (((amount_minor_units >= 1) AND (amount_minor_units <= '9007199254740991'::bigint)))`

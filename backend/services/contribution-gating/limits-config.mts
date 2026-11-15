@@ -52,11 +52,11 @@ export function getContributionLimitWindowSeconds(
 
 export function contributionLimitFieldMetadata(): Record<
   string,
-  { description: string; minValue: number; maxValueExemption: string; integer: true }
+  { description: string; minValue: number; maxValue: number; integer: true }
 > {
   const fields: Record<
     string,
-    { description: string; minValue: number; maxValueExemption: string; integer: true }
+    { description: string; minValue: number; maxValue: number; integer: true }
   > = {}
   for (const field of getContributionLimitFieldNames()) {
     const isWindow = field.endsWith('_window_seconds')
@@ -68,8 +68,7 @@ export function contributionLimitFieldMetadata(): Record<
     fields[field] = {
       description: `${formatContributionLabel(field)} contribution policy value.`,
       minValue: isWindow || isAuthoredPolicyField ? 1 : -1,
-      maxValueExemption:
-        'Contribution limits are operator policy values; validators enforce disabled sentinels and positive policy windows.',
+      maxValue: isWindow ? 31_536_000 : 1_000_000,
       integer: true,
     }
   }

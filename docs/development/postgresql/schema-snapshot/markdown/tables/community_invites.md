@@ -52,6 +52,7 @@ _none_
 - `idx_community_invites__community_id`: `CREATE INDEX idx_community_invites__community_id ON public.community_invites USING btree (community_id)`
 - `idx_community_invites__invited_by_id`: `CREATE INDEX idx_community_invites__invited_by_id ON public.community_invites USING btree (invited_by_id)`
 - `idx_community_invites__invited_user_id`: `CREATE INDEX idx_community_invites__invited_user_id ON public.community_invites USING btree (invited_user_id) WHERE (invited_user_id IS NOT NULL)`
+- `idx_community_invites__pending_email`: `CREATE UNIQUE INDEX idx_community_invites__pending_email ON public.community_invites USING btree (community_id, invited_email) WHERE ((accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL) AND (invited_email IS NOT NULL))`
 
 **Triggers:**
 

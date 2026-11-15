@@ -129,8 +129,9 @@ export async function resetTargetMarkers(populate: boolean): Promise<void> {
   if (!populate) return
   await write(
     `/* seedDeliveryLock:targetMarkers */
-    INSERT INTO media_delivery_repair_markers (media_delivery_registry_record_id,marker_token)
-    SELECT id, nextval('media_delivery_registry_generation_sequence') FROM unnest($1::uuid[]) id
+    INSERT INTO media_delivery_repair_markers (media_delivery_registry_record_id,marker_token,created_at)
+    SELECT id, nextval('media_delivery_registry_generation_sequence'), '2000-01-01'::timestamptz
+    FROM unnest($1::uuid[]) id
     ON CONFLICT (media_delivery_registry_record_id) DO NOTHING`,
     [records],
   )

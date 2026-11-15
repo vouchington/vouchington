@@ -35,12 +35,12 @@ export async function createTestAdministratorRefundOperation(
     )
     INSERT INTO membership_operations (
       membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
-      membership_provider_context_id, operation_kind, idempotency_key,
+      membership_provider_context_id, operation_kind, idempotency_key, provider_payment_reference, provider_charge_id,
       qualifying_allocation_minor_units, remaining_refundable_minor_units, currency_code,
       period_started_at, period_ends_at
     )
     SELECT source.id, source.membership_provider_lineage_id, binding.id,
-      fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), 'administrator_refund', ${`operation-${randomUUID()}`},
+      fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), 'administrator_refund', ${`operation-${randomUUID()}`}, ${`ch_${randomUUID()}`}, ${`ch_${randomUUID()}`},
       100, 100, 'usd', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
     FROM source INNER JOIN binding
       ON binding.membership_provider_lineage_id = source.membership_provider_lineage_id
@@ -97,11 +97,11 @@ export async function createTestAdministratorRefundRequest(
 ): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* createTestAdministratorRefundRequest */
     INSERT INTO membership_administrator_refund_operation_requests (
-      membership_operation_id, membership_id, issued_by_id, provider_payment_reference,
+      membership_operation_id, membership_id, issued_by_id,
       amount_minor_units, currency_code, reason, is_cancel_requested, request_fingerprint,
       administrator_request_key, note
     ) VALUES (
-      ${operation.id}, ${await createTestRetainedMembershipIdentity()}, ${operation.userId}, ${`payment-${randomUUID()}`},
+      ${operation.id}, ${await createTestRetainedMembershipIdentity()}, ${operation.userId},
       100, 'usd', 'requested', true, ${'a'.repeat(64)}, ${`request-${randomUUID()}`},
       'Customer requested a refund'
     ) RETURNING id`)
@@ -161,10 +161,10 @@ export async function createTestLinkedRefundReceiptRequest(
   await write(sql`/* createTestLinkedRefundReceiptRequest */
     INSERT INTO membership_administrator_refund_operation_requests (
       membership_operation_id, administrator_request_key, membership_id, issued_by_id,
-      provider_payment_reference, amount_minor_units, currency_code, reason, is_cancel_requested,
+      amount_minor_units, currency_code, reason, is_cancel_requested,
       request_fingerprint
     ) VALUES (
-      ${operation.id}, ${requestKey}, ${await createTestRetainedMembershipIdentity()}, ${operation.userId}, ${`ch_${randomUUID()}`},
+      ${operation.id}, ${requestKey}, ${await createTestRetainedMembershipIdentity()}, ${operation.userId},
       100, 'usd', 'requested', false, ${'b'.repeat(64)}
     )`)
   return { requestKey }

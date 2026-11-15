@@ -1,5 +1,5 @@
 import { ACTIVITYPUB_INBOX_LIMITS } from '@services/route-rate-limits/config'
-import { RATE_LIMIT_MAX_EXEMPTION } from './registry-entry-utils.mts'
+import { MAX_RATE_LIMIT_REQUESTS, MAX_RATE_LIMIT_WINDOW_SECONDS } from './registry-entry-utils.mts'
 
 export function routeRateLimitFields() {
   return {
@@ -48,7 +48,7 @@ export function routeRateLimitFields() {
 function rateLimitThresholdField(label: string) {
   return {
     description: `${label} request threshold.`,
-    maxValueExemption: RATE_LIMIT_MAX_EXEMPTION,
+    maxValue: MAX_RATE_LIMIT_REQUESTS,
     minValue: 1,
     integer: true,
   }
@@ -57,7 +57,7 @@ function rateLimitThresholdField(label: string) {
 function rateLimitTtlField(label: string) {
   return {
     description: `${label} rate-limit window length in seconds.`,
-    maxValueExemption: RATE_LIMIT_MAX_EXEMPTION,
+    maxValue: MAX_RATE_LIMIT_WINDOW_SECONDS,
     minValue: 1,
     integer: true,
   }

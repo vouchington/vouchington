@@ -63,14 +63,17 @@ export interface SubmitPostResult {
   communityPostReview?: PostMutationResponseBody['community_post_review']
 }
 
-export async function submitPost(input: SubmitPostInput): Promise<SubmitPostResult> {
+export async function submitPost(
+  input: SubmitPostInput,
+  postImageLimitMessage?: string,
+): Promise<SubmitPostResult> {
   const uploadedImages = input.images.map(img => ({
     image_id: img.image_id,
     order_index: img.order_index,
     caption: img.caption.trim(),
   }))
   const result = input.isEdit
-    ? await updateExistingPost(input, uploadedImages)
+    ? await updateExistingPost(input, uploadedImages, postImageLimitMessage)
     : await createNewPost(input, uploadedImages)
 
   if (input.postType === 'data_point' && input.saveToProfile) {
@@ -82,6 +85,7 @@ export async function submitPost(input: SubmitPostInput): Promise<SubmitPostResu
 async function updateExistingPost(
   input: SubmitPostInput,
   uploadedImages: Parameters<typeof setPostImages>[1],
+  postImageLimitMessage?: string,
 ): Promise<SubmitPostResult> {
   const post = input.post!
   const categories = serializeDiscussionCategories(input.discussionCategories)
@@ -109,7 +113,7 @@ async function updateExistingPost(
     }
   }
   await syncImages(saved, post, uploadedImages).catch((err: unknown) => {
-    toast.error(getPostImageUpdateFailureMessage(err))
+    toast.error(getPostImageUpdateFailureMessage(err, postImageLimitMessage))
   })
   return { post: saved }
 }

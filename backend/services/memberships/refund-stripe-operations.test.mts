@@ -7,7 +7,7 @@ import {
 import { recordMembershipRefundEvent } from './refunds/index.mts'
 
 describe('membership refund Stripe operations', () => {
-  it('loads charge, payment-intent, and unmatched refund totals for a batch', async () => {
+  it('sums every external receipt beyond the local issuance cap and keeps payment-intent totals exact', async () => {
     const user = await createTestUser()
     const suffix = Math.random().toString(36).slice(2)
     const membership = await createTestMembership({
@@ -17,6 +17,18 @@ describe('membership refund Stripe operations', () => {
     const chargeId = `ch_batch_${suffix}`
     const paymentIntentId = `pi_batch_${suffix}`
     await Promise.all([
+      ...Array.from({ length: 11 }, (_, index) =>
+        recordMembershipRefundEvent({
+          membershipId: membership.id,
+          membershipSourceId: membership.membership_source_id,
+          userId: user.id,
+          stripeRefundId: `re_external_${index}_${suffix}`,
+          stripeChargeId: chargeId,
+          stripePaymentIntentId: `pi_charge_${suffix}`,
+          amount: { amount: 1, currency: 'usd' },
+          stripeEventId: `evt_external_${index}_${suffix}`,
+        }),
+      ),
       recordMembershipRefundEvent({
         membershipId: membership.id,
         membershipSourceId: membership.membership_source_id,
@@ -82,7 +94,7 @@ describe('membership refund Stripe operations', () => {
       listSubscriptionInvoices,
     })
 
-    expect(charges.map(charge => charge.amount_refunded.amount)).toEqual([200, 300, 0])
+    expect(charges.map(charge => charge.amount_refunded.amount)).toEqual([211, 300, 0])
     expect(charges.every(charge => charge.amount_refunded.currency === 'usd')).toBe(true)
     expect(listSubscriptionInvoices).toHaveBeenCalledOnce()
   })

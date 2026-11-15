@@ -1,3 +1,4 @@
+import { MAX_USER_PASSKEYS } from './config.mts'
 import { read, type QueryOptions, type TransactionQuery } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
@@ -15,7 +16,7 @@ export async function getPasskeysByUserId(
   userId: string,
   options: { limit?: number; after?: { id: string } } = {},
 ): Promise<{ results: PublicPasskey[]; hasNextPage: boolean }> {
-  const limit = options.limit ?? 25
+  const limit = Math.min(options.limit ?? MAX_USER_PASSKEYS, MAX_USER_PASSKEYS)
   const query = sql`/* getPasskeysByUserId */
     SELECT id, name, device_type, is_backed_up, created_at, last_used_at
     FROM user_passkeys
@@ -24,7 +25,7 @@ export async function getPasskeysByUserId(
   if (options.after) {
     query.append(sql` AND id > ${options.after.id}`)
   }
-  query.append(sql` ORDER BY id ASC LIMIT ${limit + 1}`)
+  query.append(sql` ORDER BY id ASC LIMIT ${Math.min(limit + 1, MAX_USER_PASSKEYS)}`)
   const { rows } = await read(query)
 
   const hasNextPage = rows.length > limit
@@ -37,8 +38,8 @@ export async function getPasskeyCredentialIdsByUserId(
   options?: QueryOptions & { passkeyId?: string },
 ): Promise<string[]> {
   const statement = sql`/* getPasskeyCredentialIdsByUserId */ SELECT credential_id FROM user_passkeys WHERE user_id = ${userId}`
-  if (options?.passkeyId !== undefined)
-    statement.append(sql` AND id = ${options.passkeyId} LIMIT 1`)
+  if (options?.passkeyId !== undefined) statement.append(sql` AND id = ${options.passkeyId}`)
+  statement.append(sql` LIMIT ${MAX_USER_PASSKEYS}`)
   const { rows } = await read(statement, options)
   if (options?.passkeyId !== undefined && rows.length !== 1)
     throw createHttpError(404, 'Passkey not found')

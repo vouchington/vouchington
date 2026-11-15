@@ -6,6 +6,10 @@ import sql from 'sql-template-strings'
 import type { MembershipBillingInterval, MembershipPlanSlug } from './types.mts'
 import type { MembershipPurchaseProvider } from './purchase-intents.mts'
 
+export const MAX_ACTIVE_MEMBERSHIP_PROVIDER_MAPPINGS = 5
+
+const CATALOG_PROVIDERS = ['stripe', 'apple_app_store', 'google_play', 'microsoft_store'] as const
+
 type MembershipCatalogProviderReference = {
   provider: MembershipPurchaseProvider
   environment: 'test' | 'production'
@@ -40,18 +44,29 @@ type CatalogRow = {
 }
 
 export async function getActiveMembershipCatalogFromPrimary(): Promise<MembershipCatalogProduct[]> {
+  const [stripe, apple, google, microsoft] = CATALOG_PROVIDERS.map(getMembershipProviderContext)
   const { rows } = await write<CatalogRow>(sql`/* getActiveMembershipCatalogFromPrimary */
     SELECT product.id, product.plan, product.billing_interval AS interval,
       context.provider, context.environment, context.application_id,
       mapping.provider_product_id, mapping.base_plan_id, mapping.offer_id, mapping.sku_id,
       mapping.price_minor_units, mapping.currency_code
     FROM membership_products product
+    LEFT JOIN membership_provider_contexts context ON
+      (context.provider = 'stripe' AND context.environment = ${stripe!.environment}
+        AND context.application_id = ${stripe!.applicationId})
+      OR (context.provider = 'apple_app_store' AND context.environment = ${apple!.environment}
+        AND context.application_id = ${apple!.applicationId})
+      OR (context.provider = 'google_play' AND context.environment = ${google!.environment}
+        AND context.application_id = ${google!.applicationId})
+      OR (context.provider = 'microsoft_store' AND context.environment = ${microsoft!.environment}
+        AND context.application_id = ${microsoft!.applicationId})
     LEFT JOIN membership_provider_products mapping
       ON mapping.membership_product_id = product.id AND mapping.retired_at IS NULL
-    LEFT JOIN membership_provider_contexts context ON context.id = mapping.membership_provider_context_id
+        AND mapping.membership_provider_context_id = context.id
     WHERE product.retired_at IS NULL
     ORDER BY product.plan, product.billing_interval, context.provider, context.application_id,
-      mapping.id DESC`)
+      mapping.id DESC
+    LIMIT ${4 * CATALOG_PROVIDERS.length * MAX_ACTIVE_MEMBERSHIP_PROVIDER_MAPPINGS}`)
   const products = new Map<string, MembershipCatalogProduct>()
   for (const row of rows) {
     const product = products.get(row.id) ?? {
@@ -67,9 +82,6 @@ export async function getActiveMembershipCatalogFromPrimary(): Promise<Membershi
       row.application_id === null ||
       row.provider_product_id === null
     )
-      continue
-    const context = getMembershipProviderContext(row.provider)
-    if (row.environment !== context.environment || row.application_id !== context.applicationId)
       continue
     const hasPrice = row.price_minor_units !== null && row.currency_code !== null
     product.providers.push({

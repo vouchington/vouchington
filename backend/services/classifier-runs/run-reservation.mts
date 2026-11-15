@@ -120,7 +120,12 @@ export async function reserveLockedClassifierRun<C, L, E>(
     return { kind: 'no-work' }
   }
   if (inserted && captured.topicIds.length > 0) {
-    await insertClassifierRunCandidates(query, run.runId, captured.topicIds)
+    await insertClassifierRunCandidates(
+      query,
+      run.runId,
+      captured.topicIds,
+      adapter.capturedTopicLimit ?? null,
+    )
   }
   if (inserted && captured.storyCandidates.length > 0) {
     await insertClassifierRunStoryCandidates(query, run.runId, captured.storyCandidates)

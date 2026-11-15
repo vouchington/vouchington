@@ -39,6 +39,15 @@ Each `membership_refunds` row represents one Stripe `Refund` object and stores t
 integer minor-unit amount and currency (not a cumulative amount). Partial refunds are supported; an
 admin can refund the same charge multiple times up to the remaining refundable amount.
 
+Local refund issuance has a shared admission boundary for administrator requests and automatic
+purchase reversals. Canonical charge identity prevents a payment-intent alias from receiving a
+separate allowance. The business attempt is committed before Stripe is called so an unknown
+provider outcome remains replayable without admitting another refund accidentally.
+
+External Stripe refunds are accounting facts and are always recorded, even after local issuance
+has reached its allowance. Remaining refundable money therefore comes from the exact indexed
+charge ledger sum, without truncating receipts to the local issuance allowance.
+
 ## Renewal Notifications
 
 A daily cron job checks provider-backed, automatically renewing sources approaching

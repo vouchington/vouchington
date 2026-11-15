@@ -1,3 +1,4 @@
+import createHttpError from 'http-errors'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { resolveRecurringCatalogPrice } from '@modules/stripe/catalog'
@@ -52,6 +53,18 @@ export async function reconcileStripeMembershipCatalog({
   try {
     await reconcileStripeMembershipCatalogBody(context, resolvePrice)
   } catch (err) {
+    if (typeof err === 'object' && err !== null && 'code' in err && err.code === '40001')
+      throw createHttpError(409, 'Concurrent membership catalog publication', {
+        code: 'MEMBERSHIP_CATALOG_CONFLICT',
+        cause: err,
+      })
+    if (
+      typeof err === 'object' &&
+      err !== null &&
+      'code' in err &&
+      err.code === 'MEMBERSHIP_CATALOG_MAPPING_LIMIT_REACHED'
+    )
+      throw err
     await retireStripeCatalogMappings(context, err, startedAt)
     throw err
   }
@@ -72,7 +85,7 @@ async function reconcileStripeMembershipCatalogBody(
       }),
     ),
   )
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction({ serializable: true })
   const contextId = await getOrCreateProviderContextId(
     { provider: 'stripe', ...context },
     transaction,
