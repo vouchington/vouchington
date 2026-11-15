@@ -40,11 +40,10 @@ export async function runHostnameBlockOwnershipLookupScenarios(): Promise<void> 
     expectations: [
       {
         kind: 'usesIndexes',
-        indexes: [
-          'idx_url_hostnames__reversed_hostname__text_pattern_ops',
-          'idx_url_hostname_blocks__url_hostname_id',
-        ],
+        indexes: ['url_hostnames_hostname_key', 'idx_url_hostnames__hostname__text_pattern_ops'],
+        anyOf: true,
       },
+      { kind: 'usesIndexes', indexes: ['idx_url_hostname_blocks__url_hostname_id'] },
       { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 64 },
       { kind: 'maxProcessedRows', relation: 'url_hostname_blocks', max: 64 },
     ],

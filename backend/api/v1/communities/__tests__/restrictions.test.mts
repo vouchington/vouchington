@@ -143,18 +143,21 @@ describe('Community Restriction Routes', () => {
     it('inserts a new row when re-activating an already-active restriction type', async () => {
       const owner = await createTestUser()
       const community = await insertCommunityWithOwner(owner.id)
-      const activatedAt = new Date('2026-01-01T00:00:00.000Z')
-      const original = await insertTestCommunityRestriction({
-        communityId: community.id,
-        restrictionType: 'no_new_member_posts',
-        activatedById: owner.id,
-        activatedAt,
-        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
-      })
       const request = createRequest()
       await request.authenticateAs(owner)
+      const first = await request
+        .post(`/api/v1/communities/${community.slug}/restrictions`)
+        .send({
+          restriction_types: ['no_new_member_posts'],
+          expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        })
+        .expect(201)
+      const original = Object.values(first.body.community_restrictions)[0] as {
+        id: string
+        activated_at: string
+      }
 
-      await request
+      const activated = await request
         .post(`/api/v1/communities/${community.slug}/restrictions`)
         .send({
           restriction_types: ['no_new_member_posts'],
@@ -163,18 +166,29 @@ describe('Community Restriction Routes', () => {
         })
         .expect(201)
 
-      // A second row is inserted; the type is still active (two valid rows now exist).
-      const active = await getActiveCommunityRestrictions(community.id)
+      const activatedIds = Object.keys(activated.body.community_restrictions)
+      expect(activatedIds).toHaveLength(1)
+      expect(activatedIds).not.toContain(original.id)
+      const listed = await request
+        .get(`/api/v1/communities/${community.slug}/restrictions`)
+        .expect(200)
+      expect(listed.body.results.map((row: { id: string }) => row.id)).toEqual(
+        expect.arrayContaining([original.id, ...activatedIds]),
+      )
+      const active = Object.values(listed.body.community_restrictions) as Array<{
+        id: string
+        restriction_type: string
+        activated_at: string
+      }>
       expect(active).toHaveLength(2)
       expect(active.map(r => r.restriction_type)).toEqual([
         'no_new_member_posts',
         'no_new_member_posts',
       ])
 
-      // The original row is untouched — no timestamp updates.
       const originalRow = active.find(r => r.id === original.id)
       expect(originalRow).toBeDefined()
-      expect(originalRow?.activated_at).toEqual(activatedAt)
+      expect(originalRow?.activated_at).toBe(original.activated_at)
     })
 
     it('type stays active after lifting one of two active rows; cleared only when both are lifted', async () => {
