@@ -211,10 +211,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_review_dispute_resolution_runs__one_active
   WHERE completed_at IS NULL AND failed_at IS NULL AND expired_at IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_review_dispute_resolution_runs__dispute_id
-  ON review_dispute_resolution_runs (review_dispute_id, id DESC);
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_review_dispute_resolution_runs__lifecycle_change_id
   ON review_dispute_resolution_runs (latest_lifecycle_change_id)
   WHERE latest_lifecycle_change_id IS NOT NULL;

@@ -16,7 +16,9 @@ async function insertRun(query: QueryExecutor, disputeId: string): Promise<strin
         AND rd.approved_at IS NULL
         AND rd.sent_at IS NULL
         AND rd.resolved_at IS NULL
-      ON CONFLICT DO NOTHING
+      ON CONFLICT (review_dispute_id)
+        WHERE completed_at IS NULL AND failed_at IS NULL AND expired_at IS NULL
+        DO NOTHING
       RETURNING id, review_dispute_id
     ), requested AS (
       UPDATE review_disputes rd
@@ -45,23 +47,18 @@ async function readActiveRun(query: QueryExecutor, disputeId: string): Promise<s
 
 /**
  * Admits one AI draft request for an eligible dispute. A concurrent or repeated admission loses
- * the partial unique index and reads the existing active run, so admission needs no lock. The
- * active run can finish between the conflict and the read, so one more insert may be needed.
+ * the partial unique index and reads the existing active run, so admission needs no lock. If that
+ * run finished between the conflict and the read, the rare race is a 409 and the caller retries.
  */
 export async function admitReviewDisputeResolutionRun(
   disputeId: string,
   query: QueryExecutor = write,
 ): Promise<{ runId: string; inserted: boolean }> {
-  const first = await insertRun(query, disputeId)
-  if (first) return { runId: first, inserted: true }
+  const inserted = await insertRun(query, disputeId)
+  if (inserted) return { runId: inserted, inserted: true }
   const active = await readActiveRun(query, disputeId)
-  if (active) return { runId: active, inserted: false }
-  const second = await insertRun(query, disputeId)
-  if (second) return { runId: second, inserted: true }
-  // A concurrent admission may have inserted the replacement run first; read it.
-  const replacement = await readActiveRun(query, disputeId)
-  assert(replacement, 422, 'Dispute is no longer eligible for an AI rerun')
-  return { runId: replacement, inserted: false }
+  assert(active, 409, 'Dispute resolution run changed while it was requested; try again')
+  return { runId: active, inserted: false }
 }
 
 /** True while the run is still the one admitted request that may save a draft. */

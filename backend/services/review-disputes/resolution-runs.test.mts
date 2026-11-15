@@ -91,13 +91,13 @@ describe('review dispute resolution runs', () => {
     expect(next.runId).not.toBe(active.runId)
   })
 
-  it('refuses admission after approval', async () => {
+  it('refuses admission with a 409 when no run is active and none can be admitted', async () => {
     const { dispute, staff } = await makeDispute()
     const { runId } = await admitReviewDisputeResolutionRun(dispute.id)
     await createReviewDisputeDraft(draft(dispute.id, runId))
     await approveReviewDispute(staff.id, dispute.id)
     await expect(admitReviewDisputeResolutionRun(dispute.id)).rejects.toMatchObject({
-      status: 422,
+      status: 409,
     })
   })
 
