@@ -24,6 +24,7 @@ export async function admitCopyrightAppealRecommendationRuns(
         SELECT 1 FROM copyright_notices erased
         WHERE erased.id = submission.copyright_notice_id AND erased.evidence_erased_at IS NOT NULL
       )
+    ORDER BY submission.id ASC NULLS LAST
     ON CONFLICT (copyright_notice_submission_id)
       WHERE completed_at IS NULL AND failed_at IS NULL AND expired_at IS NULL DO NOTHING
     RETURNING id, copyright_notice_submission_id AS subject_id`)

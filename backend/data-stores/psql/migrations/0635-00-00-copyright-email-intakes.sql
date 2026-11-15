@@ -294,7 +294,7 @@ CREATE TABLE copyright_notice_email_intake_recommendation_runs (
 CREATE UNIQUE INDEX uq_copyright_notice_email_intake_recommendation_runs__active ON copyright_notice_email_intake_recommendation_runs(copyright_notice_email_intake_receipt_id)
   WHERE completed_at IS NULL AND failed_at IS NULL AND expired_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX idx_copyright_email_recommendation_runs__intake_receipt ON copyright_notice_email_intake_recommendation_runs(copyright_notice_email_intake_receipt_id, id DESC);
+CREATE INDEX idx_copyright_notice_email_intake_recommendation_runs__receipt ON copyright_notice_email_intake_recommendation_runs(copyright_notice_email_intake_receipt_id, id DESC);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_intake_recommendation_runs__result ON copyright_notice_email_intake_recommendation_runs(copyright_notice_email_intake_recommendation_id) WHERE copyright_notice_email_intake_recommendation_id IS NOT NULL;
 COMMENT ON TABLE copyright_notice_email_intake_recommendation_runs IS 'Per-attempt AI email-intake recommendation runs; the immutable recommendation stays success-only evidence and terminal runs expire under bounded operational retention.';

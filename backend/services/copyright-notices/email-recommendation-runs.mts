@@ -25,6 +25,7 @@ export async function admitCopyrightEmailRecommendationRuns(
         SELECT 1 FROM copyright_notice_email_intakes done
         WHERE done.id = receipt.id AND done.recommendation_completed_at IS NOT NULL
       )
+    ORDER BY receipt.id ASC NULLS LAST
     ON CONFLICT (copyright_notice_email_intake_receipt_id)
       WHERE completed_at IS NULL AND failed_at IS NULL AND expired_at IS NULL DO NOTHING
     RETURNING id, copyright_notice_email_intake_receipt_id AS subject_id`)
