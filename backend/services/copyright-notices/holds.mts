@@ -64,9 +64,8 @@ export async function appendCopyrightLegalHoldAssessment(input: {
     422,
     'Submission is not a court or CCB hold',
   )
-  // Before any write the delivery worker also makes: it takes the work item row, then the case's
-  // blocker generation, so preempting first cannot form a cycle. Late activation below only adds
-  // restrictions, whose restore work does not exist yet.
+  // This assessment already owns the notice it writes. Preempt under that notice before
+  // creating the hold; completion likewise writes the notice before its work item.
   await preemptCopyrightRestorations(
     submissionRows[0].copyright_notice_id,
     transaction,

@@ -57,6 +57,7 @@ export async function executeCopyrightActionIntent(
       tuple,
     )
     if (finalized === true) return 'applied'
+    if (finalized === 'not_claimed') return 'not_claimed'
     // Finalization already denied and evicted a live restored placement. A lost lease or a
     // deleted placement still gets the edge denial; the lease owner or deletion owns eviction.
     if (legal.action === 'restore' && finalized !== 'denied')

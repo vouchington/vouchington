@@ -39,8 +39,8 @@ export async function insertAdmittedCopyrightEmailSubmission(
   pending: AdmittedEmailCorrespondencePending,
 ): Promise<{ submissionId: string; correspondenceId: string }> {
   const submissionId = uuidv7()
-  // Preempt before anything the delivery worker also writes: the worker takes the work item row,
-  // then the case's blocker generation, so this order cannot form a cycle.
+  // The caller already owns the notice it writes. Preempt under that notice before inserting
+  // the admitted filing, matching completion's notice-before-work order.
   if (input.kind === 'court_or_ccb_hold')
     await preemptCopyrightRestorations(pending.notice_id, transaction)
   const { rows: submissions } = await transaction<{

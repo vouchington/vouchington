@@ -1,7 +1,10 @@
 import { beginTransaction } from '@data-stores/psql'
 import { invalidateCopyrightLegalRemovalSurfaces } from './action-delivery-cache.mts'
 import { prepublishCopyrightImagePlacementDenial } from './action-delivery-edge.mts'
-import { completeCopyrightActionIntentInTransaction } from './action-delivery-state.mts'
+import {
+  completeCopyrightActionIntentInTransaction,
+  renewCopyrightActionIntentLease,
+} from './action-delivery-state.mts'
 import { readCopyrightActionDeliveryForCompletion } from './action-delivery-facts.mts'
 
 /**
@@ -20,6 +23,8 @@ export async function denyRestoreThenComplete(input: {
   failureMessage: string
   transaction: Awaited<ReturnType<typeof beginTransaction>>
 }): Promise<'completed' | 'not_claimed'> {
+  if (!(await renewCopyrightActionIntentLease(input.intentId, input.leaseToken, input.transaction)))
+    return 'not_claimed'
   await prepublishCopyrightImagePlacementDenial({ ...input.tuple }, { query: input.transaction })
   await input.transaction.commit()
   await using receipt = await beginTransaction()

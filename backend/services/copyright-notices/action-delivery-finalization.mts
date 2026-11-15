@@ -24,12 +24,12 @@ export async function finalizeCopyrightActionAfterDelivery(
   action: 'withhold' | 'restore',
   now: Date,
   deliveredTuple: { placementId: string; revision: number; imageId: string },
-): Promise<boolean | 'denied'> {
+): Promise<boolean | 'denied' | 'not_claimed'> {
   await using transaction = await beginTransaction()
   const legal = await readCopyrightActionDeliveryForCompletion(intentId, leaseToken, transaction)
   if (!legal) {
     await transaction.commit()
-    return false
+    return 'not_claimed'
   }
   const current = await getImagePlacementForCopyright(legal.placement_id, {
     query: transaction,
@@ -56,7 +56,7 @@ export async function finalizeCopyrightActionAfterDelivery(
       completedAt: now,
       failureMessage,
       transaction,
-    }).then(result => (result === 'completed' ? ('denied' as const) : false))
+    }).then(result => (result === 'completed' ? ('denied' as const) : ('not_claimed' as const)))
   if (
     !current ||
     current.deleted ||

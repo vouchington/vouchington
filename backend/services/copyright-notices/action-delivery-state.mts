@@ -77,6 +77,21 @@ export async function claimCopyrightActionIntent(
   return rows[0] ?? null
 }
 
+/** Renew worker ownership before a denial performs external effects in this transaction. */
+export async function renewCopyrightActionIntentLease(
+  intentId: string,
+  leaseToken: string,
+  query: TransactionQuery,
+): Promise<boolean> {
+  const { rowCount } = await query(sql`/* renewCopyrightActionIntentLease */
+    UPDATE copyright_notice_action_work_items
+    SET lease_expires_at = clock_timestamp() + ${CLAIM_TIMEOUT_MS} * interval '1 millisecond'
+    WHERE id = ${intentId} AND state = 'claimed' AND lease_token = ${leaseToken}
+      AND lease_expires_at > clock_timestamp()
+  `)
+  return rowCount === 1
+}
+
 /** Pages the action intents that are due for delivery or whose claim lease expired at `now`. */
 export function searchRecoverableCopyrightActionIntentIds(
   options: CopyrightSweepPageOptions & { now: Date },

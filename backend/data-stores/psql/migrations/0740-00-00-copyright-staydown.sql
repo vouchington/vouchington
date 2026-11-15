@@ -107,7 +107,41 @@ $$;
 CREATE FUNCTION fn_update_copyright_thread_blocker_generation()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE old_case_id uuid; new_case_id uuid; case_id uuid;
+  old_work copyright_notice_action_work_items%ROWTYPE;
+  new_work copyright_notice_action_work_items%ROWTYPE;
 BEGIN
+  IF TG_TABLE_NAME = 'copyright_notice_action_work_items' AND TG_OP = 'UPDATE' THEN
+    old_work := OLD;
+    new_work := NEW;
+    IF old_work.lease_token IS NOT NULL
+      AND new_work.lease_token = old_work.lease_token
+      AND old_work.lease_expires_at IS NOT NULL
+      AND new_work.lease_expires_at > old_work.lease_expires_at THEN
+      -- Extending the same execution does not change any case-retention blocker.
+      old_work.lease_expires_at := new_work.lease_expires_at;
+      old_work.updated_at := new_work.updated_at;
+      IF old_work IS NOT DISTINCT FROM new_work THEN RETURN NEW; END IF;
+    END IF;
+    old_work := OLD;
+    IF old_work.completed_at IS NULL AND old_work.completed_at_reason IS NULL
+      AND old_work.lease_token IS NOT NULL AND old_work.leased_at IS NOT NULL
+      AND new_work.completed_at IS NOT NULL
+      AND new_work.completed_at_reason IN ('completed', 'stale', 'blocked')
+      AND new_work.lease_token IS NULL AND new_work.leased_at IS NULL
+      AND new_work.lease_expires_at IS NULL THEN
+      -- Finishing this existing blocker cannot invalidate a proof that had no blockers.
+      old_work.completed_at := new_work.completed_at;
+      old_work.completed_at_reason := new_work.completed_at_reason;
+      old_work.state := new_work.state;
+      old_work.lease_token := new_work.lease_token;
+      old_work.leased_at := new_work.leased_at;
+      old_work.lease_expires_at := new_work.lease_expires_at;
+      old_work.available_at := new_work.available_at;
+      old_work.failure_message := new_work.failure_message;
+      old_work.updated_at := new_work.updated_at;
+      IF old_work IS NOT DISTINCT FROM new_work THEN RETURN NEW; END IF;
+    END IF;
+  END IF;
   IF TG_OP <> 'INSERT' THEN
     old_case_id := fn_copyright_thread_blocker_case_id(TG_TABLE_NAME, to_jsonb(OLD));
   END IF;

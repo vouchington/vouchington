@@ -574,7 +574,7 @@ CREATE TABLE copyright_notice_lifecycle_changes (
   ),
   CONSTRAINT fk_copyright_lifecycle_events__submission_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id)
-    REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE RESTRICT,
+    REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE RESTRICT DEFERRABLE INITIALLY IMMEDIATE,
   CONSTRAINT fk_copyright_lifecycle_events__correspondence_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_correspondence_id)
     REFERENCES copyright_notice_correspondence_messages(copyright_notice_id, id) ON DELETE RESTRICT,
