@@ -82,7 +82,12 @@ export const communityModerationGroups = definitions.map(definition => ({
       {
         option: route.option,
         source: {
-          schema: { description: `${route.method} ${route.path}`, parameters },
+          schema: {
+            description: definition.plus
+              ? `${route.method} ${route.path}`
+              : route.path.replace('/api/v1/', ''),
+            parameters,
+          },
           meta: {
             audience: 'community_moderation' as const,
             title: route.option.replaceAll('_', ' '),

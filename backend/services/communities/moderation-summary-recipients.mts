@@ -21,8 +21,8 @@ export async function getModerationSummaryRecipients(
       (u.deleted_at IS NULL AND u.is_moderation_emails_enabled
        AND (SELECT TRUE FROM community_members cm WHERE cm.user_id = u.id
             AND cm.removed_at IS NULL AND cm.role IN ('owner', 'moderator') LIMIT 1) IS TRUE
-       AND EXISTS (SELECT 1 FROM user_email_addresses email WHERE email.user_id = u.id AND email.is_primary)
-       AND NOT EXISTS (SELECT 1 FROM user_suspensions suspension WHERE suspension.user_id = u.id AND suspension.lifted_at IS NULL)
+       AND (SELECT TRUE FROM user_email_addresses email WHERE email.user_id = u.id AND email.is_primary LIMIT 1) IS TRUE
+       AND (SELECT TRUE FROM user_suspensions suspension WHERE suspension.user_id = u.id AND suspension.lifted_at IS NULL LIMIT 1) IS NOT TRUE
 ) AS is_eligible
     FROM users u
     WHERE u.id > COALESCE(${afterId ?? null}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
