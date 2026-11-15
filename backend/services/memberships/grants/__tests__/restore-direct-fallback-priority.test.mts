@@ -2,16 +2,80 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
   attachTestStripeProductionProviderObservation,
+  beginTransaction,
+  createTestMembership,
   createTestSku,
   createTestUser,
   getTestGrantQueue,
 } from '@voucha/test-helpers'
+import { setTestMembershipSourceEffectiveAt } from '../../../../test-helpers/membership-source-effective-at.mts'
+import { selectHighestPriorityMembershipSource } from '../../fallback/select-highest-priority-source.mts'
+import { selectDirectTerminationReplacement } from '../select-direct-termination-replacement.mts'
 import { createMembership, grantMembership } from '../../create.mts'
 import { getStripeMembershipSourceIdentity } from '../../create-types.mts'
 import { getMembershipByStripeSubscriptionId, getMembershipByUserId } from '../../get.mts'
 import { updateMembershipFromEvent } from '../../update.mts'
 
 describe('direct fallback priority', () => {
+  it('preserves the source ID tie-break within one JavaScript millisecond', async () => {
+    const member = await createTestUser()
+    const sku = await createTestSku({ plan: 'plus' })
+    const first = await createTestMembership({
+      user_id: member.id,
+      provider_environment: 'production',
+      sku_id: sku.id,
+      stripe_subscription_id: `sub_first_${randomUUID()}`,
+      provider_application_id: sku.provider_application_id,
+    })
+    await attachTestStripeProductionProviderObservation({
+      membership_id: first.id,
+      membership_provider_product_id: sku.membership_provider_product_id,
+      status: 'active',
+    })
+    const second = await createTestMembership({
+      user_id: member.id,
+      provider_environment: 'production',
+      sku_id: sku.id,
+      stripe_subscription_id: `sub_second_${randomUUID()}`,
+      provider_application_id: sku.provider_application_id,
+    })
+    await attachTestStripeProductionProviderObservation({
+      membership_id: second.id,
+      membership_provider_product_id: sku.membership_provider_product_id,
+      status: 'active',
+    })
+    const [lower, higher] = [first, second].toSorted((a, b) =>
+      a.membership_source_id.localeCompare(b.membership_source_id),
+    )
+    const lowerAt = await setTestMembershipSourceEffectiveAt(
+      lower!.membership_source_id,
+      '2025-01-01T00:00:00.000900Z',
+    )
+    const higherAt = await setTestMembershipSourceEffectiveAt(
+      higher!.membership_source_id,
+      '2025-01-01T00:00:00.000100Z',
+    )
+    const expected = selectHighestPriorityMembershipSource([
+      {
+        membership_source_id: lower!.membership_source_id,
+        effective_at: lowerAt,
+        plan: 'plus',
+        source_kind: 'direct',
+      },
+      {
+        membership_source_id: higher!.membership_source_id,
+        effective_at: higherAt,
+        plan: 'plus',
+        source_kind: 'direct',
+      },
+    ])
+    expect(lowerAt.getTime()).toBe(higherAt.getTime())
+    expect(expected?.membership_source_id).toBe(higher!.membership_source_id)
+    await using query = await beginTransaction()
+    const replacement = await selectDirectTerminationReplacement(member.id, randomUUID(), query)
+    expect(replacement?.membership_source_id).toBe(expected?.membership_source_id)
+  })
+
   it('restores a retained direct source when its plan ties the queued grant', async () => {
     const admin = await createTestUser({ administrator: true })
     const member = await createTestUser()

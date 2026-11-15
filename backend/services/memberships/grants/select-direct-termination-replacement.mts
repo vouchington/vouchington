@@ -59,7 +59,8 @@ export async function selectDirectTerminationReplacement(
       AND (source.source_kind = 'direct'
         OR source_state.expires_at IS NULL OR source_state.expires_at > CURRENT_TIMESTAMP)
       AND evidence.verified_at IS NOT NULL AND evidence.rejected_at IS NULL
-    ORDER BY product.plan DESC, source_priority DESC, source_state.effective_at DESC, source.id DESC
+    ORDER BY product.plan DESC, source_priority DESC,
+      date_trunc('milliseconds', source_state.effective_at) DESC, source.id DESC
     LIMIT 1)
     UNION ALL
     SELECT membership_source_id, source_kind, effective_at, plan, 2 AS source_priority
