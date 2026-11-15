@@ -132902,7 +132902,7 @@
         "idx_review_successions__successor_post_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_review_successions__successor_post_id ON public.review_successions USING btree (successor_post_id, automatically_restored_at, manual_override_at, id)",
+          "definition": "CREATE INDEX idx_review_successions__successor_post_id ON public.review_successions USING btree (successor_post_id)",
           "immediate": true,
           "keys": [
             {
@@ -132910,33 +132910,6 @@
               "column": "successor_post_id",
               "descending": false,
               "expression": "successor_post_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "automatically_restored_at",
-              "descending": false,
-              "expression": "automatically_restored_at",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.timestamptz_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "manual_override_at",
-              "descending": false,
-              "expression": "manual_override_at",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.timestamptz_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
