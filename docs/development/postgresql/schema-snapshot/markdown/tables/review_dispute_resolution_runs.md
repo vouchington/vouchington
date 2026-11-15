@@ -31,7 +31,7 @@ Not partitioned — growth: bounded.
 
 **Foreign keys:**
 
-- `review_dispute_resolution_run_review_dispute_id_latest_lif_fkey`: `FOREIGN KEY (review_dispute_id, latest_lifecycle_change_id) REFERENCES review_dispute_lifecycle_changes(review_dispute_id, id) ON DELETE SET NULL (latest_lifecycle_change_id)`
+- `review_dispute_resolution_runs_latest_lifecycle_change_id_fkey`: `FOREIGN KEY (latest_lifecycle_change_id) REFERENCES review_dispute_lifecycle_changes(id) ON DELETE SET NULL`
 - `review_dispute_resolution_runs_review_dispute_id_fkey`: `FOREIGN KEY (review_dispute_id) REFERENCES review_disputes(id) ON DELETE CASCADE`
 
 **Indexes:**

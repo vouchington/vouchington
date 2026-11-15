@@ -21,6 +21,7 @@ Not partitioned — growth: bounded.
 | `model`                      | `text`                     | yes      |                              |          |           |           | OpenAI model used for the AI draft.                                                                                       |
 | `ai_drafted_at`              | `timestamp with time zone` | yes      |                              |          |           |           | When the AI agent drafted the recommended_action and ai_public_response.                                                  |
 | `ai_draft_run_id`            | `uuid`                     | yes      |                              |          |           |           | Identity of the resolution run that saved the current AI draft; retention keeps that run row while this reference exists. |
+| `ai_draft_requested_run_id`  | `uuid`                     | yes      |                              |          |           |           | Latest admitted AI draft request; its outcome is read from that run, which retention keeps while referenced.              |
 | `public_response`            | `text`                     | yes      |                              |          |           |           | Human-owned public message. The ONLY field ever delivered to the disputant.                                               |
 | `internal_notes`             | `text`                     | yes      |                              |          |           |           | Internal moderator notes, never shared with the disputant.                                                                |
 | `drafted_at`                 | `timestamp with time zone` | yes      |                              |          |           |           | When the moderator first seeded public_response from the AI draft.                                                        |
@@ -48,6 +49,7 @@ _none_
 
 **Foreign keys:**
 
+- `fk_review_disputes__ai_draft_requested_run_id`: `FOREIGN KEY (id, ai_draft_requested_run_id) REFERENCES review_dispute_resolution_runs(review_dispute_id, id) ON DELETE RESTRICT`
 - `fk_review_disputes__ai_draft_run_id`: `FOREIGN KEY (id, ai_draft_run_id) REFERENCES review_dispute_resolution_runs(review_dispute_id, id) ON DELETE RESTRICT`
 - `fk_review_disputes_latest_lifecycle_change_id`: `FOREIGN KEY (latest_lifecycle_change_id) REFERENCES review_dispute_lifecycle_changes(id) ON DELETE SET NULL`
 - `review_disputes_approved_by_id_fkey`: `FOREIGN KEY (approved_by_id) REFERENCES users(id) ON DELETE SET NULL`
@@ -59,6 +61,7 @@ _none_
 
 **Indexes:**
 
+- `idx_review_disputes__ai_draft_requested_run_id`: `CREATE INDEX idx_review_disputes__ai_draft_requested_run_id ON public.review_disputes USING btree (ai_draft_requested_run_id) WHERE (ai_draft_requested_run_id IS NOT NULL)`
 - `idx_review_disputes__ai_draft_run_id`: `CREATE INDEX idx_review_disputes__ai_draft_run_id ON public.review_disputes USING btree (ai_draft_run_id) WHERE (ai_draft_run_id IS NOT NULL)`
 - `idx_review_disputes__approved_by_id`: `CREATE INDEX idx_review_disputes__approved_by_id ON public.review_disputes USING btree (approved_by_id) WHERE (approved_by_id IS NOT NULL)`
 - `idx_review_disputes__disputant`: `CREATE INDEX idx_review_disputes__disputant ON public.review_disputes USING btree (disputant_user_id, id DESC)`

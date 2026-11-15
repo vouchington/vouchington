@@ -133141,38 +133141,6 @@
           "ready": true,
           "unique": true,
           "valid": true
-        },
-        "review_dispute_lifecycle_changes_review_dispute_id_id_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX review_dispute_lifecycle_changes_review_dispute_id_id_key ON public.review_dispute_lifecycle_changes USING btree (review_dispute_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "review_dispute_id",
-              "descending": false,
-              "expression": "review_dispute_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
         }
       },
       "physicalPartition": null,
@@ -133188,11 +133156,7 @@
           "definition": "CREATE TRIGGER trigger_review_dispute_lifecycle_changes_append_only BEFORE DELETE OR UPDATE ON public.review_dispute_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
         }
       },
-      "uniqueConstraints": {
-        "review_dispute_lifecycle_changes_review_dispute_id_id_key": {
-          "columns": ["review_dispute_id", "id"]
-        }
-      }
+      "uniqueConstraints": {}
     },
     "review_dispute_resolution_runs": {
       "checkConstraints": {
@@ -133305,11 +133269,11 @@
       },
       "comment": "Durable AI draft requests for review disputes and their terminal outcomes; one active run per dispute, retired by bounded AI rerun retention once terminal.",
       "foreignKeys": {
-        "review_dispute_resolution_run_review_dispute_id_latest_lif_fkey": {
-          "columns": ["review_dispute_id", "latest_lifecycle_change_id"],
+        "review_dispute_resolution_runs_latest_lifecycle_change_id_fkey": {
+          "columns": ["latest_lifecycle_change_id"],
           "onDelete": "SET NULL",
           "onUpdate": "NO ACTION",
-          "referencedColumns": ["review_dispute_id", "id"],
+          "referencedColumns": ["id"],
           "referencedTable": "review_dispute_lifecycle_changes",
           "validated": true
         },
@@ -133485,6 +133449,16 @@
         }
       },
       "columns": {
+        "ai_draft_requested_run_id": {
+          "comment": "Latest admitted AI draft request; its outcome is read from that run, which retention keeps while referenced.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14
+        },
         "ai_draft_run_id": {
           "comment": "Identity of the resolution run that saved the current AI draft; retention keeps that run row while this reference exists.",
           "dataType": "uuid",
@@ -133533,7 +133507,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19
+          "ordinalPosition": 20
         },
         "approved_by_id": {
           "comment": "Moderator who approved the public_response for delivery.",
@@ -133543,7 +133517,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20
+          "ordinalPosition": 21
         },
         "claim_text": {
           "comment": "The disputant's explanation of their claim.",
@@ -133563,7 +133537,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26
+          "ordinalPosition": 27
         },
         "disputant_user_id": {
           "comment": "The verified topic claimant who filed the dispute.",
@@ -133593,7 +133567,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16
+          "ordinalPosition": 17
         },
         "edited_at": {
           "comment": "When the moderator last edited public_response.",
@@ -133603,7 +133577,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17
+          "ordinalPosition": 18
         },
         "edited_by_id": {
           "comment": "Moderator who last edited the draft public_response.",
@@ -133613,7 +133587,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18
+          "ordinalPosition": 19
         },
         "id": {
           "comment": null,
@@ -133633,7 +133607,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15
+          "ordinalPosition": 16
         },
         "latest_lifecycle_change_id": {
           "comment": "Denormalized pointer to the most recent lifecycle change row for this dispute.",
@@ -133643,7 +133617,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25
+          "ordinalPosition": 26
         },
         "model": {
           "comment": "OpenAI model used for the AI draft.",
@@ -133673,7 +133647,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 15
         },
         "reason": {
           "comment": "Legal-angle reason for the dispute.",
@@ -133703,7 +133677,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24
+          "ordinalPosition": 25
         },
         "resolved_at": {
           "comment": "When the dispute was resolved or dismissed.",
@@ -133713,7 +133687,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22
+          "ordinalPosition": 23
         },
         "resolved_by_id": {
           "comment": "Moderator who resolved or dismissed the dispute.",
@@ -133723,7 +133697,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23
+          "ordinalPosition": 24
         },
         "sent_at": {
           "comment": "When the approved public_response was delivered to the disputant.",
@@ -133733,7 +133707,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 22
         },
         "topic_id": {
           "comment": "The topic the disputed review rates (the claimant's topic).",
@@ -133753,11 +133727,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 27
+          "ordinalPosition": 28
         }
       },
       "comment": "Disputes filed by verified topic claimants against reviews of their topic. Resolved disputes and their lifecycle changes are deleted after 24 months; public annotations survive independently.",
       "foreignKeys": {
+        "fk_review_disputes__ai_draft_requested_run_id": {
+          "columns": ["id", "ai_draft_requested_run_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["review_dispute_id", "id"],
+          "referencedTable": "review_dispute_resolution_runs",
+          "validated": true
+        },
         "fk_review_disputes__ai_draft_run_id": {
           "columns": ["id", "ai_draft_run_id"],
           "onDelete": "RESTRICT",
@@ -133824,6 +133806,29 @@
         }
       },
       "indexes": {
+        "idx_review_disputes__ai_draft_requested_run_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_review_disputes__ai_draft_requested_run_id ON public.review_disputes USING btree (ai_draft_requested_run_id) WHERE (ai_draft_requested_run_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "ai_draft_requested_run_id",
+              "descending": false,
+              "expression": "ai_draft_requested_run_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(ai_draft_requested_run_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_review_disputes__ai_draft_run_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
