@@ -1,3 +1,4 @@
+import { getPostPublicationWorkLimit } from '@services/post-publication/work-limits'
 import { enqueuePostPublicationEffects } from '@queues/post-publication/enqueues'
 import {
   listLiveItemSourceFeedsPage,
@@ -33,6 +34,14 @@ export async function processLiveTopicMergeContinuation(
 ): Promise<{ affectedPosts: number }> {
   const subjectId = continuation.subjectIds[continuation.subjectIndex]
   if (!subjectId) throw new TypeError('Topic merge continuation has no subject')
+  if (data.keys.length > 0) {
+    const end = data.keyOffset + getPostPublicationWorkLimit('capture_batch_size')
+    const result = await applyKeys(data, data.keys.slice(data.keyOffset, end), false)
+    await enqueuePostPublicationEffects(
+      end < data.keys.length ? { ...data, keyOffset: end } : continuationJob(data, continuation),
+    )
+    return result
+  }
   const page =
     continuation.kind === 'topic_merge_posts'
       ? await listLiveTopicMergePostsPage(subjectId, continuation.after)
@@ -40,7 +49,11 @@ export async function processLiveTopicMergeContinuation(
         ? await listLiveTopicMergeFeedsPage(subjectId, continuation.after)
         : continuation.kind === 'topic_merge_items'
           ? await listLiveTopicMergeItemsPage(subjectId, continuation.after)
-          : await listLiveItemSourceFeedsPage(subjectId, continuation.after)
+          : await listLiveItemSourceFeedsPage(
+              subjectId,
+              continuation.after,
+              data.includeDeletedSourceFeeds === true,
+            )
   const postIds = continuation.kind === 'topic_merge_posts' ? page.ids : []
   const itemIds = continuation.kind === 'topic_merge_items' ? page.ids : []
   const feedIds =
@@ -48,6 +61,7 @@ export async function processLiveTopicMergeContinuation(
       ? page.ids
       : []
   const keys = [
+    ...(page.topicIds ?? []).map(uuidValue => ({ kind: 'impact_topic' as const, uuidValue })),
     ...postIds.map(uuidValue => ({ kind: 'impact_post' as const, uuidValue })),
     ...itemIds.map(uuidValue => ({ kind: 'impact_rss_feed_item' as const, uuidValue })),
     ...feedIds.map(uuidValue => ({ kind: 'identity_rss_feed' as const, uuidValue })),

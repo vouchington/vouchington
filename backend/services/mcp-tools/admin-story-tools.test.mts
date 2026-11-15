@@ -11,7 +11,7 @@ import {
 import { readStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
 import { rejectPostgresWriteForTest } from '@voucha/test-helpers/injected-failures'
 import { getStoryById } from '@services/feeds/rss-feed-items/get-story-by-id'
-import { getStoryItemIds } from '@services/stories'
+import { isStoryItem } from '@services/stories'
 import {
   addEditorialStoryItem,
   removeEditorialStoryItem,
@@ -51,7 +51,7 @@ describe('shared editorial story operations', () => {
         contentSha256: createHash('sha256').update(JSON.stringify(itemData)).digest(),
       })
       if (operation !== 'add') await setTestItemStoryId(itemId, story.id)
-      const before = await getStoryItemIds(story.id)
+      const before = await isStoryItem(story.id, itemId)
       const restore = rejectPostgresWriteForTest(
         '/* recordModeratorAction',
         new Error('staff history rejected for test'),
@@ -68,7 +68,7 @@ describe('shared editorial story operations', () => {
       } finally {
         restore()
       }
-      expect(await getStoryItemIds(story.id)).toEqual(before)
+      expect(await isStoryItem(story.id, itemId)).toEqual(before)
       expect((await getStoryById(story.id))?.official_rss_feed_item_id).toBeNull()
       expect(await readStaffActionHistory(admin.id)).toEqual([])
     },
@@ -90,7 +90,7 @@ describe('shared editorial story operations', () => {
     expect(
       (await invoke(admin, 'add_story_item', { story_id: story.id, item_id: itemId })).isError,
     ).not.toBe(true)
-    expect(await getStoryItemIds(story.id)).toContain(itemId)
+    expect(await isStoryItem(story.id, itemId)).toBe(true)
     expect(
       (await invoke(admin, 'set_story_official_item', { story_id: story.id, item_id: itemId }))
         .isError,
@@ -99,7 +99,7 @@ describe('shared editorial story operations', () => {
     expect(
       (await invoke(admin, 'remove_story_item', { story_id: story.id, item_id: itemId })).isError,
     ).not.toBe(true)
-    expect(await getStoryItemIds(story.id)).not.toContain(itemId)
+    expect(await isStoryItem(story.id, itemId)).toBe(false)
     expect((await getStoryById(story.id))?.official_rss_feed_item_id).toBeNull()
     expect((await getStoryById(story.id))?.official_locked_at).not.toBeNull()
     expect((await readStaffActionHistory(admin.id)).map(row => row.action_type)).toEqual([

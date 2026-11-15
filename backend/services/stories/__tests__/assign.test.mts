@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { afterEach, describe, it, expect, beforeAll, vi } from 'vitest'
 import { adminAssignItemToStory, adminRemoveItemFromStory } from '../assign.mts'
-import { getStoryItemIds } from '../get.mts'
+import { isStoryItem } from '../get.mts'
 import {
   insertTestRssFeedItem,
   insertTestStory,
@@ -74,7 +74,7 @@ describe('adminAssignItemToStory', () => {
     ).resolves.toBe(itemId)
     await Promise.all(agent.admissions)
 
-    await expect(getStoryItemIds(story.id)).resolves.toContain(itemId)
+    await expect(isStoryItem(story.id, itemId)).resolves.toBe(true)
     expect(
       sentryCaptureExceptionMock.mock.calls.filter(([captured]) => captured === dispatchError),
     ).toHaveLength(1)

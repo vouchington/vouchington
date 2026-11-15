@@ -8,12 +8,6 @@ import { recordModeratorAction } from '@services/moderator-actions'
 // The route layer 404s before calling here; direct callers must guard if
 // they need "not found" semantics.
 
-async function lockPostForLock(postId: string, query: TransactionQuery): Promise<void> {
-  await query(sql`/* lockPostForLock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${postId}, 0))
-  `)
-}
-
 export async function lockPost(
   postId: string,
   lockedById: string,
@@ -21,17 +15,6 @@ export async function lockPost(
 ): Promise<void> {
   type LockResult = { community_id: string | null; created_by_id: string | null } | null
   const run = async (query: TransactionQuery): Promise<LockResult> => {
-    await lockPostForLock(postId, query)
-
-    // Re-check under the advisory lock to prevent concurrent duplicate inserts.
-    const { rows: existing } = await query(sql`/* lockPost:checkActive */
-      SELECT 1 FROM post_locks
-      WHERE post_id = ${postId}
-        AND lifted_at IS NULL
-      LIMIT 1
-    `)
-    if (existing.length > 0) return null
-
     const { rows } = await query<{ community_id: string | null; created_by_id: string | null }>(
       sql`/* lockPost:insert */
       INSERT INTO post_locks (post_id, locked_by_id)
@@ -39,6 +22,7 @@ export async function lockPost(
       FROM posts p
       WHERE p.id = ${postId}
         AND p.deleted_at IS NULL
+      ON CONFLICT (post_id) WHERE lifted_at IS NULL DO NOTHING
       RETURNING
         (SELECT community_id FROM posts WHERE id = post_locks.post_id) AS community_id,
         (SELECT created_by_id FROM posts WHERE id = post_locks.post_id) AS created_by_id
@@ -66,7 +50,6 @@ export async function unlockPost(
 ): Promise<void> {
   type UnlockRow = { community_id: string | null; created_by_id: string | null }
   const run = async (query: TransactionQuery): Promise<UnlockRow[]> => {
-    await lockPostForLock(postId, query)
     const { rows, rowCount } = await query<UnlockRow>(sql`/* unlockPost */
       UPDATE post_locks pl
       SET lifted_at = CURRENT_TIMESTAMP,

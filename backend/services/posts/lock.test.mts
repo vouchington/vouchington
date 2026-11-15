@@ -86,6 +86,30 @@ describe('lock', () => {
     })
   })
 
+  it('concurrent moderator locks create one active lock and one moderator action, and can be lifted and relocked', async () => {
+    const moderator = await createTestUser()
+    const postId = await insertTestPost({
+      title: 'Concurrent locks',
+      slug: makeSlug(),
+      createdById: user.id,
+      markdown: 'content',
+    })
+    await Promise.all([lockPost(postId, moderator.id), lockPost(postId, moderator.id)])
+    expect(
+      (await getModeratorActionRowsForTest({ postId })).filter(row => row.action_type === 'lock'),
+    ).toHaveLength(1)
+    await Promise.all([unlockPost(postId, moderator.id), unlockPost(postId, moderator.id)])
+    expect((await getPostLockedFields(postId))?.locked_at).toBeNull()
+    expect(
+      (await getModeratorActionRowsForTest({ postId })).filter(row => row.action_type === 'unlock'),
+    ).toHaveLength(1)
+    await lockPost(postId, moderator.id)
+    expect((await getPostLockedFields(postId))?.locked_at).not.toBeNull()
+    expect(
+      (await getModeratorActionRowsForTest({ postId })).filter(row => row.action_type === 'lock'),
+    ).toHaveLength(2)
+  })
+
   describe('modlog integration', () => {
     it('writes a modlog row when moderator locks a post (locker != author)', async () => {
       const author = await createTestUser()

@@ -1,5 +1,6 @@
 export type ReviewSuccessionReconciliationResult = {
   changedPostIds: string[]
+  nextCursor: string | null
 }
 
 export type ReviewSuccessionGroup = {

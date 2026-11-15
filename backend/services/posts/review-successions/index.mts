@@ -1,1 +1,1 @@
-export { reconcileReviewSuccessionsForPostIds } from './reconcile.mts'
+export { reconcileReviewSuccessionsForPostPage } from './reconcile.mts'

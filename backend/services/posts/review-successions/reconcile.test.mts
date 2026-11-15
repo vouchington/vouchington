@@ -16,7 +16,7 @@ import {
 } from '@voucha/test-helpers'
 import { archivePost, unarchivePost } from '../archive.mts'
 import type { PrivateUser } from '@services/users/types'
-import { reconcileReviewSuccessionsForPostIds } from './index.mts'
+import { reconcileReviewSuccessionsForPostPage } from './index.mts'
 import { listReviewSuccessionsForPostIds } from '@voucha/test-helpers/post-review-successions'
 import { terminalizeActiveReviewSuccessionForManualPost } from './manual.mts'
 
@@ -49,22 +49,22 @@ describe('review successions', () => {
     const predecessorId = await createReview([topicA, topicB])
     const successorId = await createReview([topicB, topicA], 'pending')
 
-    await expect(reconcileReviewSuccessionsForPostIds([successorId])).resolves.toEqual({
+    await expect(reconcileReviewSuccessionsForPostPage(successorId)).resolves.toMatchObject({
       changedPostIds: [],
     })
     expect(await getPostArchivedFields(predecessorId)).toMatchObject({ archived_at: null })
 
     await setTestPostClearanceStatus(successorId, 'in_review', administrator.id)
-    await expect(reconcileReviewSuccessionsForPostIds([successorId])).resolves.toEqual({
+    await expect(reconcileReviewSuccessionsForPostPage(successorId)).resolves.toMatchObject({
       changedPostIds: [],
     })
     await setTestPostClearanceStatus(successorId, 'rejected', administrator.id)
-    await expect(reconcileReviewSuccessionsForPostIds([successorId])).resolves.toEqual({
+    await expect(reconcileReviewSuccessionsForPostPage(successorId)).resolves.toMatchObject({
       changedPostIds: [],
     })
 
     await setTestPostClearanceStatus(successorId, 'approved', administrator.id)
-    await expect(reconcileReviewSuccessionsForPostIds([successorId])).resolves.toEqual({
+    await expect(reconcileReviewSuccessionsForPostPage(successorId)).resolves.toMatchObject({
       changedPostIds: [predecessorId],
     })
     expect(await getPostArchivedFields(predecessorId)).toMatchObject({
@@ -87,12 +87,12 @@ describe('review successions', () => {
     const oldestId = await createReview([topicA])
     const middleId = await createReview([topicA])
 
-    await reconcileReviewSuccessionsForPostIds([middleId])
+    await reconcileReviewSuccessionsForPostPage(middleId)
     const newestId = await createReview([topicA])
-    await reconcileReviewSuccessionsForPostIds([newestId])
+    await reconcileReviewSuccessionsForPostPage(newestId)
     await setTestPostClearanceStatus(newestId, 'rejected', administrator.id)
 
-    await expect(reconcileReviewSuccessionsForPostIds([newestId])).resolves.toEqual({
+    await expect(reconcileReviewSuccessionsForPostPage(newestId)).resolves.toMatchObject({
       changedPostIds: [middleId],
     })
     expect((await getPostArchivedFields(middleId))?.archived_at).toBeNull()
@@ -115,12 +115,12 @@ describe('review successions', () => {
     const predecessorId = await createReview([topicB])
     const successorId = await createReview([topicB])
 
-    await reconcileReviewSuccessionsForPostIds([successorId])
+    await reconcileReviewSuccessionsForPostPage(successorId)
     await expect(terminalizeActiveReviewSuccessionForManualPost(successorId)).resolves.toBe(false)
     await expect(terminalizeActiveReviewSuccessionForManualPost(predecessorId)).resolves.toBe(true)
     await setTestPostClearanceStatus(successorId, 'rejected', administrator.id)
 
-    await expect(reconcileReviewSuccessionsForPostIds([successorId])).resolves.toEqual({
+    await expect(reconcileReviewSuccessionsForPostPage(successorId)).resolves.toMatchObject({
       changedPostIds: [],
     })
     expect((await getPostArchivedFields(predecessorId))?.archived_at).not.toBeNull()
@@ -137,10 +137,10 @@ describe('review successions', () => {
     const predecessorId = await createReview([topicB])
     const successorId = await createReview([topicB])
 
-    await reconcileReviewSuccessionsForPostIds([successorId])
+    await reconcileReviewSuccessionsForPostPage(successorId)
     await archivePost(predecessorId, author.id)
     await setTestPostClearanceStatus(successorId, 'rejected', administrator.id)
-    await reconcileReviewSuccessionsForPostIds([successorId])
+    await reconcileReviewSuccessionsForPostPage(successorId)
 
     expect((await getPostArchivedFields(predecessorId))?.archived_at).not.toBeNull()
     await expect(listReviewSuccessionsForPostIds([predecessorId])).resolves.toMatchObject([
@@ -152,14 +152,14 @@ describe('review successions', () => {
     const predecessorId = await createReview([topicB])
     const successorId = await createReview([topicB])
 
-    await reconcileReviewSuccessionsForPostIds([successorId])
+    await reconcileReviewSuccessionsForPostPage(successorId)
     await unarchivePost(predecessorId)
 
     expect((await getPostArchivedFields(predecessorId))?.archived_at).toBeNull()
     await expect(listReviewSuccessionsForPostIds([predecessorId])).resolves.toMatchObject([
       { manual_override_at: expect.any(Date), automatically_restored_at: null },
     ])
-    await expect(reconcileReviewSuccessionsForPostIds([successorId])).resolves.toEqual({
+    await expect(reconcileReviewSuccessionsForPostPage(successorId)).resolves.toMatchObject({
       changedPostIds: [predecessorId],
     })
     expect((await getPostArchivedFields(predecessorId))?.archived_at).not.toBeNull()
@@ -174,7 +174,7 @@ describe('review successions', () => {
     })
     const predecessorId = await createReview([topic])
     const successorId = await createReview([topic])
-    await reconcileReviewSuccessionsForPostIds([successorId])
+    await reconcileReviewSuccessionsForPostPage(successorId)
     const blocked = await reviewSuccessionTopicDeleteErrorCode(topic)
     expect(blocked).toBe('23514')
     await hardDeleteTestTopic(topic)
@@ -192,7 +192,7 @@ describe('review successions', () => {
     try {
       const { result, queries } = await withCapturedTestQueries(() =>
         withPostgresTransactionForTest(
-          query => reconcileReviewSuccessionsForPostIds([successorId], { query }),
+          query => reconcileReviewSuccessionsForPostPage(successorId, null, { query }),
           {
             marker: '/* listReviewSuccessionCandidateIds */',
             complete: () => {
@@ -226,8 +226,8 @@ describe('review successions', () => {
     const predecessorId = await createReview([topicA, topicB])
     const successorId = await createReview([topicA, topicB])
 
-    await reconcileReviewSuccessionsForPostIds([successorId])
-    await expect(reconcileReviewSuccessionsForPostIds([successorId])).resolves.toEqual({
+    await reconcileReviewSuccessionsForPostPage(successorId)
+    await expect(reconcileReviewSuccessionsForPostPage(successorId)).resolves.toMatchObject({
       changedPostIds: [],
     })
     await expect(listReviewSuccessionsForPostIds([predecessorId])).resolves.toHaveLength(1)

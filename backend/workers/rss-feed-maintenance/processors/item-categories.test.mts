@@ -1,44 +1,15 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import { upsertRssFeedItemCategories } from '@services/rss-feed-items/categories'
-import { rssFeedItemsWorkConfig } from '@services/rss-feed-items/work-limits'
 import { upsertRssFeedItems } from '@services/rss-feed-items/upsert'
 import { upsertRssFeedCategories, getRssFeedCategories } from '@services/rss-feeds/categories'
-import {
-  createTestTopic,
-  getTestRssFeedItemCategorySnapshotReconciliation,
-  insertTestRssFeedDirect,
-  readAllQueueJobs,
-} from '@voucha/test-helpers'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { createTestTopic, insertTestRssFeedDirect } from '@voucha/test-helpers'
 import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import {
   processBackfillCategoriesForTopicAliases,
   processBackfillRssFeedCategoriesForTopicAlias,
-  processReconcileRssFeedItemCategorySnapshots,
 } from './item-categories.mts'
-
-async function insertSnapshotItem(suffix: string, category: string) {
-  const feed = await insertTestRssFeedDirect({})
-  const [item] = await upsertRssFeedItems(feed.id, [
-    {
-      categories: [category],
-      guid: suffix,
-      link: `https://snapshot-${suffix}.example/item`,
-      title: suffix,
-    },
-  ])
-  return item!
-}
-
-async function ownedSnapshotJobs(itemId: string) {
-  return (await readAllQueueJobs(rssFeedMaintenance)).filter(
-    job =>
-      job.name === 'processReconcileRssFeedItemCategorySnapshots' &&
-      (job.data as { rssFeedItemIds?: string[] }).rssFeedItemIds?.includes(itemId),
-  )
-}
 
 describe('rss feed item category processors', () => {
   it('backfills item categories for a newly created topic', async () => {
@@ -91,64 +62,5 @@ describe('rss feed item category processors', () => {
     expect(
       (await getRssFeedCategories(feed.id)).find(row => row.category_text === slug)?.topic_id,
     ).toBe(topic.id)
-  })
-
-  it('does not enqueue a continuation after a partial snapshot batch', async () => {
-    const suffix = randomUUID()
-    const item = await insertSnapshotItem(suffix, `snapshot-${suffix}`)
-    expect(await getTestRssFeedItemCategorySnapshotReconciliation(item.id)).toBeDefined()
-
-    await expect(
-      processReconcileRssFeedItemCategorySnapshots({ rssFeedItemIds: [item.id] }),
-    ).resolves.toEqual({ reconciled: 1 })
-
-    expect(await getTestRssFeedItemCategorySnapshotReconciliation(item.id)).toBeUndefined()
-    await expect(ownedSnapshotJobs(item.id)).resolves.toEqual([])
-  })
-
-  it('enqueues an immediate serialized continuation after a full snapshot batch', async () => {
-    onTestFinished(
-      overrideDynamicConfigFieldsForTest(rssFeedItemsWorkConfig, {
-        category_snapshot_reconciliation_batch_size: 1,
-      }),
-    )
-    const suffix = randomUUID()
-    const item = await insertSnapshotItem(suffix, `snapshot-${suffix}`)
-
-    await expect(
-      processReconcileRssFeedItemCategorySnapshots({ rssFeedItemIds: [item.id] }),
-    ).resolves.toEqual({ reconciled: 1 })
-
-    const jobs = await ownedSnapshotJobs(item.id)
-    onTestFinished(async () => {
-      await Promise.all(jobs.map(job => job.remove()))
-    })
-    expect(jobs).toHaveLength(1)
-    expect(jobs[0]!.data).toEqual({ rssFeedItemIds: [item.id] })
-  })
-
-  it('rejects when a full-batch continuation cannot be dispatched', async () => {
-    onTestFinished(
-      overrideDynamicConfigFieldsForTest(rssFeedItemsWorkConfig, {
-        category_snapshot_reconciliation_batch_size: 1,
-      }),
-    )
-    const suffix = randomUUID()
-    const item = await insertSnapshotItem(suffix, `snapshot-${suffix}`)
-    const enqueueError = new Error(`continuation unavailable ${suffix}`)
-    const originalAdd = rssFeedMaintenance.add
-    const addSpy = vi
-      .spyOn(rssFeedMaintenance, 'add')
-      .mockImplementation((name, data, opts) =>
-        name === 'processReconcileRssFeedItemCategorySnapshots' &&
-        (data as { rssFeedItemIds?: string[] }).rssFeedItemIds?.includes(item.id)
-          ? Promise.reject(enqueueError)
-          : originalAdd.call(rssFeedMaintenance, name, data, opts),
-      )
-    onTestFinished(() => addSpy.mockRestore())
-
-    await expect(
-      processReconcileRssFeedItemCategorySnapshots({ rssFeedItemIds: [item.id] }),
-    ).rejects.toBe(enqueueError)
   })
 })

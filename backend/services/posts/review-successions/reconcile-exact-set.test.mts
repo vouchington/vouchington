@@ -9,7 +9,7 @@ import {
   insertTestTopic,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import { reconcileReviewSuccessionsForPostIds } from './index.mts'
+import { reconcileReviewSuccessionsForPostPage } from './index.mts'
 import { listReviewSuccessionsForPostIds } from '@voucha/test-helpers/post-review-successions'
 
 describe('review succession exact-topic routing', () => {
@@ -58,12 +58,20 @@ describe('review succession exact-topic routing', () => {
     const emptyTopicId = await createReview([])
 
     await expect(
-      reconcileReviewSuccessionsForPostIds([supersetId, otherAuthorId, emptyTopicId]),
-    ).resolves.toEqual({ changedPostIds: [] })
+      Promise.all(
+        [supersetId, otherAuthorId, emptyTopicId].map(id =>
+          reconcileReviewSuccessionsForPostPage(id),
+        ),
+      ),
+    ).resolves.toEqual([
+      { changedPostIds: [], nextCursor: null },
+      { changedPostIds: [], nextCursor: null },
+      { changedPostIds: [], nextCursor: null },
+    ])
     expect((await getPostArchivedFields(predecessorId))?.archived_at).toBeNull()
 
     const exactSuccessorId = await createReview([topicA])
-    await expect(reconcileReviewSuccessionsForPostIds([exactSuccessorId])).resolves.toEqual({
+    await expect(reconcileReviewSuccessionsForPostPage(exactSuccessorId)).resolves.toMatchObject({
       changedPostIds: [predecessorId],
     })
     await expect(listReviewSuccessionsForPostIds([predecessorId])).resolves.toMatchObject([
@@ -77,7 +85,7 @@ describe('review succession exact-topic routing', () => {
     const secondId = await createReview([topicB])
     const successorId = await createReview([topicB])
 
-    await expect(reconcileReviewSuccessionsForPostIds([successorId])).resolves.toEqual({
+    await expect(reconcileReviewSuccessionsForPostPage(successorId)).resolves.toMatchObject({
       changedPostIds: [firstId, secondId].toSorted(),
     })
     await expect(listReviewSuccessionsForPostIds([firstId, secondId])).resolves.toMatchObject([
@@ -90,15 +98,15 @@ describe('review succession exact-topic routing', () => {
     const predecessorId = await createReview([topicC])
     const editedSuccessorId = await createReview([topicC])
 
-    await reconcileReviewSuccessionsForPostIds([editedSuccessorId])
+    await reconcileReviewSuccessionsForPostPage(editedSuccessorId)
     await insertTestPostReview(editedSuccessorId, topicD)
-    await expect(reconcileReviewSuccessionsForPostIds([editedSuccessorId])).resolves.toEqual({
+    await expect(reconcileReviewSuccessionsForPostPage(editedSuccessorId)).resolves.toMatchObject({
       changedPostIds: [predecessorId],
     })
     expect((await getPostArchivedFields(predecessorId))?.archived_at).toBeNull()
 
     const replacementId = await createReview([topicC, topicD])
-    await expect(reconcileReviewSuccessionsForPostIds([replacementId])).resolves.toEqual({
+    await expect(reconcileReviewSuccessionsForPostPage(replacementId)).resolves.toMatchObject({
       changedPostIds: [editedSuccessorId],
     })
     expect((await getPostArchivedFields(predecessorId))?.archived_at).toBeNull()
@@ -122,14 +130,14 @@ describe('review succession exact-topic routing', () => {
     ).toSorted()
     const successorId = reviewIds.at(-1)!
 
-    const first = await reconcileReviewSuccessionsForPostIds([successorId])
+    const first = await reconcileReviewSuccessionsForPostPage(successorId)
     expect(first.changedPostIds).toHaveLength(
       getPostsWorkLimit('review_succession_candidate_page_size') - 1,
     )
 
-    await expect(reconcileReviewSuccessionsForPostIds([first.changedPostIds[0]!])).resolves.toEqual(
-      { changedPostIds: reviewIds.slice(0, 2) },
-    )
+    await expect(
+      reconcileReviewSuccessionsForPostPage(first.changedPostIds[0]!),
+    ).resolves.toMatchObject({ changedPostIds: reviewIds.slice(0, 2) })
   })
 
   async function createReview(

@@ -46,7 +46,7 @@ export async function upsertRssFeedItemCategories(
 
 async function upsertRssFeedItemCategorySnapshots(
   snapshots: ReturnType<typeof normalizeRssFeedItemCategorySnapshots>,
-): Promise<void> {
+): Promise<boolean> {
   const INVALIDATION_CHUNK_SIZE = getRssFeedItemsWorkLimit('category_invalidation_chunk_size')
   const categorySqlBatches = buildRssFeedItemCategorySqlBatches(snapshots)
 
@@ -153,7 +153,7 @@ async function upsertRssFeedItemCategorySnapshots(
   await createCategoryRelations(resolvedTopicPairs, resolvedHashtagPairs, {
     enqueueTopHashtagRefresh: false,
   })
-  await reconcileRssFeedItemCategorySnapshots(snapshots)
+  const { hasMore } = await reconcileRssFeedItemCategorySnapshots(snapshots)
 
   const changedItemIds = [
     ...new Set([
@@ -169,4 +169,5 @@ async function upsertRssFeedItemCategorySnapshots(
     await invalidateRssFeedItemsStrict(...chunk)
   }
   if (changedItemIds.length > 0) void enqueueRefreshTopHashtags()
+  return !hasMore
 }

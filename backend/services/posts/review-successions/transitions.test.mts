@@ -10,7 +10,7 @@ import {
 } from '@voucha/test-helpers'
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
-import { reconcileReviewSuccessionsForPostIds } from './reconcile.mts'
+import { reconcileReviewSuccessionsForPostPage } from './reconcile.mts'
 
 describe('review succession lifecycle transitions', () => {
   let author: PrivateUser
@@ -37,10 +37,10 @@ describe('review succession lifecycle transitions', () => {
   it('restores the automatic predecessor when its successor is soft-deleted', async () => {
     const predecessor = await createReview([topicA])
     const successor = await createReview([topicA])
-    await reconcileReviewSuccessionsForPostIds([successor])
+    await reconcileReviewSuccessionsForPostPage(successor)
 
     await deleteTestPost(successor)
-    await expect(reconcileReviewSuccessionsForPostIds([successor])).resolves.toEqual({
+    await expect(reconcileReviewSuccessionsForPostPage(successor)).resolves.toMatchObject({
       changedPostIds: [predecessor],
     })
 
@@ -50,13 +50,13 @@ describe('review succession lifecycle transitions', () => {
   it('routes a topic-set edit through both its current and historical groups', async () => {
     const predecessor = await createReview([topicA])
     const successor = await createReview([topicA])
-    await reconcileReviewSuccessionsForPostIds([successor])
+    await reconcileReviewSuccessionsForPostPage(successor)
 
     await Promise.all([
       deleteTestPostReviewRating(successor, topicA),
       insertTestPostReview(successor, topicB),
     ])
-    await expect(reconcileReviewSuccessionsForPostIds([successor])).resolves.toEqual({
+    await expect(reconcileReviewSuccessionsForPostPage(successor)).resolves.toMatchObject({
       changedPostIds: [predecessor],
     })
 
@@ -69,8 +69,8 @@ describe('review succession lifecycle transitions', () => {
     const newestSuccessor = await createReview([topicB])
 
     await Promise.all([
-      reconcileReviewSuccessionsForPostIds([firstSuccessor]),
-      reconcileReviewSuccessionsForPostIds([newestSuccessor]),
+      reconcileReviewSuccessionsForPostPage(firstSuccessor),
+      reconcileReviewSuccessionsForPostPage(newestSuccessor),
     ])
 
     expect((await getPostArchivedFields(predecessor))?.archived_at).not.toBeNull()

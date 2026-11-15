@@ -1,9 +1,6 @@
 import { createReportIntegrityFlag } from '@services/report-integrity/create-flag'
 import { detectMassReportCampaign } from '@services/report-integrity/detect'
-import {
-  listPendingReportEntityPage,
-  type PendingReportEntity,
-} from '@services/report-integrity/backfill'
+import { listPendingReportEntityPage } from '@services/report-integrity/backfill'
 import {
   enqueueContinueBackfillReportIntegrity,
   enqueueReportIntegrityCheckBatch,
@@ -38,17 +35,17 @@ export async function processReportIntegrityCheck(
   }
 }
 
-/** Enqueues one bounded page of integrity checks, then continues from the page's last entity id. */
+/** Enqueues one bounded page of integrity checks, then continues from the last inspected report id. */
 export async function processBackfillReportIntegrity(
   data: BackfillReportIntegrityData = {},
-  target?: PendingReportEntity,
+  reportIds: readonly string[] | undefined = data.reportIds,
 ): Promise<{ enqueued: number }> {
   const { entities, nextCursor } = await listPendingReportEntityPage(
     Date.now(),
-    data.afterId,
-    target,
+    data.afterReportId,
+    reportIds,
   )
   if (entities.length > 0) await enqueueReportIntegrityCheckBatch(entities)
-  if (nextCursor) await enqueueContinueBackfillReportIntegrity(nextCursor)
+  if (nextCursor) await enqueueContinueBackfillReportIntegrity(nextCursor, reportIds)
   return { enqueued: entities.length }
 }

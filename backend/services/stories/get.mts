@@ -3,18 +3,17 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { Story } from './types.mts'
 
-export async function getStoryItemIds(storyId: string): Promise<string[]> {
+export async function isStoryItem(storyId: string, itemId: string): Promise<boolean> {
   const { rows } = await read(
-    sql`/* getStoryItemIds */
+    sql`/* isStoryItem */
     SELECT id
-    -- no-mistakes-disable-next-line postgres-required-predicates: story membership can attach already-created items, so item IDs may predate story_id
     FROM rss_feed_items
-    WHERE story_id = ${storyId}
+    WHERE id = ${itemId}
+      AND story_id = ${storyId}
       AND deleted_at IS NULL
-    ORDER BY id DESC
   `,
   )
-  return rows.map(r => r.id as string)
+  return rows.length > 0
 }
 
 export async function getStoriesByIdBatch(

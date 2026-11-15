@@ -3,29 +3,45 @@ import {
   backfillTopicTextItemPage,
   backfillTopicTextFeedPage,
 } from '@services/rss-feeds/topic-text-category-backfill'
-import { reconcileRssFeedItemCategorySnapshots } from '@services/rss-feed-items/category-snapshot-reconciliations'
+import {
+  reconcileRssFeedItemCategorySnapshots,
+  reconcileRssFeedItemCategorySourcePage,
+} from '@services/rss-feed-items/category-snapshot-reconciliations'
 import {
   enqueueContinueRssFeedItemCategorySnapshotReconciliation,
+  enqueueBulkRssFeedItemCategorySourcePages,
   enqueueBackfillCategoriesForTopicAliases,
   enqueueBackfillRssFeedCategoriesForTopicAlias,
 } from '@queues/rss-feed-maintenance/enqueues/item-categories'
-import type { TopicTextCategoryJob } from '@queues/rss-feed-maintenance/types'
+import type {
+  TopicTextCategoryJob,
+  RssFeedMaintenanceJobPayloads,
+} from '@queues/rss-feed-maintenance/types'
 
 /** Applies and exact-generation acknowledges bounded durable category snapshots. */
-export const processReconcileRssFeedItemCategorySnapshots = async (data: {
-  rssFeedItemIds?: string[]
-}) => {
+export const processReconcileRssFeedItemCategorySnapshots = async (
+  data: RssFeedMaintenanceJobPayloads['processReconcileRssFeedItemCategorySnapshots'],
+) => {
   const CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE = getRssFeedItemsWorkLimit(
     'category_snapshot_reconciliation_batch_size',
   )
-  const result = await reconcileRssFeedItemCategorySnapshots(
-    CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE,
-    data.rssFeedItemIds,
-  )
-  if (result.reconciled === CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE) {
-    await enqueueContinueRssFeedItemCategorySnapshotReconciliation(data.rssFeedItemIds)
+  const result = data.sourcePage
+    ? await reconcileRssFeedItemCategorySourcePage(data.sourcePage)
+    : await reconcileRssFeedItemCategorySnapshots(
+        CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE,
+        data.rssFeedItemIds,
+        data.after,
+      )
+  if (result.sourcePages?.length)
+    await enqueueBulkRssFeedItemCategorySourcePages(result.sourcePages)
+  if (!data.sourcePage && result.after) {
+    await enqueueContinueRssFeedItemCategorySnapshotReconciliation(
+      data.rssFeedItemIds,
+      result.after,
+    )
   }
-  return result
+  const { after: _after, ...response } = result
+  return response
 }
 
 /**

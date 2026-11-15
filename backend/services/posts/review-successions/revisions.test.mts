@@ -16,7 +16,7 @@ import {
   streamEntityReconciliationCandidateBatches,
   type EntityReconciliationCandidate,
 } from '@services/entity-listener-reconciliation/reconciliation'
-import { reconcileReviewSuccessionsForPostIds } from './index.mts'
+import { reconcileReviewSuccessionsForPostPage } from './index.mts'
 import { listReviewSuccessionsForPostIds } from '@voucha/test-helpers/post-review-successions'
 
 async function createReviewPair() {
@@ -47,7 +47,7 @@ describe('review succession post revisions', () => {
   it('records archive and restore timestamps once and exposes non-content listener events', async () => {
     const { administrator, predecessorId, successorId } = await createReviewPair()
     const windowStart = new Date(Date.now() - 60_000)
-    await reconcileReviewSuccessionsForPostIds([successorId])
+    await reconcileReviewSuccessionsForPostPage(successorId)
     const [epoch] = await listReviewSuccessionsForPostIds([predecessorId])
     const archived = await getPostArchiveRevisionsForTest(predecessorId)
     expect(archived).toHaveLength(1)
@@ -57,12 +57,12 @@ describe('review succession post revisions', () => {
       epoch!.predecessor_archived_at,
     )
 
-    await reconcileReviewSuccessionsForPostIds([successorId])
+    await reconcileReviewSuccessionsForPostPage(successorId)
     expect(await getPostArchiveRevisionsForTest(predecessorId)).toEqual(archived)
     expect(await listReviewSuccessionsForPostIds([predecessorId])).toEqual([epoch])
 
     await setTestPostClearanceStatus(successorId, 'rejected', administrator.id)
-    await reconcileReviewSuccessionsForPostIds([successorId])
+    await reconcileReviewSuccessionsForPostPage(successorId)
     const restored = await getPostArchiveRevisionsForTest(predecessorId)
     expect(restored).toHaveLength(2)
     expect(restored[1]).toMatchObject({ revision_type: 'update', revised_by_id: null })
@@ -72,7 +72,7 @@ describe('review succession post revisions', () => {
     expect(restored[1]!.changes.archived_at!.after).toBeNull()
     expect((await getPostArchivedFields(predecessorId))?.archived_at).toBeNull()
     const ended = await listReviewSuccessionsForPostIds([predecessorId])
-    await reconcileReviewSuccessionsForPostIds([successorId])
+    await reconcileReviewSuccessionsForPostPage(successorId)
     expect(await getPostArchiveRevisionsForTest(predecessorId)).toEqual(restored)
     expect(await listReviewSuccessionsForPostIds([predecessorId])).toEqual(ended)
 
@@ -106,10 +106,10 @@ describe('review succession post revisions', () => {
 
   it('records an automatic restore when the successor is deleted', async () => {
     const { predecessorId, successorId } = await createReviewPair()
-    await reconcileReviewSuccessionsForPostIds([successorId])
+    await reconcileReviewSuccessionsForPostPage(successorId)
     const [epoch] = await listReviewSuccessionsForPostIds([predecessorId])
     await deleteTestPost(successorId)
-    await reconcileReviewSuccessionsForPostIds([successorId])
+    await reconcileReviewSuccessionsForPostPage(successorId)
     const revisions = await getPostArchiveRevisionsForTest(predecessorId)
     expect(revisions).toHaveLength(2)
     expect(new Date(revisions[1]!.changes.archived_at!.before as string)).toEqual(
@@ -120,7 +120,7 @@ describe('review succession post revisions', () => {
 
   it('keeps a manual override revision separate and writes no automatic restore', async () => {
     const { administrator, predecessorId, successorId } = await createReviewPair()
-    await reconcileReviewSuccessionsForPostIds([successorId])
+    await reconcileReviewSuccessionsForPostPage(successorId)
     const post = await getPostByAny(predecessorId)
     if (!post) throw new Error('Expected archived predecessor')
     await setTestPostClearanceStatus(successorId, 'rejected', administrator.id)
@@ -132,7 +132,7 @@ describe('review succession post revisions', () => {
       revised_by_id: administrator.id,
       changes: { archived_at: { after: null } },
     })
-    await reconcileReviewSuccessionsForPostIds([successorId])
+    await reconcileReviewSuccessionsForPostPage(successorId)
     expect(await getPostArchiveRevisionsForTest(predecessorId)).toEqual(revisions)
     expect(await listReviewSuccessionsForPostIds([predecessorId])).toMatchObject([
       { manual_override_at: expect.any(Date), automatically_restored_at: null },

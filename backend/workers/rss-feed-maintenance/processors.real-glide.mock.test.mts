@@ -74,10 +74,26 @@ describe('merged RSS feed maintenance worker with real GlideMQ', () => {
     ])
     expect(await getTestRssFeedItemCategorySnapshotReconciliation(item!.id)).toBeDefined()
 
-    const result = await runJob('processReconcileRssFeedItemCategorySnapshots', {
+    const bulk = vi.spyOn(rssFeedMaintenance, 'addBulk')
+    onTestFinished(() => bulk.mockRestore())
+    const selected = await runJob('processReconcileRssFeedItemCategorySnapshots', {
       rssFeedItemIds: [item!.id],
     })
-    expect(result).toMatchObject({ reconciled: 1 })
+    expect(selected).toMatchObject({
+      reconciled: 0,
+      sourcePages: [expect.objectContaining({ rssFeedItemId: item!.id })],
+    })
+    expect(await getTestRssFeedItemCategorySnapshotReconciliation(item!.id)).toBeDefined()
+    expect(bulk).toHaveBeenCalledTimes(1)
+    const admitted = await bulk.mock.results[0]!.value
+    expect(admitted).toHaveLength(1)
+    expect(admitted[0]!.data).toMatchObject({
+      sourcePage: { rssFeedItemId: item!.id },
+    })
+    const sourceData = admitted[0]!.data
+    await admitted[0]!.remove()
+    const completed = await runJob('processReconcileRssFeedItemCategorySnapshots', sourceData)
+    expect(completed).toEqual({ reconciled: 1 })
     expect(await getTestRssFeedItemCategorySnapshotReconciliation(item!.id)).toBeUndefined()
     expect(await getTestRssFeedItemCategories(item!.id)).toEqual([
       expect.objectContaining({ category_text: category }),
@@ -152,10 +168,14 @@ describe('merged RSS feed maintenance worker with real GlideMQ', () => {
     onTestFinished(async () => {
       await Promise.all(ownedJobs.map(job => job.remove()))
     })
-    const data = { topicAliasIds: [alias!.id], changeId }
+    const data = {
+      topicAliasIds: [alias!.id],
+      changeId,
+      cursor: { topicAliasId: alias!.id, afterPostId: null },
+    }
     const first = posts.map(post => post.id).toSorted()[0]!
     expect(await runJob('processInvalidatePostsForTopicAliases', data)).toEqual({
-      lastPostId: first,
+      cursor: { topicAliasId: alias!.id, afterPostId: first },
       hasMore: true,
     })
     await runJob('processInvalidatePostsForTopicAliases', data)
@@ -165,7 +185,10 @@ describe('merged RSS feed maintenance worker with real GlideMQ', () => {
     })
     ownedJobs.push(...pages)
     expect(pages).toHaveLength(1)
-    expect(pages[0]!.data).toEqual({ ...data, afterPostId: first })
+    expect(pages[0]!.data).toEqual({
+      ...data,
+      cursor: { topicAliasId: alias!.id, afterPostId: first },
+    })
     await runJob('processInvalidatePostsForTopicAliases', pages[0]!.data as Record<string, unknown>)
     const original = await notifications.searchJobs({
       name: 'notifications.processReconcilePostNotifications',

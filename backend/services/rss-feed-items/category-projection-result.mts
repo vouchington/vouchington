@@ -4,17 +4,18 @@ import {
   normalizeRssFeedItemCategorySnapshots,
   type RssFeedItemCategorySnapshot,
 } from './category-batches.mts'
-import { getRssFeedItemCategorySnapshots } from './source-category-union.mts'
+import { getRssFeedItemCategorySnapshotPage } from './source-category-union.mts'
 
 export type PendingRssFeedItemCategorySnapshot = RssFeedItemCategorySnapshot & {
   change_id: string
   generation: string
+  source_union_categories?: string[]
 }
 
 /** The result row is an actual completion record and serializes the whole awaited projection. */
 export async function applyRssFeedItemCategorySnapshots(
   requestedSnapshots: RssFeedItemCategorySnapshot[],
-  project: (snapshots: RssFeedItemCategorySnapshot[]) => Promise<void>,
+  project: (snapshots: RssFeedItemCategorySnapshot[]) => Promise<void | boolean>,
   pending?: PendingRssFeedItemCategorySnapshot,
 ): Promise<boolean> {
   const orderedSnapshots = [...requestedSnapshots].toSorted((left, right) =>
@@ -36,16 +37,19 @@ export async function applyRssFeedItemCategorySnapshots(
   let snapshots = orderedSnapshots
   if (pending) {
     if (!(await isPendingCategorySnapshotCurrent(resultQuery, pending))) return false
-    const activeSources = await getRssFeedItemCategorySnapshots([pending.rss_feed_item_id])
+    const sourcePage = pending.source_union_categories
+      ? { categories: pending.source_union_categories, afterFeedId: null }
+      : await getRssFeedItemCategorySnapshotPage(pending.rss_feed_item_id, null)
+    if (sourcePage.afterFeedId) return false
     snapshots = normalizeRssFeedItemCategorySnapshots([
       {
         rss_feed_item_id: pending.rss_feed_item_id,
-        categories: activeSources.get(pending.rss_feed_item_id) ?? [],
+        categories: sourcePage.categories,
       },
     ])
   }
 
-  await project(snapshots)
+  if ((await project(snapshots)) === false) return false
   await completeCategoryProjectionResults(resultQuery, snapshots, changeIds)
   await resultQuery.commit()
   return true

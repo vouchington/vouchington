@@ -55,10 +55,29 @@ export type TopicAliasJobs = Extract<
 /** First remaining raw row, revalidated under the feed lock before a destructive page. */
 export type RssFeedHardDeletePageData = { rssFeedId: string; pageCursor: string }
 
+export type TopicAliasPostInvalidationCursor = {
+  topicAliasId: string
+  afterPostId: string | null
+}
+
 export type TopicAliasPostInvalidationData = {
   topicAliasIds: string[]
   changeId: string
-  afterPostId?: string
+  cursor: TopicAliasPostInvalidationCursor
+}
+
+export type RssFeedItemCategoryParentCursor = {
+  updatedAt: string
+  rssFeedItemId: string
+}
+
+export type RssFeedItemCategorySourcePage = {
+  rssFeedItemId: string
+  changeId: string
+  generation: string
+  afterFeedId: string | null
+  categories: string[]
+  phase: 'sources' | 'project'
 }
 
 export const TOPIC_ALIAS_UNLINK_PHASES = [
@@ -88,7 +107,11 @@ export type RssFeedMaintenanceJobPayloads = {
   }
   processFinalizeHardDeleteRssFeed: RssFeedHardDeletePageData
   processRecoverRssFeedHardDeletes: { afterId: string | null }
-  processReconcileRssFeedItemCategorySnapshots: { rssFeedItemIds?: string[] }
+  processReconcileRssFeedItemCategorySnapshots: {
+    rssFeedItemIds?: string[]
+    sourcePage?: RssFeedItemCategorySourcePage
+    after?: RssFeedItemCategoryParentCursor
+  }
   processBackfillCategoriesForTopicAliases: TopicTextCategoryJob
   processBackfillRssFeedCategoriesForTopicAlias: TopicTextCategoryJob
   processEvaluateRssFeedDiscoverability: { rssFeedId: string }

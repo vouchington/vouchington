@@ -14,6 +14,7 @@ export async function captureAddedPublicationEffectsForScope(
 export async function captureAddedPublicationEffectsForScopes(
   scopeIds: readonly string[],
   mutation: () => Promise<unknown>,
+  includeContinuations = false,
 ): Promise<PostPublicationEffectsJobData[]> {
   const owned = new Set(scopeIds)
   const ids = new Set<string>()
@@ -24,7 +25,7 @@ export async function captureAddedPublicationEffectsForScopes(
       typeof job.id === 'string' &&
       typeof data?.scope?.id === 'string' &&
       owned.has(data.scope.id) &&
-      !data.continuation
+      (includeContinuations || !data.continuation)
     )
       ids.add(job.id)
   }

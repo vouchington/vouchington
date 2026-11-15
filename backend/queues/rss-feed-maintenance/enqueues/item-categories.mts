@@ -1,12 +1,20 @@
+import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { rssFeedMaintenance } from '../queues.mts'
 import type { EnqueueReturnType } from '@voucha/types'
 import {
   CATEGORY_SNAPSHOT_RECOVERY_DEDUPLICATION_ID,
   CATEGORY_SNAPSHOT_RECOVERY_DEDUPLICATION_TTL_MS,
+  QUEUE_NAME,
   PRIORITY_DEFAULT,
   PRIORITY_RECOVERY,
   RSS_FEED_ITEM_CATEGORY_ORDERING,
 } from '../config.mts'
-import type { TopicTextCategoryCursor } from '../types.mts'
+import type {
+  TopicTextCategoryCursor,
+  RssFeedItemCategorySourcePage,
+  RssFeedItemCategoryParentCursor,
+  RssFeedMaintenanceJobPayloads,
+} from '../types.mts'
 import { createRssFeedMaintenanceEnqueue } from './create-enqueue.mts'
 
 const enqueueBackfillCategoriesForTopicAliasesJob = createRssFeedMaintenanceEnqueue(
@@ -36,14 +44,31 @@ export const enqueueReconcileRssFeedItemCategorySnapshots = (
 /** Chains another bounded page without throttle deduplication; queue ordering keeps one active. */
 export const enqueueContinueRssFeedItemCategorySnapshotReconciliation = (
   rssFeedItemIds?: string[],
+  after?: RssFeedItemCategoryParentCursor,
 ): EnqueueReturnType =>
   enqueueReconcileRssFeedItemCategorySnapshotsJob(
-    { rssFeedItemIds },
+    { rssFeedItemIds, ...(after ? { after } : {}) },
     {
       priority: PRIORITY_RECOVERY,
       ordering: RSS_FEED_ITEM_CATEGORY_ORDERING.snapshot_reconciliation,
     },
   )
+
+/** Admit one bounded parent page in one native bulk call. */
+export const enqueueBulkRssFeedItemCategorySourcePages = createBulkEnqueueFunction({
+  queue: rssFeedMaintenance,
+  queueName: QUEUE_NAME,
+  jobName: 'processReconcileRssFeedItemCategorySnapshots',
+  buildJob: (sourcePage: RssFeedItemCategorySourcePage) => ({
+    data: {
+      sourcePage,
+    } satisfies RssFeedMaintenanceJobPayloads['processReconcileRssFeedItemCategorySnapshots'],
+  }),
+  defaults: {
+    priority: PRIORITY_RECOVERY,
+    ordering: RSS_FEED_ITEM_CATEGORY_ORDERING.snapshot_reconciliation,
+  },
+})
 
 export const enqueueBackfillCategoriesForTopicAliases = (
   topicId: string,
