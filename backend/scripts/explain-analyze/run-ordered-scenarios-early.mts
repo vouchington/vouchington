@@ -1,3 +1,4 @@
+import { runPostModerationHistoryPageScenarios } from './run-scenarios/post-moderation-history-page.mts'
 import { runStoryProjectionWorkScenarios } from './run-scenarios/story-projection-work.mts'
 import { runImageQuarantineScenarios } from './run-scenarios/image-quarantine.mts'
 import { runCopyrightAcceptedPageScenarios } from './run-scenarios/copyright-accepted-pages.mts'
@@ -64,6 +65,7 @@ export const EARLY_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runPostModerationRetentionScenarios,
   seedAndAnalyzeAgentModerationRetention,
   runAgentModerationRetentionScenarios,
+  runPostModerationHistoryPageScenarios,
   runHotPathLoaderScenarios,
   runPublicRssPostSnapshotScenarios,
   // Hidden-feed story search leaves 240 story_posts rows. Profile collection pages join

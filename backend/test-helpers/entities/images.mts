@@ -25,6 +25,14 @@ export async function updateImageStatus(
   await query.commit()
 }
 
+/** Model the committed asset fence before its bounded placement retirement jobs run. */
+export async function markImageDeletedPendingPlacementRetirement(imageId: string) {
+  await write(
+    '/* markImageDeletedPendingPlacementRetirement */ UPDATE images SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1',
+    [imageId],
+  )
+}
+
 export async function markImageDeleted(imageId: string) {
   await using query = await beginTransaction()
   await query(

@@ -154,6 +154,12 @@ describe('attachBanEvasionContext', () => {
       expect(result[1]!.community_ban_evasion?.score).toBeCloseTo(0.9, 5)
     })
 
+    it('preserves a report community when a different community filter is supplied', async () => {
+      const report = makeUserReport({ entity_id: suspect2.id, community_id: communityB.id })
+      const result = await attachBanEvasionContext([report], { communityId: communityA.id })
+      expect(result[0]!.community_ban_evasion).toBeNull()
+    })
+
     it('does not guess a community when the report has no owner', async () => {
       const report = makeUserReport({ entity_id: suspect2.id })
       const result = await attachBanEvasionContext([report])

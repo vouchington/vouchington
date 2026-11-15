@@ -1,3 +1,4 @@
+import { runMembershipBoundReadScenarios } from './membership-bound-reads.mts'
 import { runMembershipChangeScenarios } from './membership-changes.mts'
 import { read } from '@data-stores/psql'
 import { buildAlreadyRefundedMinorUnitsQuery } from '@services/memberships/refund-stripe-operations'
@@ -37,4 +38,5 @@ export async function runMembershipRefundScenarios() {
 export async function runMembershipScenarios(): Promise<void> {
   await runMembershipRefundScenarios()
   await runMembershipChangeScenarios()
+  await runMembershipBoundReadScenarios()
 }

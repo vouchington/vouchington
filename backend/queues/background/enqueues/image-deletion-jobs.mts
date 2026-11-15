@@ -6,10 +6,14 @@ export const IMAGE_DELETION_DOMAIN = defineBackgroundDomain({
   domain: 'image-deletion',
   workerConcurrency: 2,
 })
+export type ImageDeletionRetirementCursor =
+  | { family: 'post' | 'surface'; afterPlacementId?: string }
+  | { family: 'complete' }
 export type ImageDeletionPageData = {
   imageId: string
   cursor: string | null
   admittedThrough?: string
+  retirement?: ImageDeletionRetirementCursor
 }
 export const IMAGE_DELETION_PAGE_JOB = defineBackgroundJob<ImageDeletionPageData>(
   IMAGE_DELETION_DOMAIN,

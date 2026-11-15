@@ -103,14 +103,16 @@ export async function getMembershipRefundTargetByStripeSubscriptionId(
     INNER JOIN LATERAL (
       SELECT membership_id, user_id, target_id
       FROM (
-        SELECT membership.id AS membership_id, membership.user_id,
+        (SELECT membership.id AS membership_id, membership.user_id,
           membership.id AS target_id, 0 AS target_priority
         FROM memberships membership
         WHERE membership.membership_source_id = source.membership_source_id
           AND source.released_at IS NULL
           AND membership.user_id = source.user_id
+        ORDER BY membership.id DESC
+        LIMIT 1)
         UNION ALL
-        SELECT membership_change.membership_id, membership_change.user_id,
+        (SELECT membership_change.membership_id, membership_change.user_id,
           membership_change.id AS target_id, 1 AS target_priority
         FROM membership_changes membership_change
         WHERE membership_change.membership_source_id = source.membership_source_id
@@ -124,6 +126,8 @@ export async function getMembershipRefundTargetByStripeSubscriptionId(
             source.released_at IS NULL
             OR uuid_extract_timestamp(membership_change.id) < source.released_at
           )
+        ORDER BY membership_change.id DESC
+        LIMIT 1)
       ) source_target
       ORDER BY target_priority, target_id DESC
       LIMIT 1

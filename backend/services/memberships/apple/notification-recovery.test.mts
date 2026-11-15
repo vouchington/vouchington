@@ -9,18 +9,33 @@ describe('Apple notification recovery', () => {
     const owned = await createTestAppleRecoveryNotification()
     const secondOwned = await createTestAppleRecoveryNotification()
 
-    const recoverable = await findRecoverableAppleNotificationJobs(
-      [owned.evidenceId, secondOwned.evidenceId],
-      1,
-    )
+    const recoverable = await findRecoverableAppleNotificationJobs({
+      evidenceIds: [owned.evidenceId, secondOwned.evidenceId],
+      batchSize: 1,
+    })
 
-    expect(recoverable).toEqual([
+    expect(recoverable.notifications).toEqual([
       {
         evidenceId: owned.evidenceId,
         providerLineageId: 'original-transaction-id',
         environment: 'test',
       },
     ])
+    await expect(
+      findRecoverableAppleNotificationJobs({
+        evidenceIds: [secondOwned.evidenceId],
+        batchSize: 1,
+      }).then(page => page.notifications),
+    ).resolves.toEqual([
+      {
+        evidenceId: secondOwned.evidenceId,
+        providerLineageId: 'original-transaction-id',
+        environment: 'test',
+      },
+    ])
+    await expect(
+      findRecoverableAppleNotificationJobs({ evidenceIds: [], batchSize: 1 }),
+    ).resolves.toMatchObject({ notifications: [], hasMore: false, nextCursor: null, inspected: 0 })
     await expect(memberships.getJob(neighbor.jobId)).resolves.toBeNull()
   })
 })

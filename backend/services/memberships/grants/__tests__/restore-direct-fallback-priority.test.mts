@@ -88,8 +88,11 @@ describe('direct fallback priority', () => {
       stripeSubscriptionId: `sub_current_higher_grant_${randomUUID()}`,
       providerApplicationId: currentSku.provider_application_id,
     })
+    const lowerSku = await createTestSku({ plan: 'plus' })
+    await grantMembership(admin.id, member.id, 'plus', lowerSku.id, 30)
     const grantSku = await createTestSku({ plan: 'pro' })
     const queued = await grantMembership(admin.id, member.id, 'pro', grantSku.id, 30)
+    const later = await grantMembership(admin.id, member.id, 'pro', grantSku.id, 30)
 
     await updateMembershipFromEvent(
       { membershipId: current.id, status: 'cancelled', terminalEffectiveAt: new Date() },
@@ -102,7 +105,8 @@ describe('direct fallback priority', () => {
       status: 'active',
     })
     await expect(getTestGrantQueue(member.id)).resolves.toMatchObject({
-      active_grant_ids: expect.arrayContaining([queued.grantId]),
+      active_grant_ids: [queued.grantId],
+      grant_ids: expect.arrayContaining([later.grantId]),
       open_activation_count: 1,
     })
   })

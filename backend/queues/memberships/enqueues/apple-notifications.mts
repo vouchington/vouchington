@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
@@ -12,6 +13,7 @@ import type {
   MembershipsJobPayloads,
   MembershipsJobs,
   ProcessAppleNotificationData,
+  RecoverAppleNotificationsData,
 } from '../types.mts'
 import { createMembershipEnqueueFunction } from './typed-job.mts'
 
@@ -52,9 +54,16 @@ export function enqueueProcessAppleNotification(
   return enqueueAppleNotificationJob(data, appleNotificationJobOptions(data))
 }
 
-export function enqueueRecoverAppleNotifications(): EnqueueReturnType {
+export function enqueueRecoverAppleNotifications(
+  data: RecoverAppleNotificationsData = {},
+): EnqueueReturnType {
+  if (data.through)
+    return enqueueRecoverAppleNotificationsJob(data, {
+      jobId: `apple-notification-recovery-page__${recoveryIdentity(data)}`,
+      priority: PRIORITY_DISPATCHER,
+    })
   const timeBucket = Math.floor(Date.now() / APPLE_NOTIFICATION_RECOVERY_INTERVAL_MS)
-  return enqueueRecoverAppleNotificationsJob({}, {
+  return enqueueRecoverAppleNotificationsJob(data, {
     jobId: `apple-notification-recovery__${timeBucket}`,
     priority: PRIORITY_DISPATCHER,
     deduplication: {
@@ -76,4 +85,22 @@ function appleNotificationJobOptions(data: ProcessAppleNotificationData): Partia
       concurrency: 1,
     },
   } satisfies Partial<JobOptions>
+}
+
+function recoveryIdentity(data: RecoverAppleNotificationsData): string {
+  return createHash('sha256')
+    .update(
+      JSON.stringify({
+        after: data.after
+          ? { receivedAt: data.after.receivedAt, evidenceId: data.after.evidenceId.toLowerCase() }
+          : undefined,
+        through: data.through
+          ? {
+              receivedAt: data.through.receivedAt,
+              evidenceId: data.through.evidenceId.toLowerCase(),
+            }
+          : undefined,
+      }),
+    )
+    .digest('hex')
 }

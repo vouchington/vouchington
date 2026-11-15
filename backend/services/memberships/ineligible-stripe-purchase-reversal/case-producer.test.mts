@@ -1,4 +1,7 @@
-import { setupStripeCollisionProducer as setupProducer } from '@voucha/test-helpers/stripe-collision-producer'
+import {
+  setupStripeCollisionProducer as setupProducer,
+  recordTestStripeCollisionWork as recordWork,
+} from '@voucha/test-helpers/stripe-collision-producer'
 import { enqueueRecoverStripePurchaseCollisions } from '@queues/memberships/enqueues'
 import { processMembershipJob } from '../../../workers/memberships/processors/process-job.mts'
 import type { Job } from 'glide-mq'
@@ -7,16 +10,13 @@ import { recoverStripePurchaseCollisions } from '../../../workers/memberships/pr
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { memberships } from '@queues/memberships/queues'
-import { beginTransaction, getTestIneligiblePurchaseReversal } from '@voucha/test-helpers'
+import { getTestIneligiblePurchaseReversal } from '@voucha/test-helpers'
 import {
   readTestStripePurchaseCollisionReview,
   readTestStripePurchaseCollisionWork,
 } from '@voucha/test-helpers/stripe-purchase-collision-work'
 import { getIneligiblePurchaseReversalCase } from './case-read.mts'
-import {
-  recordIneligibleStripePurchaseCollisionWork,
-  completeStripePurchaseCollisionWork,
-} from './collision-work.mts'
+import { completeStripePurchaseCollisionWork } from './collision-work.mts'
 import { processStripePurchaseCollisionWork } from './process-collision-work.mts'
 
 const start = 1_740_000_000
@@ -258,27 +258,6 @@ describe('durable ineligible Stripe purchase case producer', () => {
     expect(fixture.createRefund).toHaveBeenCalledTimes(1)
   })
 })
-
-async function recordWork(
-  fixture: Awaited<ReturnType<typeof setupProducer>>,
-  winningSourceKind: 'direct' | 'family',
-  collision: number,
-): Promise<string> {
-  await using query = await beginTransaction()
-  const workId = await recordIneligibleStripePurchaseCollisionWork(
-    {
-      userId: fixture.userId,
-      sourceIdentity: fixture.sourceIdentity,
-      winningSourceKind,
-      winningPlan: 'plus',
-      collisionAt: new Date(collision * 1_000),
-    },
-    query,
-  )
-  if (!workId) throw new Error('Expected Stripe purchase collision work')
-  await query.commit()
-  return workId
-}
 
 function makeOldInvoiceAmbiguous(fixture: Awaited<ReturnType<typeof setupProducer>>): void {
   fixture.oldLines.forEach((line, index) => {

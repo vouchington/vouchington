@@ -41,6 +41,8 @@ export const CORE_SCENARIOS = [
   'direct-message-inbox-page',
   'community-activity-digest-aggregation',
   'community-activity-digest-recipients',
+  'community-activity-digest-archived-first',
+  'community-activity-digest-archived-later',
   'conversations-by-user',
   'crawl-chunks-by-crawl',
   'crawl-latest-successful',

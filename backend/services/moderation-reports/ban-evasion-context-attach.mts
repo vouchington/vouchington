@@ -14,7 +14,17 @@ export async function attachBanEvasionContext(
   if (userReports.length === 0) return reports
 
   const storedCommunityIds = await readStoredReportCommunityIds(userReports)
-  const userIds = userReports.map(r => r.entity_id)
+  const targetPairs = new Map<string, { communityId: string; userId: string }>()
+  for (const report of userReports) {
+    const communityId = resolveReportCommunityId(report, storedCommunityIds, options.communityId)
+    if (communityId && (!options.communityId || communityId === options.communityId)) {
+      targetPairs.set(flagKey(report.entity_id, communityId), {
+        communityId,
+        userId: report.entity_id,
+      })
+    }
+  }
+  const targets = [...targetPairs.values()]
   const query = sql`/* attachBanEvasionContext */
     SELECT
       cm.user_id,
@@ -28,7 +38,13 @@ export async function attachBanEvasionContext(
     FROM community_members cm
     JOIN communities c ON c.id = cm.community_id AND c.deleted_at IS NULL
     LEFT JOIN view_users_public source_profile ON source_profile.id = cm.suspected_ban_evader_source_user_id
-    WHERE cm.user_id = ANY(${userIds}::uuid[])
+    WHERE (cm.community_id, cm.user_id) IN (
+      SELECT community_id, user_id
+      FROM unnest(
+        ${targets.map(target => target.communityId)}::uuid[],
+        ${targets.map(target => target.userId)}::uuid[]
+      ) AS requested(community_id, user_id)
+    )
       AND cm.suspected_ban_evader_at IS NOT NULL
       AND cm.suspected_ban_evader_dismissed_at IS NULL
       AND cm.removed_at IS NULL`

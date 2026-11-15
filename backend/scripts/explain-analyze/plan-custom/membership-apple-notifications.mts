@@ -4,9 +4,7 @@ import { collectPlanNodes, processedRows } from '../plan-nodes.mts'
 /** Generic plans must keep the ordered pending-evidence page independent of other providers. */
 export function assertAppleNotificationRecoveryPlan(result: ExplainResult): void {
   if (result.plan_cache_mode !== 'force_generic_plan') return
-  const candidate = collectPlanNodes(result.plan).find(
-    node => node['Subplan Name'] === 'CTE candidate_page',
-  )
+  const candidate = collectPlanNodes(result.plan)[0]
   const nodes = collectPlanNodes(candidate)
   const evidence = nodes.filter(
     node => node['Relation Name'] === 'membership_provider_evidence_records',

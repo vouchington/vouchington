@@ -13,7 +13,7 @@ export type IneligiblePurchaseReversalCasesLookup = Omit<
   'originatingInvoiceId'
 > & { originatingInvoiceIds: string[] }
 
-/** Reads the unexpired reversal case for each invoice id in one statement. */
+/** Reads enough unexpired matches to distinguish one case from an ambiguous invoice match. */
 export async function getIneligiblePurchaseReversalCases(
   options: IneligiblePurchaseReversalCasesLookup,
 ): Promise<IneligiblePurchaseReversalCase[]> {
@@ -41,6 +41,7 @@ export async function getIneligiblePurchaseReversalCases(
       AND binding.source_kind = 'direct'
       AND reversal_case.originating_invoice_id = ANY(${options.originatingInvoiceIds}::text[])
       AND NOT fn_membership_reversal_case_expired(reversal_case.id)
+    LIMIT 2
   `)
   return (
     rows as Array<
