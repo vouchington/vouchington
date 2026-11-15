@@ -1,5 +1,5 @@
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
-import { beginTransaction, read } from '@data-stores/psql'
+import { beginTransaction, read, withPrimaryReads } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type {
   CopyrightCounterNoticeGuidance,
@@ -46,9 +46,14 @@ type SubmissionRow = {
 }
 
 /** Agent boundary for the redacted model input; only live filings are returned. */
-export async function getCopyrightSubmissionGuidanceSource(
+/** A filing committed just before the job runs must not read as missing from a lagging replica. */
+export function getCopyrightSubmissionGuidanceSource(
   submissionId: string,
 ): Promise<GuidanceSource | null> {
+  return withPrimaryReads(() => readGuidanceSource(submissionId))
+}
+
+async function readGuidanceSource(submissionId: string): Promise<GuidanceSource | null> {
   const { rows } = await read<SubmissionRow>(sql`/* getCopyrightSubmissionGuidanceSource */
     SELECT submission.kind, submission.source_kind, submission.received_at,
       submission.body_ciphertext, submission.copyright_notice_id,

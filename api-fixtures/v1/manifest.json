@@ -18891,7 +18891,8 @@
                   ]
                 }
               }
-            }
+            },
+            "type": "object"
           },
           "CopyrightCounterNoticeGuidance": {
             "additionalProperties": false,

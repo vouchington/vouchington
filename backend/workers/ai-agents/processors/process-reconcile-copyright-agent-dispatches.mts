@@ -75,19 +75,30 @@ type RunAdmissions = {
   email: Map<string, string>
 }
 
-/** One admission statement per kind covers the whole page; each subject then enqueues its run. */
-async function admitPageRuns(pending: readonly CopyrightAgentDispatch[]): Promise<RunAdmissions> {
+/**
+ * One admission statement per kind covers the whole page; each subject then enqueues its run. The
+ * kinds settle separately, so one kind's failure keeps the other kinds' runs.
+ */
+async function admitPageRuns(
+  pending: readonly CopyrightAgentDispatch[],
+  errors: unknown[],
+): Promise<RunAdmissions> {
   const idsOf = (kind: 'appeal' | 'submission-guidance' | 'email') =>
     pending.flatMap(item => {
       if (item.kind !== kind) return []
       return [item.kind === 'email' ? item.intakeId : item.submissionId]
     })
-  const [appeal, guidance, email] = await Promise.all([
+  const [appeal, guidance, email] = await Promise.allSettled([
     admitCopyrightAppealRecommendationRuns(idsOf('appeal')),
     admitCopyrightSubmissionGuidanceRuns(idsOf('submission-guidance')),
     admitCopyrightEmailRecommendationRuns(idsOf('email')),
   ])
-  return { appeal, guidance, email }
+  const settled = (result: PromiseSettledResult<Map<string, string>>) => {
+    if (result.status === 'fulfilled') return result.value
+    errors.push(result.reason)
+    return new Map<string, string>()
+  }
+  return { appeal: settled(appeal), guidance: settled(guidance), email: settled(email) }
 }
 
 async function dispatchCopyrightAgentPage(
@@ -95,10 +106,7 @@ async function dispatchCopyrightAgentPage(
 ): Promise<unknown[]> {
   const errors: unknown[] = []
   // A failed admission keeps its page's other dispatches and later pages moving; the next sweep retries.
-  const runs = await admitPageRuns(pending).catch((err: unknown) => {
-    errors.push(err)
-    return undefined
-  })
+  const runs = await admitPageRuns(pending, errors)
   const enqueues = await Promise.allSettled(
     pending.flatMap(item => (item.kind === 'form-effect' ? [] : [enqueueDispatch(item, runs)])),
   )
@@ -118,19 +126,19 @@ async function dispatchCopyrightAgentPage(
 /** A pending subject has no result; its admitted (or already active) run is what gets enqueued. */
 async function enqueueDispatch(
   item: Exclude<CopyrightAgentDispatch, { kind: 'form-effect' }>,
-  runs: RunAdmissions | undefined,
+  runs: RunAdmissions,
 ): Promise<void> {
   if (item.kind === 'form-screening') return enqueueOrRetryCopyrightFormScreening(item.submissionId)
   if (item.kind === 'email') {
-    const runId = runs?.email.get(item.intakeId)
+    const runId = runs.email.get(item.intakeId)
     if (runId) await enqueueOrRetryCopyrightEmailIntake(item.intakeId, runId)
     return
   }
   if (item.kind === 'submission-guidance') {
-    const runId = runs?.guidance.get(item.submissionId)
+    const runId = runs.guidance.get(item.submissionId)
     if (runId) await enqueueOrRetryCopyrightSubmissionGuidance(item.submissionId, runId)
     return
   }
-  const runId = runs?.appeal.get(item.submissionId)
+  const runId = runs.appeal.get(item.submissionId)
   if (runId) await enqueueOrRetryCopyrightAppealRecommendation(item.submissionId, runId)
 }

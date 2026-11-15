@@ -15,6 +15,7 @@ import {
   continuationsAfter,
   jobFor,
   jobIds,
+  removeTrackedJob,
   pendingAppeal,
   pendingEmail,
   pendingFormEffect,
@@ -28,12 +29,7 @@ describe('processReconcileCopyrightAgentDispatches', () => {
 
   afterEach(async () => {
     vi.restoreAllMocks()
-    await Promise.all(
-      enqueued.splice(0).map(async id => {
-        const job = await ai_agents.getJob(id)
-        await job?.remove()
-      }),
-    )
+    await Promise.all(enqueued.splice(0).map(removeTrackedJob))
   })
 
   describe('while new intake is switched on', () => {

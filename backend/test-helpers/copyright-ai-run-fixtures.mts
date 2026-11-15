@@ -30,6 +30,7 @@ export async function createCopyrightCaseWithAiRunSubjects() {
   })
   const imageId = await insertTestImage(poster.id)
   await insertTestPostImage({ postId, imageId })
+  const claimantEmail = `claimant-${crypto.randomUUID()}@example.test`
   const { intake } = await createCopyrightFormIntake({
     currentUser: claimant,
     requesterIdentity: `user:${claimant.id}`,
@@ -37,8 +38,8 @@ export async function createCopyrightCaseWithAiRunSubjects() {
     request: {
       jurisdiction: 'us_dmca',
       claimantDisplayName: 'Claimant',
-      claimantContact: 'claimant@example.test',
-      claimantEmail: 'claimant@example.test',
+      claimantContact: claimantEmail,
+      claimantEmail,
       workDescription: 'A photograph',
       goodFaithBelief: true,
       accuracyAuthorityUnderPenaltyOfPerjury: true,
@@ -109,14 +110,42 @@ export async function insertTestCopyrightAiRun(
   )
 }
 
-export async function readActiveTestGuidanceRunId(submissionId: string) {
+/** Newest run of a subject, whatever its status; undefined when none was admitted. */
+export async function readLatestTestRunId(
+  table: RunTable,
+  subjectColumn: string,
+  subjectId: string,
+) {
   const { rows } = await read<{ id: string }>(
-    sql`/* readActiveTestGuidanceRunId */ SELECT id FROM copyright_notice_submission_guidance_runs
-      WHERE copyright_notice_submission_id = ${submissionId}
-        AND completed_at IS NULL AND failed_at IS NULL AND expired_at IS NULL`,
+    sql`/* readLatestTestRunId */ SELECT id FROM `
+      .append(`${table} WHERE ${subjectColumn} = `)
+      .append(sql`${subjectId} ORDER BY id DESC LIMIT 1`),
   )
   return rows[0]?.id
 }
+
+export const readLatestTestGuidanceRunId = (submissionId: string) =>
+  readLatestTestRunId(
+    COPYRIGHT_AI_RUN_TABLES.guidance,
+    'copyright_notice_submission_id',
+    submissionId,
+  )
+
+export const readActiveTestGuidanceRunId = readLatestTestGuidanceRunId
+
+export const readLatestTestEmailRunId = (intakeId: string) =>
+  readLatestTestRunId(
+    COPYRIGHT_AI_RUN_TABLES.email,
+    'copyright_notice_email_intake_receipt_id',
+    intakeId,
+  )
+
+export const readLatestTestAppealRunId = (submissionId: string) =>
+  readLatestTestRunId(
+    COPYRIGHT_AI_RUN_TABLES.appeal,
+    'copyright_notice_submission_id',
+    submissionId,
+  )
 
 /** Applies a raw timestamp assignment so a test can prove the run CHECK constraints reject it. */
 export async function setTestCopyrightAiRunTimestamps(

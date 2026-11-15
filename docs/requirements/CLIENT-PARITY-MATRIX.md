@@ -320,8 +320,8 @@ fixtures also cover recognizable uploader and inspectable-image context for poss
 including unavailable or deleted content. Native adoption and UI evidence are dependent work under
 [clients #527](https://github.com/vouchington/vouchington-clients/issues/527).
 
-Staff copyright reads name the latest AI run of each flow so a client follows an exact admitted run
-to its end: `ai_run` is `{id, status}` or null on staff-queue appeals, counter notices and legal
+Staff copyright reads name the latest AI run of each flow, so a client sees whether the current
+attempt is running, finished, failed or expired; a superseded run's outcome is not readable here: `ai_run` is `{id, status}` or null on staff-queue appeals, counter notices and legal
 holds (appeal recommendation and submission guidance runs) and on the email-intake detail (email
 recommendation runs). `status` is a code (`active`, `succeeded`, `failed`, `expired`); clients
 render it through the `native.copyright.aiRunStatus.*` catalog copy, and REST and MCP return the
