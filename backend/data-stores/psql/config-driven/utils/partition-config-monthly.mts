@@ -71,3 +71,8 @@ export const DECISION_HISTORY_PARTITION_TABLES: MonthlyPartitionTableConfig[] = 
   monthlyPartitionTable('post_clearance_changes', { retentionDays: 0, futureMonths: 2 }),
   monthlyPartitionTable('community_post_review_changes', { retentionDays: 0, futureMonths: 2 }),
 ]
+
+/** Old reporting days lost at mutation are recoverable within the existing reconciliation window. */
+export const REPORTING_SOURCE_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
+  monthlyPartitionTable('reporting_source_changes', { retentionDays: 370, futureMonths: 2 }),
+]

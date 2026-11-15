@@ -1,3 +1,4 @@
+import { parseModerationSummaryCollection } from './moderation-summary-collection.mts'
 import type {
   ProcessSendFollowNewsSourcesEmailVariables,
   ProcessSendFollowTopicsEmailVariables,
@@ -106,7 +107,17 @@ function moderationVariables(data: unknown): Record<string, unknown> {
   optionalString(record, 'unsubscribeUrl')
   optionalString(record, 'physicalAddress')
   optionalNullableString(record, 'uiLocale')
+  parseModerationSummaryCollection(record.collection)
+  if (
+    typeof record.remainingCommunityCount !== 'number' ||
+    !Number.isSafeInteger(record.remainingCommunityCount) ||
+    record.remainingCommunityCount < 0 ||
+    record.remainingCommunityCount > 100
+  )
+    throw new JobPayloadError('Invalid remainingCommunityCount')
   if (!Array.isArray(record.communities)) throw new JobPayloadError('communities must be an array')
+  if (record.communities.length > 20)
+    throw new JobPayloadError('communities must contain at most 20 cards')
   for (const community of record.communities) communityItem(community)
   return record
 }
@@ -116,12 +127,21 @@ function communityItem(item: unknown): void {
   assertExactKeys(record, Object.keys(communityItemVariableKeys))
   requiredString(record, 'name')
   requiredString(record, 'url')
+  requiredString(record, 'communityId')
+  for (const key of ['netMemberChange', 'activeMemberRate'])
+    if (record[key] !== null && (typeof record[key] !== 'number' || !Number.isFinite(record[key])))
+      throw new JobPayloadError(`${key} must be a finite number or null`)
   const title = record.topDiscussionTitle
   if (title !== null && typeof title !== 'string') {
     throw new JobPayloadError('topDiscussionTitle must be a string or null')
   }
   for (const key of communityCountKeys) {
-    if (typeof record[key] !== 'number' || Number.isNaN(record[key])) {
+    if (
+      typeof record[key] !== 'number' ||
+      !Number.isInteger(record[key]) ||
+      record[key] < 0 ||
+      record[key] > 100
+    ) {
       throw new JobPayloadError(`${key} must be a number`)
     }
   }

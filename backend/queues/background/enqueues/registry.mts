@@ -1,3 +1,4 @@
+import { REPORTING_DAILY_JOB, REPORTING_CHANGED_DAY_JOB } from './reporting-jobs.mts'
 import { IMAGE_DELETION_DOMAIN, IMAGE_DELETION_JOBS } from './image-deletion-jobs.mts'
 import { BACKGROUND_DOMAINS, type BackgroundDomain } from '../config.mts'
 import type { BackgroundDomainDefinition, BackgroundJobDefinition } from '../types.mts'
@@ -86,6 +87,8 @@ export const BACKGROUND_JOBS: readonly BackgroundJobDefinition[] = [
   ...POST_MENTIONS_JOBS,
   ...STORY_POST_RELATED_URL_PROJECTIONS_JOBS,
   ...POST_PUBLICATION_JOBS,
+  REPORTING_DAILY_JOB,
+  REPORTING_CHANGED_DAY_JOB,
   ...VOTE_AGGREGATION_JOBS,
   ...ENTITY_LISTENERS_JOBS,
   ...ACCOUNT_LIFECYCLE_JOBS,

@@ -14,7 +14,7 @@ import { backgroundQueue as emailDigests } from '@voucha/test-helpers/shared-bac
 import { updateUserFields } from '@services/users/update-fields'
 import { deleteUser } from '@services/users/delete'
 import { dispatchCommunityModerationSummaryEmails } from '../moderation-summary-emails.mts'
-import { getCommunityModerationSummaryCommunities } from '../moderation-summary-communities.mts'
+import { collectTestModerationSummary as getCommunityModerationSummaryCommunities } from '@voucha/test-helpers/moderation-summary-collection'
 
 function pinnedNow(): Date {
   return new Date(process.env.VOUCH_PROOF_NOW ?? '2026-10-31T12:00:00.000Z')

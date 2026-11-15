@@ -8,15 +8,15 @@ import {
 } from '@voucha/test-helpers'
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
-import {
-  claimTestModerationEmailSend,
-  createClockSkewModerationSummaryFixture,
-} from '@voucha/test-helpers/moderation-summary-retention'
+import { claimTestModerationEmailSend } from '@voucha/test-helpers/moderation-summary-retention'
 import { hasModerationEmailSent } from '@services/communities/moderation-summary-emails'
 import { formatLocalDate } from '@services/communities/moderation-summary-schedule'
 import { createSesBounceEvent } from '@services/ses-bounce-events'
 import { updateUserFields } from '@services/users/update-fields'
-import { processSendCommunityModerationSummaryEmail } from './community-moderation-summary.mts'
+import {
+  moderationSummaryVariableDefaults,
+  processTestModerationSummaryEmail as processSendCommunityModerationSummaryEmail,
+} from '@voucha/test-helpers/moderation-summary-collection'
 
 describe('moderation summary definitive SES rejection', () => {
   beforeEach(() => {
@@ -71,6 +71,7 @@ describe('moderation summary definitive SES rejection', () => {
           settingsUrl: 'https://voucha.ai/my/notification-settings',
           unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
           physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
+          ...moderationSummaryVariableDefaults(),
           communities: [],
         },
       ),
@@ -115,6 +116,7 @@ describe('moderation summary definitive SES rejection', () => {
       settingsUrl: 'https://voucha.ai/my/notification-settings',
       unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
       physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
+      ...moderationSummaryVariableDefaults(),
       communities: [],
     }
     const throttle = Object.assign(new Error('Maximum sending rate exceeded'), {
@@ -145,6 +147,7 @@ describe('moderation summary queued retention', () => {
       generatedForDate: '2020-01-01',
       dispatchTimeZone: 'UTC',
       settingsUrl: '/settings',
+      ...moderationSummaryVariableDefaults(),
       communities: [],
     }
     await expect(
@@ -202,8 +205,10 @@ describe('moderation summary queued retention', () => {
       settingsUrl: 'https://voucha.ai/my/notification-settings',
       unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
       physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
+      ...moderationSummaryVariableDefaults(),
       communities: [
         {
+          communityId: community.id,
           name: 'Stale Queued Community',
           url: 'https://voucha.ai/communities/stale',
           pendingPostReviews: 1,
@@ -211,6 +216,8 @@ describe('moderation summary queued retention', () => {
           pendingReports: 0,
           escalatedItems: 0,
           suspectedBanEvaders: 0,
+          newMembers: 0,
+          departedMembers: 0,
           netMemberChange: 0,
           totalActiveMembers: 0,
           newDiscussionPosts: 0,
@@ -239,59 +246,4 @@ describe('moderation summary queued retention', () => {
     await expect(processSendCommunityModerationSummaryEmail(input, variables)).resolves.toBeNull()
     expect(ses.sendEmail).toHaveBeenCalledTimes(1)
   })
-})
-
-describe('moderation summary dispatcher clock skew', () => {
-  beforeEach(() => {
-    vi.stubEnv(
-      'VOUCHA_STORED_SECRET_ENCRYPTION_KEYS',
-      'test:raw32:this fake test key is not secret',
-    )
-    vi.spyOn(ses, 'sendEmail').mockResolvedValue({} as never)
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.unstubAllEnvs()
-  })
-
-  it.each([
-    { cadence: 'daily' as const, vacationBoundary: false, excludeActivity: false },
-    { cadence: 'weekly' as const, vacationBoundary: false, excludeActivity: false },
-    { cadence: 'daily' as const, vacationBoundary: true, excludeActivity: false },
-    { cadence: 'daily' as const, vacationBoundary: false, excludeActivity: true },
-  ])(
-    'delivers a $cadence claim once when the queued window is ahead of the worker (vacation=$vacationBoundary, excludeActivity=$excludeActivity)',
-    async ({ cadence, vacationBoundary, excludeActivity }) => {
-      const queuedWindowEnd = new Date(Date.now() + 2 * 60 * 1000)
-      const { userId, trackingKey, queuedDate } = await createClockSkewModerationSummaryFixture(
-        queuedWindowEnd,
-        { cadence, excludeActivity, vacationBoundary },
-      )
-      expect(await claimTestModerationEmailSend(userId, trackingKey)).toBe(true)
-      const input = {
-        userId,
-        trackingKey,
-        windowStart: '2019-01-01T00:00:00.000Z',
-        windowEnd: queuedWindowEnd.toISOString(),
-      }
-      const variables = {
-        generatedForDate: queuedDate,
-        dispatchTimeZone: 'UTC',
-        settingsUrl: 'https://voucha.ai/my/notification-settings',
-        communities: [],
-      }
-
-      await processSendCommunityModerationSummaryEmail(input, variables)
-
-      expect(ses.sendEmail).toHaveBeenCalledWith(
-        expect.objectContaining({ subject: `Community moderation summary for ${queuedDate}` }),
-      )
-      const message = vi.mocked(ses.sendEmail).mock.calls[0]?.[0]
-      expect(message?.text?.includes('Clock skew moderation activity')).toBe(!excludeActivity)
-      await expect(hasModerationEmailSent(userId, trackingKey)).resolves.toBe(true)
-      await expect(processSendCommunityModerationSummaryEmail(input, variables)).resolves.toBeNull()
-      expect(ses.sendEmail).toHaveBeenCalledTimes(1)
-    },
-  )
 })

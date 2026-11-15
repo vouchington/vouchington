@@ -1,3 +1,4 @@
+import { reportingCandidateUnion } from './reporting-candidates.mts'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import type { getEntityReconciliationLimits } from './work-limits.mts'
 import type { CursorRunResult } from '@data-stores/psql/bounded-cursor-api'
@@ -16,14 +17,7 @@ export function streamEntityReconciliationRows(
   const after = options.after
   const firstRevisionId = getMinUUIDv7ForDate(window.start)
   const afterLastRevisionId = getMinUUIDv7ForDate(new Date(window.end.getTime() + 1))
-  return createAsyncGeneratorFromCursor<{
-    entity_type: EntityReconciliationCandidate['entityType']
-    entity_id: string
-    changed_at_epoch_us: string
-    change_id: string | null
-    details: Record<string, unknown> | null
-  }>(
-    sql`/* streamEntityReconciliationCandidateBatches */
+  const statement = sql`/* streamEntityReconciliationCandidateBatches */
       SELECT entity_type, entity_id, changed_at_epoch_us, change_id, details
       FROM (
         (SELECT * FROM (
@@ -185,14 +179,22 @@ export function streamEntityReconciliationRows(
         WHERE (changed_at, entity_id, entity_type, change_id IS NULL, COALESCE(change_id, '')) > (COALESCE(to_timestamp(floor(${after?.changedAtEpochUs ?? null}::numeric / 1000000)::double precision) + (${after?.changedAtEpochUs ?? null}::numeric % 1000000)::double precision * INTERVAL '1 microsecond', '-infinity'::timestamptz), ${after?.entityId ?? ''}::text, ${after?.entityType ?? ''}::text, ${after?.changeId === undefined}, ${after?.changeId ?? ''}::text)
         ORDER BY changed_at, entity_id, change_id
         LIMIT ${options.limits.maxRows + 1})
+    `
+  statement.append(reportingCandidateUnion(window, after, options.limits.maxRows))
+  statement.append(sql`
       ) candidates
 
       ORDER BY changed_at, entity_id, entity_type, change_id
-    `,
-    {
-      batchSize: options.limits.batchSize,
-      maxRows: options.limits.maxRows,
-      onComplete: options.onComplete,
-    },
-  )
+    `)
+  return createAsyncGeneratorFromCursor<{
+    entity_type: EntityReconciliationCandidate['entityType']
+    entity_id: string
+    changed_at_epoch_us: string
+    change_id: string | null
+    details: Record<string, unknown> | null
+  }>(statement, {
+    batchSize: options.limits.batchSize,
+    maxRows: options.limits.maxRows,
+    onComplete: options.onComplete,
+  })
 }

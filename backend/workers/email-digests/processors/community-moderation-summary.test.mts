@@ -10,7 +10,10 @@ import {
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
 import { updateUserFields } from '@services/users/update-fields'
-import { processSendCommunityModerationSummaryEmail } from './community-moderation-summary.mts'
+import {
+  moderationSummaryVariableDefaults,
+  processTestModerationSummaryEmail as processSendCommunityModerationSummaryEmail,
+} from '@voucha/test-helpers/moderation-summary-collection'
 
 describe('processSendCommunityModerationSummaryEmail', () => {
   beforeEach(() => {
@@ -63,8 +66,10 @@ describe('processSendCommunityModerationSummaryEmail', () => {
       settingsUrl: 'https://voucha.ai/my/notification-settings',
       unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
       physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
+      ...moderationSummaryVariableDefaults(),
       communities: [
         {
+          communityId: '01900000-0000-7000-8000-000000000001',
           name: 'Travel Deals',
           url: 'https://voucha.ai/communities/travel-deals',
           pendingPostReviews: 1,
@@ -72,6 +77,8 @@ describe('processSendCommunityModerationSummaryEmail', () => {
           pendingReports: 0,
           escalatedItems: 0,
           suspectedBanEvaders: 0,
+          newMembers: 0,
+          departedMembers: 0,
           netMemberChange: 0,
           totalActiveMembers: 0,
           newDiscussionPosts: 0,
@@ -129,8 +136,10 @@ describe('processSendCommunityModerationSummaryEmail', () => {
           settingsUrl: 'https://voucha.ai/my/notification-settings',
           unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
           physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
+          ...moderationSummaryVariableDefaults(),
           communities: [
             {
+              communityId: '01900000-0000-7000-8000-000000000001',
               name: 'Travel Deals',
               url: 'https://voucha.ai/communities/travel-deals',
               pendingPostReviews: 1,
@@ -138,6 +147,8 @@ describe('processSendCommunityModerationSummaryEmail', () => {
               pendingReports: 0,
               escalatedItems: 0,
               suspectedBanEvaders: 0,
+              newMembers: 0,
+              departedMembers: 0,
               netMemberChange: 0,
               totalActiveMembers: 0,
               newDiscussionPosts: 0,
@@ -186,8 +197,10 @@ describe('processSendCommunityModerationSummaryEmail', () => {
       generatedForDate: '2026-07-12',
       dispatchTimeZone,
       settingsUrl: 'https://voucha.ai/my/notification-settings',
+      ...moderationSummaryVariableDefaults(),
       communities: [
         {
+          communityId: '01900000-0000-7000-8000-000000000001',
           name: 'Travel Deals',
           url: 'https://voucha.ai/communities/travel-deals',
           pendingPostReviews: 1,
@@ -195,6 +208,8 @@ describe('processSendCommunityModerationSummaryEmail', () => {
           pendingReports: 0,
           escalatedItems: 0,
           suspectedBanEvaders: 0,
+          newMembers: 0,
+          departedMembers: 0,
           netMemberChange: 0,
           totalActiveMembers: 0,
           newDiscussionPosts: 0,

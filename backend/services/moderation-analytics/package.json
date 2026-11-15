@@ -26,6 +26,7 @@
     "@modules/pagination": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/memberships": "workspace:^",
+    "@services/reporting-daily-rollups": "workspace:^",
     "@services/users": "workspace:^",
     "http-errors": "^2.0.1",
     "p-map": "^7.1.1",

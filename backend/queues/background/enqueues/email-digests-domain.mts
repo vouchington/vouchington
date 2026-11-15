@@ -1,3 +1,8 @@
+import type { ModerationSummaryCollection } from './moderation-summary-state.mts'
+export type {
+  ModerationSummaryCollection,
+  ModerationSummaryRankedCommunity,
+} from './moderation-summary-state.mts'
 import type {
   CommunityModerationSummaryEmailProps,
   FollowNewsSourcesEmailProps,
@@ -54,7 +59,12 @@ export type ProcessSendFollowNewsSourcesEmailVariables = Omit<
 export type ProcessSendCommunityModerationSummaryEmailVariables = Omit<
   CommunityModerationSummaryEmailProps,
   'unsubscribeUrl' | 'physicalAddress'
-> & { dispatchTimeZone: string; unsubscribeUrl?: string; physicalAddress?: string }
+> & {
+  dispatchTimeZone: string
+  unsubscribeUrl?: string
+  physicalAddress?: string
+  collection: ModerationSummaryCollection
+}
 
 /** A digest email rendered at send time: the recipient plus the template's own variables. */
 export type EmailDigestSendData<TVariables> = { input: EmailDigestInput; variables: TVariables }

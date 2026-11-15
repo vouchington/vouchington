@@ -6,7 +6,10 @@ import {
   createTestUserDirect,
 } from '@voucha/test-helpers'
 import { claimEngagementEmailSend } from '@services/users/engagement-emails'
-import { processSendCommunityModerationSummaryEmail } from './community-moderation-summary.mts'
+import {
+  moderationSummaryVariableDefaults,
+  processTestModerationSummaryEmail as processSendCommunityModerationSummaryEmail,
+} from '@voucha/test-helpers/moderation-summary-collection'
 import { processSendFollowNewsSourcesEmail } from './follow-news-sources.mts'
 import { processSendFollowTopicsEmail } from './follow-topics.mts'
 import { processSendPostReferralLinkEmail } from './post-referral-link.mts'
@@ -59,6 +62,7 @@ describe('engagement email recipient recovery', () => {
           settingsUrl: commonVariables.settingsUrl,
           unsubscribeUrl: commonVariables.unsubscribeUrl,
           physicalAddress: commonVariables.physicalAddress,
+          ...moderationSummaryVariableDefaults(),
           communities: [],
         },
       ),

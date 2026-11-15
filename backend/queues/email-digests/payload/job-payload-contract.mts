@@ -41,6 +41,8 @@ export const moderationVariableKeys = {
   physicalAddress: true,
   uiLocale: true,
   communities: true,
+  collection: true,
+  remainingCommunityCount: true,
 } as const satisfies Record<keyof ProcessSendCommunityModerationSummaryEmailVariables, true>
 
 export const topicItemVariableKeys = {
@@ -68,6 +70,9 @@ export const sourceItemVariableKeys = {
 >
 
 export const communityItemVariableKeys = {
+  communityId: true,
+  newMembers: 'number',
+  departedMembers: 'number',
   name: true,
   url: true,
   topDiscussionTitle: true,
@@ -76,14 +81,14 @@ export const communityItemVariableKeys = {
   pendingReports: 'number',
   escalatedItems: 'number',
   suspectedBanEvaders: 'number',
-  netMemberChange: 'number',
+  netMemberChange: true,
   totalActiveMembers: 'number',
   newDiscussionPosts: 'number',
   newReviewPosts: 'number',
   newDataPointPosts: 'number',
   topDiscussionReplyCount: 'number',
   activeMemberCount: 'number',
-  activeMemberRate: 'number',
+  activeMemberRate: true,
 } as const satisfies Record<
   keyof ProcessSendCommunityModerationSummaryEmailVariables['communities'][number],
   true | 'number'

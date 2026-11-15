@@ -8,7 +8,7 @@ import {
 } from '@voucha/test-helpers'
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
-import { getCommunityModerationSummaryCommunities } from '../moderation-summary-communities.mts'
+import { collectTestModerationSummary as getCommunityModerationSummaryCommunities } from '@voucha/test-helpers/moderation-summary-collection'
 
 describe('moderation summary vacation suppression', () => {
   it.each([

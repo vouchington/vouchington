@@ -1,3 +1,5 @@
+import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getReportingWindows } from '@services/reporting-daily-rollups/windows'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getCommunityId } from './moderation-analytics-scope.mts'
@@ -11,81 +13,74 @@ import { getModerationAnalyticsWorkLimit } from './work-limits.mts'
 import type { ModerationAnalyticsScope, ModeratorWorkloadMetrics } from './types.mts'
 
 export async function getModeratorWorkload(
-  periodStartUuid: string,
+  periodStart: Date,
   scope: ModerationAnalyticsScope,
+  now = new Date(),
 ): Promise<ModeratorWorkloadMetrics> {
-  const leaderboardPageSize = getModerationAnalyticsWorkLimit('leaderboard_page_size')
   const communityId = getCommunityId(scope)
+  const windows = getReportingWindows(periodStart, now)
+  const partialStart = getMinUUIDv7ForDate(windows.firstPartial?.start ?? windows.today.start)
+  const partialEnd = getMinUUIDv7ForDate(windows.firstPartial?.end ?? windows.today.start)
+  const todayStart = getMinUUIDv7ForDate(windows.today.start)
   const { rows } = await read(sql`/* getModerationModeratorWorkload */
-    WITH actions AS (
-      SELECT
-        ma.actor_user_id,
-        ma.action_type::TEXT AS action_type,
-        uuid_extract_timestamp(ma.id) AS created_at
+    WITH facts AS (
+      SELECT ma.actor_user_id, ma.action_type::TEXT AS action_type,
+        (ma.created_at AT TIME ZONE 'UTC')::DATE AS day,
+        COUNT(*) AS count
       FROM moderator_actions ma
       JOIN users u ON u.id = ma.actor_user_id
-      WHERE ma.id >= ${periodStartUuid}::uuid
-        AND ma.actor_user_id IS NOT NULL
+      WHERE ((ma.id >= ${partialStart}::uuid AND ma.id < ${partialEnd}::uuid)
+        OR ma.id >= ${todayStart}::uuid)
         AND ma.action_type = ANY(${MODERATION_ANALYTICS_ACTION_TYPES}::moderator_action_types[])
         AND (u.username IS NULL OR u.username NOT IN (${MODERATION_SYSTEM_USERNAME}, ${BAN_EVASION_SYSTEM_USERNAME}, ${RSS_FEED_AUTO_UPDATER_USERNAME}))
         AND (${communityId}::uuid IS NULL OR ma.community_id = ${communityId}::uuid)
-    ),
-    actor_totals AS (
-      SELECT actor_user_id, COUNT(*)::INT AS total
-      FROM actions
+      GROUP BY ma.actor_user_id, ma.action_type, day
+      UNION ALL
+      SELECT totals.actor_user_id, totals.action_type::TEXT, totals.day, totals.count
+      FROM moderator_workload_daily_totals totals
+      JOIN users u ON u.id = totals.actor_user_id
+      WHERE totals.day >= ${windows.completed.start.toISOString().slice(0, 10)}::date
+        AND totals.day < ${windows.completed.end.toISOString().slice(0, 10)}::date
+        AND totals.community_id IS NOT DISTINCT FROM ${communityId}::uuid
+        AND totals.action_type = ANY(${MODERATION_ANALYTICS_ACTION_TYPES}::moderator_action_types[])
+        AND (u.username IS NULL OR u.username NOT IN (${MODERATION_SYSTEM_USERNAME}, ${BAN_EVASION_SYSTEM_USERNAME}, ${RSS_FEED_AUTO_UPDATER_USERNAME}))
+    ), actor_totals AS (
+      SELECT actor_user_id, SUM(count)::INT AS total
+      FROM facts
       GROUP BY actor_user_id
-      ORDER BY total DESC
-      LIMIT ${leaderboardPageSize}
-    ),
-    actor_counts AS (
-      SELECT
-        a.actor_user_id,
-        json_object_agg(a.action_type, a.count ORDER BY a.action_type) AS counts
+      ORDER BY total DESC, actor_user_id ASC
+      LIMIT ${getModerationAnalyticsWorkLimit('leaderboard_page_size')}
+    ), selected AS (
+      SELECT facts.* FROM facts JOIN actor_totals USING (actor_user_id)
+    ), actor_counts AS (
+      SELECT actor_user_id, json_object_agg(action_type, count ORDER BY action_type) AS counts
       FROM (
-        SELECT actor_user_id, action_type, COUNT(*)::INT AS count
-        FROM actions
-        WHERE actor_user_id IN (SELECT actor_user_id FROM actor_totals)
-        GROUP BY actor_user_id, action_type
-      ) a
-      GROUP BY a.actor_user_id
-    ),
-    weekly AS (
-      SELECT
-        actor_user_id,
-        DATE(date_trunc('week', created_at)) AS week,
-        action_type,
-        COUNT(*)::INT AS count
-      FROM actions
-      WHERE actor_user_id IN (SELECT actor_user_id FROM actor_totals)
-      GROUP BY actor_user_id, week, action_type
-    ),
-    weekly_json AS (
-      SELECT
-        actor_user_id,
-        json_agg(json_build_object('date', week::TEXT, 'type', action_type, 'count', count) ORDER BY week ASC, action_type ASC) AS weekly_counts
-      FROM weekly
+        SELECT actor_user_id, action_type, SUM(count)::INT AS count
+        FROM selected GROUP BY actor_user_id, action_type
+      ) counts
       GROUP BY actor_user_id
+    ), weekly AS (
+      SELECT actor_user_id, date_trunc('week', day)::DATE AS week, action_type,
+        SUM(count)::INT AS count
+      FROM selected GROUP BY actor_user_id, week, action_type
+    ), weekly_json AS (
+      SELECT actor_user_id,
+        json_agg(json_build_object('date', week::TEXT, 'type', action_type, 'count', count)
+          ORDER BY week ASC, action_type ASC) AS weekly_counts
+      FROM weekly GROUP BY actor_user_id
     )
-    SELECT COALESCE(
-      json_agg(
-        json_build_object(
-          'actor_user_id', at.actor_user_id,
-          'total', at.total,
-          'counts', COALESCE(ac.counts, '{}'::json),
-          'weekly_counts', COALESCE(wj.weekly_counts, '[]'::json)
-        )
-        ORDER BY at.total DESC, at.actor_user_id ASC
-      ),
-      '[]'::json
-    ) AS moderators
-    FROM actor_totals at
-    LEFT JOIN actor_counts ac ON ac.actor_user_id = at.actor_user_id
-    LEFT JOIN weekly_json wj ON wj.actor_user_id = at.actor_user_id
+    SELECT COALESCE(json_agg(json_build_object(
+      'actor_user_id', totals.actor_user_id,
+      'total', totals.total,
+      'counts', counts.counts,
+      'weekly_counts', weekly.weekly_counts
+    ) ORDER BY totals.total DESC, totals.actor_user_id ASC), '[]'::json) AS moderators
+    FROM actor_totals totals
+    JOIN actor_counts counts USING (actor_user_id)
+    JOIN weekly_json weekly USING (actor_user_id)
   `)
-
-  const row = rows[0]!
   return {
-    moderators: (row.moderators as ModeratorWorkloadMetrics['moderators']) ?? [],
+    moderators: (rows[0]!.moderators as ModeratorWorkloadMetrics['moderators']) ?? [],
     users: {},
   }
 }
