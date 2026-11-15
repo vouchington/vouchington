@@ -1,5 +1,10 @@
-CREATE INDEX IF NOT EXISTS idx_users__updated_at_id_active
-ON users (updated_at, (id::text)) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_users__updated_at_id
+ON users (updated_at, (id::text));
+COMMENT ON INDEX idx_users__updated_at_id IS 'Updated-window reconciliation includes soft-deleted users so historical reporting days are repaired.';
+
+CREATE INDEX IF NOT EXISTS idx_posts__updated_at_id
+ON posts (updated_at, (id::text));
+COMMENT ON INDEX idx_posts__updated_at_id IS 'Updated-window reporting reconciliation includes live and soft-deleted posts without scanning unrelated history.';
 
 CREATE INDEX IF NOT EXISTS idx_topics__updated_at_id_active
 ON topics (updated_at, (id::text)) WHERE deleted_at IS NULL AND merged_into_topic_id IS NULL;
