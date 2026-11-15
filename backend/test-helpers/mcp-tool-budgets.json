@@ -1241,17 +1241,17 @@
       },
       "draft_review_response": {
         "measured": {
-          "list": 8811,
+          "list": 8974,
           "core": 741
         },
         "max": {
-          "list": 9000,
+          "list": 10000,
           "core": 1000
         }
       },
       "approve_review_response": {
         "measured": {
-          "list": 8688,
+          "list": 8851,
           "core": 614
         },
         "max": {
@@ -1261,7 +1261,7 @@
       },
       "deliver_review_response": {
         "measured": {
-          "list": 8687,
+          "list": 8850,
           "core": 614
         },
         "max": {
@@ -1281,7 +1281,7 @@
       },
       "resolve_review_case": {
         "measured": {
-          "list": 9089,
+          "list": 9252,
           "core": 1021
         },
         "max": {
