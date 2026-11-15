@@ -155,4 +155,17 @@ describe('community application answer rows', () => {
     )
     expect(await countAnswers(applicationId)).toBe(1)
   })
+
+  it('rejects an order_index outside 0 to 999 and accepts both ends', async () => {
+    const { community } = await seedCommunity()
+    await insertQuestion(community.id, 0)
+    await insertQuestion(community.id, 999)
+    await expect(insertQuestion(community.id, 1000)).rejects.toMatchObject({
+      code: '23514',
+      constraint: 'community_application_questions_order_index_range',
+    })
+    await expect(insertQuestion(community.id, -1)).rejects.toMatchObject({
+      constraint: 'community_application_questions_order_index_range',
+    })
+  })
 })

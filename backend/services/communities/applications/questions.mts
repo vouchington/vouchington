@@ -8,6 +8,10 @@ import {
   assertApplicationQuestionInputs,
   type ApplicationQuestionInput,
 } from './question-input.mts'
+import { COMMUNITY_APPLICATION_LIMIT_MAX_VALUES } from './question-limits.mts'
+
+// The order_index CHECK keeps a community at or below this many live questions.
+const QUESTION_ROWS_MAX = COMMUNITY_APPLICATION_LIMIT_MAX_VALUES.questions_per_community
 
 export type { ApplicationQuestionInput }
 
@@ -20,7 +24,8 @@ export async function getApplicationQuestions(
     FROM community_application_questions
     WHERE community_id = ${communityId}
       AND deleted_at IS NULL
-    ORDER BY order_index ASC`
+    ORDER BY order_index ASC
+    LIMIT ${QUESTION_ROWS_MAX}`
   if (options?.lock) statement.append(sql` FOR SHARE`)
 
   const { rows } = await read(statement, options)
@@ -48,8 +53,13 @@ export async function setApplicationQuestions(
       sql`/* setApplicationQuestions:clear */
       UPDATE community_application_questions
       SET deleted_at = CURRENT_TIMESTAMP
-      WHERE community_id = ${communityId}
-        AND deleted_at IS NULL
+      WHERE id IN (
+        SELECT id FROM community_application_questions
+        WHERE community_id = ${communityId}
+          AND deleted_at IS NULL
+        ORDER BY order_index ASC
+        LIMIT ${QUESTION_ROWS_MAX}
+      )
       `,
       options,
     )
@@ -63,8 +73,13 @@ export async function setApplicationQuestions(
       WITH retired AS (
         UPDATE community_application_questions
         SET deleted_at = CURRENT_TIMESTAMP
-        WHERE community_id = ${communityId}
-          AND deleted_at IS NULL
+        WHERE id IN (
+          SELECT id FROM community_application_questions
+          WHERE community_id = ${communityId}
+            AND deleted_at IS NULL
+          ORDER BY order_index ASC
+          LIMIT ${QUESTION_ROWS_MAX}
+        )
         RETURNING id
       ), gate AS MATERIALIZED (
         SELECT COUNT(*) AS retired_count FROM retired

@@ -1,6 +1,10 @@
 import assert from 'http-assert'
-
-const MAX_APPLICATION_QUESTION_OPTIONS = 32_768
+import { createCodedError } from '@vouchington/sentry'
+import {
+  COMMUNITY_APPLICATION_QUESTION_LIMIT_REACHED,
+  COMMUNITY_APPLICATION_QUESTION_OPTION_LIMIT_REACHED,
+} from '@modules/on-error/error-codes'
+import { getCommunityApplicationLimits } from './question-limits.mts'
 
 const VALID_FIELD_TYPES = [
   'short_text',
@@ -21,6 +25,14 @@ export type ApplicationQuestionInput = {
 }
 
 export function assertApplicationQuestionInputs(questions: ApplicationQuestionInput[]): void {
+  const { questionsPerCommunity, optionsPerQuestion } = getCommunityApplicationLimits()
+  if (questions.length > questionsPerCommunity) {
+    throw createCodedError(
+      409,
+      'Community application question limit reached',
+      COMMUNITY_APPLICATION_QUESTION_LIMIT_REACHED,
+    )
+  }
   for (const question of questions) {
     assert(
       question.question && question.question.trim() === question.question,
@@ -46,11 +58,13 @@ export function assertApplicationQuestionInputs(questions: ApplicationQuestionIn
         422,
         'select field types require options',
       )
-      assert(
-        question.options.length <= MAX_APPLICATION_QUESTION_OPTIONS,
-        422,
-        `Select questions must have no more than ${MAX_APPLICATION_QUESTION_OPTIONS} options`,
-      )
+      if (question.options.length > optionsPerQuestion) {
+        throw createCodedError(
+          409,
+          'Application question option limit reached',
+          COMMUNITY_APPLICATION_QUESTION_OPTION_LIMIT_REACHED,
+        )
+      }
       for (const label of question.options) {
         assert(
           typeof label === 'string' &&
