@@ -1,3 +1,4 @@
+import { getMinUUIDv7ForDate } from '@modules/utils'
 import { write } from '@data-stores/psql'
 import { crawlSeedUuid, SEED_PREFIX, seedUuid } from './common.mts'
 
@@ -88,5 +89,18 @@ async function seedBoilerplateRemovalBatch(): Promise<void> {
     ON CONFLICT DO NOTHING`,
     [payload],
   )
-  await write(`/* seedBoilerplateRemovalBatch:analyze */ ANALYZE url_hostnames, urls, crawls`)
+  const oldPrefix = getMinUUIDv7ForDate(new Date(Date.now() - 40 * 86_400_000)).slice(0, 24)
+  await write(
+    `/* seedBoilerplateRemovalBatch:oldHistory */ INSERT INTO hostname_path_boilerplate_removals(id,hostname_id,parent_path)
+     SELECT ($1 || lpad(n::text,12,'0'))::uuid,$2,'/section-0' FROM generate_series(1,10000)n`,
+    [oldPrefix, seedUuid(1, HOSTNAME_TAG)],
+  )
+  await write(
+    `/* seedBoilerplateRemovalBatch:recentOtherPaths */ INSERT INTO hostname_path_boilerplate_removals(hostname_id,parent_path)
+     SELECT $1,'/unrelated-' || n FROM generate_series(1,10000)n`,
+    [seedUuid(1, HOSTNAME_TAG)],
+  )
+  await write(
+    `/* seedBoilerplateRemovalBatch:analyze */ ANALYZE url_hostnames, urls, crawls, hostname_path_boilerplate_removals`,
+  )
 }

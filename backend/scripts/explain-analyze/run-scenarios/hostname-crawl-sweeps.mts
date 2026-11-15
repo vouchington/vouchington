@@ -66,7 +66,13 @@ export async function runHostnameCrawlSweepScenarios(): Promise<void> {
           throw new Error('Expected the first bounded hostname page parent paths to need removal')
       },
       undefined,
-      ['listBoilerplateRemovalHostnameBatch', 'searchParentPathsNeedingBoilerplateRemoval'],
+      [
+        'listBoilerplateRemovalHostnameBatch',
+        'searchParentPathsNeedingBoilerplateRemoval',
+        'readBoilerplateCrawlProbes',
+        'readBoilerplateCrawlPage',
+        'readBoilerplateCrawlMetadata',
+      ],
     ),
   )
   // The fresh bootstrap only creates current crawl partitions; a fixed future cutoff makes
@@ -130,6 +136,12 @@ registerScenarioContract('boilerplate-removal-hostname-batch', {
     },
     { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 700 },
     { kind: 'maxProcessedRows', relation: 'urls', max: 600 },
+    { kind: 'maxProcessedRows', relation: 'hostname_path_boilerplate_removals', max: 600 },
+    {
+      kind: 'usesIndexes',
+      indexes: ['idx_hostname_path_boilerplate_removals__hostname_path_id'],
+      queryContains: 'searchParentPathsNeedingBoilerplateRemoval',
+    },
   ],
   crossPartition: {
     crawls:

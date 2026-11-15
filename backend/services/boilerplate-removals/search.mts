@@ -13,7 +13,12 @@ export type ParentPathCandidate = {
   parent_path: string
 }
 
-export type BoilerplatePathCursor = { hostname_id: string; url_id: string; crawl_id?: string }
+export type BoilerplatePathCursor = {
+  hostname_id: string
+  url_id: string
+  crawl_id?: string
+  probe_id?: string
+}
 
 /**
  * Finds parent paths of the given hostnames with a recent HTML crawl and no
@@ -40,16 +45,17 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
       CASE WHEN position('/' IN substring(u.pathname FROM 2)) > 0
         THEN left(u.pathname, position('/' IN substring(u.pathname FROM 2)))
         ELSE '/' END AS parent_path,
-      EXISTS (
-        SELECT 1 FROM url_hostnames h WHERE h.id = u.hostname_id
-          AND NOT h.is_blocked AND h.is_crawlable
-      ) AND NOT EXISTS (
-        SELECT 1 FROM hostname_path_boilerplate_removals br
+      (
+        SELECT TRUE FROM url_hostnames h WHERE h.id = u.hostname_id
+          AND NOT h.is_blocked AND h.is_crawlable LIMIT 1
+      ) IS TRUE AND (
+        SELECT TRUE FROM hostname_path_boilerplate_removals br
         WHERE br.hostname_id = u.hostname_id
           AND br.parent_path = CASE WHEN position('/' IN substring(u.pathname FROM 2)) > 0
             THEN left(u.pathname, position('/' IN substring(u.pathname FROM 2))) ELSE '/' END
           AND br.id > ${recentCutoffId}
-      ) AS eligible
+        LIMIT 1
+      ) IS NOT TRUE AS eligible
     FROM urls u
     WHERE u.hostname_id = ANY(${hostnameIds}::uuid[])
       AND (u.hostname_id, u.id) >= (
@@ -57,6 +63,7 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
         COALESCE(${options.after?.url_id ?? null}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
       )
       AND (${options.after?.crawl_id ?? null}::uuid IS NOT NULL
+        OR ${options.after?.probe_id ?? null}::uuid IS NOT NULL
         OR u.id IS DISTINCT FROM ${options.after?.url_id ?? null}::uuid)
     ORDER BY u.hostname_id, u.id
     LIMIT ${limit}
@@ -70,6 +77,7 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
     cutoff: recentCutoffDate,
     floor: crawlIdFloor,
     crawlAfter: rows[0]?.id === options.after?.url_id ? options.after?.crawl_id : undefined,
+    crawlProbe: rows[0]?.id === options.after?.url_id ? options.after?.probe_id : undefined,
     queryOptions: options.queryOptions,
   })
   const eligibleIds = new Set(inspection.eligibleCrawls.map(crawl => crawl.url_id))
@@ -91,6 +99,7 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
             hostname_id: last.hostname_id,
             url_id: last.id,
             ...(inspection.crawlAfter ? { crawl_id: inspection.crawlAfter } : {}),
+            ...(inspection.crawlProbe ? { probe_id: inspection.crawlProbe } : {}),
           }
         : undefined,
   }

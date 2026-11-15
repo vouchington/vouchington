@@ -237,15 +237,19 @@ describe('search', () => {
         })
       }
 
-      const { candidates: results } = await searchParentPathsNeedingBoilerplateRemoval(
-        [urls[0]!.hostname.id],
-        100,
-        {
+      let page = await searchParentPathsNeedingBoilerplateRemoval([urls[0]!.hostname.id], 100, {
+        now: () => asOf,
+      })
+      const parentPaths = new Set(page.candidates.map(candidate => candidate.parent_path))
+      for (let step = 0; step < urls.length && page.after; step += 1) {
+        page = await searchParentPathsNeedingBoilerplateRemoval([urls[0]!.hostname.id], 100, {
           now: () => asOf,
-        },
-      )
-
-      expect(results.map(result => result.parent_path).toSorted()).toEqual(
+          after: page.after,
+        })
+        for (const candidate of page.candidates) parentPaths.add(candidate.parent_path)
+      }
+      expect(page.after).toBeUndefined()
+      expect([...parentPaths].toSorted()).toEqual(
         inputs
           .filter(({ delta }) => delta >= 0)
           .map(({ edge, delta }) => `/${edge}-${delta}`)

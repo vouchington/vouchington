@@ -71,6 +71,7 @@ export const processBoilerplateRemoval = async (
   continuation: {
     after?: string
     crawl_after?: string
+    crawl_probe_id?: string
     samples?: { url_id: string; crawl_id: string }[]
   } = {},
 ): Promise<{ hostname_id: string; parent_path: string; skipped: boolean; deferred?: boolean }> => {
@@ -87,12 +88,14 @@ export const processBoilerplateRemoval = async (
     () => new Date(),
     continuation.after,
     continuation.crawl_after,
+    continuation.crawl_probe_id,
   )
   const remainingSlots = 3 - (continuation.samples?.length ?? 0)
   const selectedCandidates = page.candidates.slice(0, remainingSlots)
   const nextAfter =
     page.candidates.length > remainingSlots ? selectedCandidates.at(-1)!.id : page.after
   const nextCrawlAfter = page.candidates.length > remainingSlots ? undefined : page.crawl_after
+  const nextCrawlProbe = page.candidates.length > remainingSlots ? undefined : page.crawl_probe_id
   const samples = [
     ...(continuation.samples ?? []),
     ...selectedCandidates.map(candidate => ({
@@ -103,7 +106,14 @@ export const processBoilerplateRemoval = async (
   const urlIds = samples.map(sample => sample.url_id)
   if (urlIds.length < 3 && nextAfter) {
     await enqueueBulkBoilerplateRemoval([
-      { hostnameId, parentPath, after: nextAfter, crawlAfter: nextCrawlAfter, samples },
+      {
+        hostnameId,
+        parentPath,
+        after: nextAfter,
+        crawlAfter: nextCrawlAfter,
+        crawlProbe: nextCrawlProbe,
+        samples,
+      },
     ])
     return { hostname_id: hostnameId, parent_path: parentPath, skipped: false, deferred: true }
   }
@@ -133,6 +143,7 @@ export const processBoilerplateRemoval = async (
             parentPath,
             after: nextAfter,
             crawlAfter: nextCrawlAfter,
+            crawlProbe: nextCrawlProbe,
             samples: retainedSamples,
           },
         ])

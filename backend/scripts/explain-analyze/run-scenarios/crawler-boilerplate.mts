@@ -12,6 +12,7 @@ export async function runCrawlerBoilerplateScenario(): Promise<void> {
   const crawlLower = crawlSeedUuid(0, '9b')
   const crawlPrefix = crawlLower.slice(0, 24)
   const crawlUpper = `${crawlPrefix}000000002000`
+  let rejectedId: string | undefined
   try {
     await write(
       `/* seedExplainBoilerplateUrls */ INSERT INTO urls
@@ -33,6 +34,13 @@ export async function runCrawlerBoilerplateScenario(): Promise<void> {
        FROM generate_series(0, 1999) AS n ON CONFLICT DO NOTHING`,
       [crawlPrefix, URL_LOWER.slice(0, 24)],
     )
+    rejectedId = (
+      await write<{ id: string }>(
+        `/* seedExplainBoilerplateRejectedHead */ INSERT INTO crawls(url_id,response_status_code,markdown,completed_at)
+       VALUES($1,304,'',CURRENT_TIMESTAMP) RETURNING id`,
+        [`${URL_LOWER.slice(0, 24)}000000000001`],
+      )
+    ).rows[0]!.id
     await write(`/* seedExplainBoilerplate:analyze */ ANALYZE urls`)
     await write(`/* seedExplainBoilerplate:analyze */ ANALYZE crawls`)
     registerScenarioContract('crawler-boilerplate-candidates', {
@@ -50,7 +58,7 @@ export async function runCrawlerBoilerplateScenario(): Promise<void> {
     await runAndCapture(
       'crawler-boilerplate-candidates',
       async () => {
-        const candidates = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
+        const first = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
           seedUuid(0, '02'),
           '/explain-blog',
           3,
@@ -58,16 +66,60 @@ export async function runCrawlerBoilerplateScenario(): Promise<void> {
           () => new Date(),
           URL_LOWER,
         )
-        assert.equal(
-          candidates.candidates.length,
+        assert.equal(first.candidates.length, 0, 'The rejected raw head must remain pending')
+        assert.ok(first.after && first.crawl_after)
+        const second = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
+          seedUuid(0, '02'),
+          '/explain-blog',
           3,
-          'The seeded recent HTML corpus must fill the page',
+          {},
+          () => new Date(),
+          first.after,
+          first.crawl_after,
+          first.crawl_probe_id,
         )
+        assert.ok(second.after, 'Resolving the pending URL must retain later URL work')
+        const third = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
+          seedUuid(0, '02'),
+          '/explain-blog',
+          3,
+          {},
+          () => new Date(),
+          second.after,
+          second.crawl_after,
+          second.crawl_probe_id,
+        )
+        assert.ok(third.after, 'The next bounded page must retain its continuation')
+        const fourth = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
+          seedUuid(0, '02'),
+          '/explain-blog',
+          3,
+          {},
+          () => new Date(),
+          third.after,
+          third.crawl_after,
+          third.crawl_probe_id,
+        )
+        const candidates = [...second.candidates, ...third.candidates, ...fourth.candidates]
+        assert.deepEqual(
+          candidates.map(candidate => candidate.id),
+          [1, 2, 3].map(index => `${URL_LOWER.slice(0, 24)}${String(index).padStart(12, '0')}`),
+        )
+        assert.equal(candidates.length, 3, 'The seeded recent HTML corpus must fill the page')
       },
       undefined,
-      'searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId',
+      [
+        'searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId',
+        'readBoilerplateCrawlProbes',
+        'readBoilerplateCrawlPage',
+        'readBoilerplateCrawlMetadata',
+      ],
     )
   } finally {
+    if (rejectedId)
+      await write('/* cleanupExplainBoilerplateRejectedHead */ DELETE FROM crawls WHERE id=$1', [
+        rejectedId,
+      ])
     await write(
       `/* seedExplainBoilerplate:removeCrawls */ DELETE FROM crawls
       WHERE id >= $1::uuid AND id < $2::uuid`,

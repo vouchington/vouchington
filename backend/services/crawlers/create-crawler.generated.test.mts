@@ -176,12 +176,26 @@ describe('create-crawler.generated', () => {
       statusCode: 200,
     })
 
-    const { candidates } = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
+    let page = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
       hostnameId,
       '/blog',
       10,
     )
-
+    const candidates = [...page.candidates]
+    for (let step = 0; step < 10 && page.after; step += 1) {
+      page = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
+        hostnameId,
+        '/blog',
+        10,
+        {},
+        () => new Date(),
+        page.after,
+        page.crawl_after,
+        page.crawl_probe_id,
+      )
+      candidates.push(...page.candidates)
+    }
+    expect(page.after).toBeUndefined()
     expect(candidates.map(candidate => candidate.id).toSorted()).toEqual(
       [newer304UrlId, recentUrlId].toSorted(),
     )
@@ -191,7 +205,8 @@ describe('create-crawler.generated', () => {
       '/blog',
       1,
     )
-    expect(firstPage.candidates.map(candidate => candidate.id)).toEqual([recentUrlId])
+    expect(firstPage.candidates).toEqual([])
+    expect(firstPage.crawl_probe_id).toBeDefined()
     expect(firstPage.after).toBe(recentUrlId)
   })
 

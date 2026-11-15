@@ -11,7 +11,7 @@ describe('getNetworkEffects', () => {
     const referrer = await createTestUserDirect()
     const now = new Date()
     const monthEnd = Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)
-    const periodStart = new Date(monthEnd - 20_000)
+    const periodStart = new Date(monthEnd + 60 * 60 * 1_000)
     const olderSessionId = crypto.randomUUID()
     const ids: string[] = []
     try {

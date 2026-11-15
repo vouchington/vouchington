@@ -19,10 +19,12 @@ export const searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId = async (
   now: () => Date = () => new Date(),
   after?: string,
   crawlAfter?: string,
+  crawlProbe?: string,
 ): Promise<{
   candidates: BoilerplateRemovalUrlCandidate[]
   after?: string
   crawl_after?: string
+  crawl_probe_id?: string
 }> => {
   const sampledNowMs = now().getTime()
   if (!Number.isFinite(sampledNowMs)) throw new RangeError('Invalid HTML snapshot decision time')
@@ -38,12 +40,13 @@ export const searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId = async (
   >(
     sql`/* searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId */
     SELECT u.id, u.url, u.pathname,
-      EXISTS (SELECT 1 FROM url_hostnames h WHERE h.id = u.hostname_id
-        AND NOT h.is_blocked AND h.is_crawlable) AS eligible
+      (SELECT TRUE FROM url_hostnames h WHERE h.id = u.hostname_id
+        AND NOT h.is_blocked AND h.is_crawlable LIMIT 1) IS TRUE AS eligible
     FROM urls u
     WHERE u.hostname_id = ANY(${[hostnameId]}::uuid[])
       AND u.id >= COALESCE(${after ?? null}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
-      AND (${crawlAfter ?? null}::uuid IS NOT NULL OR u.id IS DISTINCT FROM ${after ?? null}::uuid)
+      AND (${crawlAfter ?? null}::uuid IS NOT NULL OR ${crawlProbe ?? null}::uuid IS NOT NULL
+        OR u.id IS DISTINCT FROM ${after ?? null}::uuid)
     ORDER BY u.hostname_id, u.id
     LIMIT ${limit}
     `,
@@ -64,6 +67,7 @@ export const searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId = async (
     cutoff: recentCutoffDate,
     floor: crawlIdFloor,
     crawlAfter: rows[0]?.id === after ? crawlAfter : undefined,
+    crawlProbe: rows[0]?.id === after ? crawlProbe : undefined,
     queryOptions,
   })
   const eligibleIds = new Map(
@@ -80,5 +84,6 @@ export const searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId = async (
     candidates,
     after: rows.length === limit || !inspection.allUrlsInspected ? inspection.lastUrlId : undefined,
     ...(inspection.crawlAfter ? { crawl_after: inspection.crawlAfter } : {}),
+    ...(inspection.crawlProbe ? { crawl_probe_id: inspection.crawlProbe } : {}),
   }
 }

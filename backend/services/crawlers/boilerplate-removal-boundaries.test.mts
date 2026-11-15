@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { insertTestCrawl, insertTestUrl, insertTestUrlHostname } from '@voucha/test-helpers'
 import { CRAWL_HTML_SNAPSHOT_RETENTION_DAYS } from '../crawls/constants.mts'
 import { searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId } from './boilerplate-removal.mts'
+import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
 
 describe('crawler boilerplate removal snapshot retention', () => {
   it('rejects an invalid snapshot decision time before querying', async () => {
@@ -15,6 +16,34 @@ describe('crawler boilerplate removal snapshot retention', () => {
         () => new Date(Number.NaN),
       ),
     ).rejects.toThrow('Invalid HTML snapshot decision time')
+  })
+
+  it('batches empty and single-crawl URLs into a constant number of queries', async () => {
+    const hostname = `crawler-batched-probes-${randomUUID()}.example.com`
+    const hostnameId = await insertTestUrlHostname({ hostname })
+    const now = new Date()
+    const expectedIds: string[] = []
+    for (const index of [0, 1, 2, 3, 4, 5]) {
+      const urlId = await insertTestUrl({ hostnameId, url: `https://${hostname}/blog/${index}` })
+      if (index % 2 === 1) {
+        await insertTestCrawl({
+          urlId,
+          statusCode: 200,
+          markdown: '',
+          completedAt: now,
+          htmlSha256: Buffer.alloc(32, index),
+          htmlSnapshotUploadedAt: now,
+        })
+        expectedIds.push(urlId)
+      }
+    }
+    const { result, queries } = await withCapturedTestQueries(() =>
+      searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(hostnameId, '/blog', 12),
+    )
+    expect(result.candidates.map(candidate => candidate.id)).toEqual(expectedIds)
+    expect(result.after).toBeUndefined()
+    expect(result.crawl_after).toBeUndefined()
+    expect(queries).toHaveLength(3)
   })
 
   it('shares the raw crawl budget across URLs and resumes the partially inspected URL', async () => {
@@ -49,7 +78,7 @@ describe('crawler boilerplate removal snapshot retention', () => {
     const first = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
       hostnameId,
       '/blog',
-      2,
+      4,
     )
     expect(first).toEqual({
       candidates: [{ id: firstId, url: `https://${hostname}/blog/first`, crawl_id: firstCrawlId }],
@@ -59,7 +88,7 @@ describe('crawler boilerplate removal snapshot retention', () => {
     const second = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
       hostnameId,
       '/blog',
-      2,
+      4,
       {},
       () => now,
       first.after,
@@ -100,7 +129,18 @@ describe('crawler boilerplate removal snapshot retention', () => {
       () => new Date(),
       first.after,
     )
-    expect(second).toEqual({
+    expect(second).toEqual({ candidates: [], after: secondId, crawl_probe_id: crawlId })
+    const third = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
+      hostnameId,
+      '/blog',
+      1,
+      {},
+      () => new Date(),
+      second.after,
+      second.crawl_after,
+      second.crawl_probe_id,
+    )
+    expect(third).toEqual({
       candidates: [{ id: secondId, url: `https://${hostname}/blog/second`, crawl_id: crawlId }],
       after: secondId,
     })
@@ -111,7 +151,7 @@ describe('crawler boilerplate removal snapshot retention', () => {
         1,
         {},
         () => new Date(),
-        second.after,
+        third.after,
       ),
     ).toEqual({ candidates: [], after: undefined })
   })
@@ -159,14 +199,27 @@ describe('crawler boilerplate removal snapshot retention', () => {
       if (delta >= 0) expectedIds.push(urlId)
     }
 
-    const { candidates } = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
+    let page = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
       hostnameId,
       '/blog',
       10,
       {},
       () => now,
     )
-
+    const candidates = [...page.candidates]
+    for (let step = 0; step < edges.length && page.after; step += 1) {
+      page = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
+        hostnameId,
+        '/blog',
+        10,
+        {},
+        () => now,
+        page.after,
+        page.crawl_after,
+      )
+      candidates.push(...page.candidates)
+    }
+    expect(page.after).toBeUndefined()
     expect(candidates.map(candidate => candidate.id).toSorted()).toEqual(expectedIds.toSorted())
   })
 })

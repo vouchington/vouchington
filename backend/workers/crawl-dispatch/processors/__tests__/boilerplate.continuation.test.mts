@@ -42,16 +42,20 @@ describe('boilerplate removal continuation', () => {
       data: { hostname_id: hostnameId, parent_path: '/solo', after: urlId },
     })
     expect(jobs).toHaveLength(1)
-    expect(jobs[0]!.data).toMatchObject({
-      after: urlId,
-      samples: [{ url_id: urlId, crawl_id: crawlId }],
-    })
+    expect(jobs[0]!.data).toMatchObject({ after: urlId, crawl_probe_id: crawlId, samples: [] })
     expect(
       await processBoilerplateRemoval(
         hostnameId,
         '/solo',
-        jobs[0]!.data as { after: string; samples: { url_id: string; crawl_id: string }[] },
+        jobs[0]!.data as { after: string; crawl_probe_id: string },
       ),
+    ).toEqual({ hostname_id: hostnameId, parent_path: '/solo', skipped: false, deferred: true })
+    expect(await getLatestBoilerplateRemovalByHostnameAndPath(hostnameId, '/solo')).toBeNull()
+    expect(
+      await processBoilerplateRemoval(hostnameId, '/solo', {
+        after: urlId,
+        samples: [{ url_id: urlId, crawl_id: crawlId }],
+      }),
     ).toEqual({ hostname_id: hostnameId, parent_path: '/solo', skipped: true })
     expect(await getLatestBoilerplateRemovalByHostnameAndPath(hostnameId, '/solo')).not.toBeNull()
   })

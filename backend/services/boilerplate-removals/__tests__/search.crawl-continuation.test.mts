@@ -9,7 +9,7 @@ describe('boilerplate discovery crawl continuation', () => {
     const hostnameId = await insertTestUrlHostname({ hostname })
     const urlId = await insertTestUrl({ hostnameId, url: `https://${hostname}/blog/one` })
     const now = new Date()
-    await insertTestCrawl({
+    const { id: validId } = await insertTestCrawl({
       urlId,
       statusCode: 200,
       markdown: '',
@@ -26,17 +26,31 @@ describe('boilerplate discovery crawl continuation', () => {
     const first = await searchParentPathsNeedingBoilerplateRemoval([hostnameId], 1)
     expect(first).toEqual({
       candidates: [],
-      after: { hostname_id: hostnameId, url_id: urlId, crawl_id: rejectedId },
+      after: { hostname_id: hostnameId, url_id: urlId, probe_id: rejectedId },
     })
     const second = await searchParentPathsNeedingBoilerplateRemoval([hostnameId], 1, {
       after: first.after,
     })
     expect(second).toEqual({
+      candidates: [],
+      after: { hostname_id: hostnameId, url_id: urlId, crawl_id: rejectedId },
+    })
+    const third = await searchParentPathsNeedingBoilerplateRemoval([hostnameId], 1, {
+      after: second.after,
+    })
+    expect(third).toEqual({
+      candidates: [],
+      after: { hostname_id: hostnameId, url_id: urlId, crawl_id: rejectedId, probe_id: validId },
+    })
+    const fourth = await searchParentPathsNeedingBoilerplateRemoval([hostnameId], 1, {
+      after: third.after,
+    })
+    expect(fourth).toEqual({
       candidates: [{ hostname_id: hostnameId, parent_path: '/blog' }],
       after: { hostname_id: hostnameId, url_id: urlId },
     })
     expect(
-      await searchParentPathsNeedingBoilerplateRemoval([hostnameId], 1, { after: second.after }),
+      await searchParentPathsNeedingBoilerplateRemoval([hostnameId], 1, { after: fourth.after }),
     ).toEqual({ candidates: [], after: undefined })
   })
 })

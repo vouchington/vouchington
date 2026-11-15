@@ -3,8 +3,6 @@
 // PR #3018 removed 48 story-hydration rss_feeds/topics fingerprints after keyed RSS feed
 // hydration passed paired custom/generic captures (2026-10-17T02-25-09-194Z).
 export const BASELINE_FINGERPRINTS = [
-  // The bounded hostname candidate probes one small recent crawl partition.
-  'crawler-boilerplate-candidates|0|searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId:force_custom_plan|force_custom_plan:crawls',
   // Engagement recipients are globally ranked by claimed-at fairness across eligible users.
   // Paired CI 42086515835 also selected these custom scans after the prompt fixture grew users.
   'engagement-follow-news-sources|0|getFollowNewsSourcesRecipients:force_custom_plan|force_custom_plan:relation__user__follow__rss_feed',

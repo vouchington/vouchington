@@ -84,13 +84,14 @@ export type BackgroundCpuJobPayloads = {
       hostnameIds: string[]
       previousCursor: string | null
       nextCursor: string | null
-      after?: { hostname_id: string; url_id: string; crawl_id?: string }
+      after?: { hostname_id: string; url_id: string; crawl_id?: string; probe_id?: string }
     }
   }
   'crawl.boilerplate_removal': {
     hostname_id: string
     parent_path: string
     crawl_after?: string
+    crawl_probe_id?: string
     after?: string
     samples?: { url_id: string; crawl_id: string }[]
   }

@@ -120,7 +120,7 @@ describe('crawl-dispatch boilerplate jobs through real GlideMQ', () => {
 
     onTestFinished(
       overrideDynamicConfigFieldsForTest(crawlBoilerplateRemovalWorkConfig, {
-        batch_size: 1,
+        batch_size: 2,
         hostname_batch_size: 1,
       }),
     )
@@ -147,24 +147,11 @@ describe('crawl-dispatch boilerplate jobs through real GlideMQ', () => {
       deferred: true,
     })
     expect(await getLatestBoilerplateRemovalByHostnameAndPath(hostnameId, '/blog')).toBeNull()
-    const secondResult = await runJob('crawl.boilerplate_removal', {
+    const result = await runJob('crawl.boilerplate_removal', {
       hostname_id: hostnameId,
       parent_path: '/blog',
       after: urls[0]!.id,
       samples: samples.slice(0, 1),
-    })
-    expect(secondResult).toEqual({
-      hostname_id: hostnameId,
-      parent_path: '/blog',
-      skipped: false,
-      deferred: true,
-    })
-    expect(await getLatestBoilerplateRemovalByHostnameAndPath(hostnameId, '/blog')).toBeNull()
-    const result = await runJob('crawl.boilerplate_removal', {
-      hostname_id: hostnameId,
-      parent_path: '/blog',
-      after: urls[1]!.id,
-      samples,
     })
     expect(result).toEqual({ hostname_id: hostnameId, parent_path: '/blog', skipped: false })
     expect(mockSend).toHaveBeenCalledTimes(2)
@@ -280,7 +267,7 @@ describe('boilerplate removal hostname sweep cursor', () => {
     ).rejects.toThrow('admission failed')
     expect(await getTestBoilerplateRemovalHostnameCursor()).toBe(before)
 
-    expect(await processBoilerplateRemovalDispatcher(async () => undefined)).toHaveLength(1)
+    expect(await processBoilerplateRemovalDispatcher(async () => undefined)).toHaveLength(0)
     expect(await getTestBoilerplateRemovalHostnameCursor()).toBe(before)
   })
 
