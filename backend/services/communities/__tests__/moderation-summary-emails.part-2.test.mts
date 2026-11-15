@@ -1,5 +1,7 @@
 import { getTestModerationSummaryRecipientCursor } from '@voucha/test-helpers/moderation-summary-retention'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { communitiesWorkConfig } from '../work-limits.mts'
 import {
   createTestUser,
   insertTestCommunity,
@@ -25,6 +27,13 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000
 const ONE_WEEK_MS = 7 * ONE_DAY_MS
 
 describe('getCommunityModerationSummaryCommunities activity digest', () => {
+  beforeEach(() => {
+    const restore = overrideDynamicConfigFieldsForTest(communitiesWorkConfig, {
+      summary_email_batch_size: 1,
+    })
+    onTestFinished(restore)
+  })
+
   it('populates membership, post-type, top-discussion, and engagement fields within the window', async () => {
     const owner = await createTestUser()
     const commenter = await createTestUser()

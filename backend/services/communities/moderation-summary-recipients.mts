@@ -1,36 +1,61 @@
 import { getCommunitiesWorkLimit } from './work-limits.mts'
+import { decodeUuidCursor, encodeCursor, hasExactKeys } from '@modules/pagination'
+import { isUUID } from '@modules/utils'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { ModerationRecipientRow } from './moderation-summary-schedule.mts'
 
-/** Every inspected user advances the cursor, including users ineligible for this digest. */
+// Scalar point bounds keep profile reads keyed instead of merging unrelated users.
+/** Every inspected membership advances the cursor, including duplicate or ineligible users. */
 export async function getModerationSummaryRecipients(
-  _now: Date,
   afterId?: string,
 ): Promise<{ recipients: ModerationRecipientRow[]; afterId?: string }> {
+  const after = afterId
+    ? decodeUuidCursor(afterId, isMembershipCursor, 'Invalid moderation membership cursor')
+    : undefined
   const limit = getCommunitiesWorkLimit('summary_email_batch_size')
   const { rows } = await read<
-    ModerationRecipientRow & { is_eligible: boolean }
+    ModerationRecipientRow & { community_id: string; is_eligible: boolean }
   >(sql`/* getModerationSummaryRecipients */
-    SELECT u.id,
+    SELECT cm.user_id AS id, cm.community_id,
       (SELECT email.email_address FROM user_email_addresses email
        WHERE email.user_id = u.id AND email.is_primary = TRUE) AS email_address,
       u.username, u.ui_locale, u.moderation_email_cadence,
       u.moderation_email_days_of_week, u.moderation_email_time_of_day,
       COALESCE(u.moderation_email_timezone, 'America/Los_Angeles') AS moderation_email_timezone,
-      (u.deleted_at IS NULL AND u.is_moderation_emails_enabled
-       AND (SELECT TRUE FROM community_members cm WHERE cm.user_id = u.id
-            AND cm.removed_at IS NULL AND cm.role IN ('owner', 'moderator') LIMIT 1) IS TRUE
+      COALESCE((u.deleted_at IS NULL AND u.is_moderation_emails_enabled
        AND (SELECT TRUE FROM user_email_addresses email WHERE email.user_id = u.id AND email.is_primary LIMIT 1) IS TRUE
        AND (SELECT TRUE FROM user_suspensions suspension WHERE suspension.user_id = u.id AND suspension.lifted_at IS NULL LIMIT 1) IS NOT TRUE
-) AS is_eligible
-    FROM users u
-    WHERE u.id > COALESCE(${afterId ?? null}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
-    ORDER BY u.id
+), FALSE) AS is_eligible
+    FROM community_members cm
+    LEFT JOIN users u ON u.id BETWEEN (SELECT cm.user_id LIMIT 1) AND (SELECT cm.user_id LIMIT 1)
+    WHERE cm.removed_at IS NULL AND cm.role IN ('owner', 'moderator')
+      AND (cm.user_id, cm.community_id) > (
+        COALESCE(${after?.id ?? null}::uuid, '00000000-0000-0000-0000-000000000000'::uuid),
+        COALESCE(${after?.communityId ?? null}::uuid, '00000000-0000-0000-0000-000000000000'::uuid))
+    ORDER BY cm.user_id, cm.community_id
     LIMIT ${limit}
   `)
+  const seen = new Set<string>()
+  const recipients = rows.filter(row => {
+    if (!row.is_eligible || seen.has(row.id)) return false
+    seen.add(row.id)
+    return true
+  })
+  const last = rows.at(-1)
   return {
-    recipients: rows.filter(row => row.is_eligible),
-    ...(rows.length === limit ? { afterId: rows[limit - 1]!.id } : {}),
+    recipients,
+    ...(rows.length === limit && last
+      ? { afterId: encodeCursor({ id: last.id, communityId: last.community_id }) }
+      : {}),
   }
+}
+
+function isMembershipCursor(value: unknown): value is { id: string; communityId: string } {
+  return (
+    hasExactKeys(value, ['id', 'communityId']) &&
+    typeof value.id === 'string' &&
+    typeof value.communityId === 'string' &&
+    isUUID(value.communityId)
+  )
 }

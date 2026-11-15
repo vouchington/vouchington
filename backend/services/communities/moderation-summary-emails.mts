@@ -22,7 +22,7 @@ export async function dispatchCommunityModerationSummaryEmails(
   now = new Date(),
   afterId?: string,
 ): Promise<void> {
-  const page = await getModerationSummaryRecipients(now, afterId)
+  const page = await getModerationSummaryRecipients(afterId)
   await pMap(page.recipients, recipient => dispatchModerationSummary(recipient, now), {
     concurrency: 1,
     stopOnError: false,

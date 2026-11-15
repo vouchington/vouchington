@@ -117,6 +117,7 @@ export function enqueueDispatchEngagementEmails(): EnqueueReturnType {
   )
 }
 
+/** afterId encodes the last inspected (user, community) membership, not just a user. */
 export function enqueueDispatchCommunityModerationSummaryEmails(
   data: { afterId?: string } = {},
 ): EnqueueReturnType {

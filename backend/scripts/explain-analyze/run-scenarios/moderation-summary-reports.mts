@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { encodeCursor } from '@modules/pagination'
 import { beginTransaction, write } from '@data-stores/psql'
 import { dispatchCommunityModerationSummaryEmails } from '@services/communities/moderation-summary-emails'
 import { getModerationSummaryRecipients } from '@services/communities/moderation-summary-recipients'
@@ -87,6 +88,13 @@ export async function runModerationSummaryReportScenario(): Promise<void> {
       expectations: [
         {
           kind: 'usesIndexes',
+          indexes: ['idx_community_members__active_moderator_user_id'],
+          queryContains: 'getModerationSummaryRecipients',
+          noSort: true,
+        },
+        { kind: 'maxProcessedRows', relation: 'community_members', max: pageSize },
+        {
+          kind: 'usesIndexes',
           indexes: ['user_moderation_email_sends_user_id_send_key_key'],
           queryContains: 'hasModerationEmailClaim',
           noSort: true,
@@ -102,12 +110,15 @@ export async function runModerationSummaryReportScenario(): Promise<void> {
     await runAndCapture(
       'moderation-summary-report-work',
       async () => {
-        const recipients = await getModerationSummaryRecipients(new Date())
+        const recipients = await getModerationSummaryRecipients()
         assert.ok(
           recipients.recipients.some(({ id }) => id === RECIPIENT_ID),
           'A report on a deleted post remains moderator work',
         )
-        await dispatchCommunityModerationSummaryEmails(now, '019d0000-0000-7000-8000-000000000000')
+        await dispatchCommunityModerationSummaryEmails(
+          now,
+          encodeCursor({ id: RECIPIENT_ID, communityId: '00000000-0000-0000-0000-000000000000' }),
+        )
         return recipients
       },
       undefined,

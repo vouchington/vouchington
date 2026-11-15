@@ -7,7 +7,7 @@ export const DISPATCHER_JOB_NAMES = [
   'dispatchApiKeyExpiryReminders',
 ] as const satisfies readonly EmailDigestDispatcherJobs[]
 
-/** Paged dispatchers carry the last inspected immutable id in their job data. */
+/** Paged dispatchers carry an opaque inspected-row cursor (a membership tuple for moderation). */
 export function dispatcherPayload(
   name: EmailDigestDispatcherJobs,
   data: unknown,

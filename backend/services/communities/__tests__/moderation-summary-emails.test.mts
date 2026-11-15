@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { communitiesWorkConfig } from '../work-limits.mts'
 import { runWithCapturedQueries } from '@data-stores/psql/query-capture'
 import {
   createTestUser,
@@ -39,6 +41,13 @@ async function findQueuedModerationSummary(userId: string) {
 }
 
 describe('moderation summary dispatch', () => {
+  beforeEach(() => {
+    const restore = overrideDynamicConfigFieldsForTest(communitiesWorkConfig, {
+      summary_email_batch_size: 1,
+    })
+    onTestFinished(restore)
+  })
+
   it.each([false, true])('skips summary reads for an existing claim (sent=%s)', async sent => {
     const user = await createTestUser()
     const now = pinnedNow()
@@ -200,6 +209,13 @@ describe('moderation summary dispatch', () => {
 })
 
 describe('moderation summary scheduling', () => {
+  beforeEach(() => {
+    const restore = overrideDynamicConfigFieldsForTest(communitiesWorkConfig, {
+      summary_email_batch_size: 1,
+    })
+    onTestFinished(restore)
+  })
+
   const now = new Date('2026-07-09T15:30:00.000Z')
   const due = { time: '08:30', timeZone: 'America/Los_Angeles', cadence: 'daily' as const }
 

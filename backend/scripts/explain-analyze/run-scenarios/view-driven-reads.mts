@@ -17,10 +17,6 @@ import { runModerationSummaryReportScenario } from './moderation-summary-reports
 import { runAndCapture, seedPostId, seedUser } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import { refreshViewDrivenOAuthActiveExpiries } from '../seed-data/view-driven-oauth.mts'
-import {
-  COMMUNITY_MEMBERSHIP_CAP_COMMUNITIES,
-  COMMUNITY_MEMBERSHIP_CAP_MODERATORS,
-} from '../seed-data/community-membership-caps.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 
 export async function runViewDrivenReadScenarios(): Promise<void> {
@@ -71,10 +67,7 @@ export async function runViewDrivenReadScenarios(): Promise<void> {
       {
         kind: 'maxProcessedRows',
         relation: 'community_members',
-        max:
-          COMMUNITY_MEMBERSHIP_CAP_COMMUNITIES +
-          COMMUNITY_MEMBERSHIP_CAP_MODERATORS +
-          moderationRecipientPageSize,
+        max: moderationRecipientPageSize,
       },
       { kind: 'maxProcessedRows', relation: 'users', max: moderationRecipientPageSize },
       {
@@ -85,7 +78,7 @@ export async function runViewDrivenReadScenarios(): Promise<void> {
     ],
   })
   await runAndCapture('moderation-summary-recipients', () =>
-    getModerationSummaryRecipients(new Date()).then(recipients => {
+    getModerationSummaryRecipients().then(recipients => {
       if (!recipients.recipients.some(({ id }) => id === seedUuid(1, '01'))) {
         throw new Error('Seeded moderator was not eligible for a moderation summary')
       }

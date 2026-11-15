@@ -353,6 +353,11 @@ order. Empty eligibility pages retain their within-user position; emitting a use
 user's remaining memberships. Archived community history therefore cannot expand one activation
 or prevent later eligible moderators from receiving their digest.
 
+Moderation summary dispatch uses active moderator memberships as its workset, so unrelated user
+growth does not increase a digest sweep's cost. Shared moderators can span continuation pages;
+per-period pending and sent claims prevent repeated summary construction without discarding
+within-user progress. Eligibility changes do not strand the membership cursor.
+
 Moderator email digests assemble large moderation workloads incrementally so one recipient cannot
 monopolize shared workers. Because collection can outlive a membership or selected content,
 delivery revalidates current access and the references included in the email.
