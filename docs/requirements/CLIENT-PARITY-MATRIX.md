@@ -624,10 +624,9 @@ repository.
 `PUT /api/v1/communities/:idOrSlug/application-questions` and MCP `set_application_questions` cap a
 community's questions and each select question's options. An over-cap request returns HTTP 409
 with `COMMUNITY_APPLICATION_QUESTION_LIMIT_REACHED` or
-`COMMUNITY_APPLICATION_QUESTION_OPTION_LIMIT_REACHED`, preserved through MCP. The defaults are 50
-questions and 100 options, configurable by developers within hard maximums. Web, Swift, and .NET
-form editors need localized handling that explains the limit without retrying the unchanged
-request. Client work is dependent and does not gate this repository.
+`COMMUNITY_APPLICATION_QUESTION_OPTION_LIMIT_REACHED`, preserved through MCP. Developers configure
+both caps in `community-application-limits-config`. Web, Swift, and .NET form editors need
+localized handling that explains the limit without retrying the unchanged request. Client work is dependent and does not gate this repository.
 
 ## Community agent prompt list pagination
 
