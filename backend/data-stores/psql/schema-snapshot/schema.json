@@ -4991,6 +4991,33 @@
           "unique": true,
           "valid": true
         },
+        "idx_agent_moderations__post_live_newest": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_agent_moderations__post_live_newest ON ONLY public.agent_moderations USING btree (post_id, id DESC) WHERE (deleted_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_agent_moderations__post_prompt_live_newest": {
           "accessMethod": "btree",
           "constraintBacked": false,
