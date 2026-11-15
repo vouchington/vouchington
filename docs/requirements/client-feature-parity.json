@@ -1216,19 +1216,28 @@
           ]
         },
         "swift": {
-          "status": "none",
-          "uiEvidence": [],
-          "behaviorTests": []
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/IntegrityPenaltyReviewSection.swift",
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/IntegrityPenaltyReviewCard.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/IntegrityPenaltyReviewSurfaceTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/IntegrityPenaltyReviewViewModelTests.swift"
+          ]
         },
         "dotnet": {
-          "status": "none",
-          "uiEvidence": [],
-          "behaviorTests": []
+          "status": "full",
+          "uiEvidence": [
+            "dotnet-clients/src/Voucha.Client.App/Pages/IntegrityPenaltyReviewSection.cs",
+            "dotnet-clients/src/Voucha.Client.App/Pages/ReportIntegrityPenaltiesPage.cs",
+            "dotnet-clients/src/Voucha.Client.App/Pages/VoteIntegrityPenaltiesPage.cs"
+          ],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.App.Tests/IntegrityPenaltyReviewPageTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/ModerationIntegrity/IntegrityPenaltyReviewViewModelTests.cs"
+          ]
         }
-      },
-      "gap": {
-        "summary": "Swift and .NET have existing integrity penalty screens but do not render annual due-review queues, opaque cursor continuation, or confirmation actions. The producer lands first; native rendered and executable proof is dependent work.",
-        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/492"
       }
     },
     {
