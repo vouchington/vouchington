@@ -12,12 +12,16 @@ import { upsertTestEmailDomainHostnameId, upsertTestHostnameId } from './email-d
  * Insert a verified email address for a user into user_email_addresses.
  * This simulates a user who has completed email verification.
  */
-export async function addVerifiedEmailForUser(userId: string, email: string): Promise<void> {
+export async function addVerifiedEmailForUser(
+  userId: string,
+  email: string,
+  isPrimary: boolean | null = false,
+): Promise<void> {
   const emailDomainHostnameId = await upsertTestEmailDomainHostnameId(email)
   await write(
     sql`/* addVerifiedEmailForUser */
     INSERT INTO user_email_addresses (user_id, email_address, email_domain_hostname_id, is_primary)
-    VALUES (${userId}, ${email}, ${emailDomainHostnameId}, false)
+    VALUES (${userId}, ${email}, ${emailDomainHostnameId}, ${isPrimary})
     ON CONFLICT (user_id, email_address) DO NOTHING
   `,
   )

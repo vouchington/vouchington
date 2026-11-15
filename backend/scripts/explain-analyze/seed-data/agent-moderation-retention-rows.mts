@@ -122,15 +122,23 @@ export async function insertAgentModerationRetentionBulk(
   newMs: number,
   postCount: number,
   agentId: string,
-  promptId: string,
+  promptIds: readonly string[],
 ): Promise<void> {
-  const rows: { id: string; postId: string; inputVersion: number }[] = []
+  const rows: { id: string; postId: string; promptId: string; inputVersion: number }[] = []
   for (let index = 0; index < postCount; index += 1) {
     const postId = seedUuid(100 + index, '05')
+    // Each post keeps one prompt so its retention history stays per prompt, while the corpus
+    // spreads across prompts like production, where prompt_id is a selective predicate.
+    const promptId = promptIds[index % promptIds.length]!
     rows.push(
-      { id: seedUuidAtTimestamp(oldStartMs + index * 2, index), postId, inputVersion: 1 },
-      { id: seedUuidAtTimestamp(oldStartMs + index * 2 + 1, index), postId, inputVersion: 2 },
-      { id: seedUuidAtTimestamp(newMs + index, index), postId, inputVersion: 3 },
+      { id: seedUuidAtTimestamp(oldStartMs + index * 2, index), postId, promptId, inputVersion: 1 },
+      {
+        id: seedUuidAtTimestamp(oldStartMs + index * 2 + 1, index),
+        postId,
+        promptId,
+        inputVersion: 2,
+      },
+      { id: seedUuidAtTimestamp(newMs + index, index), postId, promptId, inputVersion: 3 },
     )
   }
   for (let start = 0; start < rows.length; start += BATCH_SIZE) {
@@ -142,15 +150,15 @@ export async function insertAgentModerationRetentionBulk(
          (id, post_id, input_sha256, prompt_id, agent_id, results, is_flagged)
        SELECT input.id, input.post_id,
          decode(repeat('0', 62) || lpad(to_hex(input.input_version), 2, '0'), 'hex'),
-         $3::uuid, $4::uuid, '{}'::jsonb, FALSE
-       FROM unnest($1::uuid[], $2::uuid[], $5::int[])
-         AS input(id, post_id, input_version)
+         input.prompt_id, $3::uuid, '{}'::jsonb, FALSE
+       FROM unnest($1::uuid[], $2::uuid[], $4::uuid[], $5::int[])
+         AS input(id, post_id, prompt_id, input_version)
        ON CONFLICT (post_id, input_sha256, prompt_id) DO NOTHING`,
       [
         batch.map(row => row.id),
         batch.map(row => row.postId),
-        promptId,
         agentId,
+        batch.map(row => row.promptId),
         batch.map(row => row.inputVersion),
       ],
     )

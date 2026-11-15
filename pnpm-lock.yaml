@@ -92,11 +92,11 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@vitest/coverage-v8@5.1.0)(vitest@5.1.0)
       dependency-cruiser:
-        specifier: ^18.7.0
-        version: 18.7.0
+        specifier: ^18.7.2
+        version: 18.7.2
       eslint-plugin-no-mistakes:
-        specifier: ^0.109.49
-        version: 0.109.49(@typescript-eslint/parser@8.72.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
+        specifier: ^0.109.50
+        version: 0.109.50(@typescript-eslint/parser@8.72.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint-plugin-playwright:
         specifier: ^2.12.1
         version: 2.12.1(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
@@ -122,8 +122,8 @@ importers:
         specifier: ^6
         version: 6.43.0
       no-mistakes:
-        specifier: ^0.109.49
-        version: 0.109.49(vitest@5.1.0)
+        specifier: ^0.109.50
+        version: 0.109.50(vitest@5.1.0)
       oxfmt:
         specifier: ^0.78.0
         version: 0.78.0
@@ -146,8 +146,8 @@ importers:
         specifier: ^2.1.0
         version: 2.1.0(supports-color@10.2.2)
       squawk-cli:
-        specifier: ^2.70.0
-        version: 2.70.0
+        specifier: ^2.72.0
+        version: 2.72.0
       syncpack:
         specifier: ^15.3.3
         version: 15.3.3
@@ -159,7 +159,7 @@ importers:
         version: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
         specifier: ^2.0.1
-        version: 2.0.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.0)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1168.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.49(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
+        version: 2.0.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.0)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1168.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.50(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -1464,11 +1464,11 @@ importers:
         version: 2.2.2
       vouchington-tooling:
         specifier: ^2.0.1
-        version: 2.0.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.0)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1168.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.49(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
+        version: 2.0.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.0)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1168.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.50(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
     devDependencies:
       no-mistakes:
-        specifier: ^0.109.49
-        version: 0.109.49(vitest@5.1.0)
+        specifier: ^0.109.50
+        version: 0.109.50(vitest@5.1.0)
       oxfmt:
         specifier: ^0.78.0
         version: 0.78.0
@@ -2420,8 +2420,8 @@ importers:
         specifier: workspace:^
         version: link:../utils
       nodemailer:
-        specifier: ^10.4.0
-        version: 10.4.0
+        specifier: ^10.5.0
+        version: 10.5.0
     devDependencies:
       '@types/nodemailer':
         specifier: ^8.0.2
@@ -2687,6 +2687,9 @@ importers:
       '@data-stores/graceful-shutdown':
         specifier: workspace:^
         version: link:../../data-stores/graceful-shutdown
+      '@duckdb/node-api':
+        specifier: ^2.0.0-r.1
+        version: 2.0.0-r.1
       '@jongleberry/api-server':
         specifier: ^3.1.0
         version: 3.1.0
@@ -3827,6 +3830,9 @@ importers:
       '@services/mfa':
         specifier: workspace:^
         version: link:../services/mfa
+      '@services/moderation':
+        specifier: workspace:^
+        version: link:../services/moderation
       '@services/moderation-reports':
         specifier: workspace:^
         version: link:../services/moderation-reports
@@ -4004,7 +4010,7 @@ importers:
         version: 9.1.7
       vouchington-tooling:
         specifier: ^2.0.1
-        version: 2.0.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.0)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1168.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.49(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
+        version: 2.0.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.0)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1168.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.50(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
 
   backend/service-registrations:
     dependencies:
@@ -12831,8 +12837,8 @@ importers:
         specifier: ^6.2.17
         version: 6.2.17
       no-mistakes:
-        specifier: ^0.109.49
-        version: 0.109.49(vitest@5.1.0)
+        specifier: ^0.109.50
+        version: 0.109.50(vitest@5.1.0)
       openai:
         specifier: ^7.43.0
         version: 7.43.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.4)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5)
@@ -12862,7 +12868,7 @@ importers:
         version: 0.15.0
       vouchington-tooling:
         specifier: ^2.0.1
-        version: 2.0.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.0)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1168.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.49(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
+        version: 2.0.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.0)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1168.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.50(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
     devDependencies:
       '@apple/app-store-server-library':
         specifier: ^3.1.0
@@ -14824,8 +14830,8 @@ importers:
         specifier: ^0.2.1
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       mailparser:
-        specifier: ^3.14.1
-        version: 3.14.1
+        specifier: ^3.14.3
+        version: 3.14.3
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -15068,8 +15074,8 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
       no-mistakes:
-        specifier: ^0.109.49
-        version: 0.109.49(vitest@5.1.0)
+        specifier: ^0.109.50
+        version: 0.109.50(vitest@5.1.0)
       picomatch:
         specifier: ^4.0.4
         version: 4.0.7
@@ -15090,7 +15096,7 @@ importers:
         version: 11.0.5
       vouchington-tooling:
         specifier: ^2.0.1
-        version: 2.0.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.0)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1168.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.49(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
+        version: 2.0.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.0)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1168.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.50(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
     devDependencies:
       '@types/picomatch':
         specifier: ^4.0.3
@@ -15112,7 +15118,7 @@ importers:
     dependencies:
       '@sentry/cloudflare':
         specifier: ^11.12.0
-        version: 11.12.0(@cloudflare/workers-types@5.20261112.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(wrangler@4.161.0(@cloudflare/workers-types@5.20261112.1)(@types/node@26.6.6))
+        version: 11.12.0(@cloudflare/workers-types@5.20261113.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(wrangler@4.161.0(@cloudflare/workers-types@5.20261113.1)(@types/node@26.6.6))
       '@ts-shared/cache':
         specifier: workspace:^
         version: link:../ts-shared/cache
@@ -15157,8 +15163,8 @@ importers:
         version: 5.2.3
     devDependencies:
       '@cloudflare/workers-types':
-        specifier: ^5.20261112.1
-        version: 5.20261112.1
+        specifier: ^5.20261113.1
+        version: 5.20261113.1
       '@types/node':
         specifier: ^26.6.6
         version: 26.6.6
@@ -15173,7 +15179,7 @@ importers:
         version: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       wrangler:
         specifier: ^4.161.0
-        version: 4.161.0(@cloudflare/workers-types@5.20261112.1)(@types/node@26.6.6)
+        version: 4.161.0(@cloudflare/workers-types@5.20261113.1)(@types/node@26.6.6)
 
   email-templates:
     dependencies:
@@ -15330,7 +15336,7 @@ importers:
         version: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
         specifier: ^2.0.1
-        version: 2.0.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.0)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1168.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.49(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
+        version: 2.0.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.0)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1168.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.50(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
 
   static-code-analysis:
     dependencies:
@@ -15347,8 +15353,8 @@ importers:
         specifier: ^8.20.0
         version: 8.20.0
       no-mistakes:
-        specifier: ^0.109.49
-        version: 0.109.49(vitest@5.1.0)
+        specifier: ^0.109.50
+        version: 0.109.50(vitest@5.1.0)
       oxfmt:
         specifier: ^0.78.0
         version: 0.78.0
@@ -15360,14 +15366,14 @@ importers:
         version: 1.9.1
       vouchington-tooling:
         specifier: ^2.0.1
-        version: 2.0.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.0)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1168.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.49(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
+        version: 2.0.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.0)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1168.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.50(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
     devDependencies:
       dependency-cruiser:
-        specifier: ^18.7.0
-        version: 18.7.0
+        specifier: ^18.7.2
+        version: 18.7.2
       typescript:
         specifier: npm:@typescript/typescript6@^6.0.2
         version: '@typescript/typescript6@6.0.2'
@@ -15569,7 +15575,7 @@ importers:
         version: 1.4.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@sentry/nextjs':
         specifier: ^11.12.0
-        version: 11.12.0(@cloudflare/workers-types@5.20261112.1)(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react@19.3.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))(wrangler@4.161.0(@cloudflare/workers-types@5.20261112.1)(@types/node@26.6.6))
+        version: 11.12.0(@cloudflare/workers-types@5.20261113.1)(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react@19.3.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))(wrangler@4.161.0(@cloudflare/workers-types@5.20261113.1)(@types/node@26.6.6))
       '@simplewebauthn/browser':
         specifier: ^14.0.0
         version: 14.0.0
@@ -15744,7 +15750,7 @@ importers:
         version: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
       vouchington-tooling:
         specifier: ^2.0.1
-        version: 2.0.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.0)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1168.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.49(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
+        version: 2.0.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.0)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1168.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.50(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
 
 packages:
 
@@ -16290,8 +16296,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@cloudflare/workers-types@5.20261112.1':
-    resolution: {integrity: sha512-FhkAlCQ+J/pV89nhehVaarhlvZFz+ybUsePmIDN1yfI7PMmpjwdxV663e9qu+G+oQSw9oM8u5sVmheNBFn4tnw==}
+  '@cloudflare/workers-types@5.20261113.1':
+    resolution: {integrity: sha512-FhF8hRtsQCr/BWZyUN7wm2x+jqAOkRIpLOW+2fJu5OQyIDOv+c3PxY8duEAkOYXuprLImxjW+PHTbvz9+Px5cw==}
 
   '@commitlint/cli@21.2.4':
     resolution: {integrity: sha512-g3M/wrQdElqGH5vROIeL2QiYIxrzqUkhCgsDyDlWfKEyQdCt10OyMB28W2cJtpZ+VNGMvmaN923infr1hOfyrg==}
@@ -19920,42 +19926,42 @@ packages:
   '@speed-highlight/core@1.2.24':
     resolution: {integrity: sha512-qeW2e1l78afw8VhRPfPQ1Gjj+KU5XFQ/OFV5ti6eTa9bruO7mJyZtA4vw0ofqmA3tKCkROE9xLk3VZoeRc98nw==}
 
-  '@squawk-cli/darwin-arm64@2.70.0':
-    resolution: {integrity: sha512-A8ZdKTxRqtZAsd4P72ZQa3H2XwZU/jL3Nvq+DoK6yg8xbiSrhh0Byy42gOwXVx9xgc+x/+oZL+8nKflJwIntpA==}
+  '@squawk-cli/darwin-arm64@2.72.0':
+    resolution: {integrity: sha512-x9GbT+MpokUApC0hTO3aiZGXIk9NQRHIgilENX3078OVWtYQZ8K+nvZ8Fx3Hs2L3tDMVpK+G3ZO8eF7+vm+uIw==}
     cpu: [arm64]
     os: [darwin]
 
-  '@squawk-cli/darwin-x64@2.70.0':
-    resolution: {integrity: sha512-d7pYX/Y+PsKRf/A6NADP4u/4p40n/mFKLyY8MjwjnBGEhDjiT6AGgyDYrcAzF1PLxCGUmOYCKlfndW1CDrNNhA==}
+  '@squawk-cli/darwin-x64@2.72.0':
+    resolution: {integrity: sha512-U49fefGycKA6/ClFvG1N2XsVubKCKXXAWya2fizDi64wmKc+9khNEkniHwLb12Xr/0gd9cJTLF7pXCPhba4TDg==}
     cpu: [x64]
     os: [darwin]
 
-  '@squawk-cli/linux-arm64-musl@2.70.0':
-    resolution: {integrity: sha512-HSA4k3O+HWTf7XV4uOjX6FrpL2Pvxt5euiQ5CNQgqKLHXwpq8GlQhlOR1WkRZ1CnEnwZ834Chd20Xz9IHTnwiA==}
+  '@squawk-cli/linux-arm64-musl@2.72.0':
+    resolution: {integrity: sha512-unIaLzFKyDaSyOIXXKBBsXgHehr9/DqQvTNKKKMjVlNMOOsHlCHASwPQDmlfjnlRgcL0dGPGZ9j+jJqUhNbCYQ==}
     cpu: [arm64]
     os: [linux]
     libc: [musl]
 
-  '@squawk-cli/linux-arm64@2.70.0':
-    resolution: {integrity: sha512-FE27n0/O4YszESnkmiCPpjRsFg22CK8fUxfgD4AtqAtb3hGFpIAe/ZRKvqZFiVB4GDAQAB42E3Iy2hoEPozZoA==}
+  '@squawk-cli/linux-arm64@2.72.0':
+    resolution: {integrity: sha512-Nb1SKgcrwnM+PWDFEn6Q1I0jYWdATicvbpkryiJcSGnr1SwwRKKEcM23qPNzjyxJvjQeE8GoAQ4O22J23ULWwQ==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@squawk-cli/linux-x64-musl@2.70.0':
-    resolution: {integrity: sha512-UFjpC/TcNcFeglXrcPPZi59iD9ynNB8neW9DR55rT4IzAF3asQvOvKjMECUFlBno7a+Ch3V0BsZF2zY1iN+CUQ==}
+  '@squawk-cli/linux-x64-musl@2.72.0':
+    resolution: {integrity: sha512-VS5Lste4yQyrwrXJ1TuRO40BZlq898MZtRTb49X9KDQl0yj6ZrQ8KD8K00bZUzH2m/iv9QQtSNLynyMt533Xbw==}
     cpu: [x64]
     os: [linux]
     libc: [musl]
 
-  '@squawk-cli/linux-x64@2.70.0':
-    resolution: {integrity: sha512-i+yYiUJAFM6LPGlaY81J3oY21i4y+UW3GKyNJZDOeZK9AClIp+FEZQNZ0ohJnFNks5/xktYB9UhO5iU46RuyPA==}
+  '@squawk-cli/linux-x64@2.72.0':
+    resolution: {integrity: sha512-7M2tL5E8EhI9aCAFiUQe5jfMcdSBk3aSboep1U16ZqRQo6fXLUVfvpATdEXj0c4J8e9AcavTAMXSc2rQnNBRVA==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@squawk-cli/win32-x64@2.70.0':
-    resolution: {integrity: sha512-qs7s4Imajti+75GQDRFlBaM2Gv12HzXyQ6kCtlVR28SA/+pnWmg/mFBIOKz94fifdBGdGNoGw7H4znJOtmdqfQ==}
+  '@squawk-cli/win32-x64@2.72.0':
+    resolution: {integrity: sha512-PeSXhOZIlB7n4eMApujqDF1jGrTPDBnMAYohL95RZ5IoYvr9TSDqoH23rpdguj+TBDxfA9GA3KSO2fXB5NwwBw==}
     cpu: [x64]
     os: [win32]
 
@@ -20975,8 +20981,8 @@ packages:
   '@xtuc/long@4.2.2':
     resolution: {integrity: sha512-NuHqBY1PB/D8xU6s/thBgOAiAP7HOYDQ32+BFZILJ8ivkUkAHQnWfn6WhL79Owj1qmUnoN/YPhktdIoucipkAQ==}
 
-  '@zone-eu/mailsplit@5.4.29':
-    resolution: {integrity: sha512-CCUNycmUjrV5M0wNf23waWAt9eOHczhjLbUQS7k0FNJvR0py9VSqHFt+tSl/D0+XI73VLG0U+PwYtq9R0zsm9Q==}
+  '@zone-eu/mailsplit@5.4.30':
+    resolution: {integrity: sha512-qN0KT6/ziAFvo5TzscaqpurIJaJQEXPPtqBZnpyhiGrACOKLDVMV6Lm57kXt5e/8zZUWoYiSC8oKl/aewtrJDQ==}
     engines: {node: '>=20.0.0'}
 
   accepts@1.3.8:
@@ -21605,8 +21611,8 @@ packages:
     resolution: {integrity: sha512-g7nH6P6dyDioJogAAGprGpCtVImJhpPk/roCzdb3fIh61/s/nPsfR6onyMwkCAR/OlC3yBC0lESvUoQEAssIrw==}
     engines: {node: '>= 0.8'}
 
-  dependency-cruiser@18.7.0:
-    resolution: {integrity: sha512-WexT4OswA6Gy86ms2J7SJ4FJscN43dyS+i5skpbtXlPTFQW4yWbontjFip1TOBAVnc+U+9zdH0a56YTRZX/IGw==}
+  dependency-cruiser@18.7.2:
+    resolution: {integrity: sha512-3Pkco0Kx3GI8tG6DTUDfl9RSZVOXMqD+lvili8m0qw2+zhGFcZMyPspUgb7Crqps1UkL23SFXslpj7a9hj11+A==}
     engines: {node: ^22||^24||>=26}
     hasBin: true
 
@@ -21717,8 +21723,8 @@ packages:
     resolution: {integrity: sha512-Q0n9HRi4m6JuGIV1eFlmvJB7ZEVxu93IrMyiMsGC0lrMJMWzRgx6WGquyfQgZVb31vhGgXnfmPNNXmxnOkRBrg==}
     engines: {node: '>= 0.8'}
 
-  encoding-japanese@2.4.0:
-    resolution: {integrity: sha512-PE0KjlsDy9JSsoU4C2Q8NXb1kC4c+bZRac9ZvHXUE4q1Ht63gScKMdEy9jst9+Fi3M4eDkqzkEhBZvix4blP2A==}
+  encoding-japanese@2.5.0:
+    resolution: {integrity: sha512-5TKhaMWTUF777NQ16OrAkJFuEd1uOnEBw8ODeXFTc/Y9csZZQ6/jiIS5r4aFuzfowu9gLGrE51zqI2H0dLwlmg==}
     engines: {node: '>=18.0.0'}
 
   engine.io-parser@5.2.3:
@@ -21804,8 +21810,8 @@ packages:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
 
-  eslint-plugin-no-mistakes@0.109.49:
-    resolution: {integrity: sha512-UiNsgllZkEWGLOAQ4AnpAUmQ3vXINfhCajwofuOR00+7WqfqTnFtJOnVTyU6pgL9o7ScQ9IjjD0uHsyEXLHR4g==}
+  eslint-plugin-no-mistakes@0.109.50:
+    resolution: {integrity: sha512-uqxyZpvbpEj8qdocOQoMpm1g48Ju7tuL6jPrvY9ocGdC/Rhudj1Ln0W+WoZzdii9EjfqUsPKeMvRDatvp8OeCg==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
     peerDependencies:
       '@typescript-eslint/parser': '>=8'
@@ -22275,8 +22281,8 @@ packages:
     resolution: {integrity: sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==}
     engines: {node: '>= 4'}
 
-  ignore@7.0.12:
-    resolution: {integrity: sha512-/8UvqAPU9DGTI9k4mxtf49U37Isfwr8Uts96+SBHIkFxPJnHS0Ew4f00sM4Scd8V8EjM0jUNtVDdv1kPdt35lg==}
+  ignore@7.0.14:
+    resolution: {integrity: sha512-wCBiZ77u1tuWde6G/nfOtLaCTYcFDU5yCzARzK10y+rLhzYoL7a7yEemcopcc2Mzow7gZOIjnV2ym1NYmdiJOQ==}
     engines: {node: '>= 4'}
 
   immer@11.1.18:
@@ -22612,8 +22618,8 @@ packages:
     resolution: {integrity: sha512-Nyh3H90B3gRtrcxIe56Ayy7635J0jmh6AbxbQgQae8wrSPQMH5wFqJChiMTB13yKG512L3YspbA5DzumhFTITA==}
     engines: {node: '>=20.0.0'}
 
-  libmime@5.6.3:
-    resolution: {integrity: sha512-cuTUW/Jybvh5O4/U9p61gyutHOjDtZyGQYuY99+bfnaFwqcDf2Nb+R6hMHY6DDen2H9wLKQSMpofWUgn2TI5JQ==}
+  libmime@5.6.4:
+    resolution: {integrity: sha512-QWiiwq3ujIUSsCCjFDldDN7FfXuLYSTnEln0oeYfOjgqyVlRV6WQ3UyJ/paguoz8Ynxy1s7k3kh6xomS3bJkCw==}
     engines: {node: '>=20.0.0'}
 
   libqp@3.0.1:
@@ -22790,8 +22796,8 @@ packages:
   magicast@0.5.5:
     resolution: {integrity: sha512-UicdXN8zQ3JHlxVq+28afMXPr1z7WNY6+7EJnzTdQWkTAlMLF5fNCCKxJHBQwGaNGR11581EiQmQzx73+MvszA==}
 
-  mailparser@3.14.1:
-    resolution: {integrity: sha512-Z0LLk7F0yhSCx3xjyL8BMm6dXO3vuWrSAeVhm1F18wVGVBbLAKOsVsCjPyOhJy+KuyDW9PRyDuyiPb7yJCHwVA==}
+  mailparser@3.14.3:
+    resolution: {integrity: sha512-GFaKR2tMTDALRM9PQ3DkfOmWeLaRerjifEhCdUb4mM2+VtO+jZFhPMvQivvM/Df/51qYmH7msrreeQmdWjM2kw==}
     engines: {node: '>=20.0.0'}
 
   make-dir@4.0.0:
@@ -23103,30 +23109,30 @@ packages:
       sass:
         optional: true
 
-  no-mistakes-darwin-arm64@0.109.49:
-    resolution: {integrity: sha512-AbXUlATUDHhs6ViuB5VmhBaXRYdF5jd2aygnP8qSOMBxUUPco2StQbKm0PzIyay01rpR1PGuBxZS2Q1qNG8M7g==}
+  no-mistakes-darwin-arm64@0.109.50:
+    resolution: {integrity: sha512-+oqiED3yENURi0L4i2V/bgl+jAPbC9il2PgTWGRJgVQcr3nbMav855ly3Dnf3U1xf6Xtp8ntb+2Sq+5AaggmbQ==}
     cpu: [arm64]
     os: [darwin]
 
-  no-mistakes-linux-arm64-gnu@0.109.49:
-    resolution: {integrity: sha512-0zvXPhb2xQa+FxDnqqn12+0qCEMrreBGNQbZsjKSdZlvXLMVgIDRYMFvaSqcNgZYFyb+im/jbCqcmuEsxk/XtQ==}
+  no-mistakes-linux-arm64-gnu@0.109.50:
+    resolution: {integrity: sha512-w9MGkON7s/A38SWrUwaDwlNeRUi4HfQLOcBIgfHxMUQOqd2gC5FOQrzjHyF48wAGEyaNL+yP7Dbd6oxmZrf24A==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-linux-x64-gnu@0.109.49:
-    resolution: {integrity: sha512-XNSomCJvSt7JBi087i8HO1bAhBmzjbP7R/2g/eJ77Raxtkz9ODcxMP+C/+82GCXmXhpQV9J8VkmV2WfWBECfUQ==}
+  no-mistakes-linux-x64-gnu@0.109.50:
+    resolution: {integrity: sha512-D+/sdX89sbZxN6TJLUwmVN0/Qw88LWUy76YJrS8UaGL2x/8cXTZ9eKSsTH8oHEW9njmNTkHDRjfKNKUUrpmV1A==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-win32-x64-msvc@0.109.49:
-    resolution: {integrity: sha512-4BbpbfI/50gl7kfMnvvE2LK2Q/qXC+VYELKzIazL48qXczpyHlJKyMQivcqX8mD28sWXr1K2wo83NT/E7mkEGw==}
+  no-mistakes-win32-x64-msvc@0.109.50:
+    resolution: {integrity: sha512-XIB38oTYPugZkkoNZbIjNTBps/1OA5YU09EphprtI2hyzQ9xYMr3sMyC2aw7yE+/dzYVWOfHrq4qOG6hpdN5ig==}
     cpu: [x64]
     os: [win32]
 
-  no-mistakes@0.109.49:
-    resolution: {integrity: sha512-IsGDB4Iq31D+IyT9rQXDzwPa89DtqNuKirF/AEkInUnRxYwZHP1EzEaUnXpsYQY+LmL4eRz6hF/7cuEc4n6BUQ==}
+  no-mistakes@0.109.50:
+    resolution: {integrity: sha512-/jFgEir84tZl8q55NyLLZ4zpjKHDRtGyflB193vCsH5EhPW8p9j71PER9CQXbSyK6SsdG8JuaK58ta0ftfrgBA==}
     hasBin: true
     peerDependencies:
       vitest: ^5.0.3
@@ -23159,12 +23165,8 @@ packages:
     resolution: {integrity: sha512-x0InOIyzgdk+eyaWaRJFH5snEtiImgBgblZ2CyPrLmqqcuMQkEvcDPHbzqbD8eDsSeJbVOjn+crzyzHaM4D+/A==}
     engines: {node: '>=18'}
 
-  nodemailer@10.3.1:
-    resolution: {integrity: sha512-uF0AFsJC07Y1vdW7p580DKAnh7rAO+4UPSSB3mDCPNDufoiaOebV6JmrzpxB14OjEEEiBsNdYoM2Y+fN8M7BBA==}
-    engines: {node: '>=20.0.0'}
-
-  nodemailer@10.4.0:
-    resolution: {integrity: sha512-fyy6r4Q5euRJ9Qr3Cts9K7SZrfe9zmz9oLOYiAR02MEJRDRci+99y0OoYBYBgpLffOqkkjXrB/d26VfiMje/kA==}
+  nodemailer@10.5.0:
+    resolution: {integrity: sha512-L/w/HH5MqpzMDuZD7fQdt/+KqymuvrpaApaIjAH2XA3ILePwlcvXCVVvP75xVrXCEt2ggK2marrrHHFB5Qu0kA==}
     engines: {node: '>=20.0.0'}
 
   nofilter@3.1.0:
@@ -23834,6 +23836,11 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
+  semver@7.8.6:
+    resolution: {integrity: sha512-9lpSSU4Mly3mrtruwLs1eLK6+gzbzqeBFwRNjIjE+9LuDpWdYctrQlQ3ej1Ilgi7gknpsTRnPoLP8DpCHqHIJw==}
+    engines: {node: '>=10'}
+    hasBin: true
+
   send@1.2.1:
     resolution: {integrity: sha512-1gnZf7DFcoIcajTjTwjwuDjzuz4PPcY2StKPlsGAQ1+YH20IRVrBaXSWmdjowTJ6u8Rc01PoYOGHXfP1mYcZNQ==}
     engines: {node: '>= 18'}
@@ -23964,8 +23971,8 @@ packages:
     resolution: {integrity: sha512-UXhXR2869FQaD+GMly8jAMCRZ94nU5KcrFetZfWEMd+LVVG6y0ExgHAhatEcKZ/wk8YcKPdi+hiD2wm75lq3/Q==}
     engines: {node: '>=4.0.0'}
 
-  squawk-cli@2.70.0:
-    resolution: {integrity: sha512-2MIi7E/0xTbG43cOoLGu4oqxAa1EMPgfY1TS2NV7eLaSm1kTrq3u0E1MRQOQii8J/AbyJU32zdodcsXk2/IJ3A==}
+  squawk-cli@2.72.0:
+    resolution: {integrity: sha512-4vKiq4quUG8lMBZvzh19NBsqPgoB5CFNAhZwFLFk3exFLJD58viyKR9Jd8jyvRdJ6Y4GBGp23upirSPRMI5WlQ==}
     hasBin: true
 
   ssrf-guard@1.0.0:
@@ -25729,7 +25736,7 @@ snapshots:
   '@cloudflare/workerd-windows-64@1.20261110.1':
     optional: true
 
-  '@cloudflare/workers-types@5.20261112.1': {}
+  '@cloudflare/workers-types@5.20261113.1': {}
 
   '@commitlint/cli@21.2.4(@typescript/typescript6@6.0.2)(conventional-commits-parser@7.1.2)':
     dependencies:
@@ -28731,7 +28738,7 @@ snapshots:
       rollup: 4.63.4
       webpack: 5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)
 
-  '@sentry/cloudflare@11.12.0(@cloudflare/workers-types@5.20261112.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(wrangler@4.161.0(@cloudflare/workers-types@5.20261112.1)(@types/node@26.6.6))':
+  '@sentry/cloudflare@11.12.0(@cloudflare/workers-types@5.20261113.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(wrangler@4.161.0(@cloudflare/workers-types@5.20261113.1)(@types/node@26.6.6))':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@sentry/conventions': 0.32.0
@@ -28740,9 +28747,9 @@ snapshots:
       '@sentry/server-utils': 11.12.0
       magic-string: 0.30.21
     optionalDependencies:
-      '@cloudflare/workers-types': 5.20261112.1
+      '@cloudflare/workers-types': 5.20261113.1
       vite: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
-      wrangler: 4.161.0(@cloudflare/workers-types@5.20261112.1)(@types/node@26.6.6)
+      wrangler: 4.161.0(@cloudflare/workers-types@5.20261113.1)(@types/node@26.6.6)
 
   '@sentry/conventions@0.32.0': {}
 
@@ -28754,13 +28761,13 @@ snapshots:
     dependencies:
       '@sentry/core': 11.12.0
 
-  '@sentry/nextjs@11.12.0(@cloudflare/workers-types@5.20261112.1)(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react@19.3.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))(wrangler@4.161.0(@cloudflare/workers-types@5.20261112.1)(@types/node@26.6.6))':
+  '@sentry/nextjs@11.12.0(@cloudflare/workers-types@5.20261113.1)(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react@19.3.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))(wrangler@4.161.0(@cloudflare/workers-types@5.20261113.1)(@types/node@26.6.6))':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@rollup/plugin-commonjs': 28.0.1(rollup@4.63.4)
       '@sentry/browser-utils': 11.12.0
       '@sentry/bundler-plugins': 11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
-      '@sentry/cloudflare': 11.12.0(@cloudflare/workers-types@5.20261112.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(wrangler@4.161.0(@cloudflare/workers-types@5.20261112.1)(@types/node@26.6.6))
+      '@sentry/cloudflare': 11.12.0(@cloudflare/workers-types@5.20261113.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(wrangler@4.161.0(@cloudflare/workers-types@5.20261113.1)(@types/node@26.6.6))
       '@sentry/conventions': 0.32.0
       '@sentry/core': 11.12.0
       '@sentry/node': 11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
@@ -28963,25 +28970,25 @@ snapshots:
 
   '@speed-highlight/core@1.2.24': {}
 
-  '@squawk-cli/darwin-arm64@2.70.0':
+  '@squawk-cli/darwin-arm64@2.72.0':
     optional: true
 
-  '@squawk-cli/darwin-x64@2.70.0':
+  '@squawk-cli/darwin-x64@2.72.0':
     optional: true
 
-  '@squawk-cli/linux-arm64-musl@2.70.0':
+  '@squawk-cli/linux-arm64-musl@2.72.0':
     optional: true
 
-  '@squawk-cli/linux-arm64@2.70.0':
+  '@squawk-cli/linux-arm64@2.72.0':
     optional: true
 
-  '@squawk-cli/linux-x64-musl@2.70.0':
+  '@squawk-cli/linux-x64-musl@2.72.0':
     optional: true
 
-  '@squawk-cli/linux-x64@2.70.0':
+  '@squawk-cli/linux-x64@2.72.0':
     optional: true
 
-  '@squawk-cli/win32-x64@2.70.0':
+  '@squawk-cli/win32-x64@2.72.0':
     optional: true
 
   '@stablelib/base64@1.0.1': {}
@@ -30018,10 +30025,10 @@ snapshots:
   '@xtuc/long@4.2.2':
     optional: true
 
-  '@zone-eu/mailsplit@5.4.29':
+  '@zone-eu/mailsplit@5.4.30':
     dependencies:
       libbase64: 1.4.1
-      libmime: 5.6.3
+      libmime: 5.6.4
       libqp: 3.0.1
 
   accepts@1.3.8:
@@ -30585,7 +30592,7 @@ snapshots:
 
   depd@2.0.0: {}
 
-  dependency-cruiser@18.7.0:
+  dependency-cruiser@18.7.2:
     dependencies:
       acorn: 8.19.0
       acorn-jsx: 5.3.2(acorn@8.19.0)
@@ -30594,7 +30601,7 @@ snapshots:
       acorn-walk: 8.3.5
       commander: 15.0.0
       enhanced-resolve: 5.26.0
-      ignore: 7.0.12
+      ignore: 7.0.14
       interpret: 3.1.1
       is-installed-globally: 1.0.1
       json5: 2.2.3
@@ -30602,7 +30609,7 @@ snapshots:
       prompts: 2.4.2
       rechoir: 0.8.0
       safe-regex: 2.1.1
-      semver: 7.8.5
+      semver: 7.8.6
       tsconfig-paths-webpack-plugin: 4.2.0
       watskeburt: 6.0.0
 
@@ -30706,7 +30713,7 @@ snapshots:
 
   encodeurl@2.0.0: {}
 
-  encoding-japanese@2.4.0: {}
+  encoding-japanese@2.5.0: {}
 
   engine.io-parser@5.2.3: {}
 
@@ -30805,7 +30812,7 @@ snapshots:
 
   escape-string-regexp@5.0.0: {}
 
-  eslint-plugin-no-mistakes@0.109.49(@typescript-eslint/parser@8.72.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
+  eslint-plugin-no-mistakes@0.109.50(@typescript-eslint/parser@8.72.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
     dependencies:
       eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
     optionalDependencies:
@@ -31359,7 +31366,7 @@ snapshots:
 
   ignore@5.3.2: {}
 
-  ignore@7.0.12: {}
+  ignore@7.0.14: {}
 
   immer@11.1.18: {}
 
@@ -31656,9 +31663,9 @@ snapshots:
 
   libbase64@1.4.1: {}
 
-  libmime@5.6.3:
+  libmime@5.6.4:
     dependencies:
-      encoding-japanese: 2.4.0
+      encoding-japanese: 2.5.0
       iconv-lite: 0.7.3
       libbase64: 1.4.1
       libqp: 3.0.1
@@ -31795,14 +31802,14 @@ snapshots:
       '@babel/types': 7.29.8
       source-map-js: 1.2.2
 
-  mailparser@3.14.1:
+  mailparser@3.14.3:
     dependencies:
-      '@zone-eu/mailsplit': 5.4.29
+      '@zone-eu/mailsplit': 5.4.30
       he: 1.2.0
       html-to-text: 10.0.1
-      libmime: 5.6.3
+      libmime: 5.6.4
       linkify-it: 5.0.2
-      nodemailer: 10.3.1
+      nodemailer: 10.5.0
       punycode.js: 2.3.1
       tlds: 1.261.0
 
@@ -32292,24 +32299,24 @@ snapshots:
       - '@types/node'
       - babel-plugin-macros
 
-  no-mistakes-darwin-arm64@0.109.49:
+  no-mistakes-darwin-arm64@0.109.50:
     optional: true
 
-  no-mistakes-linux-arm64-gnu@0.109.49:
+  no-mistakes-linux-arm64-gnu@0.109.50:
     optional: true
 
-  no-mistakes-linux-x64-gnu@0.109.49:
+  no-mistakes-linux-x64-gnu@0.109.50:
     optional: true
 
-  no-mistakes-win32-x64-msvc@0.109.49:
+  no-mistakes-win32-x64-msvc@0.109.50:
     optional: true
 
-  no-mistakes@0.109.49(vitest@5.1.0):
+  no-mistakes@0.109.50(vitest@5.1.0):
     optionalDependencies:
-      no-mistakes-darwin-arm64: 0.109.49
-      no-mistakes-linux-arm64-gnu: 0.109.49
-      no-mistakes-linux-x64-gnu: 0.109.49
-      no-mistakes-win32-x64-msvc: 0.109.49
+      no-mistakes-darwin-arm64: 0.109.50
+      no-mistakes-linux-arm64-gnu: 0.109.50
+      no-mistakes-linux-x64-gnu: 0.109.50
+      no-mistakes-win32-x64-msvc: 0.109.50
       vitest: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   node-app-attest@1.0.1:
@@ -32332,9 +32339,7 @@ snapshots:
 
   node-releases@2.0.56: {}
 
-  nodemailer@10.3.1: {}
-
-  nodemailer@10.4.0: {}
+  nodemailer@10.5.0: {}
 
   nofilter@3.1.0: {}
 
@@ -33224,6 +33229,8 @@ snapshots:
 
   semver@7.8.5: {}
 
+  semver@7.8.6: {}
+
   send@1.2.1(supports-color@10.2.2):
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
@@ -33411,15 +33418,15 @@ snapshots:
 
   sql-template-strings@2.2.2: {}
 
-  squawk-cli@2.70.0:
+  squawk-cli@2.72.0:
     optionalDependencies:
-      '@squawk-cli/darwin-arm64': 2.70.0
-      '@squawk-cli/darwin-x64': 2.70.0
-      '@squawk-cli/linux-arm64': 2.70.0
-      '@squawk-cli/linux-arm64-musl': 2.70.0
-      '@squawk-cli/linux-x64': 2.70.0
-      '@squawk-cli/linux-x64-musl': 2.70.0
-      '@squawk-cli/win32-x64': 2.70.0
+      '@squawk-cli/darwin-arm64': 2.72.0
+      '@squawk-cli/darwin-x64': 2.72.0
+      '@squawk-cli/linux-arm64': 2.72.0
+      '@squawk-cli/linux-arm64-musl': 2.72.0
+      '@squawk-cli/linux-x64': 2.72.0
+      '@squawk-cli/linux-x64-musl': 2.72.0
+      '@squawk-cli/win32-x64': 2.72.0
 
   ssrf-guard@1.0.0:
     dependencies:
@@ -33982,7 +33989,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vouchington-tooling@2.0.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.0)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1168.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.49(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5):
+  vouchington-tooling@2.0.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.0)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1168.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.50(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5):
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3
@@ -34005,7 +34012,7 @@ snapshots:
       '@vouchington/postgres': 0.6.0
       '@vouchington/worker-runtime': 0.3.1(@aws-sdk/client-sqs@3.1168.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       next: 16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      no-mistakes: 0.109.49(vitest@5.1.0)
+      no-mistakes: 0.109.50(vitest@5.1.0)
       pg: 8.23.1
       react: 19.3.1
       typescript: '@typescript/typescript6@6.0.2'
@@ -34017,7 +34024,7 @@ snapshots:
       - supports-color
       - zod
 
-  vouchington-tooling@2.0.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.0)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1168.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.49(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5):
+  vouchington-tooling@2.0.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.0)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1168.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.50(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5):
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3
@@ -34040,7 +34047,7 @@ snapshots:
       '@vouchington/postgres': 0.6.0
       '@vouchington/worker-runtime': 0.3.1(@aws-sdk/client-sqs@3.1168.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       next: 16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      no-mistakes: 0.109.49(vitest@5.1.0)
+      no-mistakes: 0.109.50(vitest@5.1.0)
       pg: 8.23.1
       react: 19.3.1
       typescript: '@typescript/typescript6@6.0.2'
@@ -34164,7 +34171,7 @@ snapshots:
       '@cloudflare/workerd-linux-arm64': 1.20261110.1
       '@cloudflare/workerd-windows-64': 1.20261110.1
 
-  wrangler@4.161.0(@cloudflare/workers-types@5.20261112.1)(@types/node@26.6.6):
+  wrangler@4.161.0(@cloudflare/workers-types@5.20261113.1)(@types/node@26.6.6):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.5.0
       '@cloudflare/unenv-preset': 2.16.2(unenv@2.0.0-rc.24)(workerd@1.20261110.1)
@@ -34176,7 +34183,7 @@ snapshots:
       unenv: 2.0.0-rc.24
       workerd: 1.20261110.1
     optionalDependencies:
-      '@cloudflare/workers-types': 5.20261112.1
+      '@cloudflare/workers-types': 5.20261113.1
       fsevents: 2.3.3
     transitivePeerDependencies:
       - '@types/node'

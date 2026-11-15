@@ -17,6 +17,7 @@
     {
       "label": "ubuntu-24.04-arm",
       "jobs": [
+        "checks-backend-smoke.yml#native-images",
         "checks-static.yml#static-lambdas",
         "checks-static.yml#static-web",
         "publish-backend-images.yml#build",

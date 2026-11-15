@@ -41,10 +41,6 @@ const sweepRoutes: [string, () => SweepSpy][] = [
         .mockResolvedValue(undefined as never),
   ],
   [
-    'recoverAppleNotifications',
-    () => vi.spyOn(appleRecovery, 'recoverAppleNotifications').mockResolvedValue({ enqueued: 0 }),
-  ],
-  [
     'recoverGooglePlayNotifications',
     () => vi.spyOn(googlePlay, 'recoverGooglePlayNotifications').mockResolvedValue(),
   ],
@@ -84,6 +80,17 @@ describe('processMembershipJob routes', () => {
     await processMembershipJob(job(name))
 
     expect(sweep.mock.calls).toEqual([[]])
+  })
+
+  it('routes Apple recovery with its persisted inspected cursor', async () => {
+    const recover = vi
+      .spyOn(appleRecovery, 'recoverAppleNotifications')
+      .mockResolvedValue({ enqueued: 0 })
+    const recoveryJob = job('recoverAppleNotifications', {
+      through: { evidenceId: 'through-evidence', receivedAt: '2026-01-01 00:00:00.123456+00' },
+    })
+    await processMembershipJob(recoveryJob)
+    expect(recover).toHaveBeenCalledExactlyOnceWith(recoveryJob)
   })
 
   it('routes recoverMembershipVerifications with its job', async () => {

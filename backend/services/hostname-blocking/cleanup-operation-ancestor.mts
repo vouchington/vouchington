@@ -18,28 +18,24 @@ export async function lockPendingAncestorHostnameBlockCleanup(
 
   const { rows } =
     await query<PendingAncestorCleanupRoot>(sql`/* lockPendingAncestorHostnameBlockCleanup */
-    WITH ancestors AS MATERIALIZED (
-      SELECT id, hostname, cardinality(string_to_array(hostname, '.')) AS specificity
-      FROM url_hostnames WHERE hostname = ANY(${ancestors}::text[])
-    ), candidate AS MATERIALIZED (
-      SELECT root.id FROM ancestors ancestor
-      CROSS JOIN LATERAL (
-        WITH matching_root AS MATERIALIZED (
-          SELECT root.id FROM url_hostname_blocks root
-          WHERE root.url_hostname_id = ancestor.id AND root.lifted_at IS NULL
-            AND root.domain_blocklist_source_id IS NULL
-            AND root.relation_cleanup_root_block_id = root.id
-            AND root.relation_cleanup_completed_at IS NULL
-        )
-        SELECT id FROM matching_root
-      ) root
-      ORDER BY ancestor.specificity DESC, root.id LIMIT 1
-    )
     SELECT root.id, root.relation_cleanup_stage AS stage,
       root.should_penalize_relation_creators AS "penalizeCreators"
     FROM url_hostname_blocks root
-    JOIN candidate ON candidate.id = root.id
-    WHERE root.lifted_at IS NULL AND root.domain_blocklist_source_id IS NULL
+    WHERE root.id = (
+      SELECT candidate.id FROM url_hostnames ancestor
+      CROSS JOIN LATERAL (
+        SELECT pending.id FROM url_hostname_blocks pending
+        WHERE pending.url_hostname_id = ancestor.id
+          AND pending.lifted_at IS NULL AND pending.domain_blocklist_source_id IS NULL
+          AND pending.relation_cleanup_root_block_id = pending.id
+          AND pending.relation_cleanup_completed_at IS NULL
+        ORDER BY pending.id LIMIT 1
+      ) candidate
+      WHERE ancestor.hostname = ANY(${ancestors}::text[])
+      ORDER BY cardinality(string_to_array(ancestor.hostname, '.')) DESC, candidate.id
+      LIMIT 1
+    )
+      AND root.lifted_at IS NULL AND root.domain_blocklist_source_id IS NULL
       AND root.relation_cleanup_root_block_id = root.id
       AND root.relation_cleanup_completed_at IS NULL
     FOR UPDATE OF root
@@ -60,29 +56,27 @@ export async function getPendingDescendantCleanupRootHostnames(
     ),
   ]
   if (ancestorReversedHostnames.length === 0) return new Set()
+  const ancestorHostnames = ancestorReversedHostnames.map(hostname =>
+    hostname.split('.').toReversed().join('.'),
+  )
 
   const { rows } = await query<{ reversed_hostname: string }>(
     sql`/* getPendingDescendantCleanupRootHostnames */
-      WITH current_root AS MATERIALIZED (
-        SELECT hostname.reversed_hostname FROM url_hostname_blocks block
-        JOIN url_hostnames hostname ON hostname.id = block.url_hostname_id
-        WHERE block.id = ${blockId}
-      ), candidate_ancestors AS MATERIALIZED (
-        SELECT hostname.id, hostname.reversed_hostname FROM url_hostnames hostname
-        JOIN current_root ON starts_with(hostname.reversed_hostname, current_root.reversed_hostname || '.')
-        WHERE hostname.reversed_hostname = ANY(${ancestorReversedHostnames}::text[])
-      )
-      SELECT ancestor.reversed_hostname FROM candidate_ancestors ancestor
+      SELECT ancestor.reversed_hostname FROM url_hostnames ancestor
       CROSS JOIN LATERAL (
-        WITH matching_root AS MATERIALIZED (
-          SELECT 1 FROM url_hostname_blocks root
-          WHERE root.url_hostname_id = ancestor.id AND root.id <> ${blockId}
-            AND root.lifted_at IS NULL AND root.domain_blocklist_source_id IS NULL
-            AND root.relation_cleanup_root_block_id = root.id
-            AND root.relation_cleanup_completed_at IS NULL
-        )
-        SELECT 1 FROM matching_root
-      ) owned
+        SELECT 1 FROM url_hostname_blocks root
+        WHERE root.url_hostname_id = ancestor.id AND root.id <> ${blockId}
+          AND root.lifted_at IS NULL AND root.domain_blocklist_source_id IS NULL
+          AND root.relation_cleanup_root_block_id = root.id
+          AND root.relation_cleanup_completed_at IS NULL
+        LIMIT 1
+      ) pending_root
+      WHERE ancestor.hostname = ANY(${ancestorHostnames}::text[])
+        AND starts_with(ancestor.reversed_hostname, (
+          SELECT hostname.reversed_hostname FROM url_hostname_blocks block
+          JOIN url_hostnames hostname ON hostname.id = block.url_hostname_id
+          WHERE block.id = ${blockId}
+        ) || '.')
     `,
   )
   return new Set(rows.map(row => row.reversed_hostname))

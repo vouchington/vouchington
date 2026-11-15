@@ -4991,6 +4991,33 @@
           "unique": true,
           "valid": true
         },
+        "idx_agent_moderations__post_live_newest": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_agent_moderations__post_live_newest ON ONLY public.agent_moderations USING btree (post_id, id DESC) WHERE (deleted_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_agent_moderations__post_prompt_live_newest": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -23729,7 +23756,7 @@
         "idx_community_restrictions__active_lookup": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_restrictions__active_lookup ON public.community_restrictions USING btree (community_id, restriction_type) WHERE (lifted_at IS NULL)",
+          "definition": "CREATE INDEX idx_community_restrictions__active_lookup ON public.community_restrictions USING btree (community_id, restriction_type, activated_at, id) WHERE (lifted_at IS NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -23745,6 +23772,20 @@
               "expression": "restriction_type",
               "nullsFirst": false,
               "opclass": "enum_ops"
+            },
+            {
+              "column": "activated_at",
+              "descending": false,
+              "expression": "activated_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": "(lifted_at IS NULL)",

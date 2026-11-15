@@ -9,7 +9,8 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
-import { deleteImageById } from './delete.mts'
+import { getNextTestImageDeletionRetirementPage } from '@voucha/test-helpers/image-deletion'
+import { deleteImageById, processImageDeletionPage } from './delete.mts'
 import { getImageByAny } from './get.mts'
 
 describe('local', () => {
@@ -32,6 +33,8 @@ describe('local', () => {
     await insertTestPostImage({ postId, imageId })
 
     await deleteImageById(imageId)
+    const page = await getNextTestImageDeletionRetirementPage(imageId, new Set())
+    await processImageDeletionPage(imageId, { retirement: page.retirement })
 
     const post = await getPostModerationInput(postId)
     assert(post)

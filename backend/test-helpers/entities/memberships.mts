@@ -63,7 +63,7 @@ type CreateTestMembershipOptions = {
   stripe_customer_id?: string | null
   provider_environment?: 'test' | 'production'
   provider_application_id?: string
-  binding_bound_at?: Date
+  binding_bound_at?: Date | string
   granted_by_id?: string | null
 }
 type TestMembershipRow = {

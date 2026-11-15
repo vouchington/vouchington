@@ -1,27 +1,105 @@
-import { describe, expect, it, vi } from 'vitest'
+import { once } from 'node:events'
+import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { openMembershipQueueHarness } from '@voucha/test-helpers/membership-verification-queue-assertions'
+import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
+import { findRecoverableAppleNotificationJobs } from '@services/memberships/apple/notification-recovery'
+import { describe, expect, it, vi, onTestFinished } from 'vitest'
 import { memberships } from '@queues/memberships/queues'
-import { createTestAppleRecoveryNotification } from '@voucha/test-helpers/apple-recovery-fixtures'
+import {
+  createTestAppleRecoveryNotification,
+  createTestAppleRecoveryJob,
+  createTestPendingRecoveryEvidence,
+} from '@voucha/test-helpers/apple-recovery-fixtures'
 import { recoverAppleNotifications } from './apple-notification-recovery.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 describe('Apple notification recovery with real GlideMQ', () => {
+  it('keeps the cursor while full and resumes after capacity becomes available', async () => {
+    const owned = await createTestAppleRecoveryNotification()
+    const heldFirst = await createTestAppleRecoveryJob()
+    await createTestAppleRecoveryJob()
+    const counts = await memberships.getJobCounts()
+    const depth = (counts.waiting ?? 0) + (counts.active ?? 0) + (counts.delayed ?? 0)
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(pagedDispatchConfig, {
+        memberships_max_depth: depth,
+      }),
+    )
+    const page = await findRecoverableAppleNotificationJobs({
+      evidenceIds: [owned.evidenceId],
+      batchSize: 1,
+    })
+    const initial = { through: page.through! }
+    const harness = await openMembershipQueueHarness(
+      'apple-capacity',
+      async job => {
+        await recoverAppleNotifications(job, { evidenceIds: [owned.evidenceId], batchSize: 1 })
+      },
+      { concurrency: 1 },
+    )
+    onTestFinished(() => harness.close())
+    onTestFinished(async () => {
+      await (await memberships.getJob(owned.jobId))?.remove()
+    })
+    const delayed = waitForRealGlideEvent(
+      once(harness.events, 'delay-changed'),
+      'Apple capacity delay',
+    )
+    const job = await harness.queue.add('recoverAppleNotifications', initial)
+    expect(job).not.toBeNull()
+    await delayed
+    const retained = await harness.queue.getJob(job!.id)
+    expect(await retained!.getState()).toBe('delayed')
+    expect(retained!.data).toEqual(initial)
+    expect(retained!.attemptsMade).toBe(0)
+    await expect(memberships.getJob(owned.jobId)).resolves.toBeNull()
+    await heldFirst.remove()
+    const completed = waitForRealGlideEvent(
+      once(harness.events, 'completed'),
+      'Apple capacity resume',
+    )
+    await retained!.promote()
+    await completed
+    await expect(memberships.getJob(owned.jobId)).resolves.toMatchObject({
+      name: 'processAppleNotification',
+      data: { evidenceId: owned.evidenceId },
+    })
+  })
+
   it('restores owned lost stable jobs and keeps concurrent recovery deduplicated', async () => {
     const neighbor = await createTestAppleRecoveryNotification()
     const owned = await createTestAppleRecoveryNotification()
 
     try {
       await expect(memberships.getJob(owned.jobId)).resolves.toBeNull()
-      await expect(recoverAppleNotifications([owned.evidenceId], 1)).resolves.toEqual({
+      await expect(
+        recoverAppleNotifications(await createTestAppleRecoveryJob(), {
+          evidenceIds: [owned.evidenceId],
+          batchSize: 1,
+        }),
+      ).resolves.toEqual({
         enqueued: 1,
       })
-      await expect(recoverAppleNotifications([owned.evidenceId], 2)).resolves.toEqual({
+      await expect(
+        recoverAppleNotifications(await createTestAppleRecoveryJob(), {
+          evidenceIds: [owned.evidenceId],
+          batchSize: 2,
+        }),
+      ).resolves.toEqual({
         enqueued: 1,
       })
       await expect(
         Promise.all([
-          recoverAppleNotifications([owned.evidenceId], 1),
-          recoverAppleNotifications([owned.evidenceId], 1),
+          recoverAppleNotifications(await createTestAppleRecoveryJob(), {
+            evidenceIds: [owned.evidenceId],
+            batchSize: 1,
+          }),
+          recoverAppleNotifications(await createTestAppleRecoveryJob(), {
+            evidenceIds: [owned.evidenceId],
+            batchSize: 1,
+          }),
         ]),
       ).resolves.toEqual([{ enqueued: 1 }, { enqueued: 1 }])
 
@@ -40,5 +118,70 @@ describe('Apple notification recovery with real GlideMQ', () => {
       const job = await memberships.getJob(owned.jobId)
       await job?.remove()
     }
+  })
+  it('continues an empty inspected page and only dispatches its owned Apple evidence', async () => {
+    const ignored = await createTestPendingRecoveryEvidence({
+      provider: 'stripe',
+      receivedAt: '2026-01-01 00:00:00.123456+00',
+    })
+    const owned = await createTestPendingRecoveryEvidence({
+      provider: 'apple_app_store',
+      receivedAt: '2026-01-01 00:00:00.123457+00',
+    })
+    const neighbor = await createTestPendingRecoveryEvidence({
+      provider: 'apple_app_store',
+      receivedAt: '2026-01-01 00:00:00.123455+00',
+    })
+    const evidenceIds = [ignored.evidenceId, owned.evidenceId]
+    const page = await findRecoverableAppleNotificationJobs({ evidenceIds, batchSize: 1 })
+    expect(page).toMatchObject({
+      notifications: [],
+      inspected: 1,
+      hasMore: true,
+      nextCursor: { evidenceId: ignored.evidenceId },
+      through: { evidenceId: owned.evidenceId },
+    })
+    expect(page.nextCursor?.receivedAt).toContain('.123456')
+    const checkpoints: unknown[] = []
+    const harness = await openMembershipQueueHarness(
+      'apple-empty-page',
+      async job => {
+        checkpoints.push(JSON.parse(JSON.stringify(job.data)))
+        await recoverAppleNotifications(job, { evidenceIds, batchSize: 1 })
+      },
+      { concurrency: 1 },
+    )
+    onTestFinished(() => harness.close())
+    onTestFinished(async () => {
+      await (await memberships.getJob(owned.jobId))?.remove()
+    })
+    const delayed = waitForRealGlideEvent(
+      once(harness.events, 'delay-changed'),
+      'Apple empty-page checkpoint',
+    )
+    const rootJob = await harness.queue.add('recoverAppleNotifications', {})
+    await delayed
+    const retained = await harness.queue.getJob(rootJob!.id)
+    expect(retained!.data).toEqual({ after: page.nextCursor, through: page.through })
+    const completed = waitForRealGlideEvent(
+      once(harness.events, 'completed'),
+      'Apple empty-page resume',
+    )
+    await retained!.promote()
+    await completed
+    expect(checkpoints).toEqual([{}, { after: page.nextCursor, through: page.through }])
+    const stored = await harness.queue.getJob(rootJob!.id)
+    expect(stored!.data).toEqual({ after: page.nextCursor, through: page.through })
+    expect(stored!.attemptsMade).toBe(0)
+    await expect(memberships.getJob(owned.jobId)).resolves.toMatchObject({
+      name: 'processAppleNotification',
+      data: {
+        evidenceId: owned.evidenceId,
+        providerLineageId: owned.providerLineageId,
+        environment: 'test',
+      },
+    })
+    await expect(memberships.getJob(ignored.jobId)).resolves.toBeNull()
+    await expect(memberships.getJob(neighbor.jobId)).resolves.toBeNull()
   })
 })

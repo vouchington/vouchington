@@ -1,58 +1,50 @@
-import { claimTestIneligiblePurchaseReversalOperations } from '@voucha/test-helpers/membership-reversal-case-fixtures'
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
-import { createTestSku, createTestUser } from '@voucha/test-helpers'
-import { createMembership } from '../create.mts'
-import { getIneligiblePurchaseReversalCase } from './case-read.mts'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { memberships } from '@queues/memberships/queues'
+import {
+  setupStripeCollisionProducer as setupProducer,
+  recordTestStripeCollisionWork as recordWork,
+} from '@voucha/test-helpers/stripe-collision-producer'
+import {
+  getIneligiblePurchaseReversalCase,
+  getIneligiblePurchaseReversalCases,
+} from './case-read.mts'
+import { processStripePurchaseCollisionWork } from './process-collision-work.mts'
 
-describe('getIneligiblePurchaseReversalCase', () => {
-  it('finds the immutable case from the originating invoice without a subscription payload', async () => {
-    const user = await createTestUser()
-    const currentSku = await createTestSku({ plan: 'plus' })
-    await createMembership({
-      userId: user.id,
-      plan: 'plus',
-      skuId: currentSku.id,
-      stripeSubscriptionId: `sub_case_read_current_${randomUUID()}`,
-      providerEnvironment: 'production',
-    })
-    const sku = await createTestSku({ plan: 'pro' })
-    const subscriptionId = `sub_case_read_${randomUUID()}`
-    const originatingInvoiceId = `in_case_read_${randomUUID()}`
-    const target = {
-      amountMinorUnits: 100,
-      chargeId: `ch_case_read_${randomUUID()}`,
-      currency: 'usd',
-      invoiceId: originatingInvoiceId,
-      paymentIntentId: null,
-      qualifyingAmountMinorUnits: 100,
+describe('bounded immutable reversal case lookup', () => {
+  afterEach(() => vi.restoreAllMocks())
+  it('keeps the ambiguity signal bounded when an invoice matches several lineages', async () => {
+    const scope = { applicationId: `ambiguous-${randomUUID()}`, invoiceId: `in-${randomUUID()}` }
+    const firstFixture = await setupProducer('plus', false, scope)
+    const firstWorkId = await recordWork(firstFixture, 'direct', 1_740_000_000)
+    const firstJobId = `stripe-purchase-collision__${firstWorkId}`
+    onTestFinished(async () => (await memberships.getJob(firstJobId))?.remove())
+    await (await memberships.getJob(firstJobId))?.remove()
+    await processStripePurchaseCollisionWork(firstWorkId)
+    for (let index = 0; index < 2; index++) {
+      const fixture = await setupProducer('plus', false, scope)
+      const workId = await recordWork(fixture, 'direct', 1_740_000_000)
+      const jobId = `stripe-purchase-collision__${workId}`
+      onTestFinished(async () => (await memberships.getJob(jobId))?.remove())
+      await (await memberships.getJob(jobId))?.remove()
+      await expect(processStripePurchaseCollisionWork(workId)).rejects.toThrow(
+        'Stripe reversal case lookup matched more than one immutable case',
+      )
     }
-    await claimTestIneligiblePurchaseReversalOperations(
-      {
-        effectiveAt: undefined,
-        expiresAt: undefined,
-        originatingInvoiceId,
-        providerEnvironment: 'production',
-        stripePriceId: sku.stripe_price_id,
-        subscriptionId,
-        userId: user.id,
-      },
-      [target],
-      { currency: target.currency, qualifyingAmountMinorUnits: target.qualifyingAmountMinorUnits },
+    const lookup = {
+      providerApplicationId: scope.applicationId,
+      providerEnvironment: 'production' as const,
+      originatingInvoiceId: scope.invoiceId,
+    }
+    await expect(
+      getIneligiblePurchaseReversalCases({
+        providerApplicationId: lookup.providerApplicationId,
+        providerEnvironment: lookup.providerEnvironment,
+        originatingInvoiceIds: [scope.invoiceId],
+      }),
+    ).resolves.toHaveLength(2)
+    await expect(getIneligiblePurchaseReversalCase(lookup)).rejects.toThrow(
+      'Stripe reversal case lookup matched more than one immutable case',
     )
-
-    await expect(
-      getIneligiblePurchaseReversalCase({
-        originatingInvoiceId,
-        providerEnvironment: 'production',
-      }),
-    ).resolves.toMatchObject({ originatingInvoiceId, subscriptionId })
-    await expect(
-      getIneligiblePurchaseReversalCase({
-        originatingInvoiceId,
-        providerApplicationId: `other-app-${randomUUID()}`,
-        providerEnvironment: 'production',
-      }),
-    ).resolves.toBeNull()
   })
 })

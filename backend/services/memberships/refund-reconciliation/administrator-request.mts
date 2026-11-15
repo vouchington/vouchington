@@ -138,6 +138,7 @@ export async function getAdministratorRefundRequestByKey(
       AND provider_context.provider = ${scope.provider}
       AND provider_context.environment = ${scope.providerEnvironment}
       AND provider_context.application_id = ${scope.providerApplicationId}
+    LIMIT 1
   `)
   return (rows[0] as AdministratorRefundRequestRow | undefined) ?? null
 }
@@ -165,6 +166,7 @@ async function getAdministratorRefundRequestForMembershipKey(
       ON request.membership_operation_id = operation.id
     WHERE membership.id = ${membershipId}
       AND request.administrator_request_key = ${idempotencyKey}
+    LIMIT 1
   `)
   return (rows[0] as AdministratorRefundRequestRow | undefined) ?? null
 }

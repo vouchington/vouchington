@@ -25,6 +25,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/graceful-shutdown": "workspace:^",
+    "@duckdb/node-api": "^2.0.0-r.1",
     "@jongleberry/api-server": "^3.1.0",
     "@modules/on-error": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",

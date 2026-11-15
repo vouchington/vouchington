@@ -6,7 +6,7 @@ import {
   seedMicrosoftRecoveryCredentials,
   seedGoogleAcknowledgmentRecovery,
 } from '../seed-data/membership-provider-notifications.mts'
-import { findRecoverableAppleNotificationJobs } from '@services/memberships/apple/notification-recovery'
+import { runAppleNotificationRecoveryScenarios } from './membership-apple-recovery.mts'
 import { findRecoverableGooglePlayNotificationJobs } from '@services/memberships/google/notification-recovery'
 import { findRecoverableGooglePlayActiveSourceJobs } from '@services/memberships/google/active-source-recovery'
 import { findDueGooglePlayAcknowledgementIds } from '@services/memberships/google/acknowledgement-recovery'
@@ -21,32 +21,7 @@ import { runAndCapture } from '../run-support.mts'
 export async function runMembershipProviderRecoveryScenarios(): Promise<void> {
   const { googleId } = await seedProviderRecoveryNotifications()
 
-  registerScenarioContract('membership-apple-notification-recovery', {
-    expectations: [
-      { kind: 'custom', name: 'appleNotificationRecovery' },
-      {
-        kind: 'usesIndexes',
-        indexes: [
-          'idx_membership_provider_evidence_records__pending_received_at',
-          'idx_membership_provider_evidence_records__pending_id',
-        ],
-        anyOf: true,
-      },
-      { kind: 'maxProcessedRows', relation: 'membership_provider_evidence_records', max: 4_100 },
-      { kind: 'maxProcessedRows', relation: 'membership_provider_lineages', max: 2_700 },
-    ],
-    seededRows: {
-      membership_provider_evidence_records: 27_500,
-      membership_provider_lineages: 3_500,
-      membership_provider_contexts: 1_000,
-    },
-  })
-  await runAndCapture(
-    'membership-apple-notification-recovery',
-    findRecoverableAppleNotificationJobs,
-    undefined,
-    'findRecoverableAppleNotificationJobs',
-  )
+  await runAppleNotificationRecoveryScenarios()
   registerScenarioContract('membership-google-notification-recovery', {
     expectations: [
       {

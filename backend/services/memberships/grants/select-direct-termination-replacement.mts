@@ -1,6 +1,5 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { selectHighestPriorityMembershipSource } from '../fallback/select-highest-priority-source.mts'
 import type { MembershipPlanSlug } from '../types.mts'
 
 type DirectTerminationReplacement = {
@@ -17,8 +16,8 @@ export async function selectDirectTerminationReplacement(
   query: QueryExecutor,
 ): Promise<DirectTerminationReplacement | undefined> {
   const { rows } = await query(sql`/* resumeGrantAfterDirectTermination: replacement priority */
-    WITH oldest_eligible_grants_per_plan AS (
-      SELECT DISTINCT ON (product.plan)
+    WITH highest_plan_oldest_eligible_grant AS (
+      SELECT
         grant_row.membership_source_id, 'admin_grant'::membership_source_kinds AS source_kind,
         COALESCE(source_state.effective_at, grant_row.created_at) AS effective_at, product.plan
       FROM membership_grants grant_row
@@ -37,10 +36,12 @@ export async function selectDirectTerminationReplacement(
           SELECT 1 FROM membership_grant_activation_periods activation
           WHERE activation.membership_grant_id = grant_row.id AND activation.ended_at IS NULL
         )
-      ORDER BY product.plan, grant_row.id ASC
+      ORDER BY product.plan DESC, grant_row.id ASC
+      LIMIT 1
     )
-    SELECT source.id AS membership_source_id, source.source_kind, source_state.effective_at,
-      product.plan
+    (SELECT source.id AS membership_source_id, source.source_kind, source_state.effective_at,
+      product.plan,
+      CASE source.source_kind WHEN 'direct' THEN 3 ELSE 1 END AS source_priority
     FROM membership_sources source
     INNER JOIN membership_source_states source_state
       ON source_state.membership_source_id = source.id
@@ -58,8 +59,13 @@ export async function selectDirectTerminationReplacement(
       AND (source.source_kind = 'direct'
         OR source_state.expires_at IS NULL OR source_state.expires_at > CURRENT_TIMESTAMP)
       AND evidence.verified_at IS NOT NULL AND evidence.rejected_at IS NULL
+    ORDER BY product.plan DESC, source_priority DESC,
+      date_trunc('milliseconds', source_state.effective_at) DESC, source.id DESC
+    LIMIT 1)
     UNION ALL
-    SELECT membership_source_id, source_kind, effective_at, plan
-    FROM oldest_eligible_grants_per_plan`)
-  return selectHighestPriorityMembershipSource(rows as DirectTerminationReplacement[])
+    SELECT membership_source_id, source_kind, effective_at, plan, 2 AS source_priority
+    FROM highest_plan_oldest_eligible_grant
+    ORDER BY plan DESC, source_priority DESC, effective_at DESC, membership_source_id DESC
+    LIMIT 1`)
+  return rows[0] as DirectTerminationReplacement | undefined
 }

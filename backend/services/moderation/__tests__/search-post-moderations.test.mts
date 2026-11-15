@@ -106,12 +106,13 @@ describe('search-post-moderations', () => {
       markdown: `Content ${random}`,
       post_type: 'discussion',
     })
-    // Insert 12 moderations for the same post
+    const insertedIds: string[] = []
     for (let i = 0; i < 12; i++) {
-      await insertTestAgentModeration({ postId: post.id, promptId, agentId })
+      insertedIds.push(await insertTestAgentModeration({ postId: post.id, promptId, agentId }))
     }
 
-    const results = await searchPostModerationsByPostIds([post.id])
-    expect(results.length).toBeLessThanOrEqual(10)
+    await insertTestAgentModeration({ postId: post.id, promptId, agentId, deletedAt: new Date() })
+    const results = await searchPostModerationsByPostIds([post.id, post.id])
+    expect(results.map(row => row.id)).toEqual(insertedIds.toSorted().toReversed().slice(0, 10))
   })
 })

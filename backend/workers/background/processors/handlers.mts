@@ -36,7 +36,9 @@ import { voteAggregationHandlers } from '@workers/vote-aggregation/workers'
 
 /** Every handler of every domain. The registry coverage test keeps this in step with the jobs. */
 export const BACKGROUND_HANDLERS: readonly BackgroundHandler[] = [
-  backgroundHandler(IMAGE_DELETION_PAGE_JOB, job => processImageDeletionPage(job.data.imageId)),
+  backgroundHandler(IMAGE_DELETION_PAGE_JOB, job =>
+    processImageDeletionPage(job.data.imageId, { retirement: job.data.retirement }),
+  ),
   backgroundHandler(IMAGE_DELETION_RECOVER_JOB, processImageDeletionRecovery),
   ...topicMergeHandlers,
   ...sesInboundHandlers,

@@ -3,7 +3,7 @@ export type MembershipsJobPayloads = {
   recoverStripePurchaseCollisions: RecoverStripePurchaseCollisionsData
   processStripeEvent: ProcessStripeEventData
   processAppleNotification: ProcessAppleNotificationData
-  recoverAppleNotifications: Record<string, never>
+  recoverAppleNotifications: RecoverAppleNotificationsData
   processGooglePlayNotification: ProcessGooglePlayNotificationData
   recoverGooglePlayNotifications: Record<string, never>
   reconcileGooglePlayActiveSource: ReconcileGooglePlayActiveSourceData
@@ -41,6 +41,16 @@ export type RecoverStripePurchaseCollisionsData = { after?: string; through?: st
 export type RecoverMembershipVerificationsData = { after?: string; through?: string }
 
 export type ProcessMembershipVerificationData = { verificationId: string }
+
+export type AppleNotificationRecoveryCursor = {
+  receivedAt: string
+  evidenceId: string
+}
+
+export type RecoverAppleNotificationsData = {
+  after?: AppleNotificationRecoveryCursor
+  through?: AppleNotificationRecoveryCursor
+}
 
 export type ProcessAppleNotificationData = {
   evidenceId: string

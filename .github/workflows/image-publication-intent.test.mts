@@ -55,6 +55,7 @@ describe('image publication intent', () => {
     ['backend/services/example.mts', true, false],
     ['localization/catalog/en.json', true, false],
     ['backend/scripts/build/compile-backend-binaries.mts', true, false],
+    ['backend/scripts/build/compile-runtime-files.mts', true, false],
     ['web/app/page.tsx', false, true],
     ['.dockerignore', true, true],
     ['backend/services/example.test.mts', false, false],

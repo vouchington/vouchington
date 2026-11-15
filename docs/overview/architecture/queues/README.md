@@ -128,8 +128,11 @@ for the next seed. Hostname-block roots detach bounded descendant and penalty re
 deletion, while a cursor advances past an unfinished hostname cleanup operation without erasing its
 ownership.
 
-Image deletion fences delivery before processing posts that share the image. Each continuation
-commits a bounded page of post resets and deletion revisions with its cursor and pending listener
+Image deletion fences the asset before retiring its post and public-surface placements in bounded
+continuations. Retirement advances through every inspected binding, including already-retired uses,
+so recovery can safely replay a lost page without spending another placement revision. The existing
+post cursor remains independent from placement retirement, and post completion and storage cleanup
+wait until both placement families are exhausted. Each later continuation commits a bounded page of post resets and deletion revisions with its cursor and pending listener
 admissions. Admission retries drain that receipt before mutating another page, so a lost queue
 acknowledgement cannot reset a post again. Image maintenance re-admits unfinished deletions;
 root admission coalesces overlapping sweeps so backpressure cannot accumulate dispatchers.
@@ -341,6 +344,17 @@ sent-through cursor. Each window retains recipient-page progress on its GlideMQ 
 backpressure, and advances the cursor only after the last page. Native job identities suppress
 concurrent duplicate admission; recipient notification keys and delivery receipts make recovery
 safe after a terminal job is re-admitted.
+
+Each window fixes its final user before dispatch and inspects moderator memberships in index
+order. Empty eligibility pages retain their within-user position; emitting a user skips that
+user's remaining memberships. Archived community history therefore cannot expand one activation
+or prevent later eligible moderators from receiving their digest.
+
+Apple notification recovery fixes its sweep end before dispatch and advances by every inspected
+pending-evidence row, including evidence for another provider. Empty Apple pages therefore still
+continue on the same retained job. Recovery cursors preserve timestamp precision across queue
+serialization. A full queue delays that job without advancing its cursor; later scheduled sweeps replay
+retained pending evidence to recover late commits or lost queue state.
 
 ### Upload maintenance continuation
 

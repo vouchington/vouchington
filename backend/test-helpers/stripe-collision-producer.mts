@@ -1,3 +1,5 @@
+import { beginTransaction } from '@data-stores/psql'
+import { recordIneligibleStripePurchaseCollisionWork } from '../services/memberships/ineligible-stripe-purchase-reversal/collision-work.mts'
 import { randomUUID } from 'node:crypto'
 import { vi } from 'vitest'
 import * as stripeClient from '../modules/stripe/client.mts'
@@ -8,14 +10,18 @@ import { getStripeMembershipSourceIdentity } from '../services/memberships/creat
 const start = 1_740_000_000
 const end = start + 100
 
-export async function setupStripeCollisionProducer(plan: 'plus' | 'pro', history = false) {
+export async function setupStripeCollisionProducer(
+  plan: 'plus' | 'pro',
+  history = false,
+  scope: { applicationId?: string; invoiceId?: string } = {},
+) {
   const user = await createTestUser()
   const suffix = randomUUID()
-  const applicationId = `producer-${suffix}`
+  const applicationId = scope.applicationId ?? `producer-${suffix}`
   const subscriptionId = `sub_${suffix}`
   const chargeId = `ch_${suffix}`
   const refundId = `re_${suffix}`
-  const invoiceId = `in_${suffix}`
+  const invoiceId = scope.invoiceId ?? `in_${suffix}`
   const sku = await createTestSku({ plan, provider_application_id: applicationId })
   const lines = [
     {
@@ -100,4 +106,25 @@ export async function setupStripeCollisionProducer(plan: 'plus' | 'pro', history
     refundId,
     lookup,
   }
+}
+
+export async function recordTestStripeCollisionWork(
+  fixture: Awaited<ReturnType<typeof setupStripeCollisionProducer>>,
+  winningSourceKind: 'direct' | 'family',
+  collision: number,
+): Promise<string> {
+  await using query = await beginTransaction()
+  const workId = await recordIneligibleStripePurchaseCollisionWork(
+    {
+      userId: fixture.userId,
+      sourceIdentity: fixture.sourceIdentity,
+      winningSourceKind,
+      winningPlan: 'plus',
+      collisionAt: new Date(collision * 1_000),
+    },
+    query,
+  )
+  if (!workId) throw new Error('Expected Stripe purchase collision work')
+  await query.commit()
+  return workId
 }

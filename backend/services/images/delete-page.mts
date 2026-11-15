@@ -2,6 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import onError from '@modules/on-error'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import { enqueueBulkOnPostUpdated } from '@queues/entity-listeners/enqueues'
+import type { ImageDeletionRetirementCursor } from '@queues/background/enqueues/image-deletion-jobs'
 import { enqueueImageDeletionPage } from '@queues/background/enqueues/image-deletion'
 import { resetPostClearance } from '@services/post-clearance'
 import { recordPostPublicationChange } from '@services/post-publication'
@@ -12,10 +13,12 @@ import { cleanupDeletedImageStorage } from './delete-storage-cleanup.mts'
 import { createImageDeletionPostRevision } from './delete-revisions.mts'
 import { withImageStorageLifecycleLock } from './storage-lifecycle-lock.mts'
 import { getImagesWorkLimit } from './work-limits.mts'
+import { retireDeletedImagePlacementPage } from './delete-placement-retirement.mts'
 
 export type ImageDeletionOptions = {
   beginTransaction?: typeof beginTransaction
   reportAdmissionFailure?: true
+  retirement?: ImageDeletionRetirementCursor
 }
 type DeletionImage = {
   id: string
@@ -45,9 +48,9 @@ export async function processImageDeletionPageWhileLocked(
   const startTransaction = options.beginTransaction ?? beginTransaction
   const limit = getImagesWorkLimit('deletion_page_size')
   await using transaction = await startTransaction()
-  const { rows: images } = await transaction<DeletionImage>(sql`/* processImageDeletionPage:lock */
+  const { rows: images } = await transaction<DeletionImage>(sql`/* processImageDeletionPage:image */
     SELECT id, s3_key, sha_256, upload_staged_at, deletion_post_cursor, deletion_posts_completed_at,
-      quarantine_pending_at, quarantined_at FROM images WHERE id = ${imageId} AND deleted_at IS NOT NULL FOR UPDATE`)
+      quarantine_pending_at, quarantined_at FROM images WHERE id = ${imageId} AND deleted_at IS NOT NULL`)
   const image = images[0]
   if (!image) {
     await transaction.commit()
@@ -55,6 +58,17 @@ export async function processImageDeletionPageWhileLocked(
   }
   if (image.quarantine_pending_at && !image.quarantined_at)
     throw new Error('Image quarantine copy is not confirmed')
+  // The deleted asset is already unavailable. Finish both bounded placement walks before
+  // post completion or irreversible storage cleanup, carrying their independent cursor in the job.
+  const retirement = options.retirement ?? { family: 'post' }
+  const nextRetirement = await retireDeletedImagePlacementPage(imageId, retirement, transaction)
+  if (nextRetirement) {
+    await transaction.commit()
+    await admitDeletionEffect(async () => {
+      await enqueueImageDeletionPage(imageId, image.deletion_post_cursor, undefined, nextRetirement)
+    }, options.reportAdmissionFailure)
+    return
+  }
   if (image.deletion_posts_completed_at) {
     await transaction.commit()
     await cleanupDeletedImageStorage(image)
@@ -148,7 +162,7 @@ export async function processImageDeletionPageWhileLocked(
   if (complete) await cleanupDeletedImageStorage(image)
   else
     await admitDeletionEffect(async () => {
-      await enqueueImageDeletionPage(imageId, cursor, postIds.at(-1))
+      await enqueueImageDeletionPage(imageId, cursor, postIds.at(-1), { family: 'complete' })
     }, options.reportAdmissionFailure)
 }
 

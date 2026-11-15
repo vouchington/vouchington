@@ -100,6 +100,8 @@ export type CommunityActivityDigestDispatchData = {
   windowStart: string
   windowEnd: string
   afterUserId?: string
+  afterCommunityId?: string | null
+  throughUserId?: string
 }
 
 export type ReconcileMediaDeliveryRegistryData =

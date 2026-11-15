@@ -143,7 +143,9 @@ describe('media delivery registry processor', () => {
     await expect(
       getTestDeliveryRepairMarker(committed.mediaDeliveryRegistryRecordId),
     ).resolves.toEqual(expect.any(String))
+    put.mockClear()
     await repairFailedImageDeliveryMutation({ postIds: [postId], imageIds: [imageId] })
+    expect(put).toHaveBeenCalledTimes(1)
     const deliveryKey = getImagePlacementDeliveryKey({
       placementId: placement.placement_id,
       revision: placement.placement_revision,

@@ -23,28 +23,21 @@ export async function searchPostModerationsByPostIds(
   if (postIds.length === 0) return []
 
   const { rows } = await read(sql`/* searchPostModerationsByPostIds */
-    WITH ranked AS (
-      SELECT
-        am.id,
-        am.post_id,
-        am.prompt_id,
-        am.agent_id,
-        encode(am.input_sha256, 'hex') AS input_sha256,
-        am.is_flagged,
-        am.results,
-        am.created_at,
-        am.updated_at,
-        agm.slug AS moderator_slug,
-        ROW_NUMBER() OVER (PARTITION BY am.post_id ORDER BY am.id DESC) AS rn
-      FROM agent_moderations am
-      LEFT JOIN moderator_agents agm ON agm.agent_id = am.agent_id
-      WHERE am.post_id = ANY(${postIds}::uuid[])
-        AND am.deleted_at IS NULL
-    )
-    SELECT id, post_id, prompt_id, agent_id, input_sha256, is_flagged, results, created_at, updated_at, moderator_slug
-    FROM ranked
-    WHERE rn <= ${MAX_MODERATIONS_PER_POST}
-    ORDER BY post_id, id DESC
+    SELECT am.id, am.post_id, am.prompt_id, am.agent_id,
+      encode(am.input_sha256, 'hex') AS input_sha256,
+      am.is_flagged, am.results, am.created_at, am.updated_at,
+      agm.slug AS moderator_slug
+    FROM unnest(${[...new Set(postIds)]}::uuid[]) AS requested(post_id)
+    CROSS JOIN LATERAL (
+      SELECT id, post_id, prompt_id, agent_id, input_sha256,
+        is_flagged, results, created_at, updated_at
+      FROM agent_moderations
+      WHERE post_id = requested.post_id AND deleted_at IS NULL
+      ORDER BY id DESC
+      LIMIT ${MAX_MODERATIONS_PER_POST}
+    ) am
+    LEFT JOIN moderator_agents agm ON agm.agent_id = am.agent_id
+    ORDER BY am.post_id, am.id DESC
   `)
 
   return rows as AgentModerationResult[]
