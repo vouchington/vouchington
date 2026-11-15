@@ -284,6 +284,7 @@ CREATE TABLE IF NOT EXISTS community_application_questions (
   deleted_at TIMESTAMPTZ,
   CHECK (question = TRIM(question)),
   CHECK (char_length(question) BETWEEN 1 AND 500),
+  CONSTRAINT community_application_questions_order_index_range CHECK (order_index BETWEEN 0 AND 999),
   CONSTRAINT community_application_questions_identity_key UNIQUE (community_id, id)
 );
 

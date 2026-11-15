@@ -1,4 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, onTestFinished } from 'vitest'
+import { communityApplicationLimitsConfig } from '@services/communities/applications/question-limits'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { setApplicationQuestions } from '@services/communities'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -234,6 +236,46 @@ describe('Community Application Questions Routes', () => {
       expect(Array.isArray(response.body.questions)).toBe(true)
       expect(response.body.questions.length).toBe(1)
       expect(response.body.questions[0].question).toBe('Why do you want to join?')
+    })
+
+    it.each([
+      {
+        field: 'questions_per_community',
+        code: 'COMMUNITY_APPLICATION_QUESTION_LIMIT_REACHED',
+        body: [
+          { question: 'One?', field_type: 'short_text' },
+          { question: 'Two?', field_type: 'short_text' },
+        ],
+      },
+      {
+        field: 'options_per_question',
+        code: 'COMMUNITY_APPLICATION_QUESTION_OPTION_LIMIT_REACHED',
+        body: [{ question: 'Pick', field_type: 'single_select', options: ['a', 'b'] }],
+      },
+    ])('returns $code with 409 one past the $field cap', async ({ field, code, body }) => {
+      onTestFinished(
+        overrideDynamicConfigFieldsForTest(communityApplicationLimitsConfig, { [field]: 1 }),
+      )
+      const user = await createTestUser()
+      const community = await insertTestCommunity({
+        createdById: user.id,
+        slug: `app-questions-cap-${createRandomString(8)}`,
+      })
+      await insertTestCommunityMember({
+        communityId: community.id,
+        userId: user.id,
+        role: 'owner',
+      })
+      const request = createRequest()
+      await request.authenticateAs(user)
+
+      const response = await request
+        .put(`/api/v1/communities/${community.slug}/application-questions`)
+        .set('Content-Type', 'application/json')
+        .send({ questions: body })
+        .expect(409)
+
+      expect(response.body.code).toBe(code)
     })
   })
 })

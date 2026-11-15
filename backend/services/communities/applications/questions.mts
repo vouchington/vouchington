@@ -8,6 +8,11 @@ import {
   assertApplicationQuestionInputs,
   type ApplicationQuestionInput,
 } from './question-input.mts'
+import { COMMUNITY_APPLICATION_LIMIT_MAX_VALUES } from './question-limits.mts'
+
+// The partial unique index on (community_id, order_index) for live rows plus the order_index
+// CHECK (0 to 999) keep a community at or below this many live questions.
+const QUESTION_ROWS_MAX = COMMUNITY_APPLICATION_LIMIT_MAX_VALUES.questions_per_community
 
 export type { ApplicationQuestionInput }
 
@@ -20,7 +25,8 @@ export async function getApplicationQuestions(
     FROM community_application_questions
     WHERE community_id = ${communityId}
       AND deleted_at IS NULL
-    ORDER BY order_index ASC`
+    ORDER BY order_index ASC
+    LIMIT ${QUESTION_ROWS_MAX}`
   if (options?.lock) statement.append(sql` FOR SHARE`)
 
   const { rows } = await read(statement, options)

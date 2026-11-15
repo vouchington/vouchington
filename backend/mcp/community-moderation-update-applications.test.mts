@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import { communityApplicationLimitsConfig } from '@services/communities/applications/question-limits'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   createTestUser,
   insertTestCommunity,
@@ -52,6 +54,35 @@ describe('community moderation MCP application updates — real PostgreSQL and V
     expect(await getApplicationQuestions(community.id)).toEqual([
       expect.objectContaining({ question }),
     ])
+  })
+
+  it.each([
+    {
+      field: 'questions_per_community',
+      code: 'COMMUNITY_APPLICATION_QUESTION_LIMIT_REACHED',
+      questions: [
+        { question: 'One?', field_type: 'short_text' },
+        { question: 'Two?', field_type: 'short_text' },
+      ],
+    },
+    {
+      field: 'options_per_question',
+      code: 'COMMUNITY_APPLICATION_QUESTION_OPTION_LIMIT_REACHED',
+      questions: [{ question: 'Pick', field_type: 'single_select', options: ['a', 'b'] }],
+    },
+  ])('rejects one past the $field cap with $code', async ({ field, code, questions }) => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(communityApplicationLimitsConfig, { [field]: 1 }),
+    )
+    const { owner, community } = await fixture()
+    const text = await callRejectedMcpTool(
+      owner,
+      'update_community_moderation',
+      optionArgs('set_application_questions', { community: community.slug, questions }),
+      scopes,
+    )
+    expect(JSON.parse(text)).toMatchObject({ error: { status: 409, code } })
+    expect(await getApplicationQuestions(community.id)).toEqual([])
   })
 
   it('reviews a private-community application and exposes the result through the guarded list', async () => {

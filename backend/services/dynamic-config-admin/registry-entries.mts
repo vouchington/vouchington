@@ -1,3 +1,4 @@
+import { communityApplicationLimitsRegistryEntry } from './registry-community-application-limits-entry.mts'
 import { householdLimitsRegistryEntry } from './registry-household-limits-entry.mts'
 import { relationLimitsRegistryEntry } from './registry-relation-limits-entry.mts'
 import { profileCountRegistryEntry } from './registry-profile-count-entry.mts'
@@ -40,6 +41,7 @@ const unorderedRegistryEntries = [
   sessionLimitsRegistryEntry,
   relationLimitsRegistryEntry,
   householdLimitsRegistryEntry,
+  communityApplicationLimitsRegistryEntry,
   profileCountRegistryEntry,
   webSearchRegistryEntry,
   topicDataPointInsightsRegistryEntry,
