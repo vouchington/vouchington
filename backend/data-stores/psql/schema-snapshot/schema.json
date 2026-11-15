@@ -125751,6 +125751,17 @@
         "review_disputes_disputed_rating_check": "CHECK (((disputed_rating >= 1) AND (disputed_rating <= 5)))"
       },
       "columns": {
+        "ai_draft_run_id": {
+          "collation": null,
+          "comment": "Identity of the resolution run that saved the current AI draft; retained as plain current state after retention retires the run row, so it is not a foreign key.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "uuid"
+        },
         "ai_drafted_at": {
           "collation": null,
           "comment": "When the AI agent drafted the recommended_action and ai_public_response.",
@@ -125792,7 +125803,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "approved_by_id": {
@@ -125803,7 +125814,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 20,
           "type": "uuid"
         },
         "claim_text": {
@@ -125825,7 +125836,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 26,
           "type": "timestamp with time zone"
         },
         "disputant_user_id": {
@@ -125858,7 +125869,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         },
         "edited_at": {
@@ -125869,7 +125880,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "edited_by_id": {
@@ -125880,7 +125891,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "uuid"
         },
         "id": {
@@ -125902,7 +125913,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "text"
         },
         "latest_lifecycle_change_id": {
@@ -125913,7 +125924,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 25,
           "type": "uuid"
         },
         "model": {
@@ -125946,7 +125957,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "text"
         },
         "reason": {
@@ -125979,7 +125990,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 24,
           "type": "review_dispute_actions"
         },
         "resolved_at": {
@@ -125990,7 +126001,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 22,
           "type": "timestamp with time zone"
         },
         "resolved_by_id": {
@@ -126001,7 +126012,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 23,
           "type": "uuid"
         },
         "sent_at": {
@@ -126012,7 +126023,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 21,
           "type": "timestamp with time zone"
         },
         "topic_id": {
@@ -126034,7 +126045,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 26,
+          "ordinalPosition": 27,
           "type": "timestamp with time zone"
         }
       },

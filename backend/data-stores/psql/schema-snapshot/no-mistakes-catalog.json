@@ -133449,6 +133449,16 @@
         }
       },
       "columns": {
+        "ai_draft_run_id": {
+          "comment": "Identity of the resolution run that saved the current AI draft; retained as plain current state after retention retires the run row, so it is not a foreign key.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13
+        },
         "ai_drafted_at": {
           "comment": "When the AI agent drafted the recommended_action and ai_public_response.",
           "dataType": "timestamp with time zone",
@@ -133487,7 +133497,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18
+          "ordinalPosition": 19
         },
         "approved_by_id": {
           "comment": "Moderator who approved the public_response for delivery.",
@@ -133497,7 +133507,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19
+          "ordinalPosition": 20
         },
         "claim_text": {
           "comment": "The disputant's explanation of their claim.",
@@ -133517,7 +133527,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25
+          "ordinalPosition": 26
         },
         "disputant_user_id": {
           "comment": "The verified topic claimant who filed the dispute.",
@@ -133547,7 +133557,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15
+          "ordinalPosition": 16
         },
         "edited_at": {
           "comment": "When the moderator last edited public_response.",
@@ -133557,7 +133567,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16
+          "ordinalPosition": 17
         },
         "edited_by_id": {
           "comment": "Moderator who last edited the draft public_response.",
@@ -133567,7 +133577,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17
+          "ordinalPosition": 18
         },
         "id": {
           "comment": null,
@@ -133587,7 +133597,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 15
         },
         "latest_lifecycle_change_id": {
           "comment": "Denormalized pointer to the most recent lifecycle change row for this dispute.",
@@ -133597,7 +133607,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24
+          "ordinalPosition": 25
         },
         "model": {
           "comment": "OpenAI model used for the AI draft.",
@@ -133627,7 +133637,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13
+          "ordinalPosition": 14
         },
         "reason": {
           "comment": "Legal-angle reason for the dispute.",
@@ -133657,7 +133667,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23
+          "ordinalPosition": 24
         },
         "resolved_at": {
           "comment": "When the dispute was resolved or dismissed.",
@@ -133667,7 +133677,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 22
         },
         "resolved_by_id": {
           "comment": "Moderator who resolved or dismissed the dispute.",
@@ -133677,7 +133687,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22
+          "ordinalPosition": 23
         },
         "sent_at": {
           "comment": "When the approved public_response was delivered to the disputant.",
@@ -133687,7 +133697,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20
+          "ordinalPosition": 21
         },
         "topic_id": {
           "comment": "The topic the disputed review rates (the claimant's topic).",
@@ -133707,7 +133717,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 26
+          "ordinalPosition": 27
         }
       },
       "comment": "Disputes filed by verified topic claimants against reviews of their topic. Resolved disputes and their lifecycle changes are deleted after 24 months; public annotations survive independently.",
