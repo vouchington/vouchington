@@ -54,7 +54,8 @@ export async function reconcileRssFeedItemCategorySourcePage(
   await write(
     `/* acknowledgeRssFeedItemCategorySnapshot */
       DELETE FROM rss_feed_item_category_snapshot_reconciliations
-      WHERE rss_feed_item_id = $1::uuid AND generation = $2::bigint AND change_id = $3::uuid`,
+      WHERE rss_feed_item_id = $1::uuid AND generation = $2::bigint AND change_id = $3::uuid
+      RETURNING rss_feed_item_id`,
     [page.rssFeedItemId, page.generation, page.changeId],
   )
   return { reconciled: 1 }
