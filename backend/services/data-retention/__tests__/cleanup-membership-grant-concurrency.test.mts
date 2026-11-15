@@ -15,14 +15,19 @@ import { runDataRetentionCleanup } from '../cleanup.mts'
 describe('membership grant cleanup concurrency', () => {
   it('preserves a concurrent grant revocation while completing final account deletion', async () => {
     const window = createTestRetentionWindow()
-    const [administrator, member] = await Promise.all([
+    const [administrator, member, excludedMember] = await Promise.all([
+      createTestUserDirect(),
       createTestUserDirect(),
       createTestUserDirect(),
     ])
-    if (!administrator || !member) throw new Error('Failed to create test users')
+    if (!administrator || !member || !excludedMember) throw new Error('Failed to create test users')
     const sku = await createTestSku({ plan: 'plus' })
     const grant = await grantMembership(administrator.id, member.id, 'plus', sku.id, 30)
-    await softDeleteUserAt(member.id, window.firstEligibleDate)
+    await Promise.all([
+      softDeleteUserAt(member.id, window.firstEligibleDate),
+      softDeleteUserAt(excludedMember.id, window.firstEligibleDate),
+    ])
+    const excludedBeforeCleanup = await getTestUserRaw(excludedMember.id)
 
     const revocationReady = Promise.withResolvers<void>()
     const releaseRevocation = Promise.withResolvers<void>()
@@ -57,7 +62,10 @@ describe('membership grant cleanup concurrency', () => {
       ])
       const cleanup = runDataRetentionCleanup(
         { batchSize: 500, maxBatches: 1 },
-        { families: ['softDeletedUsers'], softDeletedUsers: window },
+        {
+          families: ['softDeletedUsers'],
+          softDeletedUsers: { ...window, userIds: [member.id] },
+        },
       ).then(result => result.softDeletedUsers)
       cleanupOutcome = Promise.allSettled([cleanup])
       await expect(cleanup).resolves.toEqual({ deleted: 1, hasMore: false })
@@ -70,6 +78,8 @@ describe('membership grant cleanup concurrency', () => {
     }
 
     expect(await getTestUserRaw(member.id)).toBeNull()
+    expect(excludedBeforeCleanup).not.toBeNull()
+    expect(await getTestUserRaw(excludedMember.id)).toEqual(excludedBeforeCleanup)
     await expect(getTestMembershipGrant(grant.grantId)).resolves.toMatchObject({
       revoked_by_id: administrator.id,
       revocation_reason: 'concurrent cleanup',
