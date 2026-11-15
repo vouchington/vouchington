@@ -14,6 +14,12 @@ import { createCopyrightAppeal, createCopyrightFormIntake } from '@services/copy
 import { parseCopyrightAppealRecommendationOutput } from './output.mts'
 import { admitCopyrightAppealRecommendationRun } from '@services/copyright-notices/appeal-recommendation-runs'
 import { runCopyrightAppealRecommendationAgent } from './run.mts'
+import {
+  COPYRIGHT_AI_RUN_TABLES,
+  createCopyrightCaseWithAiRunSubjects,
+  insertTestCopyrightAiRun,
+  readTestCopyrightAiRun,
+} from '@voucha/test-helpers/copyright-ai-run-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright appeal recommendation output', () => {
@@ -103,5 +109,30 @@ describe('copyright appeal recommendation output', () => {
     ).resolves.toMatchObject({
       appealRecommendations: [expect.objectContaining({ recommendation: 'reverse' })],
     })
+  })
+
+  it('expires the run when the submission is not an appeal to recommend on', async () => {
+    const { counterNoticeSubmissionId } = await createCopyrightCaseWithAiRunSubjects()
+    const runId = randomUUID()
+    await insertTestCopyrightAiRun(
+      COPYRIGHT_AI_RUN_TABLES.appeal,
+      'copyright_notice_submission_id',
+      counterNoticeSubmissionId,
+      runId,
+      false,
+    )
+    const callModel = makeAgentModelCaller({ recommendation: 'reverse', rationale: 'x' })
+    await expect(
+      runCopyrightAppealRecommendationAgent(
+        counterNoticeSubmissionId,
+        runId,
+        TEST_MODEL_SELECTION,
+        callModel,
+      ),
+    ).resolves.toBeNull()
+    expect(callModel).not.toHaveBeenCalled()
+    await expect(
+      readTestCopyrightAiRun(COPYRIGHT_AI_RUN_TABLES.appeal, runId),
+    ).resolves.toMatchObject({ status: 'expired' })
   })
 })

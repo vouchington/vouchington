@@ -213,6 +213,29 @@ describe('processReconcileCopyrightAgentDispatches', () => {
     })
   })
 
+  describe('while new intake is switched on, with a failing admission', () => {
+    useCopyrightIntakeEnvironment()
+
+    it('records an admission failure and still reconciles the page', async () => {
+      const appealId = await pendingAppeal()
+      const admissionFailure = new Error('admission failed')
+      onTestFinished(
+        rejectPostgresWriteForTest('admitCopyrightAppealRecommendationRuns', admissionFailure),
+      )
+
+      const failure = await processReconcileCopyrightAgentDispatches(
+        {},
+        { ids: [appealId], batchSize: 1 },
+      )
+        .then(() => null)
+        .catch((err: unknown) => err)
+
+      expect(failure).toBeInstanceOf(AggregateError)
+      expect((failure as AggregateError).errors).toEqual([admissionFailure])
+      await expect(jobFor(jobIds.appeal(appealId))).resolves.toBeNull()
+    })
+  })
+
   describe('while new intake is switched off', () => {
     useCopyrightIntakeEnvironment({ enabled: false })
     useAutomaticProvisionalWithholding()

@@ -8,6 +8,12 @@ import {
 import { createCopyrightEmailIntake, recordCopyrightEmailParse } from '@services/copyright-notices'
 import { parseCopyrightEmailIntakeOutput } from './output.mts'
 import { admitCopyrightEmailRecommendationRun } from '@services/copyright-notices/email-recommendation-runs'
+import { appendCopyrightEmailIntakeRecommendation } from '@services/copyright-notices/email-recommendations'
+import {
+  COPYRIGHT_AI_RUN_TABLES,
+  insertTestCopyrightAiRun,
+  readTestCopyrightAiRun,
+} from '@voucha/test-helpers/copyright-ai-run-fixtures'
 import { runCopyrightEmailIntakeAgent } from './run.mts'
 
 const parseText = (text: string) => parseCopyrightEmailIntakeOutput(JSON.parse(text))
@@ -103,7 +109,60 @@ describe('copyright email intake output', () => {
     ).resolves.toBeUndefined()
     expect(callModel).toHaveBeenCalledOnce()
   })
+
+  it('expires the run when the intake has no parsed content to read', async () => {
+    const intake = await createUnparsedIntake()
+    const runId = (await admitCopyrightEmailRecommendationRun(intake.id))!
+    const callModel = makeAgentModelCaller(JSON.parse(validOutput()))
+    await runCopyrightEmailIntakeAgent(intake.id, runId, TEST_MODEL_SELECTION, callModel)
+    expect(callModel).not.toHaveBeenCalled()
+    await expect(
+      readTestCopyrightAiRun(COPYRIGHT_AI_RUN_TABLES.email, runId),
+    ).resolves.toMatchObject({ status: 'expired', has_result: false })
+  })
+
+  it('completes a later run from the identical recommendation already stored', async () => {
+    const intake = await createUnparsedIntake()
+    const inputSha256 = Buffer.alloc(32, 9)
+    const save = (runId: string) =>
+      appendCopyrightEmailIntakeRecommendation({
+        intakeId: intake.id,
+        runId,
+        inputSha256,
+        promptVersion: 'copyright-email-intake-v3',
+        model: 'test-model',
+        structuredOutput: JSON.parse(validOutput()),
+      })
+    const first = (await admitCopyrightEmailRecommendationRun(intake.id))!
+    await expect(save(first)).resolves.toBe(true)
+    const second = randomUUID()
+    await insertTestCopyrightAiRun(
+      COPYRIGHT_AI_RUN_TABLES.email,
+      'copyright_notice_email_intake_receipt_id',
+      intake.id,
+      second,
+      false,
+    )
+    await expect(save(second)).resolves.toBe(false)
+    await expect(
+      readTestCopyrightAiRun(COPYRIGHT_AI_RUN_TABLES.email, second),
+    ).resolves.toMatchObject({ status: 'succeeded', has_result: true })
+  })
 })
+
+async function createUnparsedIntake() {
+  const sesMessageId = `ses-agent-${randomUUID()}`
+  const { intake } = await createCopyrightEmailIntake({
+    sesMessageId,
+    receivedAt: new Date(),
+    rawStorageKey: `email/${sesMessageId}/original.eml`,
+    rawSha256: Buffer.alloc(32, 5),
+    rawMimeType: 'message/rfc822',
+    rawByteSize: 12,
+    sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
+  })
+  return intake
+}
 
 function validOutput(): string {
   return JSON.stringify({
