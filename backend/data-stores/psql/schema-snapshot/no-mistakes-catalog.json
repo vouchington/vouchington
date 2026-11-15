@@ -133450,7 +133450,7 @@
       },
       "columns": {
         "ai_draft_run_id": {
-          "comment": "Identity of the resolution run that saved the current AI draft; retained as plain current state after retention retires the run row, so it is not a foreign key.",
+          "comment": "Identity of the resolution run that saved the current AI draft; retention keeps that run row while this reference exists.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -133722,6 +133722,14 @@
       },
       "comment": "Disputes filed by verified topic claimants against reviews of their topic. Resolved disputes and their lifecycle changes are deleted after 24 months; public annotations survive independently.",
       "foreignKeys": {
+        "fk_review_disputes__ai_draft_run_id": {
+          "columns": ["ai_draft_run_id"],
+          "onDelete": "NO ACTION",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "review_dispute_resolution_runs",
+          "validated": true
+        },
         "fk_review_disputes_latest_lifecycle_change_id": {
           "columns": ["latest_lifecycle_change_id"],
           "onDelete": "SET NULL",
@@ -133780,6 +133788,29 @@
         }
       },
       "indexes": {
+        "idx_review_disputes__ai_draft_run_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_review_disputes__ai_draft_run_id ON public.review_disputes USING btree (ai_draft_run_id) WHERE (ai_draft_run_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "ai_draft_run_id",
+              "descending": false,
+              "expression": "ai_draft_run_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(ai_draft_run_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_review_disputes__approved_by_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
