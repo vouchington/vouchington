@@ -38,7 +38,7 @@ describe('current EXPLAIN read inventory', () => {
       const report = await reportCoverage(sources, resultsPath, ['fixture'])
       const names = report.uncoveredReads.map(read => read.name)
       for (const name of [
-        'getLatestHtmlByUrlIds',
+        'getHtmlBySelectedCrawls',
         'downloadBatchResults',
         'getPostStoryIdsByStoryIds',
         'getPostStoryByPostId',

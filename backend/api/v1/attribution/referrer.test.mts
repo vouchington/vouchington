@@ -172,7 +172,7 @@ describe('referrer', () => {
         .expect(400)
     })
 
-    it('multiple calls with same session+referrer dedup to one row, moved to latest', async () => {
+    it('preserves each click for the same session and referrer', async () => {
       const request = createRequest()
       const { sid, deviceToken, sessionToken } = await createAnonymousSession()
       setSameOriginSessionCookies(request, deviceToken.token, sessionToken.token)
@@ -190,12 +190,13 @@ describe('referrer', () => {
         .expect(200)
 
       const rows = await getSessionReferralAttributions(sid)
-      expect(rows).toHaveLength(1)
-      expect(rows[0].landing_url).toBe('https://example.com/page2')
-      // Moved to latest: the repeat click replaces the row with a fresh, greater id.
-      // (id is a UUIDv7 string, not a number/bigint, so this can't use toBeGreaterThan.)
-      const movedToLatest = rows[0].id > firstClick!.id
-      expect(movedToLatest).toBe(true)
+      expect(rows).toHaveLength(2)
+      expect(rows[0]).toEqual(firstClick)
+      expect(rows.map(row => row.landing_url)).toEqual([
+        'https://example.com/page1',
+        'https://example.com/page2',
+      ])
+      expect(rows[1]!.id.localeCompare(firstClick!.id)).toBeGreaterThan(0)
     })
 
     it('anonymous sessions store null user_id', async () => {

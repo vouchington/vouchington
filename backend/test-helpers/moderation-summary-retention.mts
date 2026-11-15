@@ -1,3 +1,5 @@
+import { decodeUuidCursor, isSimpleCursor } from '@modules/pagination'
+import { encodeUuidCursorBefore } from './modules/pagination/uuid-cursors.mts'
 import { read, write } from '../data-stores/psql/index.mts'
 import sql from 'sql-template-strings'
 import { createTestUser } from './entities/users.mts'
@@ -13,6 +15,15 @@ import {
   formatLocalDate,
   getIsoWeekKey,
 } from '../services/communities/moderation-summary-schedule.mts'
+
+/** Starts one inspected-recipient page immediately before the owned moderator. */
+export function getTestModerationSummaryRecipientCursor(userId: string): string {
+  return decodeUuidCursor(
+    encodeUuidCursorBefore(userId),
+    isSimpleCursor,
+    'Invalid moderation summary fixture cursor',
+  ).id
+}
 
 /** Inserts a moderation email claim row; false when the claim already exists. */
 export async function claimTestModerationEmailSend(

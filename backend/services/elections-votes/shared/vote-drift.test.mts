@@ -60,8 +60,11 @@ describe('reconcilePostVoteDrift', () => {
         }),
       ),
     )
+    const [highestPostId, lowerPostId] = postIds.toSorted().toReversed()
     const voters = await Promise.all([createTestUserDirect(), createTestUserDirect()])
-    await Promise.all(voters.map(voter => insertTestPostVote(postIds[1]!, voter.id, '1.2.3.6', 1)))
+    await Promise.all(
+      voters.map(voter => insertTestPostVote(highestPostId!, voter.id, '1.2.3.6', 1)),
+    )
     const restore = overrideDynamicConfigFieldsForTest(electionsVotesWorkConfig, {
       vote_drift_votes_per_post: 1,
     })
@@ -72,13 +75,13 @@ describe('reconcilePostVoteDrift', () => {
         sampled: 0,
         capped: 1,
         drifted: 0,
-        afterId: postIds[1],
+        afterId: highestPostId,
       })
       const second = await reconcilePostVoteDrift(1, {
         samplePostIds: postIds,
         afterId: first.afterId,
       })
-      expect(second).toMatchObject({ inspected: 1, sampled: 1, capped: 0, afterId: postIds[0] })
+      expect(second).toMatchObject({ inspected: 1, sampled: 1, capped: 0, afterId: lowerPostId })
     } finally {
       restore()
     }

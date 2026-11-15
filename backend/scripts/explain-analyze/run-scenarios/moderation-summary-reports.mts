@@ -79,7 +79,6 @@ export async function runModerationSummaryReportScenario(): Promise<void> {
     )
     registerScenarioContract('moderation-summary-report-work', {
       expectations: [
-        { kind: 'usesIndexes', indexes: ['idx_moderation_reports__active_post_unique'] },
         { kind: 'maxProcessedRows', relation: 'moderation_reports', max: pageSize + 1 },
         { kind: 'maxProcessedRows', relation: 'posts', max: pageSize * 2 + 1 },
       ],

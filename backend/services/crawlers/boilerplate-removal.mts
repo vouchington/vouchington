@@ -41,10 +41,10 @@ export const searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId = async (
       EXISTS (SELECT 1 FROM url_hostnames h WHERE h.id = u.hostname_id
         AND NOT h.is_blocked AND h.is_crawlable) AS eligible
     FROM urls u
-    WHERE u.hostname_id = ${hostnameId}
+    WHERE u.hostname_id = ANY(${[hostnameId]}::uuid[])
       AND u.id >= COALESCE(${after ?? null}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
       AND (${crawlAfter ?? null}::uuid IS NOT NULL OR u.id IS DISTINCT FROM ${after ?? null}::uuid)
-    ORDER BY u.id
+    ORDER BY u.hostname_id, u.id
     LIMIT ${limit}
     `,
     undefined,
@@ -63,7 +63,7 @@ export const searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId = async (
   const inspection = await inspectBoilerplateCrawls(matchingRows, limit, {
     cutoff: recentCutoffDate,
     floor: crawlIdFloor,
-    crawlAfter,
+    crawlAfter: rows[0]?.id === after ? crawlAfter : undefined,
     queryOptions,
   })
   const eligibleIds = new Map(

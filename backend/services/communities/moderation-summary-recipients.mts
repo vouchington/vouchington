@@ -27,10 +27,10 @@ export async function getModerationSummaryRecipients(
     FROM users u
     WHERE u.id > COALESCE(${afterId ?? null}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
     ORDER BY u.id
-    LIMIT ${limit + 1}
+    LIMIT ${limit}
   `)
   return {
-    recipients: rows.slice(0, limit).filter(row => row.is_eligible),
-    ...(rows.length > limit ? { afterId: rows[limit - 1]!.id } : {}),
+    recipients: rows.filter(row => row.is_eligible),
+    ...(rows.length === limit ? { afterId: rows[limit - 1]!.id } : {}),
   }
 }

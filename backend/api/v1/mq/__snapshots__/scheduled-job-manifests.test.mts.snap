@@ -3701,7 +3701,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "job_name": "reconcileVoteDrift",
     "queue_name": "psql",
     "schedule": "0 6 * * *",
-    "triggerName": "[anonymous]",
+    "triggerName": "enqueueReconcileVoteDrift",
   },
   {
     "description": "Re-dispatch imports whose dispatcher failed",

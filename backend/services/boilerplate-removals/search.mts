@@ -69,7 +69,7 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
   const inspection = await inspectBoilerplateCrawls(rows, limit, {
     cutoff: recentCutoffDate,
     floor: crawlIdFloor,
-    crawlAfter: options.after?.crawl_id,
+    crawlAfter: rows[0]?.id === options.after?.url_id ? options.after?.crawl_id : undefined,
     queryOptions: options.queryOptions,
   })
   const eligibleIds = new Set(inspection.eligibleCrawls.map(crawl => crawl.url_id))
