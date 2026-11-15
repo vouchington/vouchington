@@ -6,14 +6,15 @@ Daily moderator-action reporting cohorts; NULL-community global cohorts survive 
 
 Not partitioned — growth: unbounded.
 
-| Column          | Type                     | Nullable | Default    | Identity | Generated | Collation | Comment                                                                                       |
-| --------------- | ------------------------ | -------- | ---------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------- |
-| `id`            | `uuid`                   | no       | `uuidv7()` |          |           |           | Identity of this daily reporting cohort.                                                      |
-| `day`           | `date`                   | no       |            |          |           |           | UTC creation day of the source moderator actions.                                             |
-| `community_id`  | `uuid`                   | yes      |            |          |           |           | Live community scope, or NULL for the independent global aggregate.                           |
-| `actor_user_id` | `uuid`                   | no       |            |          |           |           | Live actor required by the existing workload reader; physical user purge removes this cohort. |
-| `action_type`   | `moderator_action_types` | no       |            |          |           |           | Moderator action counted by this cohort; reader applies the current dashboard taxonomy.       |
-| `count`         | `bigint`                 | no       |            |          |           |           | Exact source actions in this cohort, replaced by a completed-day recomputation.               |
+| Column          | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                       |
+| --------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------- |
+| `id`            | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Identity of this daily reporting cohort.                                                      |
+| `created_at`    | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | UUIDv7-derived creation time of this daily reporting cohort.                                  |
+| `day`           | `date`                     | no       |                              |          |           |           | UTC creation day of the source moderator actions.                                             |
+| `community_id`  | `uuid`                     | yes      |                              |          |           |           | Live community scope, or NULL for the independent global aggregate.                           |
+| `actor_user_id` | `uuid`                     | no       |                              |          |           |           | Live actor required by the existing workload reader; physical user purge removes this cohort. |
+| `action_type`   | `moderator_action_types`   | no       |                              |          |           |           | Moderator action counted by this cohort; reader applies the current dashboard taxonomy.       |
+| `count`         | `bigint`                   | no       |                              |          |           |           | Exact source actions in this cohort, replaced by a completed-day recomputation.               |
 
 **Primary key:** `PRIMARY KEY (id)`
 

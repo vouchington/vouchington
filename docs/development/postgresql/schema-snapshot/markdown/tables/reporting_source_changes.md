@@ -29,4 +29,5 @@ _none_
 - `reporting_source_changes_pkey`: `CREATE UNIQUE INDEX reporting_source_changes_pkey ON ONLY public.reporting_source_changes USING btree (id)`
 
 **Triggers:**
-_none_
+
+- `trigger_reporting_source_changes_append_only`: `CREATE TRIGGER trigger_reporting_source_changes_append_only BEFORE DELETE OR UPDATE ON public.reporting_source_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

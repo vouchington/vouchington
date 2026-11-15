@@ -84557,7 +84557,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "actor_user_id": {
           "comment": "Live actor required by the existing workload reader; physical user purge removes this cohort.",
@@ -84567,7 +84567,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "community_id": {
           "comment": "Live community scope, or NULL for the independent global aggregate.",
@@ -84577,7 +84577,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3
+          "ordinalPosition": 4
         },
         "count": {
           "comment": "Exact source actions in this cohort, replaced by a completed-day recomputation.",
@@ -84587,7 +84587,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
+        },
+        "created_at": {
+          "comment": "UUIDv7-derived creation time of this daily reporting cohort.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
         },
         "day": {
           "comment": "UTC creation day of the source moderator actions.",
@@ -84597,7 +84607,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2
+          "ordinalPosition": 3
         },
         "id": {
           "comment": "Identity of this daily reporting cohort.",
@@ -130349,7 +130359,11 @@
         "columns": ["id"]
       },
       "relationKind": "partitioned table",
-      "triggers": {},
+      "triggers": {
+        "trigger_reporting_source_changes_append_only": {
+          "definition": "CREATE TRIGGER trigger_reporting_source_changes_append_only BEFORE DELETE OR UPDATE ON public.reporting_source_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
+        }
+      },
       "uniqueConstraints": {}
     },
     "retailer_countries": {

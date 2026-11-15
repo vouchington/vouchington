@@ -79785,7 +79785,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "moderator_action_types"
         },
         "actor_user_id": {
@@ -79796,7 +79796,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "community_id": {
@@ -79807,7 +79807,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "uuid"
         },
         "count": {
@@ -79818,8 +79818,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "bigint"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": "UUIDv7-derived creation time of this daily reporting cohort.",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "timestamp with time zone"
         },
         "day": {
           "collation": null,
@@ -79829,7 +79840,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "date"
         },
         "id": {
@@ -122655,7 +122666,9 @@
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "partitioned table",
-      "triggers": {},
+      "triggers": {
+        "trigger_reporting_source_changes_append_only": "CREATE TRIGGER trigger_reporting_source_changes_append_only BEFORE DELETE OR UPDATE ON public.reporting_source_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
+      },
       "uniqueConstraints": {}
     },
     "retailer_countries": {
