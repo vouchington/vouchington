@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { getCommunityRestrictionPage } from '@/lib/api/client/community-restrictions'
 import onError from '@/lib/on-error'
@@ -12,23 +12,48 @@ export function useCommunityRestrictionPages(
 ) {
   const t = useTranslations()
   const [page, setPage] = useState<{
+    slug: string
+    initialData: CommunityRestrictionsResponseBody
     status: 'active' | 'past'
-    data: CommunityRestrictionsResponseBody | null
-  }>({ status: 'active', data: null })
-  const [isLoading, setIsLoading] = useState(false)
-  const visibleData = page.data ?? initialData
+    data: CommunityRestrictionsResponseBody
+  } | null>(null)
+  const [loadingPage, setLoadingPage] = useState<{
+    slug: string
+    initialData: CommunityRestrictionsResponseBody
+  } | null>(null)
+  const generationRef = useRef(0)
+  const loadingRef = useRef(false)
+  useEffect(() => {
+    generationRef.current += 1
+    loadingRef.current = false
+    return () => {
+      generationRef.current += 1
+    }
+  }, [slug, initialData])
+  const currentPage = page?.slug === slug && page.initialData === initialData ? page : null
+  const isLoading = loadingPage?.slug === slug && loadingPage.initialData === initialData
+  const visibleData = currentPage?.data ?? initialData
   const restrictions = visibleData.results.flatMap(ref => {
     const restriction = visibleData.community_restrictions[ref.id]
     return restriction ? [restriction] : []
   })
   async function load(status: 'active' | 'past', after?: string) {
-    if (isLoading) return
-    setIsLoading(true)
+    if (loadingRef.current) return
+    const generation = generationRef.current
+    loadingRef.current = true
+    setLoadingPage({ slug, initialData })
     try {
       const data = await getCommunityRestrictionPage(slug, { status, after })
+      if (generation !== generationRef.current) return
       setPage(previous => {
-        const previousData = previous.data ?? initialData
+        if (generation !== generationRef.current) return previous
+        const previousData =
+          previous?.slug === slug && previous.initialData === initialData
+            ? previous.data
+            : initialData
         return {
+          slug,
+          initialData,
           status,
           data: after
             ? {
@@ -43,6 +68,7 @@ export function useCommunityRestrictionPages(
         }
       })
     } catch (err) {
+      if (generation !== generationRef.current) return
       onError(err, {
         fallback: t(
           'extracted.communities.communityAgentPromptHistory.failedToLoadHistory_eeddd17d',
@@ -50,15 +76,23 @@ export function useCommunityRestrictionPages(
         tags: { form: 'community-restrictions' },
       })
     } finally {
-      setIsLoading(false)
+      if (generation === generationRef.current) {
+        loadingRef.current = false
+        setLoadingPage(null)
+      }
     }
   }
   return {
-    status: page.status,
+    status: currentPage?.status ?? 'active',
     visibleData,
     restrictions,
     isLoading,
     load,
-    resetRestrictions: () => setPage({ status: 'active', data: null }),
+    resetRestrictions: () => {
+      generationRef.current += 1
+      loadingRef.current = false
+      setLoadingPage(null)
+      setPage(null)
+    },
   }
 }

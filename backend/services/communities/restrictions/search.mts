@@ -1,6 +1,6 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
-import { buildPageInfo, decodeUuidCursor, isSimpleCursor } from '@modules/pagination'
+import { buildPageInfo, decodeScopedUuidCursor } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
@@ -15,8 +15,9 @@ export async function searchCommunityRestrictions(
   assert(Number.isInteger(limit), 422, 'limit must be an integer')
   assert(limit > 0 && limit <= 100, 422, 'limit must be between 1 and 100')
   assert(status === 'active' || status === 'past', 422, 'Invalid restriction status')
+  const scope = `community-restrictions:v1:${communityId.toLowerCase()}:${status}:id-desc`
   const cursor = options?.after
-    ? decodeUuidCursor(options.after, isSimpleCursor, 'Invalid cursor format')
+    ? decodeScopedUuidCursor(options.after, scope, 'Invalid cursor format')
     : undefined
   const now = new Date()
   const query = sql`/* searchCommunityRestrictions */
@@ -38,7 +39,7 @@ export async function searchCommunityRestrictions(
     results,
     page_info: buildPageInfo(results, {
       hasNextPage: rows.length > limit,
-      getCursor: row => ({ id: row.id }),
+      getCursor: row => ({ id: row.id, scope }),
     }),
   }
 }
