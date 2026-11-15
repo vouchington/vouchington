@@ -756,6 +756,14 @@ CREATE OR REPLACE FUNCTION public.fn_register_released_user_agent_string_cleanup
  LANGUAGE plpgsql
 ```
 
+## `fn_register_reporting_statement_days`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_register_reporting_statement_days()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_register_retained_copyright_notice_identity`
 
 ```sql

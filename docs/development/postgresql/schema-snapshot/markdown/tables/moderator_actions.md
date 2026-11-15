@@ -104,8 +104,8 @@ _none_
 
 **Triggers:**
 
-- `record_reporting_deleted_action_day`: `CREATE TRIGGER record_reporting_deleted_action_day AFTER DELETE ON public.moderator_actions FOR EACH ROW EXECUTE FUNCTION record_vanished_reporting_day('moderator_action_deletion')`
-- `record_reporting_historical_action_day`: `CREATE TRIGGER record_reporting_historical_action_day AFTER INSERT ON public.moderator_actions FOR EACH ROW EXECUTE FUNCTION record_vanished_reporting_day('moderator_action_creation')`
+- `record_reporting_deleted_action_day`: `CREATE TRIGGER record_reporting_deleted_action_day AFTER DELETE ON public.moderator_actions REFERENCING OLD TABLE AS reporting_rows FOR EACH STATEMENT EXECUTE FUNCTION fn_register_reporting_statement_days('moderator_action_deletion')`
+- `record_reporting_historical_action_day`: `CREATE TRIGGER record_reporting_historical_action_day AFTER INSERT ON public.moderator_actions REFERENCING NEW TABLE AS reporting_rows FOR EACH STATEMENT EXECUTE FUNCTION fn_register_reporting_statement_days('moderator_action_creation')`
 - `trigger_moderation_transparency_actions_delete_rollup`: `CREATE TRIGGER trigger_moderation_transparency_actions_delete_rollup AFTER DELETE ON public.moderator_actions REFERENCING OLD TABLE AS deleted_actions FOR EACH STATEMENT EXECUTE FUNCTION fn_project_transparency_rollup('deleted_actions', 'action_type', 'moderation_actions')`
 - `trigger_moderation_transparency_actions_rollup`: `CREATE TRIGGER trigger_moderation_transparency_actions_rollup AFTER INSERT ON public.moderator_actions REFERENCING NEW TABLE AS new_actions FOR EACH STATEMENT EXECUTE FUNCTION fn_project_transparency_rollup('new_actions', 'action_type', 'moderation_actions')`
 - `trigger_moderation_transparency_actions_scope_guard`: `CREATE TRIGGER trigger_moderation_transparency_actions_scope_guard BEFORE UPDATE OF moderation_transparency_community_id ON public.moderator_actions FOR EACH ROW WHEN ((old.moderation_transparency_community_id IS DISTINCT FROM new.moderation_transparency_community_id)) EXECUTE FUNCTION fn_reject_mutation()`
