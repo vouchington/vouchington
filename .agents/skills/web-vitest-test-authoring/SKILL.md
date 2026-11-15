@@ -42,4 +42,4 @@ for the full policy.
    without a request scope instead of adding a blanket per-component mock. Keep any such test in a
    `.mock.test.ts(x)` file.
 7. Apply the [Test Value and Safe Reduction](../../../docs/development/reference-tests-value-and-reduction.md) gate; keep the component or client contract at its lowest realistic owning boundary.
-8. Follow the [suite rules](../../../docs/development/tests.md#test-suite-rules). `findBy*` may wait on the DOM. Replace `vi.waitFor` and `expect.poll` with the render or a returned promise. Do not skip in CI. Delete a redundant test only with the R12 coverage comparison.
+8. Follow the [suite rules](../../../docs/development/tests.md#test-suite-rules). `findBy*` may wait on the DOM. Replace `vi.waitFor` and `expect.poll` with the render or a returned promise. Do not skip in CI. Delete a redundant test only with the coverage comparison in suite rule R12.

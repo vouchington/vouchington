@@ -12,5 +12,5 @@
   unprovisioned secret to a local callee declaring it `required: false` is exempt: the callee
   owns the empty-secret path, and that caller job cannot host a readiness step. This repository
   still owns the secret inventory and workflow-file reads.
-- Validate and dispatch backend api+workers, image-resize Lambda, Cloudflare Worker, and web independently. Only api↔workers share a deploy unit; private infrastructure owns deployment ordering. Preserve independent artifact safety under [deploy decoupling](../../docs/overview/infrastructure/deployment.md#deploy-decoupling--independent-safety).
+- Validate and dispatch backend api+workers, image-resize Lambda, Cloudflare Worker, and web independently. Only api↔workers share a deploy unit; private infrastructure owns deployment ordering. Preserve independent artifact safety under [deploy decoupling](../../docs/overview/infrastructure/reference-deployment-first-time-provisioning-checklist.md#deploy-decoupling--independent-safety).
 - Follow the [validation checklist](../../docs/checklists/github-actions.md#checklist), run focused [GitHub Actions tests](../../docs/development/tests.md), and run `actionlint` for changed workflows.

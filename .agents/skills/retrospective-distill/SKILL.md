@@ -25,10 +25,9 @@ local partition or cleanup command for the export.
 On Codex, partition inspectors use the read-only `explore` role; on Claude Code, the built-in
 read-only `Explore` subagent. Before hand-reading entries, each inspector runs
 `pnpm exec vouchington agent-blackboard distill classify <partition> --retro-cutoff <retroCutoff> --session-cutoff <sessionCutoff>`.
-The historic checkpoint discriminator is `isCheckpointEntry` in
-`dev/retrospective-distill/checkpoint-entry.mts`; retrospective storage type is checked by
-`dev/retrospective-distill/retrospective-entry.mts`. The local journal CLI `--file` convenience
-omits storage type, so unresolved entries remain quarantined under the canonical rule.
+The canonical `distill classify` owns the checkpoint and retrospective entry discrimination. The
+local journal CLI `--file` convenience omits storage type, so unresolved entries remain quarantined
+under the canonical rule.
 
 The root uses [Vouchington distilling policy](distilling.md) for current-repository verification,
 scheduled prompts, redaction, and issue routing. File through the
