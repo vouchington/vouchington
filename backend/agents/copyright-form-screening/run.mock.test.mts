@@ -50,7 +50,7 @@ describe('copyright form screening agent', () => {
     expect(callModel).toHaveBeenCalledOnce()
     await expect(
       readTestCopyrightStaffScreening(intake.intake.copyright_notice_id),
-    ).resolves.toEqual({ state: 'completed', ...screeningOutput })
+    ).resolves.toEqual({ attempt_id: expect.any(String), state: 'completed', ...screeningOutput })
     await expect(
       runCopyrightFormScreeningAgent(
         intake.intake.copyright_notice_submission_id,
@@ -115,7 +115,13 @@ describe('copyright form screening agent', () => {
       ).rejects.toThrow(/Private/)
       await expect(
         readTestCopyrightStaffScreening(intake.intake.copyright_notice_id),
-      ).resolves.toEqual({ state: 'failed', recommendation: null, rationale: null, guidance: null })
+      ).resolves.toEqual({
+        attempt_id: expect.any(String),
+        state: 'failed',
+        recommendation: null,
+        rationale: null,
+        guidance: null,
+      })
     },
   )
 })

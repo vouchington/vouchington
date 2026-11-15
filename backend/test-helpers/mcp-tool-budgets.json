@@ -1221,7 +1221,7 @@
       },
       "read_moderation_appeal": {
         "measured": {
-          "list": 9245,
+          "list": 9417,
           "core": 815
         },
         "max": {
@@ -1241,7 +1241,7 @@
       },
       "draft_review_response": {
         "measured": {
-          "list": 8639,
+          "list": 8811,
           "core": 741
         },
         "max": {
@@ -1251,7 +1251,7 @@
       },
       "approve_review_response": {
         "measured": {
-          "list": 8516,
+          "list": 8688,
           "core": 614
         },
         "max": {
@@ -1261,7 +1261,7 @@
       },
       "deliver_review_response": {
         "measured": {
-          "list": 8515,
+          "list": 8687,
           "core": 614
         },
         "max": {
@@ -1281,7 +1281,7 @@
       },
       "resolve_review_case": {
         "measured": {
-          "list": 8917,
+          "list": 9089,
           "core": 1021
         },
         "max": {
@@ -1353,7 +1353,7 @@
     "legal": {
       "list_copyright_review_queue": {
         "measured": {
-          "list": 13654,
+          "list": 13698,
           "core": 300
         },
         "max": {
