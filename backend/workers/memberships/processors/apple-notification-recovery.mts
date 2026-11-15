@@ -1,3 +1,6 @@
+import { getPagedDispatchLimit } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
+import { memberships } from '@queues/memberships/queues'
+import { getMembershipWorkLimit } from '@services/memberships/work-limits'
 import {
   enqueueBulkProcessAppleNotifications,
   enqueueRecoverAppleNotifications,
@@ -13,12 +16,22 @@ export async function recoverAppleNotifications(
   job: Job<RecoverAppleNotificationsData>,
   options: { evidenceIds?: readonly string[]; batchSize?: number } = {},
 ): Promise<{ enqueued: number }> {
+  const counts = await memberships.getJobCounts()
+  const depth = (counts.waiting ?? 0) + (counts.active ?? 0) + (counts.delayed ?? 0)
+  // Keep a slot for the continuation as well as every newly admitted notification.
+  const remaining = getPagedDispatchLimit('memberships_max_depth') - depth - 1
+  if (remaining <= 0)
+    return job.moveToDelayed(Date.now() + getPagedDispatchLimit('memberships_backoff_ms'))
+  const batchSize = Math.min(
+    options.batchSize ?? getMembershipWorkLimit('notification_recovery_batch_size'),
+    remaining,
+  )
   if (!job.data.through) {
     const through = await findAppleNotificationRecoveryUpperBound(options.evidenceIds)
     if (!through) return { enqueued: 0 }
     await job.updateData({ ...job.data, through })
   }
-  const page = await findRecoverableAppleNotificationJobs({ ...job.data, ...options })
+  const page = await findRecoverableAppleNotificationJobs({ ...job.data, ...options, batchSize })
   if (page.notifications.length > 0) await enqueueBulkProcessAppleNotifications(page.notifications)
   if (page.nextCursor && page.through)
     await enqueueRecoverAppleNotifications({
