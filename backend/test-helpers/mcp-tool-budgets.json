@@ -1231,11 +1231,11 @@
       },
       "read_review_dispute": {
         "measured": {
-          "list": 7785,
+          "list": 7948,
           "core": 814
         },
         "max": {
-          "list": 8000,
+          "list": 9000,
           "core": 1000
         }
       },
