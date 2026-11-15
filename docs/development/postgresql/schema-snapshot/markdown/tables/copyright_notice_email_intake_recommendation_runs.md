@@ -35,7 +35,7 @@ _none_
 **Indexes:**
 
 - `copyright_notice_email_intake_recommendation_runs_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_intake_recommendation_runs_pkey ON public.copyright_notice_email_intake_recommendation_runs USING btree (id)`
-- `idx_copyright_email_recommendation_runs__intake_receipt`: `CREATE INDEX idx_copyright_email_recommendation_runs__intake_receipt ON public.copyright_notice_email_intake_recommendation_runs USING btree (copyright_notice_email_intake_receipt_id, id DESC)`
+- `idx_copyright_notice_email_intake_recommendation_runs__receipt`: `CREATE INDEX idx_copyright_notice_email_intake_recommendation_runs__receipt ON public.copyright_notice_email_intake_recommendation_runs USING btree (copyright_notice_email_intake_receipt_id, id DESC)`
 - `idx_copyright_notice_email_intake_recommendation_runs__result`: `CREATE INDEX idx_copyright_notice_email_intake_recommendation_runs__result ON public.copyright_notice_email_intake_recommendation_runs USING btree (copyright_notice_email_intake_recommendation_id) WHERE (copyright_notice_email_intake_recommendation_id IS NOT NULL)`
 - `uq_copyright_notice_email_intake_recommendation_runs__active`: `CREATE UNIQUE INDEX uq_copyright_notice_email_intake_recommendation_runs__active ON public.copyright_notice_email_intake_recommendation_runs USING btree (copyright_notice_email_intake_receipt_id) WHERE ((completed_at IS NULL) AND (failed_at IS NULL) AND (expired_at IS NULL))`
 

@@ -37872,10 +37872,10 @@
           "unique": true,
           "valid": true
         },
-        "idx_copyright_email_recommendation_runs__intake_receipt": {
+        "idx_copyright_notice_email_intake_recommendation_runs__receipt": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_email_recommendation_runs__intake_receipt ON public.copyright_notice_email_intake_recommendation_runs USING btree (copyright_notice_email_intake_receipt_id, id DESC)",
+          "definition": "CREATE INDEX idx_copyright_notice_email_intake_recommendation_runs__receipt ON public.copyright_notice_email_intake_recommendation_runs USING btree (copyright_notice_email_intake_receipt_id, id DESC)",
           "immediate": true,
           "keys": [
             {
