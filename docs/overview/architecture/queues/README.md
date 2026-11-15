@@ -171,6 +171,9 @@ stable identities; a bounded recovery sweep re-admits stalled operations after t
 window. Staff clients receive the operation identity and read its durable progress and totals.
 Unblocking remains fenced until cleanup completes, so a newly accepted relation cannot race an
 older block operation and be deleted by it.
+Scheduled and manual vote-counter reconciliation share an ordering lane with continuations so
+adding worker processes does not multiply admitted reconciliation work.
+
 Ballot, user-agent, and vote-integrity detail sweeps likewise enqueue a bounded continuation
 carrying only unfinished families; completed families wait for the next daily run, which also
 revisits rows that became eligible after a cursor passed them.

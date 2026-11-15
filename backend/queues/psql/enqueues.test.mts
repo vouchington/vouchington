@@ -4,8 +4,11 @@ import {
   enqueueCleanupPartitions,
   enqueueCleanupPartitionsContinuation,
   enqueueCreatePartitions,
+  enqueueReconcileVoteDrift,
 } from './enqueues.mts'
 import { psql } from './queues.mts'
+import { scheduledJobManifest } from './enqueues/schedules.mts'
+import { readEnqueuedJob } from '@voucha/test-helpers/queue-jobs'
 
 describe('classifier partition admissions', () => {
   it('serializes scheduled and continued monthly cleanup in the same lane', async () => {
@@ -75,5 +78,31 @@ describe('classifier partition admissions', () => {
     expect(request).toMatchObject({ id: requestId, data: { requestRange: range } })
     expect(classifier).toMatchObject({ id: classifierId, data: { classifierRange: range } })
     expect(request?.opts.ordering).toEqual({ key: 'operator_partitions', concurrency: 1 })
+  })
+})
+
+describe('vote drift admissions', () => {
+  it('keeps scheduled, manual and continued pages in the same bounded lane', async () => {
+    const ids: string[] = []
+    onTestFinished(async () => {
+      await Promise.all(ids.map(async id => (await psql.getJob(id))?.remove()))
+    })
+    const root = await readEnqueuedJob(psql, await enqueueReconcileVoteDrift())
+    ids.push(root.id)
+    const afterId = randomUUID()
+    const continuation = await readEnqueuedJob(psql, await enqueueReconcileVoteDrift({ afterId }))
+    ids.push(continuation.id)
+    const scheduled = scheduledJobManifest.jobs.find(
+      job => job.template.name === 'reconcileVoteDrift',
+    )!
+    const opts =
+      typeof scheduled.template.opts === 'function'
+        ? scheduled.template.opts()
+        : scheduled.template.opts
+    expect(opts?.ordering).toEqual({ key: 'psql:vote-drift', concurrency: 1 })
+    expect(root.opts.ordering).toEqual(opts?.ordering)
+    expect(continuation.opts.ordering).toEqual(opts?.ordering)
+    expect(continuation.data).toEqual({ afterId })
+    expect(typeof scheduled.template.opts).toBe('function')
   })
 })

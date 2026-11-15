@@ -1,4 +1,4 @@
-import { getVoteDriftOrderingConcurrency } from './enqueues/vote-drift-config.mts'
+import { getVoteDriftJobOptions } from './enqueues/vote-drift-config.mts'
 import { createHash } from 'node:crypto'
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
@@ -60,10 +60,7 @@ const enqueueVoteDriftPage = createEnqueueFunction<
 export function enqueueReconcileVoteDrift(
   data: PsqlJobPayloads['reconcileVoteDrift'] = {},
 ): EnqueueReturnType {
-  return enqueueVoteDriftPage(data, {
-    priority: PRIORITY_DEFAULT,
-    ordering: { key: 'psql:vote-drift', concurrency: getVoteDriftOrderingConcurrency() },
-  })
+  return enqueueVoteDriftPage(data, getVoteDriftJobOptions())
 }
 
 const enqueueRetentionJob = createEnqueueFunction<
