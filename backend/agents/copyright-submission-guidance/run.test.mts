@@ -24,6 +24,7 @@ import {
   COPYRIGHT_COUNTER_NOTICE_GUIDANCE_ELEMENTS,
   COPYRIGHT_LEGAL_HOLD_GUIDANCE_CRITERIA,
 } from '@ts-shared/utils/copyright-submission-guidance'
+import { admitCopyrightSubmissionGuidanceRun } from '@services/copyright-notices/submission-guidance-runs'
 import {
   runCopyrightSubmissionGuidanceAgent,
   type CopyrightSubmissionGuidanceModelCaller,
@@ -102,6 +103,7 @@ describe('copyright submission guidance agent', () => {
     await expect(
       runCopyrightSubmissionGuidanceAgent(
         submission.submission.id,
+        (await admitCopyrightSubmissionGuidanceRun(submission.submission.id))!,
         TEST_MODEL_SELECTION,
         callModel,
       ),
@@ -173,10 +175,20 @@ describe('copyright submission guidance agent', () => {
       makeModelCallResult(holdGuidance),
     )
     await expect(
-      runCopyrightSubmissionGuidanceAgent(first.id, TEST_MODEL_SELECTION, callModel),
+      runCopyrightSubmissionGuidanceAgent(
+        first.id,
+        (await admitCopyrightSubmissionGuidanceRun(first.id))!,
+        TEST_MODEL_SELECTION,
+        callModel,
+      ),
     ).resolves.toBe('court_or_ccb_hold')
     await expect(
-      runCopyrightSubmissionGuidanceAgent(second.id, TEST_MODEL_SELECTION, callModel),
+      runCopyrightSubmissionGuidanceAgent(
+        second.id,
+        (await admitCopyrightSubmissionGuidanceRun(second.id))!,
+        TEST_MODEL_SELECTION,
+        callModel,
+      ),
     ).resolves.toBe('court_or_ccb_hold')
     expect(callModel).toHaveBeenCalledTimes(2)
     for (const [kind, input] of callModel.mock.calls) {

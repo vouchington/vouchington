@@ -113,6 +113,19 @@ const emailIntake = createAdminTool<{ id: string }>({
               { type: 'null' },
             ],
           },
+          ai_run: {
+            anyOf: [
+              {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', format: 'uuid' },
+                  status: { type: 'string', enum: ['active', 'succeeded', 'failed', 'expired'] },
+                },
+                required: ['id', 'status'],
+              },
+              { type: 'null' },
+            ],
+          },
         },
         required: [
           'id',
@@ -121,6 +134,7 @@ const emailIntake = createAdminTool<{ id: string }>({
           'linked_notice',
           'ses_verdicts',
           'recommendation',
+          'ai_run',
         ],
       },
     },

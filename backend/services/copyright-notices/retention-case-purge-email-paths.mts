@@ -76,6 +76,10 @@ export const COPYRIGHT_CASE_EMAIL_PRIVATE_PATHS: readonly Phase[] = [
   intakeChild('copyright_decision_rationales', 'copyright_notice_email_intake_receipt_id'),
   intakeChild('copyright_notice_email_intake_reviews', 'copyright_notice_email_intake_receipt_id'),
   intakeChild(
+    'copyright_notice_email_intake_recommendation_runs',
+    'copyright_notice_email_intake_receipt_id',
+  ),
+  intakeChild(
     'copyright_notice_email_intake_recommendations',
     'copyright_notice_email_intake_receipt_id',
   ),

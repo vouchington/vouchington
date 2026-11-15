@@ -11,6 +11,12 @@ export const FINITE_COLUMN_CONTRACTS_2 = [
   ],
   ['copyright_notice_action_work_items', 'state', 'copyright_notice_action_intent_states', false],
   [
+    'copyright_notice_appeal_recommendation_runs',
+    'status',
+    'copyright_notice_ai_run_statuses',
+    false,
+  ],
+  [
     'copyright_notice_appeal_recommendations',
     'recommendation',
     'copyright_notice_appeal_recommendation_outcomes',
@@ -84,6 +90,12 @@ export const FINITE_COLUMN_CONTRACTS_2 = [
     false,
   ],
   [
+    'copyright_notice_email_intake_recommendation_runs',
+    'status',
+    'copyright_notice_ai_run_statuses',
+    false,
+  ],
+  [
     'copyright_notice_email_intake_reviews',
     'decision',
     'copyright_notice_email_intake_review_decisions',
@@ -98,6 +110,12 @@ export const FINITE_COLUMN_CONTRACTS_2 = [
     'copyright_notice_email_thread_references',
     'reference_kind',
     'copyright_notice_email_thread_reference_kinds',
+    false,
+  ],
+  [
+    'copyright_notice_submission_guidance_runs',
+    'status',
+    'copyright_notice_ai_run_statuses',
     false,
   ],
 ] as const

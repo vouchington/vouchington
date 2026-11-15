@@ -1,5 +1,6 @@
 import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import type { ClaimantMisuseSummary } from './claimant-misuse-summary.mts'
+import type { CopyrightAiRun } from './ai-run-types.mts'
 import type { CopyrightFormGuidance } from './form-screening-guidance.mts'
 import type {
   CopyrightCounterNoticeGuidance,
@@ -82,6 +83,7 @@ export type CopyrightStaffCase = {
       recommendation: FiniteValue<'copyright_notice_appeal_recommendation_outcomes'>
       rationale: string
     } | null
+    ai_run: CopyrightAiRun | null
   }>
   counter_notices: Array<{
     submission_id: string
@@ -89,12 +91,14 @@ export type CopyrightStaffCase = {
     target_ids: string[]
     statement: Record<string, unknown>
     guidance: CopyrightCounterNoticeGuidance | null
+    ai_run: CopyrightAiRun | null
   }>
   legal_holds: Array<{
     submission_id: string
     received_at: Date
     statement: Record<string, unknown>
     guidance: CopyrightLegalHoldGuidance | null
+    ai_run: CopyrightAiRun | null
     assessment: {
       id: string
       is_from_original_claimant: boolean

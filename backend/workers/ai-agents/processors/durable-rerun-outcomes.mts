@@ -11,6 +11,9 @@ import type { AIAgentJobPayloads } from '@queues/ai-agents/types'
 import { markReportJudgementRunFailed } from '@services/moderation-reports/rerun-outcomes'
 import { markAppealResolutionRunFailed } from '@services/moderation-appeals/rerun-outcomes'
 import { markReviewDisputeResolutionRunsFailed } from '@services/review-disputes/resolution-runs'
+import { markCopyrightAppealRecommendationRunFailed } from '@services/copyright-notices/appeal-recommendation-runs'
+import { markCopyrightEmailRecommendationRunFailed } from '@services/copyright-notices/email-recommendation-runs'
+import { markCopyrightSubmissionGuidanceRunFailed } from '@services/copyright-notices/submission-guidance-runs'
 import onError from '@modules/on-error'
 
 type AgentJob = NamedQueueJob<AIAgentJobPayloads>
@@ -66,5 +69,11 @@ async function persistTerminalFailure(job: AgentJob): Promise<void> {
     await markAppealResolutionRunFailed(job.data.appeal_id, job.data.ai_draft_request_token)
   } else if (job.name === 'dispute-resolution') {
     await markReviewDisputeResolutionRunsFailed([job.data.run_id])
+  } else if (job.name === 'copyright-appeal-recommendation') {
+    await markCopyrightAppealRecommendationRunFailed(job.data.run_id)
+  } else if (job.name === 'copyright-submission-guidance') {
+    await markCopyrightSubmissionGuidanceRunFailed(job.data.run_id)
+  } else if (job.name === 'copyright-email-intake') {
+    await markCopyrightEmailRecommendationRunFailed(job.data.run_id)
   }
 }

@@ -3400,6 +3400,16 @@
                 "items": {
                   "additionalProperties": false,
                   "properties": {
+                    "ai_run": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/CopyrightAiRun"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "reason": {
                       "type": "string"
                     },
@@ -3437,7 +3447,7 @@
                       "type": "array"
                     }
                   },
-                  "required": ["reason", "recommendation", "submission_id", "target_ids"],
+                  "required": ["ai_run", "reason", "recommendation", "submission_id", "target_ids"],
                   "type": "object"
                 },
                 "type": "array"
@@ -3486,6 +3496,16 @@
                 "items": {
                   "additionalProperties": false,
                   "properties": {
+                    "ai_run": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/CopyrightAiRun"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "guidance": {
                       "anyOf": [
                         {
@@ -3513,6 +3533,7 @@
                     }
                   },
                   "required": [
+                    "ai_run",
                     "guidance",
                     "received_at",
                     "statement",
@@ -3750,6 +3771,16 @@
                 "items": {
                   "additionalProperties": false,
                   "properties": {
+                    "ai_run": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/CopyrightAiRun"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "assessment": {
                       "anyOf": [
                         {
@@ -3863,6 +3894,7 @@
                     }
                   },
                   "required": [
+                    "ai_run",
                     "assessment",
                     "guidance",
                     "received_at",
@@ -15143,6 +15175,20 @@
       ],
       "type": "object"
     },
+    "CopyrightAiRun": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "status": {
+          "enum": ["active", "expired", "failed", "succeeded"],
+          "type": "string"
+        }
+      },
+      "required": ["id", "status"],
+      "type": "object"
+    },
     "CopyrightAppealRequest": {
       "additionalProperties": false,
       "properties": {
@@ -16833,6 +16879,16 @@
     "CopyrightStaffEmailIntake": {
       "additionalProperties": false,
       "properties": {
+        "ai_run": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/CopyrightAiRun"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "id": {
           "type": "string"
         },
@@ -16966,6 +17022,7 @@
         }
       },
       "required": [
+        "ai_run",
         "id",
         "linked_notice",
         "parsed_email",

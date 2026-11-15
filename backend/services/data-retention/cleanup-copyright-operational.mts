@@ -9,6 +9,7 @@ import {
   readDataRetentionField,
   type DataRetentionLimits,
 } from './config.mts'
+import { cleanupCopyrightAiRuns } from './cleanup-copyright-ai-runs.mts'
 import type { DataRetentionCleanupResult } from './cleanup-run-result.mts'
 
 export type CopyrightRetentionFamily =
@@ -20,6 +21,7 @@ export type CopyrightRetentionFamily =
   | 'copyrightReceiptReviews'
   | 'copyrightCaseThreads'
   | 'copyrightOrphanEmailThreadTokens'
+  | 'copyrightAiRuns'
 
 type CopyrightRetentionCleanupResult = Partial<
   Pick<DataRetentionCleanupResult, CopyrightRetentionFamily>
@@ -95,5 +97,11 @@ export async function runCopyrightOperationalRetentionCleanup(
         retentionDays: readDataRetentionField('copyright_unlinked_email_intake_days'),
       },
     )
+  if (active('copyrightAiRuns'))
+    result.copyrightAiRuns = await cleanupCopyrightAiRuns({
+      ...limits,
+      retentionDays: readDataRetentionField('copyright_ai_run_days'),
+      now: options.now,
+    })
   return result
 }

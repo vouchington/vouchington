@@ -5,22 +5,26 @@ import { ai_agents } from '../queues.mts'
 import type { CopyrightEmailIntakeJobData } from '../types.mts'
 import { addAIAgentJob } from './create-enqueue.mts'
 
-const jobIdFor = (intakeId: string) => `copyright_email_intake_${intakeId}`
+/** One job per admitted run, so a retained job of an earlier run never shadows a new one. */
+const jobIdFor = (runId: string) => `copyright_email_intake_${runId}`
 
-function buildCopyrightEmailIntakeJob(intakeId: string): {
+function buildCopyrightEmailIntakeJob(
+  intakeId: string,
+  runId: string,
+): {
   data: CopyrightEmailIntakeJobData
   opts: JobOptions
 } {
   return {
-    data: { intake_id: intakeId },
+    data: { intake_id: intakeId, run_id: runId },
     opts: {
-      jobId: jobIdFor(intakeId),
+      jobId: jobIdFor(runId),
       attempts: AI_AGENTS_DEFAULTS.attempts,
       backoff: AI_AGENTS_DEFAULTS.backoff,
       removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
       removeOnFail: AI_AGENTS_DEFAULTS.removeOnFail,
       priority: AGENT_PRIORITY['copyright-email-intake'],
-      deduplication: { id: `copyright_email_intake_${intakeId}`, mode: 'simple' },
+      deduplication: { id: `copyright_email_intake_${runId}`, mode: 'simple' },
       ordering: { key: `copyright_email_intake_${intakeId}`, concurrency: 1 },
     } satisfies JobOptions,
   }
@@ -41,12 +45,13 @@ type RecoveryDependencies = {
 
 export async function enqueueOrRetryCopyrightEmailIntake(
   intakeId: string,
+  runId: string,
   dependencies: RecoveryDependencies = {
     getJob: (...args) => ai_agents.getJob(...args),
     enqueue: enqueueCopyrightEmailIntake,
   },
 ): Promise<void> {
-  const retained = await dependencies.getJob(jobIdFor(intakeId), { excludeData: true })
+  const retained = await dependencies.getJob(jobIdFor(runId), { excludeData: true })
   if (retained) {
     if (retained.name !== 'copyright-email-intake') return
     const state = await retained.getState()
@@ -57,11 +62,11 @@ export async function enqueueOrRetryCopyrightEmailIntake(
     if (state === 'completed') await retained.remove()
     else return
   }
-  await dependencies.enqueue(intakeId)
+  await dependencies.enqueue(intakeId, runId)
 }
 
-export async function enqueueCopyrightEmailIntake(intakeId: string): Promise<void> {
-  const { data, opts } = buildCopyrightEmailIntakeJob(intakeId)
+export async function enqueueCopyrightEmailIntake(intakeId: string, runId: string): Promise<void> {
+  const { data, opts } = buildCopyrightEmailIntakeJob(intakeId, runId)
   await addAIAgentJob('copyright-email-intake', data, opts)
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'copyright-email-intake')
 }

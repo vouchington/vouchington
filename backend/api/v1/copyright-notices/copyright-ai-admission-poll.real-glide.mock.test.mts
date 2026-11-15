@@ -28,9 +28,12 @@ import { processCopyrightAppealRecommendation } from '../../../workers/ai-agents
 import { processCopyrightFormScreening } from '../../../workers/ai-agents/processors/process-copyright-form-screening.mts'
 import { processCopyrightSubmissionGuidance } from '../../../workers/ai-agents/processors/process-copyright-submission-guidance.mts'
 import { COPYRIGHT_COUNTER_NOTICE_GUIDANCE_ELEMENTS } from '@ts-shared/utils/copyright-submission-guidance'
+import { ALL_TOOLS } from '../../../mcp/registry/index.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
+type AiRun = { id: string; status: string } | null
 type QueuedCase = {
   id: string
   form_review: {
@@ -40,8 +43,16 @@ type QueuedCase = {
       guidance: { summary: string } | null
     } | null
   } | null
-  appeals: Array<{ submission_id: string; recommendation: { recommendation: string } | null }>
-  counter_notices: Array<{ submission_id: string; guidance: { summary: string } | null }>
+  appeals: Array<{
+    submission_id: string
+    recommendation: { recommendation: string } | null
+    ai_run: AiRun
+  }>
+  counter_notices: Array<{
+    submission_id: string
+    guidance: { summary: string } | null
+    ai_run: AiRun
+  }>
 }
 
 async function findCase(request: ReturnType<typeof createRequest>, noticeId: string) {
@@ -55,6 +66,29 @@ async function findCase(request: ReturnType<typeof createRequest>, noticeId: str
     if (!page.body.page_info.has_next_page || !page.body.page_info.end_cursor)
       throw new Error(`Copyright case ${noticeId} is not queued`)
     after = page.body.page_info.end_cursor
+  }
+}
+
+/** The MCP review queue is the same read as REST, so one admitted run reports identically. */
+async function findCaseViaMcp(
+  user: Awaited<ReturnType<typeof createTestUser>>,
+  noticeId: string,
+): Promise<QueuedCase> {
+  const tool = ALL_TOOLS.find(candidate => candidate.schema.name === 'list_copyright_review_queue')
+  let after = await readCopyrightStaffQueueCursorBefore([noticeId])
+  for (;;) {
+    const page = (await (tool as Tool<{ after: string; limit: number }>).function(user)({
+      after,
+      limit: 100,
+    })) as {
+      copyright_notices: QueuedCase[]
+      page_info: { has_next_page: boolean; end_cursor: string | null }
+    }
+    const found = page.copyright_notices.find(item => item.id === noticeId)
+    if (found) return found
+    if (!page.page_info.has_next_page || !page.page_info.end_cursor)
+      throw new Error(`Copyright case ${noticeId} is not queued`)
+    after = page.page_info.end_cursor
   }
 }
 
@@ -132,13 +166,21 @@ describe('copyright AI queue admission and staff result polling', () => {
       .expect(201)
     const submissionId = appeal.body.copyright_submission.id as string
     const staff = createRequest()
-    await staff.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    await staff.authenticateAs(moderator)
     const current = () => findCase(staff, noticeId)
-    expect(
-      (await current()).appeals.find(item => item.submission_id === submissionId)?.recommendation,
-    ).toBeNull()
+    const appealOf = (queued: QueuedCase) =>
+      queued.appeals.find(item => item.submission_id === submissionId)
+    expect(appealOf(await current())?.recommendation).toBeNull()
     const job = await findJob('copyright-appeal-recommendation', 'submission_id', submissionId)
     expect(job).toBeDefined()
+    // The admitted run is the exact one the queued job carries, and REST and MCP agree on it.
+    const runId = (job!.data as CopyrightAppealRecommendationJobData).run_id
+    expect(appealOf(await current())?.ai_run).toEqual({ id: runId, status: 'active' })
+    expect(appealOf(await findCaseViaMcp(moderator, noticeId))?.ai_run).toEqual({
+      id: runId,
+      status: 'active',
+    })
     try {
       const callModel = makeAgentModelCaller({
         recommendation: 'reverse',
@@ -150,9 +192,12 @@ describe('copyright AI queue admission and staff result polling', () => {
           callModel,
         ),
       )
-      expect(
-        (await current()).appeals.find(item => item.submission_id === submissionId)?.recommendation,
-      ).toMatchObject({ recommendation: 'reverse' })
+      expect(appealOf(await current())?.recommendation).toMatchObject({ recommendation: 'reverse' })
+      expect(appealOf(await current())?.ai_run).toEqual({ id: runId, status: 'succeeded' })
+      expect(appealOf(await findCaseViaMcp(moderator, noticeId))?.ai_run).toEqual({
+        id: runId,
+        status: 'succeeded',
+      })
       expect(callModel).toHaveBeenCalledOnce()
     } finally {
       await job?.remove()
@@ -172,13 +217,20 @@ describe('copyright AI queue admission and staff result polling', () => {
       .expect(201)
     const submissionId = filing.body.copyright_submission.id as string
     const staff = createRequest()
-    await staff.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    await staff.authenticateAs(moderator)
     const current = () => findCase(staff, noticeId)
-    expect(
-      (await current()).counter_notices.find(item => item.submission_id === submissionId)?.guidance,
-    ).toBeNull()
+    const counterOf = (queued: QueuedCase) =>
+      queued.counter_notices.find(item => item.submission_id === submissionId)
+    expect(counterOf(await current())?.guidance).toBeNull()
     const job = await findJob('copyright-submission-guidance', 'submission_id', submissionId)
     expect(job).toBeDefined()
+    const runId = (job!.data as CopyrightSubmissionGuidanceJobData).run_id
+    expect(counterOf(await current())?.ai_run).toEqual({ id: runId, status: 'active' })
+    expect(counterOf(await findCaseViaMcp(moderator, noticeId))?.ai_run).toEqual({
+      id: runId,
+      status: 'active',
+    })
     try {
       const guidance = {
         summary: 'The filer disputes the image restriction.',
@@ -198,10 +250,12 @@ describe('copyright AI queue admission and staff result polling', () => {
           callModel,
         ),
       )
-      expect(
-        (await current()).counter_notices.find(item => item.submission_id === submissionId)
-          ?.guidance,
-      ).toMatchObject({ summary: guidance.summary })
+      expect(counterOf(await current())?.guidance).toMatchObject({ summary: guidance.summary })
+      expect(counterOf(await current())?.ai_run).toEqual({ id: runId, status: 'succeeded' })
+      expect(counterOf(await findCaseViaMcp(moderator, noticeId))?.ai_run).toEqual({
+        id: runId,
+        status: 'succeeded',
+      })
       expect(callModel).toHaveBeenCalledOnce()
     } finally {
       await job?.remove()

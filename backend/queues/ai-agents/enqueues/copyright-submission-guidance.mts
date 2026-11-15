@@ -4,22 +4,31 @@ import { trackJobEnqueue } from '@services/analytics'
 import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS, AI_AGENTS_QUEUE_NAME } from '../config.mts'
 import { ai_agents } from '../queues.mts'
 
-const jobIdFor = (submissionId: string) => `copyright_submission_guidance_${submissionId}`
+/** One job per admitted run, so a retained job of an earlier run never shadows a new one. */
+const jobIdFor = (runId: string) => `copyright_submission_guidance_${runId}`
 
-export async function enqueueCopyrightSubmissionGuidance(submissionId: string): Promise<void> {
+export async function enqueueCopyrightSubmissionGuidance(
+  submissionId: string,
+  runId: string,
+): Promise<void> {
   const opts: JobOptions = {
     ...AI_AGENTS_DEFAULTS,
-    jobId: jobIdFor(submissionId),
+    jobId: jobIdFor(runId),
     priority: AGENT_PRIORITY['copyright-submission-guidance'],
-    deduplication: { id: `copyright_submission_guidance_${submissionId}`, mode: 'simple' },
+    deduplication: { id: `copyright_submission_guidance_${runId}`, mode: 'simple' },
     ordering: { key: `copyright_submission_guidance_${submissionId}`, concurrency: 1 },
   }
-  await addAIAgentJob('copyright-submission-guidance', { submission_id: submissionId }, opts)
+  await addAIAgentJob(
+    'copyright-submission-guidance',
+    { submission_id: submissionId, run_id: runId },
+    opts,
+  )
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'copyright-submission-guidance')
 }
 
 export async function enqueueOrRetryCopyrightSubmissionGuidance(
   submissionId: string,
+  runId: string,
   dependencies: {
     getJob(
       id: string,
@@ -36,7 +45,7 @@ export async function enqueueOrRetryCopyrightSubmissionGuidance(
     enqueue: enqueueCopyrightSubmissionGuidance,
   },
 ): Promise<void> {
-  const retained = await dependencies.getJob(jobIdFor(submissionId), { excludeData: true })
+  const retained = await dependencies.getJob(jobIdFor(runId), { excludeData: true })
   if (retained) {
     if (retained.name !== 'copyright-submission-guidance') return
     const state = await retained.getState()
@@ -47,5 +56,5 @@ export async function enqueueOrRetryCopyrightSubmissionGuidance(
     if (state === 'completed') await retained.remove()
     else return
   }
-  await dependencies.enqueue(submissionId)
+  await dependencies.enqueue(submissionId, runId)
 }

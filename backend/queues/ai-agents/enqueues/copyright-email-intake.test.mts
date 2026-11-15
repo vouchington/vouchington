@@ -13,15 +13,16 @@ import {
 describe('copyright email intake enqueue recovery', () => {
   it('persists an ordered, deduplicated extraction job', async () => {
     const intakeId = crypto.randomUUID()
-    const jobId = `copyright_email_intake_${intakeId}`
+    const runId = crypto.randomUUID()
+    const jobId = `copyright_email_intake_${runId}`
     try {
-      await enqueueCopyrightEmailIntake(intakeId)
+      await enqueueCopyrightEmailIntake(intakeId, runId)
       // The in-memory GlideMQ shim records the options the enqueue passed. It does not prove
       // Valkey deduplication or ordering.
       await expect(ai_agents.getJob(jobId)).resolves.toMatchObject({
         id: jobId,
         name: 'copyright-email-intake',
-        data: { intake_id: intakeId },
+        data: { intake_id: intakeId, run_id: runId },
         opts: {
           attempts: AI_AGENTS_DEFAULTS.attempts,
           backoff: AI_AGENTS_DEFAULTS.backoff,
@@ -29,7 +30,7 @@ describe('copyright email intake enqueue recovery', () => {
           removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
           removeOnFail: AI_AGENTS_DEFAULTS.removeOnFail,
           deduplication: { id: jobId, mode: 'simple' },
-          ordering: { key: jobId, concurrency: 1 },
+          ordering: { key: `copyright_email_intake_${intakeId}`, concurrency: 1 },
         },
       })
     } finally {
@@ -40,7 +41,7 @@ describe('copyright email intake enqueue recovery', () => {
   it('retries a retained failed extraction job', async () => {
     const { retry, enqueue, dependencies } =
       failedCopyrightAgentEnqueueRecovery('copyright-email-intake')
-    await enqueueOrRetryCopyrightEmailIntake('intake-id', dependencies)
+    await enqueueOrRetryCopyrightEmailIntake('intake-id', 'run-id', dependencies)
     expect(retry).toHaveBeenCalledOnce()
     expect(enqueue).not.toHaveBeenCalled()
   })
@@ -48,8 +49,8 @@ describe('copyright email intake enqueue recovery', () => {
   it('removes a completed extraction job before enqueuing recovery', async () => {
     const { remove, enqueue, dependencies } =
       completedCopyrightAgentEnqueueRecovery('copyright-email-intake')
-    await enqueueOrRetryCopyrightEmailIntake('intake-id', dependencies)
+    await enqueueOrRetryCopyrightEmailIntake('intake-id', 'run-id', dependencies)
     expect(remove).toHaveBeenCalledOnce()
-    expect(enqueue).toHaveBeenCalledWith('intake-id')
+    expect(enqueue).toHaveBeenCalledWith('intake-id', 'run-id')
   })
 })

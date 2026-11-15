@@ -1,7 +1,8 @@
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import { isUUID } from '@modules/utils'
-import { beginTransaction, read, withPrimaryReads } from '@data-stores/psql'
+import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { completeCopyrightAppealRecommendationRun } from './appeal-recommendation-runs.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
 
 type CopyrightAppealRecommendationInput = {
@@ -79,51 +80,57 @@ function parseStoredCopyrightAppeal(value: string): { reason: string; targetIds:
   return { reason: parsed.reason, targetIds: parsed.targetIds }
 }
 
+/**
+ * Writes the immutable result and, when a run is given, completes that run in the same
+ * transaction. Returns false when the input no longer applies or the run already ended.
+ */
 async function appendCopyrightAppealRecommendation(input: {
   submissionId: string
+  runId?: string
   inputSha256: Buffer
   promptVersion: string
   model: string
   recommendation: 'confirm' | 'modify' | 'reverse' | 'uncertain'
   rationale: string
-}): Promise<void> {
+}): Promise<boolean> {
   await using transaction = await beginTransaction()
   await transaction(sql`/* appendCopyrightAppealRecommendation:lockNotice */
     SELECT notice.id FROM copyright_notice_submissions submission
     JOIN copyright_notices notice ON notice.id = submission.copyright_notice_id
     WHERE submission.id = ${input.submissionId}
     FOR KEY SHARE OF notice`)
-  await transaction(sql`/* appendCopyrightAppealRecommendation */
-    INSERT INTO copyright_notice_appeal_recommendations (copyright_notice_submission_id, input_sha256, prompt_version, model, recommendation, rationale_ciphertext)
-    SELECT submission.id, ${input.inputSha256}, ${input.promptVersion}, ${input.model}, ${input.recommendation}, ${encryptSecret(input.rationale, `copyright-appeal:${input.submissionId}`)}
-    FROM copyright_notice_submissions submission
-    WHERE submission.id = ${input.submissionId}
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_notices erased
-        WHERE erased.id = submission.copyright_notice_id AND erased.evidence_erased_at IS NOT NULL
-      )
-    ON CONFLICT (copyright_notice_submission_id, input_sha256, prompt_version) DO NOTHING
+  const { rows } = await transaction<{ id: string }>(sql`/* appendCopyrightAppealRecommendation */
+    WITH inserted AS (
+      INSERT INTO copyright_notice_appeal_recommendations (copyright_notice_submission_id, input_sha256, prompt_version, model, recommendation, rationale_ciphertext)
+      SELECT submission.id, ${input.inputSha256}, ${input.promptVersion}, ${input.model}, ${input.recommendation}, ${encryptSecret(input.rationale, `copyright-appeal:${input.submissionId}`)}
+      FROM copyright_notice_submissions submission
+      WHERE submission.id = ${input.submissionId}
+        AND NOT EXISTS (
+          SELECT 1 FROM copyright_notices erased
+          WHERE erased.id = submission.copyright_notice_id AND erased.evidence_erased_at IS NOT NULL
+        )
+      ON CONFLICT (copyright_notice_submission_id, input_sha256, prompt_version) DO NOTHING
+      RETURNING id
+    )
+    SELECT id FROM inserted
+    UNION ALL
+    SELECT id FROM copyright_notice_appeal_recommendations
+    WHERE copyright_notice_submission_id = ${input.submissionId}
+      AND input_sha256 = ${input.inputSha256} AND prompt_version = ${input.promptVersion}
+    LIMIT 1
   `)
-  await transaction.commit()
-}
-
-/** Start-of-job check on the primary: a stored recommendation means the work is already done. */
-async function hasCopyrightAppealRecommendation(
-  submissionId: string,
-  promptVersion: string,
-): Promise<boolean> {
-  const { rows } = await withPrimaryReads(() =>
-    read<{ exists: boolean }>(sql`/* hasCopyrightAppealRecommendation */
-      SELECT EXISTS (
-        SELECT 1 FROM copyright_notice_appeal_recommendations
-        WHERE copyright_notice_submission_id = ${submissionId} AND prompt_version = ${promptVersion}
-      ) AS exists`),
+  const resultId = rows[0]?.id
+  if (!resultId) return false
+  if (
+    input.runId &&
+    !(await completeCopyrightAppealRecommendationRun(transaction, input.runId, resultId))
   )
-  return rows[0]?.exists ?? false
+    return false
+  await transaction.commit()
+  return true
 }
 
 export const copyrightAppealRecommendations = {
-  has: hasCopyrightAppealRecommendation,
   get: getCopyrightAppealForRecommendation,
   append: appendCopyrightAppealRecommendation,
 }

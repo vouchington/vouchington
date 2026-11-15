@@ -12,6 +12,7 @@ import {
 } from '@voucha/test-helpers'
 import { createCopyrightAppeal, createCopyrightFormIntake } from '@services/copyright-notices'
 import { parseCopyrightAppealRecommendationOutput } from './output.mts'
+import { admitCopyrightAppealRecommendationRun } from '@services/copyright-notices/appeal-recommendation-runs'
 import { runCopyrightAppealRecommendationAgent } from './run.mts'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
@@ -87,8 +88,14 @@ describe('copyright appeal recommendation output', () => {
       rationale: 'Moderator review is required.',
     })
 
+    const runId = (await admitCopyrightAppealRecommendationRun(appeal.submission.id))!
     await expect(
-      runCopyrightAppealRecommendationAgent(appeal.submission.id, TEST_MODEL_SELECTION, callModel),
+      runCopyrightAppealRecommendationAgent(
+        appeal.submission.id,
+        runId,
+        TEST_MODEL_SELECTION,
+        callModel,
+      ),
     ).resolves.toBe('reverse')
     expect(callModel).toHaveBeenCalledOnce()
     await expect(

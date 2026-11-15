@@ -86,6 +86,7 @@ describe('copyright MCP read redaction', () => {
           reason: `Call ${phone}`,
           target_ids: [],
           recommendation: null,
+          ai_run: null,
         },
       ],
       counter_notices: [
@@ -94,6 +95,7 @@ describe('copyright MCP read redaction', () => {
           received_at: new Date(),
           target_ids: [],
           guidance: null,
+          ai_run: null,
           statement: {
             name: 'Poster Name',
             electronic_signature: 'Poster Signature',
@@ -108,6 +110,7 @@ describe('copyright MCP read redaction', () => {
           submission_id: crypto.randomUUID(),
           received_at: new Date(),
           guidance: null,
+          ai_run: null,
           assessment: null,
           statement: { name: 'Counsel Name', address: '2 Test St', note: `Call ${phone}` },
         },
@@ -147,6 +150,7 @@ describe('copyright MCP read redaction', () => {
       raw_email: { mime_type: 'message/rfc822', byte_size: 100, sha256: 'a', download_url: '/raw' },
       parsed_email: { sender_email: email, subject: 'subject', body_text: 'raw email' },
       parser_error: `Parse failed for ${email}`,
+      ai_run: { id: crypto.randomUUID(), status: 'active' },
       recommendation: {
         id: crypto.randomUUID(),
         structured_output: {

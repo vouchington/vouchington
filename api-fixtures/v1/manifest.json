@@ -18858,6 +18858,41 @@
             },
             "type": "object"
           },
+          "CopyrightAiRun": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "status": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "active"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "expired"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "failed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "succeeded"
+                    }
+                  ]
+                }
+              }
+            }
+          },
           "CopyrightCounterNoticeGuidance": {
             "additionalProperties": false,
             "properties": {
@@ -19672,6 +19707,21 @@
                         "items": {
                           "additionalProperties": false,
                           "properties": {
+                            "ai_run": {
+                              "required": true,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "name": "CopyrightAiRun",
+                                    "type": "ref"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
                             "reason": {
                               "required": true,
                               "schema": {
@@ -19816,6 +19866,21 @@
                         "items": {
                           "additionalProperties": false,
                           "properties": {
+                            "ai_run": {
+                              "required": true,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "name": "CopyrightAiRun",
+                                    "type": "ref"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
                             "guidance": {
                               "required": true,
                               "schema": {
@@ -20328,6 +20393,21 @@
                         "items": {
                           "additionalProperties": false,
                           "properties": {
+                            "ai_run": {
+                              "required": true,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "name": "CopyrightAiRun",
+                                    "type": "ref"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
                             "assessment": {
                               "required": true,
                               "schema": {
@@ -115403,6 +115483,28 @@
           "id": "00000000-0000-7000-8000-000000000804"
         },
         "routeTemplate": "/api/v1/copyright-notices/:id/participant"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-copyright-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/copyright-notices/review-queue",
+      "bodyFile": "responses/native.copyright.staff-queue.ai-run.json",
+      "consumers": ["swift-core", "dotnet-core"],
+      "id": "native.copyright.staff-queue.ai-run",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/copyright-notices/staff-queue-route.mts"],
+      "path": "/api/v1/copyright-notices/review-queue",
+      "pending": true,
+      "responseSchema": {
+        "hash": "defacb94d39282b96dcb2c45983d197f30498e72a5a954d8688c4dc82f610d50",
+        "key": "native.copyright.staff-queue.ai-run"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/copyright-notices/review-queue"
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/native-copyright-cases.mts"

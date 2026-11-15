@@ -1,12 +1,12 @@
 import onError from '@modules/on-error'
-import { enqueueCopyrightSubmissionGuidance } from '@queues/ai-agents/enqueues/copyright-submission-guidance'
+import { admitAndEnqueueCopyrightSubmissionGuidance } from '@services/copyright-notices/ai-run-admission'
 
 /** A queue outage cannot roll back a committed statutory filing; the reconciler repairs it. */
 export async function enqueueCopyrightSubmissionGuidanceBestEffort(
   submissionId: string,
 ): Promise<void> {
   try {
-    await enqueueCopyrightSubmissionGuidance(submissionId)
+    await admitAndEnqueueCopyrightSubmissionGuidance(submissionId)
   } catch (err) {
     onError(
       err instanceof Error

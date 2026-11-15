@@ -26,6 +26,7 @@ export type DataRetentionConfig = {
   copyright_guest_capability_days: number
   copyright_unlinked_email_intake_days: number
   copyright_email_thread_reply_days: number
+  copyright_ai_run_days: number
 }
 
 /** The per-cleanup limits one retention run applies. Every cleanup in the run takes both. */
@@ -62,6 +63,7 @@ export const DEFAULT_DATA_RETENTION_CONFIG: DataRetentionConfig = {
   copyright_guest_capability_days: 90,
   copyright_unlinked_email_intake_days: 90,
   copyright_email_thread_reply_days: 180,
+  copyright_ai_run_days: 90,
 }
 
 export const DATA_RETENTION_MAX_VALUES: DataRetentionConfig = {
@@ -90,6 +92,7 @@ export const DATA_RETENTION_MAX_VALUES: DataRetentionConfig = {
   copyright_guest_capability_days: 3_650,
   copyright_unlinked_email_intake_days: 3_650,
   copyright_email_thread_reply_days: 3_650,
+  copyright_ai_run_days: 3_650,
 }
 
 export const dataRetentionConfig = new DynamicConfig({
@@ -120,6 +123,7 @@ export const dataRetentionConfig = new DynamicConfig({
     copyright_guest_capability_days: 'number',
     copyright_unlinked_email_intake_days: 'number',
     copyright_email_thread_reply_days: 'number',
+    copyright_ai_run_days: 'number',
   },
   defaultFields: DEFAULT_DATA_RETENTION_CONFIG,
 })
@@ -189,10 +193,6 @@ export function getCommunityPurgeBatchSize(): number {
 
 export function getCommunityModeratorScanPageSize(): number {
   return readDataRetentionField('community_moderator_scan_page_size')
-}
-
-export function getVoteIntegrityDetailRetentionDays(): number {
-  return readDataRetentionField('vote_integrity_detail_days')
 }
 
 export function getAiUsageRawRetentionDays(): number {

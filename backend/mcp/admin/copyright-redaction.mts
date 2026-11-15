@@ -158,5 +158,6 @@ export function redactCopyrightEmailIntake(intake: CopyrightStaffEmailIntake) {
       intake.recommendation && structured_output
         ? { id: intake.recommendation.id, structured_output }
         : null,
+    ai_run: intake.ai_run,
   }
 }

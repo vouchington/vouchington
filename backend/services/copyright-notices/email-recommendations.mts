@@ -3,10 +3,13 @@ import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
+import { completeCopyrightEmailRecommendationRun } from './email-recommendation-runs.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 
 type CopyrightEmailRecommendationInput = {
   intakeId: string
+  /** Completes this admitted run in the same transaction as the result. */
+  runId?: string
   inputSha256: Buffer
   promptVersion: string
   model: string
@@ -82,7 +85,27 @@ async function appendWithCurrentLink(
     VALUES (${recommendationId}, ${input.intakeId}, ${input.inputSha256}, ${input.promptVersion})
     ON CONFLICT (copyright_notice_email_intake_receipt_id, input_sha256, prompt_version)
     DO NOTHING RETURNING id`)
-  if (insertedIdentity.length === 0) return false
+  if (insertedIdentity.length === 0) {
+    if (input.runId) {
+      const { rows: existing } = await transaction<{ id: string }>(sql`
+        /* appendCopyrightEmailIntakeRecommendation:existing */
+        SELECT id FROM copyright_notice_email_intake_recommendation_identities
+        WHERE copyright_notice_email_intake_receipt_id = ${input.intakeId}
+          AND input_sha256 = ${input.inputSha256} AND prompt_version = ${input.promptVersion}`)
+      const existingId = existing[0]?.id
+      if (
+        existingId &&
+        (await completeCopyrightEmailRecommendationRun(
+          transaction,
+          input.runId,
+          input.intakeId,
+          existingId,
+        ))
+      )
+        await transaction.commit()
+    }
+    return false
+  }
   await transaction(sql`/* appendCopyrightEmailIntakeRecommendation */
     INSERT INTO copyright_notice_email_intake_recommendations (
       id, copyright_notice_email_intake_receipt_id, input_sha256, prompt_version, model,
@@ -96,6 +119,16 @@ async function appendWithCurrentLink(
       current_recommendation_identity_id = ${recommendationId},
       current_recommendation_output_ciphertext = ${outputCiphertext}
     WHERE id = ${input.intakeId}`)
+  if (
+    input.runId &&
+    !(await completeCopyrightEmailRecommendationRun(
+      transaction,
+      input.runId,
+      input.intakeId,
+      recommendationId,
+    ))
+  )
+    return false
   await transaction.commit()
   return true
 }

@@ -14,6 +14,7 @@ export async function processCopyrightEmailIntake(
   if (!isCopyrightIntakeEnabled()) return { success: true }
   await runCopyrightEmailIntakeAgent(
     job.data.intake_id,
+    job.data.run_id,
     await loadServiceModelSelection('copyright-email-intake'),
     callModel,
   )

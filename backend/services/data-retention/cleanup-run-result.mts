@@ -33,6 +33,7 @@ export type DataRetentionCleanupResult = {
   copyrightUnlinkedEmailIntakes?: { scanned: number; erased: number; hasMore: boolean }
   copyrightReceiptReviews?: { scanned: number; retired: number; hasMore: boolean }
   copyrightCaseThreads?: { scanned: number; deleted: number; hasMore: boolean }
+  copyrightAiRuns?: { deleted: number; hasMore: boolean }
   copyrightOrphanEmailThreadTokens?: { scanned: number; deleted: number; hasMore: boolean }
   retainedRelationIdentities: RetainedRelationIdentityCleanupPage[]
   retainedMediaBindings: RetainedMediaBindingCleanupPage

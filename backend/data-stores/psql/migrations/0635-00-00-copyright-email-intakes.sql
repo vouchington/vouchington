@@ -268,6 +268,45 @@ CREATE TABLE copyright_notice_email_intake_recommendations (
   CONSTRAINT uq_copyright_notice_email_intake_recommendations__intake_id__id UNIQUE (copyright_notice_email_intake_receipt_id, id)
 ) PARTITION BY RANGE (id);
 
+COMMENT ON TYPE copyright_notice_ai_run_statuses IS 'Outcome of an admitted copyright AI run: active until success, definitive failure, or expiry.';
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE copyright_notice_email_intake_recommendation_runs (
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  copyright_notice_email_intake_receipt_id uuid NOT NULL CONSTRAINT fk_copyright_email_recommendation_runs__intake_receipt REFERENCES copyright_notice_email_intake_receipts(id) ON DELETE RESTRICT,
+  copyright_notice_email_intake_recommendation_id uuid,
+  completed_at timestamptz,
+  failed_at timestamptz,
+  expired_at timestamptz,
+  status copyright_notice_ai_run_statuses GENERATED ALWAYS AS (
+    CASE WHEN completed_at IS NOT NULL THEN 'succeeded'::copyright_notice_ai_run_statuses
+         WHEN failed_at IS NOT NULL THEN 'failed'::copyright_notice_ai_run_statuses
+         WHEN expired_at IS NOT NULL THEN 'expired'::copyright_notice_ai_run_statuses
+         ELSE 'active'::copyright_notice_ai_run_statuses END
+  ) STORED,
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  CONSTRAINT fk_copyright_email_recommendation_runs__recommendation FOREIGN KEY (copyright_notice_email_intake_receipt_id, copyright_notice_email_intake_recommendation_id)
+    REFERENCES copyright_notice_email_intake_recommendation_identities(copyright_notice_email_intake_receipt_id, id) ON DELETE RESTRICT,
+  CHECK ((completed_at IS NULL) = (copyright_notice_email_intake_recommendation_id IS NULL)),
+  CHECK (num_nonnulls(completed_at, failed_at, expired_at) <= 1)
+);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX uq_copyright_notice_email_intake_recommendation_runs__active ON copyright_notice_email_intake_recommendation_runs(copyright_notice_email_intake_receipt_id)
+  WHERE completed_at IS NULL AND failed_at IS NULL AND expired_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_email_recommendation_runs__intake_receipt ON copyright_notice_email_intake_recommendation_runs(copyright_notice_email_intake_receipt_id, id DESC);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_email_intake_recommendation_runs__result ON copyright_notice_email_intake_recommendation_runs(copyright_notice_email_intake_recommendation_id) WHERE copyright_notice_email_intake_recommendation_id IS NOT NULL;
+COMMENT ON TABLE copyright_notice_email_intake_recommendation_runs IS 'Per-attempt AI email-intake recommendation runs; the immutable recommendation stays success-only evidence and terminal runs expire under bounded operational retention.';
+COMMENT ON COLUMN copyright_notice_email_intake_recommendation_runs.id IS 'UUIDv7 identity of this admitted run, returned to callers so clients can follow exactly this run.';
+COMMENT ON COLUMN copyright_notice_email_intake_recommendation_runs.copyright_notice_email_intake_receipt_id IS 'Retained intake receipt this run evaluates; at most one run per receipt is active.';
+COMMENT ON COLUMN copyright_notice_email_intake_recommendation_runs.copyright_notice_email_intake_recommendation_id IS 'Immutable result written by the transaction that completed this run; null until success.';
+COMMENT ON COLUMN copyright_notice_email_intake_recommendation_runs.completed_at IS 'Committed with the immutable result; success wins over any delayed failure observation.';
+COMMENT ON COLUMN copyright_notice_email_intake_recommendation_runs.failed_at IS 'Definitive terminal worker failure, excluding retries and provider deferrals.';
+COMMENT ON COLUMN copyright_notice_email_intake_recommendation_runs.expired_at IS 'Worker finished without a result because the input no longer applies.';
+COMMENT ON COLUMN copyright_notice_email_intake_recommendation_runs.status IS 'Outcome derived from the lifecycle timestamps; active until one is set.';
+COMMENT ON COLUMN copyright_notice_email_intake_recommendation_runs.created_at IS 'Admission time derived from the UUIDv7 identity.';
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intake_reviews (
   id uuid PRIMARY KEY DEFAULT uuidv7(),

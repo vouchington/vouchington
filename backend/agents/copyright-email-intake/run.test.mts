@@ -7,6 +7,7 @@ import {
 } from '@voucha/test-helpers/agents/model-call-result'
 import { createCopyrightEmailIntake, recordCopyrightEmailParse } from '@services/copyright-notices'
 import { parseCopyrightEmailIntakeOutput } from './output.mts'
+import { admitCopyrightEmailRecommendationRun } from '@services/copyright-notices/email-recommendation-runs'
 import { runCopyrightEmailIntakeAgent } from './run.mts'
 
 const parseText = (text: string) => parseCopyrightEmailIntakeOutput(JSON.parse(text))
@@ -96,8 +97,9 @@ describe('copyright email intake output', () => {
     })
     const callModel = makeAgentModelCaller(JSON.parse(validOutput()))
 
+    const runId = (await admitCopyrightEmailRecommendationRun(intake.id))!
     await expect(
-      runCopyrightEmailIntakeAgent(intake.id, TEST_MODEL_SELECTION, callModel),
+      runCopyrightEmailIntakeAgent(intake.id, runId, TEST_MODEL_SELECTION, callModel),
     ).resolves.toBeUndefined()
     expect(callModel).toHaveBeenCalledOnce()
   })

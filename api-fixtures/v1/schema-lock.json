@@ -430,8 +430,12 @@
       "hash": "d22beee0d7c1ed488caf0e1e979d7736750bb9fcfedaaa0ac730030854197878"
     },
     "GET:/api/v1/copyright-notices/review-queue": {
-      "fixtureIds": ["web.copyright.staff-queue.default", "web.copyright.staff-queue.territorial"],
-      "hash": "2714df22d03320b15d615bcc82e1591bb801f9530b7e6ede06b513fa15d18e20"
+      "fixtureIds": [
+        "native.copyright.staff-queue.ai-run",
+        "web.copyright.staff-queue.default",
+        "web.copyright.staff-queue.territorial"
+      ],
+      "hash": "3f3dc23df42200768047c37a562d076047770e5d2726d1f0e428b844f881c317"
     },
     "GET:/api/v1/copyright-trusted-flaggers": {
       "fixtureIds": ["copyright.trusted-flaggers.list"],
@@ -2195,6 +2199,10 @@
     "native.copyright.repeat-infringer-accounts": {
       "fixtureIds": ["native.copyright.repeat-infringer-accounts"],
       "hash": "319ebbe81cd00edd89a24eb39e18e6ef46abc1f75ae4f9d0768561cb55753198"
+    },
+    "native.copyright.staff-queue.ai-run": {
+      "fixtureIds": ["native.copyright.staff-queue.ai-run"],
+      "hash": "defacb94d39282b96dcb2c45983d197f30498e72a5a954d8688c4dc82f610d50"
     },
     "native.dynamic-config.history.default": {
       "fixtureIds": ["native.dynamic-config.history.default"],

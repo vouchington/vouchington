@@ -4,22 +4,31 @@ import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS, AI_AGENTS_QUEUE_NAME } from '../con
 import { ai_agents } from '../queues.mts'
 import { addAIAgentJob } from './create-enqueue.mts'
 
-const jobIdFor = (submissionId: string) => `copyright_appeal_recommendation_${submissionId}`
+/** One job per admitted run, so a retained job of an earlier run never shadows a new one. */
+const jobIdFor = (runId: string) => `copyright_appeal_recommendation_${runId}`
 
-export async function enqueueCopyrightAppealRecommendation(submissionId: string): Promise<void> {
+export async function enqueueCopyrightAppealRecommendation(
+  submissionId: string,
+  runId: string,
+): Promise<void> {
   const opts: JobOptions = {
     ...AI_AGENTS_DEFAULTS,
-    jobId: jobIdFor(submissionId),
+    jobId: jobIdFor(runId),
     priority: AGENT_PRIORITY['copyright-appeal-recommendation'],
-    deduplication: { id: `copyright_appeal_recommendation_${submissionId}`, mode: 'simple' },
+    deduplication: { id: `copyright_appeal_recommendation_${runId}`, mode: 'simple' },
     ordering: { key: `copyright_appeal_recommendation_${submissionId}`, concurrency: 1 },
   }
-  await addAIAgentJob('copyright-appeal-recommendation', { submission_id: submissionId }, opts)
+  await addAIAgentJob(
+    'copyright-appeal-recommendation',
+    { submission_id: submissionId, run_id: runId },
+    opts,
+  )
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'copyright-appeal-recommendation')
 }
 
 export async function enqueueOrRetryCopyrightAppealRecommendation(
   submissionId: string,
+  runId: string,
   dependencies: {
     getJob(
       id: string,
@@ -36,7 +45,7 @@ export async function enqueueOrRetryCopyrightAppealRecommendation(
     enqueue: enqueueCopyrightAppealRecommendation,
   },
 ): Promise<void> {
-  const retained = await dependencies.getJob(jobIdFor(submissionId), { excludeData: true })
+  const retained = await dependencies.getJob(jobIdFor(runId), { excludeData: true })
   if (retained) {
     if (retained.name !== 'copyright-appeal-recommendation') return
     const state = await retained.getState()
@@ -47,5 +56,5 @@ export async function enqueueOrRetryCopyrightAppealRecommendation(
     if (state === 'completed') await retained.remove()
     else return
   }
-  await dependencies.enqueue(submissionId)
+  await dependencies.enqueue(submissionId, runId)
 }
