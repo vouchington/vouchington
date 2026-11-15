@@ -2,11 +2,12 @@
 
 - Work from this non-main worktree or a trusted GitHub Actions checkout;
   do not change main or discard local work without explicit direction.
-- **One current contract:** Voucha has not launched. Read the
-  [prelaunch schema policy](docs/development/postgres-schema-rules.md#prelaunch-relational-storage):
-  rewrite current producers, consumers and canonical schema together; remove replaced paths.
-  It forbids historical-version compatibility paths while preserving external protocols, exact
-  replay, key rotation and fresh-bootstrap safety.
+- **One current contract:** Voucha is prelaunch. Never add, keep or request compatibility paths for
+  historical stored data, payloads or schemas; rewrite current producers, consumers and the
+  canonical schema together and remove replaced paths. Exceptions: external protocols, exact replay,
+  key rotation, fresh-bootstrap safety. Released native clients are no exception; breaking API
+  changes ship in lockstep via the [client parity matrix](docs/requirements/CLIENT-PARITY-MATRIX.md).
+  Why: [prelaunch policy](docs/development/postgres-schema-rules.md#prelaunch-relational-storage).
 - Follow that policy for foreign-key relations, unjoined JSON and retained identities that never
   authorize deleted entities. Read [PostgreSQL instructions](backend/data-stores/psql/AGENTS.md)
   for schema changes.
