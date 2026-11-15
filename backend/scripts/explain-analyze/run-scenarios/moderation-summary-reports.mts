@@ -3,7 +3,10 @@ import { encodeCursor } from '@modules/pagination'
 import { beginTransaction, write } from '@data-stores/psql'
 import { dispatchCommunityModerationSummaryEmails } from '@services/communities/moderation-summary-emails'
 import { getModerationSummaryRecipients } from '@services/communities/moderation-summary-recipients'
-import { getCommunitiesWorkLimit } from '@services/communities/work-limits'
+import { communitiesWorkConfig, getCommunitiesWorkLimit } from '@services/communities/work-limits'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { background } from '@queues/background/queues'
+import { EMAIL_DIGESTS_DISPATCH_MODERATION_SUMMARY_JOB } from '@queues/background/enqueues/email-digests-jobs'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { contentHash, seedUuid } from '../seed-data/common.mts'
@@ -115,16 +118,32 @@ export async function runModerationSummaryReportScenario(): Promise<void> {
           recipients.recipients.some(({ id }) => id === RECIPIENT_ID),
           'A report on a deleted post remains moderator work',
         )
-        await dispatchCommunityModerationSummaryEmails(
-          now,
-          encodeCursor({ id: RECIPIENT_ID, communityId: '00000000-0000-0000-0000-000000000000' }),
-        )
+        // Other seeded moderators can also be due; capture only the owned claim lookup.
+        const restore = overrideDynamicConfigFieldsForTest(communitiesWorkConfig, {
+          summary_email_batch_size: 1,
+        })
+        try {
+          await dispatchCommunityModerationSummaryEmails(
+            now,
+            encodeCursor({ id: RECIPIENT_ID, communityId: '00000000-0000-0000-0000-000000000000' }),
+          )
+        } finally {
+          restore()
+        }
         return recipients
       },
       undefined,
       ['getModerationSummaryRecipients', 'hasModerationEmailClaim'],
     )
   } finally {
+    if (seeded) {
+      const continuations = await background.searchJobs({
+        name: EMAIL_DIGESTS_DISPATCH_MODERATION_SUMMARY_JOB.name,
+        data: { afterId: encodeCursor({ id: RECIPIENT_ID, communityId: TARGET_COMMUNITY_ID }) },
+        limit: 1,
+      })
+      await Promise.all(continuations.map(job => job.remove()))
+    }
     if (seeded)
       await write('/* cleanupSummaryReportPosts */ DELETE FROM posts WHERE id = ANY($1::uuid[])', [
         postIds,
