@@ -33,7 +33,13 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importO
 
 type QueuedCase = {
   id: string
-  form_review: { screening: { guidance: { summary: string } | null } | null } | null
+  form_review: {
+    screening: {
+      attempt_id: string
+      state: string
+      guidance: { summary: string } | null
+    } | null
+  } | null
   appeals: Array<{ submission_id: string; recommendation: { recommendation: string } | null }>
   counter_notices: Array<{ submission_id: string; guidance: { summary: string } | null }>
 }
@@ -88,7 +94,9 @@ describe('copyright AI queue admission and staff result polling', () => {
     expect(submissionId).toBeDefined()
     const staff = createRequest()
     await staff.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
-    expect((await findCase(staff, noticeId)).form_review?.screening?.guidance ?? null).toBeNull()
+    const pending = (await findCase(staff, noticeId)).form_review?.screening
+    expect(pending).toMatchObject({ attempt_id: expect.any(String), state: 'pending' })
+    expect(pending?.guidance ?? null).toBeNull()
     const job = await findJob('copyright-form-screening', 'submission_id', submissionId!)
     expect(job).toBeDefined()
     try {
@@ -100,8 +108,10 @@ describe('copyright AI queue admission and staff result polling', () => {
       await withReservedAiUsageDay(10_000_000, () =>
         processCopyrightFormScreening(job! as Job<CopyrightFormScreeningJobData>, callModel),
       )
-      expect((await findCase(staff, noticeId)).form_review?.screening?.guidance).toMatchObject({
-        summary: testCopyrightFormGuidance.summary,
+      expect((await findCase(staff, noticeId)).form_review?.screening).toMatchObject({
+        attempt_id: pending!.attempt_id,
+        state: 'completed',
+        guidance: { summary: testCopyrightFormGuidance.summary },
       })
       expect(callModel).toHaveBeenCalledOnce()
     } finally {

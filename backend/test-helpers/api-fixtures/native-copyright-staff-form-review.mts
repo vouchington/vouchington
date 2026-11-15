@@ -44,6 +44,7 @@ export const reviewedStaffCase = {
     intake_id: '00000000-0000-7000-8000-000000000816',
     source_kind: 'guest_form',
     screening: {
+      attempt_id: '00000000-0000-7000-8000-000000000827',
       state: 'completed',
       recommendation: 'not_obviously_invalid',
       rationale: 'No obvious spam markers.',

@@ -2677,6 +2677,25 @@
                       "type": "string"
                     }
                   ]
+                },
+                "ai_draft_requested_run_status": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "const": "active"
+                    },
+                    {
+                      "const": "succeeded"
+                    },
+                    {
+                      "const": "failed"
+                    },
+                    {
+                      "const": "expired"
+                    }
+                  ]
                 }
               },
               "required": [
@@ -2711,7 +2730,8 @@
                 "status",
                 "updated_at",
                 "user_suspension_id",
-                "user_warning_id"
+                "user_warning_id",
+                "ai_draft_requested_run_status"
               ],
               "type": "object"
             }
@@ -3687,9 +3707,18 @@
                               "state": {
                                 "enum": ["completed", "failed", "pending"],
                                 "type": "string"
+                              },
+                              "attempt_id": {
+                                "type": "string"
                               }
                             },
-                            "required": ["guidance", "rationale", "recommendation", "state"],
+                            "required": [
+                              "guidance",
+                              "rationale",
+                              "recommendation",
+                              "state",
+                              "attempt_id"
+                            ],
                             "type": "object"
                           },
                           {
@@ -6776,6 +6805,25 @@
                   "type": "string"
                 }
               ]
+            },
+            "ai_draft_requested_run_status": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "const": "active"
+                },
+                {
+                  "const": "succeeded"
+                },
+                {
+                  "const": "failed"
+                },
+                {
+                  "const": "expired"
+                }
+              ]
             }
           },
           "required": [
@@ -6810,7 +6858,8 @@
             "status",
             "updated_at",
             "user_suspension_id",
-            "user_warning_id"
+            "user_warning_id",
+            "ai_draft_requested_run_status"
           ],
           "type": "object"
         }
@@ -8034,6 +8083,25 @@
                   "type": "string"
                 }
               ]
+            },
+            "ai_draft_requested_run_status": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "const": "active"
+                },
+                {
+                  "const": "succeeded"
+                },
+                {
+                  "const": "failed"
+                },
+                {
+                  "const": "expired"
+                }
+              ]
             }
           },
           "required": [
@@ -8068,7 +8136,8 @@
             "status",
             "updated_at",
             "user_suspension_id",
-            "user_warning_id"
+            "user_warning_id",
+            "ai_draft_requested_run_status"
           ],
           "type": "object"
         }
@@ -8595,6 +8664,25 @@
                   "type": "string"
                 }
               ]
+            },
+            "ai_draft_requested_run_status": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "const": "active"
+                },
+                {
+                  "const": "succeeded"
+                },
+                {
+                  "const": "failed"
+                },
+                {
+                  "const": "expired"
+                }
+              ]
             }
           },
           "required": [
@@ -8629,7 +8717,8 @@
             "status",
             "updated_at",
             "user_suspension_id",
-            "user_warning_id"
+            "user_warning_id",
+            "ai_draft_requested_run_status"
           ],
           "type": "object"
         }
@@ -9156,6 +9245,25 @@
                   "type": "string"
                 }
               ]
+            },
+            "ai_draft_requested_run_status": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "const": "active"
+                },
+                {
+                  "const": "succeeded"
+                },
+                {
+                  "const": "failed"
+                },
+                {
+                  "const": "expired"
+                }
+              ]
             }
           },
           "required": [
@@ -9190,7 +9298,8 @@
             "status",
             "updated_at",
             "user_suspension_id",
-            "user_warning_id"
+            "user_warning_id",
+            "ai_draft_requested_run_status"
           ],
           "type": "object"
         }
@@ -25031,6 +25140,25 @@
         },
         "ai_draft_requested_run_id": {
           "type": "string"
+        },
+        "ai_draft_requested_run_status": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "const": "active"
+            },
+            {
+              "const": "succeeded"
+            },
+            {
+              "const": "failed"
+            },
+            {
+              "const": "expired"
+            }
+          ]
         }
       },
       "required": [
@@ -25065,7 +25193,8 @@
         "user_suspension_id",
         "user_warning_id",
         "ai_draft_run_id",
-        "ai_draft_requested_run_id"
+        "ai_draft_requested_run_id",
+        "ai_draft_requested_run_status"
       ],
       "type": "object"
     },

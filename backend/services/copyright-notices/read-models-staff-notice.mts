@@ -56,6 +56,7 @@ type FormReviewRow = {
   copyright_notice_id: string
   intake_id: string
   source_kind: FiniteValue<'copyright_notice_submission_source_kinds'>
+  attempt_id: string | null
   state: 'pending' | 'failed' | 'completed' | null
   recommendation: FiniteValue<'copyright_notice_form_screening_recommendations'> | null
   rationale_ciphertext: string | null
@@ -76,10 +77,10 @@ export async function selectStaffFormReview(
 ): Promise<Map<string, NonNullable<CopyrightStaffCase['form_review']>>> {
   const { rows } = await query<FormReviewRow>(sql`/* getPendingCopyrightStaffCase:formReview */
     SELECT DISTINCT ON (intake.copyright_notice_id) intake.copyright_notice_id,
-      intake.id AS intake_id, submission.source_kind, execution.state, screening.recommendation, screening.rationale_ciphertext, screening.guidance_ciphertext,
+      intake.id AS intake_id, submission.source_kind, execution.id AS attempt_id, execution.state, screening.recommendation, screening.rationale_ciphertext, screening.guidance_ciphertext,
       review.is_accepted AS review_accepted, review.reviewed_at, review.reviewed_by_id
     FROM copyright_notice_form_intakes intake JOIN copyright_notice_submissions submission ON submission.id = intake.copyright_notice_submission_id
-    LEFT JOIN LATERAL (SELECT attempt.state, attempt.copyright_notice_form_screening_id FROM copyright_notice_form_screening_attempts attempt WHERE attempt.copyright_notice_form_intake_id = intake.id ORDER BY attempt.attempt_number DESC LIMIT 1) execution ON true
+    LEFT JOIN LATERAL (SELECT attempt.id, attempt.state, attempt.copyright_notice_form_screening_id FROM copyright_notice_form_screening_attempts attempt WHERE attempt.copyright_notice_form_intake_id = intake.id ORDER BY attempt.attempt_number DESC LIMIT 1) execution ON true
     LEFT JOIN copyright_notice_form_screenings screening ON screening.id = execution.copyright_notice_form_screening_id AND execution.state = 'completed'
     LEFT JOIN copyright_notice_form_intake_reviews review ON review.copyright_notice_form_intake_id = intake.id
     WHERE intake.copyright_notice_id = ANY(${noticeIds}::uuid[])
@@ -96,6 +97,7 @@ function toFormReview(row: FormReviewRow): NonNullable<CopyrightStaffCase['form_
     source_kind: row.source_kind,
     screening: row.state
       ? {
+          attempt_id: row.attempt_id!,
           state: row.state,
           recommendation: row.recommendation,
           rationale: row.rationale_ciphertext

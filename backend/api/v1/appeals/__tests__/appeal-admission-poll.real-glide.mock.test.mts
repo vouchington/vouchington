@@ -67,6 +67,7 @@ describe('appeal resolution queue admission and result polling', () => {
       ai_drafted_at: null,
       ai_draft_run_id: null,
       ai_draft_requested_run_id: rerun.body.run_id,
+      ai_draft_requested_run_status: 'active',
     })
 
     const jobs = await readAllQueueJobs(ai_agents)
@@ -102,6 +103,7 @@ describe('appeal resolution queue admission and result polling', () => {
       expect((await request.get(detailPath).expect(200)).body.appeal).toMatchObject({
         ai_draft_run_id: null,
         ai_draft_requested_run_id: rerun.body.run_id,
+        ai_draft_requested_run_status: 'active',
       })
       const callModel = makeAgentModelCaller({
         recommended_action: 'deny',
@@ -129,6 +131,10 @@ describe('appeal resolution queue admission and result polling', () => {
         ai_drafted_at: null,
         latest_lifecycle_change_id: null,
       })
+      expect((await request.get(detailPath).expect(200)).body.appeal).toMatchObject({
+        ai_draft_requested_run_id: rerun.body.run_id,
+        ai_draft_requested_run_status: 'failed',
+      })
       releaseModel.resolve()
       await processing
       const completed = await request.get(detailPath).expect(200)
@@ -139,6 +145,7 @@ describe('appeal resolution queue admission and result polling', () => {
         ai_drafted_at: expect.any(String),
         ai_draft_run_id: rerun.body.run_id,
         ai_draft_requested_run_id: rerun.body.run_id,
+        ai_draft_requested_run_status: 'succeeded',
       })
       expect((await request.get(outcomePath).expect(200)).body).toMatchObject({
         run_id: rerun.body.run_id,
