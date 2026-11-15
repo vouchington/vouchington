@@ -36,9 +36,15 @@ describe('topic alias category sweep bound', () => {
 
     const bound = first.cursor.sweep_upper_bound_item_id
     expect(bound).toBe(first.cursor.sweep_upper_bound_feed_id)
-    const boundTime = getDateFromUUIDv7(bound!).getTime()
-    expect(boundTime).toBeGreaterThanOrEqual(getDateFromUUIDv7(before.id).getTime())
+    const boundTime = uuidv7Time(bound)
+    expect(boundTime).toBeGreaterThanOrEqual(uuidv7Time(before.id))
     expect(boundTime).toBeGreaterThanOrEqual(startedAt)
     expect(boundTime).toBeLessThanOrEqual(finishedAt)
   })
 })
+
+function uuidv7Time(id: string | null): number {
+  const date = id ? getDateFromUUIDv7(id) : null
+  if (!date) throw new Error(`Expected a UUIDv7, got ${id}`)
+  return date.getTime()
+}
