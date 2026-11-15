@@ -44,4 +44,4 @@ _none_
 
 **Triggers:**
 
-- `record_reporting_follow_day`: `CREATE TRIGGER record_reporting_follow_day AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__follow__user FOR EACH ROW EXECUTE FUNCTION record_vanished_reporting_day('user_follow')`
+- `trigger_reporting_follow_day`: `CREATE TRIGGER trigger_reporting_follow_day AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__follow__user FOR EACH ROW EXECUTE FUNCTION fn_register_vanished_reporting_day('user_follow')`

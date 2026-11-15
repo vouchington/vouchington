@@ -1609,7 +1609,7 @@
 - `growth`
 - `moderator_workload`
 
-## `reporting_source_change_types`
+## `reporting_source_day_event_types`
 
 - `user_follow`
 - `post_vote_deletion`

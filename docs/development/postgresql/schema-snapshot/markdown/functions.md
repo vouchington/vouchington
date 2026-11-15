@@ -788,6 +788,14 @@ CREATE OR REPLACE FUNCTION public.fn_register_retained_image_identity()
  LANGUAGE plpgsql
 ```
 
+## `fn_register_vanished_reporting_day`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_register_vanished_reporting_day()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_admin_import_deleted_rss_feed`
 
 ```sql
@@ -2038,12 +2046,4 @@ CREATE OR REPLACE FUNCTION public.fn_wilson_score_lower_bound(pos double precisi
  RETURNS double precision
  LANGUAGE sql
  IMMUTABLE
-```
-
-## `record_vanished_reporting_day`
-
-```sql
-CREATE OR REPLACE FUNCTION public.record_vanished_reporting_day()
- RETURNS trigger
- LANGUAGE plpgsql
 ```

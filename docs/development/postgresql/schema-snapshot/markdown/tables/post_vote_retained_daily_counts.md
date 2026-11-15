@@ -33,4 +33,4 @@ _none_
 
 **Triggers:**
 
-- `record_reporting_retained_vote_day`: `CREATE TRIGGER record_reporting_retained_vote_day AFTER INSERT OR DELETE OR UPDATE ON public.post_vote_retained_daily_counts FOR EACH ROW EXECUTE FUNCTION record_vanished_reporting_day('retained_vote_change')`
+- `trigger_reporting_retained_vote_day`: `CREATE TRIGGER trigger_reporting_retained_vote_day AFTER INSERT OR DELETE OR UPDATE ON public.post_vote_retained_daily_counts FOR EACH ROW EXECUTE FUNCTION fn_register_vanished_reporting_day('retained_vote_change')`

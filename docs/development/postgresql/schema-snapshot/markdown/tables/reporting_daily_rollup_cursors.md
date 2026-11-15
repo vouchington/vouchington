@@ -6,10 +6,11 @@ Transactional first-unmaterialized day for scheduled reporting; ordinary initial
 
 Not partitioned — growth: bounded.
 
-| Column           | Type                     | Nullable | Default | Identity | Generated | Collation | Comment                                                                                                   |
-| ---------------- | ------------------------ | -------- | ------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------- |
-| `kind`           | `reporting_rollup_kinds` | no       |         |          |           |           | Concrete daily reporting projection whose position this row owns.                                         |
-| `next_rollup_on` | `date`                   | no       |         |          |           |           | Next UTC source day due for scheduled computation; initialization claims no historical day was completed. |
+| Column             | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                   |
+| ------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------- |
+| `kind`             | `reporting_rollup_kinds`   | no       |                     |          |           |           | Concrete daily reporting projection whose position this row owns.                                         |
+| `cursor_rollup_on` | `date`                     | no       |                     |          |           |           | Next UTC source day due for scheduled computation; initialization claims no historical day was completed. |
+| `updated_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Last cursor progression time maintained by the canonical update trigger.                                  |
 
 **Primary key:** `PRIMARY KEY (kind)`
 
@@ -27,4 +28,5 @@ _none_
 - `reporting_daily_rollup_cursors_pkey`: `CREATE UNIQUE INDEX reporting_daily_rollup_cursors_pkey ON public.reporting_daily_rollup_cursors USING btree (kind)`
 
 **Triggers:**
-_none_
+
+- `trigger_reporting_daily_rollup_cursors_updated_at`: `CREATE TRIGGER trigger_reporting_daily_rollup_cursors_updated_at BEFORE UPDATE ON public.reporting_daily_rollup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
