@@ -705,6 +705,9 @@
     "membership_refund_reasons": {
       "values": ["goodwill", "requested", "dispute", "other"]
     },
+    "membership_refund_request_rejection_reasons": {
+      "values": ["authentication", "rate_limited", "invalid_parameters"]
+    },
     "membership_refund_sources": {
       "values": ["admin", "stripe_dashboard"]
     },
@@ -1891,7 +1894,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_invalid_membership_operation_work_lease()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.membership_operation_id IS DISTINCT FROM OLD.membership_operation_id\n    OR NEW.attempt_count < OLD.attempt_count\n    OR (OLD.lease_token IS NOT NULL AND OLD.lease_expires_at > clock_timestamp()\n      AND NEW.lease_token IS NOT NULL AND NEW.lease_token IS DISTINCT FROM OLD.lease_token) THEN\n    RAISE EXCEPTION 'membership operations only allow claimed provider execution lifecycle transitions';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_invalid_membership_refund_operation_attempt": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_invalid_membership_refund_operation_attempt()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE valid_attempt BOOLEAN;\nBEGIN\n  SELECT operation.operation_kind IN ('automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution', 'administrator_refund') AND operation.currency_code = NEW.currency_code AND NEW.amount_minor_units <= operation.remaining_refundable_minor_units INTO valid_attempt FROM membership_operations operation WHERE operation.id = NEW.membership_operation_id;\n  IF valid_attempt IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'refund attempt does not match its operation' USING ERRCODE = '23514'; END IF;\n  RETURN NEW;\nEND $function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_invalid_membership_refund_operation_attempt()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE valid_attempt BOOLEAN;\nBEGIN\n  SELECT operation.operation_kind IN ('automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution', 'administrator_refund') AND operation.currency_code = NEW.currency_code AND NEW.amount_minor_units <= operation.remaining_refundable_minor_units\n    AND (NEW.provider_request_original_attempt_id IS NULL OR EXISTS (\n      SELECT 1 FROM membership_refund_operation_attempts original\n      WHERE original.id = NEW.provider_request_original_attempt_id\n        AND original.membership_operation_id = NEW.membership_operation_id\n        AND original.provider_request_original_attempt_id IS NULL\n        AND original.rejected_at IS NOT NULL\n        AND original.provider_idempotency_key = NEW.provider_idempotency_key\n        AND original.amount_minor_units = NEW.amount_minor_units\n        AND original.currency_code = NEW.currency_code\n    )) INTO valid_attempt FROM membership_operations operation WHERE operation.id = NEW.membership_operation_id;\n  IF valid_attempt IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'refund attempt does not match its operation' USING ERRCODE = '23514'; END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_reject_media_delivery_registry_change_retention": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_media_delivery_registry_change_retention()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE cutoff_id uuid; cutoff_at timestamptz;\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    cutoff_id := NULLIF(current_setting('app.media_delivery_retention_cutoff_id', TRUE), '')::uuid;\n    cutoff_at := NULLIF(current_setting('app.media_delivery_retention_cutoff_at', TRUE), '')::timestamptz;\n    IF cutoff_id IS NOT NULL AND OLD.id < cutoff_id\n      AND cutoff_at IS NOT NULL\n      AND (OLD.completed_at IS NULL OR OLD.completed_at < cutoff_at)\n      AND NOT (OLD.change_type = 'completed' AND OLD.desired_state = 'withheld')\n      AND NOT EXISTS (SELECT 1 FROM media_delivery_registry_records record\n        WHERE record.latest_change_id = OLD.id)\n      AND NOT EXISTS (SELECT 1 FROM media_delivery_registry_projection_work_items work\n        WHERE work.failed_change_id = OLD.id) THEN\n      RETURN OLD;\n    END IF;\n  END IF;\n  RAISE EXCEPTION 'media delivery registry changes are immutable outside eligible retention';\nEND;\n$function$\n"
@@ -1921,7 +1924,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_operation_child_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' AND fn_membership_operation_fiscal_retention_due(OLD.membership_operation_id)\n    THEN RETURN OLD; END IF;\n  RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';\nEND $function$\n"
     },
     "fn_reject_membership_operation_mutation": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_operation_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    IF fn_membership_operation_fiscal_retention_due(OLD.id) THEN RETURN OLD; END IF;\n    RAISE EXCEPTION 'membership operations cannot be deleted';\n  END IF;\n\n  IF OLD.fiscal_retention_started_at IS NULL\n    AND NEW.fiscal_retention_started_at IS NOT NULL\n    AND fn_membership_operation_fiscal_retention_due(OLD.id)\n    AND to_jsonb(NEW) - 'fiscal_retention_started_at'\n      = to_jsonb(OLD) - 'fiscal_retention_started_at'\n    THEN RETURN NEW; END IF;\n\n  IF OLD.completed_at IS NOT NULL THEN\n    RAISE EXCEPTION 'membership operations only allow one terminal lifecycle transition';\n  END IF;\n\n  IF ROW(\n    NEW.id, NEW.membership_source_id, NEW.membership_provider_lineage_id,\n    NEW.membership_lineage_binding_id, NEW.membership_provider_context_id,\n    NEW.operation_kind, NEW.idempotency_key,\n    NEW.qualifying_allocation_minor_units, NEW.currency_code, NEW.period_started_at,\n    NEW.period_ends_at, NEW.collision_at, NEW.requested_at\n  ) IS DISTINCT FROM ROW(\n    OLD.id, OLD.membership_source_id, OLD.membership_provider_lineage_id,\n    OLD.membership_lineage_binding_id, OLD.membership_provider_context_id,\n    OLD.operation_kind, OLD.idempotency_key,\n    OLD.qualifying_allocation_minor_units, OLD.currency_code, OLD.period_started_at,\n    OLD.period_ends_at, OLD.collision_at, OLD.requested_at\n  ) THEN\n    RAISE EXCEPTION 'membership operations only allow one terminal lifecycle transition';\n  END IF;\n\n  IF NEW.reconciliation_attempt_ordinal < OLD.reconciliation_attempt_ordinal THEN\n    RAISE EXCEPTION 'membership operations cannot decrease reconciliation attempts';\n  END IF;\n\n  -- Retry reconciliation may reduce a failed operation's refundable balance while unleased.\n  IF OLD.failed_at IS NOT NULL AND NEW.failed_at IS NOT DISTINCT FROM OLD.failed_at\n    AND NEW.failure_message IS NOT DISTINCT FROM OLD.failure_message\n    AND NEW.completed_at IS NULL\n    AND NEW.provider_refund_id IS NOT DISTINCT FROM OLD.provider_refund_id\n    AND NEW.remaining_refundable_minor_units <= OLD.remaining_refundable_minor_units\n    AND NEW.reconciliation_attempt_ordinal = OLD.reconciliation_attempt_ordinal\n    AND EXISTS (SELECT 1 FROM membership_operation_execution_work_items work\n      WHERE work.membership_operation_id = OLD.id AND work.lease_token IS NULL)\n    AND NOT EXISTS (SELECT 1 FROM membership_automatic_refund_receipts receipt\n      WHERE receipt.membership_operation_id = OLD.id)\n  THEN RETURN NEW; END IF;\n\n  -- A committed receipt can independently prove completion after a worker crash.\n  IF NEW.completed_at IS NOT NULL AND NEW.failed_at IS NULL\n    AND NEW.remaining_refundable_minor_units IS NOT DISTINCT FROM OLD.remaining_refundable_minor_units\n    AND NEW.provider_refund_id IS NOT DISTINCT FROM OLD.provider_refund_id\n    AND NEW.reconciliation_attempt_ordinal = OLD.reconciliation_attempt_ordinal\n    AND EXISTS (SELECT 1 FROM membership_automatic_refund_receipts receipt\n      WHERE receipt.membership_operation_id = OLD.id)\n  THEN RETURN NEW; END IF;\n\n  IF NEW.remaining_refundable_minor_units IS NOT DISTINCT FROM OLD.remaining_refundable_minor_units\n    AND NEW.reconciliation_attempt_ordinal BETWEEN OLD.reconciliation_attempt_ordinal\n      AND OLD.reconciliation_attempt_ordinal + 1\n    AND EXISTS (SELECT 1 FROM membership_operation_execution_work_items work\n      WHERE work.membership_operation_id = OLD.id AND work.lease_token IS NOT NULL\n        AND work.lease_expires_at > clock_timestamp())\n  THEN RETURN NEW; END IF;\n\n  RAISE EXCEPTION 'membership operations only allow claimed provider execution lifecycle transitions';\nEND $function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_operation_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    IF fn_membership_operation_fiscal_retention_due(OLD.id) THEN RETURN OLD; END IF;\n    RAISE EXCEPTION 'membership operations cannot be deleted';\n  END IF;\n\n  IF OLD.fiscal_retention_started_at IS NULL\n    AND NEW.fiscal_retention_started_at IS NOT NULL\n    AND fn_membership_operation_fiscal_retention_due(OLD.id)\n    AND to_jsonb(NEW) - 'fiscal_retention_started_at'\n      = to_jsonb(OLD) - 'fiscal_retention_started_at'\n    THEN RETURN NEW; END IF;\n\n  IF OLD.completed_at IS NOT NULL THEN\n    RAISE EXCEPTION 'membership operations only allow one terminal lifecycle transition';\n  END IF;\n\n  IF ROW(\n    NEW.id, NEW.membership_source_id, NEW.membership_provider_lineage_id,\n    NEW.membership_lineage_binding_id, NEW.membership_provider_context_id,\n    NEW.operation_kind, NEW.idempotency_key, NEW.provider_payment_reference, NEW.provider_charge_id,\n    NEW.qualifying_allocation_minor_units, NEW.currency_code, NEW.period_started_at,\n    NEW.period_ends_at, NEW.collision_at, NEW.requested_at\n  ) IS DISTINCT FROM ROW(\n    OLD.id, OLD.membership_source_id, OLD.membership_provider_lineage_id,\n    OLD.membership_lineage_binding_id, OLD.membership_provider_context_id,\n    OLD.operation_kind, OLD.idempotency_key, OLD.provider_payment_reference, OLD.provider_charge_id,\n    OLD.qualifying_allocation_minor_units, OLD.currency_code, OLD.period_started_at,\n    OLD.period_ends_at, OLD.collision_at, OLD.requested_at\n  ) THEN\n    RAISE EXCEPTION 'membership operations only allow one terminal lifecycle transition';\n  END IF;\n\n  IF NEW.reconciliation_attempt_ordinal < OLD.reconciliation_attempt_ordinal THEN\n    RAISE EXCEPTION 'membership operations cannot decrease reconciliation attempts';\n  END IF;\n\n  -- Retry reconciliation may reduce a failed operation's refundable balance while unleased.\n  IF OLD.failed_at IS NOT NULL AND NEW.failed_at IS NOT DISTINCT FROM OLD.failed_at\n    AND NEW.failure_message IS NOT DISTINCT FROM OLD.failure_message\n    AND NEW.completed_at IS NULL\n    AND NEW.provider_refund_id IS NOT DISTINCT FROM OLD.provider_refund_id\n    AND NEW.remaining_refundable_minor_units <= OLD.remaining_refundable_minor_units\n    AND NEW.reconciliation_attempt_ordinal = OLD.reconciliation_attempt_ordinal\n    AND EXISTS (SELECT 1 FROM membership_operation_execution_work_items work\n      WHERE work.membership_operation_id = OLD.id AND work.lease_token IS NULL)\n    AND NOT EXISTS (SELECT 1 FROM membership_automatic_refund_receipts receipt\n      WHERE receipt.membership_operation_id = OLD.id)\n  THEN RETURN NEW; END IF;\n\n  -- A committed receipt can independently prove completion after a worker crash.\n  IF NEW.completed_at IS NOT NULL AND NEW.failed_at IS NULL\n    AND NEW.remaining_refundable_minor_units IS NOT DISTINCT FROM OLD.remaining_refundable_minor_units\n    AND NEW.provider_refund_id IS NOT DISTINCT FROM OLD.provider_refund_id\n    AND NEW.reconciliation_attempt_ordinal = OLD.reconciliation_attempt_ordinal\n    AND EXISTS (SELECT 1 FROM membership_automatic_refund_receipts receipt\n      WHERE receipt.membership_operation_id = OLD.id)\n  THEN RETURN NEW; END IF;\n\n  IF NEW.remaining_refundable_minor_units IS NOT DISTINCT FROM OLD.remaining_refundable_minor_units\n    AND NEW.reconciliation_attempt_ordinal BETWEEN OLD.reconciliation_attempt_ordinal\n      AND OLD.reconciliation_attempt_ordinal + 1\n    AND EXISTS (SELECT 1 FROM membership_operation_execution_work_items work\n      WHERE work.membership_operation_id = OLD.id AND work.lease_token IS NOT NULL\n        AND work.lease_expires_at > clock_timestamp())\n  THEN RETURN NEW; END IF;\n\n  RAISE EXCEPTION 'membership operations only allow claimed provider execution lifecycle transitions';\nEND $function$\n"
     },
     "fn_reject_membership_provider_evidence_immutability": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_provider_evidence_immutability()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'membership provider evidence records are immutable';\n  END IF;\n\n  IF ROW(\n    NEW.id,\n    NEW.membership_provider_context_id,\n    NEW.provider_event_id,\n    NEW.evidence_lookup_sha256,\n    NEW.encrypted_evidence,\n    NEW.received_at\n  ) IS DISTINCT FROM ROW(\n    OLD.id,\n    OLD.membership_provider_context_id,\n    OLD.provider_event_id,\n    OLD.evidence_lookup_sha256,\n    OLD.encrypted_evidence,\n    OLD.received_at\n  ) OR (\n    OLD.membership_provider_lineage_id IS NOT NULL\n    AND NEW.membership_provider_lineage_id IS DISTINCT FROM OLD.membership_provider_lineage_id\n  ) THEN\n    RAISE EXCEPTION 'membership provider evidence identity is immutable';\n  END IF;\n\n  IF OLD.rejected_at IS NOT NULL\n    OR num_nonnulls(NEW.verified_at, NEW.rejected_at) <> 1\n    OR (\n      OLD.verified_at IS NOT NULL\n      AND (NEW.verified_at IS NOT NULL OR NEW.rejected_at IS NULL)\n    )\n  THEN\n    RAISE EXCEPTION 'membership provider evidence lifecycle is terminal';\n  END IF;\n\n  RETURN NEW;\nEND $function$\n"
@@ -1936,7 +1939,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_refund_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    IF OLD.membership_operation_id IS NOT NULL\n      AND fn_membership_operation_fiscal_retention_due(OLD.membership_operation_id) THEN RETURN OLD; END IF;\n    RAISE EXCEPTION 'membership refund receipts cannot be deleted';\n  END IF;\n  IF ROW(NEW.id, NEW.membership_id, NEW.membership_source_id, NEW.user_id,\n      NEW.stripe_refund_id, NEW.stripe_charge_id, NEW.amount_minor_units, NEW.currency_code,\n      NEW.stripe_event_id, NEW.created_at)\n    IS DISTINCT FROM\n    ROW(OLD.id, OLD.membership_id, OLD.membership_source_id, OLD.user_id,\n      OLD.stripe_refund_id, OLD.stripe_charge_id, OLD.amount_minor_units, OLD.currency_code,\n      OLD.stripe_event_id, OLD.created_at) THEN\n    RAISE EXCEPTION 'membership refund receipt facts are immutable';\n  END IF;\n  IF OLD.source = 'stripe_dashboard' AND NEW.source = 'admin'\n    AND (OLD.stripe_payment_intent_id IS NULL OR NEW.stripe_payment_intent_id = OLD.stripe_payment_intent_id)\n    AND NOT OLD.has_revoked_access THEN\n    RETURN NEW;\n  END IF;\n  IF OLD.source = 'admin' AND NEW.source = 'admin'\n    AND NOT OLD.has_revoked_access AND NEW.has_revoked_access\n    AND ROW(NEW.stripe_payment_intent_id, NEW.stripe_idempotency_key,\n      NEW.admin_request_fingerprint, NEW.reason, NEW.issued_by_id, NEW.note)\n      IS NOT DISTINCT FROM\n      ROW(OLD.stripe_payment_intent_id, OLD.stripe_idempotency_key,\n        OLD.admin_request_fingerprint, OLD.reason, OLD.issued_by_id, OLD.note) THEN\n    RETURN NEW;\n  END IF;\n  RAISE EXCEPTION 'membership refund receipts only allow one-way reconciliation or access revocation';\nEND $function$\n"
     },
     "fn_reject_membership_refund_operation_attempt_mutation": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_refund_operation_attempt_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    IF fn_membership_operation_fiscal_retention_due(OLD.membership_operation_id)\n      THEN RETURN OLD; END IF;\n    RAISE EXCEPTION 'membership refund operation attempts cannot be deleted';\n  END IF;\n  IF OLD.provider_refund_id IS NULL AND NEW.provider_refund_id IS NOT NULL AND ROW(NEW.id, NEW.membership_operation_id, NEW.membership_provider_context_id, NEW.attempt_ordinal, NEW.provider_idempotency_key, NEW.amount_minor_units, NEW.currency_code, NEW.created_at) IS NOT DISTINCT FROM ROW(OLD.id, OLD.membership_operation_id, OLD.membership_provider_context_id, OLD.attempt_ordinal, OLD.provider_idempotency_key, OLD.amount_minor_units, OLD.currency_code, OLD.created_at) THEN RETURN NEW; END IF;\n  RAISE EXCEPTION 'membership refund operation attempts only allow provider refund ID enrichment';\nEND $function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_refund_operation_attempt_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    IF fn_membership_operation_fiscal_retention_due(OLD.membership_operation_id)\n      THEN RETURN OLD; END IF;\n    RAISE EXCEPTION 'membership refund operation attempts cannot be deleted';\n  END IF;\n  IF OLD.outcome_unknown_at IS NULL AND NEW.outcome_unknown_at IS NOT NULL AND OLD.provider_refund_id IS NULL AND OLD.rejected_at IS NULL\n    AND to_jsonb(NEW) - 'outcome_unknown_at' = to_jsonb(OLD) - 'outcome_unknown_at'\n    THEN RETURN NEW; END IF;\n  IF OLD.rejected_at IS NULL AND NEW.rejected_at IS NOT NULL AND OLD.provider_refund_id IS NULL AND OLD.outcome_unknown_at IS NULL\n    AND to_jsonb(NEW) - 'rejected_at' - 'rejection_reason' = to_jsonb(OLD) - 'rejected_at' - 'rejection_reason'\n    THEN RETURN NEW; END IF;\n  IF OLD.rejected_at IS NULL AND OLD.provider_refund_id IS NULL AND NEW.provider_refund_id IS NOT NULL AND ROW(NEW.id, NEW.membership_operation_id, NEW.membership_provider_context_id, NEW.attempt_ordinal, NEW.provider_idempotency_key, NEW.provider_request_original_attempt_id, NEW.rejected_at, NEW.rejection_reason, NEW.outcome_unknown_at, NEW.amount_minor_units, NEW.currency_code, NEW.created_at) IS NOT DISTINCT FROM ROW(OLD.id, OLD.membership_operation_id, OLD.membership_provider_context_id, OLD.attempt_ordinal, OLD.provider_idempotency_key, OLD.provider_request_original_attempt_id, OLD.rejected_at, OLD.rejection_reason, OLD.outcome_unknown_at, OLD.amount_minor_units, OLD.currency_code, OLD.created_at) THEN RETURN NEW; END IF;\n  RAISE EXCEPTION 'membership refund operation attempts only allow provider refund ID enrichment';\nEND $function$\n"
     },
     "fn_reject_membership_refund_request_key_mismatch": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_refund_request_key_mismatch()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE saved_request_key TEXT;\nBEGIN\n  IF NEW.source = 'admin' THEN\n    SELECT request.administrator_request_key INTO saved_request_key\n    FROM membership_administrator_refund_operation_requests request\n    WHERE request.membership_operation_id = NEW.membership_operation_id;\n    IF saved_request_key IS DISTINCT FROM NEW.stripe_idempotency_key THEN\n      RAISE EXCEPTION 'administrator refund receipt key does not match its request' USING ERRCODE = '23514';\n    END IF;\n  END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -19549,6 +19552,33 @@
           "primary": false,
           "ready": true,
           "unique": false,
+          "valid": true
+        },
+        "idx_community_invites__pending_email": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_community_invites__pending_email ON public.community_invites USING btree (community_id, invited_email) WHERE ((accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL) AND (invited_email IS NOT NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "invited_email",
+              "descending": false,
+              "expression": "invited_email",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "((accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL) AND (invited_email IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": true,
           "valid": true
         }
       },
@@ -60574,7 +60604,6 @@
     },
     "membership_administrator_refund_operation_requests": {
       "checkConstraints": {
-        "chk_membe_admin_refun_operat_reques__provider_payment_reference": "CHECK ((((char_length(provider_payment_reference) >= 1) AND (char_length(provider_payment_reference) <= 255)) AND (provider_payment_reference = TRIM(BOTH FROM provider_payment_reference))))",
         "chk_membe_admin_refund_operat_reques__administrator_request_key": "CHECK ((((char_length(administrator_request_key) >= 1) AND (char_length(administrator_request_key) <= 255)) AND (administrator_request_key = TRIM(BOTH FROM administrator_request_key))))",
         "chk_members_adminis_refund_operati_request__request_fingerprint": "CHECK ((char_length(request_fingerprint) = 64))",
         "chk_members_adminis_refund_operati_requests__amount_minor_units": "CHECK (((amount_minor_units >= 1) AND (amount_minor_units <= '9007199254740991'::bigint)))",
@@ -60601,7 +60630,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 7,
           "type": "bigint"
         },
         "created_at": {
@@ -60612,7 +60641,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "currency_code": {
@@ -60623,7 +60652,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 8,
           "type": "currency_codes"
         },
         "id": {
@@ -60645,7 +60674,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 10,
           "type": "boolean"
         },
         "issued_by_id": {
@@ -60689,18 +60718,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
-          "type": "text"
-        },
-        "provider_payment_reference": {
-          "collation": null,
-          "comment": "Provider payment reference selected as the refund target.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 12,
           "type": "text"
         },
         "provider_subscription_reference": {
@@ -60711,7 +60729,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 6,
           "type": "text"
         },
         "reason": {
@@ -60722,7 +60740,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 9,
           "type": "membership_refund_reasons"
         },
         "request_fingerprint": {
@@ -60733,7 +60751,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 11,
           "type": "text"
         }
       },
@@ -65480,6 +65498,8 @@
         "membership_operations_check9": "CHECK ((num_nonnulls(completed_at, failed_at) <= 1))",
         "membership_operations_failure_message_check": "CHECK (((failure_message IS NULL) OR ((char_length(failure_message) >= 1) AND (char_length(failure_message) <= 2000))))",
         "membership_operations_idempotency_key_check": "CHECK ((((char_length(idempotency_key) >= 1) AND (char_length(idempotency_key) <= 255)) AND (idempotency_key = TRIM(BOTH FROM idempotency_key))))",
+        "membership_operations_provider_charge_id_check": "CHECK (((provider_charge_id IS NULL) OR (((char_length(provider_charge_id) >= 1) AND (char_length(provider_charge_id) <= 255)) AND (provider_charge_id = TRIM(BOTH FROM provider_charge_id)))))",
+        "membership_operations_provider_payment_reference_check": "CHECK (((provider_payment_reference IS NULL) OR (((char_length(provider_payment_reference) >= 1) AND (char_length(provider_payment_reference) <= 255)) AND (provider_payment_reference = TRIM(BOTH FROM provider_payment_reference)))))",
         "membership_operations_qualifying_allocation_minor_units_check": "CHECK (((qualifying_allocation_minor_units >= 0) AND (qualifying_allocation_minor_units <= '9007199254740991'::bigint)))",
         "membership_operations_reconciliation_attempt_ordinal_check": "CHECK ((reconciliation_attempt_ordinal >= 0))",
         "membership_operations_remaining_refundable_minor_units_check": "CHECK (((remaining_refundable_minor_units >= 0) AND (remaining_refundable_minor_units <= '9007199254740991'::bigint)))"
@@ -65493,7 +65513,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         },
         "completed_at": {
@@ -65504,7 +65524,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -65515,7 +65535,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 23,
           "type": "timestamp with time zone"
         },
         "currency_code": {
@@ -65526,7 +65546,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 13,
           "type": "currency_codes"
         },
         "failed_at": {
@@ -65537,7 +65557,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "failure_message": {
@@ -65548,7 +65568,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 21,
           "type": "text"
         },
         "fiscal_retention_started_at": {
@@ -65559,7 +65579,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 22,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -65647,7 +65667,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "period_started_at": {
@@ -65658,8 +65678,30 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
+        },
+        "provider_charge_id": {
+          "collation": null,
+          "comment": "Canonical Stripe charge identity shared by charge and payment-intent targets for local refund admission; never replaces the original dispatch target.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "text"
+        },
+        "provider_payment_reference": {
+          "collation": null,
+          "comment": "Immutable original Stripe charge or payment-intent protocol target used to dispatch and exactly replay a local refund operation.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "text"
         },
         "provider_refund_id": {
           "collation": null,
@@ -65680,7 +65722,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 11,
           "type": "bigint"
         },
         "reconciliation_attempt_ordinal": {
@@ -65691,7 +65733,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 15,
+          "ordinalPosition": 17,
           "type": "integer"
         },
         "remaining_refundable_minor_units": {
@@ -65702,7 +65744,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 12,
           "type": "bigint"
         },
         "requested_at": {
@@ -65713,7 +65755,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 16,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         }
       },
@@ -65947,6 +65989,40 @@
           "primary": false,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_membership_operations__provider_payment": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_operations__provider_payment ON public.membership_operations USING btree (membership_provider_context_id, provider_charge_id, id) WHERE (provider_charge_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "membership_provider_context_id",
+              "descending": false,
+              "expression": "membership_provider_context_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "provider_charge_id",
+              "descending": false,
+              "expression": "provider_charge_id",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(provider_charge_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_membership_operations__provider_refund": {
@@ -67915,6 +67991,40 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_membership_provider_products__active_product_context": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_provider_products__active_product_context ON public.membership_provider_products USING btree (membership_product_id, membership_provider_context_id, id) WHERE (retired_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "membership_product_id",
+              "descending": false,
+              "expression": "membership_product_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "membership_provider_context_id",
+              "descending": false,
+              "expression": "membership_provider_context_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(retired_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_membership_provider_products__active_sku": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -68775,6 +68885,8 @@
         "chk_membersh_refund_operatio_attempts__provider_idempotency_key": "CHECK ((((char_length(provider_idempotency_key) >= 1) AND (char_length(provider_idempotency_key) <= 255)) AND (provider_idempotency_key = TRIM(BOTH FROM provider_idempotency_key))))",
         "membership_refund_operation_attempts_amount_minor_units_check": "CHECK (((amount_minor_units >= 0) AND (amount_minor_units <= '9007199254740991'::bigint)))",
         "membership_refund_operation_attempts_attempt_ordinal_check": "CHECK ((attempt_ordinal >= 1))",
+        "membership_refund_operation_attempts_check": "CHECK (((rejected_at IS NULL) = (rejection_reason IS NULL)))",
+        "membership_refund_operation_attempts_check1": "CHECK (((rejected_at IS NULL) OR ((provider_refund_id IS NULL) AND (outcome_unknown_at IS NULL))))",
         "membership_refund_operation_attempts_provider_refund_id_check": "CHECK (((provider_refund_id IS NULL) OR (((char_length(provider_refund_id) >= 1) AND (char_length(provider_refund_id) <= 255)) AND (provider_refund_id = TRIM(BOTH FROM provider_refund_id)))))"
       },
       "columns": {
@@ -68786,7 +68898,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 11,
           "type": "bigint"
         },
         "attempt_ordinal": {
@@ -68808,7 +68920,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "currency_code": {
@@ -68819,7 +68931,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 12,
           "type": "currency_codes"
         },
         "id": {
@@ -68855,6 +68967,17 @@
           "ordinalPosition": 3,
           "type": "uuid"
         },
+        "outcome_unknown_at": {
+          "collation": null,
+          "comment": "First indeterminate execution outcome for this idempotent request; subsequent pre-execution errors cannot disprove its possible financial effect.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
         "provider_idempotency_key": {
           "collation": null,
           "comment": "Provider-scoped idempotency key used for this immutable attempt.",
@@ -68876,6 +68999,39 @@
           "nullable": true,
           "ordinalPosition": 6,
           "type": "text"
+        },
+        "provider_request_original_attempt_id": {
+          "collation": null,
+          "comment": "First rejected execution whose unchanged metadata and amount a later same-key execution replays; NULL on an original request.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "rejected_at": {
+          "collation": null,
+          "comment": "When Stripe definitively rejected this execution before its endpoint began; network and indeterminate failures leave this absent.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "rejection_reason": {
+          "collation": null,
+          "comment": "Verified pre-execution failure category, recorded once with rejected_at.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "membership_refund_request_rejection_reasons"
         }
       },
       "comment": "Append-only provider refund attempts; only a missing provider refund ID may be enriched after insertion.",
@@ -68887,6 +69043,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["id", "membership_provider_context_id"],
           "referencedTable": "membership_operations",
+          "validated": true
+        },
+        "membership_refund_operation_a_provider_request_original_at_fkey": {
+          "columns": ["provider_request_original_attempt_id"],
+          "definition": "FOREIGN KEY (provider_request_original_attempt_id) REFERENCES membership_refund_operation_attempts(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "membership_refund_operation_attempts",
           "validated": true
         },
         "membership_refund_operation_attempts_currency_code_fkey": {
@@ -68901,6 +69066,33 @@
       },
       "growth": "bounded",
       "indexes": {
+        "idx_membership_refund_operation_attempts__active_provider_key": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_membership_refund_operation_attempts__active_provider_key ON public.membership_refund_operation_attempts USING btree (membership_provider_context_id, provider_idempotency_key) WHERE (rejected_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "membership_provider_context_id",
+              "descending": false,
+              "expression": "membership_provider_context_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "provider_idempotency_key",
+              "descending": false,
+              "expression": "provider_idempotency_key",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "(rejected_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "idx_membership_refund_operation_attempts__currency_code": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -68916,6 +69108,26 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_membership_refund_operation_attempts__original_attempt": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_refund_operation_attempts__original_attempt ON public.membership_refund_operation_attempts USING btree (provider_request_original_attempt_id) WHERE (provider_request_original_attempt_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "provider_request_original_attempt_id",
+              "descending": false,
+              "expression": "provider_request_original_attempt_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(provider_request_original_attempt_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -68946,6 +69158,40 @@
           "primary": false,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_membership_refund_operation_attempts__request_history": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_refund_operation_attempts__request_history ON public.membership_refund_operation_attempts USING btree (membership_operation_id, provider_idempotency_key, attempt_ordinal DESC)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "membership_operation_id",
+              "descending": false,
+              "expression": "membership_operation_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "provider_idempotency_key",
+              "descending": false,
+              "expression": "provider_idempotency_key",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "attempt_ordinal",
+              "descending": true,
+              "expression": "attempt_ordinal",
+              "nullsFirst": true,
+              "opclass": "int4_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "membership_refund_operation_attempts_pkey": {
@@ -68994,33 +69240,6 @@
           "ready": true,
           "unique": true,
           "valid": true
-        },
-        "uq_membership_refund_operation_attempts__provider_idempotency": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_membership_refund_operation_attempts__provider_idempotency ON public.membership_refund_operation_attempts USING btree (membership_provider_context_id, provider_idempotency_key)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "membership_provider_context_id",
-              "descending": false,
-              "expression": "membership_provider_context_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "provider_idempotency_key",
-              "descending": false,
-              "expression": "provider_idempotency_key",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
         }
       },
       "partition": null,
@@ -69038,10 +69257,6 @@
         "uq_membership_refund_operation_attempts__operation_ordinal": {
           "columns": ["membership_operation_id", "attempt_ordinal"],
           "definition": "UNIQUE (membership_operation_id, attempt_ordinal)"
-        },
-        "uq_membership_refund_operation_attempts__provider_idempotency": {
-          "columns": ["membership_provider_context_id", "provider_idempotency_key"],
-          "definition": "UNIQUE (membership_provider_context_id, provider_idempotency_key)"
         }
       }
     },

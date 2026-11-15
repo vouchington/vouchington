@@ -6,44 +6,52 @@ Append-only provider refund attempts; only a missing provider refund ID may be e
 
 Not partitioned — growth: bounded.
 
-| Column                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                          |
-| -------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------- |
-| `id`                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                  |
-| `membership_operation_id`        | `uuid`                     | no       |                              |          |           |           | Refund operation whose provider attempt this records.                            |
-| `membership_provider_context_id` | `uuid`                     | no       |                              |          |           |           | Provider context constrained to match the refund operation.                      |
-| `attempt_ordinal`                | `integer`                  | no       |                              |          |           |           | Operation-local reconciliation lease ordinal that created this provider attempt. |
-| `provider_idempotency_key`       | `text`                     | no       |                              |          |           |           | Provider-scoped idempotency key used for this immutable attempt.                 |
-| `provider_refund_id`             | `text`                     | yes      |                              |          |           |           | Provider refund identity, initially unknown and enriched at most once.           |
-| `amount_minor_units`             | `bigint`                   | no       |                              |          |           |           | Attempted refund amount in the provider currency minor unit.                     |
-| `currency_code`                  | `currency_codes`           | no       |                              |          |           |           | ISO 4217 currency code for the attempted refund.                                 |
-| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                  |
+| Column                                 | Type                                          | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                           |
+| -------------------------------------- | --------------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                                   | `uuid`                                        | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                   |
+| `membership_operation_id`              | `uuid`                                        | no       |                              |          |           |           | Refund operation whose provider attempt this records.                                                                                             |
+| `membership_provider_context_id`       | `uuid`                                        | no       |                              |          |           |           | Provider context constrained to match the refund operation.                                                                                       |
+| `attempt_ordinal`                      | `integer`                                     | no       |                              |          |           |           | Operation-local reconciliation lease ordinal that created this provider attempt.                                                                  |
+| `provider_idempotency_key`             | `text`                                        | no       |                              |          |           |           | Provider-scoped idempotency key used for this immutable attempt.                                                                                  |
+| `provider_refund_id`                   | `text`                                        | yes      |                              |          |           |           | Provider refund identity, initially unknown and enriched at most once.                                                                            |
+| `provider_request_original_attempt_id` | `uuid`                                        | yes      |                              |          |           |           | First rejected execution whose unchanged metadata and amount a later same-key execution replays; NULL on an original request.                     |
+| `rejected_at`                          | `timestamp with time zone`                    | yes      |                              |          |           |           | When Stripe definitively rejected this execution before its endpoint began; network and indeterminate failures leave this absent.                 |
+| `outcome_unknown_at`                   | `timestamp with time zone`                    | yes      |                              |          |           |           | First indeterminate execution outcome for this idempotent request; subsequent pre-execution errors cannot disprove its possible financial effect. |
+| `rejection_reason`                     | `membership_refund_request_rejection_reasons` | yes      |                              |          |           |           | Verified pre-execution failure category, recorded once with rejected_at.                                                                          |
+| `amount_minor_units`                   | `bigint`                                      | no       |                              |          |           |           | Attempted refund amount in the provider currency minor unit.                                                                                      |
+| `currency_code`                        | `currency_codes`                              | no       |                              |          |           |           | ISO 4217 currency code for the attempted refund.                                                                                                  |
+| `created_at`                           | `timestamp with time zone`                    | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                   |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
 - `uq_membership_refund_operation_attempts__operation_ordinal`: `UNIQUE (membership_operation_id, attempt_ordinal)`
-- `uq_membership_refund_operation_attempts__provider_idempotency`: `UNIQUE (membership_provider_context_id, provider_idempotency_key)`
 
 **Check constraints:**
 
 - `chk_membersh_refund_operatio_attempts__provider_idempotency_key`: `CHECK ((((char_length(provider_idempotency_key) >= 1) AND (char_length(provider_idempotency_key) <= 255)) AND (provider_idempotency_key = TRIM(BOTH FROM provider_idempotency_key))))`
 - `membership_refund_operation_attempts_amount_minor_units_check`: `CHECK (((amount_minor_units >= 0) AND (amount_minor_units <= '9007199254740991'::bigint)))`
 - `membership_refund_operation_attempts_attempt_ordinal_check`: `CHECK ((attempt_ordinal >= 1))`
+- `membership_refund_operation_attempts_check`: `CHECK (((rejected_at IS NULL) = (rejection_reason IS NULL)))`
+- `membership_refund_operation_attempts_check1`: `CHECK (((rejected_at IS NULL) OR ((provider_refund_id IS NULL) AND (outcome_unknown_at IS NULL))))`
 - `membership_refund_operation_attempts_provider_refund_id_check`: `CHECK (((provider_refund_id IS NULL) OR (((char_length(provider_refund_id) >= 1) AND (char_length(provider_refund_id) <= 255)) AND (provider_refund_id = TRIM(BOTH FROM provider_refund_id)))))`
 
 **Foreign keys:**
 
 - `fk_membership_refund_operation_attempts__operation_context`: `FOREIGN KEY (membership_operation_id, membership_provider_context_id) REFERENCES membership_operations(id, membership_provider_context_id) ON DELETE RESTRICT`
+- `membership_refund_operation_a_provider_request_original_at_fkey`: `FOREIGN KEY (provider_request_original_attempt_id) REFERENCES membership_refund_operation_attempts(id) ON DELETE RESTRICT`
 - `membership_refund_operation_attempts_currency_code_fkey`: `FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
 
 **Indexes:**
 
+- `idx_membership_refund_operation_attempts__active_provider_key`: `CREATE UNIQUE INDEX idx_membership_refund_operation_attempts__active_provider_key ON public.membership_refund_operation_attempts USING btree (membership_provider_context_id, provider_idempotency_key) WHERE (rejected_at IS NULL)`
 - `idx_membership_refund_operation_attempts__currency_code`: `CREATE INDEX idx_membership_refund_operation_attempts__currency_code ON public.membership_refund_operation_attempts USING btree (currency_code)`
+- `idx_membership_refund_operation_attempts__original_attempt`: `CREATE INDEX idx_membership_refund_operation_attempts__original_attempt ON public.membership_refund_operation_attempts USING btree (provider_request_original_attempt_id) WHERE (provider_request_original_attempt_id IS NOT NULL)`
 - `idx_membership_refund_operation_attempts__provider_refund`: `CREATE UNIQUE INDEX idx_membership_refund_operation_attempts__provider_refund ON public.membership_refund_operation_attempts USING btree (membership_provider_context_id, provider_refund_id) WHERE (provider_refund_id IS NOT NULL)`
+- `idx_membership_refund_operation_attempts__request_history`: `CREATE INDEX idx_membership_refund_operation_attempts__request_history ON public.membership_refund_operation_attempts USING btree (membership_operation_id, provider_idempotency_key, attempt_ordinal DESC)`
 - `membership_refund_operation_attempts_pkey`: `CREATE UNIQUE INDEX membership_refund_operation_attempts_pkey ON public.membership_refund_operation_attempts USING btree (id)`
 - `uq_membership_refund_operation_attempts__operation_ordinal`: `CREATE UNIQUE INDEX uq_membership_refund_operation_attempts__operation_ordinal ON public.membership_refund_operation_attempts USING btree (membership_operation_id, attempt_ordinal)`
-- `uq_membership_refund_operation_attempts__provider_idempotency`: `CREATE UNIQUE INDEX uq_membership_refund_operation_attempts__provider_idempotency ON public.membership_refund_operation_attempts USING btree (membership_provider_context_id, provider_idempotency_key)`
 
 **Triggers:**
 
