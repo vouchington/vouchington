@@ -15,8 +15,6 @@ import { DELETED_USER_ID } from '@services/users/constants'
 import { v7 } from 'uuid'
 
 import { runDataRetentionCleanup } from '../cleanup.mts'
-import { lockEligibleSoftDeletedUserForFinalPurge } from '../cleanup-soft-deleted-user.mts'
-import { terminateRetainedMembershipGrants } from '../terminate-retained-membership-grants.mts'
 import { createMembership, grantMembership } from '../../memberships/create.mts'
 import { expireElapsedMemberships } from '../../memberships/grants/expire-elapsed.mts'
 import { revokeMembershipGrant } from '../../memberships/grants/revoke.mts'
@@ -125,42 +123,6 @@ describe('membership lineage retention', () => {
       ).then(result => result.softDeletedUsers),
     ).resolves.toEqual({
       deleted: 0,
-      hasMore: false,
-    })
-  })
-
-  it('locks the user before racing a grant lifecycle mutation with final deletion', async () => {
-    const window = createTestRetentionWindow()
-    const [administrator, member] = await Promise.all([
-      createTestUserDirect(),
-      createTestUserDirect(),
-    ])
-    if (!administrator || !member) throw new Error('Failed to create test users')
-    const sku = await createTestSku({ plan: 'plus' })
-    const grant = await grantMembership(administrator.id, member.id, 'plus', sku.id, 30)
-    await softDeleteUserAt(member.id, window.firstEligibleDate)
-
-    await using purgeQuery = await beginTransaction()
-    await expect(
-      lockEligibleSoftDeletedUserForFinalPurge(
-        purgeQuery,
-        member.id,
-        window.upperBoundDate,
-        window.lowerBoundDate,
-      ),
-    ).resolves.toBe(true)
-    const revocation = revokeMembershipGrant(administrator.id, grant.grantId, 'concurrent cleanup')
-    await terminateRetainedMembershipGrants(purgeQuery, member.id)
-    await purgeQuery.commit()
-
-    await expect(revocation).resolves.toMatchObject({ alreadyRevoked: true })
-    await expect(
-      runDataRetentionCleanup(
-        { batchSize: 500, maxBatches: 1 },
-        { families: ['softDeletedUsers'], softDeletedUsers: window },
-      ).then(result => result.softDeletedUsers),
-    ).resolves.toEqual({
-      deleted: 1,
       hasMore: false,
     })
   })

@@ -15,7 +15,6 @@ export async function processAuthorDeletionPublicationBatch(
   priorAuthorUsername: string | null,
   batchSize: number,
 ): Promise<{ processed: number; hasMore: boolean }> {
-  await lockAuthorForDeletion(query, authorUserId)
   const sources = await getContributedSources(query, authorUserId, batchSize)
   if (sources.length > 0) {
     return processContributedSources(query, authorUserId, priorAuthorUsername, sources).then(
@@ -85,13 +84,6 @@ async function lockInitiatedStoryPosts(
     WHERE initiated_by_id = $1::uuid AND post_id = ANY($2::uuid[])
     ORDER BY post_id FOR UPDATE`,
     [authorUserId, postIds],
-  )
-}
-
-async function lockAuthorForDeletion(query: TransactionQuery, authorUserId: string): Promise<void> {
-  await query(
-    `/* processAuthorDeletionPublicationBatch:lockAuthor */ SELECT id FROM users WHERE id = $1::uuid FOR UPDATE`,
-    [authorUserId],
   )
 }
 

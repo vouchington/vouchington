@@ -23,7 +23,7 @@ export async function cleanupSoftDeletedUser(
   await using query = await beginTransaction()
   await lockFinalUserPurge(query, targetId)
   if (
-    !(await lockEligibleSoftDeletedUserForFinalPurge(query, targetId, cutoffDate, lowerBoundDate))
+    !(await isEligibleSoftDeletedUserForFinalPurge(query, targetId, cutoffDate, lowerBoundDate))
   ) {
     await query.commit()
     return { deleted: 0, hasMore: false }
@@ -101,12 +101,14 @@ async function lockFinalUserPurge(query: QueryExecutor, targetId: string): Promi
   `)
 }
 
-export async function lockEligibleSoftDeletedUserForFinalPurge(
+export async function isEligibleSoftDeletedUserForFinalPurge(
   query: QueryExecutor,
   targetId: string,
   cutoffDate: Date,
   lowerBoundDate?: Date,
 ): Promise<boolean> {
+  // Grant mutations write entitlement effects with a users FK. Check eligibility without
+  // prelocking that parent before cleanup writes the grants; DELETE takes the user lock last.
   const { rows } = await query<{ id: string }>(
     `/* cleanupSoftDeletedUserBatch: check target */
       SELECT id FROM users
@@ -130,8 +132,7 @@ export async function lockEligibleSoftDeletedUserForFinalPurge(
           SELECT 1 FROM user_legal_preservation_holds preservation_hold
           WHERE preservation_hold.account_user_id = users.id
             AND preservation_hold.released_at IS NULL
-        )
-      FOR UPDATE OF users`,
+        )`,
     [targetId, cutoffDate, lowerBoundDate ?? null],
   )
   return rows.length > 0
