@@ -149,26 +149,28 @@ describe('Stripe disputes module', () => {
     })
   })
 
-  it.each(['warning_needs_response', 'warning_under_review'] as const)(
-    'defers a refund for a %s dispute',
-    async status => {
-      const list = vi.fn<VitestLooseMock>().mockResolvedValue(getStripeDisputePage([{ status }]))
-      vi.spyOn(stripeClientModule, 'getStripeClient').mockReturnValue({
-        disputes: { list },
-      } as never)
+  it.each([
+    'appeal_needs_response',
+    'appeal_under_review',
+    'warning_needs_response',
+    'warning_under_review',
+  ] as const)('defers a refund for a %s dispute', async status => {
+    const list = vi.fn<VitestLooseMock>().mockResolvedValue(getStripeDisputePage([{ status }]))
+    vi.spyOn(stripeClientModule, 'getStripeClient').mockReturnValue({
+      disputes: { list },
+    } as never)
 
-      await expect(
-        getStripeDisputeSettlementForPayment(
-          {
-            chargeId: 'ch_warning_open',
-            currency: 'usd',
-            paymentIntentId: null,
-          },
-          stripeLookupMaxPagesForTest,
-        ),
-      ).resolves.toEqual({ lostDisputeAmountMinorUnits: 0, refundDeferred: true })
-    },
-  )
+    await expect(
+      getStripeDisputeSettlementForPayment(
+        {
+          chargeId: 'ch_warning_open',
+          currency: 'usd',
+          paymentIntentId: null,
+        },
+        stripeLookupMaxPagesForTest,
+      ),
+    ).resolves.toEqual({ lostDisputeAmountMinorUnits: 0, refundDeferred: true })
+  })
 
   it('rejects an empty continuation page and caps dispute pagination', async () => {
     const list = vi.fn<VitestLooseMock>().mockResolvedValueOnce(getStripeDisputePage([], true))
