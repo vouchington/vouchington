@@ -66,7 +66,8 @@ export async function readCategoryDataChunk(
         AND hashtag_relation.object_id = COALESCE(existing.topic_alias_id, ta.id)
         AND hashtag_relation.deleted_at IS NULL
       LEFT JOIN users categorizer
-        ON categorizer.username = ${RSS_FEED_CATEGORIZER_USERNAME}
+        ON LOWER(categorizer.username) = LOWER(${RSS_FEED_CATEGORIZER_USERNAME})
+        AND categorizer.username = ${RSS_FEED_CATEGORIZER_USERNAME}
         AND categorizer.platform_account_kind = 'system'
       LEFT JOIN LATERAL (
         SELECT vote.score > 0 AND (

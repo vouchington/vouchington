@@ -176,22 +176,24 @@ describe('topic-aliases processors', () => {
         }),
       ),
     )
-
     await expect(
-      processInvalidatePostsForTopicAliases({ topicAliasIds: [alias!.id], changeId: alias!.id }),
-    ).resolves.toEqual({ hasMore: true, lastPostId: expect.any(String) })
+      processInvalidatePostsForTopicAliases({
+        topicAliasIds: [alias!.id],
+        changeId: alias!.id,
+        cursor: { topicAliasId: alias!.id, afterPostId: null },
+      }),
+    ).resolves.toMatchObject({ hasMore: true })
     const continuation = (await readAllQueueJobs(rssFeedMaintenance)).find(
       job =>
         job.name === 'processInvalidatePostsForTopicAliases' &&
         (job.data as { topicAliasIds?: string[] }).topicAliasIds?.includes(alias!.id),
     )
     expect(continuation?.data).toEqual({
-      afterPostId: expect.any(String),
+      cursor: { topicAliasId: alias!.id, afterPostId: expect.any(String) },
       topicAliasIds: [alias!.id],
       changeId: alias!.id,
     })
   })
-
   it('rejects a worker page when owned notification admission fails', async () => {
     const suffix = Math.random().toString(36).slice(2, 15)
     const user = await createTestUser({ administrator: true })
@@ -229,6 +231,7 @@ describe('topic-aliases processors', () => {
         processInvalidatePostsForTopicAliases({
           topicAliasIds: [alias!.id],
           changeId: randomUUID(),
+          cursor: { topicAliasId: alias!.id, afterPostId: null },
         }),
       ).rejects.toBe(failure)
     } finally {
@@ -276,8 +279,7 @@ describe('topic-aliases processors', () => {
             'topicAliasIds' in job.data &&
             Array.isArray(job.data.topicAliasIds) &&
             job.data.topicAliasIds.includes(alias!.id) &&
-            'afterPostId' in job.data &&
-            typeof job.data.afterPostId === 'string',
+            'cursor' in job.data,
         )
       )
         return Promise.reject(failure)
@@ -288,6 +290,7 @@ describe('topic-aliases processors', () => {
         processInvalidatePostsForTopicAliases({
           topicAliasIds: [alias!.id],
           changeId: randomUUID(),
+          cursor: { topicAliasId: alias!.id, afterPostId: null },
         }),
       ).rejects.toBe(failure)
     } finally {

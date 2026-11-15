@@ -49,10 +49,17 @@ export function enqueueBackfillReportIntegrity(): EnqueueReturnType {
   )
 }
 
-/** Continues the backfill after the last entity id of the previous page. */
-export function enqueueContinueBackfillReportIntegrity(afterId: string): EnqueueReturnType {
+/** Continues the backfill after the last inspected report id of the previous page. */
+export function enqueueContinueBackfillReportIntegrity(
+  afterReportId: string,
+  reportIds?: readonly string[],
+): EnqueueReturnType {
   return enqueueBackfillReportIntegrityJob(
-    { afterId },
-    { jobId: `backfill_report_integrity__${afterId}`, removeOnComplete: true, removeOnFail: true },
+    { afterReportId, ...(reportIds ? { reportIds } : {}) },
+    {
+      jobId: `backfill_report_integrity__${afterReportId}`,
+      removeOnComplete: true,
+      removeOnFail: true,
+    },
   )
 }

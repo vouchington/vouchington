@@ -1,3 +1,4 @@
+import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import type { RssFeedItemCategorySnapshot } from './category-batches.mts'
 import {
@@ -13,32 +14,14 @@ import { recordTopicAliasPublicationWork } from '@services/post-publication'
 export async function deleteStaleCategoriesAndRetractVotes(
   snapshots: readonly RssFeedItemCategorySnapshot[],
   query: TransactionQuery,
-): Promise<{ staleCategories: StaleCategory[] }> {
+): Promise<{ staleCategories: StaleCategory[]; hasMore: boolean }> {
+  const limit = getRssFeedItemsWorkLimit('category_clear_batch_size')
   const itemIds = snapshots.map(snapshot => snapshot.rss_feed_item_id)
-  const categoryItemIds = snapshots.flatMap(snapshot =>
-    snapshot.categories.map(() => snapshot.rss_feed_item_id),
-  )
-  const categoryTexts = snapshots.flatMap(snapshot => snapshot.categories)
-  // ast-grep-ignore: no-three-sequential-awaits -- lock the rss_feed_items rows this writer updates before deleting stale categories, then retract votes those categories no longer support
+  // ast-grep-ignore: no-three-sequential-awaits -- lock the rss_feed_items rows this writer updates before selecting and deleting their stale category keys
   await lockRssFeedItemsForStoryPublicationChanges(query, itemIds)
-  const { rows: staleCategories } = await query<StaleCategory>(
-    `/* reconcileRssFeedItemCategorySnapshots */
-      WITH snapshot_items AS (SELECT unnest($1::uuid[]) AS rss_feed_item_id),
-      desired_categories AS (
-        SELECT DISTINCT input.rss_feed_item_id, identity.id AS category_identity_id
-        FROM unnest($2::uuid[], $3::text[]) AS input(rss_feed_item_id, category_text)
-        JOIN rss_category_identities identity
-          ON identity.category_text = LOWER(TRIM(input.category_text))
-      ), stale_categories AS (
-        DELETE FROM rss_feed_item_categories category USING snapshot_items snapshot
-        WHERE category.rss_feed_item_id = snapshot.rss_feed_item_id
-          AND NOT EXISTS (SELECT 1 FROM desired_categories desired
-            WHERE desired.rss_feed_item_id = category.rss_feed_item_id
-              AND desired.category_identity_id = category.category_identity_id)
-        RETURNING category.rss_feed_item_id, category.topic_id, category.topic_alias_id
-      ) SELECT * FROM stale_categories`,
-    [itemIds, categoryItemIds, categoryTexts],
-  )
+  const staleKeys = await getStaleCategoryKeys(query, snapshots, limit)
+  const staleCategories = await deleteStaleCategoryKeys(query, staleKeys)
+  const candidateCount = staleKeys.length
   // ast-grep-ignore: no-three-sequential-awaits -- retract unsupported category votes before capturing resulting story eligibility; finish story publication work before scheduling affected alias publication
   await retractUnsupportedCategorizerVotes(staleCategories, query)
   await recordStoryPublicationChangesForCategoryTopics(
@@ -53,5 +36,56 @@ export async function deleteStaleCategoriesAndRetractVotes(
     query,
     staleCategories.flatMap(category => (category.topic_alias_id ? [category.topic_alias_id] : [])),
   )
-  return { staleCategories }
+  return {
+    staleCategories,
+    hasMore: candidateCount === limit || candidateCount > staleCategories.length,
+  }
+}
+
+type StaleCategoryKey = { rss_feed_item_id: string; category_identity_id: string }
+
+async function getStaleCategoryKeys(
+  query: TransactionQuery,
+  snapshots: readonly RssFeedItemCategorySnapshot[],
+  limit: number,
+): Promise<StaleCategoryKey[]> {
+  const { rows } = await query<StaleCategoryKey>(
+    `/* reconcileRssFeedItemCategorySnapshots stalePage */
+      WITH desired_categories AS (
+        SELECT DISTINCT input.rss_feed_item_id, identity.id AS category_identity_id
+        FROM unnest($2::uuid[], $3::text[]) AS input(rss_feed_item_id, category_text)
+        JOIN rss_category_identities identity
+          ON identity.category_text = LOWER(TRIM(input.category_text))
+      )
+      SELECT category.rss_feed_item_id, category.category_identity_id
+      FROM rss_feed_item_categories category
+      WHERE category.rss_feed_item_id = ANY($1::uuid[])
+        AND NOT EXISTS (SELECT 1 FROM desired_categories desired
+          WHERE desired.rss_feed_item_id = category.rss_feed_item_id
+            AND desired.category_identity_id = category.category_identity_id)
+      ORDER BY category.rss_feed_item_id, category.category_identity_id LIMIT $4`,
+    [
+      snapshots.map(snapshot => snapshot.rss_feed_item_id),
+      snapshots.flatMap(snapshot => snapshot.categories.map(() => snapshot.rss_feed_item_id)),
+      snapshots.flatMap(snapshot => snapshot.categories),
+      limit,
+    ],
+  )
+  return rows
+}
+
+async function deleteStaleCategoryKeys(
+  query: TransactionQuery,
+  keys: readonly StaleCategoryKey[],
+): Promise<StaleCategory[]> {
+  if (keys.length === 0) return []
+  const tuples = keys.map((_, index) => `($${index * 2 + 1}::uuid, $${index * 2 + 2}::uuid)`)
+  const { rows } = await query<StaleCategory>(
+    `/* reconcileRssFeedItemCategorySnapshots */
+      DELETE FROM rss_feed_item_categories category
+      WHERE (category.rss_feed_item_id, category.category_identity_id) IN (${tuples.join(', ')})
+      RETURNING category.rss_feed_item_id, category.topic_id, category.topic_alias_id`,
+    keys.flatMap(key => [key.rss_feed_item_id, key.category_identity_id]),
+  )
+  return rows
 }

@@ -11,7 +11,7 @@ import {
 import { readStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
 import { getStoryById } from '@services/feeds/rss-feed-items/get-story-by-id'
 import {
-  getStoryItemIds,
+  isStoryItem,
   addEditorialStoryItem,
   removeEditorialStoryItem,
   setEditorialStoryOfficialItem,
@@ -42,7 +42,7 @@ describe('editorial official-item membership', () => {
     const final = await getStoryById(story.id)
     expect(final?.official_rss_feed_item_id).toBeNull()
     expect(final?.official_locked_at).not.toBeNull()
-    expect(await getStoryItemIds(story.id)).not.toContain(itemId)
+    expect(await isStoryItem(story.id, itemId)).toBe(false)
     expect((await readStaffActionHistory(admin.id)).map(row => row.action_type)).toEqual([
       'story_official_item_set',
       'story_item_remove',
@@ -61,8 +61,8 @@ describe('editorial official-item membership', () => {
     const after = await getStoryById(story.id)
     expect(after?.official_rss_feed_item_id).toBeNull()
     expect(after?.official_locked_at).toEqual(before?.official_locked_at)
-    expect(await getStoryItemIds(story.id)).not.toContain(itemId)
-    expect(await getStoryItemIds(next.id)).toContain(itemId)
+    expect(await isStoryItem(story.id, itemId)).toBe(false)
+    expect(await isStoryItem(next.id, itemId)).toBe(true)
     expect(await readStaffActionHistory(admin.id)).toMatchObject([
       { action_type: 'story_official_item_set' },
       {

@@ -233,7 +233,7 @@ describe('topic alias post-cache invalidation', () => {
         await rssFeedMaintenance.searchJobs({ name: 'processInvalidatePostsForTopicAliases' })
       ).find(job => (job.data as { topicAliasIds?: string[] }).topicAliasIds?.includes(alias.id))
       expect(continuation?.data).toEqual({
-        afterPostId: thirdPostId,
+        cursor: { topicAliasId: alias.id, afterPostId: thirdPostId },
         topicAliasIds: [alias.id],
         changeId: expect.any(String),
       })

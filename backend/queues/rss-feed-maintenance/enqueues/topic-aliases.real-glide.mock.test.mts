@@ -62,7 +62,7 @@ describe('topic alias post-invalidation continuation through real GlideMQ', () =
         const [first] = (await enqueueContinueInvalidatingPostsForTopicAliases(
           topicAliasIds,
           changeId,
-          afterPostId,
+          { topicAliasId: topicAliasIds[0]!, afterPostId },
         )) as Job[]
         await waitForRealGlideEvent(
           settledRun(1).promise,
@@ -75,7 +75,7 @@ describe('topic alias post-invalidation continuation through real GlideMQ', () =
         const retried = (await enqueueContinueInvalidatingPostsForTopicAliases(
           [...topicAliasIds].toReversed(),
           changeId,
-          afterPostId,
+          { topicAliasId: topicAliasIds[0]!, afterPostId },
         )) as Job[]
         await waitForRealGlideEvent(
           settledRun(2).promise,

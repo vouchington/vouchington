@@ -6,7 +6,7 @@ import {
 import { getPostPublicationWorkLimit } from './work-limits.mts'
 
 const MIN_UUID = '00000000-0000-0000-0000-000000000000'
-type IdPage = { ids: string[]; cursor: string | null }
+type IdPage = { ids: string[]; cursor: string | null; topicIds?: string[] }
 
 /** Every branch uses a topic-first keyset index and reads at most one configured page. */
 export async function listLiveTopicMergePostsPage(
@@ -95,21 +95,37 @@ export async function listLiveTopicMergeItemsPage(
 export async function listLiveItemSourceFeedsPage(
   itemId: string,
   after: string | null,
+  includeDeleted = false,
 ): Promise<IdPage> {
   const limit = getPostPublicationWorkLimit('capture_batch_size')
-  const { rows } = await write<{ id: string }>(
+  const { rows } = await write<{
+    id: string
+    feed_context: { is_live: boolean; topic_id: string } | null
+  }>(
     `/* listLiveItemSourceFeedsPage */
-    SELECT source.rss_feed_id AS id FROM rss_feed_item_sources source
+    SELECT source.rss_feed_id AS id,
+      (SELECT jsonb_build_object('is_live', feed.deleted_at IS NULL, 'topic_id', feed.topic_id)
+       FROM rss_feeds feed WHERE feed.id = source.rss_feed_id) AS feed_context
+    FROM rss_feed_item_sources source
     WHERE source.rss_feed_item_id = $1::uuid
       AND source.rss_feed_id > COALESCE($2::uuid, $4::uuid)
-      AND (SELECT TRUE FROM rss_feeds feed
-           WHERE feed.id = source.rss_feed_id AND feed.deleted_at IS NULL) = TRUE
     ORDER BY source.rss_feed_id LIMIT $3 + 1`,
     [itemId, after, limit, MIN_UUID],
   )
   const pageRows = rows.slice(0, limit)
   return {
-    ids: pageRows.map(row => row.id),
+    ids: pageRows.flatMap(row =>
+      row.feed_context && (includeDeleted || row.feed_context.is_live) ? [row.id] : [],
+    ),
+    ...(includeDeleted
+      ? {
+          topicIds: [
+            ...new Set(
+              pageRows.flatMap(row => (row.feed_context ? [row.feed_context.topic_id] : [])),
+            ),
+          ],
+        }
+      : {}),
     cursor: rows.length > limit ? pageRows.at(-1)!.id : null,
   }
 }

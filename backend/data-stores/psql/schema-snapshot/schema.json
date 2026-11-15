@@ -89091,7 +89091,7 @@
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Append-only history of post locks. A post is locked as long as any active row (lifted_at IS NULL) exists. Prevents new replies. Canonical insert-then-cancel pattern. See community_bans for reference.",
+      "comment": "Append-only history of post locks. At most one active row (lifted_at IS NULL) exists per post. Prevents new replies. Canonical insert-then-cancel pattern. See community_bans for reference.",
       "foreignKeys": {
         "post_locks_lifted_by_id_fkey": {
           "columns": ["lifted_by_id"],
@@ -89166,7 +89166,7 @@
         "idx_post_locks__post": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_locks__post ON public.post_locks USING btree (post_id) WHERE (lifted_at IS NULL)",
+          "definition": "CREATE UNIQUE INDEX idx_post_locks__post ON public.post_locks USING btree (post_id) WHERE (lifted_at IS NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -89180,7 +89180,7 @@
           "predicate": "(lifted_at IS NULL)",
           "primary": false,
           "ready": true,
-          "unique": false,
+          "unique": true,
           "valid": true
         },
         "idx_post_locks__post_id": {
@@ -125255,13 +125255,20 @@
         "idx_review_successions__active_successor_post_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_review_successions__active_successor_post_id ON public.review_successions USING btree (successor_post_id) WHERE ((automatically_restored_at IS NULL) AND (manual_override_at IS NULL))",
+          "definition": "CREATE INDEX idx_review_successions__active_successor_post_id ON public.review_successions USING btree (successor_post_id, id) WHERE ((automatically_restored_at IS NULL) AND (manual_override_at IS NULL))",
           "includedColumns": [],
           "keys": [
             {
               "column": "successor_post_id",
               "descending": false,
               "expression": "successor_post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }

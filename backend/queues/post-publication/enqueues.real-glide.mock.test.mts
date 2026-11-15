@@ -7,6 +7,11 @@ import { postPublicationHandlers } from '../../workers/post-publication/workers.
 import { getEnqueuedJobId } from '../../test-helpers/queue-jobs.mts'
 import { enqueueBulkPostPublicationEffects, enqueuePostPublicationEffects } from './enqueues.mts'
 import { backgroundQueue as postPublicationQueue } from '../../test-helpers/shared-background-queue.mts'
+import {
+  captureAddedPublicationEffectsForScope,
+  captureAddedPublicationEffectsForScopes,
+} from '../../test-helpers/publication-effect-jobs.mts'
+import { acceptOwnedPublicationPrefixThenReject } from '../../test-helpers/publication-admission-fault.mts'
 import { enqueueLiveScopePostEffects } from '../../workers/post-publication/processors/direct-scope-post-effects.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
@@ -29,6 +34,59 @@ function payload(changeId: string, postId: string): PostPublicationEffectsJobDat
 
 describe('direct publication jobs through real GlideMQ', () => {
   afterAll(() => postPublicationQueue.close())
+
+  it('observes single and native bulk admissions once, including keys on initial continuations', async () => {
+    const postId = randomUUID()
+    const single = payload(randomUUID(), postId)
+    const first: PostPublicationEffectsJobData = {
+      ...payload(randomUUID(), postId),
+      continuation: { kind: 'post_slugs', subjectIds: [postId], subjectIndex: 0, after: null },
+    }
+    const cursor: PostPublicationEffectsJobData = {
+      ...first,
+      changeId: randomUUID(),
+      keys: [],
+      keyHash: hashCapturedPublicationKeys([]),
+    }
+    let cursorId: string | undefined
+    try {
+      const admitted = await captureAddedPublicationEffectsForScope(postId, async () => {
+        await enqueuePostPublicationEffects(single)
+        await enqueueBulkPostPublicationEffects([first])
+        await enqueueBulkPostPublicationEffects([first])
+        cursorId = getEnqueuedJobId(await enqueuePostPublicationEffects(cursor))
+      })
+      expect(admitted).toEqual([single, first])
+      expect((await postPublicationQueue.getJob(cursorId!))?.data).toEqual(cursor)
+    } finally {
+      if (cursorId) await (await postPublicationQueue.getJob(cursorId))?.remove()
+    }
+  })
+
+  it('observes a native accepted prefix beneath an admission failure wrapper', async () => {
+    const postId = randomUUID()
+    const first: PostPublicationEffectsJobData = {
+      ...payload(randomUUID(), postId),
+      keys: [],
+      keyHash: hashCapturedPublicationKeys([]),
+      continuation: { kind: 'post_slugs', subjectIds: [postId], subjectIndex: 0, after: null },
+    }
+    const second = payload(randomUUID(), postId)
+    const error = new Error('Owned native publication tail rejected')
+    const restore = acceptOwnedPublicationPrefixThenReject(postId, error)
+    try {
+      const admitted = await captureAddedPublicationEffectsForScopes(
+        [postId],
+        async () => {
+          await expect(enqueueBulkPostPublicationEffects([first, second])).rejects.toBe(error)
+        },
+        true,
+      )
+      expect(admitted).toEqual([first])
+    } finally {
+      restore()
+    }
+  })
 
   it('starts one scope discovery chain for multiple captured old-key chunks', async () => {
     const authorId = randomUUID()

@@ -40,9 +40,12 @@ export type PostPublicationEffectsJobData = {
   scopeTopicKeysCaptured: boolean
   /** Position within an immutable key page when a lower runtime cap requires another job. */
   keyOffset: number
-  /** One bounded live-identity page in a stable child chain of the captured change. */
+  /** Category changes retain every associated feed, including soft-deleted feeds. */
+  includeDeletedSourceFeeds?: boolean
+  /** One bounded live-state page in a stable child chain of the captured change. */
   continuation?: {
     kind:
+      | 'review_successions'
       | 'author_posts'
       | 'community_posts'
       | 'post_descendants'

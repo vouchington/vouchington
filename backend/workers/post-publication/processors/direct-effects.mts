@@ -27,7 +27,10 @@ import {
   listLivePublicationIdentityNames,
   listLivePublicationScopeKeys,
 } from '@services/post-publication/live-identity-pages'
-import { reconcileReviewSuccessionsForPostIds } from '@services/posts/review-successions/index'
+import {
+  enqueueReviewSuccessionEffects,
+  processReviewSuccessionContinuation,
+} from './direct-review-successions.mts'
 import {
   enqueueLivePublicationIdentityEffects,
   processLivePublicationIdentityContinuation,
@@ -42,6 +45,8 @@ export async function processApplyPostPublicationEffects(
   data: PostPublicationEffectsJobData,
 ): Promise<{ affectedPosts: number }> {
   if (data.continuation) {
+    if (data.continuation.kind === 'review_successions')
+      return processReviewSuccessionContinuation(data, data.continuation)
     if (data.continuation.kind === 'topic_feed_discoverability')
       return processTopicFeedDiscoverability(data, data.continuation)
     if (isScopePostContinuation(data.continuation.kind))
@@ -74,7 +79,7 @@ async function processPublicationKeys(
       ...keys.flatMap(key => (key.kind === 'impact_post' ? [key.uuidValue] : [])),
     ]),
   ]
-  if (postIds.length > 0) await reconcileReviewSuccessionsForPostIds(postIds)
+  if (postIds.length > 0) await enqueueReviewSuccessionEffects(data, postIds)
   const posts = await listLivePublicationPosts(postIds)
   const scopeKeys = data.scopeStart ? await listLivePublicationScopeKeys(data.scope) : []
   const selected = selectDirectPublicationEffects([...keys, ...scopeKeys], posts)

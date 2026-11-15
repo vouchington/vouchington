@@ -6,7 +6,7 @@ import {
 } from '@voucha/test-helpers/query-capture'
 import { it, expect, beforeAll, describe } from 'vitest'
 import { getStoryById } from '@services/feeds/rss-feed-items/get-story-by-id'
-import { getStoryItemIds, getStoriesByIdBatch, getStoryItemSummaries } from './get.mts'
+import { isStoryItem, getStoriesByIdBatch, getStoryItemSummaries } from './get.mts'
 import { getPostStoryIdsByStoryIds, getVisiblePostStoryIdsByStoryIds } from './get-post-stories.mts'
 import { createStory } from './create.mts'
 import {
@@ -63,10 +63,26 @@ describe('get', () => {
     expect(fetched!.cluster_reason).toBe(reason)
   })
 
-  it('getStoryItemIds returns empty array for story with no items', async () => {
+  it('isStoryItem rejects an absent item', async () => {
     const newStory = await insertTestStory()
-    const ids = await getStoryItemIds(newStory.id)
-    expect(ids).toEqual([])
+    await expect(isStoryItem(newStory.id, randomUUID())).resolves.toBe(false)
+  })
+
+  it('checks only the requested item and rejects another story membership', async () => {
+    const [feed, urlId] = await Promise.all([createTestRssFeed({}), createTestUrlWithHostname()])
+    const itemData = { title: `Membership ${randomUUID()}` }
+    const itemId = await insertTestRssFeedItem({
+      rssFeedId: feed.id,
+      urlId,
+      guid: randomUUID(),
+      itemData,
+      contentSha256: createHash('sha256').update(JSON.stringify(itemData)).digest(),
+    })
+    await setTestItemStoryId(itemId, story1.id)
+    await expect(isStoryItem(story1.id, itemId)).resolves.toBe(true)
+    await expect(isStoryItem(story2.id, itemId)).resolves.toBe(false)
+    await setTestItemStoryId(itemId, null)
+    await expect(isStoryItem(story1.id, itemId)).resolves.toBe(false)
   })
 
   it('getStoryItemSummaries falls back to media descriptions', async () => {

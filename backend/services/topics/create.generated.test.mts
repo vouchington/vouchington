@@ -219,7 +219,7 @@ describe('create.generated', () => {
     const slug = `topic-alias-read-failure-${randomUUID()}`
     const alias = await createUnlinkedTopicAlias(`source-${slug}`)
     const { result: topic, error } = await withPostgresPoolQueryFailureForTest(
-      '/* invalidatePostsForTopicAliases */',
+      '/* invalidatePostsForTopicAliases sources */',
       () =>
         createTopic(user, WEB_PROVENANCE, { name: slug, slug, source_topic_alias_id: alias.id }),
       { command: 'SELECT' },

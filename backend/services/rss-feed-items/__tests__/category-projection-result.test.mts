@@ -1,3 +1,4 @@
+import { reconcileOwnedRssCategorySnapshotBatch } from '@voucha/test-helpers/rss-category-page-jobs'
 import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import {
   getTestRssFeedItemCategoryProjectionResult,
@@ -7,7 +8,6 @@ import {
 } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
 import { applyRssFeedItemCategorySnapshots } from '../category-projection-result.mts'
-import { reconcileRssFeedItemCategorySnapshots } from '../category-snapshot-reconciliations.mts'
 import { insertMissingHashtagAliases } from '../categories-chunks.mts'
 import { upsertRssFeedItems } from '../upsert.mts'
 import { upsertRssFeedItemCategories } from '../categories.mts'
@@ -22,7 +22,7 @@ function itemInput(suffix: string, categories: string[], title = 'Initial title'
 }
 
 async function reconcileOwned(rssFeedItemId: string) {
-  return reconcileRssFeedItemCategorySnapshots(undefined, [rssFeedItemId])
+  return reconcileOwnedRssCategorySnapshotBatch([rssFeedItemId])
 }
 
 describe('RSS category projection completion result', () => {

@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeAll, onTestFinished, vi } from 'vitest'
-import { randomBytes, randomUUID } from 'node:crypto'
+import { randomBytes } from 'node:crypto'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { reportIntegrityWorkConfig } from '@services/report-integrity/work-limits'
+import { reviewTestModerationReports } from '@voucha/test-helpers/entities/moderation-reports-review'
 import {
   createTestUserDirect,
   insertTestModerationReport,
@@ -93,7 +94,7 @@ describe('processBackfillReportIntegrity', () => {
     const reporterIds = await Promise.all(
       Array.from({ length: MASS_REPORT_THRESHOLD }, () => createTestUser().then(u => u!.id)),
     )
-    await insertTestModerationReportsForTarget({
+    const reportIds = await insertTestModerationReportsForTarget({
       reporterUserIds: reporterIds,
       entityType: 'post',
       entityId: postId,
@@ -129,13 +130,7 @@ describe('processBackfillReportIntegrity', () => {
       return admission
     })
 
-    const result = await processBackfillReportIntegrity(
-      {},
-      {
-        entityType: 'post',
-        entityId: postId,
-      },
-    )
+    const result = await processBackfillReportIntegrity({}, reportIds)
     expect(result.enqueued).toBeGreaterThanOrEqual(1)
 
     const jobs = (await Promise.all(admissions)).flat()
@@ -153,25 +148,11 @@ describe('processBackfillReportIntegrity', () => {
 })
 
 describe('processBackfillReportIntegrity pages', () => {
-  it('admits nothing and ends the backfill when no entity has pending reports', async () => {
-    const addBulk = vi.spyOn(voteAggregation, 'addBulk')
-    const add = vi.spyOn(voteAggregation, 'add')
-    onTestFinished(() => {
-      addBulk.mockRestore()
-      add.mockRestore()
-    })
-
-    const result = await processBackfillReportIntegrity(
-      {},
-      { entityType: 'post', entityId: randomUUID() },
-    )
-
-    expect(result).toEqual({ enqueued: 0 })
-    expect(addBulk).not.toHaveBeenCalled()
-    expect(add).not.toHaveBeenCalled()
+  it('ends a backfill scoped to no reports', async () => {
+    expect(await processBackfillReportIntegrity({}, [])).toEqual({ enqueued: 0 })
   })
 
-  it('continues from the last entity of a full page', async () => {
+  it('continues from the last inspected report of a full page', async () => {
     const author = await createTestUser()
     const postId = await insertTestPost({
       createdById: author.id,
@@ -182,7 +163,7 @@ describe('processBackfillReportIntegrity pages', () => {
     const reporterIds = await Promise.all(
       Array.from({ length: MASS_REPORT_THRESHOLD }, () => createTestUser().then(u => u!.id)),
     )
-    await insertTestModerationReportsForTarget({
+    const reportIds = await insertTestModerationReportsForTarget({
       reporterUserIds: reporterIds,
       entityType: 'post',
       entityId: postId,
@@ -191,24 +172,83 @@ describe('processBackfillReportIntegrity pages', () => {
       backfill_batch_size: 1,
     })
     onTestFinished(restoreLimit)
-    const addBulk = vi.spyOn(voteAggregation, 'addBulk').mockResolvedValueOnce([])
-    const add = vi.spyOn(voteAggregation, 'add').mockResolvedValueOnce({ id: 'continued' } as never)
+    const addBulk = vi.spyOn(voteAggregation, 'addBulk')
+    const add = vi.spyOn(voteAggregation, 'add')
     onTestFinished(() => {
       addBulk.mockRestore()
       add.mockRestore()
     })
 
-    const result = await processBackfillReportIntegrity(
-      {},
-      { entityType: 'post', entityId: postId },
-    )
+    const result = await processBackfillReportIntegrity({}, reportIds)
 
     expect(result).toEqual({ enqueued: 1 })
-    expect(add).toHaveBeenCalledExactlyOnceWith(
+    expect(add).toHaveBeenCalledWith(
       VOTE_AGGREGATION_BACKFILL_REPORT_INTEGRITY_JOB.name,
-      { afterId: postId },
-      expect.objectContaining({ jobId: `backfill_report_integrity__${postId}` }),
+      { afterReportId: reportIds.toSorted()[0], reportIds },
+      expect.objectContaining({ jobId: `backfill_report_integrity__${reportIds.toSorted()[0]}` }),
     )
+  })
+})
+
+describe('reviewed report pages', () => {
+  it('continues an empty output page and reaches a later pending subject without admitting excluded reports', async () => {
+    const reporter = await createTestUser()
+    const targets = await Promise.all([createTestUser(), createTestUser(), createTestUser()])
+    const reviewedIds = await insertTestModerationReportsForTarget({
+      reporterUserIds: [reporter.id],
+      entityType: 'user',
+      entityId: targets[0]!.id,
+    })
+    await reviewTestModerationReports(reviewedIds)
+    const pendingIds = await insertTestModerationReportsForTarget({
+      reporterUserIds: [reporter.id],
+      entityType: 'user',
+      entityId: targets[1]!.id,
+    })
+    await insertTestModerationReportsForTarget({
+      reporterUserIds: [reporter.id],
+      entityType: 'user',
+      entityId: targets[2]!.id,
+    })
+    const owned = [...reviewedIds, ...pendingIds]
+    const restore = overrideDynamicConfigFieldsForTest(reportIntegrityWorkConfig, {
+      backfill_batch_size: 1,
+    })
+    const add = vi.spyOn(voteAggregation, 'add')
+    const addBulk = vi.spyOn(voteAggregation, 'addBulk')
+    onTestFinished(() => {
+      restore()
+      add.mockRestore()
+      addBulk.mockRestore()
+    })
+    expect(await processBackfillReportIntegrity({}, owned)).toEqual({ enqueued: 0 })
+    expect(
+      addBulk.mock.calls
+        .flatMap(([jobs]) => jobs)
+        .filter(
+          job =>
+            job.name === VOTE_AGGREGATION_REPORT_INTEGRITY_JOB.name &&
+            (job.data as ProcessReportIntegrityCheckData).entityId === targets[0]!.id,
+        ),
+    ).toEqual([])
+    expect(add).toHaveBeenCalledWith(
+      VOTE_AGGREGATION_BACKFILL_REPORT_INTEGRITY_JOB.name,
+      { afterReportId: reviewedIds[0], reportIds: owned },
+      expect.objectContaining({ jobId: `backfill_report_integrity__${reviewedIds[0]}` }),
+    )
+    expect(await processBackfillReportIntegrity({ afterReportId: reviewedIds[0] }, owned)).toEqual({
+      enqueued: 1,
+    })
+    const admitted = addBulk.mock.calls
+      .flatMap(([jobs]) => jobs)
+      .filter(job => job.name === VOTE_AGGREGATION_REPORT_INTEGRITY_JOB.name)
+    const subjectIds = admitted.map(job => (job.data as ProcessReportIntegrityCheckData).entityId)
+    expect(subjectIds).toContain(targets[1]!.id)
+    expect(subjectIds).not.toContain(targets[0]!.id)
+    expect(subjectIds).not.toContain(targets[2]!.id)
+    expect(await processBackfillReportIntegrity({ afterReportId: pendingIds[0] }, owned)).toEqual({
+      enqueued: 0,
+    })
   })
 })
 

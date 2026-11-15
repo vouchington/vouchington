@@ -2,7 +2,7 @@ import { getReportIntegrityWorkLimit } from './work-limits.mts'
 import { read } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
-import { MASS_REPORT_THRESHOLD, MASS_REPORT_WINDOW_MINUTES } from './config.mts'
+import { MASS_REPORT_WINDOW_MINUTES } from './config.mts'
 
 export type PendingReportEntity = {
   entityType: string
@@ -11,109 +11,59 @@ export type PendingReportEntity = {
 
 export type PendingReportEntityPage = {
   entities: PendingReportEntity[]
-  /** The last entity id of a full page, or null when this page reached the end. */
+  /** Last inspected report of a full page, including reviewed or ineligible rows. */
   nextCursor: string | null
 }
 
-// Sorts before every UUID, so the first page needs no separate "no cursor" predicate.
-const START_OF_IDS = '00000000-0000-0000-0000-000000000000'
+type ReportRow = { id: string; entity: PendingReportEntity | null }
 
 /**
- * One page, in entity id order after `afterId`, of entities that currently have
- * >= MASS_REPORT_THRESHOLD distinct reporters within the MASS_REPORT_WINDOW_MINUTES window. Used by
- * the backfill dispatcher to re-enqueue integrity checks that may have been lost; a full page
- * returns the cursor to continue from.
- *
- * Only pending reports within the time window are considered; out-of-window or
- * resolved reports are excluded. For posts, JOINs to `posts` to distinguish
- * post vs comment (same FK column).
+ * Walks a bounded report-id page, then dispatches its distinct live subjects. The exact
+ * integrity detector owns the reporter threshold; discovery never aggregates a window.
+ * Reviewed/ineligible reports still advance the cursor, including on empty output pages.
  */
 export async function listPendingReportEntityPage(
   now: number,
-  afterId?: string,
-  target?: PendingReportEntity,
+  afterReportId?: string,
+  reportIds?: readonly string[],
 ): Promise<PendingReportEntityPage> {
   if (!Number.isFinite(now)) throw new Error('now must be a finite number')
 
   const limit = getReportIntegrityWorkLimit('backfill_batch_size')
   const windowStartId = getMinUUIDv7ForDate(new Date(now - MASS_REPORT_WINDOW_MINUTES * 60 * 1000))
-  // A known-entity recovery narrows each branch before grouping, never after a global scan.
-  const postFilter = target
-    ? sql`AND mr.post_id = ${target.entityId}::uuid
-        AND ${target.entityType}::text = CASE WHEN p.post_type = 'comment' THEN 'comment' ELSE 'post' END`
-    : sql``
-  const userFilter = target
-    ? sql`AND mr.reported_user_id = ${target.entityId}::uuid AND ${target.entityType}::text = 'user'`
-    : sql``
-  const hostnameFilter = target
-    ? sql`AND mr.hostname_id = ${target.entityId}::uuid AND ${target.entityType}::text = 'url_hostname'`
-    : sql``
-  const rssFilter = target
-    ? sql`AND mr.rss_feed_item_id = ${target.entityId}::uuid AND ${target.entityType}::text = 'rss_feed_item'`
-    : sql``
   const query = sql`/* listPendingReportEntityPage */
-    SELECT entity_type, entity_id FROM (
-      SELECT
-        CASE WHEN p.post_type = 'comment' THEN 'comment' ELSE 'post' END AS entity_type,
-        mr.post_id::text AS entity_id
-      FROM moderation_reports mr
-      JOIN posts p ON p.id = mr.post_id AND p.deleted_at IS NULL
-      WHERE mr.post_id IS NOT NULL
-        AND mr.reviewed_at IS NULL
-        AND mr.id >= ${windowStartId}
-      `
-  query
-    .append(postFilter)
-    .append(sql`
-      GROUP BY mr.post_id, p.post_type
-      HAVING COUNT(DISTINCT mr.reporter_user_id) >= ${MASS_REPORT_THRESHOLD}
-
-      UNION ALL
-
-      SELECT 'user' AS entity_type, mr.reported_user_id::text AS entity_id
-      FROM moderation_reports mr
-      JOIN users u ON u.id = mr.reported_user_id AND u.deleted_at IS NULL
-      WHERE mr.reported_user_id IS NOT NULL
-        AND mr.reviewed_at IS NULL
-        AND mr.id >= ${windowStartId}
-      `)
-    .append(userFilter)
-    .append(sql`
-      GROUP BY mr.reported_user_id
-      HAVING COUNT(DISTINCT mr.reporter_user_id) >= ${MASS_REPORT_THRESHOLD}
-
-      UNION ALL
-
-      SELECT 'url_hostname' AS entity_type, mr.hostname_id::text AS entity_id
-      FROM moderation_reports mr
-      JOIN url_hostnames uh ON uh.id = mr.hostname_id AND NOT uh.is_blocked
-      WHERE mr.hostname_id IS NOT NULL
-        AND mr.reviewed_at IS NULL
-        AND mr.id >= ${windowStartId}
-      `)
-    .append(hostnameFilter)
-    .append(sql`
-      GROUP BY mr.hostname_id
-      HAVING COUNT(DISTINCT mr.reporter_user_id) >= ${MASS_REPORT_THRESHOLD}
-
-      UNION ALL
-
-      SELECT 'rss_feed_item' AS entity_type, mr.rss_feed_item_id::text AS entity_id
-      FROM moderation_reports mr
-      JOIN rss_feed_items rfi ON rfi.id = mr.rss_feed_item_id AND rfi.deleted_at IS NULL
-      WHERE mr.rss_feed_item_id IS NOT NULL
-        AND mr.reviewed_at IS NULL
-        AND mr.id >= ${windowStartId}
-      `)
-    .append(rssFilter).append(sql`
-      GROUP BY mr.rss_feed_item_id
-      HAVING COUNT(DISTINCT mr.reporter_user_id) >= ${MASS_REPORT_THRESHOLD}
-    ) sub
-    WHERE entity_id::uuid > ${afterId ?? START_OF_IDS}::uuid
-    ORDER BY entity_id::uuid
-    LIMIT ${limit}`)
-  const { rows } = await read<{ entity_type: string; entity_id: string }>(query)
-  const entities = rows.map(row => ({ entityType: row.entity_type, entityId: row.entity_id }))
-  const last = entities.at(-1)
-  return { entities, nextCursor: last && entities.length === limit ? last.entityId : null }
+    SELECT mr.id, CASE
+      WHEN mr.reviewed_at IS NOT NULL THEN NULL
+      WHEN mr.post_id IS NOT NULL THEN (
+        SELECT jsonb_build_object('entityType', CASE WHEN p.post_type = 'comment' THEN 'comment' ELSE 'post' END, 'entityId', p.id)
+        FROM posts p WHERE p.id = mr.post_id AND p.deleted_at IS NULL
+      )
+      WHEN mr.reported_user_id IS NOT NULL THEN (
+        SELECT jsonb_build_object('entityType', 'user', 'entityId', u.id)
+        FROM users u WHERE u.id = mr.reported_user_id AND u.deleted_at IS NULL
+      )
+      WHEN mr.hostname_id IS NOT NULL THEN (
+        SELECT jsonb_build_object('entityType', 'url_hostname', 'entityId', uh.id)
+        FROM url_hostnames uh WHERE uh.id = mr.hostname_id AND NOT uh.is_blocked
+      )
+      WHEN mr.rss_feed_item_id IS NOT NULL THEN (
+        SELECT jsonb_build_object('entityType', 'rss_feed_item', 'entityId', rfi.id)
+        FROM rss_feed_items rfi WHERE rfi.id = mr.rss_feed_item_id AND rfi.deleted_at IS NULL
+      )
+    END AS entity
+    FROM moderation_reports mr
+    WHERE mr.id >= ${windowStartId}::uuid
+      AND mr.id > ${afterReportId ?? '00000000-0000-0000-0000-000000000000'}::uuid`
+  if (reportIds) query.append(sql` AND mr.id = ANY(${reportIds}::uuid[])`)
+  query.append(sql` ORDER BY mr.id LIMIT ${limit}`)
+  const { rows } = await read<ReportRow>(query)
+  const entities = new Map<string, PendingReportEntity>()
+  for (const row of rows) {
+    const entity = row.entity
+    if (entity) entities.set(`${entity.entityType}:${entity.entityId}`, entity)
+  }
+  return {
+    entities: [...entities.values()],
+    nextCursor: rows.length === limit ? rows.at(-1)!.id : null,
+  }
 }

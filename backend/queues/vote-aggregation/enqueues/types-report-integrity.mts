@@ -4,5 +4,6 @@ export type ProcessReportIntegrityCheckData = {
 }
 
 export type BackfillReportIntegrityData = {
-  afterId?: string
+  afterReportId?: string
+  reportIds?: readonly string[]
 }

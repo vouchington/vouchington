@@ -3,7 +3,7 @@ import { isUUID } from '@modules/utils'
 import { isAdminUser, assertNotSuspended } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
 import { getStoryById } from '@services/feeds/rss-feed-items/get-story-by-id'
-import { getStoryItemIds } from './get.mts'
+import { isStoryItem } from './get.mts'
 import { adminAssignItemToStory, adminRemoveItemFromStory } from './assign.mts'
 import { adminSetStoryOfficialItem, updateStoryTitle } from './update.mts'
 
@@ -20,8 +20,7 @@ async function assertStoryItem(
 ): Promise<void> {
   assert(isUUID(itemId), 400, 'Invalid item ID')
   assert(await getStoryById(storyId), 404, 'Story not found')
-  if (membership)
-    assert((await getStoryItemIds(storyId)).includes(itemId), 400, 'Item is not in this story')
+  if (membership) assert(await isStoryItem(storyId, itemId), 400, 'Item is not in this story')
 }
 
 export async function addEditorialStoryItem(

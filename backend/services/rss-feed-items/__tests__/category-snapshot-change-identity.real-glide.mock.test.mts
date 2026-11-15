@@ -1,3 +1,7 @@
+import {
+  reconcileRssFeedItemCategorySnapshots,
+  reconcileRssFeedItemCategorySourcePage,
+} from '../category-snapshot-reconciliations.mts'
 import '@services/elections-votes'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { notifications } from '@queues/notifications/queues'
@@ -5,7 +9,6 @@ import {
   getTestRssFeedItemCategorySnapshotReconciliation,
   insertTestRssFeedDirect,
 } from '@voucha/test-helpers'
-import { reconcileRssFeedItemCategorySnapshots } from '../category-snapshot-reconciliations.mts'
 import { upsertRssFeedItems } from '../upsert.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
@@ -39,9 +42,11 @@ describe('RSS category snapshot notification identity', () => {
     )
     const beforeFirst = new Set((await jobs()).map(job => job.id))
 
-    await expect(reconcileRssFeedItemCategorySnapshots(undefined, [item!.id])).resolves.toEqual({
-      reconciled: 1,
-    })
+    const firstPage = await reconcileRssFeedItemCategorySnapshots(1, [item!.id])
+    expect(firstPage.sourcePages).toHaveLength(1)
+    await expect(
+      reconcileRssFeedItemCategorySourcePage(firstPage.sourcePages![0]!),
+    ).resolves.toEqual({ reconciled: 1 })
     const firstAdmissions = (await jobs()).filter(job => !beforeFirst.has(job.id))
     expect(firstAdmissions).toHaveLength(1)
     expect(firstAdmissions[0]!.data).toMatchObject({ changeId: first!.change_id })
@@ -55,9 +60,11 @@ describe('RSS category snapshot notification identity', () => {
     expect(second!.change_id).not.toBe(first!.change_id)
     const beforeSecond = new Set((await jobs()).map(job => job.id))
 
-    await expect(reconcileRssFeedItemCategorySnapshots(undefined, [item!.id])).resolves.toEqual({
-      reconciled: 1,
-    })
+    const secondPage = await reconcileRssFeedItemCategorySnapshots(1, [item!.id])
+    expect(secondPage.sourcePages).toHaveLength(1)
+    await expect(
+      reconcileRssFeedItemCategorySourcePage(secondPage.sourcePages![0]!),
+    ).resolves.toEqual({ reconciled: 1 })
     const secondAdmissions = (await jobs()).filter(job => !beforeSecond.has(job.id))
     expect(secondAdmissions).toHaveLength(1)
     expect(secondAdmissions[0]!.data).toMatchObject({ changeId: second!.change_id })

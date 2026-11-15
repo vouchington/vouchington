@@ -2,7 +2,7 @@
 import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import {
-  recordRssFeedTopicPublicationChanges,
+  recordRssFeedItemTopicPublicationChanges,
   recordStoryTopicPublicationChanges,
 } from '@services/post-publication'
 
@@ -47,7 +47,7 @@ export async function recordStoryPublicationChangesForCategoryTopics(
   if (topicChanges.length === 0) return
 
   const impactsByStory = new Map<string, { postIds: Set<string>; topicIds: Set<string> }>()
-  const topicIdsByRssFeed = new Map<string, Set<string>>()
+  const topicIdsByRssItem = new Map<string, Set<string>>()
   for (let offset = 0; offset < topicChanges.length; offset += STORY_CATEGORY_CHANGE_BATCH_SIZE) {
     const batch = topicChanges.slice(offset, offset + STORY_CATEGORY_CHANGE_BATCH_SIZE)
     // no-mistakes-disable-next-line query-reached-per-item: each input chunk is capped by runtime configuration; combining chunks would exceed that bound.
@@ -91,22 +91,21 @@ export async function recordStoryPublicationChangesForCategoryTopics(
       impactsByStory.set(row.story_id, impacts)
     }
     // no-mistakes-disable-next-line query-reached-per-item: each input chunk is capped by runtime configuration; combining chunks would exceed that bound.
-    const feedImpacts = await query<{ rss_feed_id: string; topic_ids: string[] }>(
+    const feedImpacts = await query<{ rss_feed_item_id: string; topic_ids: string[] }>(
       `/* recordUnclusteredRssFeedPublicationChangesForCategoryTopics */
       WITH changed_categories AS (
         SELECT rss_feed_item_id, previous_topic_id, topic_id
         FROM unnest($1::uuid[], $2::uuid[], $3::uuid[])
           AS input(rss_feed_item_id, previous_topic_id, topic_id)
       )
-      SELECT source.rss_feed_id,
+      SELECT item.id AS rss_feed_item_id,
         ARRAY_AGG(DISTINCT topic.topic_id) FILTER (WHERE topic.topic_id IS NOT NULL) AS topic_ids
       FROM changed_categories category
       JOIN rss_feed_items item ON item.id = category.rss_feed_item_id
-      JOIN rss_feed_item_sources source ON source.rss_feed_item_id = item.id
       CROSS JOIN LATERAL unnest(ARRAY[category.previous_topic_id, category.topic_id]) AS topic(topic_id)
       WHERE item.story_id IS NULL
-      GROUP BY source.rss_feed_id
-      ORDER BY source.rss_feed_id`,
+      GROUP BY item.id
+      ORDER BY item.id`,
       [
         batch.map(change => change.rss_feed_item_id),
         batch.map(change => change.previous_topic_id),
@@ -114,9 +113,9 @@ export async function recordStoryPublicationChangesForCategoryTopics(
       ],
     )
     for (const row of feedImpacts.rows) {
-      const topicIds = topicIdsByRssFeed.get(row.rss_feed_id) ?? new Set<string>()
+      const topicIds = topicIdsByRssItem.get(row.rss_feed_item_id) ?? new Set<string>()
       for (const topicId of row.topic_ids ?? []) topicIds.add(topicId)
-      topicIdsByRssFeed.set(row.rss_feed_id, topicIds)
+      topicIdsByRssItem.set(row.rss_feed_item_id, topicIds)
     }
   }
   await recordStoryTopicPublicationChanges(
@@ -127,10 +126,10 @@ export async function recordStoryPublicationChangesForCategoryTopics(
       impactedPostIds: [...impacts.postIds],
     })),
   )
-  await recordRssFeedTopicPublicationChanges(
+  recordRssFeedItemTopicPublicationChanges(
     query,
-    [...topicIdsByRssFeed].map(([rssFeedId, topicIds]) => ({
-      rssFeedId,
+    [...topicIdsByRssItem].map(([rssFeedItemId, topicIds]) => ({
+      rssFeedItemId,
       impactedTopicIds: [...topicIds],
     })),
   )

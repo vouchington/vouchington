@@ -17,13 +17,13 @@ export async function processInvalidatePostsForTopicAliases(data: TopicAliasPost
   const result = await invalidatePostsForTopicAliasesPage(
     data.topicAliasIds,
     data.changeId,
-    data.afterPostId,
+    data.cursor,
   )
-  if (result.hasMore && result.lastPostId)
+  if (result.hasMore && result.cursor)
     await enqueueContinueInvalidatingPostsForTopicAliases(
       data.topicAliasIds,
       data.changeId,
-      result.lastPostId,
+      result.cursor,
     )
   return result
 }

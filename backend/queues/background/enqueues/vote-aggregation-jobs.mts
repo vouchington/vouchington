@@ -144,9 +144,10 @@ export const VOTE_AGGREGATION_REPORT_INTEGRITY_JOB = defineBackgroundJob<{
   removeOnComplete: 100,
   removeOnFail: 100,
 })
-/** Re-enqueues one bounded page of integrity checks after `afterId`, then continues from its last id. */
+/** Re-enqueues one report-id page of integrity checks, then continues from its last inspected report. */
 export const VOTE_AGGREGATION_BACKFILL_REPORT_INTEGRITY_JOB = defineBackgroundJob<{
-  afterId?: string
+  afterReportId?: string
+  reportIds?: readonly string[]
 }>(VOTE_AGGREGATION_DOMAIN, { name: 'backfill_report_integrity', priority: PRIORITY_DISPATCH })
 
 export const VOTE_AGGREGATION_JOBS = [

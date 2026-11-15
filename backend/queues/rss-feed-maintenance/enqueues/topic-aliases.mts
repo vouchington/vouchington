@@ -11,7 +11,11 @@ import {
   TOPIC_ALIAS_ORDERING,
 } from '../config.mts'
 import { rssFeedMaintenance } from '../queues.mts'
-import type { TopicAliasPostInvalidationData, RssFeedMaintenanceJobPayloads } from '../types.mts'
+import type {
+  TopicAliasPostInvalidationCursor,
+  TopicAliasPostInvalidationData,
+  RssFeedMaintenanceJobPayloads,
+} from '../types.mts'
 import { createRssFeedMaintenanceEnqueue } from './create-enqueue.mts'
 
 const JOB_NAME = 'processTopicAliasesUpdate' as const
@@ -40,7 +44,7 @@ function postInvalidationJobId(data: TopicAliasPostInvalidationData): string {
   const aliasHash = createHash('sha256')
     .update(JSON.stringify([...new Set(data.topicAliasIds)].toSorted()))
     .digest('hex')
-  return `topic_alias_post_invalidation__${data.changeId}__${data.afterPostId}__${aliasHash}`
+  return `topic_alias_post_invalidation__${data.changeId}__${data.cursor.topicAliasId}__${data.cursor.afterPostId ?? 'root'}__${aliasHash}`
 }
 
 const enqueueBulkTopicAliasesUpdateJobs = createBulkEnqueueFunction({
@@ -92,11 +96,11 @@ export const enqueueContinueTopicAliasCategoryMappingReconciliation = (
 export const enqueueContinueInvalidatingPostsForTopicAliases = (
   topicAliasIds: string[],
   changeId: string,
-  afterPostId: string,
+  cursor: TopicAliasPostInvalidationCursor,
 ): EnqueueReturnType =>
   enqueueBulkReactivatingFinished({
     queue: rssFeedMaintenance,
-    inputs: [{ afterPostId, topicAliasIds, changeId }],
+    inputs: [{ cursor, topicAliasIds, changeId }],
     jobIdOf: postInvalidationJobId,
     enqueueBulk: enqueueInvalidatePostsForTopicAliasesJobs,
   })

@@ -1,3 +1,4 @@
+import { reconcileOwnedRssCategorySnapshotBatch } from '@voucha/test-helpers/rss-category-page-jobs'
 import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { describe, expect, it } from 'vitest'
 import type { TransactionQuery } from '@data-stores/psql'
@@ -13,7 +14,6 @@ import { upsertRssFeedItems } from '../upsert.mts'
 import { prepareRssFeedItemsForUpsert } from '../upsert-prepare.mts'
 import { upsertRssFeedItemIdentities } from '../upsert-identities.mts'
 import { upsertRssFeedItemContent, upsertRssFeedItemSources } from '../upsert-queries.mts'
-import { reconcileRssFeedItemCategorySnapshots } from '../category-snapshot-reconciliations.mts'
 
 describe('RSS feed item concurrent upsert ordering', () => {
   it('dispatches reverse-order identity, content, and source writers on two PostgreSQL clients', async () => {
@@ -117,7 +117,7 @@ describe('RSS feed item concurrent upsert ordering', () => {
     const expectedFirstOrder = await Promise.all(
       items.map(item => getRssFeedItemKeyByGuid(item.guid)),
     )
-    await reconcileOwned(expectedFirstOrder.map(item => item!.id))
+    await reconcileOwnedRssCategorySnapshotBatch(expectedFirstOrder.map(item => item!.id))
     for (const [index, item] of items.entries()) {
       const itemId = expectedFirstOrder[index]!.id
       // Throws when a feed has no source row for the shared item identity.
@@ -214,10 +214,6 @@ function createBarrieredQuery(
     },
     { client: query.client },
   ) as TransactionQuery
-}
-
-async function reconcileOwned(rssFeedItemIds: string[]): Promise<void> {
-  await reconcileRssFeedItemCategorySnapshots(undefined, rssFeedItemIds)
 }
 
 async function createSharedFeedItems() {

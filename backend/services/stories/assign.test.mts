@@ -1,7 +1,7 @@
 import { it, expect, beforeAll, afterEach, describe, vi } from 'vitest'
 import * as storyLifecycleLock from '@services/post-publication/story-lifecycle-lock'
 import { adminAssignItemToStory, adminRemoveItemFromStory } from './assign.mts'
-import { getStoryItemIds } from './get.mts'
+import { isStoryItem } from './get.mts'
 import {
   beginTransaction,
   createTestUserDirect,
@@ -76,8 +76,7 @@ describe('assign', () => {
     const newItemId = await makeTestItem()
     const result = await adminAssignItemToStory(storyPostUser.id, story.id, newItemId)
     expect(result).toBe(newItemId)
-    const ids = await getStoryItemIds(story.id)
-    expect(ids).toContain(newItemId)
+    await expect(isStoryItem(story.id, newItemId)).resolves.toBe(true)
   })
   it('rolls back its own transaction when the relation refresh fails', async () => {
     const [firstUrlId, secondUrlId] = await Promise.all([
@@ -97,7 +96,7 @@ describe('assign', () => {
     } finally {
       restore()
     }
-    await expect(getStoryItemIds(story.id)).resolves.not.toContain(itemId)
+    await expect(isStoryItem(story.id, itemId)).resolves.toBe(false)
   })
   it('adminAssignItemToStory overrides existing lock', async () => {
     const story = await insertTestStory()
@@ -146,8 +145,7 @@ describe('assign', () => {
     await adminAssignItemToStory(storyPostUser.id, story1.id, itemId)
     const result = await adminAssignItemToStory(storyPostUser.id, story2.id, itemId)
     expect(result).toBe(itemId)
-    const ids = await getStoryItemIds(story2.id)
-    expect(ids).toContain(itemId)
+    await expect(isStoryItem(story2.id, itemId)).resolves.toBe(true)
   })
   it('serializes overlapping admin assignment and removal before projecting final story relations', async () => {
     const [retainedUrlId, assignedUrlId] = await Promise.all([
@@ -186,7 +184,7 @@ describe('assign', () => {
     }
     await expect(Promise.all([assign!, remove!])).resolves.toEqual([assignedItemId, assignedItemId])
 
-    await expect(getStoryItemIds(story.id)).resolves.not.toContain(assignedItemId)
+    await expect(isStoryItem(story.id, assignedItemId)).resolves.toBe(false)
     await drainStoryPostRelatedUrlProjection(post.id)
     await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual([retainedUrlId])
     await expect(getPostCategoryTopicIds(post.id)).resolves.not.toContain(assignedTopic.id)
@@ -250,14 +248,14 @@ describe('assign', () => {
     await refreshStoryPostForStory(story.id)
     await settleStoryPostTopicVoteCapture(post.id, removedTopic.id)
     const realInvalidateStories = cacheInvalidation.invalidateStories
-    const observed: Array<{ itemIds: string[]; topicIds: string[] }> = []
+    const observed: Array<{ containsRemovedItem: boolean; topicIds: string[] }> = []
     const invalidateSpy = vi
       .spyOn(cacheInvalidation, 'invalidateStories')
       .mockImplementation(async (...storyIds) => {
         // The post-created recovery worker may also invalidate this story; each observation records
         // whether the removal had committed when it ran.
         observed.push({
-          itemIds: await getStoryItemIds(story.id),
+          containsRemovedItem: await isStoryItem(story.id, itemIds[0]!),
           topicIds: await getPostCategoryTopicIds(post.id),
         })
         await realInvalidateStories(...storyIds)
@@ -266,7 +264,7 @@ describe('assign', () => {
       adminRemoveItemFromStory(storyPostUser.id, itemIds[0]!),
     )
     expect(invalidateSpy).toHaveBeenCalledWith(story.id)
-    const afterRemoval = observed.filter(entry => !entry.itemIds.includes(itemIds[0]!))
+    const afterRemoval = observed.filter(entry => !entry.containsRemovedItem)
     expect(afterRemoval.length).toBeGreaterThanOrEqual(1)
     for (const entry of afterRemoval) expect(entry.topicIds).not.toContain(removedTopic.id)
     await drainStoryPostRelatedUrlProjection(post.id)
