@@ -57848,10 +57848,10 @@
           "unique": true,
           "valid": true
         },
-        "idx_hostname_path_boilerplate_removals__hostname_path": {
+        "idx_hostname_path_boilerplate_removals__hostname_path_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_hostname_path_boilerplate_removals__hostname_path ON public.hostname_path_boilerplate_removals USING btree (hostname_id, parent_path)",
+          "definition": "CREATE INDEX idx_hostname_path_boilerplate_removals__hostname_path_id ON public.hostname_path_boilerplate_removals USING btree (hostname_id, parent_path, id DESC)",
           "immediate": true,
           "keys": [
             {
@@ -57870,6 +57870,15 @@
               "expression": "parent_path",
               "nullsFirst": false,
               "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
