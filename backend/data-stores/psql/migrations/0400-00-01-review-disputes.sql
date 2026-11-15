@@ -151,7 +151,8 @@ CREATE TABLE IF NOT EXISTS review_dispute_lifecycle_changes (
   -- guardrails-disable-next-line uuid-must-be-key
   changed_by_id uuid REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   metadata jsonb NOT NULL DEFAULT '{}',
-  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  UNIQUE (review_dispute_id, id)
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -187,7 +188,7 @@ CREATE TABLE IF NOT EXISTS review_dispute_resolution_runs (
   expired_at timestamptz,
   ai_drafted_at timestamptz,
   -- guardrails-disable-next-line uuid-must-be-key
-  latest_lifecycle_change_id uuid REFERENCES review_dispute_lifecycle_changes (id) ON DELETE SET NULL,
+  latest_lifecycle_change_id uuid,
   status moderation_ai_rerun_statuses GENERATED ALWAYS AS (
     CASE WHEN completed_at IS NOT NULL THEN 'succeeded'::moderation_ai_rerun_statuses
          WHEN failed_at IS NOT NULL THEN 'failed'::moderation_ai_rerun_statuses
@@ -197,6 +198,9 @@ CREATE TABLE IF NOT EXISTS review_dispute_resolution_runs (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (review_dispute_id, id),
+  FOREIGN KEY (review_dispute_id, latest_lifecycle_change_id)
+    REFERENCES review_dispute_lifecycle_changes (review_dispute_id, id)
+    ON DELETE SET NULL (latest_lifecycle_change_id),
   CHECK ((completed_at IS NULL) = (ai_drafted_at IS NULL))
 );
 CREATE OR REPLACE TRIGGER trigger_review_dispute_resolution_runs_updated_at
@@ -219,7 +223,8 @@ CREATE INDEX IF NOT EXISTS idx_review_dispute_resolution_runs__lifecycle_change_
 
 ALTER TABLE review_disputes
   ADD CONSTRAINT fk_review_disputes__ai_draft_run_id
-  FOREIGN KEY (ai_draft_run_id) REFERENCES review_dispute_resolution_runs (id) ON DELETE RESTRICT NOT VALID;
+  FOREIGN KEY (id, ai_draft_run_id)
+  REFERENCES review_dispute_resolution_runs (review_dispute_id, id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE review_disputes
   VALIDATE CONSTRAINT fk_review_disputes__ai_draft_run_id;
 

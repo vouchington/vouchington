@@ -35,7 +35,7 @@ describe('registered AI rerun writes', () => {
       expect(runId).toMatch(
         kind === 'dispute' ? /^[0-9a-f-]{36}$/ : new RegExp(`^${kind}_resolution_[0-9a-f-]{36}$`),
       )
-      const jobId = kind === 'dispute' ? `dispute_resolution_${runId}` : runId
+      const jobId = kind === 'dispute' ? `dispute_resolution_${String(runId)}` : runId
       await expectStaffOperationHistory(admin.id, `${kind}_resolution_draft_rerun`)
       const jobs = await readAllQueueJobs(ai_agents)
       expect(

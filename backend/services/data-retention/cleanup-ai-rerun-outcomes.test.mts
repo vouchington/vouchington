@@ -172,6 +172,17 @@ describe('durable AI rerun retention', () => {
       'succeeded',
     )
     await setTestReviewDisputeDraftRun(disputeId, oldSavedDraft)
+    const otherUser = await createTestUser()
+    const otherDisputeId = await insertTestReviewDispute({
+      postId,
+      topicId,
+      disputantUserId: otherUser.id,
+    })
+    const oldLatestFailed = await insertTestReviewDisputeResolutionRunForRetention(
+      otherDisputeId,
+      old,
+      'failed',
+    )
 
     const result = await runDataRetentionCleanup(
       { batchSize: 10, maxBatches: 1 },
@@ -179,7 +190,15 @@ describe('durable AI rerun retention', () => {
         families: ['reviewDisputeResolutionRuns'],
         reviewDisputeResolutionRuns: {
           now,
-          runIds: [oldSucceeded, oldFailed, oldExpired, recentSucceeded, oldActive, oldSavedDraft],
+          runIds: [
+            oldSucceeded,
+            oldFailed,
+            oldExpired,
+            recentSucceeded,
+            oldActive,
+            oldSavedDraft,
+            oldLatestFailed,
+          ],
         },
       },
     )
@@ -191,5 +210,6 @@ describe('durable AI rerun retention', () => {
     expect(await getReviewDisputeRunStatus(recentSucceeded)).toBe('succeeded')
     expect(await getReviewDisputeRunStatus(oldActive)).toBe('active')
     expect(await getReviewDisputeRunStatus(oldSavedDraft)).toBe('succeeded')
+    expect(await getReviewDisputeRunStatus(oldLatestFailed)).toBe('failed')
   })
 })

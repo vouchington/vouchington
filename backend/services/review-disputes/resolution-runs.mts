@@ -24,10 +24,12 @@ async function insertRun(query: QueryExecutor, disputeId: string): Promise<strin
 async function readActiveRun(query: QueryExecutor, disputeId: string): Promise<string | undefined> {
   const { rows } = await query<{ id: string }>(sql`
     /* admitReviewDisputeResolutionRun:readActive */
-    SELECT id
-    FROM review_dispute_resolution_runs
-    WHERE review_dispute_id = ${disputeId}::uuid
-      AND completed_at IS NULL AND failed_at IS NULL AND expired_at IS NULL
+    SELECT run.id
+    FROM review_dispute_resolution_runs run
+    JOIN review_disputes rd ON rd.id = run.review_dispute_id
+    WHERE run.review_dispute_id = ${disputeId}::uuid
+      AND rd.approved_at IS NULL AND rd.sent_at IS NULL AND rd.resolved_at IS NULL
+      AND run.completed_at IS NULL AND run.failed_at IS NULL AND run.expired_at IS NULL
   `)
   return rows[0]?.id
 }
