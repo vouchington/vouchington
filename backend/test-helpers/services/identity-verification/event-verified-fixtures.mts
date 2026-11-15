@@ -1,7 +1,11 @@
 import { onTestFinished, vi } from 'vitest'
 import { v7 } from 'uuid'
-import { createTestUser } from '../../entities/users.mts'
 import { setUserVerificationFields } from '../../entities/identity-verification.mts'
+import { createPaymentPendingUser } from './payment-pending-fixtures.mts'
+import {
+  beginIdentityVerificationProviderSession,
+  consumeIdentityVerificationAttempt,
+} from '../../../services/identity-verification/attempts.mts'
 import { invalidate } from '../../../services/entity-cache/invalidate.mts'
 import { VOTE_AGGREGATION_USER_ELECTION_FAN_OUT_JOB } from '../../../queues/background/enqueues/vote-aggregation-jobs.mts'
 import { backgroundQueue } from '../../shared-background-queue.mts'
@@ -42,9 +46,10 @@ export function stubIdentityFingerprintSecret(): void {
 
 /** A user waiting on Stripe Identity for a session this test owns. */
 export async function createIdentityPendingUser() {
-  const user = await createTestUser()
+  const { user, checkoutSessionId } = await createPaymentPendingUser()
   const sessionId = `vs_${v7()}`
-  const checkoutSessionId = `cs_${v7()}`
+  await beginIdentityVerificationProviderSession(checkoutSessionId)
+  await consumeIdentityVerificationAttempt(checkoutSessionId, sessionId)
   await setUserVerificationFields(user.id, {
     verificationStatus: 'identity_pending',
     pendingVerificationSessionId: sessionId,

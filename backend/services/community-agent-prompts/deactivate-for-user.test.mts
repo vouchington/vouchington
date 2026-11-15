@@ -100,7 +100,7 @@ describe('deactivate-for-user', () => {
       // Should not throw
       await expect(
         deactivateCommunityPromptsForUser(emptyUser.id, emptyUser.id, c.id),
-      ).resolves.toBeUndefined()
+      ).resolves.toEqual({ hasMore: false })
     })
   })
 })

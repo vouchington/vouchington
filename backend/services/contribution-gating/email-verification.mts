@@ -9,59 +9,68 @@ const cache = new ValkeyCache({
   ttlSeconds: CACHE_TTL_SECONDS,
 })
 
-type VerifiedEmailCandidate = {
+type VerifiedEmailState = {
   user_id: string
-  email_address: string
-  is_disposable: boolean
+  email_address: string | null
+  has_non_disposable: boolean
 }
 
-async function getVerifiedEmailCandidatesBatch(
+async function getVerifiedEmailStatesBatch(
   userIds: string[],
-): Promise<Map<string, VerifiedEmailCandidate[]>> {
-  const results = new Map<string, VerifiedEmailCandidate[]>(userIds.map(userId => [userId, []]))
-  if (userIds.length === 0) return results
+): Promise<Map<string, VerifiedEmailState>> {
+  if (userIds.length === 0) return new Map()
 
-  const { rows } = await read<VerifiedEmailCandidate>(sql`/* getVerifiedEmailCandidatesBatch */
-    WITH candidates AS (
-      SELECT id AS source_id, user_id, email_address, email_domain_hostname_id, 0 AS provider_priority,
-        CASE WHEN is_primary THEN 0 ELSE 1 END AS address_priority, created_at
-      FROM user_email_addresses WHERE user_id = ANY(${userIds}::uuid[])
-      UNION ALL SELECT NULL::UUID, user_id, apple_user_email_address, email_domain_hostname_id, 1, 0, created_at FROM apple_accounts
-        WHERE user_id = ANY(${userIds}::uuid[]) AND apple_user_email_address IS NOT NULL
-      UNION ALL SELECT NULL::UUID, user_id, google_user_email_address, email_domain_hostname_id, 2, 0, created_at FROM google_accounts
-        WHERE user_id = ANY(${userIds}::uuid[]) AND google_user_email_address IS NOT NULL
-      UNION ALL SELECT NULL::UUID, user_id, linkedin_user_email_address, email_domain_hostname_id, 3, 0, created_at FROM linkedin_accounts
-        WHERE user_id = ANY(${userIds}::uuid[]) AND linkedin_user_email_address IS NOT NULL
-      UNION ALL SELECT NULL::UUID, user_id, github_user_email_address, email_domain_hostname_id, 4, 0, created_at FROM github_accounts
-        WHERE user_id = ANY(${userIds}::uuid[]) AND github_user_email_address IS NOT NULL
-      UNION ALL SELECT NULL::UUID, user_id, facebook_user_email_address, email_domain_hostname_id, 5, 0, created_at FROM facebook_accounts
-        WHERE user_id = ANY(${userIds}::uuid[]) AND facebook_user_email_address IS NOT NULL
-      UNION ALL SELECT NULL::UUID, user_id, microsoft_user_email_address, email_domain_hostname_id, 6, 0, created_at FROM microsoft_accounts
-        WHERE user_id = ANY(${userIds}::uuid[]) AND microsoft_user_email_address IS NOT NULL
-    )
-    SELECT candidates.user_id, candidates.email_address, EXISTS (
-      SELECT 1 FROM url_hostname_blocks block
-      WHERE block.url_hostname_id = candidates.email_domain_hostname_id
-        AND block.blocked_source = 'email_blocklist'
-        AND block.lifted_at IS NULL
-    ) AS is_disposable
-    FROM candidates
-    INNER JOIN users ON users.id = candidates.user_id AND users.deleted_at IS NULL
-    ORDER BY candidates.user_id, provider_priority, address_priority,
-      candidates.created_at, candidates.source_id NULLS LAST, candidates.email_address
+  const { rows } = await read<VerifiedEmailState>(sql`/* getVerifiedEmailStatesBatch */
+    SELECT u.id AS user_id,
+      COALESCE(
+        (SELECT email.email_address FROM user_email_addresses email
+         WHERE email.user_id = u.id
+         ORDER BY CASE WHEN email.is_primary THEN 0 ELSE 1 END, email.id, email.email_address
+         LIMIT 1),
+        apple.apple_user_email_address, google.google_user_email_address,
+        linkedin.linkedin_user_email_address, github.github_user_email_address,
+        facebook.facebook_user_email_address, microsoft.microsoft_user_email_address
+      ) AS email_address,
+      (EXISTS (
+        SELECT 1 FROM user_email_addresses email
+        WHERE email.user_id = u.id AND NOT EXISTS (
+          SELECT 1 FROM url_hostname_blocks block
+          WHERE block.url_hostname_id = email.email_domain_hostname_id
+            AND block.blocked_source = 'email_blocklist' AND block.lifted_at IS NULL
+        )
+      ) OR EXISTS (
+        SELECT 1 FROM (VALUES
+          (apple.apple_user_email_address, apple.email_domain_hostname_id),
+          (google.google_user_email_address, google.email_domain_hostname_id),
+          (linkedin.linkedin_user_email_address, linkedin.email_domain_hostname_id),
+          (github.github_user_email_address, github.email_domain_hostname_id),
+          (facebook.facebook_user_email_address, facebook.email_domain_hostname_id),
+          (microsoft.microsoft_user_email_address, microsoft.email_domain_hostname_id)
+        ) provider(email_address, hostname_id)
+        WHERE provider.email_address IS NOT NULL AND NOT EXISTS (
+          SELECT 1 FROM url_hostname_blocks block
+          WHERE block.url_hostname_id = provider.hostname_id
+            AND block.blocked_source = 'email_blocklist' AND block.lifted_at IS NULL
+        )
+      )) AS has_non_disposable
+    FROM users u
+    LEFT JOIN apple_accounts apple ON apple.user_id = u.id
+    LEFT JOIN google_accounts google ON google.user_id = u.id
+    LEFT JOIN linkedin_accounts linkedin ON linkedin.user_id = u.id
+    LEFT JOIN github_accounts github ON github.user_id = u.id
+    LEFT JOIN facebook_accounts facebook ON facebook.user_id = u.id
+    LEFT JOIN microsoft_accounts microsoft ON microsoft.user_id = u.id
+    WHERE u.id = ANY(${userIds}::uuid[]) AND u.deleted_at IS NULL
   `)
 
-  for (const row of rows) results.get(row.user_id)?.push(row)
-  return results
+  return new Map(rows.map(row => [row.user_id, row]))
 }
 
 export async function getVerifiedEmailAddressesBatch(
   userIds: string[],
 ): Promise<Map<string, string | null>> {
-  const candidates = await getVerifiedEmailCandidatesBatch(userIds)
-  return new Map(
-    userIds.map(userId => [userId, candidates.get(userId)?.[0]?.email_address ?? null]),
-  )
+  const states = await getVerifiedEmailStatesBatch(userIds)
+  return new Map(userIds.map(userId => [userId, states.get(userId)?.email_address ?? null]))
 }
 
 export async function getVerifiedEmailAddress(userId: string): Promise<string | null> {
@@ -69,8 +78,8 @@ export async function getVerifiedEmailAddress(userId: string): Promise<string | 
 }
 
 async function fetchHasVerifiedNonDisposableEmail(userId: string): Promise<{ hasEmail: boolean }> {
-  const candidates = await getVerifiedEmailCandidatesBatch([userId])
-  return { hasEmail: candidates.get(userId)?.some(candidate => !candidate.is_disposable) ?? false }
+  const states = await getVerifiedEmailStatesBatch([userId])
+  return { hasEmail: states.get(userId)?.has_non_disposable ?? false }
 }
 
 const fetchHasVerifiedNonDisposableEmailCached = cache.cacheGetByAny(
