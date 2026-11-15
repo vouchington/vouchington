@@ -266,7 +266,7 @@
     "@voucha/mcp": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
     "node-app-attest": "^1.0.1",
-    "supertest": "^7.3.1",
+    "supertest": "^7.3.2",
     "vitest": "^5.1.0"
   }
 }
