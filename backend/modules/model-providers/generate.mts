@@ -14,7 +14,7 @@ import {
 import { MODEL_PRICES } from './pricing-table.mts'
 import type { ModelSelection, OpenAITransport } from './types.mts'
 
-/** Models that return a 400 for any non-default `temperature`, `top_p` or `top_k`. */
+/** Models whose API rejects explicit sampling parameters, including their default values. */
 const REJECTS_SAMPLING_PARAMETERS = new Set(['anthropic:claude-haiku-5-5'])
 
 export type GenerateJsonOptions = {

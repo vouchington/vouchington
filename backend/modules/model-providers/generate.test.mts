@@ -44,7 +44,7 @@ function openAIResponse() {
 }
 
 describe('assertSupportedRequest', () => {
-  it.each([{ temperature: 0.2 }, { topP: 0.9 }, { topK: 5 }])(
+  it.each([{ temperature: 0.2 }, { temperature: 1 }, { topP: 0.9 }, { topP: 1 }, { topK: 5 }])(
     'rejects %o for Haiku 5.5 before any request',
     parameters => {
       expect(() =>

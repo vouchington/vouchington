@@ -58,6 +58,8 @@ describe('generateJson against recorded Anthropic Messages responses', () => {
   })
 
   it('sends one schema-constrained request and returns the parsed, priced, billed answer', async () => {
+    vi.stubEnv('ANTHROPIC_API_KEY', ' test-key ')
+    vi.stubEnv('ANTHROPIC_AUTH_TOKEN', 'ambient-token')
     replay.respondWith(loadRecordedResponse('anthropic/messages-json-end-turn.http'))
 
     const result = await ask()
@@ -65,8 +67,13 @@ describe('generateJson against recorded Anthropic Messages responses', () => {
     expect(replay.requests).toHaveLength(1)
     expect(replay.requests[0]).toMatchObject({
       method: 'POST',
-      headers: { 'x-api-key': 'test-key' },
+      url: 'https://api.anthropic.com/v1/messages',
+      headers: {
+        authorization: 'Bearer test-key',
+        'anthropic-version': '2026-10-21',
+      },
     })
+    expect(replay.requests[0]?.headers).not.toHaveProperty('x-api-key')
     const body = replay.requests[0]?.json() as Record<string, unknown> | undefined
     expect(body).toMatchObject({
       model: 'claude-haiku-5-5',
@@ -105,13 +112,16 @@ describe('generateJson against recorded Anthropic Messages responses', () => {
   })
 
   it('authenticates with the federated token as a bearer when no API key is set', async () => {
-    vi.stubEnv('ANTHROPIC_API_KEY', '')
-    vi.stubEnv('ANTHROPIC_AUTH_TOKEN', 'federated-token')
+    vi.stubEnv('ANTHROPIC_API_KEY', '   ')
+    vi.stubEnv('ANTHROPIC_AUTH_TOKEN', ' federated-token ')
     replay.respondWith(loadRecordedResponse('anthropic/messages-json-end-turn.http'))
 
     await ask()
 
-    expect(replay.requests[0]?.headers).toMatchObject({ authorization: 'Bearer federated-token' })
+    expect(replay.requests[0]?.headers).toMatchObject({
+      authorization: 'Bearer federated-token',
+      'anthropic-version': '2026-10-21',
+    })
     expect(replay.requests[0]?.headers).not.toHaveProperty('x-api-key')
     replay.assertDrained()
   })

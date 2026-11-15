@@ -35,7 +35,18 @@ describe('generateToolTurn against a recorded Anthropic tool_use response', () =
       { provider: 'anthropic', model: 'claude-haiku-5-5' },
       {
         instructions: 'Decide.',
-        messages: [{ role: 'user', text: 'Which topics?' }],
+        messages: [
+          { role: 'user', text: 'Which topics?' },
+          {
+            role: 'assistant',
+            text: 'I will look.',
+            toolCalls: [{ id: 'call_1', name: 'lookup_topics', input: { query: 'rust' } }],
+          },
+          {
+            role: 'tool',
+            results: [{ callId: 'call_1', content: '{"topics":[]}', isError: true }],
+          },
+        ],
         tools: [
           {
             name: 'lookup_topics',
@@ -48,12 +59,47 @@ describe('generateToolTurn against a recorded Anthropic tool_use response', () =
       { openaiTransport: 'openrouter' },
     )
 
-    expect(replay.requests[0]?.json()).toMatchObject({
+    expect(replay.requests).toHaveLength(1)
+    expect(replay.requests[0]).toMatchObject({
+      method: 'POST',
+      url: 'https://api.anthropic.com/v1/messages',
+      headers: {
+        authorization: 'Bearer test-key',
+        'anthropic-version': '2026-10-21',
+      },
+    })
+    expect(replay.requests[0]?.headers).not.toHaveProperty('x-api-key')
+    const body = replay.requests[0]?.json()
+    expect(body).toMatchObject({
       model: 'claude-haiku-5-5',
       max_tokens: 300,
       tool_choice: { type: 'any' },
-      messages: [{ role: 'user', content: 'Which topics?' }],
+      messages: [
+        { role: 'user', content: 'Which topics?' },
+        {
+          role: 'assistant',
+          content: [
+            { type: 'text', text: 'I will look.' },
+            { type: 'tool_use', id: 'call_1', name: 'lookup_topics', input: { query: 'rust' } },
+          ],
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'tool_result',
+              tool_use_id: 'call_1',
+              content: '{"topics":[]}',
+              is_error: true,
+            },
+          ],
+        },
+      ],
     })
+    for (const key of ['temperature', 'top_p', 'top_k', 'stream']) {
+      expect(body).not.toHaveProperty(key)
+    }
+
     expect(result).toMatchObject({
       provider: 'anthropic',
       responseId: 'msg_01ReplayFixtureToolUse',
