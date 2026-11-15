@@ -36,3 +36,7 @@ dependencies. Background processes are not cached; run `backend` or `web` in the
 - Cloud sessions do not install the plugins in the
   [Claude configuration](../../../.claude/README.md#required-agent-plugins); adapters read the
   `vouchington-tooling` copy from `node_modules` instead.
+- `pr-shepherd` is a per-machine CLI that vouchington-machines installs; cloud sessions have no
+  such provisioning, so it is absent from `PATH`. Install it yourself with
+  `pnpm add --global pr-shepherd` (outside the workspace) before shepherding a PR, or hand the PR
+  to the attended triage loop.
