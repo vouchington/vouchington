@@ -7,7 +7,7 @@ description: Diagnose Vouchington GitHub Actions failures, misleading logs, and 
 
 ## Canonical skill (required)
 
-Claude Code and Codex load `vouchington-workflow:review-ci-logs`; Grok, Cursor, and OpenCode read `node_modules/vouchington-tooling/skills/review-ci-logs/SKILL.md` and resolve its supporting resources relative to that directory. If it cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
+Claude Code, Codex, and Grok load the plugin skill `skills:review-ci-logs`. If it cannot be loaded, stop and report the missing prerequisite; never apply this adapter alone.
 
 ## Vouchington additions
 

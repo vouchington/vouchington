@@ -7,7 +7,7 @@ description: Plan Vouchington changes with evidence and a proportional durable r
 
 ## Canonical skill (required)
 
-Use `vouchington-workflow:planning` when the runtime provides it; otherwise read the installed canonical `node_modules/vouchington-tooling/skills/planning/SKILL.md` and resolve its supporting resources relative to that directory. If the canonical skill cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
+Claude Code, Codex, and Grok load the plugin skill `skills:planning`. If it cannot be loaded, stop and report the missing prerequisite; never apply this adapter alone.
 
 Scale planning and independent review to the scope, uncertainty, and risk of the change.
 

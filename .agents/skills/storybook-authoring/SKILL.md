@@ -7,8 +7,7 @@ description: Author Storybook stories, fixtures, browser-mode tests, and compone
 
 ## Canonical skill (required)
 
-Claude Code and Codex load `vouchington-testing:storybook-authoring`; Grok, Cursor, and OpenCode read
-`node_modules/vouchington-tooling/skills/storybook-authoring/SKILL.md`. If the canonical skill cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
+Claude Code, Codex, and Grok load the plugin skill `skills:test-authoring` and read its `references/storybook.md`. If either cannot be loaded, stop and report the missing prerequisite; never apply this adapter alone.
 
 ## Vouchington additions
 

@@ -7,7 +7,7 @@ description: Draft, validate, or update a Vouchington PR description.
 
 ## Canonical skill (required)
 
-Claude Code and Codex load `vouchington-workflow:pr-description`; Grok, Cursor, and OpenCode read `node_modules/vouchington-tooling/skills/pr-description/SKILL.md` and resolve its supporting resources relative to that directory. If it cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
+Claude Code, Codex, and Grok load the plugin skill `skills:pr-description` for the writing rules, and `vouchington-workflow:pr-description` for the `pr_create`, `pr_update`, and `pr_validate` MCP tools. If either cannot be loaded, stop and report the missing prerequisite; never apply this adapter alone.
 
 ## Vouchington additions
 

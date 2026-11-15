@@ -7,8 +7,7 @@ description: Author and run Voucha Playwright specs, helpers, fixtures, and brow
 
 ## Canonical skill (required)
 
-Claude Code and Codex load `vouchington-testing:playwright-authoring`; Grok, Cursor, and OpenCode read
-`node_modules/vouchington-tooling/skills/playwright-authoring/SKILL.md`. If the canonical skill cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
+Claude Code, Codex, and Grok load the plugin skills `skills:playwright-authoring` and `skills:test-authoring` (general test rules). If either cannot be loaded, stop and report the missing prerequisite; never apply this adapter alone.
 
 ## Vouchington additions
 

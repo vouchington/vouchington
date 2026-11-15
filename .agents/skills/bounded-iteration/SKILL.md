@@ -7,12 +7,7 @@ description: Bound the rows each Voucha job, sweep, cleanup, or list endpoint re
 
 ## Canonical skill (required)
 
-Claude Code and Codex load `vouchington-database:bounded-iteration`; if that canonical plugin
-source is unavailable or unreadable, read
-`node_modules/vouchington-tooling/skills/bounded-iteration/SKILL.md` instead. Grok, Cursor, and
-OpenCode read that installed skill path. Resolve supporting resources relative to the selected
-canonical skill's directory. Stop if neither canonical source is readable; never apply this adapter
-alone.
+Claude Code, Codex, and Grok load the plugin skill `skills:bounded-iteration`. If it cannot be loaded, stop and report the missing prerequisite; never apply this adapter alone.
 
 ## Vouchington additions
 

@@ -1,9 +1,9 @@
 # Implementation
 
-Follow the canonical implementation (`node_modules/vouchington-tooling/skills/agent-workflow/references/implementation.md`)
-and evidence sweep (`node_modules/vouchington-tooling/skills/agent-workflow/references/evidence-sweep.md`)
-references (behavior-change updates, semantic conflict resolution, deadline removal, policy-table
-siblings, skipped-validation findings, final-diff comparison). Vouchington additions:
+Follow the "Implement" and "Before handoff" sections of `skills:agent-workflow` (behavior-change
+updates, deadline removal, policy-table siblings, skipped-validation findings, final-diff
+comparison) and the semantic conflict-resolution rule in the `skills:git-commit-checklist`
+`references/rebase-and-lease-push.md`. Vouchington additions:
 
 - Apply only the relevant local workspace and authoring skills. Reproduce a newly found blocker
   against current main before proposing a scope change.

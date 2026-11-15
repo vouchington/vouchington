@@ -7,7 +7,7 @@ description: Find verified deferred work in merged PR journals, instructions, an
 
 ## Canonical skill (required)
 
-Claude Code and Codex load `vouchington-workflow:revisit-followups`; Grok, Cursor, and OpenCode read `node_modules/vouchington-tooling/skills/revisit-followups/SKILL.md` and resolve its supporting resources relative to that directory. If it cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
+Claude Code, Codex, and Grok load the plugin skill `skills:revisit-followups`. If it cannot be loaded, stop and report the missing prerequisite; never apply this adapter alone.
 
 ## Vouchington additions
 

@@ -4,11 +4,10 @@ Automation prompt text lives here. The attended triage loop schedules and runs t
 
 ## Prompt Surfaces
 
-| Surface                    | Source                                                             | Used by                                                                                                                              |
-| -------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Code review inline overlay | [code-review-inline-comments.md](code-review-inline-comments.md)   | Default `inline_prompt_path` overlay for the `code-review` composite action; see the file itself for the full contract and consumers |
-| Scheduled prompts          | [scheduled/](scheduled/) (indexed in [SCHEDULED.md](SCHEDULED.md)) | The attended triage loop, which schedules and runs them locally                                                                      |
-| Automation templates       | [automation templates](automation/README.md)                       | Subagent prompts the attended triage loop fills in and dispatches locally (shepherd, plan, fix, CI failure, scheduled)               |
+| Surface              | Source                                                             | Used by                                                                                                                |
+| -------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| Scheduled prompts    | [scheduled/](scheduled/) (indexed in [SCHEDULED.md](SCHEDULED.md)) | The attended triage loop, which schedules and runs them locally                                                        |
+| Automation templates | [automation templates](automation/README.md)                       | Subagent prompts the attended triage loop fills in and dispatches locally (shepherd, plan, fix, CI failure, scheduled) |
 
 Automation templates use `{{UPPER_SNAKE_CASE}}` placeholders. The caller substitutes short values inline and supplies multiline or user-provided values from files.
 

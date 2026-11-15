@@ -32,8 +32,8 @@
 
 ## Automated review
 
-- The [review prompt](code-review-prompt.md) is advisory. CI and human merge authority remain
-  independent; request another review only after material changes to the reviewed code.
+- Automated review is advisory. CI and human merge authority remain independent; request another
+  review only after material changes to the reviewed code.
 - If a check exposes no accessible findings, annotations, or logs, report that limitation instead
   of treating the badge as actionable feedback.
 - Bot-noise configuration belongs to `.pr-shepherd/classification/` and `.pr-shepherdrc.yml`.

@@ -31,7 +31,40 @@ const ADAPTER_NAMES = [
   'web-vitest-test-authoring',
 ] as const
 
+const UPSTREAM_ADAPTERS: Record<string, string> = {
+  'agent-workflow': 'skills:agent-workflow',
+  'backend-vitest-test-authoring': 'skills:test-authoring',
+  'bounded-iteration': 'skills:bounded-iteration',
+  'git-commit-checklist': 'skills:git-commit-checklist',
+  'github-actions-checklist': 'skills:github-actions-authoring',
+  'github-issue': 'skills:github-issue',
+  'package-json-checklist': 'skills:package-json-checklist',
+  planning: 'skills:planning',
+  'playwright-authoring': 'skills:playwright-authoring',
+  'postgres-node-performance-tuning': 'skills:postgres-node-performance-tuning',
+  'postgres-partitioning-uuid-v7': 'skills:postgres-partitioning-uuid-v7',
+  'postgres-schema-design': 'skills:postgres-schema-design',
+  'pr-description': 'skills:pr-description',
+  'review-ci-logs': 'skills:review-ci-logs',
+  'revisit-followups': 'skills:revisit-followups',
+  'static-analysis-checklist': 'skills:static-analysis-checklist',
+  'storybook-authoring': 'skills:test-authoring',
+  'vitest-test-authoring': 'skills:test-authoring',
+  'web-vitest-test-authoring': 'skills:test-authoring',
+}
+
 describe('Vouchington workflow skill adapters', () => {
+  it.each(Object.entries(UPSTREAM_ADAPTERS))(
+    '%s names its canonical plugin skill and no node_modules fallback',
+    (name, canonical) => {
+      const body = readFileSync(resolve(repoRoot, `.agents/skills/${name}/SKILL.md`), 'utf8')
+
+      expect(body).toContain(`\`${canonical}\``)
+      expect(body).not.toContain('node_modules/vouchington-tooling')
+      expect(body).not.toMatch(/vouchington-(testing|database):/)
+    },
+  )
+
   it.each(ADAPTER_NAMES)('%s remains discoverable through its canonical symlink', name => {
     const claudePath = resolve(repoRoot, `.claude/skills/${name}`)
 
