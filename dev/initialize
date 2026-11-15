@@ -1104,7 +1104,25 @@ prepare_worktree_database_host() {
         echo "Run 'brew services info postgresql@18' for details, fix the service, and rerun './dev/initialize $mode'." >&2
         return 1
     fi
+    assert_postgres_server_matches_install "$mode" || return 1
     echo ""
+}
+
+# `brew services start` leaves an already-running server alone, so after `brew upgrade` the old
+# server keeps running against the new install's extension libraries and fails on first load
+# (for example plpgsql "Symbol not found"). The server is shared by every worktree, so report the
+# restart instead of restarting it here.
+assert_postgres_server_matches_install() {
+    local mode=$1 prefix installed running
+    prefix=$(brew --prefix postgresql@18 2>/dev/null) || return 0
+    [ -x "$prefix/bin/postgres" ] || return 0
+    installed=$("$prefix/bin/postgres" --version 2>/dev/null | awk '{print $3}')
+    running=$(PGCONNECT_TIMEOUT=5 psql -X --dbname=postgres --no-password -Atqc 'SHOW server_version' 2>/dev/null | awk '{print $1}')
+    [ -n "$installed" ] && [ -n "$running" ] || return 0
+    [ "$installed" = "$running" ] && return 0
+    echo -e "${RED}Error: Homebrew PostgreSQL was upgraded to $installed, but the running server is still $running.${NC}" >&2
+    echo "Run 'brew services restart postgresql@18' (this briefly disconnects every worktree) and rerun './dev/initialize $mode'." >&2
+    return 1
 }
 
 ensure_database_exists() {
