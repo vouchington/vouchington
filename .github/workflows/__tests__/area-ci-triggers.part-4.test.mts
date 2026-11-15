@@ -155,6 +155,13 @@ describe('Area CI Docker triggers', () => {
     ).toEqual([])
   })
 
+  it('runs backend compiler tests without requesting image builds', () => {
+    const compilerTest = 'backend/scripts/build/compile-source-rewrites.test.mts'
+    expectPrimaryMatches('backend', [compilerTest])
+    expectPrimaryMisses('build-backend-infra', [compilerTest])
+    expect(pathMatches(refinedFilters['build-backend']!, compilerTest, true)).toBe(false)
+  })
+
   it('matches mixed changes only when true Docker infrastructure is present', () => {
     expect(
       changedFilesMatchPrimary('build-backend-infra', [
