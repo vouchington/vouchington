@@ -1,5 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import { bookmarkEntity, unbookmarkEntity } from './upsert.mts'
+import { bookmarkEntities, bookmarkEntity, unbookmarkEntity } from './upsert.mts'
 import { getBookmarksForEntity } from './get.mts'
 import {
   getUserVouchElectionVote,
@@ -151,9 +151,15 @@ describe('Follow -> trust-vote coupling (issue #7257)', () => {
     // instead of 31 concurrent createTestUser pools that exhaust CI postgres (53300).
     const targets = await createTestUsersDirect(31)
 
-    for (const target of targets) {
-      await bookmarkEntity(user, 'user', { id: target.id }, 'follow')
-    }
+    // One real relation batch avoids 31 repeated database admissions and queue writes;
+    // castFollowUserVouches still charges the follower once per target in input order.
+    const relations = await bookmarkEntities(
+      user,
+      'user',
+      targets.map(target => ({ id: target.id })),
+      'follow',
+    )
+    expect(relations).toHaveLength(31)
 
     const votes = await Promise.all(
       targets.map(target => getUserVouchElectionVote(user.id, target.id)),
