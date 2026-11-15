@@ -62,11 +62,7 @@ export async function onVerificationSessionCanceled(
           verification_provider = NULL,
           pending_verification_session_id = NULL,
           pending_checkout_session_id = NULL
-      WHERE id = (
-          SELECT user_id FROM identity_verification_attempts
-          WHERE provider_session_id = ${sessionId}
-        )
-        AND deleted_at IS NULL
+      WHERE deleted_at IS NULL
         AND verification_status = 'identity_pending'
         AND pending_verification_session_id = ${sessionId}
       RETURNING id

@@ -5,10 +5,9 @@ import {
   snapshotCommunityAgentPrompt,
 } from '@services/community-agent-prompt-audit'
 import type { CommunityAgentPrompt } from './types.mts'
-import { getCommunityModerationPageSize } from './config.mts'
 
 /**
- * Deactivates one page of allocated prompts for a user in a community.
+ * Deactivates and frees all allocated prompt slots for a user in a community.
  * Called when a moderator is removed or demoted.
  * @param actorUserId - The user performing the removal/demotion (attributed in audit log).
  * @param userId - The moderator whose prompts are being deactivated.
@@ -17,8 +16,7 @@ export async function deactivateCommunityPromptsForUser(
   actorUserId: string,
   userId: string,
   communityId: string,
-): Promise<{ hasMore: boolean }> {
-  const limit = getCommunityModerationPageSize()
+): Promise<void> {
   // Use a transaction so both the snapshot read and the update run on the write pool,
   // preventing replica-lag from causing a missed deactivation.
   await using query = await beginTransaction()
@@ -47,52 +45,41 @@ export async function deactivateCommunityPromptsForUser(
         AND cap.is_slot_allocated = true
         AND cap.deleted_at IS NULL
         AND ap.deleted_at IS NULL
-      ORDER BY cap.id
-      LIMIT ${limit + 1}
       `,
   )
 
   if (rows.length === 0) {
     await query.commit()
-    return { hasMore: false }
+    return
   }
-  const page = rows.slice(0, limit)
-  const { rows: updated } = await query<{ id: string }>(
+  await query(
     sql`/* deactivateCommunityPromptsForUser */
       UPDATE community_agent_prompts
       SET is_slot_allocated = false,
           activated_at = NULL,
           deactivated_at = CURRENT_TIMESTAMP
-      WHERE id = ANY(${page.map(prompt => prompt.id)}::uuid[])
+      WHERE created_by_id = ${userId}
+        AND community_id = ${communityId}
         AND is_slot_allocated = true
         AND deleted_at IS NULL
-      RETURNING id
       `,
   )
 
   const deactivatedAt = new Date().toISOString()
-  const updatedIds = new Set(updated.map(prompt => prompt.id))
   await query.commit()
   await recordCommunityAgentPromptChanges(
     actorUserId,
     communityId,
-    page.flatMap(prompt =>
-      updatedIds.has(prompt.id)
-        ? [
-            {
-              agentPromptId: prompt.id,
-              action: 'deactivated' as const,
-              previousFields: snapshotCommunityAgentPrompt(prompt),
-              nextFields: {
-                ...snapshotCommunityAgentPrompt(prompt),
-                is_slot_allocated: false,
-                activated_at: null,
-                deactivated_at: deactivatedAt,
-              },
-            },
-          ]
-        : [],
-    ),
+    rows.map(prompt => ({
+      agentPromptId: prompt.id,
+      action: 'deactivated' as const,
+      previousFields: snapshotCommunityAgentPrompt(prompt),
+      nextFields: {
+        ...snapshotCommunityAgentPrompt(prompt),
+        is_slot_allocated: false,
+        activated_at: null,
+        deactivated_at: deactivatedAt,
+      },
+    })),
   )
-  return { hasMore: rows.length > limit }
 }
