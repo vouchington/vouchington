@@ -36,7 +36,7 @@ describe('RSS feed item ordinary category aliases', () => {
       },
     ])
     const category = alias.toUpperCase()
-    const jobs = await captureAddedPublicationEffectsForScope(feed.id, () =>
+    const jobs = await captureAddedPublicationEffectsForScope(topic.id, () =>
       upsertRssFeedItemCategories([{ rss_feed_item_id: item.id, categories: [category] }]),
     )
     expect(jobs.flatMap(job => job.keys)).toContainEqual({
