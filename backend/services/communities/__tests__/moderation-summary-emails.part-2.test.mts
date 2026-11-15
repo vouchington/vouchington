@@ -1,4 +1,7 @@
-import { getTestModerationSummaryRecipientCursor } from '@voucha/test-helpers/moderation-summary-retention'
+import {
+  claimTestModerationEmailSend,
+  getTestModerationSummaryRecipientCursor,
+} from '@voucha/test-helpers/moderation-summary-retention'
 import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { communitiesWorkConfig } from '../work-limits.mts'
@@ -17,11 +20,11 @@ import { backgroundQueue as emailDigests } from '@voucha/test-helpers/shared-bac
 import { updateUserFields } from '@services/users/update-fields'
 import { deleteUser } from '@services/users/delete'
 import { dispatchCommunityModerationSummaryEmails } from '../moderation-summary-emails.mts'
-import { collectTestModerationSummary as getCommunityModerationSummaryCommunities } from '@voucha/test-helpers/moderation-summary-collection'
-
-function pinnedNow(): Date {
-  return new Date(process.env.VOUCH_PROOF_NOW ?? '2026-10-31T12:00:00.000Z')
-}
+import {
+  collectTestModerationSummary as getCommunityModerationSummaryCommunities,
+  processTestModerationSummaryEmail,
+} from '@voucha/test-helpers/moderation-summary-collection'
+import type { SendCommunityModerationSummaryEmailData } from '@queues/background/enqueues/email-digests-domain'
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
 const ONE_WEEK_MS = 7 * ONE_DAY_MS
@@ -174,13 +177,11 @@ describe('getCommunityModerationSummaryCommunities activity digest', () => {
   it('does not send when there is activity but no pending moderation work', async () => {
     const user = await createTestUser()
     const activityMember = await createTestUser()
-    const now = pinnedNow()
-    const moderationEmailTime = now.toISOString().slice(11, 16)
     await updateUserFields(user!.id, {
       is_moderation_emails_enabled: true,
       moderation_email_cadence: 'daily',
       moderation_email_days_of_week: [1, 2, 3, 4, 5, 6, 7],
-      moderation_email_time_of_day: moderationEmailTime,
+      moderation_email_time_of_day: '00:00',
       moderation_email_timezone: 'UTC',
     })
     const community = await insertTestCommunity({ createdById: user!.id })
@@ -205,21 +206,25 @@ describe('getCommunityModerationSummaryCommunities activity digest', () => {
       approvedById: user!.id,
     })
 
+    const now = new Date()
     await dispatchCommunityModerationSummaryEmails(
       now,
       getTestModerationSummaryRecipientCursor(user!.id),
     )
 
     const jobs = await readAllQueueJobs(emailDigests)
-    expect(
-      jobs.some(job => {
-        const data = job.data as { input?: { userId?: string } }
-        return (
-          job.name === EMAIL_DIGESTS_SEND_MODERATION_SUMMARY_JOB.name &&
-          data.input?.userId === user!.id
-        )
-      }),
-    ).toBe(false)
+    const queued = jobs.find(job => {
+      const data = job.data as { input?: { userId?: string } }
+      return (
+        job.name === EMAIL_DIGESTS_SEND_MODERATION_SUMMARY_JOB.name &&
+        data.input?.userId === user!.id
+      )
+    })
+    expect(queued).toBeDefined()
+    onTestFinished(() => queued!.remove())
+    const data = queued!.data as SendCommunityModerationSummaryEmailData
+    await expect(processTestModerationSummaryEmail(data.input, data.variables)).resolves.toBeNull()
+    await expect(claimTestModerationEmailSend(user!.id, data.input.trackingKey)).resolves.toBe(true)
   })
 
   it('excludes posts and members created before the activity window', async () => {

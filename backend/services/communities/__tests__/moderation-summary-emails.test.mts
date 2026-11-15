@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { communitiesWorkConfig } from '../work-limits.mts'
+import { processTestModerationSummaryEmail } from '@voucha/test-helpers/moderation-summary-collection'
+import type { SendCommunityModerationSummaryEmailData } from '@queues/background/enqueues/email-digests-domain'
 import { runWithCapturedQueries } from '@data-stores/psql/query-capture'
 import {
   createTestUser,
@@ -48,33 +50,34 @@ describe('moderation summary dispatch', () => {
     onTestFinished(restore)
   })
 
-  it.each([false, true])('skips summary reads for an existing claim (sent=%s)', async sent => {
-    const user = await createTestUser()
-    const now = pinnedNow()
-    await seedDueModerator(user!.id, {
-      time: now.toISOString().slice(11, 16),
-      timeZone: 'UTC',
-      cadence: 'daily',
-      days: [1, 2, 3, 4, 5, 6, 7],
-    })
-    const sendKey = `daily:${now.toISOString().slice(0, 10)}`
-    await expect(claimTestModerationEmailSend(user!.id, sendKey)).resolves.toBe(true)
-    if (sent) await markModerationEmailSent(user!.id, sendKey)
+  it.each([false, true])(
+    'preserves an existing claim without admitting collection (sent=%s)',
+    async sent => {
+      const user = await createTestUser()
+      const now = pinnedNow()
+      await seedDueModerator(user!.id, {
+        time: now.toISOString().slice(11, 16),
+        timeZone: 'UTC',
+        cadence: 'daily',
+        days: [1, 2, 3, 4, 5, 6, 7],
+      })
+      const sendKey = `daily:${now.toISOString().slice(0, 10)}`
+      await expect(claimTestModerationEmailSend(user!.id, sendKey)).resolves.toBe(true)
+      if (sent) await markModerationEmailSent(user!.id, sendKey)
 
-    const capture = await runWithCapturedQueries(() =>
-      dispatchCommunityModerationSummaryEmails(
-        now,
-        getTestModerationSummaryRecipientCursor(user!.id),
-      ),
-    )
-    const ownedQueries = capture.queries.filter(query => query.values.includes(user!.id))
-    expect(
-      ownedQueries.some(query => query.text.includes('getCommunityModerationSummaryCommunities')),
-    ).toBe(false)
-    expect(ownedQueries.some(query => query.text.includes('hasModerationEmailClaim'))).toBe(true)
+      const capture = await runWithCapturedQueries(() =>
+        dispatchCommunityModerationSummaryEmails(
+          now,
+          getTestModerationSummaryRecipientCursor(user!.id),
+        ),
+      )
+      const ownedQueries = capture.queries.filter(query => query.values.includes(user!.id))
+      expect(ownedQueries.some(query => query.text.includes('hasModerationEmailClaim'))).toBe(true)
 
-    expect(await findQueuedModerationSummary(user!.id)).toBeUndefined()
-  })
+      expect(await findQueuedModerationSummary(user!.id)).toBeUndefined()
+      await expect(claimTestModerationEmailSend(user!.id, sendKey)).resolves.toBe(false)
+    },
+  )
 
   it('claims daily and weekly windows independently', async () => {
     const user = await createTestUser()
@@ -188,23 +191,28 @@ describe('moderation summary dispatch', () => {
     })
   })
 
-  it('does not enqueue summaries for quiet communities', async () => {
+  it('releases a quiet-community claim after bounded collection', async () => {
     const user = await createTestUser()
-    const now = pinnedNow()
     await seedDueModerator(user!.id, {
-      time: now.toISOString().slice(11, 16),
+      time: '00:00',
       timeZone: 'UTC',
       cadence: 'daily',
       days: [1, 2, 3, 4, 5, 6, 7],
       pendingReview: false,
     })
 
+    const now = new Date()
     await dispatchCommunityModerationSummaryEmails(
       now,
       getTestModerationSummaryRecipientCursor(user!.id),
     )
 
-    expect(await findQueuedModerationSummary(user!.id)).toBeUndefined()
+    const queued = await findQueuedModerationSummary(user!.id)
+    expect(queued).toBeDefined()
+    onTestFinished(() => queued!.remove())
+    const data = queued!.data as SendCommunityModerationSummaryEmailData
+    await expect(processTestModerationSummaryEmail(data.input, data.variables)).resolves.toBeNull()
+    await expect(claimTestModerationEmailSend(user!.id, data.input.trackingKey)).resolves.toBe(true)
   })
 })
 
