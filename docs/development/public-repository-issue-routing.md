@@ -14,7 +14,7 @@ creating a label requires exact human approval for its repository, name, descrip
 
 PR creation remains separately authorized. Credential or helper capability never grants scope.
 Every write revalidates canonical repository identity and permission, and every result is read back.
-The `github-issue-agent` subagent must not close, delete, or lock issues. The interactive root agent
+Any agent following the `github-issue` skill, other than the interactive root, must not close, delete, or lock issues. The interactive root agent
 acting as the human-facing orchestrator may close a specifically identified issue only with the
 human's explicit authorization for that exact closure. The root performs this close directly and
 must not delegate it. Immediately before the write, it follows the canonical mutation gate and

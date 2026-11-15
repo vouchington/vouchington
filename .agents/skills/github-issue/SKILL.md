@@ -8,17 +8,19 @@ description: Search, verify, create, update, classify, and link Vouchington GitH
 ## Canonical skill (required)
 
 Claude Code and Codex load `vouchington-workflow:github-issue`; the Claude
-`github-issue-agent` subagent, Grok, Cursor, and OpenCode read
+Grok, Cursor, and OpenCode read
 `node_modules/vouchington-tooling/skills/github-issue/SKILL.md`. If neither source is readable,
 report the missing prerequisite before any issue mutation; never apply this overlay alone.
 
 ## Vouchington additions
 
-Use the `github-issue-agent` for issue work within the caller's authorization. The interactive
+Do issue work by following this skill directly, within the caller's authorization. The interactive
 root may close a specifically identified issue only with explicit human authorization for that
-closure; it must first apply the canonical mutation gate and read back the result. The issue agent
-must not close an issue; the root cannot delegate that exception. The issue agent does not edit
-code, push, create branches, delete, or lock issues. Follow
+closure; it must first apply the canonical mutation gate and read back the result. Any other
+agent following this skill must not close an issue; the root cannot delegate that exception. No
+agent following this skill edits code, pushes, creates branches, deletes, or locks issues, or
+pastes full issue bodies. When linking a PR, keep the PR body `## Related issues` section current
+with `Closes #N` and `Refs #N` lines. Follow
 [public repository routing](../../../docs/development/public-repository-issue-routing.md).
 
 Default `TARGET_REPO` to `vouchington/vouchington`; change it only on explicit human input.
