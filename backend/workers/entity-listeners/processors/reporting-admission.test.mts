@@ -1,3 +1,5 @@
+import { reconcileEntityBatches } from './reconciliation-batches.mts'
+import type { ReconcileEntityData } from '@queues/entity-listeners/types'
 import { describe, expect, it } from 'vitest'
 import type { Job } from 'glide-mq'
 import { readTestReportingJobsByRevision } from '@voucha/test-helpers/reporting-daily-rollups'
@@ -61,6 +63,81 @@ describe('reporting admission', () => {
     expect(jobs).toHaveLength(1)
     expect(jobs[0]!.name).toBe(REPORTING_CHANGED_DAY_JOB.name)
     expect(jobs[0]!.data).toEqual({ kind, day, revision: queuedRevision })
+  })
+
+  it('replays the same bounded-day admission but admits a newer source tuple on a later run', async () => {
+    const day = '2000-01-03'
+    const first: ReconcileEntityData = {
+      entityType: 'reporting_growth',
+      entityId: day,
+      changedAtEpochUs: '946857600000000',
+      changeId: crypto.randomUUID(),
+    }
+    const latest: ReconcileEntityData = {
+      ...first,
+      changedAtEpochUs: '946857600000001',
+      changeId: crypto.randomUUID(),
+    }
+    const later: ReconcileEntityData = {
+      ...first,
+      changedAtEpochUs: '946857600000003',
+      changeId: crypto.randomUUID(),
+    }
+    const failed: ReconcileEntityData = {
+      ...first,
+      entityId: '2000-01-04',
+      changedAtEpochUs: '946857600000002',
+      changeId: crypto.randomUUID(),
+    }
+    const firstRevision = `${first.changeId}-${first.changedAtEpochUs}`
+    const latestRevision = `${latest.changeId}-${latest.changedAtEpochUs}`
+    const laterRevision = `${later.changeId}-${later.changedAtEpochUs}`
+    const source = {
+      async *[Symbol.asyncIterator]() {
+        yield [first]
+        yield [latest, failed]
+      },
+    }
+    await expect(
+      reconcileEntityBatches(
+        source,
+        async candidate => {
+          if (candidate === failed) throw new Error('later group admission failed')
+          await reconcileEntity(candidate)
+        },
+        {
+          hasMore: () => false,
+          onMore: async () => {},
+        },
+      ),
+    ).rejects.toThrow('later group admission failed')
+    expect(await readTestReportingJobsByRevision(firstRevision)).toEqual([])
+    const admitted = await readTestReportingJobsByRevision(latestRevision)
+    expect(admitted).toHaveLength(1)
+    expect(admitted[0]!.data).toEqual({ kind: 'growth', day, revision: latestRevision })
+
+    // A retried bounded run retains the same actual-source identity, even after an
+    // earlier day was admitted before a later group's enqueue failed.
+    await reconcileEntityBatches(source, reconcileEntity, {
+      hasMore: () => false,
+      onMore: async () => {},
+    })
+    expect((await readTestReportingJobsByRevision(latestRevision)).map(job => job.id)).toEqual([
+      admitted[0]!.id,
+    ])
+    const next = {
+      async *[Symbol.asyncIterator]() {
+        yield [later]
+      },
+    }
+    await reconcileEntityBatches(next, reconcileEntity, {
+      hasMore: () => false,
+      onMore: async () => {},
+    })
+    const nextJobs = await readTestReportingJobsByRevision(laterRevision)
+    expect(nextJobs).toHaveLength(1)
+    expect(nextJobs[0]!.id).not.toBe(admitted[0]!.id)
+    expect(nextJobs[0]!.data).toEqual({ kind: 'growth', day, revision: laterRevision })
   })
 
   it.each([undefined, 'not-a-day'])(
