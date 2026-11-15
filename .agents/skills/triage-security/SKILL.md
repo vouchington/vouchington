@@ -43,7 +43,7 @@ post-process a PR, or make another mutation for either disposition.
 Bucket records only when `disposition: 'grouped_issue'` and
 `execution.status: 'proposed'`, then group them by identical
 `issueCandidate.groupKey`. Require each issue candidate's group key, title, and
-summary. Invoke one `github-issue-agent` workflow per group with all member
+summary. Follow the `github-issue` skill once per group with all member
 findings, never one issue workflow per finding. Reject missing or unstable group
 keys. Keep duplicate search, live taxonomy, labels, milestones, issue creation,
 and post-create verification local by following

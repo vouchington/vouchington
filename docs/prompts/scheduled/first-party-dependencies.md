@@ -13,10 +13,9 @@ workaround once its fix is released.
 - This privileged scheduled run must not dispatch read-only Codex exploration or self-review roles.
   The main agent performs the evidence gathering and a separate confidence review before any
   mutation.
-- Treat issue creation and mutation as implementation work. Delegate it serially to one
-  `gpt-5.6-terra` subagent that invokes `$github-issue` and follows that skill's live-taxonomy,
-  duplicate-search, verification, and Jonathan-owned-repository guardrails. Do not dispatch it
-  until the confidence review confirms the evidence and proposed disposition.
+- Treat issue creation and mutation as implementation work. Perform it by invoking
+  `$github-issue` and following that skill's live-taxonomy, duplicate-search, verification, and
+  Jonathan-owned-repository guardrails. Do not start it until the confidence review confirms the evidence and proposed disposition.
 
 ## Audit and selection
 

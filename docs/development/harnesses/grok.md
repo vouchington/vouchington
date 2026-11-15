@@ -7,7 +7,7 @@ copied hooks, skills, or permission allowlists.
 
 - Read checked-in `AGENTS.md` files. Do not add `CLAUDE.md`; it is gitignored and would take precedence in Claude Code.
 - Skills load from [`.agents/skills/`](../../../.agents/skills).
-- Hooks, permissions, and `github-issue-agent` load through Claude-compat from
+- Hooks and permissions load through Claude-compat from
   [`.claude/`](../../../.claude).
 - MCP: no repository file registers a server. Grok imports the machine's Claude registration of
   `vouchington-tooling` (see vouchington-machines), and its tools appear as

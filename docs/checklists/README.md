@@ -1,6 +1,6 @@
 # Checklists
 
-Consolidated lifecycle and edit checklists for the Voucha monorepo. Each checklist is the authoritative reference for its action; matching skills provide minimal entry points that route back here instead of duplicating the rules. Dedicated Codex adapters are intentionally limited to the three lifecycle checklist skills.
+Consolidated lifecycle and edit checklists for the Voucha monorepo. Each checklist is the authoritative reference for its action; matching skills provide minimal entry points that route back here instead of duplicating the rules. Skills get no dedicated Codex agent adapters.
 
 ## Checklists
 
@@ -16,7 +16,6 @@ Consolidated lifecycle and edit checklists for the Voucha monorepo. Each checkli
 ## See Also
 
 - Skills: [.agents/skills/git-commit-checklist](../../.agents/skills/git-commit-checklist/SKILL.md), [package-json-checklist](../../.agents/skills/package-json-checklist/SKILL.md), [github-actions-checklist](../../.agents/skills/github-actions-checklist/SKILL.md), [voucha-queue-authoring](../../.agents/skills/voucha-queue-authoring/SKILL.md)
-- Lifecycle Codex checklist adapters: [.codex/agents/git-commit-checklist.toml](../../.codex/agents/git-commit-checklist.toml), [package-json-checklist.toml](../../.codex/agents/package-json-checklist.toml), [github-actions-checklist.toml](../../.codex/agents/github-actions-checklist.toml)
 - [docs/README.md](../README.md) — Full documentation index
 
 ## Reference index
