@@ -1,3 +1,4 @@
+import { readGrowthRequestFacts } from '@services/reporting-daily-rollups/read-growth'
 import type { GrowthMetrics, GrowthRange } from './types.mts'
 import { getUserGrowth } from './get-user-growth.mts'
 import { getContentProduction } from './get-content-production.mts'
@@ -28,12 +29,13 @@ export function getGrowthMetrics(range: GrowthRange): Promise<GrowthMetrics> {
 async function loadGrowthMetrics(range: GrowthRange): Promise<GrowthMetrics> {
   const now = new Date()
   const periodStart = getRangeStart(range, now)
+  const facts = await readGrowthRequestFacts(periodStart, now)
 
   const [userGrowth, contentProduction, engagement, networkEffects, revenue, infrastructure] =
     await Promise.all([
-      getUserGrowth(range, periodStart),
-      getContentProduction(range, periodStart),
-      getEngagement(range, periodStart),
+      getUserGrowth(range, periodStart, facts),
+      getContentProduction(range, periodStart, facts),
+      getEngagement(range, periodStart, facts),
       getNetworkEffects(range, periodStart),
       getRevenue(range, periodStart),
       getInfrastructureMetrics(range, periodStart),

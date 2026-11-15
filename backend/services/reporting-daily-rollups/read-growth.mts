@@ -25,12 +25,26 @@ export async function readGrowthDayCounts(
   strictStart = true,
   scope: 'all' | 'content' | 'users' | 'engagement' | 'user-follow-totals' = 'all',
 ): Promise<GrowthDayCounts[]> {
+  const { rows } = await read<GrowthDayCounts>(
+    sql`/* readGrowthDayCounts */ `.append(
+      buildGrowthDayCounts(periodStart, now, strictStart, scope),
+    ),
+  )
+  return rows
+}
+
+function buildGrowthDayCounts(
+  periodStart: Date,
+  now: Date,
+  strictStart: boolean,
+  scope: 'all' | 'content' | 'users' | 'engagement' | 'user-follow-totals',
+) {
   const windows = getGrowthReadWindows(periodStart, now, strictStart)
   const firstStart = getMinUUIDv7ForDate(windows.firstPartial?.start ?? windows.today.start)
   const firstEnd = getMinUUIDv7ForDate(windows.firstPartial?.end ?? windows.today.start)
   const todayStart = getMinUUIDv7ForDate(windows.today.start)
   const postPredicate = sql`((id > ${firstStart} AND id < ${firstEnd}) OR (id > ${todayStart} OR (id = ${todayStart} AND ${!strictStart || periodStart < windows.today.start})))`
-  const statement = sql`/* readGrowthDayCounts */ WITH source_counts AS (
+  const statement = sql`WITH source_counts AS (
     SELECT day, user_count, post_count, review_count, data_point_count, discussion_count,
       comment_count, story_count, approved_count, reviewed_count, follow_count, vote_count, retained_vote_count
     FROM growth_metrics_daily_totals WHERE day >= ${windows.completed.start.toISOString().slice(0, 10)}::date AND day < ${windows.completed.end.toISOString().slice(0, 10)}::date`
@@ -81,19 +95,25 @@ export async function readGrowthDayCounts(
   statement.append(') SELECT day::text')
   for (const column of growthCountColumns) statement.append(`, sum(${column})::int AS ${column}`)
   statement.append(' FROM source_counts GROUP BY day ORDER BY day')
-  const { rows } = await read<GrowthDayCounts>(statement)
-  return rows
+  return statement
 }
 
 export async function countGrowthActiveAuthors(
   periodStart: Date,
   now = new Date(),
 ): Promise<number> {
+  const { rows } = await read<{ count: number }>(
+    sql`/* countGrowthActiveAuthors */ `.append(buildGrowthActiveAuthors(periodStart, now)),
+  )
+  return rows[0]!.count
+}
+
+function buildGrowthActiveAuthors(periodStart: Date, now: Date) {
   const windows = getGrowthReadWindows(periodStart, now, true)
   const firstStart = getMinUUIDv7ForDate(windows.firstPartial?.start ?? windows.today.start)
   const firstEnd = getMinUUIDv7ForDate(windows.firstPartial?.end ?? windows.today.start)
   const todayStart = getMinUUIDv7ForDate(windows.today.start)
-  const { rows } = await read<{ count: number }>(sql`/* countGrowthActiveAuthors */
+  return sql`
     SELECT count(DISTINCT author_user_id)::int AS count FROM (
       SELECT author_user_id FROM growth_metrics_daily_post_authors
       WHERE day >= ${windows.completed.start.toISOString().slice(0, 10)}::date AND day < ${windows.completed.end.toISOString().slice(0, 10)}::date
@@ -101,8 +121,7 @@ export async function countGrowthActiveAuthors(
       SELECT created_by_id FROM posts WHERE deleted_at IS NULL AND (
         (id > ${firstStart} AND id < ${firstEnd}) OR (id > ${todayStart} OR (id = ${todayStart} AND ${periodStart < windows.today.start})))
     ) authors
-  `)
-  return rows[0]!.count
+  `
 }
 
 function getGrowthReadWindows(periodStart: Date, now: Date, strictStart: boolean) {
@@ -114,3 +133,40 @@ function getGrowthReadWindows(periodStart: Date, now: Date, strictStart: boolean
   }
   return windows
 }
+
+export async function readGrowthRequestFacts(periodStart: Date, now: Date) {
+  const dayQuery =
+    sql`/* readGrowthRequestDayCounts */ SELECT 'period'::text AS request_window, facts.* FROM (`
+      .append(buildGrowthDayCounts(periodStart, now, true, 'all'))
+      .append(sql`) facts UNION ALL SELECT 'all'::text AS request_window, facts.* FROM (`)
+      .append(buildGrowthDayCounts(new Date(0), now, false, 'user-follow-totals'))
+      .append(') facts ORDER BY request_window, day')
+  const starts = [
+    periodStart,
+    new Date(now.getTime() - 86_400_000),
+    new Date(now.getTime() - 30 * 86_400_000),
+  ]
+  const uniqueStarts = [...new Set(starts.map(start => start.getTime()))]
+  const authorQuery = sql`/* readGrowthRequestActiveAuthors */ `
+  for (const [index, start] of uniqueStarts.entries()) {
+    if (index > 0) authorQuery.append(' UNION ALL ')
+    authorQuery
+      .append(sql`SELECT ${index}::int AS request_window, facts.count FROM (`)
+      .append(buildGrowthActiveAuthors(new Date(start), now))
+      .append(') facts')
+  }
+  const [days, authors] = await Promise.all([
+    read<GrowthDayCounts & { request_window: string }>(dayQuery),
+    read<{ request_window: number; count: number }>(authorQuery),
+  ])
+  const authorCount = (start: Date) =>
+    authors.rows.find(row => row.request_window === uniqueStarts.indexOf(start.getTime()))!.count
+  return {
+    days: days.rows.filter(row => row.request_window === 'period'),
+    allDays: days.rows.filter(row => row.request_window === 'all'),
+    activeUsers: authorCount(starts[0]!),
+    dau: authorCount(starts[1]!),
+    mau: authorCount(starts[2]!),
+  }
+}
+export type GrowthRequestFacts = Awaited<ReturnType<typeof readGrowthRequestFacts>>

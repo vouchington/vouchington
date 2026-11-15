@@ -100,7 +100,28 @@ export const ENTITY_LISTENERS_COMMUNITY_AGENT_PROMPTS_DEACTIVATED_JOB = defineBa
   priority: PRIORITY_TASK,
 })
 
+export type ReportingJobData = {
+  kind: 'growth' | 'moderator_workload'
+  day?: string
+  revision: string
+}
+export const REPORTING_DAILY_JOB = defineBackgroundJob<ReportingJobData>(ENTITY_LISTENERS_DOMAIN, {
+  name: 'reportingDaily',
+  priority: PRIORITY_DISPATCH,
+  ordering: { key: 'entity-listeners:reporting', concurrency: 1 },
+})
+export const REPORTING_CHANGED_DAY_JOB = defineBackgroundJob<ReportingJobData>(
+  ENTITY_LISTENERS_DOMAIN,
+  {
+    name: 'reportingChangedDay',
+    priority: PRIORITY_TASK,
+    ordering: { key: 'entity-listeners:reporting', concurrency: 1 },
+  },
+)
+
 export const ENTITY_LISTENERS_JOBS = [
+  REPORTING_DAILY_JOB,
+  REPORTING_CHANGED_DAY_JOB,
   ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB,
   ENTITY_LISTENERS_RECONCILE_ENTITY_JOB,
   ENTITY_LISTENERS_URL_CREATED_JOB,

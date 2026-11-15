@@ -1,12 +1,21 @@
 import { growthSeries } from '@services/reporting-daily-rollups/series'
-import { readGrowthDayCounts } from '@services/reporting-daily-rollups/read-growth'
+import {
+  readGrowthDayCounts,
+  type GrowthRequestFacts,
+} from '@services/reporting-daily-rollups/read-growth'
 import type { GrowthRange, Engagement } from './types.mts'
 
-export async function getEngagement(range: GrowthRange, periodStart: Date): Promise<Engagement> {
-  const [days, allDays] = await Promise.all([
-    readGrowthDayCounts(periodStart, new Date(), true, 'engagement'),
-    readGrowthDayCounts(new Date(0), new Date(), false, 'user-follow-totals'),
-  ])
+export async function getEngagement(
+  range: GrowthRange,
+  periodStart: Date,
+  facts?: GrowthRequestFacts,
+): Promise<Engagement> {
+  const [days, allDays] = facts
+    ? [facts.days, facts.allDays]
+    : await Promise.all([
+        readGrowthDayCounts(periodStart, new Date(), true, 'engagement'),
+        readGrowthDayCounts(new Date(0), new Date(), false, 'user-follow-totals'),
+      ])
   const votes = (day: (typeof days)[number]) =>
     day.vote_count + (range === 'all' ? day.retained_vote_count : 0)
   const totalUsers = allDays.reduce((sum, day) => sum + day.user_count, 0)

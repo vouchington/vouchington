@@ -1,5 +1,6 @@
 import { growthSeries } from '@services/reporting-daily-rollups/series'
 import {
+  type GrowthRequestFacts,
   countGrowthActiveAuthors,
   readGrowthDayCounts,
 } from '@services/reporting-daily-rollups/read-growth'
@@ -8,11 +9,14 @@ import type { GrowthRange, ContentProduction } from './types.mts'
 export async function getContentProduction(
   _range: GrowthRange,
   periodStart: Date,
+  facts?: GrowthRequestFacts,
 ): Promise<ContentProduction> {
-  const [days, activeUsers] = await Promise.all([
-    readGrowthDayCounts(periodStart, new Date(), true, 'content'),
-    countGrowthActiveAuthors(periodStart),
-  ])
+  const [days, activeUsers] = facts
+    ? [facts.days, facts.activeUsers]
+    : await Promise.all([
+        readGrowthDayCounts(periodStart, new Date(), true, 'content'),
+        countGrowthActiveAuthors(periodStart),
+      ])
   const total = days.reduce(
     (sum, day) => ({
       posts: sum.posts + day.post_count,

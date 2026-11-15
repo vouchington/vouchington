@@ -166,7 +166,8 @@ COMMENT ON COLUMN ${relation}.inbound_follow_activity_row_id IS 'Current inbound
 `
   }
 
-  query += `\nCREATE INDEX IF NOT EXISTS idx_relation__user__follow__user__reporting_created_at
+  if (metadata.table_name === 'relation__user__follow__user')
+    query += `\nCREATE INDEX IF NOT EXISTS idx_relation__user__follow__user__reporting_created_at
   ON relation__user__follow__user(created_at, subject_id, object_id);
 COMMENT ON INDEX idx_relation__user__follow__user__reporting_created_at IS 'Ordered source-day initialization and bounded follow-day reporting/reconciliation walks.';
 `
