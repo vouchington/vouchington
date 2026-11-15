@@ -26,11 +26,11 @@
     "@data-stores/psql": "workspace:^",
     "@jongleberry/vurst-html": "^0.4.3",
     "@modules/utils": "workspace:^",
+    "@services/crawlers": "workspace:^",
     "@services/crawls": "workspace:^",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
-    "@services/crawlers": "workspace:^",
     "@services/urls": "workspace:^",
     "@services/urls-hostnames": "workspace:^",
     "@services/users": "workspace:^",

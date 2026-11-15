@@ -29,12 +29,6 @@ export async function getReferralClickLog(
       sra.signed_up_at,
       sra.user_id,
       sra.created_at,
-      NOT EXISTS (
-        SELECT 1 FROM session_referral_attributions earlier
-        WHERE earlier.session_id = sra.session_id
-          AND earlier.referrer_user_id = sra.referrer_user_id
-          AND earlier.id < sra.id
-      ) AS is_first_attribution,
       users.id AS user__id,
       users.username AS user__username,
       users.profile_image_id AS user__profile_image_id,
@@ -70,7 +64,6 @@ export async function getReferralClickLog(
   const users: Record<string, PublicUser> = {}
 
   for (const row of inspectedRows) {
-    if (!row.is_first_attribution) continue
     const id = row.id as string
     results.push({ __entity_type: 'referral_click_log', id })
     clicks[id] = {

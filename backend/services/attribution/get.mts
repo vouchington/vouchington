@@ -1,6 +1,7 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { isUUID } from '@modules/utils'
+import { getMinUUIDv7ForParentHistory } from '@modules/utils/ids'
 import onError from '@modules/on-error'
 
 export async function getSignupCountByReferrerId(referrerId: string): Promise<number> {
@@ -25,6 +26,7 @@ export async function getReferrerIdForSession(sessionId: string): Promise<string
     SELECT referrer_user_id
     FROM session_referral_attributions
     WHERE session_id = ${sessionId}
+      AND id >= ${getMinUUIDv7ForParentHistory(sessionId)}::uuid
     ORDER BY id ASC
     LIMIT 1
   `)

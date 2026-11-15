@@ -16,7 +16,8 @@ import type {
   CommunityRestrictionsResponseBody,
   CommunityRestrictionType,
 } from '@/types/api-responses'
-import { CommunityRaidModeActiveList } from './community-raid-mode-active-list'
+import { CommunityRaidModeRestrictions } from './community-raid-mode-restrictions'
+import { useCommunityRestrictionPages } from './use-community-restriction-pages'
 import { CommunityRaidModeForm } from './community-raid-mode-form'
 import {
   getActiveRestrictions,
@@ -37,6 +38,7 @@ export function CommunityRaidModePanel({ community, initialData }: Props) {
   const router = useRouter()
   const [state, dispatch] = useReducer(raidModeReducer, initialRaidModeState)
   const [isNavigating, startNavigation] = useTransition()
+  const restrictionPages = useCommunityRestrictionPages(community.slug, initialData)
   const activeRestrictions = useMemo(() => getActiveRestrictions(initialData), [initialData])
   const raidModeSuggestion = initialData.raid_mode_suggestion
   const isBusy = state.isSaving || isNavigating
@@ -53,6 +55,7 @@ export function CommunityRaidModePanel({ community, initialData }: Props) {
         reason: state.reason.trim() || undefined,
       })
       onSuccess(t('extracted.communities.communityRaidModePanel.raidModeActivated_acf3cc24'))
+      restrictionPages.resetRestrictions()
       startNavigation(() => router.refresh())
       dispatch({ type: 'resetBusy' })
     } catch (err) {
@@ -72,6 +75,7 @@ export function CommunityRaidModePanel({ community, initialData }: Props) {
     try {
       await liftCommunityRestriction(community.slug, restrictionId)
       onSuccess(t('extracted.communities.communityRaidModePanel.restrictionLifted_032247f0'))
+      restrictionPages.resetRestrictions()
       startNavigation(() => router.refresh())
       dispatch({ type: 'resetBusy' })
     } catch (err) {
@@ -104,6 +108,7 @@ export function CommunityRaidModePanel({ community, initialData }: Props) {
         tags: { form: 'community-raid-mode' },
       })
     }
+    restrictionPages.resetRestrictions()
     startNavigation(() => router.refresh())
     dispatch({ type: 'resetBusy' })
   }
@@ -152,8 +157,8 @@ export function CommunityRaidModePanel({ community, initialData }: Props) {
           </Alert>
         )}
 
-        <CommunityRaidModeActiveList
-          restrictions={activeRestrictions}
+        <CommunityRaidModeRestrictions
+          pages={restrictionPages}
           liftingId={state.liftingId}
           isBusy={isBusy}
           onLift={handleLift}

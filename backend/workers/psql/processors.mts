@@ -29,7 +29,7 @@ import {
   processAgentModerationRetentionContinuation,
   startAgentModerationRetentionContinuation,
 } from './processors/agent-moderation-retention.mts'
-import { enqueueAIRetentionContinuations } from '@queues/psql/enqueues'
+import { enqueueAIRetentionContinuations, enqueueReconcileVoteDrift } from '@queues/psql/enqueues'
 import {
   dataRetentionConfig,
   getClassifierRetentionDays,
@@ -160,8 +160,11 @@ export default async function processPsql(
       }
       return (dependencies?.refreshMaterializedView ?? refreshMaterializedView)(data.viewName)
     }
-    case 'reconcileVoteDrift':
-      return reconcilePostVoteDrift()
+    case 'reconcileVoteDrift': {
+      const result = await reconcilePostVoteDrift(undefined, { afterId: data?.afterId })
+      if (result.afterId) await enqueueReconcileVoteDrift({ afterId: result.afterId })
+      return result
+    }
     case 'aiRetentionContinuation':
     case 'cleanupDeletedConversations':
     case 'cleanupOperationalTombstones':

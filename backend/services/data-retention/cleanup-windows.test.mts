@@ -8,10 +8,8 @@ import {
   hardDeleteTestPosts,
   insertTestPostBatch,
   getTestUserRaw,
-  insertReferralAttributionAt,
   insertTestOAuthAccount,
   oauthAccountExistsByProviderUserId,
-  referralAttributionExistsById,
   setOAuthAccountRetentionTime,
   softDeleteUserAt,
 } from '@voucha/test-helpers'
@@ -71,40 +69,6 @@ describe('cleanup retention windows', () => {
     expect(await getTestUserRaw(atUpperBoundUser.id)).not.toBeNull()
     expect(await getTestUserRaw(afterUpperBoundUser.id)).not.toBeNull()
   })
-
-  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
-  it('only deletes anonymous referral attributions inside the bounded UUIDv7 window', async () => {
-    const window = createTestRetentionWindow()
-    const referrer = await createTestUserDirect()
-    if (!referrer) throw new Error('Failed to create referrer')
-
-    const beforeLowerBoundId = await insertReferralAttributionAt(
-      referrer.id,
-      window.beforeLowerBoundDate,
-    )
-    const firstEligibleId = await insertReferralAttributionAt(referrer.id, window.firstEligibleDate)
-    const secondEligibleId = await insertReferralAttributionAt(
-      referrer.id,
-      window.secondEligibleDate,
-    )
-    const atUpperBoundId = await insertReferralAttributionAt(referrer.id, window.upperBoundDate)
-    const afterUpperBoundId = await insertReferralAttributionAt(
-      referrer.id,
-      window.afterUpperBoundDate,
-    )
-
-    const oldReferralAttributionsCleanup = await runDataRetentionCleanup(
-      { batchSize: 500, maxBatches: 1 },
-      { families: ['oldReferralAttributions'], oldReferralAttributions: window },
-    ).then(result => result.oldReferralAttributions)
-
-    expect(oldReferralAttributionsCleanup).toEqual({ deleted: 2, hasMore: false })
-    expect(await referralAttributionExistsById(beforeLowerBoundId)).toBe(true)
-    expect(await referralAttributionExistsById(firstEligibleId)).toBe(false)
-    expect(await referralAttributionExistsById(secondEligibleId)).toBe(false)
-    expect(await referralAttributionExistsById(atUpperBoundId)).toBe(true)
-    expect(await referralAttributionExistsById(afterUpperBoundId)).toBe(true)
-  }, 30_000)
 
   // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('only deletes orphaned OAuth accounts inside the bounded retention window', async () => {

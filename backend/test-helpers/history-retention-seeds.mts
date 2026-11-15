@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
@@ -113,18 +112,4 @@ export async function insertTopicRecommendationForRetention(postId: string): Pro
   await write(sql`/* insertTopicRecommendationForRetention */
     INSERT INTO post_topic_recommendations (post_id, topic_title, topic_slug)
     VALUES (${postId}, ${`Retention ${postId}`}, ${`retention-${postId}`})`)
-}
-
-export async function insertReferralAttributionAt(
-  referrerId: string,
-  userId: string,
-  createdAt: Date,
-): Promise<string> {
-  const id = uuidv7({ msecs: createdAt.getTime() })
-  await write(sql`/* insertReferralAttributionAt */
-    INSERT INTO session_referral_attributions
-      (id, session_id, referrer_user_id, user_id, landing_url, utm_source, utm_medium)
-    VALUES (${id}, ${randomUUID()}, ${referrerId}, ${userId},
-      'https://example.com/retention', 'newsletter', 'email')`)
-  return id
 }

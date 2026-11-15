@@ -33,6 +33,8 @@ export interface PgPoolStatsRecord extends AnalyticsBaseRecord {
 export interface PgVoteDriftRecord extends AnalyticsBaseRecord {
   entity_table: string
   sampled: number
+  inspected: number
+  capped: number
   drifted: number
   sample_entity_id?: string
 }

@@ -90,7 +90,7 @@ export async function runModerationSummaryReportScenario(): Promise<void> {
     await runAndCapture('moderation-summary-report-work', async () => {
       const recipients = await getModerationSummaryRecipients(new Date())
       assert.ok(
-        recipients.some(({ id }) => id === RECIPIENT_ID),
+        recipients.recipients.some(({ id }) => id === RECIPIENT_ID),
         'A report on a deleted post remains moderator work',
       )
       return recipients

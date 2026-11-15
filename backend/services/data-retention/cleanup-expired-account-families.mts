@@ -1,7 +1,6 @@
 import { cleanupExpiredOAuthAuthorizations } from './cleanup-oauth-authorizations.mts'
 import { cleanupExpiredOAuthAuthorizationServerArtifacts } from './cleanup-oauth-authorization-server.mts'
 import { cleanupSoftDeletedUsers } from './cleanup-soft-deleted-users.mts'
-import { cleanupOldReferralAttributions } from './cleanup-referral-attributions.mts'
 import { cleanupHistories } from './cleanup-histories.mts'
 import { cleanupOAuthFriendEdgeWork } from './cleanup-oauth-friend-edges.mts'
 import { cleanupOrphanedOAuthAccounts } from './cleanup-orphaned-oauth-accounts.mts'
@@ -32,7 +31,6 @@ export async function cleanupExpiredAccountFamilies(
     | 'expiredOAuthAuthorizations'
     | 'expiredOAuthServerArtifacts'
     | 'softDeletedUsers'
-    | 'oldReferralAttributions'
     | 'histories'
     | 'oauthFriendEdges'
     | 'orphanedOAuthAccounts'
@@ -63,9 +61,6 @@ export async function cleanupExpiredAccountFamilies(
   const softDeletedUsers = active('softDeletedUsers')
     ? await cleanupSoftDeletedUsers(withLimits(options.softDeletedUsers))
     : { deleted: 0, hasMore: false }
-  const oldReferralAttributions = active('oldReferralAttributions')
-    ? await cleanupOldReferralAttributions(withLimits(options.oldReferralAttributions))
-    : { deleted: 0, hasMore: false }
   const histories = active('histories')
     ? await cleanupHistories(withLimits(options.histories))
     : {
@@ -75,8 +70,6 @@ export async function cleanupExpiredAccountFamilies(
         community_agent_prompt_revisions: { scanned: 0, changed: 0, hasMore: false },
         followed_user_import_requests: { scanned: 0, changed: 0, hasMore: false },
         pending_user_import_requests: { scanned: 0, changed: 0, hasMore: false },
-        referral_attribution_scrub: { scanned: 0, changed: 0, hasMore: false },
-        referral_attribution_expiry: { scanned: 0, changed: 0, hasMore: false },
       }
   const oauthFriendEdges = active('oauthFriendEdges')
     ? await cleanupOAuthFriendEdgeWork(
@@ -121,7 +114,6 @@ export async function cleanupExpiredAccountFamilies(
     expiredOAuthAuthorizations,
     expiredOAuthServerArtifacts,
     softDeletedUsers,
-    oldReferralAttributions,
     histories,
     oauthFriendEdges,
     orphanedOAuthAccounts,

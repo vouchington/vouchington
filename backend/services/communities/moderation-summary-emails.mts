@@ -2,7 +2,10 @@ import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getMarketingPostalAddress, getSiteUrl } from '@modules/utils'
 import onError from '@modules/on-error'
-import { enqueueSendCommunityModerationSummaryEmail } from '@queues/email-digests/enqueues'
+import {
+  enqueueDispatchCommunityModerationSummaryEmails,
+  enqueueSendCommunityModerationSummaryEmail,
+} from '@queues/email-digests/enqueues'
 import { createEmailUnsubscribeUrl } from '@services/users'
 import type { CommunityModerationSummaryEmailProps } from '@email-templates/core'
 import pMap from 'p-map'
@@ -15,12 +18,16 @@ import {
   type ModerationRecipientRow,
 } from './moderation-summary-schedule.mts'
 
-export async function dispatchCommunityModerationSummaryEmails(now = new Date()): Promise<void> {
-  const recipients = await getModerationSummaryRecipients(now)
-  await pMap(recipients, recipient => dispatchModerationSummary(recipient, now), {
+export async function dispatchCommunityModerationSummaryEmails(
+  now = new Date(),
+  afterId?: string,
+): Promise<void> {
+  const page = await getModerationSummaryRecipients(now, afterId)
+  await pMap(page.recipients, recipient => dispatchModerationSummary(recipient, now), {
     concurrency: 1,
     stopOnError: false,
   })
+  if (page.afterId) await enqueueDispatchCommunityModerationSummaryEmails({ afterId: page.afterId })
 }
 
 async function dispatchModerationSummary(

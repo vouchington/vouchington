@@ -113,7 +113,10 @@ describe('create.generated', () => {
     await createEligibleCrawl(url1!.id, crawler.id, new Date(Date.now() - 2 * 24 * 60 * 60 * 1000))
     await createEligibleCrawl(url2!.id, crawler.id, new Date(Date.now() - 1 * 24 * 60 * 60 * 1000))
 
-    const results = await searchParentPathsNeedingBoilerplateRemoval([url1!.hostname.id], 1000)
+    const { candidates: results } = await searchParentPathsNeedingBoilerplateRemoval(
+      [url1!.hostname.id],
+      1000,
+    )
 
     const match = results.find(
       r => r.hostname_id === url1!.hostname.id && r.parent_path === '/blog',
@@ -142,7 +145,10 @@ describe('create.generated', () => {
       { cssSelectorsToRemove: [], htmlToRemove: [] },
       [],
     )
-    const results = await searchParentPathsNeedingBoilerplateRemoval([url1!.hostname.id], 1000)
+    const { candidates: results } = await searchParentPathsNeedingBoilerplateRemoval(
+      [url1!.hostname.id],
+      1000,
+    )
 
     const match = results.find(
       r => r.hostname_id === url1!.hostname.id && r.parent_path === '/news',
@@ -150,11 +156,11 @@ describe('create.generated', () => {
     expect(match).toBeUndefined()
   })
 
-  it('searchParentPathsNeedingBoilerplateRemoval ignores paths with only 1 URL', async () => {
+  it('searchParentPathsNeedingBoilerplateRemoval admits a singleton path for the worker to prove exhaustion', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const base = `https://bp-single-${random}.example.com`
 
-    // Only one URL has recent eligible crawl HTML - should not appear.
+    // A singleton is admitted; the path worker proves exhaustion before skipping.
     const url1 = await addUrl(null, `${base}/solo/only`)
     const url2 = await addUrl(null, `${base}/solo/another`)
     await updateUrlHostname(url1!.hostname.id, { is_crawlable: true })
@@ -165,12 +171,15 @@ describe('create.generated', () => {
     await createEligibleCrawl(url1!.id, crawler.id, new Date())
     await createNonEligible304Crawl(url2!.id, crawler.id, new Date())
 
-    const results = await searchParentPathsNeedingBoilerplateRemoval([url1!.hostname.id], 1000)
+    const { candidates: results } = await searchParentPathsNeedingBoilerplateRemoval(
+      [url1!.hostname.id],
+      1000,
+    )
 
     const match = results.find(
       r => r.hostname_id === url1!.hostname.id && r.parent_path === '/solo',
     )
-    expect(match).toBeUndefined()
+    expect(match).toBeDefined()
   })
 })
 

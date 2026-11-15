@@ -54,8 +54,15 @@ export async function runCrawlerBoilerplateScenario(): Promise<void> {
           seedUuid(0, '02'),
           '/explain-blog',
           3,
+          {},
+          () => new Date(),
+          URL_LOWER,
         )
-        assert.equal(candidates.length, 3, 'The seeded recent HTML corpus must fill the page')
+        assert.equal(
+          candidates.candidates.length,
+          3,
+          'The seeded recent HTML corpus must fill the page',
+        )
       },
       undefined,
       'searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId',

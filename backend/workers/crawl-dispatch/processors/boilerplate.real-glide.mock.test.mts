@@ -106,8 +106,10 @@ describe('crawl-dispatch boilerplate jobs through real GlideMQ', () => {
     })
     await updateUrlHostname(hostnameId, { is_crawlable: true })
     const crawler = await createCrawler(user, { hostname_id: hostnameId, crawler_type: 'fetch' })
+    const samples: { url_id: string; crawl_id: string }[] = []
     for (const url of urls) {
       const crawl = await createCrawl(url.id, crawler.id)
+      samples.push({ url_id: url.id, crawl_id: crawl.id })
       await updateCrawl(crawl.id, url.id, {
         response_status_code: 200,
         completed_at: new Date(),
@@ -134,9 +136,35 @@ describe('crawl-dispatch boilerplate jobs through real GlideMQ', () => {
       ).length,
     ).toBeGreaterThan(0)
 
+    const firstResult = await runJob('crawl.boilerplate_removal', {
+      hostname_id: hostnameId,
+      parent_path: '/blog',
+    })
+    expect(firstResult).toEqual({
+      hostname_id: hostnameId,
+      parent_path: '/blog',
+      skipped: false,
+      deferred: true,
+    })
+    expect(await getLatestBoilerplateRemovalByHostnameAndPath(hostnameId, '/blog')).toBeNull()
+    const secondResult = await runJob('crawl.boilerplate_removal', {
+      hostname_id: hostnameId,
+      parent_path: '/blog',
+      after: urls[0]!.id,
+      samples: samples.slice(0, 1),
+    })
+    expect(secondResult).toEqual({
+      hostname_id: hostnameId,
+      parent_path: '/blog',
+      skipped: false,
+      deferred: true,
+    })
+    expect(await getLatestBoilerplateRemovalByHostnameAndPath(hostnameId, '/blog')).toBeNull()
     const result = await runJob('crawl.boilerplate_removal', {
       hostname_id: hostnameId,
       parent_path: '/blog',
+      after: urls[1]!.id,
+      samples,
     })
     expect(result).toEqual({ hostname_id: hostnameId, parent_path: '/blog', skipped: false })
     expect(mockSend).toHaveBeenCalledTimes(2)
@@ -199,7 +227,7 @@ describe('boilerplate removal hostname sweep cursor', () => {
     expect(await processBoilerplateRemovalDispatcher(admit)).toEqual([])
     expect(await getTestBoilerplateRemovalHostnameCursor()).toBeNull()
 
-    // A capped run stops the cursor just before the last candidate's hostname.
+    // A full URL page persists continuation before advancing any hostname.
     onTestFinished(
       overrideDynamicConfigFieldsForTest(crawlBoilerplateRemovalWorkConfig, {
         hostname_batch_size: 3,
@@ -207,8 +235,9 @@ describe('boilerplate removal hostname sweep cursor', () => {
       }),
     )
     await setTestBoilerplateRemovalHostnameCursorBefore(hostnameIds[0]!)
-    expect(await processBoilerplateRemovalDispatcher(admit)).toHaveLength(2)
-    expect(await getTestBoilerplateRemovalHostnameCursor()).toBe(hostnameIds[0])
+    const before = await getTestBoilerplateRemovalHostnameCursor()
+    expect(await processBoilerplateRemovalDispatcher(admit)).toHaveLength(1)
+    expect(await getTestBoilerplateRemovalHostnameCursor()).toBe(before)
   })
 
   it('keeps the cursor when admission fails or the candidate cap truncates the batch', async () => {

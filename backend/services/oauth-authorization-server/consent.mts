@@ -164,11 +164,6 @@ async function lockAuthorizationRequest(
        AND request.browser_binding_hash = $3
        AND request.approved_at IS NULL
        AND request.denied_at IS NULL
-       AND NOT EXISTS (
-         SELECT 1 FROM oauth_authorization_requests AS newer
-         WHERE newer.browser_binding_hash = request.browser_binding_hash
-           AND newer.client_id = request.client_id AND newer.id > request.id LIMIT 1
-       )
        AND request.expires_at > CURRENT_TIMESTAMP
        AND client.revoked_at IS NULL
      AND EXISTS (SELECT 1 FROM users WHERE users.id = request.user_id AND users.deleted_at IS NULL)

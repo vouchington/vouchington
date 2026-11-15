@@ -35,37 +35,7 @@ export async function insertSessionReferralAttribution(
   )
 }
 
-export async function insertOldAnonymousReferralAttribution(
-  referrerId: string,
-  daysOld: number,
-): Promise<string> {
-  const oldDate = new Date(Date.now() - daysOld * 24 * 60 * 60 * 1000)
-  return insertReferralAttributionAt(referrerId, oldDate)
-}
-
-// General retention-fixture insert: lets a test control user_id/signed_up_at directly, e.g. to
-// model a user-linked row (retained regardless of age) or a converted row whose user was later
-// deleted (user_id nulled by the FK's ON DELETE SET NULL, which drops it back into the sweep).
-export async function insertReferralAttributionAt(
-  referrerId: string,
-  createdAt: Date,
-  userId: string | null = null,
-  signedUpAt: Date | null = null,
-  fixtureId?: string,
-): Promise<string> {
-  const id = fixtureId ?? uuidv7({ msecs: createdAt.getTime() })
-  await write(
-    sql`/* insertReferralAttributionAt */
-    INSERT INTO session_referral_attributions
-      (id, session_id, referrer_user_id, landing_url, user_id, signed_up_at)
-    VALUES (${id}, ${uuidv7()}, ${referrerId}, ${'https://example.com/'}, ${userId}, ${signedUpAt})
-  `,
-  )
-  return id
-}
-
-// Same as insertReferralAttributionAt but pinned to a caller-supplied session_id, so a
-// test can model a repeat click "moving" a row to a fresh id within the same session.
+/** Inserts one retained click with an explicit session and UUIDv7 time. */
 export async function insertAnonymousReferralAttributionForSessionAt(
   sessionId: string,
   referrerId: string,
@@ -85,23 +55,6 @@ export async function deleteReferralAttributionsByIds(ids: string[]): Promise<vo
   await write(sql`/* deleteReferralAttributionsByIds */
     DELETE FROM session_referral_attributions WHERE id = ANY(${ids}::uuid[])
   `)
-}
-
-export async function clearReferralAttributionUserId(id: string): Promise<void> {
-  await write(
-    sql`/* clearReferralAttributionUserId */
-    UPDATE session_referral_attributions SET user_id = NULL WHERE id = ${id}
-  `,
-  )
-}
-
-export async function referralAttributionExistsById(id: string): Promise<boolean> {
-  const { rows } = await read(
-    sql`/* referralAttributionExistsById */
-    SELECT id FROM session_referral_attributions WHERE id = ${id}
-  `,
-  )
-  return rows.length > 0
 }
 
 export async function getSessionReferralAttributions(sessionId: string) {

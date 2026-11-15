@@ -3,51 +3,40 @@ import {
   readBoilerplateHostnameBatch,
   type BoilerplateHostnameBatch,
 } from './hostname-cursor.mts'
-import { searchParentPathsNeedingBoilerplateRemoval, type ParentPathCandidate } from './search.mts'
+import {
+  searchParentPathsNeedingBoilerplateRemoval,
+  type ParentPathCandidate,
+  type BoilerplatePathCursor,
+} from './search.mts'
 
-/**
- * Where a run leaves the cursor. A run under the candidate cap covered the whole batch. A capped
- * run covered every hostname before its last candidate's hostname, so the cursor stops just
- * before that hostname and the next run resumes there. A capped run that only reached the first
- * hostname holds the cursor.
- */
-function settledBatch(
-  batch: BoilerplateHostnameBatch,
-  candidates: ParentPathCandidate[],
-  candidateLimit: number,
-): BoilerplateHostnameBatch | null {
-  if (candidates.length < candidateLimit) return batch
-  const lastIndex = batch.hostnameIds.indexOf(candidates.at(-1)!.hostname_id)
-  if (lastIndex <= 0) return null
-  return { ...batch, nextCursor: batch.hostnameIds[lastIndex - 1]! }
+export type BoilerplateSweepContinuation = BoilerplateHostnameBatch & {
+  after?: BoilerplatePathCursor
 }
 
-async function admitThenAdvance(
-  batch: BoilerplateHostnameBatch,
-  candidates: ParentPathCandidate[],
-  options: { candidateLimit: number },
-  admit: (candidates: ParentPathCandidate[]) => Promise<void>,
-): Promise<ParentPathCandidate[]> {
-  await admit(candidates)
-  const settled = settledBatch(batch, candidates, options.candidateLimit)
-  if (settled) await advanceBoilerplateHostnameCursor(settled)
-  return candidates
-}
-
-/**
- * One scheduled run: aggregate the next hostname batch, admit its candidates, then advance the
- * cursor with compare-and-set. Admission comes first so a failed admission leaves the batch
- * retryable. Admission is idempotent, so a run that loses the race re-admits the same jobs
- * harmlessly.
- */
+/** Admission and continuation are durable before the hostname cursor advances. */
 export async function sweepNextBoilerplateHostnameBatch(
   options: { hostnameBatchSize: number; candidateLimit: number },
   admit: (candidates: ParentPathCandidate[]) => Promise<void>,
+  continueSweep: (continuation: BoilerplateSweepContinuation) => Promise<void>,
+  continuation?: BoilerplateSweepContinuation,
 ): Promise<ParentPathCandidate[]> {
-  const batch = await readBoilerplateHostnameBatch(options.hostnameBatchSize)
-  const candidates = await searchParentPathsNeedingBoilerplateRemoval(
-    batch.hostnameIds,
+  const batch: BoilerplateSweepContinuation =
+    continuation ?? (await readBoilerplateHostnameBatch(options.hostnameBatchSize))
+  // Each job walks one hostname's URL index. Even an empty candidate page can need continuation.
+  const hostnameId = batch.hostnameIds[0]
+  if (!hostnameId) {
+    await advanceBoilerplateHostnameCursor(batch)
+    return []
+  }
+  const page = await searchParentPathsNeedingBoilerplateRemoval(
+    [hostnameId],
     options.candidateLimit,
+    { after: batch.after },
   )
-  return admitThenAdvance(batch, candidates, options, admit)
+  await admit(page.candidates)
+  if (page.after) await continueSweep({ ...batch, after: page.after })
+  else if (batch.hostnameIds.length > 1) {
+    await continueSweep({ ...batch, hostnameIds: batch.hostnameIds.slice(1), after: undefined })
+  } else await advanceBoilerplateHostnameCursor(batch)
+  return page.candidates
 }

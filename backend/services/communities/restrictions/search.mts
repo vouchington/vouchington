@@ -1,102 +1,44 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
-import { decodeUuidCursor, encodeCursor, isScoreCursor } from '@modules/pagination'
+import { buildPageInfo, decodeUuidCursor, isSimpleCursor } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import sql from 'sql-template-strings'
-import createHttpError from 'http-errors'
 import assert from 'http-assert'
 import type { CommunityRestriction } from '../types.mts'
 
-type CommunityRestrictionSearchRow = CommunityRestriction & { active_score: 0 | 1 }
-
 export async function searchCommunityRestrictions(
   communityId: string,
-  options?: QueryOptions & { limit?: number; after?: string },
+  options?: QueryOptions & { limit?: number; after?: string; status?: 'active' | 'past' },
 ): Promise<{ results: CommunityRestriction[]; page_info: PageInfo }> {
   const limit = options?.limit ?? 20
+  const status = options?.status ?? 'active'
   assert(Number.isInteger(limit), 422, 'limit must be an integer')
   assert(limit > 0 && limit <= 100, 422, 'limit must be between 1 and 100')
-
-  let cursor: { id: string; activeScore: 0 | 1 } | undefined
-
-  if (options?.after) {
-    const decodedCursor = decodeUuidCursor(options.after, isScoreCursor, 'Invalid cursor format')
-    if (decodedCursor.score !== 0 && decodedCursor.score !== 1) {
-      throw createHttpError(400, 'Invalid cursor format')
-    }
-    cursor = {
-      id: decodedCursor.id,
-      activeScore: decodedCursor.score,
-    }
-  }
-
+  assert(status === 'active' || status === 'past', 422, 'Invalid restriction status')
+  const cursor = options?.after
+    ? decodeUuidCursor(options.after, isSimpleCursor, 'Invalid cursor format')
+    : undefined
+  const now = new Date()
   const query = sql`/* searchCommunityRestrictions */
-    SELECT *
-    FROM (
-      SELECT
-        community_restrictions.id, community_restrictions.community_id,
-        community_restrictions.restriction_type, community_restrictions.activated_by_id,
-        community_restrictions.activated_at, community_restrictions.expires_at,
-        community_restrictions.created_at, community_restrictions.updated_at,
-        community_restrictions.lifted_at, community_restrictions.lifted_by_id,
-        community_restrictions.reason,
-        CASE
-          WHEN lifted_at IS NULL AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
-            THEN 1
-          ELSE 0
-        END AS active_score
-      FROM community_restrictions
-      WHERE community_id = ${communityId}
-    ) ranked_restrictions
-    WHERE TRUE
+    SELECT id, community_id, restriction_type, activated_by_id, activated_at, expires_at,
+      created_at, updated_at, lifted_at, lifted_by_id, reason
+    FROM community_restrictions
+    WHERE community_id = ${communityId}
   `
-
-  if (cursor !== undefined) {
-    query.append(sql`
-      AND (
-        active_score < ${cursor.activeScore}
-        OR (active_score = ${cursor.activeScore} AND id < ${cursor.id})
-      )
-    `)
+  if (status === 'active') {
+    query.append(sql` AND lifted_at IS NULL AND (expires_at IS NULL OR expires_at > ${now})`)
+  } else {
+    query.append(sql` AND (lifted_at IS NOT NULL OR expires_at <= ${now})`)
   }
-
-  query.append(sql`
-    ORDER BY active_score DESC, id DESC
-    LIMIT ${limit + 1}
-  `)
-
-  const { rows } = await read(query, options)
-
-  const hasNextPage = rows.length > limit
-  const results: CommunityRestriction[] = []
-  for (let i = 0; i < Math.min(rows.length, limit); i++) {
-    results.push(toCommunityRestriction(rows[i]! as CommunityRestrictionSearchRow))
-  }
-
+  if (cursor) query.append(sql` AND id < ${cursor.id}::uuid`)
+  query.append(sql` ORDER BY id DESC LIMIT ${limit + 1}`)
+  const { rows } = await read<CommunityRestriction>(query, options)
+  const results = rows.slice(0, limit)
   return {
     results,
-    page_info: {
-      has_next_page: hasNextPage,
-      end_cursor:
-        hasNextPage && results.length > 0
-          ? encodeCursor({
-              score: (rows[Math.min(rows.length, limit) - 1]! as CommunityRestrictionSearchRow)
-                .active_score,
-              id: results.at(-1)!.id,
-            })
-          : null,
-      start_cursor:
-        results.length > 0
-          ? encodeCursor({
-              score: (rows[0]! as CommunityRestrictionSearchRow).active_score,
-              id: results[0]!.id,
-            })
-          : null,
-    },
+    page_info: buildPageInfo(results, {
+      hasNextPage: rows.length > limit,
+      getCursor: row => ({ id: row.id }),
+    }),
   }
-}
-
-function toCommunityRestriction(row: CommunityRestrictionSearchRow): CommunityRestriction {
-  const { active_score: _activeScore, ...restriction } = row
-  return restriction
 }

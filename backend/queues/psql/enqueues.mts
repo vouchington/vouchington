@@ -1,3 +1,4 @@
+import { getVoteDriftOrderingConcurrency } from './enqueues/vote-drift-config.mts'
 import { createHash } from 'node:crypto'
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
@@ -47,7 +48,23 @@ function createPsqlEnqueue(jobName: EmptyPsqlJobName) {
 export const enqueueRunMigrations = createPsqlEnqueue('runMigrations')
 export const enqueueRunViews = createPsqlEnqueue('runViews')
 export const enqueueRunConfigDriven = createPsqlEnqueue('runConfigDriven')
-export const enqueueReconcileVoteDrift = createPsqlEnqueue('reconcileVoteDrift')
+const enqueueVoteDriftPage = createEnqueueFunction<
+  PsqlJobPayloads['reconcileVoteDrift'],
+  'reconcileVoteDrift'
+>({
+  queue: psql,
+  queueName: QUEUE_NAME,
+  jobName: 'reconcileVoteDrift',
+})
+
+export function enqueueReconcileVoteDrift(
+  data: PsqlJobPayloads['reconcileVoteDrift'] = {},
+): EnqueueReturnType {
+  return enqueueVoteDriftPage(data, {
+    priority: PRIORITY_DEFAULT,
+    ordering: { key: 'psql:vote-drift', concurrency: getVoteDriftOrderingConcurrency() },
+  })
+}
 
 const enqueueRetentionJob = createEnqueueFunction<
   PsqlJobPayloads['dataRetentionCleanup'],

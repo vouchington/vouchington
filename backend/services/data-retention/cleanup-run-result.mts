@@ -38,7 +38,6 @@ export type DataRetentionCleanupResult = {
   retainedMediaBindings: RetainedMediaBindingCleanupPage
   retainedIdentityRoots: RetainedIdentityCleanupPage[]
   softDeletedUsers: UserPurgeResult
-  oldReferralAttributions: CleanupResult
   histories: Record<HistoryKind, HistoryCleanupResult>
   orphanedOAuthAccounts: CleanupResult
   oauthFriendEdges: CleanupResult & { resolved: number }

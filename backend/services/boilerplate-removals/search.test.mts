@@ -43,7 +43,7 @@ describe('search', () => {
         urls.map(u => u.id),
       )
 
-      const results = await searchParentPathsNeedingBoilerplateRemoval(
+      const { candidates: results } = await searchParentPathsNeedingBoilerplateRemoval(
         [urls[0]!.hostname.id],
         100,
         {},
@@ -81,7 +81,7 @@ describe('search', () => {
       await createEligibleCrawl(urlsB[0]!.id, crawlerB.id, new Date())
       await createEligibleCrawl(urlsB[1]!.id, crawlerB.id, new Date())
 
-      const results = await searchParentPathsNeedingBoilerplateRemoval(
+      const { candidates: results } = await searchParentPathsNeedingBoilerplateRemoval(
         [urlsA[0]!.hostname.id],
         100,
         {},
@@ -108,7 +108,7 @@ describe('search', () => {
       await createEligibleCrawl(urls[2]!.id, crawler.id, new Date())
 
       // No boilerplate removal created, so this path should be included
-      const results = await searchParentPathsNeedingBoilerplateRemoval(
+      const { candidates: results } = await searchParentPathsNeedingBoilerplateRemoval(
         [urls[0]!.hostname.id],
         100,
         {},
@@ -137,7 +137,7 @@ describe('search', () => {
         snapshotUploadedAt: new Date(Date.now() - 8 * 86400000),
       })
 
-      const results = await searchParentPathsNeedingBoilerplateRemoval(
+      const { candidates: results } = await searchParentPathsNeedingBoilerplateRemoval(
         [urls[0]!.hostname.id],
         100,
         {},
@@ -177,7 +177,7 @@ describe('search', () => {
         await setTestBoilerplateRemovalIdAt(removal.id, new Date(cutoff + delta))
       }
 
-      const results = await searchParentPathsNeedingBoilerplateRemoval(
+      const { candidates: results } = await searchParentPathsNeedingBoilerplateRemoval(
         [urls[0]!.hostname.id],
         100,
         {
@@ -237,7 +237,7 @@ describe('search', () => {
         })
       }
 
-      const results = await searchParentPathsNeedingBoilerplateRemoval(
+      const { candidates: results } = await searchParentPathsNeedingBoilerplateRemoval(
         [urls[0]!.hostname.id],
         100,
         {

@@ -7,13 +7,13 @@ export const DISPATCHER_JOB_NAMES = [
   'dispatchApiKeyExpiryReminders',
 ] as const satisfies readonly EmailDigestDispatcherJobs[]
 
-/** Only the API-key dispatcher pages through a cursor; the other two take no payload. */
+/** Paged dispatchers carry the last inspected immutable id in their job data. */
 export function dispatcherPayload(
   name: EmailDigestDispatcherJobs,
   data: unknown,
 ): { afterId?: string } {
   const record = asRecord(data ?? {}, 'payload')
-  assertExactKeys(record, name === 'dispatchApiKeyExpiryReminders' ? ['afterId'] : [])
+  assertExactKeys(record, name === 'dispatchEngagementEmails' ? [] : ['afterId'])
   optionalString(record, 'afterId')
   return typeof record.afterId === 'string' ? { afterId: record.afterId } : {}
 }

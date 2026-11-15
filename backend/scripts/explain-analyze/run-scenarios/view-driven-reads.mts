@@ -86,7 +86,7 @@ export async function runViewDrivenReadScenarios(): Promise<void> {
   })
   await runAndCapture('moderation-summary-recipients', () =>
     getModerationSummaryRecipients(new Date()).then(recipients => {
-      if (!recipients.some(({ id }) => id === seedUuid(1, '01'))) {
+      if (!recipients.recipients.some(({ id }) => id === seedUuid(1, '01'))) {
         throw new Error('Seeded moderator was not eligible for a moderation summary')
       }
       return recipients

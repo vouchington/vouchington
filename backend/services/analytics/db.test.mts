@@ -21,7 +21,14 @@ describe('trackVoteDrift', () => {
 
   it('records a vote-drift row with the sampled entity id', async () => {
     const entityTable = `drift-${crypto.randomUUID()}`
-    trackVoteDrift({ entityTable, sampled: 500, drifted: 3, sampleEntityId: 'post-42' })
+    trackVoteDrift({
+      entityTable,
+      sampled: 500,
+      inspected: 502,
+      capped: 2,
+      drifted: 3,
+      sampleEntityId: 'post-42',
+    })
     await flush()
 
     const rows = await query(`SELECT * FROM pg_vote_drift WHERE entity_table = '${entityTable}'`)
@@ -30,11 +37,13 @@ describe('trackVoteDrift', () => {
     expect(Number(row.sampled)).toBe(500)
     expect(Number(row.drifted)).toBe(3)
     expect(row.sample_entity_id).toBe('post-42')
+    expect(row.inspected).toBe(502)
+    expect(row.capped).toBe(2)
   })
 
   it('records a vote-drift row without a sampled entity id', async () => {
     const entityTable = `drift-${crypto.randomUUID()}`
-    trackVoteDrift({ entityTable, sampled: 10, drifted: 0 })
+    trackVoteDrift({ entityTable, sampled: 10, inspected: 10, capped: 0, drifted: 0 })
     await flush()
 
     const rows = await query(`SELECT * FROM pg_vote_drift WHERE entity_table = '${entityTable}'`)

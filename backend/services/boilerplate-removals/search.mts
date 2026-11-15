@@ -6,22 +6,26 @@ import {
   CRAWL_CLEANUP_MAX_AGE_DAYS,
 } from '@services/crawls/constants'
 import sql from 'sql-template-strings'
+import { inspectBoilerplateCrawls } from '@services/crawlers/inspect-boilerplate-crawls'
 
 export type ParentPathCandidate = {
   hostname_id: string
   parent_path: string
 }
 
+export type BoilerplatePathCursor = { hostname_id: string; url_id: string; crawl_id?: string }
+
 /**
- * Finds parent paths of the given hostnames that have at least two recent HTML crawls and no
- * recent removal. The caller bounds `hostnameIds`; there is no all-hostnames path.
+ * Finds parent paths of the given hostnames with a recent HTML crawl and no
+ * recent removal. The URL limit counts inspected rows, including ineligible ones. Path jobs prove the two-page
+ * requirement before writing a result; a full page resumes after the last inspected URL.
  */
 export const searchParentPathsNeedingBoilerplateRemoval = async (
   hostnameIds: string[],
   limit: number,
-  options: { queryOptions?: QueryOptions; now?: () => Date } = {},
-): Promise<ParentPathCandidate[]> => {
-  if (hostnameIds.length === 0) return []
+  options: { queryOptions?: QueryOptions; now?: () => Date; after?: BoilerplatePathCursor } = {},
+): Promise<{ candidates: ParentPathCandidate[]; after?: BoilerplatePathCursor }> => {
+  if (hostnameIds.length === 0) return { candidates: [] }
   const sampledNowMs = (options.now ?? (() => new Date()))().getTime()
   if (!Number.isFinite(sampledNowMs)) throw new RangeError('Invalid HTML snapshot decision time')
   const recentCutoffDate = new Date(
@@ -32,50 +36,62 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
     new Date(recentCutoffDate.getTime() - CRAWL_CLEANUP_MAX_AGE_DAYS * 24 * 60 * 60 * 1000),
   )
   const query = sql`/* searchParentPathsNeedingBoilerplateRemoval */
-    WITH eligible_hostnames AS MATERIALIZED (
-      SELECT h.id
-      FROM url_hostnames h
-      WHERE h.id = ANY(${hostnameIds}::uuid[])
-        AND NOT h.is_blocked
-        AND h.is_crawlable
-    )
-    SELECT h.id AS hostname_id, paths.parent_path
-    FROM eligible_hostnames h
-    CROSS JOIN LATERAL (
-      SELECT u.parent_path
-      FROM (
-        SELECT url.id,
-          CASE
-            WHEN position('/' IN substring(url.pathname FROM 2)) > 0
-            THEN left(url.pathname, position('/' IN substring(url.pathname FROM 2)))
-            ELSE '/'
-          END AS parent_path
-        FROM urls url WHERE url.hostname_id = h.id
-      ) u
-      JOIN LATERAL (
-        SELECT 1 FROM crawls c
-        WHERE c.url_id = u.id
-          AND c.id >= ${crawlIdFloor}::uuid
-          AND c.response_status_code = 200
-          AND c.completed_at >= ${recentCutoffDate}
-          AND c.html_sha256 IS NOT NULL
-          AND COALESCE(c.html_snapshot_uploaded_at, c.completed_at) >= ${recentCutoffDate}
-        LIMIT 1
-      ) recent_crawl ON TRUE
-      WHERE NOT EXISTS (
+    SELECT u.id, u.hostname_id,
+      CASE WHEN position('/' IN substring(u.pathname FROM 2)) > 0
+        THEN left(u.pathname, position('/' IN substring(u.pathname FROM 2)))
+        ELSE '/' END AS parent_path,
+      EXISTS (
+        SELECT 1 FROM url_hostnames h WHERE h.id = u.hostname_id
+          AND NOT h.is_blocked AND h.is_crawlable
+      ) AND NOT EXISTS (
         SELECT 1 FROM hostname_path_boilerplate_removals br
-        WHERE br.hostname_id = h.id
-          AND br.parent_path = u.parent_path
+        WHERE br.hostname_id = u.hostname_id
+          AND br.parent_path = CASE WHEN position('/' IN substring(u.pathname FROM 2)) > 0
+            THEN left(u.pathname, position('/' IN substring(u.pathname FROM 2))) ELSE '/' END
           AND br.id > ${recentCutoffId}
+      ) AS eligible
+    FROM urls u
+    WHERE u.hostname_id = ANY(${hostnameIds}::uuid[])
+      AND (u.hostname_id, u.id) >= (
+        COALESCE(${options.after?.hostname_id ?? null}::uuid, '00000000-0000-0000-0000-000000000000'::uuid),
+        COALESCE(${options.after?.url_id ?? null}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
       )
-      GROUP BY u.parent_path
-      HAVING COUNT(*) >= 2
-    ) paths
-    ORDER BY h.id, paths.parent_path
+      AND (${options.after?.crawl_id ?? null}::uuid IS NOT NULL
+        OR u.id IS DISTINCT FROM ${options.after?.url_id ?? null}::uuid)
+    ORDER BY u.hostname_id, u.id
     LIMIT ${limit}
   `
-
-  const { rows } = await read<ParentPathCandidate>(query, undefined, options.queryOptions ?? {})
-
-  return rows
+  const { rows } = await read<ParentPathCandidate & { id: string; eligible: boolean }>(
+    query,
+    undefined,
+    options.queryOptions ?? {},
+  )
+  const inspection = await inspectBoilerplateCrawls(rows, limit, {
+    cutoff: recentCutoffDate,
+    floor: crawlIdFloor,
+    crawlAfter: options.after?.crawl_id,
+    queryOptions: options.queryOptions,
+  })
+  const eligibleIds = new Set(inspection.eligibleCrawls.map(crawl => crawl.url_id))
+  const candidatesByPath = new Map<string, ParentPathCandidate>()
+  for (const row of rows) {
+    if (eligibleIds.has(row.id))
+      candidatesByPath.set(`${row.hostname_id}:${row.parent_path}`, {
+        hostname_id: row.hostname_id,
+        parent_path: row.parent_path,
+      })
+  }
+  const candidates = [...candidatesByPath.values()]
+  const last = rows.find(row => row.id === inspection.lastUrlId)
+  return {
+    candidates,
+    after:
+      last && (rows.length === limit || !inspection.allUrlsInspected)
+        ? {
+            hostname_id: last.hostname_id,
+            url_id: last.id,
+            ...(inspection.crawlAfter ? { crawl_id: inspection.crawlAfter } : {}),
+          }
+        : undefined,
+  }
 }

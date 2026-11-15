@@ -1,3 +1,4 @@
+import { moderationDiagnosticsRegistryEntries } from './registry-moderation-diagnostics-entries.mts'
 import { hackerNewsReferenceRegistryEntry } from './registry-hacker-news-reference-entry.mts'
 import {
   hackerNewsVisibilityConfig,
@@ -34,6 +35,7 @@ import {
 } from './product-config-validators.mts'
 
 export const operationalDynamicConfigRegistryEntries = [
+  ...moderationDiagnosticsRegistryEntries,
   hackerNewsReferenceRegistryEntry,
   defineDynamicConfigNamespace({
     namespace: 'hacker-news-visibility-config',

@@ -48,7 +48,6 @@ describe('runDataRetentionCleanup', () => {
       retainedMediaBindingIds: [],
       legalRecords: { recordIds: [] },
       softDeletedUsers: emptyWindow,
-      oldReferralAttributions: emptyWindow,
       histories: emptyWindow,
       orphanedOAuthAccounts: emptyWindow,
       oauthFriendEdges: { now: new Date('1970-01-02T00:00:00.000Z') },
@@ -88,10 +87,8 @@ describe('runDataRetentionCleanup', () => {
     expect(result.retainedMediaBindings).toEqual({ scanned: 0, deleted: 0, hasMore: false })
     expect(result).toMatchObject({
       softDeletedUsers: { deleted: 0, hasMore: false },
-      oldReferralAttributions: { deleted: 0, hasMore: false },
       histories: {
         dynamic_configuration_revisions: { scanned: 0, changed: 0, hasMore: false },
-        referral_attribution_scrub: { scanned: 0, changed: 0, hasMore: false },
       },
       orphanedOAuthAccounts: { deleted: 0, hasMore: false },
       oauthFriendEdges: { deleted: 0, resolved: 0, hasMore: false },

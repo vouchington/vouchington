@@ -4,12 +4,14 @@ import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 const defaultFields = {
   primary_refresh_batch_size: 1000,
   vote_drift_sample_size: 500,
+  vote_drift_votes_per_post: 1000,
 }
 
 /** Hard ceilings for the current runtime configuration contract. */
 export const electionsVotesWorkMaxValues = {
   primary_refresh_batch_size: 10000,
   vote_drift_sample_size: 5000,
+  vote_drift_votes_per_post: 10000,
 }
 
 export const electionsVotesWorkConfig = new DynamicConfig({
@@ -17,6 +19,7 @@ export const electionsVotesWorkConfig = new DynamicConfig({
   fieldTypes: {
     primary_refresh_batch_size: 'number',
     vote_drift_sample_size: 'number',
+    vote_drift_votes_per_post: 'number',
   },
   defaultFields,
 })

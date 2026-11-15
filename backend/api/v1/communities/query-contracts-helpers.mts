@@ -19,6 +19,17 @@ export const communityPageQuery = defineQueryContract({
   after: queryString(),
 })
 
+export const communityRestrictionsQuery = defineQueryContract({
+  ...communityPageQuery.queryContract,
+  status: queryEnum(['active', 'past'], { default: 'active' }),
+})
+
+export function communityRestrictionsQueryInput(
+  raw: Record<string, unknown>,
+): Record<string, unknown> {
+  return prepareQueryForValidation(raw, communityRestrictionsQuery.queryContract)
+}
+
 export const communityApplicationsQuery = defineQueryContract({
   ...communityPageQuery.queryContract,
   status: queryEnum(['pending', 'approved', 'rejected']),

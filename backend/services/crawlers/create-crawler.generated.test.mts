@@ -176,7 +176,7 @@ describe('create-crawler.generated', () => {
       statusCode: 200,
     })
 
-    const candidates = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
+    const { candidates } = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
       hostnameId,
       '/blog',
       10,
@@ -186,12 +186,13 @@ describe('create-crawler.generated', () => {
       [newer304UrlId, recentUrlId].toSorted(),
     )
 
-    const mostRecentCandidate = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
+    const firstPage = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
       hostnameId,
       '/blog',
       1,
     )
-    expect(mostRecentCandidate.map(candidate => candidate.id)).toEqual([newer304UrlId])
+    expect(firstPage.candidates.map(candidate => candidate.id)).toEqual([recentUrlId])
+    expect(firstPage.after).toBe(recentUrlId)
   })
 
   it('createCrawler throws when hostname reference is missing', async () => {

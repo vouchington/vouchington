@@ -60,9 +60,10 @@ export async function runHostnameCrawlSweepScenarios(): Promise<void> {
         const rows = await sweepNextBoilerplateHostnameBatch(
           { hostnameBatchSize: BOILERPLATE_BATCH_HOSTNAME_COUNT, candidateLimit: 500 },
           async () => undefined,
+          async () => undefined,
         )
-        if (rows.length !== BOILERPLATE_BATCH_HOSTNAME_COUNT * BOILERPLATE_BATCH_PATHS_PER_HOSTNAME)
-          throw new Error('Expected every seeded hostname batch parent path to need removal')
+        if (rows.length !== BOILERPLATE_BATCH_PATHS_PER_HOSTNAME)
+          throw new Error('Expected the first bounded hostname page parent paths to need removal')
       },
       undefined,
       ['listBoilerplateRemovalHostnameBatch', 'searchParentPathsNeedingBoilerplateRemoval'],

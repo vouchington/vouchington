@@ -3,6 +3,7 @@ import { defineBackgroundJob } from './define-job.mts'
 import {
   EMAIL_DIGESTS_DOMAIN as DOMAIN,
   type DispatchApiKeyExpiryRemindersData,
+  type DispatchCommunityModerationSummaryData,
   type EmptyEmailDigestsJobData as EmptyData,
   type SendApiKeyExpiryReminderData,
   type SendCommunityModerationSummaryEmailData,
@@ -21,10 +22,11 @@ export const EMAIL_DIGESTS_DISPATCH_ENGAGEMENT_JOB = defineBackgroundJob<EmptyDa
   name: 'dispatchEngagementEmails',
   ...DISPATCH,
 })
-export const EMAIL_DIGESTS_DISPATCH_MODERATION_SUMMARY_JOB = defineBackgroundJob<EmptyData>(
-  DOMAIN,
-  { name: 'dispatchCommunityModerationSummaryEmails', ...DISPATCH },
-)
+export const EMAIL_DIGESTS_DISPATCH_MODERATION_SUMMARY_JOB =
+  defineBackgroundJob<DispatchCommunityModerationSummaryData>(DOMAIN, {
+    name: 'dispatchCommunityModerationSummaryEmails',
+    ...DISPATCH,
+  })
 export const EMAIL_DIGESTS_DISPATCH_API_KEY_EXPIRY_JOB =
   defineBackgroundJob<DispatchApiKeyExpiryRemindersData>(DOMAIN, {
     name: 'dispatchApiKeyExpiryReminders',

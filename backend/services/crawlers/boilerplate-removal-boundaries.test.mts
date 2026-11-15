@@ -17,6 +17,105 @@ describe('crawler boilerplate removal snapshot retention', () => {
     ).rejects.toThrow('Invalid HTML snapshot decision time')
   })
 
+  it('shares the raw crawl budget across URLs and resumes the partially inspected URL', async () => {
+    const hostname = `crawler-inner-cursor-${randomUUID()}.example.com`
+    const hostnameId = await insertTestUrlHostname({ hostname })
+    const firstId = await insertTestUrl({ hostnameId, url: `https://${hostname}/blog/first` })
+    const secondId = await insertTestUrl({ hostnameId, url: `https://${hostname}/blog/second` })
+    const now = new Date()
+    const { id: firstCrawlId } = await insertTestCrawl({
+      urlId: firstId,
+      statusCode: 200,
+      markdown: '',
+      completedAt: now,
+      htmlSha256: Buffer.alloc(32, 1),
+      htmlSnapshotUploadedAt: now,
+    })
+    const { id: secondCrawlId } = await insertTestCrawl({
+      urlId: secondId,
+      statusCode: 200,
+      markdown: '',
+      completedAt: now,
+      htmlSha256: Buffer.alloc(32, 2),
+      htmlSnapshotUploadedAt: now,
+    })
+    await insertTestCrawl({ urlId: secondId, statusCode: 304, markdown: '', completedAt: now })
+    const { id: rejectedId } = await insertTestCrawl({
+      urlId: secondId,
+      statusCode: 200,
+      markdown: '',
+      completedAt: now,
+    })
+    const first = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
+      hostnameId,
+      '/blog',
+      2,
+    )
+    expect(first).toEqual({
+      candidates: [{ id: firstId, url: `https://${hostname}/blog/first`, crawl_id: firstCrawlId }],
+      after: secondId,
+      crawl_after: rejectedId,
+    })
+    const second = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
+      hostnameId,
+      '/blog',
+      2,
+      {},
+      () => now,
+      first.after,
+      first.crawl_after,
+    )
+    expect(second).toEqual({
+      candidates: [
+        { id: secondId, url: `https://${hostname}/blog/second`, crawl_id: secondCrawlId },
+      ],
+      after: undefined,
+    })
+  })
+
+  it('advances past ineligible inspected URLs before returning a later candidate', async () => {
+    const hostname = `crawler-cursor-${randomUUID()}.example.com`
+    const hostnameId = await insertTestUrlHostname({ hostname })
+    const firstId = await insertTestUrl({ hostnameId, url: `https://${hostname}/other/first` })
+    const secondId = await insertTestUrl({ hostnameId, url: `https://${hostname}/blog/second` })
+    const { id: crawlId } = await insertTestCrawl({
+      urlId: secondId,
+      statusCode: 200,
+      markdown: '',
+      completedAt: new Date(),
+      htmlSha256: Buffer.alloc(32, 1),
+      htmlSnapshotUploadedAt: new Date(),
+    })
+    const first = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
+      hostnameId,
+      '/blog',
+      1,
+    )
+    expect(first).toEqual({ candidates: [], after: firstId })
+    const second = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
+      hostnameId,
+      '/blog',
+      1,
+      {},
+      () => new Date(),
+      first.after,
+    )
+    expect(second).toEqual({
+      candidates: [{ id: secondId, url: `https://${hostname}/blog/second`, crawl_id: crawlId }],
+      after: secondId,
+    })
+    expect(
+      await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
+        hostnameId,
+        '/blog',
+        1,
+        {},
+        () => new Date(),
+        second.after,
+      ),
+    ).toEqual({ candidates: [], after: undefined })
+  })
+
   it.each([
     new Date('2024-01-31T23:59:59.999Z'),
     new Date('2024-02-01T00:00:00.001Z'),
@@ -60,7 +159,7 @@ describe('crawler boilerplate removal snapshot retention', () => {
       if (delta >= 0) expectedIds.push(urlId)
     }
 
-    const candidates = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
+    const { candidates } = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
       hostnameId,
       '/blog',
       10,

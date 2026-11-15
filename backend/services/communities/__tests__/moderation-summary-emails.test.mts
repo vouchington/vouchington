@@ -1,3 +1,4 @@
+import { getMinUUIDv7ForParentHistory } from '@modules/utils/ids'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -46,7 +47,7 @@ describe('moderation summary dispatch', () => {
     const sendKey = `daily:${now.toISOString().slice(0, 10)}`
     await expect(claimTestModerationEmailSend(user!.id, sendKey)).resolves.toBe(true)
 
-    await dispatchCommunityModerationSummaryEmails(now)
+    await dispatchCommunityModerationSummaryEmails(now, getMinUUIDv7ForParentHistory(user!.id))
 
     expect(await findQueuedModerationSummary(user!.id)).toBeUndefined()
   })
@@ -62,7 +63,7 @@ describe('moderation summary dispatch', () => {
     })
     await expect(claimTestModerationEmailSend(user!.id, 'daily:2027-01-01')).resolves.toBe(true)
 
-    await dispatchCommunityModerationSummaryEmails(now)
+    await dispatchCommunityModerationSummaryEmails(now, getMinUUIDv7ForParentHistory(user!.id))
 
     expect((await findQueuedModerationSummary(user!.id))?.data).toMatchObject({
       input: { trackingKey: 'weekly:2026-W53' },
@@ -95,7 +96,7 @@ describe('moderation summary dispatch', () => {
       days: [1, 2, 3, 4, 5, 6, 7],
     })
 
-    await dispatchCommunityModerationSummaryEmails(now)
+    await dispatchCommunityModerationSummaryEmails(now, getMinUUIDv7ForParentHistory(user!.id))
 
     const queuedSummary = await findQueuedModerationSummary(user!.id)
     expect(queuedSummary?.data).toMatchObject({
@@ -121,7 +122,7 @@ describe('moderation summary dispatch', () => {
       days: [1, 2, 3, 4, 5, 6, 7],
     })
 
-    await dispatchCommunityModerationSummaryEmails(now)
+    await dispatchCommunityModerationSummaryEmails(now, getMinUUIDv7ForParentHistory(user!.id))
 
     const queuedSummary = await findQueuedModerationSummary(user!.id)
     expect(queuedSummary?.data).toMatchObject({
@@ -142,7 +143,7 @@ describe('moderation summary dispatch', () => {
       days: [5],
     })
 
-    await dispatchCommunityModerationSummaryEmails(now)
+    await dispatchCommunityModerationSummaryEmails(now, getMinUUIDv7ForParentHistory(user!.id))
 
     const queuedSummary = await findQueuedModerationSummary(user!.id)
     expect(queuedSummary?.data).toMatchObject({
@@ -162,7 +163,7 @@ describe('moderation summary dispatch', () => {
       pendingReview: false,
     })
 
-    await dispatchCommunityModerationSummaryEmails(now)
+    await dispatchCommunityModerationSummaryEmails(now, getMinUUIDv7ForParentHistory(user!.id))
 
     expect(await findQueuedModerationSummary(user!.id)).toBeUndefined()
   })
@@ -175,7 +176,7 @@ describe('moderation summary scheduling', () => {
   async function isQueuedFor(settings: Parameters<typeof seedDueModerator>[1]): Promise<boolean> {
     const user = await createTestUser()
     await seedDueModerator(user!.id, settings)
-    await dispatchCommunityModerationSummaryEmails(now)
+    await dispatchCommunityModerationSummaryEmails(now, getMinUUIDv7ForParentHistory(user!.id))
     return (await findQueuedModerationSummary(user!.id)) !== undefined
   }
 

@@ -62,6 +62,6 @@ function runDispatcher(
     case 'dispatchEngagementEmails':
       return dispatchers.dispatchEngagementEmails()
     case 'dispatchCommunityModerationSummaryEmails':
-      return dispatchers.dispatchCommunityModerationSummaryEmails()
+      return dispatchers.dispatchCommunityModerationSummaryEmails(new Date(), data.afterId)
   }
 }

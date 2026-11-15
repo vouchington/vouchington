@@ -75,10 +75,7 @@ export const USER_KEY_PARTITION_TABLES: string[] = [
  * Growth ledger tables - partitioned by UUIDv7 id
  * Default partition, split by adding explicit range partitions when needed
  */
-export const DEFERRED_LEDGER_PARTITION_TABLES: string[] = [
-  'mcp_call_audit_events',
-  'session_referral_attributions',
-]
+export const DEFERRED_LEDGER_PARTITION_TABLES: string[] = ['mcp_call_audit_events']
 
 /** All tables that require monthly RANGE partitions with retention. */
 export const ALL_MONTHLY_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
@@ -90,4 +87,5 @@ export const ALL_MONTHLY_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
   ...DECISION_HISTORY_PARTITION_TABLES,
   ...AI_USAGE_PARTITION_TABLES,
   ...REPORTING_SOURCE_PARTITION_TABLES,
+  { table: 'session_referral_attributions', retentionDays: 30, futureMonths: 2 },
 ]

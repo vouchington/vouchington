@@ -79,8 +79,21 @@ export type BackgroundCpuJobPayloads = {
   'crawl.refresh_hostname_crawler_dispatcher': { cursor?: CrawlDispatchCursor }
   'crawl.refresh_hostname_crawler': { hostname_id: string }
   'crawl.crawl_cleanup': { cutoffId?: string }
-  'crawl.boilerplate_removal_dispatcher': Empty
-  'crawl.boilerplate_removal': { hostname_id: string; parent_path: string }
+  'crawl.boilerplate_removal_dispatcher': {
+    continuation?: {
+      hostnameIds: string[]
+      previousCursor: string | null
+      nextCursor: string | null
+      after?: { hostname_id: string; url_id: string; crawl_id?: string }
+    }
+  }
+  'crawl.boilerplate_removal': {
+    hostname_id: string
+    parent_path: string
+    crawl_after?: string
+    after?: string
+    samples?: { url_id: string; crawl_id: string }[]
+  }
   'bedrock-embeddings.topic': DefaultBedrockEmbeddingsJobData
   'bedrock-embeddings.post': DefaultBedrockEmbeddingsJobData
   'bedrock-embeddings.rss_feed_item': DefaultBedrockEmbeddingsJobData

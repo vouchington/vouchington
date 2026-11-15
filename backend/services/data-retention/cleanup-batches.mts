@@ -89,28 +89,6 @@ export async function cleanupSoftDeletedUserBatch(
   }
   return { deleted, hasMore }
 }
-export async function deleteOldReferralAttributionBatch(
-  cutoffId: string,
-  batchSize: number,
-  lowerBoundId?: string,
-): Promise<number> {
-  const query = sql`/* deleteOldReferralAttributionBatch */
-    WITH candidates AS MATERIALIZED (
-      SELECT id FROM session_referral_attributions
-      WHERE user_id IS NULL
-        AND id < ${cutoffId}
-  `
-  if (lowerBoundId !== undefined) query.append(sql` AND id >= ${lowerBoundId}`)
-  query.append(sql`
-      ORDER BY id ASC
-      LIMIT ${batchSize}
-      FOR UPDATE SKIP LOCKED
-    )
-    DELETE FROM session_referral_attributions target USING candidates
-    WHERE target.id = candidates.id`)
-  const { rowCount } = await write(query)
-  return rowCount ?? 0
-}
 export async function deleteOrphanedOAuthAccountBatch(
   table: string,
   providerUserIdColumn: string,

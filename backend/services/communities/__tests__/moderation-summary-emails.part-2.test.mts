@@ -1,3 +1,4 @@
+import { getMinUUIDv7ForParentHistory } from '@modules/utils/ids'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -195,7 +196,7 @@ describe('getCommunityModerationSummaryCommunities activity digest', () => {
       approvedById: user!.id,
     })
 
-    await dispatchCommunityModerationSummaryEmails(now)
+    await dispatchCommunityModerationSummaryEmails(now, getMinUUIDv7ForParentHistory(user!.id))
 
     const jobs = await readAllQueueJobs(emailDigests)
     expect(

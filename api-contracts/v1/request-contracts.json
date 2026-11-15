@@ -44490,6 +44490,11 @@
       },
       "query": {
         "properties": {
+          "status": {
+            "default": "active",
+            "enum": ["active", "past"],
+            "type": "string"
+          },
           "after": {
             "type": "string"
           },

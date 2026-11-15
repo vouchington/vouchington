@@ -6,26 +6,45 @@ import {
   createTestApprovedOAuthAuthorization,
 } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import {
-  decideOAuthAuthorizationRequest,
   getOAuthAuthorizationRequestForUser,
+  beginValidatedOAuthAuthorizationRequest,
   exchangeOAuthAuthorizationCode,
 } from './index.mts'
 
 describe('OAuth overlapping request snapshots', () => {
-  it('keeps only the newest request usable and does not revive the older request after denial', async () => {
+  it('rejects a second pending request for the same browser and client', async () => {
     const user = await createTestUserDirect()
-    const old = await createTestPendingOAuthAuthorization(user)
-    const newerId = await insertTestOverlappingOAuthRequest(old.requestId)
-    expect(newerId.localeCompare(old.requestId)).toBeGreaterThan(0)
+    const pending = await createTestPendingOAuthAuthorization(user)
+    await expect(insertTestOverlappingOAuthRequest(pending.requestId)).rejects.toMatchObject({
+      code: '23505',
+      constraint: 'idx_oauth_authorization_requests__pending_browser_client',
+    })
     await expect(
-      getOAuthAuthorizationRequestForUser(user.id, old.requestId, old.bindingHash),
-    ).resolves.toBeNull()
+      getOAuthAuthorizationRequestForUser(user.id, pending.requestId, pending.bindingHash),
+    ).resolves.toMatchObject({ id: pending.requestId })
+  })
+
+  it('returns structured conflicts for raced begins and leaves the surviving request readable', async () => {
+    const user = await createTestUserDirect()
+    const pending = await createTestPendingOAuthAuthorization(user)
+    const outcomes = await Promise.allSettled(
+      [0, 1].map(() =>
+        beginValidatedOAuthAuthorizationRequest(pending.parameters, pending.validated),
+      ),
+    )
+    const admitted = outcomes.filter(outcome => outcome.status === 'fulfilled')
+    expect(admitted.length).toBeGreaterThan(0)
+    for (const outcome of outcomes.filter(result => result.status === 'rejected')) {
+      expect(outcome.reason).toMatchObject({ code: 'invalid_request', status: 409 })
+    }
+    const views = await Promise.all(
+      admitted.map(outcome =>
+        getOAuthAuthorizationRequestForUser(user.id, outcome.value.request_id, pending.bindingHash),
+      ),
+    )
+    expect(views.filter(view => view !== null)).toHaveLength(1)
     await expect(
-      decideOAuthAuthorizationRequest(user.id, old.requestId, 'approve', old.bindingHash),
-    ).rejects.toMatchObject({ code: 'access_denied' })
-    await decideOAuthAuthorizationRequest(user.id, newerId, 'deny', old.bindingHash)
-    await expect(
-      getOAuthAuthorizationRequestForUser(user.id, old.requestId, old.bindingHash),
+      getOAuthAuthorizationRequestForUser(user.id, pending.requestId, pending.bindingHash),
     ).resolves.toBeNull()
   })
 
