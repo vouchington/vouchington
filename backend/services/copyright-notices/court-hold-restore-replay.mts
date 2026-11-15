@@ -4,7 +4,7 @@ import sql from 'sql-template-strings'
 import { getCopyrightSweepLimits } from './work-limits.mts'
 import {
   copyrightActionDeliveryFacts,
-  lockCopyrightActionDeadline,
+  readCopyrightActionDeadline,
   type CopyrightActionFacts,
 } from './action-delivery-facts.mts'
 import {
@@ -45,7 +45,7 @@ export async function replayEligibleCopyrightRestoreIntentsInTransaction(input: 
 }): Promise<string[]> {
   const reopened: string[] = []
   for (const intentId of input.intentIds) {
-    // oxlint-disable-next-line no-await-in-loop -- each original intent is locked, proved and reset under the retained case fence.
+    // oxlint-disable-next-line no-await-in-loop -- each original authority is proved before its conditional reset.
     if (await replayOriginalRestore(intentId, input)) reopened.push(intentId)
   }
   return reopened
@@ -84,12 +84,11 @@ async function replayOriginalRestore(
   input: { noticeId: string; now: Date; query: TransactionQuery },
 ): Promise<boolean> {
   const statement = blockedCopyrightRestoreFacts(intentId, input.noticeId).append(sql`
-    /* replayEligibleCopyrightRestoreIntentsInTransaction:lock */
-    FOR UPDATE OF intent, restriction, target`)
+    /* replayEligibleCopyrightRestoreIntentsInTransaction:read */`)
   const { rows } = await input.query<CopyrightActionFacts>(statement)
   const facts = rows[0]
   if (!facts) return false
-  const legal = await lockCopyrightActionDeadline(facts, input.query)
+  const legal = await readCopyrightActionDeadline(facts, input.query)
   return replayOriginalRestoreWithFacts(intentId, legal, input)
 }
 

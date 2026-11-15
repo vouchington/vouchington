@@ -4,12 +4,12 @@ import sql from 'sql-template-strings'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import { invalidateCopyrightLegalRemovalSurfaces } from './action-delivery-cache.mts'
 import { denyRestoreThenComplete } from './action-delivery-denial.mts'
+import { readCopyrightActionDeliveryForCompletion } from './action-delivery-facts.mts'
 import {
   completeCopyrightActionIntentInTransaction,
   hasCopyrightActionBlocker,
   hasOtherActiveCopyrightRestrictions,
   insertCopyrightActionLifecycleEvent,
-  lockCopyrightActionDelivery,
 } from './action-delivery-state.mts'
 import { syncCopyrightIncidentsAfterStatutoryRestoreInTransaction } from './statutory-restoration-incidents.mts'
 
@@ -26,7 +26,7 @@ export async function finalizeCopyrightActionAfterDelivery(
   deliveredTuple: { placementId: string; revision: number; imageId: string },
 ): Promise<boolean | 'denied'> {
   await using transaction = await beginTransaction()
-  const legal = await lockCopyrightActionDelivery(intentId, leaseToken, transaction)
+  const legal = await readCopyrightActionDeliveryForCompletion(intentId, leaseToken, transaction)
   if (!legal) {
     await transaction.commit()
     return false
@@ -103,7 +103,16 @@ async function completeCopyrightActionAndInvalidate(input: {
   legal: Parameters<typeof hasCopyrightActionBlocker>[0]
   transaction: Awaited<ReturnType<typeof beginTransaction>>
 }): Promise<void> {
+  // Write the notice clock before blocker generation. A lost lease throws from completion,
+  // and the owning transaction discards the tentative lifecycle event with its clock writes.
   await runSequentially([
+    () =>
+      insertCopyrightActionLifecycleEvent(
+        input.legal,
+        input.intentId,
+        input.action === 'withhold' ? 'placement_withheld' : 'placement_restored',
+        input.transaction,
+      ),
     () =>
       completeCopyrightActionIntentInTransaction({
         intentId: input.intentId,
@@ -113,13 +122,6 @@ async function completeCopyrightActionAndInvalidate(input: {
         query: input.transaction,
       }),
     () => syncCopyrightIncidentsAfterStatutoryRestoreInTransaction(input.legal, input.transaction),
-    () =>
-      insertCopyrightActionLifecycleEvent(
-        input.legal,
-        input.intentId,
-        input.action === 'withhold' ? 'placement_withheld' : 'placement_restored',
-        input.transaction,
-      ),
     () =>
       invalidateCopyrightLegalRemovalSurfaces(
         { placement_id: input.legal.placement_id, action: input.action },

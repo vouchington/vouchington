@@ -135,7 +135,23 @@ export async function replayFailedCopyrightActionIntent(input: {
   actorUserId: string
 }): Promise<boolean> {
   await using transaction = await beginTransaction()
-  const { rows } = await transaction<{ copyright_notice_id: string }>(sql`
+  const { rows: events } = await transaction<{ id: string }>(sql`
+    /* replayFailedCopyrightActionIntent:event */
+    INSERT INTO copyright_notice_lifecycle_changes (
+      copyright_notice_id, change_type, changed_by_id,
+      copyright_notice_action_intent_id, replay_reason
+    )
+    SELECT target.copyright_notice_id, 'copyright_action_replayed', ${input.actorUserId},
+      intent.id, 'operator_replay'
+    FROM copyright_notice_action_work_items intent
+    JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
+    JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
+    WHERE intent.id = ${input.intentId} AND target.copyright_notice_id = ${input.noticeId}
+      AND intent.state = 'failed'
+    RETURNING id
+  `)
+  if (events.length === 0) return false
+  const { rowCount } = await transaction(sql`
     /* replayFailedCopyrightActionIntent */
     UPDATE copyright_notice_action_work_items
     SET attempt_count = 0, leased_at = NULL, completed_at = NULL,
@@ -147,17 +163,10 @@ export async function replayFailedCopyrightActionIntent(input: {
       AND copyright_notice_action_work_items.copyright_restriction_id = restriction.id
       AND target.copyright_notice_id = ${input.noticeId}
       AND copyright_notice_action_work_items.state = 'failed'
-    RETURNING target.copyright_notice_id
   `)
-  const replayed = rows[0]
-  if (replayed) {
-    await transaction(sql`/* replayFailedCopyrightActionIntent:event */
-      INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
-        copyright_notice_action_intent_id, replay_reason)
-      VALUES (${replayed.copyright_notice_id}, 'copyright_action_replayed', ${input.actorUserId},
-        ${input.intentId}, 'operator_replay')
-    `)
-  }
+  // A competing replay may win after the event's source read. Discard the tentative audit and
+  // notice clock with this owned transaction when its conditional work-item update loses.
+  if (rowCount !== 1) return false
   await transaction.commit()
-  return replayed !== undefined
+  return true
 }
