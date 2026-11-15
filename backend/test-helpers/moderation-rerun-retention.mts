@@ -66,3 +66,18 @@ export async function getTestAppealResolutionRunStatus(id: string): Promise<RunS
     SELECT status FROM moderation_appeal_resolution_runs WHERE id = ${id}::uuid LIMIT 1`)
   return rows[0]?.status ?? null
 }
+
+export async function insertTestReviewDisputeResolutionRunForRetention(
+  disputeId: string,
+  at: Date,
+  status: RunStatus,
+): Promise<string> {
+  const id = uuidv7({ msecs: at.getTime() })
+  const { completedAt, failedAt, expiredAt } = outcomeDates(status, at)
+  await write(sql`/* insertTestReviewDisputeResolutionRunForRetention */
+    INSERT INTO review_dispute_resolution_runs
+      (id, review_dispute_id, completed_at, failed_at, expired_at, ai_drafted_at)
+    VALUES (${id}::uuid, ${disputeId}::uuid, ${completedAt}, ${failedAt}, ${expiredAt},
+      ${status === 'succeeded' ? at : null})`)
+  return id
+}

@@ -5643,6 +5643,8 @@
 {"id":"copy.native.swift.reviewDisputes.rating","value":"Note : {rating}"},
 {"id":"copy.native.swift.reviewDisputes.refreshStatus","value":"Actualiser le statut"},
 {"id":"copy.native.swift.reviewDisputes.rerunAi","value":"Relancer l’IA"},
+{"id":"copy.native.swift.reviewDisputes.rerunExpired","value":"Le brouillon de l’IA n’est plus nécessaire."},
+{"id":"copy.native.swift.reviewDisputes.rerunFailed","value":"Le brouillon de l’IA a échoué. Réessayez."},
 {"id":"copy.native.swift.reviewDisputes.rerunNotQueued","value":"Le brouillon de l’IA n’a pas été mis en file d’attente."},
 {"id":"copy.native.swift.reviewDisputes.rerunStillProcessing","value":"Le brouillon de l’IA est toujours en cours. Actualisez pour vérifier."},
 {"id":"copy.native.swift.reviewDisputes.resolved","value":"Résolue"},

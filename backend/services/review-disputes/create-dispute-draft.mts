@@ -5,14 +5,19 @@ import type { ReviewDispute, ReviewDisputeRecommendedAction } from './config.mts
 
 export interface AiDraftInput {
   disputeId: string
-  requestToken: string
+  /** The admitted resolution run; only an active run may save a draft. */
+  runId: string
   recommendedAction: ReviewDisputeRecommendedAction
   aiPublicResponse: string
   aiInternalResponse: string
   model: string
-  runId?: string
 }
 
+/**
+ * Saves the draft and completes the run in one statement. The run row is locked because it is
+ * written, so a delayed failure marker either lands first (nothing saves) or finds it complete.
+ * Returns null when the run no longer applies (already finished, or the dispute left drafting).
+ */
 export async function createReviewDisputeDraft(input: AiDraftInput): Promise<ReviewDispute | null> {
   const now = new Date()
   const { rows } = await write<ReviewDispute>(sql`/* createReviewDisputeDraft */
@@ -26,15 +31,19 @@ export async function createReviewDisputeDraft(input: AiDraftInput): Promise<Rev
           ai_internal_response = ${input.aiInternalResponse},
           model = ${input.model},
           ai_drafted_at = ${now},
-          ai_draft_run_id = ${input.runId ?? null},
           public_response = ${input.aiPublicResponse},
           drafted_at = COALESCE(drafted_at, ${now}),
           latest_lifecycle_change_id = (SELECT id FROM lifecycle_change_id)
       WHERE id = ${input.disputeId}
-        AND ai_draft_request_token = ${input.requestToken}
         AND approved_at IS NULL
         AND sent_at IS NULL
         AND resolved_at IS NULL
+        AND EXISTS (
+          SELECT 1 FROM review_dispute_resolution_runs run
+          WHERE run.id = ${input.runId}::uuid AND run.review_dispute_id = review_disputes.id
+            AND run.completed_at IS NULL AND run.failed_at IS NULL AND run.expired_at IS NULL
+          FOR UPDATE
+        )
       RETURNING
         id, post_id, topic_id, disputant_user_id, reason, claim_text,
         CASE
@@ -60,46 +69,28 @@ export async function createReviewDisputeDraft(input: AiDraftInput): Promise<Rev
         updated.id,
         'ai_draft',
         NULL,
-        ${JSON.stringify({ model: input.model, recommended_action: input.recommendedAction, run_id: input.runId ?? null })}::jsonb
+        ${JSON.stringify({ model: input.model, recommended_action: input.recommendedAction, run_id: input.runId })}::jsonb
       FROM updated
       CROSS JOIN lifecycle_change_id
+    ),
+    completed_run AS (
+      UPDATE review_dispute_resolution_runs run
+      SET completed_at = ${now},
+          ai_drafted_at = ${now},
+          latest_lifecycle_change_id = updated.latest_lifecycle_change_id
+      FROM updated
+      WHERE run.id = ${input.runId}::uuid
+        AND run.review_dispute_id = updated.id
+      RETURNING run.id
     )
     SELECT * FROM updated
   `)
   const result = rows[0]
-  if (!result) {
-    const { rows: currentRows } = await write<{ ai_draft_request_token: string }>(sql`
-      /* createReviewDisputeDraft:checkRequest */
-      SELECT ai_draft_request_token FROM review_disputes WHERE id = ${input.disputeId}
-    `)
-    if (currentRows[0] && currentRows[0].ai_draft_request_token !== input.requestToken) return null // a newer request superseded this job while it was processing
-  }
-  assert(result, 404, 'Dispute not found, already approved, sent, or resolved')
-  return result
-}
-
-/** The row lock waits for an enqueueing transaction to commit or roll back before model IO. */
-export async function isCurrentReviewDisputeDraftRequest(
-  disputeId: string,
-  requestToken: string,
-): Promise<boolean> {
-  const { rows } = await write<{
-    ai_draft_request_token: string
-    approved_at: Date | null
-    sent_at: Date | null
-    resolved_at: Date | null
-  }>(sql`
-    /* isCurrentReviewDisputeDraftRequest */
-    SELECT ai_draft_request_token, approved_at, sent_at, resolved_at
-    FROM review_disputes
-    WHERE id = ${disputeId}
-
+  if (result) return result
+  const { rows: current } = await write<{ id: string }>(sql`
+    /* createReviewDisputeDraft:checkDispute */
+    SELECT id FROM review_disputes WHERE id = ${input.disputeId}
   `)
-  const dispute = rows[0]
-  return (
-    dispute?.ai_draft_request_token === requestToken &&
-    dispute.approved_at === null &&
-    dispute.sent_at === null &&
-    dispute.resolved_at === null
-  )
+  assert(current[0], 404, 'Dispute not found')
+  return null
 }

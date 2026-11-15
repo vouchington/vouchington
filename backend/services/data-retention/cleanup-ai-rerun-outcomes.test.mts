@@ -5,6 +5,10 @@ import {
   insertTestModerationAppeal,
   insertTestModerationReport,
   insertTestPost,
+  insertTestPostReview,
+  insertTestReviewDispute,
+  insertTestTopic,
+  getReviewDisputeRunStatus,
   insertTestReportJudgement,
   insertTestUserWarning,
 } from '@voucha/test-helpers'
@@ -14,6 +18,7 @@ import {
   getTestReportJudgementRunStatus,
   attachTestJudgementToRun,
   insertTestAppealResolutionRunForRetention,
+  insertTestReviewDisputeResolutionRunForRetention,
   insertTestReportJudgementRunForRetention,
 } from '@voucha/test-helpers/moderation-rerun-retention'
 import { runDataRetentionCleanup } from './cleanup.mts'
@@ -110,5 +115,73 @@ describe('durable AI rerun retention', () => {
     expect(await getTestAppealResolutionRunStatus(selectedSucceeded)).toBeNull()
     expect(await getTestAppealResolutionRunStatus(excludedOld)).toBe('failed')
     expect(await getTestAppealResolutionRunStatus(selectedRecent)).toBe('active')
+  })
+
+  it('deletes only terminal dispute runs older than the window and never an active run', async () => {
+    const now = new Date()
+    const old = new Date(now.getTime() - 100 * 86_400_000)
+    const recent = new Date(now.getTime() - 10 * 86_400_000)
+    const user = await createTestUser()
+    const topicId = await insertTestTopic({
+      name: `Retention Topic ${crypto.randomUUID()}`,
+      slug: `retention-topic-${crypto.randomUUID().slice(0, 8)}`,
+      createdById: user.id,
+    })
+    const postId = await insertTestPost({
+      title: `Dispute retention ${crypto.randomUUID()}`,
+      slug: `dispute-retention-${crypto.randomUUID()}`,
+      createdById: user.id,
+      markdown: 'Synthetic review',
+      postType: 'review',
+    })
+    await insertTestPostReview(postId, topicId, 1)
+    const disputeId = await insertTestReviewDispute({
+      postId,
+      topicId,
+      disputantUserId: user.id,
+    })
+    const oldSucceeded = await insertTestReviewDisputeResolutionRunForRetention(
+      disputeId,
+      old,
+      'succeeded',
+    )
+    const oldFailed = await insertTestReviewDisputeResolutionRunForRetention(
+      disputeId,
+      old,
+      'failed',
+    )
+    const oldExpired = await insertTestReviewDisputeResolutionRunForRetention(
+      disputeId,
+      old,
+      'expired',
+    )
+    const recentSucceeded = await insertTestReviewDisputeResolutionRunForRetention(
+      disputeId,
+      recent,
+      'succeeded',
+    )
+    const oldActive = await insertTestReviewDisputeResolutionRunForRetention(
+      disputeId,
+      old,
+      'active',
+    )
+
+    const result = await runDataRetentionCleanup(
+      { batchSize: 10, maxBatches: 1 },
+      {
+        families: ['reviewDisputeResolutionRuns'],
+        reviewDisputeResolutionRuns: {
+          now,
+          runIds: [oldSucceeded, oldFailed, oldExpired, recentSucceeded, oldActive],
+        },
+      },
+    )
+
+    expect(result.reviewDisputeResolutionRuns.deleted).toBe(3)
+    expect(await getReviewDisputeRunStatus(oldSucceeded)).toBeNull()
+    expect(await getReviewDisputeRunStatus(oldFailed)).toBeNull()
+    expect(await getReviewDisputeRunStatus(oldExpired)).toBeNull()
+    expect(await getReviewDisputeRunStatus(recentSucceeded)).toBe('succeeded')
+    expect(await getReviewDisputeRunStatus(oldActive)).toBe('active')
   })
 })

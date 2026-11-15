@@ -5098,7 +5098,25 @@
               "additionalProperties": false,
               "properties": {
                 "ai_draft_requested_run_id": {
-                  "type": "string"
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "ai_draft_requested_run_status": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "enum": ["active", "succeeded", "failed", "expired"],
+                      "type": "string"
+                    }
+                  ]
                 },
                 "ai_draft_run_id": {
                   "anyOf": [
@@ -5466,6 +5484,7 @@
               },
               "required": [
                 "ai_draft_requested_run_id",
+                "ai_draft_requested_run_status",
                 "ai_draft_run_id",
                 "ai_drafted_at",
                 "ai_internal_response",
@@ -7004,7 +7023,25 @@
           "additionalProperties": false,
           "properties": {
             "ai_draft_requested_run_id": {
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "ai_draft_requested_run_status": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "enum": ["active", "succeeded", "failed", "expired"],
+                  "type": "string"
+                }
+              ]
             },
             "ai_draft_run_id": {
               "anyOf": [
@@ -7372,6 +7409,7 @@
           },
           "required": [
             "ai_draft_requested_run_id",
+            "ai_draft_requested_run_status",
             "ai_draft_run_id",
             "ai_drafted_at",
             "ai_internal_response",
@@ -9692,7 +9730,25 @@
           "additionalProperties": false,
           "properties": {
             "ai_draft_requested_run_id": {
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "ai_draft_requested_run_status": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "enum": ["active", "succeeded", "failed", "expired"],
+                  "type": "string"
+                }
+              ]
             },
             "ai_draft_run_id": {
               "anyOf": [
@@ -10060,6 +10116,7 @@
           },
           "required": [
             "ai_draft_requested_run_id",
+            "ai_draft_requested_run_status",
             "ai_draft_run_id",
             "ai_drafted_at",
             "ai_internal_response",
@@ -10103,7 +10160,25 @@
           "additionalProperties": false,
           "properties": {
             "ai_draft_requested_run_id": {
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "ai_draft_requested_run_status": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "enum": ["active", "succeeded", "failed", "expired"],
+                  "type": "string"
+                }
+              ]
             },
             "ai_draft_run_id": {
               "anyOf": [
@@ -10471,6 +10546,7 @@
           },
           "required": [
             "ai_draft_requested_run_id",
+            "ai_draft_requested_run_status",
             "ai_draft_run_id",
             "ai_drafted_at",
             "ai_internal_response",
@@ -10514,7 +10590,25 @@
           "additionalProperties": false,
           "properties": {
             "ai_draft_requested_run_id": {
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "ai_draft_requested_run_status": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "enum": ["active", "succeeded", "failed", "expired"],
+                  "type": "string"
+                }
+              ]
             },
             "ai_draft_run_id": {
               "anyOf": [
@@ -10882,6 +10976,7 @@
           },
           "required": [
             "ai_draft_requested_run_id",
+            "ai_draft_requested_run_status",
             "ai_draft_run_id",
             "ai_drafted_at",
             "ai_internal_response",

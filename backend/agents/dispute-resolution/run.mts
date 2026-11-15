@@ -5,7 +5,7 @@ import { moderationAiConfig } from '@services/moderation-ai-config'
 import {
   getReviewDisputeByIdFromPrimary,
   createReviewDisputeDraft,
-  isCurrentReviewDisputeDraftRequest,
+  isActiveReviewDisputeResolutionRun,
 } from '@services/review-disputes'
 import onError from '@modules/on-error'
 import { callDisputeModel, type DisputeModelCaller } from './model.mts'
@@ -14,9 +14,9 @@ export type { DisputeModelCaller } from './model.mts'
 
 export interface DisputeModelInput {
   disputeId: string
-  requestToken: string
+  /** The admitted resolution run; its row id is the request identity. */
+  runId: string
   rerunById?: string | null
-  runId?: string
 }
 
 /**
@@ -30,7 +30,7 @@ export async function runDisputeResolutionAgent(
   selection: ModelSelection,
   callModel: DisputeModelCaller = callDisputeModel,
 ): Promise<void> {
-  const { disputeId, requestToken, rerunById, runId } = input
+  const { disputeId, runId, rerunById } = input
 
   const dispute = await getReviewDisputeByIdFromPrimary(disputeId)
   if (!dispute) {
@@ -42,7 +42,7 @@ export async function runDisputeResolutionAgent(
     return
   }
 
-  if (!(await isCurrentReviewDisputeDraftRequest(disputeId, requestToken))) return
+  if (!(await isActiveReviewDisputeResolutionRun(disputeId, runId))) return
 
   // Manual reruns bypass only existing-draft idempotency.
   if (!rerunById && dispute.ai_drafted_at != null) return
@@ -102,6 +102,5 @@ export async function runDisputeResolutionAgent(
     aiInternalResponse: result.output.internal_response,
     model: result.model,
     runId,
-    requestToken,
   })
 }

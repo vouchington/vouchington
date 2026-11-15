@@ -5,20 +5,25 @@ import { AI_AGENTS_QUEUE_NAME, AI_AGENTS_DEFAULTS, AGENT_PRIORITY } from '../con
 import type { DisputeResolutionJobData } from '../types.mts'
 import { addAIAgentJob } from './create-enqueue.mts'
 
+export function disputeResolutionJobId(runId: string): string {
+  return `dispute_resolution_${runId}`
+}
+
 function buildDisputeResolutionJob(
   disputeId: string,
-  requestToken: string,
+  runId: string,
   rerunById?: string | null,
 ): { data: DisputeResolutionJobData; opts: JobOptions } {
   return {
     data: {
       dispute_id: disputeId,
-      ai_draft_request_token: requestToken,
+      run_id: runId,
       rerun_by_id: rerunById ?? null,
     } satisfies DisputeResolutionJobData,
     opts: {
-      // The durable request UUID survives Valkey restarts; queue-local sequence IDs do not.
-      jobId: `dispute_resolution_${requestToken}`,
+      // The durable run UUID survives Valkey restarts; queue-local sequence IDs do not. Enqueueing
+      // the same admitted run again is therefore a no-op, which lets admission retries heal a lost job.
+      jobId: disputeResolutionJobId(runId),
       attempts: AI_AGENTS_DEFAULTS.attempts,
       backoff: AI_AGENTS_DEFAULTS.backoff,
       removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
@@ -44,26 +49,25 @@ function buildDisputeResolutionJob(
  */
 export function enqueueDisputeResolution(
   disputeId: string,
-  requestToken: string,
+  runId: string,
   rerunById?: string | null,
 ): void {
-  const { data, opts } = buildDisputeResolutionJob(disputeId, requestToken, rerunById)
+  const { data, opts } = buildDisputeResolutionJob(disputeId, runId, rerunById)
   addAIAgentJob('dispute-resolution', data, opts).catch(onError)
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'dispute-resolution')
 }
 
 /**
  * Awaitable variant for manual staff-triggered re-runs: propagates enqueue failures so the
- * caller can surface an error instead of falsely reporting the job as queued.
+ * caller can surface an error instead of falsely reporting the job as queued. A job already
+ * queued for this run is not an error.
  */
 export async function enqueueDisputeResolutionQueued(
   disputeId: string,
-  requestToken: string,
+  runId: string,
   rerunById?: string | null,
-): Promise<string> {
-  const { data, opts } = buildDisputeResolutionJob(disputeId, requestToken, rerunById)
-  const job = await addAIAgentJob('dispute-resolution', data, opts)
-  if (!job) throw new Error('Dispute resolution rerun was not admitted to the queue')
+): Promise<void> {
+  const { data, opts } = buildDisputeResolutionJob(disputeId, runId, rerunById)
+  await addAIAgentJob('dispute-resolution', data, opts)
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'dispute-resolution')
-  return job.id
 }

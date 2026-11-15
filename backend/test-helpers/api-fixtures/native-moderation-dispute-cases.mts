@@ -29,6 +29,7 @@ export const nativeModerationDisputeApiFixtureCases = [
   }),
   fixtureCase({
     id: 'native.moderation.disputes.detail.default',
+    pending: true,
     backendResponseContractKey: 'GET:/api/v1/disputes/:id#staff',
     method: 'GET',
     path: `/api/v1/disputes/${disputeId}`,
@@ -57,6 +58,7 @@ export const nativeModerationDisputeApiFixtureCases = [
   }),
   fixtureCase({
     id: 'native.moderation.disputes.update.default',
+    pending: true,
     backendResponseContractKey: 'PATCH:/api/v1/disputes/:id#staff',
     method: 'PATCH',
     path: `/api/v1/disputes/${disputeId}`,
@@ -76,6 +78,7 @@ export const nativeModerationDisputeApiFixtureCases = [
   }),
   fixtureCase({
     id: 'native.moderation.disputes.approval.default',
+    pending: true,
     backendResponseContractKey: 'POST:/api/v1/disputes/:id/approval#staff',
     method: 'POST',
     path: `/api/v1/disputes/${disputeId}/approval`,
@@ -91,6 +94,7 @@ export const nativeModerationDisputeApiFixtureCases = [
   }),
   fixtureCase({
     id: 'native.moderation.disputes.delivery.default',
+    pending: true,
     backendResponseContractKey: 'POST:/api/v1/disputes/:id/delivery#staff',
     method: 'POST',
     path: `/api/v1/disputes/${disputeId}/delivery`,
@@ -106,6 +110,7 @@ export const nativeModerationDisputeApiFixtureCases = [
   ...(['remove', 'annotate', 'dismiss'] as const).map(action =>
     fixtureCase({
       id: `native.moderation.disputes.resolution.${action}`,
+      pending: true,
       backendResponseContractKey: 'POST:/api/v1/disputes/:id/resolution#staff',
       method: 'POST',
       path: `/api/v1/disputes/${disputeId}/resolution`,
@@ -128,6 +133,7 @@ export const nativeModerationDisputeApiFixtureCases = [
   ),
   fixtureCase({
     id: 'native.moderation.disputes.resolution-drafts.default',
+    pending: true,
     backendResponseContractKey: 'POST:/api/v1/disputes/:id/resolution-drafts#staff',
     method: 'POST',
     path: `/api/v1/disputes/${disputeId}/resolution-drafts`,
@@ -135,7 +141,7 @@ export const nativeModerationDisputeApiFixtureCases = [
       routeTemplate: '/api/v1/disputes/:id/resolution-drafts',
       pathParams: { id: disputeId },
     },
-    body: { queued: true, rerun_by_id: 'staff-1', run_id: 'dispute-rerun-job-1' },
+    body: { queued: true, rerun_by_id: 'staff-1', run_id: '00000000-0000-7000-8000-000000000211' },
     status: 202,
     migratedFrom: ['backend/api/v1/disputes/disputes.mts'],
   }),

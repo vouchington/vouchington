@@ -6,6 +6,7 @@ import { cleanupPostModerationLedger } from './cleanup-post-moderation-ledger.mt
 import {
   cleanupAppealResolutionRuns,
   cleanupReportJudgementRuns,
+  cleanupReviewDisputeResolutionRuns,
 } from './cleanup-ai-rerun-outcomes.mts'
 import { cleanupObsoleteAgentModerations } from './cleanup-agent-moderations.mts'
 import { cleanupTextEmbeddingCache } from './cleanup-text-embeddings.mts'
@@ -30,6 +31,7 @@ export async function cleanupModerationEmbeddingFamilies(
     | 'oldModerationQueueClaims'
     | 'reportJudgementRuns'
     | 'appealResolutionRuns'
+    | 'reviewDisputeResolutionRuns'
     | 'oldModerationMediaReveals'
     | 'postModerationLedger'
     | 'agentModerations'
@@ -47,6 +49,7 @@ export async function cleanupModerationEmbeddingFamilies(
   const [
     reportJudgementRuns,
     appealResolutionRuns,
+    reviewDisputeResolutionRuns,
     oldModerationQueueClaims,
     oldModerationMediaReveals,
     postModerationLedger,
@@ -67,6 +70,15 @@ export async function cleanupModerationEmbeddingFamilies(
           ...withLimits(options.appealResolutionRuns),
           retentionDays:
             options.appealResolutionRuns?.retentionDays ??
+            readDataRetentionField('ai_rerun_retention_days'),
+        })
+      : { deleted: 0, hasMore: false },
+    active('reviewDisputeResolutionRuns')
+      ? cleanupReviewDisputeResolutionRuns({
+          ...options.reviewDisputeResolutionRuns,
+          ...withLimits(options.reviewDisputeResolutionRuns),
+          retentionDays:
+            options.reviewDisputeResolutionRuns?.retentionDays ??
             readDataRetentionField('ai_rerun_retention_days'),
         })
       : { deleted: 0, hasMore: false },
@@ -109,6 +121,7 @@ export async function cleanupModerationEmbeddingFamilies(
   return {
     reportJudgementRuns,
     appealResolutionRuns,
+    reviewDisputeResolutionRuns,
     oldModerationQueueClaims,
     oldModerationMediaReveals,
     postModerationLedger,

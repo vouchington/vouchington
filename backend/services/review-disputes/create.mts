@@ -13,6 +13,7 @@ import type { CreateReviewDisputeInput } from './parse.mts'
 import { currentUserCanDisputeReviewsOfTopic } from '@services/topic-claims/authorization'
 import type { PrivateUser } from '@services/users/types'
 import { getReviewDisputeByIdFromPrimary } from './get.mts'
+import { admitReviewDisputeResolutionRun } from './resolution-runs.mts'
 import type { ReviewDisputeResponse } from './types.mts'
 
 /**
@@ -89,9 +90,7 @@ async function insertReviewDispute(
   const canDispute = await currentUserCanDisputeReviewsOfTopic(currentUser, topicId)
   assert(canDispute, 403, 'You must have a verified claim on this topic to file a dispute')
 
-  const { rows } = await query<
-    ReviewDispute & { inserted: boolean; ai_draft_request_token: string }
-  >(sql`/* createReviewDispute */
+  const { rows } = await query<ReviewDispute & { inserted: boolean }>(sql`/* createReviewDispute */
     WITH lifecycle_change_id AS (
       SELECT uuidv7() AS id
     ),
@@ -112,7 +111,6 @@ async function insertReviewDispute(
       RETURNING
         (xmax = 0) AS inserted,
         id, post_id, topic_id, disputant_user_id, reason, claim_text,
-        ai_draft_request_token,
         CASE
           WHEN resolved_at IS NULL THEN 'pending'
           WHEN resolution_action = 'dismiss' THEN 'dismissed'
@@ -144,7 +142,6 @@ async function insertReviewDispute(
     SELECT
       inserted,
       id, post_id, topic_id, disputant_user_id, reason, claim_text, status,
-      ai_draft_request_token,
       recommended_action, ai_public_response, ai_internal_response, model, ai_drafted_at,
       public_response, internal_notes, drafted_at, edited_at, edited_by_id,
       approved_at, approved_by_id, sent_at, resolved_at, resolved_by_id,
@@ -157,8 +154,10 @@ async function insertReviewDispute(
   const result = { disputeId: row.id, isDuplicate: !row.inserted }
 
   if (!result.isDuplicate) {
+    // The run commits with the dispute; the enqueue follows the commit, whoever owns it.
+    const { runId } = await admitReviewDisputeResolutionRun(query, result.disputeId)
     registerPostCommitAction(query, async () =>
-      enqueueDisputeResolutionAsync(result.disputeId, row.ai_draft_request_token),
+      enqueueDisputeResolutionAsync(result.disputeId, runId),
     )
   }
   const dispute = await getReviewDisputeByIdFromPrimary(result.disputeId, { query })
@@ -166,10 +165,10 @@ async function insertReviewDispute(
   return { dispute, isDuplicate: result.isDuplicate }
 }
 
-function enqueueDisputeResolutionAsync(disputeId: string, requestToken: string): void {
+function enqueueDisputeResolutionAsync(disputeId: string, runId: string): void {
   import('@queues/ai-agents/enqueues/dispute-resolution')
     .then(({ enqueueDisputeResolution }) => {
-      enqueueDisputeResolution(disputeId, requestToken)
+      enqueueDisputeResolution(disputeId, runId)
     })
     .catch(onError)
 }

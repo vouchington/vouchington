@@ -30,6 +30,15 @@ export function cleanupAppealResolutionRuns(options: AiRerunOutcomeCleanupOption
   )
 }
 
+export function cleanupReviewDisputeResolutionRuns(options: AiRerunOutcomeCleanupOptions) {
+  const cutoffId = getMinUUIDv7ForDate(
+    getRetentionCutoffDate(normalizeRetentionDays(options.retentionDays, 90), options.now),
+  )
+  return runBoundedBatches(options, batchSize =>
+    deleteReviewDisputeResolutionRunBatch(cutoffId, batchSize, options.runIds),
+  )
+}
+
 async function deleteReportJudgementRunBatch(
   cutoffId: string,
   batchSize: number,
@@ -67,6 +76,30 @@ async function deleteAppealResolutionRunBatch(
     DELETE FROM moderation_appeal_resolution_runs AS run
     WHERE run.id = ANY(ARRAY(SELECT id FROM candidates))
       AND run.id < ${cutoffId}::uuid
+    RETURNING run.id`)
+  const { rowCount } = await write(query)
+  return rowCount ?? 0
+}
+
+/** Only terminal runs retire; an active run is the live admission and is never deleted here. */
+async function deleteReviewDisputeResolutionRunBatch(
+  cutoffId: string,
+  batchSize: number,
+  runIds?: readonly string[],
+): Promise<number> {
+  const query = sql`/* deleteOldReviewDisputeResolutionRunBatch */
+    WITH candidates AS (
+      SELECT id FROM review_dispute_resolution_runs
+      WHERE id < ${cutoffId}::uuid
+        AND (completed_at IS NOT NULL OR failed_at IS NOT NULL OR expired_at IS NOT NULL)`
+  if (runIds) query.append(sql` AND id = ANY(${runIds}::uuid[])`)
+  query.append(sql`
+      ORDER BY id LIMIT ${batchSize}
+    )
+    DELETE FROM review_dispute_resolution_runs AS run
+    WHERE run.id = ANY(ARRAY(SELECT id FROM candidates))
+      AND run.id < ${cutoffId}::uuid
+      AND (run.completed_at IS NOT NULL OR run.failed_at IS NOT NULL OR run.expired_at IS NOT NULL)
     RETURNING run.id`)
   const { rowCount } = await write(query)
   return rowCount ?? 0

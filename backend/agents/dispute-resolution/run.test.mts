@@ -2,7 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { describe, it, expect, vi, beforeAll } from 'vitest'
 import {
   createTestUser,
-  getReviewDisputeAiRequestToken,
+  getReviewDisputeActiveRunId,
+  admitTestReviewDisputeRun,
   insertTestTopic,
   insertTestPost,
   insertTestPostReview,
@@ -80,7 +81,7 @@ describe('runDisputeResolutionAgent', () => {
     })
 
     await runDisputeResolutionAgent(
-      { disputeId: dispute.id, requestToken: await getReviewDisputeAiRequestToken(dispute.id) },
+      { disputeId: dispute.id, runId: await getReviewDisputeActiveRunId(dispute.id) },
       TEST_MODEL_SELECTION,
       callModel,
     )
@@ -108,7 +109,7 @@ describe('runDisputeResolutionAgent', () => {
     })
 
     await runDisputeResolutionAgent(
-      { disputeId: dispute.id, requestToken: await getReviewDisputeAiRequestToken(dispute.id) },
+      { disputeId: dispute.id, runId: await getReviewDisputeActiveRunId(dispute.id) },
       TEST_MODEL_SELECTION,
       callModel,
     )
@@ -133,7 +134,7 @@ describe('runDisputeResolutionAgent', () => {
       internal_response: 'Internal.',
     })
     await runDisputeResolutionAgent(
-      { disputeId: dispute.id, requestToken: await getReviewDisputeAiRequestToken(dispute.id) },
+      { disputeId: dispute.id, runId: await getReviewDisputeActiveRunId(dispute.id) },
       TEST_MODEL_SELECTION,
       firstCaller,
     )
@@ -144,7 +145,7 @@ describe('runDisputeResolutionAgent', () => {
       internal_response: 'Internal.',
     })
     await runDisputeResolutionAgent(
-      { disputeId: dispute.id, requestToken: await getReviewDisputeAiRequestToken(dispute.id) },
+      { disputeId: dispute.id, runId: await admitTestReviewDisputeRun(dispute.id) },
       TEST_MODEL_SELECTION,
       secondCaller,
     )
@@ -167,7 +168,7 @@ describe('runDisputeResolutionAgent', () => {
       internal_response: 'First.',
     })
     await runDisputeResolutionAgent(
-      { disputeId: dispute.id, requestToken: await getReviewDisputeAiRequestToken(dispute.id) },
+      { disputeId: dispute.id, runId: await getReviewDisputeActiveRunId(dispute.id) },
       TEST_MODEL_SELECTION,
       firstCaller,
     )
@@ -180,7 +181,7 @@ describe('runDisputeResolutionAgent', () => {
     await runDisputeResolutionAgent(
       {
         disputeId: dispute.id,
-        requestToken: await getReviewDisputeAiRequestToken(dispute.id),
+        runId: await admitTestReviewDisputeRun(dispute.id),
         rerunById: staff.id,
       },
       TEST_MODEL_SELECTION,
@@ -199,7 +200,7 @@ describe('runDisputeResolutionAgent', () => {
       internal_response: 'x',
     })
     await runDisputeResolutionAgent(
-      { disputeId: randomUUID(), requestToken: randomUUID() },
+      { disputeId: randomUUID(), runId: randomUUID() },
       TEST_MODEL_SELECTION,
       callModel,
     )
@@ -231,7 +232,7 @@ describe('runDisputeResolutionAgent', () => {
     })
 
     await runDisputeResolutionAgent(
-      { disputeId: dispute.id, requestToken: await getReviewDisputeAiRequestToken(dispute.id) },
+      { disputeId: dispute.id, runId: await getReviewDisputeActiveRunId(dispute.id) },
       TEST_MODEL_SELECTION,
       callModel,
     )
@@ -268,7 +269,7 @@ describe('runDisputeResolutionAgent', () => {
 
     await expect(
       runDisputeResolutionAgent(
-        { disputeId: dispute.id, requestToken: await getReviewDisputeAiRequestToken(dispute.id) },
+        { disputeId: dispute.id, runId: await getReviewDisputeActiveRunId(dispute.id) },
         TEST_OPENAI_SELECTION,
         callModel,
       ),

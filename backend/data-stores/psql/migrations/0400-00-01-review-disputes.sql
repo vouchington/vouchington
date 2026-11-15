@@ -57,8 +57,6 @@ CREATE TABLE IF NOT EXISTS review_disputes (
   ai_internal_response text,
   model text,
   ai_drafted_at timestamptz,
-  ai_draft_request_token uuid NOT NULL DEFAULT uuidv7() UNIQUE,
-  ai_draft_run_id text,
 
   -- Human-owned outbound message (the ONLY thing ever delivered to the disputant)
   public_response text,
@@ -176,6 +174,58 @@ CREATE INDEX IF NOT EXISTS idx_review_disputes__latest_lifecycle_change_id
   ON review_disputes (latest_lifecycle_change_id)
   WHERE latest_lifecycle_change_id IS NOT NULL;
 
+-- One row per admitted AI draft request. The row id is the request identity; the partial unique
+-- index admits one active run per dispute, so duplicate admissions read the existing run.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS review_dispute_resolution_runs (
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  review_dispute_id uuid NOT NULL REFERENCES review_disputes (id) ON DELETE CASCADE,
+  completed_at timestamptz,
+  failed_at timestamptz,
+  expired_at timestamptz,
+  ai_drafted_at timestamptz,
+  -- guardrails-disable-next-line uuid-must-be-key
+  latest_lifecycle_change_id uuid REFERENCES review_dispute_lifecycle_changes (id) ON DELETE SET NULL,
+  status moderation_ai_rerun_statuses GENERATED ALWAYS AS (
+    CASE WHEN completed_at IS NOT NULL THEN 'succeeded'::moderation_ai_rerun_statuses
+         WHEN failed_at IS NOT NULL THEN 'failed'::moderation_ai_rerun_statuses
+         WHEN expired_at IS NOT NULL THEN 'expired'::moderation_ai_rerun_statuses
+         ELSE 'active'::moderation_ai_rerun_statuses END
+  ) STORED,
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (review_dispute_id, id),
+  CHECK ((completed_at IS NULL) = (ai_drafted_at IS NULL))
+);
+CREATE OR REPLACE TRIGGER trigger_review_dispute_resolution_runs_updated_at
+  BEFORE UPDATE ON review_dispute_resolution_runs
+  FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_review_dispute_resolution_runs__one_active_per_dispute
+  ON review_dispute_resolution_runs (review_dispute_id)
+  WHERE completed_at IS NULL AND failed_at IS NULL AND expired_at IS NULL;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_review_dispute_resolution_runs__dispute_id
+  ON review_dispute_resolution_runs (review_dispute_id, id DESC);
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_review_dispute_resolution_runs__lifecycle_change_id
+  ON review_dispute_resolution_runs (latest_lifecycle_change_id)
+  WHERE latest_lifecycle_change_id IS NOT NULL;
+
+COMMENT ON TABLE review_dispute_resolution_runs IS 'Durable AI draft requests for review disputes and their terminal outcomes; one active run per dispute, retired by bounded AI rerun retention once terminal.';
+COMMENT ON COLUMN review_dispute_resolution_runs.id IS 'Request identity: only this run may save an AI draft, independent of queue job IDs.';
+COMMENT ON COLUMN review_dispute_resolution_runs.review_dispute_id IS 'Dispute owning this exact admitted request.';
+COMMENT ON COLUMN review_dispute_resolution_runs.completed_at IS 'Committed with the actual draft and lifecycle marker; success wins over delayed failure observations.';
+COMMENT ON COLUMN review_dispute_resolution_runs.failed_at IS 'Definitive terminal worker failure, excluding retries and provider deferrals.';
+COMMENT ON COLUMN review_dispute_resolution_runs.expired_at IS 'Worker finished without saving because this request no longer applies.';
+COMMENT ON COLUMN review_dispute_resolution_runs.ai_drafted_at IS 'Draft timestamp saved by the completing worker; set exactly when completed_at is set.';
+COMMENT ON COLUMN review_dispute_resolution_runs.latest_lifecycle_change_id IS 'Lifecycle change committed with the saved draft; cleared if that change is deleted and never supplies current dispute state.';
+COMMENT ON COLUMN review_dispute_resolution_runs.status IS 'Outcome derived from durable lifecycle facts: active, succeeded, failed or expired.';
+COMMENT ON COLUMN review_dispute_resolution_runs.updated_at IS 'Last mutation timestamp maintained by the shared trigger.';
+
 ALTER TABLE notifications
   DROP CONSTRAINT IF EXISTS fk_notifications__review_dispute_id;
 
@@ -216,8 +266,6 @@ COMMENT ON COLUMN review_disputes.approved_at IS 'When a moderator approved the 
 COMMENT ON COLUMN review_disputes.sent_at IS 'When the approved public_response was delivered to the disputant.';
 COMMENT ON COLUMN review_disputes.model IS 'OpenAI model used for the AI draft.';
 COMMENT ON COLUMN review_disputes.ai_drafted_at IS 'When the AI agent drafted the recommended_action and ai_public_response.';
-COMMENT ON COLUMN review_disputes.ai_draft_request_token IS 'Durable opaque request token; only the current request may save an AI draft, independent of queue job IDs.';
-COMMENT ON COLUMN review_disputes.ai_draft_run_id IS 'Queue run that saved the current AI draft; retained across later human lifecycle changes for result polling.';
 COMMENT ON COLUMN review_disputes.internal_notes IS 'Internal moderator notes, never shared with the disputant.';
 COMMENT ON COLUMN review_disputes.drafted_at IS 'When the moderator first seeded public_response from the AI draft.';
 COMMENT ON COLUMN review_disputes.edited_at IS 'When the moderator last edited public_response.';

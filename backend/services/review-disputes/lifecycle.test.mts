@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import {
   createTestUser,
-  getReviewDisputeAiRequestToken,
+  getReviewDisputeActiveRunId,
   insertTestTopic,
   insertTestPost,
   insertTestPostReview,
@@ -10,7 +10,9 @@ import type { PrivateUser } from '@services/users/types'
 import { createTopicClaim } from '@services/topic-claims/create'
 import { adminVerifyTopicClaim } from '@services/topic-claims/admin-verify'
 import { parseCreateReviewDisputeInput } from './parse.mts'
+import { write } from '@data-stores/psql'
 import { createReviewDispute } from './create.mts'
+import { admitReviewDisputeResolutionRun } from './resolution-runs.mts'
 import { createReviewDisputeDraft } from './create-dispute-draft.mts'
 import { approveReviewDispute } from './approve-dispute.mts'
 import { sendApprovedReviewDisputeResolution } from './send-dispute-resolution.mts'
@@ -69,7 +71,7 @@ describe('review dispute lifecycle - send-requires-approval invariant', () => {
 
     await createReviewDisputeDraft({
       disputeId: dispute.id,
-      requestToken: await getReviewDisputeAiRequestToken(dispute.id),
+      runId: await getReviewDisputeActiveRunId(dispute.id),
       recommendedAction: 'no_action',
       aiPublicResponse: 'AI response here.',
       aiInternalResponse: 'Internal notes.',
@@ -87,7 +89,7 @@ describe('review dispute lifecycle - send-requires-approval invariant', () => {
 
     await createReviewDisputeDraft({
       disputeId: dispute.id,
-      requestToken: await getReviewDisputeAiRequestToken(dispute.id),
+      runId: await getReviewDisputeActiveRunId(dispute.id),
       recommendedAction: 'no_action',
       aiPublicResponse: 'We reviewed your dispute.',
       aiInternalResponse: 'No violation found.',
@@ -104,24 +106,25 @@ describe('review dispute lifecycle - send-requires-approval invariant', () => {
     const dispute = await makeDispute(postId, crypto.randomUUID())
     await createReviewDisputeDraft({
       disputeId: dispute.id,
-      requestToken: await getReviewDisputeAiRequestToken(dispute.id),
+      runId: await getReviewDisputeActiveRunId(dispute.id),
       recommendedAction: 'no_action',
       aiPublicResponse: 'Approved response.',
       aiInternalResponse: 'Approved internal notes.',
       model: 'test-model',
     })
+    const { runId: rerunId } = await admitReviewDisputeResolutionRun(write, dispute.id)
     const approved = await approveReviewDispute(staff.id, dispute.id)
 
     await expect(
       createReviewDisputeDraft({
         disputeId: dispute.id,
-        requestToken: await getReviewDisputeAiRequestToken(dispute.id),
+        runId: rerunId,
         recommendedAction: 'remove',
         aiPublicResponse: 'Late rerun response.',
         aiInternalResponse: 'Late rerun internal notes.',
         model: 'test-model-rerun',
       }),
-    ).rejects.toMatchObject({ status: 404 })
+    ).resolves.toBeNull()
 
     const unchanged = await getReviewDisputeByIdFromPrimary(dispute.id)
     expect(unchanged!.public_response).toBe('Approved response.')
@@ -134,7 +137,7 @@ describe('review dispute lifecycle - send-requires-approval invariant', () => {
     const dispute = await makeDispute(postId, crypto.randomUUID())
     await createReviewDisputeDraft({
       disputeId: dispute.id,
-      requestToken: await getReviewDisputeAiRequestToken(dispute.id),
+      runId: await getReviewDisputeActiveRunId(dispute.id),
       recommendedAction: 'no_action',
       aiPublicResponse: 'Response.',
       aiInternalResponse: 'Internal.',

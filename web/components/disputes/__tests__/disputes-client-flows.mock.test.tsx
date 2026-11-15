@@ -123,6 +123,24 @@ describe('DisputesClient — error handling, member tier, pagination, reducer', 
     expect(screen.getByTitle('Re-run AI')).toBeDisabled()
   })
 
+  it('stops waiting when the requested run definitively failed', async () => {
+    const before = makeDispute({ ai_drafted_at: null })
+    h.mockRerunDisputeAI.mockResolvedValueOnce({ queued: true, run_id: '101' })
+    h.mockReconcileDisputeAIDraft.mockResolvedValueOnce(
+      makeDispute({
+        ai_drafted_at: null,
+        ai_draft_run_id: null,
+        ai_draft_requested_run_id: '101',
+        ai_draft_requested_run_status: 'failed',
+      }),
+    )
+    await renderStaff([before])
+
+    fireEvent.click(screen.getByTitle('Re-run AI'))
+    await waitFor(() => expect(h.mockReconcileDisputeAIDraft).toHaveBeenCalledOnce())
+    await waitFor(() => expect(screen.getByTitle('Re-run AI')).toBeEnabled())
+  })
+
   it('reconciles a later run that supersedes the requested draft', async () => {
     const before = makeDispute({ ai_drafted_at: '2026-01-01T00:00:00Z' })
     h.mockRerunDisputeAI.mockResolvedValueOnce({ queued: true, run_id: '101' })

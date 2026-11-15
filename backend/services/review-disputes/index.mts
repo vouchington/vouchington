@@ -9,10 +9,14 @@ export {
   listDisputesForPost,
 } from './get.mts'
 export { redactReviewDispute, listRedactedReviewDisputes } from './redaction.mts'
+export { createReviewDisputeDraft } from './create-dispute-draft.mts'
 export {
-  createReviewDisputeDraft,
-  isCurrentReviewDisputeDraftRequest,
-} from './create-dispute-draft.mts'
+  admitReviewDisputeResolutionRun,
+  isActiveReviewDisputeResolutionRun,
+  markReviewDisputeResolutionRunExpired,
+  markReviewDisputeResolutionRunsFailed,
+  type ReviewDisputeResolutionRunStatus,
+} from './resolution-runs.mts'
 export { updateReviewDisputeDraft } from './update-dispute-draft.mts'
 export { approveReviewDispute } from './approve-dispute.mts'
 export { sendApprovedReviewDisputeResolution } from './send-dispute-resolution.mts'

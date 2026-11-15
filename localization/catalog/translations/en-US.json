@@ -5649,6 +5649,8 @@
 {"id":"copy.native.swift.reviewDisputes.rating","value":"Rating: {rating}"},
 {"id":"copy.native.swift.reviewDisputes.refreshStatus","value":"Refresh status"},
 {"id":"copy.native.swift.reviewDisputes.rerunAi","value":"Re-run AI"},
+{"id":"copy.native.swift.reviewDisputes.rerunExpired","value":"The AI draft is no longer needed."},
+{"id":"copy.native.swift.reviewDisputes.rerunFailed","value":"The AI draft failed. Try again."},
 {"id":"copy.native.swift.reviewDisputes.rerunNotQueued","value":"The AI draft was not queued."},
 {"id":"copy.native.swift.reviewDisputes.rerunStillProcessing","value":"The AI draft is still processing. Refresh to check again."},
 {"id":"copy.native.swift.reviewDisputes.resolved","value":"Resolved"},

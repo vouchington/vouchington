@@ -6,9 +6,11 @@ import { ai_agents } from '@queues/ai-agents/queues'
 import type {
   AIAgentJobData,
   AppealResolutionJobData,
+  DisputeResolutionJobData,
   ReportJudgementJobData,
 } from '@queues/ai-agents/types'
 import { markAppealResolutionRunsFailed } from '@services/moderation-appeals/rerun-outcomes'
+import { markReviewDisputeResolutionRunsFailed } from '@services/review-disputes/resolution-runs'
 import { markReportJudgementRunsFailed } from '@services/moderation-reports/rerun-outcomes'
 
 type FailedJob = Job<AIAgentJobData>
@@ -91,10 +93,12 @@ export async function processReconcileAIAgentFailures(
   const ordinaryJobs: FailedJob[] = []
   const reportJobs: FailedJob[] = []
   const appealJobs: FailedJob[] = []
+  const disputeJobs: FailedJob[] = []
   for (const { job } of selected) {
     const kind = manualKind(job)
     if (kind === 'report') reportJobs.push(job)
     else if (kind === 'appeal') appealJobs.push(job)
+    else if (kind === 'dispute') disputeJobs.push(job)
     else ordinaryJobs.push(job)
   }
 
@@ -129,6 +133,17 @@ export async function processReconcileAIAgentFailures(
       onError(asError(err))
     }
   }
+  if (disputeJobs.length > 0) {
+    try {
+      terminalized += await markReviewDisputeResolutionRunsFailed(
+        disputeJobs.map(job => (job.data as DisputeResolutionJobData).run_id),
+      )
+      removed += await removeAcknowledged(disputeJobs, batchSize)
+    } catch (err) {
+      markerFailed = true
+      onError(asError(err))
+    }
+  }
   return {
     scanned: viewed.length,
     terminalized,
@@ -142,13 +157,16 @@ export async function processReconcileAIAgentFailures(
   }
 }
 
-function manualKind(job: FailedJob): 'report' | 'appeal' | null {
+function manualKind(job: FailedJob): 'report' | 'appeal' | 'dispute' | null {
   if (job.name === 'report-judgement') {
     const data = job.data as ReportJudgementJobData
     if (data.rerun_by_id && data.run_id) return 'report'
   } else if (job.name === 'appeal-resolution') {
     const data = job.data as AppealResolutionJobData
     if (data.rerun_by_id && data.ai_draft_request_token) return 'appeal'
+  } else if (job.name === 'dispute-resolution') {
+    // Automatic and manual requests both own a run row, so both keep their failure until marked.
+    return 'dispute'
   }
   return null
 }

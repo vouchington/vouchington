@@ -77,6 +77,7 @@ export type DataRetentionCleanupOptions = {
   oldModerationQueueClaims?: OptionalRetentionLimits<CleanupOptions>
   reportJudgementRuns?: OptionalRetentionLimits<AiRerunOutcomeCleanupOptions>
   appealResolutionRuns?: OptionalRetentionLimits<AiRerunOutcomeCleanupOptions>
+  reviewDisputeResolutionRuns?: OptionalRetentionLimits<AiRerunOutcomeCleanupOptions>
   oldModerationMediaReveals?: OptionalRetentionLimits<CleanupOptions>
   postModerationLedger?: Partial<DataRetentionLimits> & {
     postIds?: readonly string[]

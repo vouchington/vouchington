@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import {
   createTestUser,
-  getReviewDisputeAiRequestToken,
+  getReviewDisputeActiveRunId,
   insertTestPost,
   insertTestPostReview,
   insertTestTopic,
@@ -68,7 +68,7 @@ describe('runDisputeResolutionAgent terminal lifecycle', () => {
     await runDisputeResolutionAgent(
       {
         disputeId: dispute.id,
-        requestToken: await getReviewDisputeAiRequestToken(dispute.id),
+        runId: await getReviewDisputeActiveRunId(dispute.id),
         rerunById: staff.id,
       },
       TEST_OPENAI_SELECTION,

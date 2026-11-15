@@ -16,7 +16,11 @@ export {
 export * from './entities/membership-source-rebinding.mts'
 export * from './types.mts'
 export * from './data.mts'
-export { getReviewDisputeAiRequestToken } from './review-dispute-ai-request.mts'
+export {
+  getReviewDisputeActiveRunId,
+  getReviewDisputeRunStatus,
+  admitTestReviewDisputeRun,
+} from './review-dispute-ai-request.mts'
 export * from './feeds.mts'
 export * from './hostname-exclusion.mts'
 export * from './notifications.mts'
