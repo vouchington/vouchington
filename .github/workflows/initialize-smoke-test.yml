@@ -44,7 +44,7 @@ jobs:
         timeout-minutes: 1
         id: pnpm-version
         uses: vouchington/vouchington-tooling/.github/actions/resolve-pnpm-version@e4f21b79d1398af8dd76c70f0775ded58f0c4f80 # v2.0.1
-      - uses: pnpm/setup@fa36a5ef7dcdefc3a7cb25655c122e00cf6e636e # v3.1.2
+      - uses: pnpm/setup@731dfb6463bbd11c11fd0ee11fe00ed0e36d48a1 # v3.2.0
         timeout-minutes: 1
         with:
           node-version-file: 'false'
