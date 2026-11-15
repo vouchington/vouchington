@@ -1,8 +1,12 @@
+import type { Job } from 'glide-mq'
 import { v7 } from 'uuid'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { recomputeGrowthDay } from '@services/reporting-daily-rollups/recompute-growth'
-import { runWithTransaction, write } from '@data-stores/psql'
+import { beginTransaction, runWithTransaction, write } from '@data-stores/psql'
+import { findNextReportingSourceDay } from '@services/reporting-daily-rollups/initialize'
+import { backgroundQueue } from './shared-background-queue.mts'
+import { readAllQueueJobs } from './queue-jobs.mts'
 import sql from 'sql-template-strings'
 
 export async function insertTestModeratorWorkloadDailyTotal(options: {
@@ -97,4 +101,32 @@ export async function insertTestReportingRemovalsBefore(
     INSERT INTO moderator_actions(id, actor_user_id, community_id, action_type)
     SELECT id, ${actorId}, ${communityId}, 'remove' FROM unnest(${ids}::uuid[]) id
   `)
+}
+
+/** Only this transaction's future action is added; disposal rolls it back. */
+export async function inspectFutureReportingSourceDays(actorId: string, communityId: string) {
+  await using transaction = await beginTransaction()
+  const notBefore = new Date('3000-01-01T00:00:00.000Z')
+  await transaction(sql`/* seedFutureReportingSourceDay */
+    INSERT INTO moderator_actions(id, actor_user_id, community_id, action_type)
+    VALUES (${v7({ msecs: notBefore.getTime() + 86400000 })}, ${actorId}, ${communityId}, 'approve')
+  `)
+  const { rows } = await transaction<{ today: string }>(sql`/* currentReportingSourceDay */
+    SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date::text AS today
+  `)
+  return {
+    today: rows[0]!.today,
+    growth: await findNextReportingSourceDay('growth', notBefore, transaction),
+    workload: await findNextReportingSourceDay('moderator_workload', notBefore, transaction),
+  }
+}
+
+export async function readTestReportingJobsByRevision(revision: string) {
+  return (await readAllQueueJobs(backgroundQueue)).filter(
+    (job): job is Job<Record<string, unknown>> =>
+      typeof job.data === 'object' &&
+      job.data !== null &&
+      'revision' in job.data &&
+      job.data.revision === revision,
+  )
 }
