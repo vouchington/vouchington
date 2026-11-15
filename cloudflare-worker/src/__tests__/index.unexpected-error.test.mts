@@ -37,6 +37,29 @@ describe('worker unexpected-error boundary', () => {
     })
   })
 
+  it.each([
+    ['true', 'noindex, nofollow, noarchive'],
+    ['TrUe', 'noindex, nofollow, noarchive'],
+    ['false', null],
+    [undefined, null],
+    [123, null],
+  ])('preserves NOINDEX=%s on the secured fallback', async (noIndex, expectedHeader) => {
+    const worker = createWorker({
+      fetchInner: () => Promise.reject(new Error('unexpected failure')),
+      captureException: () => {},
+    })
+    const env = { NOINDEX: noIndex } as Env
+
+    const response = await worker.fetch(
+      new Request('https://voucha.ai/about'),
+      env,
+      createContext(env),
+    )
+
+    expect(response.status).toBe(500)
+    expect(response.headers.get('x-robots-tag')).toBe(expectedHeader)
+  })
+
   it('returns a secured fallback when browser-upload origins are malformed', async () => {
     const captureException =
       vi.fn<(error: unknown, tags?: Parameters<typeof captureWorkerException>[1]) => void>()

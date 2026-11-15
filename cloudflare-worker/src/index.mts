@@ -143,9 +143,16 @@ export function createWorker(
         }
         const recoveryEnv = env ?? ({} as Env)
         const recoveryIsProduction = isProductionMode(recoveryEnv)
+        const errorResponseHeaders: Record<string, string> = { 'x-request-id': requestId }
+        if (
+          typeof recoveryEnv.NOINDEX === 'string' &&
+          recoveryEnv.NOINDEX.toLowerCase() === 'true'
+        ) {
+          errorResponseHeaders['x-robots-tag'] = 'noindex, nofollow, noarchive'
+        }
         const errorResponse = withHeaders(
           edgeErrorResponse(500, 'Internal Server Error', 'INTERNAL_ERROR'),
-          { 'x-request-id': requestId },
+          errorResponseHeaders,
         )
         return applySecurityHeaders(errorResponse, {
           production: recoveryIsProduction,
