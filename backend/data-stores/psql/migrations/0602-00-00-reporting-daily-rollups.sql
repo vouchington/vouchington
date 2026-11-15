@@ -102,28 +102,9 @@ BEGIN
         AND OLD.deleted_at IS NOT DISTINCT FROM NEW.deleted_at THEN RETURN NULL; END IF;
       old_day := (CASE WHEN TG_OP = 'INSERT' THEN NEW.created_at ELSE OLD.created_at END AT TIME ZONE 'UTC')::date;
       source_kind := 'user_follow';
-    WHEN 'user_deletion' THEN
-      old_day := (uuid_extract_timestamp(OLD.id) AT TIME ZONE 'UTC')::date;
-      source_kind := 'user_deletion';
-    WHEN 'post_deletion' THEN
-      old_day := (uuid_extract_timestamp(OLD.id) AT TIME ZONE 'UTC')::date;
-      source_kind := 'post_deletion';
-    WHEN 'moderator_action_deletion' THEN
-      old_day := (uuid_extract_timestamp(OLD.id) AT TIME ZONE 'UTC')::date;
-      source_kind := 'moderator_action_deletion';
     WHEN 'retained_vote_change' THEN
       old_day := CASE WHEN TG_OP = 'DELETE' THEN OLD.day ELSE NEW.day END;
       source_kind := 'retained_vote_change';
-    WHEN 'post_vote_creation' THEN
-      old_day := (uuid_extract_timestamp(NEW.id) AT TIME ZONE 'UTC')::date;
-      source_kind := 'post_vote_creation';
-    WHEN 'moderator_action_creation' THEN
-      old_day := (uuid_extract_timestamp(NEW.id) AT TIME ZONE 'UTC')::date;
-      source_kind := 'moderator_action_creation';
-    WHEN 'post_vote_deletion' THEN
-      -- Ballot row triggers are cloned to range children, including direct child and FK deletes.
-      old_day := (uuid_extract_timestamp(OLD.id) AT TIME ZONE 'UTC')::date;
-      source_kind := 'post_vote_deletion';
     ELSE RAISE EXCEPTION 'Unknown reporting lifecycle source: %', TG_ARGV[0];
   END CASE;
   IF TG_ARGV[0] = 'user_follow' AND TG_OP = 'UPDATE'
@@ -137,7 +118,21 @@ BEGIN
   RETURN NULL;
 END;
 $$;
-COMMENT ON FUNCTION record_vanished_reporting_day() IS 'Atomically preserves only the anonymous old UTC day needed after source loss; existing reconciliation reads event UUID ranges, not current-state history.';
+COMMENT ON FUNCTION record_vanished_reporting_day() IS 'Preserves affected completed days for follow lifecycle changes and retained ballot tally mutations in their source transaction.';
+
+CREATE FUNCTION fn_register_reporting_statement_days() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  INSERT INTO reporting_source_changes(source_type, source_day)
+    SELECT DISTINCT TG_ARGV[0]::reporting_source_change_types, source_day
+    FROM (
+      SELECT (uuid_extract_timestamp(id) AT TIME ZONE 'UTC')::date AS source_day
+      FROM reporting_rows
+    ) affected
+    WHERE source_day < (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date;
+  RETURN NULL;
+END;
+$$;
+COMMENT ON FUNCTION fn_register_reporting_statement_days() IS 'Coalesces a source statement transition table into one immutable recovery event per completed UTC source day, including all affected partitions when the parent is targeted.';
 
 CREATE INDEX idx_moderator_workload_daily_totals__day_id
   ON moderator_workload_daily_totals(day, id);

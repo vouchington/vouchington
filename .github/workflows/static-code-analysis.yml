@@ -183,8 +183,6 @@ jobs:
           cache: false
         timeout-minutes: 3
       - name: Run no-mistakes
-        # No-Mistakes findings are advisory; later integrity checks remain required.
-        continue-on-error: true
         run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check
         timeout-minutes: 6
       - name: Check workflow download integrity
