@@ -103,6 +103,26 @@ describe('PasskeyManager error handling', () => {
     await assertions.expect(() => expectToast(toastMock, 'error', 'Failed to add passkey'))
   })
 
+  it('shows translated recovery guidance when the passkey cap rejects registration', async () => {
+    mockVerify.mockRejectedValueOnce(
+      Object.assign(new Error('capacity'), { code: 'PASSKEY_LIMIT_REACHED' }),
+    )
+    render(
+      <PasskeyManager
+        initialData={page([])}
+        mfaStatus={mfaManagerStatus}
+      />,
+    )
+    clickSubmit(/add passkey/i)
+    await assertions.expect(() =>
+      expectToast(
+        toastMock,
+        'error',
+        'You can save up to 10 passkeys. Remove one before adding another.',
+      ),
+    )
+  })
+
   it('emits onSuccess on successful add', async () => {
     mockVerify.mockResolvedValueOnce({ passkey: makePasskey('pk-new') } as never)
     render(

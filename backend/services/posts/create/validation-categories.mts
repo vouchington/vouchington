@@ -5,7 +5,11 @@ import { isUUID } from '@modules/utils'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { getTopicsByAnyBatch } from '@services/topics/get-batch'
 import type { Topic } from '@services/topics/types'
-import { assertWithinStandingTagLimit, assertWithinTagAddLimit } from '@services/tag-limits'
+import {
+  assertWithinStandingTagLimit,
+  assertWithinTagAddLimit,
+  assertManualCategoryInputLimit,
+} from '@services/tag-limits'
 import type { ContributionLimitMembershipPlan } from '@services/contribution-gating/limit-types'
 import { getPostHashtagKeys } from '../hashtags.mts'
 import { normalizeHashtag } from '@ts-shared/utils'
@@ -24,6 +28,7 @@ export async function validatePostCategories(
 ): Promise<void> {
   if (updates.categories !== undefined) {
     assert(Array.isArray(updates.categories), 422, 'categories must be an array')
+    assertManualCategoryInputLimit(updates.categories.length)
   }
   const topicIds = new Set<string>()
   for (const category of updates.categories ?? []) {

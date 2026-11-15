@@ -6,6 +6,8 @@ import {
   CONFLICT,
   RELATION_LIMIT_REACHED,
   IMAGE_PLACEMENT_LIMIT_REACHED,
+  POST_IMAGE_LIMIT_REACHED,
+  TAG_LIMIT_REACHED,
   FORBIDDEN,
   INVALID_INPUT,
   NOT_FOUND,
@@ -104,9 +106,7 @@ export async function callMcpTool(
       await rateLimitContext?.onRateLimited()
       return buildRateLimitedToolResult(err.retryAfterSeconds)
     }
-    // Services shared with REST can reject through http-assert (vote and follower distribution
-    // limits do this). Treat their 429s like typed tool limits so the MCP audit records the
-    // refusal. Contribution capacity is a distinct, coded domain outcome.
+    // Preserve coded contribution capacity; record other shared REST 429s as tool limits.
     if (isHttpError(err) && err.status === 429 && err['code'] !== CONTRIBUTION_QUOTA_EXCEEDED) {
       await rateLimitContext?.onRateLimited()
       const retryAfterSeconds = err['retryAfterSeconds']
@@ -129,6 +129,8 @@ export async function callMcpTool(
               : INVALID_INPUT
       const domainCodes = [
         IMAGE_PLACEMENT_LIMIT_REACHED,
+        POST_IMAGE_LIMIT_REACHED,
+        TAG_LIMIT_REACHED,
         RELATION_LIMIT_REACHED,
         CONTRIBUTION_ADMISSION_IN_PROGRESS,
         CONTRIBUTION_QUOTA_EXCEEDED,

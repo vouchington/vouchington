@@ -1,3 +1,9 @@
+import {
+  getRefundOperationPaymentReference,
+  recordRefundReconciliationAttempt,
+} from './refund-issuance.mts'
+import { enrichRefundReconciliationAttemptProviderRefund } from './refund-reconciliation/ledger.mts'
+import { recordRefundRequestRejection } from './refund-request-rejection.mts'
 import * as stripeRefunds from '@modules/stripe/refunds'
 import { recordIneligiblePurchaseReversalProviderRefund } from './ineligible-stripe-purchase-reversal-execution.mts'
 import { createIneligiblePurchaseReversalRetryIdempotencyKey } from './ineligible-stripe-purchase-reversal-idempotency.mts'
@@ -45,12 +51,23 @@ async function createIneligiblePurchaseReversalRefund(
   operations: IneligiblePurchaseReversalRefundOperations,
   idempotencyKey: string,
 ): Promise<StripeRefund> {
-  const refund = await operations.createRefund({
-    chargeId: reversal.target.chargeId ?? undefined,
-    paymentIntentId: reversal.target.paymentIntentId ?? undefined,
-    amountMinorUnits: reversal.target.amountMinorUnits,
-    idempotencyKey,
-  })
+  const paymentReference = await getRefundOperationPaymentReference(reversal.id)
+  const attempt = await recordRefundReconciliationAttempt(reversal, idempotencyKey)
+  let refund: StripeRefund
+  try {
+    refund = await operations.createRefund({
+      ...(paymentReference.startsWith('pi_')
+        ? { paymentIntentId: paymentReference }
+        : { chargeId: paymentReference }),
+      amountMinorUnits: attempt.amount.amount,
+      idempotencyKey,
+    })
+  } catch (err) {
+    await recordRefundRequestRejection(attempt.id, err)
+    throw err
+  }
+  if (!attempt.providerRefundId)
+    await enrichRefundReconciliationAttemptProviderRefund(attempt.id, refund.id)
   await recordIneligiblePurchaseReversalProviderRefund(reversal, refund.id)
   return refund
 }

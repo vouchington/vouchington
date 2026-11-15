@@ -20,6 +20,7 @@ import { isUUID } from '@modules/utils'
 import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import createHttpError from 'http-errors'
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
 
 type AddEmailAddressRequest = { email_address: string; re_auth_token?: string }
 type VerifyEmailAddressRequest = { token: string; re_auth_token?: string }
@@ -98,11 +99,16 @@ app.route('/api/v1/my/email-addresses/:email/verifications').post(async (ctx: Co
     body,
   })
 
-  await withReauthenticatedAccountChange(
-    currentUser.id,
-    await ctx.getSessionTokenData(),
-    body.re_auth_token,
-    query => verifyEmailVerificationToken(currentUser.id, ctx.params.email!, body.token, { query }),
+  const session = await ctx.getSessionTokenData()
+  await conflictOnSerializationFailure(() =>
+    withReauthenticatedAccountChange(
+      currentUser.id,
+      session,
+      body.re_auth_token,
+      query =>
+        verifyEmailVerificationToken(currentUser.id, ctx.params.email!, body.token, { query }),
+      { serializable: true },
+    ),
   )
 
   ctx.json(await emailAddressPage(currentUser.id, EMAIL_ADDRESS_PAGE_LIMIT))

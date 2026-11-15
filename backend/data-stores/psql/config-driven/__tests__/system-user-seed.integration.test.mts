@@ -8,10 +8,14 @@ import {
   localSafeUsername,
   countLocalRetainedRootsFromCurrentUserVersion,
 } from '../../../../test-helpers/data-stores/psql/users.mts'
-import { isLocalPrimaryEmailForUser } from '../../../../test-helpers/data-stores/psql/email-addresses.mts'
+import {
+  isLocalPrimaryEmailForUser,
+  addLocalSecondaryEmailsForUser,
+  countLocalEmailsForUser,
+} from '../../../../test-helpers/data-stores/psql/email-addresses.mts'
 import { runConfigDrivenStatementsInTransaction } from '../../migration-runner/config-driven-statements.mts'
 import { buildSystemUserUpsertSQL } from '../utils/system-user-seed.mts'
-import generateSeedAdminUserSQL from '../0010-00-02-seed-admin-user.mts'
+import generateSeedAdminUserSQL, { buildSeedAdminUserSQL } from '../0010-00-02-seed-admin-user.mts'
 
 // Any authenticated user can rename themselves via PATCH /api/v1/my/identity (no reserved-name
 // list at that layer), and db:migrate reruns these generators on every deploy, granting
@@ -49,6 +53,29 @@ ON CONFLICT (user_id, role_type_id) DO NOTHING;`
 
     const systemRoleCount = await countLocalUserRoleAssignments(systemState!.id, 'moderator')
     expect(systemRoleCount).toBe(1)
+  })
+
+  it('rejects a missing eleventh seed email while preserving an existing email at the cap', async () => {
+    const username = localSafeUsername('seed-email-cap')
+    const email = `tests+${username}@voucha.ai`
+    const seed = buildSeedAdminUserSQL(username, email)
+    await runConfigDrivenStatementsInTransaction(seed, undefined)
+    const user = await getLocalTestUserRawByUsername(username)
+    await addLocalSecondaryEmailsForUser(
+      user!.id,
+      Array.from({ length: 9 }, (_, index) => `tests+${username}-${index}@voucha.ai`),
+    )
+    await runConfigDrivenStatementsInTransaction(seed, undefined)
+    const rejectedEmail = `tests+${username}-excess@voucha.ai`
+    await expect(
+      runConfigDrivenStatementsInTransaction(
+        buildSeedAdminUserSQL(username, rejectedEmail),
+        undefined,
+      ),
+    ).rejects.toMatchObject({ code: '23514' })
+    expect(await countLocalEmailsForUser(user!.id)).toBe(10)
+    expect(await isLocalPrimaryEmailForUser(user!.id, email)).toBe(true)
+    expect(await isLocalPrimaryEmailForUser(user!.id, rejectedEmail)).toBe(false)
   })
 
   it('runs the real jong admin generator to a stable end state across reruns', async () => {

@@ -92,7 +92,7 @@ export async function rollbackPostImages(
         query,
       )
     } catch (err) {
-      if (!isHttpError(err) || err.status !== 409 || err['code'] !== IMAGE_PLACEMENT_LIMIT_REACHED)
+      if (!isHttpError(err) || err.status !== 400 || err['code'] !== IMAGE_PLACEMENT_LIMIT_REACHED)
         throw err
       return keepCurrentModerationVersion()
     }

@@ -51,6 +51,18 @@ before the client PR.
 
 The moderation-results read has no matching MCP tool. Browser challenge context is described below.
 
+## Input capacity errors
+
+Admission limits protect complete reads without silently truncating an account's credentials,
+post categories, or financial records. REST and MCP return the same structured rejection codes.
+Clients explain which input needs removing or reducing, using translated copy rather than the
+server's diagnostic message. External Stripe refund receipts remain complete; only refunds
+issued through Voucha consume its local issuance allowance.
+
+Swift and .NET adoption for account, post, membership-grant, and refund admission errors is
+tracked in [vouchington-clients#683](https://github.com/vouchington/vouchington-clients/issues/683).
+This producer change makes no new native UI parity claim.
+
 ## Shared image placement capacity
 
 An image may be attached to posts and profile, topic, or community surfaces. If the API rejects a

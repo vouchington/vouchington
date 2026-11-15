@@ -11,6 +11,8 @@ import onError from '@modules/on-error'
 import { enqueueOnUserUpdated } from '@queues/entity-listeners/enqueues'
 import { assertUserHasSignInMethod } from '@services/oauth-accounts/sign-in-methods'
 
+export const MAX_USER_EMAIL_ADDRESSES = 10
+
 export type EmailAddress = {
   email_address: string
   is_primary: boolean
@@ -45,7 +47,9 @@ export async function listEmailAddressesPage(
       OR ((is_primary::int) = ${options.after.tier} AND id > ${options.after.id}::uuid)
     )`)
   }
-  query.append(sql` ORDER BY (is_primary::int) DESC, id ASC LIMIT ${options.limit + 1}`)
+  query.append(
+    sql` ORDER BY (is_primary::int) DESC, id ASC LIMIT ${Math.min(options.limit + 1, MAX_USER_EMAIL_ADDRESSES)}`,
+  )
   const { rows } = await read<EmailAddress & { id: string }>(query)
   return {
     results: rows.slice(0, options.limit),

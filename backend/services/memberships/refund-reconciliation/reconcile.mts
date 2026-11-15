@@ -1,3 +1,4 @@
+import { recordRefundRequestRejection } from '../refund-request-rejection.mts'
 import * as stripeRefunds from '@modules/stripe/refunds'
 import { isCurrencyCode } from '@ts-shared/money'
 import {
@@ -46,6 +47,7 @@ async function reconcileLeasedRefundOperationProviderWork<Context>(
   const context = await policy.getContext(lease.id)
   if (!context) return
   let attempt = await getLatestRefundReconciliationAttempt(lease.id)
+  if (attempt?.rejectedAt) attempt = null
   let refund = attempt?.providerRefundId
     ? await callRefundProvider('retrieve', () =>
         stripeRefunds.getStripeRefund(attempt!.providerRefundId!),
@@ -90,19 +92,26 @@ async function reconcileLeasedRefundOperationProviderWork<Context>(
     const key = policy.providerIdempotencyKey(lease, refund)
     attempt = await recordRefundReconciliationAttempt(lease, key)
     refund = null
+  } else if (!refund) {
+    attempt = await recordRefundReconciliationAttempt(lease, attempt.providerIdempotencyKey)
   }
   if (!refund) {
-    refund = await callRefundProvider('create', () =>
-      stripeRefunds.createStripeRefund({
-        ...policy.createLookup(context),
-        amountMinorUnits: lease.amount.amount,
-        idempotencyKey: attempt.providerIdempotencyKey,
-        metadata: {
-          membership_refund_operation_id: lease.id,
-          membership_refund_attempt_id: attempt.id,
-        },
-      }),
-    )
+    refund = await callRefundProvider('create', async () => {
+      try {
+        return await stripeRefunds.createStripeRefund({
+          ...policy.createLookup(context),
+          amountMinorUnits: attempt.amount.amount,
+          idempotencyKey: attempt.providerIdempotencyKey,
+          metadata: {
+            membership_refund_operation_id: lease.id,
+            membership_refund_attempt_id: attempt.providerRequestOriginalAttemptId ?? attempt.id,
+          },
+        })
+      } catch (err) {
+        await recordRefundRequestRejection(attempt.id, err)
+        throw err
+      }
+    })
   }
   if (!attempt.providerRefundId)
     await enrichRefundReconciliationAttemptProviderRefund(attempt.id, refund.id)

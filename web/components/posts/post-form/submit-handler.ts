@@ -1,3 +1,4 @@
+import { useTranslations } from '@/lib/i18n/use-translations'
 import { useState } from 'react'
 import { ApiError } from '@vouchington/api-client'
 import onError, { onSuccess } from '@/lib/on-error'
@@ -35,6 +36,7 @@ export function usePostFormSubmit({
   onCaptchaConsumed?: () => void
   onSubmitted?: (href: string) => void
 }) {
+  const t = useTranslations()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [usernameDialogOpen, setUsernameDialogOpen] = useState(false)
   const emailRecovery = useEmailVerificationRecovery()
@@ -43,7 +45,7 @@ export function usePostFormSubmit({
     setIsSubmitting(true)
     let shouldResetSubmitting = true
     try {
-      const saved = await submitPost(submitInput())
+      const saved = await submitPost(submitInput(), t('shared.postImageUpdateLimit'))
       shouldResetSubmitting = false
       onSuccess(isEdit ? 'Post updated' : 'Post created')
       const pendingRedirectPath =
@@ -97,7 +99,11 @@ export function usePostFormSubmit({
     }
     onError(err, {
       fallback: 'An unexpected error occurred.',
-      displayMessageByCode: { [IMAGE_PLACEMENT_LIMIT_REACHED]: IMAGE_PLACEMENT_LIMIT_MESSAGE },
+      displayMessageByCode: {
+        [IMAGE_PLACEMENT_LIMIT_REACHED]: IMAGE_PLACEMENT_LIMIT_MESSAGE,
+        POST_IMAGE_LIMIT_REACHED: t('shared.postImageLimit'),
+        TAG_LIMIT_REACHED: t('shared.postCategoryLimit'),
+      },
       tags: { form: 'post-submit' },
     })
     onCaptchaConsumed?.()

@@ -131,11 +131,11 @@ export async function insertMembershipRowReferencingUser(
       await write(sql`/* insertRetainedReferenceAdministratorRequest */
         INSERT INTO membership_administrator_refund_operation_requests (
           membership_operation_id, administrator_request_key, membership_id, issued_by_id,
-          provider_payment_reference, amount_minor_units, currency_code, reason,
+          amount_minor_units, currency_code, reason,
           is_cancel_requested, request_fingerprint
         ) VALUES (
           ${operation.id}, ${`request-${randomUUID()}`}, ${membershipId ?? (await createTestRetainedMembershipIdentity())}, ${userId},
-          ${`ch_${randomUUID()}`}, 100, 'usd', 'requested', false, ${'d'.repeat(64)}
+          100, 'usd', 'requested', false, ${'d'.repeat(64)}
         )`)
     }
   }

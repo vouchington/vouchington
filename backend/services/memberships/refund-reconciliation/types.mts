@@ -29,6 +29,8 @@ export type RefundReconciliationLease = {
 }
 
 export type RefundReconciliationAttempt = {
+  providerRequestOriginalAttemptId: string | null
+  rejectedAt: Date | null
   amount: Money
   attemptOrdinal: number
   id: string

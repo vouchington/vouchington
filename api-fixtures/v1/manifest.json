@@ -101680,7 +101680,7 @@
         }
       },
       "source": "backend/api/v1/posts/post-images.mts",
-      "statusCodes": [409],
+      "statusCodes": [400],
       "statusKnowledge": "explicit"
     }
   },
@@ -115383,7 +115383,7 @@
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/native-copyright-cases.mts"
       },
-      "status": 409
+      "status": 400
     },
     {
       "auth": "fixture-admin",

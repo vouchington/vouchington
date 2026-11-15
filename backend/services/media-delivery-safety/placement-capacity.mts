@@ -56,5 +56,5 @@ export async function admitImagePlacements(
 }
 
 function capacityLimitError() {
-  return createCodedError(409, 'Image placement limit reached', IMAGE_PLACEMENT_LIMIT_REACHED)
+  return createCodedError(400, 'Image placement limit reached', IMAGE_PLACEMENT_LIMIT_REACHED)
 }

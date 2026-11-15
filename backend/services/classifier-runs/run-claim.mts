@@ -68,7 +68,11 @@ export async function claimClassifierRun<C, L, E>(
   `)
   const capturedTopicIds =
     runCapturedCandidateKind(resolved) === 'topic'
-      ? await readClassifierRunCandidateTopicIds(query, input.runId)
+      ? await readClassifierRunCandidateTopicIds(
+          query,
+          input.runId,
+          adapter.capturedTopicLimit ?? null,
+        )
       : []
   const capturedStoryCandidates =
     resolved.remote?.candidateKind === 'story'

@@ -17,7 +17,7 @@ export async function deletePendingInvitesForMember(
       AND (
         invited_user_id = ${userId}
         OR invited_email IN (
-          SELECT email_address FROM user_email_addresses WHERE user_id = ${userId}
+          SELECT email_address FROM user_email_addresses WHERE user_id = ${userId} LIMIT 10
         )
       )
   `,

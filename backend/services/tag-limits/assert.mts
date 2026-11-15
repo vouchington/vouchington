@@ -4,7 +4,7 @@ import { getContributionLimitTier } from '@services/contribution-gating/limits'
 import type { ContributionLimitMembershipPlan } from '@services/contribution-gating/limit-types'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import type { EntityRelationMetadata } from '@voucha/types/entities/entity-relations-metadata'
-import { getManualTagLimit } from './config.mts'
+import { getManualTagLimit, MAX_MANUAL_TAGS } from './config.mts'
 import { countUserOriginatedTagRelations } from './count.mts'
 
 // Enforces the standing per-(subject, relation) cap on tags a user manually *adds* (requirement 1
@@ -23,7 +23,6 @@ export async function assertWithinTagAddLimit(
   incomingObjectCount: number,
 ): Promise<void> {
   const tier = getContributionLimitTier(currentUser, membershipPlan)
-  if (tier === 'admin') return
 
   const limit = getManualTagLimit(tier)
   const used =
@@ -46,13 +45,22 @@ export function assertWithinStandingTagLimit(
   finalCount: number,
 ): void {
   const tier = getContributionLimitTier(currentUser, membershipPlan)
-  if (tier === 'admin') return
 
   const limit = getManualTagLimit(tier)
-  if (finalCount > Math.max(existingCount, limit)) {
+  if (finalCount > Math.min(MAX_MANUAL_TAGS, Math.max(existingCount, limit))) {
     throw createCodedError(
       403,
       `You've reached your tag limit (${limit}) for this post. Upgrade your membership to add more tags.`,
+      TAG_LIMIT_REACHED,
+    )
+  }
+}
+
+export function assertManualCategoryInputLimit(count: number): void {
+  if (count > MAX_MANUAL_TAGS) {
+    throw createCodedError(
+      403,
+      `A post can have at most ${MAX_MANUAL_TAGS} manual categories.`,
       TAG_LIMIT_REACHED,
     )
   }

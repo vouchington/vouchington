@@ -104,7 +104,7 @@ export async function getClassifierRunCandidateTopicIdsForTest(runId: string): P
 
 /** Exercises production candidate capture with the shared test database query resource. */
 export function captureClassifierRunCandidatesForTest(runId: string, topicIds: readonly string[]) {
-  return insertClassifierRunCandidates(write, runId, topicIds)
+  return insertClassifierRunCandidates(write, runId, topicIds, null)
 }
 
 /** Exercises production community-prompt persistence with the shared test database query resource. */

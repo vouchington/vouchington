@@ -1,3 +1,4 @@
+import createHttpError from 'http-errors'
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import { registerEntitlementEffectsAfterCommit } from './entitlement-effects-after-commit.mts'
 import type {
@@ -15,6 +16,28 @@ type CreateMembershipDependencies = {
 export async function createMembership(
   options: CreateMembershipOptions,
   dependencies: CreateMembershipDependencies = {},
+): Promise<CreatedMembership> {
+  try {
+    return await createMembershipInTransaction(options, dependencies)
+  } catch (err) {
+    if (
+      !options.stripeSubscriptionId &&
+      typeof err === 'object' &&
+      err !== null &&
+      'code' in err &&
+      err.code === '40001'
+    )
+      throw createHttpError(409, 'Concurrent membership grant issuance', {
+        code: 'MEMBERSHIP_GRANT_CONFLICT',
+        cause: err,
+      })
+    throw err
+  }
+}
+
+async function createMembershipInTransaction(
+  options: CreateMembershipOptions,
+  dependencies: CreateMembershipDependencies,
 ): Promise<CreatedMembership> {
   const status = options.status ?? 'active'
   const effectiveAt = options.effectiveAt ?? new Date()
@@ -34,7 +57,9 @@ export async function createMembership(
     )
     if (membership.projected) registerEntitlementEffectsAfterCommit(dependencies.query)
   } else {
-    await using transaction = await beginTransaction()
+    await using transaction = await beginTransaction({
+      serializable: !options.stripeSubscriptionId,
+    })
     membership = await createMembershipWithQuery(options, dependencies, timingContext, transaction)
     if (membership.projected) registerEntitlementEffectsAfterCommit(transaction)
     await transaction.commit()

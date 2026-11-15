@@ -145,6 +145,39 @@ describe('usePostFormSubmit', () => {
     )
   })
 
+  it('shows translated post image capacity guidance', async () => {
+    mockedSubmitPost.mockRejectedValueOnce(
+      Object.assign(new Error('capacity'), { code: 'POST_IMAGE_LIMIT_REACHED' }),
+    )
+    const router = { push: vi.fn<VitestLooseMock>() }
+    const { result } = renderHook(() =>
+      usePostFormSubmit({ isEdit: false, router, submitInput: buildInput }),
+    )
+    await act(async () => {
+      await result.current.handleSubmitPost()
+    })
+    expect(toastMock.error).toHaveBeenCalledWith(
+      'A post can have up to 20 images. Remove an image before adding another.',
+    )
+  })
+
+  it('shows translated category recovery guidance without an upgrade suggestion', async () => {
+    mockedSubmitPost.mockRejectedValueOnce(
+      Object.assign(new Error('capacity'), { code: 'TAG_LIMIT_REACHED' }),
+    )
+    const router = { push: vi.fn<VitestLooseMock>() }
+    const { result } = renderHook(() =>
+      usePostFormSubmit({ isEdit: false, router, submitInput: buildInput }),
+    )
+    await act(async () => {
+      await result.current.handleSubmitPost()
+    })
+    expect(toastMock.error).toHaveBeenCalledWith(
+      'This post has too many categories. Remove some categories or hashtags and try again.',
+    )
+    expect(router.push).not.toHaveBeenCalled()
+  })
+
   it('routes to the saved post and shows toast on PostSavedWithRatingError', async () => {
     const router = { push: vi.fn<VitestLooseMock>() }
     const savedPost = { id: 'post-1', post_type: 'discussion' } as never

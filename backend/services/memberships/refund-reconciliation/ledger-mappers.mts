@@ -15,6 +15,8 @@ export type ReconciliationLeaseRow = {
 }
 
 export type ReconciliationAttemptRow = {
+  providerRequestOriginalAttemptId: string | null
+  rejectedAt: Date | null
   amountMinorUnits: string
   attemptOrdinal: number
   currency: string
@@ -43,6 +45,8 @@ export function mapAttempt(row: ReconciliationAttemptRow): RefundReconciliationA
   if (!isCurrencyCode(row.currency))
     throw new Error(`Invalid reconciliation currency ${row.currency}`)
   return {
+    providerRequestOriginalAttemptId: row.providerRequestOriginalAttemptId,
+    rejectedAt: row.rejectedAt,
     amount: { amount: parsePostgresMoneyAmount(row.amountMinorUnits), currency: row.currency },
     attemptOrdinal: row.attemptOrdinal,
     id: row.id,

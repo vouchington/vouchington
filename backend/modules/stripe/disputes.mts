@@ -109,7 +109,7 @@ async function listStripeDisputePages(
 }
 
 /* no-mistakes: integration=stripe */
-async function getStripePaymentIntentLatestCharge(
+export async function getStripePaymentIntentLatestCharge(
   paymentIntentId: string,
 ): Promise<Stripe.PaymentIntent['latest_charge']> {
   const paymentIntent = await getStripeClient().paymentIntents.retrieve(paymentIntentId, {

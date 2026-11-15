@@ -95,8 +95,7 @@ export const operationalDynamicConfigRegistryEntries = [
       make_discoverable_min_subscriptions: {
         description: 'Subscription count required for the alternate discoverability threshold.',
         minValue: 0,
-        maxValueExemption:
-          'Subscription thresholds intentionally remain operator-tunable because feed popularity distribution changes over time.',
+        maxValue: 1_000_000,
         integer: true,
       },
       make_undiscoverable_max_net_score: scoreField(

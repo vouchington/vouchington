@@ -2,7 +2,7 @@ import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 const defaultFields = {
-  max_placements_per_image: 1000,
+  max_placements_per_image: 20,
   recovery_page_size: 100,
   edge_publish_batch_size: 4,
   registry_reconciliation_page_size: 1000,
@@ -10,7 +10,7 @@ const defaultFields = {
 
 /** Hard ceilings for the current runtime configuration contract. */
 export const mediaDeliverySafetyWorkMaxValues = {
-  max_placements_per_image: 1000,
+  max_placements_per_image: 20,
   recovery_page_size: 1000,
   edge_publish_batch_size: 16,
   registry_reconciliation_page_size: 10000,

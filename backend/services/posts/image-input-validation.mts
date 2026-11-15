@@ -1,8 +1,10 @@
+import { MAX_POST_IMAGES, type PostImageInput } from './images-types.mts'
+import { createCodedError } from '@vouchington/sentry'
+import { POST_IMAGE_LIMIT_REACHED } from '@modules/on-error/error-codes'
 import { read } from '@data-stores/psql'
 import { isUUID } from '@modules/utils'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import type { PostImageInput } from './images-types.mts'
 
 async function assertImagesExistForUser(
   imageIds: string[],
@@ -42,7 +44,8 @@ export async function validatePostImageInputs(
   userId: string,
   isAdmin: boolean,
 ): Promise<void> {
-  assert(images.length <= 20, 422, 'A post can have at most 20 images')
+  if (images.length > MAX_POST_IMAGES)
+    throw createCodedError(400, 'Post image limit reached', POST_IMAGE_LIMIT_REACHED)
 
   const imageIds = images.map(img => img.image_id)
   const uniqueImageIds = new Set(imageIds)

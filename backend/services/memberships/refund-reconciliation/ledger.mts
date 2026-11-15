@@ -1,5 +1,6 @@
 import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+export { recordRefundReconciliationAttempt } from '../refund-issuance.mts'
 import {
   mapAttempt,
   mapLease,
@@ -44,53 +45,11 @@ export async function leaseDueRefundReconciliation(
   return row ? mapLease(row) : null
 }
 
-export async function recordRefundReconciliationAttempt(
-  lease: RefundReconciliationLease,
-  providerIdempotencyKey: string,
-): Promise<RefundReconciliationAttempt> {
-  const { rows: insertedRows } = await write(sql`/* recordRefundReconciliationAttempt:insert */
-    INSERT INTO membership_refund_operation_attempts (
-      membership_operation_id, membership_provider_context_id,
-      attempt_ordinal, provider_idempotency_key,
-      amount_minor_units, currency_code
-    ) SELECT operation.id, operation.membership_provider_context_id,
-      reconciliation_attempt_ordinal, ${providerIdempotencyKey},
-      remaining_refundable_minor_units, currency_code
-    FROM membership_operations operation
-    JOIN membership_operation_execution_work_items work ON work.membership_operation_id = operation.id
-    WHERE operation.id = ${lease.id} AND work.lease_token = ${lease.leaseToken}
-      AND work.lease_expires_at > clock_timestamp() AND operation.completed_at IS NULL
-      AND reconciliation_attempt_ordinal = ${lease.attemptOrdinal}
-    ORDER BY operation.id ASC NULLS LAST, reconciliation_attempt_ordinal ASC NULLS LAST
-    ON CONFLICT (membership_operation_id, attempt_ordinal) DO NOTHING
-    RETURNING id, membership_operation_id AS "membershipOperationId",
-      attempt_ordinal AS "attemptOrdinal", provider_idempotency_key AS "providerIdempotencyKey",
-      provider_refund_id AS "providerRefundId", amount_minor_units::TEXT AS "amountMinorUnits",
-      currency_code AS currency
-  `)
-  const inserted = insertedRows[0] as ReconciliationAttemptRow | undefined
-  if (inserted) return mapAttempt(inserted)
-
-  const { rows } = await write(sql`/* recordRefundReconciliationAttempt:existing */
-    SELECT id, membership_operation_id AS "membershipOperationId",
-      attempt_ordinal AS "attemptOrdinal", provider_idempotency_key AS "providerIdempotencyKey",
-      provider_refund_id AS "providerRefundId", amount_minor_units::TEXT AS "amountMinorUnits",
-      currency_code AS currency
-    FROM membership_refund_operation_attempts
-    WHERE membership_operation_id = ${lease.id}
-      AND provider_idempotency_key = ${providerIdempotencyKey}
-  `)
-  const existing = rows[0] as ReconciliationAttemptRow | undefined
-  if (!existing || existing.attemptOrdinal !== lease.attemptOrdinal)
-    throw new RefundReconciliationInProgressError(lease.id)
-  return mapAttempt(existing)
-}
-
 export async function getLatestRefundReconciliationAttempt(
   operationId: string,
 ): Promise<RefundReconciliationAttempt | null> {
   const { rows } = await write(sql`/* getLatestRefundReconciliationAttempt */
-    SELECT id, membership_operation_id AS "membershipOperationId",
+    SELECT id, provider_request_original_attempt_id AS "providerRequestOriginalAttemptId", rejected_at AS "rejectedAt", membership_operation_id AS "membershipOperationId",
       attempt_ordinal AS "attemptOrdinal", provider_idempotency_key AS "providerIdempotencyKey",
       provider_refund_id AS "providerRefundId", amount_minor_units::TEXT AS "amountMinorUnits",
       currency_code AS currency
@@ -110,8 +69,8 @@ export async function enrichRefundReconciliationAttemptProviderRefund(
   const { rows } = await write(sql`/* enrichRefundReconciliationAttemptProviderRefund */
     UPDATE membership_refund_operation_attempts
     SET provider_refund_id = ${providerRefundId}
-    WHERE id = ${attemptId} AND provider_refund_id IS NULL
-    RETURNING id, membership_operation_id AS "membershipOperationId",
+    WHERE id = ${attemptId} AND provider_refund_id IS NULL AND rejected_at IS NULL
+    RETURNING id, provider_request_original_attempt_id AS "providerRequestOriginalAttemptId", rejected_at AS "rejectedAt", membership_operation_id AS "membershipOperationId",
       attempt_ordinal AS "attemptOrdinal", provider_idempotency_key AS "providerIdempotencyKey",
       provider_refund_id AS "providerRefundId", amount_minor_units::TEXT AS "amountMinorUnits",
       currency_code AS currency

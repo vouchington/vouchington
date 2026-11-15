@@ -1,5 +1,6 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { getOutstandingMembershipGrantIds } from './outstanding.mts'
 import { recordMembershipExpirations } from '../expiration-changes.mts'
 
 /**
@@ -12,6 +13,7 @@ export async function expireExhaustedPausedGrants(
   accessSuspendedAt: Date,
   query: QueryExecutor,
 ): Promise<number> {
+  const grantIds = await getOutstandingMembershipGrantIds(userId, query)
   const { rows } = await query<{
     expired_at: Date
     membership_grant_id: string
@@ -27,6 +29,7 @@ export async function expireExhaustedPausedGrants(
       FROM membership_grants grant_row
       WHERE grant_row.membership_source_id = source_state.membership_source_id
         AND grant_row.user_id = ${userId} AND grant_row.revoked_at IS NULL
+        AND grant_row.id = ANY(${grantIds}::uuid[])
         AND source_state.paused_at IS NOT NULL
         AND fn_membership_grant_remaining_duration(grant_row.id) < INTERVAL '1 millisecond'
         AND NOT EXISTS (
@@ -61,6 +64,7 @@ export async function expireExhaustedPausedGrants(
     FROM membership_grants grant_row
     WHERE grant_row.membership_source_id = source_state.membership_source_id
       AND grant_row.user_id = ${userId} AND grant_row.revoked_at IS NULL
+        AND grant_row.id = ANY(${grantIds}::uuid[])
       AND source_state.paused_at IS NOT NULL
       AND NOT EXISTS (
         SELECT 1 FROM membership_grant_activation_periods activation

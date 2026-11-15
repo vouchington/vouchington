@@ -1,4 +1,6 @@
 import { type TransactionQuery, write } from '@data-stores/psql'
+import createHttpError from 'http-errors'
+import { MAX_ACTIVE_MEMBERSHIP_PROVIDER_MAPPINGS } from './provider-catalog.mts'
 import sql from 'sql-template-strings'
 import type { StripeCatalogContext } from './get-catalog.mts'
 
@@ -57,6 +59,7 @@ export async function publishStripeCatalogMapping({
       mapping => mapping.provider_product_id === providerProductId && mapping.sku_id === skuId,
     )
   ) {
+    await assertStripeCatalogMappingCapacity(membershipProductId, context, query)
     await write(
       sql`/* publishStripeCatalogMapping: insert */
         INSERT INTO membership_provider_products (membership_product_id, membership_provider_context_id, provider_product_id, sku_id, price_minor_units, currency_code)
@@ -72,6 +75,7 @@ export async function publishStripeCatalogMapping({
   if (exact.length !== 1) throw new Error(`Stripe catalog mapping ${skuId} is ambiguous`)
   const mapping = exact[0]!
   if (mapping.retired_at === null) return
+  await assertStripeCatalogMappingCapacity(membershipProductId, context, query)
   await write(
     sql`/* publishStripeCatalogMapping: reactivate */
       UPDATE membership_provider_products SET retired_at = NULL
@@ -116,4 +120,26 @@ type StripeCatalogMapping = {
   price_minor_units: string | null
   currency_code: string | null
   retired_at: Date | null
+}
+
+async function assertStripeCatalogMappingCapacity(
+  membershipProductId: string,
+  context: StripeCatalogContext,
+  query: TransactionQuery,
+): Promise<void> {
+  const { rows } = await query(sql`/* assertStripeCatalogMappingCapacity */
+    SELECT mapping.id
+    FROM membership_provider_products mapping
+    INNER JOIN membership_provider_contexts provider_context
+      ON provider_context.id = mapping.membership_provider_context_id
+    WHERE mapping.membership_product_id = ${membershipProductId}
+      AND mapping.retired_at IS NULL
+      AND provider_context.provider = 'stripe'
+      AND provider_context.environment = ${context.environment}
+      AND provider_context.application_id = ${context.applicationId}
+    LIMIT ${MAX_ACTIVE_MEMBERSHIP_PROVIDER_MAPPINGS}`)
+  if (rows.length >= MAX_ACTIVE_MEMBERSHIP_PROVIDER_MAPPINGS)
+    throw createHttpError(409, 'Active membership catalog mapping limit reached', {
+      code: 'MEMBERSHIP_CATALOG_MAPPING_LIMIT_REACHED',
+    })
 }

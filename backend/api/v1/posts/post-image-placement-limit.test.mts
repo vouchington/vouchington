@@ -11,7 +11,7 @@ import { callRejectedMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { mediaDeliverySafetyWorkConfig } from '@services/media-delivery-safety/work-limits'
 
 describe('image placement capacity protocol parity', () => {
-  it('preserves the coded 409 through REST and the real MCP create-post handler', async () => {
+  it('preserves the coded 400 through REST and the real MCP create-post handler', async () => {
     await mediaDeliverySafetyWorkConfig.waitForInitialization()
     onTestFinished(
       overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
@@ -39,7 +39,7 @@ describe('image placement capacity protocol parity', () => {
     const refused = await request
       .put(`/api/v1/posts/${ownedPosts[1]}/images`)
       .send({ images })
-      .expect(409)
+      .expect(400)
     expect(refused.body).toMatchObject({ code: 'IMAGE_PLACEMENT_LIMIT_REACHED' })
     const mcp = await callRejectedMcpTool(
       { ...user, membership_plan: 'plus' },
@@ -53,7 +53,7 @@ describe('image placement capacity protocol parity', () => {
       ['posts:read', 'posts:write'],
     )
     expect(JSON.parse(mcp)).toMatchObject({
-      error: { status: 409, code: 'IMAGE_PLACEMENT_LIMIT_REACHED', retryable: false },
+      error: { status: 400, code: 'IMAGE_PLACEMENT_LIMIT_REACHED', retryable: false },
     })
     const unchanged = await request.get(`/api/v1/posts/${ownedPosts[1]}/images`).expect(200)
     expect(unchanged.body.images).toEqual([])

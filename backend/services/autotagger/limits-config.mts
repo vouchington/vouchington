@@ -20,6 +20,8 @@ export type AutotaggerPaidLimitsFields = {
   agent_max_output_tokens: number
 }
 
+export const MAX_AUTOTAGGER_TOPICS = 20
+
 const DEFAULTS: AutotaggerPaidLimitsFields = {
   enabled: true,
   post_free_max_topics: 0,
@@ -56,25 +58,40 @@ export function getAutotaggerPaidLimitsFields(): AutotaggerPaidLimitsFields {
   const fields = autotaggerPaidLimitsConfig.getFields()
   return {
     enabled: (fields['enabled'] as boolean | undefined) ?? DEFAULTS.enabled,
-    post_free_max_topics:
-      (fields['post_free_max_topics'] as number | undefined) ?? DEFAULTS.post_free_max_topics,
-    post_plus_max_topics:
-      (fields['post_plus_max_topics'] as number | undefined) ?? DEFAULTS.post_plus_max_topics,
-    post_pro_max_topics:
-      (fields['post_pro_max_topics'] as number | undefined) ?? DEFAULTS.post_pro_max_topics,
-    rss_discoverable_llm_max_topics:
-      (fields['rss_discoverable_llm_max_topics'] as number | undefined) ??
+    post_free_max_topics: boundedTopicLimit(
+      fields['post_free_max_topics'],
+      DEFAULTS.post_free_max_topics,
+    ),
+    post_plus_max_topics: boundedTopicLimit(
+      fields['post_plus_max_topics'],
+      DEFAULTS.post_plus_max_topics,
+    ),
+    post_pro_max_topics: boundedTopicLimit(
+      fields['post_pro_max_topics'],
+      DEFAULTS.post_pro_max_topics,
+    ),
+    rss_discoverable_llm_max_topics: boundedTopicLimit(
+      fields['rss_discoverable_llm_max_topics'],
       DEFAULTS.rss_discoverable_llm_max_topics,
-    rss_collaborative_plus_max_topics:
-      (fields['rss_collaborative_plus_max_topics'] as number | undefined) ??
+    ),
+    rss_collaborative_plus_max_topics: boundedTopicLimit(
+      fields['rss_collaborative_plus_max_topics'],
       DEFAULTS.rss_collaborative_plus_max_topics,
-    rss_collaborative_pro_max_topics:
-      (fields['rss_collaborative_pro_max_topics'] as number | undefined) ??
+    ),
+    rss_collaborative_pro_max_topics: boundedTopicLimit(
+      fields['rss_collaborative_pro_max_topics'],
       DEFAULTS.rss_collaborative_pro_max_topics,
+    ),
     agent_max_turns: (fields['agent_max_turns'] as number | undefined) ?? DEFAULTS.agent_max_turns,
     agent_max_tool_calls:
       (fields['agent_max_tool_calls'] as number | undefined) ?? DEFAULTS.agent_max_tool_calls,
     agent_max_output_tokens:
       (fields['agent_max_output_tokens'] as number | undefined) ?? DEFAULTS.agent_max_output_tokens,
   }
+}
+
+function boundedTopicLimit(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.min(MAX_AUTOTAGGER_TOPICS, Math.max(0, Math.trunc(value)))
+    : fallback
 }

@@ -1,3 +1,4 @@
+import { MAX_USER_EMAIL_ADDRESSES } from './email-addresses.mts'
 import {
   runWithTransaction,
   registerPostCommitAction,
@@ -5,6 +6,8 @@ import {
 } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import { createCodedError } from '@vouchington/sentry'
+import { EMAIL_ADDRESS_LIMIT_REACHED } from '@modules/on-error/error-codes'
 import { validateEmailAddress } from '@services/email-address-validator'
 import { resolveEmailDomainHostnameId } from '@services/email-address-validator/email-domain-context'
 import { createLoginToken } from '@services/users/login-token'
@@ -14,6 +17,7 @@ import {
   primeVerifiedEmailCache,
 } from '@services/contribution-gating/email-verification'
 import onError from '@modules/on-error'
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
 import { enqueueOnUserUpdated } from '@queues/entity-listeners/enqueues'
 
 async function assertEmailAddressAvailableForUser(
@@ -74,14 +78,20 @@ export async function verifyEmailVerificationToken(
   const normalizedToken = token.toUpperCase().trim()
   const tokenHash = hashToken('email-address-verification-token', normalizedToken)
 
-  await runWithTransaction(options.query, async query => {
-    await verifyTokenAndAddEmailAddress(userId, normalized, tokenHash, query)
-    registerPostCommitAction(query, async () => {
-      await invalidateVerifiedEmailCache(userId).catch(onError)
-      await primeVerifiedEmailCache(userId).catch(onError)
-      void enqueueOnUserUpdated(userId)
-    })
-  })
+  await conflictOnSerializationFailure(() =>
+    runWithTransaction(
+      options.query,
+      async query => {
+        await verifyTokenAndAddEmailAddress(userId, normalized, tokenHash, query)
+        registerPostCommitAction(query, async () => {
+          await invalidateVerifiedEmailCache(userId).catch(onError)
+          await primeVerifiedEmailCache(userId).catch(onError)
+          void enqueueOnUserUpdated(userId)
+        })
+      },
+      { serializable: true },
+    ),
+  )
 }
 
 async function verifyTokenAndAddEmailAddress(
@@ -113,6 +123,16 @@ async function verifyTokenAndAddEmailAddress(
     422,
     'Email address has already been claimed by another account',
   )
+
+  const { rows: existingEmails } = await query<{ email_address: string }>(sql`
+    /* verifyEmailVerificationToken:capacity */
+    SELECT email_address FROM user_email_addresses WHERE user_id = ${userId} LIMIT ${MAX_USER_EMAIL_ADDRESSES}
+  `)
+  if (
+    existingEmails.length >= MAX_USER_EMAIL_ADDRESSES &&
+    !existingEmails.some(row => row.email_address === normalizedEmailAddress)
+  )
+    throw createCodedError(400, 'Email address limit reached', EMAIL_ADDRESS_LIMIT_REACHED)
 
   const emailDomainHostnameId = await resolveEmailDomainHostnameId(normalizedEmailAddress, {
     query,

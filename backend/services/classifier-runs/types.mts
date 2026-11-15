@@ -114,6 +114,8 @@ export type ClassifierRunLease<C> = {
  */
 export type ClassifierRunAdapter<C, L = never, E = void> = {
   slug: string
+  /** Hard bound on captured topic writes and replay reads for this classifier. */
+  capturedTopicLimit?: number
   /** Locks the subject; null when it is no longer eligible for this classifier. */
   lockCurrent(
     query: OwnedTransaction,

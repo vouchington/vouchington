@@ -20,7 +20,7 @@ export async function getAdministratorRefundContext(
 ): Promise<RefundContext | null> {
   const { rows } = await write(sql`/* getAdministratorRefundReconciliationContext */
     SELECT request.membership_id AS "membershipId", request.issued_by_id AS "issuedById",
-      request.provider_payment_reference AS "providerPaymentReference",
+      operation.provider_payment_reference AS "providerPaymentReference",
       request.provider_subscription_reference AS "providerSubscriptionReference", request.reason,
       request.is_cancel_requested AS "cancelRequested", request.request_fingerprint AS "requestFingerprint",
       request.administrator_request_key AS "administratorRequestKey",

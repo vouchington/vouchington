@@ -24,13 +24,17 @@ export function assertPageCursor(page: RefundMetadataPage, startingAfter?: strin
 
 export function findOperationRefund(
   refunds: readonly MetadataDiscoverableRefund[],
-  attempt: Pick<RefundReconciliationAttempt, 'id' | 'membershipOperationId'>,
+  attempt: Pick<
+    RefundReconciliationAttempt,
+    'id' | 'membershipOperationId' | 'providerRequestOriginalAttemptId'
+  >,
 ): MetadataDiscoverableRefund | null {
   return (
     refunds.find(
       refund =>
         refund.metadata?.membership_refund_operation_id === attempt.membershipOperationId &&
-        refund.metadata.membership_refund_attempt_id === attempt.id,
+        refund.metadata.membership_refund_attempt_id ===
+          (attempt.providerRequestOriginalAttemptId ?? attempt.id),
     ) ?? null
   )
 }

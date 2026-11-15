@@ -15,7 +15,7 @@ export const nativeImagePlacementApiFixtureCases: ApiFixtureCase[] = [
     },
     requestBody: { images: [{ image_id: imageId, order_index: 0, caption: '' }] },
     auth: 'fixture-user',
-    status: 409,
+    status: 400,
     backendResponseContractKey: 'PUT:/api/v1/posts/:idOrSlug/images#placement-limit',
     body: { message: 'Image placement limit reached', code: 'IMAGE_PLACEMENT_LIMIT_REACHED' },
     consumers: [...clientConsumers],

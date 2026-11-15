@@ -429,6 +429,13 @@ CREATE INDEX IF NOT EXISTS idx_community_invites__invited_by_id ON community_inv
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_invites__accepted_by_user_id ON community_invites (accepted_by_id) WHERE accepted_by_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_community_invites__pending_email
+  ON community_invites (community_id, invited_email)
+  WHERE accepted_at IS NULL AND declined_at IS NULL AND revoked_at IS NULL
+    AND invited_email IS NOT NULL;
+COMMENT ON INDEX idx_community_invites__pending_email IS 'At most one pending invitation per community and normalized email; reinviting rotates its code.';
+
 COMMENT ON TABLE community_invites IS 'Invitations to join a community, sent to a specific user or email address.';
 COMMENT ON COLUMN community_invites.community_id IS 'The community the invite is for.';
 COMMENT ON COLUMN community_invites.code_hash IS 'Purpose-bound HMAC-SHA256 of the invite code; the raw code is never persisted.';

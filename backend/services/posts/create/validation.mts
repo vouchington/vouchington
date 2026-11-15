@@ -1,3 +1,4 @@
+import { assertManualCategoryInputLimit } from '@services/tag-limits'
 import { validateCreatePostUrl } from './validation-url.mts'
 import type { PrivateUser } from '@services/users/types'
 import type { CreatePostInput, PostType } from '../types.mts'
@@ -47,6 +48,7 @@ export async function validateCreatePostInput(
   options: QueryOptions = {},
 ): Promise<CreatePostDefaults> {
   assert(creator, 422, 'Creator is required')
+  if (Array.isArray(updates.categories)) assertManualCategoryInputLimit(updates.categories.length)
   updates.post_type ||= 'discussion'
   const postType = updates.post_type
   assert(isSupportedPostType(postType), 422, 'Unsupported post_type')

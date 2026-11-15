@@ -78,6 +78,8 @@ function leaseRow() {
 
 function attemptRow() {
   return {
+    providerRequestOriginalAttemptId: null,
+    rejectedAt: null,
     amountMinorUnits: '700',
     attemptOrdinal: 1,
     currency: 'usd',

@@ -11,10 +11,9 @@ import {
   DynamicConfigValidationError,
   defineDynamicConfigNamespace,
   validatePositiveNumberFields,
-  withMaxValueExemption,
 } from 'valkyries/dynamic-config'
 import { copyrightRegistryEntry } from './registry-copyright-entry.mts'
-import { RATE_LIMIT_MAX_EXEMPTION, VOTE_WEIGHT_MAX_EXEMPTION } from './registry-entry-utils.mts'
+import { MAX_RATE_LIMIT_REQUESTS, MAX_RATE_LIMIT_WINDOW_SECONDS } from './registry-entry-utils.mts'
 import { routeRateLimitFields } from './route-rate-limit-fields.mts'
 import { validateRateLimitThresholdConfig } from './registry-membership-limit-validators.mts'
 import { validateVoteWeightConfig } from './product-config-validators.mts'
@@ -26,51 +25,48 @@ export const policyDynamicConfigRegistryEntries = [
     description: 'Vote weight multipliers and account-age thresholds.',
     config: voteWeightConfig,
     access: { update_roles: ['developer'] },
-    fields: withMaxValueExemption(
-      {
-        multiplier_mfa: { description: 'Vote multiplier for users with MFA enabled.' },
-        multiplier_has_oauth: {
-          description: 'Vote multiplier for users with at least one OAuth account.',
-        },
-        multiplier_2_plus_oauth: {
-          description: 'Vote multiplier for users with two or more OAuth accounts.',
-        },
-        multiplier_oauth_1_year: {
-          description: 'Vote multiplier for OAuth accounts older than one year.',
-        },
-        multiplier_oauth_5_years: {
-          description: 'Vote multiplier for OAuth accounts older than five years.',
-        },
-        multiplier_account_30_days: {
-          description: 'Account-age multiplier applied after the 30 day threshold.',
-        },
-        multiplier_account_1_year: {
-          description: 'Account-age multiplier applied after the one year threshold.',
-        },
-        multiplier_account_2_years: {
-          description: 'Account-age multiplier applied after the two year threshold.',
-        },
-        multiplier_account_5_years: {
-          description: 'Account-age multiplier applied after the five year threshold.',
-        },
-        weight_new_account: { description: 'Base vote weight for accounts newer than seven days.' },
-        threshold_7_days_ms: {
-          description: 'Account-age threshold for the seven day weight tier.',
-        },
-        threshold_30_days_ms: { description: 'Account-age threshold for the 30 day weight tier.' },
-        threshold_1_year_ms: { description: 'Account-age threshold for the one year weight tier.' },
-        threshold_2_years_ms: {
-          description: 'Account-age threshold for the two year weight tier.',
-        },
-        threshold_5_years_ms: {
-          description: 'Account-age threshold for the five year weight tier.',
-        },
-        multiplier_plus: { description: 'Vote multiplier for Plus members.' },
-        multiplier_pro: { description: 'Vote multiplier for Pro members.' },
-        multiplier_admin: { description: 'Vote multiplier for administrators.' },
+    fields: voteWeightFields({
+      multiplier_mfa: { description: 'Vote multiplier for users with MFA enabled.' },
+      multiplier_has_oauth: {
+        description: 'Vote multiplier for users with at least one OAuth account.',
       },
-      VOTE_WEIGHT_MAX_EXEMPTION,
-    ),
+      multiplier_2_plus_oauth: {
+        description: 'Vote multiplier for users with two or more OAuth accounts.',
+      },
+      multiplier_oauth_1_year: {
+        description: 'Vote multiplier for OAuth accounts older than one year.',
+      },
+      multiplier_oauth_5_years: {
+        description: 'Vote multiplier for OAuth accounts older than five years.',
+      },
+      multiplier_account_30_days: {
+        description: 'Account-age multiplier applied after the 30 day threshold.',
+      },
+      multiplier_account_1_year: {
+        description: 'Account-age multiplier applied after the one year threshold.',
+      },
+      multiplier_account_2_years: {
+        description: 'Account-age multiplier applied after the two year threshold.',
+      },
+      multiplier_account_5_years: {
+        description: 'Account-age multiplier applied after the five year threshold.',
+      },
+      weight_new_account: { description: 'Base vote weight for accounts newer than seven days.' },
+      threshold_7_days_ms: {
+        description: 'Account-age threshold for the seven day weight tier.',
+      },
+      threshold_30_days_ms: { description: 'Account-age threshold for the 30 day weight tier.' },
+      threshold_1_year_ms: { description: 'Account-age threshold for the one year weight tier.' },
+      threshold_2_years_ms: {
+        description: 'Account-age threshold for the two year weight tier.',
+      },
+      threshold_5_years_ms: {
+        description: 'Account-age threshold for the five year weight tier.',
+      },
+      multiplier_plus: { description: 'Vote multiplier for Plus members.' },
+      multiplier_pro: { description: 'Vote multiplier for Pro members.' },
+      multiplier_admin: { description: 'Vote multiplier for administrators.' },
+    }),
     validate: validateVoteWeightConfig,
   }),
   defineDynamicConfigNamespace({
@@ -134,29 +130,36 @@ function userRateLimitFields() {
         `${kind}_${tier}`,
         {
           description: `${kind[0]!.toUpperCase()}${kind.slice(1)} request threshold for ${formatTrustTier(tier)}.`,
+          maxValue: MAX_RATE_LIMIT_REQUESTS,
         },
       ]),
     ),
   )
-  return withMaxValueExemption(
-    {
-      ...fields,
-      read_ttl: rateLimitTtlField('Read'),
-      write_ttl: rateLimitTtlField('Write'),
-      sensitive_ttl: rateLimitTtlField('Sensitive action'),
-    },
-    RATE_LIMIT_MAX_EXEMPTION,
-  )
+  return {
+    ...fields,
+    read_ttl: rateLimitTtlField('Read'),
+    write_ttl: rateLimitTtlField('Write'),
+    sensitive_ttl: rateLimitTtlField('Sensitive action'),
+  }
 }
 
 function rateLimitTtlField(label: string) {
   return {
     description: `${label} rate-limit window length in seconds.`,
-    maxValueExemption: RATE_LIMIT_MAX_EXEMPTION,
+    maxValue: MAX_RATE_LIMIT_WINDOW_SECONDS,
   }
 }
 
 function formatTrustTier(tier: string): string {
   if (tier === 'tier0') return 'unauthenticated or lowest-trust users'
   return `trust tier ${tier.slice('tier'.length)} users`
+}
+
+function voteWeightFields(fields: Record<string, { description: string }>) {
+  return Object.fromEntries(
+    Object.entries(fields).map(([name, metadata]) => [
+      name,
+      { ...metadata, maxValue: name.endsWith('_ms') ? 100 * 365 * 86_400_000 : 1_000_000 },
+    ]),
+  )
 }

@@ -12,6 +12,9 @@ DO $$ BEGIN CREATE TYPE membership_refund_sources AS ENUM ('admin', 'stripe_dash
 DO $$ BEGIN CREATE TYPE membership_operation_kinds AS ENUM ('cancel_source', 'automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution', 'administrator_refund'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE membership_verification_result_codes AS ENUM ('verified', 'competing_direct_source', 'invalid_evidence', 'wrong_account', 'wrong_application', 'wrong_environment', 'wrong_product', 'revoked', 'expired', 'purchase_pending', 'provider_unavailable', 'missing_account_token', 'stale_evidence'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
+DO $$ BEGIN CREATE TYPE membership_refund_request_rejection_reasons AS ENUM ('authentication', 'rate_limited', 'invalid_parameters'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+COMMENT ON TYPE membership_refund_request_rejection_reasons IS 'Verified Stripe pre-execution rejection categories; unknown outcomes never receive one.';
+
 -- Provider identities are finite at deployment time, but configured application ids may vary.
 -- Keep their identity once and reference it from membership records by id.
 CREATE TABLE IF NOT EXISTS membership_provider_contexts (
@@ -87,6 +90,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_products__active_sku O
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_products__id_context ON membership_provider_products (id, membership_product_id, membership_provider_context_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_provider_products__membership_product_id ON membership_provider_products (membership_product_id);
+CREATE INDEX IF NOT EXISTS idx_membership_provider_products__active_product_context ON membership_provider_products (membership_product_id, membership_provider_context_id, id) WHERE retired_at IS NULL;
+COMMENT ON INDEX idx_membership_provider_products__active_product_context IS
+  'Bounds active catalog mapping admission and current-context catalog reads by product and provider context.';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_provider_products__currency_code ON membership_provider_products (currency_code);
 
@@ -620,6 +626,8 @@ CREATE TABLE IF NOT EXISTS membership_operations (
   provider_refund_id TEXT CONSTRAINT membership_operations__provider_refund_id_valid CHECK (provider_refund_id IS NULL OR (char_length(provider_refund_id) BETWEEN 1 AND 255 AND provider_refund_id = TRIM(provider_refund_id))),
   membership_provider_context_id UUID NOT NULL,
   operation_kind membership_operation_kinds NOT NULL, idempotency_key TEXT NOT NULL,
+  provider_charge_id TEXT CHECK (provider_charge_id IS NULL OR (char_length(provider_charge_id) BETWEEN 1 AND 255 AND provider_charge_id = TRIM(provider_charge_id))),
+  provider_payment_reference TEXT CHECK (provider_payment_reference IS NULL OR (char_length(provider_payment_reference) BETWEEN 1 AND 255 AND provider_payment_reference = TRIM(provider_payment_reference))),
   qualifying_allocation_minor_units BIGINT CHECK (qualifying_allocation_minor_units BETWEEN 0 AND 9007199254740991),
   remaining_refundable_minor_units BIGINT CHECK (remaining_refundable_minor_units BETWEEN 0 AND 9007199254740991),
   currency_code currency_codes REFERENCES currencies(code) ON DELETE RESTRICT,
@@ -673,6 +681,13 @@ CREATE INDEX IF NOT EXISTS idx_membership_operations__source_id ON membership_op
 CREATE INDEX IF NOT EXISTS idx_membership_operations__lineage_id ON membership_operations (membership_provider_lineage_id, id DESC);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_operations__binding_id ON membership_operations (membership_lineage_binding_id, id DESC);
+CREATE INDEX IF NOT EXISTS idx_membership_operations__provider_payment ON membership_operations (membership_provider_context_id, provider_charge_id, id) WHERE provider_charge_id IS NOT NULL;
+COMMENT ON INDEX idx_membership_operations__provider_payment IS
+  'Finds durable local refund operations and their actual issuance attempts for one provider payment target.';
+COMMENT ON COLUMN membership_operations.provider_payment_reference IS
+  'Immutable original Stripe charge or payment-intent protocol target used to dispatch and exactly replay a local refund operation.';
+COMMENT ON COLUMN membership_operations.provider_charge_id IS
+  'Canonical Stripe charge identity shared by charge and payment-intent targets for local refund admission; never replaces the original dispatch target.';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Fiscal retention scan: every completed operation of every kind. Whether a row may be deleted yet
 -- depends on other tables (reversal case state), so a persisted cursor steps past blocked rows
@@ -814,13 +829,12 @@ CREATE TABLE IF NOT EXISTS membership_administrator_refund_operation_requests (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   membership_operation_id UUID NOT NULL CONSTRAINT uq_membershi_administra_refund_operation_requests__operation_id UNIQUE CONSTRAINT fk_membership_administrato_refund_operation_requests__operation REFERENCES membership_operations(id) ON DELETE RESTRICT,
   administrator_request_key TEXT NOT NULL, membership_id UUID NOT NULL CONSTRAINT fk_membership_administra_refund_operation_requests__membership REFERENCES retained_membership_identities (id) ON DELETE RESTRICT, issued_by_id UUID NOT NULL CONSTRAINT fk_membership_administrato_refund_operation_requests__issued_by REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
-  provider_payment_reference TEXT NOT NULL, provider_subscription_reference TEXT,
+  provider_subscription_reference TEXT,
   amount_minor_units BIGINT NOT NULL CONSTRAINT chk_members_adminis_refund_operati_requests__amount_minor_units CHECK (amount_minor_units BETWEEN 1 AND 9007199254740991),
   currency_code currency_codes NOT NULL CONSTRAINT fk_membershi_administr_refund_operation_requests__currency_code REFERENCES currencies(code) ON DELETE RESTRICT,
   reason membership_refund_reasons NOT NULL, is_cancel_requested BOOLEAN NOT NULL,
   request_fingerprint TEXT NOT NULL, note TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  CONSTRAINT chk_membe_admin_refun_operat_reques__provider_payment_reference CHECK (char_length(provider_payment_reference) BETWEEN 1 AND 255 AND provider_payment_reference = TRIM(provider_payment_reference)),
   CHECK ((is_cancel_requested = FALSE AND provider_subscription_reference IS NULL) OR (is_cancel_requested = TRUE AND char_length(provider_subscription_reference) BETWEEN 1 AND 255 AND provider_subscription_reference = TRIM(provider_subscription_reference))),
   CONSTRAINT chk_members_adminis_refund_operati_request__request_fingerprint CHECK (char_length(request_fingerprint) = 64),
   CONSTRAINT chk_membe_admin_refund_operat_reques__administrator_request_key CHECK (char_length(administrator_request_key) BETWEEN 1 AND 255 AND administrator_request_key = TRIM(administrator_request_key)),
@@ -1017,6 +1031,12 @@ CREATE TABLE IF NOT EXISTS membership_refund_operation_attempts (
   membership_operation_id UUID NOT NULL,
   membership_provider_context_id UUID NOT NULL,
   attempt_ordinal INTEGER NOT NULL CHECK (attempt_ordinal >= 1), provider_idempotency_key TEXT NOT NULL, provider_refund_id TEXT,
+  provider_request_original_attempt_id UUID REFERENCES membership_refund_operation_attempts(id) ON DELETE RESTRICT,
+  rejected_at TIMESTAMPTZ,
+  outcome_unknown_at TIMESTAMPTZ,
+  rejection_reason membership_refund_request_rejection_reasons,
+  CHECK ((rejected_at IS NULL) = (rejection_reason IS NULL)),
+  CHECK (rejected_at IS NULL OR (provider_refund_id IS NULL AND outcome_unknown_at IS NULL)),
   amount_minor_units BIGINT NOT NULL CHECK (amount_minor_units BETWEEN 0 AND 9007199254740991),
   currency_code currency_codes NOT NULL REFERENCES currencies(code) ON DELETE RESTRICT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -1024,10 +1044,22 @@ CREATE TABLE IF NOT EXISTS membership_refund_operation_attempts (
   CHECK (provider_refund_id IS NULL OR (char_length(provider_refund_id) BETWEEN 1 AND 255 AND provider_refund_id = TRIM(provider_refund_id))),
   CONSTRAINT fk_membership_refund_operation_attempts__operation_context FOREIGN KEY (membership_operation_id, membership_provider_context_id)
     REFERENCES membership_operations(id, membership_provider_context_id) ON DELETE RESTRICT,
-  CONSTRAINT uq_membership_refund_operation_attempts__operation_ordinal UNIQUE (membership_operation_id, attempt_ordinal),
-  CONSTRAINT uq_membership_refund_operation_attempts__provider_idempotency UNIQUE (membership_provider_context_id, provider_idempotency_key)
+  CONSTRAINT uq_membership_refund_operation_attempts__operation_ordinal UNIQUE (membership_operation_id, attempt_ordinal)
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX idx_membership_refund_operation_attempts__active_provider_key
+  ON membership_refund_operation_attempts (membership_provider_context_id, provider_idempotency_key) WHERE rejected_at IS NULL;
+COMMENT ON INDEX idx_membership_refund_operation_attempts__active_provider_key IS 'One unresolved or issued execution per Stripe idempotency key; confirmed pre-execution rejections remain history.';
+CREATE INDEX idx_membership_refund_operation_attempts__request_history
+  ON membership_refund_operation_attempts (membership_operation_id, provider_idempotency_key, attempt_ordinal DESC);
+COMMENT ON INDEX idx_membership_refund_operation_attempts__request_history IS 'Finds the latest real provider execution of an original idempotent request.';
+CREATE INDEX idx_membership_refund_operation_attempts__original_attempt
+  ON membership_refund_operation_attempts (provider_request_original_attempt_id) WHERE provider_request_original_attempt_id IS NOT NULL;
+COMMENT ON INDEX idx_membership_refund_operation_attempts__original_attempt IS 'Resolves replay metadata and drains referencing executions before their original protocol snapshot.';
+COMMENT ON COLUMN membership_refund_operation_attempts.provider_request_original_attempt_id IS 'First rejected execution whose unchanged metadata and amount a later same-key execution replays; NULL on an original request.';
+COMMENT ON COLUMN membership_refund_operation_attempts.outcome_unknown_at IS 'First indeterminate execution outcome for this idempotent request; subsequent pre-execution errors cannot disprove its possible financial effect.';
+COMMENT ON COLUMN membership_refund_operation_attempts.rejected_at IS 'When Stripe definitively rejected this execution before its endpoint began; network and indeterminate failures leave this absent.';
+COMMENT ON COLUMN membership_refund_operation_attempts.rejection_reason IS 'Verified pre-execution failure category, recorded once with rejected_at.';
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_refund_operation_attempts__provider_refund ON membership_refund_operation_attempts (membership_provider_context_id, provider_refund_id) WHERE provider_refund_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_refund_operation_attempts__currency_code ON membership_refund_operation_attempts (currency_code);
@@ -1060,7 +1092,17 @@ CREATE TRIGGER trigger_maror_immutable BEFORE UPDATE OR DELETE ON membership_adm
 CREATE OR REPLACE FUNCTION fn_reject_invalid_membership_refund_operation_attempt() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE valid_attempt BOOLEAN;
 BEGIN
-  SELECT operation.operation_kind IN ('automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution', 'administrator_refund') AND operation.currency_code = NEW.currency_code AND NEW.amount_minor_units <= operation.remaining_refundable_minor_units INTO valid_attempt FROM membership_operations operation WHERE operation.id = NEW.membership_operation_id;
+  SELECT operation.operation_kind IN ('automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution', 'administrator_refund') AND operation.currency_code = NEW.currency_code AND NEW.amount_minor_units <= operation.remaining_refundable_minor_units
+    AND (NEW.provider_request_original_attempt_id IS NULL OR EXISTS (
+      SELECT 1 FROM membership_refund_operation_attempts original
+      WHERE original.id = NEW.provider_request_original_attempt_id
+        AND original.membership_operation_id = NEW.membership_operation_id
+        AND original.provider_request_original_attempt_id IS NULL
+        AND original.rejected_at IS NOT NULL
+        AND original.provider_idempotency_key = NEW.provider_idempotency_key
+        AND original.amount_minor_units = NEW.amount_minor_units
+        AND original.currency_code = NEW.currency_code
+    )) INTO valid_attempt FROM membership_operations operation WHERE operation.id = NEW.membership_operation_id;
   IF valid_attempt IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'refund attempt does not match its operation' USING ERRCODE = '23514'; END IF;
   RETURN NEW;
 END $$;
@@ -1074,7 +1116,13 @@ BEGIN
       THEN RETURN OLD; END IF;
     RAISE EXCEPTION 'membership refund operation attempts cannot be deleted';
   END IF;
-  IF OLD.provider_refund_id IS NULL AND NEW.provider_refund_id IS NOT NULL AND ROW(NEW.id, NEW.membership_operation_id, NEW.membership_provider_context_id, NEW.attempt_ordinal, NEW.provider_idempotency_key, NEW.amount_minor_units, NEW.currency_code, NEW.created_at) IS NOT DISTINCT FROM ROW(OLD.id, OLD.membership_operation_id, OLD.membership_provider_context_id, OLD.attempt_ordinal, OLD.provider_idempotency_key, OLD.amount_minor_units, OLD.currency_code, OLD.created_at) THEN RETURN NEW; END IF;
+  IF OLD.outcome_unknown_at IS NULL AND NEW.outcome_unknown_at IS NOT NULL AND OLD.provider_refund_id IS NULL AND OLD.rejected_at IS NULL
+    AND to_jsonb(NEW) - 'outcome_unknown_at' = to_jsonb(OLD) - 'outcome_unknown_at'
+    THEN RETURN NEW; END IF;
+  IF OLD.rejected_at IS NULL AND NEW.rejected_at IS NOT NULL AND OLD.provider_refund_id IS NULL AND OLD.outcome_unknown_at IS NULL
+    AND to_jsonb(NEW) - 'rejected_at' - 'rejection_reason' = to_jsonb(OLD) - 'rejected_at' - 'rejection_reason'
+    THEN RETURN NEW; END IF;
+  IF OLD.rejected_at IS NULL AND OLD.provider_refund_id IS NULL AND NEW.provider_refund_id IS NOT NULL AND ROW(NEW.id, NEW.membership_operation_id, NEW.membership_provider_context_id, NEW.attempt_ordinal, NEW.provider_idempotency_key, NEW.provider_request_original_attempt_id, NEW.rejected_at, NEW.rejection_reason, NEW.outcome_unknown_at, NEW.amount_minor_units, NEW.currency_code, NEW.created_at) IS NOT DISTINCT FROM ROW(OLD.id, OLD.membership_operation_id, OLD.membership_provider_context_id, OLD.attempt_ordinal, OLD.provider_idempotency_key, OLD.provider_request_original_attempt_id, OLD.rejected_at, OLD.rejection_reason, OLD.outcome_unknown_at, OLD.amount_minor_units, OLD.currency_code, OLD.created_at) THEN RETURN NEW; END IF;
   RAISE EXCEPTION 'membership refund operation attempts only allow provider refund ID enrichment';
 END $$;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -1407,7 +1455,6 @@ COMMENT ON COLUMN membership_administrator_refund_operation_requests.membership_
 COMMENT ON COLUMN membership_administrator_refund_operation_requests.administrator_request_key IS 'Administrator idempotency key bound to this immutable request.';
 COMMENT ON COLUMN membership_administrator_refund_operation_requests.membership_id IS 'Membership selected by the administrator when the request was submitted.';
 COMMENT ON COLUMN membership_administrator_refund_operation_requests.issued_by_id IS 'Retained user identity of the requesting administrator; outlives the live account and never authorizes.';
-COMMENT ON COLUMN membership_administrator_refund_operation_requests.provider_payment_reference IS 'Provider payment reference selected as the refund target.';
 COMMENT ON COLUMN membership_administrator_refund_operation_requests.provider_subscription_reference IS 'Provider subscription selected for cancellation when is_cancel_requested is true.';
 COMMENT ON COLUMN membership_administrator_refund_operation_requests.amount_minor_units IS 'Requested refund amount in the provider currency minor unit.';
 COMMENT ON COLUMN membership_administrator_refund_operation_requests.currency_code IS 'ISO 4217 currency code requested for the refund.';

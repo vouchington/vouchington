@@ -7,7 +7,11 @@ export async function insertClassifierRunCandidates(
   query: QueryExecutor,
   runId: string,
   topicIds: readonly string[],
+  limit: number | null,
 ): Promise<void> {
+  if (limit !== null && topicIds.length > limit) {
+    throw new Error(`Classifier captured topics exceed its limit (${limit})`)
+  }
   await query(sql`/* insertClassifierRunCandidates */
     INSERT INTO classifier_run_candidates (run_id, topic_id, ordinal)
     SELECT ${runId}, candidate.topic_id, (candidate.ordinal - 1)::int
@@ -21,10 +25,12 @@ export async function insertClassifierRunCandidates(
 export async function readClassifierRunCandidateTopicIds(
   query: QueryExecutor,
   runId: string,
+  limit: number | null,
 ): Promise<string[]> {
   const { rows } = await query<{ topic_id: string }>(sql`/* readClassifierRunCandidateTopicIds */
     SELECT topic_id FROM classifier_run_candidates
     WHERE run_id = ${runId} AND topic_id IS NOT NULL ORDER BY ordinal
+    LIMIT ${limit}
   `)
   return rows.map(row => row.topic_id)
 }
