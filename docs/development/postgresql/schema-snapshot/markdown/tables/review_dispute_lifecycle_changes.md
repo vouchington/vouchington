@@ -18,7 +18,8 @@ Not partitioned — growth: bounded.
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `review_dispute_lifecycle_changes_review_dispute_id_id_key`: `UNIQUE (review_dispute_id, id)`
 
 **Check constraints:**
 _none_
@@ -33,6 +34,7 @@ _none_
 - `idx_review_dispute_lifecycle_changes__changed_by_id`: `CREATE INDEX idx_review_dispute_lifecycle_changes__changed_by_id ON public.review_dispute_lifecycle_changes USING btree (changed_by_id) WHERE (changed_by_id IS NOT NULL)`
 - `idx_review_dispute_lifecycle_changes__dispute_created`: `CREATE INDEX idx_review_dispute_lifecycle_changes__dispute_created ON public.review_dispute_lifecycle_changes USING btree (review_dispute_id, id DESC)`
 - `review_dispute_lifecycle_changes_pkey`: `CREATE UNIQUE INDEX review_dispute_lifecycle_changes_pkey ON public.review_dispute_lifecycle_changes USING btree (id)`
+- `review_dispute_lifecycle_changes_review_dispute_id_id_key`: `CREATE UNIQUE INDEX review_dispute_lifecycle_changes_review_dispute_id_id_key ON public.review_dispute_lifecycle_changes USING btree (review_dispute_id, id)`
 
 **Triggers:**
 

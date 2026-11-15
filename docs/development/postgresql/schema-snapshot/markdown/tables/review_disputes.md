@@ -48,7 +48,7 @@ _none_
 
 **Foreign keys:**
 
-- `fk_review_disputes__ai_draft_run_id`: `FOREIGN KEY (ai_draft_run_id) REFERENCES review_dispute_resolution_runs(id) ON DELETE RESTRICT`
+- `fk_review_disputes__ai_draft_run_id`: `FOREIGN KEY (id, ai_draft_run_id) REFERENCES review_dispute_resolution_runs(review_dispute_id, id) ON DELETE RESTRICT`
 - `fk_review_disputes_latest_lifecycle_change_id`: `FOREIGN KEY (latest_lifecycle_change_id) REFERENCES review_dispute_lifecycle_changes(id) ON DELETE SET NULL`
 - `review_disputes_approved_by_id_fkey`: `FOREIGN KEY (approved_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `review_disputes_disputant_user_id_fkey`: `FOREIGN KEY (disputant_user_id) REFERENCES users(id) ON DELETE CASCADE`

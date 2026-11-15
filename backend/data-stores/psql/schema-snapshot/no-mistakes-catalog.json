@@ -133141,6 +133141,38 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "review_dispute_lifecycle_changes_review_dispute_id_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX review_dispute_lifecycle_changes_review_dispute_id_id_key ON public.review_dispute_lifecycle_changes USING btree (review_dispute_id, id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "review_dispute_id",
+              "descending": false,
+              "expression": "review_dispute_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "physicalPartition": null,
@@ -133156,7 +133188,11 @@
           "definition": "CREATE TRIGGER trigger_review_dispute_lifecycle_changes_append_only BEFORE DELETE OR UPDATE ON public.review_dispute_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "review_dispute_lifecycle_changes_review_dispute_id_id_key": {
+          "columns": ["review_dispute_id", "id"]
+        }
+      }
     },
     "review_dispute_resolution_runs": {
       "checkConstraints": {
@@ -133269,11 +133305,11 @@
       },
       "comment": "Durable AI draft requests for review disputes and their terminal outcomes; one active run per dispute, retired by bounded AI rerun retention once terminal.",
       "foreignKeys": {
-        "review_dispute_resolution_runs_latest_lifecycle_change_id_fkey": {
-          "columns": ["latest_lifecycle_change_id"],
+        "review_dispute_resolution_run_review_dispute_id_latest_lif_fkey": {
+          "columns": ["review_dispute_id", "latest_lifecycle_change_id"],
           "onDelete": "SET NULL",
           "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
+          "referencedColumns": ["review_dispute_id", "id"],
           "referencedTable": "review_dispute_lifecycle_changes",
           "validated": true
         },
@@ -133723,10 +133759,10 @@
       "comment": "Disputes filed by verified topic claimants against reviews of their topic. Resolved disputes and their lifecycle changes are deleted after 24 months; public annotations survive independently.",
       "foreignKeys": {
         "fk_review_disputes__ai_draft_run_id": {
-          "columns": ["ai_draft_run_id"],
+          "columns": ["id", "ai_draft_run_id"],
           "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
+          "referencedColumns": ["review_dispute_id", "id"],
           "referencedTable": "review_dispute_resolution_runs",
           "validated": true
         },
