@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { enqueueDispatchCommunityModerationSummaryEmails } from '../enqueues.mts'
+import { enqueueDispatchCommunityModerationSummaryEmails } from './enqueues.mts'
 import { backgroundQueue } from '@voucha/test-helpers/shared-background-queue'
 import { readEnqueuedJob } from '@voucha/test-helpers/queue-jobs'
 
