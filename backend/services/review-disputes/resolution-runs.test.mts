@@ -1,15 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import sql from 'sql-template-strings'
 import type { Job } from 'glide-mq'
 import type { DisputeResolutionJobData } from '@queues/ai-agents/types'
 import { processDisputeResolution } from '../../workers/ai-agents/processors/process-dispute-resolution.mts'
-import { write } from '@data-stores/psql'
 import {
   createTestUser,
   getReviewDisputeRunStatus,
   insertTestPost,
   insertTestPostReview,
   insertTestTopic,
+  retireTestReviewDisputeResolutionRun,
 } from '@voucha/test-helpers'
 import { createTopicClaim } from '@services/topic-claims/create'
 import { adminVerifyTopicClaim } from '@services/topic-claims/admin-verify'
@@ -72,9 +71,9 @@ describe('review dispute resolution runs', () => {
   it('admits one active run per dispute and returns it for duplicates', async () => {
     const { dispute } = await makeDispute()
     const admissions = await Promise.all([
-      admitReviewDisputeResolutionRun(write, dispute.id),
-      admitReviewDisputeResolutionRun(write, dispute.id),
-      admitReviewDisputeResolutionRun(write, dispute.id),
+      admitReviewDisputeResolutionRun(dispute.id),
+      admitReviewDisputeResolutionRun(dispute.id),
+      admitReviewDisputeResolutionRun(dispute.id),
     ])
     // Filing already admitted the automatic run, so every duplicate reads it.
     expect(admissions.every(admission => !admission.inserted)).toBe(true)
@@ -86,26 +85,26 @@ describe('review dispute resolution runs', () => {
 
   it('admits a new run once the earlier one ended', async () => {
     const { dispute } = await makeDispute()
-    const active = await admitReviewDisputeResolutionRun(write, dispute.id)
+    const active = await admitReviewDisputeResolutionRun(dispute.id)
     await createReviewDisputeDraft(draft(dispute.id, active.runId))
-    const next = await admitReviewDisputeResolutionRun(write, dispute.id)
+    const next = await admitReviewDisputeResolutionRun(dispute.id)
     expect(next.inserted).toBe(true)
     expect(next.runId).not.toBe(active.runId)
   })
 
   it('refuses admission after approval', async () => {
     const { dispute, staff } = await makeDispute()
-    const { runId } = await admitReviewDisputeResolutionRun(write, dispute.id)
+    const { runId } = await admitReviewDisputeResolutionRun(dispute.id)
     await createReviewDisputeDraft(draft(dispute.id, runId))
     await approveReviewDispute(staff.id, dispute.id)
-    await expect(admitReviewDisputeResolutionRun(write, dispute.id)).rejects.toMatchObject({
+    await expect(admitReviewDisputeResolutionRun(dispute.id)).rejects.toMatchObject({
       status: 422,
     })
   })
 
   it('keeps success when a delayed failure arrives', async () => {
     const { dispute } = await makeDispute()
-    const { runId } = await admitReviewDisputeResolutionRun(write, dispute.id)
+    const { runId } = await admitReviewDisputeResolutionRun(dispute.id)
     await createReviewDisputeDraft(draft(dispute.id, runId))
 
     expect(await markReviewDisputeResolutionRunsFailed([runId])).toBe(0)
@@ -121,12 +120,10 @@ describe('review dispute resolution runs', () => {
 
   it('keeps the saved draft run id after retention retires the run row', async () => {
     const { dispute } = await makeDispute()
-    const { runId } = await admitReviewDisputeResolutionRun(write, dispute.id)
+    const { runId } = await admitReviewDisputeResolutionRun(dispute.id)
     await createReviewDisputeDraft(draft(dispute.id, runId))
 
-    await write(
-      sql`/* retireTestRun */ DELETE FROM review_dispute_resolution_runs WHERE id = ${runId}::uuid`,
-    )
+    await retireTestReviewDisputeResolutionRun(runId)
 
     expect(await getReviewDisputeByIdFromPrimary(dispute.id)).toMatchObject({
       ai_draft_run_id: runId,
@@ -137,7 +134,7 @@ describe('review dispute resolution runs', () => {
 
   it('does not save a draft for a run that already failed', async () => {
     const { dispute } = await makeDispute()
-    const { runId } = await admitReviewDisputeResolutionRun(write, dispute.id)
+    const { runId } = await admitReviewDisputeResolutionRun(dispute.id)
     expect(await markReviewDisputeResolutionRunsFailed([runId])).toBe(1)
 
     expect(await createReviewDisputeDraft(draft(dispute.id, runId))).toBeNull()
@@ -148,21 +145,21 @@ describe('review dispute resolution runs', () => {
 
   it('expires a run the dispute no longer needs, releasing the next admission', async () => {
     const { dispute } = await makeDispute()
-    const { runId } = await admitReviewDisputeResolutionRun(write, dispute.id)
+    const { runId } = await admitReviewDisputeResolutionRun(dispute.id)
 
     await markReviewDisputeResolutionRunExpired(runId)
 
     expect(await getReviewDisputeRunStatus(runId)).toBe('expired')
     expect(await createReviewDisputeDraft(draft(dispute.id, runId))).toBeNull()
-    const next = await admitReviewDisputeResolutionRun(write, dispute.id)
+    const next = await admitReviewDisputeResolutionRun(dispute.id)
     expect(next.inserted).toBe(true)
   })
 
   it('expires a superseded run when the worker finds the dispute already approved', async () => {
     const { dispute, staff } = await makeDispute()
-    const first = await admitReviewDisputeResolutionRun(write, dispute.id)
+    const first = await admitReviewDisputeResolutionRun(dispute.id)
     await createReviewDisputeDraft(draft(dispute.id, first.runId))
-    const { runId } = await admitReviewDisputeResolutionRun(write, dispute.id)
+    const { runId } = await admitReviewDisputeResolutionRun(dispute.id)
     await approveReviewDispute(staff.id, dispute.id)
 
     await processDisputeResolution({

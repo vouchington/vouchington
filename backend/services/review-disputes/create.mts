@@ -155,7 +155,7 @@ async function insertReviewDispute(
 
   if (!result.isDuplicate) {
     // The run commits with the dispute; the enqueue follows the commit, whoever owns it.
-    const { runId } = await admitReviewDisputeResolutionRun(query, result.disputeId)
+    const { runId } = await admitReviewDisputeResolutionRun(result.disputeId, query)
     registerPostCommitAction(query, async () =>
       enqueueDisputeResolutionAsync(result.disputeId, runId),
     )

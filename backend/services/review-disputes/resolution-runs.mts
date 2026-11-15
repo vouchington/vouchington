@@ -38,8 +38,8 @@ async function readActiveRun(query: QueryExecutor, disputeId: string): Promise<s
  * active run can finish between the conflict and the read, so one more insert may be needed.
  */
 export async function admitReviewDisputeResolutionRun(
-  query: QueryExecutor,
   disputeId: string,
+  query: QueryExecutor = write,
 ): Promise<{ runId: string; inserted: boolean }> {
   const first = await insertRun(query, disputeId)
   if (first) return { runId: first, inserted: true }

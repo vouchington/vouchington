@@ -10,7 +10,6 @@ import type { PrivateUser } from '@services/users/types'
 import { createTopicClaim } from '@services/topic-claims/create'
 import { adminVerifyTopicClaim } from '@services/topic-claims/admin-verify'
 import { parseCreateReviewDisputeInput } from './parse.mts'
-import { write } from '@data-stores/psql'
 import { createReviewDispute } from './create.mts'
 import { admitReviewDisputeResolutionRun } from './resolution-runs.mts'
 import { createReviewDisputeDraft } from './create-dispute-draft.mts'
@@ -112,7 +111,7 @@ describe('review dispute lifecycle - send-requires-approval invariant', () => {
       aiInternalResponse: 'Approved internal notes.',
       model: 'test-model',
     })
-    const { runId: rerunId } = await admitReviewDisputeResolutionRun(write, dispute.id)
+    const { runId: rerunId } = await admitReviewDisputeResolutionRun(dispute.id)
     const approved = await approveReviewDispute(staff.id, dispute.id)
 
     await expect(

@@ -32,3 +32,10 @@ export async function admitTestReviewDisputeRun(disputeId: string): Promise<stri
   if (!rows[0]) throw new Error('Expected admitted dispute resolution run')
   return rows[0].id
 }
+
+/** Deletes a run row as the retention sweep does, leaving the dispute's saved draft untouched. */
+export async function retireTestReviewDisputeResolutionRun(runId: string): Promise<void> {
+  await write(sql`/* retireTestReviewDisputeResolutionRun */
+    DELETE FROM review_dispute_resolution_runs WHERE id = ${runId}::uuid
+  `)
+}

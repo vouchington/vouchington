@@ -25,7 +25,7 @@ export async function rerunReviewDisputeResolutionDraft(
       // Commit the run before enqueueing so the worker always finds it. A repeated request while
       // a run is active reads that run and enqueues it again under the same deterministic job id,
       // which is a no-op unless the first enqueue was lost.
-      const { runId } = await admitReviewDisputeResolutionRun(write, disputeId)
+      const { runId } = await admitReviewDisputeResolutionRun(disputeId, write)
       await enqueueDisputeResolutionQueued(disputeId, runId, staffUserId)
       return runId
     },
