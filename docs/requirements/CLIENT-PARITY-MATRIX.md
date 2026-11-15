@@ -260,6 +260,13 @@ Member list rows and the MCP `list_my_review_disputes` output are unchanged. Nat
 should read details the same way; that work is a vouchington-clients dependent and gates nothing
 here.
 
+Staff `GET /api/v1/appeals/:id` (and the staff appeal mutation responses and MCP `read_moderation_appeal`
+by-id) also carry `ai_draft_requested_run_status`, the status of the exact requested resolution run,
+or null while no run row exists. Staff `GET /api/v1/copyright-notices/review-queue` carries
+`form_review.screening.attempt_id` beside the existing `state`. Both are additive and read-only,
+so native clients can follow an admitted run with GET reads; their pending fixtures and labels land
+without lockstep.
+
 ## Copyright filing and staff matches
 
 The web notice form discloses whether a filing will be attributed to a signed-in user or a guest.

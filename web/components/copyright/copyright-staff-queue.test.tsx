@@ -104,6 +104,7 @@ describe('CopyrightStaffQueue', () => {
                   intake_id: 'intake-123',
                   source_kind: 'guest_form',
                   screening: {
+                    attempt_id: 'attempt-123',
                     state,
                     recommendation: state === 'completed' ? 'invalid_or_spam' : null,
                     rationale: state === 'completed' ? 'Needs review.' : null,
@@ -252,6 +253,7 @@ describe('CopyrightStaffQueue', () => {
                   intake_id: 'intake-456',
                   source_kind: 'guest_form',
                   screening: {
+                    attempt_id: 'attempt-456',
                     state: 'completed',
                     recommendation: 'invalid_or_spam',
                     rationale: 'Needs review.',

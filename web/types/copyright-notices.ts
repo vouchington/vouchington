@@ -104,7 +104,7 @@ export type CopyrightStaffQueueItem = {
     intake_id: string
     source_kind: string
     screening: {
-      attempt_id?: string
+      attempt_id: string
       state: 'pending' | 'failed' | 'completed'
       recommendation: string | null
       rationale: string | null

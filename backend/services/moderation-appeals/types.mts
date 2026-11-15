@@ -49,7 +49,7 @@ export type ModerationAppealTargetContext =
     }
 
 export type ModerationAppealResponse = ModerationAppeal & {
-  /** Status of the exact requested run; null when that run row no longer exists. */
+  /** Status of the exact requested run; null when no run row exists for the current request token. */
   ai_draft_requested_run_status: AppealResolutionRunStatus | null
   target_context?: ModerationAppealTargetContext | null
   staff_context?: {
