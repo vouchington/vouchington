@@ -133,6 +133,8 @@ function getStripeDisputeSettlement(
       }
     case 'needs_response':
     case 'under_review':
+    case 'appeal_needs_response':
+    case 'appeal_under_review':
     case 'warning_needs_response':
     case 'warning_under_review':
       return { ...settlement, refundDeferred: true }
