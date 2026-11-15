@@ -1117,7 +1117,7 @@ assert_postgres_server_matches_install() {
     prefix=$(brew --prefix postgresql@18 2>/dev/null) || return 0
     [ -x "$prefix/bin/postgres" ] || return 0
     installed=$("$prefix/bin/postgres" --version 2>/dev/null | awk '{print $3}')
-    running=$(PGCONNECT_TIMEOUT=5 psql --dbname=postgres --no-password -Atqc 'SHOW server_version' 2>/dev/null | awk '{print $1}')
+    running=$(PGCONNECT_TIMEOUT=5 psql -X --dbname=postgres --no-password -Atqc 'SHOW server_version' 2>/dev/null | awk '{print $1}')
     [ -n "$installed" ] && [ -n "$running" ] || return 0
     [ "$installed" = "$running" ] && return 0
     echo -e "${RED}Error: Homebrew PostgreSQL was upgraded to $installed, but the running server is still $running.${NC}" >&2
