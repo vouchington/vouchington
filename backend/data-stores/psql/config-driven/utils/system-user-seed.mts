@@ -35,3 +35,58 @@ SELECT '${username}', '${kind}', CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE LOWER(username) = LOWER('${username}'))
 ON CONFLICT ((LOWER(username))) WHERE username IS NOT NULL DO NOTHING;`
 }
+
+/** Build the canonical official-account seed for a trusted reserved identity. */
+export function buildSeedAdminUserSQL(username: string, emailAddress: string): string {
+  const escapedUsername = username.replaceAll("'", "''")
+  const escapedEmail = emailAddress.replaceAll("'", "''")
+  const escapedDomain = emailAddress.slice(emailAddress.lastIndexOf('@') + 1).replaceAll("'", "''")
+  const parts: string[] = ['-- Create official admin user and grant administrator role']
+
+  parts.push(buildSystemUserUpsertSQL(username, 'official'))
+
+  parts.push(`
+INSERT INTO url_hostnames (hostname, publicly_introduced_at) VALUES ('${escapedDomain}', CURRENT_TIMESTAMP)
+ON CONFLICT (hostname) DO NOTHING;
+UPDATE url_hostnames SET publicly_introduced_at = COALESCE(publicly_introduced_at, CURRENT_TIMESTAMP)
+WHERE hostname = '${escapedDomain}' AND publicly_introduced_at IS NULL;
+
+DO $email_capacity$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM users seeded_user
+    WHERE seeded_user.username = '${escapedUsername}' AND seeded_user.platform_account_kind = 'official'
+      AND NOT EXISTS (
+        SELECT 1 FROM user_email_addresses
+        WHERE user_id = seeded_user.id AND email_address = '${escapedEmail}'
+      )
+      AND (
+        SELECT COUNT(*) FROM (
+          SELECT id FROM user_email_addresses WHERE user_id = seeded_user.id LIMIT 10
+        ) existing_emails
+      ) >= 10
+  ) THEN
+    RAISE EXCEPTION 'Official account email limit reached' USING ERRCODE = '23514';
+  END IF;
+END;
+$email_capacity$;
+
+INSERT INTO user_email_addresses (user_id, email_address, email_domain_hostname_id, is_primary)
+SELECT u.id, '${escapedEmail}', email_domain.id, TRUE
+FROM users u CROSS JOIN url_hostnames email_domain
+WHERE u.username = '${escapedUsername}' AND u.platform_account_kind = 'official'
+  AND email_domain.hostname = '${escapedDomain}'
+  AND NOT EXISTS (
+    SELECT 1 FROM user_email_addresses
+    WHERE email_address = '${escapedEmail}' AND is_primary = TRUE
+  )
+ON CONFLICT (user_id, email_address) DO UPDATE SET is_primary = TRUE;`)
+
+  parts.push(`
+INSERT INTO user_roles (user_id, role_type_id)
+SELECT u.id, urt.id FROM users u, user_role_types urt
+WHERE u.username = '${escapedUsername}' AND u.platform_account_kind = 'official' AND urt.slug = 'administrator'
+ON CONFLICT (user_id, role_type_id) DO NOTHING;`)
+
+  return parts.join('\n')
+}

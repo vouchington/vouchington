@@ -1,5 +1,6 @@
 'use client'
 
+import { ApiError } from '@vouchington/api-client'
 import {
   useCallback,
   useEffect,
@@ -125,9 +126,11 @@ export function useMembershipRefundSubmission(options: {
           setReconciliationRetryAt(pendingAttempt.reconciliationRetryAt)
         }
         toast.error(
-          err instanceof Error
-            ? err.message
-            : t('extracted.admin.membershipRefundForm.failedToIssueRefund_9a1c4e77'),
+          err instanceof ApiError && err.code === 'MEMBERSHIP_REFUND_LIMIT_REACHED'
+            ? t('shared.membershipRefundLimit')
+            : err instanceof Error
+              ? err.message
+              : t('extracted.admin.membershipRefundForm.failedToIssueRefund_9a1c4e77'),
         )
       } finally {
         setIsSubmitting(false)

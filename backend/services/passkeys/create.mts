@@ -25,14 +25,9 @@ export async function createPasskey(
     await query(sql`/* createPasskey */ SELECT fn_lock_active_user_for_mutation(${userId})`)
     await query(sql`/* createPasskey: mark vote weight dirty */
     UPDATE users SET vote_weight_recalculated_at = NULL WHERE id = ${userId}`)
-    const { rows: existing } = await query(sql`/* createPasskey:capacity */
-      SELECT id FROM user_passkeys WHERE user_id = ${userId} LIMIT ${MAX_USER_PASSKEYS}
-    `)
-    if (existing.length >= MAX_USER_PASSKEYS)
-      throw createHttpError(400, 'Passkey limit reached', { code: PASSKEY_LIMIT_REACHED })
     const { rows } = await query<PublicPasskey>(sql`/* createPasskey */
       INSERT INTO user_passkeys (user_id, credential_id, public_key, counter, device_type, is_backed_up, transports, name)
-      VALUES (
+      SELECT
         ${userId},
         ${credential.id},
         ${publicKeyBuffer},
@@ -41,11 +36,16 @@ export async function createPasskey(
         ${credentialBackedUp},
         ${credential.transports ?? null},
         ${name}
-      )
+      WHERE (
+        SELECT COUNT(*) FROM (
+          SELECT id FROM user_passkeys WHERE user_id = ${userId} LIMIT ${MAX_USER_PASSKEYS}
+        ) existing_passkeys
+      ) < ${MAX_USER_PASSKEYS}
       RETURNING id, name, device_type, is_backed_up, created_at, last_used_at
     `)
     const passkey = rows[0]
-    if (!passkey) throw new Error('createPasskey: INSERT returned no rows')
+    if (!passkey)
+      throw createHttpError(400, 'Passkey limit reached', { code: PASSKEY_LIMIT_REACHED })
 
     registerPostCommitAction(query, async () => {
       await enqueueRecalculateUserVoteWeightBestEffort(userId)

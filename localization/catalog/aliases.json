@@ -9526,6 +9526,8 @@
 {"alias":"shared.hackerNews.seenOnHeading","consumer":"web","copyId":"copy.shared.hackerNews.seenOnHeading"},
 {"alias":"shared.hackerNews.storySummary","consumer":"web","copyId":"copy.shared.hackerNews.storySummary"},
 {"alias":"shared.images.uploadPreviewUnavailable","consumer":"web","copyId":"copy.images.uploadPreviewUnavailable"},
+{"alias":"shared.membershipGrantLimit","consumer":"web","copyId":"copy.shared.membershipGrantLimit"},
+{"alias":"shared.membershipRefundLimit","consumer":"web","copyId":"copy.shared.membershipRefundLimit"},
 {"alias":"shared.moderation.deletedCommunity","consumer":"web","copyId":"copy.shared.moderation.deletedCommunity"},
 {"alias":"shared.moderation.deletedContent","consumer":"web","copyId":"copy.shared.moderation.deletedContent"},
 {"alias":"shared.moderation.postEntityType","consumer":"web","copyId":"copy.native.dotnet.posts.post"},

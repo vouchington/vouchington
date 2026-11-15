@@ -6301,6 +6301,8 @@
 {"id":"copy.shared.hackerNews.seenOnCount","value":"Seen on Hacker News · {count}"},
 {"id":"copy.shared.hackerNews.seenOnHeading","value":"Seen on Hacker News"},
 {"id":"copy.shared.hackerNews.storySummary","value":"{points} points · {comments} comments"},
+{"id":"copy.shared.membershipGrantLimit","value":"This user has reached the outstanding membership grant limit. Review their existing grants before issuing another."},
+{"id":"copy.shared.membershipRefundLimit","value":"This charge has reached the local refund limit. Review the charge with support before taking further action."},
 {"id":"copy.shared.moderation.deletedCommunity","value":"Deleted community"},
 {"id":"copy.shared.moderation.deletedContent","value":"Deleted content"},
 {"id":"copy.shared.moderation.privateContent","value":"Private content"},

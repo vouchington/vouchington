@@ -2,6 +2,10 @@ import { createStripeRefund } from '../modules/stripe/refunds.mts'
 import { createProviderReplay } from './provider-replay.mts'
 import { createReplayStripeClient, loadStripeFixture } from './stripe-replay.mts'
 
+class StripeReplayConnectionClosedError extends Error {
+  readonly code = 'ECONNRESET'
+}
+
 /** A real SDK error whose provider-request history is observed by the production integration. */
 export async function createTestStripeRefundRejection(
   options: { priorUnknownExecution?: boolean } = {},
@@ -12,7 +16,7 @@ export async function createTestStripeRefundRejection(
   const client = createReplayStripeClient(async (input, init) => {
     if (options.priorUnknownExecution && !failedConnection) {
       failedConnection = true
-      throw Object.assign(new Error('Connection closed after dispatch'), { code: 'ECONNRESET' })
+      throw new StripeReplayConnectionClosedError('Connection closed after dispatch')
     }
     return replay.fetch(input, init)
   })

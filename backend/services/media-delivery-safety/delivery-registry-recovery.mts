@@ -12,6 +12,21 @@ export async function repairFailedImageDeliveryMutation(
 ): Promise<void> {
   if (!isMediaDeliveryRegistryPublicationEnabled() || recordIds?.length === 0) return
   if (!input.postIds?.length && !input.imageIds?.length) return
+  const rows = await listFailedImageDeliveryRepairMarkers(input, recordIds)
+  // Markers beyond the page stay durable; the bounded repair worker consumes them.
+  await reconcileDeliveryRepairMarkers(rows)
+  for (const marker of rows) {
+    // oxlint-disable-next-line no-await-in-loop -- projection follows committed exact-authority repair.
+    await processMediaDeliveryRegistryRecord(marker.media_delivery_registry_record_id)
+  }
+}
+
+/** Selects bounded durable repair work without publishing or consuming its tokens. */
+export async function listFailedImageDeliveryRepairMarkers(
+  input: { postIds?: string[]; imageIds?: string[] },
+  recordIds?: readonly string[],
+): Promise<{ media_delivery_registry_record_id: string; marker_token: string }[]> {
+  if (recordIds?.length === 0 || (!input.postIds?.length && !input.imageIds?.length)) return []
   // Walk durable work first: retained bindings can grow without bound for one image.
   // The existing reconciler drains this same oldest-first index, so deferred markers
   // advance naturally as earlier tokens are consumed.
@@ -27,22 +42,22 @@ export async function repairFailedImageDeliveryMutation(
     ORDER BY created_at, media_delivery_registry_record_id
     LIMIT ${getMediaDeliverySafetyWorkLimit('recovery_page_size')}
   `)
-  if (inspected.length === 0) return
-  const { rows: owned } = await write<{ media_delivery_registry_record_id: string }>(sql`
+  if (inspected.length === 0) return []
+  const statement = sql`
     /* repairFailedImageDeliveryMutation */
     SELECT registry.id AS media_delivery_registry_record_id
-    FROM media_delivery_registry_records registry
-    LEFT JOIN image_placements binding ON binding.placement_id = registry.placement_id
-    WHERE registry.id = ANY(${inspected.map(marker => marker.media_delivery_registry_record_id)}::uuid[])
-      AND (registry.image_id = ANY(${input.imageIds ?? []}::uuid[])
-        OR binding.post_id = ANY(${input.postIds ?? []}::uuid[]))
-  `)
+    FROM media_delivery_registry_records registry`
+  statement.append(
+    sql` WHERE registry.id = ANY(${inspected.map(marker => marker.media_delivery_registry_record_id)}::uuid[]) AND `,
+  )
+  // A scalar lookup on the unique placement key keeps each ownership probe to one row.
+  // JOIN and EXISTS plans scan/hash all retained bindings for the requested post.
+  if (input.postIds?.length)
+    statement.append(sql`(registry.image_id = ANY(${input.imageIds ?? []}::uuid[])
+      OR (SELECT binding.post_id FROM image_placements binding
+        WHERE binding.placement_id = registry.placement_id) = ANY(${input.postIds}::uuid[]))`)
+  else statement.append(sql`registry.image_id = ANY(${input.imageIds ?? []}::uuid[])`)
+  const { rows: owned } = await write<{ media_delivery_registry_record_id: string }>(statement)
   const ownedIds = new Set(owned.map(record => record.media_delivery_registry_record_id))
-  const rows = inspected.filter(marker => ownedIds.has(marker.media_delivery_registry_record_id))
-  // Markers beyond the page stay durable; the bounded repair worker consumes them.
-  await reconcileDeliveryRepairMarkers(rows)
-  for (const marker of rows) {
-    // oxlint-disable-next-line no-await-in-loop -- projection follows committed exact-authority repair.
-    await processMediaDeliveryRegistryRecord(marker.media_delivery_registry_record_id)
-  }
+  return inspected.filter(marker => ownedIds.has(marker.media_delivery_registry_record_id))
 }

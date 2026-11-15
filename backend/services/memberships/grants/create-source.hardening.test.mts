@@ -70,11 +70,14 @@ describe('grant issuer snapshots', () => {
     const sku = await createTestSku({ plan: 'plus' })
     const emailIssuer = await createTestUser({ noUsername: true })
     const idIssuer = await createTestUserDirect({ noUsername: true })
-    const [usernameGrant, emailGrant, idGrant] = await Promise.all([
-      grantMembership(admin.id, (await createTestUser()).id, 'plus', sku.id, 30),
-      grantMembership(emailIssuer.id, (await createTestUser()).id, 'plus', sku.id, 30),
-      grantMembership(idIssuer.id, (await createTestUser()).id, 'plus', sku.id, 30),
+    const [usernameRecipient, emailRecipient, idRecipient] = await Promise.all([
+      createTestUser(),
+      createTestUser(),
+      createTestUser(),
     ])
+    const usernameGrant = await grantMembership(admin.id, usernameRecipient.id, 'plus', sku.id, 30)
+    const emailGrant = await grantMembership(emailIssuer.id, emailRecipient.id, 'plus', sku.id, 30)
+    const idGrant = await grantMembership(idIssuer.id, idRecipient.id, 'plus', sku.id, 30)
 
     await expect(getTestMembershipRaw(usernameGrant.id)).resolves.toMatchObject({
       issuer_snapshot: `@${admin.username}`,

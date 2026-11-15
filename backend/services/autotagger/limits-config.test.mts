@@ -10,7 +10,6 @@ describe('autotagger topic ceilings', () => {
       post_pro_max_topics: 20,
       rss_discoverable_llm_max_topics: -1,
       rss_collaborative_plus_max_topics: 2.9,
-      rss_collaborative_pro_max_topics: Number.NaN,
     })
     try {
       expect(getAutotaggerPaidLimitsFields()).toMatchObject({

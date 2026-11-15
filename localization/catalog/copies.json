@@ -6301,6 +6301,8 @@
 {"descriptor":null,"id":"copy.shared.hackerNews.seenOnCount"},
 {"descriptor":null,"id":"copy.shared.hackerNews.seenOnHeading"},
 {"descriptor":null,"id":"copy.shared.hackerNews.storySummary"},
+{"descriptor":null,"id":"copy.shared.membershipGrantLimit"},
+{"descriptor":null,"id":"copy.shared.membershipRefundLimit"},
 {"descriptor":null,"id":"copy.shared.moderation.deletedCommunity"},
 {"descriptor":null,"id":"copy.shared.moderation.deletedContent"},
 {"descriptor":null,"id":"copy.shared.moderation.privateContent"},

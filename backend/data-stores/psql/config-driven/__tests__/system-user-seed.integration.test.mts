@@ -14,8 +14,8 @@ import {
   countLocalEmailsForUser,
 } from '../../../../test-helpers/data-stores/psql/email-addresses.mts'
 import { runConfigDrivenStatementsInTransaction } from '../../migration-runner/config-driven-statements.mts'
-import { buildSystemUserUpsertSQL } from '../utils/system-user-seed.mts'
-import generateSeedAdminUserSQL, { buildSeedAdminUserSQL } from '../0010-00-02-seed-admin-user.mts'
+import { buildSystemUserUpsertSQL, buildSeedAdminUserSQL } from '../utils/system-user-seed.mts'
+import generateSeedAdminUserSQL from '../0010-00-02-seed-admin-user.mts'
 
 // Any authenticated user can rename themselves via PATCH /api/v1/my/identity (no reserved-name
 // list at that layer), and db:migrate reruns these generators on every deploy, granting
