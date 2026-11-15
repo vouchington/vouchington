@@ -2031,3 +2031,11 @@ CREATE OR REPLACE FUNCTION public.fn_wilson_score_lower_bound(pos double precisi
  LANGUAGE sql
  IMMUTABLE
 ```
+
+## `record_vanished_reporting_day`
+
+```sql
+CREATE OR REPLACE FUNCTION public.record_vanished_reporting_day()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```

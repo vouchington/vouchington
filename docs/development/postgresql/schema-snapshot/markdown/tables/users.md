@@ -129,6 +129,7 @@ _none_
 
 **Triggers:**
 
+- `record_reporting_deleted_user_day`: `CREATE TRIGGER record_reporting_deleted_user_day AFTER DELETE ON public.users FOR EACH ROW EXECUTE FUNCTION record_vanished_reporting_day('user_deletion')`
 - `trigger_handoff_deleted_user_image_surfaces`: `CREATE TRIGGER trigger_handoff_deleted_user_image_surfaces BEFORE DELETE ON public.users FOR EACH ROW EXECUTE FUNCTION fn_project_handoff_deleted_user_image_surfaces()`
 - `trigger_register_retained_user_identity`: `CREATE TRIGGER trigger_register_retained_user_identity BEFORE INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('user')`
 - `trigger_retire_deleted_user_image_surfaces`: `CREATE TRIGGER trigger_retire_deleted_user_image_surfaces AFTER UPDATE OF deleted_at ON public.users FOR EACH ROW EXECUTE FUNCTION fn_project_retire_deleted_user_image_surfaces()`

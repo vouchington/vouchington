@@ -57,4 +57,6 @@ _none_
 
 **Triggers:**
 
+- `record_reporting_deleted_ballot_day`: `CREATE TRIGGER record_reporting_deleted_ballot_day AFTER DELETE ON public.post_votes FOR EACH ROW EXECUTE FUNCTION record_vanished_reporting_day('post_vote_deletion')`
+- `record_reporting_historical_ballot_day`: `CREATE TRIGGER record_reporting_historical_ballot_day AFTER INSERT ON public.post_votes FOR EACH ROW EXECUTE FUNCTION record_vanished_reporting_day('post_vote_creation')`
 - `trigger_post_votes__ua_release`: `CREATE TRIGGER trigger_post_votes__ua_release AFTER DELETE ON public.post_votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()`
