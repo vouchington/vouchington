@@ -219,7 +219,7 @@ CREATE INDEX IF NOT EXISTS idx_review_dispute_resolution_runs__lifecycle_change_
 
 ALTER TABLE review_disputes
   ADD CONSTRAINT fk_review_disputes__ai_draft_run_id
-  FOREIGN KEY (ai_draft_run_id) REFERENCES review_dispute_resolution_runs (id) NOT VALID;
+  FOREIGN KEY (ai_draft_run_id) REFERENCES review_dispute_resolution_runs (id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE review_disputes
   VALIDATE CONSTRAINT fk_review_disputes__ai_draft_run_id;
 
