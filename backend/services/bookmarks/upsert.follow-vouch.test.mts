@@ -1,5 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import { bookmarkEntity, unbookmarkEntity } from './upsert.mts'
+import { bookmarkEntities, bookmarkEntity, unbookmarkEntity } from './upsert.mts'
 import { getBookmarksForEntity } from './get.mts'
 import {
   getUserVouchElectionVote,
@@ -151,17 +151,25 @@ describe('Follow -> trust-vote coupling (issue #7257)', () => {
     // instead of 31 concurrent createTestUser pools that exhaust CI postgres (53300).
     const targets = await createTestUsersDirect(31)
 
-    for (const target of targets) {
-      await bookmarkEntity(user, 'user', { id: target.id }, 'follow')
-    }
+    // Batch the first 30 real follows to avoid repeated database admissions and queue writes;
+    // the separate 31st call proves the follower's limiter budget persists across calls.
+    const relations = await bookmarkEntities(
+      user,
+      'user',
+      targets.slice(0, 30).map(target => ({ id: target.id })),
+      'follow',
+    )
+    expect(relations).toHaveLength(30)
+    const lastTarget = targets[30]!
+    await bookmarkEntity(user, 'user', { id: lastTarget.id }, 'follow')
 
     const votes = await Promise.all(
       targets.map(target => getUserVouchElectionVote(user.id, target.id)),
     )
     expect(votes.filter(vote => vote?.choice === 'like')).toHaveLength(30)
+    expect(votes[30]).toBeNull()
 
     // The 31st follow relation itself still succeeds -- only the vouch cast is throttled.
-    const lastTarget = targets[30]!
     const bookmarks = await getBookmarksForEntity(user, 'user', { id: lastTarget.id })
     expect(bookmarks.follow).toBe(true)
   })
