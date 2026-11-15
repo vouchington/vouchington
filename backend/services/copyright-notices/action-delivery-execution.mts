@@ -9,6 +9,7 @@ import type { CopyrightActionDeliveryDependencies } from './action-delivery-depe
 import { compensateCopyrightActionFailure } from './action-delivery-compensation.mts'
 import { prepublishCopyrightImagePlacementDenial } from './action-delivery-edge.mts'
 import { finalizeCopyrightActionAfterDelivery } from './action-delivery-finalization.mts'
+import { reconcilePreemptedCopyrightRestore } from './action-delivery-reconcile-preemption.mts'
 import {
   completeCopyrightActionIntentInTransaction,
   hasCopyrightActionBlocker,
@@ -57,7 +58,11 @@ export async function executeCopyrightActionIntent(
       tuple,
     )
     if (finalized === true) return 'applied'
-    if (finalized === 'not_claimed') return 'not_claimed'
+    if (finalized === 'not_claimed') {
+      if (legal.action === 'restore' && mediaDeliveryRegistryRecordId)
+        await reconcilePreemptedCopyrightRestore(intent.id, mediaDeliveryRegistryRecordId)
+      return 'not_claimed'
+    }
     // Finalization already denied and evicted a live restored placement. A lost lease or a
     // deleted placement still gets the edge denial; the lease owner or deletion owns eviction.
     if (legal.action === 'restore' && finalized !== 'denied')
