@@ -4665,7 +4665,7 @@
 {"id":"copy.native.mcpFacts.financialProfile.cardsOpened24m","value":"Cartes ouvertes (24 mois)"},
 {"id":"copy.native.mcpFacts.financialProfile.creditScoreRange","value":"Plage de score de crédit"},
 {"id":"copy.native.mcpFacts.financialProfile.empty","value":"Aucun profil financier"},
-{"id":"copy.native.mcpFacts.financialProfile.hardInquiries12m","value":"Demandes de crédit (12 mois)"},
+{"id":"copy.native.mcpFacts.financialProfile.hardInquiries12m","value":"Vérifications de crédit approfondies (12 mois)"},
 {"id":"copy.native.mcpFacts.financialProfile.statedIncomeRange","value":"Plage de revenus déclarés"},
 {"id":"copy.native.mcpFacts.financialProfile.totalCreditLimit","value":"Limite de crédit total"},
 {"id":"copy.native.mcpFacts.financialProfile.yearsOfCreditHistory","value":"Années d’historique de crédit"},
