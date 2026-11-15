@@ -22,39 +22,22 @@ export async function queryContributionAdmissionCapacityStatus(
         ('global_limit'::text, NULL::contribution_policy_sources, NULL::post_admission_quota_consumption_modes, ${policy.global.daily.limit}::integer, ${policy.global.daily.windowSeconds}::integer),
         ('type_limit'::text, ${source}::contribution_policy_sources, 'all_windows'::post_admission_quota_consumption_modes, ${policy.type.short.limit}::integer, ${policy.type.short.windowSeconds}::integer),
         ('type_limit'::text, ${source}::contribution_policy_sources, NULL::post_admission_quota_consumption_modes, ${policy.type.daily.limit}::integer, ${policy.type.daily.windowSeconds}::integer)
-    ), actor_consumptions AS MATERIALIZED (
-      SELECT committed_at, reservation_id, source, consumption_mode
-      FROM post_admission_quota_consumptions
-      CROSS JOIN observed_at
-      WHERE actor_user_id = ${actorId}
-        AND committed_at >= observed_at.value - (
-          (SELECT MAX(window_seconds) FROM windows WHERE capacity_limit <> -1) * INTERVAL '1 second'
-        )
     ), exhausted AS (
       SELECT windows.reason, windows.window_seconds, capacity.retry_at, observed_at.value AS observed_at
       FROM windows
       CROSS JOIN observed_at
       CROSS JOIN LATERAL (
-        WITH matching AS MATERIALIZED (
-          SELECT committed_at, reservation_id
-          FROM actor_consumptions
-          WHERE committed_at >= observed_at.value - (windows.window_seconds * INTERVAL '1 second')
+        SELECT COUNT(*) AS used, MIN(committed_at) AS retry_at
+        FROM (
+          SELECT committed_at
+          FROM post_admission_quota_consumptions
+          WHERE actor_user_id = ${actorId}
+            AND committed_at >= observed_at.value - (windows.window_seconds * INTERVAL '1 second')
             AND (windows.scoped_source IS NULL OR source = windows.scoped_source)
             AND (windows.consumption_mode IS NULL OR consumption_mode = windows.consumption_mode)
-        )
-        SELECT COUNT(*) AS used,
-          CASE WHEN COUNT(*) >= windows.capacity_limit THEN (
-            SELECT committed_at
-            FROM (
-              SELECT committed_at, reservation_id
-              FROM matching
-              ORDER BY committed_at DESC, reservation_id DESC
-              LIMIT windows.capacity_limit
-            ) latest_within_limit
-            ORDER BY committed_at, reservation_id
-            LIMIT 1
-          ) END AS retry_at
-        FROM matching
+          ORDER BY committed_at DESC, reservation_id DESC
+          LIMIT GREATEST(windows.capacity_limit, 0)
+        ) latest_within_limit
       ) capacity
       WHERE windows.capacity_limit <> -1 AND capacity.used >= windows.capacity_limit
     )

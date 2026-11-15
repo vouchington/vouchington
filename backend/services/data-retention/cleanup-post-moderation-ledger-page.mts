@@ -132,7 +132,7 @@ async function runPostModerationDuePage(
              AND retention_due_at < uuid_extract_timestamp($1::uuid)
              AND (retention_due_at, id) > ($2::timestamptz, $3::uuid)
              AND disposition = 'pass' AND source <> 'staff' AND evidence <> '{}'::jsonb
-           ${postIds === undefined ? '' : 'AND version_id IN (SELECT id FROM post_moderation_versions WHERE post_id = ANY($5::uuid[]))\n           '}ORDER BY retention_due_at, id LIMIT $4`,
+           ${postIds === undefined ? '' : 'AND EXISTS (SELECT 1 FROM post_moderation_versions version WHERE version.id = post_moderation_dispositions.version_id AND version.post_id = ANY($5::uuid[]))\n           '}ORDER BY retention_due_at, id LIMIT $4`,
           [
             upperId,
             afterDueAt,

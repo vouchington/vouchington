@@ -77,6 +77,63 @@ describe('post moderation ledger progress', () => {
       { retained: true },
       {},
     ])
+    const anotherPostId = await insertTestPost({
+      createdById: user.id,
+      slug: `mod-retention-included-${randomUUID()}`,
+      title: 'Included pass evidence',
+      markdown: 'body',
+      clearanceStatus: 'pending',
+    })
+    await setPostLLMModerationContentSha256(anotherPostId, digest)
+    const anotherVersionId = uuidv7({ msecs: at(96).getTime() })
+    const excludedPostId = await insertTestPost({
+      createdById: user.id,
+      slug: `mod-retention-excluded-${randomUUID()}`,
+      title: 'Excluded pass evidence',
+      markdown: 'body',
+      clearanceStatus: 'pending',
+    })
+    await setPostLLMModerationContentSha256(excludedPostId, digest)
+    const excludedVersionId = uuidv7({ msecs: at(96).getTime() })
+    const anotherDispositionId = uuidv7({ msecs: at(92).getTime() })
+    const excludedDispositionId = uuidv7({ msecs: at(92).getTime() })
+    for (const [id, ownerPostId] of [
+      [anotherVersionId, anotherPostId],
+      [excludedVersionId, excludedPostId],
+    ] as const) {
+      await insertTestPostModerationVersionAt({
+        id,
+        postId: ownerPostId,
+        contentSha256: digest,
+        policyRevision: POST_MODERATION_POLICY_REVISION,
+      })
+    }
+    for (const [id, ownerVersionId] of [
+      [anotherDispositionId, anotherVersionId],
+      [excludedDispositionId, excludedVersionId],
+    ] as const) {
+      await insertTestPostModerationDispositionAt({
+        id,
+        versionId: ownerVersionId,
+        source: 'openai_omni',
+        disposition: 'pass',
+        evidence: { retained: true },
+      })
+    }
+    await cleanupPostModerationLedger({
+      ...options,
+      postIds: [postId, anotherPostId],
+      lowerBoundDate: at(93),
+      batchSize: 3,
+    })
+    const targeted = await getTestPostModerationRetentionState({
+      versionIds: [anotherVersionId, excludedVersionId],
+      dispositionIds: [anotherDispositionId, excludedDispositionId],
+    })
+    expect(targeted.dispositions.find(row => row.id === anotherDispositionId)?.evidence).toEqual({})
+    expect(targeted.dispositions.find(row => row.id === excludedDispositionId)?.evidence).toEqual({
+      retained: true,
+    })
   })
 
   it('does not page or lock posts for unchanged current versions on repeated passes', async () => {

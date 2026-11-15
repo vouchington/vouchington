@@ -75,11 +75,16 @@ export async function upsertAgentModerationElectionVotes(
       agent_moderation_id: string
       score: ElectionVoteScore
     }>(sql`/* upsertAgentModerationElectionVotes:previous */
-    SELECT DISTINCT ON (agent_moderation_id) agent_moderation_id, score
-    FROM agent_moderation_votes
-    WHERE user_id = ${userId}
-      AND agent_moderation_id = ANY(${values.map(vote => vote.agentModerationId)}::uuid[])
-    ORDER BY agent_moderation_id, id DESC
+    SELECT target.agent_moderation_id, previous.score
+    FROM UNNEST(${values.map(vote => vote.agentModerationId)}::uuid[]) AS target(agent_moderation_id)
+    JOIN LATERAL (
+      SELECT ballot.score
+      FROM agent_moderation_votes ballot
+      WHERE ballot.user_id = ${userId}
+        AND ballot.agent_moderation_id = target.agent_moderation_id
+      ORDER BY ballot.id DESC
+      LIMIT 1
+    ) previous ON TRUE
   `)
     const previousScores = new Map(
       previousVotes.map(vote => [vote.agent_moderation_id, vote.score]),
@@ -92,12 +97,6 @@ export async function upsertAgentModerationElectionVotes(
       ${values.map(v => v.agentModerationId)}::uuid[],
       ${values.map(v => v.score)}::integer[]
     ) AS v(user_id, agent_moderation_id, score)
-  ), previous_votes AS (
-    SELECT DISTINCT ON (agent_moderation_id) agent_moderation_id, score
-    FROM agent_moderation_votes
-    WHERE user_id = ${userId}
-      AND agent_moderation_id = ANY(${values.map(vote => vote.agentModerationId)}::uuid[])
-    ORDER BY agent_moderation_id, id DESC
   )
   INSERT INTO agent_moderation_votes (user_id, agent_moderation_id, post_id, score, ip_address, device_id, session_id, user_agent_string_id)
   SELECT input_votes.user_id, am.id, am.post_id, input_votes.score,
@@ -105,8 +104,15 @@ export async function upsertAgentModerationElectionVotes(
   FROM input_votes
   -- no-mistakes-disable-next-line postgres-required-predicates: vote input carries moderation IDs but no post IDs; use the indexed ID lookup across post partitions to obtain each ballot's post_id
   JOIN agent_moderations am ON am.id = input_votes.agent_moderation_id AND am.deleted_at IS NULL
-  LEFT JOIN previous_votes ON previous_votes.agent_moderation_id = input_votes.agent_moderation_id
-  WHERE input_votes.score IS DISTINCT FROM previous_votes.score
+  LEFT JOIN LATERAL (
+    SELECT ballot.score
+    FROM agent_moderation_votes ballot
+    WHERE ballot.user_id = input_votes.user_id
+      AND ballot.agent_moderation_id = input_votes.agent_moderation_id
+    ORDER BY ballot.id DESC
+    LIMIT 1
+  ) previous_vote ON TRUE
+  WHERE input_votes.score IS DISTINCT FROM previous_vote.score
   ORDER BY input_votes.agent_moderation_id
   RETURNING agent_moderation_id AS entity_id, post_id, user_id, score, created_at
   `)

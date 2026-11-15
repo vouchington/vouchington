@@ -37,7 +37,7 @@ CREATE INDEX IF NOT EXISTS idx_community_restrictions__community__id
   ON community_restrictions (community_id, id DESC);
 
 CREATE INDEX IF NOT EXISTS idx_community_restrictions__active_lookup
-  ON community_restrictions (community_id, restriction_type)
+  ON community_restrictions (community_id, restriction_type, activated_at, id)
   WHERE lifted_at IS NULL;
 
 COMMENT ON TABLE community_restrictions IS 'Tracks temporary community-wide moderation restrictions for Raid Mode. NULL lifted_at means the restriction was not manually lifted; expires_at may still make it inactive.';
