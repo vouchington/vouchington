@@ -67,13 +67,8 @@ export async function readBoilerplateCrawlMetadata(
       c.html_snapshot_uploaded_at, c.html_sha256 IS NOT NULL AS has_html
     FROM unnest(${selected.map(crawl => crawl.url_id)}::uuid[],
       ${selected.map(crawl => crawl.id)}::uuid[]) AS selected(url_id, crawl_id)
-    LEFT JOIN LATERAL (
-      SELECT crawl.id, crawl.response_status_code, crawl.completed_at,
-        crawl.html_snapshot_uploaded_at, crawl.html_sha256
-      FROM crawls crawl WHERE crawl.id = selected.crawl_id
-        AND crawl.url_id = selected.url_id AND crawl.id >= ${floor}::uuid
-      LIMIT 1
-    ) c ON TRUE
+    LEFT JOIN crawls c ON c.id = selected.crawl_id
+      AND c.url_id = selected.url_id AND c.id >= ${floor}::uuid
     LIMIT ${selected.length}
   `,
     undefined,
