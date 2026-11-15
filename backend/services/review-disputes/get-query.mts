@@ -8,7 +8,7 @@ export const DISPUTE_SELECT = sql`
     ELSE 'resolved'
   END AS status,
   rd.recommended_action, rd.ai_public_response, rd.ai_internal_response, rd.model, rd.ai_drafted_at,
-  saved_run.id AS ai_draft_run_id,
+  rd.ai_draft_run_id,
   requested_run.id AS ai_draft_requested_run_id,
   requested_run.status AS ai_draft_requested_run_status,
   rd.public_response, rd.internal_notes, rd.drafted_at, rd.edited_at, rd.edited_by_id,
@@ -73,13 +73,6 @@ export const DISPUTE_JOINS = sql`
     ORDER BY run.id DESC
     LIMIT 1
   ) requested_run ON true
-  LEFT JOIN LATERAL (
-    SELECT run.id
-    FROM review_dispute_resolution_runs run
-    WHERE run.review_dispute_id = rd.id AND run.completed_at IS NOT NULL
-    ORDER BY run.id DESC
-    LIMIT 1
-  ) saved_run ON true
 `
 
 /**

@@ -31,6 +31,7 @@ export async function createReviewDisputeDraft(input: AiDraftInput): Promise<Rev
           ai_internal_response = ${input.aiInternalResponse},
           model = ${input.model},
           ai_drafted_at = ${now},
+          ai_draft_run_id = ${input.runId}::uuid,
           public_response = ${input.aiPublicResponse},
           drafted_at = COALESCE(drafted_at, ${now}),
           latest_lifecycle_change_id = (SELECT id FROM lifecycle_change_id)

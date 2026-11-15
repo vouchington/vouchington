@@ -46,8 +46,11 @@ export async function admitReviewDisputeResolutionRun(
   const active = await readActiveRun(query, disputeId)
   if (active) return { runId: active, inserted: false }
   const second = await insertRun(query, disputeId)
-  assert(second, 422, 'Dispute is no longer eligible for an AI rerun')
-  return { runId: second, inserted: true }
+  if (second) return { runId: second, inserted: true }
+  // A concurrent admission may have inserted the replacement run first; read it.
+  const replacement = await readActiveRun(query, disputeId)
+  assert(replacement, 422, 'Dispute is no longer eligible for an AI rerun')
+  return { runId: replacement, inserted: false }
 }
 
 /** True while the run is still the one admitted request that may save a draft. */

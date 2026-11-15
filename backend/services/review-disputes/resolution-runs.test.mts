@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import sql from 'sql-template-strings'
 import type { Job } from 'glide-mq'
 import type { DisputeResolutionJobData } from '@queues/ai-agents/types'
 import { processDisputeResolution } from '../../workers/ai-agents/processors/process-dispute-resolution.mts'
@@ -115,6 +116,22 @@ describe('review dispute resolution runs', () => {
       ai_draft_run_id: runId,
       ai_draft_requested_run_id: runId,
       ai_draft_requested_run_status: 'succeeded',
+    })
+  })
+
+  it('keeps the saved draft run id after retention retires the run row', async () => {
+    const { dispute } = await makeDispute()
+    const { runId } = await admitReviewDisputeResolutionRun(write, dispute.id)
+    await createReviewDisputeDraft(draft(dispute.id, runId))
+
+    await write(
+      sql`/* retireTestRun */ DELETE FROM review_dispute_resolution_runs WHERE id = ${runId}::uuid`,
+    )
+
+    expect(await getReviewDisputeByIdFromPrimary(dispute.id)).toMatchObject({
+      ai_draft_run_id: runId,
+      ai_draft_requested_run_id: null,
+      ai_draft_requested_run_status: null,
     })
   })
 

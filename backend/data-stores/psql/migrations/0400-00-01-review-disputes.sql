@@ -57,6 +57,9 @@ CREATE TABLE IF NOT EXISTS review_disputes (
   ai_internal_response text,
   model text,
   ai_drafted_at timestamptz,
+  -- Opaque identity of the run that saved this draft; the run row itself is retired by retention.
+  -- guardrails-disable-next-line uuid-must-be-key
+  ai_draft_run_id uuid,
 
   -- Human-owned outbound message (the ONLY thing ever delivered to the disputant)
   public_response text,
@@ -265,6 +268,7 @@ COMMENT ON COLUMN review_disputes.public_response IS 'Human-owned public message
 COMMENT ON COLUMN review_disputes.approved_at IS 'When a moderator approved the public_response for delivery.';
 COMMENT ON COLUMN review_disputes.sent_at IS 'When the approved public_response was delivered to the disputant.';
 COMMENT ON COLUMN review_disputes.model IS 'OpenAI model used for the AI draft.';
+COMMENT ON COLUMN review_disputes.ai_draft_run_id IS 'Identity of the resolution run that saved the current AI draft; retained as plain current state after retention retires the run row, so it is not a foreign key.';
 COMMENT ON COLUMN review_disputes.ai_drafted_at IS 'When the AI agent drafted the recommended_action and ai_public_response.';
 COMMENT ON COLUMN review_disputes.internal_notes IS 'Internal moderator notes, never shared with the disputant.';
 COMMENT ON COLUMN review_disputes.drafted_at IS 'When the moderator first seeded public_response from the AI draft.';

@@ -16,7 +16,7 @@ export type ReviewDisputePostContent = {
 
 export type ReviewDisputeResponse = ReviewDispute & {
   post_label: string
-  /** Run that saved the current draft; null once retention retired it or before any draft. */
+  /** Run that saved the current draft; null before any draft; kept after retention retires the run row. */
   ai_draft_run_id: string | null
   /** Latest admitted AI draft request and its outcome; null when none is retained. */
   ai_draft_requested_run_id: string | null
