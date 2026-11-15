@@ -83,6 +83,7 @@
     "@services/memberships": "workspace:^",
     "@services/messaging": "workspace:^",
     "@services/mfa": "workspace:^",
+    "@services/moderation": "workspace:^",
     "@services/moderation-reports": "workspace:^",
     "@services/modmail": "workspace:^",
     "@services/my": "workspace:^",

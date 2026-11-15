@@ -3827,6 +3827,9 @@ importers:
       '@services/mfa':
         specifier: workspace:^
         version: link:../services/mfa
+      '@services/moderation':
+        specifier: workspace:^
+        version: link:../services/moderation
       '@services/moderation-reports':
         specifier: workspace:^
         version: link:../services/moderation-reports

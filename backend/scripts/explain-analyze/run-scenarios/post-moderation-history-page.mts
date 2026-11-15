@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { read } from '@data-stores/psql'
-import { searchPostModerationsByPostIds } from '../../../services/moderation/search-post-moderations.mts'
+import { searchPostModerationsByPostIds } from '@services/moderation/search-post-moderations'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
