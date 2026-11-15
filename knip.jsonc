@@ -118,7 +118,6 @@
     },
     "playwright": {
       "entry": [
-        "global-setup.mts",
         "setup/**/*.setup.mts",
         "tests/**/*.spec.mts",
         "credentialed/**/*.spec.mts",
@@ -338,10 +337,6 @@
     "cloudflare-worker": {
       // Wrangler and esbuild load the Worker export outside the static import graph.
       "includeEntryExports": false,
-      // `cloudflare:workers` is a Workers-runtime built-in import protocol
-      // (like `node:fs`), not the npm `cloudflare` API-client package; knip
-      // strips the scheme and flags the bare specifier as unlisted.
-      "ignoreDependencies": ["cloudflare"],
     },
     "ts-shared/*": {
       "entry": ["**/*.mts"],
