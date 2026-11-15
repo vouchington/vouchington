@@ -133724,7 +133724,7 @@
       "foreignKeys": {
         "fk_review_disputes__ai_draft_run_id": {
           "columns": ["ai_draft_run_id"],
-          "onDelete": "NO ACTION",
+          "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "review_dispute_resolution_runs",

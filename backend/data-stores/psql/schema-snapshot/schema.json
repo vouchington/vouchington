@@ -126053,8 +126053,8 @@
       "foreignKeys": {
         "fk_review_disputes__ai_draft_run_id": {
           "columns": ["ai_draft_run_id"],
-          "definition": "FOREIGN KEY (ai_draft_run_id) REFERENCES review_dispute_resolution_runs(id)",
-          "onDelete": "no action",
+          "definition": "FOREIGN KEY (ai_draft_run_id) REFERENCES review_dispute_resolution_runs(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "review_dispute_resolution_runs",
