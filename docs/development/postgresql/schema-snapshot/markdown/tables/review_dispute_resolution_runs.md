@@ -36,7 +36,6 @@ Not partitioned — growth: bounded.
 
 **Indexes:**
 
-- `idx_review_dispute_resolution_runs__dispute_id`: `CREATE INDEX idx_review_dispute_resolution_runs__dispute_id ON public.review_dispute_resolution_runs USING btree (review_dispute_id, id DESC)`
 - `idx_review_dispute_resolution_runs__lifecycle_change_id`: `CREATE INDEX idx_review_dispute_resolution_runs__lifecycle_change_id ON public.review_dispute_resolution_runs USING btree (latest_lifecycle_change_id) WHERE (latest_lifecycle_change_id IS NOT NULL)`
 - `idx_review_dispute_resolution_runs__one_active_per_dispute`: `CREATE UNIQUE INDEX idx_review_dispute_resolution_runs__one_active_per_dispute ON public.review_dispute_resolution_runs USING btree (review_dispute_id) WHERE ((completed_at IS NULL) AND (failed_at IS NULL) AND (expired_at IS NULL))`
 - `review_dispute_resolution_runs_pkey`: `CREATE UNIQUE INDEX review_dispute_resolution_runs_pkey ON public.review_dispute_resolution_runs USING btree (id)`

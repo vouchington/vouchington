@@ -133287,38 +133287,6 @@
         }
       },
       "indexes": {
-        "idx_review_dispute_resolution_runs__dispute_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_review_dispute_resolution_runs__dispute_id ON public.review_dispute_resolution_runs USING btree (review_dispute_id, id DESC)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "review_dispute_id",
-              "descending": false,
-              "expression": "review_dispute_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": true,
-              "expression": "id",
-              "nullsFirst": true,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_review_dispute_resolution_runs__lifecycle_change_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
