@@ -80,7 +80,8 @@ export async function jobFor(id: string) {
   const job = resolved ? await ai_agents.getJob(resolved) : null
   if (!job) return null
   const { run_id: runId, ...data } = job.data as { run_id?: string }
-  if (id !== resolved && !runId) throw new Error(`Job ${resolved} carries no run_id`)
+  if (id !== resolved && runId !== resolved.split('_').at(-1))
+    throw new Error(`Job ${resolved} carries run_id ${runId}, not its own run`)
   return { name: job.name, data: data as unknown }
 }
 

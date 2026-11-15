@@ -132,7 +132,10 @@ describe.each(flows)('copyright AI run: $name', flow => {
       has_result: true,
     })
     // A finished run frees the subject for a fresh admission.
+    // Appeal and guidance subjects can be re-run; a completed email recommendation never is.
     const next = await flow.admit(subjectId)
+    if (flow.name === 'email intake recommendation') expect(next).toBeNull()
+    else expect(next).toEqual(expect.any(String))
     expect(next).not.toBe(runId)
   })
 
@@ -154,7 +157,9 @@ describe.each(flows)('copyright AI run: $name', flow => {
     await flow.expire(runId)
     expect(await readTestCopyrightAiRun(flow.table, runId)).toMatchObject({ status: 'expired' })
     expect(await flow.succeed(subjectId, runId)).toBe(false)
-    expect(await flow.admit(subjectId)).not.toBe(runId)
+    const replacement = await flow.admit(subjectId)
+    expect(replacement).toEqual(expect.any(String))
+    expect(replacement).not.toBe(runId)
   })
 
   it('rejects a completion without a result and more than one terminal timestamp', async () => {
