@@ -3,8 +3,6 @@ import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatch
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { openMembershipQueueHarness } from '@voucha/test-helpers/membership-verification-queue-assertions'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
-import { readAllQueueJobs } from '@voucha/test-helpers'
-import type { RecoverAppleNotificationsData } from '@queues/memberships/types'
 import { findRecoverableAppleNotificationJobs } from '@services/memberships/apple/notification-recovery'
 import { describe, expect, it, vi, onTestFinished } from 'vitest'
 import { memberships } from '@queues/memberships/queues'
@@ -21,7 +19,7 @@ describe('Apple notification recovery with real GlideMQ', () => {
   it('keeps the cursor while full and resumes after capacity becomes available', async () => {
     const owned = await createTestAppleRecoveryNotification()
     const heldFirst = await createTestAppleRecoveryJob()
-    const heldSecond = await createTestAppleRecoveryJob()
+    await createTestAppleRecoveryJob()
     const counts = await memberships.getJobCounts()
     const depth = (counts.waiting ?? 0) + (counts.active ?? 0) + (counts.delayed ?? 0)
     onTestFinished(
@@ -58,7 +56,6 @@ describe('Apple notification recovery with real GlideMQ', () => {
     expect(retained!.attemptsMade).toBe(0)
     await expect(memberships.getJob(owned.jobId)).resolves.toBeNull()
     await heldFirst.remove()
-    await heldSecond.remove()
     const completed = waitForRealGlideEvent(
       once(harness.events, 'completed'),
       'Apple capacity resume',
@@ -145,30 +142,37 @@ describe('Apple notification recovery with real GlideMQ', () => {
       through: { evidenceId: owned.evidenceId },
     })
     expect(page.nextCursor?.receivedAt).toContain('.123456')
-    const rootJob = await createTestAppleRecoveryJob()
-    await expect(
-      recoverAppleNotifications(rootJob, { evidenceIds, batchSize: 1 }),
-    ).resolves.toEqual({ enqueued: 0 })
-    expect(rootJob.data.through).toEqual(page.through)
-    const continuations = (await readAllQueueJobs(memberships)).filter(
-      job =>
-        job.name === 'recoverAppleNotifications' &&
-        (job.data as RecoverAppleNotificationsData).after?.evidenceId === ignored.evidenceId,
+    const checkpoints: unknown[] = []
+    const harness = await openMembershipQueueHarness(
+      'apple-empty-page',
+      async job => {
+        checkpoints.push(JSON.parse(JSON.stringify(job.data)))
+        await recoverAppleNotifications(job, { evidenceIds, batchSize: 1 })
+      },
+      { concurrency: 1 },
     )
-    expect(continuations).toHaveLength(1)
-    const continuation = continuations[0]!
+    onTestFinished(() => harness.close())
     onTestFinished(async () => {
-      await (await memberships.getJob(continuation.id))?.remove()
       await (await memberships.getJob(owned.jobId))?.remove()
     })
-    const data = JSON.parse(JSON.stringify(continuation.data)) as RecoverAppleNotificationsData
-    expect(data).toEqual({ after: page.nextCursor, through: page.through })
-    await expect(
-      recoverAppleNotifications(await createTestAppleRecoveryJob(data), {
-        evidenceIds,
-        batchSize: 1,
-      }),
-    ).resolves.toEqual({ enqueued: 1 })
+    const delayed = waitForRealGlideEvent(
+      once(harness.events, 'delay-changed'),
+      'Apple empty-page checkpoint',
+    )
+    const rootJob = await harness.queue.add('recoverAppleNotifications', {})
+    await delayed
+    const retained = await harness.queue.getJob(rootJob!.id)
+    expect(retained!.data).toEqual({ after: page.nextCursor, through: page.through })
+    const completed = waitForRealGlideEvent(
+      once(harness.events, 'completed'),
+      'Apple empty-page resume',
+    )
+    await retained!.promote()
+    await completed
+    expect(checkpoints).toEqual([{}, { after: page.nextCursor, through: page.through }])
+    const stored = await harness.queue.getJob(rootJob!.id)
+    expect(stored!.data).toEqual({ after: page.nextCursor, through: page.through })
+    expect(stored!.attemptsMade).toBe(0)
     await expect(memberships.getJob(owned.jobId)).resolves.toMatchObject({
       name: 'processAppleNotification',
       data: {

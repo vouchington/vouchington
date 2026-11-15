@@ -352,9 +352,9 @@ or prevent later eligible moderators from receiving their digest.
 
 Apple notification recovery fixes its sweep end before dispatch and advances by every inspected
 pending-evidence row, including evidence for another provider. Empty Apple pages therefore still
-continue. Recovery cursors preserve timestamp precision across queue serialization, and page identities
-follow their exact positions. Later
-scheduled sweeps replay retained pending evidence to recover late commits or lost queue state.
+continue on the same retained job. Recovery cursors preserve timestamp precision across queue
+serialization. A full queue delays that job without advancing its cursor; later scheduled sweeps replay
+retained pending evidence to recover late commits or lost queue state.
 
 ### Upload maintenance continuation
 
