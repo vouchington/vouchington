@@ -822,8 +822,6 @@
 - `community_agent_prompt_revisions`
 - `followed_user_import_requests`
 - `pending_user_import_requests`
-- `referral_attribution_scrub`
-- `referral_attribution_expiry`
 
 ## `http_request_methods`
 
