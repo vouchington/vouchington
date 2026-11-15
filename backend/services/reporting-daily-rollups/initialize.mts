@@ -15,7 +15,9 @@ export async function findNextReportingSourceDay(
       SELECT LEAST((CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date,
         COALESCE((SELECT (created_at AT TIME ZONE 'UTC')::date FROM users WHERE id >= ${firstId} ORDER BY id LIMIT 1), 'infinity'::date),
         COALESCE((SELECT (created_at AT TIME ZONE 'UTC')::date FROM posts WHERE id >= ${firstId} ORDER BY id LIMIT 1), 'infinity'::date),
-        COALESCE((SELECT (created_at AT TIME ZONE 'UTC')::date FROM post_votes WHERE id >= ${firstId} ORDER BY id LIMIT 1), 'infinity'::date),
+        COALESCE((SELECT (created_at AT TIME ZONE 'UTC')::date
+          -- no-mistakes-disable-next-line postgres-required-predicates: counts votes cast in a time window, which span every target post_id partition.
+          FROM post_votes WHERE id >= ${firstId} ORDER BY id LIMIT 1), 'infinity'::date),
         COALESCE((SELECT day FROM post_vote_retained_daily_counts WHERE day >= ${notBefore.toISOString().slice(0, 10)}::date ORDER BY day LIMIT 1), 'infinity'::date),
         COALESCE((SELECT (created_at AT TIME ZONE 'UTC')::date FROM relation__user__follow__user WHERE created_at >= ${notBefore} ORDER BY created_at, subject_id, object_id LIMIT 1), 'infinity'::date))::text AS day
     `)
@@ -40,7 +42,7 @@ export async function initializeReportingRollupCursors(query: TransactionQuery) 
 async function initializeCursor(kind: 'growth' | 'moderator_workload', query: TransactionQuery) {
   const day = await findNextReportingSourceDay(kind, new Date(0), query)
   await query(sql`/* initializeReportingRollupCursor */
-    INSERT INTO reporting_daily_rollup_cursors(kind, next_rollup_on) VALUES (${kind}, ${day}::date)
+    INSERT INTO reporting_daily_rollup_cursors(kind, cursor_rollup_on) VALUES (${kind}, ${day}::date)
     ON CONFLICT (kind) DO NOTHING
   `)
 }

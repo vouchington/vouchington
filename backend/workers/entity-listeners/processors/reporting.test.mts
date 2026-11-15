@@ -5,7 +5,7 @@ import {
   insertTestModeratorAction,
 } from '@voucha/test-helpers'
 import {
-  readTestReportingSourceChangeId,
+  readTestReportingSourceDayEventId,
   reportingTestWorkerConnection,
   readTestModeratorWorkloadActor,
 } from '@voucha/test-helpers/reporting-daily-rollups'
@@ -29,7 +29,7 @@ describe('reporting daily recomputation', () => {
       occurredAt,
       actionType: 'approve',
     })
-    const id = await readTestReportingSourceChangeId(day, 'moderator_action_creation', started)
+    const id = await readTestReportingSourceDayEventId(day, 'moderator_action_creation', started)
     expect(id).toBeTypeOf('string')
     let found: { entityType: string; entityId: string } | undefined
     for await (const batch of streamEntityReconciliationCandidateBatches({

@@ -7,6 +7,7 @@ export async function reconcileEntityBatches(
     hasMore: () => boolean
     initialAfter?: ReconcileEntityData
     onMore: (after?: ReconcileEntityData) => Promise<unknown>
+    enqueueReportingDays: (candidates: ReconcileEntityData[]) => Promise<unknown>
   },
 ): Promise<{ reconciled: number; hasMore: boolean }> {
   let reconciled = 0
@@ -14,9 +15,6 @@ export async function reconcileEntityBatches(
   let lastProcessed = after
   // The existing raw candidate-run cap also bounds this invocation-local map.
   const reportingDays = new Map<string, ReconcileEntityData>()
-  async function* deferredReportingDays() {
-    yield* reportingDays.values()
-  }
   try {
     for await (const batch of batches) {
       for (const candidate of batch) {
@@ -35,9 +33,7 @@ export async function reconcileEntityBatches(
         reconciled += 1
       }
     }
-    for await (const candidate of deferredReportingDays()) {
-      await reconcileEntity(candidate)
-    }
+    if (reportingDays.size > 0) await options.enqueueReportingDays([...reportingDays.values()])
     after = lastProcessed
   } catch (err) {
     if (after || reportingDays.size > 0) await options.onMore(after)

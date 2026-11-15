@@ -58,9 +58,9 @@ export function reportingCandidateUnion(
         UNION ALL
         (SELECT * FROM (
         SELECT CASE WHEN source_type IN ('moderator_action_deletion', 'moderator_action_creation') THEN 'reporting_workload' ELSE 'reporting_growth' END,
-          source_day::text, floor(extract(epoch FROM created_at) * 1000000)::text,
-          id::text, NULL::jsonb, created_at
-        FROM reporting_source_changes WHERE id >= ${firstRevisionId} AND id < ${afterLastRevisionId}
+          source_on::text, floor(extract(epoch FROM occurred_at) * 1000000)::text,
+          id::text, NULL::jsonb, occurred_at
+        FROM reporting_source_day_events WHERE id >= ${firstRevisionId} AND id < ${afterLastRevisionId}
         ) repair_source(entity_type, entity_id, changed_at_epoch_us, change_id, details, changed_at)
         WHERE (changed_at, entity_id, entity_type, change_id IS NULL, COALESCE(change_id, '')) > (COALESCE(to_timestamp(floor(${after?.changedAtEpochUs ?? null}::numeric / 1000000)::double precision) + (${after?.changedAtEpochUs ?? null}::numeric % 1000000)::double precision * INTERVAL '1 microsecond', '-infinity'::timestamptz), ${after?.entityId ?? ''}::text, ${after?.entityType ?? ''}::text, ${after?.changeId === undefined}, ${after?.changeId ?? ''}::text)
         ORDER BY changed_at, entity_id, change_id

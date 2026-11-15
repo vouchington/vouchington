@@ -34,6 +34,7 @@ describe('reconciliation sweep ownership', () => {
           },
           {
             hasMore: () => false,
+            enqueueReportingDays: async () => {},
             onMore: after => save({ window, after }),
           },
         )

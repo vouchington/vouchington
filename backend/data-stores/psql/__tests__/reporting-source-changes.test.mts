@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { deleteTestPostVotesAcrossCompletedDays } from '@voucha/test-helpers/reporting-source-changes'
+import { deleteTestPostVotesAcrossCompletedDays } from '@voucha/test-helpers/reporting-source-day-events'
 
 describe('reporting source change statement triggers', () => {
   it('records one deletion per completed UTC day for a multirow delete through the partitioned parent', async () => {

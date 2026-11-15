@@ -1,4 +1,5 @@
 import {
+  enqueueReportingChangedDays,
   enqueueReportingJob,
   enqueueReportingMaterialization,
 } from '@queues/background/enqueues/reporting'
@@ -77,7 +78,18 @@ export async function reconcileEntities(
     hasMore: () => hasMore,
     initialAfter: data.after,
     onMore: after => saveProgress({ window: fixedWindow, ...(after && { after }) }),
+    enqueueReportingDays: enqueueReconciledReportingDays,
   })
+}
+
+export async function enqueueReconciledReportingDays(candidates: ReconcileEntityData[]) {
+  await enqueueReportingChangedDays(
+    candidates.map(candidate => ({
+      kind: candidate.entityType === 'reporting_growth' ? 'growth' : 'moderator_workload',
+      day: candidate.entityId,
+      revision: `${candidate.changeId ?? ''}-${candidate.changedAtEpochUs}`,
+    })),
+  )
 }
 
 export async function reconcileEntity(

@@ -65,13 +65,13 @@ export async function deleteTestPostVotesAcrossCompletedDays(): Promise<{
   )
   const { rows: deletionCounts } = await transaction<{ day: string; count: number }>(
     sql`/* readTestOwnedPostVoteDeletionDays */
-    SELECT source_day::text AS day, count(*)::int AS count
-    FROM reporting_source_changes
+    SELECT source_on::text AS day, count(*)::int AS count
+    FROM reporting_source_day_events
     WHERE xmin = pg_current_xact_id()::text::xid
       AND source_type = 'post_vote_deletion'
-      AND source_day = ANY(${sourceDays}::date[])
-    GROUP BY source_day
-    ORDER BY source_day
+      AND source_on = ANY(${sourceDays}::date[])
+    GROUP BY source_on
+    ORDER BY source_on
   `,
   )
 

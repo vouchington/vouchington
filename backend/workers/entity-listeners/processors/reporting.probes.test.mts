@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import type { Job } from 'glide-mq'
 import { readTestReportingJobsByRevision } from '@voucha/test-helpers/reporting-daily-rollups'
 import {
+  enqueueReportingChangedDays,
   enqueueReportingJob,
   enqueueReportingMaterialization,
 } from '@queues/background/enqueues/reporting'
@@ -11,7 +12,7 @@ import {
   REPORTING_CHANGED_DAY_JOB,
   REPORTING_DAILY_JOB,
 } from '@queues/background/enqueues/reporting-jobs'
-import { reconcileEntity } from './reconciliation.mts'
+import { enqueueReconciledReportingDays, reconcileEntity } from './reconciliation.mts'
 import { reportingHandlers } from './reporting.mts'
 
 describe('reporting admission', () => {
@@ -37,6 +38,20 @@ describe('reporting admission', () => {
     expect(changed[0]!.name).toBe(REPORTING_CHANGED_DAY_JOB.name)
     expect(changed[0]!.data).toEqual({ kind: 'growth', day, revision })
     expect(daily.map(job => job.id)).not.toContain(changed[0]!.id)
+
+    const bulkRevision = crypto.randomUUID()
+    await enqueueReportingChangedDays([
+      { kind: 'growth', day, revision: bulkRevision },
+      { kind: 'moderator_workload', day, revision: bulkRevision },
+    ])
+    await enqueueReportingChangedDays([
+      { kind: 'growth', day, revision: bulkRevision },
+      { kind: 'moderator_workload', day, revision: bulkRevision },
+    ])
+    const bulk = await readTestReportingJobsByRevision(bulkRevision)
+    expect(bulk).toHaveLength(2)
+    expect(new Set(bulk.map(job => job.id)).size).toBe(2)
+    expect(bulk.every(job => job.name === REPORTING_CHANGED_DAY_JOB.name)).toBe(true)
 
     const nextRevision = crypto.randomUUID()
     await enqueueReportingJob({ kind: 'growth', revision: nextRevision })
@@ -65,7 +80,7 @@ describe('reporting admission', () => {
     expect(jobs[0]!.data).toEqual({ kind, day, revision: queuedRevision })
   })
 
-  it('replays the same bounded-day admission but admits a newer source tuple on a later run', async () => {
+  it('bulk admits the latest bounded source tuple and admits a later revision', async () => {
     const day = '2000-01-03'
     const first: ReconcileEntityData = {
       entityType: 'reporting_growth',
@@ -83,43 +98,29 @@ describe('reporting admission', () => {
       changedAtEpochUs: '946857600000003',
       changeId: crypto.randomUUID(),
     }
-    const failed: ReconcileEntityData = {
-      ...first,
-      entityId: '2000-01-04',
-      changedAtEpochUs: '946857600000002',
-      changeId: crypto.randomUUID(),
-    }
     const firstRevision = `${first.changeId}-${first.changedAtEpochUs}`
     const latestRevision = `${latest.changeId}-${latest.changedAtEpochUs}`
     const laterRevision = `${later.changeId}-${later.changedAtEpochUs}`
     const source = {
       async *[Symbol.asyncIterator]() {
         yield [first]
-        yield [latest, failed]
+        yield [latest]
       },
     }
-    await expect(
-      reconcileEntityBatches(
-        source,
-        async candidate => {
-          if (candidate === failed) throw new Error('later group admission failed')
-          await reconcileEntity(candidate)
-        },
-        {
-          hasMore: () => false,
-          onMore: async () => {},
-        },
-      ),
-    ).rejects.toThrow('later group admission failed')
+    await reconcileEntityBatches(source, reconcileEntity, {
+      hasMore: () => false,
+      enqueueReportingDays: enqueueReconciledReportingDays,
+      onMore: async () => {},
+    })
     expect(await readTestReportingJobsByRevision(firstRevision)).toEqual([])
     const admitted = await readTestReportingJobsByRevision(latestRevision)
     expect(admitted).toHaveLength(1)
     expect(admitted[0]!.data).toEqual({ kind: 'growth', day, revision: latestRevision })
 
-    // A retried bounded run retains the same actual-source identity, even after an
-    // earlier day was admitted before a later group's enqueue failed.
+    // A retried bounded run retains the same actual-source identity.
     await reconcileEntityBatches(source, reconcileEntity, {
       hasMore: () => false,
+      enqueueReportingDays: enqueueReconciledReportingDays,
       onMore: async () => {},
     })
     expect((await readTestReportingJobsByRevision(latestRevision)).map(job => job.id)).toEqual([
@@ -132,6 +133,7 @@ describe('reporting admission', () => {
     }
     await reconcileEntityBatches(next, reconcileEntity, {
       hasMore: () => false,
+      enqueueReportingDays: enqueueReconciledReportingDays,
       onMore: async () => {},
     })
     const nextJobs = await readTestReportingJobsByRevision(laterRevision)

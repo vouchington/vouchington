@@ -24,21 +24,22 @@ export async function insertTestModeratorWorkloadDailyTotal(options: {
   `)
 }
 
-export async function readTestReportingSourceChanges(
+export async function readTestReportingSourceDayEvents(
   day: string,
   sourceType: string,
 ): Promise<number> {
-  const { rows } = await write<{ count: number }>(sql`/* readTestReportingSourceChanges */
-    SELECT count(*)::int AS count FROM reporting_source_changes
-    WHERE source_day = ${day}::date AND source_type = ${sourceType}::reporting_source_change_types
+  const { rows } = await write<{ count: number }>(sql`/* readTestReportingSourceDayEvents */
+    SELECT count(*)::int AS count FROM reporting_source_day_events
+    WHERE source_on = ${day}::date AND source_type = ${sourceType}::reporting_source_day_event_types
   `)
   return rows[0]!.count
 }
 
 export async function readTestGrowthAuthor(day: string, authorId: string): Promise<boolean> {
   const { rows } = await write(sql`/* readTestGrowthAuthor */
-    SELECT author_user_id FROM growth_metrics_daily_post_authors
-    WHERE day = ${day}::date AND author_user_id = ${authorId}
+    SELECT authors.author_user_id FROM growth_metric_daily_post_authors authors
+    JOIN growth_metric_daily_totals totals ON totals.id = authors.growth_metric_daily_total_id
+    WHERE totals.day = ${day}::date AND authors.author_user_id = ${authorId}
   `)
   return rows.length === 1
 }
@@ -58,14 +59,14 @@ export async function insertTestHistoricalReportingFollow(
   `)
 }
 
-export async function readTestReportingSourceChangeId(
+export async function readTestReportingSourceDayEventId(
   day: string,
   sourceType: string,
   after: Date,
 ): Promise<string | undefined> {
-  const { rows } = await write<{ id: string }>(sql`/* readTestReportingSourceChangeId */
-    SELECT id FROM reporting_source_changes WHERE id > ${getMinUUIDv7ForDate(after)}
-      AND source_day = ${day}::date AND source_type = ${sourceType}::reporting_source_change_types
+  const { rows } = await write<{ id: string }>(sql`/* readTestReportingSourceDayEventId */
+    SELECT id FROM reporting_source_day_events WHERE id > ${getMinUUIDv7ForDate(after)}
+      AND source_on = ${day}::date AND source_type = ${sourceType}::reporting_source_day_event_types
     ORDER BY id DESC LIMIT 1
   `)
   return rows[0]?.id
@@ -129,4 +130,11 @@ export async function readTestReportingJobsByRevision(revision: string) {
       'revision' in job.data &&
       job.data.revision === revision,
   )
+}
+
+export async function readTestGrowthTotalId(day: string): Promise<string | undefined> {
+  const { rows } = await write<{ id: string }>(sql`/* readTestGrowthTotalId */
+    SELECT id FROM growth_metric_daily_totals WHERE day = ${day}::date
+  `)
+  return rows[0]?.id
 }

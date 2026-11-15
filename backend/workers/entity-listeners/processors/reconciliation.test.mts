@@ -21,6 +21,7 @@ describe('reconcileEntityBatches', () => {
     await expect(
       reconcileEntityBatches(toAsyncBatches([[first], [second]]), reconcile, {
         hasMore: () => false,
+        enqueueReportingDays: async () => {},
         onMore,
       }),
     ).resolves.toEqual({ reconciled: 2, hasMore: false })
@@ -39,6 +40,7 @@ describe('reconcileEntityBatches', () => {
     expect(
       await reconcileEntityBatches(toAsyncBatches([[candidate]]), async () => {}, {
         hasMore: () => true,
+        enqueueReportingDays: async () => {},
         onMore,
       }),
     ).toEqual({ reconciled: 1, hasMore: true })
@@ -63,7 +65,7 @@ describe('reconcileEntityBatches', () => {
         async data => {
           if (data.entityId === second.entityId) throw new Error('side effect failed')
         },
-        { hasMore: () => false, onMore },
+        { hasMore: () => false, onMore, enqueueReportingDays: async () => {} },
       ),
     ).rejects.toThrow('side effect failed')
     expect(onMore).toHaveBeenCalledExactlyOnceWith(first)
@@ -79,7 +81,7 @@ describe('reconcileEntityBatches', () => {
         async () => {
           throw failure
         },
-        { hasMore: () => false, onMore },
+        { hasMore: () => false, onMore, enqueueReportingDays: async () => {} },
       ),
     ).rejects.toBe(failure)
     expect(onMore).not.toHaveBeenCalled()

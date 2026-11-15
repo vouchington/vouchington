@@ -28,17 +28,17 @@ async function materializeDays(
 ): Promise<{ hasMore: boolean; nextDay: string }> {
   const nextDay = await runWithTransaction(undefined, async query => {
     await initializeReportingRollupCursors(query)
-    const { rows } = await query<{ next_rollup_on: string }>(sql`/* nextReportingDay */
-      SELECT next_rollup_on::text FROM reporting_daily_rollup_cursors WHERE kind = ${kind}
+    const { rows } = await query<{ cursor_rollup_on: string }>(sql`/* nextReportingDay */
+      SELECT cursor_rollup_on::text FROM reporting_daily_rollup_cursors WHERE kind = ${kind}
     `)
-    const day = rows[0]!.next_rollup_on
+    const day = rows[0]!.cursor_rollup_on
     const bounds = getReportingDayBounds(day)
     if (bounds.start >= today) return day
     if (kind === 'growth') await recomputeGrowthDay(day, query)
     else await recomputeModeratorWorkloadDay(day, query)
     const next = await findNextReportingSourceDay(kind, bounds.end, query)
     await query(sql`/* advanceReportingDay */
-      UPDATE reporting_daily_rollup_cursors SET next_rollup_on = ${next}::date WHERE kind = ${kind}
+      UPDATE reporting_daily_rollup_cursors SET cursor_rollup_on = ${next}::date WHERE kind = ${kind}
     `)
     return next
   })

@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { createTestUser, hardDeleteTestPost, insertTestPost } from '@voucha/test-helpers'
 import {
   readTestGrowthAuthor,
-  readTestReportingSourceChanges,
+  readTestGrowthTotalId,
+  readTestReportingSourceDayEvents,
   recomputeTestGrowthDay,
 } from '@voucha/test-helpers/reporting-daily-rollups'
 
@@ -20,12 +21,15 @@ describe('reporting daily recomputation', () => {
       createdAt: date,
     })
     await recomputeTestGrowthDay(day)
+    const totalId = await readTestGrowthTotalId(day)
+    expect(totalId).toBeTypeOf('string')
     expect(await readTestGrowthAuthor(day, author.id)).toBe(true)
-    const before = await readTestReportingSourceChanges(day, 'post_deletion')
+    const before = await readTestReportingSourceDayEvents(day, 'post_deletion')
     await hardDeleteTestPost(id)
-    expect(await readTestReportingSourceChanges(day, 'post_deletion')).toBeGreaterThan(before)
+    expect(await readTestReportingSourceDayEvents(day, 'post_deletion')).toBeGreaterThan(before)
     await recomputeTestGrowthDay(day)
     expect(await readTestGrowthAuthor(day, author.id)).toBe(false)
+    expect(await readTestGrowthTotalId(day)).toBe(totalId)
   })
 
   it('preserves the strict UUID lower boundary even when the range begins at midnight', async () => {
@@ -65,8 +69,8 @@ describe('reporting daily recomputation', () => {
     const object = await createTestUser()
     const createdAt = new Date(Date.now() - 20 * 86_400_000)
     const day = createdAt.toISOString().slice(0, 10)
-    const before = await readTestReportingSourceChanges(day, 'user_follow')
+    const before = await readTestReportingSourceDayEvents(day, 'user_follow')
     await insertTestHistoricalReportingFollow(subject.id, object.id, createdAt)
-    expect(await readTestReportingSourceChanges(day, 'user_follow')).toBeGreaterThan(before)
+    expect(await readTestReportingSourceDayEvents(day, 'user_follow')).toBeGreaterThan(before)
   })
 })

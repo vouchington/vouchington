@@ -7,9 +7,15 @@ import {
 } from './reporting-jobs.mts'
 
 const enqueueDaily = createBackgroundEnqueue(REPORTING_DAILY_JOB)
-const enqueueChanged = createBackgroundEnqueue(REPORTING_CHANGED_DAY_JOB)
 const enqueueBulkDaily = createBackgroundBulkEnqueue(
   REPORTING_DAILY_JOB,
+  (data: ReportingJobData) => ({
+    data,
+    opts: { jobId: reportingJobId(data) },
+  }),
+)
+export const enqueueReportingChangedDays = createBackgroundBulkEnqueue(
+  REPORTING_CHANGED_DAY_JOB,
   (data: ReportingJobData) => ({
     data,
     opts: { jobId: reportingJobId(data) },
@@ -22,7 +28,9 @@ export function enqueueReportingMaterialization(revision: string) {
   ])
 }
 export function enqueueReportingJob(data: ReportingJobData) {
-  return (data.day ? enqueueChanged : enqueueDaily)(data, { jobId: reportingJobId(data) })
+  return data.day
+    ? enqueueReportingChangedDays([data])
+    : enqueueDaily(data, { jobId: reportingJobId(data) })
 }
 function reportingJobId(data: ReportingJobData) {
   return `reporting-${createHash('sha256')

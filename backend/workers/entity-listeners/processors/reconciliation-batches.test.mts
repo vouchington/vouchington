@@ -34,6 +34,7 @@ describe('bounded reporting reconciliation', () => {
       changeId: 'd',
     }
     const processed: ReconcileEntityData[] = []
+    const admitted: ReconcileEntityData[][] = []
     const checkpoints: (ReconcileEntityData | undefined)[] = []
     const source = {
       async *[Symbol.asyncIterator]() {
@@ -51,17 +52,21 @@ describe('bounded reporting reconciliation', () => {
         },
         {
           hasMore: () => true,
+          enqueueReportingDays: async candidates => {
+            admitted.push(candidates)
+          },
           onMore: async after => {
             checkpoints.push(after)
           },
         },
       ),
     ).resolves.toEqual({ reconciled: 6, hasMore: true })
-    expect(processed).toEqual([prefix, ordinary, latest, workload, anotherDay])
+    expect(processed).toEqual([prefix, ordinary])
+    expect(admitted).toEqual([[latest, workload, anotherDay]])
     expect(checkpoints).toEqual([anotherDay])
   })
 
-  it('pins the predecessor when a later day admission fails after a partial flush', async () => {
+  it('pins the predecessor when bulk day admission fails', async () => {
     const prefix: ReconcileEntityData = {
       entityType: 'user',
       entityId: 'user-a',
@@ -91,18 +96,21 @@ describe('bounded reporting reconciliation', () => {
       reconcileEntityBatches(
         source,
         async candidate => {
-          if (candidate === failed) throw new Error('day admission failed')
           admitted.push(candidate)
         },
         {
           hasMore: () => false,
+          enqueueReportingDays: async candidates => {
+            expect(candidates).toEqual([latest, failed])
+            throw new Error('day admission failed')
+          },
           onMore: async after => {
             checkpoints.push(after)
           },
         },
       ),
     ).rejects.toThrow('day admission failed')
-    expect(admitted).toEqual([prefix, latest])
+    expect(admitted).toEqual([prefix])
     expect(checkpoints).toEqual([prefix])
   })
 
@@ -138,6 +146,9 @@ describe('bounded reporting reconciliation', () => {
         },
         {
           hasMore: () => false,
+          enqueueReportingDays: async () => {
+            throw new Error('unexpected admission')
+          },
           onMore: async after => {
             checkpoints.push(after)
           },
@@ -161,18 +172,15 @@ describe('bounded reporting reconciliation', () => {
       },
     }
     await expect(
-      reconcileEntityBatches(
-        source,
-        async () => {
+      reconcileEntityBatches(source, async () => {}, {
+        hasMore: () => false,
+        enqueueReportingDays: async () => {
           throw new Error('first day failed')
         },
-        {
-          hasMore: () => false,
-          onMore: async after => {
-            checkpoints.push(after)
-          },
+        onMore: async after => {
+          checkpoints.push(after)
         },
-      ),
+      }),
     ).rejects.toThrow('first day failed')
     expect(checkpoints).toEqual([undefined])
   })

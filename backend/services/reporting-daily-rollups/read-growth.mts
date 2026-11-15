@@ -47,7 +47,7 @@ function buildGrowthDayCounts(
   const statement = sql`WITH source_counts AS (
     SELECT day, user_count, post_count, review_count, data_point_count, discussion_count,
       comment_count, story_count, approved_count, reviewed_count, follow_count, vote_count, retained_vote_count
-    FROM growth_metrics_daily_totals WHERE day >= ${windows.completed.start.toISOString().slice(0, 10)}::date AND day < ${windows.completed.end.toISOString().slice(0, 10)}::date`
+    FROM growth_metric_daily_totals WHERE day >= ${windows.completed.start.toISOString().slice(0, 10)}::date AND day < ${windows.completed.end.toISOString().slice(0, 10)}::date`
   if (scope === 'all' || scope === 'content' || scope === 'engagement') {
     statement
       .append(sql` UNION ALL
@@ -115,8 +115,9 @@ function buildGrowthActiveAuthors(periodStart: Date, now: Date) {
   const todayStart = getMinUUIDv7ForDate(windows.today.start)
   return sql`
     SELECT count(DISTINCT author_user_id)::int AS count FROM (
-      SELECT author_user_id FROM growth_metrics_daily_post_authors
-      WHERE day >= ${windows.completed.start.toISOString().slice(0, 10)}::date AND day < ${windows.completed.end.toISOString().slice(0, 10)}::date
+      SELECT authors.author_user_id FROM growth_metric_daily_post_authors authors
+      JOIN growth_metric_daily_totals totals ON totals.id = authors.growth_metric_daily_total_id
+      WHERE totals.day >= ${windows.completed.start.toISOString().slice(0, 10)}::date AND totals.day < ${windows.completed.end.toISOString().slice(0, 10)}::date
       UNION ALL
       SELECT created_by_id FROM posts WHERE deleted_at IS NULL AND (
         (id > ${firstStart} AND id < ${firstEnd}) OR (id > ${todayStart} OR (id = ${todayStart} AND ${periodStart < windows.today.start})))
