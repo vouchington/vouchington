@@ -324,10 +324,9 @@ annual review and confirm continued enforcement. The producer exposes
 can apply each penalty. Admin MCP reaches the due queue with `review_due` on the existing
 penalty list tools and records a review with `review` on the existing lift tools. Recording a
 review, or lifting a report-abuse penalty, rejects a suspended administrator. Due queues use opaque `after` cursors, bounded `limit`, and `page_info`
-so staff can inspect later records without first deciding every older case. Swift and .NET have existing integrity penalty surfaces, but neither
-renders this review queue yet. [Clients #492](https://github.com/vouchington/vouchington-clients/issues/492)
-owns native presentation, route consumption, and behavioral evidence; native parity stays
-dependent until that work is proven.
+so staff can inspect later records without first deciding every older case. Swift and .NET
+render the due-review queue with cursor continuation and confirmation on their existing
+integrity penalty screens ([Clients #492](https://github.com/vouchington/vouchington-clients/issues/492)).
 
 ## Topic merge operations
 
