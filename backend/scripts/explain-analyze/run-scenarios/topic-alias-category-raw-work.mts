@@ -6,6 +6,8 @@ import {
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 
+const MAX_UUID = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
+
 export async function runTopicAliasRawPageScenarios(aliasId: string): Promise<void> {
   await captureRawPhase(
     aliasId,
@@ -33,9 +35,11 @@ async function captureRawPhase(
   queryName: string,
   indexName: string,
 ): Promise<void> {
+  // Seeded ids come from the wall clock while the seed clock pins Date to the anchor day, so a
+  // start-time bound would precede every seeded row; bound the sweep explicitly instead.
   const emptyCursor = {
-    sweep_upper_bound_item_id: null,
-    sweep_upper_bound_feed_id: null,
+    sweep_upper_bound_item_id: MAX_UUID,
+    sweep_upper_bound_feed_id: MAX_UUID,
     cursor_item_id: null,
     cursor_category_identity_id: null,
     cursor_feed_id: null,
