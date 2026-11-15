@@ -26,7 +26,7 @@
     "@services/memberships": "workspace:^",
     "@services/stripe": "workspace:^",
     "@vouchington/stripe": "^0.2.0",
-    "stripe": "^23.0.1"
+    "stripe": "^23.1.0"
   },
   "devDependencies": {
     "@modules/stripe": "workspace:^",

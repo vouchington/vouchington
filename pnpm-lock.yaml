@@ -2644,13 +2644,13 @@ importers:
         version: link:../../config
       '@vouchington/stripe':
         specifier: ^0.2.0
-        version: 0.2.0(stripe@23.0.1(@types/node@26.6.6))
+        version: 0.2.0(stripe@23.1.0(@types/node@26.6.6))
       '@vouchington/utils':
         specifier: ^0.12.0
         version: 0.12.0
       stripe:
-        specifier: ^23.0.1
-        version: 23.0.1(@types/node@26.6.6)
+        specifier: ^23.1.0
+        version: 23.1.0(@types/node@26.6.6)
     devDependencies:
       '@types/node':
         specifier: ^26.6.6
@@ -11335,7 +11335,7 @@ importers:
         version: 0.2.0
       '@vouchington/stripe':
         specifier: ^0.2.0
-        version: 0.2.0(stripe@23.0.1(@types/node@26.6.6))
+        version: 0.2.0(stripe@23.1.0(@types/node@26.6.6))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -11343,8 +11343,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       stripe:
-        specifier: ^23.0.1
-        version: 23.0.1(@types/node@26.6.6)
+        specifier: ^23.1.0
+        version: 23.1.0(@types/node@26.6.6)
       valkyries:
         specifier: ^0.15.0
         version: 0.15.0
@@ -11372,10 +11372,10 @@ importers:
         version: link:../stripe
       '@vouchington/stripe':
         specifier: ^0.2.0
-        version: 0.2.0(stripe@23.0.1(@types/node@26.6.6))
+        version: 0.2.0(stripe@23.1.0(@types/node@26.6.6))
       stripe:
-        specifier: ^23.0.1
-        version: 23.0.1(@types/node@26.6.6)
+        specifier: ^23.1.0
+        version: 23.1.0(@types/node@26.6.6)
     devDependencies:
       '@modules/stripe':
         specifier: workspace:^
@@ -12823,7 +12823,7 @@ importers:
         version: 0.4.0(@jongleberry/api-server@3.1.0)(valkyries@0.15.0)
       '@vouchington/stripe':
         specifier: ^0.2.0
-        version: 0.2.0(stripe@23.0.1(@types/node@26.6.6))
+        version: 0.2.0(stripe@23.1.0(@types/node@26.6.6))
       '@vouchington/utils':
         specifier: ^0.12.0
         version: 0.12.0
@@ -12886,8 +12886,8 @@ importers:
         specifier: ^7.2.1
         version: 7.2.1
       stripe:
-        specifier: ^23.0.1
-        version: 23.0.1(@types/node@26.6.6)
+        specifier: ^23.1.0
+        version: 23.1.0(@types/node@26.6.6)
       typescript:
         specifier: npm:@typescript/typescript6@^6.0.2
         version: '@typescript/typescript6@6.0.2'
@@ -24068,8 +24068,8 @@ packages:
     resolution: {integrity: sha512-1tB5mhVo7U+ETBKNf92xT4hrQa3pm0MZ0PQvuDnWgAAGHDsfp4lPSpiS6psrSiet87wyGPh9ft6wmhOMQ0hDiw==}
     engines: {node: '>=14.16'}
 
-  stripe@23.0.1:
-    resolution: {integrity: sha512-VFLs9IAzSZ8GIm6/vqhjqOL0fbYrSNYCpgZ3LS3YkSi/i5RnyMpu/Hf9YxPTOCYwc3mZKU3IJvuvKffQH2NLMg==}
+  stripe@23.1.0:
+    resolution: {integrity: sha512-fVUfMSfTPoukfoV//MUKAx2+YxyKmYaYtnAL9VkfnHfaPNQylFdWZMD+zgUFerI8rjbaiER8Vzj2XEUQ2AhAsQ==}
     engines: {node: '>=20'}
     peerDependencies:
       '@types/node': '>=20'
@@ -29912,9 +29912,9 @@ snapshots:
       '@vouchington/uuid-v7': 0.0.0
       jose: 6.2.17
 
-  '@vouchington/stripe@0.2.0(stripe@23.0.1(@types/node@26.6.6))':
+  '@vouchington/stripe@0.2.0(stripe@23.1.0(@types/node@26.6.6))':
     dependencies:
-      stripe: 23.0.1(@types/node@26.6.6)
+      stripe: 23.1.0(@types/node@26.6.6)
 
   '@vouchington/utils@0.12.0': {}
 
@@ -33539,7 +33539,7 @@ snapshots:
 
   strip-json-comments@5.0.3: {}
 
-  stripe@23.0.1(@types/node@26.6.6):
+  stripe@23.1.0(@types/node@26.6.6):
     optionalDependencies:
       '@types/node': 26.6.6
 
