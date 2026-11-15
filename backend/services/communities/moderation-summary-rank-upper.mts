@@ -25,7 +25,9 @@ export async function captureModerationSummarySourceUpper(
       ORDER BY community_id DESC,id DESC LIMIT 1`))
   } else {
     ;({ rows } = await read<{ id: string }>(sql`/* moderationSummaryReportPostUpper */
-      SELECT id FROM posts WHERE community_id=${scan.communityId} AND community_id IS NOT NULL
+      SELECT id
+      -- no-mistakes-disable-next-line postgres-required-predicates: freezes one community's newest post id across posts' id partitions.
+      FROM posts WHERE community_id=${scan.communityId} AND community_id IS NOT NULL
       ORDER BY community_id DESC,id DESC LIMIT 1`))
   }
   scan.sourceUpperId = rows[0]?.id ?? MODERATION_SUMMARY_ZERO_ID
