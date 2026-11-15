@@ -43,20 +43,25 @@ export async function listFailedImageDeliveryRepairMarkers(
     LIMIT ${getMediaDeliverySafetyWorkLimit('recovery_page_size')}
   `)
   if (inspected.length === 0) return []
-  const statement = sql`
-    /* repairFailedImageDeliveryMutation */
-    SELECT registry.id AS media_delivery_registry_record_id
-    FROM media_delivery_registry_records registry`
-  statement.append(
-    sql` WHERE registry.id = ANY(${inspected.map(marker => marker.media_delivery_registry_record_id)}::uuid[]) AND `,
-  )
-  // A scalar lookup on the unique placement key keeps each ownership probe to one row.
-  // JOIN and EXISTS plans scan/hash all retained bindings for the requested post.
-  if (input.postIds?.length)
-    statement.append(sql`(registry.image_id = ANY(${input.imageIds ?? []}::uuid[])
-      OR (SELECT binding.post_id FROM image_placements binding
-        WHERE binding.placement_id = registry.placement_id) = ANY(${input.postIds}::uuid[]))`)
-  else statement.append(sql`registry.image_id = ANY(${input.imageIds ?? []}::uuid[])`)
+  // Plain post JOIN/EXISTS plans scan or hash retained history. The scalar post
+  // lookup and exact image/id probes visit only the already inspected work keys.
+  const statement = input.postIds?.length
+    ? sql`/* repairFailedImageDeliveryMutation */
+      SELECT registry.id AS media_delivery_registry_record_id
+      FROM media_delivery_registry_records registry
+      WHERE registry.id = ANY(${inspected.map(marker => marker.media_delivery_registry_record_id)}::uuid[])
+        AND (registry.image_id = ANY(${input.imageIds ?? []}::uuid[])
+          OR (SELECT binding.post_id FROM image_placements binding
+            WHERE binding.placement_id = registry.placement_id) = ANY(${input.postIds}::uuid[]))`
+    : sql`/* repairFailedImageDeliveryMutation */
+      SELECT matching.id AS media_delivery_registry_record_id
+      FROM unnest(${[...new Set(input.imageIds ?? [])]}::uuid[]) requested(image_id)
+      CROSS JOIN unnest(${inspected.map(marker => marker.media_delivery_registry_record_id)}::uuid[]) marker(record_id)
+      CROSS JOIN LATERAL (
+        SELECT registry.id FROM media_delivery_registry_records registry
+        WHERE registry.image_id = requested.image_id AND registry.id = marker.record_id
+        LIMIT 1
+      ) matching`
   const { rows: owned } = await write<{ media_delivery_registry_record_id: string }>(statement)
   const ownedIds = new Set(owned.map(record => record.media_delivery_registry_record_id))
   return inspected.filter(marker => ownedIds.has(marker.media_delivery_registry_record_id))

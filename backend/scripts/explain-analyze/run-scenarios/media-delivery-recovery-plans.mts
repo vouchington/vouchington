@@ -163,7 +163,7 @@ export async function captureRecovery(): Promise<void> {
               pageRecords,
             )
             assert.deepEqual(
-              captured.values[0],
+              captured.values['postIds' in scenario.input ? 0 : 1],
               pageRecords,
               'Ownership probes must use the actual bounded marker walk output',
             )
