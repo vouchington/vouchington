@@ -5,7 +5,7 @@ import { selectExecutableEntrypoint } from '@modules/utils/executable-entrypoint
 /* v8 ignore start -- process entrypoint exercised by the compiled image smoke tests. */
 const ENTRYPOINTS: Record<string, () => Promise<unknown>> = {
   'image-smoke.mts': async () => {
-    const { checkDuckDbRuntime } = await import('@data-stores/analytics/image-smoke')
+    const { checkDuckDbRuntime } = await import('@modules/utils/duckdb-image-smoke')
     await checkDuckDbRuntime()
     const { checkImageRuntime } = await import('@modules/utils/image-smoke')
     checkImageRuntime()

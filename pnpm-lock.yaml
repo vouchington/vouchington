@@ -1581,9 +1581,6 @@ importers:
       '@backend/service-registrations':
         specifier: workspace:^
         version: link:../../service-registrations
-      '@data-stores/analytics':
-        specifier: workspace:^
-        version: link:../../data-stores/analytics
       '@data-stores/graceful-shutdown':
         specifier: workspace:^
         version: link:../../data-stores/graceful-shutdown
@@ -1699,9 +1696,6 @@ importers:
       '@backend/worker-runtime':
         specifier: workspace:^
         version: link:../../worker-runtime
-      '@data-stores/analytics':
-        specifier: workspace:^
-        version: link:../../data-stores/analytics
       '@data-stores/graceful-shutdown':
         specifier: workspace:^
         version: link:../../data-stores/graceful-shutdown
@@ -1802,9 +1796,6 @@ importers:
       '@backend/worker-runtime':
         specifier: workspace:^
         version: link:../../worker-runtime
-      '@data-stores/analytics':
-        specifier: workspace:^
-        version: link:../../data-stores/analytics
       '@data-stores/graceful-shutdown':
         specifier: workspace:^
         version: link:../../data-stores/graceful-shutdown
@@ -2696,6 +2687,9 @@ importers:
       '@data-stores/graceful-shutdown':
         specifier: workspace:^
         version: link:../../data-stores/graceful-shutdown
+      '@duckdb/node-api':
+        specifier: ^1.4.5-r.1
+        version: 1.4.5-r.1
       '@jongleberry/api-server':
         specifier: ^3.1.0
         version: 3.1.0

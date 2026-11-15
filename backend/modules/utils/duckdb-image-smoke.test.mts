@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { checkDuckDbRuntime } from './image-smoke.mts'
+import { checkDuckDbRuntime } from './duckdb-image-smoke.mts'
 
 describe('DuckDB image runtime probe', () => {
   it('reports completion of the image native query probe', async () => {

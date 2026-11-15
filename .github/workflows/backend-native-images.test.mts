@@ -53,7 +53,7 @@ describe('backend native image validation', () => {
   it.each([
     'pnpm-lock.yaml',
     'backend/data-stores/analytics/package.json',
-    'backend/data-stores/analytics/image-smoke.mts',
+    'backend/modules/utils/duckdb-image-smoke.mts',
     'backend/modules/utils/image-smoke.mts',
     'backend/entrypoints/api/executable.mts',
     'backend/entrypoints/worker-cpu/executable.mts',

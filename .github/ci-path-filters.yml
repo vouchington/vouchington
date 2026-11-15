@@ -367,7 +367,7 @@ build-backend-infra:
   - 'backend/modules/worker-queue-inventory/worker-queue-policy.json'
   - 'backend/scripts/build/compile-backend-binaries.mts'
   - 'backend/scripts/build/compile-runtime-files.mts'
-  - 'backend/data-stores/analytics/image-smoke.mts'
+  - 'backend/modules/utils/duckdb-image-smoke.mts'
   - 'backend/modules/utils/image-smoke.mts'
   - 'backend/entrypoints/*/executable.mts'
   - 'backend/scripts/build/compile-source-rewrites.mts'
