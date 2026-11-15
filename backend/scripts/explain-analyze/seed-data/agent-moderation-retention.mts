@@ -1,4 +1,5 @@
 import { write } from '@data-stores/psql'
+import { MODERATOR_CONFIGS } from '@voucha/types/entities/moderator-configs'
 import { postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from './common.mts'
 import {
   insertAgentModerationRetentionBulk,
@@ -20,6 +21,12 @@ const RESTORE_PAGE_POSTS = 200
 const SYSTEM_USER_ID = seedUuid(2_000_000, '37')
 const BULK_AGENT_ID = seedUuid(2_000_000, '36')
 const BULK_PROMPT_ID = seedUuid(2_000_000, '35')
+// Production spreads results over the configured moderators' prompts; one extra prompt per
+// remaining configured moderator keeps global prompt_id selectivity realistic.
+const BULK_EXTRA_PROMPT_IDS = Array.from({ length: MODERATOR_CONFIGS.length - 1 }, (_, index) =>
+  seedUuid(2_000_100 + index, '35'),
+)
+const BULK_PROMPT_IDS = [BULK_PROMPT_ID, ...BULK_EXTRA_PROMPT_IDS]
 const CATEGORY_SYSTEM_USER_ID = seedUuid(2_000_001, '37')
 const CATEGORY_AGENT_ID = seedUuid(2_000_001, '36')
 const CATEGORY_PROMPT_ID = seedUuid(2_000_001, '35')
@@ -138,6 +145,14 @@ async function seedRetentionIdentities(bulkAgentDeletedAt: Date): Promise<void> 
      ON CONFLICT (id) DO NOTHING`,
     [BULK_PROMPT_ID, BULK_AGENT_ID, CATEGORY_PROMPT_ID, CATEGORY_AGENT_ID],
   )
+  await write(
+    `/* seedAgentModerationRetentionExtraPrompts */
+     INSERT INTO agent_prompts (id, agent_id, prompt, model_name, model_provider)
+     SELECT prompt_id, $2::uuid, 'EXPLAIN retention bulk prompt ' || ordinal, 'gpt-5.4-nano', 'openai'
+     FROM unnest($1::uuid[]) WITH ORDINALITY AS extra(prompt_id, ordinal)
+     ON CONFLICT (id) DO NOTHING`,
+    [BULK_EXTRA_PROMPT_IDS, BULK_AGENT_ID],
+  )
 }
 
 async function insertModerationRows(
@@ -160,7 +175,7 @@ async function insertModerationRows(
     newMs,
     postCount,
     BULK_AGENT_ID,
-    BULK_PROMPT_ID,
+    BULK_PROMPT_IDS,
   )
 }
 

@@ -84,7 +84,7 @@ async function dispatchMembershipJob(job: MembershipJob): Promise<void> {
       await recoverMembershipVerifications(job)
       return
     case 'recoverAppleNotifications':
-      await recoverAppleNotifications()
+      await recoverAppleNotifications(job)
       return
     case 'processGooglePlayNotification':
       await processMembershipProviderJob(job, () => processGooglePlayNotification(job.data))

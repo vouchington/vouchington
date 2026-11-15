@@ -5,5 +5,8 @@ export const MEMBERSHIP_SCENARIO_IDS = [
   'membership-change-batch-insert',
   'membership-change-batch-effects',
   'membership-change-batch-latest',
+  'membership-direct-replacement-heavy-owner',
+  'membership-refund-target-heavy-current',
+  'membership-refund-target-heavy-history',
   ...MEMBERSHIP_EXPIRY_SCENARIO_IDS,
 ] as const

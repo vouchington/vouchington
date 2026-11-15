@@ -4,6 +4,7 @@ import {
   IMAGE_DELETION_PAGE_JOB,
   type ImageDeletionPageData,
   type ImageDeletionRecoveryData,
+  type ImageDeletionRetirementCursor,
 } from './image-deletion-jobs.mts'
 import { createBackgroundBulkEnqueue } from '../enqueues.mts'
 import type { JobOptions } from 'glide-mq'
@@ -13,14 +14,25 @@ function getImageDeletionPageJobId(
   imageId: string,
   cursor: string | null,
   admittedThrough?: string,
+  retirement?: ImageDeletionRetirementCursor,
 ): string {
-  return `image-deletion-${imageId}-${cursor ?? 'start'}-${admittedThrough ?? 'pending'}`
+  const suffix = retirement
+    ? `-retirement-${retirement.family}-${'afterPlacementId' in retirement ? (retirement.afterPlacementId ?? 'start') : 'start'}`
+    : ''
+  return `image-deletion-${imageId}-${cursor ?? 'start'}-${admittedThrough ?? 'pending'}${suffix}`
 }
 const enqueuePages = createBackgroundBulkEnqueue(
   IMAGE_DELETION_PAGE_JOB,
   (data: ImageDeletionPageData) => ({
     data,
-    opts: { jobId: getImageDeletionPageJobId(data.imageId, data.cursor, data.admittedThrough) },
+    opts: {
+      jobId: getImageDeletionPageJobId(
+        data.imageId,
+        data.cursor,
+        data.admittedThrough,
+        data.retirement,
+      ),
+    },
   }),
 )
 
@@ -28,15 +40,17 @@ export async function enqueueImageDeletionPage(
   imageId: string,
   cursor: string | null,
   admittedThrough?: string,
+  retirement?: ImageDeletionRetirementCursor,
 ): Promise<void> {
-  await enqueueImageDeletionPages([{ imageId, cursor, admittedThrough }])
+  await enqueueImageDeletionPages([{ imageId, cursor, admittedThrough, retirement }])
 }
 
 export async function enqueueImageDeletionPages(inputs: ImageDeletionPageData[]): Promise<void> {
   await enqueueBulkReactivatingFinished({
     queue: background,
     inputs,
-    jobIdOf: data => getImageDeletionPageJobId(data.imageId, data.cursor, data.admittedThrough),
+    jobIdOf: data =>
+      getImageDeletionPageJobId(data.imageId, data.cursor, data.admittedThrough, data.retirement),
     enqueueBulk: enqueuePages,
   })
 }

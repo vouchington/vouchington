@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
 import { background } from '@queues/background/queues'
-import { IMAGE_DELETION_RECOVER_JOB } from '@queues/background/enqueues/image-deletion-jobs'
+import {
+  IMAGE_DELETION_RECOVER_JOB,
+  IMAGE_DELETION_PAGE_JOB,
+  type ImageDeletionPageData,
+} from '@queues/background/enqueues/image-deletion-jobs'
 import { readAllQueueJobs } from './queue-jobs.mts'
 import { approveTestPost } from './entities/post-clearance.mts'
 import { createTestUserDirect } from './entities/users-direct.mts'
@@ -111,4 +115,21 @@ export async function readImageDeletionPostOutcome(postId: string) {
   const state = await getPostModerationResetState(postId)
   if (!state) throw new Error('Owned deletion fixture post disappeared')
   return state
+}
+
+/** Select exactly the next owned retirement continuation without running a worker or polling. */
+export async function getNextTestImageDeletionRetirementPage(
+  imageId: string,
+  processed: Set<string>,
+): Promise<ImageDeletionPageData> {
+  const jobs = (await readAllQueueJobs(background)).filter(
+    job =>
+      job.name === IMAGE_DELETION_PAGE_JOB.name &&
+      (job.data as ImageDeletionPageData).imageId === imageId &&
+      (job.data as ImageDeletionPageData).retirement?.family === 'post' &&
+      !processed.has(job.id),
+  )
+  if (jobs.length !== 1) throw new Error('Expected exactly one owned retirement continuation')
+  processed.add(jobs[0]!.id)
+  return jobs[0]!.data as ImageDeletionPageData
 }

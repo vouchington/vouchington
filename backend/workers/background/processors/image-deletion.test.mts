@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
 import {
   IMAGE_DELETION_RECOVER_JOB,
+  IMAGE_DELETION_PAGE_JOB,
+  type ImageDeletionPageData,
   type ImageDeletionRecoveryData,
 } from '@queues/background/enqueues/image-deletion-jobs'
 import { background } from '@queues/background/queues'
@@ -45,8 +47,19 @@ describe('image deletion recovery dispatcher', () => {
       }),
     )
     for (const imageId of imageIds) {
+      await deleteImageById(imageId)
+      const retirement = (await readAllQueueJobs(background)).find(
+        candidate =>
+          candidate.name === IMAGE_DELETION_PAGE_JOB.name &&
+          (candidate.data as ImageDeletionPageData).imageId === imageId &&
+          (candidate.data as ImageDeletionPageData).retirement?.family === 'post',
+      )
+      expect(retirement).toBeDefined()
       await expect(
-        deleteImageById(imageId, { beginTransaction: failingImageDeletionTransaction() }),
+        processImageDeletionPage(imageId, {
+          retirement: (retirement!.data as ImageDeletionPageData).retirement,
+          beginTransaction: failingImageDeletionTransaction(),
+        }),
       ).rejects.toThrow('injected middle deletion page failure')
     }
     const data: ImageDeletionRecoveryData = { imageIds }
@@ -85,7 +98,16 @@ describe('image deletion recovery dispatcher', () => {
       data: { imageId: imageIds[1], cursor: null },
     })
     for (const fixture of fixtures) {
-      await processImageDeletionPage(fixture.imageId)
+      const retirement = (await readAllQueueJobs(background)).find(
+        candidate =>
+          candidate.name === IMAGE_DELETION_PAGE_JOB.name &&
+          (candidate.data as ImageDeletionPageData).imageId === fixture.imageId &&
+          (candidate.data as ImageDeletionPageData).retirement?.family === 'post',
+      )
+      expect(retirement).toBeDefined()
+      await processImageDeletionPage(fixture.imageId, {
+        retirement: (retirement!.data as ImageDeletionPageData).retirement,
+      })
       await expect(countPostImageRevisions(fixture.postIds[0]!)).resolves.toBe(1)
     }
     // Both deletions finished their storage cleanup; store those objects again so any repeated

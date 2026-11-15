@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { createTestMembership, createTestUser } from '@voucha/test-helpers'
+import { createTestAdministratorRefundRequest as createRequest } from '@voucha/test-helpers/membership-administrator-refund-request'
 import {
   getMembershipRefundEventFixtureForTest,
   getRefundOperationLeaseTokenForTest,
 } from '../../../test-helpers/entities/membership-refund-reconciliation-state.mts'
 import { recordMembershipRefundEvent } from '../refunds/index.mts'
+import { getAdministratorRefundRequestByKey } from './administrator-request.mts'
 import {
   claimAdministratorRefundRequest,
   completeRefundReconciliation,
@@ -49,6 +50,30 @@ describe('refund reconciliation ledger', () => {
       claimAdministratorRefundRequest(secondApplicationRequest),
     ])
     expect(firstApplication.id).not.toBe(secondApplication.id)
+    for (const [scopedRequest, operation] of [
+      [firstApplicationRequest, firstApplication],
+      [secondApplicationRequest, secondApplication],
+    ] as const) {
+      await expect(claimAdministratorRefundRequest(scopedRequest)).resolves.toEqual(operation)
+    }
+  })
+  it('looks up the exact administrator request within its provider application', async () => {
+    const idempotencyKey = `administrator-refund-${randomUUID()}`
+    const firstApplicationId = `first-${randomUUID()}`
+    const secondApplicationId = `second-${randomUUID()}`
+    const first = await claimAdministratorRefundRequest(
+      await createRequest({ idempotencyKey, providerApplicationId: firstApplicationId }),
+    )
+    await claimAdministratorRefundRequest(
+      await createRequest({ idempotencyKey, providerApplicationId: secondApplicationId }),
+    )
+    await expect(
+      getAdministratorRefundRequestByKey(idempotencyKey, {
+        provider: 'stripe',
+        providerEnvironment: 'test',
+        providerApplicationId: firstApplicationId,
+      }),
+    ).resolves.toMatchObject({ id: first.id })
   })
   it('rejects a reused administrator idempotency key when the request changes', async () => {
     const original = await createRequest()
@@ -266,35 +291,4 @@ async function createUnacknowledgedAttempt() {
   const lease = await leaseDueRefundReconciliation(operation.id)
   if (!lease) throw new Error('Expected a due administrator refund reconciliation lease')
   return recordRefundReconciliationAttempt(lease, `provider-idempotency-${randomUUID()}`)
-}
-async function createRequest(
-  options: {
-    cancelRequested?: boolean
-    idempotencyKey?: string
-    providerApplicationId?: string
-  } = {},
-) {
-  const [member, administrator] = await Promise.all([createTestUser(), createTestUser()])
-  const membership = await createTestMembership({
-    user_id: member.id,
-    provider_application_id: options.providerApplicationId,
-    provider_environment: 'test',
-    stripe_subscription_id: `sub-refund-reconciliation-${randomUUID()}`,
-  })
-  const periodStartedAt = new Date('2026-09-01T00:00:00.000Z')
-  return {
-    amount: { amount: 700, currency: 'usd' as const },
-    cancelRequested: options.cancelRequested ?? true,
-    idempotencyKey: options.idempotencyKey ?? `administrator-refund-${randomUUID()}`,
-    issuedById: administrator.id,
-    membershipId: membership.id,
-    note: 'Customer requested a refund',
-    periodEndsAt: new Date('2026-10-01T00:00:00.000Z'),
-    periodStartedAt,
-    providerPaymentReference: `payment-${randomUUID()}`,
-    providerSubscriptionReference:
-      options.cancelRequested === false ? null : `sub-refund-reconciliation-${randomUUID()}`,
-    reason: 'requested' as const,
-    requestFingerprint: randomUUID().replaceAll('-', '').repeat(2),
-  }
 }

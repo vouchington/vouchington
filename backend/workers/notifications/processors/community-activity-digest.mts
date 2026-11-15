@@ -1,3 +1,4 @@
+import { findCommunityActivityDigestThroughUserId } from '@services/notifications/community-activity-digest-recipients'
 import { processRetainedSweep } from '@data-stores/valkey-glide-mq'
 import { getPagedDispatchLimit } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
 import type { CommunityActivityDigestDispatchData } from '@queues/background/enqueues/notifications-domain'
@@ -39,10 +40,22 @@ export async function processCommunityActivityDigestDispatch(
   return processRetainedSweep<CommunityActivityDigestDispatchData, { hasMore: boolean }>(
     job,
     async save => {
+      let throughUserId = job.data.throughUserId
+      if (throughUserId === undefined) {
+        const upper = await findCommunityActivityDigestThroughUserId(userIds)
+        if (!upper) {
+          await advanceCommunityActivityDigestCursor(start, end, options)
+          return { hasMore: false }
+        }
+        throughUserId = upper
+        await save({ ...job.data, throughUserId })
+      }
       const result = await createCommunityActivityDigestBatch({
         windowStart: start,
         windowEnd: end,
         afterUserId: job.data.afterUserId,
+        afterCommunityId: job.data.afterCommunityId,
+        throughUserId,
         userIds,
         batchSize,
         now: options.now,
@@ -51,7 +64,12 @@ export async function processCommunityActivityDigestDispatch(
         result.created.map(item => ({ userId: item.userId, notificationId: item.notificationId })),
       )
       if (result.nextUserId) {
-        await save({ ...job.data, afterUserId: result.nextUserId })
+        await save({
+          ...job.data,
+          throughUserId,
+          afterUserId: result.nextUserId,
+          afterCommunityId: result.nextCommunityId,
+        })
         return { hasMore: true }
       }
       // A later window can finish before a failed predecessor. The next tick reactivates it.

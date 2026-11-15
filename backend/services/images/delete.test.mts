@@ -15,11 +15,16 @@ import {
   createImageDeletionFixture,
   failingImageDeletionAcknowledgement,
   failingImageDeletionTransaction,
+  getNextTestImageDeletionRetirementPage,
   readImageDeletionPostOutcome,
   quarantineBeforeImageDeletionTransaction,
 } from '@voucha/test-helpers/image-deletion'
 import { seedOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
 import { backgroundQueue as entitiesListeners } from '@voucha/test-helpers/shared-background-queue'
+import {
+  IMAGE_DELETION_PAGE_JOB,
+  type ImageDeletionPageData,
+} from '@queues/background/enqueues/image-deletion-jobs'
 import { ENTITY_LISTENERS_POST_UPDATED_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
 import { background } from '@queues/background/queues'
 import { deleteImageById, processImageDeletionPage } from './delete.mts'
@@ -38,8 +43,18 @@ describe('paged image deletion', () => {
     await expect(getPostByAnyCached(postId)).resolves.toMatchObject({
       clearance_status: 'approved',
     })
+    await deleteImageById(fixture.imageId)
+    const retirement = (await readAllQueueJobs(background)).find(
+      job =>
+        job.name === IMAGE_DELETION_PAGE_JOB.name &&
+        (job.data as ImageDeletionPageData).imageId === fixture.imageId &&
+        (job.data as ImageDeletionPageData).retirement?.family === 'post',
+    )
+    expect(retirement).toBeDefined()
     await withEntityListenerCompletion([{ jobName: 'processPostUpdated', entityId: postId }], () =>
-      deleteImageById(fixture.imageId),
+      processImageDeletionPage(fixture.imageId, {
+        retirement: (retirement!.data as ImageDeletionPageData).retirement,
+      }),
     )
     await expect(getPostByAnyCached(postId)).resolves.toMatchObject({
       clearance_status: 'pending',
@@ -100,8 +115,19 @@ describe('paged image deletion', () => {
     ])
     const restore = overrideDynamicConfigFieldsForTest(imagesWorkConfig, { deletion_page_size: 2 })
     try {
+      await deleteImageById(fixture.imageId)
+      const processed = new Set<string>()
+      for (let page = 0; page < Math.ceil(fixture.postIds.length / 2) - 1; page++) {
+        const data = await getNextTestImageDeletionRetirementPage(fixture.imageId, processed)
+        await processImageDeletionPage(fixture.imageId, { retirement: data.retirement })
+      }
+      const finalRetirement = await getNextTestImageDeletionRetirementPage(
+        fixture.imageId,
+        processed,
+      )
       await expect(
-        deleteImageById(fixture.imageId, {
+        processImageDeletionPage(fixture.imageId, {
+          retirement: finalRetirement.retirement,
           beginTransaction: failingImageDeletionAcknowledgement(),
         }),
       ).rejects.toThrow('injected deletion admission acknowledgement failure')
@@ -118,14 +144,14 @@ describe('paged image deletion', () => {
         deletion_page_size: 1,
       })
       try {
-        await processImageDeletionPage(fixture.imageId)
+        await processImageDeletionPage(fixture.imageId, { retirement: { family: 'complete' } })
         const partialAdmission = await background.getJob(
-          `image-deletion-${fixture.imageId}-${fixture.postIds[1]!}-${fixture.postIds[0]!}`,
+          `image-deletion-${fixture.imageId}-${fixture.postIds[1]!}-${fixture.postIds[0]!}-retirement-complete-start`,
         )
         expect(partialAdmission).toMatchObject({
           data: { cursor: fixture.postIds[1], admittedThrough: fixture.postIds[0] },
         })
-        await processImageDeletionPage(fixture.imageId)
+        await processImageDeletionPage(fixture.imageId, { retirement: { family: 'complete' } })
         await expect(Promise.all(fixture.postIds.map(countPostImageRevisions))).resolves.toEqual([
           1, 1, 0,
         ])
@@ -133,7 +159,7 @@ describe('paged image deletion', () => {
           Promise.all(fixture.postIds.slice(0, 2).map(getPostModerationResetState)),
         ).resolves.toEqual(committed)
         await expect(storage.deleted()).resolves.toEqual([])
-        await processImageDeletionPage(fixture.imageId)
+        await processImageDeletionPage(fixture.imageId, { retirement: { family: 'complete' } })
         await expect(Promise.all(fixture.postIds.map(countPostImageRevisions))).resolves.toEqual([
           1, 1, 1,
         ])
@@ -163,6 +189,17 @@ describe('paged image deletion', () => {
     const restore = overrideDynamicConfigFieldsForTest(imagesWorkConfig, { deletion_page_size: 1 })
     try {
       await deleteImageById(paged.imageId, { beginTransaction: transactions.beginTransaction })
+      await expect(Promise.all(paged.postIds.map(countPostImageRevisions))).resolves.toEqual([
+        0, 0, 0,
+      ])
+      const processed = new Set<string>()
+      for (let remaining = paged.postIds.length; remaining > 0; remaining--) {
+        const data = await getNextTestImageDeletionRetirementPage(paged.imageId, processed)
+        await processImageDeletionPage(paged.imageId, {
+          retirement: data.retirement,
+          beginTransaction: transactions.beginTransaction,
+        })
+      }
       expect(transactions.statements[0]!.join('\n')).not.toMatch(/FROM posts\b|UPDATE posts\b/i)
       expect(transactions.postScopeKeys[0]).toEqual([])
       await expect(getImageByAny(paged.imageId)).resolves.toBeNull()
@@ -172,7 +209,7 @@ describe('paged image deletion', () => {
       const firstPageState = await getPostModerationResetState(paged.postIds[0]!)
       await expect(storage.deleted()).resolves.toEqual([])
       const continuation = await background.getJob(
-        `image-deletion-${paged.imageId}-${paged.postIds[0]!}-${paged.postIds[0]!}`,
+        `image-deletion-${paged.imageId}-${paged.postIds[0]!}-${paged.postIds[0]!}-retirement-complete-start`,
       )
       expect(continuation).toMatchObject({
         data: { imageId: paged.imageId, cursor: paged.postIds[0] },
@@ -181,6 +218,7 @@ describe('paged image deletion', () => {
       await expect(
         processImageDeletionPage(paged.imageId, {
           beginTransaction: failingImageDeletionTransaction(),
+          retirement: { family: 'complete' },
         }),
       ).rejects.toThrow('injected middle deletion page failure')
       await expect(cleanupStagedUploadSource(paged.imageId)).resolves.toBe(false)
@@ -190,7 +228,7 @@ describe('paged image deletion', () => {
       ])
       await expect(storage.deleted()).resolves.toEqual([])
 
-      await processImageDeletionPage(paged.imageId)
+      await processImageDeletionPage(paged.imageId, { retirement: { family: 'complete' } })
       await expect(Promise.all(paged.postIds.map(countPostImageRevisions))).resolves.toEqual([
         1, 1, 0,
       ])
@@ -205,13 +243,13 @@ describe('paged image deletion', () => {
         paged.postIds.slice(0, 2),
       )
 
-      await processImageDeletionPage(paged.imageId)
-      await processImageDeletionPage(paged.imageId)
+      await processImageDeletionPage(paged.imageId, { retirement: { family: 'complete' } })
+      await processImageDeletionPage(paged.imageId, { retirement: { family: 'complete' } })
       await expect(Promise.all(paged.postIds.map(countPostImageRevisions))).resolves.toEqual([
         1, 1, 1,
       ])
       const completed = await Promise.all(paged.postIds.map(getPostModerationResetState))
-      await processImageDeletionPage(paged.imageId)
+      await processImageDeletionPage(paged.imageId, { retirement: { family: 'complete' } })
       await expect(Promise.all(paged.postIds.map(getPostModerationResetState))).resolves.toEqual(
         completed,
       )
@@ -226,7 +264,16 @@ describe('paged image deletion', () => {
       })
       try {
         await deleteImageById(baseline.imageId)
-        await processImageDeletionPage(baseline.imageId)
+        const retirement = (await readAllQueueJobs(background)).find(
+          job =>
+            job.name === IMAGE_DELETION_PAGE_JOB.name &&
+            (job.data as ImageDeletionPageData).imageId === baseline.imageId &&
+            (job.data as ImageDeletionPageData).retirement?.family === 'post',
+        )
+        expect(retirement).toBeDefined()
+        await processImageDeletionPage(baseline.imageId, {
+          retirement: (retirement!.data as ImageDeletionPageData).retirement,
+        })
         await expect(Promise.all(baseline.postIds.map(countPostImageRevisions))).resolves.toEqual([
           1, 1, 1,
         ])

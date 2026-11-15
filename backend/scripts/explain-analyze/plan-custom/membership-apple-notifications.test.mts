@@ -20,14 +20,8 @@ function result(
     query_text: '/* findRecoverableAppleNotificationJobs */ SELECT 1',
     plan: {
       Plan: {
-        'Node Type': 'Result',
-        Plans: [
-          {
-            'Node Type': 'Limit',
-            'Subplan Name': 'CTE candidate_page',
-            Plans: sorted ? [{ 'Node Type': 'Sort', Plans: [scan] }] : [scan],
-          },
-        ],
+        'Node Type': 'Limit',
+        Plans: sorted ? [{ 'Node Type': 'Sort', Plans: [scan] }] : [scan],
       },
     },
     execution_time_ms: 0,
@@ -37,7 +31,7 @@ function result(
   }
 }
 
-describe('Apple notification recovery generic candidate plan', () => {
+describe('Apple notification recovery generic ordered walk', () => {
   const ordered = 'idx_membership_provider_evidence_records__pending_received_at'
   const pendingId = 'idx_membership_provider_evidence_records__pending_id'
 
@@ -51,7 +45,7 @@ describe('Apple notification recovery generic candidate plan', () => {
     )
   })
 
-  it('rejects a broad or sorted generic candidate page', () => {
+  it('rejects a broad or sorted generic evidence walk', () => {
     expect(() => assertAppleNotificationRecoveryPlan(result(ordered, 1_501))).toThrow(
       /bounded ordered pending-evidence index page/,
     )

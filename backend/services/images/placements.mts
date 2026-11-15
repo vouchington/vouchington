@@ -1,6 +1,7 @@
 import { read, write } from '@data-stores/psql'
 import type { QueryExecutor, QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+import { getImagesWorkLimit } from './work-limits.mts'
 import { copyrightPlacementHostIsLiveSql } from './placement-copyright-host-sql.mts'
 import { buildCopyrightPlacementsMutationSql } from './placement-copyright-mutation-sql.mts'
 import {
@@ -18,22 +19,31 @@ export type CopyrightImagePlacementMutation =
   | { status: 'stale' | 'deleted'; placement: CopyrightImagePlacement }
   | { status: 'not_found' }
 
+/** Retire one inspected binding page; already-retired rows still advance the cursor. */
 export async function retireImagePlacementsForDeletedImage(
   imageId: string,
   query: TransactionQuery,
-): Promise<void> {
-  await query(
-    sql`/* retireImagePlacementsForDeletedImage */
+  afterPlacementId?: string,
+): Promise<string[]> {
+  const page = sql`/* retireImagePlacementsForDeletedImage */
+    WITH page AS MATERIALIZED (
+      SELECT placement_id FROM image_placements WHERE image_id = ${imageId}`
+  if (afterPlacementId) page.append(sql` AND placement_id > ${afterPlacementId}`)
+  page.append(sql`
+      ORDER BY placement_id LIMIT ${getImagesWorkLimit('deletion_page_size')}
+    ), retired AS (
       UPDATE media_placements placement
       SET retired_at = CURRENT_TIMESTAMP,
           retirement_reason = 'asset_deleted',
           revision = placement.revision + 1
-      FROM image_placements image_placement
-      WHERE image_placement.placement_id = placement.id
-        AND image_placement.image_id = ${imageId}
+      WHERE placement.id = ANY(ARRAY(SELECT placement_id FROM page))
         AND placement.retired_at IS NULL
-    `,
-  )
+      RETURNING placement.id
+    )
+    SELECT placement_id FROM page ORDER BY placement_id
+  `)
+  const { rows } = await query<{ placement_id: string }>(page)
+  return rows.map(row => row.placement_id)
 }
 
 export async function getImagePlacementForCopyright(
