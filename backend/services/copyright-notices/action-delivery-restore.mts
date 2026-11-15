@@ -37,13 +37,6 @@ export async function completeUnavailableRestore(input: {
         query: input.query,
       }),
     () => syncCopyrightIncidentsAfterStatutoryRestoreInTransaction(input.legal, input.query),
-    () =>
-      insertCopyrightActionLifecycleEvent(
-        input.legal,
-        input.intentId,
-        'restoration_unavailable',
-        input.query,
-      ),
   ])
 }
 
@@ -110,12 +103,6 @@ export async function authorizeRestoreBeforeDelivery(input: {
   query: Awaited<ReturnType<typeof beginTransaction>>
 }): Promise<void> {
   await liftCopyrightRestrictionAndResolveDeadline({ ...input, restorationOutcome: 'visible' })
-  await insertCopyrightActionLifecycleEvent(
-    input.legal,
-    input.intentId,
-    'restoration_authorized_pending_delivery',
-    input.query,
-  )
 }
 
 async function liftCopyrightRestrictionAndResolveDeadline(input: {

@@ -21,7 +21,7 @@ export async function mutateCopyrightPlacement(input: {
   current: CurrentPlacement
   now: Date
   query: Awaited<ReturnType<typeof beginTransaction>>
-}): Promise<{ placement: CurrentPlacement } | { terminal: 'stale' }> {
+}): Promise<{ placement: CurrentPlacement } | { terminal: 'stale'; failureMessage: string }> {
   const mutation =
     (input.legal.action === 'withhold' && input.current.withheld) ||
     (input.legal.action === 'restore' && !input.current.withheld)
@@ -56,7 +56,7 @@ export async function mutateCopyrightPlacement(input: {
     failureMessage: `Placement transition was ${mutation.status}.`,
     query: input.query,
   })
-  return { terminal: 'stale' }
+  return { terminal: 'stale', failureMessage: `Placement transition was ${mutation.status}.` }
 }
 
 export function isCurrentPlacementForIntent(

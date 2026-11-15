@@ -10,6 +10,20 @@ import {
   type CopyrightActionFacts,
 } from './action-delivery-facts.mts'
 
+/** A conditional terminal write lost its existing worker ownership. */
+export class CopyrightActionLeaseExpiredError extends Error {
+  readonly #query: TransactionQuery
+
+  constructor(query: TransactionQuery) {
+    super('Copyright action lease expired before completion')
+    this.#query = query
+  }
+
+  belongsTo(query: TransactionQuery | undefined): boolean {
+    return this.#query === query
+  }
+}
+
 export type { LockedCopyrightActionDelivery }
 export async function lockCopyrightActionDelivery(
   intentId: string,
@@ -112,5 +126,5 @@ export async function completeCopyrightActionIntentInTransaction(input: {
       available_at = NULL
     WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken} AND lease_expires_at > clock_timestamp()
   `)
-  if (rowCount !== 1) throw new Error('Copyright action lease expired before completion')
+  if (rowCount !== 1) throw new CopyrightActionLeaseExpiredError(input.query)
 }
