@@ -1,27 +1,30 @@
+import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { CommunityRestriction, CommunityRestrictionsResponseBody } from '@/types/api-responses'
 import { makeCommunity } from '@/test-helpers/api-responses/communities'
 
-const { mockActivate, mockLift, mockRefresh, mockOnError, mockOnSuccess } = vi.hoisted(() => ({
-  mockActivate: vi.fn<VitestLooseMock>(),
-  mockLift: vi.fn<VitestLooseMock>(),
-  mockRefresh: vi.fn<() => void>(),
-  mockOnError: vi.fn<VitestLooseMock>(),
-  mockOnSuccess: vi.fn<(message: string) => void>(),
-}))
+const { mockActivate, mockLift, mockGetRestrictions, mockOnError, mockOnSuccess } = vi.hoisted(
+  () => ({
+    mockActivate: vi.fn<VitestLooseMock>(),
+    mockLift: vi.fn<VitestLooseMock>(),
+    mockGetRestrictions: vi.fn<VitestLooseMock>(),
+    mockOnError: vi.fn<VitestLooseMock>(),
+    mockOnSuccess: vi.fn<(message: string) => void>(),
+  }),
+)
 
 vi.mock(
   import('next/navigation'),
-  () =>
-    ({
-      useRouter: () => ({ refresh: mockRefresh }),
-    }) as unknown as typeof import('next/navigation'),
+  () => navMockModule as unknown as typeof import('next/navigation'),
 )
+const mockNav = createNavMock()
+const mockRefresh = mockNav.refresh
 
 vi.mock(import('@/lib/api/client/community-restrictions'), () => ({
   activateCommunityRestrictions: mockActivate,
   liftCommunityRestriction: mockLift,
+  getCommunityRestrictionPage: mockGetRestrictions,
 }))
 
 vi.mock(import('@/lib/on-error'), () => ({
@@ -73,6 +76,59 @@ describe('CommunityRaidModePanel', () => {
 
     expect(screen.getByText('Vote spike detected')).toBeInTheDocument()
     expect(screen.getByText(/2 unresolved velocity spikes/)).toBeInTheDocument()
+  })
+
+  it('shows past restrictions separately and continues their page without lift controls', async () => {
+    const first = makeData([
+      makeRestriction({ id: 'past-1', lifted_at: '2026-01-02T00:00:00.000Z' }),
+    ])
+    first.page_info = { has_next_page: true, start_cursor: null, end_cursor: 'past-cursor' }
+    mockGetRestrictions.mockResolvedValueOnce(first)
+    mockGetRestrictions.mockResolvedValueOnce(
+      makeData([makeRestriction({ id: 'past-2', lifted_at: '2026-01-02T00:00:00.000Z' })]),
+    )
+    render(
+      <CommunityRaidModePanel
+        community={makeCommunity()}
+        initialData={makeData([])}
+      />,
+    )
+    fireEvent.click(screen.getByRole('tab', { name: 'Past' }))
+    await screen.findByRole('button', { name: 'Load more' })
+    expect(mockGetRestrictions).toHaveBeenLastCalledWith('test-community', {
+      status: 'past',
+      after: undefined,
+    })
+    expect(screen.queryByRole('button', { name: 'Lift' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
+    await waitFor(() =>
+      expect(mockGetRestrictions).toHaveBeenLastCalledWith('test-community', {
+        status: 'past',
+        after: 'past-cursor',
+      }),
+    )
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Load more' })).not.toBeInTheDocument(),
+    )
+    expect(document.querySelectorAll('[data-pw="community-raid-mode-active-row"]')).toHaveLength(2)
+  })
+
+  it('keeps the server-rendered active page when loading its first continuation', async () => {
+    const initial = makeData([makeRestriction({ id: 'active-1' })])
+    initial.page_info = { has_next_page: true, start_cursor: null, end_cursor: 'active-cursor' }
+    mockGetRestrictions.mockResolvedValueOnce(makeData([makeRestriction({ id: 'active-2' })]))
+    render(
+      <CommunityRaidModePanel
+        community={makeCommunity()}
+        initialData={initial}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'Lift' })).toHaveLength(2))
+    expect(mockGetRestrictions).toHaveBeenLastCalledWith('test-community', {
+      status: 'active',
+      after: 'active-cursor',
+    })
   })
 
   it('lifts an active restriction', async () => {

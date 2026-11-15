@@ -45,9 +45,9 @@ _none_
 
 **Indexes:**
 
-- `idx_oauth_authorization_requests__browser`: `CREATE INDEX idx_oauth_authorization_requests__browser ON public.oauth_authorization_requests USING btree (browser_binding_hash, client_id, id) WHERE ((approved_at IS NULL) AND (denied_at IS NULL))`
 - `idx_oauth_authorization_requests__client`: `CREATE INDEX idx_oauth_authorization_requests__client ON public.oauth_authorization_requests USING btree (client_id, id)`
 - `idx_oauth_authorization_requests__expiry`: `CREATE INDEX idx_oauth_authorization_requests__expiry ON public.oauth_authorization_requests USING btree (expires_at, id)`
+- `idx_oauth_authorization_requests__pending_browser_client`: `CREATE UNIQUE INDEX idx_oauth_authorization_requests__pending_browser_client ON public.oauth_authorization_requests USING btree (browser_binding_hash, client_id) WHERE ((approved_at IS NULL) AND (denied_at IS NULL))`
 - `idx_oauth_authorization_requests__user`: `CREATE INDEX idx_oauth_authorization_requests__user ON public.oauth_authorization_requests USING btree (user_id, id)`
 - `oauth_authorization_requests_pkey`: `CREATE UNIQUE INDEX oauth_authorization_requests_pkey ON public.oauth_authorization_requests USING btree (id)`
 

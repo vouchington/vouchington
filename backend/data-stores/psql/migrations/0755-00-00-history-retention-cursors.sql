@@ -7,9 +7,7 @@ CREATE TYPE history_retention_cleanup_names AS ENUM (
   'fediverse_instance_integration_changes',
   'community_agent_prompt_revisions',
   'followed_user_import_requests',
-  'pending_user_import_requests',
-  'referral_attribution_scrub',
-  'referral_attribution_expiry'
+  'pending_user_import_requests'
 );
 
 CREATE TABLE IF NOT EXISTS history_retention_cursors (
@@ -24,7 +22,7 @@ CREATE TRIGGER trigger_history_retention_cursors_updated_at
 BEFORE UPDATE ON history_retention_cursors
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
-COMMENT ON TYPE history_retention_cleanup_names IS 'Independent bounded config, setting, import, and referral history sweeps.';
+COMMENT ON TYPE history_retention_cleanup_names IS 'Independent bounded config, setting, and import history sweeps.';
 COMMENT ON TABLE history_retention_cursors IS 'Durable UUIDv7 progress for bounded history retention passes.';
 COMMENT ON COLUMN history_retention_cursors.cleanup_name IS 'History family whose pass this row checkpoints.';
 COMMENT ON COLUMN history_retention_cursors.cursor_id IS 'Last raw candidate id scanned, even when its row was a keeper.';

@@ -20,27 +20,6 @@ describe('retention day validation', () => {
     ).rejects.toThrow('retentionDays must be a positive integer')
   })
 
-  it('rejects unsafe referral attribution retention windows', async () => {
-    await expect(
-      runDataRetentionCleanup(
-        { batchSize: 500, maxBatches: 1 },
-        {
-          families: ['oldReferralAttributions'],
-          oldReferralAttributions: { retentionDays: 0, maxBatches: 1 },
-        },
-      ).then(result => result.oldReferralAttributions),
-    ).rejects.toThrow('retentionDays must be a positive integer')
-    await expect(
-      runDataRetentionCleanup(
-        { batchSize: 500, maxBatches: 1 },
-        {
-          families: ['oldReferralAttributions'],
-          oldReferralAttributions: { retentionDays: Infinity, maxBatches: 1 },
-        },
-      ).then(result => result.oldReferralAttributions),
-    ).rejects.toThrow('retentionDays must be a positive integer')
-  })
-
   it('rejects unsafe OAuth account retention windows', async () => {
     await expect(
       runDataRetentionCleanup(

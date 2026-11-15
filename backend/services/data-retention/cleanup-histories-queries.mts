@@ -88,27 +88,5 @@ export async function mutatePage(
       )
       return result.rowCount ?? 0
     }
-    case 'referral_attribution_scrub': {
-      const result = await query(
-        `/* scrubReferralHistoryPage */
-         UPDATE session_referral_attributions
-         SET landing_url = NULL, utm_source = NULL, utm_medium = NULL,
-             utm_campaign = NULL, utm_content = NULL
-         WHERE id = ANY($1::uuid[])
-           AND (landing_url IS NOT NULL OR utm_source IS NOT NULL
-             OR utm_medium IS NOT NULL OR utm_campaign IS NOT NULL
-             OR utm_content IS NOT NULL)`,
-        [ids],
-      )
-      return result.rowCount ?? 0
-    }
-    case 'referral_attribution_expiry': {
-      const result = await query(
-        `/* expireReferralHistoryPage */
-         DELETE FROM session_referral_attributions WHERE id = ANY($1::uuid[])`,
-        [ids],
-      )
-      return result.rowCount ?? 0
-    }
   }
 }

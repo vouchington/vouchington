@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import { write } from '@data-stores/psql'
 
 export const OAUTH_AUTHORITY_NOISE_COUNT = 4000
@@ -55,4 +56,38 @@ export async function analyzeOAuthAuthorityCorpus(): Promise<void> {
   )
   await write('/* analyzeOAuthAuthorityCorpus oauth_refresh_tokens */ ANALYZE oauth_refresh_tokens')
   await write('/* analyzeOAuthAuthorityCorpus oauth_access_tokens */ ANALYZE oauth_access_tokens')
+}
+
+/** Isolate the committed request while rolled-back EXPLAIN INSERTs reuse its original key. */
+export async function captureOAuthAuthorityRequest(
+  binding: string,
+  create: () => Promise<{ request_id: string }>,
+  capture: (
+    id: 'oauth-authority-request',
+    run: () => Promise<unknown>,
+    afterCapture: () => Promise<void>,
+  ) => Promise<void>,
+): Promise<string> {
+  let requestId = ''
+  try {
+    await capture(
+      'oauth-authority-request',
+      async () => {
+        requestId = (await create()).request_id
+      },
+      async () => {
+        await write(
+          '/* isolateExplainOAuthRequestBinding */ UPDATE oauth_authorization_requests SET browser_binding_hash = $2 WHERE id = $1',
+          [requestId, randomBytes(32).toString('hex')],
+        )
+      },
+    )
+    return requestId
+  } finally {
+    if (requestId)
+      await write(
+        '/* restoreExplainOAuthRequestBinding */ UPDATE oauth_authorization_requests SET browser_binding_hash = $2 WHERE id = $1',
+        [requestId, binding],
+      )
+  }
 }

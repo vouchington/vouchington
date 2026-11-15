@@ -179,7 +179,7 @@ export type PsqlJobPayloads = {
   cleanupOperationalTombstones: OperationalTombstoneRetentionData
   continueAgentModerationRetentionCleanup: AgentModerationRetentionContinuationData
   refreshMaterializedView: RefreshMaterializedViewData
-  reconcileVoteDrift: Record<string, never>
+  reconcileVoteDrift: { afterId?: string }
   'copyright.case-purge': CopyrightCasePurgeJobData
   'copyright.account-clock-sync': CopyrightAccountClockSyncJobData
 }

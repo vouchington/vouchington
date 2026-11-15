@@ -3,14 +3,13 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import { CRAWL_HTML_SNAPSHOT_RETENTION_DAYS, CRAWL_CLEANUP_MAX_AGE_DAYS } from '@voucha/config'
 import sql from 'sql-template-strings'
+import { inspectBoilerplateCrawls } from './inspect-boilerplate-crawls.mts'
 
 type BoilerplateRemovalUrlCandidate = {
   id: string
   url: string
+  crawl_id: string
 }
-
-// Escape SQL LIKE metacharacters (% and _)
-const escapeLikePattern = (pattern: string): string => pattern.replace(/[%_\\]/g, '\\$&')
 
 export const searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId = async (
   hostnameId: string,
@@ -18,7 +17,15 @@ export const searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId = async (
   limit: number = 3,
   queryOptions: QueryOptions = {},
   now: () => Date = () => new Date(),
-): Promise<BoilerplateRemovalUrlCandidate[]> => {
+  after?: string,
+  crawlAfter?: string,
+  crawlProbe?: string,
+): Promise<{
+  candidates: BoilerplateRemovalUrlCandidate[]
+  after?: string
+  crawl_after?: string
+  crawl_probe_id?: string
+}> => {
   const sampledNowMs = now().getTime()
   if (!Number.isFinite(sampledNowMs)) throw new RangeError('Invalid HTML snapshot decision time')
   const recentCutoffDate = new Date(
@@ -28,51 +35,55 @@ export const searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId = async (
     new Date(recentCutoffDate.getTime() - CRAWL_CLEANUP_MAX_AGE_DAYS * 24 * 60 * 60 * 1000),
   )
 
-  // Match URLs directly under the parent path (e.g., /blog/ for parent_path=/blog)
-  const parentPathPrefix = parentPath === '/' ? '/' : `${parentPath}/`
-  const escapedPrefix = escapeLikePattern(parentPathPrefix)
-
-  // Exclude URLs with more nested levels (e.g., /blog/2024/post would not match /blog/post)
-  const parentPathExclude = parentPath === '/' ? '/%/%' : `${parentPath}/%/%`
-  const escapedExclude = escapeLikePattern(parentPathExclude)
-
-  const likePattern = `${escapedPrefix}%`
-
-  const { rows } = await read<BoilerplateRemovalUrlCandidate>(
+  const { rows } = await read<
+    BoilerplateRemovalUrlCandidate & { pathname: string; eligible: boolean }
+  >(
     sql`/* searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId */
-    SELECT ordered_candidates.id, ordered_candidates.url
-    FROM (
-      SELECT latest_recent_body_crawls.id, latest_recent_body_crawls.url
-      FROM (
-        SELECT DISTINCT ON (u.id)
-          u.id,
-          u.url,
-          c.completed_at,
-          c.id AS crawl_id
-        FROM urls u
-        JOIN url_hostnames h
-          ON h.id = u.hostname_id
-        JOIN crawls c
-          ON c.url_id = u.id
-          AND c.id >= ${crawlIdFloor}::uuid
-        WHERE u.hostname_id = ${hostnameId}
-          AND u.pathname LIKE ${likePattern} ESCAPE '\\'
-          AND u.pathname NOT LIKE ${escapedExclude} ESCAPE '\\'
-          AND NOT h.is_blocked
-          AND h.is_crawlable
-          AND c.response_status_code = 200
-          AND c.completed_at >= ${recentCutoffDate}
-          AND c.html_sha256 IS NOT NULL
-          AND COALESCE(c.html_snapshot_uploaded_at, c.completed_at) >= ${recentCutoffDate}
-        ORDER BY u.id, c.completed_at DESC, c.id DESC
-      ) latest_recent_body_crawls
-      ORDER BY latest_recent_body_crawls.completed_at DESC, latest_recent_body_crawls.crawl_id DESC
-      LIMIT ${limit}
-    ) ordered_candidates
+    SELECT u.id, u.url, u.pathname,
+      (SELECT TRUE FROM url_hostnames h WHERE h.id = u.hostname_id
+        AND NOT h.is_blocked AND h.is_crawlable LIMIT 1) IS TRUE AS eligible
+    FROM urls u
+    WHERE u.hostname_id = ANY(${[hostnameId]}::uuid[])
+      AND u.id >= COALESCE(${after ?? null}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
+      AND (${crawlAfter ?? null}::uuid IS NOT NULL OR ${crawlProbe ?? null}::uuid IS NOT NULL
+        OR u.id IS DISTINCT FROM ${after ?? null}::uuid)
+    ORDER BY u.hostname_id, u.id
+    LIMIT ${limit}
     `,
     undefined,
     queryOptions,
   )
-
-  return rows
+  const matchingRows = rows.map(row => {
+    const prefix = parentPath === '/' ? '/' : `${parentPath}/`
+    return {
+      ...row,
+      eligible:
+        row.eligible &&
+        row.pathname.startsWith(prefix) &&
+        !row.pathname.slice(prefix.length).includes('/'),
+    }
+  })
+  const inspection = await inspectBoilerplateCrawls(matchingRows, limit, {
+    cutoff: recentCutoffDate,
+    floor: crawlIdFloor,
+    crawlAfter: rows[0]?.id === after ? crawlAfter : undefined,
+    crawlProbe: rows[0]?.id === after ? crawlProbe : undefined,
+    queryOptions,
+  })
+  const eligibleIds = new Map(
+    inspection.eligibleCrawls.map(crawl => [crawl.url_id, crawl.crawl_id]),
+  )
+  const candidates: BoilerplateRemovalUrlCandidate[] = []
+  for (const row of rows) {
+    const crawlId = eligibleIds.get(row.id)
+    if (crawlId) {
+      candidates.push({ id: row.id, url: row.url, crawl_id: crawlId })
+    }
+  }
+  return {
+    candidates,
+    after: rows.length === limit || !inspection.allUrlsInspected ? inspection.lastUrlId : undefined,
+    ...(inspection.crawlAfter ? { crawl_after: inspection.crawlAfter } : {}),
+    ...(inspection.crawlProbe ? { crawl_probe_id: inspection.crawlProbe } : {}),
+  }
 }

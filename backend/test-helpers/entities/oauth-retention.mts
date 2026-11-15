@@ -12,6 +12,9 @@ export async function prepareTestOAuthRetentionRows(
     childExpiresAt?: Date
   },
 ): Promise<void> {
+  const requestBindingHashes = Array.from({ length: options.extraRequests ?? 0 }, () =>
+    randomBytes(32).toString('hex'),
+  )
   const hashes = Array.from({ length: options.extraRefreshTokens ?? 0 }, () =>
     randomBytes(32).toString('hex'),
   )
@@ -25,11 +28,11 @@ export async function prepareTestOAuthRetentionRows(
        INSERT INTO oauth_authorization_requests
          (client_id, user_id, browser_binding_hash, redirect_uri, client_state, resource, scopes,
           code_challenge, expires_at)
-       SELECT client_id, user_id, browser_binding_hash, redirect_uri, client_state, resource, scopes,
+       SELECT client_id, user_id, binding_hash, redirect_uri, client_state, resource, scopes,
           code_challenge, expires_at
        FROM (SELECT request.* FROM oauth_authorization_requests AS request
          WHERE client_id IN (SELECT id FROM client) LIMIT 1) AS template
-       CROSS JOIN generate_series(1, $2::int)
+       CROSS JOIN unnest($2::text[]) AS binding_hash
      ), refresh AS (
        INSERT INTO oauth_refresh_tokens (family_id, token_hash, scopes, generation, expires_at)
        SELECT template.family_id, hash.value, template.scopes, template.generation + hash.ordinality,
@@ -49,7 +52,7 @@ export async function prepareTestOAuthRetentionRows(
          WHERE grant_row.client_id IN (SELECT id FROM client) LIMIT 1) AS template
        CROSS JOIN unnest($4::text[]) AS hash
      ) SELECT id FROM client`,
-    [clientId, options.extraRequests ?? 0, hashes, accessHashes],
+    [clientId, requestBindingHashes, hashes, accessHashes],
   )
   await write(
     `/* prepareTestOAuthRetentionExpiry */ WITH client AS (

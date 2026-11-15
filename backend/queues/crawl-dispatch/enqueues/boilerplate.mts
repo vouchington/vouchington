@@ -12,6 +12,10 @@ import type { BoilerplateRemovalJobs } from '../types.mts'
 type EnqueueBoilerplateRemovalEntry = {
   hostnameId: string
   parentPath: string
+  after?: string
+  crawlAfter?: string
+  crawlProbe?: string
+  samples?: { url_id: string; crawl_id: string }[]
 }
 
 const REMOVAL_JOB_NAME = 'boilerplate_removal' satisfies BoilerplateRemovalJobs
@@ -22,14 +26,25 @@ const enqueueBulkBoilerplateRemovalJobs = createBulkEnqueueFunction({
   queueName: BACKGROUND_CPU_QUEUE_NAME,
   jobName: `crawl.${REMOVAL_JOB_NAME}`,
   defaults: requireBackgroundCpuJob(`crawl.${REMOVAL_JOB_NAME}`).options,
-  buildJob: ({ hostnameId, parentPath }: EnqueueBoilerplateRemovalEntry) => ({
+  buildJob: ({
+    hostnameId,
+    parentPath,
+    after,
+    crawlAfter,
+    crawlProbe,
+    samples,
+  }: EnqueueBoilerplateRemovalEntry) => ({
     data: {
       hostname_id: hostnameId,
       parent_path: parentPath,
+      after,
+      crawl_after: crawlAfter,
+      crawl_probe_id: crawlProbe,
+      samples,
     } satisfies BackgroundCpuJobPayloads[`crawl.${typeof REMOVAL_JOB_NAME}`],
     opts: {
       deduplication: {
-        id: `crawl.${REMOVAL_JOB_NAME}__${hostnameId}__${parentPath}`,
+        id: `crawl.${REMOVAL_JOB_NAME}__${hostnameId}__${parentPath}__${after ?? 'start'}__${crawlAfter ?? 'start'}__${crawlProbe ?? 'start'}`,
         mode: 'debounce',
       },
     },
@@ -49,6 +64,8 @@ export const enqueueBulkBoilerplateRemoval = (
   } satisfies Partial<JobOptions>)
 }
 
-export function enqueueBoilerplateRemovalDispatcher(): EnqueueReturnType {
-  return enqueueBoilerplateRemovalDispatcherJob({}, { priority: PRIORITY_DISPATCHER })
+export function enqueueBoilerplateRemovalDispatcher(
+  continuation?: BackgroundCpuJobPayloads['crawl.boilerplate_removal_dispatcher']['continuation'],
+): EnqueueReturnType {
+  return enqueueBoilerplateRemovalDispatcherJob({ continuation }, { priority: PRIORITY_DISPATCHER })
 }

@@ -7,18 +7,12 @@ export const HISTORY_KINDS = [
   'community_agent_prompt_revisions',
   'followed_user_import_requests',
   'pending_user_import_requests',
-  'referral_attribution_scrub',
-  'referral_attribution_expiry',
 ] as const
 
 export type HistoryKind = (typeof HISTORY_KINDS)[number]
 
 export function hasMonotonicEligibility(kind: HistoryKind): boolean {
-  return (
-    kind === 'pending_user_import_requests' ||
-    kind === 'referral_attribution_scrub' ||
-    kind === 'referral_attribution_expiry'
-  )
+  return kind === 'pending_user_import_requests'
 }
 
 type Candidate = { id: string }
@@ -106,32 +100,6 @@ export async function listRawCandidates(
       )
       return rows
     }
-    case 'referral_attribution_scrub': {
-      const { rows } = await query<Candidate>(
-        `/* listRawReferralScrubCandidates */
-         SELECT id FROM session_referral_attributions
-         WHERE id >= COALESCE($3::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
-           AND id > COALESCE($1::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
-           AND id < $2::uuid
-           AND (landing_url IS NOT NULL OR utm_source IS NOT NULL OR utm_medium IS NOT NULL
-             OR utm_campaign IS NOT NULL OR utm_content IS NOT NULL)
-         ORDER BY id LIMIT $4 FOR UPDATE`,
-        params,
-      )
-      return rows
-    }
-    case 'referral_attribution_expiry': {
-      const { rows } = await query<Candidate>(
-        `/* listRawReferralHistoryCandidates */
-         SELECT id FROM session_referral_attributions
-         WHERE id >= COALESCE($3::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
-           AND id > COALESCE($1::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
-           AND id < $2::uuid
-         ORDER BY id LIMIT $4 FOR UPDATE`,
-        params,
-      )
-      return rows
-    }
   }
 }
 
@@ -150,28 +118,6 @@ export async function listResidualCandidate(
          SELECT id FROM user_import_requests WHERE id < $1::uuid AND id < $2::uuid
            AND id >= COALESCE($3::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
            AND followed_at IS NULL ORDER BY id LIMIT 1 FOR UPDATE`,
-      params,
-    )
-    return rows
-  }
-  if (kind === 'referral_attribution_scrub') {
-    const { rows } = await query<Candidate>(
-      `/* listResidualReferralScrubCandidate */
-         SELECT id FROM session_referral_attributions WHERE id < $1::uuid AND id < $2::uuid
-           AND id >= COALESCE($3::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
-           AND (landing_url IS NOT NULL OR utm_source IS NOT NULL OR utm_medium IS NOT NULL
-             OR utm_campaign IS NOT NULL OR utm_content IS NOT NULL)
-         ORDER BY id LIMIT 1 FOR UPDATE`,
-      params,
-    )
-    return rows
-  }
-  if (kind === 'referral_attribution_expiry') {
-    const { rows } = await query<Candidate>(
-      `/* listResidualReferralExpiryCandidate */
-         SELECT id FROM session_referral_attributions WHERE id < $1::uuid AND id < $2::uuid
-           AND id >= COALESCE($3::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
-         ORDER BY id LIMIT 1 FOR UPDATE`,
       params,
     )
     return rows

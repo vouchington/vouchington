@@ -1,4 +1,5 @@
 export const REGISTRY_ORDER = [
+  'vote-drift-queue-config',
   'hacker-news-reference-config',
   'paged-dispatch-work-config',
   'membership-verification-queue-config',

@@ -1,9 +1,10 @@
+import { createCodedError } from '@vouchington/sentry'
+import { NOT_FOUND } from '@modules/on-error/error-codes'
 import { read, beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { isUUID, isUsername } from '@modules/utils'
 import { getMinUUIDv7ForParentHistory } from '@modules/utils/ids'
-import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
 import { enqueueReferralClickNotification } from '@queues/notifications/enqueues'
 
 export async function createSessionReferralAttribution({
@@ -29,84 +30,31 @@ export async function createSessionReferralAttribution({
   assert(referrerId, 404, 'Referrer not found')
   assert(referrerId !== userId, 400, 'Cannot refer yourself')
 
-  // Dedup on (session_id, referrer_user_id): a repeat click replaces the prior row with a
-  // fresh id, moving it to the front of both the 30-day retention sweep and the
-  // recency-ordered click log — see docs/overview/architecture/partitioning-strategy.md.
-  // ON CONFLICT is unavailable here: a unique index on a RANGE(id)-partitioned table
-  // must include the partition key, so (session_id, referrer_user_id) can't be made unique.
-  //
-  // A converted row (signed_up_at set) is frozen instead of moved: minting a new id
-  // would make created_at (uuid_extract_timestamp(id)) postdate signed_up_at, which
-  // would read as "the click happened after the signup it caused" in the click log and
-  // the GDPR export.
   await using query = await beginTransaction()
-  const { rows: priorRows } = await query<{ user_id: string | null }>(
-    sql`/* createSessionReferralAttribution: read prior candidate owners */
-      SELECT user_id FROM session_referral_attributions
-      WHERE session_id = ${sessionId}
-        AND referrer_user_id = ${referrerId}
-        AND id >= ${getMinUUIDv7ForParentHistory(referrerId)}::uuid
-        AND signed_up_at IS NULL
-    `,
-  )
-  const candidateUserIds = new Set(
-    [userId, ...priorRows.map(row => row.user_id)].filter(
-      (id): id is string => typeof id === 'string',
-    ),
-  )
-  // The new owner must be active (the mutation check raises otherwise). A prior owner that has
-  // since been deleted is skipped by the active-owner read below.
-  if (typeof userId === 'string') await lockActiveUserSubjectsForMutation(query, [userId])
-  const { rows: activeRows } = await query<{ id: string }>(
-    sql`/* createSessionReferralAttribution: read active owners */
-      SELECT id FROM users WHERE id = ANY(${[...candidateUserIds]}::uuid[]) AND deleted_at IS NULL
-    `,
-  )
-  const activeOwnerIds = new Set(activeRows.map(row => row.id))
-  const { rows: replacedRows } = await query<{
-    user_id: string | null
-  }>(sql`/* createSessionReferralAttribution: remove prior unconverted click for this pair */
-    DELETE FROM session_referral_attributions
-    WHERE session_id = ${sessionId}
-      AND referrer_user_id = ${referrerId}
-      AND id >= ${getMinUUIDv7ForParentHistory(referrerId)}::uuid
-      AND signed_up_at IS NULL
-    RETURNING user_id
-  `)
-
-  let hasConvertedRow = false
-  if (replacedRows.length === 0) {
-    const { rows: convertedRows } =
-      await query(sql`/* createSessionReferralAttribution: check for a frozen converted row */
+  const { rows } = await query<{
+    exists: boolean
+  }>(sql`/* createSessionReferralAttribution: earlier click */
+    SELECT EXISTS (
       SELECT 1 FROM session_referral_attributions
       WHERE session_id = ${sessionId}
         AND referrer_user_id = ${referrerId}
         AND id >= ${getMinUUIDv7ForParentHistory(referrerId)}::uuid
-        AND signed_up_at IS NOT NULL
-      LIMIT 1
-    `)
-    hasConvertedRow = convertedRows.length > 0
-  }
+    ) AS exists
+  `)
+  const inserted = await query(sql`/* createSessionReferralAttribution: append click */
+    INSERT INTO session_referral_attributions (session_id, referrer_user_id, landing_url, user_id, utm_source, utm_medium, utm_campaign, utm_content)
+    SELECT ${sessionId}, ${referrerId}, ${landingUrl}, ${userId ?? null}::uuid,
+      ${utm?.utmSource ?? null}, ${utm?.utmMedium ?? null}, ${utm?.utmCampaign ?? null}, ${utm?.utmContent ?? null}
+    WHERE ${userId ?? null}::uuid IS NULL OR EXISTS (
+      SELECT 1 FROM users WHERE id = ${userId ?? null}::uuid AND deleted_at IS NULL
+    )
+  `)
 
-  const isNewPair = replacedRows.length === 0 && !hasConvertedRow
-  if (!hasConvertedRow) {
-    // A raced duplicate pair (see README) can leave more than one prior row; take the
-    // first non-null user_id across all of them rather than indexing [0], so credit
-    // isn't silently dropped if only one of the raced rows carried it.
-    const priorUserId = replacedRows.find(
-      row => row.user_id !== null && activeOwnerIds.has(row.user_id),
-    )?.user_id
-    await query(sql`/* createSessionReferralAttribution: insert click (new or moved-to-latest) */
-      INSERT INTO session_referral_attributions (session_id, referrer_user_id, landing_url, user_id, utm_source, utm_medium, utm_campaign, utm_content)
-      VALUES (${sessionId}, ${referrerId}, ${landingUrl}, ${userId ?? priorUserId ?? null}, ${utm?.utmSource ?? null}, ${utm?.utmMedium ?? null}, ${utm?.utmCampaign ?? null}, ${utm?.utmContent ?? null})
-    `)
-  }
-
+  if (inserted.rowCount !== 1) throw createCodedError(404, 'User not found', NOT_FOUND)
   await query.commit()
 
-  // Only a genuinely new (session, referrer) pair notifies — a moved or frozen row
-  // already notified the referrer on its original click.
-  if (isNewPair) await enqueueReferralClickNotification(referrerId)
+  // Notification deduplication is best effort when the first clicks race.
+  if (!rows[0]!.exists) await enqueueReferralClickNotification(referrerId)
 }
 
 async function getReferrerId(referrer: string): Promise<string | null> {

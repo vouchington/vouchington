@@ -55,7 +55,8 @@ export const backgroundWorkRegistryEntries6 = {
     maxValues: electionsVotesWorkMaxValues,
     descriptions: {
       primary_refresh_batch_size: 'Primary refresh batch size for elections votes processing.',
-      vote_drift_sample_size: 'Newest posts sampled by one vote drift reconciliation.',
+      vote_drift_sample_size: 'Posts inspected by one vote drift reconciliation page.',
+      vote_drift_votes_per_post: 'Vote rows inspected before a post is reported as capped.',
     },
   }),
   'entity-relations-work-config': defineBoundedWorkNamespace({

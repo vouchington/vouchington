@@ -60,12 +60,19 @@ export async function runHostnameCrawlSweepScenarios(): Promise<void> {
         const rows = await sweepNextBoilerplateHostnameBatch(
           { hostnameBatchSize: BOILERPLATE_BATCH_HOSTNAME_COUNT, candidateLimit: 500 },
           async () => undefined,
+          async () => undefined,
         )
-        if (rows.length !== BOILERPLATE_BATCH_HOSTNAME_COUNT * BOILERPLATE_BATCH_PATHS_PER_HOSTNAME)
-          throw new Error('Expected every seeded hostname batch parent path to need removal')
+        if (rows.length !== BOILERPLATE_BATCH_PATHS_PER_HOSTNAME)
+          throw new Error('Expected the first bounded hostname page parent paths to need removal')
       },
       undefined,
-      ['listBoilerplateRemovalHostnameBatch', 'searchParentPathsNeedingBoilerplateRemoval'],
+      [
+        'listBoilerplateRemovalHostnameBatch',
+        'searchParentPathsNeedingBoilerplateRemoval',
+        'readBoilerplateCrawlProbes',
+        'readBoilerplateCrawlPage',
+        'readBoilerplateCrawlMetadata',
+      ],
     ),
   )
   // The fresh bootstrap only creates current crawl partitions; a fixed future cutoff makes
@@ -110,6 +117,7 @@ export async function runHostnameCrawlSweepScenarios(): Promise<void> {
 }
 
 registerScenarioContract('boilerplate-removal-hostname-batch', {
+  seededRows: { crawls: 3_100 },
   expectations: [
     {
       kind: 'usesIndexes',
@@ -129,6 +137,12 @@ registerScenarioContract('boilerplate-removal-hostname-batch', {
     },
     { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 700 },
     { kind: 'maxProcessedRows', relation: 'urls', max: 600 },
+    { kind: 'maxProcessedRows', relation: 'hostname_path_boilerplate_removals', max: 600 },
+    {
+      kind: 'usesIndexes',
+      indexes: ['idx_hostname_path_boilerplate_removals__hostname_path_id'],
+      queryContains: 'searchParentPathsNeedingBoilerplateRemoval',
+    },
   ],
   crossPartition: {
     crawls:

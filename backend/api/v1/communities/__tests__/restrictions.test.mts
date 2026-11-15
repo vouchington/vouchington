@@ -8,7 +8,6 @@ import {
   insertTestCommunityRestriction,
 } from '@voucha/test-helpers'
 import { getActiveCommunityRestrictions } from '@services/communities/restrictions/get'
-
 describe('Community Restriction Routes', () => {
   describe('GET /api/v1/communities/:slug/restrictions', () => {
     it('returns 401 without auth', async () => {
@@ -17,20 +16,16 @@ describe('Community Restriction Routes', () => {
         createdById: owner.id,
         slug: `restrictions-get-401-${createRandomString(8)}`,
       })
-
       await createRequest().get(`/api/v1/communities/${community.slug}/restrictions`).expect(401)
     })
-
     it('returns 403 for regular members', async () => {
       const [owner, member] = await Promise.all([createTestUser(), createTestUser()])
       const community = await insertCommunityWithOwner(owner!.id)
       await insertTestCommunityMember({ communityId: community.id, userId: member!.id })
-
       const request = createRequest()
       await request.authenticateAs(member!)
       await request.get(`/api/v1/communities/${community.slug}/restrictions`).expect(403)
     })
-
     it('returns restrictions and raid mode suggestion metadata', async () => {
       const owner = await createTestUser()
       const community = await insertCommunityWithOwner(owner.id)
@@ -39,13 +34,11 @@ describe('Community Restriction Routes', () => {
         restrictionType: 'no_links',
         activatedById: owner.id,
       })
-
       const request = createRequest()
       await request.authenticateAs(owner)
       const response = await request
         .get(`/api/v1/communities/${community.slug}/restrictions`)
         .expect(200)
-
       expect(response.body.results).toContainEqual({
         __entity_type: 'community_restriction',
         id: restriction.id,
@@ -57,8 +50,7 @@ describe('Community Restriction Routes', () => {
         latest_flagged_at: null,
       })
     })
-
-    it('paginates from active restrictions into newer historical restrictions', async () => {
+    it('pages active restrictions separately from past restrictions', async () => {
       const owner = await createTestUser()
       const community = await insertCommunityWithOwner(owner.id)
       const activeRestrictionIds: string[] = []
@@ -83,7 +75,6 @@ describe('Community Restriction Routes', () => {
       }
       const request = createRequest()
       await request.authenticateAs(owner)
-
       const firstPage = await request
         .get(`/api/v1/communities/${community.slug}/restrictions?limit=20`)
         .expect(200)
@@ -92,20 +83,24 @@ describe('Community Restriction Routes', () => {
           `/api/v1/communities/${community.slug}/restrictions?limit=20&after=${encodeURIComponent(firstPage.body.page_info.end_cursor)}`,
         )
         .expect(200)
-
       const secondPageIds = secondPage.body.results.map((result: { id: string }) => result.id)
       expect(secondPageIds).toContain(activeRestrictionIds[0])
-      expect(secondPageIds).toEqual(expect.arrayContaining(historicalRestrictionIds))
+      expect(secondPageIds).toEqual([activeRestrictionIds[0]])
+      const past = await request
+        .get(`/api/v1/communities/${community.slug}/restrictions?status=past`)
+        .expect(200)
+      expect(past.body.results.map((result: { id: string }) => result.id)).toEqual(
+        historicalRestrictionIds.toReversed(),
+      )
+      await request.get(`/api/v1/communities/${community.slug}/restrictions?status=all`).expect(422)
     })
   })
-
   describe('POST /api/v1/communities/:slug/restrictions', () => {
     it('activates selected restrictions', async () => {
       const owner = await createTestUser()
       const community = await insertCommunityWithOwner(owner.id)
       const request = createRequest()
       await request.authenticateAs(owner)
-
       const response = await request
         .post(`/api/v1/communities/${community.slug}/restrictions`)
         .send({
@@ -114,32 +109,27 @@ describe('Community Restriction Routes', () => {
           reason: 'incoming brigade',
         })
         .expect(201)
-
       expect(Object.values(response.body.community_restrictions)).toHaveLength(2)
       const activeTypes = (await getActiveCommunityRestrictions(community.id)).map(
         restriction => restriction.restriction_type,
       )
       expect(activeTypes).toEqual(expect.arrayContaining(['require_post_approval', 'no_links']))
     })
-
     it('deduplicates restriction types and returns them in canonical order', async () => {
       const owner = await createTestUser()
       const community = await insertCommunityWithOwner(owner.id)
       const request = createRequest()
       await request.authenticateAs(owner)
-
       const response = await request
         .post(`/api/v1/communities/${community.slug}/restrictions`)
         .send({ restriction_types: ['no_links', 'require_post_approval', 'no_links'] })
         .expect(201)
-
       expect(
         (Object.values(response.body.community_restrictions) as { restriction_type: string }[]).map(
           restriction => restriction.restriction_type,
         ),
       ).toEqual(['require_post_approval', 'no_links'])
     })
-
     it('inserts a new row when re-activating an already-active restriction type', async () => {
       const owner = await createTestUser()
       const community = await insertCommunityWithOwner(owner.id)
@@ -156,7 +146,6 @@ describe('Community Restriction Routes', () => {
         id: string
         activated_at: string
       }
-
       const activated = await request
         .post(`/api/v1/communities/${community.slug}/restrictions`)
         .send({
@@ -165,7 +154,6 @@ describe('Community Restriction Routes', () => {
           reason: 'second activation',
         })
         .expect(201)
-
       const activatedIds = Object.keys(activated.body.community_restrictions)
       expect(activatedIds).toHaveLength(1)
       expect(activatedIds).not.toContain(original.id)
@@ -185,12 +173,10 @@ describe('Community Restriction Routes', () => {
         'no_new_member_posts',
         'no_new_member_posts',
       ])
-
       const originalRow = active.find(r => r.id === original.id)
       expect(originalRow).toBeDefined()
       expect(originalRow?.activated_at).toBe(original.activated_at)
     })
-
     it('type stays active after lifting one of two active rows; cleared only when both are lifted', async () => {
       const owner = await createTestUser()
       const community = await insertCommunityWithOwner(owner.id)
@@ -208,20 +194,17 @@ describe('Community Restriction Routes', () => {
       })
       const request = createRequest()
       await request.authenticateAs(owner)
-
       // Lift the first row — type should still be in place (row2 is still valid).
       await request
         .delete(`/api/v1/communities/${community.slug}/restrictions/${row1.id}`)
         .expect(204)
       expect(await getActiveCommunityRestrictions(community.id)).toHaveLength(1)
-
       // Lift the second row — type is now fully cleared.
       await request
         .delete(`/api/v1/communities/${community.slug}/restrictions/${row2.id}`)
         .expect(204)
       expect(await getActiveCommunityRestrictions(community.id)).toHaveLength(0)
     })
-
     it('includes older active restrictions on the first page', async () => {
       const owner = await createTestUser()
       const community = await insertCommunityWithOwner(owner.id)
@@ -245,29 +228,24 @@ describe('Community Restriction Routes', () => {
       )
       const request = createRequest()
       await request.authenticateAs(owner)
-
       const response = await request
         .get(`/api/v1/communities/${community.slug}/restrictions`)
         .expect(200)
-
       expect(response.body.results.map((result: { id: string }) => result.id)).toContain(
         activeRestriction.id,
       )
     })
-
     it('rejects invalid restriction types', async () => {
       const owner = await createTestUser()
       const community = await insertCommunityWithOwner(owner.id)
       const request = createRequest()
       await request.authenticateAs(owner)
-
       await request
         .post(`/api/v1/communities/${community.slug}/restrictions`)
         .send({ restriction_types: ['bad'], expires_at: null })
         .expect(422)
     })
   })
-
   describe('DELETE /api/v1/communities/:slug/restrictions/:id', () => {
     it('lifts an active restriction', async () => {
       const owner = await createTestUser()
@@ -280,16 +258,13 @@ describe('Community Restriction Routes', () => {
       })
       const request = createRequest()
       await request.authenticateAs(owner)
-
       await request
         .delete(`/api/v1/communities/${community.slug}/restrictions/${restriction.id}`)
         .expect(204)
-
       expect(await getActiveCommunityRestrictions(community.id)).toHaveLength(0)
     })
   })
 })
-
 async function insertCommunityWithOwner(ownerId: string) {
   const community = await insertTestCommunity({
     createdById: ownerId,

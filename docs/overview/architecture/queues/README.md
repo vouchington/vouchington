@@ -171,6 +171,9 @@ stable identities; a bounded recovery sweep re-admits stalled operations after t
 window. Staff clients receive the operation identity and read its durable progress and totals.
 Unblocking remains fenced until cleanup completes, so a newly accepted relation cannot race an
 older block operation and be deleted by it.
+Scheduled and manual vote-counter reconciliation share an ordering lane with continuations so
+adding worker processes does not multiply admitted reconciliation work.
+
 Ballot, user-agent, and vote-integrity detail sweeps likewise enqueue a bounded continuation
 carrying only unfinished families; completed families wait for the next daily run, which also
 revisits rows that became eligible after a cursor passed them.
@@ -349,6 +352,11 @@ Each window fixes its final user before dispatch and inspects moderator membersh
 order. Empty eligibility pages retain their within-user position; emitting a user skips that
 user's remaining memberships. Archived community history therefore cannot expand one activation
 or prevent later eligible moderators from receiving their digest.
+
+Moderation summary dispatch uses active moderator memberships as its workset, so unrelated user
+growth does not increase a digest sweep's cost. Shared moderators can span continuation pages;
+per-period pending and sent claims prevent repeated summary construction without discarding
+within-user progress. Eligibility changes do not strand the membership cursor.
 
 Moderator email digests assemble large moderation workloads incrementally so one recipient cannot
 monopolize shared workers. Because collection can outlive a membership or selected content,

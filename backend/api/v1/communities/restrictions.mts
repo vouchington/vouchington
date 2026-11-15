@@ -1,6 +1,9 @@
 import app from '../../app.mts'
 import { apiQuery } from '../../api-query-contract.mts'
-import { communityPageQuery, communityPageQueryInput } from './query-contracts-helpers.mts'
+import {
+  communityRestrictionsQuery,
+  communityRestrictionsQueryInput,
+} from './query-contracts-helpers.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
   parseJsonBody,
@@ -23,7 +26,7 @@ import { assertNotSuspended } from '@services/users'
 app
   .route('/api/v1/communities/:idOrSlug/restrictions')
   .get(async (ctx: Context) => {
-    apiQuery('GET:/api/v1/communities/:idOrSlug/restrictions', communityPageQuery)
+    apiQuery('GET:/api/v1/communities/:idOrSlug/restrictions', communityRestrictionsQuery)
     const currentUser = await requireAuth(ctx, 'GET:/api/v1/communities/:idOrSlug/restrictions')
     const { idOrSlug } = ctx.params as { idOrSlug: string }
     const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
@@ -39,11 +42,12 @@ app
 
     const limit = ctx.query.limit ? Number(ctx.query.limit) : undefined
     const after = ctx.query.after as string | undefined
+    const status = ctx.query.status as 'active' | 'past' | undefined
     validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/restrictions', {
-      query: communityPageQueryInput(ctx.query),
+      query: communityRestrictionsQueryInput(ctx.query),
     })
     const [result, suggestion] = await Promise.all([
-      searchCommunityRestrictions(community.id, { limit, after }),
+      searchCommunityRestrictions(community.id, { limit, after, status }),
       getRaidModeSuggestion(community.id),
     ])
 

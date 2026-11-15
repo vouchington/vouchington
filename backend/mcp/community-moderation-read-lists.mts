@@ -103,7 +103,10 @@ export const communityModerationReadLists: Record<string, CommunityModerationHan
   async list_restrictions(user, args) {
     const { community } = await communityWithGuard(user, args.community, 'moderate')
     const [result, raid_mode_suggestion] = await Promise.all([
-      searchCommunityRestrictions(community.id, page(args)),
+      searchCommunityRestrictions(community.id, {
+        ...page(args),
+        status: args.status as 'active' | 'past' | undefined,
+      }),
       getRaidModeSuggestion(community.id),
     ])
     return {

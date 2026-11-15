@@ -123,6 +123,8 @@ export async function createTestPendingOAuthAuthorization(
   const validated = await validateOAuthAuthorizationRequest(parameters)
   const request = await beginValidatedOAuthAuthorizationRequest(parameters, validated)
   return {
+    parameters,
+    validated,
     bindingHash: createOAuthBrowserBindingHash(deviceId, sessionId),
     client,
     redirectUri,

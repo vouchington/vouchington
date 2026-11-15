@@ -2,7 +2,10 @@ import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getMarketingPostalAddress, getSiteUrl } from '@modules/utils'
 import onError from '@modules/on-error'
-import { enqueueSendCommunityModerationSummaryEmail } from '@queues/email-digests/enqueues'
+import {
+  enqueueDispatchCommunityModerationSummaryEmails,
+  enqueueSendCommunityModerationSummaryEmail,
+} from '@queues/email-digests/enqueues'
 import { createEmailUnsubscribeUrl } from '@services/users'
 import type { CommunityModerationSummaryEmailProps } from '@email-templates/core'
 import pMap from 'p-map'
@@ -15,12 +18,16 @@ import {
   type ModerationRecipientRow,
 } from './moderation-summary-schedule.mts'
 
-export async function dispatchCommunityModerationSummaryEmails(now = new Date()): Promise<void> {
-  const recipients = await getModerationSummaryRecipients(now)
-  await pMap(recipients, recipient => dispatchModerationSummary(recipient, now), {
+export async function dispatchCommunityModerationSummaryEmails(
+  now = new Date(),
+  afterId?: string,
+): Promise<void> {
+  const page = await getModerationSummaryRecipients(afterId)
+  await pMap(page.recipients, recipient => dispatchModerationSummary(recipient, now), {
     concurrency: 1,
     stopOnError: false,
   })
+  if (page.afterId) await enqueueDispatchCommunityModerationSummaryEmails({ afterId: page.afterId })
 }
 
 async function dispatchModerationSummary(
@@ -30,9 +37,16 @@ async function dispatchModerationSummary(
   let sendKey: string | null = null
   try {
     if (!isModerationEmailDue(recipient, now)) return
+    const periodKey = buildModerationSendKey(recipient, now)
+    const { rows } = await read(sql`/* hasModerationEmailClaim */
+      SELECT 1 FROM user_moderation_email_sends
+      WHERE user_id = ${recipient.id} AND send_key = ${periodKey}
+      LIMIT 1
+    `)
+    if (rows.length > 0) return
 
     const windowStart = getModerationActivityWindowStart(recipient.moderation_email_cadence, now)
-    sendKey = buildModerationSendKey(recipient, now)
+    sendKey = periodKey
     if (!(await claimModerationEmailSend(recipient.id, sendKey))) return
 
     const props = {

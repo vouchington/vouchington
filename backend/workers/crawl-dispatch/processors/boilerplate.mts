@@ -1,5 +1,10 @@
+import {
+  enqueueBulkBoilerplateRemoval,
+  enqueueBoilerplateRemovalDispatcher,
+} from '@queues/crawl-dispatch/enqueues/boilerplate'
+import type { BackgroundCpuJobPayloads } from '@queues/background-cpu/types'
 import { getCrawlBoilerplateRemovalWorkLimit } from '@queues/crawl-dispatch/config'
-import { getLatestHtmlByUrlIds } from '@services/crawls/get-html-by-url-ids'
+import { getHtmlBySelectedCrawls } from '@services/crawls/get-html-by-url-ids'
 import {
   searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId,
   updateCrawlerCssSelectorsByHostname,
@@ -45,6 +50,7 @@ async function extractDomRemovalsExclusively(files: CrawlHtmlTempFile[]) {
 
 export const processBoilerplateRemovalDispatcher = (
   admit: (candidates: ParentPathCandidate[]) => Promise<void>,
+  continuation?: BackgroundCpuJobPayloads['crawl.boilerplate_removal_dispatcher']['continuation'],
 ): Promise<ParentPathCandidate[]> => {
   return sweepNextBoilerplateHostnameBatch(
     {
@@ -52,24 +58,66 @@ export const processBoilerplateRemovalDispatcher = (
       candidateLimit: getCrawlBoilerplateRemovalWorkLimit('batch_size'),
     },
     admit,
+    async next => {
+      await enqueueBoilerplateRemovalDispatcher(next)
+    },
+    continuation,
   )
 }
 
 export const processBoilerplateRemoval = async (
   hostnameId: string,
   parentPath: string,
-): Promise<{ hostname_id: string; parent_path: string; skipped: boolean }> => {
+  continuation: {
+    after?: string
+    crawl_after?: string
+    crawl_probe_id?: string
+    samples?: { url_id: string; crawl_id: string }[]
+  } = {},
+): Promise<{ hostname_id: string; parent_path: string; skipped: boolean; deferred?: boolean }> => {
   const existing = await getLatestBoilerplateRemovalByHostnameAndPath(hostnameId, parentPath)
   if (existing) {
     return { hostname_id: hostnameId, parent_path: parentPath, skipped: true }
   }
 
-  const candidates = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
+  const page = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(
     hostnameId,
     parentPath,
+    getCrawlBoilerplateRemovalWorkLimit('batch_size'),
+    {},
+    () => new Date(),
+    continuation.after,
+    continuation.crawl_after,
+    continuation.crawl_probe_id,
   )
-  const urlIds = candidates.map(c => c.id)
-  if (candidates.length < 2) {
+  const remainingSlots = 3 - (continuation.samples?.length ?? 0)
+  const selectedCandidates = page.candidates.slice(0, remainingSlots)
+  const nextAfter =
+    page.candidates.length > remainingSlots ? selectedCandidates.at(-1)!.id : page.after
+  const nextCrawlAfter = page.candidates.length > remainingSlots ? undefined : page.crawl_after
+  const nextCrawlProbe = page.candidates.length > remainingSlots ? undefined : page.crawl_probe_id
+  const samples = [
+    ...(continuation.samples ?? []),
+    ...selectedCandidates.map(candidate => ({
+      url_id: candidate.id,
+      crawl_id: candidate.crawl_id,
+    })),
+  ]
+  const urlIds = samples.map(sample => sample.url_id)
+  if (urlIds.length < 3 && nextAfter) {
+    await enqueueBulkBoilerplateRemoval([
+      {
+        hostnameId,
+        parentPath,
+        after: nextAfter,
+        crawlAfter: nextCrawlAfter,
+        crawlProbe: nextCrawlProbe,
+        samples,
+      },
+    ])
+    return { hostname_id: hostnameId, parent_path: parentPath, skipped: false, deferred: true }
+  }
+  if (urlIds.length < 2) {
     await createBoilerplateRemoval(
       hostnameId,
       parentPath,
@@ -79,11 +127,28 @@ export const processBoilerplateRemoval = async (
     return { hostname_id: hostnameId, parent_path: parentPath, skipped: true }
   }
 
-  const htmlFiles = await getLatestHtmlByUrlIds(urlIds)
+  const htmlFiles = await getHtmlBySelectedCrawls(samples)
   try {
     const validHtmlFiles = await filterValidUtf8HtmlFiles(htmlFiles)
     const budgetedHtmlFiles = selectHtmlFilesWithinByteBudget(validHtmlFiles)
     if (budgetedHtmlFiles.length < 2) {
+      if (nextAfter) {
+        const selectedPaths = new Set(budgetedHtmlFiles.map(file => file.filePath))
+        const retainedSamples = htmlFiles.flatMap(file =>
+          selectedPaths.has(file.filePath) ? [{ url_id: file.urlId, crawl_id: file.crawlId }] : [],
+        )
+        await enqueueBulkBoilerplateRemoval([
+          {
+            hostnameId,
+            parentPath,
+            after: nextAfter,
+            crawlAfter: nextCrawlAfter,
+            crawlProbe: nextCrawlProbe,
+            samples: retainedSamples,
+          },
+        ])
+        return { hostname_id: hostnameId, parent_path: parentPath, skipped: false, deferred: true }
+      }
       await createBoilerplateRemoval(
         hostnameId,
         parentPath,

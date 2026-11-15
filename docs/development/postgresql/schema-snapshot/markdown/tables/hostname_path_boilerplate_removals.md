@@ -31,7 +31,7 @@ _none_
 **Indexes:**
 
 - `hostname_path_boilerplate_removals_pkey`: `CREATE UNIQUE INDEX hostname_path_boilerplate_removals_pkey ON public.hostname_path_boilerplate_removals USING btree (id)`
-- `idx_hostname_path_boilerplate_removals__hostname_path`: `CREATE INDEX idx_hostname_path_boilerplate_removals__hostname_path ON public.hostname_path_boilerplate_removals USING btree (hostname_id, parent_path)`
+- `idx_hostname_path_boilerplate_removals__hostname_path_id`: `CREATE INDEX idx_hostname_path_boilerplate_removals__hostname_path_id ON public.hostname_path_boilerplate_removals USING btree (hostname_id, parent_path, id DESC)`
 
 **Triggers:**
 

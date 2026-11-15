@@ -50,13 +50,7 @@ describe('get', () => {
       expect(await getReferrerIdForSession(sessionId)).toBe(singleReferrer.id)
     })
 
-    // Known, accepted trade-off (see attribution/README.md § Retention & dedup): move-to-latest
-    // dedup mints a fresh id for a repeat click, so re-clicking the true first referrer before
-    // signup promotes the next-clicked referrer to "first touch." This test pins that behavior —
-    // a failure here means the semantics changed, not necessarily a regression to revert. If the
-    // product decision changes to preserve true first-touch credit across repeat clicks, update
-    // this test deliberately alongside that change.
-    it('promotes the next-clicked referrer to first touch when the true first click is re-clicked before signup', async () => {
+    it('preserves the earliest referrer when that referrer is clicked again', async () => {
       const sessionId = uuidv7()
       const [referrerA, referrerB, referrerC] = await Promise.all([
         createTestUserDirect(),
@@ -84,15 +78,13 @@ describe('get', () => {
       // True first touch was A — confirmed before the re-click.
       expect(await getReferrerIdForSession(sessionId)).toBe(referrerA.id)
 
-      // Re-clicking A moves its row to a fresh, later id (move-to-latest dedup), so it no
-      // longer sorts first by id.
       await createSessionReferralAttribution({
         sessionId,
         referrer: referrerA.id,
         landingUrl: 'https://example.com/first-touch-a-again',
       })
 
-      expect(await getReferrerIdForSession(sessionId)).toBe(referrerB.id)
+      expect(await getReferrerIdForSession(sessionId)).toBe(referrerA.id)
     })
   })
 })

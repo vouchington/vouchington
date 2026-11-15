@@ -13,12 +13,13 @@ import {
 } from '../../test-helpers/entities/urls.mts'
 import { insertTestCrawl } from '../../test-helpers/entities/crawls.mts'
 import { CRAWL_HTML_SNAPSHOT_RETENTION_DAYS } from './constants.mts'
-import { getLatestHtmlByUrlIds } from './get-html-by-url-ids.mts'
+import { getHtmlBySelectedCrawls } from './get-html-by-url-ids.mts'
 
 type CrawlSnapshot = {
   hash: string
   hostname: string
   urlId: string
+  crawlId: string
 }
 
 type SnapshotOptions = {
@@ -28,7 +29,7 @@ type SnapshotOptions = {
   statusCode?: number
 }
 
-describe('getLatestHtmlByUrlIds', () => {
+describe('getHtmlBySelectedCrawls', () => {
   it('selects recent uploaded snapshots and continues after download failures and missing objects', async () => {
     // Near the real clock: the frozen service time also signs the real S3 reads, and S3 rejects
     // requests signed more than 15 minutes from its own clock.
@@ -81,7 +82,7 @@ describe('getLatestHtmlByUrlIds', () => {
       htmlSnapshotUploadedAt: staleTime,
     })
     const missingHashUrl = await createUrl('missing-hash')
-    await insertTestCrawl({
+    const missingHash = await insertTestCrawl({
       urlId: missingHashUrl.id,
       statusCode: 200,
       markdown: '',
@@ -96,12 +97,12 @@ describe('getLatestHtmlByUrlIds', () => {
     })
 
     const successful = new Map([
-      [latest, '<main>newest snapshot</main>'],
+      [previous, '<main>selected snapshot despite a newer crawl</main>'],
       [afterFailure, '<main>download continued</main>'],
       [completionFallback, '<main>completion timestamp fallback</main>'],
     ])
     // Snapshots the query must not select still have objects, so selecting one would surface it.
-    const unselected = [previous, staleCompletion, staleUpload, failedStatus]
+    const unselected = [latest, staleCompletion, staleUpload, failedStatus]
     await Promise.all([
       ...[...successful].map(([snapshot, html]) => seedSnapshotHtml(snapshot, html)),
       ...unselected.map(snapshot => seedSnapshotHtml(snapshot, '<main>not selected</main>')),
@@ -110,19 +111,23 @@ describe('getLatestHtmlByUrlIds', () => {
     ])
     const capturedBefore = sentryCaptureExceptionMock.mock.calls.length
 
-    let files: Awaited<ReturnType<typeof getLatestHtmlByUrlIds>> = []
+    let files: Awaited<ReturnType<typeof getHtmlBySelectedCrawls>> = []
     try {
       files = await runWithServiceNow(now, () =>
-        getLatestHtmlByUrlIds([
-          latest.urlId,
-          failed.urlId,
-          afterFailure.urlId,
-          missing.urlId,
-          completionFallback.urlId,
-          staleCompletionUrl.id,
-          staleUploadUrl.id,
-          missingHashUrl.id,
-          failedStatusUrl.id,
+        getHtmlBySelectedCrawls([
+          ...[
+            previous,
+            failed,
+            afterFailure,
+            missing,
+            completionFallback,
+            staleCompletion,
+            staleUpload,
+            failedStatus,
+          ].map(snapshot => ({ url_id: snapshot.urlId, crawl_id: snapshot.crawlId })),
+          { url_id: missingHashUrl.id, crawl_id: missingHash.id },
+          // An existing crawl paired with the wrong URL must never authorize a snapshot read.
+          { url_id: failed.urlId, crawl_id: previous.crawlId },
         ]),
       )
 
@@ -181,10 +186,12 @@ describe('getLatestHtmlByUrlIds', () => {
     await Promise.all(
       [...htmlBySnapshot].map(([snapshot, html]) => seedSnapshotHtml(snapshot, html)),
     )
-    let files: Awaited<ReturnType<typeof getLatestHtmlByUrlIds>> = []
+    let files: Awaited<ReturnType<typeof getHtmlBySelectedCrawls>> = []
     try {
       files = await runWithServiceNow(frozenNow, () =>
-        getLatestHtmlByUrlIds(snapshots.map(snapshot => snapshot.urlId)),
+        getHtmlBySelectedCrawls(
+          snapshots.map(snapshot => ({ url_id: snapshot.urlId, crawl_id: snapshot.crawlId })),
+        ),
       )
       const selected = expected.toSorted((left, right) => left.urlId.localeCompare(right.urlId))
       expect(await Promise.all(files.map(file => readFile(file.filePath, 'utf8')))).toEqual(
@@ -208,7 +215,7 @@ async function createUrl(path: string): Promise<TestViewUrl> {
 
 async function insertSnapshot(url: TestViewUrl, options: SnapshotOptions): Promise<CrawlSnapshot> {
   const hash = Buffer.alloc(32, options.hashByte ?? 1)
-  await insertTestCrawl({
+  const { id: crawlId } = await insertTestCrawl({
     urlId: url.id,
     statusCode: options.statusCode ?? 200,
     markdown: '',
@@ -218,7 +225,7 @@ async function insertSnapshot(url: TestViewUrl, options: SnapshotOptions): Promi
       ? { htmlSnapshotUploadedAt: options.htmlSnapshotUploadedAt }
       : {}),
   })
-  return { hash: hash.toString('hex'), hostname: url.hostname.hostname, urlId: url.id }
+  return { hash: hash.toString('hex'), hostname: url.hostname.hostname, urlId: url.id, crawlId }
 }
 
 function s3Key(snapshot: CrawlSnapshot): string {

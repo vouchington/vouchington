@@ -1,9 +1,13 @@
+import { getMinUUIDv7ForDate } from '@modules/utils'
 import { write } from '@data-stores/psql'
-import { crawlSeedUuid, SEED_PREFIX, seedUuid } from './common.mts'
+import { crawlSeedUuid, SEED_PREFIX, seedUuid, seedUuidAtTimestamp } from './common.mts'
+import { resolveSeedAnchor } from './seed-anchor.mts'
 
 export const BOILERPLATE_BATCH_HOSTNAME_COUNT = 50
 export const BOILERPLATE_BATCH_PATHS_PER_HOSTNAME = 3
 const URLS_PER_PATH = 4
+const CRAWL_HISTORY_COUNT = 2_000
+const CRAWL_HISTORY_WINDOW_MS = 20 * 60 * 60 * 1000
 /** Sorts just before the first seeded hostname, so a scenario cursor starts the sweep right here. */
 export const BOILERPLATE_BATCH_CURSOR = `${SEED_PREFIX}-9a00-7000-8000-000000000000`
 const HOSTNAME_TAG = '9a'
@@ -88,5 +92,43 @@ async function seedBoilerplateRemovalBatch(): Promise<void> {
     ON CONFLICT DO NOTHING`,
     [payload],
   )
-  await write(`/* seedBoilerplateRemovalBatch:analyze */ ANALYZE url_hostnames, urls, crawls`)
+  // Keep the first hostname's twelve selected pairs unchanged while representing unrelated crawl history.
+  // All noise uses the other owned batch URLs, so the existing fixture cleanup removes it.
+  const historyUrls = rows.slice(pagesPerHostname)
+  const anchorMs = resolveSeedAnchor(process.env.EXPLAIN_SEED_ANCHOR_DATE).dayAnchorMs
+  const anchor = new Date(anchorMs)
+  const monthStartMs = Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth(), 1)
+  // A first-day anchor needs the full window after month start, keeping all noise with the targets.
+  const historyEndMs = Math.max(anchorMs, monthStartMs + CRAWL_HISTORY_WINDOW_MS)
+  const history = Array.from({ length: CRAWL_HISTORY_COUNT }, (_unused, index) => ({
+    crawl_id: seedUuidAtTimestamp(
+      historyEndMs - Math.floor((index * CRAWL_HISTORY_WINDOW_MS) / CRAWL_HISTORY_COUNT),
+      0x9b0000000000 + index,
+    ),
+    url_id: historyUrls[index % historyUrls.length]!.url_id,
+  }))
+  await write(
+    `/* seedBoilerplateRemovalBatch:unrelatedCrawlHistory */ INSERT INTO crawls
+      (id, url_id, markdown, response_status_code, completed_at, html_sha256,
+       html_snapshot_uploaded_at)
+    SELECT crawl_id, url_id, '', 200, uuid_extract_timestamp(crawl_id),
+      sha256(url_id::text::bytea), uuid_extract_timestamp(crawl_id)
+    FROM jsonb_to_recordset($1::jsonb) AS seed(crawl_id uuid, url_id uuid)
+    ON CONFLICT DO NOTHING`,
+    [JSON.stringify(history)],
+  )
+  const oldPrefix = getMinUUIDv7ForDate(new Date(Date.now() - 40 * 86_400_000)).slice(0, 24)
+  await write(
+    `/* seedBoilerplateRemovalBatch:oldHistory */ INSERT INTO hostname_path_boilerplate_removals(id,hostname_id,parent_path)
+     SELECT ($1 || lpad(n::text,12,'0'))::uuid,$2,'/section-0' FROM generate_series(1,10000)n`,
+    [oldPrefix, seedUuid(1, HOSTNAME_TAG)],
+  )
+  await write(
+    `/* seedBoilerplateRemovalBatch:recentOtherPaths */ INSERT INTO hostname_path_boilerplate_removals(hostname_id,parent_path)
+     SELECT $1,'/unrelated-' || n FROM generate_series(1,10000)n`,
+    [seedUuid(1, HOSTNAME_TAG)],
+  )
+  await write(
+    `/* seedBoilerplateRemovalBatch:analyze */ ANALYZE url_hostnames, urls, crawls, hostname_path_boilerplate_removals`,
+  )
 }

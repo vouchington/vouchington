@@ -1,3 +1,4 @@
+import { getVoteDriftJobOptions } from './vote-drift-config.mts'
 import type { JobOptions } from 'glide-mq'
 import { moderationRetentionSchedule } from './moderation-retention.mts'
 import { getDeployEnvironment } from '@ts-shared/deploy-environment'
@@ -167,7 +168,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     template: {
       name: RECONCILE_VOTE_DRIFT_JOB_NAME,
       data: {} satisfies PsqlJobPayloads[typeof RECONCILE_VOTE_DRIFT_JOB_NAME],
-      opts: SCHEDULE_OPTS,
+      opts: () => ({ ...SCHEDULE_OPTS, ...getVoteDriftJobOptions() }),
     },
     // Runs everywhere (no `environment` restriction), including staging and developer laptops:
     // counter drift is caused by code paths that write the denormalized counter without writing

@@ -35,7 +35,7 @@ export async function cleanupHistories(
       results[kind] = { scanned: 0, changed: 0, hasMore: false }
       continue
     }
-    // no-mistakes-disable-next-line query-reached-per-item: fixed eight-family sweep, each with its own persisted cursor and bounded page budget.
+    // no-mistakes-disable-next-line query-reached-per-item: fixed history-family sweep, each with its own persisted cursor and bounded page budget.
     results[kind] = await cleanupHistory(kind, options) // oxlint-disable-line no-await-in-loop -- independent bounded passes share the daily retention budget
   }
   return results
@@ -78,10 +78,8 @@ function cutoffFor(kind: HistoryKind, now: Date): Date {
     dynamic_configuration_revisions: subtractUtcMonths(now, 12),
     fediverse_instance_integration_changes: subtractUtcMonths(now, 12),
     rss_feed_setting_changes: getRetentionCutoffDate(90, now),
-    referral_attribution_scrub: getRetentionCutoffDate(90, now),
     followed_user_import_requests: now,
     pending_user_import_requests: getRetentionCutoffDate(180, now),
-    referral_attribution_expiry: subtractUtcMonths(now, 24),
     community_agent_prompt_revisions: now,
   } satisfies Record<HistoryKind, Date>
   return cutoffs[kind]

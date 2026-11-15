@@ -582,9 +582,7 @@
         "fediverse_instance_integration_changes",
         "community_agent_prompt_revisions",
         "followed_user_import_requests",
-        "pending_user_import_requests",
-        "referral_attribution_scrub",
-        "referral_attribution_expiry"
+        "pending_user_import_requests"
       ]
     },
     "http_request_methods": {
@@ -57850,10 +57848,10 @@
           "unique": true,
           "valid": true
         },
-        "idx_hostname_path_boilerplate_removals__hostname_path": {
+        "idx_hostname_path_boilerplate_removals__hostname_path_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_hostname_path_boilerplate_removals__hostname_path ON public.hostname_path_boilerplate_removals USING btree (hostname_id, parent_path)",
+          "definition": "CREATE INDEX idx_hostname_path_boilerplate_removals__hostname_path_id ON public.hostname_path_boilerplate_removals USING btree (hostname_id, parent_path, id DESC)",
           "immediate": true,
           "keys": [
             {
@@ -57872,6 +57870,15 @@
               "expression": "parent_path",
               "nullsFirst": false,
               "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
@@ -88531,47 +88538,6 @@
         }
       },
       "indexes": {
-        "idx_oauth_authorization_requests__browser": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_oauth_authorization_requests__browser ON public.oauth_authorization_requests USING btree (browser_binding_hash, client_id, id) WHERE ((approved_at IS NULL) AND (denied_at IS NULL))",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": "pg_catalog.\"default\"",
-              "column": "browser_binding_hash",
-              "descending": false,
-              "expression": "browser_binding_hash",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "client_id",
-              "descending": false,
-              "expression": "client_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "((approved_at IS NULL) AND (denied_at IS NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_oauth_authorization_requests__client": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -88634,6 +88600,38 @@
           "primary": false,
           "ready": true,
           "unique": false,
+          "valid": true
+        },
+        "idx_oauth_authorization_requests__pending_browser_client": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_oauth_authorization_requests__pending_browser_client ON public.oauth_authorization_requests USING btree (browser_binding_hash, client_id) WHERE ((approved_at IS NULL) AND (denied_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "browser_binding_hash",
+              "descending": false,
+              "expression": "browser_binding_hash",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "client_id",
+              "descending": false,
+              "expression": "client_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((approved_at IS NULL) AND (denied_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": true,
           "valid": true
         },
         "idx_oauth_authorization_requests__user": {
@@ -139189,7 +139187,7 @@
           "ordinalPosition": 6
         }
       },
-      "comment": "Tracks which user referred a session, linking anonymous sessions to referrers for attribution. RANGE-partitioned by id with a default partition only; split later by adding explicit range partitions.",
+      "comment": "Append-only referral click history, retained through the attribution window by RANGE(id) partition retirement.",
       "foreignKeys": {
         "session_referral_attributions_referrer_user_id_fkey": {
           "columns": ["referrer_user_id"],
@@ -139209,29 +139207,6 @@
         }
       },
       "indexes": {
-        "idx_session_referral_attributions__anonymous_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_session_referral_attributions__anonymous_id ON ONLY public.session_referral_attributions USING btree (id) WHERE (user_id IS NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(user_id IS NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_session_referral_attributions__referrer_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -139287,24 +139262,83 @@
           "unique": false,
           "valid": true
         },
-        "idx_session_referral_attributions__unscrubbed_id": {
+        "idx_session_referral_attributions__session_referrer_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_session_referral_attributions__unscrubbed_id ON ONLY public.session_referral_attributions USING btree (id) WHERE ((landing_url IS NOT NULL) OR (utm_source IS NOT NULL) OR (utm_medium IS NOT NULL) OR (utm_campaign IS NOT NULL) OR (utm_content IS NOT NULL))",
+          "definition": "CREATE INDEX idx_session_referral_attributions__session_referrer_id ON ONLY public.session_referral_attributions USING btree (session_id, referrer_user_id, id DESC)",
           "immediate": true,
           "keys": [
             {
               "collation": null,
-              "column": "id",
+              "column": "session_id",
               "descending": false,
-              "expression": "id",
+              "expression": "session_id",
               "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "referrer_user_id",
+              "descending": false,
+              "expression": "referrer_user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
           "live": true,
-          "predicate": "((landing_url IS NOT NULL) OR (utm_source IS NOT NULL) OR (utm_medium IS NOT NULL) OR (utm_campaign IS NOT NULL) OR (utm_content IS NOT NULL))",
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_session_referral_attributions__unconverted_pair": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_session_referral_attributions__unconverted_pair ON ONLY public.session_referral_attributions USING btree (session_id, referrer_user_id, id DESC) WHERE (signed_up_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "session_id",
+              "descending": false,
+              "expression": "session_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "referrer_user_id",
+              "descending": false,
+              "expression": "referrer_user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(signed_up_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,

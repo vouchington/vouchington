@@ -103,7 +103,7 @@ describe('click-log', () => {
     expect(page2.page_info.has_next_page).toBe(false)
   })
 
-  it('pages each raced session and referrer pair by its earliest click', async () => {
+  it('pages every click for the same session and referrer', async () => {
     const pairReferrer = await createTestUserDirect()
     const sessionId = uuidv7()
     const firstTime = new Date(Date.now())
@@ -135,7 +135,7 @@ describe('click-log', () => {
         limit: 1,
         after: page1.page_info.end_cursor!,
       })
-      expect(page2.results).toEqual([])
+      expect(page2.results.map(row => row.id)).toEqual([ids[1]])
       expect(page2.page_info.has_next_page).toBe(true)
 
       const page3 = await getReferralClickLog(pairReferrer.id, {
@@ -150,9 +150,6 @@ describe('click-log', () => {
   })
 
   it('moves a re-clicked session to the front of recency order (most-recent-first display)', async () => {
-    // Product decision (see attribution/README.md § Retention & dedup): sessions A, B, C click
-    // the same referrer in order, then A clicks again. Ascending recency becomes B, C, A; the
-    // click log's `ORDER BY sra.id DESC` display is the reverse: A, C, B.
     const orderingReferrer = await createTestUserDirect()
     const sessionA = uuidv7()
     const sessionB = uuidv7()
@@ -185,6 +182,6 @@ describe('click-log', () => {
 
     const result = await getReferralClickLog(orderingReferrer.id)
     const orderedUrls = result.results.map(r => result.clicks[r.id]!.landing_url)
-    expect(orderedUrls).toEqual([urlARepeat, urlC, urlB])
+    expect(orderedUrls).toEqual([urlARepeat, urlC, urlB, urlA])
   })
 })

@@ -83,7 +83,7 @@ const PARTITION_POLICY_ENTRIES: [string, PartitionPolicy][] = [
       retentionOwner: 'runDataRetentionCleanup',
     },
   ],
-  ['session_referral_attributions', defaultRange('id')],
+  ['session_referral_attributions', monthlyRange('id')],
   ['conversation_messages', defaultRange('conversation_id')],
   ['notifications', defaultRange('user_id')],
   [

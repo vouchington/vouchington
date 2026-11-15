@@ -22,7 +22,9 @@ CREATE TABLE IF NOT EXISTS hostname_path_boilerplate_removals (
 CREATE TRIGGER trigger_hostname_path_boilerplate_removals_updated_at BEFORE UPDATE ON hostname_path_boilerplate_removals FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_hostname_path_boilerplate_removals__hostname_path ON hostname_path_boilerplate_removals (hostname_id, parent_path);
+CREATE INDEX IF NOT EXISTS idx_hostname_path_boilerplate_removals__hostname_path_id
+  ON hostname_path_boilerplate_removals (hostname_id, parent_path, id DESC);
+COMMENT ON INDEX idx_hostname_path_boilerplate_removals__hostname_path_id IS 'Supports keyed recent-removal checks without scanning old same-path history.';
 
 COMMENT ON TABLE hostname_path_boilerplate_removals IS 'Stores computed boilerplate removal results for a hostname and parent path combination.';
 COMMENT ON COLUMN hostname_path_boilerplate_removals.hostname_id IS 'The hostname these removal rules apply to.';

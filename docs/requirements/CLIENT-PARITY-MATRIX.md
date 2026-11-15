@@ -24,6 +24,15 @@ See also: [Native Client Strategy](../overview/architecture/native-clients.md),
 [Client Intent Parity](./navigation/CLIENT-INTENT-PARITY.md), and
 [Native Parity Interactions](../checklists/native-parity-interactions.md).
 
+## Community restriction history
+
+Community restriction lists separate active and past history, with active as the default and an
+independent newest-first cursor for each tab. REST and MCP use the same status values and cursor
+shape. Web offers both tabs and continues each page without combining their cursors.
+Swift and .NET adoption is tracked in
+[vouchington-clients#682](https://github.com/vouchington/vouchington-clients/issues/682), a dependent
+follow-up that does not gate the producer change.
+
 ## Post-list continuation
 
 Post search and community post lists page with opaque `page_info` cursors. Clients append the

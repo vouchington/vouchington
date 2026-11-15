@@ -39,7 +39,6 @@ export type DataRetentionCleanupOptions = {
   retainedRelationIdentityKeys?: Readonly<Record<string, readonly RetainedRelationIdentityKey[]>>
   retainedMediaBindingIds?: readonly string[]
   softDeletedUsers?: OptionalRetentionLimits<CleanupOptions> & { userIds?: readonly string[] }
-  oldReferralAttributions?: OptionalRetentionLimits<CleanupOptions>
   histories?: OptionalRetentionLimits<HistoryCleanupOptions>
   orphanedOAuthAccounts?: OptionalRetentionLimits<CleanupOptions>
   oauthFriendEdges?: Partial<DataRetentionLimits> & { now?: Date }

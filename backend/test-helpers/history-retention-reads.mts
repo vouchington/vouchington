@@ -90,28 +90,8 @@ export async function readRemainingHistoryIds(kind: HistoryKind, ids: string[]):
       result = await write<{ id: string }>(sql`/* readRemainingImportHistoryIds */
         SELECT id FROM user_import_requests WHERE id = ANY(${ids}::uuid[]) ORDER BY id`)
       break
-    case 'referral_attribution_scrub':
-    case 'referral_attribution_expiry':
-      result = await write<{ id: string }>(sql`/* readRemainingReferralHistoryIds */
-        SELECT id FROM session_referral_attributions WHERE id = ANY(${ids}::uuid[]) ORDER BY id`)
-      break
   }
   return result.rows.map(row => row.id)
-}
-
-export async function readReferralDetails(id: string): Promise<{
-  landing_url: string | null
-  utm_source: string | null
-  utm_medium: string | null
-} | null> {
-  const { rows } = await write<{
-    landing_url: string | null
-    utm_source: string | null
-    utm_medium: string | null
-  }>(sql`/* readReferralDetailsForRetention */
-    SELECT landing_url, utm_source, utm_medium
-    FROM session_referral_attributions WHERE id = ${id} LIMIT 1`)
-  return rows[0] ?? null
 }
 
 export async function readHistoryCursor(kind: HistoryKind): Promise<{
@@ -179,12 +159,6 @@ export async function cleanupHistoryFixtureIds(kind: HistoryKind, ids: string[])
     case 'pending_user_import_requests':
       await query(
         sql`/* cleanTestImportHistory */ DELETE FROM user_import_requests WHERE id = ANY(${ids}::uuid[])`,
-      )
-      break
-    case 'referral_attribution_scrub':
-    case 'referral_attribution_expiry':
-      await query(
-        sql`/* cleanTestReferralHistory */ DELETE FROM session_referral_attributions WHERE id = ANY(${ids}::uuid[])`,
       )
       break
   }

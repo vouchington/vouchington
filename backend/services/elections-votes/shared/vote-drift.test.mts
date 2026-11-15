@@ -49,6 +49,44 @@ describe('reconcilePostVoteDrift', () => {
     }
   })
 
+  it('continues beyond one post page and excludes capped votes from drift conclusions', async () => {
+    const postIds = await Promise.all(
+      [0, 1].map(index =>
+        insertTestPost({
+          title: `Vote drift continuation ${index}`,
+          slug: `vote-drift-cursor-${randomBytes(6).toString('hex')}`,
+          createdById: creatorUser.id,
+          markdown: 'test',
+        }),
+      ),
+    )
+    const [highestPostId, lowerPostId] = postIds.toSorted().toReversed()
+    const voters = await Promise.all([createTestUserDirect(), createTestUserDirect()])
+    await Promise.all(
+      voters.map(voter => insertTestPostVote(highestPostId!, voter.id, '1.2.3.6', 1)),
+    )
+    const restore = overrideDynamicConfigFieldsForTest(electionsVotesWorkConfig, {
+      vote_drift_votes_per_post: 1,
+    })
+    try {
+      const first = await reconcilePostVoteDrift(1, { samplePostIds: postIds })
+      expect(first).toMatchObject({
+        inspected: 1,
+        sampled: 0,
+        capped: 1,
+        drifted: 0,
+        afterId: highestPostId,
+      })
+      const second = await reconcilePostVoteDrift(1, {
+        samplePostIds: postIds,
+        afterId: first.afterId,
+      })
+      expect(second).toMatchObject({ inspected: 1, sampled: 1, capped: 0, afterId: lowerPostId })
+    } finally {
+      restore()
+    }
+  })
+
   // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('returns a vote-drift result for the posts table without throwing', async () => {
     const postId = await insertTestPost({

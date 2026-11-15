@@ -3,6 +3,8 @@ import { emit } from '@data-stores/analytics'
 interface VoteDriftInput {
   entityTable: string
   sampled: number
+  inspected: number
+  capped: number
   drifted: number
   sampleEntityId?: string
 }
@@ -11,6 +13,8 @@ interface VoteDriftInput {
 export function trackVoteDrift({
   entityTable,
   sampled,
+  inspected,
+  capped,
   drifted,
   sampleEntityId,
 }: VoteDriftInput): void {
@@ -22,6 +26,8 @@ export function trackVoteDrift({
     env: process.env.NODE_ENV ?? 'development',
     entity_table: entityTable,
     sampled,
+    inspected,
+    capped,
     drifted,
     sample_entity_id: sampleEntityId,
   })

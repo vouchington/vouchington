@@ -43,7 +43,7 @@ export async function processCrawlDispatchJob(rawJob: Job<unknown>): Promise<unk
             parentPath: candidate.parent_path,
           })),
         )
-      })
+      }, job.data.continuation)
       return candidates.length
     }
     case 'crawl.boilerplate_removal': {
@@ -51,7 +51,7 @@ export async function processCrawlDispatchJob(rawJob: Job<unknown>): Promise<unk
       const parentPath = job.data?.parent_path
       if (!hostnameId || !parentPath)
         throw new Error('Boilerplate removal job requires .hostname_id and .parent_path')
-      return processBoilerplateRemoval(hostnameId, parentPath)
+      return processBoilerplateRemoval(hostnameId, parentPath, job.data)
     }
     default:
       throw new Error(`Crawl dispatch job ${jobName} not found`)

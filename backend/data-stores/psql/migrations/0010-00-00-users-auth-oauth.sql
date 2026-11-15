@@ -993,6 +993,16 @@ CREATE TABLE IF NOT EXISTS session_referral_attributions (
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_session_referral_attributions__session_id_id
   ON session_referral_attributions (session_id, id);
+
+CREATE INDEX IF NOT EXISTS idx_session_referral_attributions__session_referrer_id
+  ON session_referral_attributions (session_id, referrer_user_id, id DESC);
+
+CREATE INDEX IF NOT EXISTS idx_session_referral_attributions__unconverted_pair
+  ON session_referral_attributions (session_id, referrer_user_id, id DESC)
+  WHERE signed_up_at IS NULL;
+
+COMMENT ON INDEX idx_session_referral_attributions__session_referrer_id IS 'Finds earlier clicks for one session and referrer without reading other pairs.';
+COMMENT ON INDEX idx_session_referral_attributions__unconverted_pair IS 'Finds the latest unconverted click for the single-row signup update.';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_session_referral_attributions__referrer_id
   ON session_referral_attributions (referrer_user_id)
@@ -1002,16 +1012,7 @@ CREATE INDEX IF NOT EXISTS idx_session_referral_attributions__user_id
   ON session_referral_attributions (user_id)
   WHERE user_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_session_referral_attributions__anonymous_id
-  ON session_referral_attributions (id)
-  WHERE user_id IS NULL;
-
-CREATE INDEX IF NOT EXISTS idx_session_referral_attributions__unscrubbed_id
-  ON session_referral_attributions (id)
-  WHERE landing_url IS NOT NULL OR utm_source IS NOT NULL OR utm_medium IS NOT NULL
-    OR utm_campaign IS NOT NULL OR utm_content IS NOT NULL;
-
-COMMENT ON TABLE session_referral_attributions IS 'Tracks which user referred a session, linking anonymous sessions to referrers for attribution. RANGE-partitioned by id with a default partition only; split later by adding explicit range partitions.';
+COMMENT ON TABLE session_referral_attributions IS 'Append-only referral click history, retained through the attribution window by RANGE(id) partition retirement.';
 COMMENT ON COLUMN session_referral_attributions.session_id IS 'The anonymous session that was referred. Not a FK — sessions live outside PostgreSQL.';
 COMMENT ON COLUMN session_referral_attributions.referrer_user_id IS 'The user who referred this session. NULL if the referrer deleted their account.';
 COMMENT ON COLUMN session_referral_attributions.user_id IS 'The user who signed up from this referral. NULL until signup or if user deletes account.';

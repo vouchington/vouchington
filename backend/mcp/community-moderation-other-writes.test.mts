@@ -74,11 +74,11 @@ describe('community moderation MCP other writes — real PostgreSQL and Valkey',
       restriction_type: 'no_links',
       activated_by_id: owner.id,
     })
-    const read = () =>
+    const read = (status: 'active' | 'past' = 'active') =>
       callStructuredMcpTool(
         owner,
         'read_community_moderation',
-        optionArgs('list_restrictions', { community: community.id }),
+        optionArgs('list_restrictions', { community: community.id, status }),
         readScopes,
       )
     expect((await read()).results).toHaveLength(1)
@@ -90,7 +90,8 @@ describe('community moderation MCP other writes — real PostgreSQL and Valkey',
         scopes,
       ),
     ).toEqual({ success: true })
-    const lifted = await read()
+    expect((await read()).results).toEqual([])
+    const lifted = await read('past')
     expect(lifted.results).toEqual([expect.objectContaining({ id: restrictionId })])
     expect(
       (lifted.community_restrictions as Record<string, Record<string, unknown>>)[restrictionId!],

@@ -123,9 +123,11 @@ ON oauth_authorization_requests (client_id, id);
 CREATE INDEX IF NOT EXISTS idx_oauth_authorization_requests__user
 ON oauth_authorization_requests (user_id, id);
 
-CREATE INDEX IF NOT EXISTS idx_oauth_authorization_requests__browser
-ON oauth_authorization_requests (browser_binding_hash, client_id, id)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_oauth_authorization_requests__pending_browser_client
+ON oauth_authorization_requests (browser_binding_hash, client_id)
 WHERE approved_at IS NULL AND denied_at IS NULL;
+
+COMMENT ON INDEX idx_oauth_authorization_requests__pending_browser_client IS 'Keeps at most one pending request for each browser binding and client; concurrent admissions return conflict.';
 
 CREATE INDEX IF NOT EXISTS idx_oauth_authorization_requests__expiry
 ON oauth_authorization_requests (expires_at, id);

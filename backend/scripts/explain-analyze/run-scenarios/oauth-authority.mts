@@ -17,6 +17,7 @@ import { runNativeOAuthAuthorityScenario } from './oauth-native-authority.mts'
 import { write } from '@data-stores/psql'
 import {
   seedOAuthAuthorityCorpus,
+  captureOAuthAuthorityRequest,
   cleanupOAuthAuthorityCorpus,
   analyzeOAuthAuthorityCorpus,
   OAUTH_AUTHORITY_NOISE_COUNT,
@@ -62,11 +63,12 @@ export async function runOAuthAuthorityScenarios(): Promise<void> {
       state: 'explain-authority',
     }
     const validated = await validateOAuthAuthorizationRequest(parameters)
-    let requestId = ''
-    await capture('oauth-authority-request', async () => {
-      requestId = (await beginValidatedOAuthAuthorizationRequest(parameters, validated)).request_id
-    })
     const binding = createOAuthBrowserBindingHash(parameters.deviceId, parameters.sessionId)
+    const requestId = await captureOAuthAuthorityRequest(
+      binding,
+      () => beginValidatedOAuthAuthorizationRequest(parameters, validated),
+      capture,
+    )
     let code = ''
     await capture('oauth-authority-consent', async () => {
       assert.ok(await getOAuthAuthorizationRequestForUser(seedUser.id, requestId, binding))
@@ -160,6 +162,7 @@ const changedQueryNames: Record<(typeof OAUTH_AUTHORITY_SCENARIO_IDS)[number], r
 async function capture(
   id: (typeof OAUTH_AUTHORITY_SCENARIO_IDS)[number],
   run: () => Promise<unknown>,
+  afterCapture?: () => Promise<void>,
 ) {
   registerScenarioContract(id, {
     allowEmptyResult: true,
@@ -183,5 +186,8 @@ async function capture(
       { kind: 'maxProcessedRows', relation: 'app_attestation_keys', max: 2 },
     ],
   })
-  await runAndCapture(id, run, undefined, changedQueryNames[id], { useWallClock: true })
+  await runAndCapture(id, run, undefined, changedQueryNames[id], {
+    useWallClock: true,
+    afterCapture,
+  })
 }

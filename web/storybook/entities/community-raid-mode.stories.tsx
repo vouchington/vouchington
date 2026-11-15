@@ -1,3 +1,4 @@
+import { CommunityRaidModeRestrictions } from '@/components/communities/community-raid-mode-restrictions'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CommunityRaidModeActiveList } from '@/components/communities/community-raid-mode-active-list'
 import { CommunityRaidModeForm } from '@/components/communities/community-raid-mode-form'
@@ -124,5 +125,23 @@ export const ActiveRestrictions: Story = {
         onLift={() => {}}
       />
     </EntityStoryFrame>
+  ),
+}
+
+export const RestrictionHistory: Story = {
+  render: () => (
+    <CommunityRaidModeRestrictions
+      pages={{
+        status: 'active',
+        visibleData: restrictionsData,
+        restrictions: [restriction],
+        isLoading: false,
+        load: async () => {},
+        resetRestrictions: () => {},
+      }}
+      liftingId={null}
+      isBusy={false}
+      onLift={() => {}}
+    />
   ),
 }

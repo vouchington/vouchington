@@ -17815,7 +17815,7 @@
           "tool": {
             "name": "read_community_moderation",
             "title": "read community moderation",
-            "description": "list_applications: GET /api/v1/communities/:idOrSlug/applications\nread_application: GET /api/v1/communities/:idOrSlug/applications/:id\nlist_automod_actions: GET /api/v1/communities/:idOrSlug/automod/recent-actions\nlist_bans: GET /api/v1/communities/:idOrSlug/bans\nlist_active_bans: GET /api/v1/communities/:idOrSlug/bans/users/:userId\nread_ban: GET /api/v1/communities/:idOrSlug/bans/:banId\nlist_invites: GET /api/v1/communities/:idOrSlug/invites\nread_moderation_analytics: GET /api/v1/communities/:idOrSlug/moderation-analytics\nread_moderator_stats: GET /api/v1/communities/:idOrSlug/moderator-stats\nread_moderator_vacation: GET /api/v1/communities/:idOrSlug/moderator-vacation\nread_modlog: GET /api/v1/communities/:idOrSlug/modlog\nlist_pending_posts: GET /api/v1/communities/:idOrSlug/posts/pending\nlist_pending_reports: GET /api/v1/communities/:idOrSlug/reports/pending\nlist_restrictions: GET /api/v1/communities/:idOrSlug/restrictions\nlist_saved_replies: GET /api/v1/communities/:idOrSlug/saved-replies",
+            "description": "list_applications: communities/:idOrSlug/applications\nread_application: communities/:idOrSlug/applications/:id\nlist_automod_actions: communities/:idOrSlug/automod/recent-actions\nlist_bans: communities/:idOrSlug/bans\nlist_active_bans: communities/:idOrSlug/bans/users/:userId\nread_ban: communities/:idOrSlug/bans/:banId\nlist_invites: communities/:idOrSlug/invites\nread_moderation_analytics: communities/:idOrSlug/moderation-analytics\nread_moderator_stats: communities/:idOrSlug/moderator-stats\nread_moderator_vacation: communities/:idOrSlug/moderator-vacation\nread_modlog: communities/:idOrSlug/modlog\nlist_pending_posts: communities/:idOrSlug/posts/pending\nlist_pending_reports: communities/:idOrSlug/reports/pending\nlist_restrictions: communities/:idOrSlug/restrictions\nlist_saved_replies: communities/:idOrSlug/saved-replies",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -17829,15 +17829,13 @@
                       "type": "object",
                       "properties": {
                         "community": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "after": {
                           "type": "string"
                         },
                         "limit": {
-                          "maximum": 100,
-                          "minimum": 1,
-                          "type": "integer"
+                          "$ref": "#/$defs/S4"
                         },
                         "status": {
                           "enum": ["pending", "approved", "rejected"],
@@ -17861,10 +17859,10 @@
                       "type": "object",
                       "properties": {
                         "community": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "id": {
-                          "$ref": "#/$defs/S4"
+                          "$ref": "#/$defs/S5"
                         }
                       },
                       "required": ["community", "id"],
@@ -17884,7 +17882,7 @@
                       "type": "object",
                       "properties": {
                         "community": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "after": {
                           "type": "string"
@@ -17933,7 +17931,7 @@
                       "enum": ["list_bans"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S1"
+                      "$ref": "#/$defs/S2"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -17949,7 +17947,7 @@
                       "type": "object",
                       "properties": {
                         "community": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "userId": {
                           "type": "string",
@@ -17959,9 +17957,7 @@
                           "type": "string"
                         },
                         "limit": {
-                          "maximum": 100,
-                          "minimum": 1,
-                          "type": "integer"
+                          "$ref": "#/$defs/S4"
                         }
                       },
                       "required": ["community", "userId"],
@@ -17981,10 +17977,10 @@
                       "type": "object",
                       "properties": {
                         "community": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "banId": {
-                          "$ref": "#/$defs/S4"
+                          "$ref": "#/$defs/S5"
                         }
                       },
                       "required": ["community", "banId"],
@@ -18001,7 +17997,7 @@
                       "enum": ["list_invites"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S1"
+                      "$ref": "#/$defs/S2"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -18017,7 +18013,7 @@
                       "type": "object",
                       "properties": {
                         "community": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "range": {
                           "enum": ["today", "7d", "30d", "90d", "all"],
@@ -18041,7 +18037,7 @@
                       "type": "object",
                       "properties": {
                         "community": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "window": {
                           "default": "30",
@@ -18073,7 +18069,7 @@
                       "type": "object",
                       "properties": {
                         "community": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         }
                       },
                       "required": ["community"],
@@ -18093,7 +18089,7 @@
                       "type": "object",
                       "properties": {
                         "community": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "action_type": {
                           "enum": [
@@ -18188,7 +18184,7 @@
                       "enum": ["list_pending_posts"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S1"
+                      "$ref": "#/$defs/S2"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -18204,7 +18200,7 @@
                       "type": "object",
                       "properties": {
                         "community": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "after": {
                           "type": "string"
@@ -18238,7 +18234,25 @@
                       "enum": ["list_restrictions"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S1"
+                      "type": "object",
+                      "properties": {
+                        "community": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "status": {
+                          "default": "active",
+                          "enum": ["active", "past"],
+                          "type": "string"
+                        },
+                        "after": {
+                          "type": "string"
+                        },
+                        "limit": {
+                          "$ref": "#/$defs/S4"
+                        }
+                      },
+                      "required": ["community"],
+                      "additionalProperties": false
                     }
                   },
                   "required": ["option", "arguments"],
@@ -18254,7 +18268,7 @@
                       "type": "object",
                       "properties": {
                         "community": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "after": {
                           "type": "string"
@@ -18274,11 +18288,14 @@
               ],
               "$defs": {
                 "S1": {
+                  "type": "string",
+                  "description": "Community id or slug"
+                },
+                "S2": {
                   "type": "object",
                   "properties": {
                     "community": {
-                      "type": "string",
-                      "description": "Community id or slug"
+                      "$ref": "#/$defs/S1"
                     },
                     "after": {
                       "type": "string"
@@ -18291,10 +18308,6 @@
                   },
                   "required": ["community"],
                   "additionalProperties": false
-                },
-                "S2": {
-                  "type": "string",
-                  "description": "Community id or slug"
                 },
                 "S3": {
                   "enum": [
@@ -18310,6 +18323,11 @@
                   "type": "string"
                 },
                 "S4": {
+                  "maximum": 100,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "S5": {
                   "type": "string",
                   "format": "uuid",
                   "minLength": 36,

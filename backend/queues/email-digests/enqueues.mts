@@ -117,15 +117,15 @@ export function enqueueDispatchEngagementEmails(): EnqueueReturnType {
   )
 }
 
-export function enqueueDispatchCommunityModerationSummaryEmails(): EnqueueReturnType {
-  return enqueueDispatchModerationSummary(
-    {},
-    {
-      deduplication: {
-        id: 'email-digests:dispatch-moderation-summary',
-        mode: 'throttle',
-        ttl: MODERATION_SUMMARY_DISPATCH_DEDUP_TTL_MS,
-      },
+/** afterId encodes the last inspected (user, community) membership, not just a user. */
+export function enqueueDispatchCommunityModerationSummaryEmails(
+  data: { afterId?: string } = {},
+): EnqueueReturnType {
+  return enqueueDispatchModerationSummary(data, {
+    deduplication: {
+      id: `email-digests:dispatch-moderation-summary:${data.afterId ?? 'root'}`,
+      mode: 'throttle',
+      ttl: MODERATION_SUMMARY_DISPATCH_DEDUP_TTL_MS,
     },
-  )
+  })
 }

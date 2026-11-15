@@ -1,15 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, onTestFinished } from 'vitest'
-import {
-  createTestRetentionWindow,
-  createTestUserDirect,
-  insertReferralAttributionAt,
-  referralAttributionExistsById,
-} from '@voucha/test-helpers'
+import { describe, expect, it } from 'vitest'
 import {
   createDynamicConfigTestKey,
   createDynamicConfigForTest,
-  overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers/dynamic-config'
 import { dynamicConfigValkeyClient } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
@@ -27,7 +20,6 @@ import {
   DATA_RETENTION_MAX_VALUES,
   DEFAULT_DATA_RETENTION_CONFIG,
   dataRetentionConfig,
-  getDataRetentionLimits,
 } from '../config.mts'
 
 describe('data retention per-run caps', () => {
@@ -91,87 +83,6 @@ describe('data retention per-run caps', () => {
     }
   })
 
-  it('stops after max_batches_per_run batches and reports hasMore while rows remain', async () => {
-    const window = createTestRetentionWindow()
-    const referrer = await createTestUserDirect()
-    const eligibleDates = [
-      window.firstEligibleDate,
-      new Date(window.firstEligibleDate.getTime() + 30_000),
-      window.secondEligibleDate,
-    ]
-    const ids = await Promise.all(
-      eligibleDates.map(date => insertReferralAttributionAt(referrer.id, date)),
-    )
-    await dataRetentionConfig.waitForInitialization()
-    onTestFinished(
-      overrideDynamicConfigFieldsForTest(dataRetentionConfig, {
-        batch_size: 1,
-        max_batches_per_run: 2,
-      }),
-    )
-    const options = {
-      retentionDays: window.retentionDays,
-      lowerBoundDate: window.lowerBoundDate,
-      now: window.now,
-    }
-
-    expect(getDataRetentionLimits()).toEqual({ batchSize: 1, maxBatches: 2 })
-    const first = await runDataRetentionCleanup(
-      { batchSize: 500, maxBatches: 1 },
-      {
-        families: ['oldReferralAttributions'],
-        oldReferralAttributions: { ...options, ...getDataRetentionLimits() },
-      },
-    ).then(result => result.oldReferralAttributions)
-    expect(first).toEqual({ deleted: 2, hasMore: true })
-    expect(
-      (await Promise.all(ids.map(id => referralAttributionExistsById(id)))).filter(Boolean),
-    ).toHaveLength(1)
-
-    const second = await runDataRetentionCleanup(
-      { batchSize: 500, maxBatches: 1 },
-      {
-        families: ['oldReferralAttributions'],
-        oldReferralAttributions: { ...options, ...getDataRetentionLimits() },
-      },
-    ).then(result => result.oldReferralAttributions)
-    expect(second).toEqual({ deleted: 1, hasMore: false })
-    expect(await Promise.all(ids.map(id => referralAttributionExistsById(id)))).toEqual([
-      false,
-      false,
-      false,
-    ])
-  })
-
-  it('uses explicit cleanup limits to drain the owned referral window', async () => {
-    const window = createTestRetentionWindow()
-    const referrer = await createTestUserDirect()
-    const ids = await Promise.all([
-      insertReferralAttributionAt(referrer.id, window.firstEligibleDate),
-      insertReferralAttributionAt(referrer.id, window.secondEligibleDate),
-    ])
-
-    const oldReferralAttributionsCleanup = await runDataRetentionCleanup(
-      { batchSize: 500, maxBatches: 1 },
-      {
-        families: ['oldReferralAttributions'],
-        oldReferralAttributions: {
-          batchSize: 1,
-          maxBatches: 10,
-          retentionDays: window.retentionDays,
-          lowerBoundDate: window.lowerBoundDate,
-          now: window.now,
-        },
-      },
-    ).then(result => result.oldReferralAttributions)
-
-    expect(oldReferralAttributionsCleanup).toEqual({ deleted: 2, hasMore: false })
-    expect(await Promise.all(ids.map(id => referralAttributionExistsById(id)))).toEqual([
-      false,
-      false,
-    ])
-  })
-
   it.each([
     [
       'soft-deleted users',
@@ -180,14 +91,6 @@ describe('data retention per-run caps', () => {
           { batchSize: 500, maxBatches: 1 },
           { families: ['softDeletedUsers'], softDeletedUsers: options },
         ).then(result => result.softDeletedUsers),
-    ],
-    [
-      'referral attributions',
-      (options: { maxBatches: number }) =>
-        runDataRetentionCleanup(
-          { batchSize: 500, maxBatches: 1 },
-          { families: ['oldReferralAttributions'], oldReferralAttributions: options },
-        ).then(result => result.oldReferralAttributions),
     ],
     [
       'orphaned OAuth accounts',

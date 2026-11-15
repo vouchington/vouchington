@@ -1,5 +1,5 @@
 import { SCOPE_DEFINITIONS, isApiScope } from '@modules/scopes'
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, isUniqueViolation, write } from '@data-stores/psql'
 import { createOAuthBrowserBindingHash } from './browser-binding.mts'
 import { AUTHORIZATION_REQUEST_TTL_MS } from './constants.mts'
 import { getOAuthClient, getOAuthClientForAuthorization } from './clients.mts'
@@ -87,7 +87,20 @@ export async function beginValidatedOAuthAuthorizationRequest(
       codeChallenge,
       new Date(Date.now() + AUTHORIZATION_REQUEST_TTL_MS),
     ],
-  )
+  ).catch((err: unknown) => {
+    if (
+      isUniqueViolation(err) &&
+      'constraint' in err &&
+      err.constraint === 'idx_oauth_authorization_requests__pending_browser_client'
+    ) {
+      throw new OAuthProtocolError(
+        'invalid_request',
+        'authorization request changed concurrently',
+        409,
+      )
+    }
+    throw err
+  })
   await query.commit()
   const row = result.rows[0]
   if (!row)
@@ -154,11 +167,6 @@ export async function getOAuthAuthorizationRequestForUser(
        AND request.browser_binding_hash = $3
        AND request.approved_at IS NULL
        AND request.denied_at IS NULL
-       AND NOT EXISTS (
-         SELECT 1 FROM oauth_authorization_requests AS newer
-         WHERE newer.browser_binding_hash = request.browser_binding_hash
-           AND newer.client_id = request.client_id AND newer.id > request.id LIMIT 1
-       )
        AND request.expires_at > CURRENT_TIMESTAMP
        AND client.revoked_at IS NULL
        AND EXISTS (

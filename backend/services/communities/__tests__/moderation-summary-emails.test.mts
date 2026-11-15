@@ -1,4 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { communitiesWorkConfig } from '../work-limits.mts'
+import { processTestModerationSummaryEmail } from '@voucha/test-helpers/moderation-summary-collection'
+import type { SendCommunityModerationSummaryEmailData } from '@queues/background/enqueues/email-digests-domain'
+import { runWithCapturedQueries } from '@data-stores/psql/query-capture'
 import {
   createTestUser,
   clearTestUserModerationEmailTimezone,
@@ -6,7 +11,10 @@ import {
   insertTestCommunityMember,
   readAllQueueJobs,
 } from '@voucha/test-helpers'
-import { claimTestModerationEmailSend } from '@voucha/test-helpers/moderation-summary-retention'
+import {
+  claimTestModerationEmailSend,
+  getTestModerationSummaryRecipientCursor,
+} from '@voucha/test-helpers/moderation-summary-retention'
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
 import { EMAIL_DIGESTS_SEND_MODERATION_SUMMARY_JOB } from '@queues/background/enqueues/email-digests-jobs'
@@ -15,6 +23,7 @@ import { updateUserFields } from '@services/users/update-fields'
 import {
   dispatchCommunityModerationSummaryEmails,
   isModerationEmailsEnabled,
+  markModerationEmailSent,
   releaseUnsentModerationEmailClaim,
 } from '../moderation-summary-emails.mts'
 import { formatLocalDate } from '../moderation-summary-schedule.mts'
@@ -34,22 +43,41 @@ async function findQueuedModerationSummary(userId: string) {
 }
 
 describe('moderation summary dispatch', () => {
-  it('does not enqueue a summary for a window that is already claimed', async () => {
-    const user = await createTestUser()
-    const now = pinnedNow()
-    await seedDueModerator(user!.id, {
-      time: now.toISOString().slice(11, 16),
-      timeZone: 'UTC',
-      cadence: 'daily',
-      days: [1, 2, 3, 4, 5, 6, 7],
+  beforeEach(() => {
+    const restore = overrideDynamicConfigFieldsForTest(communitiesWorkConfig, {
+      summary_email_batch_size: 1,
     })
-    const sendKey = `daily:${now.toISOString().slice(0, 10)}`
-    await expect(claimTestModerationEmailSend(user!.id, sendKey)).resolves.toBe(true)
-
-    await dispatchCommunityModerationSummaryEmails(now)
-
-    expect(await findQueuedModerationSummary(user!.id)).toBeUndefined()
+    onTestFinished(restore)
   })
+
+  it.each([false, true])(
+    'preserves an existing claim without admitting collection (sent=%s)',
+    async sent => {
+      const user = await createTestUser()
+      const now = pinnedNow()
+      await seedDueModerator(user!.id, {
+        time: now.toISOString().slice(11, 16),
+        timeZone: 'UTC',
+        cadence: 'daily',
+        days: [1, 2, 3, 4, 5, 6, 7],
+      })
+      const sendKey = `daily:${now.toISOString().slice(0, 10)}`
+      await expect(claimTestModerationEmailSend(user!.id, sendKey)).resolves.toBe(true)
+      if (sent) await markModerationEmailSent(user!.id, sendKey)
+
+      const capture = await runWithCapturedQueries(() =>
+        dispatchCommunityModerationSummaryEmails(
+          now,
+          getTestModerationSummaryRecipientCursor(user!.id),
+        ),
+      )
+      const ownedQueries = capture.queries.filter(query => query.values.includes(user!.id))
+      expect(ownedQueries.some(query => query.text.includes('hasModerationEmailClaim'))).toBe(true)
+
+      expect(await findQueuedModerationSummary(user!.id)).toBeUndefined()
+      await expect(claimTestModerationEmailSend(user!.id, sendKey)).resolves.toBe(false)
+    },
+  )
 
   it('claims daily and weekly windows independently', async () => {
     const user = await createTestUser()
@@ -62,7 +90,10 @@ describe('moderation summary dispatch', () => {
     })
     await expect(claimTestModerationEmailSend(user!.id, 'daily:2027-01-01')).resolves.toBe(true)
 
-    await dispatchCommunityModerationSummaryEmails(now)
+    await dispatchCommunityModerationSummaryEmails(
+      now,
+      getTestModerationSummaryRecipientCursor(user!.id),
+    )
 
     expect((await findQueuedModerationSummary(user!.id))?.data).toMatchObject({
       input: { trackingKey: 'weekly:2026-W53' },
@@ -95,7 +126,10 @@ describe('moderation summary dispatch', () => {
       days: [1, 2, 3, 4, 5, 6, 7],
     })
 
-    await dispatchCommunityModerationSummaryEmails(now)
+    await dispatchCommunityModerationSummaryEmails(
+      now,
+      getTestModerationSummaryRecipientCursor(user!.id),
+    )
 
     const queuedSummary = await findQueuedModerationSummary(user!.id)
     expect(queuedSummary?.data).toMatchObject({
@@ -121,7 +155,10 @@ describe('moderation summary dispatch', () => {
       days: [1, 2, 3, 4, 5, 6, 7],
     })
 
-    await dispatchCommunityModerationSummaryEmails(now)
+    await dispatchCommunityModerationSummaryEmails(
+      now,
+      getTestModerationSummaryRecipientCursor(user!.id),
+    )
 
     const queuedSummary = await findQueuedModerationSummary(user!.id)
     expect(queuedSummary?.data).toMatchObject({
@@ -142,7 +179,10 @@ describe('moderation summary dispatch', () => {
       days: [5],
     })
 
-    await dispatchCommunityModerationSummaryEmails(now)
+    await dispatchCommunityModerationSummaryEmails(
+      now,
+      getTestModerationSummaryRecipientCursor(user!.id),
+    )
 
     const queuedSummary = await findQueuedModerationSummary(user!.id)
     expect(queuedSummary?.data).toMatchObject({
@@ -151,31 +191,49 @@ describe('moderation summary dispatch', () => {
     })
   })
 
-  it('does not enqueue summaries for quiet communities', async () => {
+  it('releases a quiet-community claim after bounded collection', async () => {
     const user = await createTestUser()
-    const now = pinnedNow()
     await seedDueModerator(user!.id, {
-      time: now.toISOString().slice(11, 16),
+      time: '00:00',
       timeZone: 'UTC',
       cadence: 'daily',
       days: [1, 2, 3, 4, 5, 6, 7],
       pendingReview: false,
     })
 
-    await dispatchCommunityModerationSummaryEmails(now)
+    const now = new Date()
+    await dispatchCommunityModerationSummaryEmails(
+      now,
+      getTestModerationSummaryRecipientCursor(user!.id),
+    )
 
-    expect(await findQueuedModerationSummary(user!.id)).toBeUndefined()
+    const queued = await findQueuedModerationSummary(user!.id)
+    expect(queued).toBeDefined()
+    onTestFinished(() => queued!.remove())
+    const data = queued!.data as SendCommunityModerationSummaryEmailData
+    await expect(processTestModerationSummaryEmail(data.input, data.variables)).resolves.toBeNull()
+    await expect(claimTestModerationEmailSend(user!.id, data.input.trackingKey)).resolves.toBe(true)
   })
 })
 
 describe('moderation summary scheduling', () => {
+  beforeEach(() => {
+    const restore = overrideDynamicConfigFieldsForTest(communitiesWorkConfig, {
+      summary_email_batch_size: 1,
+    })
+    onTestFinished(restore)
+  })
+
   const now = new Date('2026-07-09T15:30:00.000Z')
   const due = { time: '08:30', timeZone: 'America/Los_Angeles', cadence: 'daily' as const }
 
   async function isQueuedFor(settings: Parameters<typeof seedDueModerator>[1]): Promise<boolean> {
     const user = await createTestUser()
     await seedDueModerator(user!.id, settings)
-    await dispatchCommunityModerationSummaryEmails(now)
+    await dispatchCommunityModerationSummaryEmails(
+      now,
+      getTestModerationSummaryRecipientCursor(user!.id),
+    )
     return (await findQueuedModerationSummary(user!.id)) !== undefined
   }
 

@@ -8,12 +8,19 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface Props {
   restrictions: CommunityRestriction[]
+  status?: 'active' | 'past'
   liftingId: string | null
   isBusy: boolean
   onLift: (restrictionId: string) => void
 }
 
-export function CommunityRaidModeActiveList({ restrictions, liftingId, isBusy, onLift }: Props) {
+export function CommunityRaidModeActiveList({
+  restrictions,
+  status = 'active',
+  liftingId,
+  isBusy,
+  onLift,
+}: Props) {
   const t = useTranslations()
   if (restrictions.length === 0) {
     return (
@@ -21,7 +28,11 @@ export function CommunityRaidModeActiveList({ restrictions, liftingId, isBusy, o
         className='text-sm text-muted-foreground'
         data-pw='community-raid-mode-empty'
       >
-        {t('extracted.communities.communityRaidModeActiveList.noActiveRestrictions_a41fbbd5')}
+        {t(
+          status === 'active'
+            ? 'extracted.communities.communityRaidModeActiveList.noActiveRestrictions_a41fbbd5'
+            : 'moderation.restrictions.noPast',
+        )}
       </p>
     )
   }
@@ -47,18 +58,20 @@ export function CommunityRaidModeActiveList({ restrictions, liftingId, isBusy, o
               </p>
             )}
           </div>
-          <Button
-            type='button'
-            variant='outline'
-            size='sm'
-            loading={liftingId === restriction.id}
-            disabled={isBusy}
-            onClick={() => onLift(restriction.id)}
-            data-pw='community-raid-mode-lift'
-          >
-            <ShieldOff className='mr-2 h-4 w-4' />
-            {t('extracted.communities.communityRaidModeActiveList.lift_871eee33')}
-          </Button>
+          {status === 'active' && (
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              loading={liftingId === restriction.id}
+              disabled={isBusy}
+              onClick={() => onLift(restriction.id)}
+              data-pw='community-raid-mode-lift'
+            >
+              <ShieldOff className='mr-2 h-4 w-4' />
+              {t('extracted.communities.communityRaidModeActiveList.lift_871eee33')}
+            </Button>
+          )}
         </div>
       ))}
     </div>

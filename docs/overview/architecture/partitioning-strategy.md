@@ -48,10 +48,10 @@ serialization and uniqueness point across the user-partitioned `web_push_subscri
 `notification_push_intent_subscription_receipts` retains delivery outcomes by exact subscription
 generation, rather than an endpoint-only key.
 
-`session_referral_attributions` ages out anonymous (`user_id IS NULL`) rows by batch deletion;
-user-linked rows live with the account, and `deleteUser` nulls `user_id` so they join the sweep.
-Its current default partition has no declared drop window. A future range-drop policy must
-account for live user-linked rows before the owner can declare one.
+`session_referral_attributions` is append-only click history. Every click remains independently
+visible in click logs and account exports until the attribution retention window retires its
+monthly partition. Signup updates only the latest unconverted click; session credit preserves
+the earliest click. User-linked clicks share the same finite retention window.
 
 ## Operating Explicit Ranges
 
