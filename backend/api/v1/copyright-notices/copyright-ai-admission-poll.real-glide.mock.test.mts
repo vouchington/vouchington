@@ -166,7 +166,7 @@ describe('copyright AI queue admission and staff result polling', () => {
       .expect(201)
     const submissionId = appeal.body.copyright_submission.id as string
     const staff = createRequest()
-    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const moderator = await createTestUser({ extraRoles: ['administrator'] })
     await staff.authenticateAs(moderator)
     const current = () => findCase(staff, noticeId)
     const appealOf = (queued: QueuedCase) =>
@@ -217,7 +217,7 @@ describe('copyright AI queue admission and staff result polling', () => {
       .expect(201)
     const submissionId = filing.body.copyright_submission.id as string
     const staff = createRequest()
-    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const moderator = await createTestUser({ extraRoles: ['administrator'] })
     await staff.authenticateAs(moderator)
     const current = () => findCase(staff, noticeId)
     const counterOf = (queued: QueuedCase) =>
