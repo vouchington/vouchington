@@ -42,10 +42,6 @@ const moderationCoreEndpointRegistry: Record<string, ManifestEndpoint> = {
     path: `/api/v1/copyright-trusted-flaggers/${copyrightTrustedFlaggerId}/status-changes`,
     requestBody: { change_type: 'suspended', reason: 'Commission list update' },
   },
-  'native.copyright.staff-queue.ai-run': {
-    method: 'GET',
-    path: '/api/v1/copyright-notices/review-queue',
-  },
   'native.moderation.copyright.image-similarity-candidates.default': {
     method: 'GET',
     path: `/api/v1/copyright-notices/${copyrightNoticeId}/targets/${copyrightNoticeTargetId}/image-similarity-candidates`,
