@@ -51,7 +51,7 @@ describe('pr-shepherd guidance', () => {
       prShepherdGuidanceViolations([
         ...currentGuidance,
         { path: 'docs/example.md', text: 'Run `pnpm exec pr-shepherd iterate 42`.' },
-        { path: 'docs/other.md', text: 'Run npx pr-shepherd stack 42.' },
+        { path: 'docs/other.md', text: 'Run npx --yes pr-shepherd stack 42.' },
       ]),
     ).toEqual([
       'docs/example.md: package-runner pr-shepherd command',
