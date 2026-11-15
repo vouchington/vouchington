@@ -1,17 +1,17 @@
-import { read } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
   createCopyrightAppeal,
   createCopyrightCounterNotice,
   createCopyrightFormIntake,
-} from '../../../services/copyright-notices/index.mts'
+} from '../services/copyright-notices/index.mts'
 import {
   createTestUser,
   insertTestImage,
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
-import { getCopyrightNoticePrivateAggregate } from './private-aggregate.mts'
+import { getCopyrightNoticePrivateAggregate } from './services/copyright-notices/private-aggregate.mts'
 
 export const COPYRIGHT_AI_RUN_TABLES = {
   appeal: 'copyright_notice_appeal_recommendation_runs',
@@ -92,4 +92,41 @@ export async function readTestCopyrightAiRun(table: RunTable, runId: string) {
       .append(sql`${runId}`),
   )
   return rows[0] ?? null
+}
+
+/** Seeds one run row; a failed run is terminal, any other is active. */
+export async function insertTestCopyrightAiRun(
+  table: RunTable,
+  subjectColumn: string,
+  subjectId: string,
+  id: string,
+  failed: boolean,
+) {
+  await write(
+    sql`/* insertTestCopyrightAiRun */ INSERT INTO `
+      .append(`${table} (id, ${subjectColumn}, failed_at) `)
+      .append(sql`VALUES (${id}, ${subjectId}, ${failed ? new Date() : null})`),
+  )
+}
+
+export async function readActiveTestGuidanceRunId(submissionId: string) {
+  const { rows } = await read<{ id: string }>(
+    sql`/* readActiveTestGuidanceRunId */ SELECT id FROM copyright_notice_submission_guidance_runs
+      WHERE copyright_notice_submission_id = ${submissionId}
+        AND completed_at IS NULL AND failed_at IS NULL AND expired_at IS NULL`,
+  )
+  return rows[0]?.id
+}
+
+/** Applies a raw timestamp assignment so a test can prove the run CHECK constraints reject it. */
+export async function setTestCopyrightAiRunTimestamps(
+  table: RunTable,
+  runId: string,
+  assignment: 'completed_at = now()' | 'failed_at = now(), expired_at = now()',
+) {
+  await write(
+    sql`/* setTestCopyrightAiRunTimestamps */ UPDATE `
+      .append(`${table} SET ${assignment} WHERE id = `)
+      .append(sql`${runId}`),
+  )
 }

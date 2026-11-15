@@ -1,14 +1,13 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
 import { COPYRIGHT_COUNTER_NOTICE_GUIDANCE_ELEMENTS } from '@ts-shared/utils/copyright-submission-guidance'
 import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import {
   COPYRIGHT_AI_RUN_TABLES,
   createCopyrightCaseWithAiRunSubjects,
   readTestCopyrightAiRun,
-} from '@voucha/test-helpers/services/copyright-notices/ai-run-fixtures'
+  setTestCopyrightAiRunTimestamps,
+} from '@voucha/test-helpers/copyright-ai-run-fixtures'
 import {
   admitCopyrightAppealRecommendationRun,
   markCopyrightAppealRecommendationRunExpired,
@@ -162,18 +161,10 @@ describe.each(flows)('copyright AI run: $name', flow => {
     const subjectId = await flow.subject()
     const runId = (await flow.admit(subjectId))!
     await expect(
-      write(
-        sql`/* testCompletedWithoutResult */ UPDATE `
-          .append(flow.table)
-          .append(sql` SET completed_at = now() WHERE id = ${runId}`),
-      ),
+      setTestCopyrightAiRunTimestamps(flow.table, runId, 'completed_at = now()'),
     ).rejects.toMatchObject({ code: '23514' })
     await expect(
-      write(
-        sql`/* testTwoTerminalTimestamps */ UPDATE `
-          .append(flow.table)
-          .append(sql` SET failed_at = now(), expired_at = now() WHERE id = ${runId}`),
-      ),
+      setTestCopyrightAiRunTimestamps(flow.table, runId, 'failed_at = now(), expired_at = now()'),
     ).rejects.toMatchObject({ code: '23514' })
     expect(await readTestCopyrightAiRun(flow.table, runId)).toMatchObject({ status: 'active' })
   })

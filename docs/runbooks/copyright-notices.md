@@ -225,9 +225,10 @@ Appeal recommendations, submission guidance and email-intake recommendations eac
 active run gets that run back, so a retry or a sweep never starts a second one. The worker completes
 the run in the transaction that writes the result; a late failure never overwrites that success. A
 run ends `failed` only on a definitive terminal worker failure and `expired` when its input no longer
-applies; the dispatch sweep then admits a new run for a subject that still has no result. Terminal
-runs are deleted after `copyright_ai_run_days` by the bounded retention sweep and by case purge
-(runs before results), so a run row is never evidence. The run tables stay unpartitioned: the
+applies; the dispatch sweep then admits a new run for a subject that still has no result. Runs are
+deleted after `copyright_ai_run_days` by the bounded retention sweep (a run still active then is abandoned,
+because its subject was rejected or erased before the job ran) and by case purge (runs before
+results), so a run row is never evidence. The run tables stay unpartitioned: the
 one-active-run-per-subject partial unique index cannot carry a UUIDv7 partition key, and admission
 stays free of locks and counters.
 

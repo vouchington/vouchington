@@ -8,7 +8,7 @@ import {
   COPYRIGHT_AI_RUN_TABLES,
   createCopyrightCaseWithAiRunSubjects,
   readTestCopyrightAiRun,
-} from '@voucha/test-helpers/services/copyright-notices/ai-run-fixtures'
+} from '@voucha/test-helpers/copyright-ai-run-fixtures'
 import { admitCopyrightAppealRecommendationRun } from '@services/copyright-notices/appeal-recommendation-runs'
 import { copyrightAppealRecommendations } from '@services/copyright-notices/appeal-recommendations'
 import { admitCopyrightEmailRecommendationRun } from '@services/copyright-notices/email-recommendation-runs'

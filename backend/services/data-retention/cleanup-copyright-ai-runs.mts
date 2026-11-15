@@ -19,8 +19,9 @@ const RUN_TABLES = [
 ] as const
 
 /**
- * Deletes terminal per-attempt AI runs older than the retention window. Active runs are never
- * deleted. Runs are leaves: the immutable results they point to are not touched here, and a case
+ * Deletes per-attempt AI runs older than the retention window. A run still active after the
+ * whole window is abandoned (its subject was rejected or erased before the job ran, so nothing
+ * will finish it) and goes with the terminal ones. Runs are leaves: the immutable results they point to are not touched here, and a case
  * purge removes a case's runs before its results.
  */
 export async function cleanupCopyrightAiRuns(
@@ -32,7 +33,7 @@ export async function cleanupCopyrightAiRuns(
   const results = await Promise.all(
     RUN_TABLES.map(table =>
       runBoundedBatches(options, batchSize =>
-        deleteTerminalRunBatch(table, cutoffId, batchSize, options.runIds),
+        deleteRunBatch(table, cutoffId, batchSize, options.runIds),
       ),
     ),
   )
@@ -42,16 +43,16 @@ export async function cleanupCopyrightAiRuns(
   }
 }
 
-async function deleteTerminalRunBatch(
+async function deleteRunBatch(
   table: (typeof RUN_TABLES)[number],
   cutoffId: string,
   batchSize: number,
   runIds?: readonly string[],
 ): Promise<number> {
-  const query = sql`/* deleteOldTerminalCopyrightAiRunBatch */
+  const query = sql`/* deleteOldCopyrightAiRunBatch */
     WITH candidates AS (
       SELECT id FROM `.append(table).append(sql`
-      WHERE id < ${cutoffId}::uuid AND status <> 'active'`)
+      WHERE id < ${cutoffId}::uuid`)
   if (runIds) query.append(sql` AND id = ANY(${runIds}::uuid[])`)
   query.append(sql`
       ORDER BY id LIMIT ${batchSize}
@@ -60,7 +61,7 @@ async function deleteTerminalRunBatch(
   query.append(table)
   query.append(sql` AS run
     WHERE run.id = ANY(ARRAY(SELECT id FROM candidates))
-      AND run.id < ${cutoffId}::uuid AND run.status <> 'active'
+      AND run.id < ${cutoffId}::uuid
     RETURNING run.id`)
   const { rowCount } = await write(query)
   return rowCount ?? 0

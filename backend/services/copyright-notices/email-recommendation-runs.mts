@@ -8,7 +8,7 @@ import sql from 'sql-template-strings'
  * old recommendation partition never blocks on a run.
  */
 
-/** Idempotent batch admission: maps each receipt to its new run or its existing active run; a receipt that no longer accepts a run is absent. */
+/** Idempotent batch admission: maps each receipt to its new run or its existing active run; a receipt that is erased or already has its recommendation is absent, so a replayed SES job never buys a second model call. */
 export async function admitCopyrightEmailRecommendationRuns(
   intakeIds: readonly string[],
 ): Promise<Map<string, string>> {
@@ -21,6 +21,10 @@ export async function admitCopyrightEmailRecommendationRuns(
     INSERT INTO copyright_notice_email_intake_recommendation_runs (copyright_notice_email_intake_receipt_id)
     SELECT receipt.id FROM copyright_notice_email_intake_receipts receipt
     WHERE receipt.id = ANY(${intakeIds}::uuid[]) AND receipt.erased_at IS NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM copyright_notice_email_intakes done
+        WHERE done.id = receipt.id AND done.recommendation_completed_at IS NOT NULL
+      )
     ON CONFLICT (copyright_notice_email_intake_receipt_id)
       WHERE completed_at IS NULL AND failed_at IS NULL AND expired_at IS NULL DO NOTHING
     RETURNING id, copyright_notice_email_intake_receipt_id AS subject_id`)

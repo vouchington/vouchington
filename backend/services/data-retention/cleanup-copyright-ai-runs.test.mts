@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
 import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import {
   COPYRIGHT_AI_RUN_TABLES,
   createCopyrightCaseWithAiRunSubjects,
+  insertTestCopyrightAiRun,
   readTestCopyrightAiRun,
-} from '@voucha/test-helpers/services/copyright-notices/ai-run-fixtures'
+} from '@voucha/test-helpers/copyright-ai-run-fixtures'
 import { cleanupCopyrightAiRuns } from './cleanup-copyright-ai-runs.mts'
 
 const NOW = new Date('2100-01-01T00:00:00.000Z')
@@ -16,22 +15,8 @@ const atAge = (days: number) => uuidv7({ msecs: NOW.getTime() - days * DAY_MS })
 
 type RunTable = (typeof COPYRIGHT_AI_RUN_TABLES)[keyof typeof COPYRIGHT_AI_RUN_TABLES]
 
-async function insertRun(
-  table: RunTable,
-  subjectColumn: string,
-  subjectId: string,
-  id: string,
-  failed: boolean,
-) {
-  await write(
-    sql`/* seedCopyrightAiRunRetention */ INSERT INTO `
-      .append(`${table} (id, ${subjectColumn}, failed_at) `)
-      .append(sql`VALUES (${id}, ${subjectId}, ${failed ? new Date() : null})`),
-  )
-}
-
 describe('copyright AI run retention', () => {
-  it('deletes only owned terminal runs older than the window from every run table', async () => {
+  it('deletes only owned runs older than the window, terminal or abandoned, from every run table', async () => {
     const { appealSubmissionId, counterNoticeSubmissionId } =
       await createCopyrightCaseWithAiRunSubjects()
     const intake = await createParsedCopyrightEmailIntake()
@@ -56,10 +41,10 @@ describe('copyright AI run retention', () => {
     }))
     for (const row of rows) {
       owned.push(row.oldTerminal, row.oldActive, row.young)
-      await insertRun(row.table, row.column, row.subjectId, row.oldTerminal, true)
-      await insertRun(row.table, row.column, row.subjectId, row.young, true)
-      await insertRun(row.table, row.column, row.subjectId, row.unowned, true)
-      await insertRun(row.table, row.column, row.subjectId, row.oldActive, false)
+      await insertTestCopyrightAiRun(row.table, row.column, row.subjectId, row.oldTerminal, true)
+      await insertTestCopyrightAiRun(row.table, row.column, row.subjectId, row.young, true)
+      await insertTestCopyrightAiRun(row.table, row.column, row.subjectId, row.unowned, true)
+      await insertTestCopyrightAiRun(row.table, row.column, row.subjectId, row.oldActive, false)
     }
 
     const result = await cleanupCopyrightAiRuns({
@@ -70,14 +55,12 @@ describe('copyright AI run retention', () => {
       runIds: owned,
     })
 
-    expect(result).toEqual({ deleted: 3, hasMore: false })
+    expect(result).toEqual({ deleted: 6, hasMore: false })
     for (const row of rows) {
       expect(await readTestCopyrightAiRun(row.table, row.oldTerminal)).toBeNull()
       expect(await readTestCopyrightAiRun(row.table, row.young)).toMatchObject({ status: 'failed' })
-      // An active run is never deleted however old; an equally eligible unowned row stays.
-      expect(await readTestCopyrightAiRun(row.table, row.oldActive)).toMatchObject({
-        status: 'active',
-      })
+      // An abandoned active run goes with the terminal ones; an equally eligible unowned row stays.
+      expect(await readTestCopyrightAiRun(row.table, row.oldActive)).toBeNull()
       expect(await readTestCopyrightAiRun(row.table, row.unowned)).toMatchObject({
         status: 'failed',
       })
