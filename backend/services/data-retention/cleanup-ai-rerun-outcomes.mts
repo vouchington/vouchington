@@ -81,7 +81,7 @@ async function deleteAppealResolutionRunBatch(
   return rowCount ?? 0
 }
 
-/** Only terminal runs retire; an active run is the live admission and is never deleted here. */
+/** Only terminal runs retire; an active run, or the run behind a dispute's saved draft, stays. */
 async function deleteReviewDisputeResolutionRunBatch(
   cutoffId: string,
   batchSize: number,
@@ -91,7 +91,8 @@ async function deleteReviewDisputeResolutionRunBatch(
     WITH candidates AS (
       SELECT id FROM review_dispute_resolution_runs
       WHERE id < ${cutoffId}::uuid
-        AND (completed_at IS NOT NULL OR failed_at IS NOT NULL OR expired_at IS NOT NULL)`
+        AND (completed_at IS NOT NULL OR failed_at IS NOT NULL OR expired_at IS NOT NULL)
+        AND NOT EXISTS (SELECT 1 FROM review_disputes rd WHERE rd.ai_draft_run_id = review_dispute_resolution_runs.id)`
   if (runIds) query.append(sql` AND id = ANY(${runIds}::uuid[])`)
   query.append(sql`
       ORDER BY id LIMIT ${batchSize}
@@ -100,6 +101,7 @@ async function deleteReviewDisputeResolutionRunBatch(
     WHERE run.id = ANY(ARRAY(SELECT id FROM candidates))
       AND run.id < ${cutoffId}::uuid
       AND (run.completed_at IS NOT NULL OR run.failed_at IS NOT NULL OR run.expired_at IS NOT NULL)
+      AND NOT EXISTS (SELECT 1 FROM review_disputes rd WHERE rd.ai_draft_run_id = run.id)
     RETURNING run.id`)
   const { rowCount } = await write(query)
   return rowCount ?? 0

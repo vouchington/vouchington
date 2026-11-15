@@ -8,7 +8,6 @@ import {
   insertTestPost,
   insertTestPostReview,
   insertTestTopic,
-  retireTestReviewDisputeResolutionRun,
 } from '@voucha/test-helpers'
 import { createTopicClaim } from '@services/topic-claims/create'
 import { adminVerifyTopicClaim } from '@services/topic-claims/admin-verify'
@@ -115,20 +114,6 @@ describe('review dispute resolution runs', () => {
       ai_draft_run_id: runId,
       ai_draft_requested_run_id: runId,
       ai_draft_requested_run_status: 'succeeded',
-    })
-  })
-
-  it('keeps the saved draft run id after retention retires the run row', async () => {
-    const { dispute } = await makeDispute()
-    const { runId } = await admitReviewDisputeResolutionRun(dispute.id)
-    await createReviewDisputeDraft(draft(dispute.id, runId))
-
-    await retireTestReviewDisputeResolutionRun(runId)
-
-    expect(await getReviewDisputeByIdFromPrimary(dispute.id)).toMatchObject({
-      ai_draft_run_id: runId,
-      ai_draft_requested_run_id: null,
-      ai_draft_requested_run_status: null,
     })
   })
 

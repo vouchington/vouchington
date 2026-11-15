@@ -20,7 +20,7 @@ export {
   getReviewDisputeActiveRunId,
   getReviewDisputeRunStatus,
   admitTestReviewDisputeRun,
-  retireTestReviewDisputeResolutionRun,
+  setTestReviewDisputeDraftRun,
 } from './review-dispute-ai-request.mts'
 export * from './feeds.mts'
 export * from './hostname-exclusion.mts'

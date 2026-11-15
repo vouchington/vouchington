@@ -33,9 +33,12 @@ export async function admitTestReviewDisputeRun(disputeId: string): Promise<stri
   return rows[0].id
 }
 
-/** Deletes a run row as the retention sweep does, leaving the dispute's saved draft untouched. */
-export async function retireTestReviewDisputeResolutionRun(runId: string): Promise<void> {
-  await write(sql`/* retireTestReviewDisputeResolutionRun */
-    DELETE FROM review_dispute_resolution_runs WHERE id = ${runId}::uuid
+/** Points a dispute's saved draft at a run, as a completed draft save does. */
+export async function setTestReviewDisputeDraftRun(
+  disputeId: string,
+  runId: string,
+): Promise<void> {
+  await write(sql`/* setTestReviewDisputeDraftRun */
+    UPDATE review_disputes SET ai_draft_run_id = ${runId}::uuid WHERE id = ${disputeId}::uuid
   `)
 }

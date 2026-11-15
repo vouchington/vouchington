@@ -11,6 +11,7 @@ import {
   getReviewDisputeRunStatus,
   insertTestReportJudgement,
   insertTestUserWarning,
+  setTestReviewDisputeDraftRun,
 } from '@voucha/test-helpers'
 import {
   getTestAppealResolutionRunStatus,
@@ -165,6 +166,12 @@ describe('durable AI rerun retention', () => {
       old,
       'active',
     )
+    const oldSavedDraft = await insertTestReviewDisputeResolutionRunForRetention(
+      disputeId,
+      old,
+      'succeeded',
+    )
+    await setTestReviewDisputeDraftRun(disputeId, oldSavedDraft)
 
     const result = await runDataRetentionCleanup(
       { batchSize: 10, maxBatches: 1 },
@@ -172,7 +179,7 @@ describe('durable AI rerun retention', () => {
         families: ['reviewDisputeResolutionRuns'],
         reviewDisputeResolutionRuns: {
           now,
-          runIds: [oldSucceeded, oldFailed, oldExpired, recentSucceeded, oldActive],
+          runIds: [oldSucceeded, oldFailed, oldExpired, recentSucceeded, oldActive, oldSavedDraft],
         },
       },
     )
@@ -183,5 +190,6 @@ describe('durable AI rerun retention', () => {
     expect(await getReviewDisputeRunStatus(oldExpired)).toBeNull()
     expect(await getReviewDisputeRunStatus(recentSucceeded)).toBe('succeeded')
     expect(await getReviewDisputeRunStatus(oldActive)).toBe('active')
+    expect(await getReviewDisputeRunStatus(oldSavedDraft)).toBe('succeeded')
   })
 })

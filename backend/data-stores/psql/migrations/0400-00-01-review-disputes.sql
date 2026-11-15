@@ -57,8 +57,7 @@ CREATE TABLE IF NOT EXISTS review_disputes (
   ai_internal_response text,
   model text,
   ai_drafted_at timestamptz,
-  -- Opaque identity of the run that saved this draft; the run row itself is retired by retention.
-  -- guardrails-disable-next-line uuid-must-be-key
+  -- Run that saved this draft; retention keeps a run while a dispute still references it.
   ai_draft_run_id uuid,
 
   -- Human-owned outbound message (the ONLY thing ever delivered to the disputant)
@@ -218,6 +217,15 @@ CREATE INDEX IF NOT EXISTS idx_review_dispute_resolution_runs__lifecycle_change_
   ON review_dispute_resolution_runs (latest_lifecycle_change_id)
   WHERE latest_lifecycle_change_id IS NOT NULL;
 
+ALTER TABLE review_disputes
+  ADD CONSTRAINT fk_review_disputes__ai_draft_run_id
+  FOREIGN KEY (ai_draft_run_id) REFERENCES review_dispute_resolution_runs (id);
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_review_disputes__ai_draft_run_id
+  ON review_disputes (ai_draft_run_id)
+  WHERE ai_draft_run_id IS NOT NULL;
+
 COMMENT ON TABLE review_dispute_resolution_runs IS 'Durable AI draft requests for review disputes and their terminal outcomes; one active run per dispute, retired by bounded AI rerun retention once terminal.';
 COMMENT ON COLUMN review_dispute_resolution_runs.id IS 'Request identity: only this run may save an AI draft, independent of queue job IDs.';
 COMMENT ON COLUMN review_dispute_resolution_runs.review_dispute_id IS 'Dispute owning this exact admitted request.';
@@ -268,7 +276,7 @@ COMMENT ON COLUMN review_disputes.public_response IS 'Human-owned public message
 COMMENT ON COLUMN review_disputes.approved_at IS 'When a moderator approved the public_response for delivery.';
 COMMENT ON COLUMN review_disputes.sent_at IS 'When the approved public_response was delivered to the disputant.';
 COMMENT ON COLUMN review_disputes.model IS 'OpenAI model used for the AI draft.';
-COMMENT ON COLUMN review_disputes.ai_draft_run_id IS 'Identity of the resolution run that saved the current AI draft; retained as plain current state after retention retires the run row, so it is not a foreign key.';
+COMMENT ON COLUMN review_disputes.ai_draft_run_id IS 'Identity of the resolution run that saved the current AI draft; retention keeps that run row while this reference exists.';
 COMMENT ON COLUMN review_disputes.ai_drafted_at IS 'When the AI agent drafted the recommended_action and ai_public_response.';
 COMMENT ON COLUMN review_disputes.internal_notes IS 'Internal moderator notes, never shared with the disputant.';
 COMMENT ON COLUMN review_disputes.drafted_at IS 'When the moderator first seeded public_response from the AI draft.';
