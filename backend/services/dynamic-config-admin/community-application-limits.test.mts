@@ -1,23 +1,23 @@
 import { describe, expect, it } from 'vitest'
+import { DynamicConfigValidationError } from 'valkyries/dynamic-config'
 import { createTestUser } from '@voucha/test-helpers'
+import { getCommunityApplicationLimits } from '@services/communities/applications/question-limits'
 import { updateDynamicConfigNamespace } from './service.mts'
 
 describe('community application limit administration', () => {
-  it('rejects a question cap above 1000 before writing configuration', async () => {
-    const developer = await createTestUser({ extraRoles: ['developer'] })
-    await expect(
-      updateDynamicConfigNamespace(developer, 'community-application-limits-config', {
-        questions_per_community: 1001,
-      }),
-    ).rejects.toThrow(/1000/)
-  })
+  it.each(['questions_per_community', 'options_per_question'])(
+    'rejects %s above its maximum of 1000 without writing configuration',
+    async field => {
+      const developer = await createTestUser({ extraRoles: ['developer'] })
+      const before = getCommunityApplicationLimits()
 
-  it('rejects an option cap above its maximum', async () => {
-    const developer = await createTestUser({ extraRoles: ['developer'] })
-    await expect(
-      updateDynamicConfigNamespace(developer, 'community-application-limits-config', {
-        options_per_question: 1001,
-      }),
-    ).rejects.toThrow(/1000/)
-  })
+      await expect(
+        updateDynamicConfigNamespace(developer, 'community-application-limits-config', {
+          [field]: 1001,
+        }),
+      ).rejects.toBeInstanceOf(DynamicConfigValidationError)
+
+      expect(getCommunityApplicationLimits()).toEqual(before)
+    },
+  )
 })
