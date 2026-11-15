@@ -134,8 +134,7 @@ describe.each(flows)('copyright AI run: $name', flow => {
     // A finished run frees the subject for a fresh admission.
     // Appeal and guidance subjects can be re-run; a completed email recommendation never is.
     const next = await flow.admit(subjectId)
-    if (flow.name === 'email intake recommendation') expect(next).toBeNull()
-    else expect(next).toEqual(expect.any(String))
+    expect(next === null).toBe(flow.name === 'email intake recommendation')
     expect(next).not.toBe(runId)
   })
 
