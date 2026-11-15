@@ -17,6 +17,7 @@ describe('query lifecycle helpers', () => {
   })
 
   afterAll(async () => {
+    await closeConnection()
     await fs.promises.rm(testDir, { recursive: true })
   })
 
@@ -62,29 +63,29 @@ describe('query lifecycle helpers', () => {
     expect(rows).toEqual([{ value: 1 }])
   })
 
-  it('self-heals when a later file widens a populated table’s inferred column type', async () => {
-    // web_page_view's first-ever row here has a UUID-shaped page_id, so DuckDB infers the column
-    // as UUID and pins that type on the view it builds the moment the table is marked populated.
+  it('preserves rows when a later file widens a populated table’s inferred column type', async () => {
     const firstEventId = crypto.randomUUID()
+    const uuidPageId = crypto.randomUUID()
     writeRecord('web_page_view', {
       event_id: firstEventId,
       event_date: '2024-09-01',
       event_time: new Date('2024-09-01T00:00:00Z'),
       env: 'test',
       page_kind: 'topic',
-      page_id: crypto.randomUUID(),
+      page_id: uuidPageId,
       session_id: crypto.randomUUID(),
     })
     await flush()
-    await expect(
-      query<{ event_id: string }>(`SELECT event_id FROM web_page_view WHERE event_id = $1`, [
-        firstEventId,
-      ]),
-    ).resolves.toEqual([{ event_id: firstEventId }])
 
-    // A later, separately-partitioned file introduces a non-UUID page_id — without a rebuild the
-    // pinned view throws "Contents of view were altered" on the very next query against the table,
-    // and query()'s outer catch used to swallow that into a silent [].
+    type PageRow = { event_id: string; page_id: string; page_id_type: string }
+    const selectRows = `SELECT event_id, page_id, typeof(page_id) AS page_id_type
+      FROM web_page_view WHERE event_id IN ($1, $2) ORDER BY event_date`
+    await expect(query<PageRow>(selectRows, [firstEventId, firstEventId])).resolves.toEqual([
+      { event_id: firstEventId, page_id: uuidPageId, page_id_type: 'UUID' },
+    ])
+
+    // A separate partition widens the inferred page_id type. Both rows must remain readable,
+    // whether DuckDB widens the view automatically or query() rebuilds it after a stale-view error.
     const secondEventId = crypto.randomUUID()
     const nonUuidPageId = `o'brien's "page"`
     writeRecord('web_page_view', {
@@ -98,17 +99,9 @@ describe('query lifecycle helpers', () => {
     })
     await flush()
 
-    const rows = await query<{ event_id: string }>(
-      `SELECT event_id FROM web_page_view WHERE page_id = $1`,
-      [nonUuidPageId],
-    )
-    expect(rows).toEqual([{ event_id: secondEventId }])
-
-    // The first row must still be reachable after the rebuild — the fix must not lose data.
-    await expect(
-      query<{ event_id: string }>(`SELECT event_id FROM web_page_view WHERE event_id = $1`, [
-        firstEventId,
-      ]),
-    ).resolves.toEqual([{ event_id: firstEventId }])
+    await expect(query<PageRow>(selectRows, [firstEventId, secondEventId])).resolves.toEqual([
+      { event_id: firstEventId, page_id: uuidPageId, page_id_type: 'VARCHAR' },
+      { event_id: secondEventId, page_id: nonUuidPageId, page_id_type: 'VARCHAR' },
+    ])
   })
 })

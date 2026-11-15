@@ -6,6 +6,11 @@ name: backend-smoke
 on:
   workflow_call:
     inputs:
+      validate_native_images:
+        description: 'Build and probe shipped native images without cloud credentials'
+        required: false
+        type: boolean
+        default: false
       prepared_database:
         description: 'Use the prepared backend PostgreSQL artifact from the caller'
         required: false
@@ -21,6 +26,37 @@ env:
   NODE_ENV: test
 
 jobs:
+  native-images:
+    if: ${{ inputs.validate_native_images || github.event_name == 'workflow_dispatch' }}
+    # Docker and native ARM64 compilation require a full VM matching the shipping images.
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 2
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
+        timeout-minutes: 2
+        with:
+          cleanup: false
+          driver-opts: image=ghcr.io/vouchington/dependency-buildkit:buildx-stable-1@sha256:cec9f139f45e93c5c69c60f8b07cfad9f43f4ef6b6a6cd917527fea5ff2e3dea
+          buildkitd-config-inline: |
+            [worker.oci]
+              max-parallelism = 3
+      - name: Build shipped backend images locally
+        timeout-minutes: 20
+        run: |
+          docker buildx bake -f backend/docker-bake.hcl api worker-cpu worker-io \
+            --set api.tags=voucha-native/api:smoke \
+            --set worker-cpu.tags=voucha-native/worker-cpu:smoke \
+            --set worker-io.tags=voucha-native/worker-io:smoke
+      - name: Probe DuckDB in shipped executables and images
+        timeout-minutes: 2
+        run: .github/workflows/checks-backend-native-images.sh
+
   prepare-postgres:
     if: ${{ !inputs.prepared_database }}
     uses: ./.github/workflows/prepare-postgres.yml

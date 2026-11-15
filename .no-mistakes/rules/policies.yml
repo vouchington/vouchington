@@ -3224,6 +3224,10 @@
       # ubuntu-slim platform cap), so a slow step cannot consume all other step allowances.
       - job: '.github/workflows/ghcr-cleanup.yml#cleanup'
         maxMinutes: 11
+      # Native shipping images share the backend build path without cloud boot or publication.
+      # The job cap is tighter than its 26m step sum while retaining the 20m build allowance.
+      - job: '.github/workflows/checks-backend-smoke.yml#native-images'
+        maxMinutes: 25
       # Backend validation and publication share one build path; the 30m cap preserves the
       # measured build/smoke/scan margin plus the 8m-capped GHCR publication step. See #31.
       - job: '.github/workflows/publish-backend-images.yml#build'
@@ -3411,7 +3415,7 @@
       .github/workflows/cancel-dequeued-merge-group-runs.yml: [cancel]
       .github/workflows/cancel-replaced-merge-group-runs.yml: [cancel]
       .github/workflows/dependency-mirror.yml: [mirror]
-      .github/workflows/checks-backend-smoke.yml: [prepare-postgres, smoke]
+      .github/workflows/checks-backend-smoke.yml: [native-images, prepare-postgres, smoke]
       .github/workflows/checks-static.yml:
         [static-backend, static-cloudflare, static-lambdas, static-web]
       .github/workflows/ci-area-coverage.yml: [coverage]
@@ -3531,6 +3535,8 @@
       - '.github/workflows/tooling.yml#tooling'
       - '.github/workflows/gitleaks.yml#gitleaks'
     requiredDirectEdges:
+      - - '.github/workflows/backend.yml#changes'
+        - '.github/workflows/backend.yml#backend-smoke'
       - - '.github/workflows/explain-analyze.yml#prepare-postgres'
         - '.github/workflows/explain-analyze.yml#seed-explain'
       - - '.github/workflows/explain-analyze.yml#seed-explain'

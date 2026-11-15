@@ -2687,6 +2687,9 @@ importers:
       '@data-stores/graceful-shutdown':
         specifier: workspace:^
         version: link:../../data-stores/graceful-shutdown
+      '@duckdb/node-api':
+        specifier: ^1.4.5-r.1
+        version: 1.4.5-r.1
       '@jongleberry/api-server':
         specifier: ^3.1.0
         version: 3.1.0
