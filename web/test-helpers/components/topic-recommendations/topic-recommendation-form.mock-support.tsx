@@ -35,6 +35,11 @@ vi.mock(import('@/lib/api/client/my'), () => ({
   updateMyIdentity: vi.fn<VitestLooseMock>(),
 }))
 
+// The username dialog's real availability hook blurs when focus moves; keep returning a promise.
+vi.mock(import('@/lib/api/client/availability'), () => ({
+  checkAvailability: vi.fn<VitestLooseMock>(async () => ({ available: true, conflict: null })),
+}))
+
 vi.mock(import('@/lib/on-error'), () => ({
   default: mockOnError,
   onSuccess: mockOnSuccess,
