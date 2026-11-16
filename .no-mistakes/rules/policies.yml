@@ -2510,7 +2510,6 @@
   scope: repository
   severity: advisory
   options:
-    effort: low
     unanalyzableSql: ignore
     importSpecifier: '@data-stores/psql'
     executorFactoryNames: [beginTransaction, beginBoundedTransaction]
