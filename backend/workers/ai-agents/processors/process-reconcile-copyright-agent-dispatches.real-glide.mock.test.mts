@@ -3,6 +3,7 @@ import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/service
 import { pendingFormEffect } from '@voucha/test-helpers/copyright-dispatch-reconcile-fixtures'
 import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { createTestUser } from '@voucha/test-helpers'
+import { readLatestTestGuidanceRunId } from '@voucha/test-helpers/copyright-ai-run-fixtures'
 import { closeTestDataStores } from '@voucha/test-helpers/close-data-stores'
 import { createSignedInCopyrightForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -19,7 +20,7 @@ import { processReconcileCopyrightAgentDispatches } from './process-reconcile-co
 // The real-Valkey project selects this suffix; keep the transport as the original module.
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
-const jobId = (submissionId: string) => `copyright_submission_guidance_${submissionId}`
+const jobId = (runId: string) => `copyright_submission_guidance_${runId}`
 
 describe('copyright submission guidance backlog with new intake off', () => {
   useCopyrightIntakeEnvironment({ enabled: false })
@@ -75,16 +76,18 @@ describe('copyright submission guidance backlog with new intake off', () => {
         expect(await readTestPendingCopyrightAgentDispatches(submissionId)).toEqual([
           { kind: 'submission-guidance', submissionId },
         ])
-        expect(await ai_agents.getJob(jobId(submissionId))).toBeNull()
+        expect(await readLatestTestGuidanceRunId(submissionId)).toBeUndefined()
         await expect(
           processReconcileCopyrightAgentDispatches({}, { ids: [submissionId], batchSize: 1 }),
         ).resolves.toEqual({ hasMore: false })
         await expect(countCopyrightActiveRestrictionsForNotice(excluded.noticeId)).resolves.toBe(0)
-        const job = await ai_agents.getJob(jobId(submissionId))
+        const runId = (await readLatestTestGuidanceRunId(submissionId))!
+        const job = await ai_agents.getJob(jobId(runId))
         expect(job?.name).toBe('copyright-submission-guidance')
-        expect(job?.data).toEqual({ submission_id: submissionId })
+        expect(job?.data).toEqual({ submission_id: submissionId, run_id: runId })
       } finally {
-        const job = await ai_agents.getJob(jobId(submissionId))
+        const runId = await readLatestTestGuidanceRunId(submissionId)
+        const job = runId ? await ai_agents.getJob(jobId(runId)) : null
         if (job) await job.remove()
       }
     },

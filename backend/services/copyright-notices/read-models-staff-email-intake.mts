@@ -3,6 +3,7 @@ import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
 import { assertNotSuspended } from '@services/users'
+import { toCopyrightAiRun, type CopyrightAiRun } from './ai-run-types.mts'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { getCopyrightEmailThreadGraphMaxRows } from './config.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
@@ -29,6 +30,7 @@ export type CopyrightStaffEmailIntake = {
   parsed_email: { sender_email: string; subject: string; body_text: string } | null
   parser_error: string | null
   recommendation: { id: string; structured_output: Record<string, unknown> } | null
+  ai_run: CopyrightAiRun | null
 }
 
 export async function getCopyrightStaffEmailIntake(
@@ -45,7 +47,8 @@ export async function getCopyrightStaffEmailIntake(
       parse.sender_email_ciphertext, parse.subject_ciphertext, parse.body_ciphertext, parse.error_ciphertext,
       intake.current_recommendation_identity_id AS recommendation_id,
       intake.current_recommendation_output_ciphertext AS structured_output_ciphertext,
-      link.link_kind, link.copyright_notice_id AS linked_notice_id, `
+      link.link_kind, link.copyright_notice_id AS linked_notice_id,
+      run.id AS run_id, run.status AS run_status, `
   intakeQuery.append(copyrightEmailDuplicateMessageIdSql())
   intakeQuery.append(sql` AS has_duplicate_message_id, `)
   intakeQuery.append(copyrightEmailAncestorNoticeConflictSql(maxGraphRows))
@@ -56,6 +59,8 @@ export async function getCopyrightStaffEmailIntake(
     LEFT JOIN copyright_notice_email_intake_parses parse ON parse.copyright_notice_email_intake_id = intake.id
     LEFT JOIN copyright_notice_email_intake_notice_links link
       ON link.copyright_notice_email_intake_id = intake.id
+    LEFT JOIN LATERAL (SELECT id, status FROM copyright_notice_email_intake_recommendation_runs
+      WHERE copyright_notice_email_intake_receipt_id = intake.id ORDER BY id DESC LIMIT 1) run ON true
     WHERE intake.id = ${intakeId}
   `)
   await using transaction = await beginTransaction()
@@ -79,6 +84,8 @@ export async function getCopyrightStaffEmailIntake(
     structured_output_ciphertext: string | null
     link_kind: 'initial' | 'thread' | null
     linked_notice_id: string | null
+    run_id: string | null
+    run_status: CopyrightAiRun['status'] | null
     has_duplicate_message_id: boolean
     has_ancestor_notice_conflict: boolean
     has_reply_reference: boolean
@@ -130,6 +137,7 @@ export async function getCopyrightStaffEmailIntake(
             structured_output: JSON.parse(structuredOutput) as Record<string, unknown>,
           }
         : null,
+    ai_run: toCopyrightAiRun(row.run_id, row.run_status),
   }
 }
 

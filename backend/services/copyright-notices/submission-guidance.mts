@@ -5,6 +5,7 @@ import type {
   CopyrightCounterNoticeGuidance,
   CopyrightLegalHoldGuidance,
 } from '@ts-shared/utils/copyright-submission-guidance'
+import { completeCopyrightSubmissionGuidanceRun } from './submission-guidance-runs.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
 import { stripPersonalDetails } from './contact-redaction.mts'
 
@@ -45,9 +46,14 @@ type SubmissionRow = {
 }
 
 /** Agent boundary for the redacted model input; only live filings are returned. */
-export async function getCopyrightSubmissionGuidanceSource(
+/** A filing committed just before the job runs must not read as missing from a lagging replica. */
+export function getCopyrightSubmissionGuidanceSource(
   submissionId: string,
 ): Promise<GuidanceSource | null> {
+  return withPrimaryReads(() => readGuidanceSource(submissionId))
+}
+
+async function readGuidanceSource(submissionId: string): Promise<GuidanceSource | null> {
   const { rows } = await read<SubmissionRow>(sql`/* getCopyrightSubmissionGuidanceSource */
     SELECT submission.kind, submission.source_kind, submission.received_at,
       submission.body_ciphertext, submission.copyright_notice_id,
@@ -131,48 +137,54 @@ function isPresent(value: unknown): boolean {
   return typeof value === 'string' && value.trim().length > 0
 }
 
-/** Start-of-job check on the primary: stored guidance means the work is already done. */
-export async function hasCopyrightSubmissionGuidance(
-  submissionId: string,
-  promptVersion: string,
-): Promise<boolean> {
-  const { rows } = await withPrimaryReads(() =>
-    read<{ exists: boolean }>(sql`/* hasCopyrightSubmissionGuidance */
-      SELECT EXISTS (
-        SELECT 1 FROM copyright_notice_submission_guidance
-        WHERE copyright_notice_submission_id = ${submissionId} AND prompt_version = ${promptVersion}
-      ) AS exists`),
-  )
-  return rows[0]?.exists ?? false
-}
-
-/** Agent boundary for one immutable encrypted advisory guidance result. */
+/**
+ * Writes the immutable guidance and, when a run is given, completes that run in the same
+ * transaction. Returns false when the input no longer applies or the run already ended.
+ */
 export async function appendCopyrightSubmissionGuidance(input: {
   submissionId: string
+  runId?: string
   inputSha256: Buffer
   promptVersion: string
   model: string
   guidance: CopyrightCounterNoticeGuidance | CopyrightLegalHoldGuidance
-}): Promise<void> {
+}): Promise<boolean> {
   await using transaction = await beginTransaction()
   await transaction(sql`/* appendCopyrightSubmissionGuidance:lockNotice */
     SELECT notice.id FROM copyright_notice_submissions submission
     JOIN copyright_notices notice ON notice.id = submission.copyright_notice_id
     WHERE submission.id = ${input.submissionId}
     FOR KEY SHARE OF notice`)
-  await transaction(sql`/* appendCopyrightSubmissionGuidance */
-    INSERT INTO copyright_notice_submission_guidance (
-      copyright_notice_submission_id, input_sha256, prompt_version, model,
-      guidance_ciphertext
-    ) SELECT submission.id, ${input.inputSha256}, ${input.promptVersion}, ${input.model},
-      ${encryptSecret(JSON.stringify(input.guidance), `copyright-submission-guidance:${input.submissionId}`)}
-    FROM copyright_notice_submissions submission
-    WHERE submission.id = ${input.submissionId}
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_notices erased
-        WHERE erased.id = submission.copyright_notice_id AND erased.evidence_erased_at IS NOT NULL
-      )
-    ON CONFLICT (copyright_notice_submission_id, input_sha256, prompt_version) DO NOTHING
+  const { rows } = await transaction<{ id: string }>(sql`/* appendCopyrightSubmissionGuidance */
+    WITH inserted AS (
+      INSERT INTO copyright_notice_submission_guidance (
+        copyright_notice_submission_id, input_sha256, prompt_version, model,
+        guidance_ciphertext
+      ) SELECT submission.id, ${input.inputSha256}, ${input.promptVersion}, ${input.model},
+        ${encryptSecret(JSON.stringify(input.guidance), `copyright-submission-guidance:${input.submissionId}`)}
+      FROM copyright_notice_submissions submission
+      WHERE submission.id = ${input.submissionId}
+        AND NOT EXISTS (
+          SELECT 1 FROM copyright_notices erased
+          WHERE erased.id = submission.copyright_notice_id AND erased.evidence_erased_at IS NOT NULL
+        )
+      ON CONFLICT (copyright_notice_submission_id, input_sha256, prompt_version) DO NOTHING
+      RETURNING id
+    )
+    SELECT id FROM inserted
+    UNION ALL
+    SELECT id FROM copyright_notice_submission_guidance
+    WHERE copyright_notice_submission_id = ${input.submissionId}
+      AND input_sha256 = ${input.inputSha256} AND prompt_version = ${input.promptVersion}
+    LIMIT 1
   `)
+  const resultId = rows[0]?.id
+  if (!resultId) return false
+  if (
+    input.runId &&
+    !(await completeCopyrightSubmissionGuidanceRun(transaction, input.runId, resultId))
+  )
+    return false
   await transaction.commit()
+  return true
 }

@@ -40,6 +40,7 @@ export const COPYRIGHT_FINITE_VALUES = {
   ],
   copyright_notice_appeal_recommendation_outcomes: ['confirm', 'modify', 'reverse', 'uncertain'],
   copyright_review_actions: ['confirm', 'reverse'],
+  copyright_notice_ai_run_statuses: ['active', 'succeeded', 'failed', 'expired'],
   copyright_notice_correspondence_message_composition_kinds: [
     'inbound',
     'deterministic_template',

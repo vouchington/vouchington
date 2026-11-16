@@ -13,7 +13,7 @@ import { ai_agents } from '../queues.mts'
 const enqueues: Array<{
   name: Extract<AIAgentJobName, 'copyright-submission-guidance' | 'copyright-appeal-recommendation'>
   prefix: string
-  enqueue: (submissionId: string) => Promise<void>
+  enqueue: (submissionId: string, runId: string) => Promise<void>
   recover: typeof enqueueOrRetryCopyrightSubmissionGuidance
 }> = [
   {
@@ -35,16 +35,17 @@ describe.each(enqueues)(
   ({ name, prefix, enqueue: enqueueJob, recover }) => {
     it('persists an ordered, deduplicated guidance job', async () => {
       const submissionId = crypto.randomUUID()
-      const jobId = `${prefix}${submissionId}`
+      const runId = crypto.randomUUID()
+      const jobId = `${prefix}${runId}`
       try {
-        await enqueueJob(submissionId)
+        await enqueueJob(submissionId, runId)
 
         // The in-memory GlideMQ shim records the options the enqueue passed. It does not prove
         // Valkey deduplication or ordering.
         await expect(ai_agents.getJob(jobId)).resolves.toMatchObject({
           id: jobId,
           name,
-          data: { submission_id: submissionId },
+          data: { submission_id: submissionId, run_id: runId },
           opts: {
             attempts: AI_AGENTS_DEFAULTS.attempts,
             backoff: AI_AGENTS_DEFAULTS.backoff,
@@ -52,7 +53,7 @@ describe.each(enqueues)(
             removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
             removeOnFail: AI_AGENTS_DEFAULTS.removeOnFail,
             deduplication: { id: jobId, mode: 'simple' },
-            ordering: { key: jobId, concurrency: 1 },
+            ordering: { key: `${prefix}${submissionId}`, concurrency: 1 },
           },
         })
       } finally {
@@ -62,9 +63,11 @@ describe.each(enqueues)(
 
     it('removes a completed job before recovering its missing advisory result', async () => {
       const remove = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
-      const enqueue = vi.fn<(id: string) => Promise<void>>().mockResolvedValue(undefined)
+      const enqueue = vi
+        .fn<(id: string, runId: string) => Promise<void>>()
+        .mockResolvedValue(undefined)
 
-      await recover('submission-id', {
+      await recover('submission-id', 'run-id', {
         getJob: vi
           .fn<
             () => Promise<{
@@ -84,13 +87,15 @@ describe.each(enqueues)(
       })
 
       expect(remove).toHaveBeenCalledOnce()
-      expect(enqueue).toHaveBeenCalledWith('submission-id')
+      expect(enqueue).toHaveBeenCalledWith('submission-id', 'run-id')
     })
 
     it('does not replace a retained job owned by another queue route', async () => {
-      const enqueue = vi.fn<(id: string) => Promise<void>>().mockResolvedValue(undefined)
+      const enqueue = vi
+        .fn<(id: string, runId: string) => Promise<void>>()
+        .mockResolvedValue(undefined)
 
-      await recover('submission-id', {
+      await recover('submission-id', 'run-id', {
         getJob: async () => ({
           name: 'another-job',
           getState: async () => 'waiting',
@@ -105,9 +110,11 @@ describe.each(enqueues)(
 
     it('retries a retained failed advisory job without adding another job', async () => {
       const retry = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
-      const enqueue = vi.fn<(id: string) => Promise<void>>().mockResolvedValue(undefined)
+      const enqueue = vi
+        .fn<(id: string, runId: string) => Promise<void>>()
+        .mockResolvedValue(undefined)
 
-      await recover('submission-id', {
+      await recover('submission-id', 'run-id', {
         getJob: async () => ({
           name,
           getState: async () => 'failed',

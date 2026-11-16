@@ -124,6 +124,21 @@ export const COPYRIGHT_CASE_PURGE_PATH_3 = [
     "NOT EXISTS (SELECT 1 FROM copyright_notice_submissions replay WHERE replay.id = child.copyright_notice_submission_id AND replay.kind = 'notice')",
   ],
   [
+    'copyright_notice_submission_guidance_runs',
+    [
+      ['copyright_notice_submissions', ['copyright_notice_id'], ['id'], ['id'], ['id'], ['id']],
+      [
+        'copyright_notice_submission_guidance_runs',
+        ['copyright_notice_submission_id'],
+        ['id'],
+        ['id'],
+        ['id'],
+        ['id'],
+      ],
+    ],
+    null,
+  ],
+  [
     'copyright_notice_submission_guidance',
     [
       ['copyright_notice_submissions', ['copyright_notice_id'], ['id'], ['id'], ['id'], ['id']],

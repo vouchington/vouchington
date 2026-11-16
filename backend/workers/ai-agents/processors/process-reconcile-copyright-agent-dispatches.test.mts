@@ -15,6 +15,7 @@ import {
   continuationsAfter,
   jobFor,
   jobIds,
+  removeTrackedJob,
   pendingAppeal,
   pendingEmail,
   pendingFormEffect,
@@ -28,12 +29,7 @@ describe('processReconcileCopyrightAgentDispatches', () => {
 
   afterEach(async () => {
     vi.restoreAllMocks()
-    await Promise.all(
-      enqueued.splice(0).map(async id => {
-        const job = await ai_agents.getJob(id)
-        await job?.remove()
-      }),
-    )
+    await Promise.all(enqueued.splice(0).map(removeTrackedJob))
   })
 
   describe('while new intake is switched on', () => {
@@ -214,6 +210,29 @@ describe('processReconcileCopyrightAgentDispatches', () => {
         name: 'copyright-email-intake',
         data: { intake_id: nextEmailId },
       })
+    })
+  })
+
+  describe('while new intake is switched on, with a failing admission', () => {
+    useCopyrightIntakeEnvironment()
+
+    it('records an admission failure and still reconciles the page', async () => {
+      const appealId = await pendingAppeal()
+      const admissionFailure = new Error('admission failed')
+      onTestFinished(
+        rejectPostgresWriteForTest('admitCopyrightAppealRecommendationRuns', admissionFailure),
+      )
+
+      const failure = await processReconcileCopyrightAgentDispatches(
+        {},
+        { ids: [appealId], batchSize: 1 },
+      )
+        .then(() => null)
+        .catch((err: unknown) => err)
+
+      expect(failure).toBeInstanceOf(AggregateError)
+      expect((failure as AggregateError).errors).toEqual([admissionFailure])
+      await expect(jobFor(jobIds.appeal(appealId))).resolves.toBeNull()
     })
   })
 

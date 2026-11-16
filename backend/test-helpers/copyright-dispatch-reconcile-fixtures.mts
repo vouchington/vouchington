@@ -1,4 +1,8 @@
 import { randomUUID } from 'node:crypto'
+import {
+  readLatestTestAppealRunId,
+  readLatestTestEmailRunId,
+} from './copyright-ai-run-fixtures.mts'
 import { ai_agents } from '../queues/ai-agents/queues.mts'
 import { createCopyrightAppeal } from '../services/copyright-notices/index.mts'
 import { createTestUser } from './index.mts'
@@ -10,10 +14,33 @@ import {
   createSignedInCopyrightForm,
 } from './services/copyright-notices/screened-form.mts'
 
+/**
+ * Email and appeal jobs are keyed by the admitted run, so their ids name the subject and resolve to
+ * the run's job once one exists; a form screening job is still keyed by its submission.
+ */
 export const jobIds = {
-  email: (id: string) => `copyright_email_intake_${id}`,
+  email: (id: string) => `run:email:${id}`,
   form: (id: string) => `copyright_form_screening_${id}`,
-  appeal: (id: string) => `copyright_appeal_recommendation_${id}`,
+  appeal: (id: string) => `run:appeal:${id}`,
+}
+
+async function resolveJobId(id: string): Promise<string | null> {
+  const [, kind, subjectId] = id.match(/^run:(email|appeal):(.+)$/) ?? []
+  if (!kind || !subjectId) return id
+  const runId =
+    kind === 'email'
+      ? await readLatestTestEmailRunId(subjectId)
+      : await readLatestTestAppealRunId(subjectId)
+  if (!runId) return null
+  return kind === 'email'
+    ? `copyright_email_intake_${runId}`
+    : `copyright_appeal_recommendation_${runId}`
+}
+
+/** Removes the queued job a tracked id resolves to, if any. */
+export async function removeTrackedJob(id: string) {
+  const resolved = await resolveJobId(id)
+  if (resolved) await (await ai_agents.getJob(resolved))?.remove()
 }
 
 export async function pendingEmail() {
@@ -47,9 +74,16 @@ export async function pendingAppeal() {
   return appeal.submission.id
 }
 
+/** The queued job (without its run id, which is asserted to match the admitted run), or null. */
 export async function jobFor(id: string) {
-  const job = await ai_agents.getJob(id)
-  return job ? { name: job.name, data: job.data as unknown } : null
+  const resolved = await resolveJobId(id)
+  if (!resolved) return null
+  const job = await ai_agents.getJob(resolved)
+  if (!job) return null
+  const { run_id: runId, ...data } = job.data as { run_id?: string }
+  if (id !== resolved && runId !== resolved.split('_').at(-1))
+    throw new Error(`Job ${resolved} carries run_id ${runId}, not its own run`)
+  return { name: job.name, data: data as unknown }
 }
 
 export async function continuationsAfter(cursor: string) {

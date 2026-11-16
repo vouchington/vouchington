@@ -24,6 +24,13 @@ import {
   COPYRIGHT_COUNTER_NOTICE_GUIDANCE_ELEMENTS,
   COPYRIGHT_LEGAL_HOLD_GUIDANCE_CRITERIA,
 } from '@ts-shared/utils/copyright-submission-guidance'
+import { admitCopyrightSubmissionGuidanceRun } from '@services/copyright-notices/submission-guidance-runs'
+import {
+  COPYRIGHT_AI_RUN_TABLES,
+  createCopyrightCaseWithAiRunSubjects,
+  insertTestCopyrightAiRun,
+  readTestCopyrightAiRun,
+} from '@voucha/test-helpers/copyright-ai-run-fixtures'
 import {
   runCopyrightSubmissionGuidanceAgent,
   type CopyrightSubmissionGuidanceModelCaller,
@@ -102,6 +109,7 @@ describe('copyright submission guidance agent', () => {
     await expect(
       runCopyrightSubmissionGuidanceAgent(
         submission.submission.id,
+        (await admitCopyrightSubmissionGuidanceRun(submission.submission.id))!,
         TEST_MODEL_SELECTION,
         callModel,
       ),
@@ -173,10 +181,20 @@ describe('copyright submission guidance agent', () => {
       makeModelCallResult(holdGuidance),
     )
     await expect(
-      runCopyrightSubmissionGuidanceAgent(first.id, TEST_MODEL_SELECTION, callModel),
+      runCopyrightSubmissionGuidanceAgent(
+        first.id,
+        (await admitCopyrightSubmissionGuidanceRun(first.id))!,
+        TEST_MODEL_SELECTION,
+        callModel,
+      ),
     ).resolves.toBe('court_or_ccb_hold')
     await expect(
-      runCopyrightSubmissionGuidanceAgent(second.id, TEST_MODEL_SELECTION, callModel),
+      runCopyrightSubmissionGuidanceAgent(
+        second.id,
+        (await admitCopyrightSubmissionGuidanceRun(second.id))!,
+        TEST_MODEL_SELECTION,
+        callModel,
+      ),
     ).resolves.toBe('court_or_ccb_hold')
     expect(callModel).toHaveBeenCalledTimes(2)
     for (const [kind, input] of callModel.mock.calls) {
@@ -201,5 +219,30 @@ describe('copyright submission guidance agent', () => {
     expect(after?.counterNoticeReviews).toEqual(before?.counterNoticeReviews)
     expect(after?.restrictions).toEqual(before?.restrictions)
     expect(after?.holdAssessments).toEqual(before?.holdAssessments)
+  })
+
+  it('expires the run when the submission has no guidance source', async () => {
+    const { appealSubmissionId } = await createCopyrightCaseWithAiRunSubjects()
+    const runId = crypto.randomUUID()
+    await insertTestCopyrightAiRun(
+      COPYRIGHT_AI_RUN_TABLES.guidance,
+      'copyright_notice_submission_id',
+      appealSubmissionId,
+      runId,
+      false,
+    )
+    const callModel = vi.fn<CopyrightSubmissionGuidanceModelCaller>()
+    await expect(
+      runCopyrightSubmissionGuidanceAgent(
+        appealSubmissionId,
+        runId,
+        TEST_MODEL_SELECTION,
+        callModel,
+      ),
+    ).resolves.toBeNull()
+    expect(callModel).not.toHaveBeenCalled()
+    await expect(
+      readTestCopyrightAiRun(COPYRIGHT_AI_RUN_TABLES.guidance, runId),
+    ).resolves.toMatchObject({ status: 'expired' })
   })
 })

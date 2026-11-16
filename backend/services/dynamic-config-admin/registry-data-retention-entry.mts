@@ -152,6 +152,12 @@ export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
       maxValue: DATA_RETENTION_MAX_VALUES.copyright_unlinked_email_intake_days,
       integer: true,
     },
+    copyright_ai_run_days: {
+      description: 'Keep terminal copyright AI runs for this many days.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.copyright_ai_run_days,
+      integer: true,
+    },
     copyright_email_thread_reply_days: {
       description:
         'Keep copyright email thread references for this many days after a case becomes inactive.',

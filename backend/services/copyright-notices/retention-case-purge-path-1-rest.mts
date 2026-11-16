@@ -38,6 +38,21 @@ export const COPYRIGHT_CASE_PURGE_PATH_1_REST = [
     null,
   ],
   [
+    'copyright_notice_appeal_recommendation_runs',
+    [
+      ['copyright_notice_submissions', ['copyright_notice_id'], ['id'], ['id'], ['id'], ['id']],
+      [
+        'copyright_notice_appeal_recommendation_runs',
+        ['copyright_notice_submission_id'],
+        ['id'],
+        ['id'],
+        ['id'],
+        ['id'],
+      ],
+    ],
+    null,
+  ],
+  [
     'copyright_notice_appeal_recommendations',
     [
       ['copyright_notice_submissions', ['copyright_notice_id'], ['id'], ['id'], ['id'], ['id']],

@@ -5,7 +5,7 @@ import { createTestUser, readAllQueueJobs } from '@voucha/test-helpers'
 import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { makeAgentModelCaller } from '@voucha/test-helpers/agents/model-call-result'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
-import { enqueueCopyrightEmailIntake } from '@queues/ai-agents/enqueues/copyright-email-intake'
+import { admitAndEnqueueCopyrightEmailIntake } from '@services/copyright-notices/ai-run-admission'
 import { ai_agents } from '@queues/ai-agents/queues'
 import type { CopyrightEmailIntakeJobData } from '@queues/ai-agents/types'
 import { processCopyrightEmailIntake } from '../../../workers/ai-agents/processors/process-copyright-email-intake.mts'
@@ -19,7 +19,7 @@ describe('copyright email extraction queue admission and result polling', () => 
     const intake = await createParsedCopyrightEmailIntake()
     const staff = createRequest()
     await staff.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
-    await enqueueCopyrightEmailIntake(intake.id)
+    await admitAndEnqueueCopyrightEmailIntake(intake.id)
     const path = `/api/v1/copyright-email-intakes/${intake.id}`
     expect((await staff.get(path).expect(200)).body.copyright_email_intake).toMatchObject({
       id: intake.id,

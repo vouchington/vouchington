@@ -218,6 +218,15 @@ guidance, saved form screening applied). A held-back dispatch stays pending and 
 enablement sends it. To stop automated withholding during an incident, turn
 [`automaticProvisionalWithholding`](#automatic-provisional-withholding) off; the intake switch does not.
 
+### AI run ledger
+
+Appeal recommendations, submission guidance and email-intake recommendations each keep a per-attempt
+`*_runs` row beside the immutable success-only result. A run row is operational state, never
+evidence: staff reads show its status, and retention (`copyright_ai_run_days`, counted from
+admission) and case purge delete it, including a run abandoned because its subject was rejected or
+erased. The run tables stay unpartitioned because the one-active-run-per-subject partial unique
+index cannot carry a UUIDv7 partition key, and admission must stay free of locks and counters.
+
 ### Recording an emailed filing while intake is off
 
 Emailed counter-notices and court/CCB filing notices start their section 512(g) clocks on receipt,

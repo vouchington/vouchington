@@ -10,9 +10,10 @@ import {
   createNotice,
 } from '@voucha/test-helpers/copyright-route-fixtures'
 import { ai_agents } from '@queues/ai-agents/queues'
+import { readLatestTestGuidanceRunId } from '@voucha/test-helpers/copyright-ai-run-fixtures'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 
-const jobId = (submissionId: string) => `copyright_submission_guidance_${submissionId}`
+const jobId = (runId: string) => `copyright_submission_guidance_${runId}`
 const staffDecision = {
   rationale: 'Staff admitted this existing-case filing.',
   manual_fallback_reason: 'No recommendation is available.',
@@ -32,14 +33,19 @@ async function signedIn(user: Awaited<ReturnType<typeof createTestUser>>) {
 }
 
 async function expectGuidanceJob(submissionId: string) {
-  const job = await ai_agents.getJob(jobId(submissionId))
+  const runId = await readLatestTestGuidanceRunId(submissionId)
+  expect(runId).toBeDefined()
+  const job = await ai_agents.getJob(jobId(runId!))
   expect(job?.name).toBe('copyright-submission-guidance')
-  expect(job?.data).toEqual({ submission_id: submissionId })
+  expect(job?.data).toEqual({ submission_id: submissionId, run_id: runId })
+  return runId!
 }
 
 async function removeGuidanceJob(submissionId: string | undefined) {
   if (!submissionId) return
-  const job = await ai_agents.getJob(jobId(submissionId))
+  const runId = await readLatestTestGuidanceRunId(submissionId)
+  if (!runId) return
+  const job = await ai_agents.getJob(jobId(runId))
   if (job) await job.remove()
 }
 
@@ -109,10 +115,10 @@ describe('copyright submission guidance dispatch from filing routes', () => {
         .expect(201)
       submissionId = hold.body.copyright_submission.id
       expect(submissionId).not.toBe(supplement.body.copyright_submission.id)
-      await expectGuidanceJob(submissionId!)
+      const runId = await expectGuidanceJob(submissionId!)
       expect(add).toHaveBeenCalledExactlyOnceWith(
         'copyright-submission-guidance',
-        { submission_id: submissionId },
+        { submission_id: submissionId, run_id: runId },
         expect.anything(),
       )
       await guest
@@ -122,7 +128,7 @@ describe('copyright submission guidance dispatch from filing routes', () => {
         .expect(409)
       expect(add).toHaveBeenCalledExactlyOnceWith(
         'copyright-submission-guidance',
-        { submission_id: submissionId },
+        { submission_id: submissionId, run_id: runId },
         expect.anything(),
       )
     } finally {

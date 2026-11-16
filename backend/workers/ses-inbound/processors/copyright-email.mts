@@ -1,6 +1,6 @@
 import { createCopyrightEmailIntake, recordCopyrightEmailParse } from '@services/copyright-notices'
 import { ErasedCopyrightEmailIntakeReplay } from '@services/copyright-notices/email-intakes'
-import { enqueueCopyrightEmailIntake } from '@queues/ai-agents/enqueues/copyright-email-intake'
+import { admitAndEnqueueCopyrightEmailIntake } from '@services/copyright-notices/ai-run-admission'
 import type { SesInboundProcessJobData } from '@ts-shared/ses-inbound-contract'
 import { SesInboundTerminalError, parseSesInboundMime } from './mime.mts'
 import {
@@ -58,7 +58,7 @@ export async function processCopyrightInboundEmail(data: SesInboundProcessJobDat
     }
     return
   }
-  await enqueueCopyrightEmailIntake(intake.id)
+  await admitAndEnqueueCopyrightEmailIntake(intake.id)
 }
 
 async function preserveCopyrightEvidence(data: SesInboundProcessJobData): Promise<{

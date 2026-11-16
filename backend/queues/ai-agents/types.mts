@@ -60,10 +60,11 @@ export type AppealResolutionJobData = {
 
 export type CopyrightEmailIntakeJobData = {
   intake_id: string
+  run_id: string
 }
 export type CopyrightFormScreeningJobData = { submission_id: string }
-export type CopyrightAppealRecommendationJobData = { submission_id: string }
-export type CopyrightSubmissionGuidanceJobData = { submission_id: string }
+export type CopyrightAppealRecommendationJobData = { submission_id: string; run_id: string }
+export type CopyrightSubmissionGuidanceJobData = { submission_id: string; run_id: string }
 
 export type BackfillReportJudgementsJobData = Record<string, never>
 

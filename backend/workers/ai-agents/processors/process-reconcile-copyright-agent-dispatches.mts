@@ -7,6 +7,9 @@ import {
   isCopyrightIntakeEnabled,
   type CopyrightAgentDispatch,
 } from '@services/copyright-notices'
+import { admitCopyrightAppealRecommendationRuns } from '@services/copyright-notices/appeal-recommendation-runs'
+import { admitCopyrightEmailRecommendationRuns } from '@services/copyright-notices/email-recommendation-runs'
+import { admitCopyrightSubmissionGuidanceRuns } from '@services/copyright-notices/submission-guidance-runs'
 import { enqueueOrRetryCopyrightEmailIntake } from '@queues/ai-agents/enqueues/copyright-email-intake'
 import { enqueueOrRetryCopyrightFormScreening } from '@queues/ai-agents/enqueues/copyright-form-screening'
 import { enqueueOrRetryCopyrightAppealRecommendation } from '@queues/ai-agents/enqueues/copyright-appeal-recommendation'
@@ -66,17 +69,48 @@ function isInCaseDispatch(item: CopyrightAgentDispatch): boolean {
   return item.kind !== 'email' && item.kind !== 'form-screening'
 }
 
+type RunAdmissions = {
+  appeal: Map<string, string>
+  guidance: Map<string, string>
+  email: Map<string, string>
+}
+
+/**
+ * One admission statement per kind covers the whole page; each subject then enqueues its run. The
+ * kinds settle separately, so one kind's failure keeps the other kinds' runs.
+ */
+async function admitPageRuns(
+  pending: readonly CopyrightAgentDispatch[],
+  errors: unknown[],
+): Promise<RunAdmissions> {
+  const idsOf = (kind: 'appeal' | 'submission-guidance' | 'email') =>
+    pending.flatMap(item => {
+      if (item.kind !== kind) return []
+      return [item.kind === 'email' ? item.intakeId : item.submissionId]
+    })
+  const [appeal, guidance, email] = await Promise.allSettled([
+    admitCopyrightAppealRecommendationRuns(idsOf('appeal')),
+    admitCopyrightSubmissionGuidanceRuns(idsOf('submission-guidance')),
+    admitCopyrightEmailRecommendationRuns(idsOf('email')),
+  ])
+  const settled = (result: PromiseSettledResult<Map<string, string>>) => {
+    if (result.status === 'fulfilled') return result.value
+    errors.push(result.reason)
+    return new Map<string, string>()
+  }
+  return { appeal: settled(appeal), guidance: settled(guidance), email: settled(email) }
+}
+
 async function dispatchCopyrightAgentPage(
   pending: readonly CopyrightAgentDispatch[],
 ): Promise<unknown[]> {
+  const errors: unknown[] = []
+  // A failed admission keeps its page's other dispatches and later pages moving; the next sweep retries.
+  const runs = await admitPageRuns(pending, errors)
   const enqueues = await Promise.allSettled(
-    pending.flatMap(item => (item.kind === 'form-effect' ? [] : [enqueueDispatch(item)])),
+    pending.flatMap(item => (item.kind === 'form-effect' ? [] : [enqueueDispatch(item, runs)])),
   )
-  const errors: unknown[] = enqueues.flatMap((result): unknown[] => {
-    if (result.status !== 'rejected') return []
-    const reason: unknown = result.reason
-    return [reason]
-  })
+  for (const result of enqueues) if (result.status === 'rejected') errors.push(result.reason)
   for (const item of pending) {
     if (item.kind !== 'form-effect') continue
     try {
@@ -89,12 +123,22 @@ async function dispatchCopyrightAgentPage(
   return errors
 }
 
-function enqueueDispatch(
+/** A pending subject has no result; its admitted (or already active) run is what gets enqueued. */
+async function enqueueDispatch(
   item: Exclude<CopyrightAgentDispatch, { kind: 'form-effect' }>,
+  runs: RunAdmissions,
 ): Promise<void> {
-  if (item.kind === 'email') return enqueueOrRetryCopyrightEmailIntake(item.intakeId)
   if (item.kind === 'form-screening') return enqueueOrRetryCopyrightFormScreening(item.submissionId)
-  if (item.kind === 'submission-guidance')
-    return enqueueOrRetryCopyrightSubmissionGuidance(item.submissionId)
-  return enqueueOrRetryCopyrightAppealRecommendation(item.submissionId)
+  if (item.kind === 'email') {
+    const runId = runs.email.get(item.intakeId)
+    if (runId) await enqueueOrRetryCopyrightEmailIntake(item.intakeId, runId)
+    return
+  }
+  if (item.kind === 'submission-guidance') {
+    const runId = runs.guidance.get(item.submissionId)
+    if (runId) await enqueueOrRetryCopyrightSubmissionGuidance(item.submissionId, runId)
+    return
+  }
+  const runId = runs.appeal.get(item.submissionId)
+  if (runId) await enqueueOrRetryCopyrightAppealRecommendation(item.submissionId, runId)
 }

@@ -72,6 +72,7 @@ export const COPYRIGHT_RETENTION_FAMILIES = [
   'copyrightReceiptReviews',
   'copyrightCaseThreads',
   'copyrightOrphanEmailThreadTokens',
+  'copyrightAiRuns',
 ] as const
 
 export type CopyrightRetentionFamily = (typeof COPYRIGHT_RETENTION_FAMILIES)[number]

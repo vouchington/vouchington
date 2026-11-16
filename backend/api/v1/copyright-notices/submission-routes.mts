@@ -16,7 +16,7 @@ import {
 } from '@services/copyright-notices/http-input'
 import { assertNotSuspended } from '@services/users'
 import { enqueueCopyrightFormScreening } from '@queues/ai-agents/enqueues/copyright-form-screening'
-import { enqueueCopyrightAppealRecommendation } from '@queues/ai-agents/enqueues/copyright-appeal-recommendation'
+import { admitAndEnqueueCopyrightAppealRecommendation } from '@services/copyright-notices/ai-run-admission'
 import {
   parseJsonBody,
   getOptionalAuthAndRateLimit,
@@ -88,7 +88,7 @@ app.route('/api/v1/copyright-notices/:id/appeals').post(async (ctx: Context) => 
     body,
   })
   const result = await createCopyrightAppeal(currentUser, noticeId, idempotencyKey, input)
-  if (!result.isDuplicate) await enqueueCopyrightAppealRecommendation(result.submission.id)
+  if (!result.isDuplicate) await admitAndEnqueueCopyrightAppealRecommendation(result.submission.id)
   ctx.setStatus(result.isDuplicate ? 200 : 201)
   ctx.json({ copyright_submission: { id: result.submission.id }, is_duplicate: result.isDuplicate })
 })

@@ -1,6 +1,7 @@
 import { decryptSecret } from '@modules/token-secrets'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+import { toCopyrightAiRun, type CopyrightAiRun } from './ai-run-types.mts'
 import { groupByNotice } from './read-models-staff-group.mts'
 import { parseStoredCopyrightSubmissionGuidance } from './read-models-staff-guidance.mts'
 import { parseStatement } from './read-models-staff-submissions.mts'
@@ -27,10 +28,12 @@ export async function selectStaffLegalHolds(
     target_ids: string[]
     resolution_id: string | null
     guidance_ciphertext: string | null
+    run_id: string | null
+    run_status: CopyrightAiRun['status'] | null
   }>(sql`/* getPendingCopyrightStaffCase:legalHolds */
     SELECT submission.copyright_notice_id, submission.id AS submission_id,
       submission.received_at, submission.body_ciphertext,
-      guidance.guidance_ciphertext,
+      guidance.guidance_ciphertext, run.id AS run_id, run.status AS run_status,
       assessment.id AS assessment_id, assessment.assessed_at, assessment.is_from_original_claimant,
       assessment.proceeding_kind, assessment.ccb_claim_kind, assessment.commenced_at,
       assessment.received_by_designated_agent_at, assessment.is_same_material,
@@ -46,6 +49,7 @@ export async function selectStaffLegalHolds(
       SELECT guidance_ciphertext FROM copyright_notice_submission_guidance
       WHERE copyright_notice_submission_id = submission.id ORDER BY id DESC LIMIT 1
     ) guidance ON true
+    LEFT JOIN LATERAL (SELECT id, status FROM copyright_notice_submission_guidance_runs WHERE copyright_notice_submission_id = submission.id ORDER BY id DESC LIMIT 1) run ON true
     LEFT JOIN copyright_notice_legal_hold_assessments assessment
       ON assessment.copyright_notice_submission_id = submission.id
     LEFT JOIN copyright_notice_legal_hold_resolutions resolution
@@ -67,6 +71,7 @@ export async function selectStaffLegalHolds(
         row.submission_id,
         'court_or_ccb_hold',
       ),
+      ai_run: toCopyrightAiRun(row.run_id, row.run_status),
       assessment: row.assessment_id
         ? {
             id: row.assessment_id,

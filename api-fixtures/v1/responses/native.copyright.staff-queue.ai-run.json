@@ -1,0 +1,154 @@
+{
+  "copyright_notices": [
+    {
+      "action_intents": [
+        {
+          "action": "withhold",
+          "failure_message": "Storage unavailable",
+          "id": "00000000-0000-7000-8000-000000000825",
+          "state": "failed",
+          "target_id": "00000000-0000-7000-8000-000000000805"
+        }
+      ],
+      "appeals": [],
+      "claimant": {
+        "contact": "claimant@example.test",
+        "display_name": "Claimant",
+        "misuse": null,
+        "user_id": null
+      },
+      "counter_notices": [],
+      "delivery_intents": [],
+      "email_correspondence": [],
+      "evidence": [],
+      "form_review": {
+        "intake_id": "00000000-0000-7000-8000-000000000816",
+        "review": {
+          "is_accepted": true,
+          "reviewed_at": "2026-07-01T11:30:00.000Z",
+          "reviewed_by_id": "00000000-0000-7000-8000-000000000817"
+        },
+        "screening": {
+          "attempt_id": "00000000-0000-7000-8000-000000000827",
+          "guidance": {
+            "elements": [
+              {
+                "element": "signature",
+                "gap": null,
+                "status": "present"
+              },
+              {
+                "element": "work_identification",
+                "gap": null,
+                "status": "present"
+              },
+              {
+                "element": "material_identification",
+                "gap": "The hosted use URL does not name the specific image.",
+                "status": "unclear"
+              },
+              {
+                "element": "contact_information",
+                "gap": null,
+                "status": "present"
+              },
+              {
+                "element": "has_good_faith_statement",
+                "gap": null,
+                "status": "present"
+              },
+              {
+                "element": "accuracy_authority_statement",
+                "gap": null,
+                "status": "present"
+              }
+            ],
+            "risk_notes": [
+              {
+                "kind": "possible_fair_use",
+                "note": "The post may be a critical review."
+              }
+            ],
+            "suggested_action": "request_information",
+            "summary": "A claimant reports an unlicensed copy of an original photograph."
+          },
+          "rationale": "No obvious spam markers.",
+          "recommendation": "not_obviously_invalid",
+          "state": "completed"
+        },
+        "source_kind": "guest_form"
+      },
+      "id": "00000000-0000-7000-8000-000000000815",
+      "jurisdiction": "us_dmca",
+      "legal_holds": [
+        {
+          "ai_run": {
+            "id": "00000000-0000-7000-8000-000000000861",
+            "status": "active"
+          },
+          "assessment": null,
+          "guidance": null,
+          "received_at": "2026-07-01T11:30:00.000Z",
+          "statement": {},
+          "submission_id": "00000000-0000-7000-8000-000000000860"
+        }
+      ],
+      "next_deadline": {
+        "escalation_at": "2026-07-14T12:00:00.000Z",
+        "restoration_deadline_at": "2026-07-15T12:00:00.000Z"
+      },
+      "reasons": ["deadline_due", "staydown_review"],
+      "received_at": "2026-07-01T11:00:00.000Z",
+      "restrictions": [],
+      "staydown_matches": [
+        {
+          "hamming_distance": 3,
+          "id": "00000000-0000-7000-8000-000000000818",
+          "image_id": "00000000-0000-7000-8000-000000000819",
+          "image_placement": {
+            "image_id": "00000000-0000-7000-8000-000000000819",
+            "placement_id": "00000000-0000-7000-8000-000000000822",
+            "placement_revision": 1
+          },
+          "match_kind": "perceptual",
+          "matched_at": "2026-07-01T11:45:00.000Z",
+          "registered_image_id": "00000000-0000-7000-8000-000000000820",
+          "target_id": "00000000-0000-7000-8000-000000000805",
+          "uploaded_by_id": "00000000-0000-7000-8000-000000000821",
+          "uploaded_by_username": "photo-author"
+        },
+        {
+          "hamming_distance": 0,
+          "id": "00000000-0000-7000-8000-000000000823",
+          "image_id": "00000000-0000-7000-8000-000000000820",
+          "image_placement": null,
+          "match_kind": "exact",
+          "matched_at": "2026-07-01T11:50:00.000Z",
+          "registered_image_id": "00000000-0000-7000-8000-000000000820",
+          "target_id": "00000000-0000-7000-8000-000000000805",
+          "uploaded_by_id": "00000000-0000-7000-8000-000000000824",
+          "uploaded_by_username": null
+        }
+      ],
+      "staydown_matches_has_more": false,
+      "targets": [
+        {
+          "hosted_use_url": "https://voucha.ai/discussion/original-photograph",
+          "id": "00000000-0000-7000-8000-000000000805",
+          "image_id": "00000000-0000-7000-8000-000000000820",
+          "placement_key": "image-placement:00000000-0000-7000-8000-000000000826",
+          "placement_revision": 1,
+          "provenance": null,
+          "surface": "post-image"
+        }
+      ],
+      "waiting_since": "2026-07-01T12:00:00.000Z",
+      "work_description": "Original photograph."
+    }
+  ],
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  }
+}

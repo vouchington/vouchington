@@ -42503,6 +42503,9 @@
                         "items": {
                           "additionalProperties": false,
                           "properties": {
+                            "ai_run": {
+                              "$ref": "#/$defs/S3"
+                            },
                             "reason": {
                               "$ref": "#/$defs/S1"
                             },
@@ -42534,10 +42537,16 @@
                               "type": "string"
                             },
                             "target_ids": {
-                              "$ref": "#/$defs/S5"
+                              "$ref": "#/$defs/S6"
                             }
                           },
-                          "required": ["reason", "recommendation", "submission_id", "target_ids"],
+                          "required": [
+                            "ai_run",
+                            "reason",
+                            "recommendation",
+                            "submission_id",
+                            "target_ids"
+                          ],
                           "type": "object"
                         },
                         "type": "array"
@@ -42557,10 +42566,10 @@
                                 "additionalProperties": false,
                                 "properties": {
                                   "newest_notice_at": {
-                                    "$ref": "#/$defs/S6"
+                                    "$ref": "#/$defs/S7"
                                   },
                                   "oldest_notice_at": {
-                                    "$ref": "#/$defs/S6"
+                                    "$ref": "#/$defs/S7"
                                   },
                                   "notice_count": {
                                     "minimum": 0,
@@ -42575,7 +42584,7 @@
                                     "type": "integer"
                                   },
                                   "page_info": {
-                                    "$ref": "#/$defs/S3"
+                                    "$ref": "#/$defs/S4"
                                   },
                                   "restriction_reversed_by_appeal": {
                                     "minimum": 0,
@@ -42614,6 +42623,9 @@
                         "items": {
                           "additionalProperties": false,
                           "properties": {
+                            "ai_run": {
+                              "$ref": "#/$defs/S3"
+                            },
                             "guidance": {
                               "anyOf": [
                                 {
@@ -42636,7 +42648,7 @@
                                             "$ref": "#/$defs/S1"
                                           },
                                           "status": {
-                                            "$ref": "#/$defs/S4"
+                                            "$ref": "#/$defs/S5"
                                           }
                                         },
                                         "required": ["element", "gap", "status"],
@@ -42689,10 +42701,11 @@
                               "type": "string"
                             },
                             "target_ids": {
-                              "$ref": "#/$defs/S5"
+                              "$ref": "#/$defs/S6"
                             }
                           },
                           "required": [
+                            "ai_run",
                             "guidance",
                             "received_at",
                             "statement",
@@ -42845,7 +42858,7 @@
                                                       "$ref": "#/$defs/S1"
                                                     },
                                                     "status": {
-                                                      "$ref": "#/$defs/S4"
+                                                      "$ref": "#/$defs/S5"
                                                     }
                                                   },
                                                   "required": ["element", "gap", "status"],
@@ -42962,6 +42975,9 @@
                         "items": {
                           "additionalProperties": false,
                           "properties": {
+                            "ai_run": {
+                              "$ref": "#/$defs/S3"
+                            },
                             "assessment": {
                               "anyOf": [
                                 {
@@ -43015,7 +43031,7 @@
                                       "type": "boolean"
                                     },
                                     "target_ids": {
-                                      "$ref": "#/$defs/S5"
+                                      "$ref": "#/$defs/S6"
                                     }
                                   },
                                   "required": [
@@ -43060,7 +43076,7 @@
                                             "$ref": "#/$defs/S1"
                                           },
                                           "status": {
-                                            "$ref": "#/$defs/S4"
+                                            "$ref": "#/$defs/S5"
                                           }
                                         },
                                         "required": ["criterion", "gap", "status"],
@@ -43114,6 +43130,7 @@
                             }
                           },
                           "required": [
+                            "ai_run",
                             "assessment",
                             "guidance",
                             "received_at",
@@ -43491,7 +43508,7 @@
                   "type": "array"
                 },
                 "page_info": {
-                  "$ref": "#/$defs/S3"
+                  "$ref": "#/$defs/S4"
                 }
               },
               "required": ["copyright_notices", "page_info"],
@@ -43518,6 +43535,27 @@
                   ]
                 },
                 "S3": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "enum": ["active", "expired", "failed", "succeeded"],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "status"],
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "S4": {
                   "additionalProperties": false,
                   "properties": {
                     "end_cursor": {
@@ -43533,17 +43571,17 @@
                   "required": ["end_cursor", "has_next_page", "start_cursor"],
                   "type": "object"
                 },
-                "S4": {
+                "S5": {
                   "enum": ["missing", "present", "unclear"],
                   "type": "string"
                 },
-                "S5": {
+                "S6": {
                   "items": {
                     "type": "string"
                   },
                   "type": "array"
                 },
-                "S6": {
+                "S7": {
                   "format": "date-time",
                   "pattern": "Z$",
                   "type": ["string", "null"]
@@ -44310,6 +44348,27 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "ai_run": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": ["active", "succeeded", "failed", "expired"]
+                            }
+                          },
+                          "required": ["id", "status"]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   },
                   "required": [
@@ -44318,7 +44377,8 @@
                     "review_path",
                     "linked_notice",
                     "ses_verdicts",
-                    "recommendation"
+                    "recommendation",
+                    "ai_run"
                   ]
                 }
               },

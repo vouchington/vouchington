@@ -9,16 +9,16 @@ type RetainedCopyrightAgentJob = {
 
 type CopyrightAgentEnqueueRecoveryDependencies = {
   getJob(id: string, options: { excludeData: true }): Promise<RetainedCopyrightAgentJob | null>
-  enqueue(id: string): Promise<void>
+  enqueue(...ids: string[]): Promise<void>
 }
 
 export function failedCopyrightAgentEnqueueRecovery(jobName: string): {
   retry: ReturnType<typeof vi.fn<() => Promise<void>>>
-  enqueue: ReturnType<typeof vi.fn<(id: string) => Promise<void>>>
+  enqueue: ReturnType<typeof vi.fn<(...ids: string[]) => Promise<void>>>
   dependencies: CopyrightAgentEnqueueRecoveryDependencies
 } {
   const retry = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
-  const enqueue = vi.fn<(id: string) => Promise<void>>().mockResolvedValue(undefined)
+  const enqueue = vi.fn<(...ids: string[]) => Promise<void>>().mockResolvedValue(undefined)
   return {
     retry,
     enqueue,
@@ -35,11 +35,11 @@ export function failedCopyrightAgentEnqueueRecovery(jobName: string): {
 
 export function completedCopyrightAgentEnqueueRecovery(jobName: string): {
   remove: ReturnType<typeof vi.fn<() => Promise<void>>>
-  enqueue: ReturnType<typeof vi.fn<(id: string) => Promise<void>>>
+  enqueue: ReturnType<typeof vi.fn<(...ids: string[]) => Promise<void>>>
   dependencies: CopyrightAgentEnqueueRecoveryDependencies
 } {
   const remove = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
-  const enqueue = vi.fn<(id: string) => Promise<void>>().mockResolvedValue(undefined)
+  const enqueue = vi.fn<(...ids: string[]) => Promise<void>>().mockResolvedValue(undefined)
   return {
     remove,
     enqueue,
