@@ -1,7 +1,6 @@
 import { nativeImagePlacementApiFixtureCases } from './native-image-placement-cases.mts'
 import { claimantMisuseSummaryFixture } from './claimant-misuse-cases.mts'
 import { nativeCopyrightClaimantApiFixtureCases } from './native-copyright-claimant-cases.mts'
-import { nativeCopyrightAiRunApiFixtureCases } from './native-copyright-ai-run-cases.mts'
 import { formGuidance, reviewedStaffCase } from './native-copyright-staff-form-review.mts'
 import { webCopyrightTerritorialStaffApiFixtureCases } from './web-copyright-territorial-staff-cases.mts'
 import type { ApiFixtureCase } from './types.mts'
@@ -24,7 +23,6 @@ const clientConsumers = ['web', 'swift-core', 'swift-ui', 'dotnet-core'] as cons
 
 export const nativeCopyrightApiFixtureCases: ApiFixtureCase[] = [
   ...nativeCopyrightClaimantApiFixtureCases,
-  ...nativeCopyrightAiRunApiFixtureCases,
   ...webCopyrightTerritorialStaffApiFixtureCases,
   {
     id: 'native.copyright.repeat-infringer-accounts',
