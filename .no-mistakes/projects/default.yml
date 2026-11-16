@@ -36,10 +36,6 @@ ci-playwright:
   type: tests
   root: ci/playwright
 
-ci-transient-retry:
-  type: tests
-  root: ci/transient-retry
-
 github-actions:
   type: tests
   root: .github

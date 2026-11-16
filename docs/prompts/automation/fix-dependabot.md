@@ -22,9 +22,9 @@ migrated usage. When either condition fails, leave the PR unchanged and report t
 breaking changes, the size of the migration, and the missing coverage, so it can ask the human.
 Patch and minor bumps need no gate beyond green CI.
 
-Read `ci/transient-retry/rules.mts` first. A matching catalogued transient is evidence-only and should
-not create a code change. A new classifier requires a stable real-log fixture and durable-failure
-counterfixtures. Repository-owned or deterministic failures require a root-cause fix.
+Rebase the PR onto `main` first. Rerun failed jobs only when the branch is current with `main`;
+otherwise find the root cause and fix the flake. Repository-owned or deterministic failures require
+a root-cause fix.
 
 Before choosing a fix, search open issues and pull requests for the dependency and the failing check,
 rule, or test, and search the [docs](../../README.md) for a recorded decision about it. PR #{{PR_NUMBER}} itself never counts. When another open issue or pull request already owns this
@@ -37,7 +37,7 @@ For a dependency-owned failure, retain only the required dependency, lockfile, t
 The session summary is not visible on GitHub, so record every blocked or no-change outcome on the PR
 in exactly one blocked-status comment whose first line is `<!-- dependabot-fix-status -->`.
 Immediately before writing it, re-fetch PR #{{PR_NUMBER}} and its comments. Write nothing when the PR
-closed, its head is no longer `{{COMMIT_SHA}}`, the failure matched a catalogued transient, or you
+closed, its head is no longer `{{COMMIT_SHA}}`, the failure was external infrastructure noise, or you
 pushed a fix. When a comment containing the marker was authored by the authenticated `gh` user,
 replace its body with `gh api --method PATCH repos/{owner}/{repo}/issues/comments/<id>`; otherwise post
 one with `gh pr comment`. The body states the head SHA and failing run it covers, the failing job and

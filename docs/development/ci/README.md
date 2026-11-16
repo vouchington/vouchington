@@ -4,7 +4,6 @@ The [CI reference](../ci.md) is canonical for the CI design rationale and gates.
 `pnpm run ci:topology` are the source of truth for jobs, triggers, and dependencies.
 
 - [Inline-workflow shell footguns](tooling/reference-inline-workflow-shell-footguns-actionlint-shellcheck.md)
-- [Transient retry rules](transient-retry/README.md)
 - [Artifact rerun safety](workflows/reference-artifact-rerun-safety.md)
 - [Merge queue fail fast](workflows/reference-merge-queue-fail-fast.md)
 - [Merge queue run cancellation](workflows/reference-merge-queue-run-cancellation.md)

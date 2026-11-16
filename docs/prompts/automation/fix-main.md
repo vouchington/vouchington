@@ -19,8 +19,7 @@ Include the supplied related candidates in the search for existing work; none is
 
 - **The commit is the root cause** when it fails deterministically. It is already on `main`, so fix
   it like any other cause in this repository.
-- **A catalogued transient** is already owned by Fix Main's triage, which reruns it. Report it and
-  stop.
+- **External infrastructure noise** needs no change. Report it and stop.
 - **A flaky test** follows the shared Flaky tests flow: file or find the issue first, then delegate
   the fix through the triage loop or open a fix PR. The loop merges a flake-fix PR only when it is
   test-only.

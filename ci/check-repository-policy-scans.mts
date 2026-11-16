@@ -1,5 +1,4 @@
 import { checkWorkflowSafetyPolicy } from './check-workflow-safety-policy.mts'
-import { checkTransientRetryPolicy } from './check-transient-retry-policy.mts'
 import { checkAgentWorkflowDocs } from './check-agent-workflow-doc-policy.mts'
 import { checkKnipDependencyPolicy } from './check-knip-dependency-policy.mts'
 import { checkPostgresOrderingPolicy } from './check-postgres-ordering-policy.mts'
@@ -33,7 +32,6 @@ export async function checkRepositoryPolicyScans(root: string): Promise<void> {
     ...checkWorkflowAreaCoveragePolicy(root),
     ...checkVitestProjectCommandPolicy(root, toolingWorkflowProjectNames),
     ...checkVitestReporterPolicy(root),
-    ...(await checkTransientRetryPolicy(root)),
     ...checkAgentWorkflowDocs(root),
     ...checkPrShepherdGuidance(root),
     ...checkThinRouteCoverage(root),

@@ -2,7 +2,7 @@
 
 [Back to Tests and Checks](tests.md#local-web-validation-recovery)
 
-Use this before debugging a local web validation failure as an application bug. A reset follows [Ephemeral worktree databases](../../AGENTS.md). For CI infrastructure-failure signatures, see [Classifying Transient Infrastructure Failures](ci.md#classifying-transient-infrastructure-failures).
+Use this before debugging a local web validation failure as an application bug. A reset follows [Ephemeral worktree databases](../../AGENTS.md).
 
 | Symptom                                                                                                         | Likely cause                                                                                        | Next step                                                                                                                                           |
 | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
