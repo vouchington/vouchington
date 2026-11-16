@@ -63,28 +63,47 @@ export { loadWritablePost } from '@services/posts/authorization'
 export function postCreateParameters() {
   const parameters = postWriteParameters('POST:/api/v1/posts')
   const postProperties = parameters.properties as Record<string, Record<string, unknown>>
-  if (postProperties.community_id) {
-    const { format: _communityFormat, ...community } = postProperties.community_id
-    postProperties.community_id = {
-      ...community,
-      description: communityReferenceSchema.description,
-    }
-  }
-  if (postProperties.parent_post_id) {
-    const { format: _parentFormat, ...parent } = postProperties.parent_post_id
-    postProperties.parent_post_id = { ...parent, description: postReferenceSchema.description }
-  }
-  for (const field of Object.values(postProperties)) loosenTopicIdentifiers(field)
+  const properties = Object.fromEntries(
+    Object.entries(postProperties).map(([name, field]) => [
+      name,
+      loosenTopicIdentifiers(describeReferenceField(name, field)),
+    ]),
+  )
 
-  return parameters
+  return { ...parameters, properties }
 }
 
-function loosenTopicIdentifiers(value: unknown): void {
-  if (!value || typeof value !== 'object') return
+/** A natural-key reference replaces the UUID format with the reference description. */
+function describeReferenceField(
+  name: string,
+  field: Record<string, unknown>,
+): Record<string, unknown> {
+  const description =
+    name === 'community_id'
+      ? communityReferenceSchema.description
+      : name === 'parent_post_id'
+        ? postReferenceSchema.description
+        : undefined
+  if (description === undefined) return field
+  const { format: _format, ...rest } = field
+  return { ...rest, description }
+}
+
+function loosenTopicIdentifiers(value: unknown): unknown {
+  if (!value || typeof value !== 'object') return value
+  if (Array.isArray(value)) return value.map(loosenTopicIdentifiers)
   const record = value as Record<string, unknown>
-  if (record.topic_id && typeof record.topic_id === 'object' && !Array.isArray(record.topic_id)) {
-    const { format: _format, ...topic } = record.topic_id as Record<string, unknown>
-    record.topic_id = { ...topic, description: topicReferenceSchema.description }
-  }
-  for (const child of Object.values(record)) loosenTopicIdentifiers(child)
+  const loosened =
+    record.topic_id && typeof record.topic_id === 'object' && !Array.isArray(record.topic_id)
+      ? (() => {
+          const { format: _format, ...topic } = record.topic_id as Record<string, unknown>
+          return {
+            ...record,
+            topic_id: { ...topic, description: topicReferenceSchema.description },
+          }
+        })()
+      : record
+  return Object.fromEntries(
+    Object.entries(loosened).map(([key, child]) => [key, loosenTopicIdentifiers(child)]),
+  )
 }

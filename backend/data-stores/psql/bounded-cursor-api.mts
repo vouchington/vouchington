@@ -27,10 +27,14 @@ export function createBoundedCursorApi(psql: Psql) {
   async function* streamResolved<Row>(
     resolved: ReturnType<typeof resolveOptions<Row>>,
   ): AsyncGenerator<Row, CursorRunResult<Row>, void> {
-    const result: CursorRunResult<Row> = {
-      rowsRead: 0,
-      hasMore: resolved.options.maxRows !== undefined,
-    }
+    let rowsRead = 0
+    let hasMore = resolved.options.maxRows !== undefined
+    let lastRow: { row: Row } | undefined
+    const snapshot = (): CursorRunResult<Row> => ({
+      rowsRead,
+      hasMore,
+      ...(lastRow && { lastRow: lastRow.row }),
+    })
     try {
       maybeCaptureQuery(resolved.input, resolved.values)
       for await (const row of psql.createAsyncGeneratorFromCursor<Row>(
@@ -38,16 +42,16 @@ export function createBoundedCursorApi(psql: Psql) {
         resolved.values,
         resolved.options,
       )) {
-        if (resolved.options.maxRows !== undefined && result.rowsRead === resolved.options.maxRows)
-          return result
-        result.rowsRead++
-        result.lastRow = row
+        if (resolved.options.maxRows !== undefined && rowsRead === resolved.options.maxRows)
+          return snapshot()
+        rowsRead++
+        lastRow = { row }
         yield row
       }
-      result.hasMore = false
-      return result
+      hasMore = false
+      return snapshot()
     } finally {
-      resolved.options.onComplete?.(result)
+      resolved.options.onComplete?.(snapshot())
     }
   }
 

@@ -64,15 +64,15 @@ async function listStripeSubscriptionInvoicePages(
     limit: 100,
     startingAfter,
   })
-  invoices.push(...page.data)
-  if (!page.has_more) return invoices
+  const collected = [...invoices, ...page.data]
+  if (!page.has_more) return collected
   const lastInvoice = page.data.at(-1)
   if (!lastInvoice)
     throw new Error(`Stripe returned an empty invoice page for subscription ${subscriptionId}`)
   return listStripeSubscriptionInvoicePages(
     subscriptionId,
     lastInvoice.id,
-    invoices,
+    collected,
     pageCount + 1,
     maxPages,
   )
@@ -122,10 +122,10 @@ async function listAllStripeInvoiceLinePages(
     limit: 100,
     ...(startingAfter ? { starting_after: startingAfter } : {}),
   })
-  lines.push(...page.data)
-  if (!page.has_more) return lines
+  const collected = [...lines, ...page.data]
+  if (!page.has_more) return collected
   const lastLine = page.data.at(-1)
   if (!lastLine)
     throw new Error(`Stripe returned an empty invoice line page for invoice ${invoiceId}`)
-  return listAllStripeInvoiceLinePages(invoiceId, lastLine.id, lines, pageCount + 1, maxPages)
+  return listAllStripeInvoiceLinePages(invoiceId, lastLine.id, collected, pageCount + 1, maxPages)
 }

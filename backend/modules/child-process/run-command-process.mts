@@ -80,7 +80,7 @@ export function pipeStdout(
 }
 
 export function collectCappedStderr(child: ChildProcess, cap: number): { bytes: () => Buffer } {
-  const chunks: Buffer[] = []
+  let chunks: Buffer[] = []
   let length = 0
   const output = child.stderr
   if (!output) throw new Error('child stderr is not a pipe')
@@ -88,7 +88,7 @@ export function collectCappedStderr(child: ChildProcess, cap: number): { bytes: 
     if (length >= cap) return
     const remaining = cap - length
     const slice = chunk.byteLength > remaining ? chunk.subarray(0, remaining) : chunk
-    chunks.push(slice)
+    chunks = [...chunks, slice]
     length += slice.byteLength
   })
   return {

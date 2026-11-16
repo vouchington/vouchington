@@ -111,8 +111,7 @@ export async function processPagedDispatcher<TData extends object, TResult>(
         // Covers terminal pruning in the enqueue/checkpoint gap; released after the checkpoint.
         deduplication: { id: continuationDedupId, mode: 'throttle', ttl: Number.MAX_SAFE_INTEGER },
       })
-      page.nextAdmitted = true
-      await job.updateData({ ...job.data, dispatchReceipt: page })
+      await job.updateData({ ...job.data, dispatchReceipt: { ...page, nextAdmitted: true } })
     }
   }
   await afterDispatch?.()

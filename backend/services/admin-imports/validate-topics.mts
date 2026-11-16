@@ -1,5 +1,6 @@
 import type { BatchValidationResult, RowValidationResult } from './types.mts'
-import { validateTopicRow } from './validate-topic-row.mts'
+import { claimedReferralValidationSlug } from './validate-topic-row-referral.mts'
+import { claimedTopicSlug, validateTopicRow } from './validate-topic-row.mts'
 
 export const ALLOWED_COLUMNS = new Set([
   'slug',
@@ -24,22 +25,36 @@ export function validateTopicHeaders(headers: string[]): string[] {
   return headers.filter(h => !ALLOWED_COLUMNS.has(h))
 }
 
-export function validateTopicRows(rows: Record<string, string>[]): BatchValidationResult {
-  const results: RowValidationResult[] = []
-  const seenSlugs = new Set<string>()
-  const seenReferralValidationSlugs = new Set<string>()
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i]
-    const errors: string[] = []
-    if (!row || typeof row !== 'object') {
-      errors.push('Row must be an object')
-      results.push({ row_index: i, valid: false, errors })
-      continue
-    }
-    errors.push(...validateTopicRow(row, { seenReferralValidationSlugs, seenSlugs }))
+function isObjectRow(row: unknown): row is Record<string, string> {
+  return !!row && typeof row === 'object'
+}
 
-    results.push({ row_index: i, valid: errors.length === 0, errors })
-  }
+/** Indexes of rows repeating a key an earlier row already claimed. */
+function repeatedKeyIndexes(keys: (string | undefined)[]): number[] {
+  const firstIndexByKey = new Map(
+    keys.flatMap((key, i) => (key === undefined ? [] : [[key, i] as const])).toReversed(),
+  )
+  return keys.flatMap((key, i) => (key !== undefined && firstIndexByKey.get(key) !== i ? [i] : []))
+}
+
+export function validateTopicRows(rows: Record<string, string>[]): BatchValidationResult {
+  const duplicateSlugRows = new Set(
+    repeatedKeyIndexes(rows.map(row => (isObjectRow(row) ? claimedTopicSlug(row) : undefined))),
+  )
+  const duplicateReferralRows = new Set(
+    repeatedKeyIndexes(
+      rows.map(row => (isObjectRow(row) ? claimedReferralValidationSlug(row) : undefined)),
+    ),
+  )
+  const results: RowValidationResult[] = rows.map((row, i) => {
+    const errors = isObjectRow(row)
+      ? validateTopicRow(row, {
+          isDuplicateSlug: duplicateSlugRows.has(i),
+          isDuplicateReferralValidationSlug: duplicateReferralRows.has(i),
+        })
+      : ['Row must be an object']
+    return { row_index: i, valid: errors.length === 0, errors }
+  })
 
   return {
     valid: results.every(r => r.valid),

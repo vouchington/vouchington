@@ -53,7 +53,7 @@ async function runConfigDrivenStatementGroups(
       return runStatementAt(index + 1)
     }
 
-    group.push(statement)
+    group = [...group, statement]
     return runStatementAt(index + 1)
   }
 

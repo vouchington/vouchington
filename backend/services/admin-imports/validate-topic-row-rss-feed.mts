@@ -2,37 +2,42 @@ import { isPublicRssFeedUrl } from '@services/rss-feeds/url-validation'
 
 const VALID_FEED_TYPES = new Set(['article', 'podcast', 'video', 'mixed'])
 
-export function validateRssFeedFields(row: Record<string, string>, errors: string[]): void {
+export function validateRssFeedFields(row: Record<string, string>): string[] {
   const topicType = row.topic_type?.trim()
   const rssFeedUrl = row.rss_feed_url?.trim()
   const rssFeedTitle = row.rss_feed_title?.trim()
   const feedType = row.feed_type?.trim()
+  const isRssFeed = topicType === 'rss_feed'
 
-  if (rssFeedUrl && topicType !== 'rss_feed') {
-    errors.push('rss_feed_url is only allowed for topic_type=rss_feed')
-  } else if (rssFeedUrl && !isPublicRssFeedUrl(rssFeedUrl)) {
-    errors.push('rss_feed_url must be a valid URL')
-  }
-  if (rssFeedTitle && topicType !== 'rss_feed') {
-    errors.push('rss_feed_title is only allowed for topic_type=rss_feed')
-  }
-  if (feedType && topicType !== 'rss_feed') {
-    errors.push('feed_type is only allowed for topic_type=rss_feed')
-  } else if (feedType && !VALID_FEED_TYPES.has(feedType)) {
-    errors.push(`feed_type must be one of: ${[...VALID_FEED_TYPES].join(', ')}`)
-  }
-  if (topicType === 'rss_feed') validateRequiredRssFeedFields(row, errors)
+  return [
+    ...(rssFeedUrl && !isRssFeed
+      ? ['rss_feed_url is only allowed for topic_type=rss_feed']
+      : rssFeedUrl && !isPublicRssFeedUrl(rssFeedUrl)
+        ? ['rss_feed_url must be a valid URL']
+        : []),
+    ...(rssFeedTitle && !isRssFeed
+      ? ['rss_feed_title is only allowed for topic_type=rss_feed']
+      : []),
+    ...(feedType && !isRssFeed
+      ? ['feed_type is only allowed for topic_type=rss_feed']
+      : feedType && !VALID_FEED_TYPES.has(feedType)
+        ? [`feed_type must be one of: ${[...VALID_FEED_TYPES].join(', ')}`]
+        : []),
+    ...(isRssFeed ? validateRequiredRssFeedFields(row) : []),
+  ]
 }
 
-function validateRequiredRssFeedFields(row: Record<string, string>, errors: string[]): void {
-  if (!row.rss_feed_url?.trim()) errors.push('rss_feed_url is required for topic_type=rss_feed')
-  if (!row.rss_feed_title?.trim()) errors.push('rss_feed_title is required for topic_type=rss_feed')
-  if (!row.parent_slugs?.trim()) errors.push('parent_slugs is required for topic_type=rss_feed')
+function validateRequiredRssFeedFields(row: Record<string, string>): string[] {
   const nameTrimmed = row.name?.trim()
-  if (!nameTrimmed) errors.push('name is required for topic_type=rss_feed')
-  if (nameTrimmed && /\(https?:\/\//.test(nameTrimmed)) {
-    errors.push(
-      'rss_feed topic name must be the base title without a URL suffix (URL is appended automatically)',
-    )
-  }
+  return [
+    ...(row.rss_feed_url?.trim() ? [] : ['rss_feed_url is required for topic_type=rss_feed']),
+    ...(row.rss_feed_title?.trim() ? [] : ['rss_feed_title is required for topic_type=rss_feed']),
+    ...(row.parent_slugs?.trim() ? [] : ['parent_slugs is required for topic_type=rss_feed']),
+    ...(nameTrimmed ? [] : ['name is required for topic_type=rss_feed']),
+    ...(nameTrimmed && /\(https?:\/\//.test(nameTrimmed)
+      ? [
+          'rss_feed topic name must be the base title without a URL suffix (URL is appended automatically)',
+        ]
+      : []),
+  ]
 }

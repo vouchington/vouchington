@@ -14,16 +14,20 @@ export const OPENAI_TRANSPORT_FIELD = 'openai_transport'
 
 type FieldType = 'string'
 
-const fieldTypes: Record<string, FieldType> = { [OPENAI_TRANSPORT_FIELD]: 'string' }
-const defaultFields: Record<string, string> = {
-  [OPENAI_TRANSPORT_FIELD]: DEFAULT_OPENAI_TRANSPORT,
-}
-for (const slug of MODEL_SERVICE_SLUGS) {
-  fieldTypes[providerFieldName(slug)] = 'string'
-  fieldTypes[modelFieldName(slug)] = 'string'
-  defaultFields[providerFieldName(slug)] = DEFAULT_MODEL_SELECTION.provider
-  defaultFields[modelFieldName(slug)] = DEFAULT_MODEL_SELECTION.model
-}
+const fieldTypes: Record<string, FieldType> = Object.fromEntries([
+  [OPENAI_TRANSPORT_FIELD, 'string'],
+  ...MODEL_SERVICE_SLUGS.flatMap(slug => [
+    [providerFieldName(slug), 'string'],
+    [modelFieldName(slug), 'string'],
+  ]),
+])
+const defaultFields: Record<string, string> = Object.fromEntries([
+  [OPENAI_TRANSPORT_FIELD, DEFAULT_OPENAI_TRANSPORT],
+  ...MODEL_SERVICE_SLUGS.flatMap(slug => [
+    [providerFieldName(slug), DEFAULT_MODEL_SELECTION.provider],
+    [modelFieldName(slug), DEFAULT_MODEL_SELECTION.model],
+  ]),
+])
 
 /**
  * Which provider and model each model-backed service runs on, and which endpoint serves OpenAI.

@@ -84,22 +84,19 @@ async function drainBufferedRecords(): Promise<void> {
 async function flushBufferedRecords(): Promise<void> {
   const records = buffer.splice(0)
   bufferedBytes = 0
-  const groups = new Map<string, { table: AnalyticsTableName; date: string; lines: string[] }>()
-
-  for (const item of records) {
-    const eventDate = (item.record as { event_date: string }).event_date
-    const key = `${item.table}:${eventDate}`
-    let group = groups.get(key)
-    if (!group) {
-      group = { table: item.table, date: eventDate, lines: [] }
-      groups.set(key, group)
-    }
-    group.lines.push(item.serialized)
-  }
+  const groups = Map.groupBy(
+    records,
+    item => `${item.table}:${(item.record as { event_date: string }).event_date}`,
+  )
 
   await Promise.all(
-    Array.from(groups.values()).map(async ({ table, date, lines }) => {
-      const filePath = getPartitionPath(table, date)
+    Array.from(groups.values()).map(async items => {
+      const first = items[0]!
+      const lines = items.map(item => item.serialized)
+      const filePath = getPartitionPath(
+        first.table,
+        (first.record as { event_date: string }).event_date,
+      )
       const dir = path.dirname(filePath)
       await fs.promises.mkdir(dir, { recursive: true })
       await fs.promises.appendFile(filePath, `${lines.join('\n')}\n`, 'utf8')

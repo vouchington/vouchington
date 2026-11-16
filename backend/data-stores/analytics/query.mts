@@ -72,18 +72,22 @@ const BIGINT_FAMILY_TYPE_IDS: ReadonlySet<DuckDBTypeId> = new Set([
 // native type to a plain JSON primitive uniformly (the same conversion `duckdb --json` used to
 // do for us) — re-widen only the BIGINT-family columns back to `number` afterward.
 function denormalizeRows<T>(reader: DuckDBResultReader): T[] {
-  const bigintColumns: string[] = []
-  reader.columnNames().forEach((name, index) => {
-    if (BIGINT_FAMILY_TYPE_IDS.has(reader.columnType(index).typeId)) bigintColumns.push(name)
-  })
+  const bigintColumns = reader
+    .columnNames()
+    .filter((_, index) => BIGINT_FAMILY_TYPE_IDS.has(reader.columnType(index).typeId))
   const rows = reader.getRowObjectsJson()
   if (bigintColumns.length === 0) return rows as T[]
-  return rows.map(row => {
-    for (const name of bigintColumns) {
-      if (typeof row[name] === 'string') row[name] = Number(row[name])
-    }
-    return row as T
-  })
+  return rows.map(
+    row =>
+      ({
+        ...row,
+        ...Object.fromEntries(
+          bigintColumns.flatMap(name =>
+            typeof row[name] === 'string' ? [[name, Number(row[name])]] : [],
+          ),
+        ),
+      }) as T,
+  )
 }
 
 export async function query<T = Record<string, unknown>>(

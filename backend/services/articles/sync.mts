@@ -49,6 +49,7 @@ async function syncArticleFiles<T extends ArticleSyncFile>(
 
   for (let offset = 0; offset < mdFiles.length; offset += batchSize) {
     const prepared: PreparedArticle[] = []
+    const batchItems: ArticleSyncItem[] = []
     const batch = mdFiles.slice(offset, offset + batchSize)
     for (const articleFile of batch) {
       const item: ArticleSyncItem = { file: articleFile.file, slug: '', action: 'skipped' }
@@ -67,7 +68,7 @@ async function syncArticleFiles<T extends ArticleSyncFile>(
           item.slug = slug
           item.action = 'error'
           item.error = `Invalid post_type "${rawPostType}". Allowed: ${[...ALLOWED_POST_TYPES].join(', ')}`
-          results.push(item)
+          batchItems.push(item)
           continue
         }
         const postType: PostType = rawPostType || 'article'
@@ -76,14 +77,14 @@ async function syncArticleFiles<T extends ArticleSyncFile>(
         if (!title) {
           item.action = 'error'
           item.error = 'No title found'
-          results.push(item)
+          batchItems.push(item)
           continue
         }
 
         if (!isUUID(slug) && !isSlug(slug)) {
           item.action = 'error'
           item.error = 'Invalid post id or slug'
-          results.push(item)
+          batchItems.push(item)
           continue
         }
 
@@ -96,19 +97,18 @@ async function syncArticleFiles<T extends ArticleSyncFile>(
           postType,
           fileHash: contentHash(title, body),
         })
-        results.push(item)
+        batchItems.push(item)
       } catch (err) {
         item.action = 'error'
         item.error = err instanceof Error ? err.message : String(err)
         if (err instanceof Error) onError(err)
-        results.push(item)
+        batchItems.push(item)
       }
     }
 
-    if (prepared.length === 0) continue
-
     // oxlint-disable-next-line no-await-in-loop -- each bounded batch must finish its lookup and writes before the next batch loads
-    await processPreparedArticles(currentUser, prepared)
+    const processed = await processPreparedArticles(currentUser, prepared)
+    results.push(...batchItems.map(item => processed.get(item) ?? item))
   }
 
   return summarizeResults(results)

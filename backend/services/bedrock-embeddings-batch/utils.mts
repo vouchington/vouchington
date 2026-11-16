@@ -96,10 +96,13 @@ export async function processBatchCreation<T extends BatchEntity>(
     shouldContinue = true
     if (boundary && progress.cursor) {
       const row = boundary as T & { crawl_id?: string; order_index?: number }
-      progress.cursor = {
-        ...progress.cursor,
-        afterId: row.crawl_id ?? row.id,
-        ...(row.order_index !== undefined ? { afterOrderIndex: row.order_index } : {}),
+      progress = {
+        ...progress,
+        cursor: {
+          ...progress.cursor,
+          afterId: row.crawl_id ?? row.id,
+          ...(row.order_index !== undefined ? { afterOrderIndex: row.order_index } : {}),
+        },
       }
     }
 

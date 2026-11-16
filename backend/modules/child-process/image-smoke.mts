@@ -53,10 +53,10 @@ async function collectStdout(
   args: RunCommandOptions['args'],
   stdin?: RunCommandOptions['stdin'],
 ): Promise<string> {
-  const chunks: Buffer[] = []
+  let chunks: Buffer[] = []
   const stdout = new Writable({
     write(chunk: string | Uint8Array, _encoding, callback) {
-      chunks.push(Buffer.from(chunk))
+      chunks = [...chunks, Buffer.from(chunk)]
       callback()
     },
   })

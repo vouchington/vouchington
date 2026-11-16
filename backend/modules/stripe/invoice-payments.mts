@@ -34,8 +34,8 @@ async function listStripeInvoicePaymentIntentPages(
     limit: 100,
     ...(startingAfter ? { starting_after: startingAfter } : {}),
   })
-  payments.push(...page.data)
-  if (!page.has_more) return payments
+  const collected = [...payments, ...page.data]
+  if (!page.has_more) return collected
   const lastPayment = page.data.at(-1)
   if (!lastPayment)
     throw new Error(
@@ -44,7 +44,7 @@ async function listStripeInvoicePaymentIntentPages(
   return listStripeInvoicePaymentIntentPages(
     paymentIntentId,
     lastPayment.id,
-    payments,
+    collected,
     pageCount + 1,
     maxPages,
   )
@@ -65,10 +65,16 @@ async function listStripeInvoicePaymentPages(
     limit: 100,
     ...(startingAfter ? { starting_after: startingAfter } : {}),
   })
-  payments.push(...page.data)
-  if (!page.has_more) return payments
+  const collected = [...payments, ...page.data]
+  if (!page.has_more) return collected
   const lastPayment = page.data.at(-1)
   if (!lastPayment)
     throw new Error(`Stripe returned an empty invoice payment page for invoice ${invoiceId}`)
-  return listStripeInvoicePaymentPages(invoiceId, lastPayment.id, payments, pageCount + 1, maxPages)
+  return listStripeInvoicePaymentPages(
+    invoiceId,
+    lastPayment.id,
+    collected,
+    pageCount + 1,
+    maxPages,
+  )
 }
