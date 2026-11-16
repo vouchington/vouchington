@@ -11,4 +11,4 @@ Before changing limiter keys, charging order, or request counts, verify:
 - Capped long-window limits do not keep appending members after the cap is already reached.
 - TTL and sliding-window behavior use Valkey server time rather than local process time.
 - DB/Valkey-backed tests use unique keys or serialized execution when shared keys are unavoidable.
-- Affected worker `VALKEY_REQUESTS.md` files still document the correct call count and script behavior.
+- Count the Valkey calls and Lua scripts per limiter invocation in the changed code (no separate request-accounting document exists), and confirm the change does not add round trips or alter script behavior unintentionally.
