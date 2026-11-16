@@ -1,3 +1,4 @@
+import { lockCopyrightPlacementTransitions } from './action-delivery-placement-locking.mts'
 import { createCopyrightRestrictionDecisionNoticesInTransaction } from './restriction-outcome-notices.mts'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import type { TransactionQuery } from '@data-stores/psql/types'
@@ -11,6 +12,16 @@ export async function imposeCopyrightCourtFilingRestrictions(
   now: Date,
   query: TransactionQuery,
 ): Promise<string[]> {
+  const { rows: placements } = await query<{ id: string }>(sql`
+    /* imposeCopyrightCourtFilingRestrictions:placements */
+    SELECT DISTINCT placement.id FROM media_placements placement
+    JOIN copyright_notice_targets target ON target.placement_id = placement.id
+    WHERE target.copyright_notice_id = ${noticeId} ORDER BY placement.id
+  `)
+  await lockCopyrightPlacementTransitions(
+    placements.map(placement => placement.id),
+    query,
+  )
   const { rows: created } = await query<{
     id: string
     copyright_notice_target_id: string
@@ -37,12 +48,6 @@ export async function imposeCopyrightCourtFilingRestrictions(
         ),
     ),
   )
-  const { rows: placements } = await query<{ id: string }>(sql`
-    /* imposeCopyrightCourtFilingRestrictions:placements */
-    SELECT DISTINCT placement.id FROM media_placements placement
-    JOIN copyright_notice_targets target ON target.placement_id = placement.id
-    WHERE target.copyright_notice_id = ${noticeId} ORDER BY placement.id
-  `)
   const previousRevision = new Map<string, number>()
   // Sorted actual writes share the other mutation writers' order, including retired bindings.
   await runSequentially(

@@ -37,7 +37,7 @@ describe('restore preparation racing guest court admission', () => {
           statement: 'A federal court proceeding has commenced.',
         }),
     })
-    expect(outcomes[0]).toMatchObject({ status: 'rejected', reason: { status: 409 } })
+    expect(outcomes[0]).toEqual({ status: 'fulfilled', value: 'not_claimed' })
     expect(outcomes[1].status).toBe('fulfilled')
     const after = await getCopyrightNoticePrivateAggregate(scene.notice.id)
     expect(after?.actionIntents.find(row => row.id === scene.restore.id)).toMatchObject({

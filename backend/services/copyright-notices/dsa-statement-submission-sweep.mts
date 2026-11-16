@@ -91,6 +91,16 @@ async function materializeDsaStatementSubmission(
 
 async function insertDsaStatementSubmission(restrictionId: string, from: Date): Promise<boolean> {
   await using transaction = await beginTransaction()
+  const inserted = await insertDsaStatementSubmissionInTransaction(transaction, restrictionId, from)
+  if (inserted) await transaction.commit()
+  return inserted
+}
+
+async function insertDsaStatementSubmissionInTransaction(
+  transaction: Awaited<ReturnType<typeof beginTransaction>>,
+  restrictionId: string,
+  from: Date,
+): Promise<boolean> {
   const payload = await buildCopyrightDsaStatementPayload(restrictionId, transaction)
   const lockedNotice = await lockCopyrightNoticeForRestriction(transaction, restrictionId)
   const { rows } = await transaction<{ id: string }>(sql`/* insertDsaStatementSubmission */
@@ -104,7 +114,6 @@ async function insertDsaStatementSubmission(restrictionId: string, from: Date): 
   `)
   if (rows.length === 1 && lockedNotice)
     await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
-  await transaction.commit()
   return rows.length === 1
 }
 

@@ -31,7 +31,7 @@ describe('court filing after restored allow publication', () => {
     vi.unstubAllEnvs()
   })
 
-  it.each(['before_facts', 'before_completion_event'] as const)(
+  it.each(['before_facts', 'before_completion_generation'] as const)(
     'denies the actual published tuple when a filing preempts %s, and retains scoped recovery',
     async boundary => {
       for (const [key, value] of Object.entries(await mediaDeliveryEdgeEnvironment()))
@@ -49,11 +49,10 @@ describe('court filing after restored allow publication', () => {
       const restore = beforePostgresTransactionQueryForTest(
         boundary === 'before_facts'
           ? '/* readCopyrightActionDeliveryForCompletion */'
-          : '/* processCopyrightActionIntent:event */',
+          : '/* lockCopyrightActionGenerationForWrite */',
         values =>
           published &&
-          values.includes(scene.restore.id) &&
-          (boundary === 'before_facts' || values.includes('placement_restored')),
+          values.includes(boundary === 'before_facts' ? scene.restore.id : scene.notice.id),
         async () => {
           await appendCopyrightGuestFiling({
             noticeId: scene.notice.id,

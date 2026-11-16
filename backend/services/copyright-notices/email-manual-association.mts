@@ -1,3 +1,4 @@
+import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
 import type { TransactionQuery } from '@data-stores/psql/types'
@@ -36,23 +37,22 @@ export async function associateCopyrightEmailIntakeWithNotice(
     transaction,
   )
 
+  await lockCopyrightActionGenerationForWrite(noticeId, transaction)
   const { rows: lockedIntakes } = await transaction<{ id: string }>(sql`
     /* associateCopyrightEmailIntakeWithNotice:lockIntake */
     SELECT id FROM copyright_notice_email_intakes
     WHERE id = ${intakeId} AND raw_storage_object_id IS NOT NULL
       AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
         WHERE receipt.id = ${intakeId} AND receipt.erased_at IS NULL)
-    FOR UPDATE
   `)
   assert(lockedIntakes[0], 404, 'Copyright email intake not found')
-  // Erasure updates only intakes already linked to its case. A link committed
-  // while this lock was pending must be rejected before waiting for that case.
+  // A committed competing link is rejected before any new association is inserted.
   const lockedDecision = await readIntakeDecision(transaction, intakeId)
   if (!lockedDecision || lockedDecision.linked || lockedDecision.reviewed)
     throw copyrightEmailThreadChangedError()
   const { rows: lockedNotices } = await transaction<{ id: string; jurisdiction: string }>(sql`
     /* associateCopyrightEmailIntakeWithNotice:lockNotice */
-    SELECT id, jurisdiction FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
+    SELECT id, jurisdiction FROM copyright_notices WHERE id = ${noticeId}
   `)
   assert(lockedNotices[0], 404, 'Copyright notice not found')
   assert(
@@ -60,8 +60,7 @@ export async function associateCopyrightEmailIntakeWithNotice(
     422,
     'Correspondence kind does not apply to this jurisdiction',
   )
-  // A retention erasure takes the notice lock first. This fresh statement sees a marker
-  // committed while this association waited and fences a new marker until commit.
+  // Recheck erasure after waiting for the generation row; foreign keys protect the insert.
   const { rows: erased } = await transaction(sql`
     /* associateCopyrightEmailIntakeWithNotice:erasure */
     SELECT 1 FROM copyright_notices
@@ -102,7 +101,7 @@ export async function associateCopyrightEmailIntakeWithNotice(
   return { copyright_notice: { id: noticeId }, copyright_email_intake: { id: intakeId } }
 }
 
-/** Eligibility is recomputed after both row locks; a new reply or claimant changes this result. */
+/** Eligibility is recomputed after the generation wait; a new reply or claimant changes it. */
 async function readManualAssociationReviewPath(transaction: TransactionQuery, intakeId: string) {
   const maxGraphRows = await getCopyrightEmailThreadGraphMaxRows()
   const query = sql`/* readManualAssociationReviewPath */

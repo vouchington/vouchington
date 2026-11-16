@@ -1,3 +1,4 @@
+import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { copyrightTargetRestoreIsBlocked } from './court-hold-assessment-gate.mts'
@@ -84,6 +85,7 @@ export async function insertCopyrightActionLifecycleEvent(
   eventType: string,
   query: TransactionQuery,
 ): Promise<void> {
+  await lockCopyrightActionGenerationForWrite(legal.copyright_notice_id, query)
   await query(sql`/* processCopyrightActionIntent:event */
     INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, copyright_notice_action_intent_id)
     VALUES (${legal.copyright_notice_id}, ${eventType}, ${intentId})

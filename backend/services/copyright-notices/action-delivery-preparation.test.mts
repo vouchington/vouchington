@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { markImageModerationFlagged } from '@voucha/test-helpers'
 import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
@@ -7,7 +7,7 @@ import {
   recordOrdinaryCopyrightHold,
 } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { observeTestPostgresClientQueries } from '@voucha/test-helpers/postgres-query-pool-observer'
+import { raceCopyrightPreparationWithGuestFiling } from '@voucha/test-helpers/copyright-preparation-guest-race'
 import { interceptPostgresTransactionQueriesForTest } from '@voucha/test-helpers/injected-transaction-queries'
 import {
   getImagePlacementForCopyright,
@@ -31,72 +31,15 @@ describe('copyright restore preparation admission', () => {
       const scene = await openHeldCounterNoticeRestore()
       if (unavailable) await markImageModerationFlagged(scene.target.image_id)
       edge.put.mockClear()
-      const factsRead = Promise.withResolvers<void>()
-      const holdReady = Promise.withResolvers<void>()
-      const eventAttempt = Promise.withResolvers<void>()
-      onTestFinished(() => {
-        factsRead.resolve()
-        holdReady.resolve()
-        eventAttempt.resolve()
+      const result = await raceCopyrightPreparationWithGuestFiling({
+        intentId: scene.restore.id,
+        noticeId: scene.notice.id,
+        restrictionId: scene.restriction.id,
+        action: () => processCopyrightActionIntent(scene.restore.id, scene.restorationAt),
+        filing: () => recordOrdinaryCopyrightHold(scene),
       })
-      let prepared = false
-      const restoreIntercept = interceptPostgresTransactionQueriesForTest(
-        (text, values) => {
-          if (text.includes('preemptCopyrightRestorations') && values.includes(scene.notice.id)) {
-            holdReady.resolve()
-            return true
-          }
-          if (
-            (text.includes('processCopyrightActionIntent:event') &&
-              values.includes(scene.restore.id)) ||
-            (text.includes('createDeterministicCopyrightCorrespondencesInTransaction') &&
-              values.some(value => Array.isArray(value) && value.includes(scene.notice.id)))
-          ) {
-            eventAttempt.resolve()
-          }
-          return false
-        },
-        () => eventAttempt.promise,
-      )
-      let hold: ReturnType<typeof recordOrdinaryCopyrightHold> | undefined
-      try {
-        const { result } = await observeTestPostgresClientQueries(
-          async () => {
-            const restoring = processCopyrightActionIntent(scene.restore.id, scene.restorationAt)
-            void restoring.catch((err: unknown) => {
-              factsRead.reject(err)
-              holdReady.resolve()
-              eventAttempt.resolve()
-            })
-            await factsRead.promise
-            hold = recordOrdinaryCopyrightHold(scene)
-            void hold.catch(holdReady.reject)
-            return Promise.allSettled([restoring, hold])
-          },
-          async query => {
-            if (prepared) return
-            const unavailableReady =
-              unavailable &&
-              query.text.includes('copyrightActionDeliveryFacts') &&
-              query.values.includes(scene.restore.id)
-            const authorizationReady =
-              !unavailable &&
-              query.text.includes('processCopyrightActionIntent:otherActiveRestrictions') &&
-              query.values.includes(scene.target.placement_id)
-            if (!unavailableReady && !authorizationReady) return
-            prepared = true
-            factsRead.resolve()
-            await holdReady.promise
-          },
-        )
-        expect(result[0]).toMatchObject({ status: 'rejected', reason: { status: 409 } })
-        expect(result[1]?.status).toBe('fulfilled')
-      } finally {
-        holdReady.resolve()
-        eventAttempt.resolve()
-        restoreIntercept()
-        if (hold) await Promise.allSettled([hold])
-      }
+      expect(result[0]).toEqual({ status: 'fulfilled', value: 'not_claimed' })
+      expect(result[1].status).toBe('fulfilled')
       const after = await getCopyrightNoticePrivateAggregate(scene.notice.id)
       expect(after?.actionIntents.find(row => row.id === scene.restore.id)).toMatchObject({
         state: 'blocked',
@@ -127,7 +70,7 @@ describe('copyright restore preparation admission', () => {
       edge.put.mockClear()
       let released = false
       const restore = beforePostgresTransactionQueryForTest(
-        'processCopyrightActionIntent:event',
+        'readCopyrightActionPreparation',
         values => values.includes(scene.restore.id),
         async () => {
           released = true
@@ -147,7 +90,7 @@ describe('copyright restore preparation admission', () => {
       )
       try {
         const action = processCopyrightActionIntent(scene.restore.id, scene.restorationAt)
-        await expect(action).rejects.toMatchObject({ status: 409 })
+        await expect(action).resolves.toBe('not_claimed')
       } finally {
         restore()
       }
@@ -160,7 +103,7 @@ describe('copyright restore preparation admission', () => {
       expect(edge.put).not.toHaveBeenCalled()
     },
   )
-  it('rolls back tentative authorization when a competing placement transition wins', async () => {
+  it('keeps the newer placement when a competing transition wins before its placement check', async () => {
     const edge = installTestMediaDeliveryEdge()
     const scene = await openHeldCounterNoticeRestore()
     const before = await getCopyrightNoticePrivateAggregate(scene.notice.id)
@@ -170,7 +113,7 @@ describe('copyright restore preparation admission', () => {
     const restore = interceptPostgresTransactionQueriesForTest(
       (text, values) =>
         !changed &&
-        text.includes('/* changeImagePlacementsCopyrightWithholding */') &&
+        text.includes('/* lockCopyrightPlacementTransitions */') &&
         values.some(value => Array.isArray(value) && value.includes(scene.target.placement_id)),
       async () => {
         changed = true
@@ -194,7 +137,7 @@ describe('copyright restore preparation admission', () => {
     try {
       await expect(
         processCopyrightActionIntent(scene.restore.id, scene.restorationAt),
-      ).rejects.toMatchObject({ status: 409 })
+      ).resolves.toBe('stale')
     } finally {
       restore()
     }
@@ -205,13 +148,13 @@ describe('copyright restore preparation admission', () => {
     expect(after?.restrictions).toEqual(before?.restrictions)
     expect(after?.deadlines).toEqual(before?.deadlines)
     expect(after?.actionIntents.find(row => row.id === scene.restore.id)).toMatchObject({
-      state: 'pending',
-      completed_at_reason: null,
-      failure_message: 'Concurrent copyright restoration changed the remaining grounds',
+      state: 'stale',
+      completed_at_reason: 'stale',
+      failure_message: 'Authoritative placement no longer matches the intent revision and asset.',
     })
     expect(edge.put).not.toHaveBeenCalled()
   })
-  it('reports a conflict when blocked completion races a committed lease release', async () => {
+  it('leaves a committed lease release intact before blocked completion', async () => {
     const edge = installTestMediaDeliveryEdge()
     const scene = await openHeldCounterNoticeRestore()
     await appendTestCopyrightNoticeSubmission({
@@ -229,7 +172,7 @@ describe('copyright restore preparation admission', () => {
     const restore = interceptPostgresTransactionQueriesForTest(
       (text, values) =>
         !released &&
-        text.includes('/* completeCopyrightActionIntentInTransaction */') &&
+        text.includes('readCopyrightActionPreparation') &&
         values.includes(scene.restore.id),
       async () => {
         released = true
@@ -250,7 +193,7 @@ describe('copyright restore preparation admission', () => {
     try {
       await expect(
         processCopyrightActionIntent(scene.restore.id, scene.restorationAt),
-      ).rejects.toMatchObject({ status: 409 })
+      ).resolves.toBe('not_claimed')
     } finally {
       restore()
     }

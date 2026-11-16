@@ -156,7 +156,7 @@ export async function raceCopyrightFinalizationWithGuestFiling<Action, Filing>(i
         holderProcessId,
         pool: 'write',
         lock: { kind: 'transaction' },
-        queryMarker: 'processCopyrightActionIntent:event',
+        queryMarker: 'lockCopyrightActionGenerationForWrite',
         releaseHolder: async () => {
           resumeFiling.resolve()
           await filingSettled

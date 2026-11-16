@@ -133,11 +133,15 @@ pending, without offering an ordinary notice-assessment confirmation or reversal
 A nonqualifying assessment or final hold resolution releases only the filing ground. Restoration
 uses the current placement revision, including a placement removed and later reattached, and waits
 for every overlapping unassessed filing, qualifying hold, and ordinary notice ground to clear.
-Court admission and the complete restoration preparation use serialization conflict detection
-when a concurrent case can introduce or release a ground. This also protects a placement already
-withheld by another case: admission cannot accept a filing based on an obsolete delivery revision.
+Court admission and restoration use ordinary transactions and acquire the blocker-generation row
+that their legal writes actually update before work items or placement effects. Authority and lease
+conditions are read again after a wait. A restriction-ending transaction locks affected placements
+in identity order before ending its own ground, then reads remaining grounds in a fresh statement.
+That check-then-act lock is retained even when another ground keeps availability unchanged; only a
+real availability change advances the placement revision. Court admission shares that placement order
+while staging current-revision denials.
 Concurrent unavailable restorations cannot remove their final grounds while leaving a stranded
-withholding flag. A serialization loser receives a conflict without an automatic retry.
+withholding flag. Real conditional-state and uniqueness conflicts remain conflicts without an automatic retry.
 
 A hold resolution is an immutable record, never an edit of the filing. Resolving a hold does
 not bypass the counter-notice deadline or the human reversal requirement.

@@ -15,7 +15,7 @@ import { processCopyrightActionIntent } from './action-delivery-process.mts'
 import { publishStagedMediaDeliveryRecord } from '@services/media-delivery-safety'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
-import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
+import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 
 describe('copyright action and legal hold write order', () => {
   let edge: ReturnType<typeof installTestMediaDeliveryEdge>
@@ -67,7 +67,6 @@ describe('copyright action and legal hold write order', () => {
     const outcomes = await raceCopyrightActionWithHold({
       noticeId: scene.notice.id,
       intentId: scene.restore.id,
-      eventMarker: '/* replayFailedCopyrightActionIntent:event */',
       action: () =>
         replayFailedCopyrightActionIntent({
           intentId: scene.restore.id,
@@ -137,8 +136,6 @@ describe('copyright action and legal hold write order', () => {
       const outcomes = await raceCopyrightActionWithHold({
         noticeId: scene.notice.id,
         intentId: scene.restore.id,
-        eventMarker: '/* processCopyrightActionIntent:event */',
-        eventType: 'placement_restored',
         completion: {
           restrictionId: scene.restriction.id,
           deliveryPublished: () => deliveryPublished,
@@ -229,9 +226,9 @@ describe('copyright action and legal hold write order', () => {
     const scene = await openHeldCounterNoticeRestore()
     const atCompletion = Promise.withResolvers<void>()
     const resume = Promise.withResolvers<void>()
-    const restore = beforePostgresTransactionQueryForTest(
-      '/* processCopyrightActionIntent:event */',
-      values => values.includes(scene.restore.id) && values.includes('placement_restored'),
+    const restore = afterPostgresTransactionQueryForTest(
+      '/* readCopyrightActionDeliveryForCompletion */',
+      values => values.includes(scene.restore.id),
       async () => {
         atCompletion.resolve()
         await resume.promise

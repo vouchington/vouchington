@@ -25,6 +25,7 @@ export async function raceCopyrightFilingWithPublication<Publisher, Filing>(inpu
             value => Array.isArray(value) && value.includes(input.placementId),
           )
           if (
+            (owned && text.includes('/* lockCopyrightPlacementTransitions */')) ||
             text.includes('/* imposeCopyrightCourtFilingRestrictions:withhold */') ||
             (owned && text.includes('/* stageImagePlacementDeliveryRecords */'))
           )

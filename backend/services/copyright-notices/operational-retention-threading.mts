@@ -1,8 +1,12 @@
+import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import { copyrightOperationalThreadEligibleSql } from './operational-retention-thread-eligibility.mts'
-import { lockCopyrightThreadPreservationGate } from './operational-retention-thread-lock.mts'
+import {
+  lockCopyrightThreadPreservationGate,
+  lockCopyrightThreadRetentionNotice,
+} from './operational-retention-thread-lock.mts'
 import { deleteCaseThreadPage, type ThreadPhase } from './operational-retention-thread-page.mts'
 import { isCopyrightEmailTokenGcConflict } from './operational-retention-token-gc.mts'
 import {
@@ -10,7 +14,8 @@ import {
   resetCopyrightThreadRetentionCursor,
 } from './operational-retention-thread-cursor.mts'
 import {
-  checkCopyrightThreadProofPage,
+  readCopyrightThreadProofPage,
+  saveCopyrightThreadPageProof,
   type ThreadProofCursor,
 } from './operational-retention-thread-proofs.mts'
 
@@ -97,20 +102,31 @@ async function sweepPage(
         SELECT page.id FROM page`)
       : { rows: [] }
   // Preservation coordination remains scoped to the case and its actual legal holds.
-  await lockCopyrightThreadPreservationGate(transaction, noticeId)
-  const proof = await checkCopyrightThreadProofPage(
+  await lockCopyrightThreadPreservationGate(transaction)
+  const proof = await readCopyrightThreadProofPage(
     transaction,
     noticeId,
     now,
     cutoff,
     batchSize,
-    upperBound,
     cursor,
   )
-  if (!proof) {
+  const ready =
+    !proof.legal.blocked &&
+    proof.legal.phase === 'done' &&
+    proof.blocker !== null &&
+    !proof.blocker.blocked &&
+    proof.blocker.done
+  if (!ready) {
+    await saveCopyrightThreadPageProof(transaction, noticeId, upperBound, proof)
     await transaction.commit()
     return { scanned: 1, deleted: 0, hasMore: true }
   }
+  // Only the references phase's real link UPDATE writes the blocker generation.
+  if (phase === 'references' && references.length === 0 && link.matched_token_id !== null)
+    await lockCopyrightActionGenerationForWrite(noticeId, transaction)
+  await lockCopyrightThreadRetentionNotice(transaction, noticeId)
+  await saveCopyrightThreadPageProof(transaction, noticeId, upperBound, proof)
   const { rows: eligible } = await transaction<{ id: string }>(
     copyrightOperationalThreadEligibleSql(cutoff, noticeId),
   )

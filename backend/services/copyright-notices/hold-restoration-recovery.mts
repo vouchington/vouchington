@@ -1,3 +1,4 @@
+import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
 import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
@@ -8,7 +9,7 @@ import {
   type CopyrightSweepPageOptions,
 } from './sweep-id-pages.mts'
 
-/** One keyset page of blocked restore intents. Candidate selection is not authority: each is rechecked under its notice's complete placement fence. */
+/** One keyset page of blocked restore intents. Candidate selection is not authority: each is rechecked after owning its trigger-written generation. */
 export function searchBlockedCopyrightHoldRestorationIntentIds(
   options: CopyrightSweepPageOptions,
 ): Promise<CopyrightSweepIdPage> {
@@ -55,13 +56,14 @@ export async function recoverBlockedCopyrightHoldRestoration(
   `)
     const noticeId = rows[0]?.notice_id
     if (!noticeId) return 0
+    await lockCopyrightActionGenerationForWrite(noticeId, transaction)
     const reopened = await recoverEligibleCopyrightRestoreIntentInTransaction({
       noticeId,
       intentId,
       now,
       query: transaction,
     })
-    await transaction.commit()
+    if (reopened) await transaction.commit()
     return Number(reopened)
   }, 'Copyright hold restoration changed concurrently')
 }

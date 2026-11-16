@@ -59,7 +59,8 @@ export async function recoverEligibleCopyrightRestoreIntentInTransaction(input: 
   const statement = sql`/* recoverEligibleCopyrightRestoreIntentInTransaction:facts */
     SELECT facts.lease_token, facts.copyright_notice_id, facts.copyright_restriction_id,
       facts.placement_id, facts.image_id, facts.expected_placement_revision, facts.action,
-      facts.copyright_notice_deadline_id, facts.restriction_lifted_at, facts.human_reviewed_at,
+      facts.copyright_notice_deadline_id, facts.copyright_notice_submission_id,
+      facts.filing_release_authorized, facts.restriction_lifted_at, facts.human_reviewed_at,
       facts.human_review_action, facts.reversal_authorized, facts.reversal_by_review,
       facts.reversal_by_appeal, facts.reversal_by_administrator_lift, facts.reversal_by_complaint,
       facts.hold_resolution_authorized,

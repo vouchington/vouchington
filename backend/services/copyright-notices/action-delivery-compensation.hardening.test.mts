@@ -23,7 +23,7 @@ describe('compensation, duplicate allow publication and court filing', () => {
     vi.unstubAllEnvs()
   })
   it.each(['publish', 'stage', 'repair'] as const)(
-    'settles %s with the compensation diagnostic and a rejected conflicting filing',
+    'settles %s with the compensation diagnostic and a committed court filing',
     async mode => {
       for (const [key, value] of Object.entries(await mediaDeliveryEdgeEnvironment()))
         vi.stubEnv(key, value)
@@ -80,11 +80,8 @@ describe('compensation, duplicate allow publication and court filing', () => {
       expect(outcomes).toEqual([
         { status: 'fulfilled', value: undefined },
         {
-          status: 'rejected',
-          reason: expect.objectContaining({
-            status: 409,
-            cause: expect.objectContaining({ code: '40001' }),
-          }),
+          status: 'fulfilled',
+          value: expect.objectContaining({ kind: 'court_or_ccb_hold' }),
         },
         { status: 'rejected', reason: originalError },
       ])
@@ -92,12 +89,12 @@ describe('compensation, duplicate allow publication and court filing', () => {
         (await getCopyrightNoticePrivateAggregate(scene.notice.id))?.actionIntents.find(
           row => row.id === scene.restore.id,
         ),
-      ).toMatchObject({ state: 'pending' })
+      ).toMatchObject({ state: 'blocked' })
       expect(
         (await getCopyrightNoticePrivateAggregate(scene.notice.id))?.submissions.filter(
           row => row.kind === 'court_or_ccb_hold',
         ),
-      ).toEqual([])
+      ).toHaveLength(1)
       expect(await readMediaDeliveryRegistryItem(key)).toMatchObject({ state: 'withheld' })
     },
   )

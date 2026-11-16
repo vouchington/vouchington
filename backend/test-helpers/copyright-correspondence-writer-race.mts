@@ -24,7 +24,7 @@ export async function raceCopyrightCorrespondenceWriters(noticeId: string) {
       holderProcessId,
       pool: 'write',
       lock: { kind: 'transaction' },
-      queryMarker: 'CopyrightCorrespondence',
+      queryMarker: 'lockCopyrightActionGenerationsForWrite',
       releaseHolder: () => first[Symbol.asyncDispose](),
     },
     async waitForWrite => {

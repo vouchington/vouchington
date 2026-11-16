@@ -1,12 +1,10 @@
 import { interceptPostgresTransactionsForTest } from './injected-postgres-transactions.mts'
 import type { QueryExecutor } from '@data-stores/psql'
 
-/** Race real action and hold producers at their owned event and notice boundaries. */
+/** Race real action and hold producers at their generation and written-notice boundaries. */
 export async function raceCopyrightActionWithHold<Action, Hold>(input: {
   noticeId: string
   intentId: string
-  eventMarker: string
-  eventType?: string
   completion?: {
     restrictionId: string
     deliveryPublished: () => boolean
@@ -25,6 +23,7 @@ export async function raceCopyrightActionWithHold<Action, Hold>(input: {
   let eventPaused = false
   let noticePaused = false
   let completionReadPaused = false
+  let completingTransaction: QueryExecutor | undefined
   const restore = interceptPostgresTransactionsForTest(
     transaction =>
       new Proxy(transaction, {
@@ -35,9 +34,9 @@ export async function raceCopyrightActionWithHold<Action, Hold>(input: {
             typeof statement === 'string' ? (parameters ?? []) : (statement.values ?? [])
           if (
             !eventPaused &&
-            text.includes(input.eventMarker) &&
-            values.includes(input.intentId) &&
-            (!input.eventType || values.includes(input.eventType))
+            (!input.completion || target === completingTransaction) &&
+            text.includes('/* lockCopyrightActionGenerationForWrite */') &&
+            values.includes(input.noticeId)
           ) {
             eventPaused = true
             atEvent.resolve()
@@ -50,6 +49,7 @@ export async function raceCopyrightActionWithHold<Action, Hold>(input: {
             text.includes('/* hasOtherActiveCopyrightRestrictions */') &&
             values.includes(input.completion.restrictionId)
           ) {
+            completingTransaction = target
             completionReadPaused = true
             atCompletionRead.resolve()
             await releaseCompletionRead.promise

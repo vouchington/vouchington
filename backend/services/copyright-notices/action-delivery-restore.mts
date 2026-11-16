@@ -1,3 +1,4 @@
+import { rollbackCopyrightRestorePreparation } from './action-delivery-preparation-admission.mts'
 import type { LockedCopyrightActionDelivery } from './action-delivery-locking-types.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { runSequentially } from '@modules/utils/run-sequentially'
@@ -22,11 +23,8 @@ export async function completeUnavailableRestore(input: {
 }): Promise<void> {
   await runSequentially([
     () =>
-      clearUnavailableWithholding(input.legal, {
-        query: input.query,
-      }),
-    () =>
       liftCopyrightRestrictionAndResolveDeadline({ ...input, restorationOutcome: 'unavailable' }),
+    () => clearUnavailableWithholding(input.legal, { query: input.query }),
     () =>
       completeCopyrightActionIntentInTransaction({
         intentId: input.intentId,
@@ -41,13 +39,18 @@ export async function completeUnavailableRestore(input: {
   ])
 }
 
-/** The other-ground predicate and every resulting lift/placement effect share the caller's SSI transaction. */
+/** The other-ground predicate and every resulting effect share the caller’s generation-ordered transaction. */
 export async function retainRestoreWhenOtherRestrictionsActive(input: {
   intentId: string
   legal: LockedCopyrightActionDelivery
   now: Date
   query: Awaited<ReturnType<typeof beginTransaction>>
 }): Promise<boolean> {
+  await liftCopyrightRestrictionInTransaction(
+    input.legal.copyright_restriction_id,
+    input.now,
+    input.query,
+  )
   const { rows } = await input.query<{ blocked: boolean }>(sql`
     /* processCopyrightActionIntent:otherActiveRestrictions */
     SELECT EXISTS (
@@ -61,6 +64,7 @@ export async function retainRestoreWhenOtherRestrictionsActive(input: {
     ) AS blocked
   `)
   if (!rows[0]?.blocked) return false
+  await rollbackCopyrightRestorePreparation(input.query)
   await runSequentially([
     () =>
       insertCopyrightActionLifecycleEvent(

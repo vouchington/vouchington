@@ -1,4 +1,4 @@
-import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
 import {
   enqueueBulkApplyCopyrightActions,
   enqueueBulkApplyMediaDeliveryRegistryRecords,
@@ -44,7 +44,7 @@ type AdmittedCorrespondence = {
   correspondence_id: string
 }
 
-async function admitCopyrightEmailCorrespondenceInOwnedTransaction(input: {
+export async function admitCopyrightEmailCorrespondence(input: {
   currentUser: PrivateUser
   intakeId: string
   kind: CopyrightEmailCorrespondenceKind
@@ -79,17 +79,21 @@ async function admitCopyrightEmailCorrespondenceInOwnedTransaction(input: {
     422,
     'Review rationale is required',
   )
-  await using transaction = await beginTransaction(
-    input.kind === 'court_or_ccb_hold' ? { serializable: true } : {},
-  )
-  // The immutable thread link identifies the parent before any intake lock. Agent
-  // completion and retention take that same parent-to-child order.
+  await using transaction = await beginTransaction()
+  const { rows: owners } = await transaction<{ copyright_notice_id: string }>(sql`
+    /* admitCopyrightEmailCorrespondence:identity */
+    SELECT copyright_notice_id FROM copyright_notice_email_intake_notice_links
+    WHERE copyright_notice_email_intake_id = ${input.intakeId} AND link_kind = 'thread'
+  `)
+  assert(owners[0], 404, 'Matched copyright email correspondence not found')
+  await lockCopyrightActionGenerationForWrite(owners[0].copyright_notice_id, transaction)
+  // Resolve current case facts after the trigger-written generation row is owned.
+  // Only the link receives an explicit lock because its admission result is updated.
   const { rows: notices } = await transaction<{ jurisdiction: string }>(sql`
     /* admitCopyrightEmailCorrespondence:lockNotice */
     SELECT notice.jurisdiction FROM copyright_notice_email_intake_notice_links link
     JOIN copyright_notices notice ON notice.id = link.copyright_notice_id
     WHERE link.copyright_notice_email_intake_id = ${input.intakeId} AND link.link_kind = 'thread'
-    FOR NO KEY UPDATE OF notice
   `)
   assert(notices[0], 404, 'Matched copyright email correspondence not found')
   const { rows } =
@@ -107,7 +111,7 @@ async function admitCopyrightEmailCorrespondenceInOwnedTransaction(input: {
     JOIN copyright_notice_email_intake_parses parse
       ON parse.copyright_notice_email_intake_id = intake.id AND parse.status = 'succeeded'
     WHERE intake.id = ${input.intakeId}
-    FOR UPDATE OF intake
+    FOR UPDATE OF link
   `)
   const pending = rows[0]
   assert(pending, 404, 'Matched copyright email correspondence not found')
@@ -126,7 +130,6 @@ async function admitCopyrightEmailCorrespondenceInOwnedTransaction(input: {
   const prior = admittedRows[0]
   if (prior) {
     assert(prior.action === 'admitted', 409, 'Copyright email correspondence was already rejected')
-    await transaction.commit()
     return {
       noticeId: pending.notice_id,
       submissionId: prior.submission_id,
@@ -185,13 +188,4 @@ async function admitCopyrightEmailCorrespondenceInOwnedTransaction(input: {
     correspondenceId: correspondenceId,
     isDuplicate: false,
   }
-}
-
-export async function admitCopyrightEmailCorrespondence(
-  input: Parameters<typeof admitCopyrightEmailCorrespondenceInOwnedTransaction>[0],
-): ReturnType<typeof admitCopyrightEmailCorrespondenceInOwnedTransaction> {
-  return conflictOnSerializationFailure(
-    () => admitCopyrightEmailCorrespondenceInOwnedTransaction(input),
-    'Concurrent copyright filing changed the publication authority',
-  )
 }

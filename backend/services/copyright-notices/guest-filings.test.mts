@@ -34,7 +34,7 @@ describe('guest copyright filing and restore completion', () => {
     vi.unstubAllEnvs()
   })
 
-  it('rejects a guest court filing whose snapshot predates the completed lifecycle write', async () => {
+  it('admits a guest court filing after waiting for a completed lifecycle write', async () => {
     installTestMediaDeliveryEdge()
     const scene = await openHeldCounterNoticeRestore()
     const capability = await issueCopyrightGuestCapability({
@@ -58,20 +58,21 @@ describe('guest copyright filing and restore completion', () => {
     })
     expect(outcomes[0]).toEqual({ status: 'fulfilled', value: 'applied' })
     expect(outcomes[1]).toMatchObject({
-      status: 'rejected',
-      reason: { status: 409, cause: { code: '40001' } },
+      status: 'fulfilled',
+      value: { kind: 'court_or_ccb_hold' },
     })
     const after = await getCopyrightNoticePrivateAggregate(scene.notice.id)
     expect(after?.actionIntents.find(row => row.id === scene.restore.id)).toMatchObject({
       state: 'completed',
     })
-    expect(after?.submissions.filter(row => row.kind === 'court_or_ccb_hold')).toHaveLength(0)
+    expect(after?.submissions.filter(row => row.kind === 'court_or_ccb_hold')).toHaveLength(1)
     expect(
       after?.lifecycleEvents.filter(row => row.change_type === 'court_or_ccb_hold_received'),
-    ).toHaveLength(0)
+    ).toHaveLength(1)
+    expect((await getImagePlacementForCopyright(scene.target.placement_id))?.withheld).toBe(true)
   })
 
-  it('retains a guest court filing admitted before the pending completion event', async () => {
+  it('retains a guest court filing admitted before completion rechecks its lease', async () => {
     installTestMediaDeliveryEdge()
     const scene = await openHeldCounterNoticeRestore()
     const capability = await issueCopyrightGuestCapability({
@@ -81,8 +82,8 @@ describe('guest copyright filing and restore completion', () => {
       expiresAt: new Date(scene.restorationAt.getTime() + 24 * 60 * 60_000),
     })
     const restore = beforePostgresTransactionQueryForTest(
-      '/* processCopyrightActionIntent:event */',
-      values => values.includes(scene.restore.id) && values.includes('placement_restored'),
+      'readCopyrightActionDeliveryForCompletion',
+      values => values.includes(scene.restore.id),
       async () => {
         await appendCopyrightGuestFiling({
           noticeId: scene.notice.id,
@@ -96,7 +97,7 @@ describe('guest copyright filing and restore completion', () => {
     try {
       await expect(
         processCopyrightActionIntent(scene.restore.id, scene.restorationAt),
-      ).rejects.toThrow('Copyright action lease expired before completion')
+      ).resolves.toBe('not_claimed')
     } finally {
       restore()
     }
@@ -155,27 +156,18 @@ describe('guest copyright filing and restore completion', () => {
             statement: 'A federal court proceeding has commenced.',
           }),
       })
-      expect(outcomes).toMatchObject(
-        boundary === 'denial'
-          ? [
-              { status: 'fulfilled', value: 'denied' },
-              { status: 'rejected', reason: { status: 409, cause: { code: '40001' } } },
-            ]
-          : [
-              {
-                status: 'rejected',
-                reason: new Error('Copyright action lease expired before completion'),
-              },
-              { status: 'fulfilled', value: { kind: 'court_or_ccb_hold' } },
-            ],
-      )
+      expect(outcomes).toMatchObject([
+        {
+          status: 'rejected',
+          reason: new Error('Copyright action lease expired before completion'),
+        },
+        { status: 'fulfilled', value: { kind: 'court_or_ccb_hold' } },
+      ])
       const after = await getCopyrightNoticePrivateAggregate(scene.notice.id)
       expect(after?.actionIntents.find(row => row.id === scene.restore.id)).toMatchObject({
-        state: boundary === 'denial' ? 'stale' : 'blocked',
+        state: 'blocked',
       })
-      expect(after?.submissions.filter(row => row.kind === 'court_or_ccb_hold')).toHaveLength(
-        boundary === 'denial' ? 0 : 1,
-      )
+      expect(after?.submissions.filter(row => row.kind === 'court_or_ccb_hold')).toHaveLength(1)
     },
   )
 })

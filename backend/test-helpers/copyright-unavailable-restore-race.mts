@@ -1,8 +1,8 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import { interceptPostgresTransactionsForTest } from './injected-postgres-transactions.mts'
 
-/** Both actual restoration transactions observe the other ground before either can lift it. */
-export async function raceUnavailableCopyrightRestores<Result>(
+/** Both restoration actors reach the real placement transition lock before either proceeds. */
+export async function raceCopyrightPlacementRestores<Result>(
   placementId: string,
   actions: [() => Promise<Result>, () => Promise<Result>],
 ): Promise<PromiseSettledResult<Result>[]> {
@@ -12,20 +12,19 @@ export async function raceUnavailableCopyrightRestores<Result>(
     transaction =>
       new Proxy(transaction, {
         async apply(target, receiver, args: Parameters<QueryExecutor>) {
-          const result = await Reflect.apply(target, receiver, args)
           const [statement, parameters] = args
           const text = typeof statement === 'string' ? statement : statement.text
           const values =
             typeof statement === 'string' ? (parameters ?? []) : (statement.values ?? [])
           if (
-            text.includes('/* hasOtherActiveCopyrightRestrictions */') &&
-            values.includes(placementId)
+            text.includes('/* lockCopyrightPlacementTransitions */') &&
+            values.some(value => Array.isArray(value) && value.includes(placementId))
           ) {
             arrived += 1
             if (arrived === 2) release.resolve()
             await release.promise
           }
-          return result
+          return Reflect.apply(target, receiver, args)
         },
       }),
   )

@@ -1,3 +1,4 @@
+import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
 import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
@@ -79,6 +80,16 @@ export async function replayFailedCopyrightActionIntent(input: {
   actorUserId: string
 }): Promise<boolean> {
   await using transaction = await beginTransaction()
+  const replayed = await recordCopyrightActionReplay(input, transaction)
+  if (replayed) await transaction.commit()
+  return replayed
+}
+
+async function recordCopyrightActionReplay(
+  input: { intentId: string; noticeId: string; actorUserId: string },
+  transaction: Awaited<ReturnType<typeof beginTransaction>>,
+): Promise<boolean> {
+  await lockCopyrightActionGenerationForWrite(input.noticeId, transaction)
   const { rows: events } = await transaction<{ id: string }>(sql`
     /* replayFailedCopyrightActionIntent:event */
     INSERT INTO copyright_notice_lifecycle_changes (
@@ -111,6 +122,5 @@ export async function replayFailedCopyrightActionIntent(input: {
   // A competing replay may win after the event's source read. Discard the tentative audit and
   // notice clock with this owned transaction when its conditional work-item update loses.
   if (rowCount !== 1) return false
-  await transaction.commit()
   return true
 }

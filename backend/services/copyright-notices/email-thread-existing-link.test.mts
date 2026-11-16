@@ -1,3 +1,6 @@
+import { eraseTestCopyrightEmailIntakeOriginal } from '@voucha/test-helpers/copyright-email-intake-retention'
+import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
+import { readTestCopyrightGuestEventClocks } from '@voucha/test-helpers/copyright-guest-filing-constraints'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
@@ -82,5 +85,44 @@ describe('copyright email thread ownership', () => {
     expect(await readCopyrightEmailIntakeNoticeLinks(reply.id)).toEqual(initialLink)
     expect(await readCopyrightIntakeRetentionState(reply.id)).toMatchObject({ ancestorCount: 0 })
     expect(await readCopyrightThreadReferenceState(reply.id)).toEqual(beforeReferences)
+  })
+
+  it('replays only the retained original case after its email source is erased', async () => {
+    const owner = await createRetentionMinimalCase()
+    const foreign = await createRetentionMinimalCase()
+    const intake = await createUnparsedCopyrightEmailIntake(
+      new Date(),
+      owner.initialEmailSesMessageId,
+    )
+    expect(
+      await linkCopyrightEmailIntakeToNotice({
+        intakeId: intake.id,
+        noticeId: owner.noticeId,
+        linkKind: 'initial',
+      }),
+    ).toBe(true)
+    await eraseTestCopyrightEmailIntakeOriginal(intake.id)
+    const before = await readCopyrightIntakeRetentionState(intake.id)
+    const clock = await readTestCopyrightGuestEventClocks(owner.noticeId)
+    expect(before).toMatchObject({ intakeExists: true, receiptExists: true, hasRawObject: false })
+    await expect(
+      linkCopyrightEmailIntakeToNotice({
+        intakeId: intake.id,
+        noticeId: owner.noticeId,
+        linkKind: 'initial',
+      }),
+    ).resolves.toBe(true)
+    await expect(
+      linkCopyrightEmailIntakeToNotice({
+        intakeId: intake.id,
+        noticeId: foreign.noticeId,
+        linkKind: 'initial',
+      }),
+    ).resolves.toBe(false)
+    expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([
+      { copyright_notice_id: owner.noticeId, link_kind: 'initial' },
+    ])
+    expect(await readCopyrightIntakeRetentionState(intake.id)).toEqual(before)
+    expect(await readTestCopyrightGuestEventClocks(owner.noticeId)).toEqual(clock)
   })
 })

@@ -6,7 +6,7 @@ import {
   createMixedUnavailableCopyrightScene,
 } from '@voucha/test-helpers/copyright-court-filing-scene'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { raceUnavailableCopyrightRestores } from '@voucha/test-helpers/copyright-unavailable-restore-race'
+import { raceCopyrightPlacementRestores } from '@voucha/test-helpers/copyright-unavailable-restore-race'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import { updateProfileImageId } from '../my/identity.mts'
 import { processCopyrightActionIntent } from './action-delivery-process.mts'
@@ -53,7 +53,7 @@ describe('unavailable copyright restoration authority', () => {
         }
       }
       const now = new Date(Date.now() + attempt * 86400_000)
-      const results = await raceUnavailableCopyrightRestores(first.surface.placementId, [
+      const results = await raceCopyrightPlacementRestores(first.surface.placementId, [
         () => processCopyrightActionIntent(intents[0]!.id, now),
         () => processCopyrightActionIntent(intents[1]!.id, now),
       ])
@@ -68,11 +68,12 @@ describe('unavailable copyright restoration authority', () => {
         active: 0,
         withheld: true,
       })
-      expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1)
-      expect(results).toContainEqual({
-        status: 'rejected',
-        reason: expect.objectContaining({ status: 409 }),
-      })
+      expect(results).toEqual([
+        { status: 'fulfilled', value: 'applied' },
+        { status: 'fulfilled', value: 'applied' },
+      ])
+      expect(active).toHaveLength(0)
+      expect(placement?.withheld).toBe(false)
     },
   )
 
@@ -147,7 +148,7 @@ describe('unavailable copyright restoration authority', () => {
     expect((await getImagePlacementForCopyright(filing.surface.placementId))?.withheld).toBe(false)
   })
 
-  it('serializes concurrent assessment-origin and filing-origin unavailable releases', async () => {
+  it('completes concurrent assessment-origin and filing-origin unavailable releases without conflicts', async () => {
     for (const [key, value] of Object.entries(await mediaDeliveryEdgeEnvironment()))
       vi.stubEnv(key, value)
     const { filing, submission, ordinary, intent } = await createMixedUnavailableCopyrightScene()
@@ -156,15 +157,14 @@ describe('unavailable copyright restoration authority', () => {
       row => row.action === 'restore' && row.state === 'pending',
     )
     if (!ready) throw new Error('Filing release did not create restoration work')
-    const results = await raceUnavailableCopyrightRestores(filing.surface.placementId, [
+    const results = await raceCopyrightPlacementRestores(filing.surface.placementId, [
       () => processCopyrightActionIntent(intent.id),
       () => processCopyrightActionIntent(ready.id),
     ])
-    expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1)
-    expect(results).toContainEqual({
-      status: 'rejected',
-      reason: expect.objectContaining({ status: 409 }),
-    })
+    expect(results).toEqual([
+      { status: 'fulfilled', value: 'applied' },
+      { status: 'fulfilled', value: 'applied' },
+    ])
     const active = (
       await Promise.all(
         [filing, ordinary].map(scene => getCopyrightNoticePrivateAggregate(scene.notice.id)),
@@ -172,7 +172,7 @@ describe('unavailable copyright restoration authority', () => {
     )
       .flatMap(aggregate => aggregate?.restrictions ?? [])
       .filter(restriction => restriction.lifted_at === null)
-    expect(active).toHaveLength(1)
-    expect((await getImagePlacementForCopyright(filing.surface.placementId))?.withheld).toBe(true)
+    expect(active).toHaveLength(0)
+    expect((await getImagePlacementForCopyright(filing.surface.placementId))?.withheld).toBe(false)
   })
 })

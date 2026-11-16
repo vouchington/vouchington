@@ -1,3 +1,4 @@
+import { lockCopyrightActionGenerationsForWrite } from './action-delivery-generation.mts'
 import { beginTransaction, read } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
@@ -31,6 +32,10 @@ export async function createDeterministicCopyrightCorrespondencesInTransaction(
   if (inputs.length === 0) return []
   for (const input of inputs)
     assert(input.bodyText.trim().length > 0, 422, 'Copyright correspondence body is required')
+  await lockCopyrightActionGenerationsForWrite(
+    inputs.map(input => input.noticeId),
+    transaction,
+  )
   const ids = inputs.map(() => uuidv7())
   const { rows } = await transaction<CopyrightCorrespondenceRecord>(
     sql`/* createDeterministicCopyrightCorrespondencesInTransaction */`.append(
@@ -137,6 +142,7 @@ async function insertOutboundCopyrightCorrespondence(
   input: Parameters<typeof createOutboundCopyrightCorrespondence>[0],
   transaction: TransactionQuery,
 ): Promise<CopyrightCorrespondenceRecord> {
+  await lockCopyrightActionGenerationsForWrite([input.noticeId], transaction)
   const id = input.id ?? uuidv7()
   const { rows } = await transaction<CopyrightCorrespondenceRecord>(
     sql`/* createOutboundCopyrightCorrespondence */`.append(

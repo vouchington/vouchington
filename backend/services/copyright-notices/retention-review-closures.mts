@@ -38,8 +38,10 @@ export async function closeCopyrightTerritorialEscalation(
     WHERE id = ${escalationId} AND copyright_notice_id = ${noticeId}`)
     ).rows[0]
   assert(result, 404, 'Copyright escalation not found')
-  if (rows[0]) await advanceCopyrightLastLegalActivityAt(query, locked)
-  await query.commit()
+  if (rows[0]) {
+    await advanceCopyrightLastLegalActivityAt(query, locked)
+    await query.commit()
+  }
   return result
 }
 
@@ -67,8 +69,10 @@ export async function resolveCopyrightEuSupervisedComplaint(
     WHERE id = ${complaintId} AND copyright_notice_id = ${noticeId}`)
     ).rows[0]
   assert(result, 404, 'Copyright supervised complaint not found')
-  if (rows[0]) await advanceCopyrightLastLegalActivityAt(query, locked)
-  await query.commit()
+  if (rows[0]) {
+    await advanceCopyrightLastLegalActivityAt(query, locked)
+    await query.commit()
+  }
   return result
 }
 

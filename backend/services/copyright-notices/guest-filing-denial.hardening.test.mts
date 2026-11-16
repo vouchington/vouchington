@@ -1,4 +1,7 @@
-import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
+import {
+  afterPostgresTransactionQueryForTest,
+  beforePostgresTransactionQueryForTest,
+} from '@voucha/test-helpers/injected-postgres-transactions'
 import { processCopyrightActionIntent } from './action-delivery-process.mts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as edge from '@modules/aws/media-delivery-registry'
@@ -128,7 +131,7 @@ describe('atomic court filing publication', () => {
     expect(history.some(row => row.change_type === 'completed')).toBe(false)
   })
 
-  it('rejects filing after a different case fully restores an already-withheld placement beyond its final tuple read', async () => {
+  it('stages the current denial after another case restores before its placement check', async () => {
     for (const [key, value] of Object.entries(await mediaDeliveryEdgeEnvironment()))
       vi.stubEnv(key, value)
     const first = await createCopyrightCourtFilingScene()
@@ -140,9 +143,10 @@ describe('atomic court filing publication', () => {
     )?.actionIntents.find(row => row.action === 'restore' && row.state === 'pending')
     if (!restoreIntent) throw new Error('Initial ground did not release restoration work')
     let restored: Awaited<ReturnType<typeof getImagePlacementForCopyright>> = null
-    const reset = afterPostgresTransactionQueryForTest(
-      'denyCopyrightCourtFilingPlacements:current',
-      values => values.includes(second.notice.id),
+    const reset = beforePostgresTransactionQueryForTest(
+      'lockCopyrightPlacementTransitions',
+      values =>
+        values.some(value => Array.isArray(value) && value.includes(first.surface.placementId)),
       async () => {
         await expect(processCopyrightActionIntent(restoreIntent.id)).resolves.toBe('applied')
         restored = await getImagePlacementForCopyright(first.surface.placementId)
@@ -159,13 +163,16 @@ describe('atomic court filing publication', () => {
       },
     )
     try {
-      await expect(second.file()).rejects.toMatchObject({ status: 409 })
+      await expect(second.file()).resolves.toMatchObject({ kind: 'court_or_ccb_hold' })
     } finally {
       reset()
     }
     if (!restored) throw new Error('Restore did not cross the owned filing boundary')
     const current = await getImagePlacementForCopyright(first.surface.placementId)
     if (!current) throw new Error('Current filing placement disappeared')
+    const [projection] = await readCopyrightFilingProjection(current.placementId)
+    if (!projection) throw new Error('Current filing denial missing')
+    await processMediaDeliveryRegistryRecord(projection.id)
     expect(
       await readMediaDeliveryRegistryItem(
         getImagePlacementDeliveryKey({
@@ -174,9 +181,12 @@ describe('atomic court filing publication', () => {
           imageId: current.imageId,
         }),
       ),
-    ).toMatchObject({ state: 'allow' })
-    const rejectedFiling = await getCopyrightNoticePrivateAggregate(second.notice.id)
-    expect(rejectedFiling?.submissions.filter(row => row.kind === 'court_or_ccb_hold')).toEqual([])
-    expect(rejectedFiling?.restrictions).toEqual([])
+    ).toMatchObject({ state: 'withheld' })
+    expect(current.withheld).toBe(true)
+    const admittedFiling = await getCopyrightNoticePrivateAggregate(second.notice.id)
+    expect(
+      admittedFiling?.submissions.filter(row => row.kind === 'court_or_ccb_hold'),
+    ).toHaveLength(1)
+    expect(admittedFiling?.restrictions).toHaveLength(1)
   })
 })

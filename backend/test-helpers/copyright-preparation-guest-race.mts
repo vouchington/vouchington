@@ -14,6 +14,7 @@ export async function raceCopyrightPreparationWithGuestFiling<Action, Filing>(in
   const filingReady = Promise.withResolvers<void>()
   const eventAttempt = Promise.withResolvers<void>()
   let prepared = false
+  let filingOwnsGeneration = false
   const pending: Promise<unknown>[] = []
   const release = () => {
     preparationReady.resolve()
@@ -24,13 +25,14 @@ export async function raceCopyrightPreparationWithGuestFiling<Action, Filing>(in
   const restore = interceptPostgresTransactionQueriesForTest(
     (text, values) => {
       if (text.includes('preemptCopyrightRestorations') && values.includes(input.noticeId)) {
+        filingOwnsGeneration = true
         filingReady.resolve()
         return true
       }
       if (
-        (text.includes('processCopyrightActionIntent:event') && values.includes(input.intentId)) ||
-        (text.includes('processCopyrightActionIntent:liftRestriction') &&
-          values.includes(input.restrictionId))
+        filingOwnsGeneration &&
+        text.includes('lockCopyrightActionGenerationForWrite') &&
+        values.includes(input.noticeId)
       )
         eventAttempt.resolve()
       return false
@@ -59,8 +61,8 @@ export async function raceCopyrightPreparationWithGuestFiling<Action, Filing>(in
       async query => {
         if (prepared) return
         if (
-          !query.text.includes('processCopyrightActionIntent:otherActiveRestrictions') ||
-          !query.values.includes(input.restrictionId)
+          !query.text.includes('readCopyrightActionPreparation') ||
+          !query.values.includes(input.intentId)
         )
           return
         prepared = true

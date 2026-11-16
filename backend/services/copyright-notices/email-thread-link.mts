@@ -1,3 +1,4 @@
+import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
@@ -9,7 +10,38 @@ import { readBoundedCopyrightEmailAncestorIds } from './email-thread-ancestor-gr
 import { copyrightEmailThreadChangedError } from './email-thread-graph.mts'
 import { maintainCopyrightEmailThreadLinkActivity } from './email-thread-link-activity.mts'
 
+/** New links own their trigger-written generation before case clocks or child writes. */
 export async function insertCopyrightEmailIntakeNoticeLink(
+  transaction: TransactionQuery,
+  input: Parameters<typeof insertCopyrightEmailIntakeNoticeLinkInGenerationScope>[1],
+): Promise<boolean> {
+  await beginCopyrightEmailLinkWrite(transaction, input.noticeId)
+  const result = await insertCopyrightEmailIntakeNoticeLinkInGenerationScope(transaction, input)
+  return finishCopyrightEmailLinkWrite(transaction, result)
+}
+
+async function beginCopyrightEmailLinkWrite(transaction: TransactionQuery, noticeId: string) {
+  await transaction(
+    sql`/* insertCopyrightEmailIntakeNoticeLink:savepoint */ SAVEPOINT copyright_email_link_write`,
+  )
+  await lockCopyrightActionGenerationForWrite(noticeId, transaction)
+}
+
+async function finishCopyrightEmailLinkWrite(
+  transaction: TransactionQuery,
+  result: { linked: boolean; inserted: boolean },
+): Promise<boolean> {
+  if (!result.inserted)
+    await transaction(
+      sql`/* insertCopyrightEmailIntakeNoticeLink:rollback */ ROLLBACK TO SAVEPOINT copyright_email_link_write`,
+    )
+  await transaction(
+    sql`/* insertCopyrightEmailIntakeNoticeLink:release */ RELEASE SAVEPOINT copyright_email_link_write`,
+  )
+  return result.linked
+}
+
+async function insertCopyrightEmailIntakeNoticeLinkInGenerationScope(
   transaction: TransactionQuery,
   input: {
     intakeId: string
@@ -17,7 +49,7 @@ export async function insertCopyrightEmailIntakeNoticeLink(
     linkKind: 'initial' | 'thread'
     matchedReference?: string | null
   },
-): Promise<boolean> {
+): Promise<{ linked: boolean; inserted: boolean }> {
   let authorizingAncestorIntakeIds: readonly string[] = []
   let matchedTokenId: string | null = null
   if (input.matchedReference) {
@@ -35,7 +67,7 @@ export async function insertCopyrightEmailIntakeNoticeLink(
       JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = intake.id
       WHERE intake.id = ${input.intakeId} AND receipt.erased_at IS NULL
     `)
-    if (live.length === 0) return false
+    if (live.length === 0) return { linked: false, inserted: false }
     const { rows: retained } = await transaction<{
       copyright_notice_id: string
       link_kind: string
@@ -44,22 +76,24 @@ export async function insertCopyrightEmailIntakeNoticeLink(
       WHERE copyright_notice_email_intake_id = ${input.intakeId}
     `)
     if (retained[0])
-      return (
-        retained[0].copyright_notice_id === input.noticeId &&
-        retained[0].link_kind === input.linkKind
-      )
-    if (live[0]!.reviewed) return false
-    if (live[0]!.raw_storage_object_id === null) return false
+      return {
+        linked:
+          retained[0].copyright_notice_id === input.noticeId &&
+          retained[0].link_kind === input.linkKind,
+        inserted: false,
+      }
+    if (live[0]!.reviewed) return { linked: false, inserted: false }
+    if (live[0]!.raw_storage_object_id === null) return { linked: false, inserted: false }
     const { rows: notices } =
       await transaction(sql`/* linkCopyrightEmailIntakeToNotice:liveNotice */
       SELECT id FROM copyright_notices
       WHERE id = ${input.noticeId} AND evidence_erased_at IS NULL LIMIT 1`)
-    if (!notices[0]) return false
+    if (!notices[0]) return { linked: false, inserted: false }
     const { rows: retired } = await transaction(sql`/* linkCopyrightEmailIntakeToNotice:retired */
       SELECT 1 FROM copyright_notice_thread_retention_activities
       WHERE copyright_notice_id = ${input.noticeId}
         AND retired_before_intake_bound > ${input.intakeId}::uuid LIMIT 1`)
-    if (retired[0]) return false
+    if (retired[0]) return { linked: false, inserted: false }
     const ancestors = await readBoundedCopyrightEmailAncestorIds(
       transaction,
       input.intakeId,
@@ -86,7 +120,7 @@ export async function insertCopyrightEmailIntakeNoticeLink(
         AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
           WHERE receipt.id = ${input.intakeId} AND receipt.erased_at IS NULL)
     `)
-    if (live.length === 0) return false
+    if (live.length === 0) return { linked: false, inserted: false }
     if (live[0]!.raw_storage_object_id === null) {
       const { rows: retained } = await transaction<{
         copyright_notice_id: string
@@ -94,10 +128,12 @@ export async function insertCopyrightEmailIntakeNoticeLink(
       }>(sql`/* linkCopyrightEmailIntakeToNotice:existingInitial */
         SELECT copyright_notice_id, link_kind FROM copyright_notice_email_intake_notice_links
         WHERE copyright_notice_email_intake_id = ${input.intakeId}`)
-      return (
-        retained[0]?.copyright_notice_id === input.noticeId &&
-        retained[0]?.link_kind === input.linkKind
-      )
+      return {
+        linked:
+          retained[0]?.copyright_notice_id === input.noticeId &&
+          retained[0]?.link_kind === input.linkKind,
+        inserted: false,
+      }
     }
   }
   let inserted: Array<{ copyright_notice_id: string; link_kind: string }>
@@ -138,5 +174,5 @@ export async function insertCopyrightEmailIntakeNoticeLink(
   const linked =
     !!inserted[0] ||
     (retained?.copyright_notice_id === input.noticeId && retained?.link_kind === input.linkKind)
-  return linked
+  return { linked, inserted: inserted.length > 0 }
 }

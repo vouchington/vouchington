@@ -1,3 +1,4 @@
+import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
@@ -21,6 +22,7 @@ export async function liftCopyrightRestrictionWithoutSetter(input: {
   assert(currentUserCanLiftCopyrightRestriction(input.currentUser), 403, 'Forbidden')
   assert(input.rationale.trim() && input.rationale.length <= 10_000, 422, 'rationale is required')
   await using transaction = await beginTransaction()
+  await lockCopyrightActionGenerationForWrite(input.noticeId, transaction)
   const { rows: placementRows } = await transaction<{ placement_id: string }>(sql`
     /* liftCopyrightRestrictionWithoutSetter:findPlacement */
     SELECT target.placement_id FROM copyright_restrictions restriction
@@ -41,7 +43,7 @@ export async function liftCopyrightRestrictionWithoutSetter(input: {
     JOIN copyright_notice_targets target ON target.copyright_notice_id = notice.id
     JOIN copyright_restrictions restriction ON restriction.copyright_notice_target_id = target.id
     WHERE notice.id = ${input.noticeId} AND restriction.id = ${input.restrictionId}
-    FOR UPDATE OF notice, target, restriction
+    FOR UPDATE OF restriction
   `)
   const restriction = locked[0]
   assert(restriction, 404, 'Copyright restriction not found')

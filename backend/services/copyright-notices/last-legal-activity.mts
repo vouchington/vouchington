@@ -1,3 +1,4 @@
+import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 
@@ -11,7 +12,7 @@ export type LockedCopyrightNotice = {
 }
 
 /**
- * Take the notice row lock first in every transaction that writes a legal fact. Holds, closures
+ * Own the trigger-written blocker generation before the notice written by each legal fact. Holds, closures
  * and purges lock the notice with FOR UPDATE, so a writer that locked children first and upgraded
  * to the notice at the end would deadlock against them.
  */
@@ -19,6 +20,7 @@ export async function lockCopyrightNoticeForLegalWrite(
   query: TransactionQuery,
   noticeId: string,
 ): Promise<LockedCopyrightNotice | null> {
+  await lockCopyrightActionGenerationForWrite(noticeId, query)
   const { rows } = await query<{ jurisdiction: string }>(sql`/* lockCopyrightNoticeForLegalWrite */
     SELECT jurisdiction FROM copyright_notices WHERE id = ${noticeId} FOR NO KEY UPDATE`)
   return rows[0]

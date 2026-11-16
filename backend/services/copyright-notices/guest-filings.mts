@@ -1,4 +1,4 @@
-import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
 import {
   enqueueBulkApplyCopyrightActions,
   enqueueBulkApplyMediaDeliveryRegistryRecords,
@@ -21,7 +21,7 @@ function guestFilingEvent(kind: GuestFilingKind): string {
   return `${kind}_received`
 }
 
-async function lockGuestCapability(
+async function readGuestCapability(
   transaction: OwnedTransaction,
   input: { noticeId: string; token: string; now: Date },
 ): Promise<string> {
@@ -34,7 +34,6 @@ async function lockGuestCapability(
       AND capability.token_hash = ${hashToken(copyrightGuestCapabilityPurpose, input.token)}
       AND capability.revoked_at IS NULL
       AND capability.expires_at > ${input.now}
-    FOR UPDATE OF capability
   `,
   )
   const capability = rows[0]
@@ -55,7 +54,7 @@ async function assertNoGuestCourtHold(transaction: OwnedTransaction, capabilityI
   assert(!rows[0], 409, 'This guest capability already filed a court or CCB hold')
 }
 
-async function appendCopyrightGuestFilingInOwnedTransaction(input: {
+export async function appendCopyrightGuestFiling(input: {
   noticeId: string
   token: string
   now: Date
@@ -69,12 +68,11 @@ async function appendCopyrightGuestFilingInOwnedTransaction(input: {
       ? JSON.stringify({ summary: input.statement })
       : input.statement
   const submissionId = uuidv7()
-  await using transaction = await beginTransaction(
-    input.kind === 'court_or_ccb_hold' ? { serializable: true } : {},
-  )
+  await using transaction = await beginTransaction()
+  await lockCopyrightActionGenerationForWrite(input.noticeId, transaction)
   let withholdIds: string[] = []
   let denialRecordIds: string[] = []
-  const capabilityId = await lockGuestCapability(transaction, input)
+  const capabilityId = await readGuestCapability(transaction, input)
   if (input.kind === 'court_or_ccb_hold') await assertNoGuestCourtHold(transaction, capabilityId)
   const lifecycleEvent = sql`/* appendCopyrightGuestFiling:event */
     INSERT INTO copyright_notice_lifecycle_changes (
@@ -82,7 +80,7 @@ async function appendCopyrightGuestFilingInOwnedTransaction(input: {
     ) VALUES (${input.noticeId}, ${guestFilingEvent(input.kind)}, ${submissionId})
   `
   if (input.kind === 'court_or_ccb_hold') {
-    // The real lifecycle clock precedes every blocker-generation write. The same-case source
+    // The generation row is owned before the real lifecycle clock. The same-case source
     // FK is checked at commit after the preallocated submission identity has been inserted.
     await transaction(sql`/* appendCopyrightGuestFiling:deferSource */
       SET CONSTRAINTS fk_copyright_lifecycle_events__submission_notice DEFERRED
@@ -132,13 +130,4 @@ async function appendCopyrightGuestFilingInOwnedTransaction(input: {
   if (denialRecordIds.length > 0) void enqueueBulkApplyMediaDeliveryRegistryRecords(denialRecordIds)
   if (withholdIds.length > 0) void enqueueBulkApplyCopyrightActions(withholdIds)
   return submission
-}
-
-export async function appendCopyrightGuestFiling(
-  input: Parameters<typeof appendCopyrightGuestFilingInOwnedTransaction>[0],
-): ReturnType<typeof appendCopyrightGuestFilingInOwnedTransaction> {
-  return conflictOnSerializationFailure(
-    () => appendCopyrightGuestFilingInOwnedTransaction(input),
-    'Concurrent copyright filing changed the publication authority',
-  )
 }

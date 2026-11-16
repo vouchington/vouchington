@@ -1,3 +1,4 @@
+import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
 import { insertCopyrightActionIntent } from './action-intent-insertion.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
@@ -11,14 +12,18 @@ export async function createCopyrightRestoreIntentForReversalInTransaction(
   restrictionId: string,
   transaction: TransactionQuery,
 ): Promise<CopyrightActionIntentRecord> {
-  const { rows: placementRows } = await transaction<{ placement_id: string }>(sql`
+  const { rows: placementRows } = await transaction<{
+    placement_id: string
+    copyright_notice_id: string
+  }>(sql`
     /* createCopyrightRestoreIntentForReversalInTransaction:findPlacement */
-    SELECT target.placement_id FROM copyright_restrictions restriction
+    SELECT target.placement_id, target.copyright_notice_id FROM copyright_restrictions restriction
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
     WHERE restriction.id = ${restrictionId}
   `)
   const targetPlacement = placementRows[0]
   assert(targetPlacement, 404, 'Copyright restriction not found')
+  await lockCopyrightActionGenerationForWrite(targetPlacement.copyright_notice_id, transaction)
   const { rows } = await transaction<{
     copyright_notice_id: string
     placement_id: string
@@ -33,7 +38,6 @@ export async function createCopyrightRestoreIntentForReversalInTransaction(
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
     JOIN copyright_notices notice ON notice.id = target.copyright_notice_id
     WHERE restriction.id = ${restrictionId}
-    FOR UPDATE OF notice, target, restriction
   `),
   )
   const restriction = rows[0]

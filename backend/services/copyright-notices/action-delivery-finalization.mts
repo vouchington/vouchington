@@ -103,7 +103,8 @@ async function completeCopyrightActionAndInvalidate(input: {
   legal: Parameters<typeof hasCopyrightActionBlocker>[0]
   transaction: Awaited<ReturnType<typeof beginTransaction>>
 }): Promise<void> {
-  // Write the notice clock before blocker generation. A lost lease throws from completion,
+  // Own the trigger-written generation before the notice clock and terminal work mutation.
+  // A lost lease throws from completion,
   // and the owning transaction discards the tentative lifecycle event with its clock writes.
   await runSequentially([
     () =>

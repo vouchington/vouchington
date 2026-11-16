@@ -46,8 +46,8 @@ export async function insertAdmittedCopyrightEmailSubmission(
   denialRecordIds: string[]
 }> {
   const submissionId = uuidv7()
-  // The caller already owns the notice it writes. Preempt under that notice before inserting
-  // the admitted filing, matching completion's notice-before-work order.
+  // The caller owns the generation row that these writes update through their triggers.
+  // Preempt its work before applying placement effects, matching restoration's write order.
   if (input.kind === 'court_or_ccb_hold')
     await preemptCopyrightRestorations(pending.notice_id, transaction)
   const { rows: submissions } = await transaction<{
