@@ -30,7 +30,7 @@
     "@services/user-warnings": "workspace:^",
     "@services/users": "workspace:^",
     "@vouchington/ai": "^0.4.1",
-    "openai": "^7.43.0"
+    "openai": "^7.57.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"
