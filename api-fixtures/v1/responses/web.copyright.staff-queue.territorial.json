@@ -68,6 +68,7 @@
       "received_at": "2026-10-04T09:00:00.000Z",
       "restrictions": [
         {
+          "copyright_notice_submission_id": null,
           "id": "00000000-0000-7000-8000-00000000190e",
           "imposed_at": "2026-10-04T10:30:00.000Z",
           "status": "confirmed",

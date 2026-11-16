@@ -34,7 +34,7 @@ describe('guest copyright filing and restore completion', () => {
     vi.unstubAllEnvs()
   })
 
-  it('commits a guest court filing racing a completion that already wrote its event', async () => {
+  it('rejects a guest court filing whose snapshot predates the completed lifecycle write', async () => {
     installTestMediaDeliveryEdge()
     const scene = await openHeldCounterNoticeRestore()
     const capability = await issueCopyrightGuestCapability({
@@ -57,12 +57,18 @@ describe('guest copyright filing and restore completion', () => {
         }),
     })
     expect(outcomes[0]).toEqual({ status: 'fulfilled', value: 'applied' })
-    expect(outcomes[1]).toMatchObject({ status: 'fulfilled', value: { kind: 'court_or_ccb_hold' } })
+    expect(outcomes[1]).toMatchObject({
+      status: 'rejected',
+      reason: { status: 409, cause: { code: '40001' } },
+    })
     const after = await getCopyrightNoticePrivateAggregate(scene.notice.id)
-    expect(after?.submissions.filter(row => row.kind === 'court_or_ccb_hold')).toHaveLength(1)
+    expect(after?.actionIntents.find(row => row.id === scene.restore.id)).toMatchObject({
+      state: 'completed',
+    })
+    expect(after?.submissions.filter(row => row.kind === 'court_or_ccb_hold')).toHaveLength(0)
     expect(
       after?.lifecycleEvents.filter(row => row.change_type === 'court_or_ccb_hold_received'),
-    ).toHaveLength(1)
+    ).toHaveLength(0)
   })
 
   it('retains a guest court filing admitted before the pending completion event', async () => {
@@ -149,31 +155,27 @@ describe('guest copyright filing and restore completion', () => {
             statement: 'A federal court proceeding has commenced.',
           }),
       })
-      const acceptable =
+      expect(outcomes).toMatchObject(
         boundary === 'denial'
           ? [
-              { status: 'fulfilled', value: 'not_claimed' },
-              {
-                status: 'rejected',
-                reason: new Error('Copyright action lease expired before completion'),
-              },
+              { status: 'fulfilled', value: 'denied' },
+              { status: 'rejected', reason: { status: 409, cause: { code: '40001' } } },
             ]
           : [
               {
                 status: 'rejected',
                 reason: new Error('Copyright action lease expired before completion'),
               },
-            ]
-      expect(acceptable).toContainEqual(outcomes[0])
-      expect(outcomes[1]).toMatchObject({
-        status: 'fulfilled',
-        value: { kind: 'court_or_ccb_hold' },
+              { status: 'fulfilled', value: { kind: 'court_or_ccb_hold' } },
+            ],
+      )
+      const after = await getCopyrightNoticePrivateAggregate(scene.notice.id)
+      expect(after?.actionIntents.find(row => row.id === scene.restore.id)).toMatchObject({
+        state: boundary === 'denial' ? 'stale' : 'blocked',
       })
-      expect(
-        (await getCopyrightNoticePrivateAggregate(scene.notice.id))?.actionIntents.find(
-          row => row.id === scene.restore.id,
-        ),
-      ).toMatchObject({ state: 'blocked' })
+      expect(after?.submissions.filter(row => row.kind === 'court_or_ccb_hold')).toHaveLength(
+        boundary === 'denial' ? 0 : 1,
+      )
     },
   )
 })

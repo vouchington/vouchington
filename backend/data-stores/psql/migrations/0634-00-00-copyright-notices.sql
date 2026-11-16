@@ -133,7 +133,8 @@ CREATE TABLE copyright_notice_target_images (
 CREATE TABLE copyright_restrictions (
   copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  authorizing_assessment_id uuid NOT NULL,
+  authorizing_assessment_id uuid,
+  copyright_notice_submission_id uuid,
   is_authorizing_assessment_automated boolean NOT NULL DEFAULT false,
   copyright_notice_target_id uuid NOT NULL,
   imposed_at timestamptz NOT NULL,
@@ -148,6 +149,13 @@ CREATE TABLE copyright_restrictions (
   human_reviewed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT chk_copyright_restrictions__authorizing_source CHECK (
+    (authorizing_assessment_id IS NOT NULL AND copyright_notice_submission_id IS NULL)
+    OR (authorizing_assessment_id IS NULL AND copyright_notice_submission_id IS NOT NULL)
+  ),
+  CONSTRAINT chk_copyright_restrictions__filing_assessment_automation CHECK (
+    copyright_notice_submission_id IS NULL OR NOT is_authorizing_assessment_automated
+  ),
   CHECK (lifted_at IS NULL OR lifted_at >= imposed_at),
   CONSTRAINT chk_copyright_restrictions__administrator_lift CHECK (
     (administrator_lift_decided_at IS NULL AND administrator_lift_decided_by_id IS NULL
@@ -206,6 +214,17 @@ CREATE TABLE copyright_notice_submissions (
       AND (current_assessed_by_id IS NOT NULL OR current_assessment_form_screening_id IS NOT NULL))
   )
 );
+
+ALTER TABLE copyright_restrictions
+  ADD CONSTRAINT fk_copyright_restrictions__filing_submission_notice
+  FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id)
+  REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE copyright_restrictions
+  VALIDATE CONSTRAINT fk_copyright_restrictions__filing_submission_notice;
+CREATE INDEX idx_copyright_restrictions__filing_submission_notice
+  ON copyright_restrictions(copyright_notice_submission_id, copyright_notice_id)
+  WHERE copyright_notice_submission_id IS NOT NULL;
+COMMENT ON COLUMN copyright_restrictions.copyright_notice_submission_id IS 'Immutable court or CCB filing that originated withholding pending its legal-hold assessment; exclusive with assessment-origin restrictions.';
 
 -- A case-level generation fences paged legal-party proof against newly introduced parties.
 CREATE TABLE copyright_notice_thread_party_generations (

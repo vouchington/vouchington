@@ -1,3 +1,5 @@
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
@@ -39,7 +41,7 @@ type AdmittedCorrespondence = {
   correspondence_id: string
 }
 
-export async function admitCopyrightEmailCorrespondence(input: {
+async function admitCopyrightEmailCorrespondenceInOwnedTransaction(input: {
   currentUser: PrivateUser
   intakeId: string
   kind: CopyrightEmailCorrespondenceKind
@@ -74,7 +76,9 @@ export async function admitCopyrightEmailCorrespondence(input: {
     422,
     'Review rationale is required',
   )
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction(
+    input.kind === 'court_or_ccb_hold' ? { serializable: true } : {},
+  )
   // The immutable thread link identifies the parent before any intake lock. Agent
   // completion and retention take that same parent-to-child order.
   const { rows: notices } = await transaction<{ jurisdiction: string }>(sql`
@@ -134,11 +138,8 @@ export async function admitCopyrightEmailCorrespondence(input: {
     422,
     'Correspondence kind does not apply to this jurisdiction',
   )
-  const { submissionId, correspondenceId } = await insertAdmittedCopyrightEmailSubmission(
-    transaction,
-    input,
-    pending,
-  )
+  const { submissionId, correspondenceId, withholdIntentIds } =
+    await insertAdmittedCopyrightEmailSubmission(transaction, input, pending)
   const rationaleCiphertext = encryptSecret(
     input.rationale,
     copyrightEmailIntakePurpose(pending.amazon_ses_message_id),
@@ -173,10 +174,20 @@ export async function admitCopyrightEmailCorrespondence(input: {
     })
   }
   await transaction.commit()
+  if (withholdIntentIds.length > 0) void enqueueBulkApplyCopyrightActions(withholdIntentIds)
   return {
     noticeId: pending.notice_id,
     submissionId: submissionId,
     correspondenceId: correspondenceId,
     isDuplicate: false,
   }
+}
+
+export async function admitCopyrightEmailCorrespondence(
+  input: Parameters<typeof admitCopyrightEmailCorrespondenceInOwnedTransaction>[0],
+): ReturnType<typeof admitCopyrightEmailCorrespondenceInOwnedTransaction> {
+  return conflictOnSerializationFailure(
+    () => admitCopyrightEmailCorrespondenceInOwnedTransaction(input),
+    'Concurrent copyright filing changed the publication authority',
+  )
 }

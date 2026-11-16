@@ -1,3 +1,4 @@
+import type { LockedCopyrightActionDelivery } from './action-delivery-locking-types.mts'
 import { beginTransaction } from '@data-stores/psql'
 import {
   getImagePlacementForCopyright,
@@ -5,10 +6,7 @@ import {
   withholdImagePlacementForCopyright,
   type CopyrightImagePlacementMutation,
 } from '@services/images/placements'
-import {
-  completeCopyrightActionIntentInTransaction,
-  type LockedCopyrightActionDelivery,
-} from './action-delivery-state.mts'
+import { completeCopyrightActionIntentInTransaction } from './action-delivery-state.mts'
 
 type CurrentPlacement = Exclude<
   CopyrightImagePlacementMutation,
@@ -21,7 +19,7 @@ export async function mutateCopyrightPlacement(input: {
   current: CurrentPlacement
   now: Date
   query: Awaited<ReturnType<typeof beginTransaction>>
-}): Promise<{ placement: CurrentPlacement } | { terminal: 'stale' }> {
+}): Promise<{ placement: CurrentPlacement } | { terminal: 'stale'; failureMessage: string }> {
   const mutation =
     (input.legal.action === 'withhold' && input.current.withheld) ||
     (input.legal.action === 'restore' && !input.current.withheld)
@@ -56,7 +54,7 @@ export async function mutateCopyrightPlacement(input: {
     failureMessage: `Placement transition was ${mutation.status}.`,
     query: input.query,
   })
-  return { terminal: 'stale' }
+  return { terminal: 'stale', failureMessage: `Placement transition was ${mutation.status}.` }
 }
 
 export function isCurrentPlacementForIntent(

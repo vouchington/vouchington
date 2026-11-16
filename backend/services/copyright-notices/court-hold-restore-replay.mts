@@ -1,3 +1,4 @@
+import type { LockedCopyrightActionDelivery } from './action-delivery-locking-types.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import sql from 'sql-template-strings'
@@ -7,10 +8,7 @@ import {
   readCopyrightActionDeadline,
   type CopyrightActionFacts,
 } from './action-delivery-facts.mts'
-import {
-  hasCopyrightActionBlocker,
-  type LockedCopyrightActionDelivery,
-} from './action-delivery-locking.mts'
+import { hasCopyrightActionBlocker } from './action-delivery-locking.mts'
 import { isCurrentPlacementForIntent } from './action-delivery-mutation.mts'
 import { reopenCopyrightRestoreIntentInTransaction } from './action-delivery-state.mts'
 
@@ -100,7 +98,13 @@ async function replayOriginalRestoreWithFacts(
   if (!legal || (await hasCopyrightActionBlocker(legal, input.now, input.query))) return false
   if (!(await originalRestorationAuthorityIsValid(legal, input.now, input.query))) return false
   const current = await getImagePlacementForCopyright(legal.placement_id, { query: input.query })
-  if (!isCurrentPlacementForIntent(current, legal)) return false
+  const retainedUnavailable =
+    legal.copyright_notice_submission_id &&
+    current?.deleted &&
+    current.imageId === legal.image_id &&
+    (current.revision === legal.expected_placement_revision ||
+      current.revision === legal.expected_placement_revision + 1)
+  if (!isCurrentPlacementForIntent(current, legal) && !retainedUnavailable) return false
   const { rows: images } = await input.query<{ ready: boolean }>(sql`
     /* replayEligibleCopyrightRestoreIntentsInTransaction:readiness */
     SELECT upload_completed_at IS NOT NULL AND deleted_at IS NULL
@@ -121,7 +125,8 @@ async function originalRestorationAuthorityIsValid(
   if (
     legal.human_review_action === 'reverse' ||
     legal.reversal_authorized ||
-    legal.hold_resolution_authorized
+    legal.hold_resolution_authorized ||
+    legal.filing_release_authorized
   )
     return true
   if (

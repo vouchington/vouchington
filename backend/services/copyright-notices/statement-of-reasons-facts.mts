@@ -94,7 +94,11 @@ export function copyrightStatementFactsSql(
        OR EXISTS (SELECT 1 FROM copyright_restrictions restriction
         WHERE restriction.id = authority.restriction_id
           AND restriction.copyright_notice_id = notice.id
-          AND restriction.is_authorizing_assessment_automated)) AS automated_decision, `)
+          AND (restriction.is_authorizing_assessment_automated
+            OR (restriction.copyright_notice_submission_id IS NOT NULL AND NOT EXISTS (
+              SELECT 1 FROM copyright_notice_legal_hold_assessments filing_assessment
+              WHERE filing_assessment.copyright_notice_submission_id = restriction.copyright_notice_submission_id
+            ))))) AS automated_decision, `)
     .append(aiGuidanceSql())
     .append(
       sql` AS ai_guidance,

@@ -23,10 +23,7 @@ import {
   publishPersistedDeliveryRecord,
   publishPersistedDeliveryRecords,
 } from './delivery-registry-acknowledgement.mts'
-import {
-  imageDeliveryIsAuthorized,
-  lockImageDeliveryLegalAuthority,
-} from './delivery-authority.mts'
+import { imageDeliveryIsAuthorized } from './delivery-authority.mts'
 
 type PlacementDenial = { placementId: string; revision: number; imageId: string }
 
@@ -56,6 +53,22 @@ export async function prepublishImagePlacementDenialBatch(
       placementIds: inputs.map(input => input.placementId),
       placementOnly: true,
     })
+  await publishImagePlacementDenialTuples(inputs, query)
+}
+
+/** Publish every required denial through only the registry and its projection rows. */
+export async function publishImagePlacementDenialTuples(
+  requested: readonly PlacementDenial[],
+  query: QueryExecutor,
+): Promise<void> {
+  const inputs = [
+    ...new Map(
+      requested.map(
+        input => [`${input.placementId}:${input.revision}:${input.imageId}`, input] as const,
+      ),
+    ).values(),
+  ]
+  if (inputs.length === 0) return
   if (isMediaDeliveryRegistryPublicationEnabled()) await recordImageDeliveryRepairMarkers(inputs)
   const staged = await stageImagePlacementDeliveryRecords(
     inputs.map(input => ({ ...input, state: 'withheld' as const })),
@@ -67,7 +80,7 @@ export async function prepublishImagePlacementDenialBatch(
   for (let offset = 0; offset < recordIds.length; offset += batchSize) {
     const batchIds = recordIds.slice(offset, offset + batchSize)
     // oxlint-disable-next-line no-await-in-loop -- each constant-size group is claimed, published and acknowledged inside its own lease
-    const claims = await claimMediaDeliveryProjections(query, batchIds) // no-mistakes-disable-line query-reached-per-item: KEEP: per-image iterations ≤ ceil(max_placements_per_image (hard max 1000) / edge_publish_batch_size); backend/services/media-delivery-safety/work-limits.mts:13. The denial must reach the edge before the owner mutation.
+    const claims = await claimMediaDeliveryProjections(query, batchIds) // no-mistakes-disable-line query-reached-per-item: KEEP: the owner-authorized atomic case/owner mutation requires every supplied tuple; each sequential provider chunk is bounded by edge_publish_batch_size (hard max 16), backend/services/media-delivery-safety/work-limits.mts. No suffix may remain allowed at commit.
     if (claims.length !== batchIds.length) {
       const claimed = new Set(claims.map(claim => claim.media_delivery_registry_record_id))
       throw new Error(
@@ -75,7 +88,7 @@ export async function prepublishImagePlacementDenialBatch(
       )
     }
     // oxlint-disable-next-line no-await-in-loop -- acknowledge before the next group's lease starts
-    await publishPersistedDeliveryRecords(claims, query) // no-mistakes-disable-line query-reached-per-item: KEEP: per-image iterations ≤ ceil(max_placements_per_image (hard max 1000) / edge_publish_batch_size); backend/services/media-delivery-safety/work-limits.mts:13. The denial must reach the edge before the owner mutation.
+    await publishPersistedDeliveryRecords(claims, query) // no-mistakes-disable-line query-reached-per-item: KEEP: the owner-authorized atomic case/owner mutation requires every supplied tuple; each sequential provider chunk is bounded by edge_publish_batch_size (hard max 16), backend/services/media-delivery-safety/work-limits.mts. No suffix may remain allowed at commit.
   }
 }
 
@@ -106,12 +119,10 @@ async function publishCommittedDeliveryRecord(
     throw new Error(
       `Missing staged image placement delivery record ${mediaDeliveryRegistryRecordId}`,
     )
-  // ast-grep-ignore: no-three-sequential-awaits -- Placement ownership must be locked before legal-notice authority locks; the registry reread must use a fresh snapshot after those blocking fences.
   await lockImageDeliveryMutation(query, {
     placementIds: [record.placement_id],
     placementOnly: true,
   })
-  await lockImageDeliveryLegalAuthority(query, record)
   const current = await readCurrentPlacementDeliveryRecord(query, mediaDeliveryRegistryRecordId)
   if (!current)
     throw new Error(

@@ -85,6 +85,7 @@ export async function raceCopyrightFinalizationWithGuestFiling<Action, Filing>(i
   filing: () => Promise<Filing>
 }): Promise<[PromiseSettledResult<Action>, PromiseSettledResult<Filing>]> {
   const atFiling = Promise.withResolvers<number>()
+  const renewalReached = Promise.withResolvers<void>()
   const resumeFiling = Promise.withResolvers<void>()
   let filingProcessId: number | undefined
   const pending: Promise<unknown>[] = []
@@ -101,6 +102,7 @@ export async function raceCopyrightFinalizationWithGuestFiling<Action, Filing>(i
             input.boundary === 'denial' &&
             text.includes('/* renewCopyrightActionIntentLease */')
           ) {
+            renewalReached.resolve()
             if (filingProcessId === undefined) throw new Error('Filing holder was not captured')
             return runTestCopyrightRenewalBoundary(target, args, filingProcessId, () =>
               resumeFiling.resolve(),
@@ -139,10 +141,14 @@ export async function raceCopyrightFinalizationWithGuestFiling<Action, Filing>(i
       onTestFinished(() => resumeFiling.resolve())
       const action = input.action()
       pending.push(action)
-      const [[actionOutcome], [filingOutcome]] = await Promise.all([
-        Promise.allSettled([action]),
-        filingSettled,
+      const actionSettled = Promise.allSettled([action])
+      await Promise.race([
+        renewalReached.promise,
+        actionSettled.then(() => {
+          throw new Error('Copyright finalization settled before its lease-renewal boundary')
+        }),
       ])
+      const [[actionOutcome], [filingOutcome]] = await Promise.all([actionSettled, filingSettled])
       return [actionOutcome!, filingOutcome!]
     }
     return await withTestOwnedPostgresWait(

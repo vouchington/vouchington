@@ -88,6 +88,7 @@ export const webCopyrightTerritorialStaffApiFixtureCases: ApiFixtureCase[] = [
           restrictions: [
             {
               id: '00000000-0000-7000-8000-00000000190e',
+              copyright_notice_submission_id: null,
               target_id: '00000000-0000-7000-8000-00000000190b',
               imposed_at: '2026-10-04T10:30:00.000Z',
               status: 'confirmed',

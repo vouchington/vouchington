@@ -50,7 +50,7 @@ function copyrightRestorationCauseText(cause: CopyrightStatementInput['restorati
     case 'appeal_reversed':
       return 'the appeal reversed the decision'
     case 'hold_resolved':
-      return 'the legal hold was resolved'
+      return 'the court or CCB filing no longer prevents restoration'
     case 'administrator_lift':
       return 'an administrator lifted the restriction after review'
     case 'complaint_reversed':

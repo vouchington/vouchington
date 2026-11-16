@@ -60,12 +60,14 @@ export function makeBusyUsStaffCase(): CopyrightStaffQueueItem {
       {
         id: 'restriction-1',
         target_id: 'target-1',
+        copyright_notice_submission_id: null,
         imposed_at: '2026-10-02T00:00:00Z',
         status: 'pending_review',
       },
       {
         id: 'restriction-2',
         target_id: 'target-2',
+        copyright_notice_submission_id: null,
         imposed_at: '2026-10-02T00:00:00Z',
         status: 'confirmed',
       },

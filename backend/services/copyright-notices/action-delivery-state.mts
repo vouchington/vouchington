@@ -13,13 +13,13 @@ export {
   hasOtherActiveCopyrightRestrictions,
   insertCopyrightActionLifecycleEvent,
   liftCopyrightRestrictionInTransaction,
-  lockCopyrightActionDelivery,
 } from './action-delivery-locking.mts'
-export type { LockedCopyrightActionDelivery } from './action-delivery-locking.mts'
 export { failCopyrightActionIntent } from './action-delivery-completion.mts'
 
-const MAX_ATTEMPTS = 5
-const CLAIM_TIMEOUT_MS = 5 * 60 * 1000
+export {
+  claimCopyrightActionIntent,
+  renewCopyrightActionIntentLease,
+} from './action-delivery-claims.mts'
 
 export type CopyrightClaimedActionIntent = Pick<
   CopyrightActionIntentRecord,
@@ -28,68 +28,6 @@ export type CopyrightClaimedActionIntent = Pick<
   lease_token: string
   placement_id: string
   image_id: string
-}
-
-export async function claimCopyrightActionIntent(
-  intentId: string,
-  now: Date,
-): Promise<CopyrightClaimedActionIntent | null> {
-  await using transaction = await beginTransaction()
-  const { rows } = await transaction<CopyrightClaimedActionIntent>(sql`
-    /* claimCopyrightActionIntent */
-    WITH exhausted AS (
-      UPDATE copyright_notice_action_work_items intent
-      SET completed_at = ${now}, completed_at_reason = 'failed',
-        failure_message = 'A claimed copyright action exceeded the maximum delivery attempts.',
-        available_at = clock_timestamp()
-      WHERE intent.id = ${intentId}
-        AND intent.state = 'claimed'
-        AND intent.lease_expires_at <= ${now}
-        AND intent.attempt_count >= ${MAX_ATTEMPTS}
-    ), candidate AS (
-      SELECT intent.id
-      FROM copyright_notice_action_work_items intent
-      WHERE intent.id = ${intentId}
-        AND (
-          (intent.state = 'pending' AND (intent.available_at IS NULL OR intent.available_at <= ${now}))
-          OR (intent.state = 'claimed' AND intent.lease_expires_at <= ${now})
-        )
-      FOR UPDATE SKIP LOCKED
-    ), claimed AS (
-      UPDATE copyright_notice_action_work_items intent
-    SET lease_token = uuidv7(), attempt_count = intent.attempt_count + 1,
-      leased_at = clock_timestamp(), lease_expires_at = clock_timestamp() + ${CLAIM_TIMEOUT_MS} * interval '1 millisecond', available_at = clock_timestamp(), failure_message = NULL
-    FROM candidate
-    WHERE intent.id = candidate.id
-      AND intent.attempt_count < ${MAX_ATTEMPTS}
-      RETURNING intent.id, intent.copyright_restriction_id, intent.lease_token, intent.action,
-        intent.expected_placement_revision
-    )
-    SELECT claimed.id, claimed.lease_token, claimed.action, claimed.expected_placement_revision,
-      target.placement_id, target_image.image_id
-    FROM claimed
-    JOIN copyright_restrictions restriction ON restriction.id = claimed.copyright_restriction_id
-    JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-    JOIN copyright_notice_target_images target_image
-      ON target_image.copyright_notice_target_id = target.id
-  `)
-  await transaction.commit()
-  return rows[0] ?? null
-}
-
-/** Renew worker ownership before a denial performs external effects in this transaction. */
-export async function renewCopyrightActionIntentLease(
-  intentId: string,
-  leaseToken: string,
-  query: TransactionQuery,
-): Promise<boolean> {
-  const { rowCount } = await query(sql`/* renewCopyrightActionIntentLease */
-    UPDATE copyright_notice_action_work_items
-    SET lease_expires_at = clock_timestamp() + ${CLAIM_TIMEOUT_MS} * interval '1 millisecond'
-    WHERE id = ${intentId} AND state = 'claimed' AND lease_token = ${leaseToken}
-      AND lease_expires_at > clock_timestamp()
-  `)
-  return rowCount === 1
 }
 
 /** Pages the action intents that are due for delivery or whose claim lease expired at `now`. */

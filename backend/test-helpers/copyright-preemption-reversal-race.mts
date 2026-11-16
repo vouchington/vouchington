@@ -1,9 +1,7 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import { interceptPostgresTransactionsForTest } from './injected-postgres-transactions.mts'
-import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
-import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
 
-/** Resolve the filing while the losing worker retains its existing placement publication guard. */
+/** Preserve business ordering around the actual repair write and the newer restoration. */
 export async function raceCopyrightRepairWithReversal<Original, Newer>(input: {
   phase: 'before_write' | 'after_write'
   placementId: string
@@ -12,8 +10,10 @@ export async function raceCopyrightRepairWithReversal<Original, Newer>(input: {
   original: () => Promise<Original>
   resolveFiling: () => Promise<void>
   newer: () => Promise<Newer>
+  newerIntentId: () => string
 }): Promise<[PromiseSettledResult<Original>, PromiseSettledResult<Newer>]> {
-  const atRepair = Promise.withResolvers<number>()
+  const atRepair = Promise.withResolvers<void>()
+  const newerStarted = Promise.withResolvers<void>()
   const resume = Promise.withResolvers<void>()
   const pending: Promise<unknown>[] = []
   let paused = false
@@ -34,18 +34,23 @@ export async function raceCopyrightRepairWithReversal<Original, Newer>(input: {
             filed = true
             await input.beforeCompletion()
           }
+          if (
+            text.includes('/* renewCopyrightActionIntentLease */') &&
+            values.includes(input.newerIntentId())
+          )
+            newerStarted.resolve()
           const selected =
             !paused &&
             text.includes('/* reconcileUnauthorizedMediaDeliveryRecord:deny */') &&
             values.includes(input.recordId())
           if (selected) paused = true
           if (selected && input.phase === 'before_write') {
-            atRepair.resolve(await getTestPostgresBackendProcessId(target))
+            atRepair.resolve()
             await resume.promise
           }
           const result = await Reflect.apply(target, thisArgument, args)
           if (selected && input.phase === 'after_write') {
-            atRepair.resolve(await getTestPostgresBackendProcessId(target))
+            atRepair.resolve()
             await resume.promise
           }
           return result
@@ -56,40 +61,27 @@ export async function raceCopyrightRepairWithReversal<Original, Newer>(input: {
     const original = input.original()
     pending.push(original)
     const originalSettled = Promise.allSettled([original])
-    const holderProcessId = await Promise.race([
+    await Promise.race([
       atRepair.promise,
-      original.then(() => {
+      originalSettled.then(([outcome]) => {
+        if (outcome?.status === 'rejected') throw outcome.reason
         throw new Error('Current-authority repair was not reached')
       }),
     ])
     await input.resolveFiling()
-    return await withTestOwnedPostgresWait(
-      {
-        holderProcessId,
-        pool: 'write',
-        lock:
-          input.phase === 'before_write'
-            ? { kind: 'advisory', key: `image-placement:${input.placementId}` }
-            : { kind: 'transaction' },
-        queryMarker:
-          input.phase === 'before_write'
-            ? 'lockImageDeliveryMutation:advisory'
-            : 'stageImagePlacementDeliveryRecords',
-        releaseHolder: async () => {
-          resume.resolve()
-          await originalSettled
-        },
-      },
-      async waitForLock => {
-        const newer = input.newer()
-        pending.push(newer)
-        const newerSettled = Promise.allSettled([newer])
-        await waitForLock(newer)
-        resume.resolve()
-        const [[oldOutcome], [newOutcome]] = await Promise.all([originalSettled, newerSettled])
-        return [oldOutcome!, newOutcome!]
-      },
-    )
+    const newer = input.newer()
+    pending.push(newer)
+    const newerSettled = Promise.allSettled([newer])
+    await Promise.race([
+      newerStarted.promise,
+      newerSettled.then(([outcome]) => {
+        if (outcome?.status === 'rejected') throw outcome.reason
+        throw new Error('New restoration exited before its actual renewal query')
+      }),
+    ])
+    resume.resolve()
+    const [[oldOutcome], [newOutcome]] = await Promise.all([originalSettled, newerSettled])
+    return [oldOutcome!, newOutcome!]
   } finally {
     resume.resolve()
     restore()

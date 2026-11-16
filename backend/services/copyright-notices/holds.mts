@@ -1,3 +1,4 @@
+import { insertCopyrightCourtFilingRestoreIntents } from './court-filing-restrictions.mts'
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -127,6 +128,10 @@ export async function appendCopyrightLegalHoldAssessment(input: {
       ${assessment.id})
   `)
   await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
+  const filingRestoreIds = await insertCopyrightCourtFilingRestoreIntents(
+    lockedNotice.noticeId,
+    transaction,
+  )
   const replayedIds = await replayEligibleCopyrightRestoreIntentsInTransaction({
     noticeId: submissionRows[0].copyright_notice_id,
     intentIds: await selectBlockedCopyrightRestoreIntentIds(
@@ -137,6 +142,8 @@ export async function appendCopyrightLegalHoldAssessment(input: {
     query: transaction,
   })
   await transaction.commit()
-  void enqueueBulkApplyCopyrightActions([...new Set([...lateHoldIntentIds, ...replayedIds])])
+  void enqueueBulkApplyCopyrightActions([
+    ...new Set([...lateHoldIntentIds, ...filingRestoreIds, ...replayedIds]),
+  ])
   return { ...assessment, target_ids: input.targetIds }
 }

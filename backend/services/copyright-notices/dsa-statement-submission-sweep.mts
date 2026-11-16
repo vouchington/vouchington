@@ -49,6 +49,7 @@ export async function prepareDsaStatementSubmissionSweep(
         SELECT restriction.id AS id
         FROM copyright_restrictions restriction
         WHERE restriction.imposed_at >= ${from}
+          AND restriction.authorizing_assessment_id IS NOT NULL
           AND NOT EXISTS (
             SELECT 1 FROM copyright_dsa_statement_submissions submission
             WHERE submission.copyright_restriction_id = restriction.id
@@ -97,6 +98,7 @@ async function insertDsaStatementSubmission(restrictionId: string, from: Date): 
     SELECT restriction.id, ${JSON.stringify(payload)}::jsonb, CURRENT_TIMESTAMP
     FROM copyright_restrictions restriction
     WHERE restriction.id = ${restrictionId} AND restriction.imposed_at >= ${from}
+      AND restriction.authorizing_assessment_id IS NOT NULL
     ON CONFLICT (copyright_restriction_id) DO NOTHING
     RETURNING id
   `)

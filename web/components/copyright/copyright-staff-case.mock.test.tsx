@@ -70,6 +70,45 @@ describe('CopyrightStaffCase restriction decisions', () => {
     }
   })
 
+  it.each(['pending_review', 'confirmed'] as const)(
+    'keeps a %s filing restriction visible without assessment restriction decisions',
+    async status => {
+      const filingNotice = makeCopyrightStaffQueueItem({
+        targets: busyCase.targets,
+        restrictions: [
+          {
+            ...busyCase.restrictions[0]!,
+            status,
+            copyright_notice_submission_id: busyCase.legal_holds[0]!.submission_id,
+          },
+        ],
+        legal_holds: busyCase.legal_holds,
+      })
+      await act(async () => {
+        render(
+          <CopyrightStaffCase
+            notice={filingNotice}
+            pending={false}
+            rationale='Reviewed evidence.'
+            submit={submit}
+            submitRecovery={submit}
+          />,
+        )
+      })
+      const section = screen.getByRole('region', { name: /^Restriction review for/ })
+      expect(
+        within(section).getByRole('link', { name: busyCase.targets[0]!.hosted_use_url }),
+      ).toBeInTheDocument()
+      expect(within(section).getByText(/Material withheld for a court/)).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Confirm restriction' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Reverse restriction' })).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('heading', { name: 'Court or Copyright Claims Board filing' }),
+      ).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Record assessment' })).toBeInTheDocument()
+    },
+  )
+
   it('describes an unavailable target without displaying its identifier', async () => {
     const restriction = { ...notice.restrictions[0]!, target_id: 'missing-target' }
     await act(async () => {

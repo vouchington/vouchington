@@ -64,7 +64,8 @@ export type CopyrightNoticeRecord = {
 export type CopyrightRestrictionRecord = {
   id: string
   copyright_notice_target_id: string
-  authorizing_assessment_id: string
+  authorizing_assessment_id: string | null
+  copyright_notice_submission_id: string | null
   imposed_at: Date
   lifted_at: Date | null
   imposed_by_id: string | null

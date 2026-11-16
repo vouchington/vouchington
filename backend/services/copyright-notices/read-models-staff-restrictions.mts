@@ -14,18 +14,21 @@ export async function selectStaffRestrictions(
     imposed_at: Date
     lifted_at: Date | null
     human_reviewed_at: Date | null
+    copyright_notice_submission_id: string | null
     human_review_action: 'confirm' | 'reverse' | null
   }>(sql`/* getPendingCopyrightStaffCase:restrictions */
     SELECT target.copyright_notice_id, restriction.id, restriction.copyright_notice_target_id AS target_id, restriction.imposed_at,
-      restriction.lifted_at, restriction.human_reviewed_at, restriction.human_review_action
+      restriction.lifted_at, restriction.human_reviewed_at, restriction.human_review_action, restriction.copyright_notice_submission_id
     FROM copyright_restrictions restriction JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-    WHERE target.copyright_notice_id = ANY(${noticeIds}::uuid[]) ORDER BY restriction.id
+    WHERE target.copyright_notice_id = ANY(${noticeIds}::uuid[])
+      ORDER BY restriction.id
   `)
   return groupByNotice(
     rows.map(row => ({
       copyright_notice_id: row.copyright_notice_id,
       id: row.id,
       target_id: row.target_id,
+      copyright_notice_submission_id: row.copyright_notice_submission_id,
       imposed_at: row.imposed_at,
       status: (row.lifted_at
         ? 'lifted'

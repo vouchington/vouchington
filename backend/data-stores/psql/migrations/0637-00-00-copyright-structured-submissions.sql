@@ -73,9 +73,24 @@ CREATE INDEX idx_copyright_notice_submission_assessments__form_screening ON copy
 CREATE OR REPLACE FUNCTION fn_reject_copyright_restriction_assessment_scope()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
-  IF TG_OP = 'UPDATE' AND NEW.authorizing_assessment_id IS DISTINCT FROM OLD.authorizing_assessment_id THEN
-    RAISE EXCEPTION 'copyright restriction authorizing assessment is immutable'
+  IF TG_OP = 'UPDATE' AND ROW(NEW.authorizing_assessment_id, NEW.copyright_notice_submission_id)
+    IS DISTINCT FROM ROW(OLD.authorizing_assessment_id, OLD.copyright_notice_submission_id) THEN
+    RAISE EXCEPTION 'copyright restriction authorizing source is immutable'
       USING ERRCODE = 'check_violation';
+  END IF;
+  IF NEW.copyright_notice_submission_id IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM copyright_notice_submissions submission
+      JOIN copyright_notice_targets target ON target.copyright_notice_id = submission.copyright_notice_id
+      JOIN copyright_notices notice ON notice.id = submission.copyright_notice_id
+      WHERE notice.jurisdiction = 'us_dmca' AND submission.id = NEW.copyright_notice_submission_id
+        AND submission.kind = 'court_or_ccb_hold'
+        AND target.id = NEW.copyright_notice_target_id
+    ) THEN
+      RAISE EXCEPTION 'copyright filing restriction requires a court or CCB submission in the same case'
+        USING ERRCODE = 'check_violation';
+    END IF;
+    RETURN NEW;
   END IF;
   IF NOT EXISTS (
     SELECT 1
@@ -111,7 +126,7 @@ $$;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_restriction_assessment_scope
-BEFORE INSERT OR UPDATE OF authorizing_assessment_id ON copyright_restrictions
+BEFORE INSERT OR UPDATE OF authorizing_assessment_id, copyright_notice_submission_id ON copyright_restrictions
 FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_restriction_assessment_scope();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -121,7 +136,7 @@ CREATE TRIGGER trigger_copyright_submission_requests_immutable BEFORE UPDATE OR 
 
 COMMENT ON TABLE copyright_notice_submission_targets IS 'Exact case targets selected by an appellant or statutory counter-notice sender before compliance assessment.';
 COMMENT ON TABLE copyright_notice_submission_requests IS 'Idempotency records for authenticated appeal and counter-notice submissions.';
-COMMENT ON COLUMN copyright_restrictions.authorizing_assessment_id IS 'Immutable exact compliant assessment that authorized this restriction.';
+COMMENT ON COLUMN copyright_restrictions.authorizing_assessment_id IS 'Immutable exact compliant notice assessment that authorized an assessment-origin restriction; null for filing-origin withholding.';
 COMMENT ON COLUMN copyright_notice_submission_assessments.copyright_notice_form_screening_id IS 'Exact clear anti-spam screening authorizing an automated initial-notice assessment; null for human decisions.';
 COMMENT ON COLUMN copyright_notice_submission_targets.copyright_notice_submission_id IS 'Appeal or counter-notice whose scope is being recorded.';
 COMMENT ON COLUMN copyright_notice_submission_targets.copyright_notice_target_id IS 'Exact case target selected by the affected poster.';

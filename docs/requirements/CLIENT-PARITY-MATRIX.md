@@ -303,6 +303,14 @@ and poster whose `state` and `informed_at` report the notice sent for that targe
 staff review remain tracked by the existing parity rows in
 `client-feature-parity.json`; this change does not claim new native UI evidence.
 
+The existing copyright staff review surface includes filing-origin restriction rows with nullable
+`copyright_notice_submission_id`. Web keeps the withholding and hosted material visible, and
+routes review through the filing assessment controls rather than notice-restriction Confirm or
+Reverse. The restriction-review REST response and its MCP mirror expose the same nullable filing
+source alongside nullable `authorizing_assessment_id`, with exactly one authority source present.
+The web mutation ignores that response body; no native field consumer is introduced. Swift and
+.NET copyright filing/staff UI remain the existing #1229 gap, without a new parity claim.
+
 Repeat-misuse evidence is a bounded latest-notice window, with a claimant-scoped opaque cursor for
 separate later windows. The staff-only claimant REST read and legal MCP tool share the same counts
 and window metadata; a window's counts are not cumulative. Web labels each window's oldest and

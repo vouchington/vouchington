@@ -69,8 +69,10 @@ turn it into a human decision.
 ## Placement enforcement boundary
 
 Hosted images are addressed by a durable image-placement identity with a monotonic revision.
-Action workers re-read and lock the authoritative placement, binding, revision, every legal
-blocker, and the restriction state before applying an intent. Withholding one placement never
+Action workers re-read the authoritative placement, binding, revision, legal blockers, and
+restriction state before applying an intent. Ordinary transactions lock only rows they write;
+concurrent last-ground restoration uses serialization conflict detection rather than legal-context
+read locks. Withholding one placement never
 deletes the source image or blocks another placement that uses it. Legal references retain the
 binding but retained identity alone never grants delivery. Application controls alone cannot
 revoke a warm CDN response, so complete enforcement also needs the edge registry and cache
@@ -121,7 +123,21 @@ A proceeding blocks restoration only when the designated agent received it befor
 staff recorded that it came from the notifier or their agent (17 USC 512(g)(2)(C)), was commenced
 rather than threatened, identifies the same material, and (for the CCB) is a qualifying claim under
 17 USC 1507(d). Until staff assess a filing it blocks every target; afterwards only the targets it
-names. A hold resolution is an immutable record, never an edit of the filing. Resolving a hold does
+names. Admission retains the filing itself as immutable restriction authority and withholds the
+actual placement before committing its edge denial. It never invents a compliant notice assessment.
+The restriction and its initial decision notice remain visible to staff while qualification is
+pending, without offering an ordinary notice-assessment confirmation or reversal.
+
+A nonqualifying assessment or final hold resolution releases only the filing ground. Restoration
+uses the current placement revision, including a placement removed and later reattached, and waits
+for every overlapping unassessed filing, qualifying hold, and ordinary notice ground to clear.
+Court admission and the complete restoration preparation use serialization conflict detection
+when a concurrent case can introduce or release a ground. This also protects a placement already
+withheld by another case: admission cannot accept a filing based on an obsolete delivery revision.
+Concurrent unavailable restorations cannot remove their final grounds while leaving a stranded
+withholding flag. A serialization loser receives a conflict without an automatic retry.
+
+A hold resolution is an immutable record, never an edit of the filing. Resolving a hold does
 not bypass the counter-notice deadline or the human reversal requirement.
 
 ## Jurisdiction and public meaning

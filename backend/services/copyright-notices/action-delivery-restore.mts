@@ -1,3 +1,4 @@
+import type { LockedCopyrightActionDelivery } from './action-delivery-locking-types.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import sql from 'sql-template-strings'
@@ -8,8 +9,8 @@ import { resolveCopyrightDeadlineIfComplete } from './action-delivery-finalizati
 import {
   completeCopyrightActionIntentInTransaction,
   insertCopyrightActionLifecycleEvent,
+  hasOtherActiveCopyrightRestrictions,
   liftCopyrightRestrictionInTransaction,
-  type LockedCopyrightActionDelivery,
 } from './action-delivery-state.mts'
 import { syncCopyrightIncidentsAfterStatutoryRestoreInTransaction } from './statutory-restoration-incidents.mts'
 
@@ -21,7 +22,7 @@ export async function completeUnavailableRestore(input: {
 }): Promise<void> {
   await runSequentially([
     () =>
-      clearUnavailableImagePlacementCopyrightWithholding(input.legal.placement_id, {
+      clearUnavailableWithholding(input.legal, {
         query: input.query,
       }),
     () =>
@@ -37,31 +38,11 @@ export async function completeUnavailableRestore(input: {
         query: input.query,
       }),
     () => syncCopyrightIncidentsAfterStatutoryRestoreInTransaction(input.legal, input.query),
-    () =>
-      insertCopyrightActionLifecycleEvent(
-        input.legal,
-        input.intentId,
-        'restoration_unavailable',
-        input.query,
-      ),
   ])
 }
 
-/** Reads the placement's other restrictions, then lifts this one. Two restores doing that at once
- * would each see the other still active and leave the placement withheld, so SSI aborts one and
- * its job retries. The lease-conditional completion rolls the lift back if the lease was lost. */
+/** The other-ground predicate and every resulting lift/placement effect share the caller's SSI transaction. */
 export async function retainRestoreWhenOtherRestrictionsActive(input: {
-  intentId: string
-  legal: LockedCopyrightActionDelivery
-  now: Date
-}): Promise<boolean> {
-  await using query = await beginTransaction({ serializable: true })
-  const retained = await completeRestoreRetainingPlacement({ ...input, query })
-  await query.commit()
-  return retained
-}
-
-async function completeRestoreRetainingPlacement(input: {
   intentId: string
   legal: LockedCopyrightActionDelivery
   now: Date
@@ -82,6 +63,13 @@ async function completeRestoreRetainingPlacement(input: {
   if (!rows[0]?.blocked) return false
   await runSequentially([
     () =>
+      insertCopyrightActionLifecycleEvent(
+        input.legal,
+        input.intentId,
+        'restriction_lifted_placement_retained',
+        input.query,
+      ),
+    () =>
       liftCopyrightRestrictionAndResolveDeadline({ ...input, restorationOutcome: 'still_hidden' }),
     () =>
       completeCopyrightActionIntentInTransaction({
@@ -92,13 +80,6 @@ async function completeRestoreRetainingPlacement(input: {
         query: input.query,
       }),
     () => syncCopyrightIncidentsAfterStatutoryRestoreInTransaction(input.legal, input.query),
-    () =>
-      insertCopyrightActionLifecycleEvent(
-        input.legal,
-        input.intentId,
-        'restriction_lifted_placement_retained',
-        input.query,
-      ),
   ])
   return true
 }
@@ -110,12 +91,6 @@ export async function authorizeRestoreBeforeDelivery(input: {
   query: Awaited<ReturnType<typeof beginTransaction>>
 }): Promise<void> {
   await liftCopyrightRestrictionAndResolveDeadline({ ...input, restorationOutcome: 'visible' })
-  await insertCopyrightActionLifecycleEvent(
-    input.legal,
-    input.intentId,
-    'restoration_authorized_pending_delivery',
-    input.query,
-  )
 }
 
 async function liftCopyrightRestrictionAndResolveDeadline(input: {
@@ -149,7 +124,7 @@ async function liftCopyrightRestrictionAndResolveDeadline(input: {
             ? 'appeal_reversed'
             : input.legal.reversal_by_review
               ? 'review_reversed'
-              : input.legal.hold_resolution_authorized
+              : input.legal.hold_resolution_authorized || input.legal.filing_release_authorized
                 ? 'hold_resolved'
                 : 'counter_notice_window',
     },
@@ -160,4 +135,12 @@ async function liftCopyrightRestrictionAndResolveDeadline(input: {
     input.now,
     input.query,
   )
+}
+
+async function clearUnavailableWithholding(
+  legal: LockedCopyrightActionDelivery,
+  options: { query: Awaited<ReturnType<typeof beginTransaction>> },
+): Promise<void> {
+  if (await hasOtherActiveCopyrightRestrictions(legal, options.query)) return
+  await clearUnavailableImagePlacementCopyrightWithholding(legal.placement_id, options)
 }

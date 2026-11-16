@@ -1,3 +1,4 @@
+import { insertCopyrightCourtFilingRestoreIntents } from './court-filing-restrictions.mts'
 import { beginTransaction } from '@data-stores/psql'
 import {
   advanceCopyrightLastLegalActivityAt,
@@ -107,6 +108,10 @@ async function resolveCopyrightLegalHoldInTransaction(
     WHERE source.copyright_notice_legal_hold_assessment_id = ${input.assessmentId}
       AND restriction.lifted_at IS NULL
   `)
+  const filingRestoreIds = await insertCopyrightCourtFilingRestoreIntents(
+    assessment.copyright_notice_id,
+    transaction,
+  )
   const replayedIds = await replayEligibleCopyrightRestoreIntentsInTransaction({
     noticeId: assessment.copyright_notice_id,
     intentIds: await selectBlockedCopyrightRestoreIntentIds(
@@ -119,6 +124,12 @@ async function resolveCopyrightLegalHoldInTransaction(
   await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   return {
     resolution,
-    intentIds: [...new Set([...restrictionRows.map(row => row.intent_id), ...replayedIds])],
+    intentIds: [
+      ...new Set([
+        ...restrictionRows.map(row => row.intent_id),
+        ...filingRestoreIds,
+        ...replayedIds,
+      ]),
+    ],
   }
 }

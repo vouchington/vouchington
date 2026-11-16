@@ -99,15 +99,6 @@ export async function testDeliveryTransactionIsWaitingForLock(pid: number): Prom
   return rows[0]?.waiting ?? false
 }
 
-export async function lockTestDeliveryNoticeNowait(
-  query: TransactionQuery,
-  noticeId: string,
-): Promise<void> {
-  await query(
-    sql`/* lockTestDeliveryNoticeNowait */ SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE NOWAIT`,
-  )
-}
-
 export async function advanceTestDeliveryPlacementRevision(
   query: TransactionQuery,
   placementId: string,

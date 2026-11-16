@@ -1,11 +1,9 @@
+import type { LockedCopyrightActionDelivery } from './action-delivery-locking-types.mts'
 import { beginTransaction } from '@data-stores/psql'
 import type { CopyrightImagePlacement } from '@services/images/placements'
 import { prepublishCopyrightImagePlacementDenial } from './action-delivery-edge.mts'
 import { denyRestoreThenComplete } from './action-delivery-denial.mts'
-import {
-  completeCopyrightActionIntentInTransaction,
-  type LockedCopyrightActionDelivery,
-} from './action-delivery-state.mts'
+import { completeCopyrightActionIntentInTransaction } from './action-delivery-state.mts'
 
 export async function prepublishWithholdIfNeeded(input: {
   legal: LockedCopyrightActionDelivery
@@ -67,4 +65,23 @@ export async function completeBlockedCopyrightAction(input: {
   })
   await input.query.commit()
   return 'blocked'
+}
+
+/** A queued withhold cannot recreate a legal ground whose restoration already committed. */
+export async function completeLiftedCopyrightWithhold(input: {
+  intentId: string
+  legal: LockedCopyrightActionDelivery
+  now: Date
+  query: Awaited<ReturnType<typeof beginTransaction>>
+}): Promise<'stale'> {
+  await completeCopyrightActionIntentInTransaction({
+    intentId: input.intentId,
+    leaseToken: input.legal.lease_token,
+    outcome: 'stale',
+    completedAt: input.now,
+    failureMessage: 'The copyright restriction was lifted before its withhold delivery began.',
+    query: input.query,
+  })
+  await input.query.commit()
+  return 'stale'
 }

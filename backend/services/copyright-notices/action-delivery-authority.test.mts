@@ -19,16 +19,12 @@ import {
   getTestMediaDeliveryRecord,
   markTestMediaDeliveryRecordFailed,
 } from '@voucha/test-helpers'
-import {
-  lockTestDeliveryNoticeNowait,
-  reconcileTestDeliveryRepairMarker,
-} from '@voucha/test-helpers/entities/media-delivery-repair'
-import { lockImageDeliveryLegalAuthority } from '../media-delivery-safety/delivery-authority.mts'
+import { reconcileTestDeliveryRepairMarker } from '@voucha/test-helpers/entities/media-delivery-repair'
 import {
   hasCopyrightRegistryReplayAudit,
   readCopyrightCaseLifecycleClock,
 } from '@voucha/test-helpers/copyright-lifecycle-clock'
-import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { processCopyrightActionIntent } from './index.mts'
 import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -183,7 +179,7 @@ describe('copyright action persisted delivery authority', () => {
     )
   })
 
-  it('permits replay audit foreign keys while retaining the notice fence against filing admission', async () => {
+  it('retains replay audit foreign keys without advancing the legal activity clock', async () => {
     installTestMediaDeliveryEdge()
     const scene = await openHeldCounterNoticeRestore()
     const current = await getImagePlacementForCopyright(scene.target.placement_id)
@@ -198,45 +194,23 @@ describe('copyright action persisted delivery authority', () => {
       state: 'allow',
     })
     await markTestMediaDeliveryRecordFailed(mediaDeliveryRegistryRecordId)
-    await using authority = await beginTransaction()
-    let rollback: Promise<void> | undefined
-    const releaseAuthority = () => (rollback ??= authority.rollback())
-    let replay: ReturnType<typeof replayFailedMediaDeliveryRegistryRecords> | undefined
-    // A timed-out test releases the lock, then drains any replay it unblocked.
-    onTestFinished(async () => {
-      await releaseAuthority()
-      if (replay) await Promise.allSettled([replay])
-    })
-    await lockImageDeliveryLegalAuthority(authority, {
-      placement_id: current.placementId,
-    })
-    {
-      await using filing = await beginTransaction()
-      await expect(lockTestDeliveryNoticeNowait(filing, scene.notice.id)).rejects.toMatchObject({
-        code: '55P03',
-      })
-    }
     const beforeReplayClock = await readCopyrightCaseLifecycleClock(scene.notice.id)
     expect(beforeReplayClock).toBeInstanceOf(Date)
-    replay = replayFailedMediaDeliveryRegistryRecords({
+    const replay = replayFailedMediaDeliveryRegistryRecords({
       actorUserId: scene.moderator.id,
       recordIds: [mediaDeliveryRegistryRecordId],
     })
-    try {
-      await expect(replay).resolves.toMatchObject({ replayed: 1 })
-      expect(await readCopyrightCaseLifecycleClock(scene.notice.id)).toEqual(beforeReplayClock)
-      expect(
-        await hasCopyrightRegistryReplayAudit(
-          scene.notice.id,
-          mediaDeliveryRegistryRecordId,
-          scene.moderator.id,
-        ),
-      ).toBe(true)
-      expect(await getTestMediaDeliveryRecord(mediaDeliveryRegistryRecordId)).toMatchObject({
-        state: 'pending',
-      })
-    } finally {
-      await releaseAuthority()
-    }
+    await expect(replay).resolves.toMatchObject({ replayed: 1 })
+    expect(await readCopyrightCaseLifecycleClock(scene.notice.id)).toEqual(beforeReplayClock)
+    expect(
+      await hasCopyrightRegistryReplayAudit(
+        scene.notice.id,
+        mediaDeliveryRegistryRecordId,
+        scene.moderator.id,
+      ),
+    ).toBe(true)
+    expect(await getTestMediaDeliveryRecord(mediaDeliveryRegistryRecordId)).toMatchObject({
+      state: 'pending',
+    })
   })
 })

@@ -1,3 +1,7 @@
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { imposeCopyrightCourtFilingRestrictions } from './court-filing-restrictions.mts'
+import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
+import { denyCopyrightCourtFilingPlacements } from './guest-filing-denial.mts'
 import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -50,7 +54,7 @@ async function assertNoGuestCourtHold(transaction: OwnedTransaction, capabilityI
   assert(!rows[0], 409, 'This guest capability already filed a court or CCB hold')
 }
 
-export async function appendCopyrightGuestFiling(input: {
+async function appendCopyrightGuestFilingInOwnedTransaction(input: {
   noticeId: string
   token: string
   now: Date
@@ -64,7 +68,10 @@ export async function appendCopyrightGuestFiling(input: {
       ? JSON.stringify({ summary: input.statement })
       : input.statement
   const submissionId = uuidv7()
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction(
+    input.kind === 'court_or_ccb_hold' ? { serializable: true } : {},
+  )
+  let withholdIds: string[] = []
   const capabilityId = await lockGuestCapability(transaction, input)
   if (input.kind === 'court_or_ccb_hold') await assertNoGuestCourtHold(transaction, capabilityId)
   const lifecycleEvent = sql`/* appendCopyrightGuestFiling:event */
@@ -102,6 +109,13 @@ export async function appendCopyrightGuestFiling(input: {
     `)
     // The filing and its lifecycle are durable together before preemption can commit.
     await preemptCopyrightRestorations(input.noticeId, transaction)
+    withholdIds = await imposeCopyrightCourtFilingRestrictions(
+      input.noticeId,
+      submission.id,
+      input.now,
+      transaction,
+    )
+    await denyCopyrightCourtFilingPlacements(input.noticeId, transaction)
   }
   if (input.kind === 'withdrawal') {
     await recordClaimantMisuseEvent(transaction, {
@@ -115,5 +129,15 @@ export async function appendCopyrightGuestFiling(input: {
     })
   }
   await transaction.commit()
+  if (withholdIds.length > 0) void enqueueBulkApplyCopyrightActions(withholdIds)
   return submission
+}
+
+export async function appendCopyrightGuestFiling(
+  input: Parameters<typeof appendCopyrightGuestFilingInOwnedTransaction>[0],
+): ReturnType<typeof appendCopyrightGuestFilingInOwnedTransaction> {
+  return conflictOnSerializationFailure(
+    () => appendCopyrightGuestFilingInOwnedTransaction(input),
+    'Concurrent copyright filing changed the publication authority',
+  )
 }

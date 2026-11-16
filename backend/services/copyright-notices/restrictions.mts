@@ -100,6 +100,17 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     422,
     'Copyright screening authority is not current',
   )
+  // A newly compliant notice becomes the real ground; never rewrite filing provenance.
+  // The placement stays withheld throughout this same transaction and court blockers still apply.
+  await transaction(sql`/* acceptCopyrightNoticeAndImposeRestriction:replaceFilingGround */
+    UPDATE copyright_restrictions SET lifted_at = ${input.imposedAt}, lifted_by_id = ${input.imposedById}
+    WHERE copyright_notice_target_id = ${input.targetId}
+      AND copyright_notice_submission_id IS NOT NULL AND lifted_at IS NULL
+  `)
+  const { rows: currentPlacement } = await transaction<{ revision: number }>(sql`
+    /* acceptCopyrightNoticeAndImposeRestriction:currentRevision */
+    SELECT revision FROM media_placements WHERE id = ${target.placement_id}
+  `)
   const { rows: acceptedRows } = await transaction<{
     id: string
   }>(sql`/* acceptCopyrightNoticeAndImposeRestriction:accept */
@@ -125,7 +136,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
       ${input.imposedById}
     )
     ON CONFLICT (copyright_notice_target_id) WHERE lifted_at IS NULL DO NOTHING
-    RETURNING id, copyright_notice_target_id, authorizing_assessment_id, imposed_at, lifted_at, imposed_by_id, lifted_by_id,
+    RETURNING id, copyright_notice_target_id, authorizing_assessment_id, copyright_notice_submission_id, imposed_at, lifted_at, imposed_by_id, lifted_by_id,
       human_reviewed_at, human_review_action, human_reviewed_by_id
   `)
   const restriction = rows[0]
@@ -133,7 +144,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   const actionIntent = await insertCopyrightActionIntent(
     transaction,
     restriction.id,
-    lockedTargets[0].placement_revision,
+    currentPlacement[0]?.revision ?? lockedTargets[0].placement_revision,
     'withhold',
   )
   await createCopyrightRestrictionDecisionNoticesInTransaction(
