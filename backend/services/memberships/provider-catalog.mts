@@ -75,16 +75,17 @@ export async function getActiveMembershipCatalogFromPrimary(): Promise<Membershi
       interval: row.interval,
       providers: [],
     }
-    products.set(row.id, product)
     if (
       row.provider === null ||
       row.environment === null ||
       row.application_id === null ||
       row.provider_product_id === null
-    )
+    ) {
+      products.set(row.id, product)
       continue
+    }
     const hasPrice = row.price_minor_units !== null && row.currency_code !== null
-    product.providers.push({
+    const reference: MembershipCatalogProviderReference = {
       provider: row.provider,
       environment: row.environment,
       application_id: row.application_id,
@@ -98,7 +99,8 @@ export async function getActiveMembershipCatalogFromPrimary(): Promise<Membershi
             currency: row.currency_code as Money['currency'],
           }
         : null,
-    })
+    }
+    products.set(row.id, { ...product, providers: [...product.providers, reference] })
   }
   return [...products.values()]
 }

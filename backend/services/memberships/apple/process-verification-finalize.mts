@@ -8,10 +8,11 @@ import type { AppleVerificationContext } from './process-verification-context.mt
 export class AppleVerificationConflictError extends Error {
   readonly reasonCode: 'competing_direct_source' | 'wrong_account'
 
+  override readonly name: string = 'AppleVerificationConflictError'
+
   constructor(reasonCode: 'competing_direct_source' | 'wrong_account') {
     super(reasonCode)
     this.reasonCode = reasonCode
-    this.name = 'AppleVerificationConflictError'
   }
 }
 

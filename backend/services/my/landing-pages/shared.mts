@@ -85,41 +85,39 @@ export async function promoteOldestRemainingLandingPage(
 export function buildReviewMap(
   rows: Array<Record<string, unknown>>,
 ): Map<string, LandingPageCandidateReview> {
-  const reviews = new Map<string, LandingPageCandidateReview>()
-
-  for (const row of rows) {
-    const id = row.id as string
-    let review = reviews.get(id)
-    if (!review) {
-      review = {
+  const rowsById = Map.groupBy(rows, row => row.id as string)
+  return new Map(
+    [...rowsById].map(([id, group]): [string, LandingPageCandidateReview] => {
+      const row = group[0]!
+      return [
         id,
-        title: (row.title as string | null) ?? '',
-        declared_language: (row.declared_language as string | null) ?? null,
-        lingua_rs_detected_language: (row.lingua_rs_detected_language as string | null) ?? null,
-        slug: (row.slug as string | null) ?? null,
-        markdown: (row.markdown as string) ?? '',
-        created_at: row.created_at as Date,
-        review_topic_ratings: [],
-      }
-      reviews.set(id, review)
-    }
-
-    if (row.topic_id && row.topic_name && row.topic_slug) {
-      review.review_topic_ratings.push({
-        topic_id: row.topic_id as string,
-        topic_name: row.topic_name as string,
-        topic_slug: row.topic_slug as string,
-        rating: Number(row.rating),
-        order_index: Number(row.order_index),
-      })
-    }
-  }
-
-  for (const review of reviews.values()) {
-    review.review_topic_ratings.sort((a, b) => a.order_index - b.order_index)
-  }
-
-  return reviews
+        {
+          id,
+          title: (row.title as string | null) ?? '',
+          declared_language: (row.declared_language as string | null) ?? null,
+          lingua_rs_detected_language: (row.lingua_rs_detected_language as string | null) ?? null,
+          slug: (row.slug as string | null) ?? null,
+          markdown: (row.markdown as string) ?? '',
+          created_at: row.created_at as Date,
+          review_topic_ratings: group
+            .flatMap(candidate =>
+              candidate.topic_id && candidate.topic_name && candidate.topic_slug
+                ? [
+                    {
+                      topic_id: candidate.topic_id as string,
+                      topic_name: candidate.topic_name as string,
+                      topic_slug: candidate.topic_slug as string,
+                      rating: Number(candidate.rating),
+                      order_index: Number(candidate.order_index),
+                    },
+                  ]
+                : [],
+            )
+            .toSorted((a, b) => a.order_index - b.order_index),
+        },
+      ]
+    }),
+  )
 }
 
 export function assertNoDuplicateSelection(

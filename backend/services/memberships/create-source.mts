@@ -13,9 +13,10 @@ export { InvalidMembershipGrantUserError } from './grants/create-source.mts'
 export { createProviderMembershipSource } from './provider-source.mts'
 
 export class InvalidMembershipGrantSkuError extends Error {
+  override readonly name: string = 'InvalidMembershipGrantSkuError'
+
   constructor() {
     super('The membership product is not active for the requested plan')
-    this.name = 'InvalidMembershipGrantSkuError'
   }
 }
 

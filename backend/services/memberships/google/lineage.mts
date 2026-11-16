@@ -71,12 +71,11 @@ export async function resolveGooglePlayTokenLineage(options: {
           err.status === 410 ||
           (err.status === 400 && err.reason === 'subscriptionExpired'))
       ) {
-        tokens.push({ token, linkedToken: null, fetched: false })
         return {
           rootToken: token,
           rootDigest: digest,
           currentSubscription: currentSubscription!,
-          tokens,
+          tokens: [...tokens, { token, linkedToken: null, fetched: false }],
         }
       }
       throw err
@@ -86,12 +85,19 @@ export async function resolveGooglePlayTokenLineage(options: {
       // eslint-disable-next-line no-await-in-loop -- this lookup follows the current token fetch
       const knownRoot = await getKnownGooglePlayCanonicalRoot(environment, applicationId, digest)
       if (knownRoot) {
-        tokens.push({
-          token,
-          linkedToken: requiredText(subscription.linkedPurchaseToken),
-          fetched: true,
-        })
-        return { rootToken: token, rootDigest: knownRoot, currentSubscription, tokens }
+        return {
+          rootToken: token,
+          rootDigest: knownRoot,
+          currentSubscription,
+          tokens: [
+            ...tokens,
+            {
+              token,
+              linkedToken: requiredText(subscription.linkedPurchaseToken),
+              fetched: true,
+            },
+          ],
+        }
       }
     }
     const expiredToken = requiredText(subscription.outOfAppPurchaseContext?.expiredPurchaseToken)
@@ -102,12 +108,11 @@ export async function resolveGooglePlayTokenLineage(options: {
         applicationId,
         tokenDigest(expiredToken),
       )
-      tokens.push({ token, linkedToken: expiredToken, fetched: true })
       return {
         rootToken: knownRoot ? expiredToken : token,
         rootDigest: knownRoot ?? digest,
         currentSubscription,
-        tokens,
+        tokens: [...tokens, { token, linkedToken: expiredToken, fetched: true }],
       }
     }
     const linkedToken = requiredText(subscription.linkedPurchaseToken)

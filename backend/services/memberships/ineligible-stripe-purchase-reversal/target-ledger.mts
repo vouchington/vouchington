@@ -15,12 +15,11 @@ import { wasSucceededStripeRefundObserved } from './refund-scan.mts'
 export async function claimIneligiblePurchaseReversalTargets(
   [target, ...remainingTargets]: readonly ReversalTarget[],
   options: Omit<Parameters<typeof claimIneligiblePurchaseReversal>[0], 'target'>,
-  claimed: ClaimedReversal[],
+  claimed: readonly ClaimedReversal[],
 ): Promise<ClaimedReversal[]> {
-  if (!target) return claimed
+  if (!target) return [...claimed]
   const reversal = await claimIneligiblePurchaseReversal({ ...options, target })
-  claimed.push(reversal)
-  return claimIneligiblePurchaseReversalTargets(remainingTargets, options, claimed)
+  return claimIneligiblePurchaseReversalTargets(remainingTargets, options, [...claimed, reversal])
 }
 
 async function claimIneligiblePurchaseReversal(options: {

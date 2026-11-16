@@ -8,9 +8,10 @@ import { expireElapsedMemberships } from './expire-elapsed.mts'
 import { closeActiveGrant } from './revoke-state.mts'
 
 export class CompletedMembershipGrantError extends Error {
+  override readonly name: string = 'CompletedMembershipGrantError'
+
   constructor() {
     super('Completed membership grants cannot be revoked')
-    this.name = 'CompletedMembershipGrantError'
   }
 }
 

@@ -14,30 +14,25 @@ export function normalizeRssFeedItemCategories(categories: string[] | undefined)
 export function analyzeRssFeedItemCategories(
   categories: string[] | undefined,
 ): RssFeedItemCategoryAnalysis {
-  const normalized: string[] = []
-  const seen = new Set<string>()
-
   if (!categories || categories.length === 0) {
-    return { categories: normalized, uncappedCount: 0, truncatedCount: 0 }
+    return { categories: [], uncappedCount: 0, truncatedCount: 0 }
   }
 
-  for (const category of categories) {
+  const seen = new Set<string>()
+  const unique = categories.flatMap(category => {
     const trimmed = category.trim()
-    if (!trimmed) continue
-
+    if (!trimmed) return []
     const key = trimmed.toLowerCase()
-    if (seen.has(key)) continue
-
+    if (seen.has(key)) return []
     seen.add(key)
-    if (normalized.length < RSS_FEED_ITEM_MAX_CATEGORIES) {
-      normalized.push(trimmed)
-    }
-  }
+    return [trimmed]
+  })
+  const normalized = unique.slice(0, RSS_FEED_ITEM_MAX_CATEGORIES)
 
   return {
     categories: normalized,
-    uncappedCount: seen.size,
-    truncatedCount: Math.max(0, seen.size - normalized.length),
+    uncappedCount: unique.length,
+    truncatedCount: Math.max(0, unique.length - normalized.length),
   }
 }
 

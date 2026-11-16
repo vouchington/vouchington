@@ -116,13 +116,12 @@ function projectionInput(
   snapshots: readonly RssFeedItemCategorySnapshot[],
   changeIds: ReadonlyMap<string, string>,
 ): { tuples: string; values: unknown[] } {
-  const values: unknown[] = []
-  const tuples = snapshots.map((snapshot, index) => {
-    values.push(
-      snapshot.rss_feed_item_id,
-      changeIds.get(snapshot.rss_feed_item_id),
-      JSON.stringify(snapshot.categories),
-    )
+  const values = snapshots.flatMap(snapshot => [
+    snapshot.rss_feed_item_id,
+    changeIds.get(snapshot.rss_feed_item_id),
+    JSON.stringify(snapshot.categories),
+  ])
+  const tuples = snapshots.map((_snapshot, index) => {
     const offset = index * 3
     return `($${offset + 1}::uuid, $${offset + 2}::uuid, $${offset + 3}::jsonb)`
   })

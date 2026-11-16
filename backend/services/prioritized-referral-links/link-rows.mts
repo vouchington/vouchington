@@ -16,18 +16,21 @@ export type LinkRow = PrioritizedReferralLink & {
 }
 
 export function toLinksWithUsers(rows: LinkRow[]): ReferralLinksWithUsers {
-  const users: Record<string, ReferralLinkUser> = {}
-  const links = rows.map(({ username, account_type, user_display_name, ...link }) => {
-    if (link.user_id && username && !users[link.user_id]) {
-      users[link.user_id] = {
-        id: link.user_id,
+  const links = rows.map(({ username, account_type, user_display_name, ...link }) => link)
+  const seen = new Set<string>()
+  const users: Record<string, ReferralLinkUser> = Object.fromEntries(
+    rows.flatMap(({ username, account_type, user_display_name, user_id }) => {
+      if (!user_id || !username || seen.has(user_id)) return []
+      seen.add(user_id)
+      const user: ReferralLinkUser = {
+        id: user_id,
         username,
         account_type: account_type as ReferralLinkUser['account_type'],
         display_name: user_display_name ?? null,
       }
-    }
-    return link
-  })
+      return [[user_id, user]]
+    }),
+  )
   return { links, users }
 }
 

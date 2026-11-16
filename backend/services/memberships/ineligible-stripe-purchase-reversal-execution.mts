@@ -4,9 +4,10 @@ import { getIneligiblePurchaseReversalFailureMessage } from './ineligible-stripe
 import type { ClaimedReversal } from './ineligible-stripe-purchase-reversal-types.mts'
 
 export class IneligiblePurchaseReversalInProgressError extends Error {
+  override readonly name: string = 'IneligiblePurchaseReversalInProgressError'
+
   constructor(operationId: string) {
     super(`Ineligible Stripe purchase reversal ${operationId} is already executing`)
-    this.name = 'IneligiblePurchaseReversalInProgressError'
   }
 }
 

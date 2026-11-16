@@ -7,10 +7,7 @@ import type {
 import { getOrCreateProviderContextId } from './provider-context.mts'
 
 export class ProviderMembershipSourceConflictError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'ProviderMembershipSourceConflictError'
-  }
+  override readonly name: string = 'ProviderMembershipSourceConflictError'
 }
 
 export async function createProviderMembershipSource<

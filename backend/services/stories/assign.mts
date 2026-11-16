@@ -17,9 +17,9 @@ export async function adminAssignItemToStory(
   storyId: string,
   itemId: string,
 ): Promise<string | null> {
-  let refreshResults: Array<{ storyId: string; result: StoryPostRefreshResult | null }> = []
   let afterCommit: (() => Promise<void>) | undefined
   const assignedId = await runWithTransaction(undefined, async (query: TransactionQuery) => {
+    const refreshResults: Array<{ storyId: string; result: StoryPostRefreshResult | null }> = []
     const prior = await query(
       sql`/* adminAssignItemToStory:item */
       SELECT id, story_id FROM rss_feed_items

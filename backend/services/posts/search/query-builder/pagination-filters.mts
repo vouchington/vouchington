@@ -4,65 +4,61 @@ import { buildPostSearchTimeRangeFilter } from '../hacker-news-hot-options.mts'
 import { buildStablePostHotRankExpression } from '../stable-hot-rank.mts'
 import type { PostSearchOptions } from '../types.mts'
 
-export function appendPartitionAndPaginationFilters(
-  filters: SQLStatement[],
-  {
-    decisionInstant,
-    paginationOnly,
-    followingRankExpression,
-    hasSemanticSearch,
-    hasTextSearch,
-    options,
-    rankingScoreExpression,
-    sort,
-  }: {
-    decisionInstant: Date
-    paginationOnly: boolean
-    followingRankExpression: SQLStatement | null
-    hasSemanticSearch: boolean
-    hasTextSearch: boolean
-    options: PostSearchOptions
-    rankingScoreExpression: SQLStatement | null
-    sort: string
-  },
-): void {
+export function buildPartitionAndPaginationFilters({
+  decisionInstant,
+  paginationOnly,
+  followingRankExpression,
+  hasSemanticSearch,
+  hasTextSearch,
+  options,
+  rankingScoreExpression,
+  sort,
+}: {
+  decisionInstant: Date
+  paginationOnly: boolean
+  followingRankExpression: SQLStatement | null
+  hasSemanticSearch: boolean
+  hasTextSearch: boolean
+  options: PostSearchOptions
+  rankingScoreExpression: SQLStatement | null
+  sort: string
+}): SQLStatement[] {
   const timeRangeFilter = paginationOnly
     ? null
     : buildPostSearchTimeRangeFilter(options, 'posts.id', decisionInstant)
-  if (timeRangeFilter) filters.push(timeRangeFilter)
-  appendPaginationFilters(filters, {
-    followingRankExpression,
-    hasSemanticSearch,
-    hasTextSearch,
-    options,
-    rankingScoreExpression,
-    sort,
-  })
+  return [
+    ...(timeRangeFilter ? [timeRangeFilter] : []),
+    ...buildPaginationFilters({
+      followingRankExpression,
+      hasSemanticSearch,
+      hasTextSearch,
+      options,
+      rankingScoreExpression,
+      sort,
+    }),
+  ]
 }
 
-function appendPaginationFilters(
-  filters: SQLStatement[],
-  {
-    followingRankExpression,
-    hasSemanticSearch,
-    hasTextSearch,
-    options,
-    rankingScoreExpression,
-    sort,
-  }: {
-    followingRankExpression: SQLStatement | null
-    hasSemanticSearch: boolean
-    hasTextSearch: boolean
-    options: PostSearchOptions
-    rankingScoreExpression: SQLStatement | null
-    sort: string
-  },
-): void {
+function buildPaginationFilters({
+  followingRankExpression,
+  hasSemanticSearch,
+  hasTextSearch,
+  options,
+  rankingScoreExpression,
+  sort,
+}: {
+  followingRankExpression: SQLStatement | null
+  hasSemanticSearch: boolean
+  hasTextSearch: boolean
+  options: PostSearchOptions
+  rankingScoreExpression: SQLStatement | null
+  sort: string
+}): SQLStatement[] {
   if (sort === 'new' && options.id_lt) {
     // community_id equality plus this id bound stays on (community_id, id) and stops at LIMIT.
-    filters.push(sql`posts.id < ${options.id_lt}`)
+    return [sql`posts.id < ${options.id_lt}`]
   } else if (sort === 'following_new' && (options.ranking_lt !== undefined || options.id_lt)) {
-    appendCompositePagination(filters, {
+    return buildCompositePagination({
       expression: requiredFollowingRankExpression(followingRankExpression),
       idLt: options.id_lt,
       scoreLt: options.ranking_lt,
@@ -70,49 +66,42 @@ function appendPaginationFilters(
     })
   } else if (sort === 'best' && options.vote_score_lt !== undefined) {
     if (!options.id_lt) throw createHttpError(500, 'vote_score_lt requires id_lt')
-    filters.push(
-      sql`(posts.votes_score_sort, posts.id) < (${options.vote_score_lt}, ${options.id_lt})`,
-    )
+    return [sql`(posts.votes_score_sort, posts.id) < (${options.vote_score_lt}, ${options.id_lt})`]
   } else if ((sort === 'hot' || sort === 'trending') && options.hot_score_lt !== undefined) {
     if (!options.id_lt) throw createHttpError(500, 'hot_score_lt requires id_lt')
-    appendCompositePagination(filters, {
+    return buildCompositePagination({
       expression: buildStablePostHotRankExpression(),
       idLt: options.id_lt,
       scoreLt: options.hot_score_lt,
       scoreName: 'hot_score_lt',
     })
   } else if (sort === 'relevance' && options.ranking_lt !== undefined) {
-    appendCompositePagination(filters, {
+    return buildCompositePagination({
       expression: requiredRankingExpression(rankingScoreExpression),
       idLt: options.id_lt,
       scoreLt: options.ranking_lt,
       scoreName: 'ranking_lt',
     })
   } else if (sort === 'relevance' && !hasTextSearch && !hasSemanticSearch && options.id_lt) {
-    filters.push(sql`posts.id < ${options.id_lt}`)
+    return [sql`posts.id < ${options.id_lt}`]
   }
+  return []
 }
 
-function appendCompositePagination(
-  filters: SQLStatement[],
-  {
-    expression,
-    idLt,
-    scoreLt,
-    scoreName,
-  }: {
-    expression: SQLStatement
-    idLt?: string
-    scoreLt?: number
-    scoreName: string
-  },
-): void {
+function buildCompositePagination({
+  expression,
+  idLt,
+  scoreLt,
+  scoreName,
+}: {
+  expression: SQLStatement
+  idLt?: string
+  scoreLt?: number
+  scoreName: string
+}): SQLStatement[] {
   if (scoreLt === undefined) throw createHttpError(500, `${scoreName} requires ranking_lt`)
   if (!idLt) throw createHttpError(500, `${scoreName} requires id_lt`)
-  const filter = sql`(`
-  filter.append(expression)
-  filter.append(sql`, posts.id) < (${scoreLt}, ${idLt})`)
-  filters.push(filter)
+  return [sql`(`.append(expression).append(sql`, posts.id) < (${scoreLt}, ${idLt})`)]
 }
 
 function requiredFollowingRankExpression(expression: SQLStatement | null): SQLStatement {

@@ -100,9 +100,8 @@ export async function sanitizeRssFeedItemContentHtmlBatch(
   }
   if (current.length > 0) chunks.push(current)
 
-  const result: Record<string, string> = {}
-  await Promise.all(
-    chunks.map(async chunk => {
+  const entries = await Promise.all(
+    chunks.map(async (chunk): Promise<Array<[string, string]>> => {
       try {
         const buffers = chunk.map(({ html }) => Buffer.from(html, 'utf8'))
         const sanitized = await sanitizeRssHtmlBatch(buffers, {
@@ -110,15 +109,16 @@ export async function sanitizeRssFeedItemContentHtmlBatch(
           imageProxyUrlPrefix: CURRENT_SIDELOAD_PATH_PREFIX,
           imageProxySigningKeys: getSigningKeys(),
         })
-        for (let i = 0; i < chunk.length; i++) {
+        return chunk.flatMap(({ id }, i): Array<[string, string]> => {
           const serialized = sanitized[i]?.html.toString('utf8').trim()
           const html = serialized ? absolutizeSideloadImageSources(serialized) : undefined
-          if (html) result[chunk[i]!.id] = html
-        }
+          return html ? [[id, html]] : []
+        })
       } catch (err) {
         onError(err instanceof Error ? err : new Error(String(err)))
+        return []
       }
     }),
   )
-  return result
+  return Object.fromEntries(entries.flat())
 }

@@ -112,12 +112,12 @@ export async function validateOAuthAuthorizationRequest(
   input: AuthorizationParameters,
   onClientLoaded?: (client: OAuthClient) => void,
 ): Promise<ValidatedOAuthAuthorizationRequest> {
-  const foundClients: OAuthClient[] = []
+  let foundClient: OAuthClient | undefined
   let clientLookup: Promise<OAuthClient | null> | undefined
   const findClient = createProtocolClientLookup(async clientId => {
     const client = await (clientLookup ??= getOAuthClientForAuthorization(clientId))
-    if (client && foundClients.length === 0) {
-      foundClients.push(client)
+    if (client && foundClient === undefined) {
+      foundClient = client
       onClientLoaded?.(client)
     }
     return client
@@ -130,7 +130,7 @@ export async function validateOAuthAuthorizationRequest(
     resolveResource: findOAuthProtectedResource,
     clients: { findClient },
   })
-  const client = foundClients[0]
+  const client = foundClient
   if (!client || !validated.scopes.every(isApiScope)) {
     throw new OAuthProtocolError('server_error', 'authorization request validation failed', 503)
   }

@@ -3,12 +3,12 @@ import assert from 'http-assert'
 
 export class CircularRssFeedCanonicalError extends Error {
   readonly code = 'CIRCULAR_CANONICAL_REFERENCE'
+  override readonly name: string = 'CircularRssFeedCanonicalError'
 
   constructor(sourceId: string, targetId: string) {
     super(
       `Circular canonical reference detected: Cannot set RSS feed "${sourceId}" canonical to "${targetId}" as it would create a cycle`,
     )
-    this.name = 'CircularRssFeedCanonicalError'
   }
 }
 

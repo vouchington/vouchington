@@ -11,7 +11,7 @@ import {
   type MembershipUpdateResult,
   type MembershipUpdateRow,
 } from './update-result.mts'
-import { appendLifecycleSetClauses } from './update-lifecycle.mts'
+import { getLifecycleSetClauses } from './update-lifecycle.mts'
 import { markVoteWeightDirtyInTransaction } from './mark-vote-weight-dirty.mts'
 import type {
   MembershipEventUpdateOptions,
@@ -22,27 +22,22 @@ export async function updateMembershipFromEvent(
   options: MembershipEventUpdateOptions,
   recordChange: RecordMembershipUpdateEventChange,
 ): Promise<MembershipUpdateResult | null> {
-  const setClauses: ReturnType<typeof sql>[] = []
-
-  if (options.status !== undefined) {
-    appendLifecycleSetClauses(setClauses, options.status, options)
-  }
-  if (options.skuId !== undefined) {
-    setClauses.push(sql`membership_product_id = ${options.skuId}`)
-  }
-  if (options.expiresAt !== undefined) {
-    setClauses.push(sql`expires_at = ${options.expiresAt}`)
-  }
-  if (options.effectiveAt) {
-    setClauses.push(sql`effective_at = ${options.effectiveAt}`)
-  }
-  if (options.cancelAtPeriodEnd !== undefined) {
-    const isTerminal = options.status !== undefined && isTerminalMembershipStatus(options.status)
-    if (!isTerminal)
-      setClauses.push(sql`should_cancel_at_period_end = ${options.cancelAtPeriodEnd}`)
-  }
-
-  if (setClauses.length === 0) setClauses.push(sql`membership_product_id = membership_product_id`)
+  const lifecycleClauses =
+    options.status === undefined ? [] : getLifecycleSetClauses(options.status, options)
+  const isTerminal = options.status !== undefined && isTerminalMembershipStatus(options.status)
+  const explicitClauses = [
+    ...lifecycleClauses,
+    ...(options.skuId === undefined ? [] : [sql`membership_product_id = ${options.skuId}`]),
+    ...(options.expiresAt === undefined ? [] : [sql`expires_at = ${options.expiresAt}`]),
+    ...(options.effectiveAt ? [sql`effective_at = ${options.effectiveAt}`] : []),
+    ...(options.cancelAtPeriodEnd === undefined || isTerminal
+      ? []
+      : [sql`should_cancel_at_period_end = ${options.cancelAtPeriodEnd}`]),
+  ]
+  const setClauses =
+    explicitClauses.length === 0
+      ? [sql`membership_product_id = membership_product_id`]
+      : explicitClauses
 
   const query = sql`/* updateMembershipFromEvent */ UPDATE memberships SET `
   for (let i = 0; i < setClauses.length; i++) {

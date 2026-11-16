@@ -52,15 +52,9 @@ export function getElectionVoteRateLimitKeys(
   ip: string | undefined,
   sessionData: SessionTokenData | null,
 ): string[] {
-  const rateLimitKeys = [`uid:${currentUserId}`]
-
-  if (ip) {
-    rateLimitKeys.push(`ip:${ip}`)
-  }
-
-  if (!sessionData) return rateLimitKeys
-
-  rateLimitKeys.push(`did:${sessionData.did}`)
-  rateLimitKeys.push(`sid:${sessionData.sid}`)
-  return rateLimitKeys
+  return [
+    `uid:${currentUserId}`,
+    ...(ip ? [`ip:${ip}`] : []),
+    ...(sessionData ? [`did:${sessionData.did}`, `sid:${sessionData.sid}`] : []),
+  ]
 }

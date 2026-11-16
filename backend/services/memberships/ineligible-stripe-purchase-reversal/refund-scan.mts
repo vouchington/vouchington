@@ -18,9 +18,10 @@ export type { StripeRefundScanTarget } from './refund-scan-target.mts'
 export type StripeRefundScanCallBudget = { remainingCalls: number }
 
 class StripeRefundScanContinuationError extends Error {
+  override readonly name: string = 'StripeRefundScanContinuationError'
+
   constructor() {
     super('Stripe refund scan requires another bounded reconciliation call')
-    this.name = 'StripeRefundScanContinuationError'
   }
 }
 

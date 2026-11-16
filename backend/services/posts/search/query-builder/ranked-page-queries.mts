@@ -1,11 +1,10 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 
 /** Followed authors, or everyone else, as a keyed probe on the viewer's follow relation. */
-export function appendFollowingPhaseFilters(
-  filters: SQLStatement[],
+export function buildFollowingPhaseFilter(
   userId: string,
   phase: 'followed' | 'other',
-): void {
+): SQLStatement {
   const followedAuthor = sql`EXISTS (
     SELECT 1
     FROM relation__user__follow__user viewer_following
@@ -13,5 +12,5 @@ export function appendFollowingPhaseFilters(
       AND viewer_following.object_id = posts.created_by_id
       AND viewer_following.deleted_at IS NULL
   )`
-  filters.push(phase === 'followed' ? followedAuthor : sql`NOT `.append(followedAuthor))
+  return phase === 'followed' ? followedAuthor : sql`NOT `.append(followedAuthor)
 }
