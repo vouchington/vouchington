@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
   beginTransaction,
+  createTestAdminGrantMembership,
   createTestMembership,
   createTestSku,
   createTestUnprojectedStripeProductionProviderObservation,
@@ -11,7 +12,6 @@ import {
   getTestMembershipRaw,
 } from '@voucha/test-helpers'
 import { getMembershipHistory } from './get.mts'
-import { grantMembership } from './create.mts'
 import { recordMembershipChange, recordMembershipChanges } from './changes.mts'
 
 describe('recordMembershipChanges', () => {
@@ -25,7 +25,13 @@ describe('recordMembershipChanges', () => {
       provider_environment: 'production',
       provider_application_id: `batch-${randomUUID()}`,
     })
-    const grant = await grantMembership(administrator.id, member.id, 'plus', grantSku.id)
+    // Committed fixture: the SERIALIZABLE grant writer is only setup here, and parallel tests'
+    // predicate locks can abort it with 40001. Its contract is covered in create.test.mts.
+    const grant = await createTestAdminGrantMembership({
+      grantedById: administrator.id,
+      productId: grantSku.id,
+      userId: member.id,
+    })
     const memberMembership = await getTestMembershipRaw(grant.id)
     if (!memberMembership) throw new Error('Expected the membership grant projection')
     const otherMembership = await createTestMembership({ user_id: otherMember.id })

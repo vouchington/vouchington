@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import {
+  createTestMembership,
   createTestSku,
   createTestUser,
   releaseMembershipSourceForRebindForTest,
@@ -140,12 +141,8 @@ describe('provider membership sources', () => {
           stripeSubscriptionId: `sub_family_priority_${randomUUID()}`,
         })
       } else {
-        await createMembership({
-          userId: user.id,
-          plan: 'plus',
-          skuId: sku.id,
-          durationDays: 30,
-        })
+        // Committed fixture: the SERIALIZABLE grant writer is only setup here.
+        await createTestMembership({ user_id: user.id, plan: 'plus', sku_id: sku.id })
       }
       const familySource = await createTestProviderSource({
         userId: user.id,
