@@ -10,7 +10,7 @@ import { createCopyrightNoticeNotification, listNotifications } from '@services/
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 
 describe('copyright in-app notification delivery', () => {
-  it('persists a poster restriction notice once by its legal delivery key', async () => {
+  it('persists a status update notice once by its legal delivery key', async () => {
     const user = await createTestUser()
     const postId = await insertTestPost({
       title: `copyright notification ${crypto.randomUUID()}`,
@@ -59,7 +59,7 @@ describe('copyright in-app notification delivery', () => {
       userId: user.id,
       noticeId: notice.id,
       eventKey,
-      kind: 'copyright_poster_restriction_notice',
+      kind: 'copyright_status_update',
       aiAssisted: false,
       intentId: intent.id,
     })
@@ -67,7 +67,7 @@ describe('copyright in-app notification delivery', () => {
       userId: user.id,
       noticeId: notice.id,
       eventKey,
-      kind: 'copyright_poster_restriction_notice',
+      kind: 'copyright_status_update',
       aiAssisted: false,
       intentId: intent.id,
     })
