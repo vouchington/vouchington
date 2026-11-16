@@ -205,10 +205,15 @@ describe('expireElapsedMembershipsForUsers', () => {
     })
     await updateTestMembershipExpiresAt(membership.id, new Date('2020-01-01T00:00:00.000Z'))
 
-    const result = await expireElapsedMembershipsBatch(1_000_000, null, [member.id])
+    // The scan is global: a concurrent sweep may expire the owned member first, so assert the
+    // owned persisted state rather than this invocation's count.
+    await expireElapsedMembershipsBatch(1_000_000, null, [member.id])
 
-    expect(result.expired).toBeGreaterThanOrEqual(1)
-    await expect(getMembershipByUserId(member.id)).resolves.toBeNull()
+    // A concurrent sweep may still hold the member's lock and be committing. Taking the same
+    // FOR UPDATE lock waits for that commit, so the read below sees the settled state.
+    await withTestMembershipUserLocked(member.id, async () => {
+      await expect(getMembershipByUserId(member.id)).resolves.toBeNull()
+    })
   })
 
   it.each([0, -1, 1.5])('rejects invalid candidate batch size %s', async batchSize => {
