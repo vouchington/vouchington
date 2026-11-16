@@ -44,6 +44,3 @@ export const COPYRIGHT_AGENT_DISPATCH_JOBS = {
   CopyrightAgentDispatchStage,
   { jobName: string; schedulerId: string; description: string }
 >
-
-export type CopyrightAgentDispatchJobName =
-  (typeof COPYRIGHT_AGENT_DISPATCH_JOBS)[CopyrightAgentDispatchStage]['jobName']
