@@ -61,7 +61,6 @@ export async function resolveReviewDisputeRemove(
       },
       { query },
     )
-    await logDisputeResolution(staffUserId, 'resolve_report', disputeId, row.post_id, { query })
     if (row.post_author_id) {
       registerPostCommitAction(query, async () => {
         import('@services/notifications/create-review-actioned-notification')
@@ -71,6 +70,7 @@ export async function resolveReviewDisputeRemove(
           .catch(onError)
       })
     }
+    await logDisputeResolution(staffUserId, 'resolve_report', disputeId, row.post_id, { query })
     return getReviewDisputeAfterMutation(disputeId, { query })
   })
 }
@@ -126,7 +126,6 @@ export async function resolveReviewDisputeAnnotate(
       },
       { query },
     )
-    await logDisputeResolution(staffUserId, 'resolve_report', disputeId, row.post_id, { query })
     if (row.post_author_id) {
       registerPostCommitAction(query, async () => {
         import('@services/notifications/create-review-actioned-notification')
@@ -136,6 +135,7 @@ export async function resolveReviewDisputeAnnotate(
           .catch(onError)
       })
     }
+    await logDisputeResolution(staffUserId, 'resolve_report', disputeId, row.post_id, { query })
     return getReviewDisputeAfterMutation(disputeId, { query })
   })
 }
