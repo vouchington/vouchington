@@ -3,7 +3,7 @@ import { createTranslator } from '@ts-shared/ui-messages'
 import { catalogTreeFromLeaves } from '@ts-shared/ui-messages/catalog-tree'
 import { catalogTreeForLocale } from '@ts-shared/ui-messages/load-catalog-json'
 import { resolveLocalizationBatch } from '@vouchington/localization-compiler'
-import type { NotificationTranslate } from './render-notification-text.mts'
+import type { NotificationTranslate } from './render-notification-types.mts'
 
 const SELECTOR = 'notifications.kind.*'
 const SUPPORTED = new Set(['en', 'es', 'fr', 'pt'])

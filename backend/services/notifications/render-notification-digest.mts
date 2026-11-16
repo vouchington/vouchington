@@ -1,4 +1,4 @@
-import type { NotificationTranslate, Source } from './render-notification-text.mts'
+import type { NotificationTranslate, Source } from './render-notification-types.mts'
 import type { NotificationHydration } from './types.mts'
 
 const PREFIX = 'notifications.kind.'
