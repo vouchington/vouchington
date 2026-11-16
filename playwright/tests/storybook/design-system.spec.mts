@@ -11,7 +11,9 @@ async function requireCurrentStorybookBundle(page: Parameters<typeof navigateTo>
 }
 
 async function openStory(page: Parameters<typeof navigateTo>[0], id: string) {
-  await navigateTo(page, `/storybook/iframe.html?id=${id}&viewMode=story`)
+  // Each story load fetches ~150 same-origin assets. Wait for `load` and let the web-first
+  // assertion on the rendered story be the readiness signal instead of `networkidle`.
+  await navigateTo(page, `/storybook/iframe.html?id=${id}&viewMode=story`, { waitUntil: 'load' })
 }
 
 test.describe('Storybook design system component stories', () => {
@@ -35,15 +37,20 @@ test.describe('Storybook design system component stories', () => {
     await expect(page.getByTestId('kbd').first()).toBeVisible()
   })
 
-  test('renders badge, button, and card primitives', async ({ page }) => {
+  test('renders badge primitives', async ({ page }) => {
     await requireCurrentStorybookBundle(page)
-
     await openStory(page, 'design-system-components-badge--variants')
     await expect(page.getByTestId('badge').first()).toBeVisible()
+  })
 
+  test('renders button primitives', async ({ page }) => {
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-components-button--variants')
     await expect(page.getByTestId('button').first()).toBeVisible()
+  })
 
+  test('renders card primitives', async ({ page }) => {
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-components-card--default')
     await expect(page.getByTestId('card')).toBeVisible()
     await expect(page.getByTestId('card-header')).toBeVisible()
@@ -52,90 +59,123 @@ test.describe('Storybook design system component stories', () => {
     await expect(page.getByTestId('card-content')).toBeVisible()
   })
 
-  test('renders shared link and tooltip button', async ({ page }) => {
+  test('renders shared link', async ({ page }) => {
     await requireCurrentStorybookBundle(page)
-
     await openStory(page, 'design-system-components-textlink--default')
     await expect(page.getByTestId('text-link')).toBeVisible()
     await expect(page.getByTestId('text-link-anchor')).toHaveCount(2)
+  })
 
+  test('renders tooltip button', async ({ page }) => {
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-components-button--with-tooltip')
     await expect(page.getByTestId('tooltip-button')).toHaveCount(2)
   })
 
-  test('renders skeleton and empty state', async ({ page }) => {
+  test('renders skeleton', async ({ page }) => {
     await requireCurrentStorybookBundle(page)
-
     await openStory(page, 'design-system-components-skeleton--skeleton')
     await expect(page.getByTestId('skeleton').first()).toBeVisible()
+  })
 
-    expect(
-      await storybookBundleHasStory(page, 'design-system-components-emptystate--default'),
-      'Storybook bundle is missing design-system-components-emptystate--default.',
-    ).toBe(true)
+  test('renders empty state', async ({ page }) => {
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-components-emptystate--default')
     await expect(page.getByTestId('empty-state')).toBeVisible()
   })
 
-  test('renders feed components', async ({ page }) => {
+  test('renders feed category chips', async ({ page }) => {
     await requireCurrentStorybookBundle(page)
-
     await openStory(page, 'design-system-feed--category-chips-default')
     await expect(page.getByTestId('category-chips')).toBeVisible()
     await expect(page.getByTestId('category-chip').first()).toBeVisible()
+  })
 
+  test('renders feed header', async ({ page }) => {
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-feed--feed-header-default')
     await expect(page.getByTestId('feed-page-heading')).toBeVisible()
+  })
 
+  test('renders feed posts top section', async ({ page }) => {
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-feed--feed-posts-top-section')
     await expect(page.getByTestId('feed-top-section')).toBeVisible()
     await expect(page.getByTestId('feed-sub-filter-trigger')).toBeVisible()
     await expect(page.getByTestId('feed-sub-filter-trigger')).toContainText('Following')
+  })
 
+  test('renders feed news top section', async ({ page }) => {
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-feed--feed-news-top-section')
     await expect(page.getByTestId('feed-top-section')).toBeVisible()
     await expect(page.getByTestId('feed-sub-filter-trigger')).toContainText('Following')
+  })
 
+  test('renders all posts top section', async ({ page }) => {
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-feed--all-posts-top-section')
     await expect(page.getByTestId('post-list-top-section')).toBeVisible()
     await expect(page.getByTestId('post-type-title-dropdown-trigger')).toContainText('All')
+  })
 
+  test('renders reviews top section', async ({ page }) => {
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-feed--reviews-top-section')
     await expect(page.getByTestId('post-list-top-section')).toBeVisible()
     await expect(page.getByTestId('post-type-title-dropdown-trigger')).toContainText('Reviews')
+  })
 
+  test('renders feed skeleton', async ({ page }) => {
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-feed--feed-skeleton-default')
     await expect(page.getByTestId('feed-skeleton')).toBeVisible()
   })
 
-  test('renders layout, media, brand, and SEO components', async ({ page }) => {
+  test('renders hoverable card', async ({ page }) => {
     await requireCurrentStorybookBundle(page)
-
     await openStory(page, 'design-system-layout--hoverable-card-default')
     await expect(page.getByTestId('hoverable-card')).toBeVisible()
+  })
 
+  test('renders user avatar', async ({ page }) => {
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-media--user-avatar-default')
     await expect(page.getByTestId('user-avatar').first()).toBeVisible()
+  })
 
+  test('renders post image', async ({ page }) => {
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-media--post-image-default')
     await expect(page.getByTestId('post-image')).toBeVisible()
+  })
 
+  test('renders structured data script', async ({ page }) => {
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-seo--structured-data-script-default')
     await expect(page.getByTestId('structured-data-script')).toBeAttached()
+  })
 
+  test('renders brand logo marks', async ({ page }) => {
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'design-system-brand--logo-marks')
     await expect(page.getByTestId('voucha-logo')).toBeVisible()
   })
 
-  test('renders entity list item components', async ({ page }) => {
+  test('renders community list item card', async ({ page }) => {
     await requireCurrentStorybookBundle(page)
-
     await openStory(page, 'entities-communities--list-item-card')
     await expect(page.getByTestId('community-list-item-card')).toBeVisible()
+  })
 
+  test('renders source list item', async ({ page }) => {
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'entities-sources--list-page')
     await expect(page.getByTestId('source-list-item').first()).toBeVisible()
+  })
 
+  test('renders news item header', async ({ page }) => {
+    await requireCurrentStorybookBundle(page)
     await openStory(page, 'entities-news-and-rss-items--news-item-header-default')
     await expect(page.getByTestId('news-item-header')).toBeVisible()
   })
