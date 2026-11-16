@@ -5,7 +5,12 @@ import { CopyrightEuNoticeDetail } from './copyright-eu-notice-detail'
 
 describe('CopyrightEuNoticeDetail', () => {
   it('renders a no-action case and its stored statement with EU redress', () => {
-    render(<CopyrightEuNoticeDetail notice={makeCopyrightEuParticipantNotice()} />)
+    render(
+      <CopyrightEuNoticeDetail
+        uiLocale='en-US'
+        notice={makeCopyrightEuParticipantNotice()}
+      />,
+    )
     expect(screen.getByText('No action was taken.')).toBeInTheDocument()
     expect(screen.getByText(/Automated means: none/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Complain about this decision' })).toHaveAttribute(
@@ -18,6 +23,7 @@ describe('CopyrightEuNoticeDetail', () => {
   it('shows a reopened notice without another complaint link', () => {
     render(
       <CopyrightEuNoticeDetail
+        uiLocale='en-US'
         notice={makeCopyrightEuParticipantNotice({
           reopenedAt: '2026-10-04T12:00:00Z',
           canSubmit: false,
@@ -34,6 +40,7 @@ describe('CopyrightEuNoticeDetail', () => {
   it('shows the pre-decision state and no complaint cutoff for a never-informed viewer', () => {
     render(
       <CopyrightEuNoticeDetail
+        uiLocale='en-US'
         notice={makeCopyrightEuParticipantNotice({
           outcome: null,
           decided_at: null,

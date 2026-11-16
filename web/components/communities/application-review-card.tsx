@@ -1,5 +1,7 @@
 'use client'
 
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatUtcDate } from '@ts-shared/utils/format'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -35,6 +37,7 @@ export function ApplicationReviewCard({
   rejectionReason,
   user,
 }: ApplicationReviewCardProps) {
+  const uiLocale = useUiLocale()
   const t = useTranslations()
   const isPending = application.status === 'pending'
   const isApproved = application.status === 'approved'
@@ -45,12 +48,9 @@ export function ApplicationReviewCard({
       <div className='flex items-start justify-between gap-3'>
         <div>
           <p className='font-medium'>{getUserLabel(user, t('shared.user.deletedUser'))}</p>
-          <p
-            className='text-xs text-muted-foreground'
-            suppressHydrationWarning
-          >
+          <p className='text-xs text-muted-foreground'>
             {t('extracted.communities.applicationReview.appliedDate_6e231f5e', {
-              date: new Date(application.created_at).toLocaleDateString(),
+              date: formatUtcDate(application.created_at, uiLocale),
             })}
           </p>
         </div>

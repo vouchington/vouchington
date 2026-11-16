@@ -11,6 +11,7 @@ describe('statement delivery outcomes', () => {
   ] as const)('displays %s accurately while retaining the legal text', (state, sentAt, label) => {
     render(
       <CopyrightNoticeStatements
+        uiLocale='en-US'
         statements={[
           {
             id: 'statement',

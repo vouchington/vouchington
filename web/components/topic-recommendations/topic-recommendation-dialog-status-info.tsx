@@ -1,5 +1,7 @@
 'use client'
 
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatUtcDate } from '@ts-shared/utils/format'
 import Link from 'next/link'
 import { createUserPathname, topicHref } from '@/lib/links/entity-href'
 import type { Post } from '@/types/posts'
@@ -12,6 +14,7 @@ interface Props {
 }
 
 export function TopicRecommendationDialogStatusInfo({ selected, users }: Props) {
+  const uiLocale = useUiLocale()
   const t = useTranslations()
   const rec = selected.topic_recommendation
   if (!rec || rec.status === 'pending') return null
@@ -28,7 +31,7 @@ export function TopicRecommendationDialogStatusInfo({ selected, users }: Props) 
     t('extracted.topicRecommendations.topicRecommendationDialogStatusInfo.anAdmin_dfd7b796')
   )
   const reviewedDate = rec.reviewed_at
-    ? new Date(rec.reviewed_at).toLocaleDateString()
+    ? formatUtcDate(rec.reviewed_at, uiLocale)
     : t('extracted.topicRecommendations.topicRecommendationDialogStatusInfo.unknownDate_bced143d')
 
   if (rec.status === 'approved') {

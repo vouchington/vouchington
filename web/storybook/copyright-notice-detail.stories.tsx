@@ -29,7 +29,7 @@ const notice = {
 const meta = {
   title: 'Copyright/Notice Detail',
   component: CopyrightNoticeDetailView,
-  args: { notice, responseEligibility: null },
+  args: { notice, responseEligibility: null, uiLocale: 'en-US' },
 } satisfies Meta<typeof CopyrightNoticeDetailView>
 
 export default meta

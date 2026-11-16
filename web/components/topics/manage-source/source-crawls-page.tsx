@@ -1,5 +1,7 @@
 'use client'
 
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatUtcDateTime } from '@ts-shared/utils/format'
 import Link from 'next/link'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import { responseCodeClass } from '@/components/topics/manage-source/crawl-outcome'
@@ -23,6 +25,7 @@ interface SourceCrawlsPageProps {
 }
 
 export function SourceCrawlsPage({ data, rssFeedId, topic }: SourceCrawlsPageProps) {
+  const uiLocale = useUiLocale()
   const t = useTranslations()
   const endpoint = `/api/v1/rss-feeds/${encodeURIComponent(rssFeedId)}/crawls`
   const { pages, hasNextPage, endCursor, loadMore, loadingMore, fetchError, clearError, resetKey } =
@@ -75,21 +78,18 @@ export function SourceCrawlsPage({ data, rssFeedId, topic }: SourceCrawlsPagePro
                 key={crawl.id}
                 className='relative hover:bg-muted/50'
               >
-                <td
-                  className='px-6 py-4 text-foreground'
-                  suppressHydrationWarning
-                >
+                <td className='px-6 py-4 text-foreground'>
                   <Link
                     href={`${crawlDetailBase}${crawl.id}`}
                     prefetch={false}
                     aria-label={t(
                       'extracted.manageSource.crawlHistorySection.viewCrawlFromDate_73e55b54',
-                      { date: new Date(crawl.created_at).toLocaleString() },
+                      { date: formatUtcDateTime(crawl.created_at, uiLocale) },
                     )}
                     className="after:absolute after:inset-0 after:content-['']"
                     data-pw='source-crawl-row'
                   >
-                    {new Date(crawl.created_at).toLocaleString()}
+                    {formatUtcDateTime(crawl.created_at, uiLocale)}
                   </Link>
                 </td>
                 <td className='px-6 py-4'>

@@ -1,3 +1,4 @@
+import { formatUtcDateTime } from '@ts-shared/utils/format'
 import { notFound, permanentRedirect, redirect } from 'next/navigation'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
@@ -8,6 +9,7 @@ import { CrawlAuthoredText } from '@/components/urls/crawl-authored-text'
 import { CrawlMetaTags } from '@/components/urls/crawl-meta-tags'
 import { domainHref, urlCrawlHref, urlHref } from '@/lib/links/entity-href'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
+import { getResolvedUiLocale } from '@/lib/i18n/get-resolved-ui-locale'
 import { getTranslations } from '@/lib/i18n/get-translations'
 import { isUUID } from '@ts-shared/utils/validation-core'
 
@@ -20,7 +22,7 @@ export default async function CrawlDetailPage({
 }: {
   params: Promise<{ urlValue: string; crawlId: string }>
 }) {
-  const t = await getTranslations()
+  const [t, uiLocale] = await Promise.all([getTranslations(), getResolvedUiLocale()])
   const currentUser = await getCurrentUser()
   if (!currentUser) redirect('/login')
 
@@ -84,22 +86,16 @@ export default async function CrawlDetailPage({
               <dt className='text-sm font-medium text-muted-foreground'>
                 {t('extracted.crawlid.page.createdAt_3d443370')}
               </dt>
-              <dd
-                className='mt-1 text-sm text-foreground'
-                suppressHydrationWarning
-              >
-                {new Date(crawl.created_at).toLocaleString()}
+              <dd className='mt-1 text-sm text-foreground'>
+                {formatUtcDateTime(crawl.created_at, uiLocale)}
               </dd>
             </div>
             <div>
               <dt className='text-sm font-medium text-muted-foreground'>
                 {t('extracted.crawlid.page.completedAt_3e10363f')}
               </dt>
-              <dd
-                className='mt-1 text-sm text-foreground'
-                suppressHydrationWarning
-              >
-                {crawl.completed_at ? new Date(crawl.completed_at).toLocaleString() : 'N/A'}
+              <dd className='mt-1 text-sm text-foreground'>
+                {crawl.completed_at ? formatUtcDateTime(crawl.completed_at, uiLocale) : 'N/A'}
               </dd>
             </div>
             {crawl.title && (

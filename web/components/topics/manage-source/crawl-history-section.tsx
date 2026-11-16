@@ -1,5 +1,7 @@
 'use client'
 
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatUtcDateTime } from '@ts-shared/utils/format'
 import Link from 'next/link'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { RssFeedCrawlSummary } from '@/types/rss-feeds'
@@ -17,6 +19,7 @@ export function CrawlHistorySection({
   crawlDetailHrefBase,
   newsHref,
 }: CrawlHistorySectionProps) {
+  const uiLocale = useUiLocale()
   const t = useTranslations()
   return (
     <section
@@ -54,21 +57,17 @@ export function CrawlHistorySection({
                 key={crawl.id}
                 className='relative hover:bg-muted/50'
               >
-                <td
-                  className='py-2 text-foreground'
-                  suppressHydrationWarning
-                >
+                <td className='py-2 text-foreground'>
                   <Link
                     href={`${crawlDetailHrefBase}${crawl.id}`}
                     prefetch={false}
                     aria-label={t(
                       'extracted.manageSource.crawlHistorySection.viewCrawlFromDate_73e55b54',
-                      { date: new Date(crawl.created_at).toLocaleString() },
+                      { date: formatUtcDateTime(crawl.created_at, uiLocale) },
                     )}
                     className="after:absolute after:inset-0 after:content-['']"
-                    suppressHydrationWarning
                   >
-                    {new Date(crawl.created_at).toLocaleString()}
+                    {formatUtcDateTime(crawl.created_at, uiLocale)}
                   </Link>
                 </td>
                 <td className='py-2'>

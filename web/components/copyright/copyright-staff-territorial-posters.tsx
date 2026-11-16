@@ -1,5 +1,7 @@
 'use client'
 
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatUtcDateTime } from '@ts-shared/utils/format'
 import { PaginatedListFooter } from '@/components/shared/paginated-list-footer'
 import type { CopyrightTerritorialPoster } from '@/types/copyright-territorial'
 
@@ -14,6 +16,7 @@ type Props = {
 
 /** One row per target and poster, so a poster on several targets appears once for each. */
 export function CopyrightStaffTerritorialPosters({ posters, ...footer }: Props) {
+  const uiLocale = useUiLocale()
   return (
     <section
       aria-label='Poster delivery status'
@@ -27,7 +30,10 @@ export function CopyrightStaffTerritorialPosters({ posters, ...footer }: Props) 
           {posters.map((poster, index) => (
             <li key={`${poster.target_id}:${poster.user_id ?? 'guest'}`}>
               Poster {index + 1}: {poster.state ?? 'not sent'}; informed{' '}
-              {poster.informed_at ? new Date(poster.informed_at).toLocaleString() : 'Not recorded'}.
+              {poster.informed_at
+                ? formatUtcDateTime(poster.informed_at, uiLocale)
+                : 'Not recorded'}
+              .
             </li>
           ))}
         </ul>

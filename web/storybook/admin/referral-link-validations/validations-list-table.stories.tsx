@@ -37,6 +37,7 @@ export const WithSets: Story = {
         validations={validations}
         programSlug='amex-referrals'
         t={t}
+        uiLocale='en-US'
       />
     </StoryFrame>
   ),
@@ -49,6 +50,7 @@ export const Empty: Story = {
         validations={[]}
         programSlug='amex-referrals'
         t={t}
+        uiLocale='en-US'
       />
     </StoryFrame>
   ),

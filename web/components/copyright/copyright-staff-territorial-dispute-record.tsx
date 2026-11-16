@@ -1,5 +1,7 @@
 'use client'
 
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatUtcDateTime } from '@ts-shared/utils/format'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'
@@ -40,6 +42,7 @@ export function CopyrightStaffTerritorialSettlementRecord({
   onReview: SubmitReview
   pending: boolean
 }) {
+  const uiLocale = useUiLocale()
   const [result, setResult] = useState<CopyrightEuDisputeSettlementResult>('no_decision')
   const [decidedAt, setDecidedAt] = useState(() => dateForInput())
   const [implementedAt, setImplementedAt] = useState(() => dateForInput())
@@ -48,7 +51,8 @@ export function CopyrightStaffTerritorialSettlementRecord({
       <div className='space-y-1 text-sm'>
         <h4 className='font-medium'>{referral.body_name}</h4>
         <p>
-          Referred {new Date(referral.referred_at).toLocaleString()} by {referral.referred_by_party}
+          Referred {formatUtcDateTime(referral.referred_at, uiLocale)} by{' '}
+          {referral.referred_by_party}
         </p>
       </div>
       {!referral.outcome ? (
@@ -65,10 +69,10 @@ export function CopyrightStaffTerritorialSettlementRecord({
       ) : (
         <div className='space-y-2 text-sm'>
           <p>Outcome: {labelForResult(referral.outcome.result)}</p>
-          <p>Recorded {new Date(referral.outcome.decided_at).toLocaleString()}</p>
+          <p>Recorded {formatUtcDateTime(referral.outcome.decided_at, uiLocale)}</p>
           {referral.outcome.implemented_at ? (
             <p>
-              Implementation recorded {new Date(referral.outcome.implemented_at).toLocaleString()}
+              Implementation recorded {formatUtcDateTime(referral.outcome.implemented_at, uiLocale)}
             </p>
           ) : referral.outcome.result === 'decided_for_recipient' ? (
             <CopyrightStaffTerritorialImplementationFields

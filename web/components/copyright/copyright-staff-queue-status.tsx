@@ -1,5 +1,7 @@
 'use client'
 
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatUtcDateTime } from '@ts-shared/utils/format'
 import { Badge } from '@/components/ui/badge'
 import { TimeAgo } from '@/components/shared/time-ago'
 import type { CopyrightStaffQueueItem, CopyrightStaffQueueReason } from '@/types/copyright-notices'
@@ -25,6 +27,7 @@ const urgentReasons = new Set<CopyrightStaffQueueReason>(['deadline_due', 'deadl
 
 /** Why a case is queued, how long its oldest open item has waited, and its next deadline. */
 export function CopyrightStaffQueueStatus({ notice }: { notice: CopyrightStaffQueueItem }) {
+  const uiLocale = useUiLocale()
   const deadline = notice.next_deadline
   const unassessedFiling = notice.legal_holds.some(hold => hold.assessment === null)
   return (
@@ -54,13 +57,13 @@ export function CopyrightStaffQueueStatus({ notice }: { notice: CopyrightStaffQu
       </p>
       {unassessedFiling && deadline && (
         <p className='text-muted-foreground'>
-          Assess the filing by {new Date(deadline.escalation_at).toLocaleString()}
+          Assess the filing by {formatUtcDateTime(deadline.escalation_at, uiLocale)}
         </p>
       )}
       {deadline && (
         <p className='text-muted-foreground'>
-          Next deadline: escalation {new Date(deadline.escalation_at).toLocaleString()} ·
-          restoration {new Date(deadline.restoration_deadline_at).toLocaleString()}
+          Next deadline: escalation {formatUtcDateTime(deadline.escalation_at, uiLocale)} ·
+          restoration {formatUtcDateTime(deadline.restoration_deadline_at, uiLocale)}
         </p>
       )}
     </div>

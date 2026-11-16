@@ -1,5 +1,7 @@
 'use client'
 
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatUtcDate } from '@ts-shared/utils/format'
 import { PaginatedListFooter } from '@/components/shared/paginated-list-footer'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import { listCopyrightEuDisputeSettlements } from '@/lib/api/client/copyright-eu-dispute-settlements'
@@ -15,6 +17,7 @@ export function CopyrightEuDisputeSettlements({
   noticeId: string
   data: CopyrightEuDisputeSettlementsPage
 }) {
+  const uiLocale = useUiLocale()
   const { pages, hasNextPage, loadMore, loadingMore, fetchError, clearError } = usePaginatedList(
     data,
     `/api/v1/copyright-notices/${noticeId}/eu-dispute-settlements`,
@@ -42,15 +45,13 @@ export function CopyrightEuDisputeSettlements({
               className='rounded border p-3'
             >
               <p>{referral.body_name}</p>
-              <p>Referred {new Date(referral.referred_at).toLocaleDateString()}</p>
+              <p>Referred {formatUtcDate(referral.referred_at, uiLocale)}</p>
               {referral.outcome ? (
                 <div>
                   <p>Outcome: {referral.outcome.result.replaceAll('_', ' ')}</p>
-                  <p>Decided {new Date(referral.outcome.decided_at).toLocaleDateString()}</p>
+                  <p>Decided {formatUtcDate(referral.outcome.decided_at, uiLocale)}</p>
                   {referral.outcome.implemented_at && (
-                    <p>
-                      Implemented {new Date(referral.outcome.implemented_at).toLocaleDateString()}
-                    </p>
+                    <p>Implemented {formatUtcDate(referral.outcome.implemented_at, uiLocale)}</p>
                   )}
                 </div>
               ) : (

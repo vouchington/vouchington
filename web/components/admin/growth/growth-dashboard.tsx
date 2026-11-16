@@ -11,6 +11,8 @@ import { ContentHealth } from './content-health'
 import { InfrastructureMetricsPanel } from './infrastructure-metrics'
 import type { GrowthMetrics } from '@/types/growth-metrics'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatUtcDate } from '@ts-shared/utils/format'
 
 interface Props {
   metrics: GrowthMetrics
@@ -18,6 +20,7 @@ interface Props {
 
 export default function GrowthDashboard({ metrics }: Props) {
   const t = useTranslations()
+  const uiLocale = useUiLocale()
   return (
     <div
       className='space-y-8'
@@ -31,17 +34,10 @@ export default function GrowthDashboard({ metrics }: Props) {
           >
             {t('extracted.growth.growthDashboard.growthDashboard_5f95c2d1')}
           </h1>
-          <p
-            className='mt-1 text-sm text-muted-foreground'
-            suppressHydrationWarning
-          >
+          <p className='mt-1 text-sm text-muted-foreground'>
             {t('extracted.growth.growthDashboard.periodstartPeriodend_019842e2', {
-              periodStart: new Date(metrics.period_start).toLocaleDateString(undefined, {
-                timeZone: 'UTC',
-              }),
-              periodEnd: new Date(metrics.period_end).toLocaleDateString(undefined, {
-                timeZone: 'UTC',
-              }),
+              periodStart: formatUtcDate(metrics.period_start, uiLocale),
+              periodEnd: formatUtcDate(metrics.period_end, uiLocale),
             })}
           </p>
         </div>

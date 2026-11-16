@@ -192,7 +192,7 @@ describe('CopyrightStaffQueue', () => {
         '2026-01-01T00:00:00.000Z',
       )
       expect(screen.getByText(/^Next deadline/)).toHaveTextContent(
-        `escalation ${new Date('2026-01-10T00:00:00.000Z').toLocaleString()} · restoration ${new Date('2026-01-15T00:00:00.000Z').toLocaleString()}`,
+        'escalation Jan 10, 2026, 12:00 AM UTC · restoration Jan 15, 2026, 12:00 AM UTC',
       )
       expect(screen.getByText('Original photograph.')).toBeInTheDocument()
       const screeningText =

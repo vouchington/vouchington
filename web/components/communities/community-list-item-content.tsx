@@ -1,5 +1,7 @@
 'use client'
 
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatUtcDate } from '@ts-shared/utils/format'
 import Link from 'next/link'
 import { createPostPathname, domainHref, topicHref, urlHref } from '@/lib/links/entity-href'
 import { getPostSlugFromType } from '@/lib/route-configs'
@@ -15,6 +17,7 @@ type CommunityListItemContentProps = {
 }
 
 export function CommunityListItemContent({ item, itemType, data }: CommunityListItemContentProps) {
+  const uiLocale = useUiLocale()
   const t = useTranslations()
   switch (itemType) {
     case 'topic': {
@@ -90,11 +93,8 @@ export function CommunityListItemContent({ item, itemType, data }: CommunityList
               }}
             />
           )}
-          <p
-            className='mt-1 text-sm text-muted-foreground'
-            suppressHydrationWarning
-          >
-            {new Date(post.created_at).toLocaleDateString()}
+          <p className='mt-1 text-sm text-muted-foreground'>
+            {formatUtcDate(post.created_at, uiLocale)}
           </p>
         </div>
       )

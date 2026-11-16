@@ -1,0 +1,46 @@
+id: web-no-locale-less-date-format
+language: Tsx
+severity: error
+message: >-
+  toLocaleDateString, toLocaleTimeString, and toLocaleString without an explicit locale use the
+  browser default instead of the UI locale, so output differs between server render and client
+  hydration. Use formatUtcDate or formatUtcDateTime from @ts-shared/utils/format with the UI locale.
+files:
+  - web/**/*.ts
+  - web/**/*.tsx
+ignores:
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - web/test-helpers/**
+  - web/storybook/**
+rule:
+  kind: call_expression
+  any:
+    - pattern: $DATE.toLocaleDateString()
+    - pattern: $DATE.toLocaleTimeString()
+    - pattern: $DATE.toLocaleString()
+    - pattern: $DATE.toLocaleDateString(undefined)
+    - pattern: $DATE.toLocaleDateString(undefined, $$$REST)
+    - pattern: $DATE.toLocaleTimeString(undefined)
+    - pattern: $DATE.toLocaleTimeString(undefined, $$$REST)
+    - pattern: $DATE.toLocaleString(undefined)
+    - pattern: $DATE.toLocaleString(undefined, $$$REST)
+examples:
+  - code: new Date(x).toLocaleString()
+    isValid: false
+    file: web/components/example.tsx
+  - code: new Date(x).toLocaleDateString()
+    isValid: false
+    file: web/components/example.tsx
+  - code: new Date(x).toLocaleTimeString()
+    isValid: false
+    file: web/components/example.tsx
+  - code: "new Date(x).toLocaleDateString(undefined, { month: 'short' })"
+    isValid: false
+    file: web/components/example.tsx
+  - code: formatUtcDateTime(x, uiLocale)
+    isValid: true
+    file: web/components/example.tsx
+  - code: "new Date(x).toLocaleDateString(uiLocale, { timeZone: 'UTC' })"
+    isValid: true
+    file: web/components/example.tsx

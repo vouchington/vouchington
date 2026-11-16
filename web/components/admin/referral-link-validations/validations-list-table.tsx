@@ -1,3 +1,4 @@
+import { formatUtcDate } from '@ts-shared/utils/format'
 import Link from 'next/link'
 import { AdminTableShell } from '@/components/admin/admin-table-shell'
 import type { ReferralLinkValidation } from '@/lib/api/client/referral-link-validations'
@@ -8,13 +9,19 @@ interface ValidationsListTableProps {
   validations: ReferralLinkValidation[]
   programSlug: string
   t: Awaited<ReturnType<typeof getTranslations>>
+  uiLocale: string
 }
 
 /**
  * Presentational table of referral-link validation sets. Scoped under a referral
  * program via its slug so links resolve to the program's validation routes.
  */
-export function ValidationsListTable({ validations, programSlug, t }: ValidationsListTableProps) {
+export function ValidationsListTable({
+  validations,
+  programSlug,
+  t,
+  uiLocale,
+}: ValidationsListTableProps) {
   return (
     <AdminTableShell
       aria-label={t(
@@ -68,11 +75,8 @@ export function ValidationsListTable({ validations, programSlug, t }: Validation
               <td className='max-w-sm truncate px-6 py-4 text-sm text-muted-foreground'>
                 {v.user_help_text || '—'}
               </td>
-              <td
-                className='whitespace-nowrap px-6 py-4 text-sm text-muted-foreground'
-                suppressHydrationWarning
-              >
-                {new Date(v.updated_at).toLocaleDateString()}
+              <td className='whitespace-nowrap px-6 py-4 text-sm text-muted-foreground'>
+                {formatUtcDate(v.updated_at, uiLocale)}
               </td>
             </tr>
           ))}

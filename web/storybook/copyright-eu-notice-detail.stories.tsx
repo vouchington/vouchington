@@ -5,7 +5,7 @@ import { makeCopyrightEuParticipantNotice } from '@/test-helpers/api-responses/c
 const meta = {
   title: 'Copyright/EU Notice Detail',
   component: CopyrightEuNoticeDetail,
-  args: { notice: makeCopyrightEuParticipantNotice() },
+  args: { notice: makeCopyrightEuParticipantNotice(), uiLocale: 'en-US' },
 } satisfies Meta<typeof CopyrightEuNoticeDetail>
 export default meta
 type Story = StoryObj<typeof meta>

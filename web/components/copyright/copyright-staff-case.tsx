@@ -1,5 +1,7 @@
 'use client'
 
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatUtcDateTime } from '@ts-shared/utils/format'
 import { reviewCopyrightRestriction } from '@/lib/api/client/copyright-notices'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
 import { CopyrightStaffAppealReview } from './copyright-staff-case-appeal'
@@ -39,6 +41,7 @@ export function CopyrightStaffCase({
   submit: SubmitReview
   submitRecovery: SubmitRecovery
 }) {
+  const uiLocale = useUiLocale()
   const canSubmit = rationale.length > 0
   const isUsNotice = notice.jurisdiction === 'us_dmca'
   return (
@@ -50,7 +53,7 @@ export function CopyrightStaffCase({
       <header>
         <h2 className='font-semibold'>{copyrightCaseLabel(notice)}</h2>
         <p className='text-sm text-muted-foreground'>
-          {notice.jurisdiction} · received {new Date(notice.received_at).toLocaleString()}
+          {notice.jurisdiction} · received {formatUtcDateTime(notice.received_at, uiLocale)}
         </p>
         <CopyrightStaffQueueStatus notice={notice} />
       </header>

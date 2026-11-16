@@ -12,7 +12,7 @@ import {
   Legend,
 } from 'recharts'
 import { useUiLocale } from '@/lib/i18n/ui-locale-context'
-import { formatNumber } from '@ts-shared/utils/format'
+import { formatNumber, formatUtcDate } from '@ts-shared/utils/format'
 import type { DailyStats } from '@/types/landing-pages'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
@@ -41,9 +41,10 @@ export function AnalyticsVisitTrendChart({ dailyStats }: Props) {
             <XAxis
               dataKey='date'
               tickFormatter={(d: string) =>
-                new Date(`${d}T00:00:00`).toLocaleDateString(undefined, {
+                new Date(`${d}T00:00:00Z`).toLocaleDateString(uiLocale, {
                   month: 'short',
                   day: 'numeric',
+                  timeZone: 'UTC',
                 })
               }
               className='text-xs'
@@ -56,13 +57,7 @@ export function AnalyticsVisitTrendChart({ dailyStats }: Props) {
             <Tooltip
               formatter={value => formatNumber(Number(value), uiLocale)}
               labelFormatter={(d: unknown) =>
-                typeof d === 'string'
-                  ? new Date(`${d}T00:00:00`).toLocaleDateString(undefined, {
-                      weekday: 'short',
-                      month: 'short',
-                      day: 'numeric',
-                    })
-                  : String(d)
+                typeof d === 'string' ? formatUtcDate(`${d}T00:00:00Z`, uiLocale) : String(d)
               }
             />
             <Legend />

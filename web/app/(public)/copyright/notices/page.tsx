@@ -1,3 +1,5 @@
+import { getResolvedUiLocale } from '@/lib/i18n/get-resolved-ui-locale'
+import { formatUtcDate } from '@ts-shared/utils/format'
 import { requireCurrentUser } from '@/lib/auth/require-current-user'
 import { getCopyrightNotices } from '@/lib/api/server/copyright-notices'
 import { userHref } from '@/lib/links/entity-href'
@@ -11,6 +13,7 @@ export default async function CopyrightNoticesPage({
 }) {
   await requireCurrentUser()
   const { after } = await searchParams
+  const uiLocale = await getResolvedUiLocale()
   const notices = await getCopyrightNotices({
     after: typeof after === 'string' ? after : undefined,
   })
@@ -35,7 +38,7 @@ export default async function CopyrightNoticesPage({
             </Link>
             <p className='text-sm text-muted-foreground'>
               {notice.target_count} affected placement{notice.target_count === 1 ? '' : 's'}.
-              Accepted {new Date(notice.accepted_at).toLocaleDateString()}.
+              Accepted {formatUtcDate(notice.accepted_at, uiLocale)}.
             </p>
             {notice.claimant && (
               <p className='text-sm text-muted-foreground'>

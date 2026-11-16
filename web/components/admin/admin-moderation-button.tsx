@@ -1,5 +1,6 @@
 'use client'
 
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,7 +12,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { ScoreVote } from '@/components/votes/score-vote'
-import { formatPercent } from '@ts-shared/utils/format'
+import { formatPercent, formatUtcDateTime } from '@ts-shared/utils/format'
 import { clearAgentModerationVote, submitAgentModerationVote } from '@/lib/api/client/elections'
 import type { AgentModeration, AgentModerationElection, AgentModerationVote } from '@/types/agents'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -27,6 +28,7 @@ export default function AdminModerationButton({
   elections,
   electionVotes,
 }: AdminModerationButtonProps) {
+  const uiLocale = useUiLocale()
   const t = useTranslations()
   const hasFlagged = moderations.some(m => m.is_flagged)
 
@@ -138,11 +140,8 @@ export default function AdminModerationButton({
                       />
                     </div>
                   ) : null}
-                  <p
-                    className='text-xs text-muted-foreground mt-1'
-                    suppressHydrationWarning
-                  >
-                    {new Date(m.created_at).toLocaleString()}
+                  <p className='text-xs text-muted-foreground mt-1'>
+                    {formatUtcDateTime(m.created_at, uiLocale)}
                   </p>
                 </div>
               )

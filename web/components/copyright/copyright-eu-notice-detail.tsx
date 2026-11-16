@@ -1,3 +1,4 @@
+import { formatUtcDate } from '@ts-shared/utils/format'
 import Link from 'next/link'
 import type { CopyrightParticipantNoticeDetail } from '@/types/copyright-notices'
 import { CopyrightEuDisputeSettlements } from './copyright-eu-dispute-settlements'
@@ -7,8 +8,10 @@ import { copyrightCaseLabel } from './copyright-case-label'
 
 export function CopyrightEuNoticeDetail({
   notice,
+  uiLocale,
 }: {
   notice: Extract<CopyrightParticipantNoticeDetail, { jurisdiction: 'eu_dsa' }>
+  uiLocale: string
 }) {
   const eu = notice.eu
   return (
@@ -19,7 +22,7 @@ export function CopyrightEuNoticeDetail({
       <div>
         <p className='text-sm text-muted-foreground'>{copyrightCaseLabel(notice)}</p>
         <h1 className='text-3xl font-bold'>EU copyright notice</h1>
-        <p>Received {new Date(notice.received_at).toLocaleDateString()}</p>
+        <p>Received {formatUtcDate(notice.received_at, uiLocale)}</p>
       </div>
       <section className='space-y-2'>
         <h2 className='text-lg font-semibold'>Decision</h2>
@@ -34,7 +37,7 @@ export function CopyrightEuNoticeDetail({
               : 'No action was taken.'}
           </p>
         )}
-        {eu.decided_at && <p>Decided {new Date(eu.decided_at).toLocaleDateString()}</p>}
+        {eu.decided_at && <p>Decided {formatUtcDate(eu.decided_at, uiLocale)}</p>}
       </section>
       {notice.targets.length > 0 && (
         <section className='space-y-2'>
@@ -62,7 +65,10 @@ export function CopyrightEuNoticeDetail({
           </ul>
         </section>
       )}
-      <CopyrightNoticeStatements statements={notice.statements} />
+      <CopyrightNoticeStatements
+        statements={notice.statements}
+        uiLocale={uiLocale}
+      />
       <section className='space-y-2'>
         <h2 className='text-lg font-semibold'>Your complaint</h2>
         {eu.complaint.request ? (
@@ -82,7 +88,7 @@ export function CopyrightEuNoticeDetail({
           <p>A complaint cannot be submitted for this decision.</p>
         )}
         {eu.complaint.window_ends_at && (
-          <p>Complaint period ends {new Date(eu.complaint.window_ends_at).toLocaleDateString()}.</p>
+          <p>Complaint period ends {formatUtcDate(eu.complaint.window_ends_at, uiLocale)}.</p>
         )}
         {eu.complaint.decision && (
           <div>

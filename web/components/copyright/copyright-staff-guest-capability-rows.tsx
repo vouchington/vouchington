@@ -1,5 +1,7 @@
 'use client'
 
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatUtcDateTime } from '@ts-shared/utils/format'
 import { Button } from '@/components/ui/button'
 import type {
   CopyrightGuestCapabilityRow,
@@ -19,6 +21,7 @@ export function CopyrightGuestCapabilityRows({
   onRevoke: (capabilityId: string) => void
   onLoadOlder: () => void
 }) {
+  const uiLocale = useUiLocale()
   if (list.status === 'loading') {
     return <p className='text-sm text-muted-foreground'>Loading guest access…</p>
   }
@@ -52,7 +55,7 @@ export function CopyrightGuestCapabilityRows({
             key={row.id}
             className='flex flex-wrap items-center justify-between gap-2 p-2'
           >
-            <span>{describeCapability(row)}</span>
+            <span>{describeCapability(row, uiLocale)}</span>
             {row.status === 'active' && (
               <span className='flex gap-2'>
                 <Button
@@ -96,12 +99,12 @@ export function CopyrightGuestCapabilityRows({
   )
 }
 
-function describeCapability(row: CopyrightGuestCapabilityRow): string {
+function describeCapability(row: CopyrightGuestCapabilityRow, uiLocale: string): string {
   const issuer = row.issued_by_username ? `@${row.issued_by_username}` : 'a deleted account'
-  const issued = `Issued ${new Date(row.issued_at).toLocaleString()} by ${issuer}`
+  const issued = `Issued ${formatUtcDateTime(row.issued_at, uiLocale)} by ${issuer}`
   if (row.status === 'revoked') {
-    return `${issued} · revoked ${new Date(row.revoked_at ?? row.expires_at).toLocaleString()}`
+    return `${issued} · revoked ${formatUtcDateTime(row.revoked_at ?? row.expires_at, uiLocale)}`
   }
   const verb = row.status === 'expired' ? 'expired' : 'expires'
-  return `${issued} · ${verb} ${new Date(row.expires_at).toLocaleString()}`
+  return `${issued} · ${verb} ${formatUtcDateTime(row.expires_at, uiLocale)}`
 }
