@@ -42610,7 +42610,7 @@
         },
         "fk_copyright_lifecycle_events__submission_notice": {
           "columns": ["copyright_notice_id", "copyright_notice_submission_id"],
-          "deferrable": false,
+          "deferrable": true,
           "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["copyright_notice_id", "id"],
@@ -48769,6 +48769,7 @@
         },
         "fk_copyright_restrictions__filing_submission_notice": {
           "columns": ["copyright_notice_id", "copyright_notice_submission_id"],
+          "deferrable": false,
           "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["copyright_notice_id", "id"],
