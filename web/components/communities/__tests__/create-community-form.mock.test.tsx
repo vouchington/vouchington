@@ -43,6 +43,9 @@ const mockCheckAvailability = vi.mocked(checkAvailability)
 describe('CreateCommunityForm', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    // The username dialog's real availability hook blurs (focus moves on close/unmount) after
+    // resetAllMocks; the mock must keep returning a promise like the real async client.
+    mockCheckAvailability.mockResolvedValue({ available: true, conflict: null })
   })
 
   it('submit button is disabled when name is empty', () => {
