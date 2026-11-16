@@ -287,6 +287,12 @@ and never a lock, advisory lock, or conflict-forcing column. The guard reads and
 run inside the same SERIALIZABLE transaction so SSI can track their read/write dependencies; a
 guard read outside that transaction cannot protect the invariant. Why and owner words: [lock scope](postgresql/reference-transactions.md#lock-scope). Unenforced.
 
+An outstanding membership-grant cap is an admission guard: it counts committed grants, so
+overlapping grants may each observe available capacity and exceed it. Do not use broad SERIALIZABLE
+conflict detection to make this cap strict. Return a conflict when a real activation or effective
+membership projection uniqueness invariant rejects a write; unrelated users contending on shared
+predicate-lock pages do not constitute a membership conflict.
+
 Tests for a writer that starts after a committed decision seed that committed state before invoking
 the writer. Tests of overlapping transactions accept every valid race outcome rather than imposing
 a lock order or assuming one writer must win.

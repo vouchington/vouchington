@@ -260,8 +260,6 @@ describe('revokeMembershipGrant', () => {
   })
 })
 
-// Committed fixtures: the SERIALIZABLE grant writer is only setup in this file, and parallel
-// tests' predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
 function activeGrant(admin: { id: string }, member: { id: string }, sku: { id: string }) {
   return createTestAdminGrantMembership({
     grantedById: admin.id,

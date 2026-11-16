@@ -27,8 +27,6 @@ describe('direct terms', () => {
       stripeSubscriptionId: `sub_grant_precedence_${directUser.id}`,
     })
     const grantSku = await createTestSku({ plan: 'pro', interval: 'yearly' })
-    // Committed fixture: queueing through the SERIALIZABLE writer is covered in
-    // create-direct-grant-queue.test.mts; parallel tests' predicate locks can abort it with 40001.
     const queuedGrantId = await insertQueuedMembershipGrant({
       grantedById: admin.id,
       productId: grantSku.id,
@@ -219,8 +217,6 @@ async function resumeDirectAccessSuspension(userId: string, membershipId: string
   return outcome
 }
 
-// Committed fixtures: the SERIALIZABLE grant writer is only setup in this file, and parallel
-// tests' predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
 function activeGrant(admin: { id: string }, member: { id: string }, sku: { id: string }) {
   return createTestAdminGrantMembership({
     grantedById: admin.id,

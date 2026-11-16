@@ -25,8 +25,6 @@ describe('recordMembershipChanges', () => {
       provider_environment: 'production',
       provider_application_id: `batch-${randomUUID()}`,
     })
-    // Committed fixture: the SERIALIZABLE grant writer is only setup here, and parallel tests'
-    // predicate locks can abort it with 40001. Its contract is covered in create.test.mts.
     const grant = await createTestAdminGrantMembership({
       grantedById: administrator.id,
       productId: grantSku.id,

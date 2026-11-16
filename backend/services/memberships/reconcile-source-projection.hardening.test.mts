@@ -8,8 +8,6 @@ describe('direct membership change classification', () => {
     const admin = await createTestUser({ administrator: true })
     const member = await createTestUser()
     const grantSku = await createTestSku({ plan: 'plus' })
-    // Committed fixtures: the SERIALIZABLE grant writer is only setup here, and parallel tests'
-    // predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
     await createTestAdminGrantMembership({
       grantedById: admin.id,
       productId: grantSku.id,

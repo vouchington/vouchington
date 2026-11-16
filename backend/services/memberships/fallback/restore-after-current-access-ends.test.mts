@@ -97,8 +97,6 @@ describe('fallback access after current direct or administrator-grant access end
       stripeSubscriptionId: `sub_family_grant_precedence_${randomUUID()}`,
     })
     const grantSku = await createTestSku({ plan: 'plus', interval: 'yearly' })
-    // Committed fixture: the SERIALIZABLE grant writer is not the subject here, and parallel
-    // tests' predicate locks can abort it with 40001. Queueing is covered in create-direct-grant-queue.
     await insertQueuedMembershipGrant({
       grantedById: admin.id,
       productId: grantSku.id,

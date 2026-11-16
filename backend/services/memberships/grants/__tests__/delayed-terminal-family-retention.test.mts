@@ -38,8 +38,6 @@ describe('delayed direct termination with an elapsed queued grant', () => {
       stripeSubscriptionId: `sub_delayed_terminal_family_${randomUUID()}`,
     })
     const grantSku = await createTestSku({ plan: 'plus' })
-    // Committed fixtures: the SERIALIZABLE grant writer is only setup here, and parallel tests'
-    // predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
     await insertQueuedMembershipGrant({
       grantedById: admin.id,
       productId: grantSku.id,
