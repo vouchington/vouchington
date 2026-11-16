@@ -9,15 +9,18 @@ import { copyrightSubmissionPurpose } from '../../../services/copyright-notices/
  * encrypted for its own submission, so a staff case read that reaches the notice on a shared
  * database can decrypt it; a bare placeholder string would make every such read throw.
  */
-export async function insertEncryptedCopyrightHoldSubmission(noticeId: string): Promise<string> {
+export async function insertEncryptedCopyrightHoldSubmission(
+  noticeId: string,
+  options: { statement?: Record<string, unknown>; receivedAt?: Date } = {},
+): Promise<string> {
   const id = uuidv7()
-  const statement = JSON.stringify({ filing: `Court filing ${id}` })
+  const body = JSON.stringify(options.statement ?? { filing: `Court filing ${id}` })
   await write(sql`/* insertEncryptedCopyrightHoldSubmission */
     INSERT INTO copyright_notice_submissions (
       id, copyright_notice_id, kind, received_at, source_kind, submitted_by_id, body_ciphertext
     ) VALUES (
-      ${id}, ${noticeId}, 'court_or_ccb_hold', ${new Date()}, 'email', NULL,
-      ${encryptSecret(statement, copyrightSubmissionPurpose(id))}
+      ${id}, ${noticeId}, 'court_or_ccb_hold', ${options.receivedAt ?? new Date()}, 'email', NULL,
+      ${encryptSecret(body, copyrightSubmissionPurpose(id))}
     )`)
   return id
 }
