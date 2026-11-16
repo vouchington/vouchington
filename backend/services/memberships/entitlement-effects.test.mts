@@ -78,15 +78,17 @@ describe('membership entitlement effects', () => {
     if (!effect) throw new Error('Expected entitlement effect')
 
     const [firstClaims, secondClaims] = await Promise.all([
-      claimPendingMembershipEntitlementEffects(10_000),
-      claimPendingMembershipEntitlementEffects(10_000),
+      claimPendingMembershipEntitlementEffects(10_000, { effectIds: [effect.id] }),
+      claimPendingMembershipEntitlementEffects(10_000, { effectIds: [effect.id] }),
     ])
-    const claimed = [...firstClaims, ...secondClaims].filter(claim => claim.id === effect.id)
+    const claimed = [...firstClaims, ...secondClaims]
     expect(claimed).toHaveLength(1)
     const firstClaim = claimed[0]!
 
     await ageTestMembershipEntitlementEffectClaim(effect.id)
-    const nextClaims = await claimPendingMembershipEntitlementEffects(10_000)
+    const nextClaims = await claimPendingMembershipEntitlementEffects(10_000, {
+      effectIds: [effect.id],
+    })
     const nextClaim = nextClaims.find(claim => claim.id === effect.id)
     if (!nextClaim) throw new Error('Expected stale lease takeover')
     expect(nextClaim.deliveryClaimToken).not.toBe(firstClaim.deliveryClaimToken)
@@ -111,7 +113,12 @@ describe('membership entitlement effects', () => {
     const rawMembership = await getTestMembershipRaw(membership.id)
     if (!rawMembership?.latest_change_id) throw new Error('Expected recorded change')
 
-    await expect(deliverPendingMembershipEntitlementEffects(10_000)).resolves.toBeGreaterThan(0)
+    const [effect] = await getTestMembershipEntitlementEffects(rawMembership.latest_change_id)
+    if (!effect) throw new Error('Expected entitlement effect')
+
+    await expect(
+      deliverPendingMembershipEntitlementEffects(10_000, { effectIds: [effect.id] }),
+    ).resolves.toBe(1)
     expect(await readTestJwtStaleMarker(user.id)).not.toBeNull()
     expect(await getTestMembershipEntitlementEffects(rawMembership.latest_change_id)).toEqual([
       expect.objectContaining({ delivered_at: expect.any(Date), delivery_claim_token: null }),
