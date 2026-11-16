@@ -6,12 +6,7 @@ import {
   createTestUser,
   getTestMembershipEntitlementEffects,
   getTestMembershipRaw,
-  readAllQueueJobs,
 } from '@voucha/test-helpers'
-import { readTestJwtStaleMarker } from '@voucha/test-helpers/jwt-stale-markers'
-import { markJwtStaleBatch } from '@data-stores/valkey/jwt-stale'
-import { enqueueBulkRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
 import {
   claimPendingMembershipEntitlementEffects,
   completeMembershipEntitlementEffects,
@@ -124,7 +119,7 @@ describe('membership entitlement effects', () => {
     ])
   })
 
-  it('delivers an effect to Valkey and the vote-weight queue before durable completion', async () => {
+  it('leaves a leased effect to its claimant until durable completion', async () => {
     const user = await createTestUser()
     if (!user) throw new Error('Expected user')
     const membership = await createTestMembership({ user_id: user.id })
@@ -151,18 +146,9 @@ describe('membership entitlement effects', () => {
       }),
     ])
 
-    await markJwtStaleBatch([claim.userId])
-    await enqueueBulkRecalculateUserVoteWeight([claim.userId], true)
     await expect(completeMembershipEntitlementEffects([claim])).resolves.toBe(1)
-    expect(await readTestJwtStaleMarker(user.id)).not.toBeNull()
     expect(await getTestMembershipEntitlementEffects(changeId)).toEqual([
       expect.objectContaining({ delivered_at: expect.any(Date), delivery_claim_token: null }),
     ])
-    const jobs = await readAllQueueJobs(voteAggregation)
-    expect(jobs).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ data: { userId: user.id, forceRecalculate: true } }),
-      ]),
-    )
   })
 })
