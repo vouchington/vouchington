@@ -18,9 +18,9 @@ import {
 } from '@voucha/test-helpers/injected-failures'
 import { searchRecoverableCopyrightFormReviewIntakeIds } from '@services/copyright-notices'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { processReconcileCopyrightActionIntents } from './copyright-action-reconcile.mts'
+import { copyrightActionReconcileProcessors as stages } from './copyright-action-reconcile.mts'
 
-describe('processReconcileCopyrightActionIntents', () => {
+describe('copyright action reconcile stage jobs', () => {
   it('recovers owned rejected reviews and leaves an eligible neighbor unchanged', async () => {
     const first = await createCopyrightActionSweepReview(false)
     const second = await createCopyrightActionSweepReview(false)
@@ -37,7 +37,7 @@ describe('processReconcileCopyrightActionIntents', () => {
     expect(next.results).toEqual([second.id])
     expect(next.page_info.has_next_page).toBe(false)
 
-    await expect(processReconcileCopyrightActionIntents({}, ids, 1)).resolves.toEqual({
+    await expect(stages.forms({}, ids)).resolves.toEqual({
       enqueued: 0,
       hasMore: false,
     })
@@ -55,7 +55,7 @@ describe('processReconcileCopyrightActionIntents', () => {
     ).toEqual([neighbor.id])
   })
 
-  it('continues later stages after a page read failure and reports the failure', async () => {
+  it('fails only the forms stage on a page read failure and leaves its sibling stage running', async () => {
     const rejected = await createCopyrightActionSweepReview(false)
     const accepted = await createCopyrightActionSweepReview(true)
     const neighbor = await createCopyrightActionSweepReview(true)
@@ -63,23 +63,14 @@ describe('processReconcileCopyrightActionIntents', () => {
     onTestFinished(
       rejectPostgresWriteForTest('searchRecoverableCopyrightFormReviewIntakeIds', failure),
     )
-    const evaluatedAt = new Date().toISOString()
-    const result = await processReconcileCopyrightActionIntents(
-      { evaluatedAt },
-      [rejected.id, accepted.copyright_notice_submission_id],
-      1,
-    ).catch((err: unknown) => err)
-    expect(result).toBeInstanceOf(AggregateError)
-    expect((result as AggregateError).errors).toEqual([failure])
-    const jobs = await readAllQueueJobs(notifications)
+    const ids = [rejected.id, accepted.copyright_notice_submission_id]
+    await expect(stages.forms({ evaluatedAt: new Date().toISOString() }, ids)).rejects.toBe(failure)
     expect(
-      jobs.some(
-        job =>
-          job.name === 'notifications.processReconcileCopyrightActionIntents' &&
-          JSON.stringify(job.data) ===
-            JSON.stringify({ evaluatedAt, pending: ['forms'], cursors: { forms: null } }),
+      (await readAllQueueJobs(notifications)).filter(
+        job => job.name === 'notifications.processReconcileCopyrightFormReviews',
       ),
-    ).toBe(true)
+    ).toEqual([])
+    await expect(stages.decisions({}, ids)).resolves.toEqual({ enqueued: 0, hasMore: false })
     expect(
       (await getCopyrightNoticePrivateAggregate(accepted.copyright_notice_id))?.assessments,
     ).toHaveLength(1)
@@ -90,13 +81,10 @@ describe('processReconcileCopyrightActionIntents', () => {
   it('enforces only the selected assessment', async () => {
     const owned = await createCopyrightActionSweepEnforcement()
     const neighbor = await createCopyrightActionSweepEnforcement()
-    await expect(
-      processReconcileCopyrightActionIntents(
-        { pending: ['enforcement'] },
-        [owned.assessment.id],
-        1,
-      ),
-    ).resolves.toEqual({ enqueued: 0, hasMore: false })
+    await expect(stages.enforcement({}, [owned.assessment.id])).resolves.toEqual({
+      enqueued: 0,
+      hasMore: false,
+    })
     expect((await getCopyrightNoticePrivateAggregate(owned.notice.id))?.restrictions).toHaveLength(
       1,
     )
@@ -107,11 +95,7 @@ describe('processReconcileCopyrightActionIntents', () => {
     const owned = await createCopyrightActionSweepSuspended()
     const neighbor = await createCopyrightActionSweepSuspended()
     await expect(
-      processReconcileCopyrightActionIntents(
-        { evaluatedAt: '2030-01-02T03:04:05.000Z', pending: ['suspended'] },
-        [owned],
-        1,
-      ),
+      stages.suspended({ evaluatedAt: '2030-01-02T03:04:05.000Z' }, [owned]),
     ).resolves.toEqual({ enqueued: 0, hasMore: false })
     const restriction = (await getCopyrightNoticePrivateAggregate(owned))?.restrictions[0]
     expect(restriction?.human_review_action).toBe('reverse')
@@ -130,13 +114,10 @@ describe('processReconcileCopyrightActionIntents', () => {
         neighbor.deadline.restoration_deadline_at.getTime(),
       ) + 1000,
     ).toISOString()
-    await expect(
-      processReconcileCopyrightActionIntents(
-        { evaluatedAt, pending: ['restorations'] },
-        [owned.deadline.id],
-        1,
-      ),
-    ).resolves.toEqual({ enqueued: 0, hasMore: false })
+    await expect(stages.restorations({ evaluatedAt }, [owned.deadline.id])).resolves.toEqual({
+      enqueued: 0,
+      hasMore: false,
+    })
     expect(
       (await getCopyrightNoticePrivateAggregate(owned.notice.id))?.actionIntents.filter(
         intent => intent.action === 'restore',
@@ -154,9 +135,10 @@ describe('processReconcileCopyrightActionIntents', () => {
     const neighbor = await createCopyrightActionSweepRestricted()
     await removeCopyrightActionSweepJob(owned.intent.id)
     await removeCopyrightActionSweepJob(neighbor.intent.id)
-    await expect(
-      processReconcileCopyrightActionIntents({ pending: ['actions'] }, [owned.intent.id], 1),
-    ).resolves.toEqual({ enqueued: 1, hasMore: false })
+    await expect(stages.actions({}, [owned.intent.id])).resolves.toEqual({
+      enqueued: 1,
+      hasMore: false,
+    })
     const jobs = await readAllQueueJobs(notifications)
     expect(
       jobs.filter(
@@ -186,12 +168,15 @@ describe('processReconcileCopyrightActionIntents', () => {
       Math.max(owned.restorationAt.getTime(), neighbor.restorationAt.getTime()),
     ).toISOString()
     await expect(
-      processReconcileCopyrightActionIntents(
-        { evaluatedAt, pending: ['blocked', 'actions'] },
-        [owned.notice.id, owned.restore.id],
-        1,
-      ),
-    ).resolves.toEqual({ enqueued: 1, hasMore: false })
+      stages.blocked({ evaluatedAt }, [owned.notice.id, owned.restore.id]),
+    ).resolves.toEqual({
+      enqueued: 0,
+      hasMore: false,
+    })
+    await expect(stages.actions({ evaluatedAt }, [owned.restore.id])).resolves.toEqual({
+      enqueued: 1,
+      hasMore: false,
+    })
     expect(
       (await getCopyrightNoticePrivateAggregate(owned.notice.id))?.actionIntents.find(
         intent => intent.id === owned.restore.id,
@@ -225,11 +210,7 @@ describe('processReconcileCopyrightActionIntents', () => {
     const neighbor = await createCopyrightActionSweepReview(false)
     const failure = new Error('review transaction failed')
     onTestFinished(rejectNextPostgresTransactionForTest(failure))
-    const result = await processReconcileCopyrightActionIntents(
-      { pending: ['forms'] },
-      [first.id, second.id],
-      2,
-    ).catch((err: unknown) => err)
+    const result = await stages.forms({}, [first.id, second.id]).catch((err: unknown) => err)
     expect(result).toBeInstanceOf(AggregateError)
     expect((result as AggregateError).errors).toEqual([failure])
     expect(
@@ -243,18 +224,14 @@ describe('processReconcileCopyrightActionIntents', () => {
     ).toEqual([])
   })
 
-  it('collects page, stage and bulk admission failures while later owned work succeeds', async () => {
+  it('fails each stage on its own while its sibling stages still settle owned work', async () => {
     const decision = await createCopyrightActionSweepReview(true)
     const enforcement = await createCopyrightActionSweepEnforcement()
     const action = await createCopyrightActionSweepRestricted()
     const neighbor = await createCopyrightActionSweepEnforcement()
     await removeCopyrightActionSweepJob(action.intent.id)
-    const pageFailure = new Error('review page failed')
     const decisionFailure = new Error('decision transaction failed')
     const enqueueFailure = new Error('bulk admission failed')
-    onTestFinished(
-      rejectPostgresWriteForTest('searchRecoverableCopyrightFormReviewIntakeIds', pageFailure),
-    )
     onTestFinished(rejectNextPostgresTransactionForTest(decisionFailure))
     onTestFinished(
       rejectNextBackgroundJobAddBulkForTest(
@@ -263,17 +240,16 @@ describe('processReconcileCopyrightActionIntents', () => {
       ),
     )
 
-    const result = await processReconcileCopyrightActionIntents(
-      { pending: ['forms', 'decisions', 'actions', 'enforcement'] },
-      [decision.copyright_notice_submission_id, enforcement.assessment.id, action.intent.id],
-      1,
-    ).catch((err: unknown) => err)
-    expect(result).toBeInstanceOf(AggregateError)
-    expect((result as AggregateError).errors).toEqual([
-      pageFailure,
+    await expect(stages.decisions({}, [decision.copyright_notice_submission_id])).rejects.toBe(
       decisionFailure,
-      enqueueFailure,
-    ])
+    )
+    const enqueued = await stages.actions({}, [action.intent.id]).catch((err: unknown) => err)
+    expect(enqueued).toBeInstanceOf(AggregateError)
+    expect((enqueued as AggregateError).errors).toEqual([enqueueFailure])
+    await expect(stages.enforcement({}, [enforcement.assessment.id])).resolves.toEqual({
+      enqueued: 0,
+      hasMore: false,
+    })
     expect(
       (await getCopyrightNoticePrivateAggregate(decision.copyright_notice_id))?.assessments,
     ).toEqual([])
@@ -289,11 +265,5 @@ describe('processReconcileCopyrightActionIntents', () => {
           (job.data as { intentId?: string }).intentId === action.intent.id,
       ),
     ).toEqual([])
-  })
-
-  it('rejects an unknown continuation stage', async () => {
-    await expect(
-      processReconcileCopyrightActionIntents({ pending: ['unknown' as never] }, [], 1),
-    ).rejects.toThrow('Unknown copyright sweep stage: unknown')
   })
 })

@@ -699,8 +699,8 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Re-enqueue pending copyright media action intents",
-        "id": "copyright-action-reconciliation",
+        "description": "Re-enqueue pending copyright action work for the forms stage",
+        "id": "copyright-action-reconciliation-forms",
         "kind": "scheduled-jobs",
         "schedule": "*/5 * * * *",
         "trigger": "[function]",
@@ -711,7 +711,229 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "repeat": {
       "pattern": "*/5 * * * *",
     },
-    "schedulerId": "copyright-action-reconciliation",
+    "schedulerId": "copyright-action-reconciliation-forms",
+    "template": {
+      "data": {},
+      "name": "notifications.processReconcileCopyrightFormReviews",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "notifications:copyright-action-reconcile",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue pending copyright action work for the decisions stage",
+        "id": "copyright-action-reconciliation-decisions",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "copyright-action-reconciliation-decisions",
+    "template": {
+      "data": {},
+      "name": "notifications.processReconcileCopyrightDecisionAssessments",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "notifications:copyright-action-reconcile",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue pending copyright action work for the enforcement stage",
+        "id": "copyright-action-reconciliation-enforcement",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "copyright-action-reconciliation-enforcement",
+    "template": {
+      "data": {},
+      "name": "notifications.processReconcileCopyrightEnforcementAssessments",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "notifications:copyright-action-reconcile",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue pending copyright action work for the suspended stage",
+        "id": "copyright-action-reconciliation-suspended",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "copyright-action-reconciliation-suspended",
+    "template": {
+      "data": {},
+      "name": "notifications.processReconcileCopyrightSuspendedClaimantRestrictions",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "notifications:copyright-action-reconcile",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue pending copyright action work for the blocked stage",
+        "id": "copyright-action-reconciliation-blocked",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "copyright-action-reconciliation-blocked",
+    "template": {
+      "data": {},
+      "name": "notifications.processReconcileCopyrightBlockedHoldRestorations",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "notifications:copyright-action-reconcile",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue pending copyright action work for the restorations stage",
+        "id": "copyright-action-reconciliation-restorations",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "copyright-action-reconciliation-restorations",
+    "template": {
+      "data": {},
+      "name": "notifications.processReconcileCopyrightStatutoryRestorations",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "notifications:copyright-action-reconcile",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue pending copyright action work for the actions stage",
+        "id": "copyright-action-reconciliation-actions",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "copyright-action-reconciliation-actions",
     "template": {
       "data": {},
       "name": "notifications.processReconcileCopyrightActionIntents",
@@ -723,8 +945,8 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "exponential",
         },
         "ordering": {
-          "concurrency": 5,
-          "key": "notifications",
+          "concurrency": 1,
+          "key": "notifications:copyright-action-reconcile",
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -3484,12 +3706,60 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "triggerName": "enqueueReconcileMediaDeliveryRegistry",
   },
   {
-    "description": "Re-enqueue pending copyright media action intents",
-    "id": "copyright-action-reconciliation",
+    "description": "Re-enqueue pending copyright action work for the forms stage",
+    "id": "copyright-action-reconciliation-forms",
+    "job_name": "notifications.processReconcileCopyrightFormReviews",
+    "queue_name": "background",
+    "schedule": "*/5 * * * *",
+    "triggerName": "trigger",
+  },
+  {
+    "description": "Re-enqueue pending copyright action work for the decisions stage",
+    "id": "copyright-action-reconciliation-decisions",
+    "job_name": "notifications.processReconcileCopyrightDecisionAssessments",
+    "queue_name": "background",
+    "schedule": "*/5 * * * *",
+    "triggerName": "trigger",
+  },
+  {
+    "description": "Re-enqueue pending copyright action work for the enforcement stage",
+    "id": "copyright-action-reconciliation-enforcement",
+    "job_name": "notifications.processReconcileCopyrightEnforcementAssessments",
+    "queue_name": "background",
+    "schedule": "*/5 * * * *",
+    "triggerName": "trigger",
+  },
+  {
+    "description": "Re-enqueue pending copyright action work for the suspended stage",
+    "id": "copyright-action-reconciliation-suspended",
+    "job_name": "notifications.processReconcileCopyrightSuspendedClaimantRestrictions",
+    "queue_name": "background",
+    "schedule": "*/5 * * * *",
+    "triggerName": "trigger",
+  },
+  {
+    "description": "Re-enqueue pending copyright action work for the blocked stage",
+    "id": "copyright-action-reconciliation-blocked",
+    "job_name": "notifications.processReconcileCopyrightBlockedHoldRestorations",
+    "queue_name": "background",
+    "schedule": "*/5 * * * *",
+    "triggerName": "trigger",
+  },
+  {
+    "description": "Re-enqueue pending copyright action work for the restorations stage",
+    "id": "copyright-action-reconciliation-restorations",
+    "job_name": "notifications.processReconcileCopyrightStatutoryRestorations",
+    "queue_name": "background",
+    "schedule": "*/5 * * * *",
+    "triggerName": "trigger",
+  },
+  {
+    "description": "Re-enqueue pending copyright action work for the actions stage",
+    "id": "copyright-action-reconciliation-actions",
     "job_name": "notifications.processReconcileCopyrightActionIntents",
     "queue_name": "background",
     "schedule": "*/5 * * * *",
-    "triggerName": "enqueueReconcileCopyrightActionIntents",
+    "triggerName": "trigger",
   },
   {
     "description": "Re-enqueue pending copyright legal delivery intents",

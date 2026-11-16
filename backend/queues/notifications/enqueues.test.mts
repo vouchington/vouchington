@@ -10,7 +10,7 @@ import {
   enqueueBulkApplyMediaDeliveryRegistryRecords,
   enqueueBulkDeliverCopyrightNotices,
   enqueueCheckCopyrightReviewTarget,
-  enqueueReconcileCopyrightActionIntents,
+  enqueueReconcileCopyrightActionStage,
   enqueueReconcileDsaStatementSubmissions,
   enqueueCopyrightCasePurgeAdmission,
 } from './enqueues.mts'
@@ -19,17 +19,18 @@ import { PRIORITY_DISPATCH } from '@queues/background/config'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 
 describe('notification enqueue wiring', () => {
-  it('throttles action-intent reconciliation to one five-minute schedule', async () => {
-    await enqueueReconcileCopyrightActionIntents()
+  it('throttles each action reconciliation stage to one five-minute schedule in one shared lane', async () => {
+    await enqueueReconcileCopyrightActionStage('actions')
     const job = (await readAllQueueJobs(notifications)).find(
       candidate => candidate.name === 'notifications.processReconcileCopyrightActionIntents',
     )
     expect(job?.data).toEqual({})
     expect(job?.opts).toMatchObject({
       deduplication: {
-        id: 'copyright-action-reconciliation:{}',
+        id: 'copyright-action-reconciliation:actions:{}',
         mode: 'throttle',
       },
+      ordering: { key: 'notifications:copyright-action-reconcile' },
     })
   })
 

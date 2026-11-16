@@ -4,6 +4,8 @@ import {
   enqueueContinueReconcilePostNotifications,
   enqueueContinueReconcileRssFeedItemNotifications,
 } from '@queues/notifications/enqueues'
+import { NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOBS } from '@queues/background/enqueues/notifications-copyright-action-jobs'
+import { COPYRIGHT_ACTION_RECONCILE_STAGES } from '@queues/background/enqueues/notifications-domain'
 import {
   backgroundHandler,
   backgroundDataHandler,
@@ -23,7 +25,6 @@ import {
   NOTIFICATIONS_DIGEST_DISPATCH_JOB,
   NOTIFICATIONS_DIGEST_SCHEDULE_TICK_JOB,
   NOTIFICATIONS_FOLLOW_JOB,
-  NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOB,
   NOTIFICATIONS_RECONCILE_COPYRIGHT_DELIVERY_JOB,
   NOTIFICATIONS_RECONCILE_DSA_JOB,
   NOTIFICATIONS_RECONCILE_MEDIA_REGISTRY_JOB,
@@ -150,9 +151,11 @@ export const notificationsHandlers = [
     NOTIFICATIONS_APPLY_COPYRIGHT_ACTION_JOB,
     processors.processApplyCopyrightAction,
   ),
-  backgroundDataHandler(
-    NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOB,
-    processors.processReconcileCopyrightActionIntents,
+  ...COPYRIGHT_ACTION_RECONCILE_STAGES.map(stage =>
+    backgroundDataHandler(
+      NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOBS[stage],
+      processors.copyrightActionReconcileProcessors[stage],
+    ),
   ),
   backgroundSweepHandler(
     NOTIFICATIONS_CHECK_COPYRIGHT_REVIEW_TARGET_JOB,

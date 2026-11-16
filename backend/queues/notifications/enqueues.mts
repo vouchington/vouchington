@@ -10,10 +10,14 @@ import {
   NOTIFICATIONS_FOLLOW_JOB,
   NOTIFICATIONS_REFERRAL_CLICK_JOB,
   NOTIFICATIONS_REFERRAL_SIGNUP_JOB,
-  NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOB,
   NOTIFICATIONS_RECONCILE_COPYRIGHT_DELIVERY_JOB,
 } from '@queues/background/enqueues/notifications-jobs'
-import type { CopyrightSweepContinuation } from '@queues/background/enqueues/notifications-domain'
+import { NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOBS } from '@queues/background/enqueues/notifications-copyright-action-jobs'
+import type {
+  CopyrightActionReconcileData,
+  CopyrightActionReconcileStage,
+  CopyrightSweepContinuation,
+} from '@queues/background/enqueues/notifications-domain'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import { NOTIFICATIONS_DEDUPLICATION_TTL_MS } from './config.mts'
@@ -74,9 +78,15 @@ const enqueueReconcileCopyrightDeliveryIntentsJob = createBackgroundEnqueue(
 const enqueueApplyCopyrightActionJob = createBackgroundEnqueue(
   NOTIFICATIONS_APPLY_COPYRIGHT_ACTION_JOB,
 )
-const enqueueReconcileCopyrightActionIntentsJob = createBackgroundEnqueue(
-  NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOB,
-)
+const enqueueReconcileCopyrightActionStageJobs = {
+  forms: createBackgroundEnqueue(NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOBS.forms),
+  decisions: createBackgroundEnqueue(NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOBS.decisions),
+  enforcement: createBackgroundEnqueue(NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOBS.enforcement),
+  suspended: createBackgroundEnqueue(NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOBS.suspended),
+  blocked: createBackgroundEnqueue(NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOBS.blocked),
+  restorations: createBackgroundEnqueue(NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOBS.restorations),
+  actions: createBackgroundEnqueue(NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOBS.actions),
+} as const satisfies Record<CopyrightActionReconcileStage, unknown>
 
 /** One batched add of `enqueueDeliverCopyrightNotice` jobs, each with its own dedup id. */
 export const enqueueBulkDeliverCopyrightNotices = createBackgroundBulkEnqueue(
@@ -169,12 +179,14 @@ export function enqueueApplyCopyrightAction(intentId: string): EnqueueReturnType
   return enqueueApplyCopyrightActionJob({ intentId }, copyrightActionJobOptions(intentId))
 }
 
-export function enqueueReconcileCopyrightActionIntents(
-  data: CopyrightSweepContinuation = {},
+/** Enqueues one stage's job; a continuation's dedup id carries its stage, tick and cursor. */
+export function enqueueReconcileCopyrightActionStage(
+  stage: CopyrightActionReconcileStage,
+  data: CopyrightActionReconcileData = {},
 ): EnqueueReturnType {
-  return enqueueReconcileCopyrightActionIntentsJob(data, {
+  return enqueueReconcileCopyrightActionStageJobs[stage](data, {
     deduplication: {
-      id: `copyright-action-reconciliation:${JSON.stringify(data)}`,
+      id: `copyright-action-reconciliation:${stage}:${JSON.stringify(data)}`,
       mode: 'throttle',
       ttl: FIVE_MINUTES_MS,
     },

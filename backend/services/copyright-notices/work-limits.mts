@@ -1,5 +1,6 @@
 import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
+import type { CopyrightActionReconcileStage } from '@queues/notifications/types'
 
 const additionalDefaults = {
   delivery_lease_minutes: 15,
@@ -19,11 +20,39 @@ export const copyrightSweepConfig = new DynamicConfig({
     delivery_lease_minutes: 'number',
     screening_lease_minutes: 'number',
     association_search_candidate_rows: 'number',
+    forms_batch_size: 'number',
+    forms_max_batches_per_run: 'number',
+    decisions_batch_size: 'number',
+    decisions_max_batches_per_run: 'number',
+    enforcement_batch_size: 'number',
+    enforcement_max_batches_per_run: 'number',
+    suspended_batch_size: 'number',
+    suspended_max_batches_per_run: 'number',
+    blocked_batch_size: 'number',
+    blocked_max_batches_per_run: 'number',
+    restorations_batch_size: 'number',
+    restorations_max_batches_per_run: 'number',
+    actions_batch_size: 'number',
+    actions_max_batches_per_run: 'number',
   },
   defaultFields: {
     batch_size: 100,
     max_batches_per_run: 20,
     association_search_candidate_rows: 100,
+    forms_batch_size: 100,
+    forms_max_batches_per_run: 20,
+    decisions_batch_size: 100,
+    decisions_max_batches_per_run: 20,
+    enforcement_batch_size: 100,
+    enforcement_max_batches_per_run: 20,
+    suspended_batch_size: 100,
+    suspended_max_batches_per_run: 20,
+    blocked_batch_size: 100,
+    blocked_max_batches_per_run: 20,
+    restorations_batch_size: 100,
+    restorations_max_batches_per_run: 20,
+    actions_batch_size: 100,
+    actions_max_batches_per_run: 20,
     ...additionalDefaults,
   },
 })
@@ -36,16 +65,19 @@ export function getCopyrightAssociationSearchCandidateRows(): number {
   })
 }
 
-export function getCopyrightSweepLimits() {
+/** The page size and page cap of one action reconcile stage, or of the other copyright sweeps. */
+export function getCopyrightSweepLimits(stage?: CopyrightActionReconcileStage) {
   return {
-    batchSize: getBoundedPositiveIntegerField(copyrightSweepConfig, 'batch_size', {
-      defaultValue: 100,
-      maxValue: 100,
-    }),
-    maxBatches: getBoundedPositiveIntegerField(copyrightSweepConfig, 'max_batches_per_run', {
-      defaultValue: 20,
-      maxValue: 2000,
-    }),
+    batchSize: getBoundedPositiveIntegerField(
+      copyrightSweepConfig,
+      stage ? `${stage}_batch_size` : 'batch_size',
+      { defaultValue: 100, maxValue: 100 },
+    ),
+    maxBatches: getBoundedPositiveIntegerField(
+      copyrightSweepConfig,
+      stage ? `${stage}_max_batches_per_run` : 'max_batches_per_run',
+      { defaultValue: 20, maxValue: 2000 },
+    ),
   }
 }
 
