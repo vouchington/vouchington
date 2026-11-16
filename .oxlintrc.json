@@ -1364,6 +1364,10 @@
         "no-mistakes/postgres-no-correlated-sql-builder": [
           "error",
           { "builderMethods": ["append"], "tagNames": ["sql"] }
+        ],
+        "no-mistakes/postgres-no-async-sql-builder": [
+          "error",
+          { "builders": [{ "callees": ["sql"] }] }
         ]
       }
     },
