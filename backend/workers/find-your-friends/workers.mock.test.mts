@@ -210,14 +210,20 @@ describe('friend sync worker account identities', () => {
     expect(await getTestOAuthAccountFriendsSyncedAt('github', providerUserId)).toBeNull()
   })
 
-  it('saves dispatcher progress on the provider dispatch job', async () => {
-    const job = await findYourFriendsQueue.add(
-      'dispatchFacebookFriends',
-      { sweepStartedAt: new Date().toISOString(), upperId: null } as never,
-      { attempts: 1 },
-    )
+  for (const name of [
+    'dispatchFacebookFriends',
+    'dispatchXFriends',
+    'dispatchGithubFriends',
+  ] as const) {
+    it(`saves dispatcher progress on the ${name} job`, async () => {
+      const job = await findYourFriendsQueue.add(
+        name,
+        { sweepStartedAt: new Date().toISOString(), upperId: null } as never,
+        { attempts: 1 },
+      )
 
-    expect((await findYourFriendsQueue.getJob(job!.id))?.data).toMatchObject({ upperId: null })
-    expect(fetchSpy).not.toHaveBeenCalled()
-  })
+      expect((await findYourFriendsQueue.getJob(job!.id))?.data).toMatchObject({ upperId: null })
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
+  }
 })
