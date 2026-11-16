@@ -87,16 +87,30 @@ export async function renewStoryPostRelatedUrlProjectionWorkLease(
 export async function isStoryPostRelatedUrlProjectionWorkCurrent(
   work: ProjectionWork,
   query?: TransactionQuery,
-  lock = false,
 ): Promise<boolean> {
   const statement = `/* storyPostRelatedUrlProjectionWorkFence */
     SELECT 1 FROM story_post_related_url_projection_jobs
     WHERE post_id = $1 AND generation = $2 AND lease_token = $3
-      AND lease_expires_at > clock_timestamp()${lock ? ' FOR UPDATE' : ''}`
+      AND lease_expires_at > clock_timestamp()`
   const result = query
     ? await query(statement, [work.post_id, work.generation, work.lease_token])
     : await write(statement, [work.post_id, work.generation, work.lease_token])
   return result.rows.length === 1
+}
+
+/** Keep the leased admission check on the transaction that owns the existing job lock. */
+export async function lockStoryPostRelatedUrlProjectionWork(
+  query: TransactionQuery,
+  work: ProjectionWork,
+): Promise<boolean> {
+  const { rows } = await query(
+    `/* storyPostRelatedUrlProjectionWorkFence */
+      SELECT 1 FROM story_post_related_url_projection_jobs
+      WHERE post_id = $1 AND generation = $2 AND lease_token = $3
+        AND lease_expires_at > clock_timestamp() FOR UPDATE`,
+    [work.post_id, work.generation, work.lease_token],
+  )
+  return rows.length === 1
 }
 
 export async function advanceStoryPostRelatedUrlProjectionSourcePhase(

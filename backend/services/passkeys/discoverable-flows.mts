@@ -1,6 +1,6 @@
 import createHttpError from 'http-errors'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
-import { getPasskeyByCredentialId } from './get.mts'
+import { getPasskeyByCredentialIdForUpdate } from './get.mts'
 import { AuthError } from '@vouchington/auth'
 import { passkeyProtocol } from './protocol.mts'
 import { toPasskeyAuthenticationOptions } from './options.mts'
@@ -98,9 +98,9 @@ async function readAdmittedPasskey(
   await query('/* admitDiscoverablePasskeyLogin:userRow */ SELECT id FROM users WHERE id = $1', [
     verification.userId,
   ])
-  return getPasskeyByCredentialId(credentialId, {
-    query,
-    owner: { currentUserId: verification.userId, passkeyId: verification.passkeyId },
+  return getPasskeyByCredentialIdForUpdate(query, credentialId, {
+    currentUserId: verification.userId,
+    passkeyId: verification.passkeyId,
   })
 }
 

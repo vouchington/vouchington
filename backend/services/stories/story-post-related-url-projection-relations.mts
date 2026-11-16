@@ -22,7 +22,6 @@ import {
 import { markStoryPostRelatedUrlProjectionInvalidationRequired } from './story-post-related-url-projection-invalidation.mts'
 import { pruneStoryPostRelatedUrlsOutsidePrefix } from './story-post-related-url-projection-prune.mts'
 import {
-  lockPostScopeAndCheckProjectionWork,
   lockStoryPostRelatedUrlProjectionHostnameBlocks,
   readStoryPostRelatedUrlProjectionActiveRelations,
   recordProjectionCrawlRequirements,
@@ -33,6 +32,7 @@ import {
   stageStoryPostRelatedUrlProjectionReceipts,
 } from './story-post-related-url-projection-source.mts'
 import type { ProjectionWork, SourceRow } from './story-post-related-url-projection-types.mts'
+import { lockStoryPostRelatedUrlProjectionWork } from './story-post-related-url-projection-work.mts'
 
 type StoryTeller = Awaited<ReturnType<typeof requireStoryTeller>>
 
@@ -84,7 +84,7 @@ async function admitPreparedRows(
     { query: transaction },
     webRiskBlockedUrls,
   )
-  if (!(await lockPostScopeAndCheckProjectionWork(transaction, work))) return { ok: false }
+  if (!(await lockStoryPostRelatedUrlProjectionWork(transaction, work))) return { ok: false }
   if (!(await stageStoryPostRelatedUrlProjectionReceipts(work, decisions, transaction)))
     return { ok: false }
   const eligibleUrlIds = admittedUrlIds(decisions)

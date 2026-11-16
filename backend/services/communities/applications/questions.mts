@@ -1,5 +1,5 @@
 import { read, beginTransaction, write } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
+import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { getCommunityWithViewer } from '../load-with-viewer.mts'
@@ -18,19 +18,30 @@ export type { ApplicationQuestionInput }
 
 export async function getApplicationQuestions(
   communityId: string,
-  options?: QueryOptions & { lock?: boolean },
+  options?: QueryOptions,
 ): Promise<CommunityApplicationQuestion[]> {
-  const statement = sql`/* getApplicationQuestions */
+  const { rows } = await read(applicationQuestionsStatement(communityId), options)
+  return rows as CommunityApplicationQuestion[]
+}
+
+export async function getApplicationQuestionsForShare(
+  query: TransactionQuery,
+  communityId: string,
+): Promise<CommunityApplicationQuestion[]> {
+  const statement = applicationQuestionsStatement(communityId)
+  statement.append(sql` FOR SHARE`)
+  const { rows } = await query(statement)
+  return rows as CommunityApplicationQuestion[]
+}
+
+function applicationQuestionsStatement(communityId: string) {
+  return sql`/* getApplicationQuestions */
     SELECT id, community_id, question, field_type, options, order_index, is_required, created_at, deleted_at
     FROM community_application_questions
     WHERE community_id = ${communityId}
       AND deleted_at IS NULL
     ORDER BY order_index ASC
     LIMIT ${QUESTION_ROWS_MAX}`
-  if (options?.lock) statement.append(sql` FOR SHARE`)
-
-  const { rows } = await read(statement, options)
-  return rows as CommunityApplicationQuestion[]
 }
 
 export async function setApplicationQuestions(

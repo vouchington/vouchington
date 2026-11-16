@@ -12,6 +12,8 @@ type PasskeyCredentialRow = Omit<PasskeyCredential, 'counter' | 'transports'> & 
   transports: PasskeyCredential['transports'] | null
 }
 
+type PasskeyOwner = { currentUserId: string; passkeyId: string }
+
 export async function getPasskeysByUserId(
   userId: string,
   options: { limit?: number; after?: { id: string } } = {},
@@ -48,10 +50,26 @@ export async function getPasskeyCredentialIdsByUserId(
 
 export async function getPasskeyByCredentialId(
   credentialId: string,
-  options?:
-    | { query: TransactionQuery; owner: { currentUserId: string; passkeyId: string } }
-    | { query?: TransactionQuery; owner?: never },
+  options?: { query?: TransactionQuery },
 ): Promise<PasskeyCredential | null> {
+  const statement = passkeyCredentialStatement(credentialId)
+  const { rows } = await read(statement, { query: options?.query })
+  return passkeyCredentialFromRow(rows[0] as PasskeyCredentialRow | undefined)
+}
+
+/** Keep owner-scoped credential verification on the caller's actor transaction. */
+export async function getPasskeyByCredentialIdForUpdate(
+  query: TransactionQuery,
+  credentialId: string,
+  owner: PasskeyOwner,
+): Promise<PasskeyCredential | null> {
+  const statement = passkeyCredentialStatement(credentialId, owner)
+  statement.append(sql` FOR UPDATE`)
+  const { rows } = await query(statement)
+  return passkeyCredentialFromRow(rows[0] as PasskeyCredentialRow | undefined)
+}
+
+function passkeyCredentialStatement(credentialId: string, owner?: PasskeyOwner) {
   const statement = sql`/* getPasskeyByCredentialId */ SELECT id,
           user_id AS "userId",
           credential_id AS "credentialId",
@@ -60,12 +78,12 @@ export async function getPasskeyByCredentialId(
           transports
         FROM user_passkeys
         WHERE credential_id = ${credentialId}`
-  if (options?.owner)
-    statement.append(
-      sql` AND user_id = ${options.owner.currentUserId} AND id = ${options.owner.passkeyId} FOR UPDATE`,
-    )
-  const { rows } = await read(statement, { query: options?.query })
-  const row = rows[0] as PasskeyCredentialRow | undefined
+  if (owner)
+    statement.append(sql` AND user_id = ${owner.currentUserId} AND id = ${owner.passkeyId}`)
+  return statement
+}
+
+function passkeyCredentialFromRow(row: PasskeyCredentialRow | undefined): PasskeyCredential | null {
   return row
     ? { ...row, counter: Number(row.counter), transports: row.transports ?? undefined }
     : null

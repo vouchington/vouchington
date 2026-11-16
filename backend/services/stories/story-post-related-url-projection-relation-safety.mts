@@ -6,7 +6,6 @@ import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import { relationLimitsMaxValues } from '@services/entity-relations/relation-limits-config'
 import type { EntityRelation } from '@services/entity-relations/upsert-helpers'
 import type { ProjectionWork } from './story-post-related-url-projection-types.mts'
-import { isStoryPostRelatedUrlProjectionWorkCurrent } from './story-post-related-url-projection-work.mts'
 
 export async function drainPendingStoryPostRelatedUrlProjectionCrawlEffects(
   work: ProjectionWork,
@@ -48,13 +47,6 @@ export async function drainPendingStoryPostRelatedUrlProjectionCrawlEffects(
     [work.post_id, generations, urlIds, work.generation, work.lease_token],
   )
   return rowCount === rows.length ? rows.length : null
-}
-
-export async function lockPostScopeAndCheckProjectionWork(
-  query: TransactionQuery,
-  work: ProjectionWork,
-): Promise<boolean> {
-  return isStoryPostRelatedUrlProjectionWorkCurrent(work, query, true)
 }
 
 export async function lockStoryPostRelatedUrlProjectionHostnameBlocks(

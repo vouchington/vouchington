@@ -5,7 +5,11 @@ import onError from '@modules/on-error'
 import { createPasskey } from './create.mts'
 import { getAndDeleteChallenge, storeChallenge } from './challenges.mts'
 import { RP_ID, RP_NAME } from './config.mts'
-import { getPasskeyByCredentialId, getPasskeyCredentialIdsByUserId } from './get.mts'
+import {
+  getPasskeyByCredentialId,
+  getPasskeyByCredentialIdForUpdate,
+  getPasskeyCredentialIdsByUserId,
+} from './get.mts'
 import type { PublicPasskey } from './types.mts'
 import { updatePasskeyCounter } from './update.mts'
 
@@ -45,15 +49,12 @@ export function createPasskeyProtocol(
           ...(scope && { passkeyId: scope.passkeyId }),
         }),
       findByCredentialId: credentialId =>
-        getPasskeyByCredentialId(
-          credentialId,
-          scope
-            ? {
-                query: options.query!,
-                owner: { currentUserId: scope.currentUserId, passkeyId: scope.passkeyId },
-              }
-            : { query: options.query },
-        ),
+        scope
+          ? getPasskeyByCredentialIdForUpdate(options.query!, credentialId, {
+              currentUserId: scope.currentUserId,
+              passkeyId: scope.passkeyId,
+            })
+          : getPasskeyByCredentialId(credentialId, { query: options.query }),
       /* v8 ignore next -- successful registration requires a real authenticator ceremony */
       create: ({ userId, registration, context }) =>
         createPasskey(userId, registration, context, { query: options.query }),
