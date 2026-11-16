@@ -1,6 +1,8 @@
 /* oxlint-disable jsx-a11y/no-noninteractive-tabindex -- focusable cards support moderation queue navigation while nested buttons keep native behavior. */
 'use client'
 
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatUtcDate } from '@ts-shared/utils/format'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { PostContentText } from '@/components/posts/post-content-text'
@@ -47,6 +49,7 @@ export function ModQueuePostCard({
   rejectionReason: string
   selected: boolean
 }) {
+  const uiLocale = useUiLocale()
   const t = useTranslations()
   const queueKey = `post:${post.id}`
   const active = activeKey === queueKey
@@ -127,12 +130,9 @@ export function ModQueuePostCard({
           }}
         />
       )}
-      <p
-        className='mt-2 text-xs text-muted-foreground'
-        suppressHydrationWarning
-      >
+      <p className='mt-2 text-xs text-muted-foreground'>
         {t('extracted.communities.modQueuePosts.submitted_64900440')}{' '}
-        {new Date(post.created_at).toLocaleDateString()}
+        {formatUtcDate(post.created_at, uiLocale)}
       </p>
       <ModQueuePostCardActions
         activeAction={activeAction}

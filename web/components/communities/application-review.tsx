@@ -1,5 +1,7 @@
 'use client'
 
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatUtcDate } from '@ts-shared/utils/format'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { EmptyState } from '@/components/shared/empty-state'
@@ -25,6 +27,7 @@ interface ActiveAction {
 }
 
 export function ApplicationReview({ data, communitySlug }: ApplicationReviewProps) {
+  const uiLocale = useUiLocale()
   const t = useTranslations()
   const { refresh } = useRouter()
   const endpoint = `/api/v1/communities/${encodeURIComponent(communitySlug)}/applications`
@@ -152,7 +155,7 @@ export function ApplicationReview({ data, communitySlug }: ApplicationReviewProp
             t('shared.user.deletedUser'),
           )}
           appliedDate={t('extracted.communities.applicationReview.appliedDate_6e231f5e', {
-            date: new Date(openApplication.created_at).toLocaleDateString(),
+            date: formatUtcDate(openApplication.created_at, uiLocale),
           })}
           onClose={() => setOpenApplicationId(null)}
         />

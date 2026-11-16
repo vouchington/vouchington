@@ -16,6 +16,7 @@ import {
   serverApi,
 } from '@/lib/api/server'
 import { requireAdmin } from '@/lib/auth/require-admin'
+import { getResolvedUiLocale } from '@/lib/i18n/get-resolved-ui-locale'
 import { getTranslations } from '@/lib/i18n/get-translations'
 import { createTopicPathname, referralValidationHref } from '@/lib/links/entity-href'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
@@ -87,9 +88,10 @@ export function createReferralProgramValidationsListPage() {
     const rawAfter = (await searchParams)?.after
     const after = Array.isArray(rawAfter) ? rawAfter[0] : rawAfter
 
-    const [data, t] = await Promise.all([
+    const [data, t, uiLocale] = await Promise.all([
       getReferralProgramValidations(topic.id, after),
       getTranslations(),
+      getResolvedUiLocale(),
     ])
     return (
       <div className='space-y-4'>
@@ -114,6 +116,7 @@ export function createReferralProgramValidationsListPage() {
           validations={data.results}
           programSlug={topic.slug}
           t={t}
+          uiLocale={uiLocale}
         />
         <AdminPagination
           previousHref={after ? basePath : null}

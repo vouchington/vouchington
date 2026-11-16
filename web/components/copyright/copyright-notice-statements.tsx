@@ -1,9 +1,12 @@
+import { formatUtcDateTime } from '@ts-shared/utils/format'
 import type { CopyrightParticipantNoticeDetail } from '@/types/copyright-notices'
 
 export function CopyrightNoticeStatements({
   statements,
+  uiLocale,
 }: {
   statements: CopyrightParticipantNoticeDetail['statements']
+  uiLocale: string
 }) {
   if (statements.length === 0) return null
   return (
@@ -20,10 +23,10 @@ export function CopyrightNoticeStatements({
               : statement.state === 'bounced'
                 ? 'Delivery could not be completed'
                 : statement.sent_at
-                  ? `Sent ${new Date(statement.sent_at).toLocaleString()}`
+                  ? `Sent ${formatUtcDateTime(statement.sent_at, uiLocale)}`
                   : 'Delivery pending'}
             {statement.sent_at && (statement.state === 'failed' || statement.state === 'bounced')
-              ? ` · Sent ${new Date(statement.sent_at).toLocaleString()}`
+              ? ` · Sent ${formatUtcDateTime(statement.sent_at, uiLocale)}`
               : null}
           </p>
           <p className='whitespace-pre-wrap'>{statement.text}</p>

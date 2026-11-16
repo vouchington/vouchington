@@ -1,3 +1,4 @@
+import { formatUtcDate, formatUtcDateTime } from '@ts-shared/utils/format'
 import Link from 'next/link'
 import { userHref } from '@/lib/links/entity-href'
 import {
@@ -17,10 +18,12 @@ export function CopyrightNoticeDetailView({
   notice,
   responseEligibility,
   statements = EMPTY_STATEMENTS,
+  uiLocale,
 }: {
   notice: CopyrightNoticeDetail
   statements?: CopyrightParticipantNoticeDetail['statements']
   responseEligibility: CopyrightNoticeResponseEligibility | null
+  uiLocale: string
 }) {
   return (
     <section className='space-y-5'>
@@ -28,7 +31,7 @@ export function CopyrightNoticeDetailView({
         <p className='text-sm text-muted-foreground'>{copyrightCaseLabel(notice)}</p>
         <h1 className='text-3xl font-bold'>Copyright notice</h1>
         <p className='text-sm text-muted-foreground'>
-          Accepted {new Date(notice.accepted_at).toLocaleDateString()}
+          Accepted {formatUtcDate(notice.accepted_at, uiLocale)}
         </p>
       </div>
       {notice.claimant && (
@@ -76,12 +79,15 @@ export function CopyrightNoticeDetailView({
               className='text-sm'
             >
               {copyrightTimelineEventLabel(event.event_type)}.{' '}
-              {new Date(event.created_at).toLocaleString()}
+              {formatUtcDateTime(event.created_at, uiLocale)}
             </li>
           ))}
         </ol>
       </section>
-      <CopyrightNoticeStatements statements={statements} />
+      <CopyrightNoticeStatements
+        statements={statements}
+        uiLocale={uiLocale}
+      />
       {notice.jurisdiction === 'us_dmca' &&
         responseEligibility?.viewer_role === 'poster' &&
         responseEligibility.respondable_target_ids.length > 0 && (

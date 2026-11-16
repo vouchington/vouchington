@@ -1,3 +1,4 @@
+import { formatUtcDateTime } from '@ts-shared/utils/format'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -12,6 +13,7 @@ import { getMembership, getServerRssFeedCrawl, getTopic, getTopicRssFeeds } from
 import { requireCurrentUser } from '@/lib/auth/require-current-user'
 import { createTopicPathname, topicHref } from '@/lib/links/entity-href'
 import { canCurrentUserViewCrawlHistory } from '@/lib/permissions/can-view-crawl-history'
+import { getResolvedUiLocale } from '@/lib/i18n/get-resolved-ui-locale'
 import { getTranslations } from '@/lib/i18n/get-translations'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 import {
@@ -40,7 +42,7 @@ export function createTopicSourceCrawlDetailPage() {
   }
 
   async function TopicSourceCrawlDetailRoutePage({ params }: CrawlDetailSubPageProps) {
-    const t = await getTranslations()
+    const [t, uiLocale] = await Promise.all([getTranslations(), getResolvedUiLocale()])
     const currentUser = await requireCurrentUser()
     const membership = currentUser.roles.includes('administrator')
       ? null
@@ -136,11 +138,8 @@ export function createTopicSourceCrawlDetailPage() {
                 <dt className='text-sm font-medium text-muted-foreground'>
                   {t('extracted.crawlid.page.createdAt_3d443370')}
                 </dt>
-                <dd
-                  className='mt-1 text-sm text-foreground'
-                  suppressHydrationWarning
-                >
-                  {new Date(crawl.created_at).toLocaleString()}
+                <dd className='mt-1 text-sm text-foreground'>
+                  {formatUtcDateTime(crawl.created_at, uiLocale)}
                 </dd>
               </div>
             </dl>

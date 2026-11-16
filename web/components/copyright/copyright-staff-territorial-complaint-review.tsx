@@ -1,5 +1,7 @@
 'use client'
 
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatUtcDateTime } from '@ts-shared/utils/format'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'
@@ -22,6 +24,7 @@ export function CopyrightStaffTerritorialComplaintReview({
   onReview: SubmitReview
   pending: boolean
 }) {
+  const uiLocale = useUiLocale()
   const [disposition, setDisposition] = useState<'maintain' | 'revoke'>('maintain')
   const [rationale, setRationale] = useState('')
   const trimmedRationale = rationale.trim()
@@ -33,14 +36,14 @@ export function CopyrightStaffTerritorialComplaintReview({
         <h4 className='font-medium'>Complaint from {complaint.filed_by}</h4>
         <p className='whitespace-pre-wrap text-sm'>{complaint.explanation}</p>
         <p className='text-sm text-muted-foreground'>
-          Informed: {formatDate(complaint.informed_at)} · Complaint deadline:{' '}
-          {formatDate(complaint.window_ends_at)}
+          Informed: {formatDate(complaint.informed_at, uiLocale)} · Complaint deadline:{' '}
+          {formatDate(complaint.window_ends_at, uiLocale)}
         </p>
       </div>
       {complaint.decision ? (
         <div className='space-y-1 text-sm'>
           <p>Decision: {complaint.decision.staff_disposition}</p>
-          <p>Decision recorded {formatDate(complaint.decision.decided_at)}</p>
+          <p>Decision recorded {formatDate(complaint.decision.decided_at, uiLocale)}</p>
           <p className='whitespace-pre-wrap'>Rationale: {complaint.decision.rationale}</p>
         </div>
       ) : (
@@ -48,7 +51,7 @@ export function CopyrightStaffTerritorialComplaintReview({
           <fieldset className='space-y-2'>
             <legend className='text-sm font-medium'>Complaint decision</legend>
             <RadioGroup
-              aria-label={`Decision for complaint received ${formatDate(complaint.received_at)}`}
+              aria-label={`Decision for complaint received ${formatDate(complaint.received_at, uiLocale)}`}
               onValueChange={value => setDisposition(value as 'maintain' | 'revoke')}
               value={disposition}
             >
@@ -110,6 +113,6 @@ export function CopyrightStaffTerritorialComplaintReview({
   )
 }
 
-function formatDate(value: string | null): string {
-  return value ? new Date(value).toLocaleString() : 'Not recorded'
+function formatDate(value: string | null, uiLocale: string): string {
+  return value ? formatUtcDateTime(value, uiLocale) : 'Not recorded'
 }

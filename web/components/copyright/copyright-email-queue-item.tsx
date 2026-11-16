@@ -1,5 +1,7 @@
 'use client'
 
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatUtcDateTime } from '@ts-shared/utils/format'
 import { Button } from '@/components/ui/button'
 import { TimeAgo } from '@/components/shared/time-ago'
 import type {
@@ -28,6 +30,7 @@ export function CopyrightEmailQueueItem({
   setError: (value: string | null) => void
   setSuccess: (value: string | null) => void
 }) {
+  const uiLocale = useUiLocale()
   return (
     <li>
       <Button
@@ -38,7 +41,7 @@ export function CopyrightEmailQueueItem({
         variant='link'
       >
         {copyrightEmailReviewPathLabels[item.review_path]} · received{' '}
-        {new Date(item.received_at).toLocaleString()}
+        {formatUtcDateTime(item.received_at, uiLocale)}
       </Button>
       <p className='text-xs text-muted-foreground'>
         Received <TimeAgo date={item.received_at} />

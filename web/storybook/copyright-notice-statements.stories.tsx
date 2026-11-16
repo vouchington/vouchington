@@ -4,6 +4,7 @@ import { CopyrightNoticeStatements } from '@/components/copyright/copyright-noti
 const meta = {
   title: 'Copyright/Statements of Reasons',
   component: CopyrightNoticeStatements,
+  args: { uiLocale: 'en-US' },
 } satisfies Meta<typeof CopyrightNoticeStatements>
 export default meta
 type Story = StoryObj<typeof meta>

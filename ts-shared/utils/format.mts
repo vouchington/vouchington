@@ -9,6 +9,33 @@ export {
   type NumberFormatLocale,
 } from '@vouchington/utils/format'
 
+const dateTimeFormatters = new Map<string, Intl.DateTimeFormat>()
+
+/**
+ * Format an ISO timestamp as a UTC date and time in the UI locale. Sibling of `formatUtcDate`
+ * for surfaces that show a time of day; the fixed UTC zone keeps server render and client
+ * hydration identical.
+ * @param value ISO timestamp
+ * @param locale UI locale
+ * @returns Localized date and time with a short zone name
+ */
+export function formatUtcDateTime(value: string, locale: string): string {
+  let formatter = dateTimeFormatters.get(locale)
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone: 'UTC',
+      timeZoneName: 'short',
+    })
+    dateTimeFormatters.set(locale, formatter)
+  }
+  return formatter.format(new Date(value))
+}
+
 /**
  * User-facing labels for known post type slugs.
  */

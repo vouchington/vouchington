@@ -1,5 +1,7 @@
 'use client'
 
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatUtcDateTime } from '@ts-shared/utils/format'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'
@@ -18,6 +20,7 @@ export function CopyrightStaffTerritorial({
   pending: boolean
   onReview: SubmitReview
 }) {
+  const uiLocale = useUiLocale()
   const territorial = item.territorial
   const [showDetails, setShowDetails] = useState(false)
   if (!territorial || item.jurisdiction === 'us_dmca') return null
@@ -74,8 +77,8 @@ export function CopyrightStaffTerritorial({
         <h4 className='font-medium'>Acknowledgment</h4>
         <p className='text-sm'>
           Attempts: {territorial.acknowledgment.attempt_count}. Last attempt:{' '}
-          {formatDate(territorial.acknowledgment.last_attempt_at)}. Acknowledged:{' '}
-          {formatDate(territorial.acknowledgment.acknowledged_at)}.
+          {formatDate(territorial.acknowledgment.last_attempt_at, uiLocale)}. Acknowledged:{' '}
+          {formatDate(territorial.acknowledgment.acknowledged_at, uiLocale)}.
         </p>
         {territorial.acknowledgment.exhausted_at ? (
           <p className='text-sm text-muted-foreground'>
@@ -109,7 +112,7 @@ export function CopyrightStaffTerritorial({
           className='space-y-2'
         >
           <h4 className='font-medium'>Current decision: {territorial.decision.outcome}</h4>
-          <p className='text-sm'>Decided {formatDate(territorial.decision.decided_at)}</p>
+          <p className='text-sm'>Decided {formatDate(territorial.decision.decided_at, uiLocale)}</p>
           <p className='whitespace-pre-wrap text-sm'>
             Internal rationale: {territorial.decision.rationale}
           </p>
@@ -119,7 +122,9 @@ export function CopyrightStaffTerritorial({
         </section>
       ) : null}
       {territorial.reopened_at ? (
-        <p className='text-sm'>Complaint upheld. Reopened {formatDate(territorial.reopened_at)}.</p>
+        <p className='text-sm'>
+          Complaint upheld. Reopened {formatDate(territorial.reopened_at, uiLocale)}.
+        </p>
       ) : null}
 
       <CopyrightStaffTerritorialDecision
@@ -159,6 +164,6 @@ export function CopyrightStaffTerritorial({
   )
 }
 
-function formatDate(value: string | null): string {
-  return value ? new Date(value).toLocaleString() : 'Not recorded'
+function formatDate(value: string | null, uiLocale: string): string {
+  return value ? formatUtcDateTime(value, uiLocale) : 'Not recorded'
 }

@@ -1,4 +1,6 @@
 'use client'
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatUtcDate } from '@ts-shared/utils/format'
 import { Badge } from '@/components/ui/badge'
 import type { ListItem } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -14,6 +16,7 @@ interface ListItemRowProps {
 }
 
 export function ListItemRow({ item }: ListItemRowProps) {
+  const uiLocale = useUiLocale()
   const t = useTranslations()
   const label =
     item.item_type === 'post' ? 'Post' : (MEDIA_TYPE_LABELS[item.media_type ?? ''] ?? 'Article')
@@ -35,9 +38,8 @@ export function ListItemRow({ item }: ListItemRowProps) {
       <time
         dateTime={item.created_at}
         className='shrink-0 text-xs text-muted-foreground'
-        suppressHydrationWarning
       >
-        {new Date(item.created_at).toLocaleDateString()}
+        {formatUtcDate(item.created_at, uiLocale)}
       </time>
     </article>
   )

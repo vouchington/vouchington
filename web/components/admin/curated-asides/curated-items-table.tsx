@@ -1,5 +1,7 @@
 'use client'
 
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatUtcDateTime } from '@ts-shared/utils/format'
 import { AdminTableShell } from '@/components/admin/admin-table-shell'
 import { Button } from '@/components/ui/button'
 import { TooltipButton } from '@/components/ui/_button-tooltip'
@@ -23,6 +25,7 @@ export function CuratedItemsTable({
   onDelete,
   onReorder,
 }: CuratedItemsTableProps) {
+  const uiLocale = useUiLocale()
   const t = useTranslations()
   function handleDragStart(event: DragEvent, index: number) {
     event.dataTransfer.effectAllowed = 'move'
@@ -116,12 +119,7 @@ export function CuratedItemsTable({
                   </div>
                 </div>
               </td>
-              <td
-                className='px-4 py-3'
-                suppressHydrationWarning
-              >
-                {new Date(item.created_at).toLocaleString()}
-              </td>
+              <td className='px-4 py-3'>{formatUtcDateTime(item.created_at, uiLocale)}</td>
               <td className='px-4 py-3'>
                 <div className='flex items-center gap-1'>
                   <Button

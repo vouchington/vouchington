@@ -1,5 +1,7 @@
 'use client'
 
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatUtcDate } from '@ts-shared/utils/format'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import onError from '@/lib/on-error'
@@ -38,6 +40,7 @@ export function TopicRecommendationsTableRow({
   onQuickApprove,
   onQuickReject,
 }: TopicRecommendationsTableRowProps) {
+  const uiLocale = useUiLocale()
   const t = useTranslations()
   const { currentUser } = useAuth()
   const recommendation = post.topic_recommendation!
@@ -109,7 +112,7 @@ export function TopicRecommendationsTableRow({
               className='h-auto min-h-6 p-0 text-xs text-muted-foreground'
               onClick={() => onOpen(post)}
             >
-              {new Date(post.created_at).toLocaleDateString()}
+              {formatUtcDate(post.created_at, uiLocale)}
             </Button>
           </div>
         </div>

@@ -1,5 +1,7 @@
 'use client'
 
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatUtcDateTime } from '@ts-shared/utils/format'
 import { reviewCopyrightFormIntake } from '@/lib/api/client/copyright-notices'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
 import { CopyrightStaffFormGuidance } from './copyright-staff-form-guidance'
@@ -34,6 +36,7 @@ export function CopyrightStaffFormReview({
   rationale: string
   submit: SubmitReview
 }) {
+  const uiLocale = useUiLocale()
   if (!formReview) return null
   const { review } = formReview
   const guidance = formReview.screening?.guidance
@@ -46,7 +49,7 @@ export function CopyrightStaffFormReview({
             {review.is_accepted ? 'Approved' : 'Rejected'} by{' '}
             {review.reviewed_by_id ? 'a moderator' : 'a deleted moderator account'} on{' '}
             <time dateTime={review.reviewed_at}>
-              {new Date(review.reviewed_at).toLocaleString()}
+              {formatUtcDateTime(review.reviewed_at, uiLocale)}
             </time>
             .
           </p>

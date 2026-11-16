@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
 import { makeCopyrightStaffQueueItem } from '@/test-helpers/api-responses/copyright'
 import { CopyrightStaffQueueStatus } from './copyright-staff-queue-status'
+import { LocaleProvider } from '@/lib/i18n/ui-locale-context'
 
 function queueItem(assessed: boolean): CopyrightStaffQueueItem {
   return makeCopyrightStaffQueueItem({
@@ -40,8 +41,19 @@ describe('CopyrightStaffQueueStatus filing assessment', () => {
       ),
     ).toBeVisible()
     expect(screen.getByText(/^Assess the filing by/)).toHaveTextContent(
-      new Date('2026-01-14T00:00:00Z').toLocaleString(),
+      'Jan 14, 2026, 12:00 AM UTC',
     )
+  })
+  it.each([
+    ['en', 'Jan 14, 2026, 12:00 AM UTC'],
+    ['de', '14. Jan. 2026, 00:00 UTC'],
+  ])('renders the assessment deadline in the %s UI locale', (locale, expected) => {
+    render(
+      <LocaleProvider locale={locale}>
+        <CopyrightStaffQueueStatus notice={queueItem(false)} />
+      </LocaleProvider>,
+    )
+    expect(screen.getByText(/^Assess the filing by/)).toHaveTextContent(expected)
   })
   it('does not mark an assessed filing urgent', () => {
     render(<CopyrightStaffQueueStatus notice={queueItem(true)} />)

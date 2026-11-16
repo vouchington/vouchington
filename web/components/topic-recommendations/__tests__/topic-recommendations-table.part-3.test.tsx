@@ -73,9 +73,9 @@ describe('TopicRecommendationsTable', () => {
 
   it('opens dialog via date button', () => {
     renderTable()
-    // The date button shows localeDateString of created_at
+    // The date button shows the UTC date of created_at in the UI locale
     const dateBtn = screen.getByRole('button', {
-      name: new Date('2024-01-01T00:00:00Z').toLocaleDateString(),
+      name: 'Jan 1, 2024',
     })
     fireEvent.click(dateBtn)
     expect(screen.getByText('Recommendation rationale')).toBeDefined()

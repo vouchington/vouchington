@@ -6,6 +6,7 @@ describe('CopyrightNoticeDetailView', () => {
   it('renders the public projection without claimant, evidence, or agent fields', () => {
     render(
       <CopyrightNoticeDetailView
+        uiLocale='en-US'
         notice={{
           id: 'case-123',
           jurisdiction: 'us_dmca',
@@ -56,6 +57,7 @@ describe('CopyrightNoticeDetailView', () => {
   it('renders response links only for an affected poster with respondable targets', () => {
     render(
       <CopyrightNoticeDetailView
+        uiLocale='en-US'
         notice={{
           id: 'case-123',
           jurisdiction: 'us_dmca',
@@ -85,6 +87,7 @@ describe('CopyrightNoticeDetailView', () => {
   it('names an event type outside the case-facing set by its plain words', () => {
     render(
       <CopyrightNoticeDetailView
+        uiLocale='en-US'
         notice={{
           id: 'case-123',
           jurisdiction: 'us_dmca',
@@ -122,6 +125,7 @@ describe('CopyrightNoticeDetailView', () => {
     }
     const { rerender } = render(
       <CopyrightNoticeDetailView
+        uiLocale='en-US'
         notice={notice}
         responseEligibility={null}
         statements={[]}
@@ -132,6 +136,7 @@ describe('CopyrightNoticeDetailView', () => {
     ).not.toBeInTheDocument()
     rerender(
       <CopyrightNoticeDetailView
+        uiLocale='en-US'
         notice={notice}
         responseEligibility={null}
         statements={[

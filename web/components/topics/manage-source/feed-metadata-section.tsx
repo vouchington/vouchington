@@ -1,9 +1,12 @@
 'use client'
 
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
+import { formatUtcDateTime } from '@ts-shared/utils/format'
 import type { ManageSourceRssFeed } from './manage-source-model'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 export function FeedMetadataSection({ rssFeed }: { rssFeed: ManageSourceRssFeed }) {
+  const uiLocale = useUiLocale()
   const t = useTranslations()
   return (
     <section className='bg-card p-6 shadow-sm dark:shadow-none sm:rounded-lg'>
@@ -40,7 +43,7 @@ export function FeedMetadataSection({ rssFeed }: { rssFeed: ManageSourceRssFeed 
         </MetadataRow>
         <MetadataRow label={t('extracted.manageSource.feedMetadataSection.lastFetched_8793b931')}>
           {rssFeed.last_fetched_at
-            ? new Date(rssFeed.last_fetched_at).toLocaleString()
+            ? formatUtcDateTime(rssFeed.last_fetched_at, uiLocale)
             : t('extracted.manageSource.feedMetadataSection.never_6300ef80')}
         </MetadataRow>
         <MetadataRow label={t('extracted.manageSource.feedMetadataSection.etag_65c09e9a')}>
@@ -50,7 +53,7 @@ export function FeedMetadataSection({ rssFeed }: { rssFeed: ManageSourceRssFeed 
         </MetadataRow>
         <MetadataRow label={t('extracted.manageSource.feedMetadataSection.lastModified_7557e6ae')}>
           {rssFeed.last_modified_at
-            ? new Date(rssFeed.last_modified_at).toLocaleString()
+            ? formatUtcDateTime(rssFeed.last_modified_at, uiLocale)
             : t('extracted.manageSource.feedMetadataSection.none_dc937b59')}
         </MetadataRow>
       </dl>
