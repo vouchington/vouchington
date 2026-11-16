@@ -2,6 +2,8 @@ import { beginTransaction, write } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
+import createError from 'http-errors'
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
 import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 
@@ -25,22 +27,24 @@ export async function placeCopyrightEmailReceiptPreservationHold(
     422,
     'Invalid preservation reason',
   )
-  await using query = await beginTransaction()
-  const { rows: receipts } = await query<{
-    review_decision: string | null
-    has_final_explanation: boolean
-  }>(sql`/* lockCopyrightEmailReceiptPreservation */
+  return conflictOnSerializationFailure(async () => {
+    try {
+      await using query = await beginTransaction({ serializable: true })
+      const { rows: receipts } = await query<{
+        review_decision: string | null
+        has_final_explanation: boolean
+      }>(sql`/* lockCopyrightEmailReceiptPreservation */
     SELECT review_decision, review_rationale_ciphertext IS NOT NULL AS has_final_explanation
-    FROM copyright_notice_email_intake_receipts WHERE id = ${receiptId} FOR UPDATE`)
-  const receipt = receipts[0]
-  assert(receipt, 404, 'Copyright email receipt not found')
-  assert(
-    receipt.review_decision !== null,
-    409,
-    'Only a final standalone email receipt can receive this hold',
-  )
-  // Fresh statement after the owner lock: an association admitted before that lock is visible.
-  const { rows: links } = await query(sql`/* requireStandaloneCopyrightReceiptPreservation */
+    FROM copyright_notice_email_intake_receipts WHERE id = ${receiptId}`)
+      const receipt = receipts[0]
+      assert(receipt, 404, 'Copyright email receipt not found')
+      assert(
+        receipt.review_decision !== null,
+        409,
+        'Only a final standalone email receipt can receive this hold',
+      )
+      // The standalone predicate and final explanation participate in the same SSI snapshot.
+      const { rows: links } = await query(sql`/* requireStandaloneCopyrightReceiptPreservation */
     SELECT 1 FROM copyright_notice_email_intake_notice_links
     WHERE copyright_notice_email_intake_id = ${receiptId}
     UNION ALL
@@ -52,25 +56,35 @@ export async function placeCopyrightEmailReceiptPreservationHold(
     SELECT 1 FROM copyright_notice_correspondence_messages
     WHERE copyright_notice_email_intake_id = ${receiptId}
     LIMIT 1`)
-  assert(links.length === 0, 409, 'Linked email receipts use case preservation holds')
-  assert(receipt.has_final_explanation, 410, 'Copyright email receipt review has expired')
-  const { rows: open } = await query(sql`/* findOpenCopyrightEmailReceiptPreservationHold */
+      assert(links.length === 0, 409, 'Linked email receipts use case preservation holds')
+      assert(receipt.has_final_explanation, 410, 'Copyright email receipt review has expired')
+      const { rows: open } = await query(sql`/* findOpenCopyrightEmailReceiptPreservationHold */
     SELECT 1 FROM copyright_email_receipt_preservation_holds
     WHERE copyright_notice_email_intake_receipt_id = ${receiptId} AND released_at IS NULL`)
-  assert(open.length === 0, 409, 'Copyright email receipt already has a preservation hold')
-  const { rows } = await query<{
-    id: string
-    kind: CopyrightReceiptPreservationKind
-    placed_at: Date
-  }>(sql`/* placeCopyrightEmailReceiptPreservationHold */
+      assert(open.length === 0, 409, 'Copyright email receipt already has a preservation hold')
+      const { rows } = await query<{
+        id: string
+        kind: CopyrightReceiptPreservationKind
+        placed_at: Date
+      }>(sql`/* placeCopyrightEmailReceiptPreservationHold */
     INSERT INTO copyright_email_receipt_preservation_holds
       (copyright_notice_email_intake_receipt_id, kind, placed_by_id)
     VALUES (${receiptId}, ${kind}::copyright_email_receipt_preservation_kinds, ${currentUser.id})
     RETURNING id, kind, created_at AS placed_at`)
-  const hold = rows[0]
-  assert(hold, 500, 'Copyright email receipt preservation hold was not recorded')
-  await query.commit()
-  return hold
+      const hold = rows[0]
+      assert(hold, 500, 'Copyright email receipt preservation hold was not recorded')
+      await query.commit()
+      return hold
+    } catch (err) {
+      const failure = err as { code?: string; constraint?: string } | null
+      if (
+        failure?.code === '23505' &&
+        failure.constraint === 'idx_cpyrght_eml_rcpt_prsrvtn_hlds__one_open'
+      )
+        throw createError(409, 'Copyright email receipt changed concurrently', { cause: err })
+      throw err
+    }
+  }, 'Copyright email receipt changed concurrently')
 }
 
 /** A released hold id cannot release a replacement hold on the same retained receipt. */

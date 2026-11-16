@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { runSequentially } from '@modules/utils/run-sequentially'
 import { v7 } from 'uuid'
 import { upsertMediaTypes } from '../services/urls/media-types.mts'
 import { upsertCopyrightStorageObjectId } from '../services/copyright-notices/storage-objects.mts'
@@ -75,6 +76,19 @@ export async function seedOldCopyrightReceiptRationale(
     INSERT INTO copyright_decision_rationales
       (id, copyright_notice_email_intake_receipt_id, recorded_by_id, tool_name, rationale_ciphertext)
     VALUES (${id}, ${receipt.id}, ${reviewerId}, 'review_copyright_email_intake', 'v1:attempt')`)
+  // This fixture owns no S3 object or parse children. Admit the rationale while its source is
+  // live, then commit the guarded retained-receipt state consumed by review retirement.
+  await runSequentially([
+    () =>
+      transaction(sql`/* seedOldCopyrightReceiptRationale:erasedReceipt */
+      UPDATE copyright_notice_email_intake_receipts SET erased_at = reviewed_at WHERE id = ${receipt.id}`),
+    () =>
+      transaction(sql`/* seedOldCopyrightReceiptRationale:retentionPermit */
+      SELECT set_config('app.copyright_operational_retention', 'on', true)`),
+    () =>
+      transaction(sql`/* seedOldCopyrightReceiptRationale:removePrivateIntake */
+      DELETE FROM copyright_notice_email_intakes WHERE id = ${receipt.id}`),
+  ])
   await transaction.commit()
   return id
 }

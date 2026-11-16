@@ -122,12 +122,13 @@ describe('recordMcpCallAudit', () => {
     ).toEqual([target.id])
   })
 
-  it('waits for a concurrent case erasure and keeps only the security attempt', async () => {
+  it('rejects or omits rationale after concurrent case erasure', async () => {
     const { user, clientId } = await registerActor()
     const fixture = await createCopyrightReplayFixture()
     const context = createMcpCallAuditContext(ADMIN_MCP_SERVER_CONFIG, user.id, oauth(clientId))
     await using erasure = await beginTransaction()
     await markTestCopyrightNoticeErased(fixture.noticeId, erasure)
+    let conflict: unknown
     let securityWritten!: () => void
     const securityWrite = new Promise<void>(resolve => {
       securityWritten = resolve
@@ -149,14 +150,20 @@ describe('recordMcpCallAudit', () => {
         ])
         await securityWrite
         await erasure.commit()
-        await audit
+        await audit.catch((err: unknown) => {
+          conflict = err
+        })
       } finally {
         unsubscribe()
       }
     })
-    expect((await readTestMcpCallAuditEvents(user.id)).map(event => event.outcome)).toEqual([
-      'accepted',
-    ])
+    expect([
+      undefined,
+      expect.objectContaining({ status: 409, cause: expect.objectContaining({ code: '40001' }) }),
+    ]).toContainEqual(conflict)
+    expect((await readTestMcpCallAuditEvents(user.id)).map(event => event.outcome)).toEqual(
+      conflict ? [] : ['accepted'],
+    )
     expect(await readTestCopyrightDecisionRationales(user.id)).toHaveLength(0)
   })
 

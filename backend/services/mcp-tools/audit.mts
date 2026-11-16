@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
 import { beginTransaction } from '@data-stores/psql'
 import { getOAuthResourceUrl } from '@services/oauth-authorization-server'
 import { encryptSecret } from '@modules/token-secrets'
@@ -73,9 +74,13 @@ export async function recordMcpCallAudit(
   if (events.length === 0) return
   const { credential } = context
   const eventIds = events.map(() => uuidv7())
-  await using query = await beginTransaction()
-  const result = await query(
-    `/* recordMcpCallAudit */
+  const hasRationales = events.some(
+    event => event.copyrightRationale !== undefined && event.copyrightTarget !== undefined,
+  )
+  return conflictOnSerializationFailure(async () => {
+    await using query = await beginTransaction({ serializable: hasRationales })
+    const result = await query(
+      `/* recordMcpCallAudit */
     INSERT INTO mcp_call_audit_events
       (id, audience, correlation_id, actor_user_id, oauth_client_id, api_key_id, resource,
        jsonrpc_method, tool_name, tool_option, outcome)
@@ -91,61 +96,37 @@ export async function recordMcpCallAudit(
     CROSS JOIN unnest($7::uuid[], $8::text[], $9::text[], $10::mcp_call_audit_event_outcomes[], $11::text[])
       WITH ORDINALITY AS event(id, jsonrpc_method, tool_name, outcome, tool_option, ordinal)
     ORDER BY event.ordinal`,
-    [
-      context.audience,
-      context.correlationId,
-      context.actorUserId,
-      context.resource,
-      credential.credential === 'oauth' ? credential.oauthClientId : null,
-      credential.credential === 'api_key' ? credential.apiKeyId : null,
-      eventIds,
-      events.map(event => event.jsonrpcMethod),
-      events.map(event => event.toolName),
-      events.map(event => event.outcome),
-      events.map(event => event.option ?? null),
-    ],
-  )
-  if (result.rowCount !== events.length) throw new Error('MCP call audit was not recorded')
-  const rationales = events.flatMap(event => {
-    if (event.copyrightRationale === undefined || !event.copyrightTarget) return []
-    const id = uuidv7()
-    return [
-      {
-        id,
-        kind: event.copyrightTarget.kind,
-        targetId: event.copyrightTarget.id,
-        toolName: event.toolName,
-        ciphertext: encryptSecret(event.copyrightRationale, `copyright-decision-rationale:${id}`),
-      },
-    ]
-  })
-  if (rationales.length > 0) {
-    // Lock cases in stable order against the erasure worker's FOR UPDATE, then read fresh markers.
-    await query(
-      `/* recordMcpCallAudit:lockLegalCases */
-       WITH target AS (
-         SELECT kind, target_id FROM unnest($1::text[], $2::uuid[]) AS target(kind, target_id)
-       )
-       SELECT notice.id FROM copyright_notices notice
-       WHERE notice.id IN (
-         SELECT target_id FROM target WHERE kind = 'notice'
-         UNION ALL SELECT form_intake.copyright_notice_id FROM copyright_notice_form_intakes form_intake JOIN target
-             ON target.kind = 'form_intake' AND target.target_id = form_intake.id
-         UNION ALL SELECT submission.copyright_notice_id FROM copyright_notice_submissions submission JOIN target
-             ON target.kind = 'submission' AND target.target_id = submission.id
-         UNION ALL SELECT assessment.copyright_notice_id FROM copyright_notice_legal_hold_assessments assessment JOIN target
-             ON target.kind = 'hold_assessment' AND target.target_id = assessment.id
-         UNION ALL SELECT incident.copyright_notice_id FROM copyright_repeat_infringer_incidents incident JOIN target
-             ON target.kind = 'repeat_incident' AND target.target_id = incident.id
-         UNION ALL SELECT link.copyright_notice_id FROM copyright_notice_email_intake_notice_links link JOIN target
-             ON target.kind = 'email_intake'
-               AND target.target_id = link.copyright_notice_email_intake_id
-       )
-       ORDER BY notice.id FOR KEY SHARE OF notice`,
-      [rationales.map(row => row.kind), rationales.map(row => row.targetId)],
+      [
+        context.audience,
+        context.correlationId,
+        context.actorUserId,
+        context.resource,
+        credential.credential === 'oauth' ? credential.oauthClientId : null,
+        credential.credential === 'api_key' ? credential.apiKeyId : null,
+        eventIds,
+        events.map(event => event.jsonrpcMethod),
+        events.map(event => event.toolName),
+        events.map(event => event.outcome),
+        events.map(event => event.option ?? null),
+      ],
     )
-    await query(
-      `/* recordMcpCallAudit:legalRationales */
+    if (result.rowCount !== events.length) throw new Error('MCP call audit was not recorded')
+    const rationales = events.flatMap(event => {
+      if (event.copyrightRationale === undefined || !event.copyrightTarget) return []
+      const id = uuidv7()
+      return [
+        {
+          id,
+          kind: event.copyrightTarget.kind,
+          targetId: event.copyrightTarget.id,
+          toolName: event.toolName,
+          ciphertext: encryptSecret(event.copyrightRationale, `copyright-decision-rationale:${id}`),
+        },
+      ]
+    })
+    if (rationales.length > 0) {
+      await query(
+        `/* recordMcpCallAudit:legalRationales */
        INSERT INTO copyright_decision_rationales
          (id, copyright_notice_id, copyright_notice_email_intake_receipt_id,
           copyright_repeat_infringer_review_identity_id, account_user_id, recorded_by_id,
@@ -186,15 +167,16 @@ export async function recordMcpCallAudit(
            JOIN copyright_notices erased
              ON erased.id = link.copyright_notice_id AND erased.evidence_erased_at IS NOT NULL
            WHERE link.copyright_notice_email_intake_id = email_intake.id)`,
-      [
-        context.actorUserId,
-        rationales.map(row => row.id),
-        rationales.map(row => row.kind),
-        rationales.map(row => row.targetId),
-        rationales.map(row => row.toolName),
-        rationales.map(row => row.ciphertext),
-      ],
-    )
-  }
-  await query.commit()
+        [
+          context.actorUserId,
+          rationales.map(row => row.id),
+          rationales.map(row => row.kind),
+          rationales.map(row => row.targetId),
+          rationales.map(row => row.toolName),
+          rationales.map(row => row.ciphertext),
+        ],
+      )
+    }
+    await query.commit()
+  }, 'Copyright audit target changed concurrently')
 }
