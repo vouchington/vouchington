@@ -56,3 +56,25 @@ export async function claimTestMembershipEntitlementEffect(effectId: string): Pr
   if (!effect) throw new Error(`Expected pending membership entitlement effect ${effectId}`)
   return { id: effect.id, userId: effect.user_id, deliveryClaimToken }
 }
+
+/**
+ * Seeds a fresh lease on the effect in one write, even when a concurrent claimant on a shared DB
+ * already claimed or delivered the fixture, so tests start from a known leased state.
+ */
+export async function seedTestMembershipEntitlementEffectLease(effectId: string): Promise<{
+  id: string
+  userId: string
+  deliveryClaimToken: string
+}> {
+  const deliveryClaimToken = crypto.randomUUID()
+  const { rows } = await write(sql`/* seedTestMembershipEntitlementEffectLease */
+    UPDATE membership_entitlement_effects
+    SET delivered_at = NULL,
+        delivery_claim_token = ${deliveryClaimToken},
+        delivery_claimed_at = CURRENT_TIMESTAMP
+    WHERE id = ${effectId}
+    RETURNING id, user_id`)
+  const effect = rows[0] as { id: string; user_id: string } | undefined
+  if (!effect) throw new Error(`Expected membership entitlement effect ${effectId}`)
+  return { id: effect.id, userId: effect.user_id, deliveryClaimToken }
+}

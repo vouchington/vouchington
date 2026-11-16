@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
-  claimTestMembershipEntitlementEffect,
+  seedTestMembershipEntitlementEffectLease,
   createTestMembership,
   createTestUser,
   getTestMembershipEntitlementEffects,
@@ -108,8 +108,8 @@ describe('membership entitlement effects', () => {
     const [effect] = await getTestMembershipEntitlementEffects(changeId)
     if (!effect) throw new Error('Expected entitlement effect')
 
-    const staleClaim = await claimTestMembershipEntitlementEffect(effect.id)
-    const currentClaim = await claimTestMembershipEntitlementEffect(effect.id)
+    const staleClaim = await seedTestMembershipEntitlementEffectLease(effect.id)
+    const currentClaim = await seedTestMembershipEntitlementEffectLease(effect.id)
     expect(currentClaim.deliveryClaimToken).not.toBe(staleClaim.deliveryClaimToken)
 
     await expect(completeMembershipEntitlementEffects([staleClaim])).resolves.toBe(0)
@@ -135,7 +135,7 @@ describe('membership entitlement effects', () => {
     const [effect] = await getTestMembershipEntitlementEffects(changeId)
     if (!effect) throw new Error('Expected entitlement effect')
 
-    const claim = await claimTestMembershipEntitlementEffect(effect.id)
+    const claim = await seedTestMembershipEntitlementEffectLease(effect.id)
 
     // A global delivery cannot take this fresh lease, so it never touches the owned effect.
     await deliverPendingMembershipEntitlementEffects(10_000)
