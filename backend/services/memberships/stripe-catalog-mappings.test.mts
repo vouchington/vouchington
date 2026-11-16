@@ -67,7 +67,7 @@ describe('membership catalog mapping capacity', () => {
 })
 
 async function publish(options: Omit<Parameters<typeof publishStripeCatalogMapping>[0], 'query'>) {
-  await using transaction = await beginTransaction({ serializable: true })
+  await using transaction = await beginTransaction()
   await publishStripeCatalogMapping({ ...options, query: transaction })
   await transaction.commit()
 }

@@ -53,7 +53,15 @@ export async function reconcileStripeMembershipCatalog({
   try {
     await reconcileStripeMembershipCatalogBody(context, resolvePrice)
   } catch (err) {
-    if (typeof err === 'object' && err !== null && 'code' in err && err.code === '40001')
+    if (
+      typeof err === 'object' &&
+      err !== null &&
+      'code' in err &&
+      err.code === '23505' &&
+      'constraint' in err &&
+      (err.constraint === 'idx_membership_provider_products__active_sku' ||
+        err.constraint === 'idx_membership_provider_products__provider_identity')
+    )
       throw createHttpError(409, 'Concurrent membership catalog publication', {
         code: 'MEMBERSHIP_CATALOG_CONFLICT',
         cause: err,
@@ -85,7 +93,7 @@ async function reconcileStripeMembershipCatalogBody(
       }),
     ),
   )
-  await using transaction = await beginTransaction({ serializable: true })
+  await using transaction = await beginTransaction()
   const contextId = await getOrCreateProviderContextId(
     { provider: 'stripe', ...context },
     transaction,
@@ -109,7 +117,7 @@ async function reconcileStripeMembershipCatalogBody(
         `Missing canonical membership product ${descriptor.plan}/${descriptor.interval}`,
       )
     const price = prices[index]!
-    // eslint-disable-next-line no-await-in-loop -- one transaction serializes canonical mapping publication.
+    // eslint-disable-next-line no-await-in-loop -- publish the selected canonical mappings in a consistent order.
     await publishStripeCatalogMapping({
       membershipProductId: product.id,
       providerProductId: price.id,
