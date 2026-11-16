@@ -1,17 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { copyrightSweepConfig } from '@services/copyright-notices/work-limits'
 import { walkCopyrightSweep } from './copyright-sweep-walk.mts'
 
-describe('copyright sweep budget', () => {
+describe('copyright sweep walk', () => {
   it('stops at the page cap and resumes its saved cursor while retaining item errors', async () => {
-    overrideDynamicConfigFieldsForTest(copyrightSweepConfig, {
-      batch_size: 1,
-      max_batches_per_run: 1,
-    })
+    const limits = { batchSize: 1, maxBatches: 1 }
     const requests: Array<{ after?: string; limit?: number }> = []
     const settled: string[] = []
-    let after: string | undefined
     const search = async (request: { after?: string; limit?: number }) => {
       requests.push(request)
       return {
@@ -26,17 +20,13 @@ describe('copyright sweep budget', () => {
     const failure = new Error('head needs retry')
     const settle = async (ids: readonly string[]) => {
       settled.push(...ids)
-      return ids.includes('head') ? [failure] : []
+      return { errors: ids.includes('head') ? [failure] : [], enqueued: 0 }
     }
+    const first = await walkCopyrightSweep(search, settle, { limits })
+    expect(first).toEqual({ errors: [failure], enqueued: 0, after: 'head-cursor' })
     await expect(
-      walkCopyrightSweep(search, settle, {
-        onMore: cursor => {
-          after = cursor
-        },
-      }),
-    ).resolves.toEqual([failure])
-    expect(after).toBe('head-cursor')
-    await expect(walkCopyrightSweep(search, settle, { after })).resolves.toEqual([])
+      walkCopyrightSweep(search, settle, { limits, after: first.after }),
+    ).resolves.toEqual({ errors: [], enqueued: 0 })
     expect(requests).toEqual([{ limit: 1 }, { after: 'head-cursor', limit: 1 }])
     expect(settled).toEqual(['head', 'tail'])
   })

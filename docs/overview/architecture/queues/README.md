@@ -154,6 +154,11 @@ Copyright operational retention uses the same serialized PostgreSQL maintenance 
 continuations name only the unfinished copyright families, so their bounded pages drain without
 rerunning unrelated daily cleanup. A failed child admission fails the parent job for retry; the
 stable child identity lets that retry reuse an already admitted continuation.
+Copyright action reconciliation runs each sweep stage as its own job with its own cursor, page cap,
+retry and failure, because stages that share one budget or cursor map hide which stage starved or
+failed. Every stage reads committed state through an indexed predicate, so none waits for another
+within a pass. One ordering lane with low concurrency bounds their combined load, and a stage that
+finds more work enqueues its own continuation.
 Terminal ActivityPub identity cleanup can yield the same retained family job while work remains,
 so a daily seed is not a daily throughput ceiling. A finished fixed family id is reactivated by a
 later real cleanup pass; an active or delayed job keeps its claim. Each family has its own serial

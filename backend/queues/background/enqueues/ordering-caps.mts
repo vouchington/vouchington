@@ -28,6 +28,7 @@ export const BACKGROUND_ORDERING_CAPS = {
   'notifications:digest-schedule': 1,
   'notifications:mark-all-read': 1,
   'notifications:bulk': 1,
+  'notifications:copyright-action-reconcile': 1,
   'activitypub:outbound': 5,
   'activitypub:outbound-dispatch': 2,
   'activitypub:outbound-recovery': 1,

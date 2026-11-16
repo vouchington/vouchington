@@ -4,18 +4,19 @@ import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import {
   NOTIFICATIONS_CHECK_COPYRIGHT_REVIEW_TARGET_JOB,
   NOTIFICATIONS_DIGEST_SCHEDULE_TICK_JOB,
-  NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOB,
   NOTIFICATIONS_RECONCILE_COPYRIGHT_DELIVERY_JOB,
   NOTIFICATIONS_RECONCILE_DSA_JOB,
   NOTIFICATIONS_RECONCILE_MEDIA_REGISTRY_JOB,
   NOTIFICATIONS_RECONCILE_PUSH_INTENTS_JOB,
   NOTIFICATIONS_ADMIT_COPYRIGHT_CASE_PURGE_JOB,
 } from '@queues/background/enqueues/notifications-jobs'
+import { NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOBS } from '@queues/background/enqueues/notifications-copyright-action-jobs'
+import { COPYRIGHT_ACTION_RECONCILE_STAGES } from '@queues/background/enqueues/notifications-domain'
 import type { BackgroundJobDefinition } from '@queues/background/types'
 import {
   enqueueCheckCopyrightReviewTarget,
   enqueueCommunityActivityDigestScheduleTick,
-  enqueueReconcileCopyrightActionIntents,
+  enqueueReconcileCopyrightActionStage,
   enqueueReconcileCopyrightDeliveryIntents,
   enqueueReconcileMediaDeliveryRegistry,
   enqueueReconcileNotificationPushIntents,
@@ -60,20 +61,20 @@ export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_QUEUE_
       },
     ],
   },
-  {
-    schedulerId: 'copyright-action-reconciliation',
+  ...COPYRIGHT_ACTION_RECONCILE_STAGES.map(stage => ({
+    schedulerId: `copyright-action-reconciliation-${stage}`,
     repeat: { pattern: '*/5 * * * *' },
-    template: scheduleTemplate(NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOB),
+    template: scheduleTemplate(NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOBS[stage]),
     operatorSurfaces: [
       {
         kind: 'scheduled-jobs',
-        id: 'copyright-action-reconciliation',
+        id: `copyright-action-reconciliation-${stage}`,
         schedule: '*/5 * * * *',
-        description: 'Re-enqueue pending copyright media action intents',
-        trigger: enqueueReconcileCopyrightActionIntents,
+        description: `Re-enqueue pending copyright action work for the ${stage} stage`,
+        trigger: () => enqueueReconcileCopyrightActionStage(stage),
       },
-    ],
-  },
+    ] as const,
+  })),
   {
     schedulerId: 'copyright-delivery-reconciliation',
     repeat: { pattern: '*/5 * * * *' },

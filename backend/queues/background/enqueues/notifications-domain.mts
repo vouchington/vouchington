@@ -76,25 +76,31 @@ export type ReconcileNotificationPushIntentsData = {
 export type CopyrightIntentData = { intentId: string }
 export type DsaStatementSubmissionData = { submissionId: string }
 
-type CopyrightSweepCursor =
-  | 'forms'
-  | 'decisions'
-  | 'enforcement'
-  | 'suspended'
-  | 'blocked'
-  | 'restorations'
-  | 'actions'
-  | 'in_app'
-  | 'email-notices'
+type CopyrightSweepCursor = 'in_app' | 'email-notices'
 
-/** A fixed evaluation time and only the unfinished copyright stage cursors. */
+/** A fixed evaluation time and only the unfinished copyright delivery channel cursors. */
 export type CopyrightSweepContinuation = {
   evaluatedAt?: string
-  /** Round-robin order of unfinished and unvisited stages/channels. */
+  /** Round-robin order of unfinished and unvisited channels. */
   pending?: string[]
-  /** null resumes a stage which had no page allowance to start. */
+  /** null resumes a channel which had no page allowance to start. */
   cursors?: Partial<Record<CopyrightSweepCursor, string | null>>
 }
+
+/** Each copyright action sweep runs as its own job, so its stage never shares a budget or cursor. */
+export const COPYRIGHT_ACTION_RECONCILE_STAGES = [
+  'forms',
+  'decisions',
+  'enforcement',
+  'suspended',
+  'blocked',
+  'restorations',
+  'actions',
+] as const
+export type CopyrightActionReconcileStage = (typeof COPYRIGHT_ACTION_RECONCILE_STAGES)[number]
+
+/** One stage's fixed evaluation time and the id cursor where its walk continues. */
+export type CopyrightActionReconcileData = { evaluatedAt?: string; after?: string }
 
 export type CommunityActivityDigestDispatchData = {
   windowStart: string

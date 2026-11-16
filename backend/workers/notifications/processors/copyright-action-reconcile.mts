@@ -1,7 +1,10 @@
-import type { CopyrightSweepContinuation } from '@queues/notifications/types'
+import type {
+  CopyrightActionReconcileData,
+  CopyrightActionReconcileStage,
+} from '@queues/notifications/types'
 import {
   enqueueBulkApplyCopyrightActions,
-  enqueueReconcileCopyrightActionIntents,
+  enqueueReconcileCopyrightActionStage,
 } from '@queues/notifications/enqueues'
 import {
   createDueStatutoryCopyrightRestoreIntentsForDeadline,
@@ -17,156 +20,110 @@ import {
   searchRecoverableCopyrightFormReviewIntakeIds,
   searchSuspendedClaimantAutomaticRestrictionNoticeIds,
 } from '@services/copyright-notices'
+import { getCopyrightSweepLimits } from '@services/copyright-notices/work-limits'
 import {
-  enqueueBulkCopyrightSweepPages,
-  createCopyrightSweepBudget,
-  runCopyrightSweepStage,
+  settleCopyrightSweepByBulkEnqueue,
   settleCopyrightSweepSequentially,
   walkCopyrightSweep,
-  type CopyrightSweepTally,
+  type CopyrightSweepWalkOptions,
+  type CopyrightSweepWalkResult,
 } from './copyright-sweep-walk.mts'
 
-/**
- * Processes capped pages of each copyright action sweep in stage order: rejected form reviews, lost
- * decision assessments, pending enforcement, suspended claimants' pending automatic restrictions,
- * blocked hold restorations, due statutory restorations, then recoverable action intents. A failed item, page read, or stage does not stop the rest; the
- * job fails afterwards with every error so its retry covers what is still pending.
- */
-export async function processReconcileCopyrightActionIntents(
-  data: CopyrightSweepContinuation = {},
-  requestedIds?: readonly string[],
-  batchSize?: number,
-): Promise<{ enqueued: number; hasMore: boolean }> {
-  const evaluatedAt = data.evaluatedAt ? new Date(data.evaluatedAt) : new Date()
-  const cursors = new Map(Object.entries(data.cursors ?? {}))
-  const budget = createCopyrightSweepBudget(batchSize)
-  const deferred = new Set<string>()
-  const options = (stage: string) => {
-    const cursorAfter = cursors.get(stage) ?? undefined
-    cursors.delete(stage)
-    return {
-      after: cursorAfter,
-      singlePage: true,
-      onPageReadError: () => {
-        deferred.add(stage)
-      },
-      budget,
-      onMore: (nextCursor?: string) => {
-        cursors.set(stage, nextCursor ?? null)
-      },
-    }
-  }
-  const tally: CopyrightSweepTally = { enqueued: 0, errors: [] }
-  const stages = [
-    () =>
-      runCopyrightSweepStage(tally, () =>
-        walkCopyrightSweep(
-          page => searchRecoverableCopyrightFormReviewIntakeIds({ ...page, ids: requestedIds }),
-          ids =>
-            settleCopyrightSweepSequentially(ids, id =>
-              recoverRejectedCopyrightFormReviewEffect(id),
-            ),
-          options('forms'),
+type StageWalk = (
+  evaluatedAt: Date,
+  requestedIds: readonly string[] | undefined,
+  options: CopyrightSweepWalkOptions,
+) => Promise<CopyrightSweepWalkResult>
+
+/** How each stage reads its committed candidates and settles them; each is idempotent. */
+const stageWalks: Record<CopyrightActionReconcileStage, StageWalk> = {
+  forms: (_evaluatedAt, ids, options) =>
+    walkCopyrightSweep(
+      page => searchRecoverableCopyrightFormReviewIntakeIds({ ...page, ids }),
+      pageIds =>
+        settleCopyrightSweepSequentially(pageIds, recoverRejectedCopyrightFormReviewEffect),
+      options,
+    ),
+  decisions: (_evaluatedAt, ids, options) =>
+    walkCopyrightSweep(
+      page => recoverMissingDecisionAssessments({ ...page, ids }),
+      async () => ({ errors: [], enqueued: 0 }),
+      options,
+    ),
+  enforcement: (_evaluatedAt, ids, options) =>
+    walkCopyrightSweep(
+      page => searchPendingCopyrightEnforcementAssessmentIds({ ...page, ids }),
+      pageIds => settleCopyrightSweepSequentially(pageIds, enforceCopyrightAssessment),
+      options,
+    ),
+  suspended: (evaluatedAt, ids, options) =>
+    walkCopyrightSweep(
+      page => searchSuspendedClaimantAutomaticRestrictionNoticeIds({ ...page, ids }),
+      pageIds =>
+        settleCopyrightSweepSequentially(pageIds, id =>
+          liftSuspendedClaimantAutomaticRestrictions(id, evaluatedAt),
         ),
-      ),
-    () =>
-      runCopyrightSweepStage(tally, () =>
-        walkCopyrightSweep(
-          page => recoverMissingDecisionAssessments({ ...page, ids: requestedIds }),
-          async () => [],
-          options('decisions'),
+      options,
+    ),
+  blocked: (evaluatedAt, ids, options) =>
+    walkCopyrightSweep(
+      page => searchBlockedCopyrightHoldRestorationIntentIds({ ...page, ids }),
+      pageIds =>
+        settleCopyrightSweepSequentially(pageIds, id =>
+          recoverBlockedCopyrightHoldRestoration(id, evaluatedAt),
         ),
-      ),
-    () =>
-      runCopyrightSweepStage(tally, () =>
-        walkCopyrightSweep(
-          page => searchPendingCopyrightEnforcementAssessmentIds({ ...page, ids: requestedIds }),
-          ids => settleCopyrightSweepSequentially(ids, id => enforceCopyrightAssessment(id)),
-          options('enforcement'),
+      options,
+    ),
+  restorations: (evaluatedAt, ids, options) =>
+    walkCopyrightSweep(
+      page => searchDueStatutoryCopyrightRestorationDeadlineIds({ now: evaluatedAt, ...page, ids }),
+      (pageIds, page) =>
+        settleCopyrightSweepSequentially(pageIds, id =>
+          createDueStatutoryCopyrightRestoreIntentsForDeadline(page.candidates[id]!, evaluatedAt),
         ),
-      ),
-    () =>
-      runCopyrightSweepStage(tally, () =>
-        walkCopyrightSweep(
-          page =>
-            searchSuspendedClaimantAutomaticRestrictionNoticeIds({ ...page, ids: requestedIds }),
-          ids =>
-            settleCopyrightSweepSequentially(ids, id =>
-              liftSuspendedClaimantAutomaticRestrictions(id, evaluatedAt),
-            ),
-          options('suspended'),
-        ),
-      ),
-    () =>
-      runCopyrightSweepStage(tally, () =>
-        walkCopyrightSweep(
-          page => searchBlockedCopyrightHoldRestorationIntentIds({ ...page, ids: requestedIds }),
-          ids =>
-            settleCopyrightSweepSequentially(ids, id =>
-              recoverBlockedCopyrightHoldRestoration(id, evaluatedAt),
-            ),
-          options('blocked'),
-        ),
-      ),
-    () =>
-      runCopyrightSweepStage(tally, () =>
-        walkCopyrightSweep(
-          page =>
-            searchDueStatutoryCopyrightRestorationDeadlineIds({
-              now: evaluatedAt,
-              ...page,
-              ids: requestedIds,
-            }),
-          (ids, page) =>
-            settleCopyrightSweepSequentially(ids, id =>
-              createDueStatutoryCopyrightRestoreIntentsForDeadline(
-                page.candidates[id]!,
-                evaluatedAt,
-              ),
-            ),
-          options('restorations'),
-        ),
-      ),
-    () =>
-      enqueueBulkCopyrightSweepPages(
-        tally,
-        page =>
-          searchRecoverableCopyrightActionIntentIds({
-            now: evaluatedAt,
-            ...page,
-            ids: requestedIds,
-          }),
-        enqueueBulkApplyCopyrightActions,
-        options('actions'),
-      ),
-  ]
-  const names = [
-    'forms',
-    'decisions',
-    'enforcement',
-    'suspended',
-    'blocked',
-    'restorations',
-    'actions',
-  ]
-  const pending = [...(data.pending ?? names)]
-  while (budget.remainingPages > 0 && pending.length > 0) {
-    const name = pending.shift()!
-    const index = names.indexOf(name)
-    if (index < 0) throw new Error(`Unknown copyright sweep stage: ${name}`)
-    // oxlint-disable-next-line no-await-in-loop -- rotate after each page under one shared job allowance.
-    await stages[index]!()
-    if (cursors.has(name) && !deferred.has(name)) pending.push(name)
-  }
-  pending.push(...deferred)
-  if (pending.length > 0)
-    await enqueueReconcileCopyrightActionIntents({
-      evaluatedAt: evaluatedAt.toISOString(),
-      pending,
-      cursors: Object.fromEntries(cursors),
-    })
-  if (tally.errors.length > 0) {
-    throw new AggregateError(tally.errors, 'Copyright action reconciliation failed')
-  }
-  return { enqueued: tally.enqueued, hasMore: pending.length > 0 }
+      options,
+    ),
+  actions: (evaluatedAt, ids, options) =>
+    walkCopyrightSweep(
+      page => searchRecoverableCopyrightActionIntentIds({ now: evaluatedAt, ...page, ids }),
+      settleCopyrightSweepByBulkEnqueue(enqueueBulkApplyCopyrightActions),
+      options,
+    ),
 }
+
+/**
+ * Walks one stage's capped pages. A job that finds more enqueues its own continuation from the
+ * saved cursor, then fails with every item error so its retry covers only this stage. A failed
+ * page read fails the job and its retry resumes from the job's own cursor.
+ */
+function createStageProcessor(stage: CopyrightActionReconcileStage) {
+  return async function processReconcileCopyrightActionStage(
+    data: CopyrightActionReconcileData = {},
+    requestedIds?: readonly string[],
+  ): Promise<{ enqueued: number; hasMore: boolean }> {
+    const evaluatedAt = data.evaluatedAt ? new Date(data.evaluatedAt) : new Date()
+    const walked = await stageWalks[stage](evaluatedAt, requestedIds, {
+      after: data.after,
+      limits: getCopyrightSweepLimits(stage),
+    })
+    if (walked.after !== undefined)
+      await enqueueReconcileCopyrightActionStage(stage, {
+        evaluatedAt: evaluatedAt.toISOString(),
+        after: walked.after,
+      })
+    if (walked.errors.length > 0) {
+      throw new AggregateError(walked.errors, `Copyright ${stage} reconciliation failed`)
+    }
+    return { enqueued: walked.enqueued, hasMore: walked.after !== undefined }
+  }
+}
+
+export const copyrightActionReconcileProcessors = {
+  forms: createStageProcessor('forms'),
+  decisions: createStageProcessor('decisions'),
+  enforcement: createStageProcessor('enforcement'),
+  suspended: createStageProcessor('suspended'),
+  blocked: createStageProcessor('blocked'),
+  restorations: createStageProcessor('restorations'),
+  actions: createStageProcessor('actions'),
+} as const satisfies Record<CopyrightActionReconcileStage, unknown>

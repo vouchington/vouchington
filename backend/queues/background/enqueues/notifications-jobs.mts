@@ -26,6 +26,7 @@ import {
   type ReferralSignupNotificationData,
   type ReplayMediaDeliveryRegistryData,
 } from './notifications-domain.mts'
+import { NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOBS } from './notifications-copyright-action-jobs.mts'
 import { NOTIFICATIONS_CRITICAL_MODERATION_ALERT_JOB } from './critical-moderation-alert-job.mts'
 
 export const NOTIFICATIONS_RECONCILE_POST_JOB = defineBackgroundJob<ReconcilePostNotificationsData>(
@@ -125,12 +126,6 @@ export const NOTIFICATIONS_APPLY_COPYRIGHT_ACTION_JOB = defineBackgroundJob<Copy
   DOMAIN,
   { name: 'processApplyCopyrightAction', ...TASK, ...RETRY, attempts: 5 },
 )
-export const NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOB =
-  defineBackgroundJob<CopyrightSweepContinuation>(DOMAIN, {
-    name: 'processReconcileCopyrightActionIntents',
-    ...DISPATCH,
-    ...RETRY,
-  })
 export const NOTIFICATIONS_CHECK_COPYRIGHT_REVIEW_TARGET_JOB = defineBackgroundJob<EmptyData>(
   DOMAIN,
   { name: 'processCheckCopyrightReviewTarget', ...DISPATCH, ...RETRY },
@@ -188,7 +183,7 @@ export const NOTIFICATIONS_JOBS = [
   NOTIFICATIONS_DELIVER_COPYRIGHT_NOTICE_JOB,
   NOTIFICATIONS_RECONCILE_COPYRIGHT_DELIVERY_JOB,
   NOTIFICATIONS_APPLY_COPYRIGHT_ACTION_JOB,
-  NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOB,
+  ...Object.values(NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOBS),
   NOTIFICATIONS_CHECK_COPYRIGHT_REVIEW_TARGET_JOB,
   NOTIFICATIONS_ADMIT_COPYRIGHT_CASE_PURGE_JOB,
   NOTIFICATIONS_SUBMIT_DSA_JOB,
