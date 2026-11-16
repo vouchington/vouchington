@@ -96,18 +96,15 @@ function followRequestsWithBoundedConcurrency(
   usersById: Map<string, PrivateUser>,
   relationTarget: AutoFollowRecommendationTarget,
 ): Promise<PendingImportRequest[]> {
-  const validRequests: PendingImportRequest[] = []
-
   return chunkRequests(requests).reduce<Promise<PendingImportRequest[]>>(
     async (previousRequests, requestChunk) => {
-      await previousRequests
+      const validRequests = await previousRequests
       const chunkResults = await Promise.all(
         requestChunk.map(request => followRequest(request, usersById, relationTarget)),
       )
-      validRequests.push(...chunkResults.filter(isPendingImportRequest))
-      return validRequests
+      return [...validRequests, ...chunkResults.filter(isPendingImportRequest)]
     },
-    Promise.resolve(validRequests),
+    Promise.resolve([]),
   )
 }
 

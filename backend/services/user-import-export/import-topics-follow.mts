@@ -38,6 +38,7 @@ export async function followImportedTopics(
     recordImportRequests: typeof recordTopicImportRequests
   },
 ): Promise<ImportTopicResult[]> {
+  const errorResults = [...results]
   let prepared: Awaited<ReturnType<typeof prepareBookmarkActions>>
   try {
     prepared = await prepareBookmarkActions(
@@ -68,7 +69,7 @@ export async function followImportedTopics(
     if (message === undefined) throw result.reason
     for (const input of existingInputs) {
       if (existingTopics.get(input.index) === topicId)
-        results[input.index] = { input: input.rawName, status: 'error', error: message }
+        errorResults[input.index] = { input: input.rawName, status: 'error', error: message }
     }
   }
   const authorizedInputs = existingInputs.filter(input =>
@@ -85,6 +86,7 @@ export async function followImportedTopics(
       objectIds: [...authorized.keys()],
     },
     async (limitState, allowedIds) => {
+      const finalResults = [...errorResults]
       const followedTopicIds = new Set(limitState?.existingObjectIds ?? [])
       const skippedTopicIds = new Set<string>()
       const followedDuringImport = new Set<string>()
@@ -94,7 +96,7 @@ export async function followImportedTopics(
         const alreadyFollowing = followedTopicIds.has(topicId) || followedDuringImport.has(topicId)
         if (!alreadyFollowing && (skippedTopicIds.has(topicId) || !allowedIds.has(topicId))) {
           skippedTopicIds.add(topicId)
-          results[input.index] = {
+          finalResults[input.index] = {
             input: input.rawName,
             status: 'skipped',
             error_code: 'RELATION_LIMIT_REACHED',
@@ -102,7 +104,7 @@ export async function followImportedTopics(
           }
           continue
         }
-        results[input.index] = {
+        finalResults[input.index] = {
           input: input.rawName,
           status: alreadyFollowing ? 'already_following' : 'followed',
           entity_id: topicId,
@@ -113,7 +115,7 @@ export async function followImportedTopics(
         }
       }
 
-      const auditsBeforeFollows = audits.length
+      const followAudits: TopicImportAudit[] = []
       await recordImportRequests(currentUser.id, audits, query)
 
       try {
@@ -123,8 +125,8 @@ export async function followImportedTopics(
         )
         for (const input of existingInputs) {
           const topicId = existingTopics.get(input.index)!
-          if (results[input.index]?.status === 'followed') {
-            audits.push({ index: input.index, inputValue: input.name, topicId })
+          if (finalResults[input.index]?.status === 'followed') {
+            followAudits.push({ index: input.index, inputValue: input.name, topicId })
           }
         }
       } catch (err) {
@@ -132,18 +134,17 @@ export async function followImportedTopics(
         if (message === undefined) throw err
         for (const input of existingInputs) {
           if (!topicIdsToFollow.includes(existingTopics.get(input.index)!)) continue
-          results[input.index] = isRelationLimitError(err)
+          finalResults[input.index] = isRelationLimitError(err)
             ? { input: input.rawName, status: 'skipped', error_code: 'RELATION_LIMIT_REACHED' }
             : { input: input.rawName, status: 'error', error: message }
         }
       }
 
-      const followAudits = audits.slice(auditsBeforeFollows)
       if (followAudits.length > 0) {
         await recordImportRequests(currentUser.id, followAudits, query)
       }
 
-      return results.map(
+      return finalResults.map(
         (result, index) =>
           result ?? {
             input: inputs[index]!.rawName,

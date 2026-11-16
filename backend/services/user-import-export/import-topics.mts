@@ -35,12 +35,12 @@ export async function importTopics(
   const attempt = await claimTopicImportAttempt(currentUser.id, options.importAttemptId, names)
   if (attempt.response) return attempt.response
   const inputs = names.map((rawName, index) => prepareTopicInput(rawName, index))
-  const results: Array<ImportTopicResult | undefined> = []
-  const validInputs = inputs.filter(input => {
-    if (!input.error) return true
-    results[input.index] = { input: input.rawName, status: 'error', error: input.error }
-    return false
-  })
+  const resultEntries: Array<readonly [number, ImportTopicResult]> = inputs.flatMap(input =>
+    input.error
+      ? [[input.index, { input: input.rawName, status: 'error', error: input.error }] as const]
+      : [],
+  )
+  const validInputs = inputs.filter(input => !input.error)
 
   const existingTopics = await findTopicsBySlugOrName(validInputs)
   const existingInputs = validInputs.filter(input => existingTopics.has(input.index))
@@ -73,11 +73,14 @@ export async function importTopics(
         break
       }
       const recommendation = admission.response
-      results[input.index] = {
-        input: input.rawName,
-        status: 'recommendation_created',
-        recommendation_post_id: recommendation.id,
-      }
+      resultEntries.push([
+        input.index,
+        {
+          input: input.rawName,
+          status: 'recommendation_created',
+          recommendation_post_id: recommendation.id,
+        },
+      ])
       audits.push({
         index: input.index,
         inputValue: input.name,
@@ -85,11 +88,14 @@ export async function importTopics(
       })
     } catch (err) {
       onError(err instanceof Error ? err : new Error(String(err)))
-      results[input.index] = {
-        input: input.rawName,
-        status: 'error',
-        error: err instanceof Error ? err.message : 'Unknown error',
-      }
+      resultEntries.push([
+        input.index,
+        {
+          input: input.rawName,
+          status: 'error',
+          error: err instanceof Error ? err.message : 'Unknown error',
+        },
+      ])
     }
   }
 
@@ -98,6 +104,8 @@ export async function importTopics(
     throw inProgressError
   }
 
+  const resultsByIndex = new Map(resultEntries)
+  const results = inputs.map(input => resultsByIndex.get(input.index))
   return finalizeTopicImportAttempt(attempt.id, query =>
     followImportedTopics(currentUser, query, {
       inputs,

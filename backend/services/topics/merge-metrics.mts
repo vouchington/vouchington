@@ -94,8 +94,7 @@ export async function processTopicMergeMetricsPage(
         ORDER BY page.user_id`,
         [operationId, cursor, limit],
       )
-      const nextStats = { ...partialStats }
-      for (const row of rows) addUserMetrics(nextStats, row)
+      const nextStats = rows.reduce(addUserMetrics, partialStats)
       return pageResult(phase, cursor, rows, limit, nextStats, row => row.user_id)
     }
     case 3: {

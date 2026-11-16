@@ -2,6 +2,13 @@ import { read } from '@data-stores/psql'
 import { createSlugFromTitle, isSlug, isUUID } from '@modules/utils'
 import type { Topic } from './types.mts'
 
+type ReferenceEntry = {
+  kind: 'id' | 'slug' | 'name'
+  value: string
+  order: number
+  priority?: number
+}
+
 /**
  * Resolves topic references in one statement. Order is id, exact slug, derived slug, exact
  * case-insensitive name, alias, then merged-source slug. A slug match wins when the same text
@@ -10,36 +17,32 @@ import type { Topic } from './types.mts'
 export async function getTopicsByReferenceBatch(
   references: readonly string[],
 ): Promise<Array<Topic | null>> {
-  const ids: string[] = []
-  const idOrders: number[] = []
-  const slugs: string[] = []
-  const slugOrders: number[] = []
-  const slugPriorities: number[] = []
-  const names: string[] = []
-  const nameOrders: number[] = []
-  references.forEach((reference, index) => {
+  const entries = references.flatMap((reference, index): ReferenceEntry[] => {
     const trimmed = reference.trim()
-    if (!trimmed) return
-    if (isUUID(trimmed)) {
-      ids.push(trimmed)
-      idOrders.push(index)
-      return
-    }
+    if (!trimmed) return []
+    if (isUUID(trimmed)) return [{ kind: 'id', value: trimmed, order: index }]
     const folded = trimmed.toLowerCase()
-    if (isSlug(folded)) {
-      slugs.push(folded)
-      slugOrders.push(index)
-      slugPriorities.push(1)
-    }
     const derivedSlug = createSlugFromTitle(trimmed)
-    if (derivedSlug && derivedSlug !== folded) {
-      slugs.push(derivedSlug)
-      slugOrders.push(index)
-      slugPriorities.push(2)
-    }
-    names.push(folded)
-    nameOrders.push(index)
+    const slugEntries: ReferenceEntry[] = [
+      ...(isSlug(folded)
+        ? [{ kind: 'slug' as const, value: folded, order: index, priority: 1 }]
+        : []),
+      ...(derivedSlug && derivedSlug !== folded
+        ? [{ kind: 'slug' as const, value: derivedSlug, order: index, priority: 2 }]
+        : []),
+    ]
+    return [...slugEntries, { kind: 'name', value: folded, order: index }]
   })
+  const idEntries = entries.filter(entry => entry.kind === 'id')
+  const slugEntries = entries.filter(entry => entry.kind === 'slug')
+  const nameEntries = entries.filter(entry => entry.kind === 'name')
+  const ids = idEntries.map(entry => entry.value)
+  const idOrders = idEntries.map(entry => entry.order)
+  const slugs = slugEntries.map(entry => entry.value)
+  const slugOrders = slugEntries.map(entry => entry.order)
+  const slugPriorities = slugEntries.map(entry => entry.priority!)
+  const names = nameEntries.map(entry => entry.value)
+  const nameOrders = nameEntries.map(entry => entry.order)
   const results: Array<Topic | null> = references.map(() => null)
   if (ids.length + slugs.length + names.length === 0) return results
 

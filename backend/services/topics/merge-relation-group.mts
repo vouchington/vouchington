@@ -93,20 +93,19 @@ export async function inspectElectedTopicRelationGroups(
         priority: 0,
       })
   }
-  for (const group of groups) {
-    group.relations.sort((left, right) => {
-      if ((left.deleted_at === null) !== (right.deleted_at === null))
-        return left.deleted_at === null ? -1 : 1
-      const leftSourceCount = sourceEndpointCount(left, columns, sourceTopicId)
-      const rightSourceCount = sourceEndpointCount(right, columns, sourceTopicId)
-      if (leftSourceCount !== rightSourceCount) return leftSourceCount - rightSourceCount
-      return right.id.localeCompare(left.id)
-    })
-    group.relations.forEach((relation, index) => {
-      relation.priority = index + 1
-    })
-  }
-  return groups
+  return groups.map(group => ({
+    ...group,
+    relations: group.relations
+      .toSorted((left, right) => {
+        if ((left.deleted_at === null) !== (right.deleted_at === null))
+          return left.deleted_at === null ? -1 : 1
+        const leftSourceCount = sourceEndpointCount(left, columns, sourceTopicId)
+        const rightSourceCount = sourceEndpointCount(right, columns, sourceTopicId)
+        if (leftSourceCount !== rightSourceCount) return leftSourceCount - rightSourceCount
+        return right.id.localeCompare(left.id)
+      })
+      .map((relation, index) => ({ ...relation, priority: index + 1 })),
+  }))
 }
 
 export async function inspectElectedTopicRelationGroup(

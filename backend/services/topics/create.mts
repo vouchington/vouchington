@@ -56,22 +56,22 @@ export async function finalizeCreatedTopic(
 export const createTopic = async (
   creator: PrivateUser,
   provenance: ContentProvenance,
-  updates: CreateTopicUpdates,
+  input: CreateTopicUpdates,
   options: QueryOptions = {},
 ) => {
   assert(currentUserCanCreateTopic(creator), 403, 'Forbidden')
-  const topicType = updates.topic_type || 'topic'
-  assert(topicTypes[topicType], 422, `Invalid topic type: ${updates.topic_type}`)
+  const topicType = input.topic_type || 'topic'
+  assert(topicTypes[topicType], 422, `Invalid topic type: ${input.topic_type}`)
 
-  assert(updates.name, 422, 'Name is required')
-  assert(updates.slug, 422, 'Slug is required')
-  validateSlug(updates.slug)
+  assert(input.name, 422, 'Name is required')
+  assert(input.slug, 422, 'Slug is required')
+  validateSlug(input.slug)
 
-  if (updates.homepage_url_id !== undefined && updates.homepage_url_id !== null) {
-    assert(isUUID(updates.homepage_url_id), 422, 'Invalid homepage_url_id')
+  if (input.homepage_url_id !== undefined && input.homepage_url_id !== null) {
+    assert(isUUID(input.homepage_url_id), 422, 'Invalid homepage_url_id')
   }
 
-  updates.updated_by_id = creator.id
+  const updates = { ...input, updated_by_id: creator.id }
 
   if (options.query || options.client)
     return withTransactionOptions(options, query =>

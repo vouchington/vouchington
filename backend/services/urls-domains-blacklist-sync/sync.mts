@@ -89,9 +89,11 @@ function createBlacklistFetchHeaders(cache: SourceCacheHeaders | null): Record<s
     'Accept-Encoding': 'gzip, deflate, br',
   }
   if (cache?.membership_diff_applied_at == null) return headers
-  if (cache.etag) headers['If-None-Match'] = cache.etag
-  if (cache.last_modified_at) {
-    headers['If-Modified-Since'] = new Date(cache.last_modified_at).toUTCString()
+  return {
+    ...headers,
+    ...(cache.etag ? { 'If-None-Match': cache.etag } : {}),
+    ...(cache.last_modified_at
+      ? { 'If-Modified-Since': new Date(cache.last_modified_at).toUTCString() }
+      : {}),
   }
-  return headers
 }

@@ -5,12 +5,12 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 
 export class CircularCanonicalReferenceError extends Error {
   readonly code = 'CIRCULAR_CANONICAL_REFERENCE'
+  override name = 'CircularCanonicalReferenceError'
 
   constructor(sourceUrl: string, targetUrl: string) {
     super(
       `Circular canonical reference detected: Cannot set "${sourceUrl}" canonical to "${targetUrl}" as it would create a cycle`,
     )
-    this.name = 'CircularCanonicalReferenceError'
   }
 }
 

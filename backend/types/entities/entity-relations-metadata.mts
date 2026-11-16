@@ -18,17 +18,17 @@ export type EntityRelationMetadata = {
   extra_indexes: string[]
 }
 
-export const entityRelationMetadatum: EntityRelationMetadata[] = []
-
-for (const subjectType of Object.keys(entityRelations)) {
+export const entityRelationMetadatum: EntityRelationMetadata[] = Object.keys(
+  entityRelations,
+).flatMap(subjectType => {
   const subjectRelations = entityRelations[subjectType as EntityRelationEntityType]
-  if (!subjectRelations) continue
-  for (const objectType of Object.keys(subjectRelations)) {
+  if (!subjectRelations) return []
+  return Object.keys(subjectRelations).flatMap(objectType => {
     const objectRelations = subjectRelations[objectType as EntityRelationEntityType]
-    if (!objectRelations) continue
-    for (const predicate of Object.keys(objectRelations)) {
+    if (!objectRelations) return []
+    return Object.keys(objectRelations).map(predicate => {
       const options = objectRelations[predicate as EntityRelationPredicateType]
-      entityRelationMetadatum.push({
+      return {
         subject_type: subjectType as EntityRelationEntityType,
         object_type: objectType as EntityRelationEntityType,
         predicate: predicate as EntityRelationPredicateType,
@@ -39,10 +39,10 @@ for (const subjectType of Object.keys(entityRelations)) {
         bidirectional: entityRelationPredicates[predicate].bidirectional ?? false,
         table_name: ['relation', subjectType, predicate, objectType].join('__'),
         extra_indexes: options?.extra_indexes ?? [],
-      })
-    }
-  }
-}
+      }
+    })
+  })
+})
 
 type EntityRelationLookup = {
   subjectType: EntityRelationEntityType

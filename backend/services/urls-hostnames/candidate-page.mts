@@ -20,21 +20,21 @@ export async function readHostnameCandidatePage({
     order === 'score'
       ? { column: 'votes_score_sort', direction: 'DESC' }
       : { column: 'hostname', direction: 'ASC' }
-  values.push(limit + 1)
+  const pageValues = [...values, limit + 1]
   const { rows } = await read(
     `/* readHostnameCandidatePage */
     WITH candidate_hostnames AS MATERIALIZED (
       SELECT id, ${sort.column}, votes_score_sort AS cursor_score FROM url_hostnames
       WHERE ${filters.join(' AND ')}
       ORDER BY ${sort.column} ${sort.direction}, id ${sort.direction}
-      LIMIT $${values.length}
+      LIMIT $${pageValues.length}
     )
     SELECT hydrated.*, candidate.cursor_score FROM candidate_hostnames candidate
     JOIN LATERAL (
       SELECT * FROM view_url_hostnames WHERE id = candidate.id LIMIT 1
     ) hydrated ON true
     ORDER BY candidate.${sort.column} ${sort.direction}, candidate.id ${sort.direction}`,
-    values,
+    pageValues,
   )
 
   const all = rows as (ViewHostname & { cursor_score: number })[]

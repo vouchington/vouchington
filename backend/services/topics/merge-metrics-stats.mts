@@ -49,27 +49,42 @@ export type MetricUserRow = {
   vote_weight: number | null
 }
 
-export function addUserMetrics(stats: TopicMergeMetricStats, row: MetricUserRow): void {
-  if (row.vote_weight === null) return
+export function addUserMetrics(
+  stats: TopicMergeMetricStats,
+  row: MetricUserRow,
+): TopicMergeMetricStats {
+  if (row.vote_weight === null) return stats
   const weight = row.vote_weight
   const score = row.topic_vote_score
+  let next = stats
   if (score !== null) {
     if (score > 0) {
-      stats.votes_score_up +=
-        (score === 1 && !row.topic_vote_score_is_semantic ? 2 : score) * weight
-      stats.votes_count_up++
+      next = {
+        ...next,
+        votes_score_up:
+          next.votes_score_up +
+          (score === 1 && !row.topic_vote_score_is_semantic ? 2 : score) * weight,
+        votes_count_up: next.votes_count_up + 1,
+      }
     } else if (score < 0) {
-      stats.votes_score_down -=
-        (score === -1 && !row.topic_vote_score_is_semantic ? -2 : score) * weight
-      stats.votes_count_down++
+      next = {
+        ...next,
+        votes_score_down:
+          next.votes_score_down -
+          (score === -1 && !row.topic_vote_score_is_semantic ? -2 : score) * weight,
+        votes_count_down: next.votes_count_down + 1,
+      }
     } else if (row.topic_vote_score_is_neutral) {
-      stats.votes_score_none += weight
-      stats.votes_count_none++
+      next = {
+        ...next,
+        votes_score_none: next.votes_score_none + weight,
+        votes_count_none: next.votes_count_none + 1,
+      }
     }
   }
 
   const review = row.review_rating
-  if (review !== null) incrementRatingCount(stats, review)
+  if (review !== null) next = incrementRatingCount(next, review)
   let effectiveRating: number | null = null
   if (review !== null && review !== 3) effectiveRating = review
   else if (score !== null && (score !== 0 || row.topic_vote_score_is_neutral)) {
@@ -81,45 +96,28 @@ export function addUserMetrics(stats: TopicMergeMetricStats, row: MetricUserRow)
           : score
     effectiveRating = semanticScore + 3
   } else if (review !== null) effectiveRating = review
-  if (effectiveRating !== null) incrementRatingScore(stats, effectiveRating, weight)
+  if (effectiveRating !== null) next = incrementRatingScore(next, effectiveRating, weight)
+  return next
 }
 
-function incrementRatingCount(stats: TopicMergeMetricStats, rating: number): void {
-  switch (rating) {
-    case 1:
-      stats.ratings__count__1++
-      break
-    case 2:
-      stats.ratings__count__2++
-      break
-    case 3:
-      stats.ratings__count__3++
-      break
-    case 4:
-      stats.ratings__count__4++
-      break
-    case 5:
-      stats.ratings__count__5++
-      break
-  }
+type Rating = 1 | 2 | 3 | 4 | 5
+
+function isRating(rating: number): rating is Rating {
+  return rating === 1 || rating === 2 || rating === 3 || rating === 4 || rating === 5
 }
 
-function incrementRatingScore(stats: TopicMergeMetricStats, rating: number, weight: number): void {
-  switch (rating) {
-    case 1:
-      stats.ratings__score__1 += weight
-      break
-    case 2:
-      stats.ratings__score__2 += weight
-      break
-    case 3:
-      stats.ratings__score__3 += weight
-      break
-    case 4:
-      stats.ratings__score__4 += weight
-      break
-    case 5:
-      stats.ratings__score__5 += weight
-      break
-  }
+function incrementRatingCount(stats: TopicMergeMetricStats, rating: number): TopicMergeMetricStats {
+  if (!isRating(rating)) return stats
+  const key = `ratings__count__${rating}` as const
+  return { ...stats, [key]: stats[key] + 1 }
+}
+
+function incrementRatingScore(
+  stats: TopicMergeMetricStats,
+  rating: number,
+  weight: number,
+): TopicMergeMetricStats {
+  if (!isRating(rating)) return stats
+  const key = `ratings__score__${rating}` as const
+  return { ...stats, [key]: stats[key] + weight }
 }
