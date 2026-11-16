@@ -11,11 +11,7 @@ type Notification = Deps.Notification
 type NotificationResult = Deps.NotificationResult
 type WebPushSubscriptionRecord = Deps.WebPushSubscriptionRecord
 type PageInfo = Deps.PageInfo
-type NotificationCommunity = {
-  id: string
-  slug: string
-  name: string
-}
+type NotificationHydration = Deps.NotificationHydration
 type ListResponse<T> = Deps.ListResponse<T>
 
 export type BookmarksResponseBody = {
@@ -40,18 +36,16 @@ export type RssFeedsListResponseBody = ListResponse<ViewRssFeed> & {
 
 export type RssFeedItemsListResponseBody = ListResponse<ViewRssFeedItem>
 
-export type NotificationsResponseBody = {
+export type NotificationsResponseBody = NotificationHydration & {
   results: NotificationResult[]
   notifications: Record<string, Notification>
-  communities: Record<string, NotificationCommunity>
   page_info: PageInfo
 }
 
-export type NotificationsUnreadSummaryResponseBody = {
+export type NotificationsUnreadSummaryResponseBody = NotificationHydration & {
   unread_count: number
   results: NotificationResult[]
   notifications: Record<string, Notification>
-  communities: Record<string, NotificationCommunity>
 }
 
 export type NotificationRedirectTargetResponseBody = {

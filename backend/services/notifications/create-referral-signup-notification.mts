@@ -6,9 +6,6 @@ export async function createReferralSignupNotification(
   newUserId: string,
   newUserUsername: string | null | undefined,
 ): Promise<Array<{ user_id: string; id: string }>> {
-  const title = newUserUsername
-    ? `@${newUserUsername} signed up through your referral!`
-    : 'Someone signed up through your referral!'
   const targetPath = newUserUsername ? `/user/${newUserUsername}` : '/'
 
   const { rows } = await write(sql`/* createReferralSignupNotification */
@@ -17,8 +14,8 @@ export async function createReferralSignupNotification(
       entity_type,
       delivery_type,
       actor_user_id,
-      title,
-      body,
+      kind,
+      params,
       target_path
     )
     SELECT
@@ -26,9 +23,9 @@ export async function createReferralSignupNotification(
       'referral_signup',
       'subscription',
       ${newUserId},
-      ${title},
+      'referral_signup',
       (
-        SELECT 'You now have ' || COUNT(*)::text || ' referral' || CASE WHEN COUNT(*) = 1 THEN '' ELSE 's' END
+        SELECT jsonb_build_object('referral_count', COUNT(*))
         FROM users
         WHERE referrer_user_id = ${referrerId}
           AND deleted_at IS NULL

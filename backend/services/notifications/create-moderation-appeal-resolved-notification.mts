@@ -5,26 +5,22 @@ import { enqueueBulkDeliverNotificationPushIntents } from '@queues/notifications
 export async function createModerationAppealResolvedNotification(
   userId: string,
   appealId: string,
-  publicResponse: string,
 ): Promise<void> {
-  const body = publicResponse.slice(0, 1000)
   const { rows } = await write(sql`/* createModerationAppealResolvedNotification */
     INSERT INTO notifications (
       user_id,
       entity_type,
       moderation_appeal_id,
+      kind,
       delivery_type,
-      title,
-      body,
       target_path
     )
     VALUES (
       ${userId},
       'moderation_appeal',
       ${appealId},
+      'moderation_appeal_resolved',
       'subscription',
-      'Your moderation appeal has been resolved',
-      ${body},
       '/my/appeals'
     )
     ON CONFLICT DO NOTHING

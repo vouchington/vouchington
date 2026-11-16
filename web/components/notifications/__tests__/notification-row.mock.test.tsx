@@ -23,13 +23,25 @@ import type { NotificationListNotification } from '../notification-list'
 
 const baseNotification: NotificationListNotification = {
   id: 'notif-1',
-  entity_type: 'post',
-  title: 'Test title',
-  body: '',
+  entity_type: 'referral_click',
+  kind: 'referral_click',
+  params: {},
   read_at: null,
   created_at: '2026-01-01T00:00:00.000Z',
-  target_path: '/posts/post-1',
+  target_path: '/my/referrals',
 }
+
+const warning: NotificationListNotification = {
+  ...baseNotification,
+  entity_type: 'user_warning',
+  kind: 'user_warning',
+  user_warning_id: 'warning-1',
+}
+
+const withBody = (text: string) => ({
+  notification: warning,
+  hydration: { public_texts: { 'warning-1': text } },
+})
 
 describe('NotificationRow', () => {
   it.each([false, true])('localizes household invitation copy (compact: %s)', compact => {
@@ -40,8 +52,7 @@ describe('NotificationRow', () => {
           notification={{
             ...baseNotification,
             entity_type: 'household_invitation',
-            title: 'Household invitation',
-            body: 'You have been invited to join a household.',
+            kind: 'household_invitation',
           }}
           onOpen={vi.fn<() => void>()}
           onDelete={vi.fn<() => void>()}
@@ -68,11 +79,11 @@ describe('NotificationRow', () => {
         />,
       )
 
-      expect(screen.getByText('Test title')).toBeInTheDocument()
+      expect(screen.getByText('Someone clicked your referral link')).toBeInTheDocument()
       expect(screen.getByTestId('notification-icon')).toBeInTheDocument()
       expect(screen.getByTestId('time-ago')).toBeInTheDocument()
 
-      fireEvent.click(screen.getByRole('button', { name: /Test title/i }))
+      fireEvent.click(screen.getByRole('button', { name: /Someone clicked your referral link/i }))
       expect(onOpen).toHaveBeenCalledWith(baseNotification)
     })
 
@@ -94,7 +105,7 @@ describe('NotificationRow', () => {
     it('renders body text when body is provided', () => {
       render(
         <NotificationRow
-          notification={{ ...baseNotification, body: 'Notification body text' }}
+          {...withBody('Notification body text')}
           onOpen={vi.fn<VitestLooseMock>()}
           onDelete={vi.fn<VitestLooseMock>()}
         />,
@@ -103,7 +114,7 @@ describe('NotificationRow', () => {
       expect(screen.getByText('Notification body text')).toBeInTheDocument()
     })
 
-    it('does not render body text when body is null', () => {
+    it('does not render body text when the notification has none', () => {
       render(
         <NotificationRow
           notification={baseNotification}
@@ -147,7 +158,7 @@ describe('NotificationRow', () => {
           onDelete={vi.fn<VitestLooseMock>()}
         />,
       )
-      const mainButton = screen.getByRole('button', { name: /Test title/i })
+      const mainButton = screen.getByRole('button', { name: /Someone clicked your referral link/i })
       expect(mainButton.className).toContain('flex-col')
     })
   })
@@ -165,10 +176,10 @@ describe('NotificationRow', () => {
         />,
       )
 
-      expect(screen.getByText('Test title')).toBeInTheDocument()
+      expect(screen.getByText('Someone clicked your referral link')).toBeInTheDocument()
       expect(screen.getByTestId('notification-icon')).toBeInTheDocument()
 
-      fireEvent.click(screen.getByRole('button', { name: /Test title/i }))
+      fireEvent.click(screen.getByRole('button', { name: /Someone clicked your referral link/i }))
       expect(onOpen).toHaveBeenCalledWith(baseNotification)
     })
 
@@ -191,7 +202,7 @@ describe('NotificationRow', () => {
     it('renders body text when body is provided', () => {
       render(
         <NotificationRow
-          notification={{ ...baseNotification, body: 'Compact body text' }}
+          {...withBody('Compact body text')}
           onOpen={vi.fn<VitestLooseMock>()}
           onDelete={vi.fn<VitestLooseMock>()}
           compact
@@ -201,7 +212,7 @@ describe('NotificationRow', () => {
       expect(screen.getByText('Compact body text')).toBeInTheDocument()
     })
 
-    it('does not render body text when body is null', () => {
+    it('does not render body text when the notification has none', () => {
       render(
         <NotificationRow
           notification={baseNotification}

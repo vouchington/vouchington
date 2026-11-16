@@ -7,11 +7,10 @@ export async function createTestSubscriptionPostNotification(input: {
 }): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* createTestSubscriptionPostNotification */
     INSERT INTO notifications (
-      user_id, entity_type, post_id, title, body, target_path
+      user_id, entity_type, kind, post_id, target_path
     )
     VALUES (
-      ${input.userId}, 'post', ${input.postId}, 'New discussion',
-      'Test subscription content notification', ${`/posts/${input.postId}`}
+      ${input.userId}, 'post', 'post_new', ${input.postId}, ${`/posts/${input.postId}`}
     )
     RETURNING id
   `)
@@ -34,13 +33,12 @@ export async function createTestOrphanRssFeedItemNotification(input: {
   const { rows } = await write<{ id: string }>(
     sql`/* createTestOrphanRssFeedItemNotification */
     INSERT INTO notifications (
-      user_id, entity_type, delivery_type, sent_by_id, publication_rss_feed_item_id,
-      title, body, target_path
+      user_id, entity_type, kind, delivery_type, sent_by_id, publication_rss_feed_item_id,
+      target_path
     )
     VALUES (
-      ${input.userId}, 'rss_feed_item', 'manual_send', ${input.sentByUserId},
-      ${input.publicationRssFeedItemId}, 'Someone sent you an article',
-      'Test orphaned content notification', 'https://example.com/test'
+      ${input.userId}, 'rss_feed_item', 'rss_item_manual_send', 'manual_send', ${input.sentByUserId},
+      ${input.publicationRssFeedItemId}, 'https://example.com/test'
     )
     RETURNING id
   `,

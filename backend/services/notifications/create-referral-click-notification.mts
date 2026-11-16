@@ -1,7 +1,7 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-/** The body stays empty: landing URLs carry UTM fields that retention scrubs from attributions. */
+/** The row carries no landing URL: those carry UTM fields that retention scrubs from attributions. */
 export async function createReferralClickNotification(
   referrerId: string,
 ): Promise<Array<{ user_id: string; id: string }>> {
@@ -9,15 +9,15 @@ export async function createReferralClickNotification(
     INSERT INTO notifications (
       user_id,
       entity_type,
+      kind,
       delivery_type,
-      title,
       target_path
     )
     SELECT
       ${referrerId},
       'referral_click',
+      'referral_click',
       'subscription',
-      'Someone clicked your referral link',
       '/my/referrals'
     WHERE NOT EXISTS (
       SELECT 1

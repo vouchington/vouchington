@@ -3434,7 +3434,7 @@
     },
     "swift.notifications.default": {
       "fixtureIds": ["swift.notifications.default"],
-      "hash": "2679b80ed6406e7170b80f3bd2ffaee5079bda66c9826982d3e04a1c333d3e73"
+      "hash": "675ed40c74866b20b4b6a2d47f88560f281d29f5fb997b7d2dfe6bedff7f61d1"
     },
     "swift.podcast-episode-chapters.default": {
       "fixtureIds": ["swift.podcast-episode-chapters.default"],

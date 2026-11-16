@@ -167,9 +167,7 @@ describe('processFollowerDistributionChunk', () => {
       postId: post.id,
     })
 
-    expect(notificationRows).toEqual([
-      { user_id: selectedFollower.id, title: `@${username} sent you a discussion` },
-    ])
+    expect(notificationRows).toEqual([{ user_id: selectedFollower.id, kind: 'post_manual_send' }])
     expect(notificationRows.map(row => row.user_id)).not.toContain(deletedSelectedFollower.id)
     expect(notificationRows.map(row => row.user_id)).not.toContain(unselectedFollower.id)
     expect(notificationRows.map(row => row.user_id)).not.toContain(nonFollower.id)
@@ -224,9 +222,7 @@ describe('processFollowerDistributionChunk', () => {
     ])
 
     expect(shareRecipientIds).toEqual([shareFollower.id, sendFollower.id].toSorted())
-    expect(notificationRows).toEqual([
-      { user_id: sendFollower.id, title: `@${username} sent you an article` },
-    ])
+    expect(notificationRows).toEqual([{ user_id: sendFollower.id, kind: 'rss_item_manual_send' }])
   })
 
   it('marks RSS feed item distributions failed when the item is deleted before processing', async () => {

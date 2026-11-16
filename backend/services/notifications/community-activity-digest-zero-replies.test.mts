@@ -1,3 +1,4 @@
+import { renderListedNotification } from '@services/notifications/render-listed-notification'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUserDirect,
@@ -57,10 +58,11 @@ describe('community activity digest top discussion', () => {
         now,
       )
       const row = result.created.find(item => item.userId === owner.id)!
-      const notification = (await listNotifications(owner.id)).notifications[row.notificationId]
-      expect(notification?.body).toContain('1 reviews')
-      expect(notification?.body).not.toContain('top discussion')
-      expect(notification?.body).not.toContain('Zero reply candidate')
+      const page = await listNotifications(owner.id)
+      const { body } = renderListedNotification(page, row.notificationId)
+      expect(body).toContain('1 reviews')
+      expect(body).not.toContain('top discussion')
+      expect(body).not.toContain('Zero reply candidate')
     }),
   )
 

@@ -89,10 +89,9 @@ describe('deliverClaimedNotificationPushIntent', () => {
         {
           userId: recipient.id,
           communityId: community.id,
-          entityType: 'community_role_change',
+          kind: 'community_role_changed',
           eventKey: `push-structured-community:${community.id}`,
-          title: 'Community role changed',
-          body: 'Your community role changed.',
+          params: { from_role: 'member', to_role: 'moderator' },
         },
       ],
       {},

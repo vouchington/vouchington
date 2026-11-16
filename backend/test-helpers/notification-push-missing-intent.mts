@@ -7,10 +7,9 @@ export async function createTestNotificationWithoutPushIntent(userId: string): P
   const query = transaction
   const { rows } = await query(sql`/* createTestNotificationWithoutPushIntent */
         INSERT INTO notifications (
-          user_id, entity_type, delivery_type, title, body, target_path
+          user_id, entity_type, kind, delivery_type, target_path
         ) VALUES (
-          ${userId}, 'referral_click', 'subscription', 'Recovery notification',
-          'Missing durable push intent', '/my/referrals'
+          ${userId}, 'referral_click', 'referral_click', 'subscription', '/my/referrals'
         )
         RETURNING id
     `)

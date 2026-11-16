@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { EMPTY_NOTIFICATION_HYDRATION } from './empty-notification-hydration'
 import { NotificationsPage } from './notifications-page'
 import { getPaginatedPage } from '@/lib/api/client'
 
+type OpenNotification = (notification: { id: string }) => void
 type NotificationListProps = Parameters<typeof import('./notification-list').NotificationList>[0]
 
 const mockReceiveLoadMore = vi.fn<VitestLooseMock>()
@@ -76,7 +78,7 @@ vi.mock(import('./notification-list'), () => ({
           const notification = notifications.notifications[id]!
           return (
             <div key={id}>
-              <span>{notification.title}</span>
+              <span>{notification.kind}</span>
               <button
                 type='button'
                 onClick={() => onOpen(notification)}
@@ -107,8 +109,6 @@ describe('notifications-page', () => {
     mockDeleteMyNotification.mockReset()
     mockCreateMyWebPushSubscription.mockReset()
     mockDeleteMyWebPushSubscription.mockReset()
-    mockCaptureException.mockReset()
-    mockReceiveOpenNotification.mockReset()
     mockNavigateToTarget.mockReset()
     mockResolveNotificationTarget.mockReset()
     mockResolveNotificationTarget.mockReturnValue('/discussion/root-post/comment/p1')
@@ -134,9 +134,13 @@ describe('notifications-page', () => {
           community_id: null,
           household_id: null,
           event_key: null,
-          title: 'New reply',
-          body: 'Reply body',
-          actor_label: 'tester',
+          kind: 'post_reply' as const,
+          params: {},
+          top_post_id: null,
+          community_application_id: null,
+          moderation_appeal_id: null,
+          copyright_notice_delivery_work_item_id: null,
+          sent_by_id: null,
           target_path: '/discussion/root-post/comment/p1',
           target_entity: null,
           target_intent: null,
@@ -146,6 +150,7 @@ describe('notifications-page', () => {
           updated_at: new Date().toISOString(),
         },
       },
+      ...EMPTY_NOTIFICATION_HYDRATION,
       page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
     }
 
@@ -162,7 +167,7 @@ describe('notifications-page', () => {
         />,
       )
 
-      expect(screen.getByText('New reply')).toBeDefined()
+      expect(screen.getByText('post_reply')).toBeDefined()
       fireEvent.click(screen.getByRole('button', { name: 'Mark all as read' }))
 
       await waitFor(() => expect(mockMarkAllMyNotificationsRead).toHaveBeenCalled())
@@ -228,9 +233,7 @@ describe('notifications-page', () => {
         />,
       )
 
-      const onOpen = mockReceiveOpenNotification.mock.calls.at(-1)![0] as (notification: {
-        id: string
-      }) => void
+      const onOpen = mockReceiveOpenNotification.mock.calls.at(-1)![0] as OpenNotification
       onOpen(initialNotifications.notifications.n1)
       expect(mockMarkMyNotificationReadKeepalive).toHaveBeenCalledWith('n1')
       expect(mockNavigateToTarget).toHaveBeenCalledWith('/discussion/root-post/comment/p1')
@@ -250,9 +253,7 @@ describe('notifications-page', () => {
         />,
       )
 
-      const onOpen = mockReceiveOpenNotification.mock.calls.at(-1)![0] as (notification: {
-        id: string
-      }) => void
+      const onOpen = mockReceiveOpenNotification.mock.calls.at(-1)![0] as OpenNotification
       onOpen(initialNotifications.notifications.n1)
 
       expect(mockNavigateToTarget).toHaveBeenCalledWith('/discussion/root-post/comment/p1')
@@ -269,9 +270,9 @@ describe('notifications-page', () => {
           n2: {
             ...initialNotifications.notifications.n1,
             id: 'n2',
-            title: 'Another reply',
           },
         },
+        ...EMPTY_NOTIFICATION_HYDRATION,
         page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
       })
 
@@ -290,7 +291,7 @@ describe('notifications-page', () => {
         await loadMore()
       })
 
-      expect(screen.getByText('Another reply')).toBeInTheDocument()
+      expect(screen.getAllByText('post_reply')).toHaveLength(2)
       expect(getPaginatedPage).toHaveBeenCalledWith('/api/v1/my/notifications', {
         after: 'cursor-1',
       })

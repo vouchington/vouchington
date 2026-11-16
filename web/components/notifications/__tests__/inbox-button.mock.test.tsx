@@ -1,3 +1,4 @@
+import { EMPTY_NOTIFICATION_HYDRATION } from '@/components/notifications/empty-notification-hydration'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
@@ -66,8 +67,8 @@ vi.mock(
 )
 
 vi.mock(import('../notification-row'), () => ({
-  NotificationRow: ({ notification }: { notification: { id: string; title: string } }) => (
-    <div data-testid='notification-row'>{notification.title}</div>
+  NotificationRow: ({ notification }: { notification: { id: string; kind: string } }) => (
+    <div data-testid='notification-row'>{notification.kind}</div>
   ),
 }))
 
@@ -77,25 +78,26 @@ const emptySummary = {
   unread_count: 0,
   results: [],
   notifications: {},
+  ...EMPTY_NOTIFICATION_HYDRATION,
 }
 
 const notificationId = 'notif-1'
 const summaryWithNotification = {
   unread_count: 1,
   results: [{ id: notificationId }],
+  ...EMPTY_NOTIFICATION_HYDRATION,
   notifications: {
     [notificationId]: {
       __entity_type: 'notification' as const,
       id: notificationId,
       user_id: 'user-1',
-      entity_type: 'post' as const,
-      post_id: 'post-1',
+      entity_type: 'referral_click' as const,
+      kind: 'referral_click' as const,
+      params: {},
+      post_id: null,
       rss_feed_item_id: null,
       actor_user_id: null,
-      title: 'Test notification',
-      body: 'Test body',
-      actor_label: null,
-      target_path: '/posts/post-1',
+      target_path: '/my/referrals',
       read_at: null,
       pushed_at: null,
       created_at: '2024-01-01T00:00:00.000Z',
@@ -123,6 +125,6 @@ describe('InboxButton (stub)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('notification-row')).toBeInTheDocument()
     })
-    expect(screen.getByText('Test notification')).toBeInTheDocument()
+    expect(screen.getByText('referral_click')).toBeInTheDocument()
   })
 })

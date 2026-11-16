@@ -29,7 +29,7 @@ const PAGE_LIMIT: McpPageLimit = { min: 1, max: 100, default: 25 }
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      "List the current user's notifications and read state, newest first. results gives ids; notifications and communities hold details by id. Text from others is sanitized or fenced as external content. Use read_my_notifications (option unread) for unread count. Reading never marks an item read.",
+      "List the current user's notifications and read state, newest first. results gives ids; notifications hold a kind, params and ids; communities, actors, posts, rss_feed_items, copyright_notices and public_texts hold the named records by id, and clients render the sentence from the kind. Text from others is sanitized or fenced as external content. Use read_my_notifications (option unread) for unread count. Reading never marks an item read.",
     parameters: {
       type: 'object',
       properties: pageInputProperties('Notifications', PAGE_LIMIT),

@@ -1,3 +1,4 @@
+import { renderListedNotification } from '@services/notifications/render-listed-notification'
 import { createHash } from 'node:crypto'
 import { expect, it, describe } from 'vitest'
 import { bookmarkEntity } from '@services/bookmarks/upsert'
@@ -47,7 +48,8 @@ describe('reconcile-rss-feed-item media descriptions', () => {
     await reconcileNotificationsForRssFeedItem(itemId)
 
     const notifications = await listNotifications(subscriber.id)
-    const notification = notifications.notifications[notifications.results[0]!.id]!
-    expect(notification.body).toBe('Notification body from YouTube media description.')
+    expect(renderListedNotification(notifications, notifications.results[0]!.id).body).toBe(
+      'Notification body from YouTube media description.',
+    )
   })
 })

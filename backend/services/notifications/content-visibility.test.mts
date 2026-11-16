@@ -1,3 +1,4 @@
+import { renderListedNotification } from '@services/notifications/render-listed-notification'
 import { describe, expect, it } from 'vitest'
 import { bookmarkEntity } from '@services/bookmarks/upsert'
 import { createPostRemovedNotification } from './create-post-removed-notification.mts'
@@ -162,7 +163,7 @@ describe('content notification visibility reconciliation', () => {
 
     const notifications = await listNotifications(author.id)
     expect(notifications.results).toHaveLength(1)
-    expect(notifications.notifications[notifications.results[0]!.id]?.title).toBe(
+    expect(renderListedNotification(notifications, notifications.results[0]!.id).title).toBe(
       'Your post has been removed',
     )
   })

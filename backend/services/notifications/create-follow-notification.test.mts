@@ -1,3 +1,4 @@
+import { renderListedNotification } from '@services/notifications/render-listed-notification'
 import { it, expect, describe } from 'vitest'
 import { createTestUserDirect } from '@voucha/test-helpers'
 import { createFollowNotification } from './create-follow-notification.mts'
@@ -13,11 +14,14 @@ describe('create-follow-notification', () => {
     expect(result).toHaveLength(1)
     expect(result[0]!.user_id).toBe(followee.id)
 
-    const { notifications } = await listNotifications(followee.id)
-    const notification = notifications[result[0]!.id]
+    const page = await listNotifications(followee.id)
+    const notification = page.notifications[result[0]!.id]
     expect(notification?.entity_type).toBe('follow')
+    expect(notification?.kind).toBe('follow')
     expect(notification?.actor_user_id).toBe(follower.id)
-    expect(notification?.title).toBe(`@${follower.username} started following you`)
+    expect(renderListedNotification(page, result[0]!.id).title).toBe(
+      `@${follower.username} started following you`,
+    )
     expect(notification?.target_path).toBe(`/user/${follower.username}`)
   })
 
@@ -29,11 +33,14 @@ describe('create-follow-notification', () => {
 
     expect(result).toHaveLength(1)
 
-    const { notifications } = await listNotifications(followee.id)
-    const notification = notifications[result[0]!.id]
+    const page = await listNotifications(followee.id)
+    const notification = page.notifications[result[0]!.id]
     expect(notification?.entity_type).toBe('follow')
     expect(notification?.actor_user_id).toBe(follower.id)
-    expect(notification?.title).toBe('Someone started following you')
+    // The name is read from the follower's profile when the row is read, not stored.
+    expect(renderListedNotification(page, result[0]!.id).title).toBe(
+      `@${follower.username} started following you`,
+    )
     expect(notification?.target_path).toBe('/')
   })
 
@@ -47,9 +54,9 @@ describe('create-follow-notification', () => {
 
     expect(result).toHaveLength(1)
 
-    const { notifications } = await listNotifications(followee.id)
-    const notification = notifications[result[0]!.id]
-    expect(notification?.title).toBe(
+    const page = await listNotifications(followee.id)
+    expect(page.notifications[result[0]!.id]?.kind).toBe('follow_referral_signup')
+    expect(renderListedNotification(page, result[0]!.id).title).toBe(
       `Your referral @${follower.username} signed up and followed you!`,
     )
   })

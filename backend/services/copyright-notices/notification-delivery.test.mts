@@ -1,4 +1,4 @@
-import { copyrightNotificationCopy } from './statement-of-reasons-wording.mts'
+import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -44,24 +44,40 @@ describe('copyright in-app notification delivery', () => {
       ],
     })
     const eventKey = `copyright-delivery-${crypto.randomUUID()}`
+    const intent = await createCopyrightDeliveryIntent({
+      noticeId: notice.id,
+      submissionId: null,
+      correspondenceId: null,
+      recipientUserId: user.id,
+      recipientRole: 'claimant',
+      deliveryKind: 'status_update',
+      channel: 'in_app',
+      idempotencyKey: `copyright-delivery-intent:${crypto.randomUUID()}`,
+    })
 
     await createCopyrightNoticeNotification({
       userId: user.id,
       noticeId: notice.id,
       eventKey,
-      statementCopy: copyrightNotificationCopy('poster_restriction_notice'),
+      kind: 'copyright_poster_restriction_notice',
+      aiAssisted: false,
+      intentId: intent.id,
     })
     await createCopyrightNoticeNotification({
       userId: user.id,
       noticeId: notice.id,
       eventKey,
-      statementCopy: copyrightNotificationCopy('poster_restriction_notice'),
+      kind: 'copyright_poster_restriction_notice',
+      aiAssisted: false,
+      intentId: intent.id,
     })
     await createCopyrightNoticeNotification({
       userId: user.id,
       noticeId: notice.id,
       eventKey: `copyright-delivery-${crypto.randomUUID()}`,
-      statementCopy: copyrightNotificationCopy('status_update'),
+      kind: 'copyright_status_update',
+      aiAssisted: false,
+      intentId: intent.id,
     })
 
     const { notifications } = await listNotifications(user.id)

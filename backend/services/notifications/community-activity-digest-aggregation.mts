@@ -1,6 +1,20 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import type { CommunityActivityDigestCounts } from './community-activity-digest-body.mts'
+
+export type CommunityActivityDigestCounts = {
+  community_count: number
+  joins: number
+  departures: number
+  discussions: number
+  reviews: number
+  data_points: number
+  comments: number
+  active_posters: number
+  total_members: number
+  moderation_workload: number
+  top_post_id: string | null
+  top_discussion_replies: number
+}
 
 export async function aggregateCommunityActivityDigestBatch(input: {
   recipientIds: string[]
@@ -70,21 +84,21 @@ export async function aggregateCommunityActivityDigestBatch(input: {
       JOIN community_ids c ON c.community_id = cm.community_id WHERE cm.removed_at IS NULL
         AND cm.suspected_ban_evader_at IS NOT NULL AND cm.suspected_ban_evader_dismissed_at IS NULL GROUP BY cm.community_id
     ), top_ranked AS (
-      SELECT p.community_id, concat(c.name, ': ', p.title, ' (', count(reply.id), ' replies)') AS label,
+      SELECT p.community_id, p.id AS post_id,
         count(reply.id)::int AS replies, row_number() OVER (PARTITION BY p.community_id ORDER BY count(reply.id) DESC, p.id ASC) AS rank
-      FROM posts p JOIN communities c ON c.id = p.community_id JOIN community_ids ids ON ids.community_id = p.community_id
+      FROM posts p JOIN community_ids ids ON ids.community_id = p.community_id
       JOIN posts reply ON reply.parent_post_id = p.id AND reply.post_type = 'comment'
         AND reply.id >= ${input.windowStartId} AND reply.id < ${input.windowEndId}
         AND reply.deleted_at IS NULL
       WHERE p.post_type = 'discussion' AND p.id < ${input.windowEndId} AND p.deleted_at IS NULL
-      GROUP BY p.community_id, p.id, p.title, c.name
+      GROUP BY p.community_id, p.id
     ), activity AS (
       SELECT e.user_id, e.community_id, COALESCE(j.value,0) AS joins, COALESCE(d.value,0) AS departures,
         COALESCE(pa.discussions,0) AS discussions, COALESCE(pa.reviews,0) AS reviews,
         COALESCE(pa.data_points,0) AS data_points, COALESCE(pa.comments,0) AS comments,
         COALESCE(pa.active_posters,0) AS active_posters, COALESCE(tm.value,0) AS total_members,
         COALESCE(pr.pending,0)+COALESCE(a.pending,0)+COALESCE(r.pending,0)+COALESCE(be.pending,0) AS moderation_workload,
-        t.label AS top_discussion, COALESCE(t.replies,0) AS top_replies
+        t.post_id AS top_post_id, COALESCE(t.replies,0) AS top_replies
       FROM eligible e LEFT JOIN joins j USING (community_id) LEFT JOIN departures d USING (community_id)
       LEFT JOIN post_activity pa USING (community_id) LEFT JOIN total_members tm USING (community_id)
       LEFT JOIN pending_reviews pr USING (community_id) LEFT JOIN applications a USING (community_id)
@@ -95,7 +109,8 @@ export async function aggregateCommunityActivityDigestBatch(input: {
       sum(discussions)::int AS discussions, sum(reviews)::int AS reviews, sum(data_points)::int AS data_points,
       sum(comments)::int AS comments, sum(active_posters)::int AS active_posters, sum(total_members)::int AS total_members,
       sum(moderation_workload)::int AS moderation_workload,
-      (array_agg(top_discussion ORDER BY top_replies DESC) FILTER (WHERE top_discussion IS NOT NULL))[1] AS top_discussion
+      (array_agg(top_post_id ORDER BY top_replies DESC, top_post_id) FILTER (WHERE top_post_id IS NOT NULL))[1] AS top_post_id,
+      COALESCE((array_agg(top_replies ORDER BY top_replies DESC, top_post_id) FILTER (WHERE top_post_id IS NOT NULL))[1], 0)::int AS top_discussion_replies
     FROM active GROUP BY user_id
   `)
   return rows

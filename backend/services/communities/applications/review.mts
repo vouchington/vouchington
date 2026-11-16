@@ -68,10 +68,9 @@ export async function approveApplication(
       {
         userId: application.user_id,
         communityId: application.community_id,
-        entityType: 'community_application_decision',
+        kind: 'community_application_approved',
         eventKey: `community-application-decision:${applicationId}`,
-        title: `Your application to ${community.name} was approved`,
-        body: `You are now a member of ${community.name}.`,
+        applicationId,
       },
     ],
     options,
@@ -144,12 +143,9 @@ export async function rejectApplication(
             {
               userId: application.user_id,
               communityId: application.community_id,
-              entityType: 'community_application_decision',
+              kind: 'community_application_rejected',
               eventKey: `community-application-decision:${applicationId}`,
-              title: `Your application to ${community.name} was not approved`,
-              body: reason
-                ? `Reason: ${reason}`
-                : `Your application to ${community.name} was not approved.`,
+              applicationId,
             },
           ],
           options,

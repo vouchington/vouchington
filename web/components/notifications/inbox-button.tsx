@@ -99,6 +99,7 @@ export function InboxButton() {
                     <NotificationRow
                       key={notification.id}
                       notification={notification as NotificationListNotification}
+                      hydration={inbox.summary}
                       onOpen={n => inbox.handleClickNotification(n as Notification)}
                       onDelete={inbox.handleDeleteNotification}
                       compact

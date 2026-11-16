@@ -77,7 +77,12 @@ describe('bounded moderator scan continuation', () => {
       const notices = Object.values((await listNotifications(successor.id)).notifications)
       expect(
         notices.filter(notification => notification.entity_type === 'community_ownership_transfer'),
-      ).toEqual([expect.objectContaining({ title: `You now own ${community.name}` })])
+      ).toEqual([
+        expect.objectContaining({
+          kind: 'community_ownership_received',
+          community_id: community.id,
+        }),
+      ])
       expect(Object.values((await listNotifications(owner.id)).notifications)).not.toEqual(
         expect.arrayContaining([
           expect.objectContaining({ entity_type: 'community_ownership_transfer' }),

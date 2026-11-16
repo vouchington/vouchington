@@ -1,3 +1,4 @@
+import { renderListedNotification } from '@services/notifications/render-listed-notification'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { addUserRole } from '@services/users/roles-permissions'
@@ -133,8 +134,11 @@ describe('createCriticalModerationAlertNotification', () => {
     expect(modAlert).toBeDefined()
     expect(regularAlert).toBeUndefined()
 
-    expect(adminAlert?.title).toBe('Critical moderation alert')
-    expect(adminAlert?.body).toBe('A report requiring urgent review has been filed.')
+    expect(adminAlert?.kind).toBe('critical_moderation_alert')
+    expect(renderListedNotification(adminNotifs, adminAlert!.id)).toEqual({
+      title: 'Critical moderation alert',
+      body: '',
+    })
     expect(adminAlert?.target_path).toBe('/reports')
   })
 

@@ -31,6 +31,7 @@ import type { PrivateUser } from '@services/users/types'
 
 import type { Community } from '../../types.mts'
 import { listNotifications } from '@services/notifications/list'
+import { renderListedNotification } from '@services/notifications/render-listed-notification'
 
 describe('index', () => {
   let owner: PrivateUser
@@ -72,14 +73,19 @@ describe('index', () => {
       const updated = await getCommunityMember(publicCommunity.id, user.id)
       expect(updated?.role).toBe('moderator')
       const response = await listNotifications(user.id)
-      expect(Object.values(response.notifications)).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            entity_type: 'community_role_change',
-            body: 'Your community role changed from member to moderator.',
-          }),
-        ]),
-      )
+      expect(
+        Object.values(response.notifications).filter(
+          item => item.entity_type === 'community_role_change',
+        ),
+      ).toHaveLength(1)
+      expect(
+        renderListedNotification(
+          response,
+          Object.values(response.notifications).find(
+            item => item.kind === 'community_role_changed',
+          )!.id,
+        ).body,
+      ).toBe('Your community role changed from member to moderator.')
     })
 
     it('does not notify when assigning the existing role', async () => {
@@ -202,14 +208,15 @@ describe('index', () => {
         'member',
       )
 
-      expect(Object.values((await listNotifications(user.id)).notifications)).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            entity_type: 'community_role_change',
-            body: 'Your community role changed from moderator to member.',
-          }),
-        ]),
-      )
+      const demotion = await listNotifications(user.id)
+      expect(
+        renderListedNotification(
+          demotion,
+          Object.values(demotion.notifications).find(
+            item => item.kind === 'community_role_changed',
+          )!.id,
+        ).body,
+      ).toBe('Your community role changed from moderator to member.')
 
       expect(roleChangeEmailEnqueue).not.toBeNull()
       const job = await readEnqueuedJob(emails, await roleChangeEmailEnqueue)

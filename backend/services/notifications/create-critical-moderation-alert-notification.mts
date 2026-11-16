@@ -122,10 +122,9 @@ export async function writeCriticalAlertCandidatePage(
   if (recipientIds.length === 0) return []
   const { rows } = await query<{ user_id: string; id: string }>(sql`
         /* insertCriticalAlertNotifications */
-        INSERT INTO notifications (user_id, entity_type, moderation_report_id, delivery_type, title, body, target_path)
+        INSERT INTO notifications (user_id, entity_type, moderation_report_id, kind, delivery_type, target_path)
         SELECT candidates.user_id, 'critical_moderation_alert', ${reportId}::uuid,
-          'subscription', 'Critical moderation alert',
-          'A report requiring urgent review has been filed.', '/reports'
+          'critical_moderation_alert', 'subscription', '/reports'
         FROM unnest(${recipientIds}::uuid[]) AS candidates(user_id)
         JOIN LATERAL (
           SELECT 1 FROM users u

@@ -6,6 +6,9 @@ import {
 import { itemHasDiscoverableSourceSql } from '@modules/feed-query-builders/discoverability-sql'
 import sql from 'sql-template-strings'
 import * as webpush from 'web-push'
+import { hydrateNotifications } from '@services/notifications/hydrate-notifications'
+import { notificationTranslator } from '@services/notifications/notification-translator'
+import { renderNotificationText } from '@services/notifications/render-notification-text'
 import type { PushPayloadNotification } from './push-payload.mts'
 import {
   notificationPushDeliveryPolicy,
@@ -23,6 +26,9 @@ import {
 let isConfigured = false
 
 type NotificationPushRow = PushPayloadNotification
+type NotificationPushSource = Omit<PushPayloadNotification, 'title' | 'body'> &
+  Parameters<typeof renderNotificationText>[1] &
+  Parameters<typeof hydrateNotifications>[1][number] & { ui_locale: string | null }
 
 function ensureWebPushConfig() {
   if (isConfigured) return true
@@ -91,19 +97,22 @@ async function getEligibleNotification(
   intent: NotificationPushIntent,
 ): Promise<NotificationPushRow | undefined> {
   const query = sql`/* getEligibleNotificationPushIntent */
-    SELECT n.id, n.entity_type, n.title, n.body, n.target_path,
+    SELECT n.id, n.user_id, n.entity_type, n.kind, n.params, n.post_id, n.top_post_id,
+      n.rss_feed_item_id, n.actor_user_id, n.sent_by_id, n.community_id, n.community_application_id,
+      n.review_dispute_id, n.moderation_appeal_id, n.user_warning_id, n.copyright_notice_id,
+      n.copyright_notice_delivery_work_item_id, n.target_path,
       fn_notification_target_entity(n.entity_type, n.community_id, n.household_id) AS target_entity,
-      n.target_intent,
+      n.target_intent, recipient.ui_locale,
       (SELECT c.slug FROM communities c WHERE c.id = n.community_id AND c.deleted_at IS NULL
         AND (c.visibility = 'public' OR EXISTS (SELECT 1 FROM community_members cm
           WHERE cm.community_id = c.id AND cm.user_id = n.user_id AND cm.removed_at IS NULL))) AS community_slug
     FROM notifications n
+    JOIN users recipient ON recipient.id = n.user_id
     LEFT JOIN posts candidate_post ON candidate_post.id = n.publication_post_id
     LEFT JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
     WHERE n.user_id = ${intent.user_id} AND n.id = ${intent.notification_id} AND n.deleted_at IS NULL
       AND (n.entity_type <> 'post'
-        OR (n.delivery_type <> 'manual_send'
-          AND COALESCE(n.target_path, '') !~ '^/(posts|reviews|data-points|link|discussion|review|data-point)/')
+        OR n.kind = 'post_removed'
         OR (candidate_post.id IS NOT NULL AND (
           (n.delivery_type = 'manual_send' AND `
   query
@@ -134,6 +143,14 @@ async function getEligibleNotification(
           AND item.deleted_at IS NULL AND `)
   query.append(itemHasDiscoverableSourceSql('item.id')).append(sql`
       )))`)
-  const { rows } = await write<NotificationPushRow>(query)
-  return rows[0]
+  const { rows } = await write<NotificationPushSource>(query)
+  const row = rows[0]
+  if (!row) return undefined
+  const hydration = await hydrateNotifications(row.user_id, [row])
+  const { title, body } = renderNotificationText(
+    notificationTranslator(row.ui_locale),
+    row,
+    hydration,
+  )
+  return { ...row, title, body }
 }

@@ -259,10 +259,9 @@ describe('notification and email retention', () => {
     const input = {
       userId: user.id,
       communityId: community.id,
-      entityType: 'community_role_change' as const,
+      kind: 'community_role_changed' as const,
       eventKey,
-      title: 'Your role changed',
-      body: 'Your community role changed.',
+      params: { from_role: 'member', to_role: 'moderator' },
     }
     await using query = await beginTransaction()
     await resetTestNotificationEmailRetentionCursor(query, 'user_deleted_notifications')

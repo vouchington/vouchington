@@ -5,43 +5,9 @@ import type {
 } from '@voucha/api/types'
 import sql from 'sql-template-strings'
 import { decodeUuidCursor, encodeCursor, isSimpleCursor } from '@modules/pagination'
+import { hydrateNotifications } from './hydrate-notifications.mts'
 import { mapNotificationRow } from './shared.mts'
 import type { NotificationResult } from './types.mts'
-
-async function getNotificationCommunities(
-  userId: string,
-  notifications: NotificationsResponseBody['notifications'],
-): Promise<NotificationsResponseBody['communities']> {
-  const ids = [
-    ...new Set(
-      Object.values(notifications).flatMap(notification =>
-        notification.community_id ? [notification.community_id] : [],
-      ),
-    ),
-  ]
-  if (ids.length === 0) return {}
-
-  const { rows } = await read<{ id: string; slug: string; name: string }>(
-    `/* getNotificationCommunities */
-    SELECT c.id, c.slug, c.name
-    FROM communities c
-    WHERE c.id = ANY($1::uuid[])
-      AND c.deleted_at IS NULL
-      AND (
-        c.visibility = 'public'
-        OR EXISTS (
-          SELECT 1 FROM community_members cm
-          WHERE cm.community_id = c.id
-            AND cm.user_id = $2
-            AND cm.removed_at IS NULL
-        )
-      )
-    `,
-    [ids, userId],
-  )
-
-  return Object.fromEntries(rows.map(community => [community.id, community]))
-}
 
 export async function listNotifications(
   userId: string,
@@ -60,20 +26,24 @@ export async function listNotifications(
       id,
       user_id,
       entity_type,
+      kind,
+      params,
       post_id,
       rss_feed_item_id,
       actor_user_id,
+      sent_by_id,
       moderation_report_id,
       review_dispute_id,
       user_warning_id,
+      moderation_appeal_id,
       conversation_id,
       community_id,
+      community_application_id,
       household_id,
       copyright_notice_id,
+      copyright_notice_delivery_work_item_id,
+      top_post_id,
       event_key,
-      title,
-      body,
-      actor_label,
       target_path,
       fn_notification_target_entity(entity_type, community_id, household_id) AS target_entity,
       target_intent,
@@ -114,7 +84,7 @@ export async function listNotifications(
   return {
     results,
     notifications,
-    communities: await getNotificationCommunities(userId, notifications),
+    ...(await hydrateNotifications(userId, Object.values(notifications))),
     page_info: {
       has_next_page: hasNextPage,
       start_cursor: results[0] ? encodeCursor({ id: results[0].id }) : null,
@@ -134,20 +104,24 @@ export async function getUnreadNotificationsSummary(
       id,
       user_id,
       entity_type,
+      kind,
+      params,
       post_id,
       rss_feed_item_id,
       actor_user_id,
+      sent_by_id,
       moderation_report_id,
       review_dispute_id,
       user_warning_id,
+      moderation_appeal_id,
       conversation_id,
       community_id,
+      community_application_id,
       household_id,
       copyright_notice_id,
+      copyright_notice_delivery_work_item_id,
+      top_post_id,
       event_key,
-      title,
-      body,
-      actor_label,
       target_path,
       fn_notification_target_entity(entity_type, community_id, household_id) AS target_entity,
       target_intent,
@@ -179,6 +153,6 @@ export async function getUnreadNotificationsSummary(
       read_at: (row.read_at as Date | null) ?? null,
     })),
     notifications,
-    communities: await getNotificationCommunities(userId, notifications),
+    ...(await hydrateNotifications(userId, Object.values(notifications))),
   }
 }

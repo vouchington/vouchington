@@ -150,7 +150,7 @@ export async function seedPlaywrightFeedData(query: TransactionQuery): Promise<v
     `/* seedPlaywrightFeedData */ INSERT INTO relation__user__follow__user (subject_id, object_id) VALUES ('00000000-0000-0000-0000-000000000001', '019f0000-0000-7000-8000-000000000000') ON CONFLICT DO NOTHING`,
   )
   await query(
-    `/* seedPlaywrightFeedData */ INSERT INTO notifications ( user_id, entity_type, actor_user_id, delivery_type, title, body, actor_label, target_path ) VALUES ( '019f0000-0000-7000-8000-000000000000', 'follow', '00000000-0000-0000-0000-000000000001', 'subscription', '@test-friend started following you', '', 'test-friend', '/@test-friend' ) ON CONFLICT DO NOTHING`,
+    `/* seedPlaywrightFeedData */ INSERT INTO notifications ( user_id, entity_type, kind, actor_user_id, delivery_type, target_path ) VALUES ( '019f0000-0000-7000-8000-000000000000', 'follow', 'follow', '00000000-0000-0000-0000-000000000001', 'subscription', '/@test-friend' ) ON CONFLICT DO NOTHING`,
   )
   await query(
     `/* seedPlaywrightFeedData */ INSERT INTO relation__user__follow__rss_feed (subject_id, object_id) VALUES ('019f0000-0000-7000-8000-000000000000', '019c64e6-f8c0-7000-8000-000000000001') ON CONFLICT DO NOTHING`,

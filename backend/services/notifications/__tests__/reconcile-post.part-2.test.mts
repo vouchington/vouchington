@@ -1,3 +1,4 @@
+import { renderListedNotification } from '@services/notifications/render-listed-notification'
 import { expect, it, describe } from 'vitest'
 
 import { bookmarkEntity, unbookmarkEntity } from '@services/bookmarks/upsert'
@@ -141,9 +142,10 @@ describe('reconcile-post', () => {
     const notifications = await listNotifications(author.id)
     expect(notifications.results).toHaveLength(1)
     const notification = notifications.notifications[notifications.results[0]!.id]!
-    expect(notification.title).toBe('New reply')
-    expect(notification.title).not.toContain(replier.username)
-    expect(notification.actor_label).toBeNull()
+    const text = renderListedNotification(notifications, notification.id)
+    expect(text.title).toBe('New reply')
+    expect(text.title).not.toContain(replier.username)
+    expect(Object.keys(notifications.actors)).not.toContain(replier.id)
   })
 
   it('does not recreate a notification after the user deletes it', async () => {

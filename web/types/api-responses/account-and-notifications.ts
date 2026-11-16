@@ -138,29 +138,24 @@ export type HostnamesListResponseBody = ListResponse<Hostname>
 
 export type CommunitiesListResponseBody = ListResponse<CommunityRelationItem>
 
-export interface NotificationCommunity {
-  id: string
-  slug: string
-  name: string
-}
+export type { NotificationHydration, NotificationKind } from './shared'
+export type NotificationCommunity = Api.NotificationHydration['communities'][string]
 
 export interface FollowerDistributionAcceptedResponseBody {
   status: 'accepted'
   distribution_id: string
 }
 
-export interface NotificationsResponseBody {
+export interface NotificationsResponseBody extends Api.NotificationHydration {
   results: NotificationResult[]
   notifications: Record<string, Notification>
-  communities?: Record<string, NotificationCommunity>
   page_info: PageInfo
 }
 
-export interface NotificationsUnreadSummaryResponseBody {
+export interface NotificationsUnreadSummaryResponseBody extends Api.NotificationHydration {
   unread_count: number
   results: NotificationResult[]
   notifications: Record<string, Notification>
-  communities: Record<string, NotificationCommunity>
 }
 
 export interface MarkAllNotificationsReadResponseBody {

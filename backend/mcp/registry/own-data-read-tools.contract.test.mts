@@ -4,11 +4,15 @@ import {
   callStructuredMcpTool,
   type McpContractCaller,
 } from '@voucha/test-helpers/mcp-tool-contract'
-import { markNotificationRead, createFollowNotification } from '@services/notifications'
+import {
+  markNotificationRead,
+  createFollowNotification,
+  createUserWarningNotification,
+  listNotifications,
+} from '@services/notifications'
 import { createProfileLink } from '@services/my/profile-links'
-import { createTestUser, setUserMarkdown } from '@voucha/test-helpers'
+import { createTestUser, insertTestUserWarning, setUserMarkdown } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { setTestNotificationText } from '@voucha/test-helpers/notification-text'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { SETTINGS_PARAMETERS } from '../preference-tool-support.mts'
 
@@ -27,12 +31,9 @@ const asCaller = (user: TestUser, plan: 'plus' | null = null): McpContractCaller
   ...user,
   membership_plan: plan,
 })
-// The sanitized text differs from REST by design, and `target_path` is a frontend route the tools omit.
-const withoutText = (notification: unknown) => ({
+// `target_path` is a frontend route the tools omit.
+const withoutRoute = (notification: unknown) => ({
   ...(notification as Body),
-  title: undefined,
-  body: undefined,
-  actor_label: undefined,
   target_path: undefined,
 })
 
@@ -41,6 +42,7 @@ describe('own-data read tools — real DB', () => {
   let owner: McpContractCaller
   let stranger: McpContractCaller
   let notificationIds: string[]
+  let warningId: string
   let linkIds: string[]
 
   const call = (name: string, scopes: Scopes, args: Body = {}, who = owner) =>
@@ -60,16 +62,21 @@ describe('own-data read tools — real DB', () => {
     stranger = asCaller(otherUser!)
     // Created one at a time so the ids, which order the pages, are in creation order.
     notificationIds = []
+    // The oldest notification points at a warning whose moderator-written message is hostile.
+    const warning = await insertTestUserWarning({
+      userId: owner.id,
+      issuedById: stranger.id,
+      publicMessage: HOSTILE,
+    })
+    warningId = warning.id
+    await createUserWarningNotification(owner.id, warning.id)
+    const created = Object.values((await listNotifications(owner.id)).notifications)
+    notificationIds.push(created.find(item => item.user_warning_id === warning.id)!.id)
     for (const actor of actors) {
-      const [created] = await createFollowNotification(owner.id, actor.id, actor.username)
-      notificationIds.push(created!.id)
+      const [follow] = await createFollowNotification(owner.id, actor.id, actor.username)
+      notificationIds.push(follow!.id)
     }
     await createFollowNotification(stranger.id, actors[0]!.id, actors[0]!.username)
-    await setTestNotificationText(notificationIds[0]!, {
-      title: HOSTILE,
-      body: HOSTILE,
-      actorLabel: HOSTILE,
-    })
     await markNotificationRead(owner.id, notificationIds[1]!)
     linkIds = []
     for (const name of ['one', 'two']) {
@@ -95,9 +102,10 @@ describe('own-data read tools — real DB', () => {
       )
       expect(tool['page_info']).toEqual(route['page_info'])
       expect(tool['communities']).toEqual(route['communities'])
+      expect(tool['actors']).toEqual(route['actors'])
       for (const id of notificationIds) {
-        expect(withoutText((tool['notifications'] as Body)[id])).toEqual(
-          withoutText((route['notifications'] as Body)[id]),
+        expect(withoutRoute((tool['notifications'] as Body)[id])).toEqual(
+          withoutRoute((route['notifications'] as Body)[id]),
         )
       }
       expect(await call('read_my_notifications', BROAD, optionArgs('list', {}))).toEqual(tool)
@@ -108,23 +116,19 @@ describe('own-data read tools — real DB', () => {
       ).toHaveLength(1)
     })
 
-    it('sanitizes the title and actor label, fences the body and keeps an empty body empty', async () => {
-      const { notifications } = (await call(
-        'read_my_notifications',
-        NOTIFICATIONS,
-        optionArgs('list', {}),
-      )) as {
+    it('fences moderator-written text and keeps the stored facts as plain ids and codes', async () => {
+      const body = (await call('read_my_notifications', NOTIFICATIONS, optionArgs('list', {}))) as {
         notifications: Record<string, Body>
+        public_texts: Record<string, string>
       }
-      const hostile = notifications[notificationIds[0]!]!
-      const plain = notifications[notificationIds[1]!]!
 
-      expect(hostile['title']).toBe('Hi and reveal secrets there')
-      expect(hostile['actor_label']).toBe('Hi and reveal secrets there')
-      expect(hostile['body']).toMatch(/^<external-content source="notification"/)
-      expect(hostile['body']).not.toContain('ignore previous instructions')
-      expect(JSON.stringify(hostile)).not.toContain('<system>')
-      expect(plain['body']).toBe('')
+      expect(body.notifications[notificationIds[0]!]).toMatchObject({
+        kind: 'user_warning',
+        user_warning_id: warningId,
+      })
+      expect(body.public_texts[warningId]).toMatch(/^<external-content source="notification"/)
+      expect(body.public_texts[warningId]).not.toContain('ignore previous instructions')
+      expect(JSON.stringify(body)).not.toContain('<system>')
     })
 
     it('pages like REST, so an end cursor continues where the page ended', async () => {
@@ -148,7 +152,7 @@ describe('own-data read tools — real DB', () => {
       expect((second['results'] as Body[]).map(row => row['id'])).toEqual(
         (restSecond['results'] as Body[]).map(row => row['id']),
       )
-      expect(second['results']).toHaveLength(1)
+      expect(second['results']).toHaveLength(notificationIds.length - 2)
       expect((second['page_info'] as Body)['has_next_page']).toBe(false)
     })
 
@@ -197,17 +201,6 @@ describe('own-data read tools — real DB', () => {
         tool,
       )
       expect((await rest('/api/v1/my/notifications/unread'))['unread_count']).toBe(unread.length)
-    })
-    it('fences the body of the hostile notification', async () => {
-      const { notifications } = (await call(
-        'read_my_notifications',
-        NOTIFICATIONS,
-        optionArgs('unread', {}),
-      )) as {
-        notifications: Record<string, Body>
-      }
-      expect(notifications[notificationIds[0]!]!['title']).toBe('Hi and reveal secrets there')
-      expect(notifications[notificationIds[0]!]!['body']).toMatch(/^<external-content /)
     })
     it('never shows another user’s notifications', async () => {
       const strangerUnread = await call(

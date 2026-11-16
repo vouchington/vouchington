@@ -1,6 +1,6 @@
 import type { PoolClient } from '@data-stores/psql'
 import type { CreatedNotification } from './reconcile-batches.mts'
-import { getPostRouteSlug, truncateText } from './shared.mts'
+import { getPostRouteSlug } from './shared.mts'
 
 export type PostNotificationInsertInput = {
   id: string
@@ -27,12 +27,7 @@ export async function insertPostNotificationsForRecipients(
     post.post_type === 'comment'
       ? `/${getPostRouteSlug(post.root_post_type ?? 'discussion')}/${post.root_slug ?? post.root_post_id ?? post.id}/comment/${post.id}`
       : `/${getPostRouteSlug(post.post_type)}/${post.slug ?? post.id}`
-  const displayUsername = post.is_anonymous ? null : post.username
-  const title =
-    post.post_type === 'comment'
-      ? `New reply${displayUsername ? ` from @${displayUsername}` : ''}`
-      : `New ${post.post_type === 'data_point' ? 'data point' : post.post_type}${displayUsername ? ` from @${displayUsername}` : ''}`
-  const body = truncateText(post.title || post.markdown, 180)
+  const kind = post.post_type === 'comment' ? 'post_reply' : 'post_new'
 
   const { rows } = await client.query<CreatedNotification>(
     `/* insertPostNotificationsForRecipients */
@@ -44,11 +39,8 @@ export async function insertPostNotificationsForRecipients(
       UPDATE notifications
       SET deleted_at = NULL,
           delete_reason = NULL,
-          title = $2,
-          body = $3,
-          actor_label = $4,
-          target_path = $5
-      WHERE post_id = $6
+          target_path = $3
+      WHERE post_id = $4
         AND delivery_type = 'subscription'
         AND deleted_at IS NOT NULL
         AND delete_reason = 'system_pruned'
@@ -59,25 +51,21 @@ export async function insertPostNotificationsForRecipients(
       INSERT INTO notifications (
         user_id,
         entity_type,
+        kind,
         post_id,
-        title,
-        body,
-        actor_label,
         target_path
       )
       SELECT
         recipients.user_id,
         'post',
-        $6,
-        $2,
-        $3,
+        $2::notification_kinds,
         $4,
-        $5
+        $3
       FROM recipients
       WHERE NOT EXISTS (
         SELECT 1
         FROM notifications
-        WHERE post_id = $6
+        WHERE post_id = $4
           AND user_id = recipients.user_id
           AND delivery_type = 'subscription'
           AND deleted_at IS NULL
@@ -85,7 +73,7 @@ export async function insertPostNotificationsForRecipients(
         AND NOT EXISTS (
           SELECT 1
           FROM notifications
-          WHERE post_id = $6
+          WHERE post_id = $4
             AND user_id = recipients.user_id
             AND delivery_type = 'subscription'
             AND delete_reason = 'user_deleted'
@@ -112,7 +100,7 @@ export async function insertPostNotificationsForRecipients(
     SELECT user_id, id
     FROM inserted
   `,
-    [recipientIds, title, body, displayUsername, targetPath, post.id],
+    [recipientIds, kind, targetPath, post.id],
   )
 
   return rows

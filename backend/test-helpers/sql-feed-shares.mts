@@ -73,9 +73,9 @@ export async function getManualSendNotificationRowsForTest(params: {
   sentByUserId: string
   postId?: string
   rssFeedItemId?: string
-}): Promise<Array<{ user_id: string; title: string }>> {
+}): Promise<Array<{ user_id: string; kind: string }>> {
   const query = sql`/* getManualSendNotificationRowsForTest */
-    SELECT user_id, title
+    SELECT user_id, kind
     FROM notifications
     WHERE sent_by_id = ${params.sentByUserId}
       AND delivery_type = 'manual_send'
@@ -83,6 +83,6 @@ export async function getManualSendNotificationRowsForTest(params: {
   if (params.postId) query.append(sql` AND post_id = ${params.postId}`)
   if (params.rssFeedItemId) query.append(sql` AND rss_feed_item_id = ${params.rssFeedItemId}`)
   query.append(sql` ORDER BY user_id`)
-  const { rows } = await read<{ user_id: string; title: string }>(query)
+  const { rows } = await read<{ user_id: string; kind: string }>(query)
   return rows
 }

@@ -26,10 +26,10 @@ export async function insertTestNoContentSourceNotificationTombstone(
   const { rows } = await query<{ id: string }>(
     `/* insertTestNoContentSourceNotificationTombstone */
      INSERT INTO notifications
-       (user_id, entity_type, copyright_notice_id, event_key, title, body,
+       (user_id, entity_type, kind, copyright_notice_id, event_key,
         target_intent, deleted_at, delete_reason)
-     VALUES ($1, $2::notification_entity_types, $3, $4, 'Retention fixture',
-             'Dismissed notification', 'notifications_inbox', $5, 'user_deleted')
+     VALUES ($1, $2::notification_entity_types, $6::notification_kinds, $3, $4,
+             'notifications_inbox', $5, 'user_deleted')
      RETURNING id`,
     [
       input.userId,
@@ -37,6 +37,7 @@ export async function insertTestNoContentSourceNotificationTombstone(
       input.copyrightNoticeId ?? null,
       input.eventKey ?? null,
       input.deletedAt,
+      input.entityType === 'review_dispute' ? 'review_dispute_resolved' : 'copyright_status_update',
     ],
   )
   return rows[0]!.id

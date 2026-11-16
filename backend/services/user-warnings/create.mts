@@ -40,7 +40,7 @@ export async function createUserWarning(
     throw err
   }
   // Fire-and-forget: the warning row is already committed; notification delivery is best-effort.
-  createUserWarningNotification(input.userId, warning.id, input.publicMessage).catch(onError)
+  createUserWarningNotification(input.userId, warning.id).catch(onError)
   return warning
 }
 

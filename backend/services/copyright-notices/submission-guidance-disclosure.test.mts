@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import { listNotifications } from '@services/notifications'
 import { createCopyrightCounterNotice, reviewCopyrightCounterNotice } from './index.mts'
 import { appendCopyrightSubmissionGuidance } from './submission-guidance.mts'
-import { copyrightNotificationCopy } from './statement-of-reasons-wording.mts'
 import {
   deliverCopyrightInAppNotification,
   prepareCopyrightEmailDelivery,
@@ -191,8 +190,7 @@ describe('copyright submission guidance disclosure', () => {
       notification => notification.event_key === `copyright-delivery:${receipt.id}`,
     )
     expect(receiptNotification).toBeDefined()
-    expect(receiptNotification?.body).toBe(copyrightNotificationCopy('status_update').body)
-    expect(receiptNotification?.body).not.toContain(assisted)
+    expect(receiptNotification?.params).not.toHaveProperty('ai_assisted')
 
     await reviewCopyrightCounterNotice({
       submissionId: counter.submission.id,
@@ -212,7 +210,7 @@ describe('copyright submission guidance disclosure', () => {
     const decisionNotification = Object.values(decisionNotifications.notifications).find(
       notification => notification.event_key === `copyright-delivery:${decision.id}`,
     )
-    expect(decisionNotification?.body).toContain(assisted)
+    expect(decisionNotification?.params).toEqual({ ai_assisted: true })
 
     const lateFixture = await createTestSubmissionGuidanceCounterCase()
     const lateCounter = await createCounter(lateFixture)
@@ -236,8 +234,7 @@ describe('copyright submission guidance disclosure', () => {
       notification => notification.event_key === `copyright-delivery:${lateDecision.id}`,
     )
     expect(lateNotification).toBeDefined()
-    expect(lateNotification?.body).toBe(copyrightNotificationCopy('status_update').body)
-    expect(lateNotification?.body).not.toContain(assisted)
+    expect(lateNotification?.params).not.toHaveProperty('ai_assisted')
   })
 
   it('feeds counter-notice and hold guidance into actual restoration statements and leaves unassisted cases clear', async () => {

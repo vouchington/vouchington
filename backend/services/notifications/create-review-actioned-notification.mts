@@ -11,27 +11,22 @@ export async function createReviewActionedNotification(
   disputeId: string,
   action: 'remove' | 'annotate',
 ): Promise<void> {
-  const body =
-    action === 'remove'
-      ? 'A moderator has removed your review following a dispute. You may contact support if you believe this was in error.'
-      : 'A moderator has added a contextual note to your review following a dispute.'
+  const kind = action === 'remove' ? 'review_actioned_removed' : 'review_actioned_note'
   const { rows } = await write(sql`/* createReviewActionedNotification */
     INSERT INTO notifications (
       user_id,
       entity_type,
       review_dispute_id,
+      kind,
       delivery_type,
-      title,
-      body,
       target_path
     )
     VALUES (
       ${postAuthorUserId},
       'review_dispute',
       ${disputeId},
+      ${kind}::notification_kinds,
       'subscription',
-      'Your review has been actioned by a moderator',
-      ${body},
       '/my/disputes'
     )
     ON CONFLICT DO NOTHING

@@ -9002,7 +9002,7 @@
           "tool": {
             "name": "read_my_notifications",
             "title": "Read My Notifications",
-            "description": "list: List the current user's notifications and read state, newest first. results gives ids; notifications and communities hold details by id. Text from others is sanitized or fenced as external content. Use read_my_notifications (option unread) for unread count. Reading never marks an item read.\nunread: Get the current user's unread count and newest 10 notifications. results gives ids; notifications and communities hold details by id. Text from others is sanitized or fenced as external content. Use read_my_notifications (option list) for all items. Reading never marks an item read.",
+            "description": "list: List the current user's notifications and read state, newest first. results gives ids; notifications hold a kind, params and ids; communities, actors, posts, rss_feed_items, copyright_notices and public_texts hold the named records by id, and clients render the sentence from the kind. Text from others is sanitized or fenced as external content. Use read_my_notifications (option unread) for unread count. Reading never marks an item read.\nunread: Get the current user's unread count and newest 10 notifications. results gives ids; notifications hold a kind, params and ids; communities, actors, posts, rss_feed_items, copyright_notices and public_texts hold the named records by id, and clients render the sentence from the kind. Text from others is sanitized or fenced as external content. Use read_my_notifications (option list) for all items. Reading never marks an item read.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -9062,13 +9062,28 @@
                           "const": true
                         },
                         "results": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S3"
                         },
                         "notifications": {
                           "$ref": "#/$defs/S1"
                         },
                         "communities": {
-                          "$ref": "#/$defs/S3"
+                          "$ref": "#/$defs/S5"
+                        },
+                        "actors": {
+                          "$ref": "#/$defs/S7"
+                        },
+                        "posts": {
+                          "$ref": "#/$defs/S2"
+                        },
+                        "rss_feed_items": {
+                          "$ref": "#/$defs/S4"
+                        },
+                        "copyright_notices": {
+                          "$ref": "#/$defs/S6"
+                        },
+                        "public_texts": {
+                          "$ref": "#/$defs/S8"
                         },
                         "page_info": {
                           "type": "object",
@@ -9106,6 +9121,11 @@
                         "results",
                         "notifications",
                         "communities",
+                        "actors",
+                        "posts",
+                        "rss_feed_items",
+                        "copyright_notices",
+                        "public_texts",
                         "page_info"
                       ],
                       "additionalProperties": false
@@ -9135,13 +9155,28 @@
                       "type": "number"
                     },
                     "results": {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S3"
                     },
                     "notifications": {
                       "$ref": "#/$defs/S1"
                     },
                     "communities": {
-                      "$ref": "#/$defs/S3"
+                      "$ref": "#/$defs/S5"
+                    },
+                    "actors": {
+                      "$ref": "#/$defs/S7"
+                    },
+                    "posts": {
+                      "$ref": "#/$defs/S2"
+                    },
+                    "rss_feed_items": {
+                      "$ref": "#/$defs/S4"
+                    },
+                    "copyright_notices": {
+                      "$ref": "#/$defs/S6"
+                    },
+                    "public_texts": {
+                      "$ref": "#/$defs/S8"
                     }
                   },
                   "required": [
@@ -9149,7 +9184,12 @@
                     "unread_count",
                     "results",
                     "notifications",
-                    "communities"
+                    "communities",
+                    "actors",
+                    "posts",
+                    "rss_feed_items",
+                    "copyright_notices",
+                    "public_texts"
                   ],
                   "additionalProperties": false
                 }
@@ -9162,16 +9202,6 @@
                       "__entity_type": {
                         "const": "notification"
                       },
-                      "actor_label": {
-                        "anyOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ]
-                      },
                       "actor_user_id": {
                         "anyOf": [
                           {
@@ -9181,9 +9211,6 @@
                             "type": "string"
                           }
                         ]
-                      },
-                      "body": {
-                        "type": "string"
                       },
                       "community_id": {
                         "anyOf": [
@@ -9222,6 +9249,7 @@
                         "enum": [
                           "community_activity_digest",
                           "community_application_decision",
+                          "community_ban",
                           "community_ownership_transfer",
                           "community_role_change",
                           "copyright_notice",
@@ -9229,6 +9257,7 @@
                           "direct_message",
                           "follow",
                           "household_invitation",
+                          "moderation_appeal",
                           "moderation_report",
                           "modmail",
                           "post",
@@ -9366,9 +9395,6 @@
                           }
                         ]
                       },
-                      "title": {
-                        "type": "string"
-                      },
                       "updated_at": {
                         "type": "string"
                       },
@@ -9384,30 +9410,141 @@
                             "type": "string"
                           }
                         ]
+                      },
+                      "kind": {
+                        "enum": [
+                          "community_activity_digest",
+                          "community_application_approved",
+                          "community_application_rejected",
+                          "community_ban",
+                          "community_ownership_received",
+                          "community_ownership_transferred_away",
+                          "community_role_changed",
+                          "copyright_claimant_decision_notice",
+                          "copyright_claimant_receipt",
+                          "copyright_owner_information_notice",
+                          "copyright_poster_restoration_notice",
+                          "copyright_poster_restriction_notice",
+                          "copyright_poster_review_notice",
+                          "copyright_redress_decision_notice",
+                          "copyright_status_update",
+                          "critical_moderation_alert",
+                          "direct_message",
+                          "follow",
+                          "follow_referral_signup",
+                          "household_invitation",
+                          "moderation_appeal_resolved",
+                          "modmail",
+                          "post_manual_send",
+                          "post_new",
+                          "post_removed",
+                          "post_reply",
+                          "referral_click",
+                          "referral_signup",
+                          "report_reviewed",
+                          "review_actioned_note",
+                          "review_actioned_removed",
+                          "review_dispute_resolved",
+                          "rss_item_manual_send",
+                          "rss_item_new",
+                          "user_warning"
+                        ],
+                        "type": "string"
+                      },
+                      "params": {
+                        "additionalProperties": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "boolean"
+                            }
+                          ]
+                        },
+                        "properties": {},
+                        "type": "object"
+                      },
+                      "top_post_id": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "sent_by_id": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "moderation_appeal_id": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "copyright_notice_delivery_work_item_id": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "community_application_id": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
                       }
                     },
                     "required": [
                       "__entity_type",
-                      "actor_label",
                       "actor_user_id",
-                      "body",
+                      "community_application_id",
                       "community_id",
                       "conversation_id",
+                      "copyright_notice_delivery_work_item_id",
                       "copyright_notice_id",
                       "created_at",
                       "entity_type",
                       "event_key",
-                      "id",
                       "household_id",
+                      "id",
+                      "kind",
+                      "moderation_appeal_id",
                       "moderation_report_id",
+                      "params",
                       "post_id",
                       "pushed_at",
                       "read_at",
                       "review_dispute_id",
                       "rss_feed_item_id",
+                      "sent_by_id",
                       "target_entity",
                       "target_intent",
-                      "title",
+                      "top_post_id",
                       "updated_at",
                       "user_id",
                       "user_warning_id"
@@ -9418,6 +9555,46 @@
                   "type": "object"
                 },
                 "S2": {
+                  "additionalProperties": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "actor_user_id": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "community_id": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "post_type": {
+                        "type": "string"
+                      },
+                      "snippet": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["actor_user_id", "community_id", "id", "post_type", "snippet"],
+                    "type": "object"
+                  },
+                  "properties": {},
+                  "type": "object"
+                },
+                "S3": {
                   "items": {
                     "additionalProperties": false,
                     "properties": {
@@ -9443,7 +9620,27 @@
                   },
                   "type": "array"
                 },
-                "S3": {
+                "S4": {
+                  "additionalProperties": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "feed_name": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "snippet": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["feed_name", "id", "snippet"],
+                    "type": "object"
+                  },
+                  "properties": {},
+                  "type": "object"
+                },
+                "S5": {
                   "additionalProperties": {
                     "additionalProperties": false,
                     "properties": {
@@ -9459,6 +9656,47 @@
                     },
                     "required": ["id", "name", "slug"],
                     "type": "object"
+                  },
+                  "properties": {},
+                  "type": "object"
+                },
+                "S6": {
+                  "additionalProperties": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "jurisdiction": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["id", "jurisdiction"],
+                    "type": "object"
+                  },
+                  "properties": {},
+                  "type": "object"
+                },
+                "S7": {
+                  "additionalProperties": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "username": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["id", "username"],
+                    "type": "object"
+                  },
+                  "properties": {},
+                  "type": "object"
+                },
+                "S8": {
+                  "additionalProperties": {
+                    "type": "string"
                   },
                   "properties": {},
                   "type": "object"

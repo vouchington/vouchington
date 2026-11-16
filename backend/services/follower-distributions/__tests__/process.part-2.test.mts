@@ -187,7 +187,7 @@ describe('processFollowerDistributionChunk', () => {
         sentByUserId: sender.id,
         postId: post.id,
       }),
-    ).toEqual([{ user_id: follower.id, title: expect.any(String) }])
+    ).toEqual([{ user_id: follower.id, kind: 'post_manual_send' }])
   })
 
   it('retries a partly delivered selected chunk without duplicate sends', async () => {

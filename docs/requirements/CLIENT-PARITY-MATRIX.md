@@ -190,6 +190,16 @@ result and optimistically present read state. Background continuation usually co
 mark-all intent, but a lost or terminally failed job leaves unread rows; another mark-all request
 resumes them. Their current clients do not automatically retry that case.
 
+## Notification text by kind
+
+`GET /api/v1/my/notifications` and the unread summary no longer return `title`, `body` or
+`actor_label`. Each notification carries `kind`, `params` and its relation ids, and the page adds
+`actors`, `posts`, `rss_feed_items`, `copyright_notices`, `communities` and `public_texts` maps
+keyed by id. Web renders `notifications.kind.*` catalog copy from them in the viewer's locale; MCP
+returns the same facts with sanitized public text. Swift and .NET render from the old text fields
+and break at this contract flip until they adopt kind-based rendering, tracked as native-client
+issues rather than gating the backend change.
+
 ## Topic alias unlink
 
 `DELETE /api/v1/topics/:idOrSlug/aliases/:aliasId` accepts the unlink and responds with

@@ -2,6 +2,7 @@ import { createTestUserDirect } from './entities/users-direct.mts'
 import { insertTestCommunity } from './entities/communities.mts'
 import { insertTestCommunityMember } from './entities/community-members.mts'
 import { insertTestPost } from './entities/posts.mts'
+import { insertTestCommunityPostReview } from './entities/community-post-reviews.mts'
 import { createCommunityActivityDigestBatch } from '../services/notifications/community-activity-digest.mts'
 
 type DigestInput = { windowStart: Date; windowEnd: Date }
@@ -29,6 +30,8 @@ export async function insertDigestPostTypeFixtures(
     communityId: communityId,
     createdAt: new Date(start.getTime() - 86_400_000),
   })
+  // The digest names its top discussion only while readers may see it, so it is published.
+  await insertTestCommunityPostReview({ communityId, postId: discussionId, submittedById: userId })
   await Promise.all([
     insertTestPost({
       title: 'Reply',
