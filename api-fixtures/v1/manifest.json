@@ -115493,28 +115493,6 @@
     {
       "auth": "fixture-admin",
       "backendResponseContractKey": "GET:/api/v1/copyright-notices/review-queue",
-      "bodyFile": "responses/native.copyright.staff-queue.ai-run.json",
-      "consumers": ["swift-core", "dotnet-core"],
-      "id": "native.copyright.staff-queue.ai-run",
-      "method": "GET",
-      "migratedFrom": ["backend/api/v1/copyright-notices/staff-queue-route.mts"],
-      "path": "/api/v1/copyright-notices/review-queue",
-      "pending": true,
-      "responseSchema": {
-        "hash": "f5de7a5c4c84d17ce50f62fb055cd0303c4e4a29de045f01baaef9e2e116cd5a",
-        "key": "native.copyright.staff-queue.ai-run"
-      },
-      "route": {
-        "routeTemplate": "/api/v1/copyright-notices/review-queue"
-      },
-      "source": {
-        "caseFile": "backend/test-helpers/api-fixtures/native-copyright-cases.mts"
-      },
-      "status": 200
-    },
-    {
-      "auth": "fixture-admin",
-      "backendResponseContractKey": "GET:/api/v1/copyright-notices/review-queue",
       "bodyFile": "responses/web.copyright.staff-queue.territorial.json",
       "consumers": ["web"],
       "id": "web.copyright.staff-queue.territorial",

@@ -21,19 +21,4 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_54_AI_RUN_STATUS = [
     consumers: ['dotnet', 'swift'],
     pending: true,
   },
-  {
-    key: 'native.swift.aiRunStatus.copyrightScreeningCompleted',
-    consumers: ['dotnet', 'swift'],
-    pending: true,
-  },
-  {
-    key: 'native.swift.aiRunStatus.copyrightScreeningFailed',
-    consumers: ['dotnet', 'swift'],
-    pending: true,
-  },
-  {
-    key: 'native.swift.aiRunStatus.copyrightScreeningPending',
-    consumers: ['dotnet', 'swift'],
-    pending: true,
-  },
 ] as const satisfies readonly NativeConsumerManifestEntry[]
