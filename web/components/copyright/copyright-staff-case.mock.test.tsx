@@ -38,7 +38,7 @@ describe('CopyrightStaffCase restriction decisions', () => {
   it.each([
     ['Confirm restriction', 'confirm'],
     ['Reverse restriction', 'reverse'],
-  ] as const)('associates each %s action with its target by identity', async (label, decision) => {
+  ] as const)('records the assessment decision when staff selects %s', async (label, decision) => {
     await act(async () => {
       render(
         <CopyrightStaffCase
@@ -60,8 +60,11 @@ describe('CopyrightStaffCase restriction decisions', () => {
         'href',
         target.hosted_use_url,
       )
-      fireEvent.click(within(section).getByRole('button', { name: label }))
-      expect(reviewCopyrightRestriction).toHaveBeenLastCalledWith(
+      vi.mocked(reviewCopyrightRestriction).mockClear()
+      await act(async () => {
+        fireEvent.click(within(section).getByRole('button', { name: label }))
+      })
+      expect(reviewCopyrightRestriction).toHaveBeenCalledExactlyOnceWith(
         notice.id,
         restriction.id,
         decision,
