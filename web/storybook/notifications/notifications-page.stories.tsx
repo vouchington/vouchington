@@ -25,9 +25,7 @@ export const Inbox: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await expect(
-      canvas.getByText('Alex Morgan replied to your Sapphire Reserve review'),
-    ).toBeVisible()
+    await expect(canvas.getByText('New reply from @alex')).toBeVisible()
   },
 }
 

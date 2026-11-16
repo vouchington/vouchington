@@ -39,10 +39,8 @@ export const WithNotifications: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await expect(
-      canvas.getByText('Alex Morgan replied to your Sapphire Reserve review'),
-    ).toBeVisible()
-    await expect(canvas.getByText('Alex Morgan followed you')).toBeVisible()
+    await expect(canvas.getByText('New reply from @alex')).toBeVisible()
+    await expect(canvas.getByText('@alex started following you')).toBeVisible()
   },
 }
 
