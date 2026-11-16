@@ -79,7 +79,7 @@
     "jose": "^6.2.17",
     "no-mistakes": "^0.109.62",
     "openai": "^7.43.0",
-    "otpauth": "^9.5.2",
+    "otpauth": "^9.6.0",
     "pgvector": "^0.3.0",
     "sharp": "^0.35.5",
     "sql-template-strings": "^2.2.2",

@@ -1323,8 +1323,8 @@ importers:
         specifier: ^6.2.17
         version: 6.2.17
       otpauth:
-        specifier: ^9.5.2
-        version: 9.5.2
+        specifier: ^9.6.0
+        version: 9.6.0
       p-map:
         specifier: ^7.1.1
         version: 7.1.1
@@ -11719,8 +11719,8 @@ importers:
         specifier: ^1.5.0
         version: 1.5.0
       otpauth:
-        specifier: ^9.5.2
-        version: 9.5.2
+        specifier: ^9.6.0
+        version: 9.6.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -12870,8 +12870,8 @@ importers:
         specifier: ^7.43.0
         version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76)
       otpauth:
-        specifier: ^9.5.2
-        version: 9.5.2
+        specifier: ^9.6.0
+        version: 9.6.0
       pgvector:
         specifier: ^0.3.0
         version: 0.3.1
@@ -23266,8 +23266,8 @@ packages:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
     engines: {node: '>= 0.8.0'}
 
-  otpauth@9.5.2:
-    resolution: {integrity: sha512-GQ5emWR/x1tcExT62IBT0UfO95wZzJZyxYOJOGVeQF47SYEN9vmh0vISvDZaNMuFJRG+IaWCKtfm+t9Bfoal6w==}
+  otpauth@9.6.0:
+    resolution: {integrity: sha512-qQXHTxcXohDhQjF1ZEbUVEpTIssFL2rd+2kHfw/McIVCbTLD6qAsbTCQxpXRLyeyUw6Ipjpykw4dWZL/zfIVqA==}
 
   oxc-parser@0.127.0:
     resolution: {integrity: sha512-bkgD4qHlN7WxLdX8bLXdaU54TtQtAIg/ZBAfm0aje/mo3MRDo3P0hZSgr4U7O3xfX+fQmR5AP04JS/TGcZLcFA==}
@@ -32417,7 +32417,7 @@ snapshots:
       type-check: 0.4.0
       word-wrap: 1.2.5
 
-  otpauth@9.5.2:
+  otpauth@9.6.0:
     dependencies:
       '@noble/hashes': 2.4.0
 
