@@ -9,9 +9,9 @@ import { readTestDsaReceiptApproval } from '@voucha/test-helpers/dsa-approval-wi
 import { withdrawCopyrightJurisdictionPolicyApproval } from '@services/copyright-notices/jurisdiction-policy'
 import {
   approveJurisdictionPolicy,
-  createTerritorialActors,
   seedPendingTerritorialNotice,
 } from '@voucha/test-helpers/services/copyright-notices/territorial-routes'
+import { createTerritorialActors } from '@voucha/test-helpers/services/copyright-notices/territorial-actors'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 
 const start = '2026-01-01T00:00:00.000Z'

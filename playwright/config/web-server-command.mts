@@ -5,6 +5,12 @@ import { TestLifecycleReporter } from 'vouchington-tooling/playwright'
 import { withNodeOption } from './config-helpers.mts'
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
+const apiTestServerGuardReporter = join(
+  repoRoot,
+  'playwright',
+  'config',
+  'api-test-server-guard-reporter.mts',
+)
 const otelRegisterPreload = join(repoRoot, 'dev', 'otel-register.mts')
 
 export function shellQuote(value: string): string {
@@ -32,8 +38,9 @@ export function createReporter(junitOutputFile: string, ci: boolean): ReporterDe
         ['github'],
         ['junit', { outputFile: process.env.PLAYWRIGHT_JUNIT_OUTPUT_FILE || junitOutputFile }],
         [TestLifecycleReporter.modulePath, { failOnSkippedTests: ci }],
+        [apiTestServerGuardReporter],
       ]
-    : [['html', { open: 'never' }]]
+    : [['html', { open: 'never' }], [apiTestServerGuardReporter]]
 }
 
 function withOtelNodeImport(command: string, otelEnabled: boolean): string {

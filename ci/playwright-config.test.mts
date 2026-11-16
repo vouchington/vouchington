@@ -281,6 +281,7 @@ describe('Playwright shared config', () => {
           ['github'],
           ['junit', { outputFile: expect.any(String) }],
           [expect.stringMatching(lifecycleReporterPathPattern), { failOnSkippedTests: true }],
+          [expect.stringMatching(/playwright\/config\/api-test-server-guard-reporter\.mts$/u)],
         ]),
       )
       expect(config.projects?.map(project => project.name)).toEqual(projectNames)
@@ -289,6 +290,9 @@ describe('Playwright shared config', () => {
   )
 
   it('preserves the existing local HTML reporter selection', () => {
-    expect(createReporter('local-results.xml', false)).toEqual([['html', { open: 'never' }]])
+    expect(createReporter('local-results.xml', false)).toEqual([
+      ['html', { open: 'never' }],
+      [expect.stringMatching(/api-test-server-guard-reporter\.mts$/u)],
+    ])
   })
 })

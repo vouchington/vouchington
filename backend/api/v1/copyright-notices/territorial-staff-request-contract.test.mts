@@ -5,10 +5,10 @@ import { seedTerritorialRedress } from '@voucha/test-helpers/copyright-territori
 import {
   TERRITORIAL_SURFACES,
   approveJurisdictionPolicy,
-  createTerritorialActors,
   seedDeterminedTerritorialNotice,
   seedPendingTerritorialNotice,
 } from '@voucha/test-helpers/services/copyright-notices/territorial-routes'
+import { createTerritorialActors } from '@voucha/test-helpers/services/copyright-notices/territorial-actors'
 
 // A caller the handler turns away answers with a bare status, never a schema diagnostic.
 const SCHEMA_DIAGNOSTIC = /schema|must be|required|invalid/i
