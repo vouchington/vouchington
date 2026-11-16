@@ -1,7 +1,7 @@
 import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
-import { replayEligibleCopyrightRestoreIntentsInTransaction } from './court-hold-restore-replay.mts'
+import { recoverEligibleCopyrightRestoreIntentInTransaction } from './court-hold-restore-replay.mts'
 import {
   queryCopyrightSweepIdPage,
   type CopyrightSweepIdPage,
@@ -55,13 +55,13 @@ export async function recoverBlockedCopyrightHoldRestoration(
   `)
     const noticeId = rows[0]?.notice_id
     if (!noticeId) return 0
-    const reopened = await replayEligibleCopyrightRestoreIntentsInTransaction({
+    const reopened = await recoverEligibleCopyrightRestoreIntentInTransaction({
       noticeId,
-      intentIds: [intentId],
+      intentId,
       now,
       query: transaction,
     })
     await transaction.commit()
-    return reopened.length
+    return Number(reopened)
   }, 'Copyright hold restoration changed concurrently')
 }
