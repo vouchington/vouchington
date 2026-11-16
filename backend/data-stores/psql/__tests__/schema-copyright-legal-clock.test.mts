@@ -33,7 +33,6 @@ const caseTables = {
   copyright_notice_email_intake_reviews: 'not a legal fact',
   copyright_notice_email_intake_notice_links: 'not a legal fact',
   copyright_notice_email_correspondence_reviews: 'not a legal fact',
-  copyright_notice_email_thread_retirements: 'not a legal fact',
   copyright_notice_thread_retention_activities: 'not a legal fact',
   copyright_notice_thread_party_generations: 'not a legal fact',
   copyright_notice_thread_blocker_generations: 'not a legal fact',

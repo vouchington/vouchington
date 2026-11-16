@@ -2,6 +2,9 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+import { maintainCopyrightEmailThreadLinkActivity } from '../services/copyright-notices/email-thread-link-activity.mts'
+import { readBoundedCopyrightEmailAncestorSourceIds } from '../services/copyright-notices/email-thread-ancestor-graph.mts'
+import { getCopyrightEmailThreadGraphMaxRows } from '../services/copyright-notices/config.mts'
 import { v7 as uuidv7 } from 'uuid'
 import { createTestUserDirect } from './entities/index.mts'
 
@@ -135,7 +138,8 @@ export async function linkTestCopyrightEmailIntake(
 ): Promise<void> {
   if (linkKind === 'thread' && !reviewedById)
     throw new Error('A closed thread fixture needs its reviewer')
-  await write(sql`/* linkTestCopyrightEmailIntake */
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* linkTestCopyrightEmailIntake */
     INSERT INTO copyright_notice_email_intake_notice_links
       (copyright_notice_email_intake_id, copyright_notice_id, link_kind,
        correspondence_action, correspondence_kind, correspondence_reviewed_at,
@@ -146,6 +150,21 @@ export async function linkTestCopyrightEmailIntake(
       ${linkKind === 'thread' ? new Date() : null},
       ${reviewedById ?? null},
       ${linkKind === 'thread' ? 'fixture-closed-correspondence' : null})`)
+  if (linkKind === 'thread') {
+    const authorizingAncestorIntakeIds = await readBoundedCopyrightEmailAncestorSourceIds(
+      transaction,
+      [intakeId],
+      await getCopyrightEmailThreadGraphMaxRows(),
+    )
+    if (!authorizingAncestorIntakeIds)
+      throw new Error('Test thread exceeds the thread ancestry bound')
+    await maintainCopyrightEmailThreadLinkActivity(transaction, {
+      noticeId,
+      intakeId,
+      authorizingAncestorIntakeIds,
+    })
+  }
+  await transaction.commit()
 }
 
 export async function seedTestCopyrightAncestorEdge(
@@ -170,26 +189,4 @@ export async function readCopyrightThreadReferenceState(intakeId: string): Promi
       (SELECT COUNT(*)::integer FROM copyright_notice_email_thread_references
         WHERE copyright_notice_email_intake_id = ${intakeId}) AS reference_count`)
   return { tokenId: rows[0]!.token_id, referenceCount: rows[0]!.reference_count }
-}
-
-export async function seedCopyrightThreadRetirement(
-  noticeId: string,
-  retiredBeforeIntakeId: string,
-): Promise<void> {
-  await write(sql`/* seedCopyrightThreadRetirement */
-    INSERT INTO copyright_notice_email_thread_retirements
-      (copyright_notice_id, retired_before_intake_bound)
-    VALUES (${noticeId}, ${retiredBeforeIntakeId}::uuid)`)
-}
-
-/** Adds a historical case party after a proof page without adding a lifecycle event. */
-export async function seedCopyrightThreadPartySubmission(
-  noticeId: string,
-  submittedById: string,
-): Promise<void> {
-  await write(sql`/* seedCopyrightThreadPartySubmission */
-    INSERT INTO copyright_notice_submissions
-      (copyright_notice_id, submitted_by_id, kind, received_at, source_kind, body_ciphertext)
-    VALUES (${noticeId}, ${submittedById}, 'supplement', ${new Date(0)},
-      'signed_in_form', ${`v1:backdated-${randomUUID()}`})`)
 }

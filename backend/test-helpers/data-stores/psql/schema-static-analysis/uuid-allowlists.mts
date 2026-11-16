@@ -32,7 +32,7 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   ...OPERATIONAL_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...MODERATION_LIFECYCLE_UUID_COLUMNS_WITHOUT_KEYS,
   [
-    'copyright_notice_email_thread_retirements.retired_before_intake_bound',
+    'copyright_notice_thread_retention_activities.retired_before_intake_bound',
     'Synthetic exclusive UUIDv7 intake-age boundary blocks replay of retired sources, not a relation.',
   ],
   [

@@ -22,6 +22,7 @@ async function sweepPage(
   cutoff: Date,
   cutoffId: string,
   batchSize: number,
+  noticeIds?: readonly string[],
 ): Promise<PageResult> {
   await using transaction = await beginTransaction({ serializable: true })
   await transaction(sql`/* seedCopyrightThreadRetentionCursor */
@@ -46,11 +47,13 @@ async function sweepPage(
     WHERE kind = 'email_thread_references' FOR UPDATE`)
   const cursor = cursorRows[0]!
   const upperBound = cursor.sweep_upper_bound_record_id ?? cutoffId
-  const { rows: candidates } = await transaction<{ id: string }>(sql`/* scanCopyrightThreadCase */
+  const candidatesQuery = sql`/* scanCopyrightThreadCase */
     SELECT id FROM copyright_notices
     WHERE id > COALESCE(${cursor.cursor_record_id}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
-      AND id < LEAST(${upperBound}::uuid, ${cutoffId}::uuid)
-    ORDER BY id LIMIT 1`)
+      AND id < LEAST(${upperBound}::uuid, ${cutoffId}::uuid)`
+  if (noticeIds) candidatesQuery.append(sql` AND id = ANY(${[...noticeIds]}::uuid[])`)
+  candidatesQuery.append(sql` ORDER BY id LIMIT 1`)
+  const { rows: candidates } = await transaction<{ id: string }>(candidatesQuery)
   const noticeId = candidates[0]?.id
   if (!noticeId) {
     await resetCopyrightThreadRetentionCursor(transaction)
@@ -98,12 +101,6 @@ async function sweepPage(
       : { rows: [] }
   // Preservation coordination remains scoped to the case and its actual legal holds.
   await lockCopyrightThreadPreservationGate(transaction, noticeId)
-  // Thread writers advance this projection in their own transaction. Hold its row until
-  // deletion commits so a late review, link, reference or edge cannot pass the recheck.
-  const { rows: activityRows } = await transaction<{ copyright_notice_id: string }>(sql`
-    /* lockCopyrightThreadRetentionActivity */
-    SELECT copyright_notice_id FROM copyright_notice_thread_retention_activities
-    WHERE copyright_notice_id = ${noticeId} FOR UPDATE`)
   const proof = await checkCopyrightThreadProofPage(
     transaction,
     noticeId,
@@ -120,7 +117,7 @@ async function sweepPage(
   const { rows: eligible } = await transaction<{ id: string }>(
     copyrightOperationalThreadEligibleSql(cutoff, noticeId),
   )
-  if (eligible.length === 0 || activityRows.length === 0) {
+  if (eligible.length === 0) {
     // The next fixed sweep rechecks this case if the blocker later clears.
     await advanceCopyrightThreadCaseCursor(transaction, noticeId, upperBound)
     await transaction.commit()
@@ -130,13 +127,11 @@ async function sweepPage(
   // recreate a removed reference between pages; a fresh source remains admissible.
   // ast-grep-ignore: no-three-sequential-awaits -- persist the retirement cutoff before deleting thread evidence so replay is fenced; save the cursor from the completed delete page progress
   await transaction(sql`/* retireCopyrightCaseThread */
-    INSERT INTO copyright_notice_email_thread_retirements
-      (copyright_notice_id, retired_before_intake_bound)
-    VALUES (${noticeId}, ${cutoffId}::uuid)
-    ON CONFLICT (copyright_notice_id) DO UPDATE SET
-      retired_before_intake_bound = GREATEST(
-        copyright_notice_email_thread_retirements.retired_before_intake_bound,
-        EXCLUDED.retired_before_intake_bound)`)
+    UPDATE copyright_notice_thread_retention_activities
+    SET retired_before_intake_bound = ${cutoffId}::uuid
+    WHERE copyright_notice_id = ${noticeId}
+      AND (retired_before_intake_bound IS NULL
+        OR retired_before_intake_bound < ${cutoffId}::uuid)`)
   const result = await deleteCaseThreadPage(
     transaction,
     now,
@@ -164,6 +159,7 @@ export async function sweepCopyrightCaseThreads(options: {
   replyDays: number
   batchSize: number
   maxBatches: number
+  noticeIds?: readonly string[]
 }): Promise<PageResult> {
   const now = options.now ?? new Date()
   const cutoff = new Date(now.getTime() - options.replyDays * DAY_MS)
@@ -175,7 +171,7 @@ export async function sweepCopyrightCaseThreads(options: {
     let page: PageResult
     try {
       // oxlint-disable-next-line no-await-in-loop -- each transaction advances the durable keyset.
-      page = await sweepPage(now, cutoff, cutoffId, options.batchSize) // no-mistakes-disable-line query-reached-per-item: each fixed-budget transaction commits its durable cursor before the next page.
+      page = await sweepPage(now, cutoff, cutoffId, options.batchSize, options.noticeIds) // no-mistakes-disable-line query-reached-per-item: each fixed-budget transaction commits its durable cursor before the next page.
     } catch (err) {
       if (!isCopyrightEmailTokenGcConflict(err)) throw err
       // The aborted page did not advance its cursor. Let the next scheduled run resume it.

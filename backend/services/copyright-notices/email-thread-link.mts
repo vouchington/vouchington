@@ -4,6 +4,10 @@ import sql from 'sql-template-strings'
 import { resolveCopyrightEmailThreadTokenIds } from './email-thread-ancestors.mts'
 import { throwIfCopyrightEmailThreadWriteConflict } from './email-thread-write-conflict.mts'
 import { COPYRIGHT_EMAIL_THREAD_REFERENCE_PURPOSE } from './email-thread-references.mts'
+import { getCopyrightEmailThreadGraphMaxRows } from './config.mts'
+import { readBoundedCopyrightEmailAncestorIds } from './email-thread-ancestor-graph.mts'
+import { copyrightEmailThreadChangedError } from './email-thread-graph.mts'
+import { maintainCopyrightEmailThreadLinkActivity } from './email-thread-link-activity.mts'
 
 export async function insertCopyrightEmailIntakeNoticeLink(
   transaction: TransactionQuery,
@@ -14,13 +18,13 @@ export async function insertCopyrightEmailIntakeNoticeLink(
     matchedReference?: string | null
   },
 ): Promise<boolean> {
+  let authorizingAncestorIntakeIds: readonly string[] = []
   let matchedTokenId: string | null = null
   if (input.matchedReference) {
     const digest = hashToken(COPYRIGHT_EMAIL_THREAD_REFERENCE_PURPOSE, input.matchedReference)
     matchedTokenId = (await resolveCopyrightEmailThreadTokenIds(transaction, [digest])).get(digest)!
   }
-  // The insert trigger checks the live notice under its row lock. Existing links replay
-  // without entering that trigger while retention updates their case.
+  // Existing links replay without maintaining the clock for a new assignment.
   if (input.linkKind === 'thread') {
     const { rows: live } = await transaction<{
       raw_storage_object_id: string | null
@@ -52,20 +56,35 @@ export async function insertCopyrightEmailIntakeNoticeLink(
       WHERE id = ${input.noticeId} AND evidence_erased_at IS NULL LIMIT 1`)
     if (!notices[0]) return false
     const { rows: retired } = await transaction(sql`/* linkCopyrightEmailIntakeToNotice:retired */
-      SELECT 1 FROM copyright_notice_email_thread_retirements
+      SELECT 1 FROM copyright_notice_thread_retention_activities
       WHERE copyright_notice_id = ${input.noticeId}
         AND retired_before_intake_bound > ${input.intakeId}::uuid LIMIT 1`)
     if (retired[0]) return false
+    const ancestors = await readBoundedCopyrightEmailAncestorIds(
+      transaction,
+      input.intakeId,
+      await getCopyrightEmailThreadGraphMaxRows(),
+    )
+    if (ancestors === null) throw copyrightEmailThreadChangedError()
+    const { rows: changedAncestors } = await transaction(sql`
+      /* linkCopyrightEmailIntakeToNotice:authorizingAncestors */
+      SELECT 1 FROM unnest(${ancestors}::uuid[]) ancestor(intake_id)
+      WHERE NOT EXISTS (
+        SELECT 1 FROM copyright_notice_email_intake_notice_links link
+        WHERE link.copyright_notice_email_intake_id = ancestor.intake_id
+          AND link.copyright_notice_id = ${input.noticeId}
+      )
+      LIMIT 1`)
+    if (changedAncestors.length > 0) throw copyrightEmailThreadChangedError()
+    authorizingAncestorIntakeIds = ancestors
   } else {
-    // The initial link keeps its KEY SHARE fence against a competing promotion.
     const { rows: live } = await transaction<{
       raw_storage_object_id: string | null
-    }>(sql`/* linkCopyrightEmailIntakeToNotice:lockIntake */
+    }>(sql`/* linkCopyrightEmailIntakeToNotice:liveInitialIntake */
       SELECT raw_storage_object_id FROM copyright_notice_email_intakes
       WHERE id = ${input.intakeId}
         AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
           WHERE receipt.id = ${input.intakeId} AND receipt.erased_at IS NULL)
-      FOR KEY SHARE
     `)
     if (live.length === 0) return false
     if (live[0]!.raw_storage_object_id === null) {
@@ -97,6 +116,12 @@ export async function insertCopyrightEmailIntakeNoticeLink(
       RETURNING copyright_notice_id, link_kind
     `)
     inserted = result.rows
+    if (inserted.length > 0 && input.linkKind === 'thread')
+      await maintainCopyrightEmailThreadLinkActivity(transaction, {
+        noticeId: input.noticeId,
+        intakeId: input.intakeId,
+        authorizingAncestorIntakeIds,
+      })
   } catch (err) {
     throwIfCopyrightEmailThreadWriteConflict(err)
     throw err

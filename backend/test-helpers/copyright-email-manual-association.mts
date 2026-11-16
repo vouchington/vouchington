@@ -5,6 +5,7 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '../services/users/types.mts'
 import { searchCopyrightNoticeAssociationTargets } from '../services/copyright-notices/association-search.mts'
+import { maintainCopyrightEmailThreadLinkActivity } from '../services/copyright-notices/email-thread-link-activity.mts'
 
 /** The smallest accepted case row for a staff association boundary. */
 export async function createCopyrightNoticeForManualAssociation(
@@ -42,6 +43,7 @@ export async function seedCopyrightApiManualAssociation(intakeId: string, notice
     INSERT INTO copyright_notice_lifecycle_changes (
       copyright_notice_id, change_type, copyright_notice_email_intake_id, changed_by_id
     ) VALUES (${noticeId}, 'email_intake_manually_associated', ${intakeId}, ${reviewer.id})`)
+  await maintainCopyrightEmailThreadLinkActivity(transaction, { noticeId, intakeId })
   await transaction.commit()
   return {
     links: [{ copyright_notice_id: noticeId, link_kind: 'thread' }],

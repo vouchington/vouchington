@@ -2,6 +2,7 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import { COPYRIGHT_EMAIL_THREAD_CHANGED } from '@modules/on-error/error-codes'
 import createError from 'http-errors'
 import sql from 'sql-template-strings'
+import { hasRetiredCopyrightEmailThreadIntakes } from './email-thread-source.mts'
 
 export type CopyrightEmailThreadGraph = {
   intakeIds: string[]
@@ -112,6 +113,8 @@ export async function readCopyrightEmailThreadGraph(
     intakeIds.add(row.ancestor_id)
     if (intakeIds.size + edges.size > maxRows) return snapshot(true)
   }
+  if (await hasRetiredCopyrightEmailThreadIntakes(transaction, [...intakeIds]))
+    throw copyrightEmailThreadChangedError()
   return snapshot(false)
 
   function snapshot(overflow: boolean): CopyrightEmailThreadGraph {

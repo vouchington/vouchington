@@ -69,10 +69,25 @@ export function copyrightEmailAncestorNoticeConflictSql(maxRows: number): SQLSta
     SELECT CASE WHEN (
       SELECT count(DISTINCT ancestor_id) + count(*) - 1 FROM bounded
     ) > ${maxRows} THEN false ELSE (
-      SELECT count(DISTINCT link.copyright_notice_id) > 1
-      FROM bounded
-      JOIN copyright_notice_email_intake_notice_links link
-        ON link.copyright_notice_email_intake_id = bounded.ancestor_id
+      EXISTS (
+        SELECT 1
+        FROM bounded
+        JOIN copyright_notice_email_intake_notice_links retired_link
+          ON retired_link.copyright_notice_email_intake_id = bounded.ancestor_id
+        JOIN copyright_notice_thread_retention_activities retirement
+          ON retirement.copyright_notice_id = retired_link.copyright_notice_id
+        WHERE retirement.retired_before_intake_bound > bounded.ancestor_id
+      ) OR (
+        SELECT count(DISTINCT link.copyright_notice_id) > 1
+        FROM bounded
+        JOIN copyright_notice_email_intake_notice_links link
+          ON link.copyright_notice_email_intake_id = bounded.ancestor_id
+        WHERE NOT EXISTS (
+          SELECT 1 FROM copyright_notice_thread_retention_activities retirement
+          WHERE retirement.copyright_notice_id = link.copyright_notice_id
+            AND retirement.retired_before_intake_bound > bounded.ancestor_id
+        )
+      )
     ) END
   )`
 }
@@ -109,6 +124,18 @@ export function copyrightEmailReferencedTokenIsAmbiguousSql(intakeId: SQLStateme
          AND recorded_parent.token_id = reference.token_id
          AND recorded_parent.reference_kind = 'message_id'
         WHERE existing_edge.reply_message_intake_receipt_id = reference.copyright_notice_email_intake_id
+          AND NOT EXISTS (
+            SELECT 1
+            FROM unnest(ARRAY[
+              existing_edge.reply_message_intake_receipt_id,
+              existing_edge.ancestor_message_intake_receipt_id
+            ]) endpoint(intake_id)
+            JOIN copyright_notice_email_intake_notice_links endpoint_link
+              ON endpoint_link.copyright_notice_email_intake_id = endpoint.intake_id
+            JOIN copyright_notice_thread_retention_activities retirement
+              ON retirement.copyright_notice_id = endpoint_link.copyright_notice_id
+            WHERE retirement.retired_before_intake_bound > endpoint.intake_id
+          )
       )
   )`)
   return query

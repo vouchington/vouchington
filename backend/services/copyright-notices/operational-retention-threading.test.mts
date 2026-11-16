@@ -12,12 +12,14 @@ import {
   linkTestCopyrightEmailIntake,
   readCopyrightThreadReferenceState,
   seedCopyrightIntakeAuditReview,
-  seedCopyrightThreadRetirement,
-  seedCopyrightThreadPartySubmission,
   seedTestCopyrightAncestorEdge,
 } from '@voucha/test-helpers/copyright-operational-email-retention'
 import { readCopyrightIntakeRetentionState } from '@voucha/test-helpers/copyright-email-retention-state'
-import { seedCopyrightThreadTokenAtForTest } from '@voucha/test-helpers/copyright-thread-retention'
+import {
+  seedCopyrightThreadTokenAtForTest,
+  seedCopyrightThreadRetirement,
+  seedCopyrightThreadPartySubmission,
+} from '@voucha/test-helpers/copyright-thread-retention'
 import {
   assertAbortedCaseThreadPage,
   assertIncompleteFinalThreadRun,

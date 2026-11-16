@@ -9,10 +9,6 @@ export const COPYRIGHT_RETENTION_UNBOUNDED_TABLES = [
     'At most one open hold belongs to each retained receipt and its rows are deleted when that receipt review retires; the receipt index bounds reads.',
   ],
   [
-    'copyright_notice_email_thread_retirements',
-    'At most one durable retirement marker belongs to each copyright case; the legal case skeleton persists.',
-  ],
-  [
     'copyright_notice_guest_capability_identities',
     'Retained guest capability identities survive live-token pruning and grow with issuance; case and identity indexes keep reads selective.',
   ],
@@ -50,6 +46,6 @@ export const COPYRIGHT_RETENTION_UNBOUNDED_TABLES = [
   ],
   [
     'copyright_notice_thread_retention_activities',
-    'One indexed latest-thread-activity projection belongs to each persistent copyright case with linked email.',
+    'One indexed latest-thread-activity row and optional retirement high-water belong to each persistent copyright case with linked email.',
   ],
 ] as const

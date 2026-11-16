@@ -14,6 +14,7 @@ import {
 import type { PromoteCopyrightEmailIntakeInput } from './email-promotion-input.mts'
 import { buildEmailNotice, recordEmailPromotion } from './email-promotion-record.mts'
 import {
+  copyrightEmailThreadChangedError,
   readCopyrightEmailGraphTokens,
   readCopyrightEmailThreadGraph,
 } from './email-thread-graph.mts'
@@ -90,6 +91,9 @@ export async function admitCopyrightEmailIntake(input: PromoteCopyrightEmailInta
       ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
       RETURNING copyright_notice_id, link_kind
     `)
+    // Exact approved replay can outlive erased private parse evidence. Only a replay that
+    // restores the initial link needs the completed parse prerequisite.
+    if (replayLinks[0]) await requireCompletedCopyrightEmailParse(transaction, intake.id)
     const retainedLink =
       replayLinks[0] ??
       (
@@ -130,6 +134,7 @@ export async function admitCopyrightEmailIntake(input: PromoteCopyrightEmailInta
   await assertNoThreadCorrespondenceDecision(transaction, intake.id)
   assert(intake.raw_storage_object_id, 404, 'Copyright email intake not found')
   await assertRecommendationScope(transaction, input.recommendationId, intake.id)
+  await requireCompletedCopyrightEmailParse(transaction, intake.id)
   const purpose = copyrightEmailIntakePurpose(intake.amazon_ses_message_id)
   const notice = await createCopyrightNoticeAggregateInTransaction(
     buildEmailNotice(input, purpose, intake.received_at),
@@ -148,4 +153,15 @@ export async function admitCopyrightEmailIntake(input: PromoteCopyrightEmailInta
   if (graph.overflow) logCopyrightEmailGraphOverflow(notice.id, graph)
   if (tokens.overflow) logCopyrightEmailTokenOverflow(notice.id, maxGraphRows)
   return { noticeId: notice.id, submissionId, evidenceErased: false, isDuplicate: false }
+}
+
+async function requireCompletedCopyrightEmailParse(
+  transaction: Awaited<ReturnType<typeof beginTransaction>>,
+  intakeId: string,
+): Promise<void> {
+  const { rows } = await transaction(sql`/* promoteCopyrightEmailIntake:completedParse */
+    SELECT 1 FROM copyright_notice_email_intake_parses
+    WHERE copyright_notice_email_intake_id = ${intakeId}
+    LIMIT 1`)
+  if (!rows[0]) throw copyrightEmailThreadChangedError()
 }

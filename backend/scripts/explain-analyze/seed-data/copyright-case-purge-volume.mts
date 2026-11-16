@@ -1,4 +1,5 @@
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
+import { maintainCopyrightEmailThreadLinkActivities } from '@services/copyright-notices/email-thread-link-activity'
 
 /** Extra evidence rows on the one due case; with the single real row each source exceeds 10,000. */
 export const PURGE_EVIDENCE_VOLUME_ROWS = 10_000
@@ -74,18 +75,27 @@ export async function seedDueCaseEvidenceVolume(
         JOIN copyright_notice_storage_objects object ON object.storage_key = receipt.amazon_ses_message_id`,
       [EMAIL_KEY, mediaTypeId, ...bounds],
     )
-    // Each link row touches the case's clock row, so its updates run in small statements.
+    // Maintain the case clock once for each bounded chunk of actual new links.
     for (let from = bounds[0] ?? 0; from < (bounds[1] ?? 0); from += LINK_CHUNK) {
+      await using transaction = await beginTransaction()
       // no-mistakes-disable-next-line query-reached-per-item: each statement is one bounded chunk of a set-based seed
-      await write(
+      const { rows: inserted } = await transaction<{
+        copyright_notice_email_intake_id: string
+      }>(
         `/* seedExplainCopyrightPurgeVolume:links */
       INSERT INTO copyright_notice_email_intake_notice_links
         (copyright_notice_email_intake_id, copyright_notice_id, link_kind, correspondence_action)
       SELECT intake.id, $1::uuid, 'thread', 'pending'
       FROM generate_series($3::int, $4::int - 1) AS n
-        JOIN copyright_notice_email_intakes intake ON intake.amazon_ses_message_id = $2::text || n`,
+        JOIN copyright_notice_email_intakes intake ON intake.amazon_ses_message_id = $2::text || n
+      RETURNING copyright_notice_email_intake_id`,
         [dueId, EMAIL_KEY, from, Math.min(from + LINK_CHUNK, bounds[1] ?? 0)],
       )
+      await maintainCopyrightEmailThreadLinkActivities(transaction, {
+        noticeId: dueId,
+        intakeIds: inserted.map(row => row.copyright_notice_email_intake_id),
+      })
+      await transaction.commit()
     }
   }
   await seedSpreadSubmissions(dueId, mediaTypeId)

@@ -133,20 +133,6 @@ export const COPYRIGHT_CASE_PURGE_PATH_2 = [
     null,
   ],
   [
-    'copyright_notice_email_thread_retirements',
-    [
-      [
-        'copyright_notice_email_thread_retirements',
-        ['copyright_notice_id'],
-        ['id'],
-        ['copyright_notice_id'],
-        ['copyright_notice_id'],
-        ['copyright_notice_id'],
-      ],
-    ],
-    null,
-  ],
-  [
     'copyright_notice_form_intake_reviews',
     [
       ['copyright_notice_form_intakes', ['copyright_notice_id'], ['id'], ['id'], ['id'], ['id']],

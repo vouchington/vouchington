@@ -1,5 +1,8 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { maintainCopyrightEmailThreadLinkActivity } from '../services/copyright-notices/email-thread-link-activity.mts'
+import { readBoundedCopyrightEmailAncestorSourceIds } from '../services/copyright-notices/email-thread-ancestor-graph.mts'
+import { getCopyrightEmailThreadGraphMaxRows } from '../services/copyright-notices/config.mts'
 
 /** Seed only the explicit committed graph that a review-path read will inspect. */
 export async function seedCommittedCopyrightEmailReviewGraph({
@@ -28,6 +31,17 @@ export async function seedCommittedCopyrightEmailReviewGraph({
       INSERT INTO copyright_notice_email_intake_notice_links (
         copyright_notice_email_intake_id, copyright_notice_id, link_kind, correspondence_action
       ) VALUES (${intakeId}, ${noticeId}, 'thread', 'pending')`)
+    const ancestors = await readBoundedCopyrightEmailAncestorSourceIds(
+      transaction,
+      [intakeId],
+      await getCopyrightEmailThreadGraphMaxRows(),
+    )
+    if (!ancestors) throw new Error('Review graph exceeds the thread ancestry bound')
+    await maintainCopyrightEmailThreadLinkActivity(transaction, {
+      noticeId,
+      intakeId,
+      authorizingAncestorIntakeIds: ancestors,
+    })
   }
   await transaction.commit()
 }

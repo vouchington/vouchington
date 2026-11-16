@@ -9,11 +9,11 @@ import {
 } from '@voucha/test-helpers/copyright-operational-email-retention'
 import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
-import { createRetentionThreadSeedEmail } from '@voucha/test-helpers/services/copyright-notices/retention-parsed-email'
+import { createCommittedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-committed-intake'
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import { createCopyrightEmailIntake } from './email-intakes.mts'
 import { buildCopyrightEmailThreadReferenceRows } from './email-thread-references.mts'
-import { admitCopyrightEmailReferenceFacts } from './email-thread-reference-facts.mts'
+import { recordCopyrightEmailParse } from './email-intake-parses.mts'
 import { deriveCopyrightEmailThread } from './email-thread-derive.mts'
 import { recordCopyrightEmailThreadReferences } from './email-threading.mts'
 import { sweepUnlinkedCopyrightEmailIntakes } from './operational-retention-email-intakes.mts'
@@ -41,7 +41,16 @@ describe('copyright email committed reference final state', () => {
       references: [] as string[],
     }
     const rows = buildCopyrightEmailThreadReferenceRows(input)
-    expect(await admitCopyrightEmailReferenceFacts(intake.id, rows)).toBe(true)
+    await recordCopyrightEmailParse(intake, {
+      status: 'succeeded',
+      fromEmail: `claimant-${randomUUID()}@example.test`,
+      subject: 'Copyright notice',
+      bodyText: 'Committed immutable headers.',
+      messageId: input.messageId,
+      inReplyTo: input.inReplyTo,
+      replyReferences: input.references,
+      attachments: [],
+    })
     const before = await readCopyrightThreadReferenceState(intake.id)
     await positionCopyrightOperationalCursor('unlinked_email_intakes', intake.id)
     await expect(
@@ -61,24 +70,23 @@ describe('copyright email committed reference final state', () => {
   it('does not derive a case link after the linked intake crosses retirement high-water', async () => {
     const notice = await createRetentionMinimalCase()
     const parentMessageId = `<parent-${randomUUID()}@example.test>`
-    const parent = await createRetentionThreadSeedEmail('phase-retirement-parent', {
-      sesMessageId: notice.initialEmailSesMessageId,
+    const parent = await createCommittedCopyrightEmailIntake({
       messageId: parentMessageId,
     })
     await linkTestCopyrightEmailIntake(parent.id, notice.noticeId)
-    const intake = await createRetentionThreadSeedEmail('phase-retirement', {
-      messageId: `<seed-${randomUUID()}@example.test>`,
+    const messageId = `<seed-${randomUUID()}@example.test>`
+    const intake = await createCommittedCopyrightEmailIntake({
+      messageId,
       replyReferences: [parentMessageId],
     })
     await linkTestCopyrightEmailIntake(intake.id, notice.noticeId, 'thread', notice.moderator.id)
     const input = {
       intakeId: intake.id,
-      messageId: `<${randomUUID()}@example.test>`,
-      inReplyTo: [parentMessageId],
-      references: [] as string[],
+      messageId,
+      inReplyTo: [] as string[],
+      references: [parentMessageId],
     }
     const rows = buildCopyrightEmailThreadReferenceRows(input)
-    expect(await admitCopyrightEmailReferenceFacts(intake.id, rows)).toBe(true)
     await expect(deriveCopyrightEmailThread(input, rows)).resolves.toMatchObject({
       noticeId: notice.noticeId,
     })

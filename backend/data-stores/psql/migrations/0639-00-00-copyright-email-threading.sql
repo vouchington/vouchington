@@ -17,19 +17,6 @@ CREATE TABLE copyright_notice_email_thread_tokens (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 
-CREATE TABLE copyright_notice_email_thread_retirements (
-  copyright_notice_id uuid PRIMARY KEY REFERENCES copyright_notices(id) ON DELETE RESTRICT,
-  retired_before_intake_bound uuid NOT NULL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-CREATE TRIGGER trigger_copyright_email_thread_retirements_updated_at
-  BEFORE UPDATE ON copyright_notice_email_thread_retirements
-  FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
-COMMENT ON TABLE copyright_notice_email_thread_retirements IS 'Durable case threading high-water: previously admitted intake IDs below the bound cannot rebuild expired references on replay; fresh sources may still thread when the case accepts them.';
-COMMENT ON COLUMN copyright_notice_email_thread_retirements.copyright_notice_id IS 'Case whose email threading is retired.';
-COMMENT ON COLUMN copyright_notice_email_thread_retirements.retired_before_intake_bound IS 'Exclusive UUIDv7 intake-age boundary committed atomically with the first cleanup page, then advanced for later closed windows; this synthetic bound is not a foreign-key reference.';
-COMMENT ON COLUMN copyright_notice_email_thread_retirements.updated_at IS 'Last time the closed-case threading high-water advanced.';
-
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_thread_references (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
@@ -387,22 +374,39 @@ COMMENT ON COLUMN copyright_notice_correspondence_messages.copyright_notice_emai
 -- Current-case thread activity is maintained at every write boundary, so a retention check
 -- never needs to aggregate an unbounded case graph or historical reference set.
 CREATE TABLE copyright_notice_thread_retention_activities (
-  copyright_notice_id uuid PRIMARY KEY REFERENCES copyright_notices(id) ON DELETE CASCADE,
-  last_activity_at timestamptz NOT NULL
+  copyright_notice_id uuid PRIMARY KEY REFERENCES copyright_notices(id) ON DELETE RESTRICT,
+  last_activity_at timestamptz NOT NULL,
+  retired_before_intake_bound uuid,
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-COMMENT ON TABLE copyright_notice_thread_retention_activities IS 'Latest case-thread write clock used to bound the closed-window retention check; never grants access to retained source identities.';
+CREATE TRIGGER trigger_copyright_thread_retention_activities_updated_at
+  BEFORE UPDATE ON copyright_notice_thread_retention_activities
+  FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE copyright_notice_thread_retention_activities IS 'Case-thread activity clock and retirement high-water, maintained together at actual write boundaries; never grants access to retained source identities.';
 COMMENT ON COLUMN copyright_notice_thread_retention_activities.copyright_notice_id IS 'Case whose latest thread-related activity is retained here.';
 COMMENT ON COLUMN copyright_notice_thread_retention_activities.last_activity_at IS 'Latest write or retained capability expiry relevant to the case thread window.';
+COMMENT ON COLUMN copyright_notice_thread_retention_activities.retired_before_intake_bound IS 'Exclusive UUIDv7 intake-age boundary committed atomically with the first cleanup page, then advanced for later closed windows; this synthetic bound is not a foreign-key reference.';
+COMMENT ON COLUMN copyright_notice_thread_retention_activities.updated_at IS 'Last time case-thread activity or the closed-case threading high-water changed.';
 
-CREATE FUNCTION fn_copyright_touch_thread_retention_activity(case_id uuid, activity_at timestamptz)
+CREATE FUNCTION fn_copyright_touch_thread_retention_activity(
+  case_id uuid,
+  activity_at timestamptz,
+  source_intake_id uuid DEFAULT NULL
+)
 RETURNS void LANGUAGE plpgsql AS $$
 BEGIN
-  PERFORM 1 FROM copyright_notices WHERE id = case_id FOR KEY SHARE;
   INSERT INTO copyright_notice_thread_retention_activities (copyright_notice_id, last_activity_at)
   VALUES (case_id, COALESCE(activity_at, CURRENT_TIMESTAMP))
   ON CONFLICT (copyright_notice_id) DO UPDATE
     SET last_activity_at = GREATEST(copyright_notice_thread_retention_activities.last_activity_at,
-                                    EXCLUDED.last_activity_at);
+                                    EXCLUDED.last_activity_at)
+    WHERE source_intake_id IS NULL
+      OR copyright_notice_thread_retention_activities.retired_before_intake_bound IS NULL
+      OR copyright_notice_thread_retention_activities.retired_before_intake_bound <= source_intake_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'retired copyright email intake cannot accept thread facts'
+      USING ERRCODE = 'check_violation';
+  END IF;
 END;
 $$;
 
@@ -422,13 +426,15 @@ BEGIN
   ) INTO clock_at
   FROM copyright_notice_email_intakes intake
   WHERE intake.id = NEW.copyright_notice_email_intake_id;
-  PERFORM fn_copyright_touch_thread_retention_activity(NEW.copyright_notice_id, clock_at);
+  PERFORM fn_copyright_touch_thread_retention_activity(
+    NEW.copyright_notice_id, clock_at, NEW.copyright_notice_email_intake_id);
   RETURN NEW;
 END;
 $$;
 CREATE TRIGGER trigger_copyright_thread_activity_on_link
   AFTER INSERT ON copyright_notice_email_intake_notice_links
-  FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_activity_on_link();
+  FOR EACH ROW WHEN (NEW.link_kind = 'initial')
+  EXECUTE FUNCTION fn_update_copyright_thread_activity_on_link();
 
 CREATE FUNCTION fn_update_copyright_thread_activity_on_reference()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
@@ -438,7 +444,8 @@ BEGIN
   FROM copyright_notice_email_intake_notice_links link
   WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id;
   IF case_id IS NOT NULL THEN
-    PERFORM fn_copyright_touch_thread_retention_activity(case_id, uuid_extract_timestamp(NEW.id));
+    PERFORM fn_copyright_touch_thread_retention_activity(
+      case_id, uuid_extract_timestamp(NEW.id), NEW.copyright_notice_email_intake_id);
   END IF;
   RETURN NEW;
 END;
@@ -449,16 +456,20 @@ CREATE TRIGGER trigger_copyright_thread_activity_on_reference
 
 CREATE FUNCTION fn_update_copyright_thread_activity_on_edge()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
-DECLARE case_id uuid;
+DECLARE source record;
 BEGIN
-  FOR case_id IN
-    SELECT DISTINCT link.copyright_notice_id
+  -- The oldest endpoint must pass the case's bound, so both endpoints must pass it.
+  FOR source IN
+    SELECT link.copyright_notice_id,
+      min(link.copyright_notice_email_intake_id::text)::uuid AS intake_id
     FROM copyright_notice_email_intake_notice_links link
     WHERE link.copyright_notice_email_intake_id IN
       (NEW.reply_message_intake_receipt_id, NEW.ancestor_message_intake_receipt_id)
+    GROUP BY link.copyright_notice_id
     ORDER BY link.copyright_notice_id
   LOOP
-    PERFORM fn_copyright_touch_thread_retention_activity(case_id, CURRENT_TIMESTAMP);
+    PERFORM fn_copyright_touch_thread_retention_activity(
+      source.copyright_notice_id, CURRENT_TIMESTAMP, source.intake_id);
   END LOOP;
   RETURN NEW;
 END;
