@@ -1,3 +1,4 @@
+import { COPYRIGHT_AGENT_DISPATCH_STAGES } from '@queues/ai-agents/enqueues/copyright-agent-dispatch-stages'
 import { COPYRIGHT_ACTION_RECONCILE_STAGES } from '@queues/background/enqueues/notifications-domain'
 import {
   moderationRetentionQueueConfig,
@@ -5,6 +6,7 @@ import {
   PARTITION_CLEANUP_MAX_PARTITIONS,
 } from '@queues/psql/config'
 import {
+  copyrightAgentDispatchLimitFields,
   copyrightNoticesAdditionalMaxValues,
   copyrightSweepConfig,
 } from '@services/copyright-notices/work-limits'
@@ -159,20 +161,26 @@ export const workDynamicConfigRegistryEntries = [
         ]),
       ),
       ...Object.fromEntries(
-        COPYRIGHT_ACTION_RECONCILE_STAGES.flatMap(stage => [
+        [
+          ...COPYRIGHT_ACTION_RECONCILE_STAGES.map(stage => [stage, `${stage} action reconcile`]),
+          ...COPYRIGHT_AGENT_DISPATCH_STAGES.map(stage => [
+            copyrightAgentDispatchLimitFields[stage],
+            `${stage} agent dispatch`,
+          ]),
+        ].flatMap(([prefix, job]) => [
           [
-            `${stage}_batch_size`,
+            `${prefix}_batch_size`,
             {
-              description: `Maximum rows per page of the ${stage} action reconcile job.`,
+              description: `Maximum rows per page of the ${job} job.`,
               minValue: 1,
               maxValue: 100,
               integer: true,
             },
           ],
           [
-            `${stage}_max_batches_per_run`,
+            `${prefix}_max_batches_per_run`,
             {
-              description: `Maximum pages per run of the ${stage} action reconcile job; remaining work continues in its own job.`,
+              description: `Maximum pages per run of the ${job} job; remaining work continues in its own job.`,
               minValue: 1,
               maxValue: 2000,
               integer: true,

@@ -15,7 +15,7 @@ import {
   issueCopyrightGuestCapability,
 } from '@services/copyright-notices'
 import { ai_agents } from '@queues/ai-agents/queues'
-import { processReconcileCopyrightAgentDispatches } from './process-reconcile-copyright-agent-dispatches.mts'
+import { copyrightAgentDispatchProcessors } from './process-reconcile-copyright-agent-dispatches.mts'
 
 // The real-Valkey project selects this suffix; keep the transport as the original module.
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
@@ -78,7 +78,10 @@ describe('copyright submission guidance backlog with new intake off', () => {
         ])
         expect(await readLatestTestGuidanceRunId(submissionId)).toBeUndefined()
         await expect(
-          processReconcileCopyrightAgentDispatches({}, { ids: [submissionId], batchSize: 1 }),
+          copyrightAgentDispatchProcessors['submission-guidance'](
+            {},
+            { ids: [submissionId], batchSize: 1 },
+          ),
         ).resolves.toEqual({ hasMore: false })
         await expect(countCopyrightActiveRestrictionsForNotice(excluded.noticeId)).resolves.toBe(0)
         const runId = (await readLatestTestGuidanceRunId(submissionId))!

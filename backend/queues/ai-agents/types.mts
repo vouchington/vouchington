@@ -99,6 +99,7 @@ export type SpendCapRecheckJobData = {
   cursor?: string
 }
 
+/** One stage's id cursor where its walk continues. */
 export type CopyrightAgentSweepData = { after?: string }
 
 type AIAgentJobPayloadsByName = {
@@ -118,7 +119,11 @@ type AIAgentJobPayloadsByName = {
   'auto-dispatch-judgement': AutoDispatchJudgementJobData
   'reconcile-auto-dispatch-judgements': Record<string, never>
   'recover-background-response': BackgroundResponseJobData
-  'reconcile-copyright-agent-dispatches': CopyrightAgentSweepData
+  'reconcile-copyright-email-dispatches': CopyrightAgentSweepData
+  'reconcile-copyright-form-screening-dispatches': CopyrightAgentSweepData
+  'reconcile-copyright-form-effect-dispatches': CopyrightAgentSweepData
+  'reconcile-copyright-appeal-dispatches': CopyrightAgentSweepData
+  'reconcile-copyright-submission-guidance-dispatches': CopyrightAgentSweepData
   'reconcile-ai-agent-failures': Record<string, never>
   'expire-stuck-appeal-resolution-runs': Record<string, never>
   'expire-stuck-dispute-resolution-runs': Record<string, never>

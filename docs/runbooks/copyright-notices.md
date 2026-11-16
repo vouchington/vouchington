@@ -211,10 +211,13 @@ email contents reach a model and no automatic receipt is sent. A sender hears fr
 staff act. When the switch is turned on, the reconciler sends every ingested email with no
 recommendation and no staff decision to the recommendation job.
 
-The `reconcile-copyright-agent-dispatches` sweep keeps running while off. It holds back the dispatches
-that start work for new intake (email recommendation and form screening, whose jobs also check the
-switch themselves) and keeps those belonging to an open case (appeal recommendation, submission
-guidance, saved form screening applied). A held-back dispatch stays pending and the first sweep after
+The copyright agent dispatch sweeps keep running while off. Each pending-dispatch kind is its own job
+(`reconcile-copyright-{email,form-screening,form-effect,appeal,submission-guidance}-dispatches`) with
+its own cursor, page caps (`agent_<kind>_batch_size`, `agent_<kind>_max_batches_per_run`) and retry,
+and one ordering lane bounds their combined load. While off, the email and form-screening jobs hold
+back the dispatches that start work for new intake (their agent jobs also check the switch
+themselves); the appeal, submission-guidance and saved form-effect jobs keep serving cases already
+open. A held-back dispatch stays pending and the first sweep after
 enablement sends it. To stop automated withholding during an incident, turn
 [`automaticProvisionalWithholding`](#automatic-provisional-withholding) off; the intake switch does not.
 
