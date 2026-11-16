@@ -31,9 +31,11 @@ describe('registered AI rerun writes', () => {
       const { id } = await createStaffResolutionFixture(kind, false)
       const result = await invoke(admin, 'rerun_review_resolution_draft', id, kind)
       expect(result.isError).not.toBe(true)
-      expect(result.structuredContent?.['run_id']).toMatch(
-        new RegExp(`^${kind}_resolution_[0-9a-f-]{36}$`),
+      const runId = result.structuredContent?.['run_id']
+      expect(runId).toMatch(
+        kind === 'dispute' ? /^[0-9a-f-]{36}$/ : new RegExp(`^${kind}_resolution_[0-9a-f-]{36}$`),
       )
+      const jobId = kind === 'dispute' ? `dispute_resolution_${String(runId)}` : runId
       await expectStaffOperationHistory(admin.id, `${kind}_resolution_draft_rerun`)
       const jobs = await readAllQueueJobs(ai_agents)
       expect(
@@ -42,7 +44,7 @@ describe('registered AI rerun writes', () => {
             job.name === `${kind}-resolution` &&
             'rerun_by_id' in job.data &&
             job.data.rerun_by_id === admin.id &&
-            job.id === result.structuredContent?.['run_id'],
+            job.id === jobId,
         ),
       ).toBeDefined()
       expect(jobs).toEqual(

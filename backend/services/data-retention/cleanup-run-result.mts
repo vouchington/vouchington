@@ -64,6 +64,7 @@ export type DataRetentionCleanupResult = {
   oldModerationQueueClaims: CleanupResult & { cursorId: string | null }
   reportJudgementRuns: CleanupResult
   appealResolutionRuns: CleanupResult
+  reviewDisputeResolutionRuns: CleanupResult
   oldModerationMediaReveals: CleanupResult & { cursorId: string | null }
   postModerationLedger: PostModerationLedgerCleanupResult
   agentModerations: AgentModerationCleanupResult

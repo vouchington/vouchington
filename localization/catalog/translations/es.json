@@ -5643,6 +5643,8 @@
 {"id":"copy.native.swift.reviewDisputes.rating","value":"Puntuación: {rating}"},
 {"id":"copy.native.swift.reviewDisputes.refreshStatus","value":"Actualizar estado"},
 {"id":"copy.native.swift.reviewDisputes.rerunAi","value":"Volver a ejecutar la IA"},
+{"id":"copy.native.swift.reviewDisputes.rerunExpired","value":"Ya no se necesita el borrador de IA."},
+{"id":"copy.native.swift.reviewDisputes.rerunFailed","value":"El borrador de IA falló. Inténtalo de nuevo."},
 {"id":"copy.native.swift.reviewDisputes.rerunNotQueued","value":"El borrador de IA no se puso en cola."},
 {"id":"copy.native.swift.reviewDisputes.rerunStillProcessing","value":"El borrador de IA sigue procesándose. Actualiza para comprobarlo."},
 {"id":"copy.native.swift.reviewDisputes.resolved","value":"Resuelta"},

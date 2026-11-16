@@ -5643,6 +5643,8 @@
 {"id":"copy.native.swift.reviewDisputes.rating","value":"Classificação: {rating}"},
 {"id":"copy.native.swift.reviewDisputes.refreshStatus","value":"Atualizar estado"},
 {"id":"copy.native.swift.reviewDisputes.rerunAi","value":"Executar novamente a IA"},
+{"id":"copy.native.swift.reviewDisputes.rerunExpired","value":"O rascunho da IA já não é necessário."},
+{"id":"copy.native.swift.reviewDisputes.rerunFailed","value":"O rascunho da IA falhou. Tente novamente."},
 {"id":"copy.native.swift.reviewDisputes.rerunNotQueued","value":"O rascunho da IA não foi colocado na fila."},
 {"id":"copy.native.swift.reviewDisputes.rerunStillProcessing","value":"O rascunho da IA ainda está a ser processado. Atualize para verificar."},
 {"id":"copy.native.swift.reviewDisputes.resolved","value":"Resolvida"},

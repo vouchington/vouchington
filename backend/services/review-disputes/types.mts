@@ -1,4 +1,5 @@
 import type { ReviewDispute } from './config.mts'
+import type { ReviewDisputeResolutionRunStatus } from './resolution-runs.mts'
 
 export type ReviewDisputeActorSummary = {
   id: string
@@ -15,8 +16,11 @@ export type ReviewDisputePostContent = {
 
 export type ReviewDisputeResponse = ReviewDispute & {
   post_label: string
-  ai_draft_run_id?: string | null
-  ai_draft_requested_run_id: string
+  /** Run that saved the current draft; null before any draft; kept after retention retires the run row. */
+  ai_draft_run_id: string | null
+  /** Latest admitted AI draft request and its outcome; null when none is retained. */
+  ai_draft_requested_run_id: string | null
+  ai_draft_requested_run_status: ReviewDisputeResolutionRunStatus | null
   post_content: ReviewDisputePostContent | null
   staff_context?: {
     disputant: ReviewDisputeActorSummary

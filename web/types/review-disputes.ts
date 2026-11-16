@@ -64,7 +64,8 @@ export interface ReviewDispute {
   ai_internal_response?: string | null
   ai_drafted_at?: string | null
   ai_draft_run_id?: string | null
-  ai_draft_requested_run_id?: string
+  ai_draft_requested_run_id?: string | null
+  ai_draft_requested_run_status?: 'active' | 'succeeded' | 'failed' | 'expired' | null
   public_response?: string | null
   internal_notes?: string | null
   drafted_at?: string | null

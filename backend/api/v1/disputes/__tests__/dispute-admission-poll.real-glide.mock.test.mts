@@ -8,11 +8,14 @@ import {
   insertTestPostReview,
   insertTestTopic,
   readAllQueueJobs,
+  getReviewDisputeActiveRunId,
+  getReviewDisputeRunStatus,
 } from '@voucha/test-helpers'
 import { callStructuredMcpTool, optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 import { makeAgentModelCaller } from '@voucha/test-helpers/agents/model-call-result'
 import { ai_agents } from '@queues/ai-agents/queues'
 import type { DisputeResolutionJobData } from '@queues/ai-agents/types'
+import { disputeResolutionJobId } from '@queues/ai-agents/enqueues/dispute-resolution'
 import { createTopicClaim } from '@services/topic-claims/create'
 import { adminVerifyTopicClaim } from '@services/topic-claims/admin-verify'
 import { parseCreateReviewDisputeInput } from '@services/review-disputes/parse'
@@ -57,52 +60,61 @@ describe('dispute resolution queue admission and result polling', () => {
     const { dispute } = await createReviewDispute(claimant, input)
     const request = createRequest()
     await request.authenticateAs(staff)
-    const rerun = await request.post(`/api/v1/disputes/${dispute.id}/resolution-drafts`).expect(202)
-    expect(rerun.body).toMatchObject({ queued: true, run_id: expect.any(String) })
     const path = `/api/v1/disputes/${dispute.id}`
+    const automaticRunId = await getReviewDisputeActiveRunId(dispute.id)
+    // Admission is idempotent: a rerun while the automatic run is active reads that run.
+    const duplicate = await request
+      .post(`/api/v1/disputes/${dispute.id}/resolution-drafts`)
+      .expect(202)
+    expect(duplicate.body).toMatchObject({ queued: true, run_id: automaticRunId })
     expect((await request.get(path).expect(200)).body.dispute).toMatchObject({
       status: 'pending',
       ai_drafted_at: null,
+      ai_draft_run_id: null,
+      ai_draft_requested_run_id: automaticRunId,
+      ai_draft_requested_run_status: 'active',
     })
     const jobs = await readAllQueueJobs(ai_agents)
-    const job = jobs.find(
-      candidate =>
-        candidate.name === 'dispute-resolution' &&
-        'dispute_id' in candidate.data &&
-        candidate.data.dispute_id === dispute.id &&
-        'rerun_by_id' in candidate.data &&
-        candidate.data.rerun_by_id === staff.id,
-    )
-    expect(job).toBeDefined()
     const automaticJob = jobs.find(
-      candidate =>
-        candidate.name === 'dispute-resolution' &&
-        'dispute_id' in candidate.data &&
-        candidate.data.dispute_id === dispute.id &&
-        'rerun_by_id' in candidate.data &&
-        candidate.data.rerun_by_id === null,
+      candidate => candidate.id === disputeResolutionJobId(automaticRunId),
     )
     expect(automaticJob).toBeDefined()
-    if (!automaticJob) throw new Error('Expected automatic dispute job')
-    expect(rerun.body.run_id).toBe(job?.id)
-    expect((await request.get(path).expect(200)).body.dispute).toMatchObject({
-      ai_draft_requested_run_id: rerun.body.run_id,
-      ai_draft_run_id: null,
-    })
+    expect(automaticJob?.data).toMatchObject({ dispute_id: dispute.id, run_id: automaticRunId })
+    let rerunJob: Job<DisputeResolutionJobData> | null = null
     try {
-      const staleModel = makeAgentModelCaller({
+      const automaticModel = makeAgentModelCaller({
         recommended_action: 'remove',
-        public_response: 'Older automatic result.',
-        internal_response: 'Older automatic reasoning.',
+        public_response: 'Automatic result.',
+        internal_response: 'Automatic reasoning.',
       })
-      await processDisputeResolution(automaticJob! as Job<DisputeResolutionJobData>, staleModel)
-      expect(staleModel).not.toHaveBeenCalled()
+      await processDisputeResolution(automaticJob! as Job<DisputeResolutionJobData>, automaticModel)
+      expect(automaticModel).toHaveBeenCalledOnce()
+      expect((await request.get(path).expect(200)).body.dispute).toMatchObject({
+        ai_draft_run_id: automaticRunId,
+        ai_draft_requested_run_id: automaticRunId,
+        ai_draft_requested_run_status: 'succeeded',
+      })
+
+      const rerun = await request
+        .post(`/api/v1/disputes/${dispute.id}/resolution-drafts`)
+        .expect(202)
+      expect(rerun.body).toMatchObject({ queued: true, run_id: expect.any(String) })
+      expect(rerun.body.run_id).not.toBe(automaticRunId)
+      expect((await request.get(path).expect(200)).body.dispute).toMatchObject({
+        ai_draft_run_id: automaticRunId,
+        ai_draft_requested_run_id: rerun.body.run_id,
+        ai_draft_requested_run_status: 'active',
+      })
+      rerunJob = (await ai_agents.getJob(
+        disputeResolutionJobId(rerun.body.run_id),
+      )) as Job<DisputeResolutionJobData> | null
+      expect(rerunJob?.data).toMatchObject({ run_id: rerun.body.run_id, rerun_by_id: staff.id })
       const callModel = makeAgentModelCaller({
         recommended_action: 'no_action',
         public_response: 'We reviewed the disputed review.',
         internal_response: 'No policy violation found.',
       })
-      await processDisputeResolution(job! as Job<DisputeResolutionJobData>, callModel)
+      await processDisputeResolution(rerunJob!, callModel)
       expect((await request.get(path).expect(200)).body.dispute).toMatchObject({
         status: 'pending',
         recommended_action: 'no_action',
@@ -110,15 +122,15 @@ describe('dispute resolution queue admission and result polling', () => {
         ai_drafted_at: expect.any(String),
         ai_draft_run_id: rerun.body.run_id,
         ai_draft_requested_run_id: rerun.body.run_id,
+        ai_draft_requested_run_status: 'succeeded',
       })
       expect(callModel).toHaveBeenCalledOnce()
       const staleSave = await createReviewDisputeDraft({
         disputeId: dispute.id,
-        requestToken: (automaticJob.data as DisputeResolutionJobData).ai_draft_request_token,
-        runId: automaticJob.id,
+        runId: automaticRunId,
         recommendedAction: 'remove',
-        aiPublicResponse: 'Older automatic draft must not replace the requested rerun.',
-        aiInternalResponse: 'Older in-flight job.',
+        aiPublicResponse: 'A finished run must not replace the requested rerun.',
+        aiInternalResponse: 'Older finished run.',
         model: 'test-model',
       })
       expect(staleSave).toBeNull()
@@ -131,6 +143,21 @@ describe('dispute resolution queue admission and result polling', () => {
         ai_draft_requested_run_id: rerun.body.run_id,
         internal_notes: 'Later staff lifecycle change.',
       })
+      const mcpRead = await callStructuredMcpTool(
+        { ...staff, membership_plan: 'plus' },
+        'read_review_dispute',
+        optionArgs('get', { id: dispute.id }),
+        ['moderation:read'],
+        { interface: 'mcp', credential: 'oauth', client: null, oauthClientId: crypto.randomUUID() },
+      )
+      const restDispute = (await request.get(path).expect(200)).body.dispute
+      for (const field of [
+        'ai_draft_run_id',
+        'ai_draft_requested_run_id',
+        'ai_draft_requested_run_status',
+      ] as const) {
+        expect((mcpRead.dispute as Record<string, unknown>)[field]).toBe(restDispute[field])
+      }
       const mcpRerun = await callStructuredMcpTool(
         { ...staff, membership_plan: 'plus' },
         'rerun_review_resolution_draft',
@@ -143,11 +170,13 @@ describe('dispute resolution queue admission and result polling', () => {
         rerun_by_id: staff.id,
         run_id: expect.any(String),
       })
-      const mcpJob = await ai_agents.getJob(String(mcpRerun.run_id))
+      expect(mcpRerun.run_id).not.toBe(rerun.body.run_id)
+      expect(await getReviewDisputeRunStatus(String(mcpRerun.run_id))).toBe('active')
+      const mcpJob = await ai_agents.getJob(disputeResolutionJobId(String(mcpRerun.run_id)))
       expect(mcpJob).not.toBeNull()
       await mcpJob?.remove()
     } finally {
-      await job?.remove()
+      await rerunJob?.remove()
       await automaticJob?.remove()
     }
   })

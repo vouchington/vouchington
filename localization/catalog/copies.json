@@ -5649,6 +5649,8 @@
 {"descriptor":null,"id":"copy.native.swift.reviewDisputes.rating"},
 {"descriptor":null,"id":"copy.native.swift.reviewDisputes.refreshStatus"},
 {"descriptor":null,"id":"copy.native.swift.reviewDisputes.rerunAi"},
+{"descriptor":null,"id":"copy.native.swift.reviewDisputes.rerunExpired"},
+{"descriptor":null,"id":"copy.native.swift.reviewDisputes.rerunFailed"},
 {"descriptor":null,"id":"copy.native.swift.reviewDisputes.rerunNotQueued"},
 {"descriptor":null,"id":"copy.native.swift.reviewDisputes.rerunStillProcessing"},
 {"descriptor":null,"id":"copy.native.swift.reviewDisputes.resolved"},

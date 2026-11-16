@@ -11,6 +11,7 @@ export type RedactedReviewDispute = Omit<
   | 'ai_drafted_at'
   | 'ai_draft_run_id'
   | 'ai_draft_requested_run_id'
+  | 'ai_draft_requested_run_status'
   | 'internal_notes'
   | 'drafted_at'
   | 'edited_at'
@@ -38,6 +39,7 @@ export function redactReviewDispute(dispute: ReviewDisputeResponse): RedactedRev
     ai_drafted_at: _ada,
     ai_draft_run_id: _adri,
     ai_draft_requested_run_id: _adrri,
+    ai_draft_requested_run_status: _adrrs,
     internal_notes: _in,
     drafted_at: _da,
     edited_at: _ea,

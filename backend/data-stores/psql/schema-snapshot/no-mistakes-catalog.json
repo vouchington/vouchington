@@ -133158,6 +133158,253 @@
       },
       "uniqueConstraints": {}
     },
+    "review_dispute_resolution_runs": {
+      "checkConstraints": {
+        "review_dispute_resolution_runs_check": {
+          "definition": "CHECK (((completed_at IS NULL) = (ai_drafted_at IS NULL)))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "ai_drafted_at": {
+          "comment": "Draft timestamp saved by the completing worker; set exactly when completed_at is set.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6
+        },
+        "completed_at": {
+          "comment": "Committed with the actual draft and lifecycle marker; success wins over delayed failure observations.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "created_at": {
+          "comment": null,
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9
+        },
+        "expired_at": {
+          "comment": "Worker finished without saving because this request no longer applies.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5
+        },
+        "failed_at": {
+          "comment": "Definitive terminal worker failure, excluding retries and provider deferrals.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
+        },
+        "id": {
+          "comment": "Request identity: only this run may save an AI draft, independent of queue job IDs.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "latest_lifecycle_change_id": {
+          "comment": "Lifecycle change committed with the saved draft; cleared if that change is deleted and never supplies current dispute state.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7
+        },
+        "review_dispute_id": {
+          "comment": "Dispute owning this exact admitted request.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "status": {
+          "comment": "Outcome derived from durable lifecycle facts: active, succeeded, failed or expired.",
+          "dataType": "moderation_ai_rerun_statuses",
+          "defaultExpression": null,
+          "generated": "stored",
+          "generatedExpression": "\nCASE\n    WHEN (completed_at IS NOT NULL) THEN 'succeeded'::moderation_ai_rerun_statuses\n    WHEN (failed_at IS NOT NULL) THEN 'failed'::moderation_ai_rerun_statuses\n    WHEN (expired_at IS NOT NULL) THEN 'expired'::moderation_ai_rerun_statuses\n    ELSE 'active'::moderation_ai_rerun_statuses\nEND",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8
+        },
+        "updated_at": {
+          "comment": "Last mutation timestamp maintained by the shared trigger.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10
+        }
+      },
+      "comment": "Durable AI draft requests for review disputes and their terminal outcomes; one active run per dispute, retired by bounded AI rerun retention once terminal.",
+      "foreignKeys": {
+        "review_dispute_resolution_runs_latest_lifecycle_change_id_fkey": {
+          "columns": ["latest_lifecycle_change_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "review_dispute_lifecycle_changes",
+          "validated": true
+        },
+        "review_dispute_resolution_runs_review_dispute_id_fkey": {
+          "columns": ["review_dispute_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "review_disputes",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "idx_review_dispute_resolution_runs__lifecycle_change_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_review_dispute_resolution_runs__lifecycle_change_id ON public.review_dispute_resolution_runs USING btree (latest_lifecycle_change_id) WHERE (latest_lifecycle_change_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "latest_lifecycle_change_id",
+              "descending": false,
+              "expression": "latest_lifecycle_change_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(latest_lifecycle_change_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_review_dispute_resolution_runs__one_active_per_dispute": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_review_dispute_resolution_runs__one_active_per_dispute ON public.review_dispute_resolution_runs USING btree (review_dispute_id) WHERE ((completed_at IS NULL) AND (failed_at IS NULL) AND (expired_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "review_dispute_id",
+              "descending": false,
+              "expression": "review_dispute_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((completed_at IS NULL) AND (failed_at IS NULL) AND (expired_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "review_dispute_resolution_runs_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX review_dispute_resolution_runs_pkey ON public.review_dispute_resolution_runs USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "review_dispute_resolution_runs_review_dispute_id_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX review_dispute_resolution_runs_review_dispute_id_id_key ON public.review_dispute_resolution_runs USING btree (review_dispute_id, id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "review_dispute_id",
+              "descending": false,
+              "expression": "review_dispute_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_review_dispute_resolution_runs_updated_at": {
+          "definition": "CREATE TRIGGER trigger_review_dispute_resolution_runs_updated_at BEFORE UPDATE ON public.review_dispute_resolution_runs FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {
+        "review_dispute_resolution_runs_review_dispute_id_id_key": {
+          "columns": ["review_dispute_id", "id"]
+        }
+      }
+    },
     "review_disputes": {
       "checkConstraints": {
         "review_disputes_claim_text_check": {
@@ -133170,25 +133417,25 @@
         }
       },
       "columns": {
-        "ai_draft_request_token": {
-          "comment": "Durable opaque request token; only the current request may save an AI draft, independent of queue job IDs.",
+        "ai_draft_requested_run_id": {
+          "comment": "Latest admitted AI draft request; its outcome is read from that run, which retention keeps while referenced.",
           "dataType": "uuid",
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 13
-        },
-        "ai_draft_run_id": {
-          "comment": "Queue run that saved the current AI draft; retained across later human lifecycle changes for result polling.",
-          "dataType": "text",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
           "ordinalPosition": 14
+        },
+        "ai_draft_run_id": {
+          "comment": "Identity of the resolution run that saved the current AI draft; retention keeps that run row while this reference exists.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13
         },
         "ai_drafted_at": {
           "comment": "When the AI agent drafted the recommended_action and ai_public_response.",
@@ -133453,6 +133700,22 @@
       },
       "comment": "Disputes filed by verified topic claimants against reviews of their topic. Resolved disputes and their lifecycle changes are deleted after 24 months; public annotations survive independently.",
       "foreignKeys": {
+        "fk_review_disputes__ai_draft_requested_run_id": {
+          "columns": ["id", "ai_draft_requested_run_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["review_dispute_id", "id"],
+          "referencedTable": "review_dispute_resolution_runs",
+          "validated": true
+        },
+        "fk_review_disputes__ai_draft_run_id": {
+          "columns": ["id", "ai_draft_run_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["review_dispute_id", "id"],
+          "referencedTable": "review_dispute_resolution_runs",
+          "validated": true
+        },
         "fk_review_disputes_latest_lifecycle_change_id": {
           "columns": ["latest_lifecycle_change_id"],
           "onDelete": "SET NULL",
@@ -133511,6 +133774,52 @@
         }
       },
       "indexes": {
+        "idx_review_disputes__ai_draft_requested_run_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_review_disputes__ai_draft_requested_run_id ON public.review_disputes USING btree (ai_draft_requested_run_id) WHERE (ai_draft_requested_run_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "ai_draft_requested_run_id",
+              "descending": false,
+              "expression": "ai_draft_requested_run_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(ai_draft_requested_run_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_review_disputes__ai_draft_run_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_review_disputes__ai_draft_run_id ON public.review_disputes USING btree (ai_draft_run_id) WHERE (ai_draft_run_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "ai_draft_run_id",
+              "descending": false,
+              "expression": "ai_draft_run_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(ai_draft_run_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_review_disputes__approved_by_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -133754,29 +134063,6 @@
           "unique": false,
           "valid": true
         },
-        "review_disputes_ai_draft_request_token_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX review_disputes_ai_draft_request_token_key ON public.review_disputes USING btree (ai_draft_request_token)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "ai_draft_request_token",
-              "descending": false,
-              "expression": "ai_draft_request_token",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
         "review_disputes_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -133814,11 +134100,7 @@
           "definition": "CREATE TRIGGER trigger_review_disputes_updated_at BEFORE UPDATE ON public.review_disputes FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
-      "uniqueConstraints": {
-        "review_disputes_ai_draft_request_token_key": {
-          "columns": ["ai_draft_request_token"]
-        }
-      }
+      "uniqueConstraints": {}
     },
     "review_succession_topics": {
       "checkConstraints": {},

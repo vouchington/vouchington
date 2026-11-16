@@ -10,6 +10,7 @@ import type { NamedQueueJob } from '@data-stores/valkey-glide-mq'
 import type { AIAgentJobPayloads } from '@queues/ai-agents/types'
 import { markReportJudgementRunFailed } from '@services/moderation-reports/rerun-outcomes'
 import { markAppealResolutionRunFailed } from '@services/moderation-appeals/rerun-outcomes'
+import { markReviewDisputeResolutionRunsFailed } from '@services/review-disputes/resolution-runs'
 import onError from '@modules/on-error'
 
 type AgentJob = NamedQueueJob<AIAgentJobPayloads>
@@ -63,5 +64,7 @@ async function persistTerminalFailure(job: AgentJob): Promise<void> {
     await markReportJudgementRunFailed(job.data.triggering_report_id, job.data.run_id)
   } else if (job.name === 'appeal-resolution' && job.data.rerun_by_id) {
     await markAppealResolutionRunFailed(job.data.appeal_id, job.data.ai_draft_request_token)
+  } else if (job.name === 'dispute-resolution') {
+    await markReviewDisputeResolutionRunsFailed([job.data.run_id])
   }
 }

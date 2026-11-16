@@ -33,15 +33,24 @@ export function useDisputeAiReruns(
     const requestedRunId = saved.ai_draft_requested_run_id
     // A newer staff request may supersede ours. Only the current server request
     // completing is terminal; staff approval, delivery, or resolution also ends AI drafting.
+    const status = saved.ai_draft_requested_run_status
+    const ended = status === 'failed' || status === 'expired'
     if (
       !saved.approved_at &&
       !saved.sent_at &&
       !saved.resolved_at &&
+      !ended &&
       (!requestedRunId || saved.ai_draft_run_id !== requestedRunId)
     )
       return
     dispatch({ type: 'update_dispute', dispute: saved })
     clearPendingRerun(before.id, runId)
+    // A definitive failure ends polling; the staff member can request another draft.
+    if (ended && saved.ai_draft_run_id !== requestedRunId)
+      onError(new Error(`The AI draft ${status}.`), {
+        fallback: t('extracted.disputes.disputesClient.failedToReRunAi_8c594308'),
+        tags: { form: 'dispute-rerun' },
+      })
   }
 
   usePendingAiRefresh(

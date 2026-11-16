@@ -496,7 +496,11 @@ Staff report judgement and appeal reruns receive opaque exact run IDs. Authorize
 the parent and run return a durable `active`, `succeeded`, `failed`, or `expired` outcome independent
 of queue-job cleanup; the report result includes its actual judgement ID on success. Appeal
 exact-run result reads are a new staff-only contract. The report result contract uses `run_id` and
-`status` in place of `completed`. A different judgement, a prior
+`status` in place of `completed`. Staff dispute reruns return the exact run UUID, and the dispute
+read (REST and MCP) carries `ai_draft_requested_run_id` plus `ai_draft_requested_run_status` for the
+latest admitted run, separate from `ai_draft_run_id`, the run that saved the current draft. A delayed
+failure never overrides a saved draft. Native adoption is pending under
+[clients #397](https://github.com/vouchington/vouchington-clients/issues/397). A different judgement, a prior
 run's late response, or a transiently missing run cannot complete or release the current pending
 admission. Definitive failure or expiry releases its controls so staff can retry; a missing run
 remains inconclusive, including after finite retention. A client polling deadline shows a refresh
