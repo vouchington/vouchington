@@ -31,6 +31,10 @@
       "error",
       { "builderMethods": ["append"], "tagNames": ["sql"] }
     ],
+    "no-mistakes/postgres-no-async-sql-builder": [
+      "error",
+      { "builders": [{ "callees": ["sql"] }] }
+    ],
     "no-mistakes/postgres-no-manual-transaction": [
       "error",
       {
