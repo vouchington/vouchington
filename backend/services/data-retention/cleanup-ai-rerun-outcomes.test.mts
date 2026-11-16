@@ -20,6 +20,8 @@ import {
   getTestReportJudgementRunStatus,
   attachTestJudgementToRun,
   insertTestAppealResolutionRunForRetention,
+  setTestAppealDraftRun,
+  setTestAppealRequestedRun,
   insertTestReviewDisputeResolutionRunForRetention,
   insertTestReportJudgementRunForRetention,
 } from '@voucha/test-helpers/moderation-rerun-retention'
@@ -102,13 +104,34 @@ describe('durable AI rerun retention', () => {
       recent,
       'active',
     )
+    const oldActive = await insertTestAppealResolutionRunForRetention(appeal.id, old, 'active')
+    const oldSavedDraft = await insertTestAppealResolutionRunForRetention(
+      appeal.id,
+      old,
+      'succeeded',
+    )
+    await setTestAppealDraftRun(appeal.id, oldSavedDraft)
+    const otherWarning = await insertTestUserWarning({
+      userId: appellant.id,
+      issuedById: appellant.id,
+    })
+    const otherAppeal = await insertTestModerationAppeal({
+      appellantId: appellant.id,
+      userWarningId: otherWarning.id,
+    })
+    const oldLatestFailed = await insertTestAppealResolutionRunForRetention(
+      otherAppeal.id,
+      old,
+      'failed',
+    )
+    await setTestAppealRequestedRun(otherAppeal.id, oldLatestFailed)
     const result = await runDataRetentionCleanup(
-      { batchSize: 1, maxBatches: 1 },
+      { batchSize: 10, maxBatches: 1 },
       {
         families: ['appealResolutionRuns'],
         appealResolutionRuns: {
           now,
-          runIds: [selectedSucceeded, selectedRecent],
+          runIds: [selectedSucceeded, selectedRecent, oldActive, oldSavedDraft, oldLatestFailed],
         },
       },
     )
@@ -117,6 +140,9 @@ describe('durable AI rerun retention', () => {
     expect(await getTestAppealResolutionRunStatus(selectedSucceeded)).toBeNull()
     expect(await getTestAppealResolutionRunStatus(excludedOld)).toBe('failed')
     expect(await getTestAppealResolutionRunStatus(selectedRecent)).toBe('active')
+    expect(await getTestAppealResolutionRunStatus(oldActive)).toBe('active')
+    expect(await getTestAppealResolutionRunStatus(oldSavedDraft)).toBe('succeeded')
+    expect(await getTestAppealResolutionRunStatus(oldLatestFailed)).toBe('failed')
   })
 
   it('deletes only terminal dispute runs older than the window and never an active run', async () => {

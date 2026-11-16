@@ -35,8 +35,8 @@ export async function runModerationRerunRetentionScenarios(
     )
     await write(
       `/* seedModerationRerunRetention:appeals */
-       INSERT INTO moderation_appeal_resolution_runs (id, moderation_appeal_id)
-       SELECT owned.id, $2::uuid FROM unnest($1::uuid[]) AS owned(id)`,
+       INSERT INTO moderation_appeal_resolution_runs (id, moderation_appeal_id, expired_at)
+       SELECT owned.id, $2::uuid, now() FROM unnest($1::uuid[]) AS owned(id)`,
       [appealIds, appealId],
     )
     await write(
@@ -144,8 +144,8 @@ async function restorePage(relation: string, parentId: string, ids: readonly str
   } else {
     await write(
       `/* restoreModerationRerunRetention:appeals */
-       INSERT INTO moderation_appeal_resolution_runs (id, moderation_appeal_id)
-       SELECT owned.id, $2::uuid FROM unnest($1::uuid[]) AS owned(id)`,
+       INSERT INTO moderation_appeal_resolution_runs (id, moderation_appeal_id, expired_at)
+       SELECT owned.id, $2::uuid, now() FROM unnest($1::uuid[]) AS owned(id)`,
       [ids, parentId],
     )
   }

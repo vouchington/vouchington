@@ -124,7 +124,7 @@ export async function processReconcileAIAgentFailures(
       terminalized += await markAppealResolutionRunsFailed(
         appealJobs.map(job => {
           const data = job.data as AppealResolutionJobData
-          return { appealId: data.appeal_id, requestToken: data.ai_draft_request_token }
+          return { appealId: data.appeal_id, runId: data.run_id }
         }),
       )
       removed += await removeAcknowledged(appealJobs, batchSize)
@@ -162,8 +162,8 @@ function manualKind(job: FailedJob): 'report' | 'appeal' | 'dispute' | null {
     const data = job.data as ReportJudgementJobData
     if (data.rerun_by_id && data.run_id) return 'report'
   } else if (job.name === 'appeal-resolution') {
-    const data = job.data as AppealResolutionJobData
-    if (data.rerun_by_id && data.ai_draft_request_token) return 'appeal'
+    // Automatic and manual requests both own a run row, so both keep their failure until marked.
+    return 'appeal'
   } else if (job.name === 'dispute-resolution') {
     // Automatic and manual requests both own a run row, so both keep their failure until marked.
     return 'dispute'

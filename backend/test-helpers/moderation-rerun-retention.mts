@@ -81,3 +81,16 @@ export async function insertTestReviewDisputeResolutionRunForRetention(
       ${status === 'succeeded' ? at : null})`)
   return id
 }
+
+/** Points an appeal's saved draft at a run, as a completed draft save does. */
+export async function setTestAppealDraftRun(appealId: string, runId: string): Promise<void> {
+  await write(sql`/* setTestAppealDraftRun */
+    UPDATE moderation_appeals SET ai_draft_run_id = ${runId}::uuid WHERE id = ${appealId}::uuid`)
+}
+
+/** Points an appeal's latest request at a run, as an admission does. */
+export async function setTestAppealRequestedRun(appealId: string, runId: string): Promise<void> {
+  await write(sql`/* setTestAppealRequestedRun */
+    UPDATE moderation_appeals SET ai_draft_requested_run_id = ${runId}::uuid
+    WHERE id = ${appealId}::uuid`)
+}

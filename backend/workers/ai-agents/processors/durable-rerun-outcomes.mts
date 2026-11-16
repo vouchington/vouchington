@@ -65,8 +65,8 @@ async function persistOrDelay(job: AgentJob, persistFailure: PersistFailure): Pr
 async function persistTerminalFailure(job: AgentJob): Promise<void> {
   if (job.name === 'report-judgement' && job.data.rerun_by_id && job.data.run_id) {
     await markReportJudgementRunFailed(job.data.triggering_report_id, job.data.run_id)
-  } else if (job.name === 'appeal-resolution' && job.data.rerun_by_id) {
-    await markAppealResolutionRunFailed(job.data.appeal_id, job.data.ai_draft_request_token)
+  } else if (job.name === 'appeal-resolution') {
+    await markAppealResolutionRunFailed(job.data.appeal_id, job.data.run_id)
   } else if (job.name === 'dispute-resolution') {
     await markReviewDisputeResolutionRunsFailed([job.data.run_id])
   } else if (job.name === 'copyright-appeal-recommendation') {

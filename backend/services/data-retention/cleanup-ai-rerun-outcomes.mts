@@ -60,6 +60,7 @@ async function deleteReportJudgementRunBatch(
   return rowCount ?? 0
 }
 
+/** Only terminal runs retire; an active run, the run an appeal last requested, and the run behind its saved draft stay. */
 async function deleteAppealResolutionRunBatch(
   cutoffId: string,
   batchSize: number,
@@ -68,7 +69,10 @@ async function deleteAppealResolutionRunBatch(
   const query = sql`/* deleteOldAppealResolutionRunBatch */
     WITH candidates AS (
       SELECT id FROM moderation_appeal_resolution_runs
-      WHERE id < ${cutoffId}::uuid`
+      WHERE id < ${cutoffId}::uuid
+        AND (completed_at IS NOT NULL OR failed_at IS NOT NULL OR expired_at IS NOT NULL)
+        AND NOT EXISTS (SELECT 1 FROM moderation_appeals ma WHERE ma.ai_draft_run_id = moderation_appeal_resolution_runs.id)
+        AND NOT EXISTS (SELECT 1 FROM moderation_appeals ma WHERE ma.ai_draft_requested_run_id = moderation_appeal_resolution_runs.id)`
   if (runIds) query.append(sql` AND id = ANY(${runIds}::uuid[])`)
   query.append(sql`
       ORDER BY id LIMIT ${batchSize}
@@ -76,6 +80,9 @@ async function deleteAppealResolutionRunBatch(
     DELETE FROM moderation_appeal_resolution_runs AS run
     WHERE run.id = ANY(ARRAY(SELECT id FROM candidates))
       AND run.id < ${cutoffId}::uuid
+      AND (run.completed_at IS NOT NULL OR run.failed_at IS NOT NULL OR run.expired_at IS NOT NULL)
+      AND NOT EXISTS (SELECT 1 FROM moderation_appeals ma WHERE ma.ai_draft_run_id = run.id)
+      AND NOT EXISTS (SELECT 1 FROM moderation_appeals ma WHERE ma.ai_draft_requested_run_id = run.id)
     RETURNING run.id`)
   const { rowCount } = await write(query)
   return rowCount ?? 0

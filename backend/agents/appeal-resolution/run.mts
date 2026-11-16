@@ -20,7 +20,7 @@ export type { AppealModelCaller } from './model.mts'
 
 export interface AppealModelInput {
   appealId: string
-  requestToken: string
+  /** The admitted resolution run; its row id is the request identity. */
   runId: string
   rerunById?: string | null
 }
@@ -36,33 +36,31 @@ export async function runAppealResolutionAgent(
   selection: ModelSelection,
   callModel: AppealModelCaller = callAppealModel,
 ): Promise<void> {
-  const { appealId, requestToken, rerunById, runId } = input
+  const { appealId, runId, rerunById } = input
 
-  if (rerunById) {
-    const runStatus = await getAppealResolutionRunStatus(appealId, requestToken)
-    // A missing outcome is inconclusive, and terminal work must never make another paid call.
-    if (runStatus !== 'active') return
-    if (!(await claimAppealResolutionRun(appealId, requestToken))) {
-      await markAppealResolutionRunExpired(appealId, requestToken)
-      return
-    }
+  const runStatus = await getAppealResolutionRunStatus(appealId, runId)
+  // A missing outcome is inconclusive, and terminal work must never make another paid call.
+  if (runStatus !== 'active') return
+  if (!(await claimAppealResolutionRun(appealId, runId))) {
+    await markAppealResolutionRunExpired(appealId, runId)
+    return
   }
 
   const appeal = await getModerationAppealByIdFromPrimary(appealId)
   if (!appeal) {
-    if (rerunById) await markAppealResolutionRunExpired(appealId, requestToken)
+    await markAppealResolutionRunExpired(appealId, runId)
     onError(new Error(`runAppealResolutionAgent: appeal not found: ${appealId}`))
     return
   }
 
   if (appeal.approved_at != null || appeal.sent_at != null || appeal.resolved_at != null) {
-    if (rerunById) await markAppealResolutionRunExpired(appealId, requestToken)
+    await markAppealResolutionRunExpired(appealId, runId)
     return
   }
 
-  const currentRequest = await isCurrentModerationAppealDraftRequest(appealId, requestToken)
+  const currentRequest = await isCurrentModerationAppealDraftRequest(appealId, runId)
   if (!currentRequest) {
-    if (rerunById) await markAppealResolutionRunExpired(appealId, requestToken)
+    await markAppealResolutionRunExpired(appealId, runId)
     return
   }
 
@@ -129,14 +127,13 @@ export async function runAppealResolutionAgent(
 
   const savedDraft = await createModerationAppealDraft({
     appealId,
-    requestToken,
     runId,
     recommendedAction: result.output.recommended_action,
     aiPublicResponse: result.output.public_response,
     aiInternalResponse: result.output.internal_response,
     model: result.model,
   })
-  if (!savedDraft && rerunById) await markAppealResolutionRunExpired(appealId, requestToken)
+  if (!savedDraft) await markAppealResolutionRunExpired(appealId, runId)
 }
 
 function getPostRemovalActionLabel(kind: 'platform' | 'community' | null): string {

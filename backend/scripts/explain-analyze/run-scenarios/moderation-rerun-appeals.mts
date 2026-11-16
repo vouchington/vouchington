@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import { beginTransaction, write } from '@data-stores/psql'
 import { createModerationAppealDraft } from '@services/moderation-appeals/create-appeal-draft'
 import {
-  appealResolutionRunId,
   claimAppealResolutionRun,
   createAppealResolutionRun,
   getAppealResolutionRunOutcome,
@@ -14,29 +13,25 @@ import {
 import { registerModerationRerunScenario as register } from './moderation-rerun-contract.mts'
 import { runAndCapture } from '../run-support.mts'
 
-export async function runAppealScenarios(appealId: string, requestToken: string): Promise<void> {
+export async function runAppealScenarios(appealId: string): Promise<void> {
   register('appeal-rerun-admission')
   await runAndCapture(
     'appeal-rerun-admission',
     async () => {
       await using transaction = await beginTransaction()
-      const { rows: tokens } = await transaction<{ id: string }>(
-        '/* moderationRerunOutcome:token */ SELECT uuidv7() AS id',
-      )
-      const admissionToken = tokens[0]!.id
-      await createAppealResolutionRun(transaction, appealId, admissionToken)
+      await createAppealResolutionRun(transaction, appealId)
       await transaction.rollback()
     },
     undefined,
     'createAppealResolutionRun',
   )
 
-  await createAppealResolutionRun(write, appealId, requestToken)
+  const runId = await createAppealResolutionRun(write, appealId)
   register('appeal-rerun-claim')
   await runAndCapture(
     'appeal-rerun-claim',
     async () => {
-      assert.equal(await claimAppealResolutionRun(appealId, requestToken), true)
+      assert.equal(await claimAppealResolutionRun(appealId, runId), true)
     },
     undefined,
     'claimAppealResolutionRun',
@@ -45,7 +40,7 @@ export async function runAppealScenarios(appealId: string, requestToken: string)
   await runAndCapture(
     'appeal-rerun-status',
     async () => {
-      assert.equal(await getAppealResolutionRunStatus(appealId, requestToken), 'active')
+      assert.equal(await getAppealResolutionRunStatus(appealId, runId), 'active')
     },
     undefined,
     'getAppealResolutionRunStatus',
@@ -54,15 +49,12 @@ export async function runAppealScenarios(appealId: string, requestToken: string)
   await runAndCapture(
     'appeal-rerun-result',
     async () => {
-      assert.deepEqual(
-        await getAppealResolutionRunOutcome(appealId, appealResolutionRunId(requestToken)),
-        {
-          run_id: appealResolutionRunId(requestToken),
-          status: 'active',
-          ai_drafted_at: null,
-          latest_lifecycle_change_id: null,
-        },
-      )
+      assert.deepEqual(await getAppealResolutionRunOutcome(appealId, runId), {
+        run_id: runId,
+        status: 'active',
+        ai_drafted_at: null,
+        latest_lifecycle_change_id: null,
+      })
     },
     undefined,
     'getAppealResolutionRunOutcome',
@@ -74,8 +66,7 @@ export async function runAppealScenarios(appealId: string, requestToken: string)
     async () => {
       const result = await createModerationAppealDraft({
         appealId,
-        requestToken,
-        runId: appealResolutionRunId(requestToken),
+        runId,
         recommendedAction: 'deny',
         aiPublicResponse: 'EXPLAIN fixture',
         aiInternalResponse: 'EXPLAIN fixture',
@@ -87,22 +78,22 @@ export async function runAppealScenarios(appealId: string, requestToken: string)
     'createModerationAppealDraft',
   )
 
-  const failedToken = await addAppealRun(appealId)
+  const failedRunId = await addAppealRun(appealId)
   register('appeal-rerun-failed')
   await runAndCapture(
     'appeal-rerun-failed',
     async () => {
-      await markAppealResolutionRunFailed(appealId, failedToken)
-      assert.equal(await getAppealResolutionRunStatus(appealId, failedToken), 'failed')
+      await markAppealResolutionRunFailed(appealId, failedRunId)
+      assert.equal(await getAppealResolutionRunStatus(appealId, failedRunId), 'failed')
     },
     undefined,
     'markAppealResolutionRunsFailed',
     {
-      afterCapture: () => restoreAppealOutcome(failedToken, 'failed_at'),
+      afterCapture: () => restoreAppealOutcome(failedRunId, 'failed_at'),
     },
   )
   for (const batchSize of [10, 30] as const) {
-    const batchTokens = await Promise.all(
+    const batchRunIds = await Promise.all(
       Array.from({ length: batchSize }, () => addAppealRun(appealId)),
     )
     const scenarioId = `appeal-rerun-failed-batch-${batchSize}` as const
@@ -113,9 +104,9 @@ export async function runAppealScenarios(appealId: string, requestToken: string)
       async () => {
         assert.equal(
           await markAppealResolutionRunsFailed(
-            batchTokens.map(batchRequestToken => ({
+            batchRunIds.map(batchRunId => ({
               appealId,
-              requestToken: batchRequestToken,
+              runId: batchRunId,
             })),
           ),
           batchSize,
@@ -123,21 +114,21 @@ export async function runAppealScenarios(appealId: string, requestToken: string)
       },
       undefined,
       'markAppealResolutionRunsFailed',
-      { afterCapture: () => restoreAppealOutcomes(batchTokens, 'failed_at') },
+      { afterCapture: () => restoreAppealOutcomes(batchRunIds, 'failed_at') },
     )
   }
-  const expiredToken = await addAppealRun(appealId)
+  const expiredRunId = await addAppealRun(appealId)
   register('appeal-rerun-expired')
   await runAndCapture(
     'appeal-rerun-expired',
     async () => {
-      await markAppealResolutionRunExpired(appealId, expiredToken)
-      assert.equal(await getAppealResolutionRunStatus(appealId, expiredToken), 'expired')
+      await markAppealResolutionRunExpired(appealId, expiredRunId)
+      assert.equal(await getAppealResolutionRunStatus(appealId, expiredRunId), 'expired')
     },
     undefined,
     'markAppealResolutionRunExpired',
     {
-      afterCapture: () => restoreAppealOutcome(expiredToken, 'expired_at'),
+      afterCapture: () => restoreAppealOutcome(expiredRunId, 'expired_at'),
     },
   )
 }

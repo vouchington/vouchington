@@ -5,7 +5,6 @@ import { approveModerationAppeal } from '@services/moderation-appeals/approve-ap
 import { createModerationAppeal } from '@services/moderation-appeals/create'
 import { getModerationAppealById } from '@services/moderation-appeals/get'
 import {
-  appealResolutionRunId,
   claimAppealResolutionRun,
   getAppealResolutionRunOutcome,
 } from '@services/moderation-appeals/rerun-outcomes'
@@ -57,22 +56,20 @@ describe('runAppealResolutionAgent concurrency', () => {
         appeal_reason: `Claim ordering ${randomUUID()}`,
       }),
     )
-    const [olderToken, newerToken] = [
+    const [olderRunId, newerRunId] = [
       await createUnclaimedAppealResolutionRunForTest(appeal.id),
       await createUnclaimedAppealResolutionRunForTest(appeal.id),
     ].toSorted()
-    const newerRunId = appealResolutionRunId(newerToken)
     await runAppealResolutionAgent(
-      { appealId: appeal.id, requestToken: newerToken, runId: newerRunId, rerunById: staff.id },
+      { appealId: appeal.id, runId: newerRunId, rerunById: staff.id },
       TEST_MODEL_SELECTION,
       () => Promise.resolve(makeModelResponse('deny', 'Newer draft.', 'Newer private draft.')),
     )
-    expect(await claimAppealResolutionRun(appeal.id, olderToken)).toBe(false)
+    expect(await claimAppealResolutionRun(appeal.id, olderRunId)).toBe(false)
     await runAppealResolutionAgent(
       {
         appealId: appeal.id,
-        requestToken: olderToken,
-        runId: appealResolutionRunId(olderToken),
+        runId: olderRunId,
         rerunById: staff.id,
       },
       TEST_MODEL_SELECTION,
@@ -84,9 +81,9 @@ describe('runAppealResolutionAgent concurrency', () => {
     expect(await getAppealResolutionRunOutcome(appeal.id, newerRunId)).toMatchObject({
       status: 'succeeded',
     })
-    expect(
-      await getAppealResolutionRunOutcome(appeal.id, appealResolutionRunId(olderToken)),
-    ).toMatchObject({ status: 'expired' })
+    expect(await getAppealResolutionRunOutcome(appeal.id, olderRunId)).toMatchObject({
+      status: 'expired',
+    })
   })
 
   it('preserves an approval that wins while a queued rerun is calling the model', async () => {

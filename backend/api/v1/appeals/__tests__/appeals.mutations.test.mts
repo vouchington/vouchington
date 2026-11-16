@@ -57,7 +57,7 @@ function expectCanonicalAppeal(
     case_id: expected.caseId,
     status: expected.status,
     ai_draft_run_id: null,
-    ai_draft_requested_run_id: expect.stringMatching(/^appeal_resolution_[0-9a-f-]{36}$/),
+    ai_draft_requested_run_id: null,
     ai_draft_requested_run_status: null,
     created_at: expect.any(String),
     latest_lifecycle_change_id: expect.any(String),

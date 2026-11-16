@@ -16,10 +16,7 @@ import type { AppealResolutionJobData } from '@queues/ai-agents/types'
 import { createModerationAppeal } from '@services/moderation-appeals/create'
 import { parseCreateModerationAppealInput } from '@services/moderation-appeals/parse'
 import { processAppealResolution } from '../../../../workers/ai-agents/processors/process-appeal-resolution.mts'
-import {
-  appealResolutionRequestToken,
-  markAppealResolutionRunFailed,
-} from '@services/moderation-appeals/rerun-outcomes'
+import { markAppealResolutionRunFailed } from '@services/moderation-appeals/rerun-outcomes'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
@@ -42,7 +39,7 @@ describe('appeal resolution queue admission and result polling', () => {
     await request.authenticateAs(staff)
     const rerun = await request.post(`/api/v1/appeals/${appeal.id}/resolution-drafts`).expect(202)
     expect(rerun.body).toMatchObject({ queued: true, rerun_by_id: staff.id })
-    expect(rerun.body.run_id).toMatch(/^appeal_resolution_[0-9a-f-]{36}$/)
+    expect(rerun.body.run_id).toMatch(/^[0-9a-f-]{36}$/)
 
     const detailPath = `/api/v1/appeals/${appeal.id}?consistency=primary`
     const outcomePath = `/api/v1/appeals/${appeal.id}/resolution-drafts/${rerun.body.run_id}`
@@ -57,9 +54,7 @@ describe('appeal resolution queue admission and result polling', () => {
     await appellantRequest.authenticateAs(appellant)
     await appellantRequest.get(outcomePath).expect(403)
     await request
-      .get(
-        `/api/v1/appeals/${appeal.id}/resolution-drafts/appeal_resolution_${crypto.randomUUID()}`,
-      )
+      .get(`/api/v1/appeals/${appeal.id}/resolution-drafts/${crypto.randomUUID()}`)
       .expect(404)
     const pending = await request.get(detailPath).expect(200)
     expect(pending.body.appeal).toMatchObject({
@@ -123,9 +118,7 @@ describe('appeal resolution queue admission and result polling', () => {
       })
       const processing = processAppealResolution(job! as Job<AppealResolutionJobData>, callModel)
       await modelStarted.promise
-      const requestToken = appealResolutionRequestToken(rerun.body.run_id)
-      expect(requestToken).not.toBeNull()
-      await markAppealResolutionRunFailed(appeal.id, requestToken!)
+      await markAppealResolutionRunFailed(appeal.id, rerun.body.run_id)
       expect((await request.get(outcomePath).expect(200)).body).toMatchObject({
         status: 'failed',
         ai_drafted_at: null,

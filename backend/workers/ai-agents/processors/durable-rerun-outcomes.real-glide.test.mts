@@ -60,10 +60,7 @@ describe('durable moderation rerun terminal outcomes', () => {
                       run.data.run_id!,
                     )
                   else if (run.name === 'appeal-resolution')
-                    await markAppealResolutionRunFailed(
-                      run.data.appeal_id,
-                      run.data.ai_draft_request_token,
-                    )
+                    await markAppealResolutionRunFailed(run.data.appeal_id, run.data.run_id)
                 },
               )
             : Promise.resolve(),

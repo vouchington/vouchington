@@ -43,6 +43,7 @@ describe('createModerationAppeal', () => {
       expect(isDuplicate).toBe(false)
       expect(appeal.post_id).toBe(postId)
       expect(appeal.status).toBe('pending')
+      expect(appeal.ai_draft_requested_run_status).toBe('active')
       expect(appeal.target_context).toMatchObject({
         type: 'post_removal',
         id: postId,

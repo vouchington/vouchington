@@ -54,7 +54,8 @@ export type DisputeResolutionJobData = {
 
 export type AppealResolutionJobData = {
   appeal_id: string
-  ai_draft_request_token: string
+  /** Resolution run row id: the durable request identity. */
+  run_id: string
   rerun_by_id?: string | null
 }
 

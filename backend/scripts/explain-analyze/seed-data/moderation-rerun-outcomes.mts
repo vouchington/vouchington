@@ -9,7 +9,6 @@ export const RERUN_OUTCOME_SEEDED_RUN_COUNT =
 export async function seedModerationRerunOutcomes(): Promise<{
   reportId: string
   appealId: string
-  appealRequestToken: string
   reportRunIds: string[]
 }> {
   const { rows: reports } = await write<{ id: string; case_id: string }>(
@@ -22,12 +21,12 @@ export async function seedModerationRerunOutcomes(): Promise<{
   const report = reports[0]
   if (!report?.case_id) throw new Error('Moderation rerun EXPLAIN report was not seeded')
 
-  const { rows: appeals } = await write<{ id: string; ai_draft_request_token: string }>(
+  const { rows: appeals } = await write<{ id: string }>(
     `/* seedModerationRerunOutcomes:appeal */
      INSERT INTO moderation_appeals
        (created_via, appellant_user_id, post_id, post_removal_kind, appeal_reason, case_id)
      VALUES ('api', $1::uuid, $2::uuid, 'platform', 'EXPLAIN rerun fixture', $3::uuid)
-     RETURNING id, ai_draft_request_token`,
+     RETURNING id`,
     [seedUuid(5000, '01'), seedUuid(20, '05'), report.case_id],
   )
   const appeal = appeals[0]
@@ -92,7 +91,6 @@ export async function seedModerationRerunOutcomes(): Promise<{
     return {
       reportId: report.id,
       appealId: appeal.id,
-      appealRequestToken: appeal.ai_draft_request_token,
       reportRunIds,
     }
   } catch (err) {

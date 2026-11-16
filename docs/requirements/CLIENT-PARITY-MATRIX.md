@@ -523,7 +523,9 @@ of queue-job cleanup; the report result includes its actual judgement ID on succ
 exact-run result reads are a new staff-only contract. The report result contract uses `run_id` and
 `status` in place of `completed`. Staff dispute reruns return the exact run UUID, and the dispute
 read (REST and MCP) carries `ai_draft_requested_run_id` plus `ai_draft_requested_run_status` for the
-latest admitted run, separate from `ai_draft_run_id`, the run that saved the current draft. A delayed
+latest admitted run, separate from `ai_draft_run_id`, the run that saved the current draft. Staff
+appeal reads carry the same three fields, and the appeal rerun and exact-run read use the same run
+UUID, so a rerun is done when `ai_draft_run_id` equals the queued run. A delayed
 failure never overrides a saved draft. Native adoption is pending under
 [clients #397](https://github.com/vouchington/vouchington-clients/issues/397). A different judgement, a prior
 run's late response, or a transiently missing run cannot complete or release the current pending

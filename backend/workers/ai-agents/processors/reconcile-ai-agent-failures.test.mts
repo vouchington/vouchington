@@ -62,7 +62,7 @@ describe('processReconcileAIAgentFailures bounded windows', () => {
       fakeJob(
         'a0',
         'appeal-resolution',
-        { rerun_by_id: 'staff', ai_draft_request_token: 'not-a-uuid', appeal_id: 'not-a-uuid' },
+        { rerun_by_id: 'staff', run_id: 'not-a-uuid', appeal_id: 'not-a-uuid' },
         removeAppeal,
       ),
     ]

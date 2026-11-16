@@ -77,8 +77,10 @@ CREATE TABLE IF NOT EXISTS moderation_appeals (
   ai_internal_response text,
   model text,
   ai_drafted_at timestamptz,
-  ai_draft_request_token uuid NOT NULL DEFAULT uuidv7() UNIQUE,
-  ai_draft_run_id text,
+  -- Run that saved this draft; retention keeps a run while an appeal still references it.
+  ai_draft_run_id uuid,
+  -- Latest admitted AI draft request; retention keeps a run while an appeal still references it.
+  ai_draft_requested_run_id uuid,
 
   -- Human-owned outbound message
   public_response text,
@@ -205,7 +207,8 @@ CREATE OR REPLACE TRIGGER trigger_moderation_appeal_resolution_runs_updated_at
   BEFORE UPDATE ON moderation_appeal_resolution_runs
   FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 COMMENT ON TABLE moderation_appeal_resolution_runs IS 'Durable manual appeal AI admissions and outcomes; bounded AI rerun retention preserves recovery beyond queue cleanup.';
-COMMENT ON COLUMN moderation_appeal_resolution_runs.moderation_appeal_id IS 'Appeal owning this exact admitted request token.';
+COMMENT ON COLUMN moderation_appeal_resolution_runs.id IS 'Request identity: only this run may save an AI draft, independent of queue job IDs.';
+COMMENT ON COLUMN moderation_appeal_resolution_runs.moderation_appeal_id IS 'Appeal owning this exact admitted request.';
 COMMENT ON COLUMN moderation_appeal_resolution_runs.completed_at IS 'Committed with the actual draft and lifecycle marker; success wins over delayed failure observations.';
 COMMENT ON COLUMN moderation_appeal_resolution_runs.failed_at IS 'Definitive terminal worker failure, excluding retries and provider deferrals.';
 COMMENT ON COLUMN moderation_appeal_resolution_runs.expired_at IS 'Worker completed without saving because this generation no longer applies.';
@@ -288,6 +291,30 @@ END $$;
 CREATE INDEX IF NOT EXISTS idx_moderation_appeal_resolution_runs__lifecycle_change_id
   ON moderation_appeal_resolution_runs (latest_lifecycle_change_id)
   WHERE latest_lifecycle_change_id IS NOT NULL;
+
+ALTER TABLE moderation_appeals
+  ADD CONSTRAINT fk_moderation_appeals__ai_draft_run_id
+  FOREIGN KEY (id, ai_draft_run_id)
+  REFERENCES moderation_appeal_resolution_runs (moderation_appeal_id, id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE moderation_appeals
+  VALIDATE CONSTRAINT fk_moderation_appeals__ai_draft_run_id;
+
+ALTER TABLE moderation_appeals
+  ADD CONSTRAINT fk_moderation_appeals__ai_draft_requested_run_id
+  FOREIGN KEY (id, ai_draft_requested_run_id)
+  REFERENCES moderation_appeal_resolution_runs (moderation_appeal_id, id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE moderation_appeals
+  VALIDATE CONSTRAINT fk_moderation_appeals__ai_draft_requested_run_id;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderation_appeals__ai_draft_requested_run_id
+  ON moderation_appeals (ai_draft_requested_run_id)
+  WHERE ai_draft_requested_run_id IS NOT NULL;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderation_appeals__ai_draft_run_id
+  ON moderation_appeals (ai_draft_run_id)
+  WHERE ai_draft_run_id IS NOT NULL;
 
 -- Wire FK from notifications.moderation_appeal_id → moderation_appeals(id)
 -- The column was added to notifications in place in 0120; this migration adds the FK.
@@ -377,8 +404,8 @@ COMMENT ON COLUMN moderation_appeals.ai_public_response IS 'AI-drafted public re
 COMMENT ON COLUMN moderation_appeals.ai_internal_response IS 'AI-drafted internal reasoning for moderators.';
 COMMENT ON COLUMN moderation_appeals.model IS 'OpenAI model used for the AI draft.';
 COMMENT ON COLUMN moderation_appeals.ai_drafted_at IS 'When the AI agent drafted the recommended_action and responses.';
-COMMENT ON COLUMN moderation_appeals.ai_draft_request_token IS 'Durable opaque request token; only the current request may save an AI draft, independent of queue job IDs.';
-COMMENT ON COLUMN moderation_appeals.ai_draft_run_id IS 'Queue run that saved the current AI draft; retained across later human lifecycle changes for result polling.';
+COMMENT ON COLUMN moderation_appeals.ai_draft_requested_run_id IS 'Latest admitted AI draft request; only that run may save a draft, and its outcome is read from the run, which retention keeps while referenced.';
+COMMENT ON COLUMN moderation_appeals.ai_draft_run_id IS 'Identity of the resolution run that saved the current AI draft; retention keeps that run row while this reference exists.';
 COMMENT ON COLUMN moderation_appeals.public_response IS 'Human-owned public message. The ONLY field ever delivered to the appellant.';
 COMMENT ON COLUMN moderation_appeals.internal_notes IS 'Internal moderator notes, never shared with the appellant.';
 COMMENT ON COLUMN moderation_appeals.drafted_at IS 'When the moderator first seeded public_response from the AI draft.';
