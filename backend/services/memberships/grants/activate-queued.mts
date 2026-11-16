@@ -16,10 +16,10 @@ export async function activateOldestQueuedGrant(
   startedAt = closedMembership.expires_at,
   membershipSourceId?: string,
 ): Promise<boolean> {
-  const { rows: users } = await query(sql`/* activateOldestQueuedGrant: lock user */
+  const { rows: users } = await query(sql`/* activateOldestQueuedGrant: user */
     SELECT id FROM users WHERE id = ${userId}`)
   if (users.length === 0) return false
-  const change = await activateOldestQueuedGrantForLockedUser(
+  const change = await activateOldestQueuedGrantForUser(
     userId,
     closedMembership,
     query,
@@ -31,8 +31,8 @@ export async function activateOldestQueuedGrant(
   return true
 }
 
-/** The caller owns the user lock and records this transition's history with its page. */
-export async function activateOldestQueuedGrantForLockedUser(
+/** The caller records this transition's history with its page. */
+export async function activateOldestQueuedGrantForUser(
   userId: string,
   closedMembership: ClosedMembership,
   query: QueryExecutor,

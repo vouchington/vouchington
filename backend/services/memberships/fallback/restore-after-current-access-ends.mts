@@ -1,7 +1,7 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { recordMembershipChanges, type MembershipChangeInput } from '../changes.mts'
-import { activateOldestQueuedGrantForLockedUser } from '../grants/activate-queued.mts'
+import { activateOldestQueuedGrantForUser } from '../grants/activate-queued.mts'
 import { pauseOpenGrantActivations } from '../grants/pause-open-activations.mts'
 import type { MembershipPlanSlug } from '../types.mts'
 import {
@@ -38,9 +38,9 @@ export async function restoreFallbackAfterCurrentAccessEndsInTransaction(
   query: QueryExecutor,
   options: { membershipSourceId?: string } = {},
 ): Promise<boolean> {
-  await query(sql`/* restoreFallbackAfterCurrentAccessEnds: lock user */
+  await query(sql`/* restoreFallbackAfterCurrentAccessEnds: user */
     SELECT id FROM users WHERE id = ${userId}`)
-  const change = await restoreFallbackAfterCurrentAccessEndsForLockedUser(
+  const change = await restoreFallbackAfterCurrentAccessEndsForUser(
     userId,
     membershipId,
     query,
@@ -50,8 +50,8 @@ export async function restoreFallbackAfterCurrentAccessEndsInTransaction(
   await recordMembershipChanges([change], { query })
   return true
 }
-/** Reprojects a fallback under the caller's user lock and returns its pending history fact. */
-export async function restoreFallbackAfterCurrentAccessEndsForLockedUser(
+/** Reprojects a fallback and returns its pending history fact. */
+export async function restoreFallbackAfterCurrentAccessEndsForUser(
   userId: string,
   membershipId: string,
   query: QueryExecutor,
@@ -72,7 +72,7 @@ export async function restoreFallbackAfterCurrentAccessEndsForLockedUser(
   )
     await pauseOpenGrantActivations(userId, current.access_ended_at, query)
   if (fallback.source_kind === 'admin_grant' && !fallback.has_open_grant_activation)
-    return activateOldestQueuedGrantForLockedUser(
+    return activateOldestQueuedGrantForUser(
       userId,
       {
         id: current.id,

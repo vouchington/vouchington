@@ -17,7 +17,7 @@ export async function resumeGrantAfterDirectAccessSuspensionInTransaction(
   changed: boolean
   retainsPaidAccess: boolean
 }> {
-  await query(sql`/* resumeGrantAfterDirectTermination: lock user */
+  await query(sql`/* resumeGrantAfterDirectTermination: user */
     SELECT id FROM users WHERE id = ${userId}`)
   const { rows } = await query(sql`/* resumeGrantAfterDirectTermination: source */
     SELECT membership.membership_source_id, membership.membership_product_id,
