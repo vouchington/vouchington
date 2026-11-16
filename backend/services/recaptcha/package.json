@@ -29,7 +29,7 @@
     "@valkey/valkey-glide": "^2.6.0",
     "@voucha/config": "workspace:^",
     "http-errors": "^2.0.1",
-    "undici": "^8.12.3"
+    "undici": "^8.12.4"
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5"

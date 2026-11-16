@@ -35,6 +35,6 @@
   "devDependencies": {
     "@services/ai-usage": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
-    "undici": "^8.12.3"
+    "undici": "^8.12.4"
   }
 }

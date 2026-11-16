@@ -218,7 +218,7 @@ importers:
         version: link:../../services/ai-usage
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -255,10 +255,10 @@ importers:
         version: link:../../services/users
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       openai:
         specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76)
+        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -307,7 +307,7 @@ importers:
         version: link:../../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
     devDependencies:
       '@ts-shared/utils':
         specifier: workspace:^
@@ -316,8 +316,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
 
   backend/agents/classifier-runs:
     dependencies:
@@ -341,7 +341,7 @@ importers:
         version: link:../../services/classifiers
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -363,7 +363,7 @@ importers:
         version: link:../../services/classifiers
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
 
   backend/agents/community-moderation:
     dependencies:
@@ -405,8 +405,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
 
   backend/agents/conversation-title:
     dependencies:
@@ -431,7 +431,7 @@ importers:
         version: link:../../test-helpers
       openai:
         specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76)
+        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
 
   backend/agents/copyright-appeal-recommendation:
     dependencies:
@@ -511,7 +511,7 @@ importers:
         version: link:../../../ts-shared/utils
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -545,10 +545,10 @@ importers:
         version: link:../../services/topic-claims
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       openai:
         specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76)
+        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
     devDependencies:
       '@services/users':
         specifier: workspace:^
@@ -594,14 +594,14 @@ importers:
         version: link:../../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
 
   backend/agents/report-judgement:
     dependencies:
@@ -628,10 +628,10 @@ importers:
         version: link:../../services/moderation-reports
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       openai:
         specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76)
+        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -674,8 +674,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
 
   backend/agents/story-post:
     dependencies:
@@ -693,10 +693,10 @@ importers:
         version: link:../../services/stories
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       openai:
         specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76)
+        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -1329,8 +1329,8 @@ importers:
         specifier: ^7.1.1
         version: 7.1.1
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
@@ -1682,8 +1682,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
 
   backend/entrypoints/worker-cpu:
     dependencies:
@@ -2283,8 +2283,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -2458,7 +2458,7 @@ importers:
         version: link:../utils
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
 
   backend/modules/on-error:
     dependencies:
@@ -2491,7 +2491,7 @@ importers:
         version: link:../utils
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       '@vouchington/queue-errors':
         specifier: ^0.2.1
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
@@ -2500,7 +2500,7 @@ importers:
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       openai:
         specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76)
+        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
 
   backend/modules/openrouter-utils:
     dependencies:
@@ -2512,10 +2512,10 @@ importers:
         version: link:../utils
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       openai:
         specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76)
+        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
 
   backend/modules/pagination:
     dependencies:
@@ -2666,10 +2666,10 @@ importers:
         version: link:../../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
 
   backend/modules/token-secrets:
     dependencies:
@@ -2733,8 +2733,8 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
       validator:
         specifier: ^13.15.35
         version: 13.15.35
@@ -3967,7 +3967,7 @@ importers:
         version: link:../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       '@vouchington/mcp-server':
         specifier: ^0.2.0
         version: 0.2.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))
@@ -4140,8 +4140,8 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
     devDependencies:
       '@queues/activitypub':
         specifier: workspace:^
@@ -4263,7 +4263,7 @@ importers:
         version: link:../../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       '@vouchington/postgres':
         specifier: ^0.6.1
         version: 0.6.1
@@ -5071,8 +5071,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -5720,8 +5720,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
 
   backend/services/crawler-html:
     dependencies:
@@ -5763,8 +5763,8 @@ importers:
         version: 1.0.0
     devDependencies:
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
 
   backend/services/crawler-referral-links:
     dependencies:
@@ -6873,8 +6873,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
@@ -7272,8 +7272,8 @@ importers:
         specifier: ^1.5.0
         version: 1.5.0
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -8980,8 +8980,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
 
   backend/services/oauth-accounts:
     dependencies:
@@ -9057,8 +9057,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
 
   backend/services/oauth-authorization-server:
     dependencies:
@@ -9136,8 +9136,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
       valkyries:
         specifier: ^0.15.0
         version: 0.15.0
@@ -9185,8 +9185,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
       valkyries:
         specifier: ^0.15.0
         version: 0.15.0
@@ -9217,8 +9217,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
 
   backend/services/oauth-linkedin:
     dependencies:
@@ -9236,8 +9236,8 @@ importers:
         version: 0.12.0
     devDependencies:
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
 
   backend/services/oauth-microsoft:
     dependencies:
@@ -9261,8 +9261,8 @@ importers:
         specifier: ^2.0.5
         version: 2.0.5
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
 
   backend/services/oauth-x:
     dependencies:
@@ -9300,8 +9300,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
       valkyries:
         specifier: ^0.15.0
         version: 0.15.0
@@ -9369,10 +9369,10 @@ importers:
         version: link:../ai-usage
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       openai:
         specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76)
+        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -9943,8 +9943,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
       vitest:
         specifier: ^5.1.0
         version: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
@@ -10238,8 +10238,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -11570,8 +11570,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
 
   backend/services/topic-revisions:
     dependencies:
@@ -11847,8 +11847,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
@@ -11927,8 +11927,8 @@ importers:
         specifier: ^7.0.0
         version: 7.0.0
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
     devDependencies:
       '@queues/bloom-filters':
         specifier: workspace:^
@@ -12661,8 +12661,8 @@ importers:
         specifier: ^7.5.2
         version: 7.5.2
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -12829,7 +12829,7 @@ importers:
         version: link:../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       '@vouchington/http-transport':
         specifier: ^0.1.1
         version: 0.1.1
@@ -12868,7 +12868,7 @@ importers:
         version: 0.109.63(vitest@5.1.0)
       openai:
         specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76)
+        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
       otpauth:
         specifier: ^9.6.0
         version: 9.6.0
@@ -12885,8 +12885,8 @@ importers:
         specifier: ^7.3.2
         version: 7.3.2(supports-color@10.2.2)
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
@@ -13268,7 +13268,7 @@ importers:
         version: link:../../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       '@vouchington/queue-errors':
         specifier: ^0.2.1
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
@@ -13277,7 +13277,7 @@ importers:
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       openai:
         specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76)
+        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
       p-map:
         specifier: ^7.1.1
         version: 7.1.1
@@ -13289,8 +13289,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
       vitest:
         specifier: ^5.1.0
         version: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
@@ -13510,8 +13510,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
 
   backend/workers/background-cpu:
     dependencies:
@@ -14300,8 +14300,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+        specifier: ^8.12.4
+        version: 8.12.4
 
   backend/workers/follower-distributions:
     dependencies:
@@ -14656,7 +14656,7 @@ importers:
         version: link:../../test-helpers
       openai:
         specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76)
+        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
 
   backend/workers/post-mentions:
     dependencies:
@@ -24404,8 +24404,8 @@ packages:
     resolution: {integrity: sha512-03KrMbjIFDWQR5RNPrSw3bd1r12JpyFQl9/yxjUbJtqkjmllqC5lFjZh6ujeuJCKr8EOQvRW872Oy/az+nLYxg==}
     engines: {node: '>=20.18.1'}
 
-  undici@8.12.3:
-    resolution: {integrity: sha512-+fdndUTwBP86cVjihTp21hZHo7d6oj1c/47XPA3lL8mM0XHs+C4EkcjmgRsFnFk2f/UONGDy9ItBItmXsLOQHw==}
+  undici@8.12.4:
+    resolution: {integrity: sha512-8Mx+uNKKER2bA4AdtedkqRbwUCIJFr2nJckXRe5yrDqzePqwLP7VNcctN8/XdmDSbF7mS+jJKIszlL+vbam1VA==}
     engines: {node: '>=22.19.0'}
 
   unenv@2.0.0-rc.24:
@@ -24947,7 +24947,7 @@ snapshots:
       ipaddr.js: 2.5.0
       undici_v6: undici@6.29.1
       undici_v7: undici@7.30.1
-      undici_v8: undici@8.12.3
+      undici_v8: undici@8.12.4
 
   '@atproto-labs/fetch@0.4.2':
     dependencies:
@@ -29576,12 +29576,12 @@ snapshots:
       convert-source-map: 2.0.0
       tinyrainbow: 3.2.0
 
-  '@vouchington/ai@0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76))':
+  '@vouchington/ai@0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))':
     dependencies:
       ajv: 8.20.0
     optionalDependencies:
       '@anthropic-ai/sdk': 1.8.0(zod@3.25.76)
-      openai: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76)
+      openai: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
 
   '@vouchington/api-client@0.3.0(react@19.3.1)':
     optionalDependencies:
@@ -29647,7 +29647,7 @@ snapshots:
     dependencies:
       '@jongleberry/api-server': 3.1.0
       ssrf-guard: 1.0.0
-      undici: 8.12.3
+      undici: 8.12.4
 
   '@vouchington/image-resize@0.2.0(@types/node@26.6.6)':
     dependencies:
@@ -31484,7 +31484,7 @@ snapshots:
       parse5-parser-stream: 8.1.1
       saxes: 6.0.0
       tough-cookie: 6.0.2
-      undici: 8.12.3
+      undici: 8.12.4
       w3c-xmlserializer: 6.0.0
       webidl-conversions: 8.0.1
       whatwg-mimetype: 5.0.0
@@ -32326,11 +32326,11 @@ snapshots:
       is-inside-container: 1.0.0
       wsl-utils: 0.1.0
 
-  openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.23.0)(zod@3.25.76):
+  openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76):
     optionalDependencies:
       '@aws-sdk/credential-provider-node': 3.972.97
       '@smithy/signature-v4': 5.7.5
-      undici: 8.12.3
+      undici: 8.12.4
       ws: 8.23.0
       zod: 3.25.76
 
@@ -33372,7 +33372,7 @@ snapshots:
   ssrf-guard@1.0.0:
     dependencies:
       ipaddr.js: 2.5.0
-      undici: 8.12.3
+      undici: 8.12.4
 
   stacktrace-parser@0.1.11:
     dependencies:
@@ -33741,7 +33741,7 @@ snapshots:
 
   undici@7.30.1: {}
 
-  undici@8.12.3: {}
+  undici@8.12.4: {}
 
   unenv@2.0.0-rc.24:
     dependencies:
