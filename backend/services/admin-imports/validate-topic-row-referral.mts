@@ -9,54 +9,60 @@ const REFERRAL_COLUMNS = [
   'referral_company_slug',
 ] as const
 
-export function validateReferralFields(
-  row: Record<string, string>,
-  errors: string[],
-  seenReferralValidationSlugs: Set<string>,
-): void {
-  const topicType = row.topic_type?.trim()
-  if (topicType === 'referral_program') {
-    validateReferralProgramFields(row, errors, seenReferralValidationSlugs)
-    return
-  }
-  for (const col of REFERRAL_COLUMNS) {
-    if (row[col]?.trim())
-      errors.push(`${col} must be empty for topic_type other than referral_program`)
-  }
+const REFERRAL_VALIDATION_SLUG_PATTERN = /^[a-z0-9_]+$/
+
+/** The referral validation slug a row claims, or undefined when it cannot claim one. */
+export function claimedReferralValidationSlug(row: Record<string, string>): string | undefined {
+  if (row.topic_type?.trim() !== 'referral_program') return undefined
+  const slug = row.referral_validation_slug?.trim()
+  return slug && REFERRAL_VALIDATION_SLUG_PATTERN.test(slug) ? slug : undefined
 }
 
-export function validateReferralUrlFields(row: Record<string, string>, errors: string[]): void {
+export function validateReferralFields(
+  row: Record<string, string>,
+  isDuplicateReferralValidationSlug: boolean,
+): string[] {
+  if (row.topic_type?.trim() === 'referral_program') {
+    return validateReferralProgramFields(row, isDuplicateReferralValidationSlug)
+  }
+  return REFERRAL_COLUMNS.filter(col => row[col]?.trim()).map(
+    col => `${col} must be empty for topic_type other than referral_program`,
+  )
+}
+
+export function validateReferralUrlFields(row: Record<string, string>): string[] {
   const referralExampleUrl = row.referral_example_url?.trim()
-  if (referralExampleUrl && !isReferralExampleUrl(referralExampleUrl)) {
-    errors.push('referral_example_url must be a valid URL')
-  }
   const referralCompanySlug = row.referral_company_slug?.trim()
-  if (referralCompanySlug && !isSlug(referralCompanySlug)) {
-    errors.push('referral_company_slug must be a valid slug')
-  }
+  return [
+    ...(referralExampleUrl && !isReferralExampleUrl(referralExampleUrl)
+      ? ['referral_example_url must be a valid URL']
+      : []),
+    ...(referralCompanySlug && !isSlug(referralCompanySlug)
+      ? ['referral_company_slug must be a valid slug']
+      : []),
+  ]
 }
 
 function validateReferralProgramFields(
   row: Record<string, string>,
-  errors: string[],
-  seenReferralValidationSlugs: Set<string>,
-): void {
+  isDuplicateReferralValidationSlug: boolean,
+): string[] {
   const referralValidationSlug = row.referral_validation_slug?.trim()
-  if (!referralValidationSlug) {
-    errors.push('referral_validation_slug is required for topic_type=referral_program')
-  } else if (!/^[a-z0-9_]+$/.test(referralValidationSlug)) {
-    errors.push('referral_validation_slug must match ^[a-z0-9_]+$')
-  } else if (seenReferralValidationSlugs.has(referralValidationSlug)) {
-    errors.push(`referral_validation_slug "${referralValidationSlug}" is duplicated in this batch`)
-  } else {
-    seenReferralValidationSlugs.add(referralValidationSlug)
-  }
-  if (!row.referral_hostname?.trim()) {
-    errors.push('referral_hostname is required for topic_type=referral_program')
-  }
-  if (!row.referral_pathname?.trim()) {
-    errors.push('referral_pathname is required for topic_type=referral_program')
-  }
+  return [
+    ...(!referralValidationSlug
+      ? ['referral_validation_slug is required for topic_type=referral_program']
+      : !REFERRAL_VALIDATION_SLUG_PATTERN.test(referralValidationSlug)
+        ? ['referral_validation_slug must match ^[a-z0-9_]+$']
+        : isDuplicateReferralValidationSlug
+          ? [`referral_validation_slug "${referralValidationSlug}" is duplicated in this batch`]
+          : []),
+    ...(row.referral_hostname?.trim()
+      ? []
+      : ['referral_hostname is required for topic_type=referral_program']),
+    ...(row.referral_pathname?.trim()
+      ? []
+      : ['referral_pathname is required for topic_type=referral_program']),
+  ]
 }
 
 function isReferralExampleUrl(value: string): boolean {

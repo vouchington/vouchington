@@ -4,30 +4,38 @@ import { tagPostWithTopics } from '@services/posts/tagging'
 import type { Post } from '@services/posts/types'
 import { updatePost } from '@services/posts/update'
 import type { PrivateUser } from '@services/users/types'
+import type { ArticleSyncItem } from '@voucha/types/article-sync'
 import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
 
 import { contentHash, lookupKey, prefetchPosts, type PreparedArticle } from './sync-helpers.mts'
 
+type ItemOutcome = Pick<ArticleSyncItem, 'action' | 'error'>
+
+/** Maps each prepared article's item to its final item; the inputs are never modified. */
 export async function processPreparedArticles(
   currentUser: PrivateUser,
   prepared: PreparedArticle[],
-): Promise<void> {
+): Promise<Map<ArticleSyncItem, ArticleSyncItem>> {
+  if (prepared.length === 0) return new Map()
   let existingBySlug: Map<string, Post>
   try {
     existingBySlug = await prefetchPosts(prepared.map(article => article.slug))
   } catch (err) {
-    for (const { item } of prepared) {
-      item.action = 'error'
-      item.error = err instanceof Error ? err.message : String(err)
-    }
     if (err instanceof Error) onError(err)
-    return
+    return new Map(
+      prepared.map(({ item }) => [
+        item,
+        { ...item, action: 'error', error: err instanceof Error ? err.message : String(err) },
+      ]),
+    )
   }
 
   // Different slugs and UUIDs can resolve to the same post. Keep the current
   // state by ID so every alias sees a preceding file's successful update.
   const currentById = new Map([...existingBySlug.values()].map(post => [post.id, post]))
+  const finalItems = new Map<ArticleSyncItem, ArticleSyncItem>()
   for (const { item, slug, title, body, topics, postType, fileHash } of prepared) {
+    let outcome: ItemOutcome
     try {
       const key = lookupKey(slug)
       const prefetched = existingBySlug.get(key)
@@ -35,8 +43,11 @@ export async function processPreparedArticles(
 
       if (existing) {
         if (existing.post_type !== postType) {
-          item.action = 'error'
-          item.error = `Post type mismatch: existing="${existing.post_type}", expected="${postType}"`
+          finalItems.set(item, {
+            ...item,
+            action: 'error',
+            error: `Post type mismatch: existing="${existing.post_type}", expected="${postType}"`,
+          })
           continue
         }
 
@@ -44,7 +55,7 @@ export async function processPreparedArticles(
 
         if (fileHash === existingHash) {
           // Skip against the batch-start snapshot (or an earlier write in this batch); the next sync restores concurrent edits from the repository.
-          item.action = 'skipped'
+          outcome = { action: 'skipped' }
           if (topics?.length) {
             // oxlint-disable-next-line no-await-in-loop -- topic tagging must finish before this file's result is recorded
             await tagPostWithTopics(currentUser, existing.id, topics)
@@ -53,7 +64,7 @@ export async function processPreparedArticles(
           // oxlint-disable-next-line no-await-in-loop -- duplicate slugs require the update to finish before processing the next file
           const updated = await updatePost(currentUser, existing, { markdown: body, title })
           currentById.set(updated.id, updated)
-          item.action = 'updated'
+          outcome = { action: 'updated' }
           if (topics?.length) {
             // oxlint-disable-next-line no-await-in-loop -- topic tagging follows the completed update for this file
             await tagPostWithTopics(currentUser, existing.id, topics)
@@ -72,7 +83,7 @@ export async function processPreparedArticles(
         })
         existingBySlug.set(key, post)
         currentById.set(post.id, post)
-        item.action = 'created'
+        outcome = { action: 'created' }
 
         if (topics?.length) {
           // oxlint-disable-next-line no-await-in-loop -- topic tagging follows the completed creation for this file
@@ -80,9 +91,10 @@ export async function processPreparedArticles(
         }
       }
     } catch (err) {
-      item.action = 'error'
-      item.error = err instanceof Error ? err.message : String(err)
+      outcome = { action: 'error', error: err instanceof Error ? err.message : String(err) }
       if (err instanceof Error) onError(err)
     }
+    finalItems.set(item, { ...item, ...outcome })
   }
+  return finalItems
 }

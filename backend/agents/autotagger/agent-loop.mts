@@ -61,7 +61,7 @@ export async function runAutotaggerAgentLoop(
 ): Promise<AutotaggerAgentLoopResult> {
   const { bounds } = params
   const candidates = new Set(params.candidateIds)
-  const messages: AgentTurnMessage[] = [{ role: 'user', text: params.input }]
+  let messages: AgentTurnMessage[] = [{ role: 'user', text: params.input }]
   let outputTokens = 0
   let toolCallCount = 0
   let previousSignature: string | undefined
@@ -89,7 +89,7 @@ export async function runAutotaggerAgentLoop(
     )
     outputTokens += response.usage.outputTokens
     const { text, toolCalls } = response.output
-    messages.push({ role: 'assistant', text, toolCalls })
+    messages = messages.concat({ role: 'assistant', text, toolCalls })
     const signature = callsSignature(toolCalls)
     if (signature === previousSignature) return result('stalled', turn)
     previousSignature = signature
@@ -118,7 +118,7 @@ export async function runAutotaggerAgentLoop(
       const output = await runSearchTopicsTool(call.input, candidates, params.search)
       results.push({ callId: call.id, content: output.content, isError: output.isError })
     }
-    messages.push({ role: 'tool', results })
+    messages = messages.concat({ role: 'tool', results })
   }
   return result('turns-exhausted', bounds.maxTurns)
 }

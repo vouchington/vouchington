@@ -13,13 +13,13 @@ interface CapturedQuery {
   timestamp: number
 }
 let captureEnabled = false
-const captured: CapturedQuery[] = []
+let captured: CapturedQuery[] = []
 const queryCaptureScopes = new AsyncLocalStorage<{ captured: boolean }>()
 // Plan tests share a fork with in-process workers. This audience records only the profiled call.
 const captureAudiences = new AsyncLocalStorage<CapturedQuery[]>()
 export function enableQueryCapture(): void {
   captureEnabled = true
-  captured.length = 0
+  captured = []
 }
 export function disableQueryCapture(): void {
   captureEnabled = false
@@ -30,7 +30,7 @@ export function getCapturedQueries(): CapturedQuery[] {
 }
 
 export function clearCapturedQueries(): void {
-  captured.length = 0
+  captured = []
 }
 
 export function runWithSingleQueryCapture<Result>(handler: () => Result): Result {
@@ -93,7 +93,7 @@ export function maybeCaptureQuery(input: QueryInput, values?: QueryValues): void
     timestamp: Date.now(),
   }
   if (audience) audience.push(record)
-  else captured.push(record)
+  else captured = [...captured, record]
 }
 
 const captureAwareQueries = new WeakSet<QueryExecutor>()

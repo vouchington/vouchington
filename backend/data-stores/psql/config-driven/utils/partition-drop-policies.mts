@@ -29,20 +29,20 @@ export type PartitionDropPolicy = {
   inFlightPredicates?: readonly string[]
 }
 
-/** A null minimum makes retirement fail closed until the table owner chooses a window. */
-export const PARTITION_DROP_POLICIES: Record<string, PartitionDropPolicy> = Object.fromEntries(
-  [
-    ...POST_PARTITION_TABLES,
-    ...USER_DATA_REQUEST_PARTITION_TABLES,
-    ...CLASSIFIER_RESULT_PARTITION_TABLES,
-    ...USER_SESSION_PARTITION_TABLES,
-    ...USER_KEY_PARTITION_TABLES,
-    ...DEFERRED_LEDGER_PARTITION_TABLES,
-  ].map(table => [table, { minimumRetentionDays: null }]),
-)
+type PolicyEntry = [string, PartitionDropPolicy]
 
-for (const config of ALL_MONTHLY_PARTITION_TABLES) {
-  PARTITION_DROP_POLICIES[config.table] = {
+const NULL_MINIMUM_POLICIES: PolicyEntry[] = [
+  ...POST_PARTITION_TABLES,
+  ...USER_DATA_REQUEST_PARTITION_TABLES,
+  ...CLASSIFIER_RESULT_PARTITION_TABLES,
+  ...USER_SESSION_PARTITION_TABLES,
+  ...USER_KEY_PARTITION_TABLES,
+  ...DEFERRED_LEDGER_PARTITION_TABLES,
+].map(table => [table, { minimumRetentionDays: null }])
+
+const MONTHLY_POLICIES: PolicyEntry[] = ALL_MONTHLY_PARTITION_TABLES.map(config => [
+  config.table,
+  {
     minimumRetentionDays: config.retentionDays ?? null,
     legalBasis: 'docs/overview/architecture/partitioning-strategy.md',
     ...(config.table === 'crawls' && {
@@ -51,70 +51,26 @@ for (const config of ALL_MONTHLY_PARTITION_TABLES) {
     ...(config.table === 'crawl_chunks' && {
       inFlightPredicates: ['bedrock_nova_multimodal_v1_embedding_created_at IS NULL'],
     }),
-  }
-}
+  },
+])
 
-for (const config of COPYRIGHT_HISTORY_PARTITION_TABLES) {
-  PARTITION_DROP_POLICIES[config.table] = {
+const COPYRIGHT_HISTORY_POLICIES: PolicyEntry[] = COPYRIGHT_HISTORY_PARTITION_TABLES.map(config => [
+  config.table,
+  {
     minimumRetentionDays: config.retentionDays ?? null,
     minimumRetentionMonths: 72,
     legalBasis: 'docs/requirements/moderation/COPYRIGHT-NOTICES.md#evidence-retention',
     copyrightHistory: true,
-  }
-}
+  },
+])
 
-for (const table of CLASSIFIER_RESULT_PARTITION_TABLES) {
-  PARTITION_DROP_POLICIES[table] = {
+const CLASSIFIER_RESULT_POLICIES: PolicyEntry[] = CLASSIFIER_RESULT_PARTITION_TABLES.map(table => [
+  table,
+  {
     minimumRetentionDays: 90,
     legalBasis: 'docs/overview/architecture/partitioning-strategy.md',
-  }
-}
-
-PARTITION_DROP_POLICIES.user_data_requests = {
-  minimumRetentionDays: 30,
-  legalBasis: 'docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md',
-}
-PARTITION_DROP_POLICIES.user_data_request_attempts = {
-  minimumRetentionDays: 30,
-  legalBasis: 'docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md',
-}
-
-// Any row left after bounded folding, including protected replay usage, blocks DROP.
-PARTITION_DROP_POLICIES.ai_usage_records = {
-  minimumRetentionDays: 180,
-  legalBasis: 'docs/overview/architecture/partitioning-strategy.md',
-  mustBeEmpty: true,
-  retirementReferenceTables: [
-    'ai_usage_provider_response_keys',
-    'communities',
-    'posts',
-    'classifier_run_identities',
-    'ai_service_tiers',
-    'currencies',
-  ],
-}
-
-PARTITION_DROP_POLICIES.topic_revisions = {
-  minimumRetentionDays: null,
-  minimumRetentionMonths: 12,
-  legalBasis: 'docs/overview/architecture/partitioning-strategy.md',
-  retirementReferenceTables: ['topics', 'users'],
-}
-
-PARTITION_DROP_POLICIES.post_revisions = {
-  minimumRetentionDays: null,
-  minimumRetentionMonths: 72,
-  legalBasis: 'docs/overview/architecture/partitioning-strategy.md',
-  retirementReferenceTables: ['posts', 'users'],
-}
-
-// Security call audits may be retired only after the privacy-policy window. The legal
-// decision rationale lives with its copyright case and is not retained by this partition.
-PARTITION_DROP_POLICIES['mcp_call_audit_events'] = {
-  minimumRetentionDays: 366,
-  legalBasis: 'articles/privacy-policy.md',
-  legalHoldAccountColumn: 'actor_user_id',
-}
+  },
+])
 
 // Owner-approved minimum for both transition histories. Retire only complete calendar months.
 // retirementReferenceTables lists every table on either side of the history table's foreign keys
@@ -128,12 +84,87 @@ const TRANSITION_HISTORY_REFERENCES: Readonly<Record<string, readonly string[]>>
     'retained_user_identities',
   ],
 }
-for (const [table, retirementReferenceTables] of Object.entries(TRANSITION_HISTORY_REFERENCES)) {
-  PARTITION_DROP_POLICIES[table] = {
+
+const TRANSITION_HISTORY_POLICIES: PolicyEntry[] = Object.entries(
+  TRANSITION_HISTORY_REFERENCES,
+).map(([table, retirementReferenceTables]) => [
+  table,
+  {
     minimumRetentionDays: null,
     minimumRetentionMonths: 72,
     legalBasis: 'docs/overview/architecture/partitioning-strategy.md',
     legalHoldAccountColumn: 'post_author_user_id',
     retirementReferenceTables,
-  }
-}
+  },
+])
+
+/**
+ * A null minimum makes retirement fail closed until the table owner chooses a window. A later
+ * entry replaces an earlier entry for the same table.
+ */
+export const PARTITION_DROP_POLICIES: Record<string, PartitionDropPolicy> = Object.fromEntries([
+  ...NULL_MINIMUM_POLICIES,
+  ...MONTHLY_POLICIES,
+  ...COPYRIGHT_HISTORY_POLICIES,
+  ...CLASSIFIER_RESULT_POLICIES,
+  [
+    'user_data_requests',
+    {
+      minimumRetentionDays: 30,
+      legalBasis: 'docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md',
+    },
+  ],
+  [
+    'user_data_request_attempts',
+    {
+      minimumRetentionDays: 30,
+      legalBasis: 'docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md',
+    },
+  ],
+  // Any row left after bounded folding, including protected replay usage, blocks DROP.
+  [
+    'ai_usage_records',
+    {
+      minimumRetentionDays: 180,
+      legalBasis: 'docs/overview/architecture/partitioning-strategy.md',
+      mustBeEmpty: true,
+      retirementReferenceTables: [
+        'ai_usage_provider_response_keys',
+        'communities',
+        'posts',
+        'classifier_run_identities',
+        'ai_service_tiers',
+        'currencies',
+      ],
+    },
+  ],
+  [
+    'topic_revisions',
+    {
+      minimumRetentionDays: null,
+      minimumRetentionMonths: 12,
+      legalBasis: 'docs/overview/architecture/partitioning-strategy.md',
+      retirementReferenceTables: ['topics', 'users'],
+    },
+  ],
+  [
+    'post_revisions',
+    {
+      minimumRetentionDays: null,
+      minimumRetentionMonths: 72,
+      legalBasis: 'docs/overview/architecture/partitioning-strategy.md',
+      retirementReferenceTables: ['posts', 'users'],
+    },
+  ],
+  // Security call audits may be retired only after the privacy-policy window. The legal
+  // decision rationale lives with its copyright case and is not retained by this partition.
+  [
+    'mcp_call_audit_events',
+    {
+      minimumRetentionDays: 366,
+      legalBasis: 'articles/privacy-policy.md',
+      legalHoldAccountColumn: 'actor_user_id',
+    },
+  ],
+  ...TRANSITION_HISTORY_POLICIES,
+])

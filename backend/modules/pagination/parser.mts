@@ -71,26 +71,14 @@ export class PaginationParser<TConfig extends PaginationConfig> {
     }
     const { limit, ...cursorQuery } = query
     const { after } = this.#core.parse(cursorQuery)
-    const result: Record<string, unknown> = {}
-    if (after !== undefined) result.after = after
     const bounds = narrowLimitBounds(this.#limitBounds, runtimeBounds)
-    result.limit = parseBoundedIntegerLimit(limit, bounds)
+    const parsedLimit = parseBoundedIntegerLimit(limit, bounds)
     const filters = this.#filters
-    if (!filters) return result as ParsedOptions<TConfig>
-
-    if (filters.postTypes) setDefined(result, 'post_types', validatePostTypes(query.post_types))
-    if (filters.topicTypes) setDefined(result, 'topic_types', validateTopicTypes(query.topic_types))
-    if (filters.timeRange) setDefined(result, 'time_range', validateTimeRange(query.time_range))
-    if (filters.sort) setDefined(result, 'sort', validateSort(query.sort, filters.sort))
-    if (filters.search) {
-      if (query.text_search_query !== undefined)
-        result.text_search_query = stringFromUnknown(query.text_search_query)
-      if (query.semantic_search_query !== undefined)
-        result.semantic_search_query = stringFromUnknown(query.semantic_search_query)
-    }
-    if (filters.mediaTypes)
-      setDefined(result, 'media_types', validateMediaTypes(query.media_type, query.media_types))
-    return result as ParsedOptions<TConfig>
+    return {
+      ...(after !== undefined && { after }),
+      limit: parsedLimit,
+      ...(filters && parseFilters(filters, query)),
+    } as ParsedOptions<TConfig>
   }
 }
 
@@ -101,6 +89,40 @@ export function parseBoundedIntegerLimit(
   return parsePlatformBoundedIntegerLimit(value, { paramName: 'limit', ...bounds })
 }
 
-function setDefined(result: Record<string, unknown>, key: string, value: unknown): void {
-  if (value !== undefined) result[key] = value
+function defined(key: string, value: unknown): Array<[string, unknown]> {
+  return value === undefined ? [] : [[key, value]]
+}
+
+function searchEntries(query: Record<string, unknown>): Array<[string, unknown]> {
+  return [
+    ...(query.text_search_query !== undefined
+      ? [['text_search_query', stringFromUnknown(query.text_search_query)] as [string, unknown]]
+      : []),
+    ...(query.semantic_search_query !== undefined
+      ? [
+          ['semantic_search_query', stringFromUnknown(query.semantic_search_query)] as [
+            string,
+            unknown,
+          ],
+        ]
+      : []),
+  ]
+}
+
+/** Validates each enabled filter in declaration order and keeps the ones the query supplied. */
+function parseFilters(
+  filters: NonNullable<PaginationConfig['filters']>,
+  query: Record<string, unknown>,
+): Record<string, unknown> {
+  const entries: Array<[string, unknown]> = [
+    ...(filters.postTypes ? defined('post_types', validatePostTypes(query.post_types)) : []),
+    ...(filters.topicTypes ? defined('topic_types', validateTopicTypes(query.topic_types)) : []),
+    ...(filters.timeRange ? defined('time_range', validateTimeRange(query.time_range)) : []),
+    ...(filters.sort ? defined('sort', validateSort(query.sort, filters.sort)) : []),
+    ...(filters.search ? searchEntries(query) : []),
+    ...(filters.mediaTypes
+      ? defined('media_types', validateMediaTypes(query.media_type, query.media_types))
+      : []),
+  ]
+  return Object.fromEntries(entries)
 }

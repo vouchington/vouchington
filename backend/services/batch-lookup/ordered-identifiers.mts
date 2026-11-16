@@ -56,14 +56,13 @@ export function partitionBatchIdentifiers<TType extends BatchIdentifierType>(
 export function buildOrderedInputCtes<TType extends BatchIdentifierType>(
   partitions: readonly OrderedInputPartition<TType>[],
 ): OrderedInputCtes {
-  const values: unknown[] = []
-  const ctes = partitions.map(partition => {
-    const valueParam = values.length + 1
-    const orderParam = values.length + 2
-    values.push(
-      partition.inputs.map(input => input.value),
-      partition.inputs.map(input => input.index),
-    )
+  const values = partitions.flatMap(partition => [
+    partition.inputs.map(input => input.value),
+    partition.inputs.map(input => input.index),
+  ])
+  const ctes = partitions.map((partition, partitionIndex) => {
+    const valueParam = partitionIndex * 2 + 1
+    const orderParam = partitionIndex * 2 + 2
 
     return `${partition.cteName} AS (
       SELECT unnest($${valueParam}::${partition.sqlType}[]) AS input_value,

@@ -153,8 +153,7 @@ export async function retirePartitionsSequentially(
   return candidates.reduce(
     async (previous, candidate) => {
       const outcomes = await previous
-      outcomes.push(await retireOne(candidate))
-      return outcomes
+      return [...outcomes, await retireOne(candidate)]
     },
     Promise.resolve([] as PartitionDropOutcome[]),
   )

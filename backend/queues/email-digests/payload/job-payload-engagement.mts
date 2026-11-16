@@ -23,11 +23,9 @@ import {
   requiredString,
 } from '@queues/emails/payload/job-payload-read'
 
-const communityCountKeyList: string[] = []
-for (const [key, kind] of Object.entries(communityItemVariableKeys)) {
-  if (kind === 'number') communityCountKeyList.push(key)
-}
-const communityCountKeys: readonly string[] = communityCountKeyList
+const communityCountKeys: readonly string[] = Object.entries(communityItemVariableKeys).flatMap(
+  ([key, kind]) => (kind === 'number' ? [key] : []),
+)
 
 export const parseEngagementVariables = {
   processSendFollowTopicsEmail: (data: unknown) =>

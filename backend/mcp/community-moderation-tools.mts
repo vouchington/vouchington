@@ -43,14 +43,14 @@ async function resolveModerationReferences(args: unknown): Promise<CommunityMode
     resolveReferenceFields(next, REFERENCE_FIELDS),
     postReferences.length > 0 ? canonicalEntityIds('post', postReferences) : Promise.resolve([]),
   ])
-  let resolvedIndex = 0
-  if (postIdPresent) {
-    next.postId = resolvedPosts[resolvedIndex++] ?? MISSING_REFERENCE_ID
-  }
-  if (postIdsPresent) {
-    next.post_ids = resolvedPosts.slice(resolvedIndex).map(id => id ?? MISSING_REFERENCE_ID)
-  }
-  return next as CommunityModerationArgs
+  const postIdOffset = postIdPresent ? 1 : 0
+  return {
+    ...next,
+    ...(postIdPresent && { postId: resolvedPosts[0] ?? MISSING_REFERENCE_ID }),
+    ...(postIdsPresent && {
+      post_ids: resolvedPosts.slice(postIdOffset).map(id => id ?? MISSING_REFERENCE_ID),
+    }),
+  } as CommunityModerationArgs
 }
 
 const handlers: Record<string, CommunityModerationHandler> = {

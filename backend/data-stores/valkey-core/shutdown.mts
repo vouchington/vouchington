@@ -28,14 +28,16 @@ async function gracefulShutdown(): Promise<void> {
   }
 }
 
-export const onGracefulShutdown = Object.assign(gracefulShutdown, {
-  async waitForInitialization(): Promise<void> {
-    const results = await Promise.allSettled(
-      dynamicConfigs.map(config => Promise.resolve().then(() => config.waitForInitialization())),
-    )
-    const errors = collectErrors(results)
-    if (errors.length > 0) throw new AggregateError(errors, 'Dynamic config initialization failed')
-  },
+async function waitForInitialization(): Promise<void> {
+  const results = await Promise.allSettled(
+    dynamicConfigs.map(config => Promise.resolve().then(() => config.waitForInitialization())),
+  )
+  const errors = collectErrors(results)
+  if (errors.length > 0) throw new AggregateError(errors, 'Dynamic config initialization failed')
+}
+
+export const onGracefulShutdown = Object.assign(() => gracefulShutdown(), {
+  waitForInitialization,
 })
 
 // Self-register so the final shutdown phase (after drain callbacks) closes these clients, without

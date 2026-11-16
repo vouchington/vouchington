@@ -4,39 +4,40 @@ import { validateRssFeedUrl } from '@services/user-import-export/validate-rss-fe
 
 export type RssFeedReference = { id: string; slug: null }
 
+type Entry =
+  | { kind: 'id'; value: string; order: number }
+  | { kind: 'url'; value: string; order: number; priority: number }
+
 /** RSS feed id or URL. `http` is also tried as `https` in the same statement. */
 export async function resolveRssFeeds(
   references: readonly string[],
 ): Promise<Array<RssFeedReference | null>> {
-  const ids: string[] = []
-  const idOrders: number[] = []
-  const urls: string[] = []
-  const urlOrders: number[] = []
-  const urlPriorities: number[] = []
-  references.forEach((reference, index) => {
+  const entries = references.flatMap((reference, order): Entry[] => {
     const trimmed = reference.trim()
-    if (!trimmed) return
-    if (isUUID(trimmed)) {
-      ids.push(trimmed)
-      idOrders.push(index)
-      return
-    }
+    if (!trimmed) return []
+    if (isUUID(trimmed)) return [{ kind: 'id', value: trimmed, order }]
     const validated = validateRssFeedUrl(trimmed)
-    if (!validated.valid) return
-    urls.push(validated.canonicalUrl)
-    urlOrders.push(index)
-    urlPriorities.push(0)
-    if (validated.canonicalUrl.startsWith('http://')) {
-      const https = validateRssFeedUrl(validated.canonicalUrl.replace(/^http:\/\//, 'https://'))
-      if (https.valid) {
-        urls.push(https.canonicalUrl)
-        urlOrders.push(index)
-        urlPriorities.push(1)
-      }
-    }
+    if (!validated.valid) return []
+    const httpsFallback = validated.canonicalUrl.startsWith('http://')
+      ? validateRssFeedUrl(validated.canonicalUrl.replace(/^http:\/\//, 'https://'))
+      : undefined
+    return [
+      { kind: 'url', value: validated.canonicalUrl, order, priority: 0 },
+      ...(httpsFallback?.valid
+        ? [{ kind: 'url', value: httpsFallback.canonicalUrl, order, priority: 1 } satisfies Entry]
+        : []),
+    ]
   })
+  const idRefs = entries.filter(entry => entry.kind === 'id')
+  const urlRefs = entries.filter(entry => entry.kind === 'url')
   return getRssFeedsByReferenceBatch(
-    { ids, idOrders, urls, urlOrders, urlPriorities },
+    {
+      ids: idRefs.map(entry => entry.value),
+      idOrders: idRefs.map(entry => entry.order),
+      urls: urlRefs.map(entry => entry.value),
+      urlOrders: urlRefs.map(entry => entry.order),
+      urlPriorities: urlRefs.map(entry => entry.priority),
+    },
     references.length,
   )
 }
