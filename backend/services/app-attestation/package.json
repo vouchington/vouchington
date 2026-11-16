@@ -32,7 +32,7 @@
     "@vouchington/sentry": "^0.6.0",
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
-    "node-app-attest": "^1.0.1",
+    "node-app-attest": "^2.2.0",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {

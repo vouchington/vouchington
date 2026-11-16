@@ -63,7 +63,9 @@ export async function verifyAssertionSignature(
     type: 'spki',
   }).export({ type: 'spki', format: 'pem' })
 
-  const signCountGate = params.signCountFloor === -1 ? -1 : storedKey.sign_count
+  // node-app-attest >= 2.1 rejects a negative signCount, so the disabled gate is a floor of 0:
+  // real assertion counters start at 1, so this still accepts every out-of-order counter.
+  const signCountGate = params.signCountFloor === -1 ? 0 : storedKey.sign_count
 
   let result: unknown
   try {

@@ -5,6 +5,7 @@ import {
 import { createPublicKey, randomBytes, randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { verifyAssertion } from './assertion.mts'
+import { verifyAssertionSignature } from './assertion-core.mts'
 import { storeAppAttestChallenge } from './challenges.mts'
 import { appAttestationConfig } from './config.mts'
 import { insertAttestationKey, loadAttestationKeyByKeyId } from './store.mts'
@@ -131,6 +132,33 @@ describe('verifyAssertion', () => {
         payload: FIXTURE_PAYLOAD,
       }),
     ).rejects.toMatchObject({ status: 403, code: 'ATTESTATION_REJECTED' })
+  })
+
+  it('accepts a counter at or below the stored sign_count when the monotonic gate is disabled', async () => {
+    const did = randomUUID()
+    const { keyId } = await insertRandomAttestationKey(did)
+
+    const challengeKey = testChallengeKey('gate-disabled')
+    await storeAppAttestChallenge('assertion', challengeKey, 'unused-by-verifyAssertion')
+    await verifyAssertion({
+      challengeKey,
+      keyId,
+      did,
+      assertion: FIXTURE_ASSERTION,
+      payload: FIXTURE_PAYLOAD,
+    })
+
+    // The stored sign_count is now 1 and the fixture counter is 1: the per-request path
+    // (signCountFloor -1) must still verify it, because requests arrive out of order.
+    await expect(
+      verifyAssertionSignature({
+        keyId,
+        did,
+        assertion: FIXTURE_ASSERTION,
+        payload: FIXTURE_PAYLOAD,
+        signCountFloor: -1,
+      }),
+    ).resolves.toBe(1)
   })
 
   it('rejects an assertion for an unknown keyId', async () => {
