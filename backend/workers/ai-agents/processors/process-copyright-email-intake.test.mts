@@ -8,7 +8,7 @@ import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches'
 import { processCopyrightEmailIntake } from './process-copyright-email-intake.mts'
-import { processReconcileCopyrightAgentDispatches } from './process-reconcile-copyright-agent-dispatches.mts'
+import { copyrightAgentDispatchProcessors } from './process-reconcile-copyright-agent-dispatches.mts'
 
 const jobFor = (intakeId: string) =>
   ({ data: { intake_id: intakeId } }) as Job<CopyrightEmailIntakeJobData>
@@ -44,7 +44,7 @@ describe('processCopyrightEmailIntake while intake is switched off', () => {
       if (jobId) await (await ai_agents.getJob(jobId))?.remove()
     })
     const reconcile = () =>
-      processReconcileCopyrightAgentDispatches({}, { ids: [intake.id], batchSize: 1 })
+      copyrightAgentDispatchProcessors.email({}, { ids: [intake.id], batchSize: 1 })
 
     await processCopyrightEmailIntake(jobFor(intake.id), callModel)
     await reconcile()
