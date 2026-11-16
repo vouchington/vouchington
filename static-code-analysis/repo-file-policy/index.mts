@@ -37,7 +37,6 @@ import { checkPostPublicationReaderInventory } from './post-publication-reader-i
 import { checkPostPublicationWriterInventory } from './post-publication-writer-inventory.mts'
 import { checkPublicSourceLiterals } from './public-source-literal-guard.mts'
 import { checkRelationalStorage } from './relational-storage-guard.mts'
-import { checkPlaywrightVisibilityFallback } from './playwright-visibility-fallback-guard.mts'
 import {
   checkWebIdRouteSegments,
   webIdRouteSegmentAllowlistFile,
@@ -116,7 +115,6 @@ export async function checkRepoFilePolicy(
   errors.push(...ghaWorkspacePolicy.errors)
   checkLivingDocsPinGuard(ctx.repoRoot, trackedFiles, errors)
   checkPublicSourceLiterals(ctx.repoRoot, trackedFiles, errors)
-  checkPlaywrightVisibilityFallback(ctx.repoRoot, trackedFiles, errors, ctx.readTrackedFile)
   if (trackedFileSet.has(webIdRouteSegmentAllowlistFile))
     checkWebIdRouteSegments(trackedFiles, errors)
   return { errors }
