@@ -2637,6 +2637,31 @@
           reason: 'membership create counts at most 5 households per individual (LIMIT 6) before insert; a race may overshoot and the schema has no maximum',
         }
 
+- name: grouping does not stand in for aggregation
+  rule: postgres-grouping-not-aggregation
+  scope: repository
+  severity: advisory
+  options:
+    importSpecifier: '@data-stores/psql'
+    executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+    executorTypeNames: [TransactionQuery, QueryExecutor, PoolClient, QueryOptions]
+    schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+    include: ['backend/**/*.{ts,mts,js}']
+    exclude: ['**/*.test.*', '**/__tests__/**', '**/test-helpers/**', 'backend/scripts/**']
+
+- name: locks are taken only on written rows
+  rule: postgres-lock-written-rows-only
+  scope: repository
+  severity: advisory
+  options:
+    unanalyzableSql: ignore
+    importSpecifier: '@data-stores/psql'
+    executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+    executorTypeNames: [TransactionQuery, QueryExecutor, PoolClient, QueryOptions]
+    schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+    include: ['backend/**/*.{ts,mts,js}']
+    exclude: ['**/*.test.*', '**/__tests__/**', '**/test-helpers/**', 'backend/scripts/**']
+
 - name: counter columns have nonnegative checks
   rule: postgres-column-check-constraints
   scope: repository
