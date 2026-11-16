@@ -7,8 +7,7 @@ description: Author backend Vitest tests, fixtures, provider mocks, and database
 
 ## Canonical skill (required)
 
-Claude Code and Codex load `vouchington-testing:backend-vitest-test-authoring`; Grok, Cursor, and OpenCode read
-`node_modules/vouchington-tooling/skills/backend-vitest-test-authoring/SKILL.md`. If the canonical skill cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
+Claude Code, Codex, and Grok load the plugin skill `skills:test-authoring` and read its `references/vitest.md` (the "Every Vitest test" and "Backend: persistence, providers, services, queues" sections). If either cannot be loaded, stop and report the missing prerequisite; never apply this adapter alone.
 
 ## Vouchington additions
 

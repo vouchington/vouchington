@@ -7,18 +7,17 @@ allowed-tools: ['Bash', 'Read', 'Grep', 'Glob', 'Agent', 'ToolSearch']
 
 # Triage Security
 
-This is a Vouchington-only adapter. Use public `security-triage` plugin version
-0.1.0 or later for Codex Security finding intake, classification, approval,
+This is a Vouchington-only adapter. Load the plugin skill `skills:triage-codex-security` (Claude
+Code, Codex, and Grok) for Codex Security finding intake, classification, approval,
 hosted disposition changes, and provider-created fix PRs. It emits the
 `codex-security-triage/v1` handoff; do not recreate those generic operations in
 this repository.
 
-Before beginning, verify that the installed plugin is `security-triage` version
-0.1.0 or later and can produce `codex-security-triage/v1`. If it is unavailable
-or incompatible, fail closed: make no hosted finding, issue, or PR mutation.
-Install the public plugin using the host-specific instructions at
-<https://github.com/vouchington/vouchington-tooling#install>, then restart
-discovery and verify the version. Use the host-specific instructions there.
+Before beginning, verify that `skills:triage-codex-security` loads and can produce
+`codex-security-triage/v1`. If it is unavailable or incompatible, fail closed: make no hosted
+finding, issue, or PR mutation. Install the `skills` plugin using the
+[required agent plugin instructions](../../../.claude/README.md#required-agent-plugins), then
+restart discovery.
 
 Recompute the adapter binding from the selected remote: fetch its default branch,
 then accept only handoff records whose `canonicalRepository` exactly equals
@@ -72,9 +71,8 @@ Verify the PR is still `OPEN`, not a draft, and labeled `automation`
 with the attended triage loop, within its grant.
 
 This is Vouchington post-processing only: it does not create, repair, or replace
-the provider PR. Preserve the canonical
-[agent-authored PR creation feedback](../agent-workflow/code-review.md#agent-authored-pr-creation-feedback)
-record and invoke [retrospective](../retrospective/SKILL.md) once before the
+the provider PR. Preserve the agent-authored PR creation feedback record (the
+`references/feedback.md` procedure of `vouchington-workflow:triage-prs`) and invoke [retrospective](../retrospective/SKILL.md) once before the
 final report.
 
 ## See Also

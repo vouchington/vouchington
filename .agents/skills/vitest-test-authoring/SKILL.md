@@ -7,8 +7,7 @@ description: Author non-web Vitest tests, mocks, and fixtures in backend, lambda
 
 ## Canonical skill (required)
 
-Claude Code and Codex load `vouchington-testing:vitest-test-authoring`; Grok, Cursor, and OpenCode read
-`node_modules/vouchington-tooling/skills/vitest-test-authoring/SKILL.md`. If the canonical skill cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
+Claude Code, Codex, and Grok load the plugin skill `skills:test-authoring` and read its `references/vitest.md` (the "Every Vitest test" section). If either cannot be loaded, stop and report the missing prerequisite; never apply this adapter alone.
 
 ## Vouchington additions
 

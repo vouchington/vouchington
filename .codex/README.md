@@ -2,8 +2,8 @@
 
 Codex reads checked-in `AGENTS.md` files and discovers local adapters under `.agents/skills/`.
 No repository file installs a plugin or registers an MCP server. vouchington-machines'
-`install-dependencies.sh` installs the `vouchington-workflow`, `vouchington-testing`,
-`vouchington-database`, `security-triage` and `pr-shepherd` plugins for Codex, and `./configure-agents.sh`
+`install-dependencies.sh` installs the `skills` (marketplace `jonathanong-skills`),
+`vouchington-workflow` and `pr-shepherd` plugins for Codex, and `./configure-agents.sh`
 registers `vouchington-tooling` in the user's Codex config and pre-approves its tools. Run
 `./diagnose-agents.sh --repo <worktree>` there to check; the hand-run `codex plugin` install steps
 are retired.

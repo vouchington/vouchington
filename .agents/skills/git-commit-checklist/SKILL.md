@@ -7,7 +7,7 @@ description: Validate and prepare Vouchington commits before staging or committi
 
 ## Canonical skill (required)
 
-Claude Code and Codex load `vouchington-workflow:git-commit-checklist`; Grok, Cursor, and OpenCode read `node_modules/vouchington-tooling/skills/git-commit-checklist/SKILL.md` and resolve its supporting resources relative to that directory. If it cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
+Claude Code, Codex, and Grok load the plugin skill `skills:git-commit-checklist`. If it cannot be loaded, stop and report the missing prerequisite; never apply this adapter alone.
 
 ## Vouchington additions
 

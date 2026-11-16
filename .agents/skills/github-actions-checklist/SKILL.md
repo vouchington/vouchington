@@ -7,7 +7,7 @@ description: Edit Vouchington GitHub Actions workflows and composite actions.
 
 ## Canonical skill (required)
 
-Claude Code and Codex load `vouchington-workflow:github-actions-checklist`; Grok, Cursor, and OpenCode read `node_modules/vouchington-tooling/skills/github-actions-checklist/SKILL.md` and resolve its supporting resources relative to that directory. If it cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
+Claude Code, Codex, and Grok load the plugin skill `skills:github-actions-authoring` and read its `references/workflow-baseline.md` (the checklist). If either cannot be loaded, stop and report the missing prerequisite; never apply this adapter alone.
 
 ## Vouchington additions
 

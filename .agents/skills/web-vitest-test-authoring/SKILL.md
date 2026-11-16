@@ -7,8 +7,7 @@ description: Author web/** Vitest tests and fixtures with Next.js mocking and re
 
 ## Canonical skill (required)
 
-Claude Code and Codex load `vouchington-testing:nextjs-vitest-test-authoring`; Grok, Cursor, and OpenCode read
-`node_modules/vouchington-tooling/skills/nextjs-vitest-test-authoring/SKILL.md`. If the canonical skill cannot be read, stop and report the missing prerequisite; never apply this overlay alone. The local `web-vitest-test-authoring` name is intentionally retained as the Vouchington-facing alias.
+Claude Code, Codex, and Grok load the plugin skill `skills:test-authoring` and read its `references/vitest.md` (the "Every Vitest test" and "Next.js: components, routes, server boundaries" sections). If either cannot be loaded, stop and report the missing prerequisite; never apply this adapter alone. The local `web-vitest-test-authoring` name is the Vouchington-facing alias for that Next.js guidance.
 
 ## Vouchington additions
 

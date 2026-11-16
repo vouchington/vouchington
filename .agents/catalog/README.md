@@ -2,12 +2,11 @@
 
 This focused index is directly linked from its owning `AGENTS.md`; select the document that matches the work at hand.
 
-The approved shared workflow, testing, and database adapters load the matching Vouchington plugin
-skill first. Install the upstream Claude or Codex plugins using the [required agent plugin
+The approved shared adapters load the matching `skills` or `vouchington-workflow` plugin skill
+first. Install the upstream Claude or Codex plugins using the [required agent plugin
 instructions](../../.claude/README.md#required-agent-plugins); the entries below only add
 Vouchington-specific policy and pointers.
 
-- [Code review prompt](../skills/agent-workflow/code-review-prompt.md)
 - [Code review workflow](../skills/agent-workflow/code-review.md)
 - [Start of work](../skills/agent-workflow/start-of-work.md)
 - [Implementation](../skills/agent-workflow/implementation.md)

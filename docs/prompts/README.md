@@ -4,11 +4,10 @@ Automation prompt text lives here. The attended triage loop schedules and runs t
 
 ## Prompt Surfaces
 
-| Surface                    | Source                                                             | Used by                                                                                                                              |
-| -------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Code review inline overlay | [code-review-inline-comments.md](code-review-inline-comments.md)   | Default `inline_prompt_path` overlay for the `code-review` composite action; see the file itself for the full contract and consumers |
-| Scheduled prompts          | [scheduled/](scheduled/) (indexed in [SCHEDULED.md](SCHEDULED.md)) | The attended triage loop, which schedules and runs them locally                                                                      |
-| Automation templates       | [automation templates](automation/README.md)                       | Subagent prompts the attended triage loop fills in and dispatches locally (shepherd, plan, fix, CI failure, scheduled)               |
+| Surface              | Source                                                             | Used by                                                                                                                |
+| -------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| Scheduled prompts    | [scheduled/](scheduled/) (indexed in [SCHEDULED.md](SCHEDULED.md)) | The attended triage loop, which schedules and runs them locally                                                        |
+| Automation templates | [automation templates](automation/README.md)                       | Subagent prompts the attended triage loop fills in and dispatches locally (shepherd, plan, fix, CI failure, scheduled) |
 
 Automation templates use `{{UPPER_SNAKE_CASE}}` placeholders. The caller substitutes short values inline and supplies multiline or user-provided values from files.
 
@@ -31,9 +30,8 @@ These templates are Vitest fixtures, not docs-only markdown, so changes under th
 
 ## Agent-Authored PR Feedback Loop
 
-PR-triage skills use the canonical
-[agent-authored PR creation feedback](../../.agents/skills/agent-workflow/code-review.md#agent-authored-pr-creation-feedback)
-rubric to turn evidence from generated PRs into improvements to their verified
+PR-triage skills use the agent-authored PR creation feedback rubric
+(`references/feedback.md` of `vouchington-workflow:triage-prs`) to turn evidence from generated PRs into improvements to their verified
 source prompt, producing skill, or shared workflow. `/triage-prs` automatically combines actionable,
 verified `docs/prompts/**` findings from its batch into one draft feedback PR with its plan stored outside Git;
 other sources keep the normal human disposition. Individual scheduled prompt bodies change only when

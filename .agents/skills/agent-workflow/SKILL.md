@@ -7,9 +7,7 @@ description: Apply Voucha workflow constraints when planning, implementing, revi
 
 ## Canonical skill (required)
 
-Load `vouchington-workflow:agent-workflow`, or
-`node_modules/vouchington-tooling/skills/agent-workflow/SKILL.md` when the plugin is unavailable.
-If neither canonical source is readable, report the missing prerequisite; do not apply this overlay alone.
+Claude Code, Codex, and Grok load the plugin skill `skills:agent-workflow`. If it cannot be loaded, stop and report the missing prerequisite; never apply this adapter alone.
 Apply these local additions after the canonical skill. Resolve references relative to their owner;
 do not reload a canonical skill or adapter already read in this task.
 
@@ -19,12 +17,12 @@ do not reload a canonical skill or adapter already read in this task.
   [skill-authoring instructions](../AGENTS.md) for skills. Startup context is not a repository-wide
   instruction scan; see [harness loading](../../../docs/development/agent-harness-parity.md).
 - For repository work, use the corresponding local skill adapter before its canonical plugin.
-  `nextjs-vitest-test-authoring` maps to the local `web-vitest-test-authoring` adapter.
+  The upstream Next.js Vitest guidance maps to the local `web-vitest-test-authoring` adapter.
 - Follow human direction, then the accepted plan, linked issues, and advisory AI reviews. Record
   material decisions with the saved plan or PR; do not duplicate them across mandatory ledgers.
 - Keep the prelaunch, relational-storage, and client-parity constraints in [AGENTS.md](../../../AGENTS.md).
-- Apply the canonical parallel-by-default rule; upstream means `vouchington-tooling` and
-  `no-mistakes`. Vouchington also serializes writes in one shared worktree, DB/Valkey-backed tests
+- Apply the canonical parallel-by-default rule; upstream means `skills`,
+  `vouchington-tooling`, and `no-mistakes`. Vouchington also serializes writes in one shared worktree, DB/Valkey-backed tests
   (the coordinator runs them one at a time), and `pnpm exec` and `no-mistakes` calls, which share
   pnpm's store index and the no-mistakes lock across worktrees. Other parallel tools run through
   `node_modules/.bin/<tool>`; see [agent sandbox](../../../docs/development/agent-sandbox.md).
@@ -37,7 +35,6 @@ do not reload a canonical skill or adapter already read in this task.
 - Setup, freshness, and local services: [start of work](start-of-work.md).
 - A plan is needed: [planning](../planning/SKILL.md); save it outside Git.
 - Implementation and validation: [implementation](implementation.md).
-- Substantive or risky review: [code review](code-review.md).
 - Commit and push: [before pushing](before-pushing.md).
 - PR creation, shepherding (or the optional `/shepherd` delegation to the triage loop), and merge
   authority: [Git and PRs](git-and-prs.md).

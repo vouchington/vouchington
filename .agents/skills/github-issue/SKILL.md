@@ -7,9 +7,7 @@ description: Search, verify, create, update, classify, and link Vouchington GitH
 
 ## Canonical skill (required)
 
-Claude Code and Codex load `vouchington-workflow:github-issue`; Grok, Cursor, and OpenCode read
-`node_modules/vouchington-tooling/skills/github-issue/SKILL.md`. If neither source is readable,
-report the missing prerequisite before any issue mutation; never apply this overlay alone.
+Claude Code, Codex, and Grok load the plugin skill `skills:github-issue`. If it cannot be loaded, stop and report the missing prerequisite; never apply this adapter alone.
 
 ## Vouchington additions
 

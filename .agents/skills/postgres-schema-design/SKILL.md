@@ -7,12 +7,7 @@ description: Design Vouchington PostgreSQL schemas using the canonical database 
 
 ## Canonical skill (required)
 
-Claude Code and Codex load `vouchington-database:postgres-schema-design`; if that canonical plugin
-source is unavailable or unreadable, read
-`node_modules/vouchington-tooling/skills/postgres-schema-design/SKILL.md` instead. Grok, Cursor, and
-OpenCode read that installed skill path. Resolve supporting resources relative to the selected
-canonical skill's directory. Stop if neither canonical source is readable; never apply this adapter
-alone.
+Claude Code, Codex, and Grok load the plugin skill `skills:postgres-schema-design`. If it cannot be loaded, stop and report the missing prerequisite; never apply this adapter alone.
 
 ## Vouchington additions
 
