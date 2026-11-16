@@ -104,8 +104,6 @@ describe('direct fallback priority', () => {
       status: 'active',
     })
     const grantSku = await createTestSku({ plan: 'plus' })
-    // Committed fixtures: the SERIALIZABLE grant writer is only setup here, and parallel tests'
-    // predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
     const queuedGrantId = await insertQueuedMembershipGrant({
       grantedById: admin.id,
       productId: grantSku.id,

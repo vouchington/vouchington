@@ -40,8 +40,6 @@ describe('revokeMembershipGrant family fallback', () => {
     })
     await endTestMembershipProjection(direct.id)
     const grantSku = await createTestSku({ plan: 'pro', interval: 'yearly' })
-    // Committed fixtures: the SERIALIZABLE grant writer is only setup here, and parallel tests'
-    // predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
     const grant = await createTestAdminGrantMembership({
       grantedById: admin.id,
       productId: grantSku.id,

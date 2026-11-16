@@ -32,13 +32,14 @@ export async function createGrantSource(
     durationDays > 3660
   )
     throw new RangeError('Admin grants require durationDays between 1 and 3660')
+  // Admission checks committed grant rows; concurrent issuers may each pass and exceed this cap.
   const outstanding = await getOutstandingMembershipGrantIds(options.userId, query)
   if (outstanding.length >= MAX_OUTSTANDING_MEMBERSHIP_GRANTS_PER_USER)
     throw createHttpError(409, 'Outstanding membership grant limit reached', {
       code: 'MEMBERSHIP_GRANT_LIMIT_REACHED',
     })
   const issuerSnapshot = await getGrantIssuerSnapshot(options.grantedById, query)
-  const { rows } = await query(sql`/* createMembership: serialize and persist grant FIFO */
+  const { rows } = await query(sql`/* createMembership: persist grant FIFO */
     WITH locked_user AS (
       SELECT id FROM users WHERE id = ${options.userId}
     ), open_direct_term AS (

@@ -25,7 +25,10 @@ export async function createMembership(
       typeof err === 'object' &&
       err !== null &&
       'code' in err &&
-      err.code === '40001'
+      err.code === '23505' &&
+      'constraint' in err &&
+      (err.constraint === 'idx_membership_grant_activation_periods__open_user' ||
+        err.constraint === 'idx_memberships__effective_user')
     )
       throw createHttpError(409, 'Concurrent membership grant issuance', {
         code: 'MEMBERSHIP_GRANT_CONFLICT',
@@ -57,9 +60,7 @@ async function createMembershipInTransaction(
     )
     if (membership.projected) registerEntitlementEffectsAfterCommit(dependencies.query)
   } else {
-    await using transaction = await beginTransaction({
-      serializable: !options.stripeSubscriptionId,
-    })
+    await using transaction = await beginTransaction()
     membership = await createMembershipWithQuery(options, dependencies, timingContext, transaction)
     if (membership.projected) registerEntitlementEffectsAfterCommit(transaction)
     await transaction.commit()

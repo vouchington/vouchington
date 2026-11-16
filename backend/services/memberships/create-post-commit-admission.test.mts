@@ -16,9 +16,7 @@ import { createMembership } from './create.mts'
 import { getMembershipByUserId } from './get.mts'
 import { updateMembershipFromEvent } from './update.mts'
 
-// Admission runs after any projected membership commits. A direct (Stripe-sourced) membership
-// commits at the default isolation level, so parallel tests' SERIALIZABLE predicate locks cannot
-// abort it with 40001; the SERIALIZABLE grant writer has its own tests in create.test.mts.
+// Admission runs after any projected membership commits.
 const directSubscriptionId = () => `sub_admission_${randomUUID()}`
 
 describe('createMembership post-commit entitlement admission', () => {

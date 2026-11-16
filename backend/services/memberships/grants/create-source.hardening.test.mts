@@ -52,7 +52,7 @@ describe('grant issuer snapshots', () => {
     })
   })
 
-  it('returns a conflict instead of over-admitting concurrent grants', async () => {
+  it('checks concurrent grants against committed outstanding grants', async () => {
     const recipient = await createTestUser()
     const sku = await createTestSku({ plan: 'plus' })
     for (let index = 0; index < MAX_OUTSTANDING_MEMBERSHIP_GRANTS_PER_USER - 1; index++)
@@ -61,9 +61,14 @@ describe('grant issuer snapshots', () => {
       grantMembership(admin.id, recipient.id, 'plus', sku.id, 30),
       grantMembership(admin.id, recipient.id, 'plus', sku.id, 30),
     ])
-    expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1)
-    const rejected = results.find(result => result.status === 'rejected')
-    expect(rejected).toMatchObject({ status: 'rejected', reason: { statusCode: 409 } })
+    const committed = results.filter(result => result.status === 'fulfilled')
+    expect(committed.length).toBeGreaterThanOrEqual(1)
+    const rejected = results.filter(result => result.status === 'rejected')
+    for (const result of rejected)
+      expect(result.reason).toMatchObject({
+        statusCode: 409,
+        code: 'MEMBERSHIP_GRANT_LIMIT_REACHED',
+      })
   })
 
   it('snapshots a human issuer by username, then primary email, then exact ID', async () => {

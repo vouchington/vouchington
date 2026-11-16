@@ -141,7 +141,6 @@ describe('provider membership sources', () => {
           stripeSubscriptionId: `sub_family_priority_${randomUUID()}`,
         })
       } else {
-        // Committed fixture: the SERIALIZABLE grant writer is only setup here.
         await createTestMembership({ user_id: user.id, plan: 'plus', sku_id: sku.id })
       }
       const familySource = await createTestProviderSource({

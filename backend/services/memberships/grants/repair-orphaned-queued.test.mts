@@ -39,8 +39,6 @@ describe('repairOrphanedQueuedGrantsBatch', () => {
     const member = await createTestUser()
     const activeSku = await createTestSku({ plan: 'plus' })
     const queuedSku = await createTestSku({ plan: 'pro', interval: 'yearly' })
-    // Committed fixtures: the SERIALIZABLE grant writer is only setup here, and parallel tests'
-    // predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
     const active = await createTestAdminGrantMembership({
       grantedById: admin.id,
       productId: activeSku.id,

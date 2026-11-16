@@ -193,8 +193,6 @@ describe('provider observation projection', () => {
   it('restores the retained grant after a direct provider observation expires', async () => {
     const user = await createTestUser()
     const grantSku = await createTestSku({ plan: 'plus' })
-    // Committed fixture: the SERIALIZABLE grant writer is only setup here, and parallel tests'
-    // predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
     await createTestMembership({ user_id: user.id, sku_id: grantSku.id })
     const effectiveAt = new Date(Date.now() - 2 * 86_400_000)
     const fixture = await createAppleObservationFixture(user.id, 'pro', 'direct', { effectiveAt })
@@ -230,8 +228,6 @@ describe('provider observation projection', () => {
   it('restores a retained grant while direct access is paused, then reactivates the direct source', async () => {
     const user = await createTestUser()
     const grantSku = await createTestSku({ plan: 'plus' })
-    // Committed fixture: the SERIALIZABLE grant writer is only setup here, and parallel tests'
-    // predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
     await createTestMembership({ user_id: user.id, sku_id: grantSku.id })
     const effectiveAt = new Date(Date.now() - 2 * 86_400_000)
     const fixture = await createAppleObservationFixture(user.id, 'pro', 'direct', { effectiveAt })
