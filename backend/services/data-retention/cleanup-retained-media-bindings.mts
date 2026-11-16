@@ -86,10 +86,11 @@ async function cleanupRetainedMediaBindingsPage(
   const { rows: images } = await query<{ id: string }>(
     `/* lockRetainedMediaBindingImages */
      SELECT root.id FROM retained_image_identities root
-     JOIN (SELECT DISTINCT image_id FROM retained_image_placement_bindings
-       WHERE placement_id = ANY($1::uuid[])) requested ON requested.image_id = root.id
+     WHERE root.id = ANY($2::uuid[])
+       AND EXISTS (SELECT 1 FROM retained_image_placement_bindings binding
+         WHERE binding.image_id = root.id AND binding.placement_id = ANY($1::uuid[]))
      ORDER BY root.id FOR UPDATE OF root SKIP LOCKED`,
-    [pagePlacementIds],
+    [pagePlacementIds, page.map(row => row.image_id)],
   )
   const { rows: locked } = await query<{ placement_id: string }>(
     `/* lockRetainedMediaBindings */

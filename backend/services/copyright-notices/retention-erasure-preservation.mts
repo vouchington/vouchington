@@ -25,11 +25,7 @@ export async function lockCopyrightRationaleRetentionPage(
     transaction,
     accounts.rows.map(account => account.account_user_id),
   )
-  // Fence party additions before reading held-case scope in the following DELETE statement.
-  await transaction(`/* lockCopyrightRationaleRetentionParties */
-    LOCK TABLE copyright_notice_thread_party_generations IN SHARE MODE`)
-  await transaction(`/* lockCopyrightRationaleRetentionHolds */
-    LOCK TABLE user_legal_preservation_holds IN SHARE MODE`)
+  // The destructive statement rechecks current party and hold coverage before deleting.
   const locked = await transaction<{ id: string }>(
     `/* lockCopyrightRationaleRetentionRows */
      SELECT id FROM copyright_decision_rationales

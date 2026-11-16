@@ -58,7 +58,7 @@ async function readGuidanceSource(submissionId: string): Promise<GuidanceSource 
     SELECT submission.kind, submission.source_kind, submission.received_at,
       submission.body_ciphertext, submission.copyright_notice_id,
       notice.work_description, notice.received_at AS notice_received_at,
-      (SELECT count(DISTINCT restriction.copyright_notice_target_id)
+      (SELECT count(*)
        FROM copyright_restrictions restriction
        WHERE restriction.copyright_notice_id = notice.id AND restriction.lifted_at IS NULL
       ) AS restricted_target_count

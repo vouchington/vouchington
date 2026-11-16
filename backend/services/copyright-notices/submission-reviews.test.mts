@@ -22,6 +22,7 @@ import {
   reviewCopyrightCounterNotice,
 } from './index.mts'
 import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
+import { getCopyrightSubmissionGuidanceSource } from './submission-guidance.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -218,7 +219,7 @@ describe('copyright submission moderator reviews', () => {
   })
 
   it('starts the statutory clock only after a moderator accepts the counter-notice', async () => {
-    const fixture = await createRestrictedFixture()
+    const fixture = await createRestrictedFixture(2)
     const counter = await createCopyrightCounterNotice(
       fixture.poster,
       fixture.noticeId,
@@ -231,9 +232,15 @@ describe('copyright submission moderator reviews', () => {
         consentToServiceOfProcess: true,
         goodFaithMisidentificationUnderPenaltyOfPerjury: true,
         electronicSignature: 'Poster',
-        targetIds: [fixture.targetId],
+        targetIds: fixture.targetIds,
       },
     )
+    await expect(
+      getCopyrightSubmissionGuidanceSource(counter.submission.id),
+    ).resolves.toMatchObject({
+      kind: 'counter_notice',
+      input: { notice: { restrictedTargetCount: 2 } },
+    })
     const result = await reviewCopyrightCounterNotice({
       submissionId: counter.submission.id,
       currentUser: fixture.moderator,
