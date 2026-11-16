@@ -67,8 +67,9 @@ role from the signed-in chrome and
 ## Email OTP
 
 Follow [AUTH.md](../../../docs/requirements/security/AUTH.md) email OTP and
-deep-link steps. Use the inbox of the operator's own staging test address; no repository config
-names it, so the caller supplies `<operator-email>`.
+deep-link steps. Use the inbox of the operator's own staging test address. The "Staging QA
+operator" section of the first-deploy checklist in the private `vouchington-infra` repository
+records it and requires organization access; pass it as `<operator-email>`.
 
 Local chrome-qa’s test CAPTCHA exemption does **not** apply. Email login links still require
 a deliberate **Log in** click after the code is prefilled.
