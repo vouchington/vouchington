@@ -8,7 +8,10 @@ import type {
   SourceDecision,
   SourceRow,
 } from './story-post-related-url-projection-types.mts'
-import { isStoryPostRelatedUrlProjectionWorkCurrent } from './story-post-related-url-projection-work.mts'
+import {
+  isStoryPostRelatedUrlProjectionWorkCurrent,
+  lockStoryPostRelatedUrlProjectionWork,
+} from './story-post-related-url-projection-work.mts'
 
 export async function getStoryPostRelatedUrlProjectionPrefix(
   input: {
@@ -118,12 +121,14 @@ export async function stageStoryPostRelatedUrlProjectionReceipts(
   rows: SourceDecision[],
   existingQuery?: TransactionQuery,
 ): Promise<boolean> {
-  if (rows.length === 0)
-    return isStoryPostRelatedUrlProjectionWorkCurrent(work, existingQuery, false)
-  if (existingQuery)
-    return stageStoryPostRelatedUrlProjectionReceiptsOn(existingQuery, work, rows, false)
+  if (rows.length === 0) return isStoryPostRelatedUrlProjectionWorkCurrent(work, existingQuery)
+  if (existingQuery) {
+    if (!(await isStoryPostRelatedUrlProjectionWorkCurrent(work, existingQuery))) return false
+    return stageStoryPostRelatedUrlProjectionReceiptsOn(existingQuery, work, rows)
+  }
   await using query = await beginTransaction()
-  const staged = await stageStoryPostRelatedUrlProjectionReceiptsOn(query, work, rows, true)
+  if (!(await lockStoryPostRelatedUrlProjectionWork(query, work))) return false
+  const staged = await stageStoryPostRelatedUrlProjectionReceiptsOn(query, work, rows)
   if (staged) await query.commit()
   return staged
 }
@@ -132,9 +137,7 @@ async function stageStoryPostRelatedUrlProjectionReceiptsOn(
   query: TransactionQuery,
   work: ProjectionWork,
   rows: SourceDecision[],
-  lock: boolean,
 ): Promise<boolean> {
-  if (!(await isStoryPostRelatedUrlProjectionWorkCurrent(work, query, lock))) return false
   await query(
     `/* stageStoryPostRelatedUrlProjectionReceipts */
       INSERT INTO story_post_related_url_projection_receipts

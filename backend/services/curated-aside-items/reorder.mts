@@ -1,4 +1,4 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import createHttpError from 'http-errors'
 import { currentUserCanManageCuratedAsides } from './authorization.mts'
@@ -19,7 +19,7 @@ export async function reorderCuratedItems(
   await using query = await beginTransaction()
   // Pre-lock in ascending id order to prevent ABBA deadlocks when concurrent
   // reorder requests touch overlapping item sets in different orderings.
-  await write(
+  await query(
     sql`/* reorderCuratedItems lockRows */
       SELECT id FROM curated_aside_items
       WHERE id = ANY(${itemIds}::uuid[])
@@ -28,9 +28,8 @@ export async function reorderCuratedItems(
       ORDER BY id
       FOR UPDATE
     `,
-    { query },
   )
-  await write(
+  await query(
     sql`/* reorderCuratedItems */
       UPDATE curated_aside_items
       SET position = ordering.position
@@ -39,7 +38,6 @@ export async function reorderCuratedItems(
         AND curated_aside_items.aside_type = ${asideType}
         AND curated_aside_items.deleted_at IS NULL
     `,
-    { query },
   )
 
   await query.commit()

@@ -114,7 +114,7 @@ async function getLockedCompletion(
   query: TransactionQuery,
   completionNow: () => Date,
 ): Promise<CompletionRow> {
-  const { rows } = await read<CompletionRow>(
+  const { rows } = await query<CompletionRow>(
     sql`/* getLockedNativeBlueskyLinkCompletion */
       SELECT completion.account_link_authorization_id, completion.user_id, account.bluesky_did,
              completion.handle, completion.token_hash, completion.expires_at
@@ -122,7 +122,6 @@ async function getLockedCompletion(
       JOIN bluesky_linked_accounts account ON account.link_authorization_id = completion.account_link_authorization_id
       WHERE completion.account_link_authorization_id = ${flowId}
       FOR UPDATE OF completion`,
-    { query },
   )
   const completion = rows[0]
   if (!completion || completion.expires_at <= completionNow()) {

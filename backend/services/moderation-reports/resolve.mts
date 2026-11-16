@@ -41,7 +41,7 @@ export async function resolveModerationReport(
     if (options.communityId) assert(context.is_in_community_scope, 403, 'Forbidden')
     assert(context.status === 'pending', 409, 'Report is already resolved')
     // Keep case writers ahead of report/cluster writes, matching report FK checks.
-    await lockModerationCases([context.case_id], { query })
+    await lockModerationCases([context.case_id], query)
     const { rows } = await write<ModerationReport>(
       sql`/* resolveModerationReport */
           WITH updated AS (
@@ -151,7 +151,7 @@ export async function dismissPendingReportsForDeletedEntity(
     const { rows: candidates } = await write<{ id: string }>(caseQuery, { query })
     const caseIds = candidates.map(row => row.id)
     if (caseIds.length === 0) return { count: 0, notifications: [] }
-    await lockModerationCases(caseIds, { query })
+    await lockModerationCases(caseIds, query)
     const updateQuery = sql`/* dismissPendingReportsForDeletedEntity */
       WITH updated AS (
         UPDATE moderation_reports

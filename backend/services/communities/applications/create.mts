@@ -15,7 +15,7 @@ import { insertApplicationAnswers } from './answer-rows.mts'
 import { assertApplicationAnswers } from './answers.mts'
 import { getApplication } from './get.mts'
 import { getPendingApplicationForUser } from './pending.mts'
-import { getApplicationQuestions } from './questions.mts'
+import { getApplicationQuestionsForShare } from './questions.mts'
 import type { CommunityApplication } from '../types.mts'
 
 /**
@@ -53,7 +53,7 @@ async function insertApplication(
   assert(!community.archived_at, 409, 'Archived communities cannot be updated')
   assert(community.visibility === 'private', 422, 'Applications are only for private communities')
 
-  const questions = await getApplicationQuestions(communityId, { ...options, lock: true })
+  const questions = await getApplicationQuestionsForShare(query, communityId)
   // Malformed answers stay 422 ahead of the ban, member, and pending gates.
   assertApplicationAnswers(questions, answers)
 
