@@ -7,10 +7,11 @@ import {
   endTestMembershipProjection,
   getTestMembershipEntitlementEffects,
   getTestMembershipRaw,
+  insertQueuedMembershipGrant,
   rejectTestMembershipProviderEvidence,
   updateTestMembershipExpiresAt,
 } from '@voucha/test-helpers'
-import { createMembership, grantMembership } from '../create.mts'
+import { createMembership } from '../create.mts'
 import { getMembershipByUserId, getMembershipHistory } from '../get.mts'
 import { updateMembershipFromEvent } from '../update.mts'
 
@@ -96,7 +97,14 @@ describe('fallback access after current direct or administrator-grant access end
       stripeSubscriptionId: `sub_family_grant_precedence_${randomUUID()}`,
     })
     const grantSku = await createTestSku({ plan: 'plus', interval: 'yearly' })
-    await grantMembership(admin.id, user.id, 'plus', grantSku.id, 30)
+    // Committed fixture: the SERIALIZABLE grant writer is not the subject here, and parallel
+    // tests' predicate locks can abort it with 40001. Queueing is covered in create-direct-grant-queue.
+    await insertQueuedMembershipGrant({
+      grantedById: admin.id,
+      productId: grantSku.id,
+      userId: user.id,
+      durationDays: 30,
+    })
 
     await updateMembershipFromEvent(
       { membershipId: direct.id, status: 'paused' },
