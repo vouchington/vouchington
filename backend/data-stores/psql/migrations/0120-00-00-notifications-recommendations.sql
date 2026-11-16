@@ -275,6 +275,8 @@ CREATE TABLE IF NOT EXISTS notifications (
         AND jsonb_typeof(params -> 'referral_count') = 'number'
       WHEN 'community_role_changed' THEN params ?& ARRAY['from_role', 'to_role']
         AND params - 'from_role' - 'to_role' = '{}'::jsonb
+        AND params ->> 'from_role' IN ('owner', 'moderator', 'member')
+        AND params ->> 'to_role' IN ('owner', 'moderator', 'member')
         AND jsonb_typeof(params -> 'from_role') = 'string'
         AND jsonb_typeof(params -> 'to_role') = 'string'
       WHEN 'community_activity_digest' THEN params ?& ARRAY[
@@ -283,6 +285,18 @@ CREATE TABLE IF NOT EXISTS notifications (
         AND params - 'community_count' - 'joins' - 'departures' - 'discussions' - 'reviews'
           - 'data_points' - 'comments' - 'active_posters' - 'total_members'
           - 'moderation_workload' - 'top_discussion_replies' = '{}'::jsonb
+        AND jsonb_typeof(params -> 'community_count') = 'number'
+        AND jsonb_typeof(params -> 'joins') = 'number'
+        AND jsonb_typeof(params -> 'departures') = 'number'
+        AND jsonb_typeof(params -> 'discussions') = 'number'
+        AND jsonb_typeof(params -> 'reviews') = 'number'
+        AND jsonb_typeof(params -> 'data_points') = 'number'
+        AND jsonb_typeof(params -> 'comments') = 'number'
+        AND jsonb_typeof(params -> 'active_posters') = 'number'
+        AND jsonb_typeof(params -> 'total_members') = 'number'
+        AND jsonb_typeof(params -> 'moderation_workload') = 'number'
+        AND (NOT params ? 'top_discussion_replies'
+          OR jsonb_typeof(params -> 'top_discussion_replies') = 'number')
       WHEN 'copyright_status_update' THEN params - 'ai_assisted' = '{}'::jsonb
         AND (NOT params ? 'ai_assisted' OR params -> 'ai_assisted' = 'true'::jsonb)
       ELSE params = '{}'::jsonb
@@ -295,7 +309,11 @@ CREATE TABLE IF NOT EXISTS notifications (
     (entity_type = 'community_application_decision') = (community_application_id IS NOT NULL)
   ),
   CONSTRAINT chk_notifications__copyright_delivery_shape CHECK (
-    copyright_notice_delivery_work_item_id IS NULL OR entity_type = 'copyright_notice'
+    (kind IN (
+      'copyright_claimant_receipt', 'copyright_status_update', 'copyright_poster_restriction_notice',
+      'copyright_poster_review_notice', 'copyright_poster_restoration_notice',
+      'copyright_owner_information_notice', 'copyright_claimant_decision_notice',
+      'copyright_redress_decision_notice')) = (copyright_notice_delivery_work_item_id IS NOT NULL)
   ),
   CONSTRAINT chk_notifications__manual_send_kind CHECK (
     (kind IN ('post_manual_send', 'rss_item_manual_send')) = (delivery_type = 'manual_send')

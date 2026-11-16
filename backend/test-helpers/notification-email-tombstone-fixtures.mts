@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import type { TransactionQuery } from '@data-stores/psql'
 
 export async function insertTestMinimalCopyrightNotice(query: TransactionQuery): Promise<string> {
@@ -23,13 +24,25 @@ export async function insertTestNoContentSourceNotificationTombstone(
     eventKey?: string
   },
 ): Promise<string> {
+  // Every copyright kind projects a legal delivery obligation, so the row must cite one.
+  const workItem =
+    input.entityType === 'copyright_notice'
+      ? await query<{ id: string }>(
+          `/* insertTestTombstoneCopyrightWorkItem */
+           INSERT INTO copyright_notice_delivery_work_items
+             (copyright_notice_id, recipient_user_id, recipient_role, delivery_kind, channel, idempotency_key)
+           VALUES ($1, $2, 'claimant', 'status_update', 'in_app', $3)
+           RETURNING id`,
+          [input.copyrightNoticeId, input.userId, `tombstone-${randomUUID()}`],
+        )
+      : null
   const { rows } = await query<{ id: string }>(
     `/* insertTestNoContentSourceNotificationTombstone */
      INSERT INTO notifications
        (user_id, entity_type, kind, copyright_notice_id, event_key,
-        target_intent, deleted_at, delete_reason)
+        target_intent, deleted_at, delete_reason, copyright_notice_delivery_work_item_id)
      VALUES ($1, $2::notification_entity_types, $6::notification_kinds, $3, $4,
-             'notifications_inbox', $5, 'user_deleted')
+             'notifications_inbox', $5, 'user_deleted', $7)
      RETURNING id`,
     [
       input.userId,
@@ -38,6 +51,7 @@ export async function insertTestNoContentSourceNotificationTombstone(
       input.eventKey ?? null,
       input.deletedAt,
       input.entityType === 'review_dispute' ? 'review_dispute_resolved' : 'copyright_status_update',
+      workItem?.rows[0]?.id ?? null,
     ],
   )
   return rows[0]!.id

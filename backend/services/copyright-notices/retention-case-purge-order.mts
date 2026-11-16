@@ -11,7 +11,10 @@ import {
   COPYRIGHT_CASE_EMAIL_PRIVATE_PATHS,
 } from './retention-case-purge-email-paths.mts'
 
+// Member notifications cite their delivery work item (ON DELETE RESTRICT), so their phases drain
+// before every phase that deletes a work item.
 const CASE_PATHS = [
+  ...COPYRIGHT_CASE_PURGE_PATH_5_REST,
   ...COPYRIGHT_CASE_PURGE_PATH_1,
   ...COPYRIGHT_CASE_PURGE_PATH_1_REST,
   ...COPYRIGHT_CASE_PURGE_PATH_2,
@@ -19,7 +22,6 @@ const CASE_PATHS = [
   ...COPYRIGHT_CASE_PURGE_PATH_3,
   ...COPYRIGHT_CASE_PURGE_PATH_4,
   ...COPYRIGHT_CASE_PURGE_PATH_5,
-  ...COPYRIGHT_CASE_PURGE_PATH_5_REST,
 ] as const
 
 // These two legal child tables cite private email rows. They must drain while

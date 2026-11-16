@@ -40,7 +40,7 @@ function unique(values: Array<string | null>): string[] {
   return [...new Set(values.flatMap(value => value ?? []))]
 }
 
-async function readCommunities(userId: string, ids: string[]) {
+async function readCommunities(userId: string, ids: string[], applicationIds: string[]) {
   if (ids.length === 0) return []
   const { rows } = await read<NotificationCommunity>(sql`/* hydrateNotificationCommunities */
     SELECT c.id, c.slug, c.name
@@ -51,7 +51,8 @@ async function readCommunities(userId: string, ids: string[]) {
         c.visibility = 'public'
         OR EXISTS (
           SELECT 1 FROM community_applications ca
-          WHERE ca.community_id = c.id AND ca.user_id = ${userId}
+          WHERE ca.id = ANY(${applicationIds}::uuid[]) AND ca.community_id = c.id
+            AND ca.user_id = ${userId} AND ca.reviewed_at IS NOT NULL
         )
         OR EXISTS (
           SELECT 1 FROM community_members cm
@@ -164,11 +165,22 @@ export async function hydrateNotifications(
     ...posts.map(post => post.community_id),
   ])
   const [communities, actors] = await Promise.all([
-    readCommunities(userId, communityIds),
+    readCommunities(
+      userId,
+      communityIds,
+      unique(
+        notifications.map(n =>
+          n.kind === 'community_application_approved' || n.kind === 'community_application_rejected'
+            ? n.community_application_id
+            : null,
+        ),
+      ),
+    ),
     actorIds.length === 0
       ? []
       : read<NotificationActor>(sql`/* hydrateNotificationActors */
-          SELECT id, username FROM users WHERE id = ANY(${actorIds}::uuid[])
+          SELECT id, username FROM users
+          WHERE id = ANY(${actorIds}::uuid[]) AND deleted_at IS NULL
         `).then(result => result.rows),
   ])
 
