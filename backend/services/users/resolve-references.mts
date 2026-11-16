@@ -3,25 +3,25 @@ import { isUUID } from '@modules/utils'
 
 export type UserReference = { id: string; username: string | null; slug: null }
 
+type ReferenceEntry = { kind: 'id' | 'name'; value: string; order: number }
+
 /** User id or username, in one statement. A user with no username resolves only by id. */
 export async function getUsersByReferenceBatch(
   references: readonly string[],
 ): Promise<Array<UserReference | null>> {
-  const ids: string[] = []
-  const idOrders: number[] = []
-  const names: string[] = []
-  const nameOrders: number[] = []
-  references.forEach((reference, index) => {
+  const entries = references.flatMap((reference, index): ReferenceEntry[] => {
     const trimmed = reference.trim()
-    if (!trimmed) return
-    if (isUUID(trimmed)) {
-      ids.push(trimmed)
-      idOrders.push(index)
-      return
-    }
-    names.push(trimmed.toLowerCase())
-    nameOrders.push(index)
+    if (!trimmed) return []
+    return isUUID(trimmed)
+      ? [{ kind: 'id', value: trimmed, order: index }]
+      : [{ kind: 'name', value: trimmed.toLowerCase(), order: index }]
   })
+  const idEntries = entries.filter(entry => entry.kind === 'id')
+  const nameEntries = entries.filter(entry => entry.kind === 'name')
+  const ids = idEntries.map(entry => entry.value)
+  const idOrders = idEntries.map(entry => entry.order)
+  const names = nameEntries.map(entry => entry.value)
+  const nameOrders = nameEntries.map(entry => entry.order)
   const results: Array<UserReference | null> = references.map(() => null)
   if (ids.length + names.length === 0) return results
   const { rows } = await read<{

@@ -1,9 +1,9 @@
 export class TopicImportInProgressError extends Error {
   readonly retryAfterSeconds: number
+  override name = 'TopicImportInProgressError'
 
   constructor(retryAfterSeconds: number) {
     super('Topic recommendation is in progress')
-    this.name = 'TopicImportInProgressError'
     this.retryAfterSeconds = retryAfterSeconds
   }
 }

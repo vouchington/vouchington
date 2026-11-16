@@ -7,15 +7,19 @@ import type { Job } from 'glide-mq'
 export function processCopyrightCasePurge(
   job: Pick<Job<CopyrightCasePurgeJobData>, 'data' | 'updateData' | 'moveToDelayed'>,
 ) {
-  const options = { resumeAt: Date.now() }
+  let resumeAt = Date.now()
   return processRetainedSweep(
     job,
     async save => {
       const result = await runCopyrightCasePurgePage(job.data)
-      if (result.deferred) options.resumeAt = Date.now() + 5 * 60_000
+      if (result.deferred) resumeAt = Date.now() + 5 * 60_000
       if (result.hasMore) await save(result.data)
       return result
     },
-    options,
+    {
+      get resumeAt() {
+        return resumeAt
+      },
+    },
   )
 }

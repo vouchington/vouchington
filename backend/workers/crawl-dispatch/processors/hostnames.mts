@@ -73,7 +73,7 @@ async function dispatchWeeklyHostnameCrawlerRefresh(
     // oxlint-disable-next-line no-await-in-loop -- enqueue must commit before the retained cursor advances
     await enqueueBulkRefreshHostnameCrawler(ids)
     count += ids.length
-    cursor.afterId = ids.at(-1)!
+    cursor = { sweepStartedAt: cursor.sweepStartedAt, afterId: ids.at(-1)! }
     // oxlint-disable-next-line no-await-in-loop -- retained state must survive a worker restart
     await saveProgress(cursor)
     if (ids.length < pageSize) return { count, hasMore: false }

@@ -97,22 +97,34 @@ export async function getHackerNewsItemsByUrlIds(
   for (const row of await readInChunks(urlIds, ids => readItemRows(ids, options))) {
     const urlId = row.url_id as string
     const items = itemsByUrlId.get(urlId) ?? { stories: [], comments: [] }
-    itemsByUrlId.set(urlId, items)
     const postedAt = new Date(row.posted_at as Date | string).toISOString()
-    if (row.kind === 'story') {
-      items.stories.push({
-        hacker_news_item_id: Number(row.hacker_news_item_id),
-        points: Number(row.points),
-        reply_count: Number(row.reply_count),
-        posted_at: postedAt,
-      })
-    } else {
-      items.comments.push({
-        hacker_news_item_id: Number(row.hacker_news_item_id),
-        parent_story_item_id: Number(row.parent_story_item_id),
-        posted_at: postedAt,
-      })
-    }
+    itemsByUrlId.set(
+      urlId,
+      row.kind === 'story'
+        ? {
+            ...items,
+            stories: [
+              ...items.stories,
+              {
+                hacker_news_item_id: Number(row.hacker_news_item_id),
+                points: Number(row.points),
+                reply_count: Number(row.reply_count),
+                posted_at: postedAt,
+              },
+            ],
+          }
+        : {
+            ...items,
+            comments: [
+              ...items.comments,
+              {
+                hacker_news_item_id: Number(row.hacker_news_item_id),
+                parent_story_item_id: Number(row.parent_story_item_id),
+                posted_at: postedAt,
+              },
+            ],
+          },
+    )
   }
   return itemsByUrlId
 }

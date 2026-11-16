@@ -65,9 +65,13 @@ export async function parseSesInboundMime(rawMime: Readable): Promise<ParsedSesI
     parser.once('headerLines', lines => {
       for (const header of lines as Array<{ key: string; line: string }>) {
         if (header.key === 'references') {
-          references.push(...parseMessageIds(header.line.slice(header.line.indexOf(':') + 1)))
+          references = references.concat(
+            parseMessageIds(header.line.slice(header.line.indexOf(':') + 1)),
+          )
         } else if (header.key === 'in-reply-to') {
-          inReplyTo.push(...parseMessageIds(header.line.slice(header.line.indexOf(':') + 1)))
+          inReplyTo = inReplyTo.concat(
+            parseMessageIds(header.line.slice(header.line.indexOf(':') + 1)),
+          )
         } else if (header.key === 'list-id') {
           listId = header.line.slice(header.line.indexOf(':') + 1).trim()
         } else if (header.key === 'list-unsubscribe') {

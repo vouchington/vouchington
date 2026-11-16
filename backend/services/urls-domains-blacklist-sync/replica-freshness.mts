@@ -1,10 +1,11 @@
 /** Retryable. glide-mq backs off while the replica's source version is older than the writer's. */
 export class ReplicaBehindError extends Error {
+  override name = 'ReplicaBehindError'
+
   constructor() {
     super(
       'Blocklist replica source version is behind the writer version read before the membership copy',
     )
-    this.name = 'ReplicaBehindError'
   }
 }
 

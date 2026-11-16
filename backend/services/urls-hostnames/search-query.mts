@@ -2,7 +2,7 @@ import { decodeUuidCursor, isNameCursor, isScoreCursor } from '@modules/paginati
 import { escapeLikePattern } from '@modules/search-utils'
 import { appendTopicDescendantsCte } from '@voucha/types/entities/topic-descendants'
 import sql from 'sql-template-strings'
-import { appendDescendantRootFilter, appendTopicFilters } from './search-topic-filters.mts'
+import { appendDescendantRootFilter, topicFilters } from './search-topic-filters.mts'
 import type { SearchUrlHostnamesOptions } from './search-types.mts'
 
 export function buildSearchUrlHostnamesQueryBody(options: SearchUrlHostnamesOptions) {
@@ -80,49 +80,45 @@ function buildSearchFilters(
   effectiveTopicIds: string[],
   walkTopics: boolean,
 ): ReturnType<typeof sql>[] {
-  const filters: ReturnType<typeof sql>[] = []
-  if (!options.includePrivate) filters.push(sql`publicly_introduced_at IS NOT NULL`)
-  appendBooleanFilter(filters, 'is_blocked', options.is_blocked)
-  appendBooleanFilter(filters, 'is_crawlable', options.is_crawlable)
-  if (!walkTopics) appendTopicFilters(filters, options, effectiveTopicIds)
-  appendCursorFilter(filters, options)
-  return filters
+  return [
+    ...(options.includePrivate ? [] : [sql`publicly_introduced_at IS NOT NULL`]),
+    ...booleanFilter('is_blocked', options.is_blocked),
+    ...booleanFilter('is_crawlable', options.is_crawlable),
+    ...(walkTopics ? [] : topicFilters(options, effectiveTopicIds)),
+    ...cursorFilter(options),
+  ]
 }
 
-function appendBooleanFilter(
-  filters: ReturnType<typeof sql>[],
+function booleanFilter(
   field: 'is_blocked' | 'is_crawlable',
   value: SearchUrlHostnamesOptions['is_blocked'],
-): void {
+): ReturnType<typeof sql>[] {
   if (value === true || value === 1 || value === '1') {
-    filters.push(field === 'is_blocked' ? sql`is_blocked` : sql`is_crawlable`)
+    return [field === 'is_blocked' ? sql`is_blocked` : sql`is_crawlable`]
   } else if (value === false || value === 0 || value === '0') {
-    filters.push(field === 'is_blocked' ? sql`(NOT is_blocked)` : sql`NOT is_crawlable`)
+    return [field === 'is_blocked' ? sql`(NOT is_blocked)` : sql`NOT is_crawlable`]
   }
+  return []
 }
 
-function appendCursorFilter(
-  filters: ReturnType<typeof sql>[],
-  { after, sort }: SearchUrlHostnamesOptions,
-): void {
-  if (!after) return
+function cursorFilter({ after, sort }: SearchUrlHostnamesOptions): ReturnType<typeof sql>[] {
+  if (!after) return []
   if (sort === 'trust') {
     const cursor = decodeUuidCursor(
       after,
       isScoreCursor,
       'Invalid cursor format: expected score cursor',
     )
-    filters.push(sql`(h.votes_score_sort, h.id) < (${cursor.score}, ${cursor.id})`)
-    return
+    return [sql`(h.votes_score_sort, h.id) < (${cursor.score}, ${cursor.id})`]
   }
   const cursor = decodeUuidCursor(
     after,
     isNameCursor,
     'Invalid cursor format: expected name cursor',
   )
-  filters.push(
+  return [
     sql`(h.hostname > ${cursor.name} OR (h.hostname = ${cursor.name} AND h.id > ${cursor.id}))`,
-  )
+  ]
 }
 
 function appendWhereClause(query: ReturnType<typeof sql>, filters: ReturnType<typeof sql>[]): void {

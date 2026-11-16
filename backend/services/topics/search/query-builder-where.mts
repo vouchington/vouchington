@@ -9,53 +9,48 @@ export function buildTopicSearchWhereClauses(
   sort: TopicSearchSort,
   state: TopicSearchState,
 ) {
-  const whereClauses: SQLStatement[] = [
+  const searchPattern = state.hasTextSearch
+    ? `%${escapeLikePattern(options.text_search_query!.trim())}%`
+    : null
+  return [
     sql`t.deleted_at IS NULL`,
     sql`t.merged_into_topic_id IS NULL`,
-  ]
-
-  if (state.hasTextSearch) {
-    const searchPattern = `%${escapeLikePattern(options.text_search_query!.trim())}%`
-    whereClauses.push(sql`(
+    ...(searchPattern === null
+      ? []
+      : [
+          sql`(
       t.name ILIKE ${searchPattern} ESCAPE '\\' OR
       t.slug ILIKE ${searchPattern} ESCAPE '\\'
-    )`)
-  }
-
-  if (options.hashtag_topic_ids && options.hashtag_topic_ids.length > 0) {
-    whereClauses.push(sql`t.id = ANY(${options.hashtag_topic_ids})`)
-  }
-
-  appendSemanticFilters(whereClauses, options, state)
-
-  if (options.slugs && options.slugs.length > 0) {
-    whereClauses.push(sql`t.slug = ANY(${options.slugs})`)
-  }
-
-  if (options.topic_types && options.topic_types.length > 0) {
-    whereClauses.push(sql`t.topic_type = ANY(${options.topic_types})`)
-  }
-
-  if (options.spending_category) {
-    whereClauses.push(sql`EXISTS (
+    )`,
+        ]),
+    ...(options.hashtag_topic_ids && options.hashtag_topic_ids.length > 0
+      ? [sql`t.id = ANY(${options.hashtag_topic_ids})`]
+      : []),
+    ...semanticFilters(options, state),
+    ...(options.slugs && options.slugs.length > 0 ? [sql`t.slug = ANY(${options.slugs})`] : []),
+    ...(options.topic_types && options.topic_types.length > 0
+      ? [sql`t.topic_type = ANY(${options.topic_types})`]
+      : []),
+    ...(options.spending_category
+      ? [
+          sql`EXISTS (
       SELECT 1 FROM spending_category_topics tsc
       WHERE tsc.topic_id = t.id
-    )`)
-  }
-
-  if (options.rss_feed) {
-    whereClauses.push(sql`EXISTS (
+    )`,
+        ]
+      : []),
+    ...(options.rss_feed
+      ? [
+          sql`EXISTS (
       SELECT 1 FROM rss_feeds rf
       WHERE rf.topic_id = t.id
         AND rf.deleted_at IS NULL
-    )`)
-  }
-
-  appendFediverseInstanceFilters(whereClauses, options)
-
-  appendPaginationFilters(whereClauses, options, sort, state)
-
-  return whereClauses
+    )`,
+        ]
+      : []),
+    ...fediverseInstanceFilters(options),
+    ...paginationFilters(options, sort, state),
+  ]
 }
 
 export function appendTopicSearchWhere(query: SQLStatement, whereClauses: SQLStatement[]) {
@@ -71,45 +66,43 @@ export function appendTopicSearchWhere(query: SQLStatement, whereClauses: SQLSta
   })
 }
 
-function appendSemanticFilters(
-  whereClauses: SQLStatement[],
-  options: TopicSearchOptions,
-  state: TopicSearchState,
-) {
-  if (!state.hasSemanticSignal) return
+function semanticFilters(options: TopicSearchOptions, state: TopicSearchState): SQLStatement[] {
+  if (!state.hasSemanticSignal) return []
 
-  whereClauses.push(sql`t.bedrock_nova_multimodal_v1_embedding IS NOT NULL`)
-  if (state.hasSemanticSearch) {
-    whereClauses.push(
-      sql`(t.bedrock_nova_multimodal_v1_embedding <=> semantic_search_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
-    )
-  }
-  if (state.hasSimilarPostSearch) {
-    whereClauses.push(
-      sql`(t.bedrock_nova_multimodal_v1_embedding <=> similar_post_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
-    )
-  }
-  if (state.hasSimilarTopicSearch) {
-    whereClauses.push(
-      sql`(t.bedrock_nova_multimodal_v1_embedding <=> similar_topic_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
-    )
-    whereClauses.push(sql`t.id <> ${options.similar_topic_id!}`)
-  }
-  if (state.hasSimilarRssFeedItemSearch) {
-    whereClauses.push(
-      sql`(t.bedrock_nova_multimodal_v1_embedding <=> similar_rss_feed_item_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
-    )
-  }
+  return [
+    sql`t.bedrock_nova_multimodal_v1_embedding IS NOT NULL`,
+    ...(state.hasSemanticSearch
+      ? [
+          sql`(t.bedrock_nova_multimodal_v1_embedding <=> semantic_search_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
+        ]
+      : []),
+    ...(state.hasSimilarPostSearch
+      ? [
+          sql`(t.bedrock_nova_multimodal_v1_embedding <=> similar_post_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
+        ]
+      : []),
+    ...(state.hasSimilarTopicSearch
+      ? [
+          sql`(t.bedrock_nova_multimodal_v1_embedding <=> similar_topic_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
+          sql`t.id <> ${options.similar_topic_id!}`,
+        ]
+      : []),
+    ...(state.hasSimilarRssFeedItemSearch
+      ? [
+          sql`(t.bedrock_nova_multimodal_v1_embedding <=> similar_rss_feed_item_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
+        ]
+      : []),
+  ]
 }
 
-function appendFediverseInstanceFilters(whereClauses: SQLStatement[], options: TopicSearchOptions) {
+function fediverseInstanceFilters(options: TopicSearchOptions): SQLStatement[] {
   if (
     !options.fediverse_instance &&
     !options.fediverse_instance_software &&
     options.fediverse_instance_open_registrations === undefined &&
     !options.fediverse_instance_integration_status
   )
-    return
+    return []
 
   const clause = sql`EXISTS (
       SELECT 1 FROM fediverse_instance_topics tfi
@@ -133,25 +126,26 @@ function appendFediverseInstanceFilters(whereClauses: SQLStatement[], options: T
 
   clause.append(sql`
     )`)
-  whereClauses.push(clause)
+  return [clause]
 }
 
-function appendPaginationFilters(
-  whereClauses: SQLStatement[],
+function paginationFilters(
   options: TopicSearchOptions,
   sort: TopicSearchSort,
   state: TopicSearchState,
-) {
+): SQLStatement[] {
   if (
     sort === 'relevance' &&
     state.hasTextSearch &&
     options.tier_after !== undefined &&
     options.id_lt
   ) {
-    whereClauses.push(sql`(
+    return [
+      sql`(
       tier_calc.relevance_tier > ${options.tier_after}
       OR (tier_calc.relevance_tier = ${options.tier_after} AND t.id < ${options.id_lt})
-    )`)
+    )`,
+    ]
   } else if (
     state.useSemanticRelevanceRanking &&
     options.ranking_lt !== undefined &&
@@ -163,12 +157,13 @@ function appendPaginationFilters(
     rankingCursorFilter.append(sql`,
       t.id
     ) < (${options.ranking_lt}, ${options.id_lt})`)
-    whereClauses.push(rankingCursorFilter)
+    return [rankingCursorFilter]
   } else if (sort === 'best' && options.score_lt !== undefined && options.id_lt !== undefined) {
-    whereClauses.push(
+    return [
       sql`(COALESCE(tm.ratings__score__sort, 0), t.id) < (${options.score_lt}, ${options.id_lt})`,
-    )
+    ]
   } else if (options.id_lt) {
-    whereClauses.push(sql`t.id < ${options.id_lt}`)
+    return [sql`t.id < ${options.id_lt}`]
   }
+  return []
 }

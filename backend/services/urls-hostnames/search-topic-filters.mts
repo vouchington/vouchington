@@ -1,31 +1,28 @@
 import sql from 'sql-template-strings'
 import type { SearchUrlHostnamesOptions } from './search-types.mts'
 
-export function appendTopicFilters(
-  filters: ReturnType<typeof sql>[],
+export function topicFilters(
   { include_descendants = false, topic_match = 'any' }: SearchUrlHostnamesOptions,
   effectiveTopicIds: string[],
-): void {
-  if (effectiveTopicIds.length === 0) return
-  if (!include_descendants) {
-    appendDirectTopicFilter(filters, topic_match, effectiveTopicIds)
-    return
-  }
+): ReturnType<typeof sql>[] {
+  if (effectiveTopicIds.length === 0) return []
+  if (!include_descendants) return directTopicFilter(topic_match, effectiveTopicIds)
   if (topic_match === 'all' && effectiveTopicIds.length > 1) {
-    for (const topicId of effectiveTopicIds) {
-      filters.push(sql`EXISTS (
+    return effectiveTopicIds.map(
+      topicId => sql`EXISTS (
         SELECT 1 FROM topic_descendants
         WHERE topic_descendants.root_post_id = ${topicId}
           AND topic_descendants.topic_id = h.topic_id
-      )`)
-    }
-  } else {
-    filters.push(sql`EXISTS (
+      )`,
+    )
+  }
+  return [
+    sql`EXISTS (
       SELECT 1
       FROM topic_descendants
       WHERE topic_descendants.topic_id = h.topic_id
-    )`)
-  }
+    )`,
+  ]
 }
 
 export function appendDescendantRootFilter(
@@ -45,16 +42,11 @@ export function appendDescendantRootFilter(
   }
 }
 
-function appendDirectTopicFilter(
-  filters: ReturnType<typeof sql>[],
+function directTopicFilter(
   topicMatch: SearchUrlHostnamesOptions['topic_match'],
   effectiveTopicIds: string[],
-): void {
-  if (effectiveTopicIds.length === 1) {
-    filters.push(sql`topic_id = ${effectiveTopicIds[0]}`)
-  } else if (topicMatch === 'all') {
-    filters.push(sql`FALSE`)
-  } else {
-    filters.push(sql`topic_id = ANY(${effectiveTopicIds})`)
-  }
+): ReturnType<typeof sql>[] {
+  if (effectiveTopicIds.length === 1) return [sql`topic_id = ${effectiveTopicIds[0]}`]
+  if (topicMatch === 'all') return [sql`FALSE`]
+  return [sql`topic_id = ANY(${effectiveTopicIds})`]
 }

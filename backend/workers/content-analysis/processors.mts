@@ -65,11 +65,9 @@ export async function processLanguageDetectionBackfill(
 ): Promise<{ updated: number; hasMore: boolean }> {
   assertKnownLanguageDetectionBackfillJob(jobName)
   if (entityIds?.length === 0) return { updated: 0, hasMore: false }
-  const cursor: LanguageDetectionBackfillCursor = savedCursor
-    ? { ...savedCursor }
-    : {
-        sweepStartedAt: new Date().toISOString(),
-      }
+  let cursor: LanguageDetectionBackfillCursor = savedCursor ?? {
+    sweepStartedAt: new Date().toISOString(),
+  }
   if (!savedCursor) await saveProgress(cursor)
   const maxRows = getLanguageDetectionWorkLimit('backfill_max_rows_per_run')
   let read = 0
@@ -82,7 +80,7 @@ export async function processLanguageDetectionBackfill(
       const result = await detect(ids)
       updated += result.updated
       read += ids.length
-      cursor.afterId = ids.at(-1)!
+      cursor = { sweepStartedAt: cursor.sweepStartedAt, afterId: ids.at(-1)! }
       await saveProgress(cursor)
     }
   }
