@@ -76,16 +76,13 @@ export type ReconcileNotificationPushIntentsData = {
 export type CopyrightIntentData = { intentId: string }
 export type DsaStatementSubmissionData = { submissionId: string }
 
-type CopyrightSweepCursor = 'in_app' | 'email-notices'
+/** Each delivery channel's reconcile runs as its own job, so its channel never shares a budget or cursor. */
+export const COPYRIGHT_DELIVERY_RECONCILE_CHANNELS = ['in_app', 'email'] as const
+export type CopyrightDeliveryReconcileChannel =
+  (typeof COPYRIGHT_DELIVERY_RECONCILE_CHANNELS)[number]
 
-/** A fixed evaluation time and only the unfinished copyright delivery channel cursors. */
-export type CopyrightSweepContinuation = {
-  evaluatedAt?: string
-  /** Round-robin order of unfinished and unvisited channels. */
-  pending?: string[]
-  /** null resumes a channel which had no page allowance to start. */
-  cursors?: Partial<Record<CopyrightSweepCursor, string | null>>
-}
+/** The id cursor where one channel's walk continues. */
+export type CopyrightDeliveryReconcileData = { after?: string }
 
 /** Each copyright action sweep runs as its own job, so its stage never shares a budget or cursor. */
 export const COPYRIGHT_ACTION_RECONCILE_STAGES = [

@@ -1,6 +1,9 @@
 import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
-import type { CopyrightActionReconcileStage } from '@queues/notifications/types'
+import type {
+  CopyrightActionReconcileStage,
+  CopyrightDeliveryReconcileChannel,
+} from '@queues/notifications/types'
 
 const additionalDefaults = {
   delivery_lease_minutes: 15,
@@ -34,6 +37,10 @@ export const copyrightSweepConfig = new DynamicConfig({
     restorations_max_batches_per_run: 'number',
     actions_batch_size: 'number',
     actions_max_batches_per_run: 'number',
+    in_app_batch_size: 'number',
+    in_app_max_batches_per_run: 'number',
+    email_batch_size: 'number',
+    email_max_batches_per_run: 'number',
   },
   defaultFields: {
     batch_size: 100,
@@ -53,6 +60,10 @@ export const copyrightSweepConfig = new DynamicConfig({
     restorations_max_batches_per_run: 20,
     actions_batch_size: 100,
     actions_max_batches_per_run: 20,
+    in_app_batch_size: 100,
+    in_app_max_batches_per_run: 20,
+    email_batch_size: 100,
+    email_max_batches_per_run: 20,
     ...additionalDefaults,
   },
 })
@@ -65,8 +76,10 @@ export function getCopyrightAssociationSearchCandidateRows(): number {
   })
 }
 
-/** The page size and page cap of one action reconcile stage, or of the other copyright sweeps. */
-export function getCopyrightSweepLimits(stage?: CopyrightActionReconcileStage) {
+/** The page size and page cap of one action stage or delivery channel, or of the other copyright sweeps. */
+export function getCopyrightSweepLimits(
+  stage?: CopyrightActionReconcileStage | CopyrightDeliveryReconcileChannel,
+) {
   return {
     batchSize: getBoundedPositiveIntegerField(
       copyrightSweepConfig,

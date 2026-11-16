@@ -1,4 +1,4 @@
-import { COPYRIGHT_ACTION_RECONCILE_STAGES } from '@queues/background/enqueues/notifications-domain'
+import { copyrightReconcileJobFields } from './registry-copyright-reconcile-fields.mts'
 import {
   moderationRetentionQueueConfig,
   partitionCleanupConfig,
@@ -158,28 +158,7 @@ export const workDynamicConfigRegistryEntries = [
           { description: field.replaceAll('_', ' '), minValue: 1, maxValue, integer: true },
         ]),
       ),
-      ...Object.fromEntries(
-        COPYRIGHT_ACTION_RECONCILE_STAGES.flatMap(stage => [
-          [
-            `${stage}_batch_size`,
-            {
-              description: `Maximum rows per page of the ${stage} action reconcile job.`,
-              minValue: 1,
-              maxValue: 100,
-              integer: true,
-            },
-          ],
-          [
-            `${stage}_max_batches_per_run`,
-            {
-              description: `Maximum pages per run of the ${stage} action reconcile job; remaining work continues in its own job.`,
-              minValue: 1,
-              maxValue: 2000,
-              integer: true,
-            },
-          ],
-        ]),
-      ),
+      ...copyrightReconcileJobFields,
       batch_size: {
         description: 'Maximum rows per page.',
         minValue: 1,

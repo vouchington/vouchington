@@ -4,20 +4,23 @@ import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import {
   NOTIFICATIONS_CHECK_COPYRIGHT_REVIEW_TARGET_JOB,
   NOTIFICATIONS_DIGEST_SCHEDULE_TICK_JOB,
-  NOTIFICATIONS_RECONCILE_COPYRIGHT_DELIVERY_JOB,
   NOTIFICATIONS_RECONCILE_DSA_JOB,
   NOTIFICATIONS_RECONCILE_MEDIA_REGISTRY_JOB,
   NOTIFICATIONS_RECONCILE_PUSH_INTENTS_JOB,
   NOTIFICATIONS_ADMIT_COPYRIGHT_CASE_PURGE_JOB,
 } from '@queues/background/enqueues/notifications-jobs'
+import { NOTIFICATIONS_RECONCILE_COPYRIGHT_DELIVERY_JOBS } from '@queues/background/enqueues/notifications-copyright-delivery-jobs'
 import { NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOBS } from '@queues/background/enqueues/notifications-copyright-action-jobs'
-import { COPYRIGHT_ACTION_RECONCILE_STAGES } from '@queues/background/enqueues/notifications-domain'
+import {
+  COPYRIGHT_ACTION_RECONCILE_STAGES,
+  COPYRIGHT_DELIVERY_RECONCILE_CHANNELS,
+} from '@queues/background/enqueues/notifications-domain'
 import type { BackgroundJobDefinition } from '@queues/background/types'
 import {
   enqueueCheckCopyrightReviewTarget,
   enqueueCommunityActivityDigestScheduleTick,
   enqueueReconcileCopyrightActionStage,
-  enqueueReconcileCopyrightDeliveryIntents,
+  enqueueReconcileCopyrightDeliveryChannel,
   enqueueReconcileMediaDeliveryRegistry,
   enqueueReconcileNotificationPushIntents,
   enqueueCopyrightCasePurgeAdmission,
@@ -75,20 +78,20 @@ export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_QUEUE_
       },
     ] as const,
   })),
-  {
-    schedulerId: 'copyright-delivery-reconciliation',
+  ...COPYRIGHT_DELIVERY_RECONCILE_CHANNELS.map(channel => ({
+    schedulerId: `copyright-delivery-reconciliation-${channel}`,
     repeat: { pattern: '*/5 * * * *' },
-    template: scheduleTemplate(NOTIFICATIONS_RECONCILE_COPYRIGHT_DELIVERY_JOB),
+    template: scheduleTemplate(NOTIFICATIONS_RECONCILE_COPYRIGHT_DELIVERY_JOBS[channel]),
     operatorSurfaces: [
       {
         kind: 'scheduled-jobs',
-        id: 'copyright-delivery-reconciliation',
+        id: `copyright-delivery-reconciliation-${channel}`,
         schedule: '*/5 * * * *',
-        description: 'Re-enqueue pending copyright legal delivery intents',
-        trigger: enqueueReconcileCopyrightDeliveryIntents,
+        description: `Re-enqueue pending copyright legal delivery intents for the ${channel} channel`,
+        trigger: () => enqueueReconcileCopyrightDeliveryChannel(channel),
       },
-    ],
-  },
+    ] as const,
+  })),
   {
     schedulerId: 'copyright-review-target-page',
     repeat: { pattern: '*/5 * * * *' },

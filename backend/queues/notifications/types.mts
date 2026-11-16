@@ -1,5 +1,6 @@
 export type {
   CopyrightActionReconcileData,
   CopyrightActionReconcileStage,
-  CopyrightSweepContinuation,
+  CopyrightDeliveryReconcileChannel,
+  CopyrightDeliveryReconcileData,
 } from '@queues/background/enqueues/notifications-domain'

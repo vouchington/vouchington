@@ -10,13 +10,14 @@ import {
   NOTIFICATIONS_FOLLOW_JOB,
   NOTIFICATIONS_REFERRAL_CLICK_JOB,
   NOTIFICATIONS_REFERRAL_SIGNUP_JOB,
-  NOTIFICATIONS_RECONCILE_COPYRIGHT_DELIVERY_JOB,
 } from '@queues/background/enqueues/notifications-jobs'
+import { NOTIFICATIONS_RECONCILE_COPYRIGHT_DELIVERY_JOBS } from '@queues/background/enqueues/notifications-copyright-delivery-jobs'
 import { NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOBS } from '@queues/background/enqueues/notifications-copyright-action-jobs'
 import type {
   CopyrightActionReconcileData,
   CopyrightActionReconcileStage,
-  CopyrightSweepContinuation,
+  CopyrightDeliveryReconcileChannel,
+  CopyrightDeliveryReconcileData,
 } from '@queues/background/enqueues/notifications-domain'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
@@ -72,9 +73,10 @@ const enqueueDeleteNotificationJob = createBackgroundEnqueue(NOTIFICATIONS_DELET
 const enqueueDeliverCopyrightNoticeJob = createBackgroundEnqueue(
   NOTIFICATIONS_DELIVER_COPYRIGHT_NOTICE_JOB,
 )
-const enqueueReconcileCopyrightDeliveryIntentsJob = createBackgroundEnqueue(
-  NOTIFICATIONS_RECONCILE_COPYRIGHT_DELIVERY_JOB,
-)
+const enqueueReconcileCopyrightDeliveryChannelJobs = {
+  in_app: createBackgroundEnqueue(NOTIFICATIONS_RECONCILE_COPYRIGHT_DELIVERY_JOBS.in_app),
+  email: createBackgroundEnqueue(NOTIFICATIONS_RECONCILE_COPYRIGHT_DELIVERY_JOBS.email),
+} as const satisfies Record<CopyrightDeliveryReconcileChannel, unknown>
 const enqueueApplyCopyrightActionJob = createBackgroundEnqueue(
   NOTIFICATIONS_APPLY_COPYRIGHT_ACTION_JOB,
 )
@@ -153,12 +155,14 @@ export function enqueueDeliverCopyrightNotice(intentId: string): EnqueueReturnTy
   return enqueueDeliverCopyrightNoticeJob({ intentId }, copyrightDeliveryJobOptions(intentId))
 }
 
-export function enqueueReconcileCopyrightDeliveryIntents(
-  data: CopyrightSweepContinuation = {},
+/** Enqueues one channel's job; a continuation's dedup id carries its channel and cursor. */
+export function enqueueReconcileCopyrightDeliveryChannel(
+  channel: CopyrightDeliveryReconcileChannel,
+  data: CopyrightDeliveryReconcileData = {},
 ): EnqueueReturnType {
-  return enqueueReconcileCopyrightDeliveryIntentsJob(data, {
+  return enqueueReconcileCopyrightDeliveryChannelJobs[channel](data, {
     deduplication: {
-      id: `copyright-delivery-reconciliation:${JSON.stringify(data)}`,
+      id: `copyright-delivery-reconciliation:${channel}:${JSON.stringify(data)}`,
       mode: 'throttle',
       ttl: FIVE_MINUTES_MS,
     },

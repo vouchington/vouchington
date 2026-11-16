@@ -30,7 +30,7 @@ export { processConversationMessageNotification } from './processors/conversatio
 export { processReconcileMembershipVisibility } from './processors/membership-visibility.mts'
 export {
   processDeliverCopyrightNotice,
-  processReconcileCopyrightDeliveryIntents,
+  copyrightDeliveryReconcileProcessors,
 } from './processors/copyright-delivery.mts'
 export { processApplyCopyrightAction } from './processors/copyright-action.mts'
 export { copyrightActionReconcileProcessors } from './processors/copyright-action-reconcile.mts'

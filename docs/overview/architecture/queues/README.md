@@ -159,6 +159,8 @@ retry and failure, because stages that share one budget or cursor map hide which
 failed. Every stage reads committed state through an indexed predicate, so none waits for another
 within a pass. One ordering lane with low concurrency bounds their combined load, and a stage that
 finds more work enqueues its own continuation.
+Copyright delivery reconciliation does the same per channel: in-app and email each run as their own
+job and cap, in one ordering lane, and neither waits for the other.
 Terminal ActivityPub identity cleanup can yield the same retained family job while work remains,
 so a daily seed is not a daily throughput ceiling. A finished fixed family id is reactivated by a
 later real cleanup pass; an active or delayed job keeps its claim. Each family has its own serial

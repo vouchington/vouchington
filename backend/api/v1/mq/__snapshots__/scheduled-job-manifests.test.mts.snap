@@ -958,8 +958,8 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Re-enqueue pending copyright legal delivery intents",
-        "id": "copyright-delivery-reconciliation",
+        "description": "Re-enqueue pending copyright legal delivery intents for the in_app channel",
+        "id": "copyright-delivery-reconciliation-in_app",
         "kind": "scheduled-jobs",
         "schedule": "*/5 * * * *",
         "trigger": "[function]",
@@ -970,10 +970,10 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "repeat": {
       "pattern": "*/5 * * * *",
     },
-    "schedulerId": "copyright-delivery-reconciliation",
+    "schedulerId": "copyright-delivery-reconciliation-in_app",
     "template": {
       "data": {},
-      "name": "notifications.processReconcileCopyrightDeliveryIntents",
+      "name": "notifications.processReconcileCopyrightInAppDeliveryIntents",
       "opts": {
         "attempts": 3,
         "backoff": {
@@ -982,8 +982,45 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "exponential",
         },
         "ordering": {
-          "concurrency": 5,
-          "key": "notifications",
+          "concurrency": 1,
+          "key": "notifications:copyright-delivery-reconcile",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue pending copyright legal delivery intents for the email channel",
+        "id": "copyright-delivery-reconciliation-email",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "copyright-delivery-reconciliation-email",
+    "template": {
+      "data": {},
+      "name": "notifications.processReconcileCopyrightEmailDeliveryIntents",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "notifications:copyright-delivery-reconcile",
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -3762,12 +3799,20 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "triggerName": "trigger",
   },
   {
-    "description": "Re-enqueue pending copyright legal delivery intents",
-    "id": "copyright-delivery-reconciliation",
-    "job_name": "notifications.processReconcileCopyrightDeliveryIntents",
+    "description": "Re-enqueue pending copyright legal delivery intents for the in_app channel",
+    "id": "copyright-delivery-reconciliation-in_app",
+    "job_name": "notifications.processReconcileCopyrightInAppDeliveryIntents",
     "queue_name": "background",
     "schedule": "*/5 * * * *",
-    "triggerName": "enqueueReconcileCopyrightDeliveryIntents",
+    "triggerName": "trigger",
+  },
+  {
+    "description": "Re-enqueue pending copyright legal delivery intents for the email channel",
+    "id": "copyright-delivery-reconciliation-email",
+    "job_name": "notifications.processReconcileCopyrightEmailDeliveryIntents",
+    "queue_name": "background",
+    "schedule": "*/5 * * * *",
+    "triggerName": "trigger",
   },
   {
     "description": "Enqueue due public copyright DSA statement submissions",

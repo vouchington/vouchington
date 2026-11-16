@@ -4,8 +4,12 @@ import {
   enqueueContinueReconcilePostNotifications,
   enqueueContinueReconcileRssFeedItemNotifications,
 } from '@queues/notifications/enqueues'
+import { NOTIFICATIONS_RECONCILE_COPYRIGHT_DELIVERY_JOBS } from '@queues/background/enqueues/notifications-copyright-delivery-jobs'
 import { NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOBS } from '@queues/background/enqueues/notifications-copyright-action-jobs'
-import { COPYRIGHT_ACTION_RECONCILE_STAGES } from '@queues/background/enqueues/notifications-domain'
+import {
+  COPYRIGHT_ACTION_RECONCILE_STAGES,
+  COPYRIGHT_DELIVERY_RECONCILE_CHANNELS,
+} from '@queues/background/enqueues/notifications-domain'
 import {
   backgroundHandler,
   backgroundDataHandler,
@@ -25,7 +29,6 @@ import {
   NOTIFICATIONS_DIGEST_DISPATCH_JOB,
   NOTIFICATIONS_DIGEST_SCHEDULE_TICK_JOB,
   NOTIFICATIONS_FOLLOW_JOB,
-  NOTIFICATIONS_RECONCILE_COPYRIGHT_DELIVERY_JOB,
   NOTIFICATIONS_RECONCILE_DSA_JOB,
   NOTIFICATIONS_RECONCILE_MEDIA_REGISTRY_JOB,
   NOTIFICATIONS_RECONCILE_POST_JOB,
@@ -143,9 +146,11 @@ export const notificationsHandlers = [
     NOTIFICATIONS_DELIVER_COPYRIGHT_NOTICE_JOB,
     processors.processDeliverCopyrightNotice,
   ),
-  backgroundDataHandler(
-    NOTIFICATIONS_RECONCILE_COPYRIGHT_DELIVERY_JOB,
-    processors.processReconcileCopyrightDeliveryIntents,
+  ...COPYRIGHT_DELIVERY_RECONCILE_CHANNELS.map(channel =>
+    backgroundDataHandler(
+      NOTIFICATIONS_RECONCILE_COPYRIGHT_DELIVERY_JOBS[channel],
+      processors.copyrightDeliveryReconcileProcessors[channel],
+    ),
   ),
   backgroundDataHandler(
     NOTIFICATIONS_APPLY_COPYRIGHT_ACTION_JOB,
