@@ -26,10 +26,11 @@ describe('copyright legal-removal surfaces', () => {
 
   it('keeps a withhold owed until the RSS snapshot generation advances', async () => {
     const scene = await restrictedScene()
-    const generation = await rssSnapshotGeneration.getRssSnapshotLegalGeneration()
-    vi.spyOn(rssSnapshotGeneration, 'invalidateRssSnapshotsForLegalRemoval').mockRejectedValueOnce(
-      new Error('generation outage'),
-    )
+    // The generation key is process-wide and sibling legal-removal tests advance it, so assert on
+    // this case's own invalidation calls instead of comparing generation values.
+    const invalidation = vi
+      .spyOn(rssSnapshotGeneration, 'invalidateRssSnapshotsForLegalRemoval')
+      .mockRejectedValueOnce(new Error('generation outage'))
     const now = new Date()
 
     await expect(processCopyrightActionIntent(scene.withhold.id, now)).rejects.toThrow(
@@ -39,7 +40,7 @@ describe('copyright legal-removal surfaces', () => {
       state: 'pending',
       completed_at: null,
     })
-    expect(await rssSnapshotGeneration.getRssSnapshotLegalGeneration()).toBe(generation)
+    expect(invalidation).toHaveBeenCalledTimes(1)
 
     await expect(
       processCopyrightActionIntent(scene.withhold.id, new Date(now.getTime() + 61_000)),
@@ -47,7 +48,8 @@ describe('copyright legal-removal surfaces', () => {
     expect(await getActionIntent(scene.notice.id, 'withhold')).toMatchObject({
       state: 'completed',
     })
-    expect(await rssSnapshotGeneration.getRssSnapshotLegalGeneration()).not.toBe(generation)
+    expect(invalidation).toHaveBeenCalledTimes(2)
+    await expect(invalidation.mock.results[1]!.value).resolves.toBeUndefined()
   })
 
   it.each(['placement changed', 'blocker admitted'] as const)(
@@ -65,7 +67,7 @@ describe('copyright legal-removal surfaces', () => {
         restrictionId: scene.restriction.id,
         placementRevision: scene.target.placement_revision,
       })
-      const generation = await rssSnapshotGeneration.getRssSnapshotLegalGeneration()
+      const invalidation = vi.spyOn(rssSnapshotGeneration, 'invalidateRssSnapshotsForLegalRemoval')
       const evictions = vi.spyOn(copyrightCache, 'invalidateCopyrightLegalRemovalSurfaces')
 
       await expect(
@@ -101,7 +103,7 @@ describe('copyright legal-removal surfaces', () => {
       expect(await getActionIntent(scene.notice.id, 'restore')).toMatchObject({
         state: scenario === 'blocker admitted' ? 'blocked' : 'stale',
       })
-      expect(await rssSnapshotGeneration.getRssSnapshotLegalGeneration()).not.toBe(generation)
+      expect(invalidation).toHaveBeenCalledTimes(1)
     },
   )
 })
