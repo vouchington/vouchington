@@ -2,7 +2,7 @@ import { runMembershipExpiryCandidateScenario } from './membership-expiry-candid
 import { beginTransaction, read } from '@data-stores/psql'
 import {
   activateOldestQueuedGrant,
-  activateOldestQueuedGrantForLockedUser,
+  activateOldestQueuedGrantForUser,
 } from '@services/memberships/grants/activate-queued'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
@@ -49,7 +49,7 @@ export async function runMembershipExpiryPageScenarios(): Promise<void> {
       await transaction('/* lockExpiryFixtureUser */ SELECT id FROM users WHERE id=$1 FOR UPDATE', [
         closed.user_id,
       ])
-      await activateOldestQueuedGrantForLockedUser(closed.user_id, closed, transaction)
+      await activateOldestQueuedGrantForUser(closed.user_id, closed, transaction)
     },
     undefined,
     'activateOldestQueuedGrant',
@@ -65,6 +65,6 @@ export async function runMembershipExpiryPageScenarios(): Promise<void> {
       await activateOldestQueuedGrant(closed.user_id, closed, transaction)
     },
     undefined,
-    'activateOldestQueuedGrant: lock user',
+    'activateOldestQueuedGrant: user',
   )
 }

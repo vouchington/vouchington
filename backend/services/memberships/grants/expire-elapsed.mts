@@ -18,8 +18,6 @@ export async function expireElapsedMemberships(
     onPage?: () => void
   } = {},
 ): Promise<MembershipExpiryResult> {
-  await query(sql`/* expireElapsedMemberships: lock user */
-    SELECT id FROM users WHERE id = ${userId}`)
   const { maxBatches } = options.limits ?? getMembershipWorkLimits()
   // Each page expires one current projection before considering its queued replacement.
   const { processed: expired, hasMore: reachedPageLimit } = await runBoundedPages(

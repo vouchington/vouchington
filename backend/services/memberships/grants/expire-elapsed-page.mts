@@ -1,8 +1,8 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { recordMembershipChanges, type MembershipChangeInput } from '../changes.mts'
-import { restoreFallbackAfterCurrentAccessEndsForLockedUser } from '../fallback/restore-after-current-access-ends.mts'
-import { activateOldestQueuedGrantForLockedUser } from './activate-queued.mts'
+import { restoreFallbackAfterCurrentAccessEndsForUser } from '../fallback/restore-after-current-access-ends.mts'
+import { activateOldestQueuedGrantForUser } from './activate-queued.mts'
 
 /** Expire one schema-bounded current projection under its conditional write lock. */
 export async function expireElapsedMembershipPage(
@@ -73,11 +73,11 @@ export async function expireElapsedMembershipPage(
     },
   ]
   if (options.activateQueuedGrants !== false) {
-    const activated = await activateOldestQueuedGrantForLockedUser(userId, membership, query)
+    const activated = await activateOldestQueuedGrantForUser(userId, membership, query)
     if (activated) changes.push(activated)
     else {
       // The grant may have been the temporary fallback after a direct source suspended.
-      const fallback = await restoreFallbackAfterCurrentAccessEndsForLockedUser(
+      const fallback = await restoreFallbackAfterCurrentAccessEndsForUser(
         userId,
         membership.id,
         query,
