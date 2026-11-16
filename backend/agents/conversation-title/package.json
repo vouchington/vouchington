@@ -31,6 +31,6 @@
   "devDependencies": {
     "@services/users": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
-    "openai": "^7.43.0"
+    "openai": "^7.57.0"
   }
 }
