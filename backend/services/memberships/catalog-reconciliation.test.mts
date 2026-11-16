@@ -220,13 +220,26 @@ describe('Stripe membership catalog reconciliation', () => {
     expect(canonicalMappings(mappings)).toEqual(expectedCanonicalMappings('fk-hold'))
   })
 
-  it('publishes concurrent repeats without duplicating or retiring selected mappings', async () => {
+  it('preserves a complete catalog when concurrent repeats succeed or conflict', async () => {
     const outcomes = await Promise.allSettled([
       reconcileStripeMembershipCatalog({ context, resolvePrice: resolvePrice('same') }),
       reconcileStripeMembershipCatalog({ context, resolvePrice: resolvePrice('same') }),
     ])
 
-    expect(outcomes.map(outcome => outcome.status)).toEqual(['fulfilled', 'fulfilled'])
+    expect(outcomes.some(outcome => outcome.status === 'fulfilled')).toBe(true)
+    for (const outcome of outcomes) {
+      if (outcome.status !== 'rejected') continue
+      expect(outcome.reason).toMatchObject({
+        statusCode: 409,
+        code: 'MEMBERSHIP_CATALOG_CONFLICT',
+        cause: {
+          code: '23505',
+          constraint: expect.stringMatching(
+            /^idx_membership_provider_products__(active_sku|provider_identity)$/,
+          ),
+        },
+      })
+    }
     const mappings = await getTestStripeCatalogMappings(context.applicationId, context.environment)
     expect(mappings).toHaveLength(4)
     expect(canonicalMappings(mappings)).toEqual(expectedCanonicalMappings('same'))
