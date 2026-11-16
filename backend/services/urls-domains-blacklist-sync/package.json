@@ -31,7 +31,7 @@
     "@services/urls-domains-blacklist": "workspace:^",
     "@vouchington/queue-errors": "^0.2.1",
     "pg-copy-streams": "^7.0.0",
-    "undici": "^8.12.3"
+    "undici": "^8.12.4"
   },
   "devDependencies": {
     "@queues/bloom-filters": "workspace:^",

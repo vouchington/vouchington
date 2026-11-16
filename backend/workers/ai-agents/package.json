@@ -72,7 +72,7 @@
   "devDependencies": {
     "@data-stores/valkey-core": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
-    "undici": "^8.12.3",
+    "undici": "^8.12.4",
     "vitest": "^5.1.0"
   }
 }

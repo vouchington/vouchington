@@ -48,6 +48,6 @@
     "@services/elections-votes": "workspace:^",
     "@services/web-risk": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
-    "undici": "^8.12.3"
+    "undici": "^8.12.4"
   }
 }

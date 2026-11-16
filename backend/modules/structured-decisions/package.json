@@ -25,6 +25,6 @@
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/ai": "^0.4.1",
-    "undici": "^8.12.3"
+    "undici": "^8.12.4"
   }
 }

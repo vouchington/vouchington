@@ -41,6 +41,6 @@
   "devDependencies": {
     "@ts-shared/utils": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
-    "undici": "^8.12.3"
+    "undici": "^8.12.4"
   }
 }
