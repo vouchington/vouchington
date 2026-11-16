@@ -5,6 +5,7 @@ import { Queue, QueueEvents, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { deferPostgresConnectionTimeout } from '@vouchington/queue-errors'
+import { waitForEmitterEvent } from '../../../test-helpers/real-glide-terminal-deadline.mts'
 import { createTestPostgresConnectionWaitPool } from '@voucha/test-helpers/postgres-connection-wait'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
@@ -30,7 +31,7 @@ async function runDeferredConnectionWait(
   try {
     await Promise.all([events.waitUntilReady(), worker.waitUntilReady()])
     const retrying = Promise.race([
-      once(events, 'retrying'),
+      waitForEmitterEvent<{ jobId: string }>(events, 'retrying'),
       once(events, 'failed').then(([event]) => {
         throw new Error(`Job failed instead of deferring: ${JSON.stringify(event)}`)
       }),
@@ -38,7 +39,7 @@ async function runDeferredConnectionWait(
     const job = await queue.add('database-read', {}, { attempts: 3 })
     if (!job) throw new Error('Expected a queued database-read job')
 
-    const [event] = await retrying
+    const event = await retrying
     const stored = await queue.getJob(job.id)
     return {
       jobId: job.id,

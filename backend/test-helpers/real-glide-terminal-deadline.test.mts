@@ -1,5 +1,6 @@
+import { EventEmitter } from 'node:events'
 import { describe, expect, it } from 'vitest'
-import { waitForRealGlideEvent } from './real-glide-terminal-deadline.mts'
+import { waitForEmitterEvent, waitForRealGlideEvent } from './real-glide-terminal-deadline.mts'
 
 describe('real GlideMQ terminal event deadline', () => {
   it('rejects a stalled completed, failed, or drained wait with a named deadline', async () => {
@@ -38,5 +39,24 @@ describe('real GlideMQ terminal event deadline', () => {
     })
     pending.resolve('completed')
     await expect(pending.promise).resolves.toBe('completed')
+  })
+
+  it.each(['delay-changed', 'added', 'retrying', 'message-deleted', 'poll-error'])(
+    'rejects a stalled %s wait with a message naming the event',
+    async event => {
+      const emitter = new EventEmitter()
+      await expect(waitForEmitterEvent(emitter, event, 50)).rejects.toThrow(
+        `${event} event did not settle within 50ms`,
+      )
+      expect(emitter.listenerCount(event)).toBe(0)
+    },
+  )
+
+  it('resolves with the first payload of an emitted event and stops listening', async () => {
+    const emitter = new EventEmitter()
+    const waiting = waitForEmitterEvent<{ jobId: string }>(emitter, 'delay-changed', 1_000)
+    emitter.emit('delay-changed', { jobId: 'job-1' }, 'ignored')
+    await expect(waiting).resolves.toEqual({ jobId: 'job-1' })
+    expect(emitter.listenerCount('delay-changed')).toBe(0)
   })
 })

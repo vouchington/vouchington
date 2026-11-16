@@ -1,4 +1,3 @@
-import { once } from 'node:events'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
   countTestSqsMessages,
@@ -7,6 +6,7 @@ import {
 } from '@voucha/test-helpers/aws-emulator-sqs'
 import { sentryCaptureMessageMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { loadSesInboundSqs } from './workers.mts'
+import { waitForEmitterEvent } from '../../test-helpers/real-glide-terminal-deadline.mts'
 
 describe('loadSesInboundSqs', () => {
   afterEach(() => {
@@ -44,7 +44,7 @@ describe('loadSesInboundSqs', () => {
     // close() returns one shared promise, so closing again after a failed assertion is safe.
     onTestFinished(() => consumer.close())
     expect(consumer.name).toBe('ses-inbound-sqs')
-    await once(consumer, 'message-deleted')
+    await waitForEmitterEvent(consumer, 'message-deleted')
 
     expect(await countTestSqsMessages(queueUrl)).toBe(0)
   })
