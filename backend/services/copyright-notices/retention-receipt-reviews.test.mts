@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/index'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
@@ -6,6 +6,9 @@ import { useCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyri
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import {
   attemptCopyrightReceiptReviewMutation,
+  copyrightReceiptReviewFixturePriority,
+  peekCopyrightReceiptReviewRetirementCandidate,
+  isCopyrightReceiptReviewRetirementEligible,
   readCopyrightReceiptHolds,
   readCopyrightReceiptReview,
   retireOldCopyrightReceiptRationale,
@@ -20,27 +23,38 @@ import {
 import { sweepCopyrightReceiptReviews } from './retention-receipt-reviews.mts'
 import { createCopyrightEmailIntake, ErasedCopyrightEmailIntakeReplay } from './email-intakes.mts'
 
-const oldReview = new Date('2001-01-01T00:00:00.000Z')
+let oldReview: Date
+const retirementCutoff = new Date('1900-01-01T00:00:00.000Z')
 
 describe('standalone copyright receipt review expiry', () => {
   useCopyrightIntakeEnvironment()
   useCopyrightEvidenceBucket()
+  beforeEach(async () => {
+    oldReview = await copyrightReceiptReviewFixturePriority()
+  })
   it('keeps the final explanation when hold admission wins the retirement lock', async () => {
     const reviewer = await createTestUserDirect({ extraRoles: ['moderator'] })
     const receipt = await seedCopyrightReceiptReview({
       reviewerId: reviewer.id,
       reviewedAt: oldReview,
     })
-    let skipped: Awaited<ReturnType<typeof sweepCopyrightReceiptReviews>> | undefined
+    const sentinel = await seedCopyrightReceiptReview({
+      reviewerId: reviewer.id,
+      reviewedAt: new Date(oldReview.getTime() + 86_400_000),
+      erased: false,
+    })
+    expect(await peekCopyrightReceiptReviewRetirementCandidate(retirementCutoff)).toBe(receipt.id)
+    let preservedDuringSweep: Awaited<ReturnType<typeof readCopyrightReceiptReview>> | undefined
     const restore = afterPostgresTransactionQueryForTest(
       '/* placeCopyrightEmailReceiptPreservationHold */',
       values => values.includes(receipt.id),
       async () => {
-        skipped = await sweepCopyrightReceiptReviews({
+        await sweepCopyrightReceiptReviews({
+          now: retirementCutoff,
           batchSize: 1,
           maxBatches: 1,
-          receiptIds: [receipt.id],
         })
+        preservedDuringSweep = await readCopyrightReceiptReview(receipt.id)
       },
     )
     let admitted: Awaited<ReturnType<typeof placeCopyrightEmailReceiptPreservationHold>>
@@ -53,7 +67,13 @@ describe('standalone copyright receipt review expiry', () => {
     } finally {
       restore()
     }
-    expect(skipped).toEqual({ scanned: 0, retired: 0, hasMore: false })
+    expect((await readCopyrightReceiptReview(sentinel.id))?.review_retirement_check_at).toEqual(
+      expect.any(Date),
+    )
+    expect(preservedDuringSweep).toMatchObject({
+      review_decision: 'rejected',
+      review_rationale_ciphertext: 'v1:test-rationale',
+    })
     expect(await readCopyrightReceiptReview(receipt.id)).toMatchObject({
       review_decision: 'rejected',
       review_rationale_ciphertext: 'v1:test-rationale',
@@ -104,7 +124,7 @@ describe('standalone copyright receipt review expiry', () => {
     })
     const outside = await seedCopyrightReceiptReview({
       reviewerId: reviewer.id,
-      reviewedAt: oldReview,
+      reviewedAt: new Date(oldReview.getTime() + 86_400_000),
     })
     let retired = 0
     const restore = afterPostgresTransactionQueryForTest(
@@ -112,9 +132,9 @@ describe('standalone copyright receipt review expiry', () => {
       values => values.includes(receipt.id),
       async () => {
         const result = await sweepCopyrightReceiptReviews({
+          now: retirementCutoff,
           batchSize: 1,
           maxBatches: 1,
-          receiptIds: [receipt.id],
         })
         retired = result.retired
       },
@@ -138,9 +158,9 @@ describe('standalone copyright receipt review expiry', () => {
       reviewedAt: oldReview,
     })
     const result = await sweepCopyrightReceiptReviews({
-      batchSize: 10,
+      now: retirementCutoff,
+      batchSize: 1,
       maxBatches: 1,
-      receiptIds: [receipt.id],
     })
     expect(result.retired).toBe(1)
     expect(await readCopyrightReceiptReview(receipt.id)).toMatchObject({
@@ -177,11 +197,7 @@ describe('standalone copyright receipt review expiry', () => {
     await expect(attemptCopyrightReceiptReviewMutation(unerased.id)).rejects.toThrow(
       'copyright email receipt identity and completed review are immutable',
     )
-    await sweepCopyrightReceiptReviews({
-      batchSize: 10,
-      maxBatches: 1,
-      receiptIds: [recent.id, unerased.id],
-    })
+    await sweepCopyrightReceiptReviews({ now: retirementCutoff, batchSize: 1, maxBatches: 1 })
     for (const receipt of [recent, unerased]) {
       expect(await readCopyrightReceiptReview(receipt.id)).toMatchObject({
         review_decision: 'rejected',
@@ -200,10 +216,11 @@ describe('standalone copyright receipt review expiry', () => {
       receipt.id,
       'court_request',
     )
-    await sweepCopyrightReceiptReviews({ batchSize: 10, maxBatches: 1, receiptIds: [receipt.id] })
+    expect(await peekCopyrightReceiptReviewRetirementCandidate(retirementCutoff)).toBe(receipt.id)
+    await sweepCopyrightReceiptReviews({ now: retirementCutoff, batchSize: 1, maxBatches: 1 })
     expect((await readCopyrightReceiptReview(receipt.id))?.review_decision).toBe('rejected')
     await releaseCopyrightEmailReceiptPreservationHold(reviewer, receipt.id, hold.id)
-    await sweepCopyrightReceiptReviews({ batchSize: 10, maxBatches: 1, receiptIds: [receipt.id] })
+    expect(await isCopyrightReceiptReviewRetirementEligible(receipt.id)).toBe(false)
     expect(await readCopyrightReceiptReview(receipt.id)).toMatchObject({
       review_decision: 'rejected',
     })
@@ -223,7 +240,7 @@ describe('standalone copyright receipt review expiry', () => {
       staffId: reviewer.id,
       releasedAt: new Date('2002-01-01T00:00:00.000Z'),
     })
-    await sweepCopyrightReceiptReviews({ batchSize: 10, maxBatches: 1, receiptIds: [receipt.id] })
+    await sweepCopyrightReceiptReviews({ now: retirementCutoff, batchSize: 1, maxBatches: 1 })
     expect((await readCopyrightReceiptReview(receipt.id))?.review_decision).toBeNull()
     expect(await readCopyrightReceiptHolds(receipt.id)).toEqual([])
   })
@@ -236,14 +253,16 @@ describe('standalone copyright receipt review expiry', () => {
       erased: false,
     })
     const rationaleId = await seedOldCopyrightReceiptRationale(receipt, reviewer.id)
-    await sweepCopyrightReceiptReviews({ batchSize: 10, maxBatches: 1, receiptIds: [receipt.id] })
-    expect((await readCopyrightReceiptReview(receipt.id))?.review_decision).toBe('rejected')
+    expect(await isCopyrightReceiptReviewRetirementEligible(receipt.id)).toBe(false)
+    expect(await readCopyrightReceiptReview(receipt.id)).toMatchObject({
+      review_decision: 'rejected',
+      review_rationale_ciphertext: 'v1:test-rationale',
+    })
     expect(await retireOldCopyrightReceiptRationale(rationaleId)).toBe(1)
     await sweepCopyrightReceiptReviews({
-      batchSize: 10,
+      batchSize: 1,
       maxBatches: 1,
-      now: new Date(Date.now() + 2 * 86_400_000),
-      receiptIds: [receipt.id],
+      now: retirementCutoff,
     })
     expect(await readCopyrightReceiptReview(receipt.id)).toMatchObject({
       review_decision: null,

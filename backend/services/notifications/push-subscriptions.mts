@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { beginTransaction, isUniqueViolation, write, type QueryOptions } from '@data-stores/psql'
+import { beginTransaction, isUniqueViolation, write } from '@data-stores/psql'
 import { createCodedError } from '@vouchington/sentry'
 import { CONFLICT } from '@modules/on-error/error-codes'
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
@@ -127,11 +127,7 @@ export function assertWebPushEndpointOwnerMatches(endpoint: string, ownedEndpoin
     throw createCodedError(409, 'Web Push endpoint digest collision.', CONFLICT)
 }
 
-export async function deleteWebPushSubscription(
-  userId: string,
-  subscriptionId: string,
-  options?: QueryOptions,
-) {
+export async function deleteWebPushSubscription(userId: string, subscriptionId: string) {
   const { rowCount } = await write(
     sql`/* deleteWebPushSubscription */
     WITH retired AS (
@@ -153,7 +149,6 @@ export async function deleteWebPushSubscription(
     WHERE owner.user_id = retired.user_id
       AND owner.subscription_id = retired.id
       AND owner.endpoint = retired.endpoint`,
-    options,
   )
   return (rowCount ?? 0) > 0
 }
@@ -162,7 +157,6 @@ export async function deleteWebPushSubscription(
 export async function deleteExactWebPushSubscription(
   userId: string,
   binding: { endpoint: string; subscriptionId: string },
-  options?: QueryOptions,
 ): Promise<void> {
   await write(
     sql`/* deleteExactWebPushSubscription */
@@ -186,6 +180,5 @@ export async function deleteExactWebPushSubscription(
     WHERE owner.user_id = retired.user_id
       AND owner.subscription_id = retired.id
       AND owner.endpoint = retired.endpoint`,
-    options,
   )
 }

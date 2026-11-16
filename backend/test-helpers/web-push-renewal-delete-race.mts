@@ -1,40 +1,40 @@
-import type { QueryExecutor, QueryOptions } from '@data-stores/psql'
-import { interceptPostgresTransactionsForTest } from './injected-postgres-transactions.mts'
-import { createTestPostgresLockWaiter } from './postgres-lock-waiter.mts'
+import { afterPostgresTransactionQueryForTest } from './injected-postgres-transactions.mts'
+import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
+import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
 
-/** Pause renewal after retiring its old subscription until deletion really waits on that write. */
+/** Pause renewal after retiring its old subscription until default-pool deletion really waits. */
 export async function runTestWebPushRenewalDeleteRace<Result>(input: {
   userId: string
   deleteMarker: string
   renew: () => Promise<Result>
-  remove: (options: QueryOptions) => Promise<unknown>
+  remove: () => Promise<unknown>
 }): Promise<Result> {
-  let waiter: Awaited<ReturnType<typeof createTestPostgresLockWaiter>> | undefined
   let deletion: Promise<unknown> | undefined
-  const restore = interceptPostgresTransactionsForTest(
-    transaction =>
-      new Proxy(transaction, {
-        async apply(target, thisArgument, argumentsList: Parameters<QueryExecutor>) {
-          const result = await Reflect.apply(target, thisArgument, argumentsList)
-          const [statement] = argumentsList
-          const text = typeof statement === 'string' ? statement : statement.text
-          if (text.includes('/* releaseWebPushEndpointOwner */')) {
-            waiter = await createTestPostgresLockWaiter({
-              holder: transaction,
-              lock: { kind: 'transaction' },
-              selected: { marker: input.deleteMarker, binding: { index: 0, value: input.userId } },
-            })
-            const ownedWaiter = waiter
-            deletion = input.remove({ query: ownedWaiter.query }).then(async value => {
-              await ownedWaiter.query.commit()
-              return value
-            })
-            await ownedWaiter.waitForLock(deletion)
-          }
-          return result
+  const observed = Promise.withResolvers<void>()
+  const restore = afterPostgresTransactionQueryForTest(
+    '/* releaseWebPushEndpointOwner */',
+    values => values.includes(input.userId),
+    async query => {
+      const holderProcessId = await getTestPostgresBackendProcessId(query)
+      deletion = withTestOwnedPostgresWait(
+        {
+          holderProcessId,
+          pool: 'write',
+          lock: { kind: 'transaction' },
+          queryMarker: input.deleteMarker,
+          // Renewal's await-using owner releases its transaction on either outcome.
+          releaseHolder: async () => {},
         },
-      }),
-    true,
+        async waitForLock => {
+          const pending = input.remove()
+          await waitForLock(pending)
+          observed.resolve()
+          return pending
+        },
+      )
+      void deletion.catch((err: unknown) => observed.reject(err))
+      await observed.promise
+    },
   )
   try {
     const renewed = await input.renew()
@@ -43,6 +43,6 @@ export async function runTestWebPushRenewalDeleteRace<Result>(input: {
     return renewed
   } finally {
     restore()
-    await waiter?.[Symbol.asyncDispose]()
+    await Promise.allSettled(deletion ? [deletion] : [])
   }
 }

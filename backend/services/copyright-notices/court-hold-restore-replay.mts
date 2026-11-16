@@ -59,7 +59,13 @@ export async function recoverEligibleCopyrightRestoreIntentInTransaction(input: 
   query: TransactionQuery
 }): Promise<boolean> {
   const statement = sql`/* recoverEligibleCopyrightRestoreIntentInTransaction:facts */
-    SELECT facts.*, deadline.earliest_restoration_at, deadline.resolved_at, deadline.cancelled_at
+    SELECT facts.lease_token, facts.copyright_notice_id, facts.copyright_restriction_id,
+      facts.placement_id, facts.image_id, facts.expected_placement_revision, facts.action,
+      facts.copyright_notice_deadline_id, facts.restriction_lifted_at, facts.human_reviewed_at,
+      facts.human_review_action, facts.reversal_authorized, facts.reversal_by_review,
+      facts.reversal_by_appeal, facts.reversal_by_administrator_lift, facts.reversal_by_complaint,
+      facts.hold_resolution_authorized,
+      deadline.earliest_restoration_at, deadline.resolved_at, deadline.cancelled_at
     FROM (`.append(blockedCopyrightRestoreFacts(input.intentId, input.noticeId)).append(sql`) facts
     LEFT JOIN copyright_notice_deadlines deadline ON deadline.id = facts.copyright_notice_deadline_id
     WHERE facts.copyright_notice_deadline_id IS NULL OR deadline.id IS NOT NULL`)

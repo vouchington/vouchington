@@ -34,17 +34,13 @@ describe('web push endpoint ownership', () => {
             ? '/* deleteWebPushSubscription */'
             : '/* deleteExactWebPushSubscription */',
         renew: () => upsertWebPushSubscription(input(user.id, endpoint)),
-        remove: options =>
+        remove: () =>
           kind === 'delete'
-            ? deleteWebPushSubscription(user.id, original.id, options)
-            : deleteExactWebPushSubscription(
-                user.id,
-                {
-                  endpoint,
-                  subscriptionId: original.id,
-                },
-                options,
-              ),
+            ? deleteWebPushSubscription(user.id, original.id)
+            : deleteExactWebPushSubscription(user.id, {
+                endpoint,
+                subscriptionId: original.id,
+              }),
       })
       await expect(getTestWebPushEndpointOwner(endpoint)).resolves.toEqual({
         user_id: user.id,

@@ -6,7 +6,6 @@ export async function sweepCopyrightReceiptReviews(options: {
   batchSize: number
   maxBatches: number
   now?: Date
-  receiptIds?: readonly string[]
 }): Promise<{ scanned: number; retired: number; hasMore: boolean }> {
   if (!Number.isInteger(options.batchSize) || options.batchSize < 1 || options.batchSize > 5_000)
     throw new RangeError('Receipt review page size must be between 1 and 5,000')
@@ -18,7 +17,7 @@ export async function sweepCopyrightReceiptReviews(options: {
   const before = options.now ?? new Date()
   for (let batch = 0; batch < options.maxBatches; batch += 1) {
     // oxlint-disable-next-line no-await-in-loop -- each raw page commits before the next bounded tick.
-    const page = await sweepReceiptReviewPage(options.batchSize, before, options.receiptIds) // no-mistakes-disable-line query-reached-per-item: one bounded transactional page commits before the next capped page.
+    const page = await sweepReceiptReviewPage(options.batchSize, before) // no-mistakes-disable-line query-reached-per-item: one bounded transactional page commits before the next capped page.
     scanned += page.scanned
     retired += page.retired
     hasMore = page.scanned === options.batchSize
@@ -30,13 +29,11 @@ export async function sweepCopyrightReceiptReviews(options: {
 async function sweepReceiptReviewPage(
   batchSize: number,
   candidateBefore: Date,
-  receiptIds?: readonly string[],
 ): Promise<{ scanned: number; retired: number }> {
   await using transaction = await beginBoundedTransaction({
     connectionTimeoutMs: 5_000,
     statementTimeoutMs: 20_000,
   })
-  const owned = receiptIds ? sql` AND id = ANY(${receiptIds}::uuid[])` : sql``
   const { rows: candidates } = await transaction<{
     id: string
   }>(
@@ -45,9 +42,8 @@ async function sweepReceiptReviewPage(
     WHERE review_decision IS NOT NULL
       AND review_retirement_check_at <= ${candidateBefore}
       AND reviewed_at <= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - make_interval(years => 6)) AT TIME ZONE 'UTC'
-  `.append(owned).append(sql`
     ORDER BY review_retirement_check_at, reviewed_at, id
-    LIMIT ${batchSize} FOR UPDATE SKIP LOCKED`),
+    LIMIT ${batchSize} FOR UPDATE SKIP LOCKED`,
   )
   if (candidates.length === 0) {
     await transaction.commit()
