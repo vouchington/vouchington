@@ -5,6 +5,8 @@ import {
   readTestCopyrightTrustedFlaggerMatch,
   readTestTrustedFlaggerNoticeEffects,
   replayTestCopyrightTrustedFlaggerMatch,
+  reinstateTestCopyrightTrustedFlaggerWithEarlierId,
+  seedTestCopyrightTrustedFlaggerCutoffComponents,
 } from '@voucha/test-helpers/copyright-trusted-flaggers'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import {
@@ -13,7 +15,10 @@ import {
 } from '@voucha/test-helpers/services/copyright-notices/territorial-routes'
 import type { PrivateUser } from '@services/users/types'
 import { receiveEuCopyrightNotice } from './eu-notice-receipt.mts'
-import { recordCopyrightTrustedFlaggerChange } from './trusted-flaggers.mts'
+import {
+  getCopyrightTrustedFlagger,
+  recordCopyrightTrustedFlaggerChange,
+} from './trusted-flaggers.mts'
 
 async function fileEu(user: PrivateUser | null, key = crypto.randomUUID()) {
   const suffix = crypto.randomUUID()
@@ -37,6 +42,43 @@ async function fileEu(user: PrivateUser | null, key = crypto.randomUUID()) {
 
 describe('EU trusted-flagger receipt attribution', () => {
   useCopyrightIntakeEnvironment()
+
+  it('selects one deterministic pre-receipt component when backend clocks cross the cutoff', async () => {
+    const administrator = await createTestUser({ administrator: true })
+    const claimant = await createTestUser()
+    await approveJurisdictionPolicy(administrator, 'eu_dsa')
+    const entry = await createTestCopyrightTrustedFlagger(administrator, claimant.id)
+    await seedTestCopyrightTrustedFlaggerCutoffComponents(administrator, entry.id)
+    expect((await getCopyrightTrustedFlagger(administrator, entry.id))?.status).toBe('active')
+    // The eligible components end in a newer suspension and an older reinstatement.
+    // Choosing only the newer component prevents the older active component producing a match.
+    const filing = await fileEu(claimant)
+    expect(await readTestCopyrightTrustedFlaggerMatch(filing.receipt.notice_id)).toBeNull()
+    await replayTestCopyrightTrustedFlaggerMatch(filing.receipt.notice_id)
+    expect(await readTestCopyrightTrustedFlaggerMatch(filing.receipt.notice_id)).toBeNull()
+  })
+
+  it('attributes the receipt using a backdated chain tip instead of the highest UUID', async () => {
+    const administrator = await createTestUser({ administrator: true })
+    const claimant = await createTestUser()
+    await approveJurisdictionPolicy(administrator, 'eu_dsa')
+    const entry = await createTestCopyrightTrustedFlagger(administrator, claimant.id)
+    const suspended = await recordCopyrightTrustedFlaggerChange(administrator, entry.id, {
+      changeType: 'suspended',
+      reason: 'Before the recording backend clock regressed',
+    })
+    const reinstatedId = await reinstateTestCopyrightTrustedFlaggerWithEarlierId(
+      administrator,
+      entry.id,
+      suspended,
+    )
+    expect(reinstatedId.localeCompare(suspended.id)).toBeLessThan(0)
+    const filing = await fileEu(claimant)
+    expect(await readTestCopyrightTrustedFlaggerMatch(filing.receipt.notice_id)).toEqual({
+      flaggerId: entry.id,
+      inArea: true,
+    })
+  })
 
   it('captures an eligible match while priority is off, without a decision or restriction', async () => {
     const administrator = await createTestUser({ administrator: true })
@@ -74,13 +116,14 @@ describe('EU trusted-flagger receipt attribution', () => {
       changeType: 'suspended',
       reason: 'Commission list shows a suspension',
     })
-    expect(
-      await readTestCopyrightTrustedFlaggerMatch((await fileEu(claimant)).receipt.notice_id),
-    ).toBeNull()
+    const suspendedFiling = await fileEu(claimant)
+    expect(await readTestCopyrightTrustedFlaggerMatch(suspendedFiling.receipt.notice_id)).toBeNull()
     await recordCopyrightTrustedFlaggerChange(administrator, entry.id, {
       changeType: 'reinstated',
       reason: 'Commission list shows reinstatement',
     })
+    await replayTestCopyrightTrustedFlaggerMatch(suspendedFiling.receipt.notice_id)
+    expect(await readTestCopyrightTrustedFlaggerMatch(suspendedFiling.receipt.notice_id)).toBeNull()
     const reinstated = await fileEu(claimant)
     expect(await readTestCopyrightTrustedFlaggerMatch(reinstated.receipt.notice_id)).toEqual({
       flaggerId: entry.id,

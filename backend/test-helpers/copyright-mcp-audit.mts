@@ -95,3 +95,14 @@ export function decryptTestCopyrightDecisionRationale(
   if (!row.rationale_ciphertext) throw new Error('Decision rationale missing')
   return decryptSecret(row.rationale_ciphertext, `copyright-decision-rationale:${rationaleRowId}`)
 }
+
+/** Read the persisted erasure marker without the private aggregate's intentional projection. */
+export async function readTestCopyrightNoticeEvidenceErasedAt(
+  noticeId: string,
+): Promise<Date | null> {
+  const { rows } = await read<{
+    evidence_erased_at: Date | null
+  }>(sql`/* readTestCopyrightNoticeEvidenceErasedAt */
+    SELECT evidence_erased_at FROM copyright_notices WHERE id = ${noticeId}`)
+  return rows[0]?.evidence_erased_at ?? null
+}

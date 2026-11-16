@@ -4,7 +4,7 @@ import { recordMembershipChanges, type MembershipChangeInput } from '../changes.
 import { restoreFallbackAfterCurrentAccessEndsForLockedUser } from '../fallback/restore-after-current-access-ends.mts'
 import { activateOldestQueuedGrantForLockedUser } from './activate-queued.mts'
 
-/** One schema-bounded current projection; the caller holds the user's lock. */
+/** Expire one schema-bounded current projection under its conditional write lock. */
 export async function expireElapsedMembershipPage(
   userId: string,
   query: QueryExecutor,

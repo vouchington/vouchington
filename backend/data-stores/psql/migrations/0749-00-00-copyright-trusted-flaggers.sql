@@ -35,12 +35,21 @@ CREATE TRIGGER trigger_copyright_trusted_flaggers_updated_at
 CREATE TABLE copyright_trusted_flagger_changes (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_trusted_flagger_id uuid NOT NULL CONSTRAINT fk_copyright_trusted_flagger_changes__flagger REFERENCES copyright_trusted_flaggers(id) ON DELETE RESTRICT,
+  previous_copyright_trusted_flagger_change_id uuid,
   change_type copyright_trusted_flagger_change_types NOT NULL,
   changed_by_id uuid NOT NULL REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   reason text NOT NULL CHECK (char_length(reason) BETWEEN 1 AND 4000),
-  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  CONSTRAINT uq_copyright_trusted_flagger_changes__flagger_id UNIQUE (copyright_trusted_flagger_id, id),
+  CONSTRAINT fk_copyright_trusted_flagger_changes__previous FOREIGN KEY (copyright_trusted_flagger_id, previous_copyright_trusted_flagger_change_id)
+    REFERENCES copyright_trusted_flagger_changes (copyright_trusted_flagger_id, id) ON DELETE RESTRICT,
+  CONSTRAINT chk_copyright_trusted_flagger_changes__previous CHECK (previous_copyright_trusted_flagger_change_id <> id)
 );
 
+CREATE UNIQUE INDEX idx_copyright_trusted_flagger_changes__first
+  ON copyright_trusted_flagger_changes (copyright_trusted_flagger_id) WHERE previous_copyright_trusted_flagger_change_id IS NULL;
+CREATE UNIQUE INDEX idx_copyright_trusted_flagger_changes__successor
+  ON copyright_trusted_flagger_changes (copyright_trusted_flagger_id, previous_copyright_trusted_flagger_change_id);
 CREATE INDEX idx_copyright_trusted_flagger_changes__entry_id__id
   ON copyright_trusted_flagger_changes (copyright_trusted_flagger_id, id DESC);
 CREATE INDEX idx_copyright_trusted_flagger_changes__changed_by_id
@@ -79,6 +88,7 @@ COMMENT ON COLUMN copyright_trusted_flaggers.updated_at IS 'Last database update
 COMMENT ON TABLE copyright_trusted_flagger_changes IS 'Append-only status transitions; the latest change determines whether a designation is active, suspended or revoked.';
 COMMENT ON COLUMN copyright_trusted_flagger_changes.id IS 'UUIDv7 status-change identifier.';
 COMMENT ON COLUMN copyright_trusted_flagger_changes.copyright_trusted_flagger_id IS 'Designation whose status changed.';
+COMMENT ON COLUMN copyright_trusted_flagger_changes.previous_copyright_trusted_flagger_change_id IS 'Previous immutable transition for this designation; null only for the first change. Each transition has at most one successor.';
 COMMENT ON COLUMN copyright_trusted_flagger_changes.change_type IS 'Suspension, reinstatement or final revocation.';
 COMMENT ON COLUMN copyright_trusted_flagger_changes.changed_by_id IS 'Retained identity of the administrator who recorded the transition.';
 COMMENT ON COLUMN copyright_trusted_flagger_changes.reason IS 'Staff reason for the recorded status transition.';

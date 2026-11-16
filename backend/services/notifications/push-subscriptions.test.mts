@@ -1,12 +1,12 @@
+import { runTestWebPushClaimRace } from '@voucha/test-helpers/web-push-claim-race'
+import { runTestWebPushRenewalDeleteRace } from '@voucha/test-helpers/web-push-renewal-delete-race'
 import {
   createTestUserDirect,
   deleteTestWebPushEndpointOwner,
   getTestWebPushEndpointOwner,
   getTestWebPushEndpointOwnershipCounts,
-  holdTestWebPushEndpointOwnershipReplacement,
   observeTestPostgresQueryPools,
   softDeleteTestWebPushSubscription,
-  testWebPushSubscriptionRowLockAvailable,
 } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
 import {
@@ -21,6 +21,38 @@ function input(userId: string, endpoint: string) {
 }
 
 describe('web push endpoint ownership', () => {
+  it.each(['delete', 'exact'] as const)(
+    'finishes renewal overlapping %s deletion without an ownership cycle',
+    async kind => {
+      const user = await createTestUserDirect()
+      const endpoint = `https://push.example.test/${crypto.randomUUID()}`
+      const original = await upsertWebPushSubscription(input(user.id, endpoint))
+      const renewed = await runTestWebPushRenewalDeleteRace({
+        userId: user.id,
+        deleteMarker:
+          kind === 'delete'
+            ? '/* deleteWebPushSubscription */'
+            : '/* deleteExactWebPushSubscription */',
+        renew: () => upsertWebPushSubscription(input(user.id, endpoint)),
+        remove: () =>
+          kind === 'delete'
+            ? deleteWebPushSubscription(user.id, original.id)
+            : deleteExactWebPushSubscription(user.id, {
+                endpoint,
+                subscriptionId: original.id,
+              }),
+      })
+      await expect(getTestWebPushEndpointOwner(endpoint)).resolves.toEqual({
+        user_id: user.id,
+        subscription_id: renewed.id,
+      })
+      await expect(getTestWebPushEndpointOwnershipCounts(endpoint)).resolves.toEqual({
+        ownerCount: 1,
+        activeSubscriptionCount: 1,
+      })
+      await expect(deleteWebPushSubscription(user.id, original.id)).resolves.toBe(false)
+    },
+  )
   it('reads ownership-bearing subscription pages from the primary database', async () => {
     const user = await createTestUserDirect()
     const observed = await observeTestPostgresQueryPools('/* listWebPushSubscriptions */', () =>
@@ -77,48 +109,55 @@ describe('web push endpoint ownership', () => {
     await expect(getTestWebPushEndpointOwner(endpoint)).resolves.toBeUndefined()
   })
 
-  it('serializes concurrent claims for one endpoint', async () => {
+  it('keeps one owner across concurrent claims for one endpoint', async () => {
     const [firstUser, secondUser] = await Promise.all([
       createTestUserDirect(),
       createTestUserDirect(),
     ])
     const endpoint = `https://push.example.test/${crypto.randomUUID()}`
-    await Promise.all([
-      upsertWebPushSubscription(input(firstUser!.id, endpoint)),
-      upsertWebPushSubscription(input(secondUser!.id, endpoint)),
+    const outcomes = await runTestWebPushClaimRace(endpoint, [
+      () => upsertWebPushSubscription(input(firstUser!.id, endpoint)),
+      () => upsertWebPushSubscription(input(secondUser!.id, endpoint)),
     ])
+    expect(outcomes.some(outcome => outcome.status === 'fulfilled')).toBe(true)
+    for (const outcome of outcomes.filter(result => result.status === 'rejected'))
+      expect(outcome.reason).toMatchObject({ status: 409 })
+    const owner = await getTestWebPushEndpointOwner(endpoint)
+    expect(
+      outcomes.some(
+        result =>
+          result.status === 'fulfilled' &&
+          result.value.id === owner?.subscription_id &&
+          result.value.user_id === owner.user_id,
+      ),
+    ).toBe(true)
     await expect(getTestWebPushEndpointOwnershipCounts(endpoint)).resolves.toEqual({
       ownerCount: 1,
       activeSubscriptionCount: 1,
     })
   })
 
-  it('locks the owner before mutating the current subscription', async () => {
+  it('keeps one activation across competing same-user renewals', async () => {
     const user = await createTestUserDirect()
     const endpoint = `https://push.example.test/${crypto.randomUUID()}`
-    const current = await upsertWebPushSubscription(input(user!.id, endpoint))
-    await using owner = await holdTestWebPushEndpointOwnershipReplacement(endpoint)
-
-    const ownerLockReached = Promise.withResolvers<void>()
-    const replacementRequest = upsertWebPushSubscription(input(user!.id, endpoint), {
-      beforeOwnerRowLock: async () => {
-        try {
-          await expect(testWebPushSubscriptionRowLockAvailable(current.id)).resolves.toBe(true)
-          ownerLockReached.resolve()
-        } catch (err) {
-          ownerLockReached.reject(err)
-          throw err
-        }
-      },
-    })
-    void replacementRequest.catch(() => undefined)
-    await ownerLockReached.promise
-
-    await owner.release()
-    const replacement = await replacementRequest
-    await expect(getTestWebPushEndpointOwner(endpoint)).resolves.toEqual({
-      user_id: user!.id,
-      subscription_id: replacement.id,
+    const original = await upsertWebPushSubscription(input(user.id, endpoint))
+    const outcomes = await runTestWebPushClaimRace(endpoint, [
+      () => upsertWebPushSubscription(input(user.id, endpoint)),
+      () => upsertWebPushSubscription(input(user.id, endpoint)),
+    ])
+    expect(outcomes.some(outcome => outcome.status === 'fulfilled')).toBe(true)
+    for (const outcome of outcomes.filter(result => result.status === 'rejected'))
+      expect(outcome.reason).toMatchObject({ status: 409 })
+    const owner = await getTestWebPushEndpointOwner(endpoint)
+    expect(owner?.subscription_id).not.toBe(original.id)
+    expect(
+      outcomes.some(
+        outcome => outcome.status === 'fulfilled' && outcome.value.id === owner?.subscription_id,
+      ),
+    ).toBe(true)
+    await expect(getTestWebPushEndpointOwnershipCounts(endpoint)).resolves.toEqual({
+      ownerCount: 1,
+      activeSubscriptionCount: 1,
     })
   })
 

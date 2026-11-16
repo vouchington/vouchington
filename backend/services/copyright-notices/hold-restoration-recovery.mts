@@ -1,6 +1,7 @@
 import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { replayEligibleCopyrightRestoreIntentsInTransaction } from './court-hold-restore-replay.mts'
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { recoverEligibleCopyrightRestoreIntentInTransaction } from './court-hold-restore-replay.mts'
 import {
   queryCopyrightSweepIdPage,
   type CopyrightSweepIdPage,
@@ -42,8 +43,9 @@ export async function recoverBlockedCopyrightHoldRestoration(
   intentId: string,
   now: Date,
 ): Promise<number> {
-  await using transaction = await beginTransaction()
-  const { rows } = await transaction<{ notice_id: string }>(sql`
+  return conflictOnSerializationFailure(async () => {
+    await using transaction = await beginTransaction({ serializable: true })
+    const { rows } = await transaction<{ notice_id: string }>(sql`
     /* recoverBlockedCopyrightHoldRestoration:notice */
     SELECT target.copyright_notice_id AS notice_id
     FROM copyright_notice_action_work_items intent
@@ -51,17 +53,15 @@ export async function recoverBlockedCopyrightHoldRestoration(
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
     WHERE intent.id = ${intentId}
   `)
-  const noticeId = rows[0]?.notice_id
-  if (!noticeId) return 0
-  await transaction(sql`/* recoverBlockedCopyrightHoldRestoration:noticeLock */
-    SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
-  `)
-  const reopened = await replayEligibleCopyrightRestoreIntentsInTransaction({
-    noticeId,
-    intentIds: [intentId],
-    now,
-    query: transaction,
-  })
-  await transaction.commit()
-  return reopened.length
+    const noticeId = rows[0]?.notice_id
+    if (!noticeId) return 0
+    const reopened = await recoverEligibleCopyrightRestoreIntentInTransaction({
+      noticeId,
+      intentId,
+      now,
+      query: transaction,
+    })
+    await transaction.commit()
+    return Number(reopened)
+  }, 'Copyright hold restoration changed concurrently')
 }

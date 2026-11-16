@@ -27,6 +27,20 @@ const ROLLOVERS = [
 describe('abandoned upload cleanup', () => {
   afterEach(() => vi.restoreAllMocks())
 
+  it('acknowledges an owned staged source only once across concurrent cleanup', async () => {
+    const stagedAt = new Date(Date.now() - 2 * HOUR)
+    const id = await createOwnedStagedImage(stagedAt)
+    await backdateImageUploadStagedAt(id, stagedAt, 'complete')
+    const storage = await seedOwnedUploadCleanupStorage([id])
+    const outcomes = await Promise.all([
+      cleanupStagedUploadSource(id),
+      cleanupStagedUploadSource(id),
+    ])
+    expect(outcomes.toSorted((a, b) => Number(a) - Number(b))).toEqual([false, true])
+    expect((await getImageById(id, true))?.upload_source_deleted_at).toBeInstanceOf(Date)
+    await expect(storage.deleted()).resolves.toEqual([{ Bucket: S3Buckets.imageUploads, Key: id }])
+  })
+
   it('deletes only the old pending owned upload and keeps a recent upload', async () => {
     const now = new Date()
     const oldId = await createOwnedStagedImage(new Date(now.getTime() - 25 * HOUR))

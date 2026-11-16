@@ -1,9 +1,11 @@
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, isUniqueViolation } from '@data-stores/psql'
 import { assertNotSuspended } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
+import createError from 'http-errors'
 import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
+import { flaggerRowsSql } from './trusted-flagger-rows-sql.mts'
 import { currentUserCanApproveCopyrightJurisdictionPolicy } from './jurisdiction-policy.mts'
 import {
   type CreateCopyrightTrustedFlaggerInput,
@@ -48,25 +50,21 @@ export async function createCopyrightTrustedFlagger(
   assert(currentUserCanApproveCopyrightJurisdictionPolicy(currentUser), 403, 'Forbidden')
   const validated = validateTrustedFlaggerInput(input)
   await using transaction = await beginTransaction()
-  const { rows: users } = await transaction<{ id: string }>(sql`
-    /* createCopyrightTrustedFlagger:user */
-    SELECT id FROM users WHERE id = ${input.userId} AND deleted_at IS NULL FOR UPDATE
-  `)
-  assert(users[0], 422, 'user_id must name an active user')
   const { rows } = await transaction<Omit<CopyrightTrustedFlagger, 'status'>>(sql`
     /* createCopyrightTrustedFlagger */
     INSERT INTO copyright_trusted_flaggers (
       name, user_id, awarding_coordinator_name, awarding_member_state, awarded_on,
       award_reference, area_of_expertise, area_description, created_by_id
-    ) VALUES (
+    ) SELECT
       ${validated.name}, ${input.userId}, ${validated.coordinator}, ${validated.memberState},
       ${validated.awardedAt}::date, ${validated.awardReference}, ${validated.areaOfExpertise},
       ${validated.areaDescription}, ${currentUser.id}
-    ) RETURNING id, name, user_id, awarding_coordinator_name, awarding_member_state,
+    FROM users WHERE id = ${input.userId} AND deleted_at IS NULL
+    RETURNING id, name, user_id, awarding_coordinator_name, awarding_member_state,
       awarded_on::text AS awarded_on, award_reference, area_of_expertise, area_description
   `)
   const created = rows[0]
-  assert(created, 500, 'Trusted flagger was not recorded')
+  assert(created, 422, 'user_id must name an active user')
   await transaction.commit()
   return { ...created, status: 'active' }
 }
@@ -86,44 +84,61 @@ export async function recordCopyrightTrustedFlaggerChange(
     422,
     'change_type is invalid',
   )
-  await using transaction = await beginTransaction()
-  // Lock the parent in its own statement. A waiting transaction must take a fresh
-  // READ COMMITTED snapshot for the child-log lookup after the prior writer commits.
-  const { rows: locked } = await transaction<{ id: string }>(sql`
-    /* recordCopyrightTrustedFlaggerChange:lock */
-    SELECT id FROM copyright_trusted_flaggers WHERE id = ${flaggerId} FOR UPDATE
-  `)
-  assert(locked[0], 404, 'Trusted flagger not found')
-  const { rows: latest } = await transaction<{
-    change_type: CopyrightTrustedFlaggerChangeType
-  }>(sql`
-    /* recordCopyrightTrustedFlaggerChange:latest */
-    SELECT change_type FROM copyright_trusted_flagger_changes
-    WHERE copyright_trusted_flagger_id = ${flaggerId}
-    ORDER BY id DESC LIMIT 1
-  `)
-  const status: CopyrightTrustedFlaggerStatus =
-    latest[0]?.change_type === 'suspended' || latest[0]?.change_type === 'revoked'
-      ? latest[0].change_type
-      : 'active'
-  assert(
-    (input.changeType === 'suspended' && status === 'active') ||
-      (input.changeType === 'reinstated' && status === 'suspended') ||
-      (input.changeType === 'revoked' && status !== 'revoked'),
-    409,
-    'Trusted flagger status does not allow this change',
-  )
-  const { rows: changes } = await transaction<CopyrightTrustedFlaggerChange>(sql`
-    /* recordCopyrightTrustedFlaggerChange */
-    INSERT INTO copyright_trusted_flagger_changes (
-      copyright_trusted_flagger_id, change_type, changed_by_id, reason
-    ) VALUES (${flaggerId}, ${input.changeType}, ${currentUser.id}, ${reason})
-    RETURNING id, copyright_trusted_flagger_id, change_type, reason, created_at
-  `)
-  const change = changes[0]
-  assert(change, 500, 'Trusted flagger change was not recorded')
-  await transaction.commit()
-  return change
+  try {
+    await using transaction = await beginTransaction()
+    const { rows: flaggers } = await transaction<{ id: string }>(sql`
+      /* recordCopyrightTrustedFlaggerChange:flagger */
+      SELECT id FROM copyright_trusted_flaggers WHERE id = ${flaggerId}
+    `)
+    assert(flaggers[0], 404, 'Trusted flagger not found')
+    const { rows: latest } = await transaction<{
+      id: string
+      change_type: CopyrightTrustedFlaggerChangeType
+    }>(sql`
+      /* recordCopyrightTrustedFlaggerChange:latest */
+      SELECT change.id, change.change_type FROM copyright_trusted_flagger_changes change
+      WHERE change.copyright_trusted_flagger_id = ${flaggerId}
+        AND NOT EXISTS (
+          SELECT 1 FROM copyright_trusted_flagger_changes successor
+          WHERE successor.copyright_trusted_flagger_id = change.copyright_trusted_flagger_id
+            AND successor.previous_copyright_trusted_flagger_change_id = change.id
+        )
+      LIMIT 1
+    `)
+    const status: CopyrightTrustedFlaggerStatus =
+      latest[0]?.change_type === 'suspended' || latest[0]?.change_type === 'revoked'
+        ? latest[0].change_type
+        : 'active'
+    assert(
+      (input.changeType === 'suspended' && status === 'active') ||
+        (input.changeType === 'reinstated' && status === 'suspended') ||
+        (input.changeType === 'revoked' && status !== 'revoked'),
+      409,
+      'Trusted flagger status does not allow this change',
+    )
+    const { rows: changes } = await transaction<CopyrightTrustedFlaggerChange>(sql`
+      /* recordCopyrightTrustedFlaggerChange */
+      INSERT INTO copyright_trusted_flagger_changes (
+        copyright_trusted_flagger_id, previous_copyright_trusted_flagger_change_id,
+        change_type, changed_by_id, reason
+      ) VALUES (${flaggerId}, ${latest[0]?.id ?? null}, ${input.changeType}, ${currentUser.id}, ${reason})
+      RETURNING id, copyright_trusted_flagger_id, change_type, reason, created_at
+    `)
+    const change = changes[0]
+    assert(change, 500, 'Trusted flagger change was not recorded')
+    await transaction.commit()
+    return change
+  } catch (err) {
+    if (
+      isUniqueViolation(err) &&
+      'constraint' in err &&
+      (err.constraint === 'idx_copyright_trusted_flagger_changes__first' ||
+        err.constraint === 'idx_copyright_trusted_flagger_changes__successor')
+    ) {
+      throw createError(409, 'Trusted flagger status changed concurrently', { cause: err })
+    }
+    throw err
+  }
 }
 
 export async function getCopyrightTrustedFlagger(
@@ -159,19 +174,6 @@ export async function listCopyrightTrustedFlaggers(
     results: rows.slice(0, options.limit).map(toTrustedFlagger),
     hasNextPage: rows.length > options.limit,
   }
-}
-
-function flaggerRowsSql() {
-  return sql`/* flaggerRowsSql */
-    SELECT flagger.id, flagger.name, flagger.user_id, flagger.awarding_coordinator_name,
-      flagger.awarding_member_state, flagger.awarded_on::text AS awarded_on, flagger.award_reference,
-      flagger.area_of_expertise, flagger.area_description, latest.change_type AS latest_change_type
-    FROM copyright_trusted_flaggers flagger
-    LEFT JOIN LATERAL (
-      SELECT change_type FROM copyright_trusted_flagger_changes
-      WHERE copyright_trusted_flagger_id = flagger.id ORDER BY id DESC LIMIT 1
-    ) latest ON true
-  `
 }
 
 function toTrustedFlagger(row: EntryRow): CopyrightTrustedFlagger {

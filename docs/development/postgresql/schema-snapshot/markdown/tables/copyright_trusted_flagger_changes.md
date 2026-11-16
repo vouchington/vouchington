@@ -6,34 +6,41 @@ Append-only status transitions; the latest change determines whether a designati
 
 Not partitioned — growth: unbounded.
 
-| Column                         | Type                                     | Nullable | Default                      | Identity | Generated | Collation | Comment                                                             |
-| ------------------------------ | ---------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
-| `id`                           | `uuid`                                   | no       | `uuidv7()`                   |          |           |           | UUIDv7 status-change identifier.                                    |
-| `copyright_trusted_flagger_id` | `uuid`                                   | no       |                              |          |           |           | Designation whose status changed.                                   |
-| `change_type`                  | `copyright_trusted_flagger_change_types` | no       |                              |          |           |           | Suspension, reinstatement or final revocation.                      |
-| `changed_by_id`                | `uuid`                                   | no       |                              |          |           |           | Retained identity of the administrator who recorded the transition. |
-| `reason`                       | `text`                                   | no       |                              |          |           |           | Staff reason for the recorded status transition.                    |
-| `created_at`                   | `timestamp with time zone`               | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Transition time derived from the UUIDv7 identifier.                 |
+| Column                                         | Type                                     | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                        |
+| ---------------------------------------------- | ---------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `id`                                           | `uuid`                                   | no       | `uuidv7()`                   |          |           |           | UUIDv7 status-change identifier.                                                                                               |
+| `copyright_trusted_flagger_id`                 | `uuid`                                   | no       |                              |          |           |           | Designation whose status changed.                                                                                              |
+| `previous_copyright_trusted_flagger_change_id` | `uuid`                                   | yes      |                              |          |           |           | Previous immutable transition for this designation; null only for the first change. Each transition has at most one successor. |
+| `change_type`                                  | `copyright_trusted_flagger_change_types` | no       |                              |          |           |           | Suspension, reinstatement or final revocation.                                                                                 |
+| `changed_by_id`                                | `uuid`                                   | no       |                              |          |           |           | Retained identity of the administrator who recorded the transition.                                                            |
+| `reason`                                       | `text`                                   | no       |                              |          |           |           | Staff reason for the recorded status transition.                                                                               |
+| `created_at`                                   | `timestamp with time zone`               | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Transition time derived from the UUIDv7 identifier.                                                                            |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `uq_copyright_trusted_flagger_changes__flagger_id`: `UNIQUE (copyright_trusted_flagger_id, id)`
 
 **Check constraints:**
 
+- `chk_copyright_trusted_flagger_changes__previous`: `CHECK ((previous_copyright_trusted_flagger_change_id <> id))`
 - `copyright_trusted_flagger_changes_reason_check`: `CHECK (((char_length(reason) >= 1) AND (char_length(reason) <= 4000)))`
 
 **Foreign keys:**
 
 - `copyright_trusted_flagger_changes_changed_by_id_fkey`: `FOREIGN KEY (changed_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `fk_copyright_trusted_flagger_changes__flagger`: `FOREIGN KEY (copyright_trusted_flagger_id) REFERENCES copyright_trusted_flaggers(id) ON DELETE RESTRICT`
+- `fk_copyright_trusted_flagger_changes__previous`: `FOREIGN KEY (copyright_trusted_flagger_id, previous_copyright_trusted_flagger_change_id) REFERENCES copyright_trusted_flagger_changes(copyright_trusted_flagger_id, id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `copyright_trusted_flagger_changes_pkey`: `CREATE UNIQUE INDEX copyright_trusted_flagger_changes_pkey ON public.copyright_trusted_flagger_changes USING btree (id)`
 - `idx_copyright_trusted_flagger_changes__changed_by_id`: `CREATE INDEX idx_copyright_trusted_flagger_changes__changed_by_id ON public.copyright_trusted_flagger_changes USING btree (changed_by_id)`
 - `idx_copyright_trusted_flagger_changes__entry_id__id`: `CREATE INDEX idx_copyright_trusted_flagger_changes__entry_id__id ON public.copyright_trusted_flagger_changes USING btree (copyright_trusted_flagger_id, id DESC)`
+- `idx_copyright_trusted_flagger_changes__first`: `CREATE UNIQUE INDEX idx_copyright_trusted_flagger_changes__first ON public.copyright_trusted_flagger_changes USING btree (copyright_trusted_flagger_id) WHERE (previous_copyright_trusted_flagger_change_id IS NULL)`
+- `idx_copyright_trusted_flagger_changes__successor`: `CREATE UNIQUE INDEX idx_copyright_trusted_flagger_changes__successor ON public.copyright_trusted_flagger_changes USING btree (copyright_trusted_flagger_id, previous_copyright_trusted_flagger_change_id)`
+- `uq_copyright_trusted_flagger_changes__flagger_id`: `CREATE UNIQUE INDEX uq_copyright_trusted_flagger_changes__flagger_id ON public.copyright_trusted_flagger_changes USING btree (copyright_trusted_flagger_id, id)`
 
 **Triggers:**
 

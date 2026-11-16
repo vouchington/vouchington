@@ -87,8 +87,7 @@ async function expireSelectedMembershipUsers(
 export async function getElapsedMembershipUserIdsBatch(batchSize: number): Promise<string[]> {
   if (!Number.isInteger(batchSize) || batchSize < 1)
     throw new RangeError('Membership expiry batch size must be a positive integer')
-  await using query = await beginTransaction()
-  const { rows } = await query(sql`/* expireElapsedMembershipsBatch: candidates */
+  const { rows } = await write(sql`/* expireElapsedMembershipsBatch: candidates */
       WITH candidates AS MATERIALIZED (
         SELECT membership.user_id FROM memberships membership
         INNER JOIN membership_sources source ON source.id = membership.membership_source_id
@@ -100,9 +99,8 @@ export async function getElapsedMembershipUserIdsBatch(batchSize: number): Promi
       )
       SELECT user_row.id AS user_id FROM users user_row
       WHERE user_row.id IN (SELECT user_id FROM candidates)
-      ORDER BY user_row.id LIMIT ${batchSize} FOR UPDATE SKIP LOCKED`)
+      ORDER BY user_row.id LIMIT ${batchSize}`)
   const result = (rows as Array<{ user_id: string }>).map(row => row.user_id)
-  await query.commit()
   return result
 }
 
@@ -137,18 +135,13 @@ async function expireElapsedMembershipsForUserInTransaction(
 ): Promise<MembershipExpiryResult & { pages: number }> {
   let pages = 0
   await using query = await beginTransaction()
-  const { rows } = await query(sql`/* expireElapsedMembershipsBatch: lock user */
-    SELECT id FROM users WHERE id = ${userId} FOR UPDATE SKIP LOCKED`)
-  const result =
-    rows.length === 0
-      ? { expired: 0, hasMore: true }
-      : await expireElapsedMemberships(userId, query, {
-          requireComplete: false,
-          limits,
-          onPage: () => {
-            pages++
-          },
-        })
+  const result = await expireElapsedMemberships(userId, query, {
+    requireComplete: false,
+    limits,
+    onPage: () => {
+      pages++
+    },
+  })
   await query.commit()
   return { ...result, pages }
 }

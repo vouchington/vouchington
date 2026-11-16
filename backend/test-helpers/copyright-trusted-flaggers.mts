@@ -1,5 +1,6 @@
 import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
 import type { PrivateUser } from '../services/users/types.mts'
 import {
   createCopyrightTrustedFlagger,
@@ -83,4 +84,70 @@ export async function countTestCopyrightTrustedFlaggerChanges(flaggerId: string)
     WHERE copyright_trusted_flagger_id = ${flaggerId}
   `)
   return rows[0]?.count ?? 0
+}
+
+/** Attempt a real insert with an explicitly selected predecessor, including invalid cross-entry links. */
+export async function insertTestCopyrightTrustedFlaggerChange(
+  administrator: PrivateUser,
+  flaggerId: string,
+  previousChangeId: string,
+): Promise<void> {
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* insertTestCopyrightTrustedFlaggerChange */
+    INSERT INTO copyright_trusted_flagger_changes (
+      copyright_trusted_flagger_id, previous_copyright_trusted_flagger_change_id,
+      change_type, changed_by_id, reason
+    ) VALUES (${flaggerId}, ${previousChangeId}, 'revoked', ${administrator.id}, 'Test predecessor')
+  `)
+  await transaction.commit()
+}
+
+/** Model a backend clock moving backwards while the immutable predecessor relation advances. */
+export async function reinstateTestCopyrightTrustedFlaggerWithEarlierId(
+  administrator: PrivateUser,
+  flaggerId: string,
+  predecessor: { id: string; created_at: Date },
+): Promise<string> {
+  const id = uuidv7({ msecs: predecessor.created_at.getTime() - 1000 })
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* reinstateTestCopyrightTrustedFlaggerWithEarlierId */
+    INSERT INTO copyright_trusted_flagger_changes (
+      id, copyright_trusted_flagger_id, previous_copyright_trusted_flagger_change_id,
+      change_type, changed_by_id, reason
+    ) VALUES (${id}, ${flaggerId}, ${predecessor.id}, 'reinstated', ${administrator.id}, 'Clock regression reinstatement')
+  `)
+  await transaction.commit()
+  return id
+}
+
+/** Four valid one-row appends whose clock readings split the receipt-eligible chain. */
+export async function seedTestCopyrightTrustedFlaggerCutoffComponents(
+  administrator: PrivateUser,
+  flaggerId: string,
+): Promise<void> {
+  await using transaction = await beginTransaction()
+  const { rows } = await transaction<{ created_at: Date }>(sql`
+    /* seedTestCopyrightTrustedFlaggerCutoffComponents:anchor */
+    SELECT created_at FROM copyright_trusted_flaggers WHERE id = ${flaggerId}
+  `)
+  const anchor = rows[0]
+  if (!anchor) throw new Error('Missing owned designation')
+  const events = [
+    { changeType: 'suspended', shift: -4000 },
+    { changeType: 'reinstated', shift: 86_400_000 },
+    { changeType: 'suspended', shift: -6000 },
+    { changeType: 'reinstated', shift: -5000 },
+  ] as const
+  let previousId: string | null = null
+  for (const event of events) {
+    const id = uuidv7({ msecs: anchor.created_at.getTime() + event.shift })
+    await transaction(sql`/* seedTestCopyrightTrustedFlaggerCutoffComponents:append */
+      INSERT INTO copyright_trusted_flagger_changes (
+        id, copyright_trusted_flagger_id, previous_copyright_trusted_flagger_change_id,
+        change_type, changed_by_id, reason
+      ) VALUES (${id}, ${flaggerId}, ${previousId}, ${event.changeType}, ${administrator.id}, 'Cutoff component clock regression')
+    `)
+    previousId = id
+  }
+  await transaction.commit()
 }

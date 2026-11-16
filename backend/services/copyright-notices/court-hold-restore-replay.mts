@@ -51,19 +51,53 @@ export async function replayEligibleCopyrightRestoreIntentsInTransaction(input: 
   return reopened
 }
 
+/** The recovery owner supplies SERIALIZABLE isolation for its complete authority snapshot. */
+export async function recoverEligibleCopyrightRestoreIntentInTransaction(input: {
+  noticeId: string
+  intentId: string
+  now: Date
+  query: TransactionQuery
+}): Promise<boolean> {
+  const statement = sql`/* recoverEligibleCopyrightRestoreIntentInTransaction:facts */
+    SELECT facts.lease_token, facts.copyright_notice_id, facts.copyright_restriction_id,
+      facts.placement_id, facts.image_id, facts.expected_placement_revision, facts.action,
+      facts.copyright_notice_deadline_id, facts.restriction_lifted_at, facts.human_reviewed_at,
+      facts.human_review_action, facts.reversal_authorized, facts.reversal_by_review,
+      facts.reversal_by_appeal, facts.reversal_by_administrator_lift, facts.reversal_by_complaint,
+      facts.hold_resolution_authorized,
+      deadline.earliest_restoration_at, deadline.resolved_at, deadline.cancelled_at
+    FROM (`.append(blockedCopyrightRestoreFacts(input.intentId, input.noticeId)).append(sql`) facts
+    LEFT JOIN copyright_notice_deadlines deadline ON deadline.id = facts.copyright_notice_deadline_id
+    WHERE facts.copyright_notice_deadline_id IS NULL OR deadline.id IS NOT NULL`)
+  const { rows } = await input.query<LockedCopyrightActionDelivery>(statement)
+  return replayOriginalRestoreWithFacts(input.intentId, rows[0] ?? null, input)
+}
+
+function blockedCopyrightRestoreFacts(intentId: string, noticeId: string) {
+  return copyrightActionDeliveryFacts().append(sql`
+    WHERE intent.id = ${intentId} AND target.copyright_notice_id = ${noticeId}
+      AND intent.action = 'restore' AND intent.state = 'blocked'`)
+}
+
 async function replayOriginalRestore(
   intentId: string,
   input: { noticeId: string; now: Date; query: TransactionQuery },
 ): Promise<boolean> {
-  const statement = copyrightActionDeliveryFacts()
-  statement.append(sql`/* replayEligibleCopyrightRestoreIntentsInTransaction:lock */
-    WHERE intent.id = ${intentId} AND target.copyright_notice_id = ${input.noticeId}
-      AND intent.action = 'restore' AND intent.state = 'blocked'
+  const statement = blockedCopyrightRestoreFacts(intentId, input.noticeId).append(sql`
+    /* replayEligibleCopyrightRestoreIntentsInTransaction:lock */
     FOR UPDATE OF intent, restriction, target`)
   const { rows } = await input.query<CopyrightActionFacts>(statement)
   const facts = rows[0]
   if (!facts) return false
   const legal = await lockCopyrightActionDeadline(facts, input.query)
+  return replayOriginalRestoreWithFacts(intentId, legal, input)
+}
+
+async function replayOriginalRestoreWithFacts(
+  intentId: string,
+  legal: LockedCopyrightActionDelivery | null,
+  input: { now: Date; query: TransactionQuery },
+): Promise<boolean> {
   if (!legal || (await hasCopyrightActionBlocker(legal, input.now, input.query))) return false
   if (!(await originalRestorationAuthorityIsValid(legal, input.now, input.query))) return false
   const current = await getImagePlacementForCopyright(legal.placement_id, { query: input.query })

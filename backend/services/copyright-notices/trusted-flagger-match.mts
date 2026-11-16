@@ -14,11 +14,19 @@ export async function recordCopyrightTrustedFlaggerMatch(
     FROM copyright_notices notice
     JOIN copyright_trusted_flaggers flagger ON flagger.user_id = notice.claimant_user_id
     LEFT JOIN LATERAL (
-      SELECT change.change_type
-      FROM copyright_trusted_flagger_changes change
-      WHERE change.copyright_trusted_flagger_id = flagger.id
-        -- no-mistakes-disable-next-line postgres-generated-column-predicates: UUIDv7 has no timestamp-to-bound helper; notice receipt time is the legal event cutoff.
-        AND change.created_at <= notice.received_at
+      WITH eligible_changes AS (
+        SELECT change.id, change.change_type,
+          change.previous_copyright_trusted_flagger_change_id
+        FROM copyright_trusted_flagger_changes change
+        WHERE change.copyright_trusted_flagger_id = flagger.id
+          -- no-mistakes-disable-next-line postgres-generated-column-predicates: UUIDv7 has no timestamp-to-bound helper; notice receipt time is the legal event cutoff.
+          AND change.created_at <= notice.received_at
+      )
+      SELECT change.change_type FROM eligible_changes change
+      WHERE NOT EXISTS (
+        SELECT 1 FROM eligible_changes successor
+        WHERE successor.previous_copyright_trusted_flagger_change_id = change.id
+      )
       ORDER BY change.id DESC LIMIT 1
     ) latest_change ON true
     WHERE notice.id = ${noticeId} AND notice.jurisdiction = 'eu_dsa'

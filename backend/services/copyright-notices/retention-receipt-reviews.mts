@@ -14,10 +14,10 @@ export async function sweepCopyrightReceiptReviews(options: {
   let scanned = 0
   let retired = 0
   let hasMore = false
-  const candidateBefore = options.now ?? new Date()
+  const before = options.now ?? new Date()
   for (let batch = 0; batch < options.maxBatches; batch += 1) {
     // oxlint-disable-next-line no-await-in-loop -- each raw page commits before the next bounded tick.
-    const page = await sweepReceiptReviewPage(options.batchSize, candidateBefore) // no-mistakes-disable-line query-reached-per-item: one bounded transactional page commits before the next capped page.
+    const page = await sweepReceiptReviewPage(options.batchSize, before) // no-mistakes-disable-line query-reached-per-item: one bounded transactional page commits before the next capped page.
     scanned += page.scanned
     retired += page.retired
     hasMore = page.scanned === options.batchSize
@@ -36,13 +36,15 @@ async function sweepReceiptReviewPage(
   })
   const { rows: candidates } = await transaction<{
     id: string
-  }>(sql`/* pageCopyrightReceiptReviewRetirement */
+  }>(
+    sql`/* pageCopyrightReceiptReviewRetirement */
     SELECT id FROM copyright_notice_email_intake_receipts
     WHERE review_decision IS NOT NULL
       AND review_retirement_check_at <= ${candidateBefore}
       AND reviewed_at <= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - make_interval(years => 6)) AT TIME ZONE 'UTC'
     ORDER BY review_retirement_check_at, reviewed_at, id
-    LIMIT ${batchSize} FOR UPDATE SKIP LOCKED`)
+    LIMIT ${batchSize} FOR UPDATE SKIP LOCKED`,
+  )
   if (candidates.length === 0) {
     await transaction.commit()
     return { scanned: 0, retired: 0 }
