@@ -1,9 +1,11 @@
+import { COPYRIGHT_AGENT_DISPATCH_STAGES } from '@queues/ai-agents/enqueues/copyright-agent-dispatch-stages'
 import {
   moderationRetentionQueueConfig,
   partitionCleanupConfig,
   PARTITION_CLEANUP_MAX_PARTITIONS,
 } from '@queues/psql/config'
 import {
+  copyrightAgentDispatchLimitFields,
   copyrightNoticesAdditionalMaxValues,
   copyrightSweepConfig,
 } from '@services/copyright-notices/work-limits'
@@ -155,6 +157,28 @@ export const workDynamicConfigRegistryEntries = [
         Object.entries(copyrightNoticesAdditionalMaxValues).map(([field, maxValue]) => [
           field,
           { description: field.replaceAll('_', ' '), minValue: 1, maxValue, integer: true },
+        ]),
+      ),
+      ...Object.fromEntries(
+        COPYRIGHT_AGENT_DISPATCH_STAGES.flatMap(stage => [
+          [
+            `${copyrightAgentDispatchLimitFields[stage]}_batch_size`,
+            {
+              description: `Maximum rows per page of the ${stage} agent dispatch job.`,
+              minValue: 1,
+              maxValue: 100,
+              integer: true,
+            },
+          ],
+          [
+            `${copyrightAgentDispatchLimitFields[stage]}_max_batches_per_run`,
+            {
+              description: `Maximum pages per run of the ${stage} agent dispatch job; remaining work continues in its own job.`,
+              minValue: 1,
+              maxValue: 2000,
+              integer: true,
+            },
+          ],
         ]),
       ),
       batch_size: {

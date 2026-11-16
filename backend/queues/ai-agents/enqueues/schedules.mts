@@ -4,9 +4,14 @@ import {
   upsertScheduledJobManifest,
 } from '@modules/scheduled-job-manifest'
 import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS, AI_AGENTS_QUEUE_NAME } from '../config.mts'
+import {
+  COPYRIGHT_AGENT_DISPATCH_JOBS,
+  COPYRIGHT_AGENT_DISPATCH_ORDERING,
+  COPYRIGHT_AGENT_DISPATCH_STAGES,
+} from './copyright-agent-dispatch-stages.mts'
 import { ai_agents } from '../queues.mts'
 import { enqueueReconcileAutoDispatchJudgements } from './reconcile-auto-dispatch.mts'
-import { enqueueReconcileCopyrightAgentDispatches } from './reconcile-copyright-agent-dispatches.mts'
+import { enqueueReconcileCopyrightAgentDispatchStage } from './reconcile-copyright-agent-dispatches.mts'
 import { enqueueReconcileClassifierRuns } from './reconcile-classifier-runs.mts'
 import { enqueueReconcileAIAgentFailures } from './reconcile-ai-agent-failures.mts'
 
@@ -57,24 +62,30 @@ export const scheduledJobManifest = defineScheduledJobManifest(AI_AGENTS_QUEUE_N
       },
     ],
   },
-  {
-    schedulerId: 'reconcileCopyrightAgentDispatches',
-    repeat: { pattern: '*/5 * * * *' },
-    template: {
-      name: 'reconcile-copyright-agent-dispatches',
-      data: {},
-      opts: () => reconcilerOptions('reconcile-copyright-agent-dispatches'),
-    },
-    operatorSurfaces: [
-      {
-        kind: 'scheduled-jobs',
-        id: 'reconcileCopyrightAgentDispatches',
-        schedule: '*/5 * * * *',
-        description: 'Re-enqueue unassessed copyright email and form agent work',
-        trigger: enqueueReconcileCopyrightAgentDispatches,
+  ...COPYRIGHT_AGENT_DISPATCH_STAGES.map(stage => {
+    const { jobName, schedulerId, description } = COPYRIGHT_AGENT_DISPATCH_JOBS[stage]
+    return {
+      schedulerId,
+      repeat: { pattern: '*/5 * * * *' },
+      template: {
+        name: jobName,
+        data: {},
+        opts: () => ({
+          ...reconcilerOptions(jobName),
+          ordering: COPYRIGHT_AGENT_DISPATCH_ORDERING,
+        }),
       },
-    ],
-  },
+      operatorSurfaces: [
+        {
+          kind: 'scheduled-jobs',
+          id: schedulerId,
+          schedule: '*/5 * * * *',
+          description,
+          trigger: () => enqueueReconcileCopyrightAgentDispatchStage(stage),
+        },
+      ] as const,
+    }
+  }),
   {
     schedulerId: 'reconcileAutoDispatchJudgements',
     repeat: { pattern: '*/5 * * * *' },

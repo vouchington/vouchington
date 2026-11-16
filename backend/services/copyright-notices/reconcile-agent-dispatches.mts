@@ -32,7 +32,12 @@ type CopyrightAgentDispatchRow = {
  * email decided while intake was paused is not sent to the model after the switch turns on.
  */
 export async function getPendingCopyrightAgentDispatches(
-  options: { after?: string; limit?: number; ids?: readonly string[] } = {},
+  options: {
+    after?: string
+    limit?: number
+    ids?: readonly string[]
+    kind?: CopyrightAgentDispatch['kind']
+  } = {},
 ): Promise<CopyrightAgentDispatchPage> {
   const limit = options.limit ?? 100
   assert(
@@ -48,10 +53,14 @@ export async function getPendingCopyrightAgentDispatches(
     options.ids === undefined ? sharedDbCursorScope(cursor?.id) : sharedDbIdsScope(options.ids),
   )
   const query = buildPendingCopyrightAgentDispatchesQuery()
-  if (options.ids !== undefined) {
-    query.append(sql`\n    WHERE id = ANY(${[...options.ids]}::uuid[])`)
-    if (cursor) query.append(sql` AND id > ${cursor.id}`)
-  } else if (cursor) query.append(sql`\n    WHERE id > ${cursor.id}`)
+  const filters = [
+    ...(options.kind ? [sql`kind = ${options.kind}`] : []),
+    ...(options.ids !== undefined ? [sql`id = ANY(${[...options.ids]}::uuid[])`] : []),
+    ...(cursor ? [sql`id > ${cursor.id}`] : []),
+  ]
+  filters.forEach((filter, index) => {
+    query.append(index === 0 ? sql`\n    WHERE ` : sql` AND `).append(filter)
+  })
   query.append(sql`\n    ORDER BY id LIMIT ${limit + 1}`)
   const { rows } = await read<CopyrightAgentDispatchRow>(query)
   const page = rows.slice(0, limit)
