@@ -97,6 +97,9 @@ describe('operator classifier range retirement SQL contract', () => {
     expect(batchProbe).toContain('run.terminal_failed_at IS NULL')
     const positions = (marker: string) =>
       capture.statements.flatMap((statement, index) => (statement.includes(marker) ? [index] : []))
+    expect(positions('lockClassifierResultFkTargets')[0]).toBeLessThan(
+      positions('lockClassifierResultParents')[0]!,
+    )
     expect(positions('retireClassifierResultRange:lockChild')).toHaveLength(
       CLASSIFIER_RESULT_PARTITION_TABLES.length,
     )
