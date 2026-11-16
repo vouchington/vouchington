@@ -87,7 +87,7 @@ importers:
         version: 0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       agent-blackboard:
         specifier: ^0.7.0
-        version: 0.7.0(supports-color@10.2.2)(zod@4.6.5)
+        version: 0.7.0(supports-color@10.2.2)(zod@3.25.76)
       coverage-check:
         specifier: ^0.18.0
         version: 0.18.0(@vitest/coverage-v8@5.1.0)(vitest@5.1.0)
@@ -120,7 +120,7 @@ importers:
         version: 30.1.3(@noble/hashes@2.4.0)
       knip:
         specifier: ^6
-        version: 6.43.0
+        version: 6.45.1
       no-mistakes:
         specifier: ^0.109.59
         version: 0.109.59(vitest@5.1.0)
@@ -156,7 +156,7 @@ importers:
         version: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
         specifier: ^3.1.0
-        version: 3.1.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.59(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
+        version: 3.1.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.59(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@3.25.76)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -218,7 +218,7 @@ importers:
         version: link:../../services/ai-usage
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -255,10 +255,10 @@ importers:
         version: link:../../services/users
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76))
       openai:
         specifier: ^7.43.0
-        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5)
+        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -307,7 +307,7 @@ importers:
         version: link:../../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76))
     devDependencies:
       '@ts-shared/utils':
         specifier: workspace:^
@@ -341,7 +341,7 @@ importers:
         version: link:../../services/classifiers
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -363,7 +363,7 @@ importers:
         version: link:../../services/classifiers
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76))
 
   backend/agents/community-moderation:
     dependencies:
@@ -431,7 +431,7 @@ importers:
         version: link:../../test-helpers
       openai:
         specifier: ^7.43.0
-        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5)
+        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76)
 
   backend/agents/copyright-appeal-recommendation:
     dependencies:
@@ -511,7 +511,7 @@ importers:
         version: link:../../../ts-shared/utils
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -545,10 +545,10 @@ importers:
         version: link:../../services/topic-claims
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76))
       openai:
         specifier: ^7.43.0
-        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5)
+        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76)
     devDependencies:
       '@services/users':
         specifier: workspace:^
@@ -594,7 +594,7 @@ importers:
         version: link:../../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -628,10 +628,10 @@ importers:
         version: link:../../services/moderation-reports
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76))
       openai:
         specifier: ^7.43.0
-        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5)
+        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -693,10 +693,10 @@ importers:
         version: link:../../services/stories
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76))
       openai:
         specifier: ^7.43.0
-        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5)
+        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -1340,7 +1340,7 @@ importers:
     devDependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.32.2
-        version: 1.32.2(supports-color@10.2.2)(zod@4.6.5)
+        version: 1.32.2(supports-color@10.2.2)(zod@3.25.76)
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../modules/structured-decisions
@@ -1461,7 +1461,7 @@ importers:
         version: 2.2.2
       vouchington-tooling:
         specifier: ^3.1.0
-        version: 3.1.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.59(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
+        version: 3.1.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.59(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@3.25.76)
     devDependencies:
       no-mistakes:
         specifier: ^0.109.59
@@ -2185,7 +2185,7 @@ importers:
         version: link:../types
       '@vouchington/mcp-server':
         specifier: ^0.2.0
-        version: 0.2.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))
+        version: 0.2.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))
       '@vouchington/sentry':
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.12.0)(@sentry/core@11.12.0)(@sentry/node@11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
@@ -2446,7 +2446,7 @@ importers:
     dependencies:
       '@anthropic-ai/sdk':
         specifier: ^1.8.0
-        version: 1.8.0(zod@4.6.5)
+        version: 1.8.0(zod@3.25.76)
       '@modules/openai-utils':
         specifier: workspace:^
         version: link:../openai-utils
@@ -2458,7 +2458,7 @@ importers:
         version: link:../utils
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76))
 
   backend/modules/on-error:
     dependencies:
@@ -2491,7 +2491,7 @@ importers:
         version: link:../utils
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76))
       '@vouchington/queue-errors':
         specifier: ^0.2.1
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
@@ -2500,7 +2500,7 @@ importers:
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       openai:
         specifier: ^7.43.0
-        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5)
+        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76)
 
   backend/modules/openrouter-utils:
     dependencies:
@@ -2512,10 +2512,10 @@ importers:
         version: link:../utils
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76))
       openai:
         specifier: ^7.43.0
-        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5)
+        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76)
 
   backend/modules/pagination:
     dependencies:
@@ -2666,7 +2666,7 @@ importers:
         version: link:../../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76))
       undici:
         specifier: ^8.12.3
         version: 8.12.3
@@ -3967,10 +3967,10 @@ importers:
         version: link:../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76))
       '@vouchington/mcp-server':
         specifier: ^0.2.0
-        version: 0.2.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))
+        version: 0.2.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))
       '@vouchington/postgres':
         specifier: ^0.6.1
         version: 0.6.1
@@ -4007,7 +4007,7 @@ importers:
         version: 9.1.7
       vouchington-tooling:
         specifier: ^3.1.0
-        version: 3.1.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.59(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
+        version: 3.1.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.59(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.1.0)(zod@3.25.76)
 
   backend/service-registrations:
     dependencies:
@@ -4263,7 +4263,7 @@ importers:
         version: link:../../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76))
       '@vouchington/postgres':
         specifier: ^0.6.1
         version: 0.6.1
@@ -7947,7 +7947,7 @@ importers:
         version: link:../../data-stores/psql
       '@modelcontextprotocol/sdk':
         specifier: ^1.32.2
-        version: 1.32.2(supports-color@10.2.2)(zod@4.6.5)
+        version: 1.32.2(supports-color@10.2.2)(zod@3.25.76)
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -7983,7 +7983,7 @@ importers:
         version: link:../../types
       '@vouchington/mcp-server':
         specifier: ^0.2.0
-        version: 0.2.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))
+        version: 0.2.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -9369,10 +9369,10 @@ importers:
         version: link:../ai-usage
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76))
       openai:
         specifier: ^7.43.0
-        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5)
+        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -12829,7 +12829,7 @@ importers:
         version: link:../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76))
       '@vouchington/http-transport':
         specifier: ^0.1.1
         version: 0.1.1
@@ -12841,7 +12841,7 @@ importers:
         version: 0.3.0(react@19.3.1)
       '@vouchington/mcp-server':
         specifier: ^0.2.0
-        version: 0.2.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))
+        version: 0.2.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))
       '@vouchington/postgres':
         specifier: ^0.6.1
         version: 0.6.1
@@ -12868,7 +12868,7 @@ importers:
         version: 0.109.59(vitest@5.1.0)
       openai:
         specifier: ^7.43.0
-        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5)
+        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76)
       otpauth:
         specifier: ^9.5.2
         version: 9.5.2
@@ -12895,7 +12895,7 @@ importers:
         version: 0.15.0
       vouchington-tooling:
         specifier: ^3.1.0
-        version: 3.1.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.59(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
+        version: 3.1.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.59(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@3.25.76)
     devDependencies:
       '@apple/app-store-server-library':
         specifier: ^3.1.0
@@ -13268,7 +13268,7 @@ importers:
         version: link:../../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76))
       '@vouchington/queue-errors':
         specifier: ^0.2.1
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
@@ -13277,7 +13277,7 @@ importers:
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       openai:
         specifier: ^7.43.0
-        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5)
+        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76)
       p-map:
         specifier: ^7.1.1
         version: 7.1.1
@@ -14656,7 +14656,7 @@ importers:
         version: link:../../test-helpers
       openai:
         specifier: ^7.43.0
-        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5)
+        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76)
 
   backend/workers/post-mentions:
     dependencies:
@@ -15129,7 +15129,7 @@ importers:
         version: 11.0.5
       vouchington-tooling:
         specifier: ^3.1.0
-        version: 3.1.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.59(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
+        version: 3.1.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.59(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@3.25.76)
     devDependencies:
       '@types/picomatch':
         specifier: ^4.0.3
@@ -15369,7 +15369,7 @@ importers:
         version: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
         specifier: ^3.1.0
-        version: 3.1.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.59(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
+        version: 3.1.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.59(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.1.0)(zod@3.25.76)
 
   static-code-analysis:
     dependencies:
@@ -15399,7 +15399,7 @@ importers:
         version: 1.9.1
       vouchington-tooling:
         specifier: ^3.1.0
-        version: 3.1.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.59(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
+        version: 3.1.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.59(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@3.25.76)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -15783,7 +15783,7 @@ importers:
         version: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
       vouchington-tooling:
         specifier: ^3.1.0
-        version: 3.1.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.59(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5)
+        version: 3.1.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.59(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@3.25.76)
 
 packages:
 
@@ -17766,8 +17766,8 @@ packages:
     cpu: [arm]
     os: [android]
 
-  '@oxc-parser/binding-android-arm-eabi@0.155.0':
-    resolution: {integrity: sha512-A6xv7hDtnTm+xlZ7utn6rRQpRMJHRhVr3gjRGqlx0RUX84mNk0pAsy6YN/wWhuOTkaZhRrrzaLxf0NfbH77j2w==}
+  '@oxc-parser/binding-android-arm-eabi@0.156.0':
+    resolution: {integrity: sha512-RMq7DKNzEp1T51QKNLTn0NryNEt2IYfh7mZBlIdi2Ju52ltOEDMeIXv0XBpA6dL7j7ChjlcovtGcc1Jv4qMipg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm]
     os: [android]
@@ -17790,8 +17790,8 @@ packages:
     cpu: [arm64]
     os: [android]
 
-  '@oxc-parser/binding-android-arm64@0.155.0':
-    resolution: {integrity: sha512-T1wWwH9/JI5g7Z4kEQwDOwhToxdDhRyOTklH+uuNpJ16m3MZFmGl+l2rKc0NHQdbVRG2LTOBsNjpW3h1BWytPA==}
+  '@oxc-parser/binding-android-arm64@0.156.0':
+    resolution: {integrity: sha512-mwkWKhOBpmh8fWc3m4MiLsmEAtx0YuHmvyo9ff557cnb3QZ2kt2eauSz75wCGIpiZG3gUsJ4WwzEjm4R4/BHig==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [android]
@@ -17814,8 +17814,8 @@ packages:
     cpu: [arm64]
     os: [darwin]
 
-  '@oxc-parser/binding-darwin-arm64@0.155.0':
-    resolution: {integrity: sha512-ZoRB3qJxJ8DWA41jHja+YeB0lLfjBy4T+Kr15vnN1k65X3zbJt3rPZftEwN4Ju4tmA4K/T9dWWD7Z8ewQLnrVA==}
+  '@oxc-parser/binding-darwin-arm64@0.156.0':
+    resolution: {integrity: sha512-6pGR5fUszM9M4eBBapqpGjCRJolFwuCldx8bRQjqXyM09cQysBTWVF2Ttg4UNJVxYSaw5RRINbveCOOCrsuGvA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [darwin]
@@ -17838,8 +17838,8 @@ packages:
     cpu: [x64]
     os: [darwin]
 
-  '@oxc-parser/binding-darwin-x64@0.155.0':
-    resolution: {integrity: sha512-vxtL86BtM+IgrpejA86nbTk5j0HKTIMeuaJ1fQciw6p9RfavPtIPjI7gN34owap0yG9txXBaAWpGdxokNwdqIw==}
+  '@oxc-parser/binding-darwin-x64@0.156.0':
+    resolution: {integrity: sha512-M9QghL7uCAqMKjYJv1rDGblfEvkeQu3QzTPd7Uwo16gG3uO7m9ikVQ9OL8FZTnKzU4vbCEby6kTlEkqN+JeEMA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [darwin]
@@ -17862,8 +17862,8 @@ packages:
     cpu: [x64]
     os: [freebsd]
 
-  '@oxc-parser/binding-freebsd-x64@0.155.0':
-    resolution: {integrity: sha512-tN6Ru5e0UVnWaIuiH8jEwnvxuxg7FvhWwSd3oe5oDhOD4ObsSr9/N6WfHLjilUWlPPj65ptwrSDH0Y7lzwTzmw==}
+  '@oxc-parser/binding-freebsd-x64@0.156.0':
+    resolution: {integrity: sha512-lX0ANxSwAOrpOT7NHB+YsrBqDJ8sOVon5m7GS9eQtkuUeNzQMMGpFsJLsStawTbrdwOF5KDVxgPWcKmt/DIZUQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [freebsd]
@@ -17886,8 +17886,8 @@ packages:
     cpu: [arm]
     os: [linux]
 
-  '@oxc-parser/binding-linux-arm-gnueabihf@0.155.0':
-    resolution: {integrity: sha512-h4ozA5n6L6lwolsz9iwunEhKWnIVbmFRots5QxEix0H6nJ5ICpuDa7PuShuhfpIDFe3+Qvyscioyiv+9g+4Syg==}
+  '@oxc-parser/binding-linux-arm-gnueabihf@0.156.0':
+    resolution: {integrity: sha512-iPgYpasRcqk7X3TGncQg7B+6RotDvG8weug0UrgF+FXLf4KmaNDyT91BKONlqbHcNgK9Nryp7AEZGuQn32fP6g==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm]
     os: [linux]
@@ -17910,8 +17910,8 @@ packages:
     cpu: [arm]
     os: [linux]
 
-  '@oxc-parser/binding-linux-arm-musleabihf@0.155.0':
-    resolution: {integrity: sha512-058/+LardpfuUlsKIvBGk/CYoakEVcMgqYx8GgyUZeOxFWTojYLlCc1Gb60/y21v3esDhHidgiY/Zbq9LpBhaQ==}
+  '@oxc-parser/binding-linux-arm-musleabihf@0.156.0':
+    resolution: {integrity: sha512-sJqJDEZevtkEfoxrXfaRTkSt6Itckr549cIfBbs11UgXv8bFyqQsXTQa6iKm8mTiWYmCDDFJf7TLnqxcbqzPOw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm]
     os: [linux]
@@ -17937,8 +17937,8 @@ packages:
     os: [linux]
     libc: [glibc]
 
-  '@oxc-parser/binding-linux-arm64-gnu@0.155.0':
-    resolution: {integrity: sha512-nrOt2Y3xIAzu+lSPzH0864ieO+iCCXgoo9qFlGANE8Xh0cQ+RP8Wstfp+/wXN2YCyb98cAGzX0VruKYw7it/jw==}
+  '@oxc-parser/binding-linux-arm64-gnu@0.156.0':
+    resolution: {integrity: sha512-mrQs5OdRiqKskRuWEORPKT6YGIFhrpVvCvL9hqVaIh60EzgR4qjPvSsV6hWZcOfyWHBTbdEvfnDJPh/eQlxPRQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [linux]
@@ -17965,8 +17965,8 @@ packages:
     os: [linux]
     libc: [musl]
 
-  '@oxc-parser/binding-linux-arm64-musl@0.155.0':
-    resolution: {integrity: sha512-KYAayyN5hQbJPtGKtRxlyc8XYmyntOplyXSQzTDrmbz7l/GCrzQbSswvyJFBTH1LGtsZrbXOAfN52i/Kz6kLKg==}
+  '@oxc-parser/binding-linux-arm64-musl@0.156.0':
+    resolution: {integrity: sha512-ZtPqgCU3+wpU7dvX7YbaEiw71r0UdguzuPhcx4PIEZSs4XFqc6F5wXCtNdb6M7m3DMErlxrwosryoXrzYOY/Gg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [linux]
@@ -17993,8 +17993,8 @@ packages:
     os: [linux]
     libc: [glibc]
 
-  '@oxc-parser/binding-linux-ppc64-gnu@0.155.0':
-    resolution: {integrity: sha512-CSuSY5hfjtsBnHXydOj8jiNfS1qHbdPZuPz1YL1cSgK7VmNYP+QlZIbG0BBYYBgX/vYEgZwbG9mBdW4YairZ5w==}
+  '@oxc-parser/binding-linux-ppc64-gnu@0.156.0':
+    resolution: {integrity: sha512-ZuGRT/adReZZJn3PYNneb1HQIOH0iIZ2fzFgC1/XJYpMQ5KsRKmWIEzy3wEFsUwIOTomCmnmTZ/zbFYo9z9VeA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [ppc64]
     os: [linux]
@@ -18021,8 +18021,8 @@ packages:
     os: [linux]
     libc: [glibc]
 
-  '@oxc-parser/binding-linux-riscv64-gnu@0.155.0':
-    resolution: {integrity: sha512-7KCfOQm+Nz2N8trAXbQkal4TQ5756WVEmhm35y816YHvyFnEfVsICsiV5k0pEszNf/fRm4cm2i6i18SJ6/iCWg==}
+  '@oxc-parser/binding-linux-riscv64-gnu@0.156.0':
+    resolution: {integrity: sha512-T+iWCeAOoEAJpHqr6/pogHIv98g9p8Ctccysm/h962hG4ayX5OL2c0Ih4oYe+JuFndLXy/OASvwMlTPe76sIiw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [riscv64]
     os: [linux]
@@ -18049,8 +18049,8 @@ packages:
     os: [linux]
     libc: [musl]
 
-  '@oxc-parser/binding-linux-riscv64-musl@0.155.0':
-    resolution: {integrity: sha512-JSlhgoK+/g1TGJI5NuADx2+6syhxnQNLCWLXyO5QLFyetomcr/vIxSdiNlmyAv963YXUzCuwAwRG6npZ5xyJ1A==}
+  '@oxc-parser/binding-linux-riscv64-musl@0.156.0':
+    resolution: {integrity: sha512-wL55bI2kVKfwdxScbw60zVgzAqbQbmE5zpSPWPZoZ9RSG8egm6ITE/UWE5mDWlglxz1QElJCcUbpaJCtHD11BQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [riscv64]
     os: [linux]
@@ -18077,8 +18077,8 @@ packages:
     os: [linux]
     libc: [glibc]
 
-  '@oxc-parser/binding-linux-s390x-gnu@0.155.0':
-    resolution: {integrity: sha512-WFIX+dPokWp64mi434Md3U3lJaTwNxAphvGjpltoyQjGUsdXavOIRrnp9dOS34Hd75HOAwDxAI+YwWOwqmJbtg==}
+  '@oxc-parser/binding-linux-s390x-gnu@0.156.0':
+    resolution: {integrity: sha512-+D+JilhLqwrDLODYEl4qtovVwgxKALb23FkAWBiPvgmUWYgjCV83KKuwwxZJM8GCdKlNA1vt3iKtow8HUFjXtg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [s390x]
     os: [linux]
@@ -18105,8 +18105,8 @@ packages:
     os: [linux]
     libc: [glibc]
 
-  '@oxc-parser/binding-linux-x64-gnu@0.155.0':
-    resolution: {integrity: sha512-g6xSDC/JpbnVOz5uafMGyK3txBVRFMQTx8opv/yHXGxqV3ZMVl3bf7W8XrSnF68dmy3gM4dgReNryuE53+WkeQ==}
+  '@oxc-parser/binding-linux-x64-gnu@0.156.0':
+    resolution: {integrity: sha512-jRfwpN4xKrsEpC+SgrUPY5k0mINYZn7aLrt22I3uQFoumiSgHgsLYgS9f84ntbkvSydH4HiwGuDa2b1XCHaJzw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [linux]
@@ -18133,8 +18133,8 @@ packages:
     os: [linux]
     libc: [musl]
 
-  '@oxc-parser/binding-linux-x64-musl@0.155.0':
-    resolution: {integrity: sha512-6/4xlxKlZJWrQ0uwDFPc0H9+xLu7068CKhX3vIDW3SbvP/lVgnVuT5v6dyugeWskWpuxqF/WJ4WKwhxjU3pG2w==}
+  '@oxc-parser/binding-linux-x64-musl@0.156.0':
+    resolution: {integrity: sha512-P/ajnypgLmxmuRRyCIZcp2o4lOwmCaXYH5+eqDTcCW+MCTI+csKSw/Zc6GB67jZoVa4ey3q1jXEt7S60adBEMQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [linux]
@@ -18158,8 +18158,8 @@ packages:
     cpu: [arm64]
     os: [openharmony]
 
-  '@oxc-parser/binding-openharmony-arm64@0.155.0':
-    resolution: {integrity: sha512-tltklL0J0XjDxIRTBXWOBhvc2mitcmES45pIxhwDWfxRyqz7Vkeu0NekTZEIxGE4f/lXgq3vZcjjffteQOVorg==}
+  '@oxc-parser/binding-openharmony-arm64@0.156.0':
+    resolution: {integrity: sha512-WSN6rQZZc9KqgZ4lMfjVDvqKhVOCjey/YEZIPisGXmwBqwgWOzru207dyiH50LHcf1n9LO2oceGk/id6RL9v0g==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [openharmony]
@@ -18187,8 +18187,8 @@ packages:
     cpu: [arm64]
     os: [win32]
 
-  '@oxc-parser/binding-win32-arm64-msvc@0.155.0':
-    resolution: {integrity: sha512-alAb9TzjatUEsOeoncAziUnfdTDxfyswhalFZ9sC6plUgATIUx2NIZ0+bMn6aJ28AduS1OpG/OAisr/YISn4Ig==}
+  '@oxc-parser/binding-win32-arm64-msvc@0.156.0':
+    resolution: {integrity: sha512-l21Tz6tjraGBC3JefVeJZ9pojD0fCiB62PydAv+i9nrqJX7z/pDmyDNYLamDr/PRcQ4UQbFwkSnz7NKBB9UMLw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [win32]
@@ -18211,8 +18211,8 @@ packages:
     cpu: [ia32]
     os: [win32]
 
-  '@oxc-parser/binding-win32-ia32-msvc@0.155.0':
-    resolution: {integrity: sha512-yc5cbSfcGmRv/KpxDFuyk8adEBaWd/9HilWvBbQ4bFbus1V2PUh2mGB2Cfq9rqZTqLeiMT8x0skV+LKp9hOMgQ==}
+  '@oxc-parser/binding-win32-ia32-msvc@0.156.0':
+    resolution: {integrity: sha512-CUq0ZFl/RODqPiIgfNNSamkpTj5x8AjBTkR/y1DNVIQiTGnmWqjHcn3o08ZW3q/LgkI4g9G9g6UirmmQFvuOZw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [ia32]
     os: [win32]
@@ -18235,8 +18235,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@oxc-parser/binding-win32-x64-msvc@0.155.0':
-    resolution: {integrity: sha512-8heq6jGq+rfpTDRDjoQiBHw0maQZf3IXkS99pdHQZPoTL5kyF5qyPS0RidUlSdnWDIqxXb5nux7GBD9cT+imUw==}
+  '@oxc-parser/binding-win32-x64-msvc@0.156.0':
+    resolution: {integrity: sha512-dcpx5Y1x2v/cs7U/q3SZMvmxfyXjVvqC86jMuw2ZZUbHDd7W2cW7uSMQfg3GLVaE68Su3H9xd/Pc4v6QNyeSRg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [win32]
@@ -18249,9 +18249,6 @@ packages:
 
   '@oxc-project/types@0.152.0':
     resolution: {integrity: sha512-oM/5rLBm2tPkg0iBgkH/FOeR3PCDpY19GTgAZjMFM8h9WI9VW7cLgzp6nwtarYKmovavIQZ+Fe/RKX/8C8O/Rw==}
-
-  '@oxc-project/types@0.155.0':
-    resolution: {integrity: sha512-SeE8JPwW1xs1tHeNycjUtUBdhorRa8o4jlvjwk49R7/Z291i+4DQa7JJIgOm/TaYQZx+QrPQbVJ/9c8dMIZN8Q==}
 
   '@oxc-project/types@0.156.0':
     resolution: {integrity: sha512-1Duyg48TdJNdyhEB8Xn1L36bT9Pv6GUtlKjHxOys8xkaF/rQq3XJE+bAurSK/AgIz5mGFsb77cn9Pb20+WCScw==}
@@ -20985,6 +20982,11 @@ packages:
 
   ajv-formats@2.1.1:
     resolution: {integrity: sha512-Wx0Kx52hxE7C18hkMEggYlEifqWZtYaRgouJor+WMdPnQyEK13vgEWyVNup7SoeeoLMsr4kf5h6dOW11I15MUA==}
+    peerDependencies:
+      ajv: ^8.0.0
+    peerDependenciesMeta:
+      ajv:
+        optional: true
 
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
@@ -22542,8 +22544,8 @@ packages:
     resolution: {integrity: sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ==}
     engines: {node: '>=6'}
 
-  knip@6.43.0:
-    resolution: {integrity: sha512-8l3cCOg/EXoILO0qcSoMra49yQM91+lEIR4fu5Ko8rrArGX8xKdKZiGI9psPiY6rhLmfLERcMfFEByF0wli5CA==}
+  knip@6.45.1:
+    resolution: {integrity: sha512-zp3zXKy2cZWiIttdlWU5fisKxVQaLSU6471ej0KGz1GdHdaHxpzTAO/LIyFNc3gU3v1W7LJaqvYumoO3l/u+6A==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
@@ -23196,8 +23198,8 @@ packages:
     resolution: {integrity: sha512-ZztsZgaCWmPeKYMdoTT5e0oV/oxD1NeLWNR3kAtr/G707cUPYaaozRlVDHLCGnszHJRszN9mJwmPNpqgwloC0A==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
-  oxc-parser@0.155.0:
-    resolution: {integrity: sha512-C/ReSf1JUFukK/zvk6jhcNibSssvas5+ktIzK7fbKVd3CedWe59C3QwHEOrEZj/4Rt9+xg0Jeis/Jv1F/KM1mw==}
+  oxc-parser@0.156.0:
+    resolution: {integrity: sha512-7JhjgOfZjrIFJH5TlHrpRua864Si5GvwrPr5+eIRCY2sszhKXo6pyhP0HQKOGTtfO4UowwZ72XTGba0+lZphOQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   oxc-resolver@11.21.2:
@@ -24311,8 +24313,8 @@ packages:
     resolution: {integrity: sha512-rvKSBiC5zqCCiDZ9kAOszZcDvdAHwwIKJG33Ykj43OKcWsnmcBRL09YTU4nOeHZ8Y2a7l1MgTd08SBe9A8Qj6A==}
     engines: {node: '>=18'}
 
-  unbash@6.0.1:
-    resolution: {integrity: sha512-0db9eS5iqybux41zLkX69nk90KTci7F7eZ+gXzEG/Q7E0tAqEBhRh5fkZvk1N7jT7QkGWqq34i8SFGPFEe1V8A==}
+  unbash@6.0.4:
+    resolution: {integrity: sha512-t3OptUArewg9OpYGDskTSlxhyLDahfmZ4d36hE44Efb1y3HRLLpzsVqwH+AwBVymP4t7pP71xN+nnduudn2awA==}
     engines: {node: '>=14'}
 
   undici-types@7.24.6:
@@ -24779,9 +24781,6 @@ packages:
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
-  zod@4.6.5:
-    resolution: {integrity: sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==}
-
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
@@ -24791,13 +24790,13 @@ snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
 
-  '@anthropic-ai/sdk@1.8.0(zod@4.6.5)':
+  '@anthropic-ai/sdk@1.8.0(zod@3.25.76)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       json-schema-to-ts: 3.1.1
       standardwebhooks: 1.1.1
     optionalDependencies:
-      zod: 4.6.5
+      zod: 3.25.76
 
   '@apple/app-store-server-library@3.1.0':
     dependencies:
@@ -26255,7 +26254,7 @@ snapshots:
     dependencies:
       '@pgsql/types': 18.0.0
 
-  '@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5)':
+  '@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76)':
     dependencies:
       '@hono/node-server': 2.1.5(hono@4.13.18)
       ajv: 8.20.0
@@ -26272,8 +26271,8 @@ snapshots:
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
-      zod: 4.6.5
-      zod-to-json-schema: 3.25.2(zod@4.6.5)
+      zod: 3.25.76
+      zod-to-json-schema: 3.25.2(zod@3.25.76)
     transitivePeerDependencies:
       - supports-color
 
@@ -27073,7 +27072,7 @@ snapshots:
   '@oxc-parser/binding-android-arm-eabi@0.152.0':
     optional: true
 
-  '@oxc-parser/binding-android-arm-eabi@0.155.0':
+  '@oxc-parser/binding-android-arm-eabi@0.156.0':
     optional: true
 
   '@oxc-parser/binding-android-arm64@0.127.0':
@@ -27085,7 +27084,7 @@ snapshots:
   '@oxc-parser/binding-android-arm64@0.152.0':
     optional: true
 
-  '@oxc-parser/binding-android-arm64@0.155.0':
+  '@oxc-parser/binding-android-arm64@0.156.0':
     optional: true
 
   '@oxc-parser/binding-darwin-arm64@0.127.0':
@@ -27097,7 +27096,7 @@ snapshots:
   '@oxc-parser/binding-darwin-arm64@0.152.0':
     optional: true
 
-  '@oxc-parser/binding-darwin-arm64@0.155.0':
+  '@oxc-parser/binding-darwin-arm64@0.156.0':
     optional: true
 
   '@oxc-parser/binding-darwin-x64@0.127.0':
@@ -27109,7 +27108,7 @@ snapshots:
   '@oxc-parser/binding-darwin-x64@0.152.0':
     optional: true
 
-  '@oxc-parser/binding-darwin-x64@0.155.0':
+  '@oxc-parser/binding-darwin-x64@0.156.0':
     optional: true
 
   '@oxc-parser/binding-freebsd-x64@0.127.0':
@@ -27121,7 +27120,7 @@ snapshots:
   '@oxc-parser/binding-freebsd-x64@0.152.0':
     optional: true
 
-  '@oxc-parser/binding-freebsd-x64@0.155.0':
+  '@oxc-parser/binding-freebsd-x64@0.156.0':
     optional: true
 
   '@oxc-parser/binding-linux-arm-gnueabihf@0.127.0':
@@ -27133,7 +27132,7 @@ snapshots:
   '@oxc-parser/binding-linux-arm-gnueabihf@0.152.0':
     optional: true
 
-  '@oxc-parser/binding-linux-arm-gnueabihf@0.155.0':
+  '@oxc-parser/binding-linux-arm-gnueabihf@0.156.0':
     optional: true
 
   '@oxc-parser/binding-linux-arm-musleabihf@0.127.0':
@@ -27145,7 +27144,7 @@ snapshots:
   '@oxc-parser/binding-linux-arm-musleabihf@0.152.0':
     optional: true
 
-  '@oxc-parser/binding-linux-arm-musleabihf@0.155.0':
+  '@oxc-parser/binding-linux-arm-musleabihf@0.156.0':
     optional: true
 
   '@oxc-parser/binding-linux-arm64-gnu@0.127.0':
@@ -27157,7 +27156,7 @@ snapshots:
   '@oxc-parser/binding-linux-arm64-gnu@0.152.0':
     optional: true
 
-  '@oxc-parser/binding-linux-arm64-gnu@0.155.0':
+  '@oxc-parser/binding-linux-arm64-gnu@0.156.0':
     optional: true
 
   '@oxc-parser/binding-linux-arm64-musl@0.127.0':
@@ -27169,7 +27168,7 @@ snapshots:
   '@oxc-parser/binding-linux-arm64-musl@0.152.0':
     optional: true
 
-  '@oxc-parser/binding-linux-arm64-musl@0.155.0':
+  '@oxc-parser/binding-linux-arm64-musl@0.156.0':
     optional: true
 
   '@oxc-parser/binding-linux-ppc64-gnu@0.127.0':
@@ -27181,7 +27180,7 @@ snapshots:
   '@oxc-parser/binding-linux-ppc64-gnu@0.152.0':
     optional: true
 
-  '@oxc-parser/binding-linux-ppc64-gnu@0.155.0':
+  '@oxc-parser/binding-linux-ppc64-gnu@0.156.0':
     optional: true
 
   '@oxc-parser/binding-linux-riscv64-gnu@0.127.0':
@@ -27193,7 +27192,7 @@ snapshots:
   '@oxc-parser/binding-linux-riscv64-gnu@0.152.0':
     optional: true
 
-  '@oxc-parser/binding-linux-riscv64-gnu@0.155.0':
+  '@oxc-parser/binding-linux-riscv64-gnu@0.156.0':
     optional: true
 
   '@oxc-parser/binding-linux-riscv64-musl@0.127.0':
@@ -27205,7 +27204,7 @@ snapshots:
   '@oxc-parser/binding-linux-riscv64-musl@0.152.0':
     optional: true
 
-  '@oxc-parser/binding-linux-riscv64-musl@0.155.0':
+  '@oxc-parser/binding-linux-riscv64-musl@0.156.0':
     optional: true
 
   '@oxc-parser/binding-linux-s390x-gnu@0.127.0':
@@ -27217,7 +27216,7 @@ snapshots:
   '@oxc-parser/binding-linux-s390x-gnu@0.152.0':
     optional: true
 
-  '@oxc-parser/binding-linux-s390x-gnu@0.155.0':
+  '@oxc-parser/binding-linux-s390x-gnu@0.156.0':
     optional: true
 
   '@oxc-parser/binding-linux-x64-gnu@0.127.0':
@@ -27229,7 +27228,7 @@ snapshots:
   '@oxc-parser/binding-linux-x64-gnu@0.152.0':
     optional: true
 
-  '@oxc-parser/binding-linux-x64-gnu@0.155.0':
+  '@oxc-parser/binding-linux-x64-gnu@0.156.0':
     optional: true
 
   '@oxc-parser/binding-linux-x64-musl@0.127.0':
@@ -27241,7 +27240,7 @@ snapshots:
   '@oxc-parser/binding-linux-x64-musl@0.152.0':
     optional: true
 
-  '@oxc-parser/binding-linux-x64-musl@0.155.0':
+  '@oxc-parser/binding-linux-x64-musl@0.156.0':
     optional: true
 
   '@oxc-parser/binding-openharmony-arm64@0.127.0':
@@ -27253,7 +27252,7 @@ snapshots:
   '@oxc-parser/binding-openharmony-arm64@0.152.0':
     optional: true
 
-  '@oxc-parser/binding-openharmony-arm64@0.155.0':
+  '@oxc-parser/binding-openharmony-arm64@0.156.0':
     optional: true
 
   '@oxc-parser/binding-wasm32-wasi@0.127.0':
@@ -27272,7 +27271,7 @@ snapshots:
   '@oxc-parser/binding-win32-arm64-msvc@0.152.0':
     optional: true
 
-  '@oxc-parser/binding-win32-arm64-msvc@0.155.0':
+  '@oxc-parser/binding-win32-arm64-msvc@0.156.0':
     optional: true
 
   '@oxc-parser/binding-win32-ia32-msvc@0.127.0':
@@ -27284,7 +27283,7 @@ snapshots:
   '@oxc-parser/binding-win32-ia32-msvc@0.152.0':
     optional: true
 
-  '@oxc-parser/binding-win32-ia32-msvc@0.155.0':
+  '@oxc-parser/binding-win32-ia32-msvc@0.156.0':
     optional: true
 
   '@oxc-parser/binding-win32-x64-msvc@0.127.0':
@@ -27296,7 +27295,7 @@ snapshots:
   '@oxc-parser/binding-win32-x64-msvc@0.152.0':
     optional: true
 
-  '@oxc-parser/binding-win32-x64-msvc@0.155.0':
+  '@oxc-parser/binding-win32-x64-msvc@0.156.0':
     optional: true
 
   '@oxc-project/types@0.127.0': {}
@@ -27304,8 +27303,6 @@ snapshots:
   '@oxc-project/types@0.148.0': {}
 
   '@oxc-project/types@0.152.0': {}
-
-  '@oxc-project/types@0.155.0': {}
 
   '@oxc-project/types@0.156.0': {}
 
@@ -29149,7 +29146,7 @@ snapshots:
   '@types/jsonwebtoken@9.0.10':
     dependencies:
       '@types/ms': 2.1.0
-      '@types/node': 26.6.6
+      '@types/node': 25.9.5
 
   '@types/jsrsasign@10.5.15': {}
 
@@ -29167,7 +29164,7 @@ snapshots:
 
   '@types/node-fetch@2.6.13':
     dependencies:
-      '@types/node': 26.6.6
+      '@types/node': 25.9.5
       form-data: 4.0.6
 
   '@types/node@25.9.5':
@@ -29276,12 +29273,33 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@typescript-eslint/parser@8.72.1(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)':
+    dependencies:
+      '@typescript-eslint/scope-manager': 8.72.1
+      '@typescript-eslint/types': 8.72.1
+      '@typescript-eslint/typescript-estree': 8.72.1(supports-color@10.2.2)(typescript@6.0.3)
+      '@typescript-eslint/visitor-keys': 8.72.1
+      debug: 4.4.3(supports-color@10.2.2)
+      eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
+      typescript: 6.0.3
+    transitivePeerDependencies:
+      - supports-color
+
   '@typescript-eslint/project-service@8.72.1(@typescript/typescript6@6.0.2)(supports-color@10.2.2)':
     dependencies:
       '@typescript-eslint/tsconfig-utils': 8.72.1(@typescript/typescript6@6.0.2)
       '@typescript-eslint/types': 8.72.1
       debug: 4.4.3(supports-color@10.2.2)
       typescript: '@typescript/typescript6@6.0.2'
+    transitivePeerDependencies:
+      - supports-color
+
+  '@typescript-eslint/project-service@8.72.1(supports-color@10.2.2)(typescript@6.0.3)':
+    dependencies:
+      '@typescript-eslint/tsconfig-utils': 8.72.1(typescript@6.0.3)
+      '@typescript-eslint/types': 8.72.1
+      debug: 4.4.3(supports-color@10.2.2)
+      typescript: 6.0.3
     transitivePeerDependencies:
       - supports-color
 
@@ -29293,6 +29311,10 @@ snapshots:
   '@typescript-eslint/tsconfig-utils@8.72.1(@typescript/typescript6@6.0.2)':
     dependencies:
       typescript: '@typescript/typescript6@6.0.2'
+
+  '@typescript-eslint/tsconfig-utils@8.72.1(typescript@6.0.3)':
+    dependencies:
+      typescript: 6.0.3
 
   '@typescript-eslint/types@8.72.1': {}
 
@@ -29308,6 +29330,21 @@ snapshots:
       tinyglobby: 0.2.17
       ts-api-utils: 2.5.0(@typescript/typescript6@6.0.2)
       typescript: '@typescript/typescript6@6.0.2'
+    transitivePeerDependencies:
+      - supports-color
+
+  '@typescript-eslint/typescript-estree@8.72.1(supports-color@10.2.2)(typescript@6.0.3)':
+    dependencies:
+      '@typescript-eslint/project-service': 8.72.1(supports-color@10.2.2)(typescript@6.0.3)
+      '@typescript-eslint/tsconfig-utils': 8.72.1(typescript@6.0.3)
+      '@typescript-eslint/types': 8.72.1
+      '@typescript-eslint/visitor-keys': 8.72.1
+      debug: 4.4.3(supports-color@10.2.2)
+      minimatch: 10.2.6
+      semver: 7.8.6
+      tinyglobby: 0.2.17
+      ts-api-utils: 2.5.0(typescript@6.0.3)
+      typescript: 6.0.3
     transitivePeerDependencies:
       - supports-color
 
@@ -29523,12 +29560,12 @@ snapshots:
       convert-source-map: 2.0.0
       tinyrainbow: 3.2.0
 
-  '@vouchington/ai@0.4.1(@anthropic-ai/sdk@1.8.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))':
+  '@vouchington/ai@0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76))':
     dependencies:
       ajv: 8.20.0
     optionalDependencies:
-      '@anthropic-ai/sdk': 1.8.0(zod@4.6.5)
-      openai: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5)
+      '@anthropic-ai/sdk': 1.8.0(zod@3.25.76)
+      openai: 7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76)
 
   '@vouchington/api-client@0.3.0(react@19.3.1)':
     optionalDependencies:
@@ -29614,10 +29651,10 @@ snapshots:
     optionalDependencies:
       react: 19.3.1
 
-  '@vouchington/mcp-server@0.2.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))':
+  '@vouchington/mcp-server@0.2.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))':
     dependencies:
       '@jongleberry/vurst-prompt': 0.4.3
-      '@modelcontextprotocol/sdk': 1.32.2(supports-color@10.2.2)(zod@4.6.5)
+      '@modelcontextprotocol/sdk': 1.32.2(supports-color@10.2.2)(zod@3.25.76)
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
 
@@ -29859,16 +29896,16 @@ snapshots:
 
   agent-base@9.0.0: {}
 
-  agent-blackboard@0.7.0(supports-color@10.2.2)(zod@4.6.5):
+  agent-blackboard@0.7.0(supports-color@10.2.2)(zod@3.25.76):
     dependencies:
-      '@modelcontextprotocol/sdk': 1.32.2(supports-color@10.2.2)(zod@4.6.5)
+      '@modelcontextprotocol/sdk': 1.32.2(supports-color@10.2.2)(zod@3.25.76)
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - supports-color
       - zod
 
-  ajv-formats@2.1.1:
-    dependencies:
+  ajv-formats@2.1.1(ajv@8.20.0):
+    optionalDependencies:
       ajv: 8.20.0
     optional: true
 
@@ -31412,20 +31449,19 @@ snapshots:
 
   kleur@4.1.5: {}
 
-  knip@6.43.0:
+  knip@6.45.1:
     dependencies:
       formatly: 0.11.4
       get-tsconfig: 4.14.3
       jiti: 2.7.0
-      oxc-parser: 0.155.0
+      oxc-parser: 0.156.0
       oxc-resolver: 11.24.2
       picomatch: 4.0.7
       smol-toml: 1.9.1
       strip-json-comments: 5.0.3
       tinyglobby: 0.2.17
-      unbash: 6.0.1
+      unbash: 6.0.4
       yaml: 2.9.1
-      zod: 4.6.5
 
   leac@0.7.0: {}
 
@@ -32153,13 +32189,13 @@ snapshots:
       is-inside-container: 1.0.0
       wsl-utils: 0.1.0
 
-  openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5):
+  openai@7.43.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@3.25.76):
     optionalDependencies:
       '@aws-sdk/credential-provider-node': 3.972.97
       '@smithy/signature-v4': 5.7.5
       undici: 8.12.3
       ws: 8.22.0
-      zod: 4.6.5
+      zod: 3.25.76
 
   optionator@0.9.4:
     dependencies:
@@ -32247,29 +32283,29 @@ snapshots:
       '@oxc-parser/binding-win32-ia32-msvc': 0.152.0
       '@oxc-parser/binding-win32-x64-msvc': 0.152.0
 
-  oxc-parser@0.155.0:
+  oxc-parser@0.156.0:
     dependencies:
-      '@oxc-project/types': 0.155.0
+      '@oxc-project/types': 0.156.0
     optionalDependencies:
-      '@oxc-parser/binding-android-arm-eabi': 0.155.0
-      '@oxc-parser/binding-android-arm64': 0.155.0
-      '@oxc-parser/binding-darwin-arm64': 0.155.0
-      '@oxc-parser/binding-darwin-x64': 0.155.0
-      '@oxc-parser/binding-freebsd-x64': 0.155.0
-      '@oxc-parser/binding-linux-arm-gnueabihf': 0.155.0
-      '@oxc-parser/binding-linux-arm-musleabihf': 0.155.0
-      '@oxc-parser/binding-linux-arm64-gnu': 0.155.0
-      '@oxc-parser/binding-linux-arm64-musl': 0.155.0
-      '@oxc-parser/binding-linux-ppc64-gnu': 0.155.0
-      '@oxc-parser/binding-linux-riscv64-gnu': 0.155.0
-      '@oxc-parser/binding-linux-riscv64-musl': 0.155.0
-      '@oxc-parser/binding-linux-s390x-gnu': 0.155.0
-      '@oxc-parser/binding-linux-x64-gnu': 0.155.0
-      '@oxc-parser/binding-linux-x64-musl': 0.155.0
-      '@oxc-parser/binding-openharmony-arm64': 0.155.0
-      '@oxc-parser/binding-win32-arm64-msvc': 0.155.0
-      '@oxc-parser/binding-win32-ia32-msvc': 0.155.0
-      '@oxc-parser/binding-win32-x64-msvc': 0.155.0
+      '@oxc-parser/binding-android-arm-eabi': 0.156.0
+      '@oxc-parser/binding-android-arm64': 0.156.0
+      '@oxc-parser/binding-darwin-arm64': 0.156.0
+      '@oxc-parser/binding-darwin-x64': 0.156.0
+      '@oxc-parser/binding-freebsd-x64': 0.156.0
+      '@oxc-parser/binding-linux-arm-gnueabihf': 0.156.0
+      '@oxc-parser/binding-linux-arm-musleabihf': 0.156.0
+      '@oxc-parser/binding-linux-arm64-gnu': 0.156.0
+      '@oxc-parser/binding-linux-arm64-musl': 0.156.0
+      '@oxc-parser/binding-linux-ppc64-gnu': 0.156.0
+      '@oxc-parser/binding-linux-riscv64-gnu': 0.156.0
+      '@oxc-parser/binding-linux-riscv64-musl': 0.156.0
+      '@oxc-parser/binding-linux-s390x-gnu': 0.156.0
+      '@oxc-parser/binding-linux-x64-gnu': 0.156.0
+      '@oxc-parser/binding-linux-x64-musl': 0.156.0
+      '@oxc-parser/binding-openharmony-arm64': 0.156.0
+      '@oxc-parser/binding-win32-arm64-msvc': 0.156.0
+      '@oxc-parser/binding-win32-ia32-msvc': 0.156.0
+      '@oxc-parser/binding-win32-x64-msvc': 0.156.0
 
   oxc-resolver@11.21.2:
     optionalDependencies:
@@ -32972,7 +33008,7 @@ snapshots:
     dependencies:
       '@types/json-schema': 7.0.15
       ajv: 8.20.0
-      ajv-formats: 2.1.1
+      ajv-formats: 2.1.1(ajv@8.20.0)
       ajv-keywords: 5.1.0(ajv@8.20.0)
     optional: true
 
@@ -33468,6 +33504,10 @@ snapshots:
     dependencies:
       typescript: '@typescript/typescript6@6.0.2'
 
+  ts-api-utils@2.5.0(typescript@6.0.3):
+    dependencies:
+      typescript: 6.0.3
+
   ts-dedent@2.3.0: {}
 
   tsconfck@3.1.6(@typescript/typescript6@6.0.2):
@@ -33544,7 +33584,7 @@ snapshots:
 
   uint8array-extras@1.5.0: {}
 
-  unbash@6.0.1: {}
+  unbash@6.0.4: {}
 
   undici-types@7.24.6: {}
 
@@ -33743,12 +33783,12 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vouchington-tooling@3.1.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.59(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5):
+  vouchington-tooling@3.1.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.59(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@3.25.76):
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3
       '@typescript-eslint/parser': 8.72.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
-      agent-blackboard: 0.7.0(supports-color@10.2.2)(zod@4.6.5)
+      agent-blackboard: 0.7.0(supports-color@10.2.2)(zod@3.25.76)
       coverage-check: 0.18.0(@vitest/coverage-v8@5.1.0)(vitest@5.1.0)
       csv-parse: 7.0.3
       csv-stringify: 6.9.0
@@ -33760,12 +33800,12 @@ snapshots:
       yaml: 2.9.1
     optionalDependencies:
       '@libpg-query/parser': 18.0.0
-      '@modelcontextprotocol/sdk': 1.32.2(supports-color@10.2.2)(zod@4.6.5)
+      '@modelcontextprotocol/sdk': 1.32.2(supports-color@10.2.2)(zod@3.25.76)
       '@playwright/test': 1.65.1
       '@typescript/typescript6': 6.0.2
       '@vouchington/postgres': 0.6.1
       '@vouchington/worker-runtime': 0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
-      next: 16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      next: 16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       no-mistakes: 0.109.59(vitest@5.1.0)
       pg: 8.23.1
       react: 19.3.1
@@ -33778,12 +33818,12 @@ snapshots:
       - supports-color
       - zod
 
-  vouchington-tooling@3.1.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.59(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.1.0)(zod@4.6.5):
+  vouchington-tooling@3.1.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.59(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.1.0)(zod@3.25.76):
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3
-      '@typescript-eslint/parser': 8.72.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
-      agent-blackboard: 0.7.0(supports-color@10.2.2)(zod@4.6.5)
+      '@typescript-eslint/parser': 8.72.1(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
+      agent-blackboard: 0.7.0(supports-color@10.2.2)(zod@3.25.76)
       coverage-check: 0.18.0(@vitest/coverage-v8@5.1.0)(vitest@5.1.0)
       csv-parse: 7.0.3
       csv-stringify: 6.9.0
@@ -33795,7 +33835,7 @@ snapshots:
       yaml: 2.9.1
     optionalDependencies:
       '@libpg-query/parser': 18.0.0
-      '@modelcontextprotocol/sdk': 1.32.2(supports-color@10.2.2)(zod@4.6.5)
+      '@modelcontextprotocol/sdk': 1.32.2(supports-color@10.2.2)(zod@3.25.76)
       '@playwright/test': 1.65.1
       '@typescript/typescript6': 6.0.2
       '@vouchington/postgres': 0.6.1
@@ -33804,7 +33844,7 @@ snapshots:
       no-mistakes: 0.109.59(vitest@5.1.0)
       pg: 8.23.1
       react: 19.3.1
-      typescript: '@typescript/typescript6@6.0.2'
+      typescript: 6.0.3
       vitest: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
     transitivePeerDependencies:
       - '@cfworker/json-schema'
@@ -34035,12 +34075,10 @@ snapshots:
       cookie: 1.1.1
       youch-core: 0.3.3
 
-  zod-to-json-schema@3.25.2(zod@4.6.5):
+  zod-to-json-schema@3.25.2(zod@3.25.76):
     dependencies:
-      zod: 4.6.5
+      zod: 3.25.76
 
   zod@3.25.76: {}
-
-  zod@4.6.5: {}
 
   zwitch@2.0.4: {}

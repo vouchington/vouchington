@@ -112,19 +112,6 @@ export const allowedWorkspaceIgnoreDependencies = new Map<
     ],
   ],
   [
-    'cloudflare-worker',
-    [
-      {
-        dependency: 'cloudflare',
-        evidenceFiles: [
-          'cloudflare-worker/src/cached-origin.mts',
-          'cloudflare-worker/src/types.mts',
-        ],
-        evidencePattern: /\bfrom 'cloudflare:workers'/,
-      },
-    ],
-  ],
-  [
     'lambdas/image-resize',
     [
       {
