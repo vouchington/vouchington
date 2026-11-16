@@ -19,6 +19,8 @@
   material or replacing an apparently missing page.
 - Put directory-scoped invariants in the nearest `AGENTS.md` and task procedures in a matching skill
   ([skill authoring](../.agents/skills/AGENTS.md)). Link to canonical owners instead of duplicating.
+  Agents read every `AGENTS.md` ancestor, so never link to a parent; delete an `AGENTS.md` that
+  would hold nothing but such a link.
   Keep navigation within the three-link reachability budget and update incoming links when moving a page.
 
 ## Domain and owner indexes

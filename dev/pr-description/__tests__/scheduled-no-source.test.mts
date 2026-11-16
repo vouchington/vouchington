@@ -31,14 +31,6 @@ describe('scheduled no-source PR validation', () => {
     })
   })
 
-  it('accepts the retired Auto Harness workspace line during the transition', () => {
-    const body = VALID_SCHEDULED_NO_SOURCE_BODY.replace(
-      'Triage loop scheduled prompt',
-      'Auto Harness scheduled prompt',
-    )
-    expect(validatePrBody(body).ok).toBe(true)
-  })
-
   it.each([
     ['missing visible line', 'No source issue; scheduled prompt run.\n', ''],
     ['misspelled marker', 'no-source-scheduled-prompt', 'no-source-schedule-prompt'],
