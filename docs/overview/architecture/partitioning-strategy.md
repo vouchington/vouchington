@@ -53,6 +53,16 @@ visible in click logs and account exports until the attribution retention window
 monthly partition. Signup updates only the latest unconverted click; session credit preserves
 the earliest click. User-linked clicks share the same finite retention window.
 
+## Partition drop or sweep
+
+See the canonical [partition drop or sweep rule](https://github.com/jonathanong/skills/blob/main/skills/postgres-partitioning-uuid-v7/SKILL.md).
+
+Whole-range age retirement is unsuitable for
+[`moderation_appeal_resolution_runs`](https://github.com/vouchington/vouchington/pull/5884) and
+[review-dispute resolution runs](https://github.com/vouchington/vouchington/pull/5783): references
+to a latest requested or draft-producing run can remain in any age range, so dropping a range
+would discard a result still in use.
+
 ## Operating Explicit Ranges
 
 A populated default overlaps every prospective range. Create a standalone matching table, move the
