@@ -64,4 +64,32 @@ describe('copyright claims racing guest court admission', () => {
       ).toHaveLength(1)
     },
   )
+  it('persists terminal failure when the fifth claimed attempt expires without a receipt', async () => {
+    installTestMediaDeliveryEdge()
+    const scene = await openHeldCounterNoticeRestore()
+    let now = scene.restorationAt
+    for (let attempt = 0; attempt < 5; attempt++) {
+      now = new Date(scene.restorationAt.getTime() + attempt * 60 * 60_000)
+      const claimed = await claimCopyrightActionIntent(scene.restore.id, now)
+      if (!claimed) throw new Error('Restore claim missing')
+      if (attempt < 4)
+        await failCopyrightActionIntent({
+          intentId: claimed.id,
+          leaseToken: claimed.lease_token,
+          failedAt: now,
+          failureMessage: 'Provider attempt failed.',
+        })
+    }
+    await expect(
+      claimCopyrightActionIntent(scene.restore.id, new Date(now.getTime() + 6 * 60_000)),
+    ).resolves.toBeNull()
+    const after = await getCopyrightNoticePrivateAggregate(scene.notice.id)
+    expect(after?.actionIntents.find(row => row.id === scene.restore.id)).toMatchObject({
+      state: 'failed',
+      attempt_count: 5,
+      completed_at_reason: 'failed',
+      failure_message: 'A claimed copyright action exceeded the maximum delivery attempts.',
+    })
+    expect(after?.restrictions.find(row => row.id === scene.restriction.id)?.lifted_at).toBeNull()
+  })
 })
