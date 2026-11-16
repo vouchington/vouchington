@@ -2,10 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
 import { countEuTransparencyReportsBy } from '@voucha/test-helpers/data-stores/psql/copyright-eu-reports'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
-import {
-  approveJurisdictionPolicy,
-  createTerritorialActors,
-} from '@voucha/test-helpers/services/copyright-notices/territorial-routes'
+import { approveJurisdictionPolicy } from '@voucha/test-helpers/services/copyright-notices/territorial-routes'
+import { createTerritorialActors } from '@voucha/test-helpers/services/copyright-notices/territorial-actors'
 
 const SCHEMA_DIAGNOSTIC = /schema|must be|required|invalid/i
 

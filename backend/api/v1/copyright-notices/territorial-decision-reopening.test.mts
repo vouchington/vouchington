@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { createHostedImagePost } from '@voucha/test-helpers/services/copyright-notices/hosted-post-audience'
 import {
   approveJurisdictionPolicy,
-  createTerritorialActors,
   TERRITORIAL_SURFACES,
-  type TerritorialActors,
 } from '@voucha/test-helpers/services/copyright-notices/territorial-routes'
+import {
+  createTerritorialActors,
+  type TerritorialActors,
+} from '@voucha/test-helpers/services/copyright-notices/territorial-actors'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import {
   readTerritorialDecisionReopeningFacts,

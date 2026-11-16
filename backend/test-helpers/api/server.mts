@@ -16,6 +16,7 @@ import {
 } from 'vouchington-tooling/runner-port-policy'
 import { recordServerErrorResponse } from './server-error-responses.mts'
 import { profileRequestQueries } from './request-query-profile.mts'
+import { API_TEST_SERVER_STATE_KEY } from './server-global.mts'
 
 type ApiTestListener = ReturnType<typeof createApiRequestGuardedListener>
 type ApiTestServerAddress = { host: LoopbackHost; port: number }
@@ -25,7 +26,6 @@ type ApiTestServerState = {
   addressPromise: Promise<ApiTestServerAddress>
 }
 
-const API_TEST_SERVER_STATE_KEY = '__vouchaApiTestServerState'
 const API_TEST_SERVER_LISTENER_KEY = '__vouchaApiTestServerListener'
 const API_TEST_SERVER_MATCHER_KEY = '__vouchaApiTestServerMatcher'
 

@@ -11,10 +11,10 @@ import { loginAsMfaUser, loginAsUser } from '../../helpers/auth.mts'
 import { revealOwnedQueueItem } from '../../helpers/copyright-queue.mts'
 import {
   approveJurisdictionPolicy,
-  createTerritorialActors,
+  createTerritorialUsers,
   seedDeterminedTerritorialNotice,
   seedPendingTerritorialNotice,
-  type TerritorialActors,
+  type TerritorialUsers,
 } from '../../../backend/test-helpers/services/copyright-notices/territorial-routes.mts'
 import { seedTerritorialRedress } from '../../../backend/test-helpers/copyright-territorial-redress-seed.mts'
 import {
@@ -65,12 +65,12 @@ test.describe('EU copyright navigation with unapproved intake', () => {
 // Approval is global, so these run after the unapproved checks above (one worker runs a file in
 // order) and withdraw it again before any other file observes it.
 test.describe('EU copyright controls with an approved policy', () => {
-  let actors: TerritorialActors
+  let actors: TerritorialUsers
   let approvalId: string
 
   test.beforeAll(async () => {
     protectPlaywrightHookTimeouts(test.info())
-    actors = await createTerritorialActors()
+    actors = await createTerritorialUsers()
     approvalId = (await approveJurisdictionPolicy(actors.administrator, 'eu_dsa')).id
   })
 

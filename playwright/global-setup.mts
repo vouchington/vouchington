@@ -6,6 +6,7 @@ import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { FullConfig } from '@playwright/test'
+import { isApiTestServerStarted } from '../backend/test-helpers/api/server-global.mts'
 import { assertResolvedPlaywrightTimeouts } from './config/test-timeout.mts'
 import { assertPlaywrightSeedData } from '../backend/test-helpers/playwright-seed-assertions.mts'
 import { pinPlaywrightSeedCrawlAnchor } from '../backend/test-helpers/playwright-seed-crawl-ids.mts'
@@ -35,6 +36,13 @@ const PLAYWRIGHT_TOPIC_IDS = [
 
 export default async function globalSetup(config: FullConfig) {
   assertResolvedPlaywrightTimeouts(config)
+  // The shared API test server binds [::1] on a random port. Playwright loads every spec in this
+  // process, so one spec importing it can shadow the IPv4-only worker port from Chromium (#5846).
+  if (isApiTestServerStarted()) {
+    throw new Error(
+      'A Playwright spec imports backend/test-helpers/api/server.mts, which binds a [::1] listener in the runner. Import service-level helpers instead.',
+    )
+  }
   // The runner may use NODE_ENV=production alongside the standalone web build. Its direct database
   // calls are test fixtures and should use the query guard's test exemption.
   process.env.NODE_ENV = 'test'

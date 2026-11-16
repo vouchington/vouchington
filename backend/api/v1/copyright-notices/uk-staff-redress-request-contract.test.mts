@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import {
   approveJurisdictionPolicy,
-  createTerritorialActors,
   seedDeterminedTerritorialNotice,
 } from '@voucha/test-helpers/services/copyright-notices/territorial-routes'
+import { createTerritorialActors } from '@voucha/test-helpers/services/copyright-notices/territorial-actors'
 
 // A caller the handler turns away answers with a bare status, never a schema diagnostic.
 const SCHEMA_DIAGNOSTIC = /schema|must be|required|invalid/i
