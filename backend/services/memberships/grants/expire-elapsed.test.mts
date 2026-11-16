@@ -207,7 +207,7 @@ describe('expireElapsedMembershipsForUsers', () => {
     })
     await updateTestMembershipExpiresAt(membership.id, new Date('2020-01-01T00:00:00.000Z'))
 
-    const result = await expireElapsedMembershipsBatch(1_000_000)
+    const result = await expireElapsedMembershipsBatch(1_000_000, null, [member.id])
 
     expect(result.expired).toBeGreaterThanOrEqual(1)
     await expect(getMembershipByUserId(member.id)).resolves.toBeNull()
@@ -231,7 +231,7 @@ describe('expireElapsedMembershipsForUsers', () => {
     await withTestMembershipUserLocked(member.id, async () => {
       const candidates = await getElapsedMembershipUserIdsBatch(1_000_000)
       expect(candidates).not.toContain(member.id)
-      expect((await expireElapsedMembershipsBatch(1)).hasMore).toBe(true)
+      expect((await expireElapsedMembershipsBatch(1, null, [member.id])).hasMore).toBe(true)
       await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({
         expired: 0,
         hasMore: true,
