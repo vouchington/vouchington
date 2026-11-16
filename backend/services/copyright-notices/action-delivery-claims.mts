@@ -1,11 +1,20 @@
 import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import type { CopyrightClaimedActionIntent } from './action-delivery-state.mts'
 import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
+import type { CopyrightActionIntentRecord } from './types.mts'
 
 const MAX_ATTEMPTS = 5
 const CLAIM_TIMEOUT_MS = 5 * 60 * 1000
+
+export type CopyrightClaimedActionIntent = Pick<
+  CopyrightActionIntentRecord,
+  'id' | 'action' | 'expected_placement_revision'
+> & {
+  lease_token: string
+  placement_id: string
+  image_id: string
+}
 
 export async function claimCopyrightActionIntent(
   intentId: string,

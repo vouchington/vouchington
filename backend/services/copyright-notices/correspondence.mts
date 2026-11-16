@@ -5,6 +5,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 import type { CopyrightCorrespondenceKind, CopyrightCorrespondenceRecord } from './types.mts'
+import { advanceCopyrightCorrespondenceNotices } from './correspondence-notice-write.mts'
 
 type OutboundCompositionKind = 'deterministic_template' | 'staff' | 'agent'
 
@@ -22,7 +23,7 @@ export async function createDeterministicCopyrightCorrespondenceInTransaction(
   return (await createDeterministicCopyrightCorrespondencesInTransaction([input], transaction))[0]!
 }
 
-/** One statement creates every message; results align with `inputs`. */
+/** Advances the written case clocks before inserting messages; results align with `inputs`. */
 export async function createDeterministicCopyrightCorrespondencesInTransaction(
   inputs: readonly DeterministicCorrespondenceInput[],
   transaction: TransactionQuery,
@@ -30,10 +31,10 @@ export async function createDeterministicCopyrightCorrespondencesInTransaction(
   if (inputs.length === 0) return []
   for (const input of inputs)
     assert(input.bodyText.trim().length > 0, 422, 'Copyright correspondence body is required')
+  await advanceCopyrightCorrespondenceNotices(inputs, transaction)
   const ids = inputs.map(() => uuidv7())
   const { rows } = await transaction<CopyrightCorrespondenceRecord>(
     sql`/* createDeterministicCopyrightCorrespondencesInTransaction */
-      WITH created AS (
       INSERT INTO copyright_notice_correspondence_messages (
         id, copyright_notice_id, copyright_notice_submission_id, direction, correspondence_kind,
         composition_kind, body_ciphertext, drafted_by_id
@@ -53,16 +54,9 @@ export async function createDeterministicCopyrightCorrespondencesInTransaction(
           WHERE submission.id = input.submission_id AND submission.copyright_notice_id = notice.id
         )
       ORDER BY input.notice_id, input.id
-      FOR UPDATE OF notice
       RETURNING id, copyright_notice_id, copyright_notice_submission_id, copyright_notice_email_intake_id,
         direction, correspondence_kind, composition_kind, body_ciphertext, drafted_by_id,
         approved_at, approved_by_id, sent_at
-      ), advanced AS (
-        UPDATE copyright_notices
-        SET last_legal_activity_at = GREATEST(last_legal_activity_at, clock_timestamp())
-        WHERE id IN (SELECT copyright_notice_id FROM created)
-      )
-      SELECT * FROM created
     `,
   )
   const byId = new Map(rows.map(row => [row.id, row]))
@@ -142,6 +136,7 @@ async function insertOutboundCopyrightCorrespondence(
   input: Parameters<typeof createOutboundCopyrightCorrespondence>[0],
   transaction: TransactionQuery,
 ): Promise<CopyrightCorrespondenceRecord> {
+  await advanceCopyrightCorrespondenceNotices([input], transaction)
   const id = input.id ?? uuidv7()
   const { rows } =
     await transaction<CopyrightCorrespondenceRecord>(sql`/* createOutboundCopyrightCorrespondence */

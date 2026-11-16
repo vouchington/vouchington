@@ -5,7 +5,6 @@ import {
   type CopyrightSweepIdPage,
   type CopyrightSweepPageOptions,
 } from './sweep-id-pages.mts'
-import type { CopyrightActionIntentRecord } from './types.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 export {
   completeCopyrightActionIntentInTransaction,
@@ -19,16 +18,8 @@ export { failCopyrightActionIntent } from './action-delivery-completion.mts'
 export {
   claimCopyrightActionIntent,
   renewCopyrightActionIntentLease,
+  type CopyrightClaimedActionIntent,
 } from './action-delivery-claims.mts'
-
-export type CopyrightClaimedActionIntent = Pick<
-  CopyrightActionIntentRecord,
-  'id' | 'action' | 'expected_placement_revision'
-> & {
-  lease_token: string
-  placement_id: string
-  image_id: string
-}
 
 /** Pages the action intents that are due for delivery or whose claim lease expired at `now`. */
 export function searchRecoverableCopyrightActionIntentIds(
