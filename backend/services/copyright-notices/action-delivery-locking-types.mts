@@ -7,6 +7,7 @@ export type LockedCopyrightActionDelivery = {
   expected_placement_revision: number
   action: 'withhold' | 'restore'
   copyright_notice_deadline_id: string | null
+  copyright_notice_submission_id: string | null
   restriction_lifted_at: Date | null
   human_reviewed_at: Date | null
   human_review_action: 'confirm' | 'reverse' | null
@@ -15,6 +16,7 @@ export type LockedCopyrightActionDelivery = {
   reversal_by_appeal: boolean
   reversal_by_administrator_lift: boolean
   reversal_by_complaint: boolean
+  filing_release_authorized: boolean
   hold_resolution_authorized: boolean
   earliest_restoration_at: Date | null
   resolved_at: Date | null

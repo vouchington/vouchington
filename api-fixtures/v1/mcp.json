@@ -43190,6 +43190,9 @@
                         "items": {
                           "additionalProperties": false,
                           "properties": {
+                            "copyright_notice_submission_id": {
+                              "$ref": "#/$defs/S1"
+                            },
                             "id": {
                               "type": "string"
                             },
@@ -43204,7 +43207,13 @@
                               "type": "string"
                             }
                           },
-                          "required": ["id", "imposed_at", "status", "target_id"],
+                          "required": [
+                            "copyright_notice_submission_id",
+                            "id",
+                            "imposed_at",
+                            "status",
+                            "target_id"
+                          ],
                           "type": "object"
                         },
                         "type": "array"
@@ -45146,7 +45155,10 @@
                   "additionalProperties": false,
                   "properties": {
                     "authorizing_assessment_id": {
-                      "type": "string"
+                      "$ref": "#/$defs/S1"
+                    },
+                    "copyright_notice_submission_id": {
+                      "$ref": "#/$defs/S1"
                     },
                     "copyright_notice_target_id": {
                       "type": "string"
@@ -45191,6 +45203,7 @@
                   },
                   "required": [
                     "authorizing_assessment_id",
+                    "copyright_notice_submission_id",
                     "copyright_notice_target_id",
                     "human_review_action",
                     "human_reviewed_at",

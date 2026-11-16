@@ -235,7 +235,12 @@ describe('copyright guest capabilities', () => {
     })
     const heldAggregate = await getCopyrightNoticePrivateAggregate(held.notice.id)
     const otherAggregate = await getCopyrightNoticePrivateAggregate(other.notice.id)
-    expect(heldAggregate?.restrictions).toEqual([])
+    expect(heldAggregate?.restrictions).toHaveLength(1)
+    expect(heldAggregate?.restrictions[0]).toMatchObject({
+      authorizing_assessment_id: null,
+      copyright_notice_submission_id: court.id,
+      lifted_at: null,
+    })
     expect(otherAggregate?.submissions).toHaveLength(1)
     expect(
       heldAggregate?.lifecycleEvents.find(

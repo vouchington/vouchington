@@ -3,10 +3,7 @@ import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mt
 import { listNotifications } from '@services/notifications'
 import { deliverCopyrightInAppNotification } from './delivery-transport.mts'
 import { describe, expect, it } from 'vitest'
-import { beginTransaction, createTestUser } from '@voucha/test-helpers'
-import { getTestPostgresBackendProcessId } from '@voucha/test-helpers/postgres-lock-wait'
-import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
-import { createCopyrightClaimantDecisionNoticeInTransaction } from './claimant-decision-notices.mts'
+import { createTestUser } from '@voucha/test-helpers'
 import {
   createClearScreenedForm,
   createGuestCopyrightForm,
@@ -18,6 +15,9 @@ import {
   readTestCopyrightStatementIntents,
   replayTestCopyrightClaimantDecision,
 } from '@voucha/test-helpers/copyright-statement-notices'
+import { interceptPostgresTransactionsForTest } from '@voucha/test-helpers/injected-postgres-transactions'
+import type { QueryExecutor } from '@data-stores/psql'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { reviewCopyrightFormIntake } from './form-reviews.mts'
 import { recoverRejectedCopyrightFormReviewEffect } from './form-reviews-recovery.mts'
 
@@ -142,34 +142,82 @@ describe('claimant copyright decision notices', () => {
       'A person made this decision',
     )
   })
-  it('reads the decision flags after the notice lock, so a waiting reversal sees the committed rejection', async () => {
+  it('recovers an in-flight real rejection without sending a contradictory reversal or duplicate decision', async () => {
     const notice = await createSignedInCopyrightForm()
     const caseId = notice.intake.copyright_notice_id
-    await using holder = await beginTransaction()
-    const holderProcessId = await getTestPostgresBackendProcessId(holder)
-    await createCopyrightClaimantDecisionNoticeInTransaction(
-      { noticeId: caseId, event: 'not_accepted' },
-      holder,
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const assessed = Promise.withResolvers<void>()
+    const resumeRejection = Promise.withResolvers<void>()
+    const recoveryStarted = Promise.withResolvers<void>()
+    const pending: Promise<unknown>[] = []
+    const reset = interceptPostgresTransactionsForTest(
+      transaction =>
+        new Proxy(transaction, {
+          async apply(target, thisArgument, args: Parameters<QueryExecutor>) {
+            const [statement, parameters] = args
+            const text = typeof statement === 'string' ? statement : statement.text
+            const values = typeof statement === 'string' ? (parameters ?? []) : statement.values
+            if (
+              text.includes('recoverRejectedCopyrightFormReviewEffect:lock') &&
+              values.includes(`copyright-form-review:${notice.intake.id}`)
+            )
+              recoveryStarted.resolve()
+            const result = await Reflect.apply(target, thisArgument, args)
+            if (
+              text.includes('appendCopyrightSubmissionAssessment:currentResult') &&
+              values.includes(notice.intake.copyright_notice_submission_id)
+            ) {
+              assessed.resolve()
+              await resumeRejection.promise
+            }
+            return result
+          },
+        }),
     )
-    await withTestOwnedPostgresWait(
-      {
-        holderProcessId,
-        pool: 'write',
-        lock: { kind: 'transaction' },
-        queryMarker: 'createCopyrightClaimantDecisionNoticeInTransaction:recipient',
-        releaseHolder: () => holder[Symbol.asyncDispose](),
-      },
-      async waitForLock => {
-        const reversal = replayTestCopyrightClaimantDecision(caseId, 'reversed')
-        await waitForLock(reversal)
-        await holder.commit()
-        await reversal
-      },
+    try {
+      const rejection = reviewCopyrightFormIntake({
+        intakeId: notice.intake.id,
+        currentUser: moderator,
+        is_accepted: false,
+        rationale: 'Incomplete notice.',
+      })
+      pending.push(rejection)
+      await Promise.race([
+        assessed.promise,
+        rejection.then(() => {
+          throw new Error('Rejection exited before its assessment was written')
+        }),
+      ])
+      const recovery = recoverRejectedCopyrightFormReviewEffect(notice.intake.id)
+      pending.push(recovery)
+      await Promise.race([
+        recoveryStarted.promise,
+        recovery.then(() => {
+          throw new Error('Recovery exited before its owned review query')
+        }),
+      ])
+      resumeRejection.resolve()
+      await Promise.all([rejection, recovery])
+    } finally {
+      resumeRejection.resolve()
+      reset()
+      await Promise.allSettled(pending)
+    }
+    await recoverRejectedCopyrightFormReviewEffect(notice.intake.id)
+    const aggregate = await getCopyrightNoticePrivateAggregate(caseId)
+    expect(aggregate?.assessments).toContainEqual(
+      expect.objectContaining({
+        is_substantially_compliant: false,
+        assessed_by_id: moderator.id,
+      }),
     )
     const decisions = (await readTestCopyrightStatementIntents(caseId)).filter(
       row => row.delivery_kind === 'claimant_decision_notice',
     )
     expect(decisions).toHaveLength(2)
-    expect(decisions.filter(row => row.text?.includes('We could not accept'))).toHaveLength(2)
+    expect(new Set(decisions.map(row => row.channel))).toEqual(new Set(['in_app', 'email']))
+    expect(decisions.every(row => row.text?.includes('We could not accept'))).toBe(true)
+    expect(decisions.some(row => row.text?.includes('reversed'))).toBe(false)
+    expect(await countCopyrightActiveRestrictionsForNotice(caseId)).toBe(0)
   })
 })

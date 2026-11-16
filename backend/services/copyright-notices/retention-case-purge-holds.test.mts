@@ -1,3 +1,8 @@
+import {
+  raceCopyrightPurgeWithCorrespondence,
+  readCopyrightPurgeAssessmentPointers,
+} from '@voucha/test-helpers/copyright-purge-writer-race'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
@@ -96,6 +101,41 @@ describe('copyright case purge holds placed mid-purge', () => {
     expect(await Promise.all(entry.evidenceKeys.map(bucket.countVersions))).toEqual(
       versionsBeforeHold,
     )
+    expect(await readCopyrightCasePurgeFixture(entry.noticeId)).toMatchObject({ live: true })
+  }, 30_000)
+
+  // no-mistakes-timeout-reason: real email case traverses bounded purge proof and evidence pages
+  it('commits a pointer-cut page and a concurrent case correspondence without a generation deadlock', async () => {
+    await setPageSize(100)
+    const entry = await createRetentionEmailCase()
+    await settleCopyrightCasePurgeFixtureActions(entry.noticeId)
+    await publishCopyrightCasePurgeCoverage(entry.noticeId)
+    let data = firstPage(entry.noticeId)
+    for (
+      let step = 0;
+      step < 1_000 && !(data.phase === 'pointers' && data.phaseIndex === 1);
+      step += 1
+    ) {
+      const page = await runCopyrightCasePurgePage(data, PURGE_NOW)
+      expect(page.hasMore).toBe(true)
+      data = page.data
+    }
+    expect(data).toMatchObject({ phase: 'pointers', phaseIndex: 1 })
+    const { page, message } = await raceCopyrightPurgeWithCorrespondence(entry.noticeId, () =>
+      runCopyrightCasePurgePage(data, PURGE_NOW),
+    )
+    expect(page.hasMore).toBe(true)
+    expect(page.data.phaseIndex).toBe(2)
+    const aggregate = await getCopyrightNoticePrivateAggregate(entry.noticeId)
+    expect(aggregate?.correspondence).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: message.id, body_ciphertext: message.body_ciphertext }),
+      ]),
+    )
+    expect(await readCopyrightPurgeAssessmentPointers(entry.noticeId)).toEqual({
+      total: 1,
+      remaining: 0,
+    })
     expect(await readCopyrightCasePurgeFixture(entry.noticeId)).toMatchObject({ live: true })
   }, 30_000)
 })

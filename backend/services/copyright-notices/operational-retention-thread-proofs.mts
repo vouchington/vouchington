@@ -27,16 +27,17 @@ export type ThreadProofCursor = {
   cursor_blocker_generation: string | null
 }
 
-/** Both paged proofs must match current generations before any irreversible delete. */
-export async function checkCopyrightThreadProofPage(
+export type ThreadPageProof = { legal: LegalPage; blocker: BlockerPage | null }
+
+/** Calculate one bounded proof page without advancing its persisted cursor. */
+export async function readCopyrightThreadProofPage(
   transaction: TransactionQuery,
   noticeId: string,
   now: Date,
   cutoff: Date,
   batchSize: number,
-  upperBound: string,
   cursor: ThreadProofCursor,
-): Promise<{ legal: LegalPage; blocker: BlockerPage } | null> {
+): Promise<ThreadPageProof> {
   const legal = await checkCopyrightThreadLegalPage(transaction, noticeId, cutoff, batchSize, {
     phase: cursor.cursor_legal_phase,
     childId: cursor.cursor_legal_child_id,
@@ -44,12 +45,7 @@ export async function checkCopyrightThreadProofPage(
     partyGeneration: cursor.cursor_case_party_generation,
     latestReleaseAt: cursor.cursor_legal_latest_release_at,
   })
-  if (legal.blocked) {
-    await advanceCopyrightThreadCaseCursor(transaction, noticeId, upperBound)
-    return null
-  }
-  await saveCopyrightThreadLegalProof(transaction, legal, upperBound)
-  if (legal.phase !== 'done') return null
+  if (legal.blocked || legal.phase !== 'done') return { legal, blocker: null }
 
   const blocker = await checkCopyrightThreadBlockerPage(transaction, noticeId, now, batchSize, {
     phase: cursor.cursor_blocker_phase,
@@ -57,10 +53,25 @@ export async function checkCopyrightThreadProofPage(
     assessmentId: cursor.cursor_blocker_assessment_identity_id,
     generation: cursor.cursor_blocker_generation,
   })
-  if (blocker.blocked) {
+  return { legal, blocker }
+}
+
+/** Persist the original blocked, partial, or complete proof once, after writer ordering. */
+export async function saveCopyrightThreadPageProof(
+  transaction: TransactionQuery,
+  noticeId: string,
+  upperBound: string,
+  proof: ThreadPageProof,
+): Promise<void> {
+  if (proof.legal.blocked) {
     await advanceCopyrightThreadCaseCursor(transaction, noticeId, upperBound)
-    return null
+    return
   }
-  await saveCopyrightThreadBlockerProof(transaction, blocker, upperBound)
-  return blocker.done ? { legal, blocker } : null
+  await saveCopyrightThreadLegalProof(transaction, proof.legal, upperBound)
+  if (!proof.blocker) return
+  if (proof.blocker.blocked) {
+    await advanceCopyrightThreadCaseCursor(transaction, noticeId, upperBound)
+    return
+  }
+  await saveCopyrightThreadBlockerProof(transaction, proof.blocker, upperBound)
 }

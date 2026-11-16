@@ -1,7 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { copyrightReceiptText } from './statement-of-reasons-wording.mts'
 import { createCopyrightDeliveryIntents } from './delivery-intent-batch.mts'
-import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
+import { createDeterministicCopyrightCorrespondencesWithLockedGenerations } from './correspondence.mts'
 
 /**
  * The immutable receipt body must exist before its email delivery obligation can reference it.
@@ -16,15 +16,19 @@ export async function createCopyrightFormReceiptInTransaction(
   },
   transaction: TransactionQuery,
 ): Promise<void> {
-  const correspondence = await createDeterministicCopyrightCorrespondenceInTransaction(
-    {
-      noticeId: input.noticeId,
-      submissionId: input.submissionId,
-      correspondenceKind: 'receipt',
-      bodyText: copyrightReceiptText(input.noticeId),
-    },
-    transaction,
-  )
+  const correspondence = (
+    await createDeterministicCopyrightCorrespondencesWithLockedGenerations(
+      [
+        {
+          noticeId: input.noticeId,
+          submissionId: input.submissionId,
+          correspondenceKind: 'receipt',
+          bodyText: copyrightReceiptText(input.noticeId),
+        },
+      ],
+      transaction,
+    )
+  )[0]!
   await createCopyrightDeliveryIntents(
     [
       {

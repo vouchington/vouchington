@@ -1,3 +1,4 @@
+import { courtFilingReleaseSourceSql } from './court-filing-release-sql.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { LockedCopyrightActionDelivery } from './action-delivery-locking-types.mts'
@@ -19,10 +20,12 @@ export function copyrightActionDeliveryFacts() {
   return sql`/* copyrightActionDeliveryFacts */
     SELECT intent.lease_token, target.copyright_notice_id, intent.copyright_restriction_id, target.placement_id,
     target_image.image_id, intent.expected_placement_revision, intent.action,
-    intent.copyright_notice_deadline_id,
+    intent.copyright_notice_deadline_id, restriction.copyright_notice_submission_id,
     restriction.lifted_at AS restriction_lifted_at, restriction.human_reviewed_at,
     restriction.human_review_action,
     `
+    .append(courtFilingReleaseSourceSql())
+    .append(sql` AS filing_release_authorized, `)
     .append(anyReversalSourceSql())
     .append(sql` AS reversal_authorized, `)
     .append(reverseReviewSourceSql())
@@ -46,20 +49,35 @@ export function copyrightActionDeliveryFacts() {
       ON target_image.copyright_notice_target_id = target.id`)
 }
 
-export async function lockCopyrightActionDeadline(
+/** Completion validates the lease with its write, without locking its earlier legal reads. */
+export async function readCopyrightActionDeliveryForCompletion(
+  intentId: string,
+  leaseToken: string,
+  query: TransactionQuery,
+): Promise<LockedCopyrightActionDelivery | null> {
+  const statement = copyrightActionDeliveryFacts()
+  statement.append(sql`/* readCopyrightActionDeliveryForCompletion */
+    WHERE intent.id = ${intentId} AND intent.state = 'claimed'
+      AND intent.lease_token = ${leaseToken} AND intent.lease_expires_at > clock_timestamp()`)
+  const { rows } = await query<CopyrightActionFacts>(statement)
+  const facts = rows[0]
+  if (!facts) return null
+  return readCopyrightActionDeadline(facts, query)
+}
+
+export async function readCopyrightActionDeadline(
   facts: CopyrightActionFacts,
   query: TransactionQuery,
 ): Promise<LockedCopyrightActionDelivery | null> {
   if (!facts.copyright_notice_deadline_id) {
     return { ...facts, earliest_restoration_at: null, resolved_at: null, cancelled_at: null }
   }
-  const { rows } = await query<
+  const { rows: deadlines } = await query<
     Pick<LockedCopyrightActionDelivery, 'earliest_restoration_at' | 'resolved_at' | 'cancelled_at'>
-  >(sql`/* lockCopyrightActionDelivery:deadline */
+  >(sql`/* readCopyrightActionDeadline */
     SELECT earliest_restoration_at, resolved_at, cancelled_at
     FROM copyright_notice_deadlines
     WHERE id = ${facts.copyright_notice_deadline_id}
-    FOR UPDATE
   `)
-  return rows[0] ? { ...facts, ...rows[0] } : null
+  return deadlines[0] ? { ...facts, ...deadlines[0] } : null
 }

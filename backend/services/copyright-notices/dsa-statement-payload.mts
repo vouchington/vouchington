@@ -60,7 +60,7 @@ export async function buildCopyrightDsaStatementPayload(
     JOIN copyright_notice_target_images target_image
       ON target_image.copyright_notice_target_id = restriction.copyright_notice_target_id
     LEFT JOIN images image ON image.id = target_image.image_id
-    WHERE restriction.id = ${restrictionId}
+    WHERE restriction.id = ${restrictionId} AND restriction.authorizing_assessment_id IS NOT NULL
   `)
   const { rows } = await transaction<RestrictionFacts>(statement)
   const row = rows[0]

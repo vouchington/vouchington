@@ -1,3 +1,4 @@
+import { interceptPostgresTransactionQueriesForTest } from '@voucha/test-helpers/injected-transaction-queries'
 import { randomUUID } from 'node:crypto'
 import { beginTransaction } from '@voucha/test-helpers'
 import { COPYRIGHT_EMAIL_THREAD_CHANGED } from '@modules/on-error/error-codes'
@@ -52,7 +53,7 @@ describe('copyright email notice link write order', () => {
     expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([])
   })
 
-  it('commits two distinct thread links after both have read the same live notice', async () => {
+  it('commits two distinct thread links contending for the same case generation', async () => {
     const notice = await createRetentionMinimalCase()
     const first = await createRetentionParsedEmail(`link-first-${randomUUID()}`)
     const second = await createRetentionParsedEmail(`link-second-${randomUUID()}`)
@@ -70,28 +71,33 @@ describe('copyright email notice link write order', () => {
       await transaction.commit()
       return linked
     }
-    const { result: outcomes, queries } = await observeTestPostgresClientQueries(
+    const restore = interceptPostgresTransactionQueriesForTest(
+      (text, values) =>
+        prechecked < 2 &&
+        text.includes('lockCopyrightActionGenerationForWrite') &&
+        values.includes(notice.noticeId),
       async () => {
-        const firstAttempt = link(first.id)
-        const secondAttempt = link(second.id)
-        void firstAttempt.catch(bothPrechecked.reject)
-        void secondAttempt.catch(bothPrechecked.reject)
-        try {
-          await bothPrechecked.promise
-          release.resolve()
-          return await Promise.allSettled([firstAttempt, secondAttempt])
-        } finally {
-          release.resolve()
-          await Promise.allSettled([firstAttempt, secondAttempt])
-        }
-      },
-      async query => {
-        if (!query.text.includes('linkCopyrightEmailIntakeToNotice:retired')) return
         prechecked += 1
         if (prechecked === 2) bothPrechecked.resolve()
         await release.promise
       },
     )
+    onTestFinished(restore)
+    const { result: outcomes, queries } = await observeTestPostgresClientQueries(async () => {
+      const firstAttempt = link(first.id)
+      const secondAttempt = link(second.id)
+      void firstAttempt.catch(bothPrechecked.reject)
+      void secondAttempt.catch(bothPrechecked.reject)
+      try {
+        await bothPrechecked.promise
+        release.resolve()
+        return await Promise.allSettled([firstAttempt, secondAttempt])
+      } finally {
+        release.resolve()
+        await Promise.allSettled([firstAttempt, secondAttempt])
+      }
+    })
+    restore()
     expect(prechecked).toBe(2)
     expect(
       queries.filter(query => query.text.includes('linkCopyrightEmailIntakeToNotice:retired')),

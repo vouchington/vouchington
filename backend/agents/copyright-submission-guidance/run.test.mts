@@ -11,14 +11,12 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 import { createSignedInCopyrightForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
-import { createTestCopyrightStaff } from '@voucha/test-helpers/services/copyright-notices/guest-capability'
+import { insertEncryptedCopyrightHoldSubmission } from '@voucha/test-helpers/data-stores/psql/copyright-hold-submission'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { readTestCopyrightSubmissionGuidanceRecords } from '@voucha/test-helpers/copyright-submission-guidance-records'
 import {
-  appendCopyrightGuestFiling,
   createCopyrightCounterNotice,
   createCopyrightFormIntake,
-  issueCopyrightGuestCapability,
 } from '@services/copyright-notices'
 import {
   COPYRIGHT_COUNTER_NOTICE_GUIDANCE_ELEMENTS,
@@ -142,38 +140,17 @@ describe('copyright submission guidance agent', () => {
   it('strips email and phone variations before the model sees a hold and hashes identical residue equally', async () => {
     const { intake } = await createSignedInCopyrightForm()
     const noticeId = intake.copyright_notice_id
-    const staff = await createTestCopyrightStaff()
-    const now = new Date()
-    const [firstCapability, secondCapability] = await Promise.all([
-      issueCopyrightGuestCapability({
-        issuedAt: new Date(),
-        currentUser: staff,
-        noticeId,
-        expiresAt: new Date(now.getTime() + 60_000),
-      }),
-      issueCopyrightGuestCapability({
-        issuedAt: new Date(),
-        currentUser: staff,
-        noticeId,
-        expiresAt: new Date(now.getTime() + 60_000),
-      }),
-    ])
     const statement = (email: string) =>
       `Court case 1:26-cv-01234 filed 2026-07-02. Contact ${email} and +1 (555) 010-0100. Lives at 12 Elm Street, Springfield, IL 62701 (DOB 04/15/1980). 17 U.S.C. § 512(g).`
-    const [first, second] = await Promise.all([
-      appendCopyrightGuestFiling({
-        noticeId,
-        token: firstCapability.token,
-        now,
-        kind: 'court_or_ccb_hold',
-        statement: statement('alpha@example.test'),
+    const now = new Date()
+    const [firstId, secondId] = await Promise.all([
+      insertEncryptedCopyrightHoldSubmission(noticeId, {
+        statement: { summary: statement('alpha@example.test') },
+        receivedAt: now,
       }),
-      appendCopyrightGuestFiling({
-        noticeId,
-        token: secondCapability.token,
-        now,
-        kind: 'court_or_ccb_hold',
-        statement: statement('beta@example.test'),
+      insertEncryptedCopyrightHoldSubmission(noticeId, {
+        statement: { summary: statement('beta@example.test') },
+        receivedAt: now,
       }),
     ])
     const before = await getCopyrightNoticePrivateAggregate(noticeId)
@@ -182,16 +159,16 @@ describe('copyright submission guidance agent', () => {
     )
     await expect(
       runCopyrightSubmissionGuidanceAgent(
-        first.id,
-        (await admitCopyrightSubmissionGuidanceRun(first.id))!,
+        firstId,
+        (await admitCopyrightSubmissionGuidanceRun(firstId))!,
         TEST_MODEL_SELECTION,
         callModel,
       ),
     ).resolves.toBe('court_or_ccb_hold')
     await expect(
       runCopyrightSubmissionGuidanceAgent(
-        second.id,
-        (await admitCopyrightSubmissionGuidanceRun(second.id))!,
+        secondId,
+        (await admitCopyrightSubmissionGuidanceRun(secondId))!,
         TEST_MODEL_SELECTION,
         callModel,
       ),
@@ -209,8 +186,8 @@ describe('copyright submission guidance agent', () => {
       expect(input).toContain('1:26-cv-01234')
       expect(input).toContain('2026-07-02')
     }
-    const [firstRow] = await readTestCopyrightSubmissionGuidanceRecords(first.id)
-    const [secondRow] = await readTestCopyrightSubmissionGuidanceRecords(second.id)
+    const [firstRow] = await readTestCopyrightSubmissionGuidanceRecords(firstId)
+    const [secondRow] = await readTestCopyrightSubmissionGuidanceRecords(secondId)
     expect(firstRow?.inputSha256).toBe(secondRow?.inputSha256)
     expect(firstRow?.guidance).toEqual(holdGuidance)
     expect(secondRow?.guidance).toEqual(holdGuidance)

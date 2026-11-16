@@ -4,12 +4,12 @@ import sql from 'sql-template-strings'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import { invalidateCopyrightLegalRemovalSurfaces } from './action-delivery-cache.mts'
 import { denyRestoreThenComplete } from './action-delivery-denial.mts'
+import { readCopyrightActionDeliveryForCompletion } from './action-delivery-facts.mts'
 import {
   completeCopyrightActionIntentInTransaction,
   hasCopyrightActionBlocker,
   hasOtherActiveCopyrightRestrictions,
   insertCopyrightActionLifecycleEvent,
-  lockCopyrightActionDelivery,
 } from './action-delivery-state.mts'
 import { syncCopyrightIncidentsAfterStatutoryRestoreInTransaction } from './statutory-restoration-incidents.mts'
 
@@ -24,12 +24,12 @@ export async function finalizeCopyrightActionAfterDelivery(
   action: 'withhold' | 'restore',
   now: Date,
   deliveredTuple: { placementId: string; revision: number; imageId: string },
-): Promise<boolean | 'denied'> {
+): Promise<boolean | 'denied' | 'not_claimed'> {
   await using transaction = await beginTransaction()
-  const legal = await lockCopyrightActionDelivery(intentId, leaseToken, transaction)
+  const legal = await readCopyrightActionDeliveryForCompletion(intentId, leaseToken, transaction)
   if (!legal) {
     await transaction.commit()
-    return false
+    return 'not_claimed'
   }
   const current = await getImagePlacementForCopyright(legal.placement_id, {
     query: transaction,
@@ -56,7 +56,7 @@ export async function finalizeCopyrightActionAfterDelivery(
       completedAt: now,
       failureMessage,
       transaction,
-    }).then(result => (result === 'completed' ? ('denied' as const) : false))
+    }).then(result => (result === 'completed' ? ('denied' as const) : ('not_claimed' as const)))
   if (
     !current ||
     current.deleted ||
@@ -103,7 +103,17 @@ async function completeCopyrightActionAndInvalidate(input: {
   legal: Parameters<typeof hasCopyrightActionBlocker>[0]
   transaction: Awaited<ReturnType<typeof beginTransaction>>
 }): Promise<void> {
+  // Own the trigger-written generation before the notice clock and terminal work mutation.
+  // A lost lease throws from completion,
+  // and the owning transaction discards the tentative lifecycle event with its clock writes.
   await runSequentially([
+    () =>
+      insertCopyrightActionLifecycleEvent(
+        input.legal,
+        input.intentId,
+        input.action === 'withhold' ? 'placement_withheld' : 'placement_restored',
+        input.transaction,
+      ),
     () =>
       completeCopyrightActionIntentInTransaction({
         intentId: input.intentId,
@@ -113,13 +123,6 @@ async function completeCopyrightActionAndInvalidate(input: {
         query: input.transaction,
       }),
     () => syncCopyrightIncidentsAfterStatutoryRestoreInTransaction(input.legal, input.transaction),
-    () =>
-      insertCopyrightActionLifecycleEvent(
-        input.legal,
-        input.intentId,
-        input.action === 'withhold' ? 'placement_withheld' : 'placement_restored',
-        input.transaction,
-      ),
     () =>
       invalidateCopyrightLegalRemovalSurfaces(
         { placement_id: input.legal.placement_id, action: input.action },

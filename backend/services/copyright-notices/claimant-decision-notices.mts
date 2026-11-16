@@ -41,7 +41,7 @@ export async function buildCopyrightClaimantDecisionDelivery(
   input: CopyrightClaimantDecisionNoticeInput,
   transaction: TransactionQuery,
 ): Promise<CopyrightStatementDeliveryInput | null> {
-  const { claimant_user_id } = await lockCopyrightNoticeForClaimantDecision(
+  const { claimant_user_id } = await readCopyrightNoticeForClaimantDecision(
     input.noticeId,
     transaction,
   )
@@ -65,14 +65,14 @@ export async function buildCopyrightClaimantDecisionDelivery(
   )
 }
 
-/** Locks the notice. The decision flags are read after it, in their own statement. */
-export async function lockCopyrightNoticeForClaimantDecision(
+/** Reads the claimant identity; the owning legal write determines decision authority. */
+export async function readCopyrightNoticeForClaimantDecision(
   noticeId: string,
   transaction: TransactionQuery,
 ): Promise<{ claimant_user_id: string | null }> {
   const { rows } = await transaction<{ claimant_user_id: string | null }>(
     sql`/* createCopyrightClaimantDecisionNoticeInTransaction:recipient */
-    SELECT claimant_user_id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
+    SELECT claimant_user_id FROM copyright_notices WHERE id = ${noticeId}
   `,
   )
   assert(rows[0], 404, 'Copyright notice not found')

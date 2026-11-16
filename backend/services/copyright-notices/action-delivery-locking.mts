@@ -1,29 +1,22 @@
+import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { copyrightTargetRestoreIsBlocked } from './court-hold-assessment-gate.mts'
 import type { CopyrightActionDeliveryOutcome } from './action-delivery-state-types.mts'
 import type { LockedCopyrightActionDelivery } from './action-delivery-locking-types.mts'
 import { removeCopyrightStaydownEntryInTransaction } from './staydown-registration.mts'
-import {
-  copyrightActionDeliveryFacts,
-  lockCopyrightActionDeadline,
-  type CopyrightActionFacts,
-} from './action-delivery-facts.mts'
+/** A conditional terminal write lost its existing worker ownership. */
+export class CopyrightActionLeaseExpiredError extends Error {
+  readonly #query: TransactionQuery
 
-export type { LockedCopyrightActionDelivery }
-export async function lockCopyrightActionDelivery(
-  intentId: string,
-  leaseToken: string,
-  query: TransactionQuery,
-): Promise<LockedCopyrightActionDelivery | null> {
-  const statement = copyrightActionDeliveryFacts()
-  statement.append(sql`/* lockCopyrightActionDelivery */
-    WHERE intent.id = ${intentId} AND intent.state = 'claimed' AND intent.lease_token = ${leaseToken} AND intent.lease_expires_at > clock_timestamp()
-    FOR UPDATE OF intent`)
-  const { rows } = await query<CopyrightActionFacts>(statement)
-  const locked = rows[0]
-  if (!locked) return null
-  return lockCopyrightActionDeadline(locked, query)
+  constructor(query: TransactionQuery) {
+    super('Copyright action lease expired before completion')
+    this.#query = query
+  }
+
+  belongsTo(query: TransactionQuery | undefined): boolean {
+    return this.#query === query
+  }
 }
 
 export async function hasCopyrightActionBlocker(
@@ -35,7 +28,8 @@ export async function hasCopyrightActionBlocker(
   const reversalAuthorized =
     intent.human_review_action === 'reverse' ||
     intent.reversal_authorized ||
-    intent.hold_resolution_authorized
+    intent.hold_resolution_authorized ||
+    intent.filing_release_authorized
   if (intent.restriction_lifted_at === null && !reversalAuthorized) {
     if (
       !intent.human_reviewed_at ||
@@ -91,6 +85,7 @@ export async function insertCopyrightActionLifecycleEvent(
   eventType: string,
   query: TransactionQuery,
 ): Promise<void> {
+  await lockCopyrightActionGenerationForWrite(legal.copyright_notice_id, query)
   await query(sql`/* processCopyrightActionIntent:event */
     INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, copyright_notice_action_intent_id)
     VALUES (${legal.copyright_notice_id}, ${eventType}, ${intentId})
@@ -112,5 +107,5 @@ export async function completeCopyrightActionIntentInTransaction(input: {
       available_at = NULL
     WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken} AND lease_expires_at > clock_timestamp()
   `)
-  if (rowCount !== 1) throw new Error('Copyright action lease expired before completion')
+  if (rowCount !== 1) throw new CopyrightActionLeaseExpiredError(input.query)
 }

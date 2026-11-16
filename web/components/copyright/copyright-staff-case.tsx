@@ -130,7 +130,13 @@ function CopyrightStaffRestrictionReviews({
   submit,
 }: ReviewProps) {
   return notice.restrictions.map(restriction => {
-    if (restriction.status !== 'pending_review') return null
+    const isFilingRestriction = restriction.copyright_notice_submission_id !== null
+    if (
+      restriction.status !== 'pending_review' &&
+      !(isFilingRestriction && restriction.status === 'confirmed')
+    ) {
+      return null
+    }
     const target = notice.targets.find(item => item.id === restriction.target_id)
     return (
       <section
@@ -150,19 +156,27 @@ function CopyrightStaffRestrictionReviews({
             'Hosted material reference unavailable.'
           )}
         </p>
-        <ReviewButtons
-          pending={pending}
-          canSubmit={canSubmit}
-          submit={submit}
-          approve={() =>
-            reviewCopyrightRestriction(notice.id, restriction.id, 'confirm', rationale)
-          }
-          reject={() => reviewCopyrightRestriction(notice.id, restriction.id, 'reverse', rationale)}
-          heading='Pending restriction review'
-          description='Affected hosted material'
-          approveLabel='Confirm restriction'
-          rejectLabel='Reverse restriction'
-        />
+        {isFilingRestriction ? (
+          <p className='text-sm'>
+            Material withheld for a court or Copyright Claims Board filing. See the filing below.
+          </p>
+        ) : (
+          <ReviewButtons
+            pending={pending}
+            canSubmit={canSubmit}
+            submit={submit}
+            approve={() =>
+              reviewCopyrightRestriction(notice.id, restriction.id, 'confirm', rationale)
+            }
+            reject={() =>
+              reviewCopyrightRestriction(notice.id, restriction.id, 'reverse', rationale)
+            }
+            heading='Pending restriction review'
+            description='Affected hosted material'
+            approveLabel='Confirm restriction'
+            rejectLabel='Reverse restriction'
+          />
+        )}
       </section>
     )
   })

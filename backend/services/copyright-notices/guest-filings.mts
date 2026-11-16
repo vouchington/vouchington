@@ -1,3 +1,9 @@
+import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
+import {
+  enqueueBulkApplyCopyrightActions,
+  enqueueBulkApplyMediaDeliveryRegistryRecords,
+} from '@queues/notifications/enqueues'
+import { applyCopyrightCourtFiling } from './guest-filing-denial.mts'
 import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -7,7 +13,6 @@ import { recordClaimantMisuseEvent } from './claimant-misuse-ledger.mts'
 import { copyrightGuestCapabilityPurpose } from './guest-capabilities.mts'
 import { revokeCopyrightGuestCapabilitiesForWithdrawal } from './guest-capability-withdrawal.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
-import { preemptCopyrightRestorations } from './restore-preemption.mts'
 
 const guestFilingKinds = ['supplement', 'withdrawal', 'court_or_ccb_hold'] as const
 type GuestFilingKind = (typeof guestFilingKinds)[number]
@@ -16,7 +21,7 @@ function guestFilingEvent(kind: GuestFilingKind): string {
   return `${kind}_received`
 }
 
-async function lockGuestCapability(
+async function readGuestCapability(
   transaction: OwnedTransaction,
   input: { noticeId: string; token: string; now: Date },
 ): Promise<string> {
@@ -29,7 +34,6 @@ async function lockGuestCapability(
       AND capability.token_hash = ${hashToken(copyrightGuestCapabilityPurpose, input.token)}
       AND capability.revoked_at IS NULL
       AND capability.expires_at > ${input.now}
-    FOR UPDATE OF capability
   `,
   )
   const capability = rows[0]
@@ -65,12 +69,24 @@ export async function appendCopyrightGuestFiling(input: {
       : input.statement
   const submissionId = uuidv7()
   await using transaction = await beginTransaction()
-  const capabilityId = await lockGuestCapability(transaction, input)
+  await lockCopyrightActionGenerationForWrite(input.noticeId, transaction)
+  let withholdIds: string[] = []
+  let denialRecordIds: string[] = []
+  const capabilityId = await readGuestCapability(transaction, input)
   if (input.kind === 'court_or_ccb_hold') await assertNoGuestCourtHold(transaction, capabilityId)
-  // Preempt before the filing writes anything the delivery worker also writes: the worker takes
-  // the work item row, then the case's blocker generation, so this order cannot form a cycle.
-  if (input.kind === 'court_or_ccb_hold')
-    await preemptCopyrightRestorations(input.noticeId, transaction)
+  const lifecycleEvent = sql`/* appendCopyrightGuestFiling:event */
+    INSERT INTO copyright_notice_lifecycle_changes (
+      copyright_notice_id, change_type, copyright_notice_submission_id
+    ) VALUES (${input.noticeId}, ${guestFilingEvent(input.kind)}, ${submissionId})
+  `
+  if (input.kind === 'court_or_ccb_hold') {
+    // The generation row is owned before the real lifecycle clock. The same-case source
+    // FK is checked at commit after the preallocated submission identity has been inserted.
+    await transaction(sql`/* appendCopyrightGuestFiling:deferSource */
+      SET CONSTRAINTS fk_copyright_lifecycle_events__submission_notice DEFERRED
+    `)
+    await transaction(lifecycleEvent)
+  }
   const { rows } = await transaction<{ id: string; kind: GuestFilingKind; received_at: Date }>(
     sql`/* appendCopyrightGuestFiling */
     INSERT INTO copyright_notice_submissions (
@@ -85,16 +101,19 @@ export async function appendCopyrightGuestFiling(input: {
   )
   const submission = rows[0]
   assert(submission, 500, 'Copyright guest filing was not created')
-  await transaction(sql`/* appendCopyrightGuestFiling:event */
-    INSERT INTO copyright_notice_lifecycle_changes (
-      copyright_notice_id, change_type, copyright_notice_submission_id
-    ) VALUES (${input.noticeId}, ${guestFilingEvent(input.kind)}, ${submission.id})
-  `)
+  if (input.kind !== 'court_or_ccb_hold') await transaction(lifecycleEvent)
   if (input.kind === 'court_or_ccb_hold') {
     await transaction(sql`/* appendCopyrightGuestFiling:urgent */
       INSERT INTO copyright_notice_urgent_filings (copyright_notice_submission_id, classified_at)
       VALUES (${submission.id}, ${input.now})
     `)
+    // The filing and its lifecycle are durable together before preemption can commit.
+    ;({ withholdIds, denialRecordIds } = await applyCopyrightCourtFiling(
+      input.noticeId,
+      submission.id,
+      input.now,
+      transaction,
+    ))
   }
   if (input.kind === 'withdrawal') {
     await recordClaimantMisuseEvent(transaction, {
@@ -108,5 +127,7 @@ export async function appendCopyrightGuestFiling(input: {
     })
   }
   await transaction.commit()
+  if (denialRecordIds.length > 0) void enqueueBulkApplyMediaDeliveryRegistryRecords(denialRecordIds)
+  if (withholdIds.length > 0) void enqueueBulkApplyCopyrightActions(withholdIds)
   return submission
 }

@@ -1,16 +1,14 @@
+import type { LockedCopyrightActionDelivery } from './action-delivery-locking-types.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import sql from 'sql-template-strings'
 import { getCopyrightSweepLimits } from './work-limits.mts'
 import {
   copyrightActionDeliveryFacts,
-  lockCopyrightActionDeadline,
+  readCopyrightActionDeadline,
   type CopyrightActionFacts,
 } from './action-delivery-facts.mts'
-import {
-  hasCopyrightActionBlocker,
-  type LockedCopyrightActionDelivery,
-} from './action-delivery-locking.mts'
+import { hasCopyrightActionBlocker } from './action-delivery-locking.mts'
 import { isCurrentPlacementForIntent } from './action-delivery-mutation.mts'
 import { reopenCopyrightRestoreIntentInTransaction } from './action-delivery-state.mts'
 
@@ -45,7 +43,7 @@ export async function replayEligibleCopyrightRestoreIntentsInTransaction(input: 
 }): Promise<string[]> {
   const reopened: string[] = []
   for (const intentId of input.intentIds) {
-    // oxlint-disable-next-line no-await-in-loop -- each original intent is locked, proved and reset under the retained case fence.
+    // oxlint-disable-next-line no-await-in-loop -- each original authority is proved before its conditional reset.
     if (await replayOriginalRestore(intentId, input)) reopened.push(intentId)
   }
   return reopened
@@ -61,7 +59,8 @@ export async function recoverEligibleCopyrightRestoreIntentInTransaction(input: 
   const statement = sql`/* recoverEligibleCopyrightRestoreIntentInTransaction:facts */
     SELECT facts.lease_token, facts.copyright_notice_id, facts.copyright_restriction_id,
       facts.placement_id, facts.image_id, facts.expected_placement_revision, facts.action,
-      facts.copyright_notice_deadline_id, facts.restriction_lifted_at, facts.human_reviewed_at,
+      facts.copyright_notice_deadline_id, facts.copyright_notice_submission_id,
+      facts.filing_release_authorized, facts.restriction_lifted_at, facts.human_reviewed_at,
       facts.human_review_action, facts.reversal_authorized, facts.reversal_by_review,
       facts.reversal_by_appeal, facts.reversal_by_administrator_lift, facts.reversal_by_complaint,
       facts.hold_resolution_authorized,
@@ -84,12 +83,11 @@ async function replayOriginalRestore(
   input: { noticeId: string; now: Date; query: TransactionQuery },
 ): Promise<boolean> {
   const statement = blockedCopyrightRestoreFacts(intentId, input.noticeId).append(sql`
-    /* replayEligibleCopyrightRestoreIntentsInTransaction:lock */
-    FOR UPDATE OF intent, restriction, target`)
+    /* replayEligibleCopyrightRestoreIntentsInTransaction:read */`)
   const { rows } = await input.query<CopyrightActionFacts>(statement)
   const facts = rows[0]
   if (!facts) return false
-  const legal = await lockCopyrightActionDeadline(facts, input.query)
+  const legal = await readCopyrightActionDeadline(facts, input.query)
   return replayOriginalRestoreWithFacts(intentId, legal, input)
 }
 
@@ -101,7 +99,13 @@ async function replayOriginalRestoreWithFacts(
   if (!legal || (await hasCopyrightActionBlocker(legal, input.now, input.query))) return false
   if (!(await originalRestorationAuthorityIsValid(legal, input.now, input.query))) return false
   const current = await getImagePlacementForCopyright(legal.placement_id, { query: input.query })
-  if (!isCurrentPlacementForIntent(current, legal)) return false
+  const retainedUnavailable =
+    legal.copyright_notice_submission_id &&
+    current?.deleted &&
+    current.imageId === legal.image_id &&
+    (current.revision === legal.expected_placement_revision ||
+      current.revision === legal.expected_placement_revision + 1)
+  if (!isCurrentPlacementForIntent(current, legal) && !retainedUnavailable) return false
   const { rows: images } = await input.query<{ ready: boolean }>(sql`
     /* replayEligibleCopyrightRestoreIntentsInTransaction:readiness */
     SELECT upload_completed_at IS NOT NULL AND deleted_at IS NULL
@@ -122,7 +126,8 @@ async function originalRestorationAuthorityIsValid(
   if (
     legal.human_review_action === 'reverse' ||
     legal.reversal_authorized ||
-    legal.hold_resolution_authorized
+    legal.hold_resolution_authorized ||
+    legal.filing_release_authorized
   )
     return true
   if (

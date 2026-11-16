@@ -71,6 +71,7 @@ export type CopyrightStaffCase = {
   restrictions: Array<{
     id: string
     target_id: string
+    copyright_notice_submission_id: string | null
     imposed_at: Date
     status: 'pending_review' | 'confirmed' | 'reversed' | 'lifted'
   }>

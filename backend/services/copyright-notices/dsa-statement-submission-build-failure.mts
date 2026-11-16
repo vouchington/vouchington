@@ -28,6 +28,22 @@ export async function recordDsaStatementBuildFailure(
   failureCode: string,
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
+  const inserted = await insertDsaStatementBuildFailure(
+    transaction,
+    restrictionId,
+    from,
+    failureCode,
+  )
+  if (inserted) await transaction.commit()
+  return inserted
+}
+
+async function insertDsaStatementBuildFailure(
+  transaction: Awaited<ReturnType<typeof beginTransaction>>,
+  restrictionId: string,
+  from: Date,
+  failureCode: string,
+): Promise<boolean> {
   const lockedNotice = await lockCopyrightNoticeForRestriction(transaction, restrictionId)
   const { rowCount } = await transaction(sql`/* recordDsaStatementBuildFailure */
     INSERT INTO copyright_dsa_statement_submissions (
@@ -40,7 +56,6 @@ export async function recordDsaStatementBuildFailure(
   `)
   if (rowCount === 1 && lockedNotice)
     await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
-  await transaction.commit()
   return rowCount === 1
 }
 

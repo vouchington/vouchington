@@ -1,3 +1,5 @@
+import { imposeCopyrightCourtFilingRestrictions } from './court-filing-restrictions.mts'
+import { stageCopyrightCourtFilingDenials } from './guest-filing-denial.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
@@ -37,10 +39,15 @@ export async function insertAdmittedCopyrightEmailSubmission(
       | CopyrightEmailOtherSubmission
   },
   pending: AdmittedEmailCorrespondencePending,
-): Promise<{ submissionId: string; correspondenceId: string }> {
+): Promise<{
+  submissionId: string
+  correspondenceId: string
+  withholdIntentIds: string[]
+  denialRecordIds: string[]
+}> {
   const submissionId = uuidv7()
-  // Preempt before anything the delivery worker also writes: the worker takes the work item row,
-  // then the case's blocker generation, so this order cannot form a cycle.
+  // The caller owns the generation row that these writes update through their triggers.
+  // Preempt its work before applying placement effects, matching restoration's write order.
   if (input.kind === 'court_or_ccb_hold')
     await preemptCopyrightRestorations(pending.notice_id, transaction)
   const { rows: submissions } = await transaction<{
@@ -55,6 +62,17 @@ export async function insertAdmittedCopyrightEmailSubmission(
   `)
   const submission = submissions[0]
   assert(submission, 500, 'Failed to record copyright email submission')
+  let withholdIntentIds: string[] = []
+  let denialRecordIds: string[] = []
+  if (input.kind === 'court_or_ccb_hold') {
+    withholdIntentIds = await imposeCopyrightCourtFilingRestrictions(
+      pending.notice_id,
+      submission.id,
+      pending.received_at,
+      transaction,
+    )
+    denialRecordIds = await stageCopyrightCourtFilingDenials(pending.notice_id, transaction)
+  }
   if (input.kind === 'complaint')
     await createGuestTerritorialComplaintFromEmail(
       {
@@ -99,5 +117,10 @@ export async function insertAdmittedCopyrightEmailSubmission(
   `)
   const correspondence = correspondenceRows[0]
   assert(correspondence, 500, 'Failed to record copyright email correspondence')
-  return { submissionId: submission.id, correspondenceId: correspondence.id }
+  return {
+    submissionId: submission.id,
+    correspondenceId: correspondence.id,
+    withholdIntentIds,
+    denialRecordIds,
+  }
 }

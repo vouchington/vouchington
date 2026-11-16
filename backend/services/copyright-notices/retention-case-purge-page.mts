@@ -1,3 +1,5 @@
+import { copyrightCasePurgeWritesGeneration } from './retention-case-purge-generation.mts'
+import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
 import { beginBoundedTransaction } from '@data-stores/psql'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
@@ -83,6 +85,8 @@ export async function runCopyrightCasePurgePage(
     await query.commit()
     return { data, hasMore: true, deferred: true }
   }
+  const writesGeneration = copyrightCasePurgeWritesGeneration(data)
+  if (writesGeneration) await lockCopyrightActionGenerationForWrite(data.noticeId, query)
   const { rows: locked } = await query<LockedNotice>(
     copyrightCasePurgeProofSql(data.noticeId, true),
   )
@@ -108,6 +112,8 @@ export async function runCopyrightCasePurgePage(
         proofVersion: beforeVersion,
       }
     : { ...data, legalClockAt: clock, proofVersion: beforeVersion }
+  // The worker saves this existing reset cursor; discard locks without running a different phase.
+  if (changed && writesGeneration) return { data: current, hasMore: true }
   const result = await runLockedPage(query, current, eligible[0]!, pageSize)
   const { rows: after } = await query<LockedNotice>(
     copyrightCasePurgeProofSql(data.noticeId, false),

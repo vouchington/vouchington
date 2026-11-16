@@ -1,3 +1,4 @@
+import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
 import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
@@ -5,7 +6,6 @@ import {
   type CopyrightSweepIdPage,
   type CopyrightSweepPageOptions,
 } from './sweep-id-pages.mts'
-import type { CopyrightActionIntentRecord } from './types.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 export {
   completeCopyrightActionIntentInTransaction,
@@ -13,69 +13,14 @@ export {
   hasOtherActiveCopyrightRestrictions,
   insertCopyrightActionLifecycleEvent,
   liftCopyrightRestrictionInTransaction,
-  lockCopyrightActionDelivery,
 } from './action-delivery-locking.mts'
-export type { LockedCopyrightActionDelivery } from './action-delivery-locking.mts'
 export { failCopyrightActionIntent } from './action-delivery-completion.mts'
 
-const MAX_ATTEMPTS = 5
-const CLAIM_TIMEOUT_MS = 5 * 60 * 1000
-
-export type CopyrightClaimedActionIntent = Pick<
-  CopyrightActionIntentRecord,
-  'id' | 'action' | 'expected_placement_revision'
-> & {
-  lease_token: string
-  placement_id: string
-  image_id: string
-}
-
-export async function claimCopyrightActionIntent(
-  intentId: string,
-  now: Date,
-): Promise<CopyrightClaimedActionIntent | null> {
-  await using transaction = await beginTransaction()
-  const { rows } = await transaction<CopyrightClaimedActionIntent>(sql`
-    /* claimCopyrightActionIntent */
-    WITH exhausted AS (
-      UPDATE copyright_notice_action_work_items intent
-      SET completed_at = ${now}, completed_at_reason = 'failed',
-        failure_message = 'A claimed copyright action exceeded the maximum delivery attempts.',
-        available_at = clock_timestamp()
-      WHERE intent.id = ${intentId}
-        AND intent.state = 'claimed'
-        AND intent.lease_expires_at <= ${now}
-        AND intent.attempt_count >= ${MAX_ATTEMPTS}
-    ), candidate AS (
-      SELECT intent.id
-      FROM copyright_notice_action_work_items intent
-      WHERE intent.id = ${intentId}
-        AND (
-          (intent.state = 'pending' AND (intent.available_at IS NULL OR intent.available_at <= ${now}))
-          OR (intent.state = 'claimed' AND intent.lease_expires_at <= ${now})
-        )
-      FOR UPDATE SKIP LOCKED
-    ), claimed AS (
-      UPDATE copyright_notice_action_work_items intent
-    SET lease_token = uuidv7(), attempt_count = intent.attempt_count + 1,
-      leased_at = clock_timestamp(), lease_expires_at = clock_timestamp() + ${CLAIM_TIMEOUT_MS} * interval '1 millisecond', available_at = clock_timestamp(), failure_message = NULL
-    FROM candidate
-    WHERE intent.id = candidate.id
-      AND intent.attempt_count < ${MAX_ATTEMPTS}
-      RETURNING intent.id, intent.copyright_restriction_id, intent.lease_token, intent.action,
-        intent.expected_placement_revision
-    )
-    SELECT claimed.id, claimed.lease_token, claimed.action, claimed.expected_placement_revision,
-      target.placement_id, target_image.image_id
-    FROM claimed
-    JOIN copyright_restrictions restriction ON restriction.id = claimed.copyright_restriction_id
-    JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-    JOIN copyright_notice_target_images target_image
-      ON target_image.copyright_notice_target_id = target.id
-  `)
-  await transaction.commit()
-  return rows[0] ?? null
-}
+export {
+  claimCopyrightActionIntent,
+  renewCopyrightActionIntentLease,
+  type CopyrightClaimedActionIntent,
+} from './action-delivery-claims.mts'
 
 /** Pages the action intents that are due for delivery or whose claim lease expired at `now`. */
 export function searchRecoverableCopyrightActionIntentIds(
@@ -135,7 +80,33 @@ export async function replayFailedCopyrightActionIntent(input: {
   actorUserId: string
 }): Promise<boolean> {
   await using transaction = await beginTransaction()
-  const { rows } = await transaction<{ copyright_notice_id: string }>(sql`
+  const replayed = await recordCopyrightActionReplay(input, transaction)
+  if (replayed) await transaction.commit()
+  return replayed
+}
+
+async function recordCopyrightActionReplay(
+  input: { intentId: string; noticeId: string; actorUserId: string },
+  transaction: Awaited<ReturnType<typeof beginTransaction>>,
+): Promise<boolean> {
+  await lockCopyrightActionGenerationForWrite(input.noticeId, transaction)
+  const { rows: events } = await transaction<{ id: string }>(sql`
+    /* replayFailedCopyrightActionIntent:event */
+    INSERT INTO copyright_notice_lifecycle_changes (
+      copyright_notice_id, change_type, changed_by_id,
+      copyright_notice_action_intent_id, replay_reason
+    )
+    SELECT target.copyright_notice_id, 'copyright_action_replayed', ${input.actorUserId},
+      intent.id, 'operator_replay'
+    FROM copyright_notice_action_work_items intent
+    JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
+    JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
+    WHERE intent.id = ${input.intentId} AND target.copyright_notice_id = ${input.noticeId}
+      AND intent.state = 'failed'
+    RETURNING id
+  `)
+  if (events.length === 0) return false
+  const { rowCount } = await transaction(sql`
     /* replayFailedCopyrightActionIntent */
     UPDATE copyright_notice_action_work_items
     SET attempt_count = 0, leased_at = NULL, completed_at = NULL,
@@ -147,17 +118,9 @@ export async function replayFailedCopyrightActionIntent(input: {
       AND copyright_notice_action_work_items.copyright_restriction_id = restriction.id
       AND target.copyright_notice_id = ${input.noticeId}
       AND copyright_notice_action_work_items.state = 'failed'
-    RETURNING target.copyright_notice_id
   `)
-  const replayed = rows[0]
-  if (replayed) {
-    await transaction(sql`/* replayFailedCopyrightActionIntent:event */
-      INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
-        copyright_notice_action_intent_id, replay_reason)
-      VALUES (${replayed.copyright_notice_id}, 'copyright_action_replayed', ${input.actorUserId},
-        ${input.intentId}, 'operator_replay')
-    `)
-  }
-  await transaction.commit()
-  return replayed !== undefined
+  // A competing replay may win after the event's source read. Discard the tentative audit and
+  // notice clock with this owned transaction when its conditional work-item update loses.
+  if (rowCount !== 1) return false
+  return true
 }

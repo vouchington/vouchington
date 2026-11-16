@@ -2,7 +2,7 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
+import { createDeterministicCopyrightCorrespondencesWithLockedGenerations } from './correspondence.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import type { PromoteCopyrightEmailIntakeInput } from './email-promotion-input.mts'
 import { linkPendingCopyrightEmailRepliesInTransaction } from './email-thread-link-pending.mts'
@@ -112,17 +112,21 @@ export async function recordEmailPromotion(
     SELECT id FROM copyright_notice_delivery_work_items WHERE copyright_notice_email_intake_receipt_id = ${intake.id}
       AND delivery_kind = 'email_intake_received' AND state NOT IN ('failed', 'bounced')
   `)
-  const claimantReceipt = await createDeterministicCopyrightCorrespondenceInTransaction(
-    {
-      noticeId,
-      submissionId: submission.id,
-      correspondenceKind: 'receipt',
-      bodyText: arrivalReceipt[0]
-        ? copyrightPromotionText(noticeId)
-        : copyrightReceiptText(noticeId),
-    },
-    transaction,
-  )
+  const claimantReceipt = (
+    await createDeterministicCopyrightCorrespondencesWithLockedGenerations(
+      [
+        {
+          noticeId,
+          submissionId: submission.id,
+          correspondenceKind: 'receipt',
+          bodyText: arrivalReceipt[0]
+            ? copyrightPromotionText(noticeId)
+            : copyrightReceiptText(noticeId),
+        },
+      ],
+      transaction,
+    )
+  )[0]!
   await createCopyrightDeliveryIntent(
     {
       noticeId,

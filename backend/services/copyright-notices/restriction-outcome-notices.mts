@@ -5,7 +5,7 @@ import { decryptCopyrightClaimantEmail } from './claimant-email.mts'
 import { selectCopyrightDeliveryInputs } from './delivery-inputs.mts'
 import {
   claimantDecisionDelivery,
-  lockCopyrightNoticeForClaimantDecision,
+  readCopyrightNoticeForClaimantDecision,
   type CopyrightClaimantDecisionEvent,
 } from './claimant-decision-notices.mts'
 import {
@@ -25,7 +25,7 @@ export type CopyrightRestrictionDecisionNoticeInput = CopyrightPosterNoticeInput
 /**
  * Notifies the posters (and informed community owners) and the claimant of one restriction
  * decision. Both statements describe the same restriction, so the facts are read once and every
- * delivery is created together. The claimant locks the notice before the facts are read.
+ * delivery is created together. The claimant identity is read before the facts.
  */
 export async function createCopyrightRestrictionDecisionNoticesInTransaction(
   input: CopyrightRestrictionDecisionNoticeInput,
@@ -39,7 +39,7 @@ export async function createCopyrightRestrictionDecisionNoticesInTransaction(
 
 /**
  * The deliveries several restriction decisions of one notice owe, read with one statement for the
- * claimant lock and one for the facts, recipients and claimant address. The claimant is told once per event, from the
+ * claimant identity and one for the facts, recipients and claimant address. The claimant is told once per event, from the
  * first decision of that event, as sequential creation would find it.
  */
 export async function buildCopyrightRestrictionDecisionDeliveries(
@@ -54,7 +54,7 @@ export async function buildCopyrightRestrictionDecisionDeliveries(
     500,
     'Restriction decisions must share one notice',
   )
-  const { claimant_user_id } = await lockCopyrightNoticeForClaimantDecision(noticeId, transaction)
+  const { claimant_user_id } = await readCopyrightNoticeForClaimantDecision(noticeId, transaction)
   // The facts, recipients, claimant address and decision flags are independent reads of the
   // post-lock snapshot.
   const { facts, parties, claimantEmail, claimantDecisionFlags } =

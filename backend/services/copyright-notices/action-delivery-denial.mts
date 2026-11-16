@@ -3,12 +3,13 @@ import { invalidateCopyrightLegalRemovalSurfaces } from './action-delivery-cache
 import { prepublishCopyrightImagePlacementDenial } from './action-delivery-edge.mts'
 import {
   completeCopyrightActionIntentInTransaction,
-  lockCopyrightActionDelivery,
+  renewCopyrightActionIntentLease,
 } from './action-delivery-state.mts'
+import { readCopyrightActionDeliveryForCompletion } from './action-delivery-facts.mts'
 
 /**
  * Denies a restored placement tuple and records the intent outcome in three ordered steps:
- * the denial commits in the caller's intent-locked transaction, legal-removal surfaces are
+ * the denial commits in the caller's transaction, legal-removal surfaces are
  * evicted once that projection change is visible, and a second lease-fenced transaction
  * commits the outcome as the eviction receipt. A failed eviction leaves the intent claimed,
  * so compensation or lease recovery retries it.
@@ -22,10 +23,16 @@ export async function denyRestoreThenComplete(input: {
   failureMessage: string
   transaction: Awaited<ReturnType<typeof beginTransaction>>
 }): Promise<'completed' | 'not_claimed'> {
+  if (!(await renewCopyrightActionIntentLease(input.intentId, input.leaseToken, input.transaction)))
+    return 'not_claimed'
   await prepublishCopyrightImagePlacementDenial({ ...input.tuple }, { query: input.transaction })
   await input.transaction.commit()
   await using receipt = await beginTransaction()
-  const legal = await lockCopyrightActionDelivery(input.intentId, input.leaseToken, receipt)
+  const legal = await readCopyrightActionDeliveryForCompletion(
+    input.intentId,
+    input.leaseToken,
+    receipt,
+  )
   if (!legal) {
     await receipt.commit()
     return 'not_claimed'

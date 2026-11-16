@@ -1,3 +1,5 @@
+import { lockCopyrightPlacementTransitions } from './action-delivery-placement-locking.mts'
+import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
 import { insertCopyrightActionIntent } from './action-intent-insertion.mts'
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
@@ -36,6 +38,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   `)
   if (formAuthorities[0])
     await lockAssessmentForm(formAuthorities[0].copyright_notice_submission_id, transaction)
+  await lockCopyrightActionGenerationForWrite(input.noticeId, transaction)
   const { rows: noticeRows } = await transaction<{ id: string }>(
     sql`/* acceptCopyrightNoticeAndImposeRestriction:lockNotice */
     SELECT id FROM copyright_notices WHERE id = ${input.noticeId} FOR UPDATE
@@ -49,7 +52,6 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     WHERE id = ${input.targetId}
       AND copyright_notice_id = ${input.noticeId}
       AND placement_id = ${target.placement_id}
-    FOR UPDATE
   `,
   )
   assert(lockedTargets[0], 409, 'Copyright notice target changed while being restricted')
@@ -87,7 +89,6 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     WHERE assessment.id = ${input.assessmentId}
       AND submission.copyright_notice_id = ${input.noticeId}
       AND submission.kind = 'notice'
-    FOR UPDATE OF submission
   `),
   )
   const assessment = assessmentRows[0]
@@ -100,6 +101,18 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     422,
     'Copyright screening authority is not current',
   )
+  await lockCopyrightPlacementTransitions([target.placement_id], transaction)
+  // A newly compliant notice becomes the real ground; never rewrite filing provenance.
+  // The placement stays withheld throughout this same transaction and court blockers still apply.
+  await transaction(sql`/* acceptCopyrightNoticeAndImposeRestriction:replaceFilingGround */
+    UPDATE copyright_restrictions SET lifted_at = ${input.imposedAt}, lifted_by_id = ${input.imposedById}
+    WHERE copyright_notice_target_id = ${input.targetId}
+      AND copyright_notice_submission_id IS NOT NULL AND lifted_at IS NULL
+  `)
+  const { rows: currentPlacement } = await transaction<{ revision: number }>(sql`
+    /* acceptCopyrightNoticeAndImposeRestriction:currentRevision */
+    SELECT revision FROM media_placements WHERE id = ${target.placement_id}
+  `)
   const { rows: acceptedRows } = await transaction<{
     id: string
   }>(sql`/* acceptCopyrightNoticeAndImposeRestriction:accept */
@@ -125,7 +138,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
       ${input.imposedById}
     )
     ON CONFLICT (copyright_notice_target_id) WHERE lifted_at IS NULL DO NOTHING
-    RETURNING id, copyright_notice_target_id, authorizing_assessment_id, imposed_at, lifted_at, imposed_by_id, lifted_by_id,
+    RETURNING id, copyright_notice_target_id, authorizing_assessment_id, copyright_notice_submission_id, imposed_at, lifted_at, imposed_by_id, lifted_by_id,
       human_reviewed_at, human_review_action, human_reviewed_by_id
   `)
   const restriction = rows[0]
@@ -133,7 +146,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   const actionIntent = await insertCopyrightActionIntent(
     transaction,
     restriction.id,
-    lockedTargets[0].placement_revision,
+    currentPlacement[0]?.revision ?? lockedTargets[0].placement_revision,
     'withhold',
   )
   await createCopyrightRestrictionDecisionNoticesInTransaction(

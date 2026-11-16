@@ -1,3 +1,8 @@
+import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
+import {
+  enqueueBulkApplyCopyrightActions,
+  enqueueBulkApplyMediaDeliveryRegistryRecords,
+} from '@queues/notifications/enqueues'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
@@ -75,14 +80,20 @@ export async function admitCopyrightEmailCorrespondence(input: {
     'Review rationale is required',
   )
   await using transaction = await beginTransaction()
-  // The immutable thread link identifies the parent before any intake lock. Agent
-  // completion and retention take that same parent-to-child order.
+  const { rows: owners } = await transaction<{ copyright_notice_id: string }>(sql`
+    /* admitCopyrightEmailCorrespondence:identity */
+    SELECT copyright_notice_id FROM copyright_notice_email_intake_notice_links
+    WHERE copyright_notice_email_intake_id = ${input.intakeId} AND link_kind = 'thread'
+  `)
+  assert(owners[0], 404, 'Matched copyright email correspondence not found')
+  await lockCopyrightActionGenerationForWrite(owners[0].copyright_notice_id, transaction)
+  // Resolve current case facts after the trigger-written generation row is owned.
+  // Only the link receives an explicit lock because its admission result is updated.
   const { rows: notices } = await transaction<{ jurisdiction: string }>(sql`
     /* admitCopyrightEmailCorrespondence:lockNotice */
     SELECT notice.jurisdiction FROM copyright_notice_email_intake_notice_links link
     JOIN copyright_notices notice ON notice.id = link.copyright_notice_id
     WHERE link.copyright_notice_email_intake_id = ${input.intakeId} AND link.link_kind = 'thread'
-    FOR NO KEY UPDATE OF notice
   `)
   assert(notices[0], 404, 'Matched copyright email correspondence not found')
   const { rows } =
@@ -100,7 +111,7 @@ export async function admitCopyrightEmailCorrespondence(input: {
     JOIN copyright_notice_email_intake_parses parse
       ON parse.copyright_notice_email_intake_id = intake.id AND parse.status = 'succeeded'
     WHERE intake.id = ${input.intakeId}
-    FOR UPDATE OF intake
+    FOR UPDATE OF link
   `)
   const pending = rows[0]
   assert(pending, 404, 'Matched copyright email correspondence not found')
@@ -119,7 +130,6 @@ export async function admitCopyrightEmailCorrespondence(input: {
   const prior = admittedRows[0]
   if (prior) {
     assert(prior.action === 'admitted', 409, 'Copyright email correspondence was already rejected')
-    await transaction.commit()
     return {
       noticeId: pending.notice_id,
       submissionId: prior.submission_id,
@@ -134,11 +144,8 @@ export async function admitCopyrightEmailCorrespondence(input: {
     422,
     'Correspondence kind does not apply to this jurisdiction',
   )
-  const { submissionId, correspondenceId } = await insertAdmittedCopyrightEmailSubmission(
-    transaction,
-    input,
-    pending,
-  )
+  const { submissionId, correspondenceId, withholdIntentIds, denialRecordIds } =
+    await insertAdmittedCopyrightEmailSubmission(transaction, input, pending)
   const rationaleCiphertext = encryptSecret(
     input.rationale,
     copyrightEmailIntakePurpose(pending.amazon_ses_message_id),
@@ -173,6 +180,8 @@ export async function admitCopyrightEmailCorrespondence(input: {
     })
   }
   await transaction.commit()
+  if (denialRecordIds.length > 0) void enqueueBulkApplyMediaDeliveryRegistryRecords(denialRecordIds)
+  if (withholdIntentIds.length > 0) void enqueueBulkApplyCopyrightActions(withholdIntentIds)
   return {
     noticeId: pending.notice_id,
     submissionId: submissionId,

@@ -98,7 +98,7 @@ RANGE partitioned on `id` (children: monthly, retention owner `cleanupPartitions
 - `fk_copyright_lifecycle_events__hold_assessment_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_legal_hold_assessment_id) REFERENCES copyright_notice_legal_hold_assessments(copyright_notice_id, id) ON DELETE RESTRICT`
 - `fk_copyright_lifecycle_events__hold_resolution_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_legal_hold_resolution_id) REFERENCES copyright_notice_legal_hold_resolutions(copyright_notice_id, id) ON DELETE RESTRICT`
 - `fk_copyright_lifecycle_events__restriction_notice`: `FOREIGN KEY (copyright_notice_id, copyright_restriction_id) REFERENCES copyright_restrictions(copyright_notice_id, id) ON DELETE RESTRICT`
-- `fk_copyright_lifecycle_events__submission_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id) REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE RESTRICT`
+- `fk_copyright_lifecycle_events__submission_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id) REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE RESTRICT DEFERRABLE`
 
 **Indexes:**
 

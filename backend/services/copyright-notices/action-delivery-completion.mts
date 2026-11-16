@@ -1,3 +1,4 @@
+import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { CopyrightActionIntentRecord } from './types.mts'
@@ -13,9 +14,11 @@ export async function failCopyrightActionIntent(input: {
   beforeRelease?: () => Promise<void>
 }): Promise<'retrying' | 'failed' | 'not_claimed'> {
   await using transaction = await beginTransaction()
-  const { rows } = await transaction<Pick<CopyrightActionIntentRecord, 'attempt_count'>>(
+  const { rows } = await transaction<
+    Pick<CopyrightActionIntentRecord, 'attempt_count'> & { copyright_notice_id: string }
+  >(
     sql`/* failCopyrightActionIntent:lock */
-      SELECT attempt_count
+      SELECT attempt_count, copyright_notice_id
       FROM copyright_notice_action_work_items
       WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken} AND lease_expires_at > clock_timestamp()
     `,
@@ -25,6 +28,9 @@ export async function failCopyrightActionIntent(input: {
   // The lease-conditional UPDATE below rejects a worker whose lease lapsed during compensation.
   await input.beforeRelease?.()
   const failed = intent.attempt_count >= MAX_ATTEMPTS
+  // Failure/retry writes this row through the blocker-generation trigger. Acquire it before
+  // the work item, matching filing admission; media compensation has already committed.
+  await lockCopyrightActionGenerationForWrite(intent.copyright_notice_id, transaction)
   const { rows: released } = await transaction(sql`/* failCopyrightActionIntent */
     UPDATE copyright_notice_action_work_items
     SET
@@ -40,7 +46,7 @@ export async function failCopyrightActionIntent(input: {
     WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken} AND lease_expires_at > clock_timestamp()
     RETURNING id
   `)
-  await transaction.commit()
   if (!released[0]) return 'not_claimed'
+  await transaction.commit()
   return failed ? 'failed' : 'retrying'
 }

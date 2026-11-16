@@ -1,3 +1,4 @@
+import { makeCopyrightStaffQueueItem } from '@/test-helpers/api-responses/copyright'
 import { makeBusyUsStaffCase } from '@/test-helpers/api-responses/copyright-staff-case'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
@@ -116,12 +117,14 @@ describe('CopyrightStaffQueue', () => {
                   {
                     id: 'restriction-123',
                     target_id: 'target-123',
+                    copyright_notice_submission_id: null,
                     imposed_at: '2026-01-02T00:00:00.000Z',
                     status: 'pending_review',
                   },
                   {
                     id: 'restriction-456',
                     target_id: 'target-456',
+                    copyright_notice_submission_id: null,
                     imposed_at: '2026-01-02T00:00:00.000Z',
                     status: 'confirmed',
                   },
@@ -236,7 +239,7 @@ describe('CopyrightStaffQueue', () => {
         <CopyrightStaffQueue
           data={{
             copyright_notices: [
-              {
+              makeCopyrightStaffQueueItem({
                 id: 'case-456',
                 jurisdiction: 'us_dmca',
                 received_at: '2026-01-01T00:00:00.000Z',
@@ -247,8 +250,6 @@ describe('CopyrightStaffQueue', () => {
                   misuse: null,
                 },
                 work_description: 'Original photograph.',
-                targets: [],
-                evidence: [],
                 form_review: {
                   intake_id: 'intake-456',
                   source_kind: 'guest_form',
@@ -265,22 +266,13 @@ describe('CopyrightStaffQueue', () => {
                     reviewed_by_id: reviewedById,
                   },
                 },
-                restrictions: [],
-                appeals: [],
-                counter_notices: [],
-                legal_holds: [],
-                action_intents: [],
-                delivery_intents: [],
-                staydown_matches: [],
-                staydown_matches_has_more: false,
-                email_correspondence: [],
                 reasons: ['deadline_due'],
                 waiting_since: '2026-01-05T00:00:00.000Z',
                 next_deadline: {
                   escalation_at: '2026-01-05T00:00:00.000Z',
                   restoration_deadline_at: '2026-01-15T00:00:00.000Z',
                 },
-              },
+              }),
             ],
             page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
           }}

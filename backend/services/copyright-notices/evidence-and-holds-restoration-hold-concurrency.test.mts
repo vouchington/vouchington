@@ -15,7 +15,7 @@ describe('late legal-hold and restoration concurrency', () => {
     vi.unstubAllEnvs()
   })
 
-  it('serializes the placement fence before case records, leaving a concurrent restored tuple denied', async () => {
+  it('keeps the tuple denied when hold qualification overlaps restoration', async () => {
     const { moderator, notice, restorationAt, restore, target } =
       await openHeldCounterNoticeRestore()
     const holdSubmission = await appendTestCopyrightNoticeSubmission({
@@ -27,7 +27,7 @@ describe('late legal-hold and restoration concurrency', () => {
       bodyCiphertext: `concurrent-hold-${crypto.randomUUID()}`,
     })
 
-    const [restoreOutcome, holdOutcome] = await Promise.all([
+    const [restoreOutcome, holdOutcome] = await Promise.allSettled([
       processCopyrightActionIntent(restore.id, restorationAt),
       appendCopyrightLegalHoldAssessment({
         currentUser: moderator,
@@ -44,8 +44,22 @@ describe('late legal-hold and restoration concurrency', () => {
       }),
     ])
 
-    expect(['applied', 'blocked', 'stale', 'not_claimed']).toContain(restoreOutcome)
-    expect(holdOutcome.target_ids).toEqual([target.id])
+    const restoreResult =
+      restoreOutcome.status === 'fulfilled'
+        ? restoreOutcome
+        : {
+            status: 'rejected',
+            statusCode: restoreOutcome.reason?.status,
+            causeCode: restoreOutcome.reason?.cause?.code,
+          }
+    expect([
+      ...['applied', 'blocked', 'stale', 'not_claimed'].map(value => ({
+        status: 'fulfilled',
+        value,
+      })),
+      { status: 'rejected', statusCode: 409, causeCode: '40001' },
+    ]).toContainEqual(restoreResult)
+    expect(holdOutcome).toMatchObject({ status: 'fulfilled', value: { target_ids: [target.id] } })
     await expect(getImagePlacementForCopyright(target.placement_id)).resolves.toEqual(
       expect.objectContaining({ withheld: true }),
     )

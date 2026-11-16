@@ -1,3 +1,4 @@
+import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import {
   createCopyrightNoticeForManualAssociation,
@@ -6,7 +7,6 @@ import {
   readCopyrightEmailManualAssociationEvent,
   readCopyrightEmailManualAssociationReview,
 } from '@voucha/test-helpers/copyright-email-manual-association'
-import { lockTestCopyrightEmailIntakeForGraphChange } from '@voucha/test-helpers/copyright-email-ancestor-edges'
 import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
@@ -166,46 +166,34 @@ describe('manual copyright email association', () => {
     expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toEqual([])
   })
 
-  it('returns the stable conflict when a thread link wins between preflight and intake lock', async () => {
+  it('returns the stable conflict when a thread link commits before the generation wait', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const intake = await createManualReply()
     const noticeId = await createCopyrightNoticeForManualAssociation()
     await using threading = await beginTransaction()
-    await lockTestCopyrightEmailIntakeForGraphChange(intake.id, threading)
-    let resolvePreflight!: () => void
-    const preflight = new Promise<void>(resolve => {
-      resolvePreflight = resolve
-    })
     let reviewsFromThreading: Awaited<
       ReturnType<typeof readCopyrightEmailManualAssociationReview>
     > = []
-    const dispose = installSharedDbScopeObserver(event => {
-      if (
-        event.operation === 'associateCopyrightEmailIntakePreflight' &&
-        event.scope.kind === 'ids' &&
-        event.scope.ids[0] === intake.id
-      )
-        resolvePreflight()
-    })
+    const dispose = beforePostgresTransactionQueryForTest(
+      'lockCopyrightActionGenerationForWrite',
+      values => values.includes(noticeId),
+      async () => {
+        expect(
+          await linkCopyrightEmailIntakeToNotice(
+            { intakeId: intake.id, noticeId, linkKind: 'thread' },
+            threading,
+          ),
+        ).toBe(true)
+        await threading.commit()
+        reviewsFromThreading = await readCopyrightEmailManualAssociationReview(intake.id)
+      },
+    )
     try {
       const association = runWithCapturedQueries(async () =>
         associateCopyrightEmailIntakeWithNotice(moderator, intake.id, noticeId)
           .then(() => new Error('Manual association unexpectedly won'))
           .catch((err: unknown) => err),
       )
-      await preflight
-      expect(
-        await linkCopyrightEmailIntakeToNotice(
-          {
-            intakeId: intake.id,
-            noticeId,
-            linkKind: 'thread',
-          },
-          threading,
-        ),
-      ).toBe(true)
-      await threading.commit()
-      reviewsFromThreading = await readCopyrightEmailManualAssociationReview(intake.id)
       const { result, queries } = await association
       expect(result).toMatchObject({ status: 409, code: 'copyright_email_thread_changed' })
       expect(

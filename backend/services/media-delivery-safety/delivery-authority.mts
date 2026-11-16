@@ -3,32 +3,6 @@ import sql from 'sql-template-strings'
 import type { ImageDeliveryRecord } from './delivery-registry-types.mts'
 import { imageSurfaceOwnerIsLiveSql } from './surface-owner-live-sql.mts'
 
-/** Called only while the exact delivery placement fences are retained. */
-export async function lockImageDeliveryLegalAuthorities(
-  query: QueryExecutor,
-  records: readonly Pick<ImageDeliveryRecord, 'placement_id'>[],
-): Promise<void> {
-  if (records.length === 0) return
-  const placementIds = [...new Set(records.map(record => record.placement_id))]
-  // Filing admission takes the notice lock. Hold it from proof through provider publication.
-  await query(sql`/* imageDeliveryIsAuthorized:noticeLocks */
-      -- no-mistakes-disable-next-line postgres-bounded-statements: publication must retain locks on every notice targeting this placement from the authority proof through provider publication; notice history is uncapped, and a LIMIT would omit a legal-authority fence.
-      SELECT notice.id FROM copyright_notices notice
-      WHERE EXISTS (
-        SELECT 1 FROM copyright_notice_targets target
-        WHERE target.copyright_notice_id = notice.id
-          AND target.placement_id = ANY(${placementIds}::uuid[])
-      ) ORDER BY notice.id FOR NO KEY UPDATE
-    `)
-}
-
-export async function lockImageDeliveryLegalAuthority(
-  query: QueryExecutor,
-  record: Pick<ImageDeliveryRecord, 'placement_id'>,
-): Promise<void> {
-  await lockImageDeliveryLegalAuthorities(query, [record])
-}
-
 type AuthorityTuple = Pick<ImageDeliveryRecord, 'image_id' | 'placement_id' | 'placement_revision'>
 
 /** One statement proves every tuple; the result is keyed by `placement_id:placement_revision:image_id`. */
@@ -38,7 +12,6 @@ export async function imageDeliveryAuthorizations(
 ): Promise<Map<string, boolean>> {
   const allowedByTuple = new Map<string, boolean>()
   if (records.length === 0) return allowedByTuple
-  await lockImageDeliveryLegalAuthorities(query, records)
   const statement = sql`/* imageDeliveryAuthorizations */ SELECT authority.image_id,
     authority.placement_id, authority.placement_revision, `
   statement.append(imageDeliveryAuthorityProof())
@@ -65,7 +38,7 @@ export async function imageDeliveryIsAuthorized(
   return allowed.get(deliveryTupleKey(record)) ?? false
 }
 
-/** SQL predicate over an exact tuple named authority; shared by snapshot staging and locked publication. */
+/** SQL predicate over an exact tuple named authority; shared by snapshot staging and publication. */
 export function imageDeliveryAuthorityProof(): ReturnType<typeof sql> {
   const proof = sql`EXISTS (
       SELECT 1 FROM images image

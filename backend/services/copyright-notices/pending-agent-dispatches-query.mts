@@ -105,6 +105,7 @@ export function buildPendingCopyrightAgentDispatchesQuery() {
                 SELECT 1 FROM copyright_restrictions restriction
                 WHERE restriction.copyright_notice_target_id = target.id
                   AND restriction.lifted_at IS NULL
+                  AND restriction.authorizing_assessment_id IS NOT NULL
               )
               AND NOT EXISTS (
                 SELECT 1 FROM copyright_restrictions restriction

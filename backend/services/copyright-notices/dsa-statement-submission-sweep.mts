@@ -49,6 +49,7 @@ export async function prepareDsaStatementSubmissionSweep(
         SELECT restriction.id AS id
         FROM copyright_restrictions restriction
         WHERE restriction.imposed_at >= ${from}
+          AND restriction.authorizing_assessment_id IS NOT NULL
           AND NOT EXISTS (
             SELECT 1 FROM copyright_dsa_statement_submissions submission
             WHERE submission.copyright_restriction_id = restriction.id
@@ -90,6 +91,16 @@ async function materializeDsaStatementSubmission(
 
 async function insertDsaStatementSubmission(restrictionId: string, from: Date): Promise<boolean> {
   await using transaction = await beginTransaction()
+  const inserted = await insertDsaStatementSubmissionInTransaction(transaction, restrictionId, from)
+  if (inserted) await transaction.commit()
+  return inserted
+}
+
+async function insertDsaStatementSubmissionInTransaction(
+  transaction: Awaited<ReturnType<typeof beginTransaction>>,
+  restrictionId: string,
+  from: Date,
+): Promise<boolean> {
   const payload = await buildCopyrightDsaStatementPayload(restrictionId, transaction)
   const lockedNotice = await lockCopyrightNoticeForRestriction(transaction, restrictionId)
   const { rows } = await transaction<{ id: string }>(sql`/* insertDsaStatementSubmission */
@@ -97,12 +108,12 @@ async function insertDsaStatementSubmission(restrictionId: string, from: Date): 
     SELECT restriction.id, ${JSON.stringify(payload)}::jsonb, CURRENT_TIMESTAMP
     FROM copyright_restrictions restriction
     WHERE restriction.id = ${restrictionId} AND restriction.imposed_at >= ${from}
+      AND restriction.authorizing_assessment_id IS NOT NULL
     ON CONFLICT (copyright_restriction_id) DO NOTHING
     RETURNING id
   `)
   if (rows.length === 1 && lockedNotice)
     await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
-  await transaction.commit()
   return rows.length === 1
 }
 

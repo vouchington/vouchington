@@ -23,10 +23,7 @@ import {
   publishPersistedDeliveryRecord,
   publishPersistedDeliveryRecords,
 } from './delivery-registry-acknowledgement.mts'
-import {
-  imageDeliveryIsAuthorized,
-  lockImageDeliveryLegalAuthority,
-} from './delivery-authority.mts'
+import { imageDeliveryIsAuthorized } from './delivery-authority.mts'
 
 type PlacementDenial = { placementId: string; revision: number; imageId: string }
 
@@ -106,12 +103,10 @@ async function publishCommittedDeliveryRecord(
     throw new Error(
       `Missing staged image placement delivery record ${mediaDeliveryRegistryRecordId}`,
     )
-  // ast-grep-ignore: no-three-sequential-awaits -- Placement ownership must be locked before legal-notice authority locks; the registry reread must use a fresh snapshot after those blocking fences.
   await lockImageDeliveryMutation(query, {
     placementIds: [record.placement_id],
     placementOnly: true,
   })
-  await lockImageDeliveryLegalAuthority(query, record)
   const current = await readCurrentPlacementDeliveryRecord(query, mediaDeliveryRegistryRecordId)
   if (!current)
     throw new Error(

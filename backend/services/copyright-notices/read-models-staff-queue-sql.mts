@@ -63,6 +63,7 @@ export function copyrightStaffQueueKeysSql({
       FROM copyright_restrictions restriction
       JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
       WHERE restriction.lifted_at IS NULL AND restriction.human_reviewed_at IS NULL
+        AND restriction.copyright_notice_submission_id IS NULL
       UNION ALL
       SELECT submission.copyright_notice_id, 'appeal_review', submission.received_at
       FROM copyright_notice_submissions submission

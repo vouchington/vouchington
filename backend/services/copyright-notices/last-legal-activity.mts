@@ -11,7 +11,7 @@ export type LockedCopyrightNotice = {
 }
 
 /**
- * Take the notice row lock first in every transaction that writes a legal fact. Holds, closures
+ * Own the trigger-written blocker generation before the notice written by each legal fact. Holds, closures
  * and purges lock the notice with FOR UPDATE, so a writer that locked children first and upgraded
  * to the notice at the end would deadlock against them.
  */
@@ -20,7 +20,13 @@ export async function lockCopyrightNoticeForLegalWrite(
   noticeId: string,
 ): Promise<LockedCopyrightNotice | null> {
   const { rows } = await query<{ jurisdiction: string }>(sql`/* lockCopyrightNoticeForLegalWrite */
-    SELECT jurisdiction FROM copyright_notices WHERE id = ${noticeId} FOR NO KEY UPDATE`)
+    WITH generation AS MATERIALIZED (
+      SELECT copyright_notice_id FROM copyright_notice_thread_blocker_generations
+      WHERE copyright_notice_id = ${noticeId}::uuid FOR UPDATE
+    )
+    SELECT jurisdiction FROM copyright_notices
+    WHERE id = COALESCE((SELECT copyright_notice_id FROM generation), ${noticeId}::uuid)
+    FOR NO KEY UPDATE`)
   return rows[0]
     ? ({ noticeId, jurisdiction: rows[0].jurisdiction } as LockedCopyrightNotice)
     : null

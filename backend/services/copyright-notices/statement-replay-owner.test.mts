@@ -24,6 +24,7 @@ describe('copyright statement replay from durable authority', () => {
     const restriction = before?.restrictions[0]
     if (!restriction) throw new Error('Automatic restriction was not recorded')
     const originalAssessmentId = restriction.authorizing_assessment_id
+    if (!originalAssessmentId) throw new Error('Fixture restriction is not assessment-origin')
     const firstIntents = await readTestCopyrightStatementIntents(noticeId)
     const originalPosterBodies = firstIntents
       .filter(intent => intent.delivery_kind === 'poster_restriction_notice')
