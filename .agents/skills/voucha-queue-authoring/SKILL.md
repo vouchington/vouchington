@@ -39,6 +39,16 @@ scoped rules under [`backend/queues/`](../../../backend/queues/AGENTS.md),
 9. For effectful worker/RPC or financial (Stripe) operations, fill in the
    [durable transition matrix](../../../docs/checklists/reference-backend-queues-durable-transition-matrix.md).
 
+## Vouchington additions
+
+- MUST NOT run several sweeps, stages, or phases in one job. Give each its own job name, cursor
+  in job data, per-run cap, retry policy, and failure boundary. Enqueue a later sequential phase
+  after commit, only when the earlier walk has finished.
+- MUST NOT share a mutable budget, tally, error list, or cursor map across stages. Bound total
+  load through the queue's ordering lane and concurrency.
+
+For sweep and phase details, read the canonical public
+[bounded-iteration skill](https://github.com/jonathanong/skills/blob/main/skills/bounded-iteration/SKILL.md).
 For sweeps and cleanup jobs, apply [bounded-iteration](../bounded-iteration/SKILL.md).
 
 Load the installed `glide-mq` skill only when generic GlideMQ API detail is needed; repository
