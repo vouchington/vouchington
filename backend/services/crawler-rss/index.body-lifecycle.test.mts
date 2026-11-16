@@ -29,9 +29,18 @@ describe('RSS crawler response body lifecycle', () => {
 
   it('bounds a successful feed whose body stalls after headers', async () => {
     const cancel = vi.fn<() => void>()
+    let pulls = 0
+    const stalled = Promise.withResolvers<void>()
     const body = new ReadableStream<Uint8Array>({
-      start(controller) {
-        controller.enqueue(Buffer.from('<?xml version="1.0"?><rss version="2.0"><channel>'))
+      pull(controller) {
+        pulls += 1
+        if (pulls === 1) {
+          controller.enqueue(Buffer.from('<?xml version="1.0"?><rss version="2.0"><channel>'))
+          return undefined
+        }
+        // Second pull: the first chunk was consumed and the reader is waiting on more data.
+        stalled.resolve()
+        return new Promise<void>(() => {})
       },
       cancel,
     })
@@ -40,9 +49,12 @@ describe('RSS crawler response body lifecycle', () => {
       new Response(body, { headers: { 'content-type': 'application/rss+xml' } }),
       deadline.signal,
     )
+    const outcome = pending.catch((err: unknown) => err)
+    await stalled.promise
+    expect(deadline.signal.aborted).toBe(false)
     deadline.abort(new DOMException('deadline', 'AbortError'))
 
-    await expect(pending).rejects.toMatchObject({ name: 'CrawlerTimeoutError' })
+    expect(await outcome).toMatchObject({ name: 'CrawlerTimeoutError' })
     expect(cancel).toHaveBeenCalledOnce()
     expect(body.locked).toBe(false)
   })
