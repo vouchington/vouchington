@@ -22,7 +22,6 @@ async function sweepPage(
   cutoff: Date,
   cutoffId: string,
   batchSize: number,
-  noticeIds?: readonly string[],
 ): Promise<PageResult> {
   await using transaction = await beginTransaction({ serializable: true })
   await transaction(sql`/* seedCopyrightThreadRetentionCursor */
@@ -47,13 +46,11 @@ async function sweepPage(
     WHERE kind = 'email_thread_references' FOR UPDATE`)
   const cursor = cursorRows[0]!
   const upperBound = cursor.sweep_upper_bound_record_id ?? cutoffId
-  const candidatesQuery = sql`/* scanCopyrightThreadCase */
+  const { rows: candidates } = await transaction<{ id: string }>(sql`/* scanCopyrightThreadCase */
     SELECT id FROM copyright_notices
     WHERE id > COALESCE(${cursor.cursor_record_id}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
-      AND id < LEAST(${upperBound}::uuid, ${cutoffId}::uuid)`
-  if (noticeIds) candidatesQuery.append(sql` AND id = ANY(${[...noticeIds]}::uuid[])`)
-  candidatesQuery.append(sql` ORDER BY id LIMIT 1`)
-  const { rows: candidates } = await transaction<{ id: string }>(candidatesQuery)
+      AND id < LEAST(${upperBound}::uuid, ${cutoffId}::uuid)
+    ORDER BY id LIMIT 1`)
   const noticeId = candidates[0]?.id
   if (!noticeId) {
     await resetCopyrightThreadRetentionCursor(transaction)
@@ -159,7 +156,6 @@ export async function sweepCopyrightCaseThreads(options: {
   replyDays: number
   batchSize: number
   maxBatches: number
-  noticeIds?: readonly string[]
 }): Promise<PageResult> {
   const now = options.now ?? new Date()
   const cutoff = new Date(now.getTime() - options.replyDays * DAY_MS)
@@ -171,7 +167,7 @@ export async function sweepCopyrightCaseThreads(options: {
     let page: PageResult
     try {
       // oxlint-disable-next-line no-await-in-loop -- each transaction advances the durable keyset.
-      page = await sweepPage(now, cutoff, cutoffId, options.batchSize, options.noticeIds) // no-mistakes-disable-line query-reached-per-item: each fixed-budget transaction commits its durable cursor before the next page.
+      page = await sweepPage(now, cutoff, cutoffId, options.batchSize) // no-mistakes-disable-line query-reached-per-item: each fixed-budget transaction commits its durable cursor before the next page.
     } catch (err) {
       if (!isCopyrightEmailTokenGcConflict(err)) throw err
       // The aborted page did not advance its cursor. Let the next scheduled run resume it.

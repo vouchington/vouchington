@@ -159,7 +159,6 @@ describe('copyright email reference and retirement SSI', () => {
       now: new Date(Date.now() + 181 * DAY_MS),
       replyDays: 180,
       batchSize: 10,
-      noticeIds: [notice.noticeId],
     }
     // Commit the real bounded proof pages, stopping before the first destructive statement.
     // The raced call below then owns exactly one destructive page, with no earlier page progress.

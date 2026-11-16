@@ -175,7 +175,6 @@ describe('copyright delayed email derivation after retirement', () => {
         replyDays: 180,
         batchSize: 2,
         maxBatches: 100,
-        noticeIds: [promoted.noticeId],
       }
       await positionCopyrightOperationalCursor('email_thread_references', promoted.noticeId)
       const firstCycle = await sweepCopyrightCaseThreads(sweepOptions)
@@ -191,6 +190,7 @@ describe('copyright delayed email derivation after retirement', () => {
         noticeId: outboundOwner.noticeId,
       })
       expect(await readCopyrightThreadRetirementBound(promoted.noticeId)).not.toBeNull()
+      expect(await readCopyrightThreadRetirementBound(outboundOwner.noticeId)).toBeNull()
       expect((await readCopyrightThreadReferenceState(parent.intakeId)).referenceCount).toBe(0)
       const retiredRoot = await readCopyrightThreadReferenceState(root.intakeId)
       const retiredParent = await readCopyrightThreadReferenceState(parent.intakeId)
@@ -221,9 +221,13 @@ describe('copyright delayed email derivation after retirement', () => {
       await expect(recordCopyrightEmailParse(intake, parse)).resolves.toBeNull()
       expect(await readCopyrightThreadReferenceState(root.intakeId)).toEqual(retiredRoot)
       expect(await readCopyrightThreadReferenceState(parent.intakeId)).toEqual(retiredParent)
+      // Open the next owned interval on the real reserved cursor. The production sweep
+      // still follows its normal bounded case scan on a shared, dirty database.
+      await positionCopyrightOperationalCursor('email_thread_references', promoted.noticeId)
       const nextCycle = await sweepCopyrightCaseThreads(sweepOptions)
       expect(nextCycle.hasMore).toBe(false)
       expect(nextCycle.deleted).toBeGreaterThan(0)
+      expect(await readCopyrightThreadRetirementBound(outboundOwner.noticeId)).toBeNull()
       expect(await findOutboundCopyrightEmailThreadMatch([outboundMessageId])).toMatchObject({
         noticeId: outboundOwner.noticeId,
       })
