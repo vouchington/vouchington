@@ -10,63 +10,49 @@ import {
   streamGithubAccountsToSync,
   getFriendAccountSweepUpperId,
   type AccountToSync,
+  type FriendSyncProvider,
 } from '@services/friend-recommendations/accounts-to-sync'
 import { getFriendsDispatchLimits } from '@services/friend-recommendations/work-limits'
 
-export async function processFindYourFriendsDispatcher(
+const providers = {
+  facebook: { stream: streamFacebookAccountsToSync, enqueue: enqueueBulkSyncFacebookFriends },
+  x: { stream: streamXAccountsToSync, enqueue: enqueueBulkSyncXFriends },
+  github: { stream: streamGithubAccountsToSync, enqueue: enqueueBulkSyncGithubFriends },
+} as const satisfies Record<FriendSyncProvider, unknown>
+
+/**
+ * Walks one provider's capped account pages and enqueues its eligible sync jobs. Each provider is
+ * its own job with its own cursor, caps, retry and failure; nothing is shared between providers.
+ */
+export async function processFriendsProviderDispatch(
+  provider: FriendSyncProvider,
   data: FriendsDispatchData = {},
   saveProgress?: (data: FriendsDispatchData) => Promise<void>,
 ): Promise<{ count: number; hasMore: boolean }> {
-  const limits = getFriendsDispatchLimits()
+  const limits = getFriendsDispatchLimits(provider)
   const sweepStartedAt = data.sweepStartedAt ?? new Date().toISOString()
-  const upperIds = data.upperIds ?? (await readSweepUpperIds())
-  const afterIds = { ...data.afterIds }
-  const finishedProviders = [...(data.finishedProviders ?? [])]
-  const providers = [
-    {
-      name: 'facebook',
-      stream: streamFacebookAccountsToSync,
-      enqueue: enqueueBulkSyncFacebookFriends,
-    },
-    { name: 'x', stream: streamXAccountsToSync, enqueue: enqueueBulkSyncXFriends },
-    {
-      name: 'github',
-      stream: streamGithubAccountsToSync,
-      enqueue: enqueueBulkSyncGithubFriends,
-    },
-  ] as const
-  const snapshot = (): FriendsDispatchData => ({
+  const upperId =
+    data.upperId !== undefined ? data.upperId : await getFriendAccountSweepUpperId(provider)
+  await saveProgress?.({ sweepStartedAt, upperId, afterId: data.afterId })
+  let progress: { hasMore: boolean; lastRow?: AccountToSync } = { hasMore: false }
+  const stream = providers[provider].stream({
     sweepStartedAt,
-    upperIds,
-    afterIds: { ...afterIds },
-    finishedProviders: [...finishedProviders],
+    upperId,
+    afterId: data.afterId,
+    limits,
+    onComplete: result => {
+      progress = result
+    },
   })
-  await saveProgress?.(snapshot())
-  let count = 0
-  for (const provider of providers) {
-    if (finishedProviders.includes(provider.name)) continue
-    let progress: { hasMore: boolean; lastRow?: AccountToSync } = { hasMore: false }
-    const stream = provider.stream({
-      sweepStartedAt,
-      upperId: upperIds[provider.name],
-      afterId: afterIds[provider.name],
-      limits,
-      onComplete: result => {
-        progress = result
-      },
-    })
-    // oxlint-disable-next-line no-await-in-loop -- each bounded provider stream preserves enqueue backpressure
-    count += await collectAndEnqueue(stream, provider.enqueue, limits.batchSize, async lastId => {
-      afterIds[provider.name] = lastId
-      await saveProgress?.(snapshot())
-    })
-    if (progress.hasMore && progress.lastRow) afterIds[provider.name] = progress.lastRow.id
-    else finishedProviders.push(provider.name)
-    // oxlint-disable-next-line no-await-in-loop -- persist completed provider state before scanning the next provider
-    await saveProgress?.(snapshot())
-  }
-  const hasMore = finishedProviders.length < providers.length
-  return { count, hasMore }
+  const count = await collectAndEnqueue(
+    stream,
+    providers[provider].enqueue,
+    limits.batchSize,
+    async lastId => saveProgress?.({ sweepStartedAt, upperId, afterId: lastId }),
+  )
+  if (!progress.hasMore || !progress.lastRow) return { count, hasMore: false }
+  await saveProgress?.({ sweepStartedAt, upperId, afterId: progress.lastRow.id })
+  return { count, hasMore: true }
 }
 
 async function collectAndEnqueue(
@@ -93,13 +79,4 @@ async function collectAndEnqueue(
     count += batch.length
   }
   return count
-}
-
-async function readSweepUpperIds(): Promise<Required<FriendsDispatchData>['upperIds']> {
-  const [facebook, x, github] = await Promise.all([
-    getFriendAccountSweepUpperId('facebook'),
-    getFriendAccountSweepUpperId('x'),
-    getFriendAccountSweepUpperId('github'),
-  ])
-  return { facebook, x, github }
 }

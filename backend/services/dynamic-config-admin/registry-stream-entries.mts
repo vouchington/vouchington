@@ -1,7 +1,10 @@
 import { entityReconciliationConfig } from '@services/entity-listener-reconciliation/work-limits'
 import { referralCrawlDispatchConfig } from '@services/crawler-referral-links/work-limits'
 import { referralUnfurlDispatchConfig } from '@services/referral-link-unfurl/work-limits'
-import { friendsDispatchConfig } from '@services/friend-recommendations/work-limits'
+import {
+  FRIEND_SYNC_PROVIDERS,
+  friendsDispatchConfig,
+} from '@services/friend-recommendations/work-limits'
 import { crawlDispatchConfig, crawlCleanupMaxValues } from '@services/crawls/work-limits'
 import { crawlerRefreshRegistryEntry } from './registry-crawler-refresh.mts'
 import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
@@ -77,7 +80,7 @@ export const streamDynamicConfigRegistryEntries = [
     namespace: 'referral-crawl-dispatch-work-config',
     label: 'Referral crawl dispatch',
     description:
-      'Bounded dispatch pages with fixed sweep continuations for remaining eligible work.',
+      'Bounded per-provider dispatch jobs with fixed sweep continuations for remaining eligible work.',
     config: referralCrawlDispatchConfig,
     access: { update_roles: ['developer'] },
     fields: {
@@ -105,7 +108,7 @@ export const streamDynamicConfigRegistryEntries = [
     namespace: 'referral-unfurl-dispatch-work-config',
     label: 'Referral unfurl recovery',
     description:
-      'Bounded dispatch pages with fixed sweep continuations for remaining eligible work.',
+      'Bounded per-provider dispatch jobs with fixed sweep continuations for remaining eligible work.',
     config: referralUnfurlDispatchConfig,
     access: { update_roles: ['developer'] },
     fields: {
@@ -127,23 +130,31 @@ export const streamDynamicConfigRegistryEntries = [
     namespace: 'friends-dispatch-work-config',
     label: 'Friend synchronization dispatch',
     description:
-      'Bounded dispatch pages with fixed sweep continuations for remaining eligible work.',
+      'Bounded per-provider dispatch jobs with fixed sweep continuations for remaining eligible work.',
     config: friendsDispatchConfig,
     access: { update_roles: ['developer'] },
-    fields: {
-      batch_size: {
-        description: 'Maximum rows per enqueue batch.',
-        minValue: 1,
-        maxValue: 5000,
-        integer: true,
-      },
-      max_rows_per_provider_per_run: {
-        description: 'Maximum eligible rows per dispatch run.',
-        minValue: 1,
-        maxValue: 100000,
-        integer: true,
-      },
-    },
+    fields: Object.fromEntries(
+      FRIEND_SYNC_PROVIDERS.flatMap(provider => [
+        [
+          `${provider}_batch_size`,
+          {
+            description: `Maximum rows per enqueue batch of the ${provider} dispatch job.`,
+            minValue: 1,
+            maxValue: 5000,
+            integer: true,
+          },
+        ],
+        [
+          `${provider}_max_rows_per_run`,
+          {
+            description: `Maximum eligible rows per run of the ${provider} dispatch job.`,
+            minValue: 1,
+            maxValue: 100000,
+            integer: true,
+          },
+        ],
+      ]),
+    ),
   }),
   defineDynamicConfigNamespace({
     namespace: 'entity-reconciliation-work-config',

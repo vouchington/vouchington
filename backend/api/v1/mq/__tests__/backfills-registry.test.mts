@@ -32,7 +32,9 @@ const EXPECTED_EXISTING_DISPATCHER_BACKFILL_IDS = new Set([
   'vote-weight-family-source-changes',
   'vote-weight-dirty-markers',
   'relation-election-updates',
-  'find-your-friends-dispatch',
+  'find-your-friends-dispatch-facebook',
+  'find-your-friends-dispatch-x',
+  'find-your-friends-dispatch-github',
   'oauth-authorization-exchange-dispatch',
   'topic-aliases-category-mapping-reconciliation',
 ])

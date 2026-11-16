@@ -12,7 +12,7 @@ import { createTestOAuthAccountSweepWindow } from '@voucha/test-helpers/oauth-ac
 import { friendsDispatchConfig } from '@services/friend-recommendations/work-limits'
 import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
 import type { FriendsDispatchData } from '@queues/find-your-friends/types'
-import { processFindYourFriendsDispatcher } from './processors.mts'
+import { processFriendsProviderDispatch } from './processors.mts'
 
 const providers = [
   { provider: 'facebook', syncName: 'syncFacebookFriends', key: 'facebookAccountId' },
@@ -34,7 +34,7 @@ async function insertEligibleAccount(
   })
 }
 
-describe('processFindYourFriendsDispatcher', () => {
+describe('processFriendsProviderDispatch', () => {
   beforeAll(() =>
     vi.stubEnv(
       'VOUCHA_STORED_SECRET_ENCRYPTION_KEYS',
@@ -49,17 +49,18 @@ describe('processFindYourFriendsDispatcher', () => {
     for (const accountId of accountIds) await insertEligibleAccount('facebook', accountId)
     onTestFinished(
       overrideDynamicConfigFieldsForTest(friendsDispatchConfig, {
-        batch_size: 2,
-        max_rows_per_provider_per_run: 10,
+        facebook_batch_size: 2,
+        facebook_max_rows_per_run: 10,
       }),
     )
     const saved: FriendsDispatchData[] = []
 
-    const result = await processFindYourFriendsDispatcher(
+    const result = await processFriendsProviderDispatch(
+      'facebook',
       {
         sweepStartedAt: await readTestDatabaseTimestamp(),
-        upperIds: { facebook: window.upperId, x: null, github: null },
-        afterIds: { facebook: window.afterId },
+        upperId: window.upperId,
+        afterId: window.afterId,
       },
       async next => {
         saved.push(next)
@@ -67,15 +68,11 @@ describe('processFindYourFriendsDispatcher', () => {
     )
 
     expect(result).toEqual({ count: 3, hasMore: false })
-    expect(saved.map(next => next.afterIds?.facebook)).toEqual([
+    expect(saved.map(next => next.afterId)).toEqual([
       window.afterId,
       window.secondId,
       window.upperId,
-      window.upperId,
-      window.upperId,
-      window.upperId,
     ])
-    expect(saved.at(-1)?.finishedProviders).toEqual(['facebook', 'x', 'github'])
     for (const accountId of accountIds) {
       expect(
         await findYourFriendsQueue.searchJobs({
@@ -86,67 +83,62 @@ describe('processFindYourFriendsDispatcher', () => {
     }
   })
 
-  it('counts accounts across all providers', async () => {
-    onTestFinished(
-      overrideDynamicConfigFieldsForTest(friendsDispatchConfig, {
-        batch_size: 2,
-        max_rows_per_provider_per_run: 10,
-      }),
-    )
-    const windows = {
-      facebook: createTestOAuthAccountSweepWindow(),
-      x: createTestOAuthAccountSweepWindow(),
-      github: createTestOAuthAccountSweepWindow(),
-    }
-    for (const { provider } of providers)
-      await insertEligibleAccount(provider, windows[provider].upperId)
+  for (const { provider, syncName, key } of providers) {
+    it(`enqueues only ${provider} accounts from its own job`, async () => {
+      onTestFinished(
+        overrideDynamicConfigFieldsForTest(friendsDispatchConfig, {
+          [`${provider}_batch_size`]: 2,
+          [`${provider}_max_rows_per_run`]: 10,
+        }),
+      )
+      const window = createTestOAuthAccountSweepWindow()
+      await insertEligibleAccount(provider, window.upperId)
 
-    const result = await processFindYourFriendsDispatcher({
-      sweepStartedAt: await readTestDatabaseTimestamp(),
-      upperIds: {
-        facebook: windows.facebook.upperId,
-        x: windows.x.upperId,
-        github: windows.github.upperId,
-      },
-      afterIds: {
-        facebook: windows.facebook.afterId,
-        x: windows.x.afterId,
-        github: windows.github.afterId,
-      },
-    })
+      const result = await processFriendsProviderDispatch(provider, {
+        sweepStartedAt: await readTestDatabaseTimestamp(),
+        upperId: window.upperId,
+        afterId: window.afterId,
+      })
 
-    expect(result).toEqual({ count: 3, hasMore: false })
-    for (const { provider, syncName, key } of providers) {
+      expect(result).toEqual({ count: 1, hasMore: false })
       expect(
         await findYourFriendsQueue.searchJobs({
           name: syncName,
-          data: { [key]: windows[provider].upperId },
+          data: { [key]: window.upperId },
         }),
       ).not.toEqual([])
-    }
-  })
+      for (const other of providers.filter(candidate => candidate.provider !== provider)) {
+        expect(
+          await findYourFriendsQueue.searchJobs({
+            name: other.syncName,
+            data: { [other.key]: window.upperId },
+          }),
+        ).toEqual([])
+      }
+    })
+  }
 
-  it('starts a sweep by reading each provider upper id', async () => {
+  it('starts a sweep by reading the provider upper id', async () => {
     const window = createTestOAuthAccountSweepWindow()
     await insertEligibleAccount('facebook', window.upperId)
     onTestFinished(
       overrideDynamicConfigFieldsForTest(friendsDispatchConfig, {
-        batch_size: 1,
-        max_rows_per_provider_per_run: 1,
+        facebook_batch_size: 1,
+        facebook_max_rows_per_run: 1,
       }),
     )
     const saved: FriendsDispatchData[] = []
 
-    await processFindYourFriendsDispatcher({}, async next => {
+    await processFriendsProviderDispatch('facebook', {}, async next => {
       saved.push(next)
     })
 
-    const facebookUpperId = saved[0]?.upperIds?.facebook
+    const facebookUpperId = saved[0]?.upperId
     expect(
       [window.upperId, facebookUpperId]
         .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b)))
         .at(-1),
     ).toBe(facebookUpperId)
-    expect(Object.keys(saved[0]?.upperIds ?? {}).toSorted()).toEqual(['facebook', 'github', 'x'])
+    expect(saved[0]?.sweepStartedAt).toEqual(expect.any(String))
   })
 })

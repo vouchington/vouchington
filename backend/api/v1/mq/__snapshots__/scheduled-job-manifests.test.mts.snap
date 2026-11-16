@@ -2323,14 +2323,14 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Dispatch "find your friends" social matching",
-        "id": "dispatchFindYourFriends",
+        "description": "Dispatch "find your friends" facebook account syncs",
+        "id": "dispatchFacebookFriends",
         "kind": "scheduled-jobs",
         "schedule": "0 3 * * *",
         "trigger": "[function]",
       },
       {
-        "backfillId": "find-your-friends-dispatch",
+        "backfillId": "find-your-friends-dispatch-facebook",
         "kind": "backfill",
       },
     ],
@@ -2339,16 +2339,102 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "repeat": {
       "pattern": "0 3 * * *",
     },
-    "schedulerId": "dispatchFindYourFriends",
+    "schedulerId": "dispatchFacebookFriends",
     "template": {
       "data": {},
-      "name": "dispatchFindYourFriends",
+      "name": "dispatchFacebookFriends",
       "opts": {
         "attempts": 3,
         "backoff": {
           "delay": 5000,
           "jitter": 0.5,
           "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "dispatch_friends",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch "find your friends" x account syncs",
+        "id": "dispatchXFriends",
+        "kind": "scheduled-jobs",
+        "schedule": "0 3 * * *",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "find-your-friends-dispatch-x",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "find-your-friends",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 3 * * *",
+    },
+    "schedulerId": "dispatchXFriends",
+    "template": {
+      "data": {},
+      "name": "dispatchXFriends",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "dispatch_friends",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch "find your friends" github account syncs",
+        "id": "dispatchGithubFriends",
+        "kind": "scheduled-jobs",
+        "schedule": "0 3 * * *",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "find-your-friends-dispatch-github",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "find-your-friends",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 3 * * *",
+    },
+    "schedulerId": "dispatchGithubFriends",
+    "template": {
+      "data": {},
+      "name": "dispatchGithubFriends",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "dispatch_friends",
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -3994,12 +4080,28 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "triggerName": "enqueueTopicMergeRecovery",
   },
   {
-    "description": "Dispatch "find your friends" social matching",
-    "id": "dispatchFindYourFriends",
-    "job_name": "dispatchFindYourFriends",
+    "description": "Dispatch "find your friends" facebook account syncs",
+    "id": "dispatchFacebookFriends",
+    "job_name": "dispatchFacebookFriends",
     "queue_name": "find-your-friends",
     "schedule": "0 3 * * *",
-    "triggerName": "enqueueDispatchFindYourFriends",
+    "triggerName": "trigger",
+  },
+  {
+    "description": "Dispatch "find your friends" x account syncs",
+    "id": "dispatchXFriends",
+    "job_name": "dispatchXFriends",
+    "queue_name": "find-your-friends",
+    "schedule": "0 3 * * *",
+    "triggerName": "trigger",
+  },
+  {
+    "description": "Dispatch "find your friends" github account syncs",
+    "id": "dispatchGithubFriends",
+    "job_name": "dispatchGithubFriends",
+    "queue_name": "find-your-friends",
+    "schedule": "0 3 * * *",
+    "triggerName": "trigger",
   },
   {
     "description": "Repair Hacker News filter flags in bounded pages",

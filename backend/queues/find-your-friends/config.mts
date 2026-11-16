@@ -1,11 +1,27 @@
 import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
+import type { FindYourFriendsDispatcherJobs, FriendDispatchProvider } from './types.mts'
 
 export const QUEUE_NAME = 'find-your-friends'
 export const PRIORITY_DEFAULT = 10
 export const PRIORITY_DISPATCHER = 100
 
+/** Each provider's dispatch walks its own accounts as its own job. */
+export const FRIEND_DISPATCH_PROVIDERS = [
+  'facebook',
+  'x',
+  'github',
+] as const satisfies readonly FriendDispatchProvider[]
+
+export const FRIEND_DISPATCH_JOBS = {
+  facebook: 'dispatchFacebookFriends',
+  x: 'dispatchXFriends',
+  github: 'dispatchGithubFriends',
+} as const satisfies Record<FriendDispatchProvider, FindYourFriendsDispatcherJobs>
+
 export const FIND_YOUR_FRIENDS_ORDERING = {
+  /** One lane bounds the load of every provider dispatch together. */
+  dispatch_friends: { key: 'dispatch_friends', concurrency: 1 },
   sync_facebook: { key: 'sync_facebook', concurrency: 5 },
   sync_x: { key: 'sync_x', concurrency: 2 }, // tight rate limits
   sync_github: { key: 'sync_github', concurrency: 5 },

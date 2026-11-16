@@ -1,6 +1,6 @@
 import { assertNever } from '@modules/utils/assert-never'
 import { createAsyncGeneratorFromCursor, read } from '@data-stores/psql'
-import { getFriendsDispatchLimits } from './work-limits.mts'
+import { getFriendsDispatchLimits, type FriendSyncProvider } from './work-limits.mts'
 import type { CursorRunResult } from '@data-stores/psql/bounded-cursor-api'
 
 export type AccountToSync = { id: string; eligible: boolean }
@@ -11,7 +11,7 @@ export type AccountSyncSweepOptions = {
   limits?: ReturnType<typeof getFriendsDispatchLimits>
   onComplete?: (result: CursorRunResult<AccountToSync>) => void
 }
-export type FriendSyncProvider = 'facebook' | 'x' | 'github'
+export type { FriendSyncProvider }
 
 function providerUserIdColumn(provider: FriendSyncProvider): string {
   switch (provider) {
@@ -53,7 +53,7 @@ async function* streamAccounts(
   provider: FriendSyncProvider,
   options: AccountSyncSweepOptions,
 ): AsyncGenerator<AccountToSync, CursorRunResult<AccountToSync>, void> {
-  const limits = options.limits ?? getFriendsDispatchLimits()
+  const limits = options.limits ?? getFriendsDispatchLimits(provider)
   const sweepStartedAt = options.sweepStartedAt ?? new Date().toISOString()
   const upperId =
     options.upperId !== undefined ? options.upperId : await getFriendAccountSweepUpperId(provider)

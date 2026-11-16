@@ -11,7 +11,7 @@ import {
   enqueueResumeSyncXFriends,
 } from '@queues/find-your-friends/enqueues'
 import type { FriendSyncResume, FindYourFriendsJobPayloads } from '@queues/find-your-friends/types'
-import { processFindYourFriendsDispatcher } from './processors.mts'
+import { processFriendsProviderDispatch } from './processors.mts'
 import { syncFacebookFriends } from '@services/oauth-facebook/friends'
 import { syncXFriends } from '@services/oauth-x/friends'
 import { syncGithubFriends } from '@services/oauth-github/friends'
@@ -25,8 +25,24 @@ type FindYourFriendsJob = NamedQueueJob<FindYourFriendsJobPayloads>
 export const findYourFriends = createWorker<unknown, unknown, FindYourFriendsJob>(
   QUEUE_NAME,
   (job: FindYourFriendsJob) => {
-    if (job.name === 'dispatchFindYourFriends')
-      return processRetainedSweep(job, save => processFindYourFriendsDispatcher(job.data, save))
+    switch (job.name) {
+      case 'dispatchFacebookFriends':
+        return processRetainedSweep(job, save =>
+          processFriendsProviderDispatch('facebook', job.data, save),
+        )
+      case 'dispatchXFriends':
+        return processRetainedSweep(job, save =>
+          processFriendsProviderDispatch('x', job.data, save),
+        )
+      case 'dispatchGithubFriends':
+        return processRetainedSweep(job, save =>
+          processFriendsProviderDispatch('github', job.data, save),
+        )
+      case 'syncFacebookFriends':
+      case 'syncXFriends':
+      case 'syncGithubFriends':
+        break
+    }
     const orderingKey = job.opts.ordering?.key
 
     switch (orderingKey) {

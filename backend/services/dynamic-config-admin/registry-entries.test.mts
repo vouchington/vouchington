@@ -92,10 +92,14 @@ describe('dynamic config registry entry ordering', () => {
       batch_size: { integer: true, minValue: 1, maxValue: 5_000 },
     })
   })
-  it('registers the friends per-provider budget', () => {
+  it('registers each friends dispatch provider budget', () => {
     expect(dynamicConfigRegistry.get('friends-dispatch-work-config')?.fields).toMatchObject({
-      batch_size: { integer: true, minValue: 1 },
-      max_rows_per_provider_per_run: { integer: true, minValue: 1 },
+      facebook_batch_size: { integer: true, minValue: 1 },
+      facebook_max_rows_per_run: { integer: true, minValue: 1 },
+      x_batch_size: { integer: true, minValue: 1 },
+      x_max_rows_per_run: { integer: true, minValue: 1 },
+      github_batch_size: { integer: true, minValue: 1 },
+      github_max_rows_per_run: { integer: true, minValue: 1 },
     })
   })
   it('registers the conversation participant hard maximum', () => {
