@@ -44,7 +44,7 @@ export async function checkAutomaticWithholdingCaps(
     /* checkAutomaticWithholdingCaps:claimant */
     -- cross-partition: the legal assessment time is independent of the UUIDv7 insertion clock;
     -- an id bound could omit a qualifying assessment when the clocks differ.
-    SELECT count(DISTINCT assessment.id)::int AS total
+    SELECT count(*)::int AS total
     FROM copyright_notices notice
     JOIN copyright_notice_submissions submission ON submission.copyright_notice_id = notice.id
     -- no-mistakes-disable-next-line postgres-required-predicates: assessed_at defines the exact rolling cap across retained assessment partitions

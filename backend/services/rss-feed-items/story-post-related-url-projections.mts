@@ -78,7 +78,7 @@ async function lockStoriesAndFindStoryPostIds(
   await lockStoryLifecycles(query, storyIds)
   const { rows: postRows } = await query<{ post_id: string }>(
     `/* markStoryPostRelatedUrlProjectionsForStories:posts */
-      SELECT DISTINCT post_story.post_id
+      SELECT post_story.post_id
       FROM story_posts post_story
       JOIN posts ON posts.id = post_story.post_id
       WHERE post_story.story_id = ANY($1::uuid[])

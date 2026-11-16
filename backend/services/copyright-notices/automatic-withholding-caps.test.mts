@@ -29,12 +29,16 @@ describe('automatic withholding caps', () => {
   it('refuses a claimant past the daily cap and leaves the notice to a moderator', async () => {
     await switchOn({ automaticWithholdingClaimantDailyCap: 1 })
     const claimant = await createTestUser()
-    const [first, second] = [await createForm({ claimant }), await createForm({ claimant })]
+    const first = (await createClearScreenedForm(2, { claimant })).notice
+    const second = await createForm({ claimant })
 
     await screen(first)
     await screen(second)
 
-    await expect(readTestAutomaticWithholdingOutcome(first)).resolves.toEqual(withheld)
+    await expect(readTestAutomaticWithholdingOutcome(first)).resolves.toEqual({
+      ...withheld,
+      restrictions: 2,
+    })
     await expect(readTestAutomaticWithholdingOutcome(second)).resolves.toEqual(
       refusedFor('claimant_daily_cap'),
     )

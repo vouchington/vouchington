@@ -51,18 +51,16 @@ async function getStaleCategoryKeys(
 ): Promise<StaleCategoryKey[]> {
   const { rows } = await query<StaleCategoryKey>(
     `/* reconcileRssFeedItemCategorySnapshots stalePage */
-      WITH desired_categories AS (
-        SELECT DISTINCT input.rss_feed_item_id, identity.id AS category_identity_id
-        FROM unnest($2::uuid[], $3::text[]) AS input(rss_feed_item_id, category_text)
-        JOIN rss_category_identities identity
-          ON identity.category_text = LOWER(TRIM(input.category_text))
-      )
       SELECT category.rss_feed_item_id, category.category_identity_id
       FROM rss_feed_item_categories category
       WHERE category.rss_feed_item_id = ANY($1::uuid[])
-        AND NOT EXISTS (SELECT 1 FROM desired_categories desired
-          WHERE desired.rss_feed_item_id = category.rss_feed_item_id
-            AND desired.category_identity_id = category.category_identity_id)
+        AND NOT EXISTS (
+          SELECT 1
+          FROM unnest($2::uuid[], $3::text[]) AS input(rss_feed_item_id, category_text)
+          JOIN rss_category_identities identity
+            ON identity.category_text = LOWER(TRIM(input.category_text))
+          WHERE input.rss_feed_item_id = category.rss_feed_item_id
+            AND identity.id = category.category_identity_id)
       ORDER BY category.rss_feed_item_id, category.category_identity_id LIMIT $4`,
     [
       snapshots.map(snapshot => snapshot.rss_feed_item_id),
