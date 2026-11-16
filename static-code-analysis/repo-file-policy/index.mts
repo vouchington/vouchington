@@ -28,7 +28,6 @@ import { checkSchemaDocDriftGuard } from './schema-doc-drift-guard.mts'
 import { checkClientParityMatrixGuard } from './client-parity-matrix-guard.mts'
 import { checkGhApiShellQuoting } from './gh-api-shell-quoting-guard.mts'
 import { checkLivingDocsPinGuard } from './living-docs-pin-guard.mts'
-import { checkTransientRetryPromptGuard } from './transient-retry-prompt-guard.mts'
 import { checkMonetaryContracts, checkMonetarySnapshot } from './monetary-contract-guard.mts'
 import { checkSplitMarkdownCanonicalLinkGuard } from './split-markdown-canonical-link-guard.mts'
 import { loadSchemaSnapshot } from './schema-snapshot-loader.mts'
@@ -115,7 +114,6 @@ export async function checkRepoFilePolicy(
     workflowDirectories: ['.github/workflows', 'ci/no-mistakes-workflows'],
   })
   errors.push(...ghaWorkspacePolicy.errors)
-  checkTransientRetryPromptGuard(ctx.repoRoot, trackedFiles, errors)
   checkLivingDocsPinGuard(ctx.repoRoot, trackedFiles, errors)
   checkPublicSourceLiterals(ctx.repoRoot, trackedFiles, errors)
   checkPlaywrightVisibilityFallback(ctx.repoRoot, trackedFiles, errors, ctx.readTrackedFile)

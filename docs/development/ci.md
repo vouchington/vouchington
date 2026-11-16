@@ -11,8 +11,7 @@ performance budget, not a timeout or CI failure threshold. The scheduled
 [`ci-job-runtime.md`](../prompts/scheduled/ci-job-runtime.md) prompt turns the highest-ranked breach
 of the ceiling into one issue, and the scheduled
 [`ci-log-quality.md`](../prompts/scheduled/ci-log-quality.md) prompt selects one bounded,
-diagnostics-preserving log fix. Use [`transient-retry.md`](../prompts/scheduled/transient-retry.md)
-for retry fingerprint policy and the
+diagnostics-preserving log fix. Use the
 [`review-ci-logs` skill](../../.agents/skills/review-ci-logs/SKILL.md) to separate real failures
 from source echo, cascades, and volume-only output.
 
@@ -169,8 +168,7 @@ downstream consequence.
 area's `test-playwright-credentialed` job call live providers as informational smoke checks: their
 gates do not wait on them, they publish no LCOV, and `.pr-shepherdrc.yml` lists them under
 `checks.ignore`. A provider failure is not by itself a regression in this repository, so it must not
-eject a queue entry, and no [transient-failure rule](reference-ci-classifying-transient-infrastructure-failures.md)
-reruns them because a rerun of a non-gating job gains nothing. The failed job stays red so the
+eject a queue entry, and a rerun of a non-gating job gains nothing. The failed job stays red so the
 check, the Nightly run, and the Nightly alert still report it. Recorded provider responses replayed
 through `createProviderReplay` gate the
 same request handling deterministically; see [live-provider smoke checks](tests.md#live-provider-smoke-checks)
@@ -190,8 +188,8 @@ hook-harness event relay and the attended
 `/shepherd`, `/plan` and `/fix` handling. An agent shepherds the PR it authored with pr-shepherd;
 posting a literal `/shepherd` comment is an optional delegation to the loop (for example when the
 session must end or the owner asks), after which the agent stops and the loop owns the PR. The loop
-runs the [prompts](../prompts/README.md) on its own schedule. Rerunning a transient failure follows
-[Classifying Transient Infrastructure Failures](reference-ci-classifying-transient-infrastructure-failures.md).
+runs the [prompts](../prompts/README.md) on its own schedule. Rebase onto `main` first. Rerun failed jobs only when the
+branch is current with `main`; otherwise find the root cause and fix the flake.
 
 - **Merge queue ejection** is triaged by the attended triage loop, which groups recent ejections by
   root cause, fixes flaky tests in new PRs, files issues, or comments on ejected PRs, and never
@@ -216,5 +214,4 @@ runs the [prompts](../prompts/README.md) on its own schedule. Rerunning a transi
 
 - <a id="destructive-manual-workflows"></a>[Destructive Manual Workflows](reference-ci-destructive-manual-workflows.md)
 - <a id="ci-job-conditions"></a>[CI Job Conditions](reference-ci-ci-job-conditions.md)
-- <a id="classifying-transient-infrastructure-failures"></a>[Classifying Transient Infrastructure Failures](reference-ci-classifying-transient-infrastructure-failures.md)
 - <a id="adding-a-trustedcredentialed-ci-job"></a>[Adding a Trusted/Credentialed CI Job](reference-ci-adding-a-trusted-credentialed-ci-job.md)

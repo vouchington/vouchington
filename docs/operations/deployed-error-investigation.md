@@ -29,9 +29,7 @@ an action that would mutate data or infrastructure.
 
 Escalate a confirmed regression with bounded, redacted evidence and the last
 known-good deployment. Production diagnosis requires separate explicit
-authorization. Follow the [CI transient retry policy](../development/ci.md#classifying-transient-infrastructure-failures)
-for a classified transport failure; do not alter application or retry policy
-from one timeout.
+authorization. Do not alter application or retry policy from one timeout.
 
 ## Related references
 

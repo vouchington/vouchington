@@ -34,7 +34,8 @@
   commands. See [dependency policy](../../../docs/development/dependency-updates.md).
 - Treat CI failures as potentially related until evidence says otherwise. Use
   [review-ci-logs](../review-ci-logs/SKILL.md) and the
-  [transient-retry catalog](../../../ci/transient-retry/README.md) before retrying.
+  to find the root cause. Rebase onto `main` first; rerun failed jobs only when the branch is
+  current with `main`, otherwise fix the flake.
   Voucha's patch-coverage gate blocks; informational Codecov upload status does not replace it.
 
 - For an upper-only fast-forward while a lower layer is queued, follow [the forge check](../stacked-prs/SKILL.md#upper-only-fast-forward): capture the parent head/base, upper remote head, and stack order; reread all four immediately before pushing. Require unchanged refs, a fast-forward upper commit, and parent ancestry. On a mismatch, merge, or queue exit, stop and reread. Do not sync or rebase the stack while the lower layer is queued; read-only review and CI work can continue.

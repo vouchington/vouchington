@@ -36,4 +36,4 @@ parameters after reading it:
   and [merge authority](../../../docs/development/merge-authority.md).
   Native stacks use [stacked PRs](../stacked-prs/SKILL.md).
 - **CI failures:** diagnose with [review-ci-logs](../review-ci-logs/SKILL.md)
-  and classify retries through [transient retry](../../../ci/transient-retry/README.md).
+  and rerun only a branch that is current with `main`; otherwise fix the root cause.

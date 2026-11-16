@@ -7,7 +7,7 @@ output.
 - Check the latest target-branch runs first and fix repository-owned root causes before symptoms.
 - Measure the selected job or step in bytes and lines before changing it.
 - Preserve non-zero exits, complete primary errors, artifacts, summaries, resource/exit evidence,
-  and transient-retry fingerprints.
+  and failure fingerprints.
 - Do not add blanket quiet flags or truncate Storybook, browser, compiler, or test diagnostics
   without proving equivalent failure information from before/after samples.
 - Skip findings already covered by open issues or pull requests. Record larger or lower-confidence
@@ -28,7 +28,7 @@ proposed PR body must include:
 - `## Validation` — record the measured source evidence and name the next verification point: the
   before/after comparison or exact post-implementation check still required.
 - `## Rollout / deploy safety` — explain how the implementation preserves complete primary errors, artifacts, summaries,
-  resource/exit evidence, transient-retry fingerprints, and non-zero failure behavior. This heading
+  resource/exit evidence, and non-zero failure behavior. This heading
   records CI evidence preservation. Product changes follow [One current contract](../../../AGENTS.md).
 
 Publish the bounded patch as the draft PR with the required title, body, and commit message. If no independently mergeable patch is confidently ready, stop and report that outcome. An issue-only or findings-only fallback is forbidden.

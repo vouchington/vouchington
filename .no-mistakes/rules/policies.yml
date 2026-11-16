@@ -2007,7 +2007,6 @@
       static-analysis-tools: [tooling]
       static-analysis-ast-grep: [tooling]
       dev-tools: [tooling]
-      ci-transient-retry: [tooling]
       ci-tools: [tooling]
       github-actions: [tooling]
       git-hooks: [tooling]
