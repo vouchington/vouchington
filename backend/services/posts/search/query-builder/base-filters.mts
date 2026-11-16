@@ -48,20 +48,25 @@ function buildDiscoveryEligibility(
   isAdmin: boolean,
   includeArchivedCommunities: boolean,
 ): SQLStatement {
-  const eligibility = (postAlias: 'posts' | 'root_post') =>
-    viewer
-      ? buildViewerPostDiscoveryEligibilityFilter('posts', postAlias, {
-          currentUserId: viewer.id,
-          includeArchivedCommunities,
-          isAdministrator: isAdmin,
-        })
-      : buildPublicPostEligibilityFilter('posts', postAlias, { includeArchivedCommunities })
+  const viewerOptions = {
+    currentUserId: viewer?.id ?? '',
+    includeArchivedCommunities,
+    isAdministrator: isAdmin,
+  }
   // Root posts already supply their own access row; only replies need a keyed root probe.
   return sql`CASE WHEN posts.root_post_id IS NULL THEN `
-    .append(eligibility('posts'))
+    .append(
+      viewer
+        ? buildViewerPostDiscoveryEligibilityFilter('posts', 'posts', viewerOptions)
+        : buildPublicPostEligibilityFilter('posts', 'posts', { includeArchivedCommunities }),
+    )
     .append(sql` ELSE EXISTS (
     SELECT 1 FROM posts root_post WHERE root_post.id = posts.root_post_id AND `)
-    .append(eligibility('root_post'))
+    .append(
+      viewer
+        ? buildViewerPostDiscoveryEligibilityFilter('posts', 'root_post', viewerOptions)
+        : buildPublicPostEligibilityFilter('posts', 'root_post', { includeArchivedCommunities }),
+    )
     .append(sql`) END`)
 }
 
