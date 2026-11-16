@@ -36,9 +36,11 @@ function scheduleOAuthCompletion(callback: () => void): () => void {
 
 export default function OAuthBrokerCallbackPage() {
   return (
-    <Suspense fallback={<OAuthBrokerStatus />}>
-      <OAuthBrokerCallbackContent />
-    </Suspense>
+    <div data-pw='oauth-broker-callback'>
+      <Suspense fallback={<OAuthBrokerStatus />}>
+        <OAuthBrokerCallbackContent />
+      </Suspense>
+    </div>
   )
 }
 

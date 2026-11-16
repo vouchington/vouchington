@@ -9,9 +9,11 @@ const X_CALLBACK_FALLBACK = <XCallbackStatus />
 
 export default function XCallbackPage() {
   return (
-    <Suspense fallback={X_CALLBACK_FALLBACK}>
-      <XCallbackContent />
-    </Suspense>
+    <div data-pw='oauth-callback-x'>
+      <Suspense fallback={X_CALLBACK_FALLBACK}>
+        <XCallbackContent />
+      </Suspense>
+    </div>
   )
 }
 

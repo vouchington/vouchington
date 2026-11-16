@@ -148,31 +148,36 @@ test.describe('Route coverage baseline', () => {
   test('covers /auth/callback/github', async ({ page }) => {
     await navigateTo(page, '/auth/callback/github?code=coverage')
 
-    await expect(page.getByTestId('oauth-callback-github-loading')).toBeVisible()
+    const callback = page.getByTestId('oauth-callback-github')
+    await expect(callback.getByTestId('oauth-callback-github-loading')).toBeVisible()
   })
 
   test('covers /auth/callback/apple', async ({ page }) => {
     await navigateTo(page, '/auth/callback/apple?id_token=coverage')
 
-    await expect(page.getByTestId('oauth-callback-apple-loading')).toBeVisible()
+    const callback = page.getByTestId('oauth-callback-apple')
+    await expect(callback.getByTestId('oauth-callback-apple-loading')).toBeVisible()
   })
 
   test('covers /auth/callback/linkedin', async ({ page }) => {
     await navigateTo(page, '/auth/callback/linkedin?code=coverage')
 
-    await expect(page.getByTestId('oauth-callback-linkedin-loading')).toBeVisible()
+    const callback = page.getByTestId('oauth-callback-linkedin')
+    await expect(callback.getByTestId('oauth-callback-linkedin-loading')).toBeVisible()
   })
 
   test('covers /auth/callback/microsoft', async ({ page }) => {
     await navigateTo(page, '/auth/callback/microsoft?code=coverage')
 
-    await expect(page.getByTestId('oauth-callback-microsoft-loading')).toBeVisible()
+    const callback = page.getByTestId('oauth-callback-microsoft')
+    await expect(callback.getByTestId('oauth-callback-microsoft-loading')).toBeVisible()
   })
 
   test('covers /auth/callback/x', async ({ page }) => {
     await navigateTo(page, '/auth/callback/x?code=coverage')
 
-    await expect(page.getByTestId('oauth-callback-x-loading')).toBeVisible()
+    const callback = page.getByTestId('oauth-callback-x')
+    await expect(callback.getByTestId('oauth-callback-x-loading')).toBeVisible()
   })
 
   test('covers /auth/callback/broker', async ({ page }) => {
@@ -180,7 +185,8 @@ test.describe('Route coverage baseline', () => {
 
     await expect(page).toHaveURL('/auth/callback/broker')
     void page.getByTestId('oauth-broker-callback-loading')
-    await expect(page.getByTestId('oauth-broker-callback-error')).toBeVisible()
+    const callback = page.getByTestId('oauth-broker-callback')
+    await expect(callback.getByTestId('oauth-broker-callback-error')).toBeVisible()
   })
 
   test('covers /communities/[slug]/lists', async ({ page }) => {

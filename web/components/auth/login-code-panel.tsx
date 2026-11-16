@@ -79,6 +79,7 @@ export function LoginCodePanel({
         onResendCode={onResendCode}
         onSubmit={handleCodeSubmit}
         turnstileReady={turnstileToken !== null}
+        data-pw='login-code-step'
       />
       {step === 'mfa' && (
         <MfaStep

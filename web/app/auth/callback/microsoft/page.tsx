@@ -9,9 +9,11 @@ const MICROSOFT_CALLBACK_FALLBACK = <MicrosoftCallbackStatus />
 
 export default function MicrosoftCallbackPage() {
   return (
-    <Suspense fallback={MICROSOFT_CALLBACK_FALLBACK}>
-      <MicrosoftCallbackContent />
-    </Suspense>
+    <div data-pw='oauth-callback-microsoft'>
+      <Suspense fallback={MICROSOFT_CALLBACK_FALLBACK}>
+        <MicrosoftCallbackContent />
+      </Suspense>
+    </div>
   )
 }
 

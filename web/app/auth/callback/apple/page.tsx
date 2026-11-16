@@ -12,9 +12,11 @@ const APPLE_CALLBACK_USER_NAME_KEYS = ['userName', 'user_name', 'name'] as const
 
 export default function AppleCallbackPage() {
   return (
-    <Suspense fallback={APPLE_CALLBACK_FALLBACK}>
-      <AppleCallbackContent />
-    </Suspense>
+    <div data-pw='oauth-callback-apple'>
+      <Suspense fallback={APPLE_CALLBACK_FALLBACK}>
+        <AppleCallbackContent />
+      </Suspense>
+    </div>
   )
 }
 

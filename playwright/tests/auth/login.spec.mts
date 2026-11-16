@@ -20,7 +20,8 @@ test.describe('Login Page', () => {
   test('should render login form', async ({ page }) => {
     await navigateTo(page, '/login')
 
-    await expect(page.getByTestId('login-email-input')).toBeVisible()
+    const loginForm = page.getByTestId('login-form')
+    await expect(loginForm.getByTestId('login-email-input')).toBeVisible()
     await expect(page.getByTestId('login-turnstile-container')).toBeVisible()
     await expect(page.getByTestId('login-continue-with-email-button')).toBeVisible()
     await expect(page.getByTestId('login-email-input')).toBeFocused()
@@ -78,7 +79,8 @@ test.describe('Login Page', () => {
     await expect(submitButton).toBeEnabled()
     await submitButton.click()
 
-    await expect(page.getByTestId('login-verification-code-input')).toBeVisible()
+    const codeStep = page.getByTestId('login-code-step')
+    await expect(codeStep.getByTestId('login-verification-code-input')).toBeVisible()
     await expect(page.getByTestId('login-code-submit-button')).toBeVisible()
     await expect(page.getByTestId('login-code-back-button')).toBeVisible()
     await expect(page.getByTestId('login-verification-code-input')).toBeFocused()

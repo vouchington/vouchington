@@ -138,7 +138,10 @@ export function LoginForm({
   }
 
   return (
-    <div className='space-y-4'>
+    <div
+      className='space-y-4'
+      data-pw='login-form'
+    >
       <LoginEmailStep
         active={step === 'email'}
         email={email}

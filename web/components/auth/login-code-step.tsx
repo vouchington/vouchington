@@ -22,6 +22,7 @@ interface LoginCodeStepProps {
   onResendCode: () => Promise<void>
   onSubmit: (e: SyntheticEvent) => Promise<void>
   turnstileReady: boolean
+  'data-pw'?: string
 }
 
 export function LoginCodeStep({
@@ -34,6 +35,7 @@ export function LoginCodeStep({
   onResendCode,
   onSubmit,
   turnstileReady,
+  'data-pw': dataPw = 'login-code-step',
 }: LoginCodeStepProps) {
   const t = useTranslations()
   const otpInputRef = useRef<HTMLInputElement>(null)
@@ -50,6 +52,7 @@ export function LoginCodeStep({
     <form
       onSubmit={onSubmit}
       className='space-y-4'
+      data-pw={dataPw}
     >
       <p className='text-sm text-muted-foreground'>
         {t('extracted.auth.loginCodeStep.enterTheVerificationCodeSentTo_b53551d7')}{' '}

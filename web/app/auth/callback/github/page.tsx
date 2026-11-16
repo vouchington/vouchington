@@ -9,9 +9,11 @@ const GITHUB_CALLBACK_FALLBACK = <GithubCallbackStatus />
 
 export default function GithubCallbackPage() {
   return (
-    <Suspense fallback={GITHUB_CALLBACK_FALLBACK}>
-      <GithubCallbackContent />
-    </Suspense>
+    <div data-pw='oauth-callback-github'>
+      <Suspense fallback={GITHUB_CALLBACK_FALLBACK}>
+        <GithubCallbackContent />
+      </Suspense>
+    </div>
   )
 }
 
