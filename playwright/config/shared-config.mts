@@ -91,10 +91,7 @@ export function createPlaywrightConfig({
     workers,
     forbidOnly: CI,
     retries: CI ? 1 : 0,
-    reporter: [
-      ...createReporter(junitOutputFile, CI),
-      [join(__dirname, 'playwright/config/api-test-server-guard-reporter.mts')],
-    ],
+    reporter: createReporter(junitOutputFile, CI),
     globalSetup,
     maxFailures: CI ? 3 : undefined,
     timeout,

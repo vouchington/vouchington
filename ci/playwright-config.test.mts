@@ -290,6 +290,9 @@ describe('Playwright shared config', () => {
   )
 
   it('preserves the existing local HTML reporter selection', () => {
-    expect(createReporter('local-results.xml', false)).toEqual([['html', { open: 'never' }]])
+    expect(createReporter('local-results.xml', false)).toEqual([
+      ['html', { open: 'never' }],
+      [expect.stringMatching(/api-test-server-guard-reporter\.mts$/u)],
+    ])
   })
 })
