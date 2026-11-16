@@ -1,10 +1,16 @@
-import { createModerationSummaryCollection } from '@queues/background/enqueues/moderation-summary-state'
+import {
+  createModerationSummaryCollection,
+  MODERATION_SUMMARY_STAGES,
+  type ModerationSummaryNext,
+  type ModerationSummaryStage,
+} from '@queues/background/enqueues/moderation-summary-state'
 import { createHash } from 'node:crypto'
 import { getBackgroundOrderingConcurrency } from '@queues/background/config'
 import { createBackgroundEnqueue } from '@queues/background/enqueues'
 import {
   EMAIL_DIGESTS_DISPATCH_ENGAGEMENT_JOB,
   EMAIL_DIGESTS_DISPATCH_MODERATION_SUMMARY_JOB,
+  EMAIL_DIGESTS_MODERATION_SUMMARY_STAGE_JOBS,
   EMAIL_DIGESTS_SEND_FOLLOW_NEWS_SOURCES_JOB,
   EMAIL_DIGESTS_SEND_FOLLOW_TOPICS_JOB,
   EMAIL_DIGESTS_SEND_MODERATION_SUMMARY_JOB,
@@ -28,6 +34,12 @@ const enqueueFollowTopics = createBackgroundEnqueue(EMAIL_DIGESTS_SEND_FOLLOW_TO
 const enqueuePostReferralLink = createBackgroundEnqueue(EMAIL_DIGESTS_SEND_POST_REFERRAL_LINK_JOB)
 const enqueueFollowNewsSources = createBackgroundEnqueue(EMAIL_DIGESTS_SEND_FOLLOW_NEWS_SOURCES_JOB)
 const enqueueModerationSummary = createBackgroundEnqueue(EMAIL_DIGESTS_SEND_MODERATION_SUMMARY_JOB)
+const enqueueModerationSummaryStage = Object.fromEntries(
+  MODERATION_SUMMARY_STAGES.map(stage => [
+    stage,
+    createBackgroundEnqueue(EMAIL_DIGESTS_MODERATION_SUMMARY_STAGE_JOBS[stage]),
+  ]),
+) as Record<ModerationSummaryStage, typeof enqueueModerationSummary>
 const enqueueDispatchEngagement = createBackgroundEnqueue(EMAIL_DIGESTS_DISPATCH_ENGAGEMENT_JOB)
 const enqueueDispatchModerationSummary = createBackgroundEnqueue(
   EMAIL_DIGESTS_DISPATCH_MODERATION_SUMMARY_JOB,
@@ -54,19 +66,25 @@ export function enqueueSendFollowNewsSourcesEmail(
   return enqueueFollowNewsSources({ input, variables })
 }
 
+/** Starts a digest collection at its first stage, memberships. */
 export function enqueueSendCommunityModerationSummaryEmail(
   input: SendCommunityModerationSummaryEmailData['input'],
   variables: Omit<ProcessSendCommunityModerationSummaryEmailVariables, 'collection'>,
 ): EnqueueReturnType {
   const collection = createModerationSummaryCollection()
-  return enqueueContinueCommunityModerationSummaryEmail(input, {
+  return enqueueModerationSummaryStep('memberships', input, {
     ...variables,
     communities: [],
     collection,
   })
 }
 
-export function enqueueContinueCommunityModerationSummaryEmail(
+/**
+ * Admits the job that runs after a finished stage. The id is the stage plus its cursor, so a
+ * retried stage re-admits the same next job instead of a second one.
+ */
+export function enqueueModerationSummaryStep(
+  next: ModerationSummaryNext,
   input: SendCommunityModerationSummaryEmailData['input'],
   variables: ProcessSendCommunityModerationSummaryEmailVariables,
 ): EnqueueReturnType {
@@ -74,15 +92,14 @@ export function enqueueContinueCommunityModerationSummaryEmail(
   const identity = createHash('sha256')
     .update(
       JSON.stringify([
+        next,
         input.userId,
         input.trackingKey,
         cursor.eventId,
-        cursor.phase,
         cursor.afterMembershipId,
         cursor.discussionCommunityIndex,
         cursor.scan && [
           cursor.scan.communityId,
-          cursor.scan.stage,
           cursor.scan.afterId,
           cursor.scan.parentId,
           cursor.scan.afterChildId,
@@ -92,7 +109,7 @@ export function enqueueContinueCommunityModerationSummaryEmail(
       ]),
     )
     .digest('hex')
-  return enqueueModerationSummary(
+  return (next === 'send' ? enqueueModerationSummary : enqueueModerationSummaryStage[next])(
     { input, variables },
     {
       jobId: `moderation-summary-${identity}`,

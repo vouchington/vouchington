@@ -15,7 +15,7 @@ import {
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
 import { insertBackdatedModerationSummaryCommunity } from '@voucha/test-helpers/moderation-summary-activity-community'
-import { EMAIL_DIGESTS_SEND_MODERATION_SUMMARY_JOB } from '@queues/background/enqueues/email-digests-jobs'
+import { EMAIL_DIGESTS_MODERATION_SUMMARY_STAGE_JOBS } from '@queues/background/enqueues/email-digests-jobs'
 import { backgroundQueue as emailDigests } from '@voucha/test-helpers/shared-background-queue'
 import { updateUserFields } from '@services/users/update-fields'
 import { deleteUser } from '@services/users/delete'
@@ -216,7 +216,7 @@ describe('getCommunityModerationSummaryCommunities activity digest', () => {
     const queued = jobs.find(job => {
       const data = job.data as { input?: { userId?: string } }
       return (
-        job.name === EMAIL_DIGESTS_SEND_MODERATION_SUMMARY_JOB.name &&
+        job.name === EMAIL_DIGESTS_MODERATION_SUMMARY_STAGE_JOBS.memberships.name &&
         data.input?.userId === user!.id
       )
     })

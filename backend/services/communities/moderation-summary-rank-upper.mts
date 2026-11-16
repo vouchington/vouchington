@@ -7,7 +7,7 @@ import {
 
 // Backlog IDs may be ahead of the activity clock. Freeze each raw source's
 // persisted maximum instead of clipping pending work to the activity window.
-export async function captureModerationSummarySourceUpper(
+export async function readModerationSummarySourceUpper(
   scan: ModerationSummaryScan,
   source: 'reviews' | 'applications' | 'report-posts',
 ): Promise<string> {
@@ -30,11 +30,10 @@ export async function captureModerationSummarySourceUpper(
       FROM posts WHERE community_id=${scan.communityId} AND community_id IS NOT NULL
       ORDER BY community_id DESC,id DESC LIMIT 1`))
   }
-  scan.sourceUpperId = rows[0]?.id ?? MODERATION_SUMMARY_ZERO_ID
-  return scan.sourceUpperId
+  return rows[0]?.id ?? MODERATION_SUMMARY_ZERO_ID
 }
 
-export async function captureModerationSummaryChildUpper(
+export async function readModerationSummaryChildUpper(
   scan: ModerationSummaryScan,
 ): Promise<string> {
   if (scan.childUpperId !== null) return scan.childUpperId
@@ -42,6 +41,5 @@ export async function captureModerationSummaryChildUpper(
     SELECT id FROM moderation_reports WHERE post_id=${scan.parentId}
       AND reviewed_at IS NULL AND resolution_action IS NULL
     ORDER BY post_id DESC,id DESC LIMIT 1`)
-  scan.childUpperId = rows[0]?.id ?? MODERATION_SUMMARY_ZERO_ID
-  return scan.childUpperId
+  return rows[0]?.id ?? MODERATION_SUMMARY_ZERO_ID
 }

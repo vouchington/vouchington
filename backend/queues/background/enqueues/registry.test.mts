@@ -73,9 +73,10 @@ describe('background registry', () => {
     const dispatchers = jobs.filter(job => job.name.includes('.dispatch'))
     expect(dispatchers).toHaveLength(3)
     expect(dispatchers.every(job => job.options.priority === 100)).toBe(true)
-    expect(jobs.filter(job => !dispatchers.includes(job)).map(job => job.options.priority)).toEqual(
-      [10, 10, 10, 10, 10],
-    )
+    const sends = jobs.filter(job => !dispatchers.includes(job))
+    // Four template sends and the API-key reminder, plus the ten moderation-summary stage jobs.
+    expect(sends).toHaveLength(15)
+    expect(sends.every(job => job.options.priority === 10)).toBe(true)
   })
 
   it('lists a domain’s job names and sums the worker baselines it replaced', () => {
