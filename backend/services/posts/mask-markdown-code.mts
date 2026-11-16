@@ -29,7 +29,7 @@ export function maskMarkdownCode(input: string): string {
   for (const line of input.matchAll(/^(?: {0,3}>[ \t]?)+ {4}[^\n]*/gm)) {
     masked.fill(' ', line.index!, line.index! + line[0].length)
   }
-  maskIndentedCodeBlocks(input, masked)
+  for (const [start, end] of indentedCodeBlockRanges(input)) masked.fill(' ', start, end)
   for (const span of masked.join('').matchAll(/(?<!`)(`+)(?!`)([\s\S]*?)(?<!`)\1(?!`)/g)) {
     masked.fill(' ', span.index!, span.index! + span[0].length)
   }
@@ -62,7 +62,8 @@ function findUnclosedFenceEnd(
   return containerEnd.exec(input)?.index ?? input.length
 }
 
-function maskIndentedCodeBlocks(input: string, masked: string[]): void {
+function indentedCodeBlockRanges(input: string): Array<readonly [number, number]> {
+  const ranges: Array<readonly [number, number]> = []
   const lines = [...input.matchAll(/[^\n]*(?:\n|$)/g)].filter(line => line[0] !== '')
   let inCodeBlock = false
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
@@ -75,8 +76,9 @@ function maskIndentedCodeBlocks(input: string, masked: string[]): void {
     }
     if (!inCodeBlock && !canStartIndentedCodeBlock(lines, lineIndex)) continue
     inCodeBlock = true
-    masked.fill(' ', line.index!, line.index! + content.length)
+    ranges.push([line.index!, line.index! + content.length])
   }
+  return ranges
 }
 
 function canStartIndentedCodeBlock(lines: RegExpMatchArray[], lineIndex: number): boolean {

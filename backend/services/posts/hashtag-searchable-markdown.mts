@@ -26,7 +26,7 @@ function maskEscapedHashtag(match: string): string {
 
 function maskMarkdownImagesAndDestinations(input: string): string {
   const masked = input.split('')
-  maskLinkReferenceDefinitions(input, masked)
+  for (const [start, end] of linkReferenceDefinitionRanges(input)) masked.fill(' ', start, end)
   const pairs = buildDelimiterPairs(input)
   const definitions = new Set(
     [...input.matchAll(/^(?:(?: {0,3}>[ \t]?)+)? {0,3}\[([^\]]+)\]:/gm)].map(match =>
@@ -57,19 +57,19 @@ function maskMarkdownImagesAndDestinations(input: string): string {
   return masked.join('')
 }
 
-function maskLinkReferenceDefinitions(input: string, masked: string[]): void {
+function linkReferenceDefinitionRanges(input: string): Array<readonly [number, number]> {
   const definition =
     /^(?:(?: {0,3}>[ \t]?)+)? {0,3}\[(?:\\.|[^\]\\])+\]:[ \t]*(?:<[^<>\n]*>|(?:\\[^\n]|[^\\\s<>])+)(?:(?:[ \t]+|\n(?:(?: {0,3}>[ \t]?)+)?[ \t]*)(?:"[^"\n]*"|'[^'\n]*'|\([^\n]*\)))?[ \t]*$/gm
-  for (const match of input.matchAll(definition)) {
-    masked.fill(' ', match.index!, match.index! + match[0].length)
-  }
+  return [...input.matchAll(definition)].map(
+    match => [match.index!, match.index! + match[0].length] as const,
+  )
 }
 
 function buildDelimiterPairs(input: string) {
   const square = new Map<number, number>()
   const round = new Map<number, number>()
-  const squareStack: number[] = []
-  const roundStack: number[] = []
+  let squareStack: DelimiterStack = null
+  let roundStack: DelimiterStack = null
   const escaped: boolean[] = []
   let backslashes = 0
   for (let index = 0; index < input.length; index++) {
@@ -81,17 +81,20 @@ function buildDelimiterPairs(input: string) {
     escaped[index] = backslashes % 2 === 1
     backslashes = 0
     if (escaped[index]) continue
-    if (character === '[') squareStack.push(index)
-    else if (character === ']') pairLast(squareStack, square, index)
-    else if (character === '(') roundStack.push(index)
-    else if (character === ')') pairLast(roundStack, round, index)
+    if (character === '[') squareStack = { index, rest: squareStack }
+    else if (character === ']') squareStack = pairLast(squareStack, square, index)
+    else if (character === '(') roundStack = { index, rest: roundStack }
+    else if (character === ')') roundStack = pairLast(roundStack, round, index)
   }
   return { square, round, escaped }
 }
 
-function pairLast(stack: number[], pairs: Map<number, number>, end: number): void {
-  const start = stack.pop()
-  if (start !== undefined) pairs.set(start, end)
+/** Persistent stack, so each push and pop is O(1) without mutating a shared array. */
+type DelimiterStack = { readonly index: number; readonly rest: DelimiterStack } | null
+
+function pairLast(stack: DelimiterStack, pairs: Map<number, number>, end: number): DelimiterStack {
+  if (stack) pairs.set(stack.index, end)
+  return stack?.rest ?? null
 }
 
 function normalizeReference(value: string): string {

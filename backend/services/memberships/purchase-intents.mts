@@ -24,9 +24,10 @@ export class MembershipPurchaseIneligibleError extends Error {
   readonly provider: MembershipPurchaseProvider | null
   readonly eligibleAt: Date | null
 
+  override readonly name: string = 'MembershipPurchaseIneligibleError'
+
   constructor(provider: MembershipPurchaseProvider | null, eligibleAt: Date | null) {
     super('Membership purchase is not eligible.')
-    this.name = 'MembershipPurchaseIneligibleError'
     this.provider = provider
     this.eligibleAt = eligibleAt
   }

@@ -28,12 +28,13 @@ export class DirectMembershipSourceRejectedError extends Error {
   readonly reason: DirectMembershipSourceRejectionReason
   readonly currentSourceKind: 'admin_grant' | 'direct' | 'family'
 
+  override readonly name: string = 'DirectMembershipSourceRejectedError'
+
   constructor(
     reason: DirectMembershipSourceRejectionReason,
     currentSourceKind: 'admin_grant' | 'direct' | 'family',
   ) {
     super(reason)
-    this.name = 'DirectMembershipSourceRejectedError'
     this.reason = reason
     this.currentSourceKind = currentSourceKind
   }

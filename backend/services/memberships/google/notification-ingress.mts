@@ -8,15 +8,17 @@ import { parseGooglePlayRtdn } from './rtdn.mts'
 import type { GoogleOidcTrustMaterial, GooglePlayMembershipProviderEnvironment } from './types.mts'
 
 export class InvalidGooglePlayRtdnError extends Error {
+  override readonly name: string = 'InvalidGooglePlayRtdnError'
+
   constructor() {
     super('Invalid Google Play notification.')
-    this.name = 'InvalidGooglePlayRtdnError'
   }
 }
 export class GooglePlayRtdnTrustUnavailableError extends Error {
+  override readonly name: string = 'GooglePlayRtdnTrustUnavailableError'
+
   constructor() {
     super('Google Play notification trust keys are unavailable.')
-    this.name = 'GooglePlayRtdnTrustUnavailableError'
   }
 }
 

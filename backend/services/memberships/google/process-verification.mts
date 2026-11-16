@@ -27,9 +27,10 @@ import {
 } from './verification-finalization.mts'
 
 export class GooglePlayPurchasePendingError extends Error {
+  override readonly name: string = 'GooglePlayPurchasePendingError'
+
   constructor() {
     super('Google Play purchase is pending')
-    this.name = 'GooglePlayPurchasePendingError'
   }
 }
 

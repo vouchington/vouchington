@@ -4,9 +4,10 @@ import sql from 'sql-template-strings'
 import { tokenDigest } from './token-digest.mts'
 
 export class GooglePlayLineageConflictError extends Error {
+  override readonly name: string = 'GooglePlayLineageConflictError'
+
   constructor() {
     super('Google Play purchase token belongs to another canonical lineage')
-    this.name = 'GooglePlayLineageConflictError'
   }
 }
 

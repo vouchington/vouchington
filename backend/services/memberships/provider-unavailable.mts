@@ -2,10 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import { finalizePendingMembershipVerification } from './verification-work.mts'
 
 export class MembershipProviderUnavailableError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
-    super(message, options)
-    this.name = 'MembershipProviderUnavailableError'
-  }
+  override readonly name: string = 'MembershipProviderUnavailableError'
 }
 
 export async function rejectUnavailableMembershipProvider(verificationId: string): Promise<void> {

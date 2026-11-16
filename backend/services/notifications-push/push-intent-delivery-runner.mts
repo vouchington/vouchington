@@ -25,7 +25,6 @@ export async function runNotificationPushDelivery(input: {
   policy: NotificationPushDeliveryPolicy
 }): Promise<PushDeliveryRun> {
   const agent = new Agent({ keepAlive: true })
-  const outcomes: NotificationPushEndpointOutcome[] = []
   let subscriptionStale = false
   const keeper = createNotificationPushIntentLeaseKeeper({
     intent: input.intent,
@@ -38,13 +37,18 @@ export async function runNotificationPushDelivery(input: {
     await keeper.renewNow()
     if (keeper.ownershipLost) {
       await keeper.stopAndSettle()
-      return { outcomes, subscriptionStale, ownershipLost: true, fatalError: keeper.fatalError }
+      return {
+        outcomes: [],
+        subscriptionStale,
+        ownershipLost: true,
+        fatalError: keeper.fatalError,
+      }
     }
     keeper.start()
-    await pMap(
+    const results = await pMap(
       input.pending,
-      async subscription => {
-        if (keeper.ownershipLost) return
+      async (subscription): Promise<NotificationPushEndpointOutcome | undefined> => {
+        if (keeper.ownershipLost) return undefined
         const outcome = await sendSubscription(
           subscription,
           buildNotificationPushPayload(input.notification, subscription),
@@ -56,17 +60,18 @@ export async function runNotificationPushDelivery(input: {
             const persistence = await persistClaimedNotificationPushOutcome(input.intent, outcome)
             if (persistence === 'lease_lost') {
               keeper.fail()
-              return
+              return undefined
             }
             if (persistence === 'subscription_stale') {
               subscriptionStale = true
-              return
+              return undefined
             }
-            if (persistence === 'persisted') outcomes.push(outcome)
+            if (persistence === 'persisted') return outcome
           } catch (err) {
             keeper.fail(err instanceof Error ? err : new Error('Push outcome persistence failed'))
           }
         }
+        return undefined
       },
       { concurrency: input.policy.endpointConcurrency, stopOnError: false },
     )
@@ -74,7 +79,7 @@ export async function runNotificationPushDelivery(input: {
     if (!keeper.ownershipLost) await keeper.renewNow()
     await keeper.stopAndSettle()
     return {
-      outcomes,
+      outcomes: results.filter(outcome => outcome !== undefined),
       subscriptionStale,
       ownershipLost: keeper.ownershipLost,
       fatalError: keeper.fatalError,

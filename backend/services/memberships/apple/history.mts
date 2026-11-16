@@ -57,7 +57,7 @@ export async function fetchAppleTransactionHistory(
     sort: Order.ASCENDING,
     productTypes: [ProductType.AUTO_RENEWABLE],
   }
-  const transactions: string[] = []
+  const pages: string[][] = []
   let revision: string | null = null
   for (let page = 0; page < MAX_HISTORY_PAGES; page++) {
     // eslint-disable-next-line no-await-in-loop -- each page requires Apple's continuation token.
@@ -67,8 +67,8 @@ export async function fetchAppleTransactionHistory(
       request,
       GetTransactionHistoryVersion.V2,
     )
-    transactions.push(...(response.signedTransactions ?? []))
-    if (!response.hasMore) return transactions
+    pages.push(response.signedTransactions ?? [])
+    if (!response.hasMore) return pages.flat()
     if (!response.revision)
       throw new Error('Apple history response omitted its continuation revision')
     revision = response.revision

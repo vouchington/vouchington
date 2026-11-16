@@ -127,8 +127,7 @@ export async function getEntityRelationsBatch(
   options: EntityRelationQueryOptions,
 ): Promise<Map<string, EntityRelationResult[]>> {
   const uniqueIds = [...new Set(subjectIds)]
-  const grouped = new Map(uniqueIds.map(id => [id, [] as EntityRelationResult[]]))
-  if (uniqueIds.length === 0) return grouped
+  if (uniqueIds.length === 0) return new Map()
   const metadata = requireRelationMetadata(subjectType, predicate, objectType)
   const query = sql`/* getEntityRelationsBatch */ `
   uniqueIds.forEach((id, index) => {
@@ -151,12 +150,20 @@ export async function getEntityRelationsBatch(
     query.append('created_at DESC, object_id DESC')
   else query.append('order_index ASC, object_id ASC')
   const { rows } = await (options.readOnly === false ? write : read)(query)
-  for (const row of rows as Array<EntityRelationResult & { requested_subject_id: string }>) {
-    const { requested_subject_id, ...relation } = row
-    grouped.get(requested_subject_id)!.push(relation)
-  }
+  const grouped = Map.groupBy(
+    rows as Array<EntityRelationResult & { requested_subject_id: string }>,
+    row => row.requested_subject_id,
+  )
   return new Map(
-    [...grouped].map(([id, relations]) => [id, decorateRelations(objectType, relations)]),
+    uniqueIds.map(id => [
+      id,
+      decorateRelations(
+        objectType,
+        (grouped.get(id) ?? []).map(
+          ({ requested_subject_id: _requestedSubjectId, ...relation }) => relation,
+        ),
+      ),
+    ]),
   )
 }
 

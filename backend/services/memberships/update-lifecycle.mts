@@ -7,53 +7,50 @@ export type MembershipLifecycleClockOptions = {
   transitionEffectiveAt?: Date | null
 }
 
-export function appendLifecycleSetClauses(
-  setClauses: ReturnType<typeof sql>[],
+export function getLifecycleSetClauses(
   status: MembershipStatus,
   options: MembershipLifecycleClockOptions = {},
-) {
+): ReturnType<typeof sql>[] {
   const terminalEffectiveAt = options.terminalEffectiveAt ?? null
   if (status === 'active') {
-    setClauses.push(sql`cancelled_at = NULL`)
-    setClauses.push(sql`expired_at = NULL`)
-    setClauses.push(sql`past_due_at = NULL`)
-    setClauses.push(sql`paused_at = NULL`)
-    return
+    return [
+      sql`cancelled_at = NULL`,
+      sql`expired_at = NULL`,
+      sql`past_due_at = NULL`,
+      sql`paused_at = NULL`,
+    ]
   }
   if (status === 'cancelled') {
-    setClauses.push(
+    return [
       sql`cancelled_at = COALESCE(cancelled_at, ${terminalEffectiveAt}::timestamptz, CURRENT_TIMESTAMP)`,
-    )
-    setClauses.push(sql`expired_at = NULL`)
-    setClauses.push(sql`past_due_at = NULL`)
-    setClauses.push(sql`paused_at = NULL`)
-    setClauses.push(sql`should_cancel_at_period_end = false`)
-    return
+      sql`expired_at = NULL`,
+      sql`past_due_at = NULL`,
+      sql`paused_at = NULL`,
+      sql`should_cancel_at_period_end = false`,
+    ]
   }
   if (status === 'expired') {
-    setClauses.push(sql`cancelled_at = NULL`)
-    setClauses.push(
+    return [
+      sql`cancelled_at = NULL`,
       sql`expired_at = COALESCE(expired_at, ${terminalEffectiveAt}::timestamptz, CURRENT_TIMESTAMP)`,
-    )
-    setClauses.push(sql`past_due_at = NULL`)
-    setClauses.push(sql`paused_at = NULL`)
-    setClauses.push(sql`should_cancel_at_period_end = false`)
-    return
+      sql`past_due_at = NULL`,
+      sql`paused_at = NULL`,
+      sql`should_cancel_at_period_end = false`,
+    ]
   }
   if (status === 'past_due') {
-    setClauses.push(sql`cancelled_at = NULL`)
-    setClauses.push(sql`expired_at = NULL`)
-    setClauses.push(
+    return [
+      sql`cancelled_at = NULL`,
+      sql`expired_at = NULL`,
       sql`past_due_at = COALESCE(past_due_at, ${options.transitionEffectiveAt ?? null}::timestamptz, CURRENT_TIMESTAMP)`,
-    )
-    setClauses.push(sql`paused_at = NULL`)
-    return
+      sql`paused_at = NULL`,
+    ]
   }
 
-  setClauses.push(sql`cancelled_at = NULL`)
-  setClauses.push(sql`expired_at = NULL`)
-  setClauses.push(sql`past_due_at = NULL`)
-  setClauses.push(
+  return [
+    sql`cancelled_at = NULL`,
+    sql`expired_at = NULL`,
+    sql`past_due_at = NULL`,
     sql`paused_at = COALESCE(paused_at, ${options.transitionEffectiveAt ?? null}::timestamptz, CURRENT_TIMESTAMP)`,
-  )
+  ]
 }

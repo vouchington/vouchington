@@ -7,31 +7,41 @@ export type { PublicationCapturedKey } from '@voucha/types/post-publication'
 
 /** Captures the caller's pre-mutation footprint without requiring retained PostgreSQL rows. */
 export function capturedPublicationKeys(change: PostPublicationChange): PublicationCapturedKey[] {
-  const keys: PublicationCapturedKey[] = impactPublicationKeys({
-    postIds: change.impactedPostIds,
-    topicIds: change.impactedTopicIds,
-    communityIds: change.impactedCommunityIds,
-    rssFeedItemIds: change.impactedRssFeedItemIds,
-  })
   const footprint = change.footprint
-  if (footprint) {
-    addUuidKey(keys, 'identity_author', footprint.priorAuthorUserId)
-    addTextKey(keys, 'identity_author_username', footprint.priorAuthorUsername)
-    addUuidKey(keys, 'identity_community', footprint.priorCommunityId)
-    for (const rssFeedId of footprint.priorRssFeedIds ?? [])
-      addUuidKey(keys, 'identity_rss_feed', rssFeedId)
-    addUuidKey(keys, 'impact_post', footprint.priorRootId)
-    addTextKey(keys, 'identity_post_slug', footprint.priorPostSlug)
-    addTextKey(keys, 'identity_community_slug', footprint.priorCommunitySlug)
-    if (footprint.priorSitemapTarget)
-      keys.push({ kind: 'sitemap_target', ...footprint.priorSitemapTarget })
-  }
-  if (change.scope.type === 'author') addUuidKey(keys, 'identity_author', change.scope.authorUserId)
-  if (change.scope.type === 'community')
-    addUuidKey(keys, 'identity_community', change.scope.communityId)
-  if (change.scope.type === 'rss_feed')
-    addUuidKey(keys, 'identity_rss_feed', change.scope.rssFeedId)
-  addTextKey(keys, 'identity_topic_alias', change.topicAliasText)
+  const keys: PublicationCapturedKey[] = [
+    ...impactPublicationKeys({
+      postIds: change.impactedPostIds,
+      topicIds: change.impactedTopicIds,
+      communityIds: change.impactedCommunityIds,
+      rssFeedItemIds: change.impactedRssFeedItemIds,
+    }),
+    ...(footprint
+      ? [
+          ...uuidKey('identity_author', footprint.priorAuthorUserId),
+          ...textKey('identity_author_username', footprint.priorAuthorUsername),
+          ...uuidKey('identity_community', footprint.priorCommunityId),
+          ...(footprint.priorRssFeedIds ?? []).flatMap(rssFeedId =>
+            uuidKey('identity_rss_feed', rssFeedId),
+          ),
+          ...uuidKey('impact_post', footprint.priorRootId),
+          ...textKey('identity_post_slug', footprint.priorPostSlug),
+          ...textKey('identity_community_slug', footprint.priorCommunitySlug),
+          ...(footprint.priorSitemapTarget
+            ? [{ kind: 'sitemap_target' as const, ...footprint.priorSitemapTarget }]
+            : []),
+        ]
+      : []),
+    ...(change.scope.type === 'author'
+      ? uuidKey('identity_author', change.scope.authorUserId)
+      : []),
+    ...(change.scope.type === 'community'
+      ? uuidKey('identity_community', change.scope.communityId)
+      : []),
+    ...(change.scope.type === 'rss_feed'
+      ? uuidKey('identity_rss_feed', change.scope.rssFeedId)
+      : []),
+    ...textKey('identity_topic_alias', change.topicAliasText),
+  ]
   return uniquePublicationKeys(keys)
 }
 
@@ -105,20 +115,18 @@ export function splitCapturedPublicationKeys(
   return pages
 }
 
-function addUuidKey(
-  keys: PublicationCapturedKey[],
+function uuidKey(
   kind: Extract<PublicationCapturedKey, { uuidValue: string }>['kind'],
   uuidValue: string | undefined,
-): void {
-  if (uuidValue) keys.push({ kind, uuidValue })
+): PublicationCapturedKey[] {
+  return uuidValue ? [{ kind, uuidValue }] : []
 }
 
-function addTextKey(
-  keys: PublicationCapturedKey[],
+function textKey(
   kind: Extract<PublicationCapturedKey, { textValue: string }>['kind'],
   textValue: string | undefined,
-): void {
-  if (textValue) keys.push({ kind, textValue })
+): PublicationCapturedKey[] {
+  return textValue ? [{ kind, textValue }] : []
 }
 
 function uniqueIds(ids: readonly string[] | undefined): string[] {

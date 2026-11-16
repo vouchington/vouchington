@@ -12,9 +12,10 @@ import type { RefundReconciliationAttempt, RefundReconciliationLease } from './t
 import { claimMembershipOperationExecutionWork } from '../operation-execution-work.mts'
 
 class RefundReconciliationInProgressError extends Error {
+  override readonly name: string = 'RefundReconciliationInProgressError'
+
   constructor(operationId: string) {
     super(`Refund reconciliation ${operationId} is already leased`)
-    this.name = 'RefundReconciliationInProgressError'
   }
 }
 

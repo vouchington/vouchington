@@ -22,9 +22,10 @@ type GetStripeDisputeSettlementForPayment = (options: {
 }) => Promise<StripeDisputeSettlement>
 
 export class StripeReversalRefundDeferredError extends Error {
+  override readonly name: string = 'StripeReversalRefundDeferredError'
+
   constructor() {
     super('Stripe reversal refund is deferred until Stripe reaches a terminal state')
-    this.name = 'StripeReversalRefundDeferredError'
   }
 }
 

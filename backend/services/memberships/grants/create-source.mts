@@ -8,9 +8,10 @@ import {
 } from './outstanding.mts'
 
 export class InvalidMembershipGrantUserError extends Error {
+  override readonly name: string = 'InvalidMembershipGrantUserError'
+
   constructor() {
     super('The membership grant user does not exist')
-    this.name = 'InvalidMembershipGrantUserError'
   }
 }
 

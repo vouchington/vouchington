@@ -36,13 +36,12 @@ export async function aggregateModeratorActionCounts(
       count: number
     }
 
-    let entry = byActor.get(actor_user_id)
-    if (!entry) {
-      entry = { actor_user_id, total: 0, counts: {} }
-      byActor.set(actor_user_id, entry)
-    }
-    entry.counts[action_type] = count
-    entry.total += count
+    const entry = byActor.get(actor_user_id) ?? { actor_user_id, total: 0, counts: {} }
+    byActor.set(actor_user_id, {
+      actor_user_id,
+      total: entry.total + count,
+      counts: { ...entry.counts, [action_type]: count },
+    })
   }
 
   return Array.from(byActor.values()).toSorted((a, b) => b.total - a.total)

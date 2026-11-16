@@ -1,7 +1,8 @@
 export class RefundProviderOperationError extends Error {
+  override readonly name: string = 'RefundProviderOperationError'
+
   constructor(message: string, cause?: unknown) {
     super(message, { cause })
-    this.name = 'RefundProviderOperationError'
   }
 }
 

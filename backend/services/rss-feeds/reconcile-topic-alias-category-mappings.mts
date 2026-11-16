@@ -56,24 +56,24 @@ async function reconcileTopicAliasCategoryMappingDirtyRows(
 ): Promise<{ reconciled: number; updated: number; errors: unknown[]; hasMore: boolean }> {
   const [candidate, ...remaining] = candidates
   if (!candidate) return { reconciled, updated, errors, hasMore }
+  let result: { updated: number; hasMore: boolean }
   try {
-    const result = await reconcileTopicAliasCategoryMappingDirtyRow(candidate)
-    return await reconcileTopicAliasCategoryMappingDirtyRows(
-      remaining,
-      reconciled + (result.hasMore ? 0 : 1),
-      updated + result.updated,
-      errors,
-      hasMore || result.hasMore,
-    )
+    result = await reconcileTopicAliasCategoryMappingDirtyRow(candidate)
   } catch (err) {
-    errors.push(err)
+    return reconcileTopicAliasCategoryMappingDirtyRows(
+      remaining,
+      reconciled,
+      updated,
+      [...errors, err],
+      hasMore,
+    )
   }
   return reconcileTopicAliasCategoryMappingDirtyRows(
     remaining,
-    reconciled,
-    updated,
+    reconciled + (result.hasMore ? 0 : 1),
+    updated + result.updated,
     errors,
-    hasMore,
+    hasMore || result.hasMore,
   )
 }
 

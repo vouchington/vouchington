@@ -15,9 +15,10 @@ export class GooglePlaySubscriptionLookupError extends Error {
   readonly purchaseTokenDigest: string
   readonly reason: string | null
 
+  override readonly name: string = 'GooglePlaySubscriptionLookupError'
+
   constructor(status: number, purchaseToken: string, reason: string | null = null) {
     super(`Google Play subscriptionsv2 fetch failed with ${status}`)
-    this.name = 'GooglePlaySubscriptionLookupError'
     this.status = status
     this.purchaseTokenDigest = createHash('sha256').update(purchaseToken).digest('hex')
     this.reason = reason

@@ -20,38 +20,36 @@ export function planReviewSuccessionMutations(
     group.push(candidate)
     grouped.set(key, group)
   }
-  const archives: ReviewSuccessionArchive[] = []
-  const restorations: ReviewSuccessionRestoration[] = []
-  for (const group of grouped.values()) planGroup(group, archives, restorations)
-  return { archives, restorations }
+  const plans = [...grouped.values()].map(planGroup)
+  return {
+    archives: plans.flatMap(plan => plan.archives),
+    restorations: plans.flatMap(plan => plan.restorations),
+  }
 }
 
-function planGroup(
-  candidates: readonly ReviewSuccessionCandidate[],
-  archives: ReviewSuccessionArchive[],
-  restorations: ReviewSuccessionRestoration[],
-): void {
+function planGroup(candidates: readonly ReviewSuccessionCandidate[]): ReviewSuccessionMutationPlan {
   let winner: ReviewSuccessionCandidate | undefined
   for (const candidate of candidates) if (isQualifyingCandidate(candidate)) winner = candidate
-  if (!winner) return
-  if (winner.successionId && winner.archivedAt) {
-    restorations.push({
-      authorUserId: winner.authorUserId,
-      topicIds: winner.topicIds,
-      postId: winner.id,
-      successionId: winner.successionId,
-      successionTopicIds: winner.successionTopicIds ?? [],
-    })
-  }
-  for (const candidate of candidates) {
-    if (candidate.id >= winner.id || !candidate.isPublic) continue
-    archives.push({
-      authorUserId: winner.authorUserId,
-      topicIds: winner.topicIds,
-      predecessorPostId: candidate.id,
-      successorPostId: winner.id,
-    })
-  }
+  if (!winner) return { archives: [], restorations: [] }
+  const { authorUserId, topicIds, id: winnerId } = winner
+  const restorations: ReviewSuccessionRestoration[] =
+    winner.successionId && winner.archivedAt
+      ? [
+          {
+            authorUserId,
+            topicIds,
+            postId: winnerId,
+            successionId: winner.successionId,
+            successionTopicIds: winner.successionTopicIds ?? [],
+          },
+        ]
+      : []
+  const archives: ReviewSuccessionArchive[] = candidates.flatMap(candidate =>
+    candidate.id < winnerId && candidate.isPublic
+      ? [{ authorUserId, topicIds, predecessorPostId: candidate.id, successorPostId: winnerId }]
+      : [],
+  )
+  return { archives, restorations }
 }
 
 function isQualifyingCandidate(candidate: ReviewSuccessionCandidate): boolean {

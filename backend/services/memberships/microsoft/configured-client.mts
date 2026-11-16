@@ -91,7 +91,7 @@ async function queryMicrosoftStorePages<T>(
   queryName: string,
 ): Promise<T[]> {
   const MAX_QUERY_PAGES = getMembershipWorkLimit('microsoft_query_max_pages')
-  const items: T[] = []
+  const pages: T[][] = []
   const continuationTokens = new Set<string>()
   let continuationToken: string | null = null
   for (let page = 0; page < MAX_QUERY_PAGES; page++) {
@@ -101,8 +101,8 @@ async function queryMicrosoftStorePages<T>(
     // eslint-disable-next-line no-await-in-loop -- each page response yields the next continuation token.
     const payload = await response.json()
     const parsed = parseMicrosoftStorePage(payload, queryName)
-    items.push(...(parsed.items as T[]))
-    if (parsed.continuationToken === null) return items
+    pages.push(parsed.items as T[])
+    if (parsed.continuationToken === null) return pages.flat()
     if (continuationTokens.has(parsed.continuationToken))
       throw new Error(`Microsoft Store ${queryName} continuation token repeated`)
     continuationTokens.add(parsed.continuationToken)

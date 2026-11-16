@@ -8,9 +8,10 @@ import type { AppleMembershipProviderEnvironment, AppleNotificationVerifier } fr
 import { verifyAppleNotification } from './verify-notification.mts'
 
 export class InvalidAppleNotificationError extends Error {
+  override readonly name: string = 'InvalidAppleNotificationError'
+
   constructor() {
     super('Invalid Apple App Store notification.')
-    this.name = 'InvalidAppleNotificationError'
   }
 }
 
