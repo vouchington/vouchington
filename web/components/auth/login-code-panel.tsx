@@ -68,7 +68,10 @@ export function LoginCodePanel({
   }
 
   return (
-    <>
+    <div
+      className='contents'
+      data-pw='login-code-panel'
+    >
       <LoginCodeStep
         active={active}
         code={code}
@@ -87,6 +90,6 @@ export function LoginCodePanel({
           onBack={handleMfaBack}
         />
       )}
-    </>
+    </div>
   )
 }

@@ -9,9 +9,11 @@ const LINKEDIN_CALLBACK_FALLBACK = <LinkedInCallbackStatus />
 
 export default function LinkedInCallbackPage() {
   return (
-    <Suspense fallback={LINKEDIN_CALLBACK_FALLBACK}>
-      <LinkedInCallbackContent />
-    </Suspense>
+    <div data-pw='oauth-callback-linkedin'>
+      <Suspense fallback={LINKEDIN_CALLBACK_FALLBACK}>
+        <LinkedInCallbackContent />
+      </Suspense>
+    </div>
   )
 }
 

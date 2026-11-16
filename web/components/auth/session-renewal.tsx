@@ -53,12 +53,21 @@ export function SessionRenewal({
 
   if (proofRequired)
     return (
-      <div className='flex min-h-screen flex-col items-center justify-center gap-4'>
+      <div
+        className='flex min-h-screen flex-col items-center justify-center gap-4'
+        data-pw='session-renewal-proof-required'
+      >
         <p role='alert'>{t('extracted.api.errorHelpers.anErrorOccurredPleaseTryAgain_9c170dda')}</p>
-        <Button onClick={() => navigate(next)}>{t('extracted.app.error.tryAgain_d8b8392e')}</Button>
+        <Button
+          onClick={() => navigate(next)}
+          data-pw='session-renewal-proof-continue'
+        >
+          {t('extracted.app.error.tryAgain_d8b8392e')}
+        </Button>
         <Button
           variant='outline'
           onClick={() => navigate(buildLoginHref({ next }))}
+          data-pw='session-renewal-proof-sign-in'
         >
           {t('extracted.components.navbar.signIn_bcc0bcc9')}
         </Button>
@@ -67,13 +76,17 @@ export function SessionRenewal({
 
   if (failed)
     return (
-      <div className='flex min-h-screen flex-col items-center justify-center gap-4'>
+      <div
+        className='flex min-h-screen flex-col items-center justify-center gap-4'
+        data-pw='session-renewal-failed'
+      >
         <p role='alert'>{t('extracted.api.errorHelpers.anErrorOccurredPleaseTryAgain_9c170dda')}</p>
         <Button
           onClick={() => {
             setFailed(false)
             setAttempt(value => value + 1)
           }}
+          data-pw='session-renewal-retry'
         >
           {t('extracted.app.error.tryAgain_d8b8392e')}
         </Button>
@@ -81,7 +94,10 @@ export function SessionRenewal({
     )
 
   return (
-    <div className='flex min-h-screen items-center justify-center'>
+    <div
+      className='flex min-h-screen items-center justify-center'
+      data-pw='session-renewal-pending'
+    >
       <Spinner />
     </div>
   )

@@ -50,6 +50,7 @@ export function LoginCodeStep({
     <form
       onSubmit={onSubmit}
       className='space-y-4'
+      data-pw='login-code-step'
     >
       <p className='text-sm text-muted-foreground'>
         {t('extracted.auth.loginCodeStep.enterTheVerificationCodeSentTo_b53551d7')}{' '}
