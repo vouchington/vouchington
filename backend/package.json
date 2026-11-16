@@ -16,7 +16,6 @@
     "../ts-shared/route-classification",
     "../ts-shared/ses-inbound-contract",
     "../ts-shared/session-jwt",
-    "../ts-shared/ui-messages",
     "../ts-shared/url-signing",
     "../ts-shared/user-profile-collections",
     "../ts-shared/utils",

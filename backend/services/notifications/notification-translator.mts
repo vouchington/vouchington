@@ -1,7 +1,4 @@
 import { getLocalizationDatabase } from '@services/localization/database'
-import { createTranslator } from '@ts-shared/ui-messages'
-import { catalogTreeFromLeaves } from '@ts-shared/ui-messages/catalog-tree'
-import { catalogTreeForLocale } from '@ts-shared/ui-messages/load-catalog-json'
 import { resolveLocalizationBatch } from '@vouchington/localization-compiler'
 import type { NotificationTranslate } from './render-notification-types.mts'
 
@@ -16,18 +13,19 @@ function catalogLocale(uiLocale: string | null | undefined): string {
 }
 
 function buildTranslator(locale: string): NotificationTranslate {
-  // Production ships only the compiled catalog; local runs and tests read the committed JSON.
-  const catalog = process.env.LOCALIZATION_SQLITE_PATH
-    ? catalogTreeFromLeaves(
-        resolveLocalizationBatch(getLocalizationDatabase(), {
-          consumer: 'web',
-          locales: locale === 'en' ? ['en'] : [locale, 'en'],
-          selectors: [SELECTOR],
-        }).messages,
-      )
-    : catalogTreeForLocale(locale)
-  const translate = createTranslator(locale, catalog, { onUnresolved: key => key })
-  return (key, parameters) => translate(key as never, parameters)
+  const { messages } = resolveLocalizationBatch(getLocalizationDatabase(), {
+    consumer: 'web',
+    locales: locale === 'en' ? ['en'] : [locale, 'en'],
+    selectors: [SELECTOR],
+  })
+  // Notification copy is plain `{name}` text, so no plural or descriptor runtime is needed.
+  return (key, parameters) => {
+    const leaf = messages[key]
+    if (typeof leaf !== 'string') return key
+    return leaf.replace(/\{(\w+)\}/g, (token, name: string) =>
+      parameters && name in parameters ? String(parameters[name]) : token,
+    )
+  }
 }
 
 /** A translator for `notifications.kind.*` copy in the user's UI locale, cached per locale. */

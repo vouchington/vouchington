@@ -34,7 +34,6 @@
     "@services/entity-cache": "workspace:^",
     "@services/localization": "workspace:^",
     "@services/users": "workspace:^",
-    "@ts-shared/ui-messages": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/localization-compiler": "^0.3.0",
     "@vouchington/sentry": "^0.6.0",
