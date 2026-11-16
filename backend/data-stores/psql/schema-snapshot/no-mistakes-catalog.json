@@ -1472,8 +1472,8 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_thread_blocker_case_id(source_table text, source_row jsonb)\n RETURNS uuid\n LANGUAGE plpgsql\nAS $function$\nDECLARE case_id uuid;\nBEGIN\n  IF source_row IS NULL THEN RETURN NULL; END IF;\n  IF source_table = 'copyright_notices' THEN\n    RETURN (source_row ->> 'id')::uuid;\n  ELSIF source_table = 'copyright_notice_target_images' THEN\n    SELECT target.copyright_notice_id INTO case_id FROM copyright_notice_targets target\n    WHERE target.id = (source_row ->> 'copyright_notice_target_id')::uuid;\n  ELSIF source_table IN (\n    'copyright_notice_form_screenings', 'copyright_notice_form_screening_attempts',\n    'copyright_notice_form_intake_reviews') THEN\n    SELECT intake.copyright_notice_id INTO case_id FROM copyright_notice_form_intakes intake\n    WHERE intake.id = (source_row ->> 'copyright_notice_form_intake_id')::uuid;\n  ELSIF source_table = 'copyright_territorial_redress_decisions' THEN\n    SELECT request.copyright_notice_id INTO case_id\n    FROM copyright_territorial_redress_requests request\n    WHERE request.id = (source_row ->> 'copyright_territorial_redress_request_id')::uuid;\n  ELSIF source_table IN ('copyright_notice_appeal_reviews', 'copyright_notice_counter_notice_reviews') THEN\n    SELECT submission.copyright_notice_id INTO case_id FROM copyright_notice_submissions submission\n    WHERE submission.id = (source_row ->> 'copyright_notice_submission_id')::uuid;\n  ELSIF source_table = 'copyright_staydown_entries' THEN\n    SELECT restriction.copyright_notice_id INTO case_id FROM copyright_restrictions restriction\n    WHERE restriction.id = (source_row ->> 'copyright_restriction_id')::uuid;\n  ELSIF source_table = 'copyright_staydown_matches' THEN\n    SELECT restriction.copyright_notice_id INTO case_id\n    FROM copyright_staydown_entries entry\n    JOIN copyright_restrictions restriction ON restriction.id = entry.copyright_restriction_id\n    WHERE entry.id = (source_row ->> 'copyright_staydown_entry_id')::uuid;\n  ELSIF source_table = 'copyright_notice_email_intake_reviews' THEN\n    SELECT link.copyright_notice_id INTO case_id\n    FROM copyright_notice_email_intake_notice_links link\n    WHERE link.copyright_notice_email_intake_id =\n      (source_row ->> 'copyright_notice_email_intake_receipt_id')::uuid;\n  ELSIF source_table = 'copyright_notice_delivery_recipients' THEN\n    SELECT work_item.copyright_notice_id INTO case_id\n    FROM copyright_notice_delivery_work_items work_item\n    WHERE work_item.id = (source_row ->> 'copyright_notice_delivery_work_item_id')::uuid;\n  ELSE\n    case_id := (source_row ->> 'copyright_notice_id')::uuid;\n  END IF;\n  RETURN case_id;\nEND;\n$function$\n",
       "returnsSet": false
     },
-    "fn_copyright_touch_thread_retention_activity(case_id uuid, activity_at timestamp with time zone)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_touch_thread_retention_activity(case_id uuid, activity_at timestamp with time zone)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM 1 FROM copyright_notices WHERE id = case_id FOR KEY SHARE;\n  INSERT INTO copyright_notice_thread_retention_activities (copyright_notice_id, last_activity_at)\n  VALUES (case_id, COALESCE(activity_at, CURRENT_TIMESTAMP))\n  ON CONFLICT (copyright_notice_id) DO UPDATE\n    SET last_activity_at = GREATEST(copyright_notice_thread_retention_activities.last_activity_at,\n                                    EXCLUDED.last_activity_at);\nEND;\n$function$\n",
+    "fn_copyright_touch_thread_retention_activity(case_id uuid, activity_at timestamp with time zone, source_intake_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_touch_thread_retention_activity(case_id uuid, activity_at timestamp with time zone, source_intake_id uuid DEFAULT NULL::uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO copyright_notice_thread_retention_activities (copyright_notice_id, last_activity_at)\n  VALUES (case_id, COALESCE(activity_at, CURRENT_TIMESTAMP))\n  ON CONFLICT (copyright_notice_id) DO UPDATE\n    SET last_activity_at = GREATEST(copyright_notice_thread_retention_activities.last_activity_at,\n                                    EXCLUDED.last_activity_at)\n    WHERE source_intake_id IS NULL\n      OR copyright_notice_thread_retention_activities.retired_before_intake_bound IS NULL\n      OR copyright_notice_thread_retention_activities.retired_before_intake_bound <= source_intake_id;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'retired copyright email intake cannot accept thread facts'\n      USING ERRCODE = 'check_violation';\n  END IF;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_create_community_search_counts()": {
@@ -2305,7 +2305,7 @@
       "returnsSet": false
     },
     "fn_update_copyright_thread_activity_on_edge()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_thread_activity_on_edge()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE case_id uuid;\nBEGIN\n  FOR case_id IN\n    SELECT DISTINCT link.copyright_notice_id\n    FROM copyright_notice_email_intake_notice_links link\n    WHERE link.copyright_notice_email_intake_id IN\n      (NEW.reply_message_intake_receipt_id, NEW.ancestor_message_intake_receipt_id)\n    ORDER BY link.copyright_notice_id\n  LOOP\n    PERFORM fn_copyright_touch_thread_retention_activity(case_id, CURRENT_TIMESTAMP);\n  END LOOP;\n  RETURN NEW;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_thread_activity_on_edge()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE source record;\nBEGIN\n  -- The oldest endpoint must pass the case's bound, so both endpoints must pass it.\n  FOR source IN\n    SELECT link.copyright_notice_id,\n      min(link.copyright_notice_email_intake_id::text)::uuid AS intake_id\n    FROM copyright_notice_email_intake_notice_links link\n    WHERE link.copyright_notice_email_intake_id IN\n      (NEW.reply_message_intake_receipt_id, NEW.ancestor_message_intake_receipt_id)\n    GROUP BY link.copyright_notice_id\n    ORDER BY link.copyright_notice_id\n  LOOP\n    PERFORM fn_copyright_touch_thread_retention_activity(\n      source.copyright_notice_id, CURRENT_TIMESTAMP, source.intake_id);\n  END LOOP;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_update_copyright_thread_activity_on_intake_review()": {
@@ -2313,11 +2313,11 @@
       "returnsSet": false
     },
     "fn_update_copyright_thread_activity_on_link()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_thread_activity_on_link()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE clock_at timestamptz;\nBEGIN\n  SELECT GREATEST(\n    uuid_extract_timestamp(NEW.id), intake.received_at,\n    (SELECT reference.created_at FROM copyright_notice_email_thread_references reference\n      WHERE reference.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id\n      ORDER BY reference.id DESC LIMIT 1),\n    (SELECT review.reviewed_at FROM copyright_notice_email_intake_reviews review\n      WHERE review.copyright_notice_email_intake_receipt_id = NEW.copyright_notice_email_intake_id\n      ORDER BY review.id DESC LIMIT 1),\n    CURRENT_TIMESTAMP\n  ) INTO clock_at\n  FROM copyright_notice_email_intakes intake\n  WHERE intake.id = NEW.copyright_notice_email_intake_id;\n  PERFORM fn_copyright_touch_thread_retention_activity(NEW.copyright_notice_id, clock_at);\n  RETURN NEW;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_thread_activity_on_link()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE clock_at timestamptz;\nBEGIN\n  SELECT GREATEST(\n    uuid_extract_timestamp(NEW.id), intake.received_at,\n    (SELECT reference.created_at FROM copyright_notice_email_thread_references reference\n      WHERE reference.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id\n      ORDER BY reference.id DESC LIMIT 1),\n    (SELECT review.reviewed_at FROM copyright_notice_email_intake_reviews review\n      WHERE review.copyright_notice_email_intake_receipt_id = NEW.copyright_notice_email_intake_id\n      ORDER BY review.id DESC LIMIT 1),\n    CURRENT_TIMESTAMP\n  ) INTO clock_at\n  FROM copyright_notice_email_intakes intake\n  WHERE intake.id = NEW.copyright_notice_email_intake_id;\n  PERFORM fn_copyright_touch_thread_retention_activity(\n    NEW.copyright_notice_id, clock_at, NEW.copyright_notice_email_intake_id);\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_update_copyright_thread_activity_on_reference()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_thread_activity_on_reference()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE case_id uuid;\nBEGIN\n  SELECT link.copyright_notice_id INTO case_id\n  FROM copyright_notice_email_intake_notice_links link\n  WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id;\n  IF case_id IS NOT NULL THEN\n    PERFORM fn_copyright_touch_thread_retention_activity(case_id, uuid_extract_timestamp(NEW.id));\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_thread_activity_on_reference()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE case_id uuid;\nBEGIN\n  SELECT link.copyright_notice_id INTO case_id\n  FROM copyright_notice_email_intake_notice_links link\n  WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id;\n  IF case_id IS NOT NULL THEN\n    PERFORM fn_copyright_touch_thread_retention_activity(\n      case_id, uuid_extract_timestamp(NEW.id), NEW.copyright_notice_email_intake_id);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_update_copyright_thread_blocker_generation()": {
@@ -36780,7 +36780,7 @@
           "definition": "CREATE TRIGGER trigger_copyright_email_thread_links_current_decision BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_email_link_current_decision()"
         },
         "trigger_copyright_thread_activity_on_link": {
-          "definition": "CREATE TRIGGER trigger_copyright_thread_activity_on_link AFTER INSERT ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_activity_on_link()"
+          "definition": "CREATE TRIGGER trigger_copyright_thread_activity_on_link AFTER INSERT ON public.copyright_notice_email_intake_notice_links FOR EACH ROW WHEN ((new.link_kind = 'initial'::copyright_notice_email_intake_link_kinds)) EXECUTE FUNCTION fn_update_copyright_thread_activity_on_link()"
         },
         "trigger_copyright_thread_blocker_generation": {
           "definition": "CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()"
@@ -38834,89 +38834,6 @@
           "columns": ["copyright_notice_email_intake_id", "token_id", "reference_kind"]
         }
       }
-    },
-    "copyright_notice_email_thread_retirements": {
-      "checkConstraints": {},
-      "columns": {
-        "copyright_notice_id": {
-          "comment": "Case whose email threading is retired.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
-        },
-        "retired_before_intake_bound": {
-          "comment": "Exclusive UUIDv7 intake-age boundary committed atomically with the first cleanup page, then advanced for later closed windows; this synthetic bound is not a foreign-key reference.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2
-        },
-        "updated_at": {
-          "comment": "Last time the closed-case threading high-water advanced.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3
-        }
-      },
-      "comment": "Durable case threading high-water: previously admitted intake IDs below the bound cannot rebuild expired references on replay; fresh sources may still thread when the case accepts them.",
-      "foreignKeys": {
-        "copyright_notice_email_thread_retireme_copyright_notice_id_fkey": {
-          "columns": ["copyright_notice_id"],
-          "deferrable": false,
-          "onDelete": "RESTRICT",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_notices",
-          "validated": true
-        }
-      },
-      "indexes": {
-        "copyright_notice_email_thread_retirements_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_notice_email_thread_retirements_pkey ON public.copyright_notice_email_thread_retirements USING btree (copyright_notice_id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "copyright_notice_id",
-              "descending": false,
-              "expression": "copyright_notice_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["copyright_notice_id"]
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_copyright_email_thread_retirements_updated_at": {
-          "definition": "CREATE TRIGGER trigger_copyright_email_thread_retirements_updated_at BEFORE UPDATE ON public.copyright_notice_email_thread_retirements FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-        }
-      },
-      "uniqueConstraints": {}
     },
     "copyright_notice_email_thread_tokens": {
       "checkConstraints": {
@@ -45703,14 +45620,34 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
+        },
+        "retired_before_intake_bound": {
+          "comment": "Exclusive UUIDv7 intake-age boundary committed atomically with the first cleanup page, then advanced for later closed windows; this synthetic bound is not a foreign-key reference.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "updated_at": {
+          "comment": "Last time case-thread activity or the closed-case threading high-water changed.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
         }
       },
-      "comment": "Latest case-thread write clock used to bound the closed-window retention check; never grants access to retained source identities.",
+      "comment": "Case-thread activity clock and retirement high-water, maintained together at actual write boundaries; never grants access to retained source identities.",
       "foreignKeys": {
         "copyright_notice_thread_retention_acti_copyright_notice_id_fkey": {
           "columns": ["copyright_notice_id"],
           "deferrable": false,
-          "onDelete": "CASCADE",
+          "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "copyright_notices",
@@ -45747,7 +45684,11 @@
         "columns": ["copyright_notice_id"]
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_copyright_thread_retention_activities_updated_at": {
+          "definition": "CREATE TRIGGER trigger_copyright_thread_retention_activities_updated_at BEFORE UPDATE ON public.copyright_notice_thread_retention_activities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
       "uniqueConstraints": {}
     },
     "copyright_notice_urgent_filings": {

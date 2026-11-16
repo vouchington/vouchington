@@ -89,10 +89,10 @@ CREATE OR REPLACE FUNCTION public.fn_copyright_thread_blocker_case_id(source_tab
  LANGUAGE plpgsql
 ```
 
-## `fn_copyright_touch_thread_retention_activity(case_id uuid, activity_at timestamp with time zone)`
+## `fn_copyright_touch_thread_retention_activity(case_id uuid, activity_at timestamp with time zone, source_intake_id uuid)`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_copyright_touch_thread_retention_activity(case_id uuid, activity_at timestamp with time zone)
+CREATE OR REPLACE FUNCTION public.fn_copyright_touch_thread_retention_activity(case_id uuid, activity_at timestamp with time zone, source_intake_id uuid DEFAULT NULL::uuid)
  RETURNS void
  LANGUAGE plpgsql
 ```
