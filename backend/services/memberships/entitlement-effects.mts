@@ -12,9 +12,6 @@ export type MembershipEntitlementEffect = {
   deliveryClaimToken: string
 }
 
-/** Optional claim scope; omitted claims every pending effect, as the worker does. */
-export type MembershipEntitlementEffectScope = { effectIds?: readonly string[] }
-
 export async function recordMembershipEntitlementEffects(
   effects: readonly { membershipChangeId: string; userId: string }[],
   query?: QueryExecutor,
@@ -45,9 +42,7 @@ export function buildMembershipEntitlementEffectsInsert(
 
 export async function claimPendingMembershipEntitlementEffects(
   batchSize = getMembershipWorkLimit('entitlement_effect_batch_size'),
-  scope: MembershipEntitlementEffectScope = {},
 ): Promise<MembershipEntitlementEffect[]> {
-  const effectIds = scope.effectIds ? [...scope.effectIds] : null
   const deliveryClaimToken = crypto.randomUUID()
   await using query = await beginTransaction()
   const { rows } = await query(sql`/* claimPendingMembershipEntitlementEffects */
@@ -55,7 +50,6 @@ export async function claimPendingMembershipEntitlementEffects(
         SELECT id
         FROM membership_entitlement_effects
         WHERE delivered_at IS NULL
-          AND (${effectIds}::uuid[] IS NULL OR id = ANY(${effectIds}::uuid[]))
           AND (
             delivery_claimed_at IS NULL
             OR delivery_claimed_at < CURRENT_TIMESTAMP - make_interval(secs => ${DELIVERY_CLAIM_TTL_SECONDS})
@@ -113,9 +107,8 @@ export async function completeMembershipEntitlementEffects(
  */
 export async function deliverPendingMembershipEntitlementEffects(
   batchSize = getMembershipWorkLimit('entitlement_effect_batch_size'),
-  scope: MembershipEntitlementEffectScope = {},
 ): Promise<number> {
-  const effects = await claimPendingMembershipEntitlementEffects(batchSize, scope)
+  const effects = await claimPendingMembershipEntitlementEffects(batchSize)
   if (effects.length === 0) return 0
 
   const userIds = [...new Set(effects.map(effect => effect.userId))]
