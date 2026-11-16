@@ -7,10 +7,11 @@ import {
   getTestGrantQueue,
   readAllQueueJobs,
   setTestMembershipGrantRemainingMilliseconds,
+  insertQueuedMembershipGrant,
 } from '@voucha/test-helpers'
 import * as unfurlEnqueues from '@queues/unfurl-referral-links/enqueues'
 import { backgroundCpu as unfurlReferralLinksQueue } from '@queues/background-cpu/queues'
-import { createMembership, grantMembership } from '../../create.mts'
+import { createMembership } from '../../create.mts'
 import { getMembershipByUserId } from '../../get.mts'
 import { updateMembershipFromEvent } from '../../update.mts'
 
@@ -37,7 +38,14 @@ describe('delayed direct termination with an elapsed queued grant', () => {
       stripeSubscriptionId: `sub_delayed_terminal_family_${randomUUID()}`,
     })
     const grantSku = await createTestSku({ plan: 'plus' })
-    await grantMembership(admin.id, member.id, 'plus', grantSku.id, 30)
+    // Committed fixtures: the SERIALIZABLE grant writer is only setup here, and parallel tests'
+    // predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
+    await insertQueuedMembershipGrant({
+      grantedById: admin.id,
+      productId: grantSku.id,
+      userId: member.id,
+      durationDays: 30,
+    })
     const [queuedGrantId] = (await getTestGrantQueue(member.id)).grant_ids
     expect(queuedGrantId).toBeDefined()
     await setTestMembershipGrantRemainingMilliseconds(queuedGrantId!, 0.5)

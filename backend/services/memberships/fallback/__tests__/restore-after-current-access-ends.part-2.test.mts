@@ -1,14 +1,17 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
+  createTestAdminGrantMembership,
   createTestFamilyMembership,
   createTestSku,
   createTestUser,
+  getTestGrantQueue,
   getTestMembershipEntitlementEffects,
+  insertQueuedMembershipGrant,
   getTestMembershipRaw,
   updateTestMembershipExpiresAt,
 } from '@voucha/test-helpers'
-import { createMembership, grantMembership } from '../../create.mts'
+import { createMembership } from '../../create.mts'
 import { getMembershipByUserId, getMembershipHistory } from '../../get.mts'
 import { expireElapsedMembershipsForUsers } from '../../grants/expire-elapsed-batch.mts'
 import { updateMembershipFromEvent } from '../../update.mts'
@@ -29,8 +32,16 @@ describe('fallback access after current direct or administrator-grant access end
       userId: user.id,
     })
     const grantSku = await createTestSku({ plan: 'pro', interval: 'yearly' })
-    const grant = await grantMembership(admin.id, user.id, 'pro', grantSku.id, 30)
-    expect(grant.queued).toBe(false)
+    // Committed fixtures: the SERIALIZABLE grant writer is only setup here, and parallel tests'
+    // predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
+    const grant = await createTestAdminGrantMembership({
+      grantedById: admin.id,
+      productId: grantSku.id,
+      userId: user.id,
+    })
+    await expect(getTestGrantQueue(user.id)).resolves.toMatchObject({
+      active_grant_ids: [grant.grantId],
+    })
     await updateTestMembershipExpiresAt(grant.id, new Date('2020-01-01T00:00:00.000Z'))
 
     await expect(expireElapsedMembershipsForUsers([user.id])).resolves.toEqual({
@@ -85,7 +96,12 @@ describe('fallback access after current direct or administrator-grant access end
       stripeSubscriptionId: `sub_family_after_grant_${randomUUID()}`,
     })
     const grantSku = await createTestSku({ plan: 'plus', interval: 'yearly' })
-    await grantMembership(admin.id, user.id, 'plus', grantSku.id, 30)
+    await insertQueuedMembershipGrant({
+      grantedById: admin.id,
+      productId: grantSku.id,
+      userId: user.id,
+      durationDays: 30,
+    })
 
     await updateMembershipFromEvent(
       { membershipId: direct.id, status: 'paused' },
@@ -162,11 +178,23 @@ describe('fallback access after current direct or administrator-grant access end
       projection_ended_at: expect.any(Date),
       status: 'cancelled',
     })
-    const firstGrant = await grantMembership(admin.id, user.id, 'plus', firstGrantSku.id, 30)
+    const firstGrantId = await insertQueuedMembershipGrant({
+      grantedById: admin.id,
+      productId: firstGrantSku.id,
+      userId: user.id,
+      durationDays: 30,
+    })
     const secondGrantSku = await createTestSku({ plan: 'plus', interval: 'yearly' })
-    const secondGrant = await grantMembership(admin.id, user.id, 'plus', secondGrantSku.id, 30)
-    expect(firstGrant.queued).toBe(true)
-    expect(secondGrant.queued).toBe(true)
+    const secondGrantId = await insertQueuedMembershipGrant({
+      grantedById: admin.id,
+      productId: secondGrantSku.id,
+      userId: user.id,
+      durationDays: 30,
+    })
+    await expect(getTestGrantQueue(user.id)).resolves.toMatchObject({
+      active_grant_ids: [],
+      grant_ids: [firstGrantId, secondGrantId],
+    })
 
     await updateMembershipFromEvent(
       { membershipId: direct.id, status: 'paused' },

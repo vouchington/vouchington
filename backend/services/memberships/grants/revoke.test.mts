@@ -1,17 +1,19 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
+  createTestAdminGrantMembership,
   createTestSku,
   createTestUser,
   getTestMembershipGrant,
   getTestGrantQueue,
   getTestMembershipEntitlementEffects,
   getTestMembershipEntitlementEffectsForGrant,
+  insertQueuedMembershipGrant,
   setTestMembershipGrantRemainingMilliseconds,
   updateTestMembershipExpiresAt,
 } from '@voucha/test-helpers'
 import { spyOnMembershipEntitlementAdmission } from '../../../test-helpers/membership-entitlement-admission.mts'
-import { createMembership, grantMembership } from '../create.mts'
+import { createMembership } from '../create.mts'
 import { getMembershipByUserId, getMembershipHistory } from '../get.mts'
 import { CompletedMembershipGrantError, revokeMembershipGrant } from './revoke.mts'
 
@@ -30,9 +32,9 @@ describe('revokeMembershipGrant', () => {
     const revoker = await createTestUser({ administrator: true })
     const member = await createTestUser()
     const activeSku = await createTestSku({ plan: 'plus' })
-    await grantMembership(grantor.id, member.id, 'plus', activeSku.id, 30)
+    await activeGrant(grantor, member, activeSku)
     const queuedSku = await createTestSku({ plan: 'pro', interval: 'yearly' })
-    await grantMembership(grantor.id, member.id, 'pro', queuedSku.id, 31)
+    await queuedGrant(grantor, member, queuedSku, 31)
     const [, queuedGrantId] = (await getTestGrantQueue(member.id)).grant_ids
     expect(queuedGrantId).toBeDefined()
     const beforeHistory = (await getMembershipHistory(member.id)).results
@@ -77,9 +79,9 @@ describe('revokeMembershipGrant', () => {
     const admin = await createTestUser({ administrator: true })
     const member = await createTestUser()
     const activeSku = await createTestSku({ plan: 'plus' })
-    const active = await grantMembership(admin.id, member.id, 'plus', activeSku.id, 30)
+    const active = await activeGrant(admin, member, activeSku)
     const queuedSku = await createTestSku({ plan: 'pro', interval: 'yearly' })
-    await grantMembership(admin.id, member.id, 'pro', queuedSku.id, 30)
+    await queuedGrant(admin, member, queuedSku, 30)
     const [, queuedGrantId] = (await getTestGrantQueue(member.id)).grant_ids
     expect(queuedGrantId).toBeDefined()
     await revokeMembershipGrant(admin.id, queuedGrantId!, 'revoke before replay')
@@ -107,7 +109,7 @@ describe('revokeMembershipGrant', () => {
     const admin = await createTestUser({ administrator: true })
     const member = await createTestUser()
     const grantSku = await createTestSku({ plan: 'plus' })
-    const grant = await grantMembership(admin.id, member.id, 'plus', grantSku.id, 30)
+    const grant = await activeGrant(admin, member, grantSku)
     const directSku = await createTestSku({ plan: 'pro', interval: 'yearly' })
     const subscriptionId = `sub_revoke_superseded_${randomUUID()}`
     await createMembership({
@@ -154,7 +156,7 @@ describe('revokeMembershipGrant', () => {
     const secondAdmin = await createTestUser({ administrator: true })
     const member = await createTestUser()
     const sku = await createTestSku({ plan: 'plus' })
-    const grant = await grantMembership(firstAdmin.id, member.id, 'plus', sku.id, 30)
+    const grant = await activeGrant(firstAdmin, member, sku)
 
     const results = await Promise.all([
       revokeMembershipGrant(firstAdmin.id, grant.grantId, 'first revocation'),
@@ -183,7 +185,7 @@ describe('revokeMembershipGrant', () => {
     const admin = await createTestUser({ administrator: true })
     const member = await createTestUser()
     const sku = await createTestSku({ plan: 'plus' })
-    const grant = await grantMembership(admin.id, member.id, 'plus', sku.id, 30)
+    const grant = await activeGrant(admin, member, sku)
 
     const result = await revokeMembershipGrant(admin.id, grant.grantId, 'revoke after lock')
 
@@ -195,9 +197,9 @@ describe('revokeMembershipGrant', () => {
     const admin = await createTestUser({ administrator: true })
     const member = await createTestUser()
     const firstSku = await createTestSku({ plan: 'plus' })
-    await grantMembership(admin.id, member.id, 'plus', firstSku.id, 30)
+    await activeGrant(admin, member, firstSku)
     const secondSku = await createTestSku({ plan: 'pro', interval: 'yearly' })
-    await grantMembership(admin.id, member.id, 'pro', secondSku.id, 31)
+    await queuedGrant(admin, member, secondSku, 31)
     const queue = await getTestGrantQueue(member.id)
     const [firstGrantId] = queue.grant_ids
     expect(firstGrantId).toBeDefined()
@@ -235,9 +237,9 @@ describe('revokeMembershipGrant', () => {
     const admin = await createTestUser({ administrator: true })
     const member = await createTestUser()
     const directSku = await createTestSku({ plan: 'plus' })
-    const active = await grantMembership(admin.id, member.id, 'plus', directSku.id, 30)
+    const active = await activeGrant(admin, member, directSku)
     const queuedSku = await createTestSku({ plan: 'pro', interval: 'yearly' })
-    await grantMembership(admin.id, member.id, 'pro', queuedSku.id, 1)
+    await queuedGrant(admin, member, queuedSku, 1)
     const [, queuedGrantId] = (await getTestGrantQueue(member.id)).grant_ids
     expect(queuedGrantId).toBeDefined()
     await setTestMembershipGrantRemainingMilliseconds(queuedGrantId!, 0.5)
@@ -257,3 +259,27 @@ describe('revokeMembershipGrant', () => {
     )
   })
 })
+
+// Committed fixtures: the SERIALIZABLE grant writer is only setup in this file, and parallel
+// tests' predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
+function activeGrant(admin: { id: string }, member: { id: string }, sku: { id: string }) {
+  return createTestAdminGrantMembership({
+    grantedById: admin.id,
+    productId: sku.id,
+    userId: member.id,
+  })
+}
+
+function queuedGrant(
+  admin: { id: string },
+  member: { id: string },
+  sku: { id: string },
+  durationDays: number,
+) {
+  return insertQueuedMembershipGrant({
+    grantedById: admin.id,
+    productId: sku.id,
+    userId: member.id,
+    durationDays,
+  })
+}

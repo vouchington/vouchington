@@ -1,6 +1,10 @@
-import { createTestSku, createTestUser, updateTestMembershipExpiresAt } from '@voucha/test-helpers'
+import {
+  createTestAdminGrantMembership,
+  createTestSku,
+  createTestUser,
+  updateTestMembershipExpiresAt,
+} from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
-import { grantMembership } from '../create.mts'
 import { getMembershipByUserId, getMembershipHistory } from '../get.mts'
 import { expireTestMembershipsThrough } from '@voucha/test-helpers/entities/membership-expiry'
 
@@ -13,7 +17,15 @@ describe('expireElapsedMemberships database boundary', () => {
     const admin = await createTestUser({ administrator: true })
     const member = await createTestUser()
     const sku = await createTestSku({ plan: 'plus' })
-    const grant = await grantMembership(admin.id, member.id, 'plus', sku.id, 30)
+    // Committed fixtures: the SERIALIZABLE grant writer is only setup here, and parallel tests'
+    // predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
+    const grant = await createTestAdminGrantMembership({
+      grantedById: admin.id,
+      productId: sku.id,
+      userId: member.id,
+    })
+    // The fixture grant is open-ended, so give it the 30-day term the writer would have set.
+    await updateTestMembershipExpiresAt(grant.id, new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))
     const cutoff = (await getMembershipByUserId(member.id))?.expires_at
     if (!cutoff) throw new Error('Expected the owned grant to have a persisted expiry')
     await updateTestMembershipExpiresAt(grant.id, new Date(cutoff.getTime() + expiryOffset))
