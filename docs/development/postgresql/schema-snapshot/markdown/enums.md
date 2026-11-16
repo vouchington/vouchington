@@ -1383,6 +1383,44 @@
 - `household_invitation`
 - `copyright_notice`
 
+## `notification_kinds`
+
+- `post_new`
+- `post_reply`
+- `post_manual_send`
+- `post_removed`
+- `rss_item_new`
+- `rss_item_manual_send`
+- `follow`
+- `follow_referral_signup`
+- `referral_signup`
+- `referral_click`
+- `report_reviewed`
+- `critical_moderation_alert`
+- `review_dispute_resolved`
+- `review_actioned_removed`
+- `review_actioned_note`
+- `user_warning`
+- `moderation_appeal_resolved`
+- `community_ban`
+- `direct_message`
+- `modmail`
+- `community_application_approved`
+- `community_application_rejected`
+- `community_role_changed`
+- `community_ownership_received`
+- `community_ownership_transferred_away`
+- `community_activity_digest`
+- `household_invitation`
+- `copyright_claimant_receipt`
+- `copyright_status_update`
+- `copyright_poster_restriction_notice`
+- `copyright_poster_review_notice`
+- `copyright_poster_restoration_notice`
+- `copyright_owner_information_notice`
+- `copyright_claimant_decision_notice`
+- `copyright_redress_decision_notice`
+
 ## `notification_push_endpoint_statuses`
 
 - `pending`
