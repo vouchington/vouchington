@@ -11,7 +11,6 @@ import {
   insertQueuedMembershipGrant,
   setTestMembershipGrantRemainingMilliseconds,
   updateTestMembershipExpiresAt,
-  withTestMembershipUserLocked,
 } from '@voucha/test-helpers'
 import { createMembership } from '../create.mts'
 import {
@@ -192,7 +191,6 @@ describe('expireElapsedMembershipsForUsers', () => {
     })
     await updateTestMembershipExpiresAt(membership.id, new Date('2020-01-01T00:00:00.000Z'))
 
-    // SKIP LOCKED can underfill when another sweep holds the first global candidate.
     expect((await getElapsedMembershipUserIdsBatch(1)).length).toBeLessThanOrEqual(1)
   })
 
@@ -217,7 +215,7 @@ describe('expireElapsedMembershipsForUsers', () => {
     await expect(getElapsedMembershipUserIdsBatch(batchSize)).rejects.toThrow(RangeError)
   })
 
-  it('skips locked users and recovers them on the next batch', async () => {
+  it('expires an owned projection once across concurrent sweepers', async () => {
     const admin = await createTestUser({ administrator: true })
     const member = await createTestUser()
     const sku = await createTestSku({ plan: 'plus' })
@@ -226,24 +224,18 @@ describe('expireElapsedMembershipsForUsers', () => {
       productId: sku.id,
       userId: member.id,
     })
-    await updateTestMembershipExpiresAt(membership.id, new Date('2020-01-01T00:00:00.000Z'))
-
-    await withTestMembershipUserLocked(member.id, async () => {
-      const candidates = await getElapsedMembershipUserIdsBatch(1_000_000)
-      expect(candidates).not.toContain(member.id)
-      expect((await expireElapsedMembershipsBatch(1, null, [member.id])).hasMore).toBe(true)
-      await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({
-        expired: 0,
-        hasMore: true,
-      })
-    })
-    await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({
-      expired: 1,
-      hasMore: false,
-    })
-    await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({
-      expired: 0,
-      hasMore: false,
-    })
+    await updateTestMembershipExpiresAt(membership.id, new Date('2020-01-01'))
+    const results = await Promise.all([
+      expireElapsedMembershipsForUsers([member.id]),
+      expireElapsedMembershipsForUsers([member.id]),
+    ])
+    expect(results.map(result => result.expired).toSorted((a, b) => a - b)).toEqual([0, 1])
+    expect(results.every(result => !result.hasMore)).toBe(true)
+    expect(
+      (await getMembershipHistory(member.id)).results.filter(
+        row => row.membership_id === membership.id && row.change_type === 'expiration',
+      ),
+    ).toHaveLength(1)
+    await expect(getMembershipByUserId(member.id)).resolves.toBeNull()
   })
 })

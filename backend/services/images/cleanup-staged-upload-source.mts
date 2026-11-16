@@ -1,4 +1,4 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import onError from '@modules/on-error'
 import {
   deleteImageUploadSourceFromS3,
@@ -15,7 +15,7 @@ interface RecoverableStagedSource {
   deleted_at: Date | null
 }
 
-// Re-read under a primary lock immediately before selecting staged-only versus known storage.
+// Re-read on the primary while the storage lifecycle lock protects storage cleanup.
 export async function cleanupStagedUploadSource(imageId: string): Promise<boolean> {
   return withImageStorageLifecycleLock(imageId, async () =>
     cleanupStagedUploadSourceWhileLocked(imageId),
@@ -23,9 +23,8 @@ export async function cleanupStagedUploadSource(imageId: string): Promise<boolea
 }
 
 async function cleanupStagedUploadSourceWhileLocked(imageId: string): Promise<boolean> {
-  await using transaction = await beginTransaction()
-  const { rows } = await transaction<RecoverableStagedSource>(
-    `/* cleanupStagedUploadSource:lock */
+  const { rows } = await write<RecoverableStagedSource>(
+    `/* cleanupStagedUploadSource:read */
     SELECT id, s3_key, sha_256, upload_staged_at, upload_failed_at, deleted_at
     FROM images
     WHERE id = $1
@@ -33,12 +32,10 @@ async function cleanupStagedUploadSourceWhileLocked(imageId: string): Promise<bo
       AND upload_source_deleted_at IS NULL
       AND (deleted_at IS NULL OR deletion_posts_completed_at IS NOT NULL)
       AND (quarantine_pending_at IS NULL OR quarantined_at IS NOT NULL)
-    FOR UPDATE
   `,
     [imageId],
   )
   const image = rows[0]
-  await transaction.commit()
   if (!image) return false
 
   const terminal = image.deleted_at !== null || image.upload_failed_at !== null

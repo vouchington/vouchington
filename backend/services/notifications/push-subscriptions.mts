@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, isUniqueViolation, write, type QueryOptions } from '@data-stores/psql'
 import { createCodedError } from '@vouchington/sentry'
 import { CONFLICT } from '@modules/on-error/error-codes'
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
@@ -55,26 +55,42 @@ export async function listWebPushSubscriptionsPage(
 }
 
 /** Claims endpoint ownership and always creates a fresh browser activation generation. */
-export async function upsertWebPushSubscription(
-  input: PushSubscriptionInput,
-  hooks?: { beforeOwnerRowLock?: () => Promise<void> },
-) {
+export async function upsertWebPushSubscription(input: PushSubscriptionInput) {
+  try {
+    return await createWebPushSubscriptionGeneration(input)
+  } catch (err) {
+    if (isUniqueViolation(err)) {
+      const conflict = createCodedError(
+        409,
+        'Concurrent Web Push subscription registration.',
+        CONFLICT,
+      )
+      conflict.cause = err
+      throw conflict
+    }
+    throw err
+  }
+}
+
+async function createWebPushSubscriptionGeneration(input: PushSubscriptionInput) {
   const endpointDigest = createHash('sha256').update(input.endpoint).digest('hex')
   await using transaction = await beginTransaction()
-  await transaction(sql`/* lockWebPushEndpointOwner */
-    SELECT pg_advisory_xact_lock(hashtextextended(${`web-push-endpoint:${endpointDigest}`}, 0))`)
-  await hooks?.beforeOwnerRowLock?.()
-  const existing = await transaction<{ endpoint: string }>(sql`/* getWebPushEndpointOwner */
-    SELECT endpoint
+  const existing = await transaction<{
+    endpoint: string
+    user_id: string
+    subscription_id: string
+  }>(sql`/* getWebPushEndpointOwner */
+    SELECT endpoint, user_id, subscription_id
     FROM web_push_endpoint_owners
-    WHERE endpoint_digest = decode(${endpointDigest}, 'hex')
-    FOR UPDATE`)
+    WHERE endpoint_digest = decode(${endpointDigest}, 'hex')`)
   assertWebPushEndpointOwnerMatches(input.endpoint, existing.rows[0]?.endpoint)
   await transaction(sql`/* releaseWebPushEndpointOwner */
     UPDATE web_push_subscriptions subscription
     SET deleted_at = CURRENT_TIMESTAMP
     FROM web_push_endpoint_owners owner
     WHERE owner.endpoint_digest = decode(${endpointDigest}, 'hex')
+      AND owner.user_id = ${existing.rows[0]?.user_id ?? null}::uuid
+      AND owner.subscription_id = ${existing.rows[0]?.subscription_id ?? null}::uuid
       AND subscription.user_id = owner.user_id
       AND subscription.id = owner.subscription_id
       AND subscription.deleted_at IS NULL`)
@@ -88,13 +104,19 @@ export async function upsertWebPushSubscription(
       expiration_time_milliseconds::text AS expiration_time_milliseconds, user_agent, last_success_at,
       last_failure_at, created_at, updated_at`)
   const subscription = rows[0] as Record<string, unknown>
-  await transaction(sql`/* claimWebPushEndpointOwner */
+  const owner = await transaction(sql`/* claimWebPushEndpointOwner */
     INSERT INTO web_push_endpoint_owners (endpoint_digest, endpoint, user_id, subscription_id)
     VALUES (decode(${endpointDigest}, 'hex'), ${input.endpoint}, ${input.userId}, ${subscription.id})
     ON CONFLICT (endpoint_digest) DO UPDATE
     SET endpoint = EXCLUDED.endpoint,
         user_id = EXCLUDED.user_id,
-        subscription_id = EXCLUDED.subscription_id`)
+        subscription_id = EXCLUDED.subscription_id
+    WHERE web_push_endpoint_owners.endpoint = EXCLUDED.endpoint
+      AND web_push_endpoint_owners.user_id = ${existing.rows[0]?.user_id ?? null}::uuid
+      AND web_push_endpoint_owners.subscription_id = ${existing.rows[0]?.subscription_id ?? null}::uuid
+    RETURNING subscription_id`)
+  if (owner.rowCount !== 1)
+    throw createCodedError(409, 'Concurrent Web Push endpoint ownership change.', CONFLICT)
   await transaction.commit()
   return mapWebPushSubscriptionRow(subscription)
 }
@@ -105,26 +127,34 @@ export function assertWebPushEndpointOwnerMatches(endpoint: string, ownedEndpoin
     throw createCodedError(409, 'Web Push endpoint digest collision.', CONFLICT)
 }
 
-export async function deleteWebPushSubscription(userId: string, subscriptionId: string) {
-  const { rowCount } = await write(sql`/* deleteWebPushSubscription */
-    WITH removed_owner AS (
-      DELETE FROM web_push_endpoint_owners
-      USING web_push_subscriptions subscription
-      WHERE web_push_endpoint_owners.user_id = ${userId}
-        AND web_push_endpoint_owners.subscription_id = ${subscriptionId}::uuid
-        AND subscription.user_id = web_push_endpoint_owners.user_id
-        AND subscription.id = web_push_endpoint_owners.subscription_id
-        AND subscription.endpoint = web_push_endpoint_owners.endpoint
-      RETURNING web_push_endpoint_owners.user_id, web_push_endpoint_owners.subscription_id,
-        web_push_endpoint_owners.endpoint
+export async function deleteWebPushSubscription(
+  userId: string,
+  subscriptionId: string,
+  options?: QueryOptions,
+) {
+  const { rowCount } = await write(
+    sql`/* deleteWebPushSubscription */
+    WITH retired AS (
+      UPDATE web_push_subscriptions subscription
+      SET deleted_at = CURRENT_TIMESTAMP
+      WHERE subscription.user_id = ${userId}
+        AND subscription.id = ${subscriptionId}::uuid
+        AND subscription.deleted_at IS NULL
+        AND EXISTS (
+          SELECT 1 FROM web_push_endpoint_owners owner
+          WHERE owner.user_id = subscription.user_id
+            AND owner.subscription_id = subscription.id
+            AND owner.endpoint = subscription.endpoint
+        )
+      RETURNING subscription.user_id, subscription.id, subscription.endpoint
     )
-    UPDATE web_push_subscriptions subscription
-    SET deleted_at = CURRENT_TIMESTAMP
-    FROM removed_owner owner
-    WHERE subscription.user_id = owner.user_id
-      AND subscription.id = owner.subscription_id
-      AND subscription.endpoint = owner.endpoint
-      AND subscription.deleted_at IS NULL`)
+    DELETE FROM web_push_endpoint_owners owner
+    USING retired
+    WHERE owner.user_id = retired.user_id
+      AND owner.subscription_id = retired.id
+      AND owner.endpoint = retired.endpoint`,
+    options,
+  )
   return (rowCount ?? 0) > 0
 }
 
@@ -132,20 +162,30 @@ export async function deleteWebPushSubscription(userId: string, subscriptionId: 
 export async function deleteExactWebPushSubscription(
   userId: string,
   binding: { endpoint: string; subscriptionId: string },
+  options?: QueryOptions,
 ): Promise<void> {
-  await write(sql`/* deleteExactWebPushSubscription */
-    WITH removed_owner AS (
-      DELETE FROM web_push_endpoint_owners
-      WHERE user_id = ${userId}
-        AND subscription_id = ${binding.subscriptionId}::uuid
-        AND endpoint = ${binding.endpoint}
-      RETURNING user_id, subscription_id
+  await write(
+    sql`/* deleteExactWebPushSubscription */
+    WITH retired AS (
+      UPDATE web_push_subscriptions subscription
+      SET deleted_at = CURRENT_TIMESTAMP
+      WHERE subscription.user_id = ${userId}
+        AND subscription.id = ${binding.subscriptionId}::uuid
+        AND subscription.endpoint = ${binding.endpoint}
+        AND subscription.deleted_at IS NULL
+        AND EXISTS (
+          SELECT 1 FROM web_push_endpoint_owners owner
+          WHERE owner.user_id = subscription.user_id
+            AND owner.subscription_id = subscription.id
+            AND owner.endpoint = subscription.endpoint
+        )
+      RETURNING subscription.user_id, subscription.id, subscription.endpoint
     )
-    UPDATE web_push_subscriptions subscription
-    SET deleted_at = CURRENT_TIMESTAMP
-    FROM removed_owner owner
-    WHERE subscription.user_id = owner.user_id
-      AND subscription.id = owner.subscription_id
-      AND subscription.endpoint = ${binding.endpoint}
-      AND subscription.deleted_at IS NULL`)
+    DELETE FROM web_push_endpoint_owners owner
+    USING retired
+    WHERE owner.user_id = retired.user_id
+      AND owner.subscription_id = retired.id
+      AND owner.endpoint = retired.endpoint`,
+    options,
+  )
 }

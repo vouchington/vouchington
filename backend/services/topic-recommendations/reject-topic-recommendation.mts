@@ -21,15 +21,6 @@ export async function rejectTopicRecommendation(
 
   await using query = await beginTransaction()
   const options = { query }
-  const lockedStatusQuery = await query(sql`/* rejectTopicRecommendation */
-      SELECT reviewed_at
-      FROM post_topic_recommendations
-      WHERE post_id = ${recommendation.id}
-      FOR UPDATE
-    `)
-  const reviewedAt = lockedStatusQuery.rows[0]?.reviewed_at
-  assert(reviewedAt === null, 422, 'Recommendation is already reviewed')
-
   const result = await write(
     sql`/* rejectTopicRecommendation */
         UPDATE post_topic_recommendations
