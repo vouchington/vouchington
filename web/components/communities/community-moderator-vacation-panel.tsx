@@ -49,7 +49,6 @@ export function CommunityModeratorVacationPanel({
 
   function handleSuppressDigestsToggle(enabled: boolean) {
     if (isPending) return
-    const previous = suppressDigests
     setSuppressDigests(enabled)
     startTransition(async () => {
       try {
@@ -64,7 +63,7 @@ export function CommunityModeratorVacationPanel({
               ),
         )
       } catch (err) {
-        setSuppressDigests(previous)
+        setSuppressDigests(suppressDigests)
         onError(err, {
           fallback: t(
             'extracted.communities.communityModeratorVacationPanel.failedToUpdateCommunityDigestPreference_8cd7e69b',
@@ -77,7 +76,6 @@ export function CommunityModeratorVacationPanel({
 
   function handleToggle(enabled: boolean) {
     if (isPending) return
-    const prev = active
     setActive(enabled)
 
     startTransition(async () => {
@@ -98,7 +96,7 @@ export function CommunityModeratorVacationPanel({
           )
         }
       } catch (err) {
-        setActive(prev)
+        setActive(active)
         onError(err, {
           fallback: t(
             'extracted.communities.communityModeratorVacationPanel.failedToUpdateVacationMode_247adec7',
@@ -111,7 +109,6 @@ export function CommunityModeratorVacationPanel({
 
   function handleDurationChange(value: string) {
     if (!active || isPending) return
-    const prev = duration
     setDuration(value)
 
     startTransition(async () => {
@@ -125,7 +122,7 @@ export function CommunityModeratorVacationPanel({
           ),
         )
       } catch (err) {
-        setDuration(prev)
+        setDuration(duration)
         onError(err, {
           fallback: t(
             'extracted.communities.communityModeratorVacationPanel.failedToUpdateVacationDuration_b2cadfd0',

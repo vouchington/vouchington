@@ -1,5 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import { getModerationCleanupCandidates } from './cleanup-moderation-candidates.mts'
 import { deleteExpiredModerationHistory } from './cleanup-moderation-delete-history.mts'
@@ -77,9 +77,9 @@ async function cleanupModerationRecordPage(
     options.upperBoundDate && options.upperBoundDate < productionUpperDate
       ? options.upperBoundDate
       : productionUpperDate
-  const upperId = cursor.sweep_upper_bound_record_id ?? getMinUUIDv7ForDate(upperDate)
+  const upperId = cursor.sweep_upper_bound_record_id ?? getMinUuidv7ForDate(upperDate)
   const lowerId = options.lowerBoundDate
-    ? getMinUUIDv7ForDate(options.lowerBoundDate)
+    ? getMinUuidv7ForDate(options.lowerBoundDate)
     : '00000000-0000-0000-0000-000000000000'
   const afterId =
     cursor.cursor_record_id && cursor.cursor_record_id > lowerId ? cursor.cursor_record_id : lowerId

@@ -1,4 +1,4 @@
-import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
+import { POST_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/post-classifier'
 import { CLASSIFIER_RUN_ATTEMPTS } from '../queues/ai-agents/config.mts'
 import { createPostClassifierRegistration } from '../workers/ai-agents/processors/classifier-run-post-classifier.mts'
 import { executeLeasedRun, type EfficiencyDriver } from './classifier-call-efficiency-run.mts'
@@ -23,7 +23,7 @@ const EVERY_REMOTE_TOGGLE = [
  * the one provider call.
  */
 export const postClassifierEfficiencyDriver: EfficiencyDriver = {
-  slug: POST_CLASSIFIER_SLUG,
+  slug: POST_CLASSIFIER_SYSTEM_USERNAME,
   scope: 'C5 post classifier',
   fanOuts: [1, 10],
   questions: questionCount => questionCount,

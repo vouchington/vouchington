@@ -1,5 +1,5 @@
 import { cleanupPostModerationLedgerPage } from './cleanup-post-moderation-ledger-page.mts'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { assertPositiveInteger } from './normalize-positive-integer.mts'
 import {
   POST_MODERATION_RETENTION_KINDS,
@@ -39,9 +39,9 @@ export async function cleanupPostModerationLedger(
     (options.now ?? new Date()).getTime() - options.retentionDays * 86_400_000,
   )
   // The upper bound is exclusive; include the entire millisecond exactly 90 days old.
-  const cutoffId = getMinUUIDv7ForDate(new Date(cutoff.getTime() + 1))
+  const cutoffId = getMinUuidv7ForDate(new Date(cutoff.getTime() + 1))
   const lowerId = options.lowerBoundDate
-    ? getMinUUIDv7ForDate(options.lowerBoundDate)
+    ? getMinUuidv7ForDate(options.lowerBoundDate)
     : '00000000-0000-0000-0000-000000000000'
   let deletedVersions = 0
   let clearedPassEvidence = 0

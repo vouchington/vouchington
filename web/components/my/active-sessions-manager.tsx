@@ -90,14 +90,13 @@ export function ActiveSessionsManager({ initialData, initialSessions }: Props) {
   }
 
   function confirmPendingAction() {
-    const pending = confirmation
     setConfirmation(null)
-    if (pending?.type === 'session') {
-      void handleSignOut(pending.session)
-    } else if (pending?.type === 'all') {
+    if (confirmation?.type === 'session') {
+      void handleSignOut(confirmation.session)
+    } else if (confirmation?.type === 'all') {
       void handleSignOutAll()
-    } else if (pending?.type === 'mcp') {
-      void handleRevokeMcp(pending.grantId)
+    } else if (confirmation?.type === 'mcp') {
+      void handleRevokeMcp(confirmation.grantId)
     }
   }
 

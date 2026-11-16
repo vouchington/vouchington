@@ -1,4 +1,4 @@
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 
 export const CLASSIFIER_RETENTION_DAYS = 90
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -14,7 +14,7 @@ export function assertClassifierBatchWithinRetention(batchId: string, now = new 
 }
 
 export function isClassifierBatchWithinRetention(batchId: string, now = new Date()): boolean {
-  return batchId.toLowerCase() >= getMinUUIDv7ForDate(classifierRetentionCutoff(now))
+  return batchId.toLowerCase() >= getMinUuidv7ForDate(classifierRetentionCutoff(now))
 }
 
 export function assertClassifierWindowWithinRetention(from: Date, now = new Date()): void {

@@ -44,19 +44,18 @@ export async function createOAuthFlowResultForUser(options: {
     await lockLoginCredentialAdmission(options.user.id, options.firstFactor, query)
     const loaded = await getPrivateUserByAny(options.user.id, { query })
     if (!loaded) throw createHttpError(401, 'Sign-in account no longer exists')
-    const user = loaded
     const original = options.authenticatedSessionId
       ? await readOriginalSessionAssurance(
-          user.id,
+          loaded.id,
           { sid: options.authenticatedSessionId, did: options.deviceId },
           { query },
         )
       : null
     if (original) {
-      const claims = await getEnrichedSessionClaims(user, original)
-      return issuePreparedOAuthFlowResult({ ...options, user, claims, query })
+      const claims = await getEnrichedSessionClaims(loaded, original)
+      return issuePreparedOAuthFlowResult({ ...options, user: loaded, claims, query })
     }
-    const result = await prepareOAuthFlowResultForUser({ ...options, user, query })
+    const result = await prepareOAuthFlowResultForUser({ ...options, user: loaded, query })
     if (result.mfaRequired) return result
     return issuePreparedOAuthFlowResult({ ...options, ...result, query })
   })

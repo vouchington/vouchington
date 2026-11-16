@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { PRIORITY_DISPATCH } from '@queues/background/config'
-import { notifications } from '../queues.mts'
+import { background as notifications } from '@queues/background/queues'
 import { enqueueContinueCriticalModerationAlertNotification } from './critical-moderation-alert.mts'
 
 describe('critical moderation alert enqueue', () => {

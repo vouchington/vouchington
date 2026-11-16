@@ -15,8 +15,6 @@ export async function getLandingPageAnalyticsByPageId(
 ): Promise<Omit<LandingPageAnalytics, 'conversion_funnel'>> {
   assert(isUUID(landingPageId), 422, 'Invalid landing page ID')
 
-  const pageId = landingPageId
-
   const [visitRows, clickRows, itemClickRows, dailyRows, utmRows] = await Promise.all([
     // Total visits and unique visitors (last 30 days for unique_visitors)
     query<{ total_visits: number; unique_visitors: number }>(
@@ -28,7 +26,7 @@ export async function getLandingPageAnalyticsByPageId(
       WHERE page_kind = 'landing_page'
         AND page_id = $1
     `,
-      [pageId],
+      [landingPageId],
     ),
     // Total clicks
     query<{ total_clicks: number }>(
@@ -38,7 +36,7 @@ export async function getLandingPageAnalyticsByPageId(
       WHERE page_kind = 'landing_page'
         AND page_id = $1
     `,
-      [pageId],
+      [landingPageId],
     ),
     // Per-item click counts
     query<{ item_id: string; click_count: number }>(
@@ -54,7 +52,7 @@ export async function getLandingPageAnalyticsByPageId(
       GROUP BY target_id
       ORDER BY click_count DESC
     `,
-      [pageId],
+      [landingPageId],
     ),
     // Daily combined visits and clicks (last 30 days)
     query<{ date: string; visits: number; clicks: number; unique_visitors: number }>(
@@ -87,7 +85,7 @@ export async function getLandingPageAnalyticsByPageId(
       FULL OUTER JOIN daily_clicks c ON v.date = c.date
       ORDER BY date ASC
     `,
-      [pageId],
+      [landingPageId],
     ),
     // UTM source breakdown (last 30 days)
     query<{ utm_source: string; visits: number }>(
@@ -104,7 +102,7 @@ export async function getLandingPageAnalyticsByPageId(
       -- Dashboard contract: Top 20 sources (docs/requirements/admin/LANDING-PAGE-ANALYTICS.md).
       LIMIT 20
     `,
-      [pageId],
+      [landingPageId],
     ),
   ])
 

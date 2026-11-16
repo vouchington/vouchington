@@ -1,7 +1,7 @@
 import { describe, it, beforeAll, expect } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
-import { articleSync } from '@queues/article-sync/queues'
+import { background } from '@queues/background/queues'
 import { ARTICLE_SYNC_PROCESS_JOB } from '@queues/background/enqueues/article-sync-jobs'
 import { articleSyncPubSub } from '@data-stores/valkey-pubsub'
 import type { PrivateUser } from '@services/users/types'
@@ -38,7 +38,7 @@ describe('GET /api/v1/admin/article-syncs/:jobId/stream', () => {
   it('streams a terminal queue status and closes the response', async () => {
     const request = createRequest()
     await request.authenticateAs(admin)
-    const job = await articleSync.add(
+    const job = await background.add(
       ARTICLE_SYNC_PROCESS_JOB.name,
       { userId: admin.id },
       ARTICLE_SYNC_PROCESS_JOB.options,

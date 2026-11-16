@@ -38,19 +38,18 @@ export function createPostEditPage(postType: PostType, _slug: string) {
     throw new Error(`createPostEditPage called with non-editable post type: ${postType}`)
   }
 
-  const editablePostType = postType
-  const title = editTitles[editablePostType]
+  const title = editTitles[postType]
 
   async function generateMetadata(): Promise<Metadata> {
     return createNoIndexMetadata(title)
   }
 
-  async function PostEditRoutePage({ params }: DetailPageProps) {
+  const PostEditRoutePage = async ({ params }: DetailPageProps) => {
     const { id } = await params
     return (
       <EditPostPage
         id={id}
-        postType={editablePostType}
+        postType={postType}
         title={title}
       />
     )

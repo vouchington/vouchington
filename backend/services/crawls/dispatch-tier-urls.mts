@@ -1,5 +1,5 @@
 import { executeHandlerWithCursorInBatches } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import {
   getEntityRelationUrlTables,
@@ -43,8 +43,8 @@ async function dispatchTierCrawlUrls(
   const resolved = resolveCrawlDispatchPageLimits(limits)
   const sweepStartedAt = cursor?.sweepStartedAt ?? new Date().toISOString()
   await saveProgress?.({ sweepStartedAt, ...(cursor?.afterId && { afterId: cursor.afterId }) })
-  const upperId = getMinUUIDv7ForDate(new Date(sweepStartedAt))
-  const attemptCutoffId = getMinUUIDv7ForDate(
+  const upperId = getMinUuidv7ForDate(new Date(sweepStartedAt))
+  const attemptCutoffId = getMinUuidv7ForDate(
     new Date(new Date(sweepStartedAt).getTime() - ATTEMPT_THRESHOLD_HOURS * 60 * 60 * 1000),
   )
   const queryStatement = sql`/* dispatchTierCrawlUrls */ `

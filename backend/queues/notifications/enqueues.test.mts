@@ -14,7 +14,7 @@ import {
   enqueueReconcileDsaStatementSubmissions,
   enqueueCopyrightCasePurgeAdmission,
 } from './enqueues.mts'
-import { notifications } from './queues.mts'
+import { background as notifications } from '@queues/background/queues'
 import { PRIORITY_DISPATCH } from '@queues/background/config'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 

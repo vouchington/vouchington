@@ -23,7 +23,6 @@ export async function seedCommentsAndDescendantDepth(): Promise<void> {
 
 /** A long chain with late breadth makes an unbounded recursive walk visible in the plan. */
 export async function seedCommentDescendantDepth(): Promise<void> {
-  const rootId = COMMENT_DESCENDANT_DEPTH_ROOT_ID
   const hash = contentHash('comment-descendant-depth')
   await write(
     `/* seedCommentDescendantDepth:root */ INSERT INTO posts (
@@ -31,12 +30,14 @@ export async function seedCommentDescendantDepth(): Promise<void> {
       bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256
     ) VALUES ($1, 'discussion', 'system', 'seed', $2, now(), $3, $3)
     ON CONFLICT DO NOTHING`,
-    [rootId, seedUuid(0, '01'), hash],
+    [COMMENT_DESCENDANT_DEPTH_ROOT_ID, seedUuid(0, '01'), hash],
   )
   const ids = Array.from({ length: SPINE_LENGTH }, (_, index) =>
     seedUuidAtTimestamp(SPINE_START_MS + index * 1000, SPINE_SERIAL_START + index),
   )
-  const parentIds = ids.map((_, index) => (index === 0 ? rootId : ids[index - 1]))
+  const parentIds = ids.map((_, index) =>
+    index === 0 ? COMMENT_DESCENDANT_DEPTH_ROOT_ID : ids[index - 1],
+  )
   await write(
     `/* seedCommentDescendantDepth:spine */ INSERT INTO posts (
       id, post_type, created_via, markdown, parent_post_id, root_post_id,
@@ -47,7 +48,7 @@ export async function seedCommentDescendantDepth(): Promise<void> {
       now(), $4, $4
     FROM UNNEST($1::uuid[], $2::uuid[]) AS chain(id, parent_id)
     ON CONFLICT DO NOTHING`,
-    [ids, parentIds, rootId, hash],
+    [ids, parentIds, COMMENT_DESCENDANT_DEPTH_ROOT_ID, hash],
   )
 
   const leafIds = Array.from({ length: LEAF_COUNT }, (_, index) =>
@@ -63,6 +64,6 @@ export async function seedCommentDescendantDepth(): Promise<void> {
       now(), $4, $4
     FROM UNNEST($1::uuid[]) AS leaf(id)
     ON CONFLICT DO NOTHING`,
-    [leafIds, ids.at(-1), rootId, hash],
+    [leafIds, ids.at(-1), COMMENT_DESCENDANT_DEPTH_ROOT_ID, hash],
   )
 }

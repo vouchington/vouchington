@@ -83,7 +83,6 @@ export function useNewsItemStoryContinuations({
   /* oxlint-disable react-you-might-not-need-an-effect/no-event-handler -- synchronize external story pages when the server acknowledges changed reference visibility */
   useEffect(() => {
     if (generation === 0) return
-    const scope = requestScope
     const storiesToRefresh = Object.entries(currentStoryState.byStory).filter(
       ([storyId, state]) =>
         selections.get(storyId)?.primaryId === state.primaryId &&
@@ -91,29 +90,29 @@ export function useNewsItemStoryContinuations({
     )
     void (async () => {
       for (const [storyId] of storiesToRefresh) {
-        if (requestScopeRef.current !== scope) return
-        if (scope.active.has(storyId)) continue
+        if (requestScopeRef.current !== requestScope) return
+        if (requestScope.active.has(storyId)) continue
         const selection = selections.get(storyId)
         if (!selection) continue
         // Size from current state: a page may have loaded while earlier stories replayed.
         const state = latestStoryState.current.byStory[storyId]
         if (state?.primaryId !== selection.primaryId) continue
-        scope.active.add(storyId)
+        requestScope.active.add(storyId)
         const pageCount = Math.max(1, state.pages.length)
-        scope.pendingRefresh.set(storyId, { primaryId: selection.primaryId, pageCount })
+        requestScope.pendingRefresh.set(storyId, { primaryId: selection.primaryId, pageCount })
         setStoryState(previous =>
-          updateStory(previous, scope, storyId, selection.primaryId, {
+          updateStory(previous, requestScope, storyId, selection.primaryId, {
             loading: true,
             error: false,
           }),
         )
         try {
           // oxlint-disable-next-line no-await-in-loop -- serialize retained stories to bound refresh concurrency
-          await refreshStoryPages(storyId, selection, pageCount, scope)
+          await refreshStoryPages(storyId, selection, pageCount, requestScope)
         } catch {
-          markFailed(storyId, selection, scope)
+          markFailed(storyId, selection, requestScope)
         } finally {
-          scope.active.delete(storyId)
+          requestScope.active.delete(storyId)
         }
       }
     })()
@@ -128,33 +127,32 @@ export function useNewsItemStoryContinuations({
     if (!selection) return
     const state = currentStoryState.byStory[storyId]
     if (state && state.primaryId !== selection.primaryId) return
-    const scope = requestScope
-    if (scope.active.has(storyId)) return
-    scope.active.add(storyId)
-    const pendingRefresh = scope.pendingRefresh.get(storyId)
+    if (requestScope.active.has(storyId)) return
+    requestScope.active.add(storyId)
+    const pendingRefresh = requestScope.pendingRefresh.get(storyId)
     if (state?.error && pendingRefresh?.primaryId === selection.primaryId) {
       setStoryState(previous =>
-        updateStory(previous, scope, storyId, selection.primaryId, {
+        updateStory(previous, requestScope, storyId, selection.primaryId, {
           loading: true,
           error: false,
         }),
       )
       try {
-        await refreshStoryPages(storyId, selection, pendingRefresh.pageCount, scope)
+        await refreshStoryPages(storyId, selection, pendingRefresh.pageCount, requestScope)
       } catch {
-        markFailed(storyId, selection, scope)
+        markFailed(storyId, selection, requestScope)
       } finally {
-        scope.active.delete(storyId)
+        requestScope.active.delete(storyId)
       }
       return
     }
     const pageInfo = state?.pages.at(-1)?.page_info ?? selection.preview.page_info
     if (!pageInfo.has_next_page || !pageInfo.end_cursor) {
-      scope.active.delete(storyId)
+      requestScope.active.delete(storyId)
       return
     }
     setStoryState(previous =>
-      updateStory(previous, scope, storyId, selection.primaryId, {
+      updateStory(previous, requestScope, storyId, selection.primaryId, {
         loading: true,
         error: false,
       }),
@@ -165,24 +163,25 @@ export function useNewsItemStoryContinuations({
         excludeItemId: selection.primaryId,
       })
       if (
-        requestScopeRef.current !== scope ||
+        requestScopeRef.current !== requestScope ||
         latestSelections.current.get(storyId)?.primaryId !== selection.primaryId
       )
         return
       setStoryState(previous => {
-        if (previous.key !== scope.key || previous.viewerId !== scope.viewerId) return previous
+        if (previous.key !== requestScope.key || previous.viewerId !== requestScope.viewerId)
+          return previous
         const prior = previous.byStory[storyId]
         if (prior && prior.primaryId !== selection.primaryId) return previous
-        return updateStory(previous, scope, storyId, selection.primaryId, {
+        return updateStory(previous, requestScope, storyId, selection.primaryId, {
           pages: [...(prior?.pages ?? []), response],
           loading: false,
           error: false,
         })
       })
     } catch {
-      markFailed(storyId, selection, scope)
+      markFailed(storyId, selection, requestScope)
     } finally {
-      scope.active.delete(storyId)
+      requestScope.active.delete(storyId)
     }
   }
 

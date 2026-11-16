@@ -5,7 +5,6 @@ import { PUBLICATION_SCOPE_SEED as seed } from './publication-scope-pages.mts'
 
 export const ALIAS_UNLINK_ITEM_COUNT =
   postPublicationWorkMaxValues.topic_alias_unlink_page_size * 2 + 1
-const ITEM_COUNT = ALIAS_UNLINK_ITEM_COUNT
 const ALIAS_NOISE_COUNT = 4000
 export const ALIAS_UNLINK_HASHTAG_ID = seedUuid(ALIAS_NOISE_COUNT + 2, 'e3')
 export const ALIAS_UNLINK_MARK_ID = seedUuid(ALIAS_NOISE_COUNT + 3, 'e3')
@@ -44,7 +43,7 @@ export async function seedAliasUnlinkFixture(): Promise<void> {
      SELECT format('019e0000-ed00-7000-8000-%s', lpad(to_hex(n), 12, '0'))::uuid,
        $1::uuid, 'seed-publication-alias-' || n
      FROM generate_series(0, $2::integer - 1) n ON CONFLICT DO NOTHING`,
-    ['019e0000-0200-7000-8000-000000000000', ITEM_COUNT],
+    ['019e0000-0200-7000-8000-000000000000', ALIAS_UNLINK_ITEM_COUNT],
   )
   await query(
     `/* seedAliasUnlinkItems */
@@ -79,7 +78,7 @@ export async function seedAliasUnlinkFixture(): Promise<void> {
        ON identity.id = format('019e0000-e600-7000-8000-%s',
          lpad(to_hex((item_number.n * 10 + ordinal.k) % $4::integer), 12, '0'))::uuid
      ON CONFLICT DO NOTHING`,
-    [seed.negativeTopic, seed.negativeAlias, ITEM_COUNT, seed.count],
+    [seed.negativeTopic, seed.negativeAlias, ALIAS_UNLINK_ITEM_COUNT, seed.count],
   )
   await query(
     `/* seedAliasUnlinkItemRelations */
@@ -155,5 +154,5 @@ export async function cleanupAliasUnlinkFixture(): Promise<void> {
 }
 
 function itemEndId(): string {
-  return `019e0000-ed00-7000-8000-${ITEM_COUNT.toString(16).padStart(12, '0')}`
+  return `019e0000-ed00-7000-8000-${ALIAS_UNLINK_ITEM_COUNT.toString(16).padStart(12, '0')}`
 }

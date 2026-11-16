@@ -1,7 +1,7 @@
 import { objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
 import {
   CONTENT_COUNT_PROPERTIES,
-  FOLLOWERS_SCHEMA,
+  countSchema,
   RATINGS_COUNT_SCHEMA,
 } from './topic-output-schema-parts.mts'
 
@@ -27,7 +27,7 @@ export const GET_DOMAIN_RATINGS_OUTPUT_SCHEMA = outcomeSchema(
       topic_title: { type: 'string' },
       ratings: RATINGS_COUNT_SCHEMA,
       content_counts: objectSchema(CONTENT_COUNT_PROPERTIES),
-      followers: FOLLOWERS_SCHEMA,
+      followers: countSchema,
     }),
     rss_feed: objectSchema({ rss_feed_id: { type: 'string' }, title: { type: 'string' } }),
   },

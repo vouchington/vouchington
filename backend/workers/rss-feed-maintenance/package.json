@@ -27,6 +27,7 @@
     "glide-mq": "^0.20.0"
   },
   "devDependencies": {
+    "@queues/background": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@voucha/test-helpers": "workspace:^"

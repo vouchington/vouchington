@@ -1,5 +1,5 @@
 import { write } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import { getRetentionCutoffDate, normalizeRetentionDays } from './cleanup-options.mts'
 import { runBoundedBatches } from './run-bounded-batches.mts'
@@ -13,7 +13,7 @@ export type AiRerunOutcomeCleanupOptions = {
 }
 
 export function cleanupReportJudgementRuns(options: AiRerunOutcomeCleanupOptions) {
-  const cutoffId = getMinUUIDv7ForDate(
+  const cutoffId = getMinUuidv7ForDate(
     getRetentionCutoffDate(normalizeRetentionDays(options.retentionDays, 90), options.now),
   )
   return runBoundedBatches(options, batchSize =>
@@ -22,7 +22,7 @@ export function cleanupReportJudgementRuns(options: AiRerunOutcomeCleanupOptions
 }
 
 export function cleanupAppealResolutionRuns(options: AiRerunOutcomeCleanupOptions) {
-  const cutoffId = getMinUUIDv7ForDate(
+  const cutoffId = getMinUuidv7ForDate(
     getRetentionCutoffDate(normalizeRetentionDays(options.retentionDays, 90), options.now),
   )
   return runBoundedBatches(options, batchSize =>
@@ -31,7 +31,7 @@ export function cleanupAppealResolutionRuns(options: AiRerunOutcomeCleanupOption
 }
 
 export function cleanupReviewDisputeResolutionRuns(options: AiRerunOutcomeCleanupOptions) {
-  const cutoffId = getMinUUIDv7ForDate(
+  const cutoffId = getMinUuidv7ForDate(
     getRetentionCutoffDate(normalizeRetentionDays(options.retentionDays, 90), options.now),
   )
   return runBoundedBatches(options, batchSize =>

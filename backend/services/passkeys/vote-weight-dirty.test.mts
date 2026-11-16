@@ -8,7 +8,7 @@ import {
   insertTestPasskey,
   safeUsername,
 } from '@voucha/test-helpers'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { background } from '@queues/background/queues'
 import { VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB } from '../../queues/background/enqueues/vote-aggregation-jobs.mts'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { addVerifiedEmailForUser } from '@voucha/test-helpers/entities/email-addresses'
@@ -100,12 +100,12 @@ describe('passkey vote-weight dirty markers', () => {
       const entered = Promise.withResolvers<void>()
       const release = Promise.withResolvers<void>()
       const failure = new Error('Owned passkey vote-weight admission failure')
-      const originalAdd = voteAggregation.add
-      let admitted: Awaited<ReturnType<typeof voteAggregation.add>> | undefined
-      let admission: ReturnType<typeof voteAggregation.add> | undefined
+      const originalAdd = background.add
+      let admitted: Awaited<ReturnType<typeof background.add>> | undefined
+      let admission: ReturnType<typeof background.add> | undefined
       let operation: Promise<unknown> | undefined
       let matchingAdmissions = 0
-      const add = vi.spyOn(voteAggregation, 'add').mockImplementation((name, data, options) => {
+      const add = vi.spyOn(background, 'add').mockImplementation((name, data, options) => {
         if (
           name !== VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB.name ||
           typeof data !== 'object' ||
@@ -113,12 +113,12 @@ describe('passkey vote-weight dirty markers', () => {
           !('userId' in data) ||
           data.userId !== user.id
         )
-          return originalAdd.call(voteAggregation, name, data, options)
+          return originalAdd.call(background, name, data, options)
         matchingAdmissions += 1
         entered.resolve()
         admission = release.promise.then(async () => {
           if (outcome === 'failure') throw failure
-          admitted = await originalAdd.call(voteAggregation, name, data, options)
+          admitted = await originalAdd.call(background, name, data, options)
           return admitted
         })
         return admission
@@ -149,7 +149,7 @@ describe('passkey vote-weight dirty markers', () => {
         release.resolve()
         await operation
         expect(matchingAdmissions).toBe(1)
-        const job = admitted ? await voteAggregation.getJob(admitted.id) : undefined
+        const job = admitted ? await background.getJob(admitted.id) : undefined
         expect(job?.data).toEqual(outcome === 'success' ? { userId: user.id } : undefined)
         expect(
           sentryCaptureExceptionMock.mock.calls.filter(([error]) => error === failure),

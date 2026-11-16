@@ -20,7 +20,7 @@ import {
   VOTE_AGGREGATION_TOPIC_RATING_STATS_JOB,
   VOTE_AGGREGATION_UPDATE_ELECTION_JOB,
 } from '@queues/background/enqueues/vote-aggregation-jobs'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { background } from '@queues/background/queues'
 import { topicVoteOptions } from '@services/topics/vote-handler-options'
 
 describe('election vote no-op reconciliation', () => {
@@ -31,7 +31,7 @@ describe('election vote no-op reconciliation', () => {
     expect(await getTopicElectionVoteEventCount(user.id, topicId)).toBe(1)
     const statsJobName = VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name
     const ratingJobName = VOTE_AGGREGATION_TOPIC_RATING_STATS_JOB.name
-    const admissions = holdQueueBulkAdmissions(voteAggregation, [
+    const admissions = holdQueueBulkAdmissions(background, [
       {
         jobName: statsJobName,
         matchesData: data =>

@@ -1,5 +1,5 @@
 import { read, type QueryExecutor } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { aiGuidanceSql, automaticRestrictionSql } from './automated-assessment-sql.mts'
@@ -25,7 +25,7 @@ export async function readDsaCopyrightNoticeFigures(
   queryExecutor: QueryExecutor = read,
 ): Promise<DsaCopyrightNoticeFigures> {
   if (noticeIds?.length === 0) return emptyDsaCopyrightNoticeFigures()
-  const [from, to] = [getMinUUIDv7ForDate(periodStartedAt), getMinUUIDv7ForDate(periodEndedAt)]
+  const [from, to] = [getMinUuidv7ForDate(periodStartedAt), getMinUuidv7ForDate(periodEndedAt)]
   const population = [...DSA_COPYRIGHT_NOTICE_JURISDICTIONS]
   const noticeAlias = sql``.append('notice.id')
   const query = sql`/* readDsaCopyrightNoticeFigures */

@@ -1,4 +1,4 @@
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import { getQueueVolume } from './moderation-analytics-queue-volume.mts'
 import { getRuleViolations } from './moderation-analytics-rule-violations.mts'
 import { getAutomodPerformance } from './moderation-analytics-automod-performance.mts'
@@ -16,7 +16,7 @@ export async function getModerationAnalytics(
 ): Promise<ModerationAnalytics> {
   const now = new Date()
   const periodStart = getRangeStart(range, now)
-  const periodStartUuid = getMinUUIDv7ForDate(periodStart)
+  const periodStartUuid = getMinUuidv7ForDate(periodStart)
 
   const [
     queueVolume,

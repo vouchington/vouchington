@@ -1,6 +1,6 @@
 /* oxlint-disable no-await-in-loop -- each capped ledger page advances its durable rejection floor before the next page. */
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { getMaximumActivityAgeDays } from '@services/ap-inbox-activities/config'
 import { assertPositiveInteger } from './normalize-positive-integer.mts'
 import { advanceReplayRejectionFloor } from './cleanup-activitypub-replay-floor.mts'
@@ -50,7 +50,7 @@ export async function cleanupActivityPubReplayPage(
   query: TransactionQuery,
   options: { batchSize: number; cutoff: Date },
 ): Promise<ReplayCleanupPage> {
-  const ageBound = getMinUUIDv7ForDate(new Date(Math.max(0, options.cutoff.getTime())))
+  const ageBound = getMinUuidv7ForDate(new Date(Math.max(0, options.cutoff.getTime())))
   await query(
     `/* ensureActivityPubReplayRejectionFloor */
      INSERT INTO activitypub_replay_rejection_floors DEFAULT VALUES

@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { lockCopyrightRationaleRetentionPage } from '@services/copyright-notices/retention-erasure-preservation'
 import { sourcePlan, type Source } from './security-record-plans.mts'
 
@@ -11,7 +11,7 @@ export async function cleanupSecuritySourcePageInTransaction(
   now: Date,
 ): Promise<{ deleted: number; hasMore: boolean }> {
   const plan = sourcePlan(source, now)
-  const cutoffId = getMinUUIDv7ForDate(plan.cutoffAt)
+  const cutoffId = getMinUuidv7ForDate(plan.cutoffAt)
   await query(
     `/* ensureSecurityRetentionCursor */
      INSERT INTO security_retention_cleanup_cursors (source)

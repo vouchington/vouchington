@@ -1,5 +1,5 @@
 import { decodeUuidCursor, isSimpleCursor } from '@modules/pagination'
-import { getDateFromUUIDv7 } from '@modules/utils/ids'
+import { getDateFromUuidv7 } from '@modules/utils/ids'
 import { describe, expect, it } from 'vitest'
 import { nativeModerationReviewQueueApiFixtureCases } from './native-moderation-review-queue-cases.mts'
 
@@ -36,7 +36,7 @@ describe('native moderation review queue fixtures', () => {
     const posts = [...firstPage.results, ...secondPage.results]
 
     for (const post of posts) {
-      expect(getDateFromUUIDv7(post.id)?.toISOString()).toBe(post.created_at)
+      expect(getDateFromUuidv7(post.id)?.toISOString()).toBe(post.created_at)
       expect(post.media_reveal.requires_reveal).toBe(
         post.media_reveal.images.length > 0 &&
           (post.moderation_summary.disposition === 'review' ||

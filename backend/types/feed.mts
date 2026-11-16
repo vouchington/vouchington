@@ -2,4 +2,4 @@ import { VALID_FEED_TIME_RANGES, type FeedTimeRange } from '@ts-shared/feed-capa
 
 export type TimeRange = FeedTimeRange
 
-export const VALID_TIME_RANGES = VALID_FEED_TIME_RANGES
+export { VALID_FEED_TIME_RANGES }

@@ -8,7 +8,7 @@ import {
 import { insertAliasInvalidationSourceForTest } from '@voucha/test-helpers/topic-alias-post-invalidation'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { caches } from '@services/entity-cache/caches'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import type { TopicAliasPostInvalidationData } from '@queues/rss-feed-maintenance/types'
 import { processInvalidatePostsForTopicAliases } from '../../workers/rss-feed-maintenance/processors/topic-aliases.mts'
@@ -109,7 +109,7 @@ describe('bounded topic-alias post invalidation', () => {
     const cached = await Promise.all(postIds.map(postId => caches.posts.get(postId)))
     expect(cached.slice(0, 4)).toEqual([null, null, null, null])
     expect(cached[4]).not.toBeNull()
-    const jobs = await notifications.searchJobs({
+    const jobs = await background.searchJobs({
       name: 'notifications.processReconcilePostNotifications',
       data: { changeId },
     })

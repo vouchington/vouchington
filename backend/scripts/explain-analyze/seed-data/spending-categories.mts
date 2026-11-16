@@ -13,12 +13,11 @@ export async function seedSpendingCategories(
   console.log(`Seeding ${count} personal and ${householdCount} household spending categories...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     const ownerCount = Math.min(SPENDING_CATEGORY_SEED_OWNER_COUNT, count)
     const categoryCount = Math.ceil(Math.max(count, householdCount) / ownerCount)
     const categoryIds = Array.from({ length: categoryCount }, (_, index) => seedUuid(index, '04'))
 
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO spending_category_topics (topic_id)
        SELECT id FROM UNNEST($1::UUID[]) AS id
        ON CONFLICT DO NOTHING`,
@@ -33,7 +32,7 @@ export async function seedSpendingCategories(
       // The signup trigger already inserted this owner's first household.
       householdRows.push(`($${base}, $${base + 1})`)
     }
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO households (id, owner_user_id)
        VALUES ${householdRows.join(', ')}
        ON CONFLICT (id) DO UPDATE SET owner_user_id = EXCLUDED.owner_user_id`,
@@ -48,7 +47,7 @@ export async function seedSpendingCategories(
     }
     membershipValues.push(seedUuid(1, '20'), seedUuid(0, '1b'))
     membershipRows.push(`($${membershipValues.length - 1}, $${membershipValues.length})`)
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO household_members (household_id, individual_id)
        VALUES ${membershipRows.join(', ')}
        ON CONFLICT DO NOTHING`,
@@ -68,7 +67,7 @@ export async function seedSpendingCategories(
         const base = values.length - 2
         rows.push(spendingEntrySeedRow(base, 'personal'))
       }
-      await query(spendingEntryUpsertSql('individual_id', rows), values)
+      await transaction(spendingEntryUpsertSql('individual_id', rows), values)
     }
 
     for (let i = 0; i < householdCount; i += 500) {
@@ -84,7 +83,7 @@ export async function seedSpendingCategories(
         const base = values.length - 2
         rows.push(spendingEntrySeedRow(base, 'household'))
       }
-      await query(spendingEntryUpsertSql('household_id', rows), values)
+      await transaction(spendingEntryUpsertSql('household_id', rows), values)
     }
 
     await transaction.commit()

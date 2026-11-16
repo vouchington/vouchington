@@ -74,14 +74,13 @@ function UserSignalElectionCardContent({
     if (isLoading) return
 
     setIsLoading(true)
-    const previousChoice = selectedChoice
     setSelectedChoice(action.choice)
     try {
       await submitVote(userId, action.choice)
       toast.success(action.successMessage)
       onVoteSubmitted?.(action.choice)
     } catch (err) {
-      setSelectedChoice(previousChoice)
+      setSelectedChoice(selectedChoice)
       if (isEmailVerificationRequired(err)) {
         emailRecovery?.openEmailVerificationRecovery()
       } else {
@@ -94,14 +93,13 @@ function UserSignalElectionCardContent({
 
   async function handleClear() {
     if (isLoading) return
-    const previousChoice = selectedChoice
     setIsLoading(true)
     setSelectedChoice(null)
     try {
       if (!clearVote) return
       await clearVote(userId)
     } catch (err) {
-      setSelectedChoice(previousChoice)
+      setSelectedChoice(selectedChoice)
       if (isEmailVerificationRequired(err)) {
         emailRecovery?.openEmailVerificationRecovery()
       } else {

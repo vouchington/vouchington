@@ -183,20 +183,23 @@
         }
       - {
           file: backend/scripts/explain-analyze/seed-data/communities-and-ratings.mts,
-          callee: 'query',
+          callee: 'transaction',
         }
       - {
           file: backend/scripts/explain-analyze/seed-data/conversation-pagination.mts,
-          callee: 'query',
+          callee: 'transaction',
         }
-      - { file: backend/scripts/explain-analyze/seed-data/crawls.mts, callee: 'query' }
-      - { file: backend/scripts/explain-analyze/seed-data/entities.mts, callee: 'query' }
+      - { file: backend/scripts/explain-analyze/seed-data/crawls.mts, callee: 'transaction' }
+      - { file: backend/scripts/explain-analyze/seed-data/entities.mts, callee: 'transaction' }
       - { file: backend/scripts/explain-analyze/seed-data/feeds.mts, callee: 'itemsTransaction' }
       - {
           file: backend/scripts/explain-analyze/seed-data/follower-distributions.mts,
           callee: 'transaction',
         }
-      - { file: backend/scripts/explain-analyze/seed-data/individual-cards.mts, callee: 'query' }
+      - {
+          file: backend/scripts/explain-analyze/seed-data/individual-cards.mts,
+          callee: 'transaction',
+        }
       - { file: backend/scripts/explain-analyze/seed-data/maintenance.mts, callee: 'write' }
       # Seed transaction runs two fixed statements (seed-data/media-delivery-replay.mts:20,26); no per-item loop at the flagged calls. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
@@ -205,28 +208,40 @@
         }
       # Disposable explain-analyze seed database, script-only: each loop advances fixed 500- or 1000-row chunks to its seed-size count, one multi-row INSERT per chunk, and literal lists run once. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed. MEMBERSHIP_PRODUCTS is a closed list; later seed files follow the same shape.
       - { file: backend/scripts/explain-analyze/seed-data/memberships.mts, callee: 'transaction' }
-      - { file: backend/scripts/explain-analyze/seed-data/notifications.mts, callee: 'query' }
-      - { file: backend/scripts/explain-analyze/seed-data/point-valuations.mts, callee: 'query' }
+      - { file: backend/scripts/explain-analyze/seed-data/notifications.mts, callee: 'transaction' }
+      - {
+          file: backend/scripts/explain-analyze/seed-data/point-valuations.mts,
+          callee: 'transaction',
+        }
       - {
           file: backend/scripts/explain-analyze/seed-data/post-feed-shares.mts,
           callee: 'transaction',
         }
-      - { file: backend/scripts/explain-analyze/seed-data/relations.mts, callee: 'query' }
-      - { file: backend/scripts/explain-analyze/seed-data/remote-followers.mts, callee: 'query' }
+      - { file: backend/scripts/explain-analyze/seed-data/relations.mts, callee: 'transaction' }
+      - {
+          file: backend/scripts/explain-analyze/seed-data/remote-followers.mts,
+          callee: 'transaction',
+        }
       - {
           file: backend/scripts/explain-analyze/seed-data/rewards-program-statuses.mts,
-          callee: 'query',
+          callee: 'transaction',
         }
-      - { file: backend/scripts/explain-analyze/seed-data/spending-categories.mts, callee: 'query' }
+      - {
+          file: backend/scripts/explain-analyze/seed-data/spending-categories.mts,
+          callee: 'transaction',
+        }
       - {
           file: backend/scripts/explain-analyze/seed-data/trending-communities.mts,
-          callee: 'query',
+          callee: 'transaction',
         }
       - {
           file: backend/scripts/explain-analyze/seed-data/user-removed-platform-posts.mts,
-          callee: 'query',
+          callee: 'transaction',
         }
-      - { file: backend/scripts/explain-analyze/seed-data/votes-and-aliases.mts, callee: 'query' }
+      - {
+          file: backend/scripts/explain-analyze/seed-data/votes-and-aliases.mts,
+          callee: 'transaction',
+        }
       # Dev-only login helper: loops the requested extraRoles, a short fixed persona role list, for one locally minted user (login-as/run.mts:96). no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - { file: backend/scripts/login-as/run.mts, callee: 'addUserRole' }
       # Dev-only login helper: mints one deep link per persona of the closed ALL_PERSONAS list (login-as/run.mts:121). no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.

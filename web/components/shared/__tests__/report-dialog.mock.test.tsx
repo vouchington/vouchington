@@ -12,7 +12,7 @@ vi.mock(
   () =>
     ({
       submitReport: mockSubmitReport,
-      REPORT_REASONS: [
+      MODERATION_REPORT_REASON_OPTIONS: [
         { value: 'spam', label: 'Spam' },
         { value: 'harassment', label: 'Harassment' },
         { value: 'misinformation', label: 'Misinformation' },

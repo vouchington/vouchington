@@ -5,7 +5,7 @@ import { runInsideTestWorkerProcessor } from '@vouchington/worker-runtime/testin
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import { clearJwtStaleIfCurrent, getJwtStaleKey } from '@data-stores/valkey/jwt-stale'
 import { readTestJwtStaleMarker } from '@voucha/test-helpers/jwt-stale-markers'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { background } from '@queues/background/queues'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import {
   countUserRoleAssignments,
@@ -39,7 +39,7 @@ describe('roles-permissions', () => {
       await insertTestTotpAuthenticator(grantedUser.id, 'committed-grant')
       const staleKey = getJwtStaleKey(grantedUser.id)
       const queueGate = holdQueueAdmission(
-        voteAggregation,
+        background,
         jobName,
         data =>
           typeof data === 'object' &&
@@ -75,7 +75,7 @@ describe('roles-permissions', () => {
           try {
             await grant?.catch(() => undefined)
             await releaseWorker()
-            if (jobId) await (await voteAggregation.getJob(jobId))?.remove()
+            if (jobId) await (await background.getJob(jobId))?.remove()
             if (marker) await clearJwtStaleIfCurrent(grantedUser.id, marker)
           } finally {
             queueGate.restore()
@@ -101,7 +101,7 @@ describe('roles-permissions', () => {
         jobId = job?.id
         await grant
         expect(jobId).toBeDefined()
-        expect((await voteAggregation.getJob(jobId!))?.data).toEqual({ userId: grantedUser.id })
+        expect((await background.getJob(jobId!))?.data).toEqual({ userId: grantedUser.id })
         expect(await readTestJwtStaleMarker(grantedUser.id)).toBe(marker)
         expect(sentryCaptureExceptionMock.mock.calls.slice(reportsBefore)).toEqual([])
       } finally {
@@ -113,10 +113,10 @@ describe('roles-permissions', () => {
       const grantedUser = await createTestUser()
       await insertTestTotpAuthenticator(grantedUser.id, 'post-commit-grant')
       const admissionError = new Error('Injected vote-weight queue admission failure')
-      const originalAdd = voteAggregation.add
+      const originalAdd = background.add
       const reportsBefore = sentryCaptureExceptionMock.mock.calls.length
       let matchingAdmissions = 0
-      const addSpy = vi.spyOn(voteAggregation, 'add').mockImplementation((name, data, options) => {
+      const addSpy = vi.spyOn(background, 'add').mockImplementation((name, data, options) => {
         if (
           name === jobName &&
           typeof data === 'object' &&
@@ -127,7 +127,7 @@ describe('roles-permissions', () => {
           matchingAdmissions += 1
           return Promise.reject(admissionError)
         }
-        return originalAdd.call(voteAggregation, name, data, options)
+        return originalAdd.call(background, name, data, options)
       })
 
       try {

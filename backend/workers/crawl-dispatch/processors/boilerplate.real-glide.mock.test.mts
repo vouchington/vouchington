@@ -15,7 +15,7 @@ import { addUrls } from '@services/urls/upsert'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
 import { createTestUser, insertTestUrlHostname } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import {
   getTestBoilerplateRemovalHostnameCursor,
   setTestBoilerplateRemovalHostnameCursor,
@@ -84,7 +84,7 @@ describe('crawl-dispatch boilerplate jobs through real GlideMQ', () => {
     const hostname = `bp-merged-${randomUUID()}.example.com`
     // The sweep walks hostnames in id order from the cursor, so an earliest-possible id keeps this fixture first.
     const hostnameId = await insertTestUrlHostname({
-      id: getMinUUIDv7ForDate(
+      id: getMinUuidv7ForDate(
         new Date(Date.UTC(1970, 0, 1) + parseInt(randomUUID().slice(0, 7), 16)),
       ),
       hostname,
@@ -174,7 +174,7 @@ describe('boilerplate removal hostname sweep cursor', () => {
       const hostname = `bp-sweep-${randomUUID()}.example.com`
       // Distinct earliest-possible ids keep these fixtures first in id order.
       const hostnameId = await insertTestUrlHostname({
-        id: getMinUUIDv7ForDate(new Date(Date.UTC(1970, 0, 1) + seed * 3 + offset)),
+        id: getMinUuidv7ForDate(new Date(Date.UTC(1970, 0, 1) + seed * 3 + offset)),
         hostname,
       })
       hostnameIds.push(hostnameId)
@@ -231,7 +231,7 @@ describe('boilerplate removal hostname sweep cursor', () => {
     const user = await createTestUser()
     const hostname = `bp-hold-${randomUUID()}.example.com`
     const hostnameId = await insertTestUrlHostname({
-      id: getMinUUIDv7ForDate(
+      id: getMinUuidv7ForDate(
         new Date(Date.UTC(1970, 0, 1) + parseInt(randomUUID().slice(0, 7), 16)),
       ),
       hostname,

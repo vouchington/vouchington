@@ -10,7 +10,7 @@ import { createStoryClusteringRunAdapter } from '@services/stories'
 import {
   createClassifierRunSweepScope,
   dispatchApprovedClassifierPost,
-  POST_CLASSIFIER_SLUG,
+  POST_CLASSIFIER_SYSTEM_USERNAME,
 } from '@voucha/test-helpers/classifier-run-worker'
 import {
   createStoryClusteringItem,
@@ -30,7 +30,7 @@ import {
   readClassifierFeedItemClockForTest,
 } from '@voucha/test-helpers/classifier-health-clock'
 import { rejectPostgresReadForTest } from '@voucha/test-helpers/injected-failures'
-import { afterAll, beforeAll, beforeEach, describe, expect, it, onTestFinished } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
   sentryCaptureExceptionMock,
   sentryCaptureMessageMock,
@@ -223,7 +223,9 @@ describe('classifier receipt health alarms: the alarm payload and failures', () 
 })
 
 describe('classifier receipt health alarms: the scheduled recovery tick (real PG)', () => {
-  const scope = createClassifierRunSweepScope(getClassifierRunHandler(POST_CLASSIFIER_SLUG))
+  const scope = createClassifierRunSweepScope(
+    getClassifierRunHandler(POST_CLASSIFIER_SYSTEM_USERNAME),
+  )
   const tick = (data = {}, overrides = {}) =>
     processReconcileClassifierRuns(data, { ...scope.ids(), ...overrides }, 2)
   let release: (() => Promise<void>) | undefined
@@ -263,19 +265,17 @@ describe('classifier receipt health alarms: the scheduled recovery tick (real PG
   })
 
   it('leaves the chained pages of a sweep alone, so one tick alarms once', async () => {
-    let reads = 0
+    const onRead = vi.fn<() => void>()
     await observeTestPostgresQueryPools(
       'readOldestIncompleteClassifierRun',
       async () => {
-        await tick({ phase: 'requests', classifier: POST_CLASSIFIER_SLUG })
+        await tick({ phase: 'requests', classifier: POST_CLASSIFIER_SYSTEM_USERNAME })
         await tick({ phase: 'incomplete', after: null })
       },
-      () => {
-        reads++
-      },
+      onRead,
     )
 
-    expect(reads).toBe(0)
+    expect(onRead).not.toHaveBeenCalled()
   })
 
   it('alarms from the tick on a stuck classifier and still runs the sweep', async () => {
@@ -287,7 +287,7 @@ describe('classifier receipt health alarms: the scheduled recovery tick (real PG
       kind: 'incomplete',
     })
 
-    expect(alarmsOf('run-age', POST_CLASSIFIER_SLUG)).toHaveLength(1)
+    expect(alarmsOf('run-age', POST_CLASSIFIER_SYSTEM_USERNAME)).toHaveLength(1)
   })
 
   it('does not let a failed health read stop the sweep', async () => {

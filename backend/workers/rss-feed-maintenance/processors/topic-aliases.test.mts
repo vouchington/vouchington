@@ -20,7 +20,7 @@ import {
   processTopicAliasesUpdate,
 } from './topic-aliases.mts'
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { topicsWorkConfig } from '@services/topics/work-limits'
 
@@ -211,8 +211,8 @@ describe('topic-aliases processors', () => {
       authoredToken: `#processor-${suffix}`,
     })
     const failure = new Error(`Owned worker notification admission failure ${suffix}`)
-    const originalAddBulk = notifications.addBulk
-    const addSpy = vi.spyOn(notifications, 'addBulk').mockImplementation(jobs => {
+    const originalAddBulk = background.addBulk
+    const addSpy = vi.spyOn(background, 'addBulk').mockImplementation(jobs => {
       if (
         jobs.some(
           job =>
@@ -224,7 +224,7 @@ describe('topic-aliases processors', () => {
         )
       )
         return Promise.reject(failure)
-      return originalAddBulk.call(notifications, jobs)
+      return originalAddBulk.call(background, jobs)
     })
     try {
       await expect(

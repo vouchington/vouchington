@@ -3,7 +3,8 @@ import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { TitleRouteDropdown } from '@/components/shared/title-route-dropdown'
 import { getTranslations } from '@/lib/i18n/get-translations'
-import { feedRouteConfigs, type FeedCategory } from '@/lib/feed-route-configs'
+import type { FeedCategory } from '@/lib/feed-route-configs'
+import { feedRouteConfigData } from '@/lib/feed-route-config-data'
 
 const feedTitleLabels: Record<FeedCategory, MessageKey> = {
   posts: 'extracted.feed.feedPageHeader.myPostsFeed_a1ed6e47',
@@ -40,27 +41,27 @@ export async function FeedPageHeader({
           items={[
             {
               label: t(feedTitleLabels.posts),
-              href: feedRouteConfigs.posts.path,
+              href: feedRouteConfigData.posts.path,
               active: category === 'posts',
             },
             {
               label: t(feedTitleLabels.news),
-              href: feedRouteConfigs.news.path,
+              href: feedRouteConfigData.news.path,
               active: category === 'news',
             },
             {
               label: t(feedTitleLabels.podcasts),
-              href: feedRouteConfigs.podcasts.path,
+              href: feedRouteConfigData.podcasts.path,
               active: category === 'podcasts',
             },
             {
               label: t(feedTitleLabels.videos),
-              href: feedRouteConfigs.videos.path,
+              href: feedRouteConfigData.videos.path,
               active: category === 'videos',
             },
             {
               label: t(feedTitleLabels['referral-links']),
-              href: feedRouteConfigs['referral-links'].path,
+              href: feedRouteConfigData['referral-links'].path,
               active: category === 'referral-links',
             },
           ]}

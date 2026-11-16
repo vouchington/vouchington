@@ -45,7 +45,6 @@ export async function readCopyrightReviewTargetBreaches(options: {
     options.reviewTargetMinutes === null
       ? null
       : new Date(options.now.getTime() - options.reviewTargetMinutes * 60_000)
-  const limit = COPYRIGHT_REVIEW_TARGET_ID_LIMIT
   const query = sql`/* readCopyrightReviewTargetBreaches */`
   query.append(copyrightStaffQueueKeysSql({ paging: true }))
   query
@@ -74,17 +73,17 @@ export async function readCopyrightReviewTargetBreaches(options: {
     )
     SELECT
       (SELECT count(*)::int FROM waiting) AS waiting_count,
-      (SELECT coalesce((array_agg(notice_id::text ORDER BY waiting_since, notice_id))[1:${limit}::int], '{}')
+      (SELECT coalesce((array_agg(notice_id::text ORDER BY waiting_since, notice_id))[1:${COPYRIGHT_REVIEW_TARGET_ID_LIMIT}::int], '{}')
         FROM waiting) AS waiting_notice_ids,
       (SELECT count(*)::int FROM missed) AS escalation_count,
-      (SELECT coalesce((array_agg(notice_id::text ORDER BY escalation_at, notice_id))[1:${limit}::int], '{}')
+      (SELECT coalesce((array_agg(notice_id::text ORDER BY escalation_at, notice_id))[1:${COPYRIGHT_REVIEW_TARGET_ID_LIMIT}::int], '{}')
         FROM missed) AS escalation_notice_ids,
       (SELECT count(*)::int FROM missed WHERE restoration_deadline_at <= ${options.now})
         AS restoration_count,
-      (SELECT coalesce((array_agg(notice_id::text ORDER BY restoration_deadline_at, notice_id))[1:${limit}::int], '{}')
+      (SELECT coalesce((array_agg(notice_id::text ORDER BY restoration_deadline_at, notice_id))[1:${COPYRIGHT_REVIEW_TARGET_ID_LIMIT}::int], '{}')
         FROM missed WHERE restoration_deadline_at <= ${options.now}) AS restoration_notice_ids,
       (SELECT count(*)::int FROM email_waiting) AS email_count,
-      (SELECT coalesce((array_agg(id::text ORDER BY received_at, id))[1:${limit}::int], '{}')
+      (SELECT coalesce((array_agg(id::text ORDER BY received_at, id))[1:${COPYRIGHT_REVIEW_TARGET_ID_LIMIT}::int], '{}')
         FROM email_waiting) AS email_intake_ids
   `)
   const { rows } = await read<{

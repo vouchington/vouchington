@@ -20,25 +20,24 @@ export const PUBLICATION_SCOPE_SEED = {
 
 /** Hot owners and duplicate category runs make LIMIT-before-filter/index regressions visible. */
 export async function seedPublicationScopePages(): Promise<void> {
-  const s = PUBLICATION_SCOPE_SEED
   await using query = await beginTransaction()
   await query(
     `/* seedPublicationScopePages:owners */
     INSERT INTO users (id, username) VALUES ($1, 'seed-publication-scope') ON CONFLICT DO NOTHING`,
-    [s.author],
+    [PUBLICATION_SCOPE_SEED.author],
   )
   await query(
     `/* seedPublicationScopePages:community */
     INSERT INTO communities (id, name, slug, created_by_id, created_via)
     VALUES ($1, 'Scope seed', 'seed-publication-scope', $2, 'system') ON CONFLICT DO NOTHING`,
-    [s.community, s.author],
+    [PUBLICATION_SCOPE_SEED.community, PUBLICATION_SCOPE_SEED.author],
   )
   await query(
     `/* seedPublicationScopePages:topic */
     INSERT INTO topics (id, name, slug, created_via, bedrock_nova_multimodal_v1_content_sha256)
     VALUES ($1, 'Scope seed', 'seed-publication-scope', 'system', decode(repeat('00',32),'hex')),
       ($2, 'Scope negative', 'seed-publication-scope-negative', 'system', decode(repeat('00',32),'hex')) ON CONFLICT DO NOTHING`,
-    [s.topic, s.negativeTopic],
+    [PUBLICATION_SCOPE_SEED.topic, PUBLICATION_SCOPE_SEED.negativeTopic],
   )
   await query(
     `/* seedPublicationScopePages:mergedSources */
@@ -47,45 +46,50 @@ export async function seedPublicationScopePages(): Promise<void> {
     SELECT ('019e0000-ea00-7000-8000-'||lpad(to_hex(n),12,'0'))::uuid,
       'Scope merged '||n,'seed-publication-scope-merged-'||n,'system',decode(repeat('00',32),'hex'),$1,CURRENT_TIMESTAMP,$2
     FROM generate_series(0,$3::int-1) n ON CONFLICT DO NOTHING`,
-    [s.topic, s.author, s.count],
+    [PUBLICATION_SCOPE_SEED.topic, PUBLICATION_SCOPE_SEED.author, PUBLICATION_SCOPE_SEED.count],
   )
   await query(
     `/* seedPublicationScopePages:url */
     INSERT INTO urls (id,url,hostname_id,search_params)
     VALUES ($1,'https://seed-host-0.example.com/publication-scope.xml',$2,'{}'::jsonb)
     ON CONFLICT DO NOTHING`,
-    [s.url, seedUuid(0, '02')],
+    [PUBLICATION_SCOPE_SEED.url, seedUuid(0, '02')],
   )
   await query(
     `/* seedPublicationScopePages:feed */
     INSERT INTO rss_feeds (id,rss_feed_url_id,topic_id,title,created_via)
     VALUES ($1,$2,$3,'Scope seed','system') ON CONFLICT DO NOTHING`,
-    [s.feed, s.url, s.topic],
+    [PUBLICATION_SCOPE_SEED.feed, PUBLICATION_SCOPE_SEED.url, PUBLICATION_SCOPE_SEED.topic],
   )
   await query(
     `/* seedPublicationScopePages:itemIdentity */
     INSERT INTO rss_feed_item_guids (id,url_hostname_id,guid)
     VALUES ($1,$2,'seed-publication-scope-item') ON CONFLICT DO NOTHING`,
-    [s.item, seedUuid(0, '02')],
+    [PUBLICATION_SCOPE_SEED.item, seedUuid(0, '02')],
   )
   await query(
     `/* seedPublicationScopePages:item */
     INSERT INTO rss_feed_items (id,url_id,data,bedrock_nova_multimodal_v1_content_sha256)
     VALUES ($1,$2,'{}'::jsonb,decode(repeat('00',32),'hex')) ON CONFLICT DO NOTHING`,
-    [s.item, s.url],
+    [PUBLICATION_SCOPE_SEED.item, PUBLICATION_SCOPE_SEED.url],
   )
   await query(
     `/* seedPublicationScopePages:alias */
     INSERT INTO topic_aliases (id, topic_id, alias) VALUES ($1,$2,'seed-publication-scope'),
       ($3,$4,'seed-publication-scope-negative') ON CONFLICT DO NOTHING`,
-    [s.alias, s.topic, s.negativeAlias, s.negativeTopic],
+    [
+      PUBLICATION_SCOPE_SEED.alias,
+      PUBLICATION_SCOPE_SEED.topic,
+      PUBLICATION_SCOPE_SEED.negativeAlias,
+      PUBLICATION_SCOPE_SEED.negativeTopic,
+    ],
   )
   await query(
     `/* seedPublicationScopePages:root */
     INSERT INTO posts (id, created_by_id, community_id, post_type, title, markdown, created_via,
       bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256)
     VALUES ($1,$2,$3,'discussion','Scope seed','Scope seed','system',decode(repeat('00',32),'hex'),decode(repeat('00',32),'hex')) ON CONFLICT DO NOTHING`,
-    [s.root, s.author, s.community],
+    [PUBLICATION_SCOPE_SEED.root, PUBLICATION_SCOPE_SEED.author, PUBLICATION_SCOPE_SEED.community],
   )
   await query(
     `/* seedPublicationScopePages:posts */
@@ -94,7 +98,12 @@ export async function seedPublicationScopePages(): Promise<void> {
     SELECT ('019e0000-e500-7000-8000-' || lpad(to_hex(n),12,'0'))::uuid,
       $1,$2,'comment','Scope seed','Scope seed','system',$3,$3,decode(repeat('00',32),'hex'),decode(repeat('00',32),'hex')
     FROM generate_series(0,$4::int-1) n ON CONFLICT DO NOTHING`,
-    [s.author, s.community, s.root, s.count],
+    [
+      PUBLICATION_SCOPE_SEED.author,
+      PUBLICATION_SCOPE_SEED.community,
+      PUBLICATION_SCOPE_SEED.root,
+      PUBLICATION_SCOPE_SEED.count,
+    ],
   )
   await query(
     `/* seedPublicationScopePages:relations */
@@ -102,7 +111,12 @@ export async function seedPublicationScopePages(): Promise<void> {
     SELECT id,$1::uuid,$3::uuid,CASE WHEN row_number() OVER (ORDER BY id) % 1000 = 0 THEN 1 ELSE 0 END
     FROM posts WHERE parent_post_id=$4
     UNION ALL SELECT id,$2::uuid,$3::uuid,0 FROM posts WHERE parent_post_id=$4 ON CONFLICT DO NOTHING`,
-    [s.alias, s.negativeAlias, s.author, s.root],
+    [
+      PUBLICATION_SCOPE_SEED.alias,
+      PUBLICATION_SCOPE_SEED.negativeAlias,
+      PUBLICATION_SCOPE_SEED.author,
+      PUBLICATION_SCOPE_SEED.root,
+    ],
   )
   await query(
     `/* seedPublicationScopePages:sources */
@@ -111,13 +125,17 @@ export async function seedPublicationScopePages(): Promise<void> {
     FROM posts p CROSS JOIN (VALUES ('title'),('markdown'),('explicit')) source(source)
     CROSS JOIN unnest($1::uuid[]) alias(topic_alias_id)
     WHERE parent_post_id=$3 ON CONFLICT DO NOTHING`,
-    [[s.alias, s.negativeAlias], s.author, s.root],
+    [
+      [PUBLICATION_SCOPE_SEED.alias, PUBLICATION_SCOPE_SEED.negativeAlias],
+      PUBLICATION_SCOPE_SEED.author,
+      PUBLICATION_SCOPE_SEED.root,
+    ],
   )
   await query(
     `/* seedPublicationScopePages:categoryIdentities */
     INSERT INTO rss_category_identities (id,category_text)
     SELECT ('019e0000-ec00-7000-8000-'||lpad(to_hex(n),12,'0'))::uuid,'seed-publication-scope-'||n FROM generate_series(0,$1::int-1) n ON CONFLICT DO NOTHING`,
-    [s.count],
+    [PUBLICATION_SCOPE_SEED.count],
   )
   await query(
     `/* seedPublicationScopePages:negativeCategoryIdentities */
@@ -125,7 +143,7 @@ export async function seedPublicationScopePages(): Promise<void> {
     SELECT ('019e0000-e600-7000-8000-'||lpad(to_hex(n),12,'0'))::uuid,
       'seed-publication-scope-negative-'||n FROM generate_series(0,$1::int-1) n
     ON CONFLICT DO NOTHING`,
-    [s.count],
+    [PUBLICATION_SCOPE_SEED.count],
   )
   await query(
     `/* seedPublicationScopePages:feedCategories */
@@ -133,7 +151,7 @@ export async function seedPublicationScopePages(): Promise<void> {
     SELECT $2,c.id,$1 FROM rss_category_identities c
     WHERE c.category_text LIKE 'seed-publication-scope-%'
       AND c.category_text NOT LIKE 'seed-publication-scope-negative-%' ON CONFLICT DO NOTHING`,
-    [s.topic, s.feed],
+    [PUBLICATION_SCOPE_SEED.topic, PUBLICATION_SCOPE_SEED.feed],
   )
   await query(
     `/* seedPublicationScopePages:itemCategories */
@@ -141,21 +159,21 @@ export async function seedPublicationScopePages(): Promise<void> {
     SELECT $2,c.id,c.category_text,$1 FROM rss_category_identities c
     WHERE c.category_text LIKE 'seed-publication-scope-%'
       AND c.category_text NOT LIKE 'seed-publication-scope-negative-%' ON CONFLICT DO NOTHING`,
-    [s.topic, s.item],
+    [PUBLICATION_SCOPE_SEED.topic, PUBLICATION_SCOPE_SEED.item],
   )
   await query(
     `/* seedPublicationScopePages:negativeFeedCategories */
     INSERT INTO rss_feed_categories (rss_feed_id,category_identity_id,topic_id)
     SELECT $2,c.id,$1 FROM rss_category_identities c
     WHERE c.category_text LIKE 'seed-publication-scope-negative-%' ON CONFLICT DO NOTHING`,
-    [s.negativeTopic, s.feed],
+    [PUBLICATION_SCOPE_SEED.negativeTopic, PUBLICATION_SCOPE_SEED.feed],
   )
   await query(
     `/* seedPublicationScopePages:negativeItemCategories */
     INSERT INTO rss_feed_item_categories (rss_feed_item_id,category_identity_id,category_text,topic_id)
     SELECT $2,c.id,c.category_text,$1 FROM rss_category_identities c
     WHERE c.category_text LIKE 'seed-publication-scope-negative-%' ON CONFLICT DO NOTHING`,
-    [s.negativeTopic, s.item],
+    [PUBLICATION_SCOPE_SEED.negativeTopic, PUBLICATION_SCOPE_SEED.item],
   )
   await query.commit()
 }

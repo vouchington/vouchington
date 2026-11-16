@@ -13,7 +13,6 @@ export async function seedRemoteFollowers(count = REMOTE_FOLLOWER_SEED_COUNT): P
   const targetUserId = seedUuid(0, '01')
   await seedRemoteFollowerDirectories()
   await using transaction = await beginTransaction()
-  const query = transaction
   for (let start = 0; start < count; start += 1000) {
     const batchSize = Math.min(1000, count - start)
     const actorValues: unknown[] = []
@@ -50,18 +49,18 @@ export async function seedRemoteFollowers(count = REMOTE_FOLLOWER_SEED_COUNT): P
       relationRows.push(`($${relationBase}, $${relationBase + 1}, $${relationBase + 2})`)
     }
 
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO remote_actor_identities (id, actor_uri)
          VALUES ${identityRows.join(', ')} ON CONFLICT DO NOTHING`,
       identityValues,
     )
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO remote_actors
            (id, key_id, public_key_pem, inbox_url, hostname_id)
          VALUES ${actorRows.join(', ')} ON CONFLICT DO NOTHING`,
       actorValues,
     )
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO relation__remote_actor__follow__user
            (subject_id, object_id, created_by_id)
          VALUES ${relationRows.join(', ')} ON CONFLICT DO NOTHING`,
@@ -82,7 +81,7 @@ export async function seedRemoteFollowers(count = REMOTE_FOLLOWER_SEED_COUNT): P
     )
   }
   if (targetSpreadRows.length > 0) {
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO relation__remote_actor__follow__user
            (subject_id, object_id, created_by_id)
          VALUES ${targetSpreadRows.join(', ')} ON CONFLICT DO NOTHING`,
@@ -95,7 +94,6 @@ export async function seedRemoteFollowers(count = REMOTE_FOLLOWER_SEED_COUNT): P
 async function seedRemoteFollowerDirectories(): Promise<void> {
   console.log(`Seeding ${REMOTE_FOLLOWER_DIRECTORY_COUNT} remote follower directories...`)
   await using transaction = await beginTransaction()
-  const query = transaction
   for (let start = 0; start < REMOTE_FOLLOWER_DIRECTORY_COUNT; start += 500) {
     const batchSize = Math.min(500, REMOTE_FOLLOWER_DIRECTORY_COUNT - start)
     const hostnameValues: unknown[] = []
@@ -126,20 +124,20 @@ async function seedRemoteFollowerDirectories(): Promise<void> {
       extensionValues.push(topicId)
       extensionRows.push(`($${extensionValues.length})`)
     }
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO url_hostnames (id, hostname, publicly_introduced_at)
          SELECT input.id::uuid, input.hostname, CURRENT_TIMESTAMP
          FROM (VALUES ${hostnameRows.join(', ')}) AS input(id, hostname)
          WHERE TRUE ON CONFLICT DO NOTHING`,
       hostnameValues,
     )
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO topics
            (id, name, slug, topic_type, hostname_id, bedrock_nova_multimodal_v1_content_sha256, created_via)
          VALUES ${topicRows.join(', ')} ON CONFLICT DO NOTHING`,
       topicValues,
     )
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO fediverse_instance_topics (topic_id)
          VALUES ${extensionRows.join(', ')} ON CONFLICT DO NOTHING`,
       extensionValues,

@@ -13,7 +13,7 @@ import {
   insertTestUrlHostname,
   insertTestVoteIntegrityFlag,
 } from '@voucha/test-helpers'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { background } from '@queues/background/queues'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { createVoteIntegrityFlag } from './create-flag.mts'
 import { getVoteIntegrityFlagByIdFromPrimary } from './get-flags.mts'
@@ -150,7 +150,7 @@ describe('apply-ring-penalty', () => {
 
       const jobId = `voteWeight__${upvoter!.id}__force`
       const admission = holdQueueBulkAdmission(
-        voteAggregation,
+        background,
         'vote-aggregation.processRecalculateUserVoteWeight',
         data =>
           typeof data === 'object' &&
@@ -187,7 +187,7 @@ describe('apply-ring-penalty', () => {
         const [result, jobs] = await Promise.all([operation, admittedJobsPromise])
         expect(result).toMatchObject({ penalized_user_count: 1 })
         expect(jobs).toHaveLength(1)
-        expect(await voteAggregation.getJob(jobId)).toMatchObject({
+        expect(await background.getJob(jobId)).toMatchObject({
           data: { userId: upvoter!.id, forceRecalculate: true },
         })
       } finally {
@@ -209,10 +209,10 @@ describe('apply-ring-penalty', () => {
       const jobId = `voteWeight__${upvoter!.id}__force`
       const failure = new Error('Owned vote-weight bulk admission failure')
       const reportOffset = sentryCaptureExceptionMock.mock.calls.length
-      const originalAddBulk = voteAggregation.addBulk
-      const addBulk = vi.spyOn(voteAggregation, 'addBulk').mockImplementation(jobs => {
+      const originalAddBulk = background.addBulk
+      const addBulk = vi.spyOn(background, 'addBulk').mockImplementation(jobs => {
         if (jobs.some(job => job.opts?.jobId === jobId)) return Promise.reject(failure)
-        return originalAddBulk.call(voteAggregation, jobs)
+        return originalAddBulk.call(background, jobs)
       })
 
       try {

@@ -12,7 +12,7 @@ import { processTopicMergeReferencePage } from './merge-reference-pages.mts'
 import {
   topicMergePlainPages,
   topicMergeSubtypePages,
-  topicMergeCollisionPages,
+  collisionReferences,
   topicMergeBookmarkPages,
 } from './merge-reference-page-inventory.mts'
 import {
@@ -66,7 +66,7 @@ export async function processTopicMergeReferenceStagePage(
       : operation.stage === 'references'
         ? topicMergePlainPages
         : operation.stage === 'collisions'
-          ? topicMergeCollisionPages
+          ? collisionReferences
           : operation.stage === 'bookmarks'
             ? topicMergeBookmarkPages
             : null

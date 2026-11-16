@@ -3,7 +3,7 @@ import {
   VOTE_ENTITY_ID_COLUMN_IDENTIFIERS,
   VOTE_TABLE_IDENTIFIERS,
 } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import {
   VELOCITY_SPIKE_THRESHOLD,
@@ -43,9 +43,9 @@ export async function detectVelocitySpike(
   }
 
   const windowStart = new Date(asOfMs - VELOCITY_SPIKE_WINDOW_MINUTES * 60 * 1000)
-  const lowerBoundId = getMinUUIDv7ForDate(windowStart)
+  const lowerBoundId = getMinUuidv7ForDate(windowStart)
   const youngAccountCutoff = new Date(asOfMs - YOUNG_ACCOUNT_AGE_DAYS * 24 * 60 * 60 * 1000)
-  const youngAccountCutoffId = getMinUUIDv7ForDate(youngAccountCutoff)
+  const youngAccountCutoffId = getMinUuidv7ForDate(youngAccountCutoff)
 
   const query = sql`/* detectVelocitySpike */
     SELECT COUNT(DISTINCT v.user_id)::int AS young_account_vote_count

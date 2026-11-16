@@ -1,6 +1,6 @@
 import type { Job } from 'glide-mq'
 import { v7 } from 'uuid'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { recomputeGrowthDay } from '@services/reporting-daily-rollups/recompute-growth'
 import { beginTransaction, runWithTransaction, write } from '@data-stores/psql'
@@ -65,7 +65,7 @@ export async function readTestReportingSourceDayEventId(
   after: Date,
 ): Promise<string | undefined> {
   const { rows } = await write<{ id: string }>(sql`/* readTestReportingSourceDayEventId */
-    SELECT id FROM reporting_source_day_events WHERE id > ${getMinUUIDv7ForDate(after)}
+    SELECT id FROM reporting_source_day_events WHERE id > ${getMinUuidv7ForDate(after)}
       AND source_on = ${day}::date AND source_type = ${sourceType}::reporting_source_day_event_types
     ORDER BY id DESC LIMIT 1
   `)

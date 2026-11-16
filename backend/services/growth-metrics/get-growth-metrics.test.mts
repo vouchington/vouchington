@@ -5,7 +5,7 @@ import {
   insertPostElectionVote,
   insertTestPost,
 } from '@voucha/test-helpers'
-import { getMaxUUIDv7ForDate, getMinUUIDv7ForDate } from '@modules/utils'
+import { getMaxUuidv7ForDate, getMinUuidv7ForDate } from '@modules/utils'
 import { getGrowthMetrics } from './get-growth-metrics.mts'
 import { getUserGrowth } from './get-user-growth.mts'
 import { getContentProduction } from './get-content-production.mts'
@@ -85,12 +85,12 @@ describe('getEngagement', () => {
       const before = await getEngagement('all', periodStart)
 
       await Promise.all([
-        insertPostElectionVote(user.id, repairedPostId, 2, getMinUUIDv7ForDate(voteTime)),
+        insertPostElectionVote(user.id, repairedPostId, 2, getMinUuidv7ForDate(voteTime)),
         insertPostElectionVote(
           user.id,
           semanticPostId,
           2,
-          getMaxUUIDv7ForDate(voteTime),
+          getMaxUuidv7ForDate(voteTime),
           false,
           true,
         ),

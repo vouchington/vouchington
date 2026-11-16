@@ -80,14 +80,9 @@ try {
     }
   }
   if (closeCanonical) {
-    const close = closeCanonical
-    const end = async () => {
-      observedClients += await close()
-      canonicalClosed = true
-    }
     try {
-      if (shutdown) await shutdown({ onGracefulShutdownPSQL: end })
-      else await end()
+      if (shutdown) await shutdown({ onGracefulShutdownPSQL: closeCanonicalPool })
+      else await closeCanonicalPool()
     } catch (err) {
       errors.push(err)
     }
@@ -108,3 +103,9 @@ try {
 if (errors.length === 1) throw errors[0]
 if (errors.length > 1)
   throw new AggregateError(errors, 'Migration native control failed', { cause: errors[0] })
+
+async function closeCanonicalPool(): Promise<void> {
+  if (!closeCanonical) return
+  observedClients += await closeCanonical()
+  canonicalClosed = true
+}

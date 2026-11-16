@@ -11,7 +11,6 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 
 export async function runActiveCandidatePages(promptSeededRows: number): Promise<void> {
-  const communityId = COMMUNITY_AGENT_PROMPT_PAGE_COMMUNITY_ID
   const expectations = [
     { kind: 'usesIndexes' as const, indexes: ['idx_community_agent_prompts__active'] },
     { kind: 'maxProcessedRows' as const, relation: 'community_agent_prompts', max: 90 },
@@ -30,7 +29,11 @@ export async function runActiveCandidatePages(promptSeededRows: number): Promise
   await runAndCapture(
     'active-community-prompts-first-candidate-page',
     async () => {
-      const page = await getActiveCommunityAgentPromptPage(communityId, null, 30)
+      const page = await getActiveCommunityAgentPromptPage(
+        COMMUNITY_AGENT_PROMPT_PAGE_COMMUNITY_ID,
+        null,
+        30,
+      )
       assert.equal(page.items.length, 0)
       assert.ok(page.next)
       next = page.next
@@ -45,7 +48,11 @@ export async function runActiveCandidatePages(promptSeededRows: number): Promise
   await runAndCapture(
     'active-community-prompts-continuation-page',
     async () => {
-      const page = await getActiveCommunityAgentPromptPage(communityId, next, 30)
+      const page = await getActiveCommunityAgentPromptPage(
+        COMMUNITY_AGENT_PROMPT_PAGE_COMMUNITY_ID,
+        next,
+        30,
+      )
       assert.equal(page.items.length, 0)
       assert.ok(page.next)
     },
@@ -69,7 +76,7 @@ export async function runActiveCandidatePages(promptSeededRows: number): Promise
     'active-community-prompts-ineligible-final-page',
     async () => {
       const page = await getActiveCommunityAgentPromptPage(
-        communityId,
+        COMMUNITY_AGENT_PROMPT_PAGE_COMMUNITY_ID,
         { activatedAt, id: seedUuid(89 * COMMUNITY_AGENT_PROMPTS_PER_CREATOR, 'ef') },
         30,
       )

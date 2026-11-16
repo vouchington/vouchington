@@ -1,4 +1,4 @@
-import { mintUUIDv7 } from '@modules/utils/ids'
+import { mintUuidv7 } from '@modules/utils/ids'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BedrockControlClient } from '@modules/aws/bedrock-control'
 import {
@@ -31,7 +31,7 @@ describe('processBatch', () => {
   })
 
   function batchId() {
-    const id = mintUUIDv7()
+    const id = mintUuidv7()
     createdBatchIds.push(id)
     return id
   }

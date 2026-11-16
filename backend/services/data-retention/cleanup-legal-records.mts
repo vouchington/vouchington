@@ -1,5 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import { getMaxUUIDv7ForDate } from '@modules/utils'
+import { getMaxUuidv7ForDate } from '@modules/utils'
 import { shiftUtcCalendarMonths } from '@modules/utils/calendar-months'
 import { DELETED_USER_ID } from '@services/users/constants'
 import { assertPositiveInteger } from './normalize-positive-integer.mts'
@@ -74,7 +74,7 @@ async function cleanupLegalRecordPage(
   const upperDate = new Date(cutoff.getTime() + 3 * 86_400_000)
   const table = TABLES[family]
   const values: unknown[] = [
-    family === 'identity_verification_attempt' ? getMaxUUIDv7ForDate(upperDate) : upperDate,
+    family === 'identity_verification_attempt' ? getMaxUuidv7ForDate(upperDate) : upperDate,
     now,
     months,
   ]

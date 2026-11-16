@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { getRetentionCutoffDate, normalizeRetentionDays } from './cleanup-options.mts'
 import { deleteMediaDeliveryChangePage } from './delete-media-delivery-change-page.mts'
 import { runKeysetRetentionPage } from './run-keyset-retention-page.mts'
@@ -29,7 +29,7 @@ export async function cleanupOldMediaDeliveryChanges(
     return { deleted: 0, hasMore: false, continuation: null }
   }
   return runPersistedRetentionPages(options, batchSize =>
-    deleteMediaDeliveryChangeSweepPage(getMinUUIDv7ForDate(cutoff), cutoff, batchSize, options),
+    deleteMediaDeliveryChangeSweepPage(getMinUuidv7ForDate(cutoff), cutoff, batchSize, options),
   )
 }
 
@@ -66,7 +66,7 @@ async function deleteMediaDeliveryChangeSweepPage(
         [
           upperBound,
           progress.cursor_change_id,
-          ...(options.lowerBoundDate ? [getMinUUIDv7ForDate(options.lowerBoundDate)] : []),
+          ...(options.lowerBoundDate ? [getMinUuidv7ForDate(options.lowerBoundDate)] : []),
           ...(options.changeIds ? [options.changeIds] : []),
           limit,
         ],

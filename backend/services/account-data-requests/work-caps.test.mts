@@ -12,7 +12,7 @@ import { dataRequestConfig } from './work-limits.mts'
 import { createDataRequest } from './create.mts'
 import { claimRecoverableDataRequests } from './recovery.mts'
 import { recoverExportRequests } from '../../workers/account-lifecycle/processors/account-data-requests.mts'
-import { accountLifecycle } from '../../queues/account-lifecycle/queues.mts'
+import { background } from '@queues/background/queues'
 
 describe('account export work caps', () => {
   it('claims one owned active attempt per page without changing an eligible neighbor', async () => {
@@ -178,9 +178,7 @@ async function queuedRequestIds(
 ): Promise<string[]> {
   const jobs = await Promise.all(
     requests.map(request =>
-      accountLifecycle.getJob(
-        `account-data-export__${request.id}__${request.processing_attempt_id}`,
-      ),
+      background.getJob(`account-data-export__${request.id}__${request.processing_attempt_id}`),
     ),
   )
   return jobs.flatMap((job, index) => (job ? [requests[index]!.id] : []))

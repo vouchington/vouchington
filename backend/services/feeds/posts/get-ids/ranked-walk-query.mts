@@ -1,5 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import { buildStablePostHotRankExpression } from '@services/posts/search/stable-hot-rank'
 import { appendPostFeedRelationCTEs } from './relation-ctes.mts'
 import { appendEligiblePostsSelect } from './eligible-posts-cte.mts'
@@ -141,7 +141,7 @@ export function buildRankedPostFeedPageQueryBody(
     .append(buildBroadcastVisibilityFilter('eligible_posts', options.currentUserId))
     .append(sql` AND ((walk.delivery_type = 'direct' AND `)
     .append(buildDirectMatchCondition(options))
-  if (options.cutoff) query.append(sql` AND walk.post_id >= ${getMinUUIDv7ForDate(options.cutoff)}`)
+  if (options.cutoff) query.append(sql` AND walk.post_id >= ${getMinUuidv7ForDate(options.cutoff)}`)
   query.append(sql`) OR (walk.delivery_type = 'share'
     AND walk.shared_by_id IS NOT NULL
     AND NOT EXISTS (SELECT 1 FROM excluded_users WHERE excluded_users.user_id = walk.shared_by_id)`)

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { write } from '@data-stores/psql'
-import { getDateFromUUIDv7, mintUUIDv7 } from '@modules/utils'
+import { getDateFromUuidv7, mintUuidv7 } from '@modules/utils'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
 import { createTestPost } from '@voucha/test-helpers/entities/create-test-entities'
 import { insertTestUrlDirect } from '@voucha/test-helpers/entities/urls'
@@ -32,13 +32,13 @@ export async function prepareCrawlDispatchScale() {
     `https://unrelated-${suffix}.example.com/base`,
   ))!
   await insertTestCrawlDispatchPlanUrls({
-    ids: Array.from({ length: 10000 }, () => mintUUIDv7()),
+    ids: Array.from({ length: 10000 }, () => mintUuidv7()),
     hostname: unrelated.hostname.hostname,
     hostnameId: unrelated.hostname.id,
     actorId: actor.id,
   })
   const post = await createTestPost({ user: actor })
-  const eligibleIds = Array.from({ length: 10 }, () => mintUUIDv7())
+  const eligibleIds = Array.from({ length: 10 }, () => mintUuidv7())
   await insertTestPostRelatedUrlBatch({
     postIds: eligibleIds.map(() => post.id),
     urlIds: eligibleIds,
@@ -46,7 +46,7 @@ export async function prepareCrawlDispatchScale() {
     hostnameId: target.hostname.id,
     createdById: actor.id,
   })
-  const tier2Ids = Array.from({ length: 10 }, () => mintUUIDv7())
+  const tier2Ids = Array.from({ length: 10 }, () => mintUuidv7())
   await insertTestPostRelatedUrlBatch({
     postIds: tier2Ids.map(() => post.id),
     urlIds: tier2Ids,
@@ -93,8 +93,8 @@ async function countCrawlDispatchCandidateRows(): Promise<Record<string, number>
 export async function prepareReferralCrawlScale() {
   const owner = await createTestUser()
   const referralProgramId = await insertTestReferralProgram({ createdById: owner.id })
-  const base = (await insertTestUrlDirect(owner.id, `https://${mintUUIDv7()}.example.com/base`))!
-  const urlIds = Array.from({ length: 10004 }, () => mintUUIDv7())
+  const base = (await insertTestUrlDirect(owner.id, `https://${mintUuidv7()}.example.com/base`))!
+  const urlIds = Array.from({ length: 10004 }, () => mintUuidv7())
   await insertTestCrawlDispatchPlanUrls({
     ids: urlIds,
     hostname: base.hostname.hostname,
@@ -129,8 +129,8 @@ export async function prepareReferralCrawlScale() {
 export async function prepareReferralUnfurlScale() {
   const owner = await createTestUser()
   const referralProgramId = await insertTestReferralProgram({ createdById: owner.id })
-  const base = (await insertTestUrlDirect(owner.id, `https://${mintUUIDv7()}.example.com/base`))!
-  const urlIds = Array.from({ length: 10010 }, () => mintUUIDv7())
+  const base = (await insertTestUrlDirect(owner.id, `https://${mintUuidv7()}.example.com/base`))!
+  const urlIds = Array.from({ length: 10010 }, () => mintUuidv7())
   await insertTestCrawlDispatchPlanUrls({
     ids: urlIds,
     hostname: base.hostname.hostname,
@@ -158,7 +158,7 @@ export async function prepareReferralUnfurlScale() {
 /** Explicit business cursor; never changes native UUID or audit clocks. */
 function ownedSweepAfter(ids: readonly string[], elapsedDays: number): string {
   const timestamps = ids.map(id => {
-    const date = getDateFromUUIDv7(id)
+    const date = getDateFromUuidv7(id)
     if (!date || !Number.isFinite(date.getTime())) throw new Error('Missing owned UUID timestamp')
     return date.getTime()
   })
@@ -169,7 +169,7 @@ function ownedSweepAfter(ids: readonly string[], elapsedDays: number): string {
 function assertOwnedIdsWithinSweep(ids: readonly string[], sweep: string): void {
   const upperTimestamp = new Date(sweep).getTime()
   for (const id of ids) {
-    const date = getDateFromUUIDv7(id)
+    const date = getDateFromUuidv7(id)
     if (!date || !Number.isFinite(date.getTime()) || date.getTime() > upperTimestamp)
       throw new Error('Owned link UUID exceeds the business cursor cutoff')
   }

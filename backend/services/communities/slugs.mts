@@ -1,4 +1,4 @@
-import { createSlugFromTitle, convertUUIDToBase36, isSlug } from '@modules/utils'
+import { createSlugFromTitle, uuidv7RandomToBase36, isSlug } from '@modules/utils'
 import assert from 'http-assert'
 
 const MAX_SLUG_LENGTH = 80
@@ -16,5 +16,5 @@ export function generateCommunitySlug(name: string, id: string): string {
     .slice(0, MAX_NAME_SLUG_LENGTH)
     .replace(/-+$/, '')
   assert(nameSlug.length > 0, 422, 'Could not generate a valid slug from the given name')
-  return `${nameSlug}-${convertUUIDToBase36(id)}`
+  return `${nameSlug}-${uuidv7RandomToBase36(id)}`
 }

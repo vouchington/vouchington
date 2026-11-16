@@ -3,7 +3,7 @@ import {
   VOTE_ENTITY_ID_COLUMN_IDENTIFIERS,
   VOTE_TABLE_IDENTIFIERS,
 } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import {
   IP_CORRELATION_THRESHOLD,
@@ -45,7 +45,7 @@ export async function detectIpCorrelation(
   }
 
   const windowStart = new Date(asOfMs - IP_CORRELATION_WINDOW_MINUTES * 60 * 1000)
-  const lowerBoundId = getMinUUIDv7ForDate(windowStart)
+  const lowerBoundId = getMinUuidv7ForDate(windowStart)
 
   const query = sql`/* detectIpCorrelation */
     SELECT

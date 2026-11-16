@@ -32,7 +32,6 @@ import {
   getServerRuntimePublicConfig,
   serializeRuntimePublicConfigBootstrapScript,
 } from '@/lib/runtime-public-config-server'
-import { serializeCatalog } from '@ts-shared/ui-messages/catalog-bootstrap'
 import { RootAppShell } from './root-app-shell'
 import { getTranslations } from '@/lib/i18n/get-translations'
 import { getGlobalServerFeatureFlags } from '@/lib/feature-flags/server'
@@ -93,7 +92,7 @@ export default async function RootLayout({
   const uiMessages = await loadServerMessages(uiLocale)
   const uiMessagesScript = serializeUiMessagesBootstrapScript({
     locale: uiLocale,
-    catalog: serializeCatalog(uiMessages),
+    catalog: structuredClone(uiMessages),
   })
   const pathname = headersList.get('x-pathname')
   const safePathname = pathname ?? ''

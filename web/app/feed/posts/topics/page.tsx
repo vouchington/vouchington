@@ -1,4 +1,4 @@
-import { feedRouteConfigs } from '@/lib/feed-route-configs'
+import { feedRouteConfigData } from '@/lib/feed-route-config-data'
 import { FeedPostListPage } from '@/components/feed/feed-post-list-page'
 import type { Metadata } from 'next'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
@@ -6,7 +6,7 @@ import { getTranslations } from '@/lib/i18n/get-translations'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations()
-  return createNoIndexMetadata(t(feedRouteConfigs['posts/topics'].title))
+  return createNoIndexMetadata(t(feedRouteConfigData['posts/topics'].title))
 }
 
 export const dynamic = 'force-dynamic'
@@ -18,7 +18,7 @@ interface Props {
 export default async function FeedPostsTopicsPage({ searchParams }: Props) {
   return (
     <FeedPostListPage
-      config={feedRouteConfigs['posts/topics']}
+      config={feedRouteConfigData['posts/topics']}
       searchParams={searchParams}
     />
   )

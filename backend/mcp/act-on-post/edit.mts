@@ -9,7 +9,7 @@ import { toWrittenMcpPost, type McpPostSummary as McpPost } from '../mcp-post-ou
 import {
   loadWritablePost,
   postWriteParameters,
-  POST_ID_SCHEMA,
+  postReferenceSchema,
   POST_WRITE_RESULT_SCHEMA,
 } from '../post-write-tool-support.mts'
 
@@ -21,7 +21,7 @@ export const updatePostSource: MergedToolSource<Args, { success: true; post: Mcp
       'Edit a post or comment when you have the same edit permission as on the website. Send only fields to change; archive true archives it and archive false restores it. Content edits retain the REST edit window and per-type rules.',
     parameters: {
       ...parameters,
-      properties: { ...parameters.properties, id: POST_ID_SCHEMA },
+      properties: { ...parameters.properties, id: postReferenceSchema },
       required: ['id'],
     },
   },

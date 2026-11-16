@@ -11,8 +11,6 @@ import { BatchFileBuilder } from '../orchestrator/file-builder.mts'
 const MAX_IMAGE_EMBEDDING_PIXELS = 24_000_000
 const MAX_IMAGE_EMBEDDING_DIMENSION = 1024
 
-const MAX_IMAGE_EMBEDDING_SOURCE_BYTES = MAX_IMAGE_UPLOAD_BYTES
-
 type PendingImage = {
   id: string
   s3_key: string
@@ -111,7 +109,7 @@ export async function addImageToBatch(
 
 async function createBedrockImageBytes(body: unknown, imageId: string): Promise<Buffer> {
   const source = await freezeImageUpload(body as AsyncIterable<Uint8Array>, {
-    maxBytes: MAX_IMAGE_EMBEDDING_SOURCE_BYTES,
+    maxBytes: MAX_IMAGE_UPLOAD_BYTES,
   })
   try {
     const bytes = await transformImage(source.filename, {

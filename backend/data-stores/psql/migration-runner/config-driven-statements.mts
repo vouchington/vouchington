@@ -23,12 +23,11 @@ async function runConfigDrivenStatementGroups(
   lockTimeoutMs: number,
   writer?: QueryExecutor,
 ): Promise<void> {
-  let group: string[] = []
+  const group: string[] = []
 
   async function flushGroup(): Promise<void> {
     if (group.length === 0) return
-    const statementsToRun = group
-    group = []
+    const statementsToRun = group.splice(0)
     if (writer) {
       await runConfigDrivenStatementsWithWriterTransaction(statementsToRun, writer, lockTimeoutMs)
     } else {

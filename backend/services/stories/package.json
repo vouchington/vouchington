@@ -62,6 +62,7 @@
     "valkyries": "^0.15.0"
   },
   "devDependencies": {
+    "@queues/background": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

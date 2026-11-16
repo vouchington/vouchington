@@ -12,7 +12,7 @@ import {
 } from '@services/posts/authorization'
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
 import type { MergedToolSource } from '../create-merged-tool.mts'
-import { POST_TARGET_SCHEMA, postActionMeta } from './meta.mts'
+import { postReferenceSchema, postActionMeta } from './meta.mts'
 import { getDelegatedToolAuthority } from '../delegated-authority.mts'
 import { requireActiveToolUser } from '../private-user.mts'
 import { successSchema } from '@vouchington/mcp-server/schema'
@@ -22,7 +22,6 @@ import { canonicalEntityId } from '../resolve-entity-reference.mts'
 type RatingArgs = { id: string; topic_id: string; rating?: number; order_index?: number }
 type Success = { success: true }
 
-const TOPIC = topicReferenceSchema
 const RATING = { type: 'integer', minimum: 1, maximum: 5 }
 const ORDER = { type: 'integer', minimum: 0 }
 const COLLECTION = '/api/v1/posts/:idOrSlug/ratings'
@@ -40,7 +39,7 @@ function ratingSource(
       description,
       parameters: {
         type: 'object',
-        properties: { id: POST_TARGET_SCHEMA, topic_id: TOPIC, ...fields },
+        properties: { id: postReferenceSchema, topic_id: topicReferenceSchema, ...fields },
         required: ['id', 'topic_id', ...required],
       },
     },

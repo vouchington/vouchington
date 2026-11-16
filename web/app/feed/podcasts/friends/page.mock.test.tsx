@@ -2,7 +2,7 @@ import '@/test-helpers/i18n/mock-json-messages'
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import FeedPodcastsFriendsPage from './page'
-import { feedRouteConfigs } from '@/lib/feed-route-configs'
+import { feedRouteConfigData } from '@/lib/feed-route-config-data'
 
 const { mockFeedNewsListPage } = vi.hoisted(() => ({
   mockFeedNewsListPage: vi.fn<VitestLooseMock>(),
@@ -25,7 +25,7 @@ describe('FeedPodcastsFriendsPage', () => {
 
     expect(screen.getByText('feed podcasts friends page')).toBeDefined()
     expect(mockFeedNewsListPage.mock.calls[0]![0]).toEqual({
-      config: feedRouteConfigs['podcasts/friends'],
+      config: feedRouteConfigData['podcasts/friends'],
       searchParams: {},
     })
   })

@@ -1,7 +1,7 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { buildPublicPostEligibilityFilter } from '@modules/feed-query-builders'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import type { CurrencyCode, Money } from '@ts-shared/money'
 import { parsePostgresMoneyAmount } from '@vouchington/utils/money'
 import {
@@ -135,7 +135,7 @@ export async function getTopicDataPointInsightsBatch(
   const query = buildTopicDataPointInsightsQuery(
     uniqueIds,
     {
-      minId: getMinUUIDv7ForDate(insightsWindowStart(getTopicDataPointInsightsWindowYears())),
+      minId: getMinUuidv7ForDate(insightsWindowStart(getTopicDataPointInsightsWindowYears())),
       rowCap: getTopicDataPointInsightsRowCap(),
     },
     options,

@@ -21,9 +21,10 @@ function preserveScrollForPathname(pathname: string, scrollY = window.scrollY) {
 export function consumePreservedScrollPosition(pathname: string): number | null {
   if (preservedScrollPosition === null) return null
 
-  const preserved = preservedScrollPosition
+  const scrollY =
+    preservedScrollPosition.pathname === pathname ? preservedScrollPosition.scrollY : null
   preservedScrollPosition = null
-  return preserved.pathname === pathname ? preserved.scrollY : null
+  return scrollY
 }
 
 export function preserveScrollForInternalHrefClick(

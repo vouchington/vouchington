@@ -1,5 +1,5 @@
 import { executeHandlerWithCursorInBatches, write } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import { getUrlHostnameCrawlerDetailsById } from '@services/urls-hostnames'
@@ -24,7 +24,7 @@ export const dispatchCrawlUrlsPerHostname = async (
   const resolved = resolveCrawlDispatchPageLimits(limits)
   const sweepStartedAt = cursor?.sweepStartedAt ?? new Date().toISOString()
   await saveProgress?.({ sweepStartedAt, ...(cursor?.afterId && { afterId: cursor.afterId }) })
-  const upperId = getMinUUIDv7ForDate(new Date(sweepStartedAt))
+  const upperId = getMinUuidv7ForDate(new Date(sweepStartedAt))
   const hostname = await getUrlHostnameCrawlerDetailsById(hostnameId, { readOnly: false })
   if (
     !hostname ||
@@ -34,7 +34,7 @@ export const dispatchCrawlUrlsPerHostname = async (
   )
     return { count: 0, hasMore: false }
   const attemptThresholdHours = hostname.attempt_threshold_hours ?? 1
-  const attemptCutoffId = getMinUUIDv7ForDate(
+  const attemptCutoffId = getMinUuidv7ForDate(
     new Date(new Date(sweepStartedAt).getTime() - attemptThresholdHours * 60 * 60 * 1000),
   )
 

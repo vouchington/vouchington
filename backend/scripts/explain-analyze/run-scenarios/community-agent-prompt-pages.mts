@@ -70,7 +70,6 @@ export async function runCommunityAgentPromptPageScenarios(): Promise<void> {
 }
 
 async function runSlotScenarios(): Promise<void> {
-  const creatorId = COMMUNITY_AGENT_PROMPT_PAGE_CREATOR_ID
   const seededRows = {
     community_agent_prompts:
       COMMUNITY_AGENT_PROMPT_TOTAL_ROWS + COMMUNITY_AGENT_PROMPT_SLOT_COUNT_NOISE_CREATORS + 4,
@@ -88,7 +87,7 @@ async function runSlotScenarios(): Promise<void> {
   })
   await runAndCapture(
     'community-agent-prompt-slot-count',
-    async () => assert.equal(await getUsedSlotsForUser(creatorId), 1),
+    async () => assert.equal(await getUsedSlotsForUser(COMMUNITY_AGENT_PROMPT_PAGE_CREATOR_ID), 1),
     undefined,
     'getUsedSlotsForUser',
   )
@@ -117,7 +116,7 @@ async function runSlotScenarios(): Promise<void> {
     async () => {
       await using query = await beginTransaction()
       const state = await allocateCommunityAgentPromptSlotInTransaction(
-        creatorId,
+        COMMUNITY_AGENT_PROMPT_PAGE_CREATOR_ID,
         COMMUNITY_AGENT_PROMPT_ALLOCATION_TARGET_ID,
         3,
         query,
@@ -127,7 +126,7 @@ async function runSlotScenarios(): Promise<void> {
         allocated_count: number
       }>(sql`/* verifyPromptSlotAllocationProjection */
         SELECT allocated_count FROM community_agent_prompt_slot_counts
-        WHERE creator_user_id = ${creatorId}
+        WHERE creator_user_id = ${COMMUNITY_AGENT_PROMPT_PAGE_CREATOR_ID}
       `)
       assert.equal(rows[0]?.allocated_count, 2)
       await query.rollback()

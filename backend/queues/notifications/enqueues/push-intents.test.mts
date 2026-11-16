@@ -4,7 +4,7 @@ import {
   enqueueDeliverNotificationPushIntent,
   enqueueReconcileNotificationPushIntents,
 } from './push-intents.mts'
-import { notifications } from '../queues.mts'
+import { background } from '@queues/background/queues'
 import { PRIORITY_DISPATCH, PRIORITY_TASK } from '@queues/background/config'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 
@@ -16,7 +16,7 @@ describe('notification push intent queue wiring', () => {
 
     await enqueueDeliverNotificationPushIntent(userId, notificationId)
 
-    const job = (await readAllQueueJobs(notifications)).find(
+    const job = (await readAllQueueJobs(background)).find(
       candidate =>
         candidate.name === 'notifications.processDeliverNotificationPushIntent' &&
         (candidate.data as { userId?: string }).userId === userId,
@@ -34,7 +34,7 @@ describe('notification push intent queue wiring', () => {
   it('throttles periodic intent reconciliation to one five-minute schedule', async () => {
     await enqueueReconcileNotificationPushIntents()
 
-    const job = (await readAllQueueJobs(notifications)).find(
+    const job = (await readAllQueueJobs(background)).find(
       candidate => candidate.name === 'notifications.processReconcileNotificationPushIntents',
     )
     expect(job?.data).toEqual({})

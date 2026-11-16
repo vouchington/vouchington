@@ -1,5 +1,5 @@
 import { write } from '@data-stores/psql'
-import { CRAWL_SEED_PREFIX, SEED_PREFIX } from './common.mts'
+import { crawlUuidv7Prefix, SEED_PREFIX } from './common.mts'
 import { printPlanDiagnostics } from './plan-diagnostics.mts'
 
 interface TableInfo {
@@ -50,8 +50,8 @@ export const SEEDED_ROW_COUNT_TARGETS: readonly TableInfo[] = [
   { table: 'conversation_messages', column: 'conversation_id' },
   { table: 'post_votes', column: 'user_id' },
   { table: 'topic_votes', column: 'user_id' },
-  { table: 'crawls', column: 'id', prefix: CRAWL_SEED_PREFIX },
-  { table: 'crawl_chunks', column: 'crawl_id', prefix: CRAWL_SEED_PREFIX },
+  { table: 'crawls', column: 'id', prefix: crawlUuidv7Prefix },
+  { table: 'crawl_chunks', column: 'crawl_id', prefix: crawlUuidv7Prefix },
   { table: 'post_slugs', column: 'post_id' },
   { table: 'topic_aliases', column: 'topic_id' },
   { table: 'user_profile_links', column: 'user_id' },

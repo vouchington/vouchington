@@ -6,7 +6,7 @@ import {
   createTestRssFeedWithTiming,
   createTestTopic,
 } from '@voucha/test-helpers'
-import { getDateFromUUIDv7 } from '@modules/utils/ids'
+import { getDateFromUuidv7 } from '@modules/utils/ids'
 import { upsertRssFeedItemCategories } from '@services/rss-feed-items/categories'
 import {
   type AliasCategoryCursor,
@@ -44,7 +44,7 @@ describe('topic alias category sweep bound', () => {
 })
 
 function uuidv7Time(id: string | null): number {
-  const date = id ? getDateFromUUIDv7(id) : null
+  const date = id ? getDateFromUuidv7(id) : null
   if (!date) throw new Error(`Expected a UUIDv7, got ${id}`)
   return date.getTime()
 }

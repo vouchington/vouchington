@@ -1,4 +1,4 @@
-import { mintUUIDv7 } from '@modules/utils/ids'
+import { mintUuidv7 } from '@modules/utils/ids'
 import { expect } from 'vitest'
 import { beginTransaction, read, type OwnedTransaction } from '@data-stores/psql'
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
@@ -22,7 +22,7 @@ export async function createEmbeddingFairnessSnapshot(
   let transaction: OwnedTransaction | undefined
   const prepared = Promise.withResolvers<void>()
   const operations: Promise<unknown>[] = []
-  const id = mintUUIDv7()
+  const id = mintUuidv7()
   let closing: Promise<void> | undefined
   const close = () => (closing ??= closeTransaction())
   quota.beforeRelease(close)

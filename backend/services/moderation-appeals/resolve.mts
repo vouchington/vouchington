@@ -111,21 +111,20 @@ export async function resolveModerationAppealAccept(
         { query },
       ),
     ])
-    const updated = row
     await logAppealResolution(
       staffUserId,
       'resolve_appeal',
       appealId,
-      updated.appellant_user_id,
-      updated.community_id,
+      row.appellant_user_id,
+      row.community_id,
       { query },
     )
     afterCommit = async () => {
-      const postCommitWork: Promise<unknown>[] = [maybeResolveCase(updated.case_id, staffUserId)]
-      if (updated.user_suspension_id) {
-        postCommitWork.push(invalidate.users(updated.appellant_user_id))
+      const postCommitWork: Promise<unknown>[] = [maybeResolveCase(row.case_id, staffUserId)]
+      if (row.user_suspension_id) {
+        postCommitWork.push(invalidate.users(row.appellant_user_id))
       }
-      if (updated.user_suspension_id || updated.post_id) {
+      if (row.user_suspension_id || row.post_id) {
         void enqueueRefreshTopHashtags()
       }
       await Promise.all(postCommitWork)

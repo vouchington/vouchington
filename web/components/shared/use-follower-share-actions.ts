@@ -154,8 +154,6 @@ export const useFollowerShareActions = ({
     }
   }
 
-  const handleAudienceChange = setAudience
-
   function handleSendDialogOpen() {
     resetDialogState(true)
   }
@@ -171,7 +169,7 @@ export const useFollowerShareActions = ({
     isSharePending,
     resetDialogState,
     selectedFollowers,
-    handleAudienceChange,
+    handleAudienceChange: setAudience,
     toggleFollowerSelection,
   }
 }

@@ -47,16 +47,15 @@ export function ModmailInbox({ communitySlug, initialData }: Props) {
     const cursor = pageInfo.endCursor
     if ((hasLoadedFirstPageRef.current && !cursor) || loadingMoreRef.current) return
     const generation = generationRef.current
-    const contextSlug = communitySlug
     const isFirstPageRetry = !hasLoadedFirstPageRef.current
     loadingMoreRef.current = true
     setLoadingMore(true)
     if (!isFirstPageRetry) setLoadError(null)
     try {
       const res = cursor
-        ? await getModmailInboxClient(contextSlug, { after: cursor })
-        : await getModmailInboxClient(contextSlug)
-      if (generation !== generationRef.current || contextSlug !== communitySlug) return
+        ? await getModmailInboxClient(communitySlug, { after: cursor })
+        : await getModmailInboxClient(communitySlug)
+      if (generation !== generationRef.current) return
       setThreads(prev => appendUniqueThreads(isFirstPageRetry ? [] : prev, res.results))
       hasLoadedFirstPageRef.current = true
       setHasLoadedFirstPage(true)
@@ -66,17 +65,17 @@ export function ModmailInbox({ communitySlug, initialData }: Props) {
         endCursor: res.page_info.end_cursor,
       })
     } catch (err) {
-      if (generation === generationRef.current && contextSlug === communitySlug) {
+      if (generation === generationRef.current) {
         setLoadError(err instanceof Error ? err : new Error(String(err)))
         onError(err, {
           fallback: isFirstPageRetry
             ? t('extracted.communities.modmailInbox.failedToLoadModmailInbox_b0fe8c15')
             : t('extracted.communities.modmailInbox.failedToLoadMoreThreads_c5092cf8'),
-          tags: { action: 'modmail-inbox-more', communitySlug: contextSlug },
+          tags: { action: 'modmail-inbox-more', communitySlug: communitySlug },
         })
       }
     } finally {
-      if (generation === generationRef.current && contextSlug === communitySlug) {
+      if (generation === generationRef.current) {
         loadingMoreRef.current = false
         setLoadingMore(false)
       }

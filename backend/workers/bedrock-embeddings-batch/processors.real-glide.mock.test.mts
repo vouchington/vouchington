@@ -9,7 +9,7 @@ import {
 import { streamPendingPosts } from '@services/bedrock-embeddings-batch/entities/posts'
 import { createTestUserDirect, deleteTestPost, insertTestPost } from '@voucha/test-helpers'
 import { BedrockControlClient } from '@modules/aws/bedrock-control'
-import { getMinUUIDv7ForDate } from '../../modules/utils/ids.mts'
+import { getMinUuidv7ForDate } from '../../modules/utils/ids.mts'
 import { uuidAfter } from '@voucha/test-helpers/uuid-before'
 import { backgroundCpu } from '../../queues/background-cpu/queues.mts'
 import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch/config'
@@ -131,9 +131,9 @@ describe('bounded Bedrock batch dispatcher continuations', () => {
       }),
     )
     const timestamp = Date.UTC(2400, 0, 1) + parseInt(randomUUID().slice(0, 8), 16)
-    const ids = [0, 1, 2].map(offset => getMinUUIDv7ForDate(new Date(timestamp + offset)))
+    const ids = [0, 1, 2].map(offset => getMinUuidv7ForDate(new Date(timestamp + offset)))
     const cursor = {
-      afterId: getMinUUIDv7ForDate(new Date(timestamp - 1)),
+      afterId: getMinUuidv7ForDate(new Date(timestamp - 1)),
       throughId: ids[2]!,
     }
     const continuationId = `bedrock-embeddings__poll_dispatcher__${cursor.throughId}__${ids[0]}`
@@ -207,9 +207,9 @@ describe('bounded Bedrock batch dispatcher continuations', () => {
       }),
     )
     const timestamp = Date.UTC(2401, 0, 1) + parseInt(randomUUID().slice(0, 8), 16)
-    const ids = [0, 1, 2].map(offset => getMinUUIDv7ForDate(new Date(timestamp + offset)))
+    const ids = [0, 1, 2].map(offset => getMinUuidv7ForDate(new Date(timestamp + offset)))
     const cursor = {
-      afterId: getMinUUIDv7ForDate(new Date(timestamp - 1)),
+      afterId: getMinUuidv7ForDate(new Date(timestamp - 1)),
       throughId: ids[2]!,
     }
     const continuationId = `bedrock-embeddings__stale_cleanup_dispatcher__${cursor.throughId}__${ids[0]}`

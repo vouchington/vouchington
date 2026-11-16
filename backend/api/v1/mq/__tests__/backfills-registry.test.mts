@@ -8,7 +8,7 @@ import { backgroundQueue as activitypub } from '@voucha/test-helpers/shared-back
 import { scheduledJobManifest as activitypubScheduledJobManifest } from '@queues/activitypub/enqueues/schedules'
 import { scheduledJobManifest as embeddingReconciliationManifest } from '@queues/bedrock-embeddings-batch/enqueues/schedules'
 import { backgroundCpu as bedrock_embeddings_batch } from '@queues/background-cpu/queues'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { background } from '@queues/background/queues'
 import { EXISTING_DISPATCHER_BACKFILLS } from '@services/queue-monitoring/backfills-existing-dispatchers'
 import { BACKFILL_REGISTRY } from '@services/queue-monitoring/backfills-registry'
 
@@ -172,7 +172,7 @@ describe('BACKFILL_REGISTRY', () => {
     if (!entry) throw new Error('Relation election backfill missing')
     const enqueued = await entry.trigger()
     if (isDeduplicatedEnqueue(enqueued)) return
-    await expect(readEnqueuedJob(voteAggregation, enqueued)).resolves.toMatchObject({
+    await expect(readEnqueuedJob(background, enqueued)).resolves.toMatchObject({
       name: 'vote-aggregation.processRecalculateVoteWeightDispatcher',
       data: { replayElectionsOnly: true },
     })
@@ -187,7 +187,7 @@ describe('BACKFILL_REGISTRY', () => {
     if (!entry) throw new Error(`${id} backfill missing`)
     const enqueued = await entry.trigger()
     if (isDeduplicatedEnqueue(enqueued)) return
-    await expect(readEnqueuedJob(voteAggregation, enqueued)).resolves.toMatchObject({
+    await expect(readEnqueuedJob(background, enqueued)).resolves.toMatchObject({
       name: `vote-aggregation.${jobName}`,
       data: {},
     })
@@ -198,7 +198,7 @@ describe('BACKFILL_REGISTRY', () => {
     if (!entry) throw new Error('Dirty-marker backfill missing')
     const enqueued = await entry.trigger()
     if (isDeduplicatedEnqueue(enqueued)) return
-    await expect(readEnqueuedJob(voteAggregation, enqueued)).resolves.toMatchObject({
+    await expect(readEnqueuedJob(background, enqueued)).resolves.toMatchObject({
       name: 'vote-aggregation.processVoteWeightDirtyMarkers',
       data: {},
     })

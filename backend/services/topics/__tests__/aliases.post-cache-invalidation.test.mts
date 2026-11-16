@@ -1,6 +1,6 @@
 import { caches } from '@services/entity-cache/caches'
 import { refresh } from '../../entity-fetch/refresh.mts'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { NOTIFICATIONS_RECONCILE_POST_JOB } from '@queues/background/enqueues/notifications-jobs'
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import type { PrivateUser } from '@services/users/types'
@@ -145,8 +145,8 @@ describe('topic alias post-cache invalidation', () => {
     const alias = await createUnlinkedTopicAlias(`notification-failure-alias-${suffix}`)
     const postId = (await createCachedAliasPosts(alias.id, user, suffix, 1))[0]!
     const failure = new Error(`Owned notification admission failure ${suffix}`)
-    const originalAddBulk = notifications.addBulk
-    const addSpy = vi.spyOn(notifications, 'addBulk').mockImplementation(jobs => {
+    const originalAddBulk = background.addBulk
+    const addSpy = vi.spyOn(background, 'addBulk').mockImplementation(jobs => {
       if (
         jobs.some(
           job =>
@@ -158,7 +158,7 @@ describe('topic alias post-cache invalidation', () => {
         )
       )
         return Promise.reject(failure)
-      return originalAddBulk.call(notifications, jobs)
+      return originalAddBulk.call(background, jobs)
     })
 
     try {
@@ -288,7 +288,7 @@ async function expectPostCachesInvalidated(postIds: string[]): Promise<void> {
 async function expectPostNotificationReconciliationEnqueued(postIds: string[], changeId?: string) {
   const found = await Promise.all(
     postIds.map(postId =>
-      notifications.searchJobs({
+      background.searchJobs({
         name: 'notifications.processReconcilePostNotifications',
         data: { postId, ...(changeId ? { changeId } : {}) },
       }),

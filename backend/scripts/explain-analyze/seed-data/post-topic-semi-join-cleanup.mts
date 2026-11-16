@@ -5,9 +5,14 @@ import { POST_TOPIC_OWNED_IDS } from './post-topic-owned-posts.mts'
 
 /** Delete only this fixture's relation, aliases, and topic rows after late EXPLAIN captures. */
 export async function cleanupPostTopicSemiJoinFixture(): Promise<void> {
-  const fixture = POST_TOPIC_SEMI_JOIN_FIXTURE
-  const aliasIds = [...fixture.sparseAliasIds, ...fixture.denseAliasIds]
-  const topicIds = [fixture.sparseTopicId, fixture.denseTopicId]
+  const aliasIds = [
+    ...POST_TOPIC_SEMI_JOIN_FIXTURE.sparseAliasIds,
+    ...POST_TOPIC_SEMI_JOIN_FIXTURE.denseAliasIds,
+  ]
+  const topicIds = [
+    POST_TOPIC_SEMI_JOIN_FIXTURE.sparseTopicId,
+    POST_TOPIC_SEMI_JOIN_FIXTURE.denseTopicId,
+  ]
 
   await using transaction = await beginTransaction()
   await transaction(

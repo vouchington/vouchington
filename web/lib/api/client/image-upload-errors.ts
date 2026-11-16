@@ -18,7 +18,4 @@ class ImageProcessingTimeoutError extends Error {
   }
 }
 
-export {
-  ImageBlockedError as InternalImageBlockedError,
-  ImageProcessingTimeoutError as InternalImageProcessingTimeoutError,
-}
+export { ImageBlockedError, ImageProcessingTimeoutError }

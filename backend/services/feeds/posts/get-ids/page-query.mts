@@ -1,5 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import { appendEligiblePostsCTE, appendEligiblePostsSelect } from './eligible-posts-cte.mts'
 import type { PostFeedPageQueryOptions } from './page-options.mts'
 import { buildDirectMatchCondition } from './direct-match.mts'
@@ -69,12 +69,12 @@ function appendDirectArm(
     .append(buildBroadcastVisibilityFilter('eligible_posts', options.currentUserId))
   if (cutoff)
     query.append(sql`
-        AND eligible_posts.id >= ${getMinUUIDv7ForDate(cutoff)}`)
+        AND eligible_posts.id >= ${getMinUuidv7ForDate(cutoff)}`)
   if (cursor?.sort === 'new') {
     // The id bound keeps the keyset condition on the id index; created_at derives from id.
     const cursorDate = new Date(cursor.sortAt)
     query.append(sql`
-        AND eligible_posts.id < ${getMinUUIDv7ForDate(new Date(cursorDate.getTime() + 1))}::uuid
+        AND eligible_posts.id < ${getMinUuidv7ForDate(new Date(cursorDate.getTime() + 1))}::uuid
         AND (eligible_posts.created_at, eligible_posts.id)
           < (${cursor.sortAt}::timestamptz, ${cursor.id}::uuid)`)
   }

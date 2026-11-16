@@ -12,7 +12,7 @@ import {
   softDeleteReferralLink,
 } from '@voucha/test-helpers/entities/referral-links'
 import { encodeCursor } from '@modules/pagination'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import { getReferralLinksFeed } from './get.mts'
 
 describe('referral feed latest eligible link', () => {
@@ -82,7 +82,7 @@ describe('referral feed latest eligible link', () => {
     expect(first.results.map(row => row.id)).toEqual([parent])
     const terminal = await getReferralLinksFeed(viewer, 'follow_users', {
       limit: 1,
-      after: encodeCursor({ id: getMinUUIDv7ForDate(new Date(0)) }),
+      after: encodeCursor({ id: getMinUuidv7ForDate(new Date(0)) }),
     })
     expect(terminal.results).toEqual([])
     expect(terminal.page_info).toEqual({

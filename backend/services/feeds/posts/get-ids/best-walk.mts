@@ -1,5 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import { buildDirectMatchCondition } from './direct-match.mts'
 import type { PostFeedPageQueryOptions } from './page-options.mts'
 import { buildBroadcastVisibilityFilter } from './visibility-filter.mts'
@@ -25,7 +25,7 @@ export function appendBestWalk(
     .append(buildDirectMatchCondition(options))
   if (cutoff)
     query.append(sql`
-        AND eligible_posts.id >= ${getMinUUIDv7ForDate(cutoff)}`)
+        AND eligible_posts.id >= ${getMinUuidv7ForDate(cutoff)}`)
   if (options.includeSharedPosts) {
     query.append(sql`
       UNION ALL

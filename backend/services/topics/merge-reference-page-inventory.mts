@@ -11,7 +11,7 @@ export const topicMergeSubtypePages = [
   ),
   { table: 'rewards_program_status_topics', columns: ['lifetime_version_id'] },
 ]
-export const topicMergeCollisionPages = collisionReferences
+export { collisionReferences }
 export const topicMergeBookmarkPages = Object.entries(relationReferences).flatMap(
   ([table, columns]) =>
     relationElectionTables.has(table)

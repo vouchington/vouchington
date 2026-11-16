@@ -1,5 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import { appendPostFeedRelationCTEs } from './relation-ctes.mts'
 import { appendEligiblePostsSelect } from './eligible-posts-cte.mts'
 import { buildDirectMatchCondition } from './direct-match.mts'
@@ -134,13 +134,13 @@ function appendNewArm(
       .append(
         shares
           ? sql`post_feed_shares.sort_at >= ${options.cutoff}`
-          : sql`posts.id >= ${getMinUUIDv7ForDate(options.cutoff)}`,
+          : sql`posts.id >= ${getMinUuidv7ForDate(options.cutoff)}`,
       )
   const cursor = options.cursor
   if (cursor?.sort === 'new') {
     if (!shares)
       query.append(
-        sql` AND posts.id < ${getMinUUIDv7ForDate(new Date(new Date(cursor.sortAt).getTime() + 1))}::uuid`,
+        sql` AND posts.id < ${getMinUuidv7ForDate(new Date(new Date(cursor.sortAt).getTime() + 1))}::uuid`,
       )
     query
       .append(sql` AND (`)

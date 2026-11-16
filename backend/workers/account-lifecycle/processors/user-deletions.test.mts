@@ -4,7 +4,7 @@ import {
 } from '@voucha/test-helpers/services/user-deletions/user-deletion-sweep-neighbor'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { createUserDeletionRequest } from '@services/user-deletions'
-import { accountLifecycle } from '@queues/account-lifecycle/queues'
+import { background } from '@queues/background/queues'
 import { createTestUser } from '@voucha/test-helpers'
 import {
   rejectNextPostgresTransactionForTest,
@@ -32,7 +32,7 @@ describe('user-deletions processor', () => {
     expect(advanced?.processingAttempts).toBe(1)
     expect(advanced?.currentPhase).toBe('votes')
     expect(advanced?.processingAttemptId).not.toBe(request.processingAttemptId)
-    const successor = await accountLifecycle.getJob(
+    const successor = await background.getJob(
       `user-deletion__${request.id}__${advanced?.processingAttemptId}`,
     )
     expect(successor?.data).toEqual({
@@ -98,7 +98,7 @@ describe('user-deletions processor', () => {
 
     await expect(recoverUserDeletions([request.id, other.id], 1)).resolves.toEqual({ enqueued: 1 })
 
-    const queued = await accountLifecycle.getJob(
+    const queued = await background.getJob(
       `user-deletion__${request.id}__${request.processingAttemptId}`,
     )
     expect(queued?.data).toEqual({
@@ -106,12 +106,10 @@ describe('user-deletions processor', () => {
       processingAttemptId: request.processingAttemptId,
     })
     expect(
-      await accountLifecycle.getJob(`user-deletion__${other.id}__${other.processingAttemptId}`),
+      await background.getJob(`user-deletion__${other.id}__${other.processingAttemptId}`),
     ).toBeNull()
     await expect(recoverUserDeletions([request.id, other.id], 1)).resolves.toEqual({ enqueued: 1 })
-    const next = await accountLifecycle.getJob(
-      `user-deletion__${other.id}__${other.processingAttemptId}`,
-    )
+    const next = await background.getJob(`user-deletion__${other.id}__${other.processingAttemptId}`)
     expect(next?.data).toEqual({
       requestId: other.id,
       processingAttemptId: other.processingAttemptId,

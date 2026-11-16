@@ -18,7 +18,6 @@ import {
   enqueueOrReactivateBulkOAuthAuthorizationExchanges,
   enqueueOAuthAuthorizationExchangeDispatcher,
 } from './enqueues.mts'
-import { oauthAuthorizationExchangeQueue } from './queues.mts'
 
 vi.hoisted(() => {
   const url = new URL(process.env.VALKEY_URL || 'redis://localhost:6379')
@@ -211,7 +210,7 @@ describe('OAuth exchange dispatcher enqueue through real GlideMQ', () => {
   // promotion of prioritized jobs, and one attempt avoids waiting out a retry backoff.
   const productionOptions = async (deduplicationId: string) => {
     await enqueueOAuthAuthorizationExchangeDispatcher({ deduplicationId })
-    const jobs = await readAllQueueJobs(oauthAuthorizationExchangeQueue)
+    const jobs = await readAllQueueJobs(background)
     const observed = jobs.find(
       job =>
         job.name === OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB.name &&

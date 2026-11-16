@@ -7,7 +7,7 @@ import {
   enqueueOrReactivateBulkExportRequests,
   enqueueRecoverExportRequests,
 } from './account-data-requests.mts'
-import { accountLifecycle } from '../queues.mts'
+import { background } from '@queues/background/queues'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 
 describe('account data request enqueues', () => {
@@ -17,7 +17,7 @@ describe('account data request enqueues', () => {
     const processingAttemptId = randomUUID()
     const jobId = `account-data-export__${requestId}__${processingAttemptId}`
     await enqueueExportRequest(requestId, userId, processingAttemptId)
-    const jobs = await readAllQueueJobs(accountLifecycle)
+    const jobs = await readAllQueueJobs(background)
     expect(jobs.find(job => job.id === jobId)).toMatchObject({
       id: jobId,
       data: { requestId, userId, processingAttemptId },
@@ -45,7 +45,7 @@ describe('account data request enqueues', () => {
     const processingAttemptId = randomUUID()
     const jobId = `account-data-export__${requestId}__${processingAttemptId}`
     await enqueueExportRequest(requestId, randomUUID(), processingAttemptId, 7)
-    const jobs = await readAllQueueJobs(accountLifecycle)
+    const jobs = await readAllQueueJobs(background)
     expect(jobs.find(job => job.id === jobId)).toMatchObject({ opts: { priority: 7 } })
   })
 
@@ -54,7 +54,7 @@ describe('account data request enqueues', () => {
     const userId = randomUUID()
     const processingAttemptId = randomUUID()
     const failure = new Error('enqueue rejected')
-    const add = vi.spyOn(accountLifecycle, 'add').mockRejectedValueOnce(failure)
+    const add = vi.spyOn(background, 'add').mockRejectedValueOnce(failure)
     try {
       await expect(enqueueExportRequest(requestId, userId, processingAttemptId)).rejects.toBe(
         failure,
@@ -81,7 +81,7 @@ describe('account data request enqueues', () => {
 
   it('throttles the periodic export recovery sweep under one deduplication id', async () => {
     await enqueueRecoverExportRequests()
-    const jobs = await readAllQueueJobs(accountLifecycle)
+    const jobs = await readAllQueueJobs(background)
     expect(jobs.find(job => job.name === ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB.name)).toMatchObject(
       {
         opts: {
@@ -93,7 +93,7 @@ describe('account data request enqueues', () => {
 
   it('runs operator-triggered export cleanup at background priority', async () => {
     await enqueueCleanupExpiredExports()
-    const jobs = await readAllQueueJobs(accountLifecycle)
+    const jobs = await readAllQueueJobs(background)
     expect(
       jobs.find(job => job.name === 'account-lifecycle.processCleanupExpiredExports'),
     ).toMatchObject({

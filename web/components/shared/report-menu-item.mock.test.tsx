@@ -10,7 +10,7 @@ vi.mock(
       submitReport: vi
         .fn<VitestLooseMock>()
         .mockResolvedValue({ report: { id: 'r1', status: 'pending' } }),
-      REPORT_REASONS: [
+      MODERATION_REPORT_REASON_OPTIONS: [
         { value: 'spam', label: 'Spam' },
         { value: 'other', label: 'Other' },
       ],

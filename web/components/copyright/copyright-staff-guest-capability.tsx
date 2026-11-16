@@ -68,10 +68,9 @@ export function CopyrightStaffGuestCapability({ noticeId }: { noticeId: string }
     }, 'Could not revoke guest access')
   }
   function requestInformation() {
-    const capabilityId = requestFor
-    if (!capabilityId || !statement.trim()) return
+    if (!requestFor || !statement.trim()) return
     run(async () => {
-      await requestCopyrightGuestInformation(noticeId, capabilityId, statement.trim())
+      await requestCopyrightGuestInformation(noticeId, requestFor, statement.trim())
       setStatement('')
       setRequestFor(null)
       onSuccess(

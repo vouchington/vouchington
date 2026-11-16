@@ -45,6 +45,7 @@
     "@modules/pagination": "workspace:^",
     "@queues/ai-agents": "workspace:^",
     "@queues/article-sync": "workspace:^",
+    "@queues/background": "workspace:^",
     "@services/comments": "workspace:^",
     "@services/communities": "workspace:^",
     "@services/copyright-notices": "workspace:^",

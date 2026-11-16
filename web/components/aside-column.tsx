@@ -42,8 +42,6 @@ export function AsideColumn({
   // No content and no footer → don't render the column so main content is centered
   if (!children && !showFooter) return null
 
-  const isInfiniteScroll = showFooter
-
   return (
     <aside
       ref={asideRef}
@@ -59,7 +57,7 @@ export function AsideColumn({
         desktopAsideOpen ? 'lg:w-[334px] lg:min-w-[334px] lg:ml-4' : 'lg:w-0 lg:min-w-0 lg:ml-0',
         // Mobile: infinite-scroll pages hide the column (aside shown via Sheet drawer instead)
         // Non-infinite pages: aside flows below main content; drawer provides quick access
-        isInfiniteScroll || mobileHidden ? 'hidden lg:block' : 'mt-4 w-full lg:mt-0',
+        showFooter || mobileHidden ? 'hidden lg:block' : 'mt-4 w-full lg:mt-0',
       )}
     >
       <div

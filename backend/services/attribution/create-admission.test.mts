@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUserDirect, getSessionReferralAttributions } from '@voucha/test-helpers'
 import { holdQueueAdmission } from '@voucha/test-helpers/queue-admission-hold'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { v7 as uuidv7 } from 'uuid'
 import { createSessionReferralAttribution } from './create.mts'
 
@@ -11,7 +11,7 @@ describe('referral click admission', () => {
     const sessionId = uuidv7()
     const landingUrl = `https://example.test/${uuidv7()}`
     const gate = holdQueueAdmission(
-      notifications,
+      background,
       'notifications.processReferralClickNotification',
       data =>
         typeof data === 'object' &&

@@ -72,9 +72,8 @@ export async function listReceivedUserWarnings(
   query.append(sql` ORDER BY w.id DESC LIMIT ${limit + 1}`)
 
   const { rows } = await read<MemberUserWarningListItem>(query)
-  const items = rows
-  const hasNextPage = items.length > limit
-  const warnings = hasNextPage ? items.slice(0, limit) : items
+  const hasNextPage = rows.length > limit
+  const warnings = hasNextPage ? rows.slice(0, limit) : rows
 
   return {
     warnings,
@@ -127,9 +126,8 @@ export async function listIssuedUserWarnings(
   query.append(sql` ORDER BY w.id DESC LIMIT ${limit + 1}`)
 
   const { rows } = await read<UserWarningListItem>(query)
-  const items = rows
-  const hasNextPage = items.length > limit
-  const warnings = hasNextPage ? items.slice(0, limit) : items
+  const hasNextPage = rows.length > limit
+  const warnings = hasNextPage ? rows.slice(0, limit) : rows
 
   return {
     warnings,

@@ -2,7 +2,7 @@ import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
 import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
 import { enqueueBulkUpdateTopicElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { background } from '@queues/background/queues'
 import { describe, expect, it, vi } from 'vitest'
 import {
   commitTestElectionVoteTransaction,
@@ -72,10 +72,10 @@ describe('createVotesUpsert', () => {
       createdById: user.id,
     })
     const admissionError = new Error('Injected election stats admission failure')
-    const originalAddBulk = voteAggregation.addBulk
+    const originalAddBulk = background.addBulk
     const reportsBefore = sentryCaptureExceptionMock.mock.calls.length
     let matchingAdmissions = 0
-    const addBulkSpy = vi.spyOn(voteAggregation, 'addBulk').mockImplementation(jobs => {
+    const addBulkSpy = vi.spyOn(background, 'addBulk').mockImplementation(jobs => {
       if (
         jobs.some(
           job =>
@@ -89,7 +89,7 @@ describe('createVotesUpsert', () => {
         matchingAdmissions += 1
         return Promise.reject(admissionError)
       }
-      return originalAddBulk.call(voteAggregation, jobs)
+      return originalAddBulk.call(background, jobs)
     })
 
     try {

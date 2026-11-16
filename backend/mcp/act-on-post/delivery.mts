@@ -9,7 +9,7 @@ import {
 import { markRead, markUnread } from '@services/read-states'
 import { assertPostReadStateTarget } from '@services/posts/authorization'
 import type { MergedToolSource } from '../create-merged-tool.mts'
-import { POST_TARGET_SCHEMA, postActionMeta } from './meta.mts'
+import { postReferenceSchema, postActionMeta } from './meta.mts'
 import { getDelegatedToolAuthority } from '../delegated-authority.mts'
 import {
   DISTRIBUTION_OUTPUT_SCHEMA,
@@ -30,7 +30,7 @@ function distributionSource(
       description: send
         ? 'Send a post to all or selected current followers, at most once per day.'
         : 'Share a post with your followers, at most once per day.',
-      parameters: distributionParameters('id', POST_TARGET_SCHEMA, send),
+      parameters: distributionParameters('id', postReferenceSchema, send),
     },
     meta: postActionMeta(
       [{ method: 'POST', path: `/api/v1/posts/:idOrSlug/${send ? 'sends' : 'shares'}` }],
@@ -67,7 +67,7 @@ function readStateSource(read: boolean): MergedToolSource<{ id: string }, { succ
       description: read ? 'Mark a post you can see read.' : 'Mark a post you can see unread.',
       parameters: {
         type: 'object',
-        properties: { id: POST_TARGET_SCHEMA },
+        properties: { id: postReferenceSchema },
         required: ['id'],
       },
     },

@@ -9,7 +9,7 @@ import {
   NOTIFICATIONS_DIGEST_SCHEDULE_TICK_JOB,
 } from '@queues/background/enqueues/notifications-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
-import { notifications } from '../queues.mts'
+import { background } from '@queues/background/queues'
 
 export type { CommunityActivityDigestDispatchData }
 
@@ -42,7 +42,7 @@ export function enqueueCommunityActivityDigestWindows(
   windows: CommunityActivityDigestDispatchData[],
 ) {
   return enqueueBulkReactivatingFinished({
-    queue: notifications,
+    queue: background,
     inputs: windows,
     jobIdOf: communityActivityDigestWindowJobId,
     enqueueBulk: enqueueBulkWindowJobs,

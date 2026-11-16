@@ -2,7 +2,7 @@ import { afterEach, describe, it, expect, beforeAll, beforeEach, vi } from 'vite
 import { upsertEntityRelation } from './upsert.mts'
 import { entityRelationMetadatum, type EntityRelationMetadata } from './metadata.mts'
 import { createTestUser, readAllQueueJobs, removeEnqueuedJobs } from '@voucha/test-helpers'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import {
   backgroundQueue as activitypub,
   backgroundQueue as blueskyFollowPropagation,
@@ -31,7 +31,7 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
     pendingEnqueues.length = 0
     vi.restoreAllMocks()
     // Notifications and ActivityPub share the background queue, so one spy sees both.
-    trackBulkEnqueue(notifications, pendingEnqueues)
+    trackBulkEnqueue(background, pendingEnqueues)
   })
 
   afterEach(async () => {
@@ -41,7 +41,7 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
   })
 
   function hasFollowJobFor(
-    jobs: Awaited<ReturnType<typeof notifications.getJobs>>,
+    jobs: Awaited<ReturnType<typeof background.getJobs>>,
     followeeId: string,
   ): boolean {
     return jobs.some(
@@ -72,7 +72,7 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
     })
 
     await settleEnqueues(pendingEnqueues)
-    const jobs = await readAllQueueJobs(notifications)
+    const jobs = await readAllQueueJobs(background)
     expect(hasFollowJobFor(jobs, followee.id)).toBe(false)
   })
 
@@ -82,7 +82,7 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
     await upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee])
 
     await settleEnqueues(pendingEnqueues)
-    const jobs = await readAllQueueJobs(notifications)
+    const jobs = await readAllQueueJobs(background)
     expect(hasFollowJobFor(jobs, followee.id)).toBe(true)
   })
 

@@ -17,7 +17,7 @@ import { createTestUserDirect } from '@voucha/test-helpers/entities/users-direct
 import { insertTestCommunity } from '@voucha/test-helpers/entities/communities'
 import { insertTestCommunityMember } from '@voucha/test-helpers/entities/community-members'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
-import { notifications } from '../../queues/notifications/queues.mts'
+import { background as notifications } from '@queues/background/queues'
 import {
   communityActivityDigestWindowJobId,
   enqueueCommunityActivityDigestWindows,

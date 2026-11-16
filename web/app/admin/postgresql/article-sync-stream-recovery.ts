@@ -70,7 +70,10 @@ export function createArticleSyncStreamRecovery(continueJob: (jobId: string) => 
 
   function schedule() {
     if (timer !== undefined || stopped || jobId === undefined) return
-    const scheduledJobId = jobId
+    scheduleJob(jobId)
+  }
+
+  function scheduleJob(scheduledJobId: string) {
     timer = setTimeout(() => {
       timer = undefined
       if (stopped || jobId !== scheduledJobId) return

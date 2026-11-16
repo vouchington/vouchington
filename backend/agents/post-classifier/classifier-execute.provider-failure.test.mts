@@ -9,7 +9,7 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/execution'
 import { getPostClassifierLocalOutcomeFacts } from '@voucha/test-helpers/data-stores/psql/post-classifier/run-facts'
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
-import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
+import { POST_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/post-classifier'
 import { Response } from 'undici'
 import { createPostClassifierClient } from './classifier-client.mts'
 import { executePostClassifierRun } from './classifier-execute.mts'
@@ -53,7 +53,7 @@ describe('post classifier provider failures (real receipts, real client)', () =>
   afterAll(async () => release?.())
 
   describeClassifierProviderFailures({
-    slug: POST_CLASSIFIER_SLUG,
+    slug: POST_CLASSIFIER_SYSTEM_USERNAME,
     async prepare() {
       const input = await createPostClassifierExecutionFixture(true, false)
       let { lease } = input
@@ -75,7 +75,8 @@ describe('post classifier provider failures (real receipts, real client)', () =>
           if (claim.kind === 'claimed') lease = claim.lease
           return claim.kind
         },
-        facts: async () => (await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]!,
+        facts: async () =>
+          (await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SYSTEM_USERNAME))[0]!,
       }
     },
   })
@@ -94,7 +95,9 @@ describe('post classifier provider failures (real receipts, real client)', () =>
         'terminal',
       )
 
-      expect((await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]).toMatchObject({
+      expect(
+        (await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SYSTEM_USERNAME))[0],
+      ).toMatchObject({
         terminal_failure_kind: 'provider-error',
         provider_attempts_started: 1,
       })

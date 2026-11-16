@@ -74,7 +74,6 @@ export function NewsItemModalFooterActions({
   const startDiscussionAction = useStartDiscussionAction(
     getStartDiscussionActionProps({ isLoggedIn, hasStoryPost, relatedUrlId }),
   )
-  const hasMenuActions = isLoggedIn
 
   return (
     <div className='flex min-w-0 items-center justify-center gap-1'>
@@ -129,7 +128,7 @@ export function NewsItemModalFooterActions({
         />
       )}
       {/* Desktop: inline Hide/Save + ... with Share/Report */}
-      {hasMenuActions && (
+      {isLoggedIn && (
         <div className='hidden min-w-0 items-center justify-center gap-1 overflow-x-auto scrollbar-hide sm:flex'>
           {isLoggedIn && (
             <SaveButton

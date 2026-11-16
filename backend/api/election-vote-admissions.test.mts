@@ -33,7 +33,7 @@ describe('owned vote-route admission settlement', () => {
     'rejects deduplicated $mode calls as fresh owned admissions',
     async ({ mode, skipped }) => {
       const user = await createTestUserDirect()
-      const { voteAggregation: queue } = await import('../queues/vote-aggregation/queues.mts')
+      const { background: queue } = await import('@queues/background/queues')
       const retry = await import('../data-stores/valkey-glide-mq/glide-mq-retry.mts')
       const data = { userId: user.id }
       const opts = {
@@ -205,7 +205,7 @@ describe('owned vote-route admission settlement', () => {
         ('topicId' in data && data.topicId === topicId))
     const finish = await observeOwnedVoteRouteAdmissions(owns)
     const worker = getSharedBackgroundWorker()
-    const { voteAggregation: queue } = await import('../queues/vote-aggregation/queues.mts')
+    const { background: queue } = await import('@queues/background/queues')
     const retry = await import('../data-stores/valkey-glide-mq/glide-mq-retry.mts')
     let followUp: Promise<unknown> | undefined
     const completed = (job: { data: { electionId?: string } }) => {

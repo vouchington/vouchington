@@ -18,7 +18,7 @@ import {
   enqueueReplayMediaDeliveryRegistry,
   type ReplayMediaDeliveryRegistryData,
 } from '../../queues/notifications/enqueues.mts'
-import { notifications } from '../../queues/notifications/queues.mts'
+import { background } from '@queues/background/queues'
 import { processReplayMediaDeliveryRegistry } from '../../workers/notifications/processors/media-delivery-registry.mts'
 import { replayFailedMediaDeliveryRegistryRecords } from './delivery-registry-reconciliation.mts'
 describe('media delivery replay jobs', () => {
@@ -91,7 +91,7 @@ describe('media delivery replay jobs', () => {
       ),
     ).rejects.toThrow('Invalid media replay cursor')
     expect(
-      await notifications.searchJobs({
+      await background.searchJobs({
         name: 'notifications.processReplayMediaDeliveryRegistry',
         data: { actorUserId: first!.nonModerator.id, after: page.after },
       }),
@@ -143,7 +143,7 @@ describe('media delivery replay jobs', () => {
       async (data, job) => {
         const next = data as ReplayMediaDeliveryRegistryData
         if (isDeduplicatedEnqueue(job)) return
-        const persisted = await readEnqueuedJob(notifications, job)
+        const persisted = await readEnqueuedJob(background, job)
         expect(persisted).toMatchObject({
           name: 'notifications.processReplayMediaDeliveryRegistry',
           data: next,

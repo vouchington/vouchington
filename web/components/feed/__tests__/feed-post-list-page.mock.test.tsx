@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FeedPostListPage } from '../feed-post-list-page'
-import { feedRouteConfigs } from '@/lib/feed-route-configs'
+import { feedRouteConfigData } from '@/lib/feed-route-config-data'
 import type { PostsResponseBody } from '@/types/api-responses'
 
 const { mockGetCurrentUser, mockGetPostFeed } = vi.hoisted(() => ({
@@ -71,7 +71,7 @@ describe('FeedPostListPage', () => {
 
   it('does not pass community scope to friends-only posts', async () => {
     const ui = await FeedPostListPage({
-      config: feedRouteConfigs['posts/friends'],
+      config: feedRouteConfigData['posts/friends'],
       searchParams: Promise.resolve({ community: 'topic-list' }),
     })
 
@@ -89,7 +89,7 @@ describe('FeedPostListPage', () => {
 
   it('does not pass community scope to topic posts', async () => {
     const ui = await FeedPostListPage({
-      config: feedRouteConfigs['posts/topics'],
+      config: feedRouteConfigData['posts/topics'],
       searchParams: Promise.resolve({ community: 'topic-list' }),
     })
 
@@ -106,7 +106,7 @@ describe('FeedPostListPage', () => {
 
   it('passes search query to topic posts', async () => {
     await FeedPostListPage({
-      config: feedRouteConfigs['posts/topics'],
+      config: feedRouteConfigData['posts/topics'],
       searchParams: Promise.resolve({ q: 'cash #cards' }),
     })
 

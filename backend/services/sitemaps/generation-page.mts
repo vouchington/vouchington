@@ -59,7 +59,6 @@ export async function generateSitemapPage<T extends SourceEntry>(
   }
   if (!progress) {
     if (expectedGenerationId) return { manifest: publishedManifest, hasMore: false, stale: true }
-    const previousManifest = publishedManifest
     progress = {
       generation_id: randomUUID(),
       started_at: now.toISOString(),
@@ -69,8 +68,8 @@ export async function generateSitemapPage<T extends SourceEntry>(
       after_path: null,
       page_count: 0,
       finished: false,
-      previous_generation_id: previousManifest?.generation_id ?? null,
-      previous_page_count: previousManifest?.active_page_count ?? 0,
+      previous_generation_id: publishedManifest?.generation_id ?? null,
+      previous_page_count: publishedManifest?.active_page_count ?? 0,
     }
     await dependencies.putProgress(progress)
   }

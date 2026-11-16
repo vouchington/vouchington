@@ -26,12 +26,10 @@ import { caches } from '@services/entity-cache/caches'
 import { write } from '@data-stores/psql'
 
 const getUserPrivateByAnyFromCache = caches.users_private.cacheGetByAny(getPrivateUserByAny)
-const getUserPublicByAnyFromCache = caches.users_public.cacheGetByAny(getPublicUserByAny)
+// Anonymous reads use the cached public snapshot without a live deletion recheck.
+export const getUserPublicByAnyFromCache = caches.users_public.cacheGetByAny(getPublicUserByAny)
 const getUserPublicByAnyBatchFromCache =
   caches.users_public.cacheGetByAnyBatch(getPublicUsersByAnyBatch)
-
-// Anonymous reads use the cached public snapshot without a live deletion recheck.
-export const getAnonymousUserPublicByAnyCached = getUserPublicByAnyFromCache
 
 export async function getUserPrivateByAnyCached(identifier: string) {
   return returnActiveCachedUser(await getUserPrivateByAnyFromCache(identifier))

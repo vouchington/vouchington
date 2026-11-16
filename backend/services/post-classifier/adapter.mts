@@ -3,7 +3,7 @@ import {
   lockApprovedPostClassifierInput,
   type ClassifierRunAdapter,
 } from '@services/classifier-runs'
-import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
+import { POST_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/post-classifier'
 import { resolvePostClassifierConfiguration } from './configuration.mts'
 import { applyPostClassifierEffects, type PostClassifierEffects } from './effects.mts'
 import {
@@ -31,7 +31,7 @@ export function createPostClassifierRunAdapter(
 ): PostClassifierRunAdapter {
   if (!detectorPackageVersion) throw new Error('Detector package version is required')
   return {
-    slug: POST_CLASSIFIER_SLUG,
+    slug: POST_CLASSIFIER_SYSTEM_USERNAME,
     lockCurrent: lockApprovedPostClassifierInput,
     async resolve(_subject, current, query) {
       const resolved = await resolvePostClassifierConfiguration(current.communityId, {

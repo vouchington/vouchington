@@ -18,7 +18,7 @@ import { enableAutomaticProvisionalWithholdingForTest } from './services/copyrig
 import { applyNonSpamSignedInCopyrightFormScreening } from '../services/copyright-notices/form-screenings.mts'
 import { suspendUser } from '../services/users/suspension.mts'
 import { encryptSecret } from '@modules/token-secrets'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import { readAllQueueJobs } from './queue-jobs.mts'
 import { forgetDedupEntries, removeQueuedJobsById } from './shared-queue-cleanup.mts'
@@ -97,13 +97,13 @@ export async function createCopyrightActionSweepBlocked() {
 
 /** Remove the fixture's own earlier enqueue and its throttle window. */
 export async function removeCopyrightActionSweepJob(intentId: string) {
-  const jobs = await readAllQueueJobs(notifications)
+  const jobs = await readAllQueueJobs(background)
   const ids = jobs.flatMap(job =>
     job.name === 'notifications.processApplyCopyrightAction' &&
     (job.data as { intentId?: string }).intentId === intentId
       ? [job.id]
       : [],
   )
-  await removeQueuedJobsById(notifications, ids)
+  await removeQueuedJobsById(background, ids)
   forgetDedupEntries(BACKGROUND_QUEUE_NAME, [`copyright-action:${intentId}`])
 }

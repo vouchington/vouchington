@@ -5,7 +5,6 @@ export async function seedCrawls(count = 100): Promise<void> {
   console.log(`Seeding ${count} crawls...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     for (let i = 0; i < count; i += 500) {
       const batch = Math.min(500, count - i)
       const values: unknown[] = []
@@ -21,7 +20,7 @@ export async function seedCrawls(count = 100): Promise<void> {
           `($${base}, $${base + 1}, $${base + 2}, $${base + 3}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
         )
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO crawls (id, url_id, markdown, response_status_code, completed_at, embeddings_generated_at)
          VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
         values,
@@ -35,7 +34,6 @@ export async function seedCrawlChunks(count = 300): Promise<void> {
   console.log(`Seeding ${count} crawl chunks...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     for (let i = 0; i < count; i += 500) {
       const batch = Math.min(500, count - i)
       const values: unknown[] = []
@@ -50,7 +48,7 @@ export async function seedCrawlChunks(count = 300): Promise<void> {
         const base = values.length - 3
         rows.push(`($${base}, $${base + 1}, $${base + 2}, $${base + 3})`)
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO crawl_chunks (crawl_id, order_index, markdown, bedrock_nova_multimodal_v1_content_sha256)
          VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
         values,
@@ -64,7 +62,6 @@ export async function seedPostSlugs(count = 100): Promise<void> {
   console.log(`Seeding ${count} post slugs...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     const values: unknown[] = []
     const rows: string[] = []
     for (let i = 0; i < count; i++) {
@@ -74,7 +71,7 @@ export async function seedPostSlugs(count = 100): Promise<void> {
       const base = values.length - 1
       rows.push(`($${base}, $${base + 1})`)
     }
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO post_slugs (post_id, slug) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
       values,
     )

@@ -9,9 +9,7 @@ import { bookmarkRouteConfigData } from './bookmark-route-config-data'
 import type { BookmarkFamily, BookmarkRouteConfig } from './bookmark-route-config-types'
 export type { BookmarkFamily, BookmarkRouteConfig } from './bookmark-route-config-types'
 
-export const bookmarkRouteConfigs = bookmarkRouteConfigData
-
-export type BookmarkRouteKey = keyof typeof bookmarkRouteConfigs
+export type BookmarkRouteKey = keyof typeof bookmarkRouteConfigData
 
 /** Returns TitleRouteDropdownItem[] for all entries sharing the same family (≥2 members). */
 export function getBookmarkCrossLinks(
@@ -22,7 +20,7 @@ export function getBookmarkCrossLinks(
   if (!family) return []
   // Object.values() widens each entry's literal MessageKey fields to `string`; recover the
   // known-correct shape (validated per-entry by the `satisfies` checks on the config data).
-  const allConfigs = Object.values(bookmarkRouteConfigs) as BookmarkRouteConfig[]
+  const allConfigs = Object.values(bookmarkRouteConfigData) as BookmarkRouteConfig[]
   const members = allConfigs.filter(c => c.family === family)
   if (members.length < 2) return []
   return members.map(c => ({

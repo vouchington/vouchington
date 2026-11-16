@@ -71,6 +71,7 @@
   "devDependencies": {
     "@modules/aws": "workspace:^",
     "@modules/csv": "workspace:^",
+    "@queues/background": "workspace:^",
     "@services/bluesky-accounts": "workspace:^",
     "@services/lists": "workspace:^",
     "@ts-shared/url-signing": "workspace:^",

@@ -81,12 +81,11 @@ export function useCommentCollapse({
     next.desired = collapsing
     next.revision += 1
     mutations.current.set(id, next)
-    const scope = scopeKey
     setOverrideState(prev => ({
-      scope,
-      values: { ...(prev.scope === scope ? prev.values : {}), [id]: collapsing },
+      scope: scopeKey,
+      values: { ...(prev.scope === scopeKey ? prev.values : {}), [id]: collapsing },
     }))
-    void saveCollapse(id, next, scope)
+    void saveCollapse(id, next, scopeKey)
   }
 
   async function saveCollapse(id: string, mutation: CollapseMutation, scope: string) {

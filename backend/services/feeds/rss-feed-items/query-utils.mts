@@ -1,4 +1,4 @@
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import type { TimeRange } from '../types.mts'
 import { getTimeRangeLowerBoundDate } from '../time-range-utils.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
@@ -96,6 +96,6 @@ export function getCutoffDateForTimeRange(
 
   return {
     cutoffDate,
-    itemCutoffId: getMinUUIDv7ForDate(cutoffDate),
+    itemCutoffId: getMinUuidv7ForDate(cutoffDate),
   }
 }

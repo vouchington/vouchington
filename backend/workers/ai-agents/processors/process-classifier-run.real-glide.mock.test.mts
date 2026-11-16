@@ -12,7 +12,7 @@ import {
 } from '@queues/ai-agents/config'
 import { enqueueClassifierRun } from '@queues/ai-agents/enqueues/classifier-run'
 import { ai_agents } from '@queues/ai-agents/queues'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import type { ClassifierRunJobData } from '@queues/ai-agents/types'
 import { claimClassifierRun, startClassifierProviderAttempt } from '@services/classifier-runs'
 import { createPostClassifierRunAdapter } from '@services/post-classifier'
@@ -20,7 +20,7 @@ import { spendCapConfig } from '@services/ai-usage'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 import {
   classifierRunJobFor,
-  POST_CLASSIFIER_SLUG,
+  POST_CLASSIFIER_SYSTEM_USERNAME,
 } from '@voucha/test-helpers/classifier-run-worker'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
@@ -61,7 +61,7 @@ const REMOTE_TOPICS = [
 async function reserveRun(remote: boolean, local: boolean) {
   const setup = await createApprovedClassifierPost(remote, local)
   const subject = { postId: setup.post.id, rssFeedItemId: null }
-  const reserved = await getClassifierRunHandler(POST_CLASSIFIER_SLUG).reserve(subject)
+  const reserved = await getClassifierRunHandler(POST_CLASSIFIER_SYSTEM_USERNAME).reserve(subject)
   if (reserved.kind !== 'reserved') throw new Error(`Unexpected reservation: ${reserved.kind}`)
   return { ...setup, subject, run: reserved.run }
 }
@@ -106,11 +106,15 @@ describe('classifier run processor (real GlideMQ)', () => {
     }
 
     await expect(
-      processClassifierRun(classifierRunJobFor(toClassifierRunJobData(POST_CLASSIFIER_SLUG, run))),
+      processClassifierRun(
+        classifierRunJobFor(toClassifierRunJobData(POST_CLASSIFIER_SYSTEM_USERNAME, run)),
+      ),
     ).resolves.toEqual({ kind: 'terminal' })
 
     expect(request).not.toHaveBeenCalled()
-    await expect(getClassifierRunFacts(post.id, POST_CLASSIFIER_SLUG)).resolves.toMatchObject([
+    await expect(
+      getClassifierRunFacts(post.id, POST_CLASSIFIER_SYSTEM_USERNAME),
+    ).resolves.toMatchObject([
       {
         provider_attempts_started: CLASSIFIER_RUN_ATTEMPTS,
         terminal_failure_kind: 'attempts-exhausted',
@@ -130,12 +134,12 @@ describe('classifier run processor (real GlideMQ)', () => {
     for (const slug of REMOTE_TOPICS) {
       await setPostClassifierToggleForTest(setup.community.id, slug, true)
     }
-    const reserved = await getClassifierRunHandler(POST_CLASSIFIER_SLUG).reserve({
+    const reserved = await getClassifierRunHandler(POST_CLASSIFIER_SYSTEM_USERNAME).reserve({
       postId: setup.post.id,
       rssFeedItemId: null,
     })
     if (reserved.kind !== 'reserved') throw new Error(`Unexpected reservation: ${reserved.kind}`)
-    const data = toClassifierRunJobData(POST_CLASSIFIER_SLUG, reserved.run)
+    const data = toClassifierRunJobData(POST_CLASSIFIER_SYSTEM_USERNAME, reserved.run)
     const request = vi.mocked(fetchStructuredDecisionProvider)
     request.mockImplementation(async (_url, init) => {
       const ids = Object.keys(readAskedQuestions(init))
@@ -177,7 +181,8 @@ describe('classifier run processor (real GlideMQ)', () => {
       },
     )
     const jobId = `classifier_run_${data.runId}`
-    const facts = async () => (await getClassifierRunFacts(setup.post.id, POST_CLASSIFIER_SLUG))[0]
+    const facts = async () =>
+      (await getClassifierRunFacts(setup.post.id, POST_CLASSIFIER_SYSTEM_USERNAME))[0]
     const exhausted = waitForWorkerJob(worker, 'failed', jobId, CLASSIFIER_RUN_ATTEMPTS)
     try {
       await enqueueClassifierRun(data)
@@ -214,7 +219,7 @@ describe('classifier run processor (real GlideMQ)', () => {
           .map(job => job.remove()),
       )
       await Promise.all(
-        (await readAllQueueJobs(notifications))
+        (await readAllQueueJobs(background))
           .filter(
             job =>
               job.name === 'notifications.processReconcilePostNotifications' &&

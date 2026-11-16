@@ -19,7 +19,7 @@ import {
   VOTE_AGGREGATION_BACKFILL_REPORT_INTEGRITY_JOB,
   VOTE_AGGREGATION_REPORT_INTEGRITY_JOB,
 } from '@queues/background/enqueues/vote-aggregation-jobs'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { background } from '@queues/background/queues'
 import type { ProcessReportIntegrityCheckData } from '@queues/vote-aggregation/enqueues/types-report-integrity'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 
@@ -100,9 +100,9 @@ describe('processBackfillReportIntegrity', () => {
       entityId: postId,
     })
 
-    const admissions: Array<ReturnType<typeof voteAggregation.addBulk>> = []
-    const addBulk = voteAggregation.addBulk
-    const admissionSpy = vi.spyOn(voteAggregation, 'addBulk')
+    const admissions: Array<ReturnType<typeof background.addBulk>> = []
+    const addBulk = background.addBulk
+    const admissionSpy = vi.spyOn(background, 'addBulk')
     onTestFinished(async () => {
       const settled = await Promise.allSettled(admissions)
       const errors: unknown[] = []
@@ -117,7 +117,7 @@ describe('processBackfillReportIntegrity', () => {
       if (errors.length) throw new AggregateError(errors, 'Owned report admissions failed')
     }, 5_000)
     admissionSpy.mockImplementation((jobs, ...options) => {
-      const admission = addBulk.call(voteAggregation, jobs, ...options)
+      const admission = addBulk.call(background, jobs, ...options)
       if (
         jobs.some(
           job =>
@@ -135,7 +135,7 @@ describe('processBackfillReportIntegrity', () => {
 
     const jobs = (await Promise.all(admissions)).flat()
     const waiting = await Promise.all(
-      jobs.flatMap(job => (job ? [readEnqueuedJob(voteAggregation, { id: job.id })] : [])),
+      jobs.flatMap(job => (job ? [readEnqueuedJob(background, { id: job.id })] : [])),
     )
     const found = waiting.find(
       j =>
@@ -172,8 +172,8 @@ describe('processBackfillReportIntegrity pages', () => {
       backfill_batch_size: 1,
     })
     onTestFinished(restoreLimit)
-    const addBulk = vi.spyOn(voteAggregation, 'addBulk')
-    const add = vi.spyOn(voteAggregation, 'add')
+    const addBulk = vi.spyOn(background, 'addBulk')
+    const add = vi.spyOn(background, 'add')
     onTestFinished(() => {
       addBulk.mockRestore()
       add.mockRestore()
@@ -214,8 +214,8 @@ describe('reviewed report pages', () => {
     const restore = overrideDynamicConfigFieldsForTest(reportIntegrityWorkConfig, {
       backfill_batch_size: 1,
     })
-    const add = vi.spyOn(voteAggregation, 'add')
-    const addBulk = vi.spyOn(voteAggregation, 'addBulk')
+    const add = vi.spyOn(background, 'add')
+    const addBulk = vi.spyOn(background, 'addBulk')
     onTestFinished(() => {
       restore()
       add.mockRestore()

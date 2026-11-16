@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { mintUUIDv7 } from '@modules/utils/ids'
+import { mintUuidv7 } from '@modules/utils/ids'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   createTestUserDirect,
@@ -25,7 +25,7 @@ describe('vote stats snapshot ordering', () => {
     const heldVoter = await createTestUserDirect({
       username: `test-vss-held-vote-second-${suffix}`,
     })
-    const [lowerVoteId, higherVoteId] = [mintUUIDv7(), mintUUIDv7()].toSorted()
+    const [lowerVoteId, higherVoteId] = [mintUuidv7(), mintUuidv7()].toSorted()
     await insertPostElectionVote(voter.id, postId, 1, higherVoteId!)
     const inserted = Promise.withResolvers<void>()
     const releaseVote = Promise.withResolvers<void>()
@@ -62,7 +62,7 @@ describe('vote stats snapshot ordering', () => {
     const heldVoter = await createTestUserDirect({
       username: `test-vss-equal-xmax-held-${randomBytes(6).toString('hex')}`,
     })
-    const [lowerVoteId, higherVoteId] = [mintUUIDv7(), mintUUIDv7()].toSorted()
+    const [lowerVoteId, higherVoteId] = [mintUuidv7(), mintUuidv7()].toSorted()
     await insertPostElectionVote(voter.id, postId, 1, higherVoteId!)
     const inserted = Promise.withResolvers<void>()
     const releaseVote = Promise.withResolvers<void>()

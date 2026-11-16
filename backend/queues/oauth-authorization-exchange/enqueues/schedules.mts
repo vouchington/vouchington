@@ -2,15 +2,12 @@ import { defineScheduledJobManifest } from '@modules/scheduled-job-manifest'
 import { toSchedulerTemplateOptions } from '@vouchington/worker-runtime/schedule-manifest'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import { OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB } from '@queues/background/enqueues/oauth-authorization-exchange-jobs'
-import {
-  OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_INTERVAL_MS,
-  OAUTH_AUTHORIZATION_EXCHANGE_ORDERING,
-} from '../config.mts'
+import { SCHEDULING_FLOOR_MS, OAUTH_AUTHORIZATION_EXCHANGE_ORDERING } from '../config.mts'
 
 export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_QUEUE_NAME, [
   {
     schedulerId: 'oauthAuthorizationExchangeDispatcher',
-    repeat: { every: OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_INTERVAL_MS },
+    repeat: { every: SCHEDULING_FLOOR_MS },
     template: {
       name: OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB.name,
       data: {},

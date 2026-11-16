@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { mintUUIDv7 } from '@modules/utils/ids'
+import { mintUuidv7 } from '@modules/utils/ids'
 import { write } from '../index.mts'
 import { describe, expect, it } from 'vitest'
 
@@ -20,7 +20,7 @@ describe('bedrock embedding batch foreign keys', () => {
         `/* schemaIngestionRelations */
          INSERT INTO bedrock_embedding_batches (id, model_id, job_type, data, url_id)
          VALUES ($1, 'amazon.nova-2-multimodal-embeddings-v1:0', 'topics', '{}'::jsonb, $2)`,
-        [mintUUIDv7(), missing],
+        [mintUuidv7(), missing],
       ),
     ).resolves.toBe('23503')
     await expect(
@@ -28,7 +28,7 @@ describe('bedrock embedding batch foreign keys', () => {
         `/* schemaIngestionRelations */
          INSERT INTO bedrock_embedding_batches (id, model_id, job_type, data, crawl_id)
          VALUES ($1, 'amazon.nova-2-multimodal-embeddings-v1:0', 'topics', '{}'::jsonb, $2)`,
-        [mintUUIDv7(), missing],
+        [mintUuidv7(), missing],
       ),
     ).resolves.toBe('23503')
   })

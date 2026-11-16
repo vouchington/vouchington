@@ -17,8 +17,7 @@ export async function preparePublicationScopePlans(): Promise<void> {
 }
 
 export async function preparePublicationHardDeletePlans(): Promise<void> {
-  const seed = PUBLICATION_SCOPE_SEED
-  const negativeIds = Array.from({ length: seed.negativeFeedCount }, (_, index) =>
+  const negativeIds = Array.from({ length: PUBLICATION_SCOPE_SEED.negativeFeedCount }, (_, index) =>
     seedUuid(index, 'ee'),
   )
   {
@@ -28,7 +27,7 @@ export async function preparePublicationHardDeletePlans(): Promise<void> {
     INSERT INTO rss_feeds (id,rss_feed_url_id,topic_id,title,created_via,deleted_at)
     SELECT id,$2::uuid,$3::uuid,'Scope negative owner','system',CURRENT_TIMESTAMP
     FROM unnest($1::uuid[]) input(id) ON CONFLICT DO NOTHING`,
-      [negativeIds, seed.url, seed.negativeTopic],
+      [negativeIds, PUBLICATION_SCOPE_SEED.url, PUBLICATION_SCOPE_SEED.negativeTopic],
     )
     await query(
       `/* preparePublicationHardDeletePlans:distributeOwnedNegativeCategories */
@@ -40,31 +39,44 @@ export async function preparePublicationHardDeletePlans(): Promise<void> {
     SET rss_feed_id=($3::uuid[])[((owned.ordinal-1)%$4::int+1)::int]
     FROM owned WHERE category.rss_feed_id=$1::uuid
       AND category.category_identity_id=owned.category_identity_id`,
-      [seed.feed, seed.negativeTopic, negativeIds, seed.negativeFeedCount],
+      [
+        PUBLICATION_SCOPE_SEED.feed,
+        PUBLICATION_SCOPE_SEED.negativeTopic,
+        negativeIds,
+        PUBLICATION_SCOPE_SEED.negativeFeedCount,
+      ],
     )
     await query(
       `/* preparePublicationHardDeletePlans:sparseOwner */
     INSERT INTO rss_feeds (id,rss_feed_url_id,topic_id,title,created_via,deleted_at)
     VALUES ($1,$2,$3,'Scope sparse owner','system',CURRENT_TIMESTAMP) ON CONFLICT DO NOTHING`,
-      [seed.descriptorFeed, seed.url, seed.topic],
+      [
+        PUBLICATION_SCOPE_SEED.descriptorFeed,
+        PUBLICATION_SCOPE_SEED.url,
+        PUBLICATION_SCOPE_SEED.topic,
+      ],
     )
     await query(
       `/* preparePublicationHardDeletePlans:sparseCategory */
     INSERT INTO rss_category_identities (id,category_text)
     VALUES ($1,'seed-publication-scope-next-page') ON CONFLICT DO NOTHING`,
-      [seed.descriptorCategory],
+      [PUBLICATION_SCOPE_SEED.descriptorCategory],
     )
     await query(
       `/* preparePublicationHardDeletePlans:sparseMapping */
     INSERT INTO rss_feed_categories (rss_feed_id,category_identity_id,topic_id)
     VALUES ($1,$2,$3) ON CONFLICT DO NOTHING`,
-      [seed.descriptorFeed, seed.descriptorCategory, seed.topic],
+      [
+        PUBLICATION_SCOPE_SEED.descriptorFeed,
+        PUBLICATION_SCOPE_SEED.descriptorCategory,
+        PUBLICATION_SCOPE_SEED.topic,
+      ],
     )
     await query(
       `/* preparePublicationHardDeletePlans:mark */ UPDATE rss_feeds
     SET deleted_at = CURRENT_TIMESTAMP, hard_delete_requested_at = CURRENT_TIMESTAMP
     WHERE id = ANY($1::uuid[])`,
-      [[seed.feed, seed.descriptorFeed]],
+      [[PUBLICATION_SCOPE_SEED.feed, PUBLICATION_SCOPE_SEED.descriptorFeed]],
     )
     await query.commit()
   }

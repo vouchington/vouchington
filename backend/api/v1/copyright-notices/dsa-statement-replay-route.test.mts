@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createTestUser, readAllQueueJobs } from '@voucha/test-helpers'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { DSA_TEST_UUID } from '@voucha/test-helpers/dsa-transparency-database-fixtures'
 import {
@@ -45,7 +45,7 @@ describe('POST copyright DSA statement replay', () => {
       replayed_by_id: user.id,
     })
     expect(
-      (await readAllQueueJobs(notifications)).filter(
+      (await readAllQueueJobs(background)).filter(
         job =>
           job.name === 'notifications.processSubmitDsaStatementOfReasons' &&
           (job.data as { submissionId?: string }).submissionId === id,
@@ -94,7 +94,7 @@ describe('POST copyright DSA statement replay with operator submission gate enab
     const { request } = await requestAs({ extraRoles: ['administrator'] })
     expect((await request.post(path(id)).expect(200)).body).toEqual({ replayed: true })
     expect(
-      (await readAllQueueJobs(notifications)).filter(
+      (await readAllQueueJobs(background)).filter(
         job =>
           job.name === 'notifications.processSubmitDsaStatementOfReasons' &&
           (job.data as { submissionId?: string }).submissionId === id,

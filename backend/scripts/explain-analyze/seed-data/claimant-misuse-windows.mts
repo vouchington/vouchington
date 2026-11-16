@@ -110,7 +110,6 @@ export async function seedClaimantMisuseWindows(): Promise<void> {
 }
 
 async function seedRepeatedClaimantEvents(): Promise<void> {
-  const noticeId = CLAIMANT_MISUSE_DENSE_NOTICE_ID
   await write(
     `/* seedClaimantMisuseWindows:repeatedSubmissions */
     INSERT INTO copyright_notice_submissions
@@ -118,7 +117,7 @@ async function seedRepeatedClaimantEvents(): Promise<void> {
     SELECT ('019e0000-e700-7000-8000-' || lpad(to_hex(1900000 + n), 12, '0'))::uuid,
       $1::uuid, 'withdrawal', CURRENT_TIMESTAMP, 'staff', 'synthetic-ciphertext'
     FROM generate_series(0, 3999) n ORDER BY n ON CONFLICT (id) DO NOTHING`,
-    [noticeId],
+    [CLAIMANT_MISUSE_DENSE_NOTICE_ID],
   )
   await write(
     `/* seedClaimantMisuseWindows:repeatedEvents */
@@ -129,6 +128,6 @@ async function seedRepeatedClaimantEvents(): Promise<void> {
       ('019e0000-e700-7000-8000-' || lpad(to_hex(1900000 + n), 12, '0'))::uuid,
       CURRENT_TIMESTAMP
     FROM generate_series(0, 3999) n ORDER BY n ON CONFLICT (id) DO NOTHING`,
-    [noticeId],
+    [CLAIMANT_MISUSE_DENSE_NOTICE_ID],
   )
 }

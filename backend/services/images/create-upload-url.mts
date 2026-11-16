@@ -1,5 +1,5 @@
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
-import { mintUUIDv7 } from '@modules/utils/ids'
+import { mintUuidv7 } from '@modules/utils/ids'
 import { MediaError, validateMediaUpload } from '@vouchington/media'
 import { SUPPORTED_IMAGE_FORMATS } from './constants.mts'
 import { presignImageUploadUrl } from './presign-upload-url.mts'
@@ -16,11 +16,10 @@ export async function createImageUploadUrl(user: { id: string }, options: Create
   const { contentType: normalizedContentType } = validateImageUpload(options)
   await using transaction = await beginTransaction()
 
-  const imageId = mintUUIDv7()
-  const s3Key = imageId
+  const imageId = mintUuidv7()
 
   const uploadUrl = await presignImageUploadUrl({
-    s3Key,
+    s3Key: imageId,
     contentType: normalizedContentType,
     contentLength: options.contentLength,
     expiresInSeconds: PRESIGNED_URL_EXPIRATION_SECONDS,

@@ -15,14 +15,14 @@ import {
   getUndoFollowActivityId,
   type DeliverActivityData,
 } from '@queues/activitypub/enqueues/delivery'
-import { getMinUUIDv7ForDate, mintUUIDv7 } from '@modules/utils/ids'
+import { getMinUuidv7ForDate, mintUuidv7 } from '@modules/utils/ids'
 import { getMaximumActivityAgeDays } from '@services/ap-inbox-activities/config'
 import { deliverActivity } from './delivery.mts'
 
 const INBOX_URL = 'https://a.example/inbox'
 
 function expiredActivityId(): string {
-  return getMinUUIDv7ForDate(new Date(Date.now() - (getMaximumActivityAgeDays() + 1) * 86_400_000))
+  return getMinUuidv7ForDate(new Date(Date.now() - (getMaximumActivityAgeDays() + 1) * 86_400_000))
 }
 
 // A federated sender with an actor keypair and a target that is federated or not.
@@ -31,7 +31,7 @@ async function followScene({ targetFederated = true, withKeypair = true } = {}) 
   const target = targetFederated ? await createFederatedUser() : await createTestUserDirect()
   const keyPair = withKeypair ? await getOrCreateActorKeyPair(source.id) : null
   const followData: DeliverActivityData = {
-    activityId: mintUUIDv7(),
+    activityId: mintUuidv7(),
     activityType: 'Follow',
     sourceUserId: source.id,
     targetUserId: target.id,
@@ -126,7 +126,7 @@ describe('deliverActivity', () => {
     ['Follow with a non-UUIDv7 id', { activityId: 'not-uuid-v7' }, 'unsupported-activity-id'],
   ] as const)('drops an %s before opt-in reads or HTTP', async (_name, overrides, reason) => {
     const data = {
-      activityId: mintUUIDv7(),
+      activityId: mintUuidv7(),
       activityType: 'Follow',
       sourceUserId: 'user-1',
       targetUserId: 'user-2',
@@ -173,7 +173,7 @@ describe('deliverActivity', () => {
     })
     await expect(
       deliverActivity({
-        activityId: mintUUIDv7(),
+        activityId: mintUuidv7(),
         activityType: 'Like',
         sourceUserId: source.id,
         targetPostId: postId,

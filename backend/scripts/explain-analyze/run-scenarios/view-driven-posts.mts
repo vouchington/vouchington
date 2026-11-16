@@ -8,17 +8,17 @@ import { getPostIds } from '../run-services.mts'
 const EXISTING_COMMUNITY_ID = `${SEED_PREFIX}-1400-7000-8000-000000000000`
 
 export async function runViewDrivenPostScenarios(): Promise<void> {
-  const communityId = EXISTING_COMMUNITY_ID
   const scenarios = [
     {
       id: 'search-community-posts',
       description: 'Community search lists posts across the community history.',
-      run: () => getPostIds(undefined, { community_id: communityId, limit: 25 }),
+      run: () => getPostIds(undefined, { community_id: EXISTING_COMMUNITY_ID, limit: 25 }),
     },
     {
       id: 'search-community-posts-1m',
       description: 'Community search lists posts across the community history.',
-      run: () => getPostIds(undefined, { community_id: communityId, time_range: '1m', limit: 25 }),
+      run: () =>
+        getPostIds(undefined, { community_id: EXISTING_COMMUNITY_ID, time_range: '1m', limit: 25 }),
     },
     {
       id: 'search-community-agent-simulation-posts',

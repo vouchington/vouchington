@@ -1,7 +1,7 @@
 import pMap from 'p-map'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import type { CommunityModerationSummaryEmailProps } from '@email-templates/core'
 import {
   createModerationSummaryScan,
@@ -115,8 +115,8 @@ export async function collectModerationSummaryPage(
       return { collection: state, communities }
     }
     state.scan ??= createModerationSummaryScan(selected.communityId, 'members', selected.metrics)
-    const endId = getMinUUIDv7ForDate(activityEnd)
-    const startId = getMinUUIDv7ForDate(windowStart)
+    const endId = getMinUuidv7ForDate(activityEnd)
+    const startId = getMinUuidv7ForDate(windowStart)
     if (state.scan.stage === 'members')
       await collectModerationSummaryMemberPage(
         state.scan,

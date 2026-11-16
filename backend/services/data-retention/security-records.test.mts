@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import {
   insertTestAccountCopyrightRationale,
@@ -97,7 +97,7 @@ describe('security record cleanup', () => {
            WHERE marker.client_id = client.id) AS never_granted,
          client.id < $2::uuid AS aged
        FROM oauth_clients client WHERE client.client_id = $1::text FOR UPDATE`,
-      [pending.client.client_id, getMinUUIDv7ForDate(plan.cutoffAt)],
+      [pending.client.client_id, getMinUuidv7ForDate(plan.cutoffAt)],
     )
     expect(client.rows[0]?.never_granted).toBe(true)
     expect(client.rows[0]?.aged).toBe(true)
@@ -105,7 +105,7 @@ describe('security record cleanup', () => {
       `/* testNeverGrantedClientWithRequests:delete */ DELETE FROM oauth_clients target
        WHERE target.id = $1::uuid AND target.id < $2::uuid
          AND ${plan.deletePredicate}`,
-      [client.rows[0]!.id, getMinUUIDv7ForDate(plan.cutoffAt)],
+      [client.rows[0]!.id, getMinUuidv7ForDate(plan.cutoffAt)],
     )
     expect(deletion.rowCount).toBe(0)
     expect((await getTestOAuthRetentionRowCounts(pending.client.client_id)).requests).toBe(3)
@@ -121,7 +121,7 @@ describe('security record cleanup', () => {
       `/* testNeverGrantedClientWithRequests:retire */ DELETE FROM oauth_clients target
        WHERE target.id = $1::uuid AND target.id < $2::uuid
          AND ${plan.deletePredicate}`,
-      [client.rows[0]!.id, getMinUUIDv7ForDate(plan.cutoffAt)],
+      [client.rows[0]!.id, getMinUuidv7ForDate(plan.cutoffAt)],
     )
     expect(retired.rowCount).toBe(1)
   })

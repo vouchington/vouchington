@@ -1,4 +1,4 @@
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 
 export type ClassifierPartitionRangeInput = {
   fromDate: string
@@ -57,8 +57,8 @@ export function parseClassifierPartitionRange(input: ClassifierPartitionRangeInp
   return {
     fromDate,
     toDate,
-    fromId: getMinUUIDv7ForDate(fromDate),
-    toId: getMinUUIDv7ForDate(toDate),
+    fromId: getMinUuidv7ForDate(fromDate),
+    toId: getMinUuidv7ForDate(toDate),
     nameSuffix: `r_${input.fromDate.replaceAll('-', '')}_${input.toDate.replaceAll('-', '')}`,
     maxDefaultRows,
   }

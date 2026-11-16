@@ -1,6 +1,6 @@
 /**
  * Raw route config data for feed pages.
- * Imported by feed-route-configs.ts — do not import this directly.
+ * Consumers import this module directly; feed-route-configs.ts holds the derived helpers.
  */
 import type {
   PostFeedRouteConfig,

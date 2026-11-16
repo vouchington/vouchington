@@ -2,7 +2,7 @@ import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/en
 import { createBackgroundBulkEnqueue } from '@queues/background/enqueues'
 import { NOTIFICATIONS_MARK_ALL_READ_JOB } from '@queues/background/enqueues/notifications-jobs'
 import type { MarkAllNotificationsReadData } from '@queues/background/enqueues/notifications-domain'
-import { notifications } from '../queues.mts'
+import { background } from '@queues/background/queues'
 
 const enqueueBulkMarkAllRead = createBackgroundBulkEnqueue(
   NOTIFICATIONS_MARK_ALL_READ_JOB,
@@ -14,7 +14,7 @@ const enqueueBulkMarkAllRead = createBackgroundBulkEnqueue(
 
 export function enqueueMarkAllNotificationsReadContinuation(data: MarkAllNotificationsReadData) {
   return enqueueBulkReactivatingFinished({
-    queue: notifications,
+    queue: background,
     inputs: [data],
     jobIdOf: markAllReadJobId,
     enqueueBulk: enqueueBulkMarkAllRead,

@@ -1,7 +1,7 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 import crypto from 'node:crypto'
 import { encodeCursor } from '@modules/pagination'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import {
   createTestUser,
   acquireTestModerationTransparencyDateReservation,
@@ -117,10 +117,10 @@ describe('all-time moderation transparency pages', () => {
     const cutoff = new Date('2026-08-14T12:00:00.000Z')
     const month = new Date('2026-07-01T00:00:00.000Z')
     const scope = 'moderation-transparency:global:month-desc'
-    const exactId = getMinUUIDv7ForDate(month)
+    const exactId = getMinUuidv7ForDate(month)
     for (const cursor of [
-      { timestamp: month.getTime() + 1, id: getMinUUIDv7ForDate(new Date(month.getTime() + 1)) },
-      { timestamp: month.getTime(), id: getMinUUIDv7ForDate(new Date(month.getTime() + 1)) },
+      { timestamp: month.getTime() + 1, id: getMinUuidv7ForDate(new Date(month.getTime() + 1)) },
+      { timestamp: month.getTime(), id: getMinUuidv7ForDate(new Date(month.getTime() + 1)) },
     ]) {
       expect(() =>
         getTransparencyWindow('all', cutoff, encodeCursor({ ...cursor, scope }), scope),

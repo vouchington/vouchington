@@ -1,4 +1,4 @@
-import { mintUUIDv7, getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { mintUuidv7, getMinUuidv7ForDate } from '@modules/utils/ids'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch/config'
 import { afterEach, beforeEach, describe, expect, it, vi, onTestFinished } from 'vitest'
@@ -24,7 +24,7 @@ vi.mock<typeof import('@modules/aws/bedrock-control')>(
 const createdBatchIds: string[] = []
 
 function batchId() {
-  const id = mintUUIDv7()
+  const id = mintUuidv7()
   createdBatchIds.push(id)
   return id
 }
@@ -47,7 +47,7 @@ describe('runStaleCleanup', () => {
       }),
     )
     const timestamp = Date.now() + 86_400_000 + Math.floor(Math.random() * 1_000_000_000)
-    const ids = [0, 1].map(offset => getMinUUIDv7ForDate(new Date(timestamp + offset)))
+    const ids = [0, 1].map(offset => getMinUuidv7ForDate(new Date(timestamp + offset)))
     onTestFinished(() => cleanupTestEmbeddingsBatches(ids))
     await Promise.all(
       ids.map(id =>
@@ -62,8 +62,8 @@ describe('runStaleCleanup', () => {
     // Completed provider jobs remain locally pending until their output is downloaded.
     vi.mocked(BedrockControlClient.send).mockResolvedValue({ status: 'Completed' } as never)
     const first = await runStaleCleanup(1, {
-      afterId: getMinUUIDv7ForDate(new Date(timestamp - 1)),
-      throughId: getMinUUIDv7ForDate(new Date(timestamp + 2)),
+      afterId: getMinUuidv7ForDate(new Date(timestamp - 1)),
+      throughId: getMinUuidv7ForDate(new Date(timestamp + 2)),
     })
     expect(first).toMatchObject({ inspected: 1, hasMore: true, reconciled: 1 })
     expect(first.nextCursor?.afterId).toBe(ids[0])
@@ -84,7 +84,7 @@ describe('runStaleCleanup', () => {
       }),
     )
     const timestamp = Date.now() + 86_400_000 + Math.floor(Math.random() * 1_000_000_000)
-    const ids = [0, 1].map(offset => getMinUUIDv7ForDate(new Date(timestamp + offset)))
+    const ids = [0, 1].map(offset => getMinUuidv7ForDate(new Date(timestamp + offset)))
     onTestFinished(() => cleanupTestEmbeddingsBatches(ids))
     await Promise.all([
       insertTestEmbeddingsBatch({
@@ -102,8 +102,8 @@ describe('runStaleCleanup', () => {
     ])
     vi.mocked(BedrockControlClient.send).mockResolvedValue({ status: 'Completed' } as never)
     const first = await runStaleCleanup(1, {
-      afterId: getMinUUIDv7ForDate(new Date(timestamp - 1)),
-      throughId: getMinUUIDv7ForDate(new Date(timestamp + 2)),
+      afterId: getMinUuidv7ForDate(new Date(timestamp - 1)),
+      throughId: getMinUuidv7ForDate(new Date(timestamp + 2)),
     })
     expect(first).toMatchObject({ inspected: 0, hasMore: true })
     expect(first.nextCursor?.afterId).toBe(ids[0])

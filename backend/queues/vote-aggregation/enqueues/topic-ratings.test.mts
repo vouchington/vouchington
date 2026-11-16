@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { VOTE_AGGREGATION_TOPIC_RATING_STATS_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
-import { voteAggregation } from '../queues.mts'
+import { background } from '@queues/background/queues'
 import { enqueueBulkUpdateTopicRatingStatsForTopicId } from './topic-ratings.mts'
 
 describe('topic rating stats enqueues', () => {
   it('updates topic rating stats at the requested priority', async () => {
-    const addBulk = vi.spyOn(voteAggregation, 'addBulk').mockResolvedValueOnce([])
+    const addBulk = vi.spyOn(background, 'addBulk').mockResolvedValueOnce([])
     const topicId = randomUUID()
 
     try {

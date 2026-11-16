@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { REPORT_REASONS } from '@/lib/api/client/reports'
+import { MODERATION_REPORT_REASON_OPTIONS } from '@/lib/api/client/reports'
 import { filterVisibleDuplicateClusters } from '../reports-clustered-state'
 import type {
   AdminModerationReportCluster,
@@ -9,7 +9,7 @@ import type {
 describe('reports clustered state', () => {
   it('merges duplicate reason breakdowns in shared report reason order', () => {
     const duplicate = makeDuplicateCluster(
-      REPORT_REASONS.map((option, index) =>
+      MODERATION_REPORT_REASON_OPTIONS.map((option, index) =>
         makeCluster({
           id: `post:post-${index}`,
           entity_id: `post-${index}`,
@@ -19,13 +19,16 @@ describe('reports clustered state', () => {
     )
 
     expect(filterVisibleDuplicateClusters([duplicate], new Set())[0]!.reason_breakdown).toEqual(
-      REPORT_REASONS.map((option, index) => ({ reason: option.value, count: index + 1 })),
+      MODERATION_REPORT_REASON_OPTIONS.map((option, index) => ({
+        reason: option.value,
+        count: index + 1,
+      })),
     )
   })
 
   it('preserves capped summary markers from visible duplicate members', () => {
     const duplicate = makeDuplicateCluster([
-      ...REPORT_REASONS.map((_, index) =>
+      ...MODERATION_REPORT_REASON_OPTIONS.map((_, index) =>
         makeCluster({
           id: `post:post-${index}`,
           entity_id: `post-${index}`,

@@ -16,7 +16,7 @@ import {
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { backgroundCpu as crawlUrls } from '@queues/background-cpu/queues'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { ai_agents } from '@queues/ai-agents/queues'
 import * as notificationReconcile from '@services/entity-relations/notification-reconcile'
 import { backgroundQueue } from '../../../test-helpers/shared-background-queue.mts'
@@ -30,7 +30,6 @@ import { getSystemUserByUsername, upsertSystemUser } from '@services/users/syste
 import { getPrivateUserByAny } from '@services/users'
 import { prepareStoryPost } from '../story-posts.mts'
 import { processOwnedStoryProjectionPage } from '../../../test-helpers/services/stories/story-post-related-url-projection.mts'
-import { voteAggregation } from '../../../queues/vote-aggregation/queues.mts'
 import type { PrivateUser } from '@services/users/types'
 
 function sha256(data: unknown): Buffer {
@@ -200,7 +199,7 @@ async function hasCrawlUrlJob(urlId: string): Promise<boolean> {
 async function hasPostNotificationJob(postId: string): Promise<boolean> {
   // No `state` key: a `priority > 0` notification is `prioritized`, not `waiting`, until a worker
   // promotes it, so a `'waiting'` filter misses it.
-  const jobs = await notifications.searchJobs({
+  const jobs = await background.searchJobs({
     name: 'notifications.processReconcilePostNotifications',
     data: { postId },
   })
@@ -212,7 +211,7 @@ async function hasEntityRelationVoteStatsJob(relationId: string): Promise<boolea
   // deterministically empty once the worker drains the job to a terminal state. The shim skips the
   // state filter entirely when it is omitted (glide-mq testing.js searchJobs), so this still narrows
   // by name + data and just stops caring which state the match is in.
-  const jobs = await voteAggregation.searchJobs({
+  const jobs = await background.searchJobs({
     name: 'vote-aggregation.processUpdateElectionVoteStats',
     data: {
       electionId: relationId,

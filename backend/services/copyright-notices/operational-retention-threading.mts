@@ -1,6 +1,6 @@
 import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
 import { beginTransaction } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import { copyrightOperationalThreadEligibleSql } from './operational-retention-thread-eligibility.mts'
 import {
@@ -175,7 +175,7 @@ export async function sweepCopyrightCaseThreads(options: {
 }): Promise<PageResult> {
   const now = options.now ?? new Date()
   const cutoff = new Date(now.getTime() - options.replyDays * DAY_MS)
-  const cutoffId = getMinUUIDv7ForDate(cutoff)
+  const cutoffId = getMinUuidv7ForDate(cutoff)
   let scanned = 0
   let deleted = 0
   let hasMore = false

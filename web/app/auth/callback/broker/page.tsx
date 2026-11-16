@@ -52,13 +52,12 @@ function OAuthBrokerCallbackContent() {
 
   useEffect(() => {
     if (!flowId) return undefined
-    const activeFlowId = flowId
     const lifetime = new AbortController()
     const pending: { cancelPoll?: () => void; cancelReceipt?: () => void } = {}
 
-    async function complete() {
+    const complete = async (): Promise<void> => {
       try {
-        const result = await completeOAuthAuthorization<CompletionResponse>(activeFlowId)
+        const result = await completeOAuthAuthorization<CompletionResponse>(flowId)
         if (lifetime.signal.aborted) return
         if ('status' in result && result.status === 'pending') {
           pending.cancelPoll = scheduleOAuthCompletion(complete)
@@ -73,16 +72,16 @@ function OAuthBrokerCallbackContent() {
           'mfa_required' in result
             ? {
                 type: 'voucha:oauth-broker:complete',
-                flowId: activeFlowId,
+                flowId,
                 status: 'mfa_required',
                 loginAttemptId: result.login_attempt_id,
               }
             : {
                 type: 'voucha:oauth-broker:complete',
-                flowId: activeFlowId,
+                flowId,
                 status: 'user' in result ? 'authenticated' : 'connected',
               }
-        const receipt = waitForOAuthBrokerReceipt(opener, activeFlowId)
+        const receipt = waitForOAuthBrokerReceipt(opener, flowId)
         pending.cancelReceipt = receipt.cancel
         opener.postMessage(completionMessage, window.location.origin)
         if (!(await receipt.result)) {
@@ -90,7 +89,7 @@ function OAuthBrokerCallbackContent() {
           return
         }
         if (lifetime.signal.aborted) return
-        await acknowledgeOAuthAuthorization(activeFlowId)
+        await acknowledgeOAuthAuthorization(flowId)
         if (lifetime.signal.aborted) return
         window.close()
       } catch (err) {
@@ -104,7 +103,7 @@ function OAuthBrokerCallbackContent() {
             opener.postMessage(
               {
                 type: 'voucha:oauth-broker:complete',
-                flowId: activeFlowId,
+                flowId,
                 status: 'failed',
               },
               window.location.origin,

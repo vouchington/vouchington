@@ -2,14 +2,10 @@
 
 import { ApiError } from '@vouchington/api-client'
 import { completeImageUpload, getImageUploadState, getImageUploadUrl } from './image-upload-api'
-import {
-  InternalImageBlockedError,
-  InternalImageProcessingTimeoutError,
-} from './image-upload-errors'
+import { ImageBlockedError } from './image-upload-errors'
 import { pollImageUntilUploaded } from './image-upload-wait'
 
-export const ImageBlockedError = InternalImageBlockedError
-export const ImageProcessingTimeoutError = InternalImageProcessingTimeoutError
+export { ImageBlockedError, ImageProcessingTimeoutError } from './image-upload-errors'
 export { POLL_INTERVAL_MS, POLL_MAX_ERRORS, POLL_TIMEOUT_MS } from './image-upload-polling'
 export { pollImageUntilUploaded } from './image-upload-wait'
 const CROSS_USER_DEDUP_MESSAGE = 'Image upload matched an image that is not available to this user'

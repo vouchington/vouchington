@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { deserializeCatalog, serializeCatalog } from './catalog-bootstrap.mts'
+import { deserializeCatalog } from './catalog-bootstrap.mts'
 import { createTranslator } from './index.mts'
 import { catalogMessagesFromTables } from './load-catalog-json.mts'
 import { enMessages, esMessages } from '../test-helpers/locale-catalogs.mts'
@@ -60,7 +60,7 @@ describe('catalog bootstrap', () => {
   })
 
   it('serializes every catalog leaf, including plural descriptors', () => {
-    const serialized = serializeCatalog(enMessages)
+    const serialized = structuredClone(enMessages)
 
     expect(serialized.nav).toEqual(enMessages.nav)
     expect(serialized).not.toHaveProperty('native')
@@ -83,7 +83,7 @@ describe('catalog bootstrap', () => {
   })
 
   it('produces a detached JSON-safe value without loss', () => {
-    const serialized = serializeCatalog(enMessages)
+    const serialized = structuredClone(enMessages)
     const roundTripped = JSON.parse(JSON.stringify(serialized))
 
     expect(roundTripped).toEqual(serialized)
@@ -91,7 +91,7 @@ describe('catalog bootstrap', () => {
   })
 
   it('accepts a serialized complete catalog without reconstructing executable leaves', () => {
-    const roundTripped = JSON.parse(JSON.stringify(serializeCatalog(enMessages)))
+    const roundTripped = JSON.parse(JSON.stringify(structuredClone(enMessages)))
     const t = createTranslator('en', deserializeCatalog(roundTripped))
 
     expect(t('nav.home')).toBe('Home')
@@ -99,7 +99,7 @@ describe('catalog bootstrap', () => {
   })
 
   it('preserves the requested locale descriptors through the bootstrap', () => {
-    const roundTripped = JSON.parse(JSON.stringify(serializeCatalog(esMessages)))
+    const roundTripped = JSON.parse(JSON.stringify(structuredClone(esMessages)))
     const t = createTranslator('es', deserializeCatalog(roundTripped))
 
     expect(t('settings.language.supportedCount', { count: 2 })).toBe('2 idiomas')

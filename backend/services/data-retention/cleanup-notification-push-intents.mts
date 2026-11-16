@@ -1,5 +1,5 @@
 import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import { getRetentionCutoffDate, normalizeRetentionDays } from './cleanup-options.mts'
 import { DEFAULT_BATCH_SIZE } from './cleanup-batches.mts'
@@ -40,7 +40,7 @@ export async function cleanupOldPendingNotificationPushIntents(
 ): Promise<PendingNotificationPushIntentCleanupResult> {
   const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
   const maxBatches = assertPositiveInteger(options.maxBatches, 'maxBatches')
-  const cutoff = getMinUUIDv7ForDate(getRetentionCutoffDate(30, options.now))
+  const cutoff = getMinUuidv7ForDate(getRetentionCutoffDate(30, options.now))
   if (options.scopeUserId && !options.borrowedQuery) {
     throw new TypeError('A scoped pending intent sweep requires a borrowed transaction')
   }

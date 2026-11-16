@@ -10,7 +10,7 @@ export async function observeOwnedVoteRouteAdmissions(
   observeWorkers = true,
 ) {
   const retry = await import('../data-stores/valkey-glide-mq/glide-mq-retry.mts')
-  const { voteAggregation } = await import('../queues/vote-aggregation/queues.mts')
+  const { background } = await import('@queues/background/queues')
   type Attempt = {
     promise?: Promise<unknown>
     calls: Array<{ kind: string; data: unknown; result?: Promise<unknown> }>
@@ -162,7 +162,7 @@ export async function observeOwnedVoteRouteAdmissions(
       void promise.catch(() => undefined)
       return promise
     })
-    watch('vote-aggregation', voteAggregation as Queue)
+    watch('vote-aggregation', background as Queue)
   } catch (err) {
     failures.push(err)
     await finish()

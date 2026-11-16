@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import {
   createClassifierRunSweepScope,
   dispatchApprovedClassifierPost,
-  POST_CLASSIFIER_SLUG,
+  POST_CLASSIFIER_SYSTEM_USERNAME,
 } from '@voucha/test-helpers/classifier-run-worker'
 import {
   readClassifierRunJobsForTest,
@@ -18,7 +18,9 @@ import { sentryCaptureMessageMock } from '../../../test-helpers/vitest.setup.sen
 import { getClassifierRunHandler } from './classifier-run-registry.mts'
 import { processReconcileClassifierRuns } from './process-reconcile-classifier-runs.mts'
 
-const scope = createClassifierRunSweepScope(getClassifierRunHandler(POST_CLASSIFIER_SLUG))
+const scope = createClassifierRunSweepScope(
+  getClassifierRunHandler(POST_CLASSIFIER_SYSTEM_USERNAME),
+)
 const sweep = (data = {}) => processReconcileClassifierRuns(data, scope.ids(), 2)
 
 async function dispatchTracked(remote: boolean) {
@@ -28,7 +30,7 @@ async function dispatchTracked(remote: boolean) {
 }
 
 const runFacts = async (postId: string) =>
-  (await getClassifierRunFacts(postId, POST_CLASSIFIER_SLUG))[0]!
+  (await getClassifierRunFacts(postId, POST_CLASSIFIER_SYSTEM_USERNAME))[0]!
 
 const alarmsOf = (kind: string, id?: string) =>
   sentryCaptureMessageMock.mock.calls.filter(
@@ -86,7 +88,9 @@ describe('classifier run recovery sweep: the bound alarm', () => {
     expect(alarmsOf('sweep-bound-exceeded', run.runId)).toHaveLength(1)
 
     // The terminal counts show the looped receipt under its own failure kind.
-    const { terminal } = await getClassifierRunHandler(POST_CLASSIFIER_SLUG).health(new Date())
+    const { terminal } = await getClassifierRunHandler(POST_CLASSIFIER_SYSTEM_USERNAME).health(
+      new Date(),
+    )
     expect(terminal.failed['sweep-bound-exceeded']).toBeGreaterThanOrEqual(1)
   })
 

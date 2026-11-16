@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { read, write } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import {
   cleanupAppealResolutionRuns,
   cleanupReportJudgementRuns,
@@ -46,7 +46,7 @@ export async function runModerationRerunRetentionScenarios(
       '/* seedModerationRerunRetention:analyzeAppeals */ ANALYZE moderation_appeal_resolution_runs',
     )
 
-    const cutoffId = getMinUUIDv7ForDate(getRetentionCutoffDate(90, now))
+    const cutoffId = getMinUuidv7ForDate(getRetentionCutoffDate(90, now))
     await assertOwnedEligibleRows('moderation_report_judgement_runs', cutoffId, reportIds)
     await assertOwnedEligibleRows('moderation_appeal_resolution_runs', cutoffId, appealIds)
     await runRetentionScenario({

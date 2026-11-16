@@ -58,10 +58,10 @@ export async function openRetirementTransaction(deadline: number) {
       })
   }
   try {
-    client = await pool.connect()
-    const transaction = await beginTransaction({ client })
+    const checkedOut = await pool.connect()
+    client = checkedOut
+    const transaction = await beginTransaction({ client: checkedOut })
     const dispose = transaction[Symbol.asyncDispose]
-    const ownedClient = client
     transaction[Symbol.asyncDispose] = async () => {
       const failures: unknown[] = []
       try {
@@ -70,7 +70,7 @@ export async function openRetirementTransaction(deadline: number) {
         failures.push(err_)
       }
       try {
-        ownedClient.release(failures.length > 0)
+        checkedOut.release(failures.length > 0)
       } catch (err_) {
         failures.push(err_)
       }

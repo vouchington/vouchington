@@ -1,4 +1,4 @@
-import { getDateFromUUIDv7 } from '@modules/utils/ids'
+import { getDateFromUuidv7 } from '@modules/utils/ids'
 import { createCodedError } from '@vouchington/sentry'
 import { CONTRIBUTION_GATED, EMAIL_VERIFICATION_REQUIRED } from '@modules/on-error/error-codes'
 import type { PrivateUser } from '@voucha/types/entities/user'
@@ -30,7 +30,7 @@ export async function getContributionStatus(
   if (!context.skipAccountAgeGate && currentUser.verification_status !== 'verified') {
     // 3. Account < 7 days → gated (only applies to UUIDv7 IDs; non-UUIDv7 IDs don't exist in
     //    production since all users are created with the DB default uuidv7(), so null is skipped)
-    const createdAt = getDateFromUUIDv7(currentUser.id)
+    const createdAt = getDateFromUuidv7(currentUser.id)
     if (createdAt) {
       const ageMs = Date.now() - createdAt.getTime()
       if (ageMs < CONTRIBUTION_GATE_ACCOUNT_AGE_MS) {

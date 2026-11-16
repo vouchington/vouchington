@@ -1,5 +1,5 @@
 import { read, type QueryExecutor } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type {
@@ -31,7 +31,7 @@ export async function readDsaCopyrightComplaintFigures(
   queryExecutor: QueryExecutor = read,
 ): Promise<DsaCopyrightComplaintFigures> {
   if (noticeIds?.length === 0) return emptyDsaCopyrightComplaintFigures()
-  const [from, to] = [getMinUUIDv7ForDate(periodStartedAt), getMinUUIDv7ForDate(periodEndedAt)]
+  const [from, to] = [getMinUuidv7ForDate(periodStartedAt), getMinUuidv7ForDate(periodEndedAt)]
   const query = sql`/* readDsaCopyrightComplaintFigures */
     WITH received AS (
       SELECT request.filed_by, request.challenged_decision_outcome::text AS outcome,

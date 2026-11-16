@@ -52,7 +52,7 @@ export const updatePost = async (
   let contentChanged = false
   let shouldEnqueuePostUpdated = false
   let previousPost = post
-  let effectiveChanges = normalizedChanges
+  let changes = normalizedChanges
   let syncHashtagCategories = false
   async function updatePostInTransaction() {
     await using query = await beginTransaction()
@@ -64,7 +64,7 @@ export const updatePost = async (
           assessment.changes,
           assessment.urls,
         )
-        effectiveChanges = normalizedChanges
+        changes = normalizedChanges
       }
       const activeCategoryOwnerId = await lockPostUpdateMutationScopes(
         query,
@@ -83,14 +83,13 @@ export const updatePost = async (
       if (!currentPost) throw createHttpError(404, 'Post not found')
       if (delegated) await loadWritablePost(creator, post.id, 'edit', options, currentPost)
       if (hashtagIntent)
-        effectiveChanges = await prepareLockedHashtagIntentChanges(
+        changes = await prepareLockedHashtagIntentChanges(
           creator,
           currentPost,
           normalizedChanges,
           hashtagIntent,
           options,
         )
-      const changes = effectiveChanges
       syncHashtagCategories =
         changes.title !== undefined ||
         changes.markdown !== undefined ||
@@ -191,7 +190,7 @@ export const updatePost = async (
   const post2 = await updatePostInTransaction().catch(mapPostUpdateError)
 
   return finalizePostUpdateAndDeliver({
-    changes: effectiveChanges,
+    changes,
     contentChanged,
     previousPost,
     shouldEnqueuePostUpdated,

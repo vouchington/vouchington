@@ -35,27 +35,29 @@ app.route('/api/v1/topics/:sourceIdOrSlug/merges').post(async (ctx: Context) => 
     400,
     'destination_id_or_slug is required',
   )
-  const destination = destinationIdOrSlug
 
   // Keep source 404/409 ahead of a malformed destination while batching ordinary inputs.
-  const validDestination = isUUID(destination.trim()) || isSlug(destination.trim().toLowerCase())
+  const validDestination =
+    isUUID(destinationIdOrSlug.trim()) || isSlug(destinationIdOrSlug.trim().toLowerCase())
   const batch = await getTopicsByAnyWithRedirectBatch([
     ctx.params.sourceIdOrSlug!,
-    ...(validDestination ? [destination] : []),
+    ...(validDestination ? [destinationIdOrSlug] : []),
   ])
   const sourceResult = batch[0]
   ctx.assert(sourceResult, 404, 'Source topic not found')
-  const source = sourceResult
-  ctx.assert(!source.topic_redirect, 409, 'Source topic has already been merged')
+  ctx.assert(!sourceResult.topic_redirect, 409, 'Source topic has already been merged')
 
   const destinationResult = validDestination
     ? batch[1]
-    : await getTopicByAnyWithRedirect(destination)
+    : await getTopicByAnyWithRedirect(destinationIdOrSlug)
   ctx.assert(destinationResult, 404, 'Destination topic not found')
-  const target = destinationResult
-  ctx.assert(!target.topic_redirect, 409, 'Destination topic has already been merged')
+  ctx.assert(!destinationResult.topic_redirect, 409, 'Destination topic has already been merged')
 
-  const operation = await createTopicMergeOperation(currentUser, source.topic, target.topic)
+  const operation = await createTopicMergeOperation(
+    currentUser,
+    sourceResult.topic,
+    destinationResult.topic,
+  )
   ctx.setStatus(202)
   ctx.json({
     topic_merge: {

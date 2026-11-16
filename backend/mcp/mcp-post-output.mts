@@ -22,7 +22,6 @@ import type { TopicRecommendationPost } from '@services/topic-recommendations'
 import { closedObject, pickProperties } from './read-tool-output-schema.mts'
 
 /** The post fields the MCP read tools return, in output order. */
-const MCP_POST_FIELDS = PUBLIC_POST_FIELDS
 const SUMMARY_FIELDS = [
   'id',
   'slug',
@@ -47,7 +46,7 @@ export type McpPostSummary = Pick<McpPost, (typeof SUMMARY_FIELDS)[number]> & {
 export function mcpPostSchema(details = false) {
   return closedObject(
     {
-      ...pickProperties('Post', details ? MCP_POST_FIELDS : SUMMARY_FIELDS),
+      ...pickProperties('Post', details ? PUBLIC_POST_FIELDS : SUMMARY_FIELDS),
       ...(details ? pickProperties('Post', ['topic_recommendation']) : {}),
       hacker_news_references: mcpHackerNewsReferenceSchema(details),
     },

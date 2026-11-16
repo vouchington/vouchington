@@ -1,4 +1,4 @@
-import { mintUUIDv7 } from '@modules/utils/ids'
+import { mintUuidv7 } from '@modules/utils/ids'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import {
   cleanupTestEmbeddingsBatches,
@@ -165,7 +165,7 @@ async function insertBatch(
   },
   queryOptions: QueryOptions = {},
 ): Promise<void> {
-  const id = mintUUIDv7()
+  const id = mintUuidv7()
   createdBatchIds.push(id)
   await insertTestEmbeddingsBatch(
     {

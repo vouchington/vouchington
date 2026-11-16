@@ -83,13 +83,12 @@ export async function loginWithEmailAddressToken(options: {
     await lockLoginCredentialAdmission(existing.id, firstFactor, query)
     const loaded = await getPrivateUserByAny(existing.id, { query })
     if (!loaded) throw createHttpError(401, 'Sign-in account no longer exists')
-    const user = loaded
-    const claims = await getEnrichedSessionClaims(user)
+    const claims = await getEnrichedSessionClaims(loaded)
 
-    if (await userHasMfa(user.id, { query })) {
+    if (await userHasMfa(loaded.id, { query })) {
       const loginAttemptId = await createLoginAttempt({
         firstFactor,
-        userId: user.id,
+        userId: loaded.id,
         deviceId: options.deviceId,
         sessionId: options.sessionId,
         deviceClass: options.deviceClass,
@@ -101,7 +100,7 @@ export async function loginWithEmailAddressToken(options: {
 
     const tokens = await createDeviceAndSessionTokens({
       did: options.deviceId,
-      uid: user.id,
+      uid: loaded.id,
       roles: claims?.roles,
       membershipPlan: claims?.membershipPlan,
       membershipExpiresAt: claims?.membershipExpiresAt,
@@ -116,7 +115,7 @@ export async function loginWithEmailAddressToken(options: {
 
     return {
       mfaRequired: false as const,
-      user: getSessionResponseUser(user, tokens.sessionToken.payload),
+      user: getSessionResponseUser(loaded, tokens.sessionToken.payload),
       deviceToken: tokens.deviceToken,
       sessionToken: tokens.sessionToken,
     }

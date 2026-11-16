@@ -35,7 +35,6 @@ export function CrawlerEditForm({ crawler, crawlerId }: CrawlerEditFormProps) {
   // eslint-disable-next-line react-doctor/no-derived-useState -- intentional initial value; crawlerType diverges after user edits
   const [crawlerType, setCrawlerType] = useState(crawler.crawler_type)
   const [saving, setSaving] = useState(false)
-  const handleCrawlerTypeChange = setCrawlerType
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -67,7 +66,7 @@ export function CrawlerEditForm({ crawler, crawlerId }: CrawlerEditFormProps) {
       <CrawlerBasicFields
         crawler={crawler}
         crawlerType={crawlerType}
-        onCrawlerTypeChange={handleCrawlerTypeChange}
+        onCrawlerTypeChange={setCrawlerType}
       />
       <CrawlerRemovalFields crawler={crawler} />
       <div className='flex gap-4'>

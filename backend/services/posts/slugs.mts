@@ -1,4 +1,4 @@
-import { convertUUIDToBase36, createSlugFromTitle, isUUID, validateSlug } from '@modules/utils'
+import { uuidv7RandomToBase36, createSlugFromTitle, isUUID, validateSlug } from '@modules/utils'
 import { isUniqueViolation, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import assert from 'http-assert'
@@ -9,7 +9,7 @@ export const createPostSlug = async (
   options: QueryOptions,
 ) => {
   assert(post.title, 422, 'Title is required')
-  const slug = _slug || `${createSlugFromTitle(post.title, 50)}-${convertUUIDToBase36(post.id)}`
+  const slug = _slug || `${createSlugFromTitle(post.title, 50)}-${uuidv7RandomToBase36(post.id)}`
   validateSlug(slug)
   // Post detail routes resolve UUID-shaped :idOrSlug as IDs before consulting post_slugs,
   // so a UUID-shaped slug would 404. Reject it here.

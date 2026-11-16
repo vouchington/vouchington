@@ -7,7 +7,7 @@ import {
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { backgroundCpu as unfurlReferralLinksQueue } from '@queues/background-cpu/queues'
-import { getDateFromUUIDv7, mintUUIDv7 } from '@modules/utils'
+import { getDateFromUuidv7, mintUuidv7 } from '@modules/utils'
 import { insertTestCrawlDispatchPlanUrls } from '@voucha/test-helpers/entities/crawl-dispatch-plans'
 import { insertTestUnfurlDispatchPlanLinks } from '@voucha/test-helpers/entities/unfurl-dispatch-plans'
 import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
@@ -24,7 +24,7 @@ describe('bounded referral unfurl dispatch', () => {
   it('resumes still-requested rows while excluding new requests from the fixed sweep', async () => {
     const owner = await createTestUser()
     const referralProgramId = await insertTestReferralProgram({ createdById: owner.id })
-    const ownerCreatedAt = getDateFromUUIDv7(owner.id)
+    const ownerCreatedAt = getDateFromUuidv7(owner.id)
     if (!ownerCreatedAt) throw new Error('Expected owned native UUIDv7 anchor')
     const requestedAt = new Date(ownerCreatedAt.getTime() + 86_400_000).toISOString()
     const sweepStartedAt = requestedAt
@@ -107,15 +107,15 @@ describe('bounded referral unfurl dispatch', () => {
   it('uses the pending timestamp index for sparse due work among later requests on older links', async () => {
     const owner = await createTestUser()
     const referralProgramId = await insertTestReferralProgram({ createdById: owner.id })
-    const base = (await insertTestUrlDirect(owner.id, `https://${mintUUIDv7()}.example.com/base`))!
-    const urlIds = Array.from({ length: 6 }, () => mintUUIDv7())
+    const base = (await insertTestUrlDirect(owner.id, `https://${mintUuidv7()}.example.com/base`))!
+    const urlIds = Array.from({ length: 6 }, () => mintUuidv7())
     await insertTestCrawlDispatchPlanUrls({
       ids: urlIds,
       hostname: base.hostname.hostname,
       hostnameId: base.hostname.id,
       actorId: owner.id,
     })
-    const baseCreatedAt = getDateFromUUIDv7(base.id)
+    const baseCreatedAt = getDateFromUuidv7(base.id)
     if (!baseCreatedAt) throw new Error('Expected owned native UUIDv7 anchor')
     const dueAt = new Date(baseCreatedAt.getTime() + 172_800_000).toISOString()
     const later = await insertTestUnfurlDispatchPlanLinks({
@@ -155,7 +155,7 @@ describe('bounded referral unfurl dispatch', () => {
   it('keeps an explicit page when shared unfurl config is larger', async () => {
     const owner = await createTestUser()
     const referralProgramId = await insertTestReferralProgram({ createdById: owner.id })
-    const ownerCreatedAt = getDateFromUUIDv7(owner.id)
+    const ownerCreatedAt = getDateFromUuidv7(owner.id)
     if (!ownerCreatedAt) throw new Error('Expected owned native UUIDv7 anchor')
     const requestedAt = new Date(ownerCreatedAt.getTime() + 86_400_000).toISOString()
     const ids = await insertTestUnfurlDispatchPlanLinks({

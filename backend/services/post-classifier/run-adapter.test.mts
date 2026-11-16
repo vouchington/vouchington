@@ -11,7 +11,7 @@ import { localOutcomeFor } from '@voucha/test-helpers/data-stores/psql/post-clas
 import { setPostClassifierPostHashForTest } from '@voucha/test-helpers/data-stores/psql/post-classifier/run-facts'
 import { setPostClassifierToggleForTest } from '@voucha/test-helpers/entities/post-classifier-toggles'
 import { setTestPostClearanceStatus } from '@voucha/test-helpers/entities/post-clearance'
-import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
+import { POST_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/post-classifier'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   claimClassifierRun,
@@ -21,7 +21,7 @@ import {
 } from '@services/classifier-runs'
 import { createPostClassifierRunAdapter } from './index.mts'
 
-const runs = (postId: string) => getClassifierRunFacts(postId, POST_CLASSIFIER_SLUG)
+const runs = (postId: string) => getClassifierRunFacts(postId, POST_CLASSIFIER_SYSTEM_USERNAME)
 
 const request = requestPostClassifierRun
 

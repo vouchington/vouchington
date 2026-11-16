@@ -17,7 +17,7 @@ import { parseNumberParam } from '@ts-shared/utils/query'
 
 // Trending topics use a custom time range (day/week/month), not the standard TimeRange type
 const TIME_RANGES = ['day', 'week', 'month'] as const
-const VALID_TIME_RANGES = new Set<string>(TIME_RANGES)
+const VALID_FEED_TIME_RANGES = new Set<string>(TIME_RANGES)
 const trendingTopicsFilters = defineQueryContract({
   time_range: queryEnum(TIME_RANGES, { default: 'day' }),
   min_score: queryNumber(),
@@ -34,7 +34,7 @@ app.route('/api/v1/trending-topics').get(async ctx => {
   let timeRange: 'day' | 'week' | 'month' = 'day'
   if (ctx.query.time_range !== undefined) {
     const tr = String(ctx.query.time_range)
-    if (!VALID_TIME_RANGES.has(tr)) {
+    if (!VALID_FEED_TIME_RANGES.has(tr)) {
       ctx.throw(400, 'Invalid time range')
     }
     timeRange = tr as 'day' | 'week' | 'month'

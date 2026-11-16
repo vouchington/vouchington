@@ -141,8 +141,6 @@ export async function ensureSession(
     }
     return { kind: 'unavailable' }
   }
-  const privateKeys = edgePrivateKeys
-  const publicKeys = edgePublicKeys
 
   const mode = isProduction ? 'production' : 'development'
 
@@ -152,8 +150,8 @@ export async function ensureSession(
     deviceToken,
     sessionToken,
     env: {
-      VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: privateKeys,
-      VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64: publicKeys,
+      VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: edgePrivateKeys,
+      VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64: edgePublicKeys,
     },
     issuer: EDGE_ANON_SESSION_JWT_ISSUER,
     mode,

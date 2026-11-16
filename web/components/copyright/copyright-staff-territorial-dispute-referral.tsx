@@ -65,13 +65,12 @@ export function CopyrightStaffTerritorialReferralFields({
       onSubmit={event => {
         event.preventDefault()
         if (!canSubmit) return
-        const referredByParty = party
         onReview(
           () =>
             referCopyrightEuDisputeSettlement(item.id, {
               body_name: bodyName.trim(),
               referred_at: new Date(referredAt).toISOString(),
-              referred_by_party: referredByParty,
+              referred_by_party: party,
               ...(referredByUserId ? { referred_by_id: referredByUserId } : {}),
             }),
           'Dispute settlement referral recorded.',

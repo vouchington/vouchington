@@ -14,7 +14,7 @@ import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import { hasOAuthAccount } from '@services/user-rate-limits/trust-tier'
 import { assertCanContribute } from '@services/contribution-gating/assert'
-import { getDateFromUUIDv7 } from '@modules/utils/ids'
+import { getDateFromUuidv7 } from '@modules/utils/ids'
 import { createCodedError } from '@vouchington/sentry'
 import {
   OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN,
@@ -41,7 +41,7 @@ export async function getAuthorizedPostContributionMembershipPlan(currentUser: P
 
 export function isPostContentEditable(currentUser: PrivateUser, post: Post, now: number): boolean {
   if (currentUser.roles.includes('administrator')) return true
-  const createdAt = getDateFromUUIDv7(post.id)
+  const createdAt = getDateFromUuidv7(post.id)
   if (!createdAt) return true
   return now - createdAt.getTime() <= ONE_DAY_MS
 }

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { dispatchTier1CrawlUrls, dispatchTier2CrawlUrls } from '../dispatch-tier-urls.mts'
-import { getMaxUUIDv7ForDate } from '@modules/utils'
+import { getMaxUuidv7ForDate } from '@modules/utils'
 import {
   createEntityRelationWithElection,
   createReferralProgramFixture,
@@ -43,7 +43,7 @@ function ownedUrlWindow(size: number) {
         BigInt(`0x${randomUUID().replaceAll('-', '').slice(0, 12)}`) % BigInt(historicalRangeMs),
       ),
   )
-  const upperId = getMaxUUIDv7ForDate(time)
+  const upperId = getMaxUuidv7ForDate(time)
   const upper = BigInt(`0x${upperId.replaceAll('-', '')}`)
   const idAtOffset = (offset: number) => {
     const hex = (upper - BigInt(offset)).toString(16).padStart(32, '0')

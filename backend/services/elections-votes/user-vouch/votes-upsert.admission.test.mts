@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB } from '@queues/background/enqueues/activitypub-jobs'
 import { BLUESKY_FOLLOW_PROPAGATION_RECONCILE_FOLLOW_JOB } from '@queues/background/enqueues/bluesky-follow-propagation-jobs'
 import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { background } from '@queues/background/queues'
 import {
   createTestUser,
   getEntityRelation,
@@ -33,7 +33,7 @@ describe('user-vouch vote admission', () => {
       BLUESKY_FOLLOW_PROPAGATION_RECONCILE_FOLLOW_JOB.name,
       VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name,
     ] as const
-    const { holds, restore } = holdQueueBulkAdmissions(voteAggregation, [
+    const { holds, restore } = holdQueueBulkAdmissions(background, [
       {
         jobName: jobNames[0],
         matchesData: data =>
@@ -147,10 +147,10 @@ describe('user-vouch vote admission', () => {
     const voter = await createTestUser()
     const target = await createTestUser()
     const admissionError = new Error('Injected user-vouch stats admission failure')
-    const originalAddBulk = voteAggregation.addBulk
+    const originalAddBulk = background.addBulk
     const reportsBefore = sentryCaptureExceptionMock.mock.calls.length
     let matchingAdmissions = 0
-    const addBulkSpy = vi.spyOn(voteAggregation, 'addBulk').mockImplementation(jobs => {
+    const addBulkSpy = vi.spyOn(background, 'addBulk').mockImplementation(jobs => {
       if (
         jobs.some(
           job =>
@@ -166,7 +166,7 @@ describe('user-vouch vote admission', () => {
         matchingAdmissions += 1
         return Promise.reject(admissionError)
       }
-      return originalAddBulk.call(voteAggregation, jobs)
+      return originalAddBulk.call(background, jobs)
     })
 
     try {

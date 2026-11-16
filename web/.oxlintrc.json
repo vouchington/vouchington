@@ -57,6 +57,19 @@
       "files": [
         "**/*.test.{mts,ts,tsx}",
         "**/*.spec.{mts,ts,tsx}",
+        "**/*.mock.test.{mts,ts,tsx}",
+        "**/__tests__/**/*.{mts,ts,tsx}",
+        "**/test-helpers/**",
+        "**/*.stories.{ts,tsx}"
+      ],
+      "rules": {
+        "no-mistakes/ts-no-const-aliases": "off"
+      }
+    },
+    {
+      "files": [
+        "**/*.test.{mts,ts,tsx}",
+        "**/*.spec.{mts,ts,tsx}",
         "**/__tests__/**/*.{mts,ts,tsx}",
         "**/test-helpers/**"
       ],

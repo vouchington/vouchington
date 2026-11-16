@@ -30,7 +30,6 @@ type ToolResult =
   | { success: false; error: string }
 
 const EMPTY_PAGE_INFO: PageInfo = { has_next_page: false, start_cursor: null, end_cursor: null }
-const LIMIT = COMMENT_ANCESTOR_PAGE_MAX_LIMIT
 
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
@@ -43,8 +42,8 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         limit: {
           type: 'integer',
           minimum: 1,
-          maximum: LIMIT,
-          description: `Parents per page (default ${LIMIT})`,
+          maximum: COMMENT_ANCESTOR_PAGE_MAX_LIMIT,
+          description: `Parents per page (default ${COMMENT_ANCESTOR_PAGE_MAX_LIMIT})`,
         },
         after: { type: 'string' },
       },
@@ -76,7 +75,11 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
       // comment or a placeholder. The window itself is a bounded read, as in the REST twin.
       const page = await resolveCommentAncestorPage({
         after: args.after,
-        limit: clampToolLimit(args.limit, LIMIT, LIMIT),
+        limit: clampToolLimit(
+          args.limit,
+          COMMENT_ANCESTOR_PAGE_MAX_LIMIT,
+          COMMENT_ANCESTOR_PAGE_MAX_LIMIT,
+        ),
         target: thread.post,
       }).catch((err: unknown) => {
         if (createHttpError.isHttpError(err) && err.status === 400) return null

@@ -36,7 +36,7 @@ export interface SubmitReportResponse {
   isDuplicate: boolean
 }
 
-export const REPORT_REASONS = MODERATION_REPORT_REASON_OPTIONS
+export { MODERATION_REPORT_REASON_OPTIONS }
 
 export async function submitReport(input: {
   entityType: ReportableEntityType

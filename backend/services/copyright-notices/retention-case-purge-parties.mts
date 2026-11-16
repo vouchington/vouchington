@@ -36,14 +36,13 @@ export async function retainCopyrightCasePartyPage(
       WHERE copyright_notice_id = ${noticeId}::uuid`.append(cursor)
   statement.append(sql` ORDER BY id LIMIT ${limit}`)
   const { rows } = await query<PartyRow>(statement)
-  const page = rows
-  const userIds = page.map(row => row.user_id).filter((id): id is string => id !== null)
-  if (source === 'targets' && page.length > 0) {
+  const userIds = rows.map(row => row.user_id).filter((id): id is string => id !== null)
+  if (source === 'targets' && rows.length > 0) {
     const placementSql = sql`/* retainCopyrightCasePlacementParties */
       SELECT DISTINCT party.user_id FROM copyright_notice_targets target
       CROSS JOIN LATERAL `.append(copyrightPlacementPartiesSql('retain'))
       .append(sql` party WHERE target.copyright_notice_id = ${noticeId}::uuid
-        AND target.id = ANY(${page.map(row => row.id)}::uuid[])
+        AND target.id = ANY(${rows.map(row => row.id)}::uuid[])
         AND party.user_id IS NOT NULL`)
     const { rows: placementRows } = await query<{ user_id: string }>(placementSql)
     userIds.push(...placementRows.map(row => row.user_id))
@@ -62,7 +61,7 @@ export async function retainCopyrightCasePartyPage(
       WHERE EXCLUDED.is_incident_party AND NOT copyright_notice_party_identities.is_incident_party`)
   }
   return {
-    nextId: page.at(-1)?.id ?? null,
+    nextId: rows.at(-1)?.id ?? null,
     hasMore: source !== 'claimant' && rows.length === limit,
     complete: false,
   }

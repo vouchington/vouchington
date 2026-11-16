@@ -1,6 +1,6 @@
 import { randomInt } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import {
   createTestRssFeedItemWithUrl,
   createTestRssFeedWithTiming,
@@ -46,7 +46,7 @@ describe('RSS feed decision instant', () => {
     let equal: Awaited<ReturnType<typeof createTestRssFeedItemWithUrl>> | undefined
     for (let attempt = 0; attempt < 5; attempt++) {
       cutoffMs = Date.now() - randomInt(1, 12 * 60 * 60 * 1000)
-      const candidate = getMinUUIDv7ForDate(new Date(cutoffMs))
+      const candidate = getMinUuidv7ForDate(new Date(cutoffMs))
       try {
         equal = await createTestRssFeedItemWithUrl(feedId, {
           id: candidate,

@@ -5,11 +5,8 @@ import {
   type OAuthAuthorizationExchangeJobData,
 } from '@queues/background/enqueues/oauth-authorization-exchange-jobs'
 import type { JobOptions } from 'glide-mq'
-import {
-  OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_INTERVAL_MS,
-  OAUTH_AUTHORIZATION_EXCHANGE_ORDERING,
-} from './config.mts'
-import { oauthAuthorizationExchangeQueue } from './queues.mts'
+import { SCHEDULING_FLOOR_MS, OAUTH_AUTHORIZATION_EXCHANGE_ORDERING } from './config.mts'
+import { background } from '@queues/background/queues'
 
 const enqueueExchangeJob = createBackgroundEnqueue(OAUTH_AUTHORIZATION_EXCHANGE_JOB)
 
@@ -66,7 +63,7 @@ function getOAuthAuthorizationExchangeDispatcherJobOptions(
     deduplication: {
       id: deduplicationId,
       mode: 'throttle',
-      ttl: OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_INTERVAL_MS,
+      ttl: SCHEDULING_FLOOR_MS,
     },
   } satisfies Partial<JobOptions>
 }
@@ -90,7 +87,7 @@ function getOAuthAuthorizationExchangeJobOptions(authorizationId: string): Parti
 
 /** The bounded durable recovery page supplies the only IDs whose retained jobs matter. */
 async function getRecoveryJobs(ids: readonly string[], state: 'completed' | 'failed') {
-  const jobs = await Promise.all(ids.map(id => oauthAuthorizationExchangeQueue.getJob(id)))
+  const jobs = await Promise.all(ids.map(id => background.getJob(id)))
   const states = await Promise.all(jobs.map(async job => job?.getState()))
   return jobs.flatMap((job, index) => (job && states[index] === state ? [job] : []))
 }

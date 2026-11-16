@@ -4,11 +4,11 @@ import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { TitleRouteDropdown } from '@/components/shared/title-route-dropdown'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import {
-  bookmarkRouteConfigs,
   getBookmarkCrossLinks,
   type BookmarkRouteConfig,
   type BookmarkRouteKey,
 } from '@/lib/bookmark-route-configs'
+import { bookmarkRouteConfigData } from '@/lib/bookmark-route-config-data'
 
 interface BookmarkPageHeaderProps {
   routeKey: BookmarkRouteKey
@@ -20,7 +20,7 @@ export function BookmarkPageHeader({ routeKey, actions }: BookmarkPageHeaderProp
   const t = useTranslations()
   // Indexing by the BookmarkRouteKey union widens literal MessageKey fields to `string`;
   // recover the known-correct shape (each entry is validated by `satisfies` on the config data).
-  const config = bookmarkRouteConfigs[routeKey] as BookmarkRouteConfig
+  const config = bookmarkRouteConfigData[routeKey] as BookmarkRouteConfig
   const crossLinks = getBookmarkCrossLinks(t, config.family, config.path)
   const title = t(config.title)
   const breadcrumbItems = [

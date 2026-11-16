@@ -8,7 +8,7 @@ import sql from 'sql-template-strings'
 import { enqueueByHostname } from './dispatch-hostnames.mts'
 import { enqueueCrawlReferralLinksDispatcher } from '@queues/crawl-referral-links/enqueues'
 
-import { getMaxUUIDv7ForDate } from '@modules/utils'
+import { getMaxUuidv7ForDate } from '@modules/utils'
 import type {
   ReferralCrawlDispatchData,
   ReferralCrawlDispatchCursor,
@@ -34,7 +34,7 @@ export async function dispatchReferralLinkCrawls(
     ...(options.referralLinkIds && { referralLinkIds: options.referralLinkIds }),
   }
   await options.saveProgress?.({ ...scope, cursor: { ...options.cursor, sweepStartedAt } })
-  const upperId = getMaxUUIDv7ForDate(new Date(sweepStartedAt))
+  const upperId = getMaxUuidv7ForDate(new Date(sweepStartedAt))
   const queryStatement = sql`/* dispatchReferralLinkCrawls */
     WITH due_candidates AS MATERIALIZED (
       SELECT id, url_id, referral_program_topic_id, last_crawl_failure_at,

@@ -167,19 +167,13 @@ export async function seedCommentDescendantPartitionFixture(): Promise<CommentDe
       (monthIndex < BACKGROUND_COMMENT_COUNT % PARTITION_MONTHS ? 1 : 0)
     while (remaining > 0) {
       const batchCount = Math.min(remaining, INSERT_BATCH_SIZE)
-      const batchSerial = serial
-      const rows = Array.from({ length: batchCount }, (_, index) => ({
-        id: seedUuidAtTimestamp(month + 5 * 60 * 60_000, batchSerial + index),
-        parentId: backgroundRootIds[monthIndex]!,
-        rootId: backgroundRootIds[monthIndex]!,
-      }))
-      serial += batchCount
+      const rows = backgroundCommentRows(month, backgroundRootIds[monthIndex]!, serial, batchCount)
       // no-mistakes-disable-next-line query-reached-per-item: insert the 100,000-row background corpus in bounded 5,000-row batches
       await insertCommentRows(transaction, rows, hash)
+      serial += batchCount
       remaining -= batchCount
     }
   }
-
   phaseStartedAt = logCommentFixturePhase('background rows', phaseStartedAt)
   await transaction.commit()
   logCommentFixturePhase('commit', phaseStartedAt)
@@ -196,4 +190,9 @@ export async function seedCommentDescendantPartitionFixture(): Promise<CommentDe
     backgroundComments: BACKGROUND_COMMENT_COUNT,
     partitionNames,
   }
+}
+
+function backgroundCommentRows(at: number, root: string, from: number, count: number) {
+  const idAt = (i: number) => seedUuidAtTimestamp(at + 5 * 60 * 60_000, from + i)
+  return Array.from({ length: count }, (_, i) => ({ id: idAt(i), parentId: root, rootId: root }))
 }

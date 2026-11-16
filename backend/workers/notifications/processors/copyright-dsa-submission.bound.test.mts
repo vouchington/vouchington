@@ -14,7 +14,7 @@ import { readTestDsaSubmissionForRestriction } from '@voucha/test-helpers/dsa-st
 import { useDsaStatementSubmissions } from '@voucha/test-helpers/dsa-switches'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { DSA_TEST_PROVIDER_ORIGIN } from '@voucha/test-helpers/dsa-transparency-database-provider'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { processReconcileDsaStatementSubmissions } from './copyright-dsa-submission.mts'
 
 describe('DSA reconciliation bounded pages', () => {
@@ -50,7 +50,7 @@ describe('DSA reconciliation bounded pages', () => {
       ),
     ).resolves.toEqual({ enqueued: 1, hasMore: true })
     expect(
-      (await readAllQueueJobs(notifications)).filter(
+      (await readAllQueueJobs(background)).filter(
         job =>
           job.name === 'notifications.processSubmitDsaStatementOfReasons' &&
           [firstId, secondId, excludedId].includes(
@@ -96,7 +96,7 @@ describe('DSA reconciliation bounded pages', () => {
     const firstSubmission = await readTestDsaSubmissionForRestriction(first.restrictionId)
     const secondSubmission = await readTestDsaSubmissionForRestriction(second.restrictionId)
     expect(
-      (await readAllQueueJobs(notifications)).filter(
+      (await readAllQueueJobs(background)).filter(
         job =>
           job.name === 'notifications.processSubmitDsaStatementOfReasons' &&
           [firstSubmission.id, secondSubmission.id, excludedSubmissionId].includes(

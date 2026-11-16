@@ -1,6 +1,6 @@
 import assert from 'http-assert'
 import { enqueueArticleSync, readArticleSyncJob } from '@queues/article-sync/enqueues'
-import { articleSync } from '@queues/article-sync/queues'
+import { background } from '@queues/background/queues'
 import { recordStaffOperation } from '@services/moderator-actions'
 import { assertNotSuspended, isAdminUser } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
@@ -10,7 +10,7 @@ export async function startAdminArticleSync(currentUser: PrivateUser) {
   assertNotSuspended(currentUser)
   const job = await recordStaffOperation(
     currentUser.id,
-    { actionType: 'article_sync_run', queueName: articleSync.name },
+    { actionType: 'article_sync_run', queueName: background.name },
     async () => {
       const queued = await enqueueArticleSync(currentUser.id)
       assert(queued, 409, 'An article sync was already triggered recently')

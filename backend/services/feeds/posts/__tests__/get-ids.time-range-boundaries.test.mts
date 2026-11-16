@@ -1,6 +1,6 @@
 import { randomInt, randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import {
   createTestUser,
   followUser,
@@ -60,7 +60,7 @@ describe('post feed decision instant', () => {
     let equalPostId: string | undefined
     for (let attempt = 0; attempt < 5; attempt++) {
       cutoffMs = Date.now() - randomInt(1, 12 * 60 * 60 * 1000)
-      const candidate = getMinUUIDv7ForDate(new Date(cutoffMs))
+      const candidate = getMinUuidv7ForDate(new Date(cutoffMs))
       try {
         equalPostId = await insertTestPost({
           id: candidate,

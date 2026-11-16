@@ -71,6 +71,7 @@
   },
   "devDependencies": {
     "@data-stores/valkey-core": "workspace:^",
+    "@queues/background": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
     "undici": "^8.12.4",
     "vitest": "^5.1.0"

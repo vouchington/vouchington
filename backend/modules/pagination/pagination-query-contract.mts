@@ -1,4 +1,4 @@
-import type { VALID_TIME_RANGES } from '@voucha/types/feed'
+import type { VALID_FEED_TIME_RANGES } from '@voucha/types/feed'
 import type { VALID_MEDIA_TYPES, VALID_POST_TYPES, VALID_TOPIC_TYPES } from './filters.mts'
 import type { FiltersConfig, PaginationConfig } from './types.mts'
 import type {
@@ -37,7 +37,7 @@ type PaginationFilterQueryContract<TFilters extends FiltersConfig | undefined> =
       }
     : {}) &
   (TFilters extends { timeRange: true }
-    ? { readonly time_range: QueryEnumContract<typeof VALID_TIME_RANGES> }
+    ? { readonly time_range: QueryEnumContract<typeof VALID_FEED_TIME_RANGES> }
     : {}) &
   (TFilters extends { sort: infer TValues extends readonly string[] }
     ? { readonly sort: QueryEnumContract<TValues> }

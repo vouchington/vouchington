@@ -1,5 +1,5 @@
 import { randomInt, randomUUID } from 'node:crypto'
-import { getDateFromUUIDv7, getMaxUUIDv7ForDate } from '@modules/utils/ids'
+import { getDateFromUuidv7, getMaxUuidv7ForDate } from '@modules/utils/ids'
 import { createTestUser } from './entities/users.mts'
 import { createTestTopic } from './entities/create-test-entities.mts'
 import { insertTestRssFeed } from './entities/rss-feeds.mts'
@@ -32,7 +32,7 @@ export const languageBackfillTables = [
 /** A genuine resumed UUIDv7 interval containing exactly three owned row identities. */
 export async function createLanguageBackfillWindow(table: LanguageDetectionEntityTable) {
   const fence = new Date(Date.now() - randomInt(86_400_000, 172_800_000))
-  const upper = getMaxUUIDv7ForDate(fence)
+  const upper = getMaxUuidv7ForDate(fence)
   const numericUpper = BigInt(`0x${upper.replaceAll('-', '')}`)
   const beforeUpper = (offset: bigint) => {
     const hex = (numericUpper - offset).toString(16).padStart(32, '0')
@@ -41,7 +41,7 @@ export async function createLanguageBackfillWindow(table: LanguageDetectionEntit
   const lower = beforeUpper(3n)
   const ids = [beforeUpper(2n), beforeUpper(1n), upper]
   for (const id of [lower, ...ids]) {
-    if (getDateFromUUIDv7(id)?.getTime() !== fence.getTime()) {
+    if (getDateFromUuidv7(id)?.getTime() !== fence.getTime()) {
       throw new Error('Owned backfill IDs must retain the historical UUIDv7 fence')
     }
   }

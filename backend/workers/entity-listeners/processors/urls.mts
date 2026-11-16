@@ -1,7 +1,7 @@
 import { enqueueMissingHackerNewsLookups } from '@services/urls/hacker-news-lookup-enqueue'
 import { getUrlById } from '@services/urls/get'
 import { getOrCreateCrawlerForHostname } from '@services/crawlers'
-import { computeParentPath } from '@ts-shared/utils/urls'
+import { getFirstPathSegment } from '@ts-shared/utils/urls'
 import { enqueueBulkBoilerplateRemoval } from '@queues/crawl-dispatch/enqueues/boilerplate'
 
 export const processUrlCreated = async (
@@ -22,7 +22,7 @@ export const processUrlCreated = async (
 }
 
 async function triggerBoilerplateRemoval(hostnameId: string, pathname: string) {
-  const parentPath = computeParentPath(pathname)
+  const parentPath = getFirstPathSegment(pathname)
   if (parentPath !== null) {
     await enqueueBulkBoilerplateRemoval([{ hostnameId, parentPath }])
   }

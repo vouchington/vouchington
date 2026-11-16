@@ -1,5 +1,5 @@
 import { getActorKeyId } from '@modules/activitypub-uris'
-import { getDateFromUUIDv7 } from '@modules/utils/ids'
+import { getDateFromUuidv7 } from '@modules/utils/ids'
 import { wrapHttpForRetry } from '@modules/queue-errors'
 import { getMaximumActivityAgeDays } from '@services/ap-inbox-activities/config'
 import {
@@ -27,7 +27,7 @@ function isUndoMissingOriginalActivityId(
 function activityAgeRejectionReason(
   data: Exclude<DeliverActivityData, { activityType: 'Accept' }> | DistributeActivityData,
 ): 'unsupported-activity-id' | 'expired-activity' | null {
-  const activityCreatedAt = getDateFromUUIDv7(
+  const activityCreatedAt = getDateFromUuidv7(
     data.activityType === 'UndoFollow' || data.activityType === 'UndoLike'
       ? data.originalActivityId
       : data.activityId,

@@ -43,26 +43,25 @@ export function CommentNode({
   const [localHtml, setLocalHtml] = useState<string | null>(node.html)
   const [isEditing, setIsEditing] = useState(false)
 
-  const post = localPost
-  const html = localHtml
   const { children } = node
-  const isCollapsed = collapsedIds.has(post.id)
-  const isDeleted = !!post.deleted_at || post.placeholder_state === 'deleted'
-  const isUnmoderated = post.placeholder_state === 'unmoderated'
+  const isCollapsed = collapsedIds.has(localPost.id)
+  const isDeleted = !!localPost.deleted_at || localPost.placeholder_state === 'deleted'
+  const isUnmoderated = localPost.placeholder_state === 'unmoderated'
   const isPlaceholder = isDeleted || isUnmoderated
-  const isReplyLocked = isThreadLocked || post.locked_at != null
-  const permalink = `/${rootPostType}/${rootPostId}/comment/${post.id}`
+  const isReplyLocked = isThreadLocked || localPost.locked_at != null
+  const permalink = `/${rootPostType}/${rootPostId}/comment/${localPost.id}`
   const reportEntityId =
     isAuthenticated &&
     !isPlaceholder &&
     currentUserId &&
-    post.created_by &&
-    currentUserId !== post.created_by.id
-      ? post.id
+    localPost.created_by &&
+    currentUserId !== localPost.created_by.id
+      ? localPost.id
       : undefined
 
-  const username = post.created_by?.username ?? (post.is_anonymous ? 'Anonymous' : 'deleted')
-  const isAnonymous = post.is_anonymous && !post.created_by
+  const username =
+    localPost.created_by?.username ?? (localPost.is_anonymous ? 'Anonymous' : 'deleted')
+  const isAnonymous = localPost.is_anonymous && !localPost.created_by
 
   function handleEditSave(updatedPost: Post) {
     setLocalPost(updatedPost)
@@ -90,7 +89,7 @@ export function CommentNode({
           isCollapsed={isCollapsed}
           isDeleted={isDeleted}
           isUnmoderated={isUnmoderated}
-          node={{ ...node, post }}
+          node={{ ...node, post: localPost }}
           onToggleCollapse={onToggleCollapse}
           permalink={permalink}
           reportEntityId={reportEntityId}
@@ -101,16 +100,16 @@ export function CommentNode({
           <>
             {isEditing ? (
               <CommentNodeEditForm
-                post={post}
+                post={localPost}
                 onSave={handleEditSave}
                 onCancel={() => setIsEditing(false)}
               />
             ) : (
               <CommentNodeContent
-                html={html}
+                html={localHtml}
                 isDeleted={isDeleted}
                 isUnmoderated={isUnmoderated}
-                post={post}
+                post={localPost}
               />
             )}
 
@@ -118,7 +117,7 @@ export function CommentNode({
               <CommentNodeActions
                 hideDownCount={hideDownCount}
                 isAdmin={isAdmin}
-                node={{ ...node, post }}
+                node={{ ...node, post: localPost }}
                 onQuote={onQuote}
                 onToggleReply={onToggleReply}
                 onStartEdit={() => setIsEditing(true)}
@@ -129,11 +128,11 @@ export function CommentNode({
               />
             )}
 
-            {!isReplyLocked && replyToId === post.id && (
+            {!isReplyLocked && replyToId === localPost.id && (
               <CommentNodeReplyForm
                 onCommentAdded={onCommentAdded}
                 onToggleReply={onToggleReply}
-                postId={post.id}
+                postId={localPost.id}
                 quoteMarkdown={quoteMarkdown}
                 rootPostId={rootPostId}
               />
@@ -175,12 +174,12 @@ export function CommentNode({
               </div>
             )}
 
-            {moreRepliesIds?.has(post.id) && (
+            {moreRepliesIds?.has(localPost.id) && (
               <Button
                 type='button'
                 variant='ghost'
                 size='sm'
-                onClick={() => onLoadMoreReplies?.(post.id)}
+                onClick={() => onLoadMoreReplies?.(localPost.id)}
               >
                 {t('extracted.comments.commentNode.loadMore_ac8991ef')}
               </Button>

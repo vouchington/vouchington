@@ -1,7 +1,7 @@
 import { createTestDataRequestSweepNeighbor } from '@voucha/test-helpers/account-data-request-sweep-neighbor'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { createDataRequest, getDataRequestById } from '@services/account-data-requests'
-import { accountLifecycle } from '@queues/account-lifecycle/queues'
+import { background } from '@queues/background/queues'
 import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import { createTestUser, makeUserDataRequestRecoverableForTest } from '@voucha/test-helpers'
 import {
@@ -57,7 +57,7 @@ describe('recoverExportRequests', () => {
       hasMore: false,
     })
 
-    const queued = await accountLifecycle.getJob(exportJobId(request))
+    const queued = await background.getJob(exportJobId(request))
     expect(queued?.data).toEqual({
       requestId: request.id,
       userId: user.id,
@@ -76,7 +76,7 @@ describe('recoverExportRequests', () => {
       hasMore: false,
     })
 
-    expect(await accountLifecycle.getJob(exportJobId(request))).toBeNull()
+    expect(await background.getJob(exportJobId(request))).toBeNull()
     expect(await neighbor.readState()).toEqual(neighbor.state)
   })
 })

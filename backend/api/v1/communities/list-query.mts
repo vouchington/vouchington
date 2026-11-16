@@ -31,7 +31,7 @@ export function parseEligiblePostType(
   return eligiblePostTypeParam
 }
 
-export const VALID_SORT_MODES = COMMUNITY_SORT_MODES
+export { COMMUNITY_SORT_MODES }
 export const VALID_LIST_TYPES = ['follow', 'mute'] as const
 export const VALID_LIST_SCOPES = ['mine'] as const
 export const VALID_FEED_CATEGORIES = ['posts', 'news', 'news_sources', 'news_topics'] as const
@@ -42,7 +42,7 @@ export const communitiesQuery = defineQueryContract({
   after: queryString(),
   member_id: queryEnum(['me']),
   eligible_post_type: queryEnum(['discussion', 'review', 'data_point']),
-  sort: queryEnum(VALID_SORT_MODES),
+  sort: queryEnum(COMMUNITY_SORT_MODES),
   list_type: queryEnum(VALID_LIST_TYPES),
   list_scope: queryEnum(VALID_LIST_SCOPES),
   feed_category: queryEnum(VALID_FEED_CATEGORIES),
@@ -66,11 +66,11 @@ export function parseCommunitiesListQuery(
   currentUser: PrivateUser | null,
 ): CommunitiesListQuery {
   const sortParam = ctx.query.sort as string | undefined
-  if (sortParam && !VALID_SORT_MODES.includes(sortParam as CommunitySortMode)) {
-    ctx.throw(400, `Invalid sort value. Must be one of: ${VALID_SORT_MODES.join(', ')}`)
+  if (sortParam && !COMMUNITY_SORT_MODES.includes(sortParam as CommunitySortMode)) {
+    ctx.throw(400, `Invalid sort value. Must be one of: ${COMMUNITY_SORT_MODES.join(', ')}`)
   }
   const sort: CommunitySortMode =
-    sortParam && VALID_SORT_MODES.includes(sortParam as CommunitySortMode)
+    sortParam && COMMUNITY_SORT_MODES.includes(sortParam as CommunitySortMode)
       ? (sortParam as CommunitySortMode)
       : 'name'
 

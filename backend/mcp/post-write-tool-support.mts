@@ -9,7 +9,7 @@ import { mcpPostSchema } from './mcp-post-output.mts'
 
 export const POST_WRITE_SCOPES = ['posts:read', 'posts:write'] as const
 export const POST_WRITE_RESULT_SCHEMA = successSchema({ post: mcpPostSchema() })
-export const POST_ID_SCHEMA = postReferenceSchema
+export { postReferenceSchema }
 
 /** Reuse the current REST input contract without changing or regenerating REST contracts. */
 export function postWriteParameters(

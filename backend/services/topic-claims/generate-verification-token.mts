@@ -43,16 +43,15 @@ export async function issueDomainVerificationToken(
     WHERE id = ${claim.id} AND claimant_user_id = ${currentUserId}
   `)
 
-  const hostname = currentHostname
   return {
     rawToken,
     dnsInstructions: {
       recordType: 'TXT',
-      hostname: `${TOPIC_CLAIM_DNS_TXT_PREFIX}.${hostname}`,
+      hostname: `${TOPIC_CLAIM_DNS_TXT_PREFIX}.${currentHostname}`,
       value: rawToken,
     },
     wellKnownInstructions: {
-      url: `https://${hostname}/.well-known/voucha-verification.txt`,
+      url: `https://${currentHostname}/.well-known/voucha-verification.txt`,
       fileContent: rawToken,
     },
   }

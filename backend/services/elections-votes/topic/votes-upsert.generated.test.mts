@@ -7,7 +7,7 @@ import {
   VOTE_AGGREGATION_TOPIC_RATING_STATS_JOB,
   VOTE_AGGREGATION_UPDATE_ELECTION_JOB,
 } from '@queues/background/enqueues/vote-aggregation-jobs'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { background } from '@queues/background/queues'
 import { getTopicElectionsByIdBatch } from './get-election-batch.mts'
 import { getTopicElectionVote } from './votes-get.mts'
 import { upsertTopicElectionVotes } from './votes-upsert.mts'
@@ -45,7 +45,7 @@ describe('votes-upsert.generated', () => {
     })
     const electionJobName = VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name
     const ratingJobName = VOTE_AGGREGATION_TOPIC_RATING_STATS_JOB.name
-    const admissions = holdQueueBulkAdmissions(voteAggregation, [
+    const admissions = holdQueueBulkAdmissions(background, [
       {
         jobName: electionJobName,
         matchesData: data =>

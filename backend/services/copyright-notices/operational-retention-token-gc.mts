@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 
 const TOKEN_GC_GRACE_MS = 60 * 60 * 1000
@@ -16,7 +16,7 @@ export function isCopyrightEmailTokenGcConflict(err: unknown): boolean {
 }
 
 export function copyrightEmailTokenGcCutoffId(now: Date): string {
-  return getMinUUIDv7ForDate(new Date(now.getTime() - TOKEN_GC_GRACE_MS))
+  return getMinUuidv7ForDate(new Date(now.getTime() - TOKEN_GC_GRACE_MS))
 }
 
 export async function deleteOrphanCopyrightEmailThreadTokens(

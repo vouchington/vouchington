@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { isDeduplicatedEnqueue, readEnqueuedJob } from '@voucha/test-helpers'
 import { holdBackgroundDomain } from '../../../../test-helpers/shared-background-worker.mts'
 import { runInsideTestWorkerProcessor as withoutFlush } from '@vouchington/worker-runtime/testing'
-import { voteAggregation } from '../queues.mts'
+import { background } from '@queues/background/queues'
 import {
   enqueueVoteWeightAgeMilestones,
   enqueueVoteWeightMembershipExpirations,
@@ -111,7 +111,7 @@ describe('vote-weight dispatcher admission', () => {
       try {
         const deduplicationId = `backfill:${dispatcher.backfillId}:${randomUUID()}`
         const root = await readEnqueuedJob(
-          voteAggregation,
+          background,
           await withoutFlush(() => dispatcher.root(deduplicationId)),
         )
         admittedJobs.push(root)
@@ -127,7 +127,7 @@ describe('vote-weight dispatcher admission', () => {
         ).toBe(true)
 
         const continuation = await readEnqueuedJob(
-          voteAggregation,
+          background,
           await withoutFlush(dispatcher.continuation),
         )
         admittedJobs.push(continuation)
@@ -150,11 +150,11 @@ describe('vote-weight dispatcher admission', () => {
       const admittedJobs: Array<{ remove: () => Promise<unknown> }> = []
       try {
         const { first, duplicate, distinct } = await withoutFlush(dispatcher.admissions)
-        const admitted = await readEnqueuedJob(voteAggregation, first)
+        const admitted = await readEnqueuedJob(background, first)
         admittedJobs.push(admitted)
         expect(isDeduplicatedEnqueue(duplicate)).toBe(true)
-        expect((await voteAggregation.getJob(admitted.id))?.timestamp).toBe(admitted.timestamp)
-        const other = await readEnqueuedJob(voteAggregation, distinct)
+        expect((await background.getJob(admitted.id))?.timestamp).toBe(admitted.timestamp)
+        const other = await readEnqueuedJob(background, distinct)
         admittedJobs.push(other)
         expect(other.id).not.toBe(admitted.id)
       } finally {
@@ -172,12 +172,12 @@ describe('vote-weight dispatcher admission', () => {
     const admittedJobs: Array<{ remove: () => Promise<unknown> }> = []
     try {
       const unstarted = await readEnqueuedJob(
-        voteAggregation,
+        background,
         await withoutFlush(() => enqueueVoteWeightFamilySourceChanges({ window, branches: {} })),
       )
       admittedJobs.push(unstarted)
       const completed = await readEnqueuedJob(
-        voteAggregation,
+        background,
         await withoutFlush(() =>
           enqueueVoteWeightFamilySourceChanges({ window, branches: { rejected_at: null } }),
         ),
@@ -223,7 +223,7 @@ describe('vote-weight dispatcher admission', () => {
 
     try {
       for (const testCase of cases) {
-        const job = await readEnqueuedJob(voteAggregation, await withoutFlush(testCase.enqueue))
+        const job = await readEnqueuedJob(background, await withoutFlush(testCase.enqueue))
         admittedJobs.push(job)
         expect(job.data).toEqual(testCase.expected)
       }

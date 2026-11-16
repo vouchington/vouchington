@@ -12,13 +12,12 @@ const DAYS_BEFORE_WINDOW = 40
 export async function seedStoryPostIndexPadding(initiatedById: string): Promise<void> {
   const { postIds, storyIds } = paddingIds()
   await using transaction = await beginTransaction()
-  const query = transaction
-  await query(
+  await transaction(
     `/* seedStoryPostIndexPadding:stories */ INSERT INTO stories (id, title)
      SELECT id, 'Story post index padding' FROM UNNEST($1::uuid[]) AS seed(id)`,
     [storyIds],
   )
-  await query(
+  await transaction(
     `/* seedStoryPostIndexPadding:posts */ INSERT INTO posts (
        id, created_via, post_type, title, created_by_id, approved_at,
        bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256)
@@ -27,13 +26,13 @@ export async function seedStoryPostIndexPadding(initiatedById: string): Promise<
      FROM UNNEST($1::uuid[]) AS seed(id)`,
     [postIds, initiatedById],
   )
-  await query(
+  await transaction(
     `/* seedStoryPostIndexPadding:links */ INSERT INTO story_posts (post_id, story_id, initiated_by_id)
      SELECT post_id, story_id, $3
      FROM UNNEST($1::uuid[], $2::uuid[]) AS seed(post_id, story_id)`,
     [postIds, storyIds, initiatedById],
   )
-  await query(`/* seedStoryPostIndexPadding:analyze */ ANALYZE posts, story_posts, stories,
+  await transaction(`/* seedStoryPostIndexPadding:analyze */ ANALYZE posts, story_posts, stories,
     rss_feed_items, rss_feed_item_sources, rss_feeds, user_suspensions, communities,
     community_members, community_post_reviews, relation__user__follow__user`)
   await transaction.commit()
@@ -45,12 +44,11 @@ export async function seedStoryPostIndexPadding(initiatedById: string): Promise<
 export async function deleteStoryPostIndexPadding(): Promise<void> {
   const { postIds, storyIds } = paddingIds()
   await using transaction = await beginTransaction()
-  const query = transaction
-  await query(
+  await transaction(
     `/* deleteStoryPostIndexPadding:posts */ DELETE FROM posts WHERE id = ANY($1::uuid[])`,
     [postIds],
   )
-  await query(
+  await transaction(
     `/* deleteStoryPostIndexPadding:stories */ DELETE FROM stories WHERE id = ANY($1::uuid[])`,
     [storyIds],
   )

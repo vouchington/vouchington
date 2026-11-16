@@ -7,13 +7,13 @@ import {
   safeUsername,
 } from '@voucha/test-helpers'
 import { createPostModerationContent } from '@services/posts/content'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 
 const DAY_MS = 86_400_000
 
 /** A post id minted far outside every lookback ceiling, unique per call. */
 const oldPostId = () =>
-  getMinUUIDv7ForDate(new Date(Date.now() - 400 * DAY_MS - Math.random() * 1e8))
+  getMinUuidv7ForDate(new Date(Date.now() - 400 * DAY_MS - Math.random() * 1e8))
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 

@@ -4,7 +4,7 @@ import { rejectNextPostgresTransactionForTest } from '@voucha/test-helpers/injec
 import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
 import { removeQueuedJobsById } from '@voucha/test-helpers/shared-queue-cleanup'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import type { CopyrightActionReconcileData } from '@queues/notifications/types'
 import { searchRecoverableCopyrightFormReviewIntakeIds } from '@services/copyright-notices'
 import { copyrightSweepConfig } from '@services/copyright-notices/work-limits'
@@ -14,7 +14,7 @@ import { copyrightActionReconcileProcessors as stages } from '../copyright-actio
 const FORMS_JOB = 'notifications.processReconcileCopyrightFormReviews'
 
 async function readFormContinuations(after: string | null) {
-  return (await readAllQueueJobs(notifications)).filter(
+  return (await readAllQueueJobs(background)).filter(
     job => job.name === FORMS_JOB && (job.data as CopyrightActionReconcileData).after === after,
   )
 }
@@ -37,7 +37,7 @@ describe('copyright action reconcile stage continuation', () => {
     onTestFinished(async () => {
       const continuations = await readFormContinuations(page.page_info.end_cursor)
       await removeQueuedJobsById(
-        notifications,
+        background,
         continuations.map(job => job.id),
       )
     })
@@ -81,7 +81,7 @@ describe('copyright action reconcile stage continuation', () => {
     onTestFinished(async () => {
       const continuations = await readFormContinuations(page.page_info.end_cursor)
       await removeQueuedJobsById(
-        notifications,
+        background,
         continuations.map(job => job.id),
       )
     })

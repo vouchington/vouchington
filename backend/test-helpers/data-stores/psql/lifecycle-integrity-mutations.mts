@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 
 import { write } from '@data-stores/psql'
-import { mintUUIDv7 } from '@modules/utils/ids'
+import { mintUuidv7 } from '@modules/utils/ids'
 import sql from 'sql-template-strings'
 
 export async function insertContradictoryImageLifecycle(userId: string): Promise<void> {
@@ -26,7 +26,7 @@ export async function insertContradictoryBedrockBatchLifecycle(): Promise<void> 
     INSERT INTO bedrock_embedding_batches (
       id, model_id, job_type, completed_at, failed_at
     ) VALUES (
-      ${mintUUIDv7()}, 'test-model', 'topics',
+      ${mintUuidv7()}, 'test-model', 'topics',
       CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
     )`)
 }
@@ -99,7 +99,7 @@ export async function rewriteTerminalDataRequest(): Promise<void> {
 }
 
 export async function rewriteTerminalBedrockBatch(): Promise<void> {
-  const id = mintUUIDv7()
+  const id = mintUuidv7()
   await write(
     sql`/* rewriteTerminalBedrockBatch:setup */
     INSERT INTO bedrock_embedding_batches (

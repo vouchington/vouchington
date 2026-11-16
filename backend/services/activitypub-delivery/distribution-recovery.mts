@@ -1,5 +1,5 @@
 import { write } from '@data-stores/psql'
-import { getMaxUUIDv7ForDate } from '@modules/utils/ids'
+import { getMaxUuidv7ForDate } from '@modules/utils/ids'
 import sql from 'sql-template-strings'
 
 export type OutboundRecoverySource = 'follows' | 'votes'
@@ -61,7 +61,7 @@ export async function listPendingOutboundDistributionPage(
   if (after && (!afterPostId || !afterVoteId)) throw new Error('Invalid vote cursor')
   // Keep a closed post window across continuations. The pending partial index supplies the
   // keyset directly, so an idle sweep does not enumerate unrelated posts.
-  const fixedUpperPostId = throughPostId ?? getMaxUUIDv7ForDate(new Date())
+  const fixedUpperPostId = throughPostId ?? getMaxUuidv7ForDate(new Date())
   const statement = sql`/* listPendingOutboundDistributionPage:votes */
     WITH pending_page AS MATERIALIZED (
       SELECT post_id, id, user_id,

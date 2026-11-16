@@ -17,7 +17,7 @@ import {
 } from '@voucha/test-helpers/entities/communities'
 import { createCommunityPostFixture } from '@voucha/test-helpers/services/posts/test-support'
 
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 
 describe('post', () => {
   describe('Post Individual Routes', () => {
@@ -137,5 +137,5 @@ describe('post', () => {
     })
   })
   // keep generated shard bindings live for typecheck
-  void (0 as unknown as typeof getMinUUIDv7ForDate)
+  void (0 as unknown as typeof getMinUuidv7ForDate)
 })

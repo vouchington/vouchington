@@ -7,7 +7,7 @@ import {
   VOTE_ENTITY_ID_COLUMN_IDENTIFIERS,
   VOTE_TABLE_IDENTIFIERS,
 } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { MINIMUM_TERMINAL_IDENTITY_RETENTION_DAYS } from '@services/ap-inbox-activities/config'
 import {
   POST_VOTE_RETENTION_TALLY_SQL,
@@ -94,8 +94,8 @@ async function cleanupOrdinarySupersededVoteBallotTable(
     VOTE_ENTITY_ID_COLUMN_IDENTIFIERS,
     'entityColumn',
   )
-  const cutoffId = getMinUUIDv7ForDate(new Date(now.getTime() - BALLOT_RETENTION_DAYS * DAY_MS))
-  const replayCutoffId = getMinUUIDv7ForDate(new Date(now.getTime() - REPLAY_RETENTION_MS))
+  const cutoffId = getMinUuidv7ForDate(new Date(now.getTime() - BALLOT_RETENTION_DAYS * DAY_MS))
+  const replayCutoffId = getMinUuidv7ForDate(new Date(now.getTime() - REPLAY_RETENTION_MS))
   await using ownedQuery = borrowedQuery ? undefined : await beginTransaction()
   const query = borrowedQuery ?? ownedQuery!
   const cursor = voteIds ? null : await lockVoteBallotCleanupCursor(query, table, cutoffId)

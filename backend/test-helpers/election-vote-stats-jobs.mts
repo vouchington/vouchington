@@ -1,5 +1,5 @@
 import { getOrCreateQueue } from '@vouchington/worker-runtime/testing'
-import { voteAggregation as electionsQueue } from '../queues/vote-aggregation/queues.mts'
+import { background as electionsQueue } from '@queues/background/queues'
 import type { ElectionJobInput } from '../queues/vote-aggregation/enqueues/types-elections.mts'
 import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB } from '../queues/background/enqueues/vote-aggregation-jobs.mts'
 import { promoteDelayedJobs } from './queue-jobs.mts'

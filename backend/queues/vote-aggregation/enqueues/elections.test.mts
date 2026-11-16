@@ -15,7 +15,7 @@ import {
   VOTE_AGGREGATION_UPDATE_ELECTION_JOB,
   type ElectionLane,
 } from '@queues/background/enqueues/vote-aggregation-jobs'
-import { voteAggregation } from '../queues.mts'
+import { background } from '@queues/background/queues'
 import type { EntityRelationElectionTable } from './types-elections.mts'
 
 /** Every production lane, so a new ElectionLane fails this file at typecheck. */
@@ -36,7 +36,7 @@ describe('election enqueue options', () => {
   async function admittedPostOptions() {
     const electionId = randomUUID()
     await enqueueBulkUpdatePostElectionVoteStats([electionId])
-    const jobs = await voteAggregation.searchJobs({
+    const jobs = await background.searchJobs({
       name: VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name,
       data: { electionId },
     })
@@ -59,7 +59,7 @@ describe('election enqueue options', () => {
   it('throttles each election ID for five seconds', async () => {
     const electionId = randomUUID()
     await enqueueBulkUpdatePostElectionVoteStats([electionId])
-    const [job] = await voteAggregation.searchJobs({
+    const [job] = await background.searchJobs({
       name: VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name,
       data: { electionId },
     })
@@ -101,7 +101,7 @@ describe('election enqueue options', () => {
         ])
         break
     }
-    const jobs = await voteAggregation.searchJobs({
+    const jobs = await background.searchJobs({
       name: VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name,
       data: { electionId },
     })
@@ -122,7 +122,7 @@ describe('election enqueue options', () => {
     await enqueueBulkUpdateEntityRelationElectionVoteStats(
       tables.map(relationTable => ({ entityRelationId: electionId, relationTable })),
     )
-    const jobs = await voteAggregation.searchJobs({
+    const jobs = await background.searchJobs({
       name: VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name,
       data: { electionId },
     })
@@ -152,7 +152,7 @@ describe('election enqueue options', () => {
     }
     await enqueueBulkUpdateEntityRelationElectionVoteStats([target])
 
-    const jobs = await voteAggregation.searchJobs({
+    const jobs = await background.searchJobs({
       name: VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name,
       data: { electionId: target.entityRelationId },
     })
@@ -178,7 +178,7 @@ describe('election enqueue call options', () => {
 
     await enqueueBulkUpdatePostElectionVoteStats([electionId], 41)
 
-    const jobs = await voteAggregation.searchJobs({
+    const jobs = await background.searchJobs({
       name: VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name,
       data: { electionId },
     })
@@ -192,7 +192,7 @@ describe('election enqueue call options', () => {
 
   it('tags a rejected admission as critical with the election context', async () => {
     const failure = new Error('election admission rejected')
-    vi.spyOn(voteAggregation, 'addBulk').mockRejectedValueOnce(failure)
+    vi.spyOn(background, 'addBulk').mockRejectedValueOnce(failure)
 
     await expect(
       enqueueBulkUpdateTopicElectionVoteStats([randomUUID(), randomUUID()]),

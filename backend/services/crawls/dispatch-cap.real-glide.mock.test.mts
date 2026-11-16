@@ -14,7 +14,7 @@ import { updateUrlHostname } from '@services/urls-hostnames/update'
 import { crawlDispatchConfig } from './work-limits.mts'
 import { dispatchCrawlUrlsPerHostname } from './dispatch-per-hostname.mts'
 import type { CrawlDispatchCursor } from '@queues/crawl-dispatch/types'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { dispatchTier1CrawlUrls, dispatchTier2CrawlUrls } from './dispatch-tier-urls.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
@@ -29,7 +29,7 @@ describe('bounded crawl URL dispatch', () => {
     await setTestRobotsTxtCache(hostname, 'User-agent: *\nAllow: /')
     const post = await createTestPost({ user: owner })
     const time = new Date(Date.UTC(2020, 0, 1) + Math.floor(Math.random() * 30_000_000_000))
-    const lowerId = getMinUUIDv7ForDate(time)
+    const lowerId = getMinUuidv7ForDate(time)
     const ids = [1, 2, 3].map(index => lowerId.slice(0, -12) + String(index).padStart(12, '0'))
     await insertTestPostRelatedUrlBatch({
       postIds: ids.map(() => post.id),
@@ -105,7 +105,7 @@ describe('bounded crawl URL dispatch', () => {
     await setTestRobotsTxtCache(hostname, 'User-agent: *\nAllow: /')
     const post = await createTestPost({ user: owner })
     const time = new Date(Date.UTC(2020, 0, 1) + Math.floor(Math.random() * 30_000_000_000))
-    const lowerId = getMinUUIDv7ForDate(time)
+    const lowerId = getMinUuidv7ForDate(time)
     const ids = [1, 2, 3].map(index => lowerId.slice(0, -12) + String(index).padStart(12, '0'))
     await insertTestPostRelatedUrlBatch({
       postIds: ids.map(() => post.id),

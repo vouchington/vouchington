@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it, vi } from 'vitest'
 import { getUrlById } from '@services/urls/get'
-import { getDateFromUUIDv7 } from '@modules/utils'
+import { getDateFromUuidv7 } from '@modules/utils'
 import {
   createTestUser,
   insertTestReferralProgram,
@@ -148,7 +148,7 @@ describe('bounded referral crawl dispatch', () => {
         }),
       ),
     )
-    expect(ids.map(id => getDateFromUUIDv7(id)?.getTime())).toEqual(idMillis)
+    expect(ids.map(id => getDateFromUuidv7(id)?.getTime())).toEqual(idMillis)
     overrideDynamicConfigFieldsForTest(referralCrawlDispatchConfig, {
       batch_size: 3,
       max_rows_per_run: 3,

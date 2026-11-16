@@ -11,7 +11,7 @@ import {
   expireClassifierRunLeaseForTest,
   getClassifierRunFacts,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
-import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
+import { POST_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/post-classifier'
 import {
   createPostClassifierExecutionFixture,
   initializePostClassifierExecutionTests,
@@ -73,7 +73,9 @@ describe('post classifier billing', () => {
         executePostClassifierRun(input, createBillingDependencies(input, fetch)),
       ).rejects.toBeInstanceOf(SpendCapBreachError)
       expect(fetch).not.toHaveBeenCalled()
-      expect((await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]).toMatchObject({
+      expect(
+        (await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SYSTEM_USERNAME))[0],
+      ).toMatchObject({
         provider_attempts_started: 0,
         lease_token: null,
       })
@@ -145,7 +147,9 @@ describe('post classifier billing', () => {
         await executePostClassifierRun({ ...input, lease: reclaimed.lease }, dependencies),
       ).toBe('replay')
       expect(fetch).toHaveBeenCalledOnce()
-      expect((await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]).toMatchObject({
+      expect(
+        (await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SYSTEM_USERNAME))[0],
+      ).toMatchObject({
         provider_attempts_started: 1,
       })
       await expect(listAiUsageRecordsForClassifierRun(input.run.runId)).resolves.toHaveLength(1)
@@ -191,13 +195,13 @@ describe('post classifier billing', () => {
         expect(await run).toBe('persisted')
         expect(fetch).toHaveBeenCalledOnce()
         await expect(listAiUsageRecordsForClassifierRun(input.run.runId)).resolves.toHaveLength(1)
-        expect((await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]).toMatchObject(
-          {
-            provider_attempts_started: 1,
-            outcomes_persisted_at: expect.any(Date),
-            terminal_failed_at: null,
-          },
-        )
+        expect(
+          (await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SYSTEM_USERNAME))[0],
+        ).toMatchObject({
+          provider_attempts_started: 1,
+          outcomes_persisted_at: expect.any(Date),
+          terminal_failed_at: null,
+        })
       })
     })
 
@@ -208,13 +212,13 @@ describe('post classifier billing', () => {
         expect(await run).toBe('terminal')
         expect(fetch).toHaveBeenCalledOnce()
         await expect(listAiUsageRecordsForClassifierRun(input.run.runId)).resolves.toHaveLength(1)
-        expect((await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]).toMatchObject(
-          {
-            provider_attempts_started: 1,
-            outcomes_persisted_at: null,
-            terminal_failure_kind: 'invalid-result',
-          },
-        )
+        expect(
+          (await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SYSTEM_USERNAME))[0],
+        ).toMatchObject({
+          provider_attempts_started: 1,
+          outcomes_persisted_at: null,
+          terminal_failure_kind: 'invalid-result',
+        })
       })
     })
   })

@@ -1,4 +1,4 @@
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 
 const DAY_MS = 86_400_000
 
@@ -10,8 +10,8 @@ export function getReportingDayBounds(day: Date | string) {
   return {
     start,
     end,
-    firstId: getMinUUIDv7ForDate(start),
-    afterLastId: getMinUUIDv7ForDate(end),
+    firstId: getMinUuidv7ForDate(start),
+    afterLastId: getMinUuidv7ForDate(end),
   }
 }
 

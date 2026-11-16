@@ -9,7 +9,6 @@ export async function seedEntityRelations(
   console.log(`Seeding ${count} entity relations (post->topic category)...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     for (let i = 0; i < count; i += 1000) {
       const batch = Math.min(1000, count - i)
       const values: unknown[] = []
@@ -37,7 +36,7 @@ export async function seedEntityRelations(
           `($${base}, $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5})`,
         )
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO relation__post__category__topic
            (id, subject_id, object_id, created_by_id, votes_score_up, votes_count_up)
          VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
@@ -57,8 +56,7 @@ export async function seedPublisherTypeRelation(): Promise<void> {
   console.log('Seeding publisher-type relation...')
   {
     await using transaction = await beginTransaction()
-    const query = transaction
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO relation__topic__publisher_type__topic
          (id, subject_id, object_id, created_by_id)
        VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
@@ -73,7 +71,6 @@ export async function seedSavedPostRelations(count = 5000): Promise<void> {
   console.log(`Seeding ${count} saved-post pagination relations...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     for (let i = 0; i < count; i += 1000) {
       const batch = Math.min(1000, count - i)
       const values: unknown[] = []
@@ -83,7 +80,7 @@ export async function seedSavedPostRelations(count = 5000): Promise<void> {
         const base = values.length - 2
         rows.push(`($${base}, $${base + 1}, $${base + 2})`)
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO relation__user__save__post
            (subject_id, object_id, created_by_id)
          VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
@@ -99,7 +96,6 @@ export async function seedFollowPostRelations(count = 5000): Promise<void> {
   console.log(`Seeding ${count} followed-post relations...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     for (let i = 0; i < count; i += 1000) {
       const batch = Math.min(1000, count - i)
       const values: unknown[] = []
@@ -111,7 +107,7 @@ export async function seedFollowPostRelations(count = 5000): Promise<void> {
         const base = values.length - 2
         rows.push(`($${base}, $${base + 1}, $${base + 2})`)
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO relation__user__follow__post
            (subject_id, object_id, created_by_id)
          VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
@@ -127,20 +123,18 @@ export async function seedFollowRelations(count = 2000): Promise<void> {
   console.log(`Seeding ${count} follow relations...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     const values: unknown[] = []
     const rows: string[] = []
     for (let i = 0; i < count; i++) {
       const subjectId = seedUuid(i % 20_000, '01')
       const objectId = seedUuid((i + 1) % 20_000, '01')
       if (subjectId === objectId) continue
-      const userId = subjectId
-      values.push(subjectId, objectId, userId)
+      values.push(subjectId, objectId, subjectId)
       const base = values.length - 2
       rows.push(`($${base}, $${base + 1}, $${base + 2})`)
     }
     if (rows.length > 0) {
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO relation__user__follow__user (subject_id, object_id, created_by_id)
          VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
         values,
@@ -154,7 +148,6 @@ export async function seedMuteBlockRelations(count = 1000): Promise<void> {
   console.log(`Seeding ${count} mute/block relations...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     const muteValues: unknown[] = []
     const muteRows: string[] = []
     const blockValues: unknown[] = []
@@ -174,14 +167,14 @@ export async function seedMuteBlockRelations(count = 1000): Promise<void> {
       }
     }
     if (muteRows.length > 0) {
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO relation__user__mute__user (subject_id, object_id, created_by_id)
          VALUES ${muteRows.join(', ')} ON CONFLICT DO NOTHING`,
         muteValues,
       )
     }
     if (blockRows.length > 0) {
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO relation__user__block__user (subject_id, object_id, created_by_id)
          VALUES ${blockRows.join(', ')} ON CONFLICT DO NOTHING`,
         blockValues,

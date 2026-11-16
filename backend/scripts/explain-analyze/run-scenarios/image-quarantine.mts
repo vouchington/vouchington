@@ -19,8 +19,11 @@ export async function runImageQuarantineScenarios(): Promise<void> {
   assert.equal(existing.rows.length, 0, 'Native image quarantine witness requires no pending work')
   assert.deepEqual(await listPendingImageQuarantinePage(), [])
   assert.deepEqual(await reconcilePendingImageQuarantines(), { reconciled: 0 })
-  const definition = OPENAI_MODERATION_RECONCILE_IMAGE_QUARANTINES_JOB
-  const job = await background.add(definition.name, {}, definition.options)
+  const job = await background.add(
+    OPENAI_MODERATION_RECONCILE_IMAGE_QUARANTINES_JOB.name,
+    {},
+    OPENAI_MODERATION_RECONCILE_IMAGE_QUARANTINES_JOB.options,
+  )
   assert.ok(job)
   try {
     assert.deepEqual(

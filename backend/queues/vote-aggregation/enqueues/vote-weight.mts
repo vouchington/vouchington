@@ -10,7 +10,7 @@ import {
   VOTE_AGGREGATION_VOTE_WEIGHT_DISPATCHER_JOB,
   type UserElectionFanOutCursor,
 } from '@queues/background/enqueues/vote-aggregation-jobs'
-import { voteAggregation } from '../queues.mts'
+import { background } from '@queues/background/queues'
 import type { ProcessRecalculateUserVoteWeightData } from './types-vote-weight.mts'
 import {
   buildBackfillDispatcherJobOptions,
@@ -128,7 +128,7 @@ const enqueueVoteWeightEvents = createBackgroundBulkEnqueue(
 export function enqueueRecalculateVoteWeightEvents(events: VoteWeightEvent[]) {
   let factoryRejected = false
   return enqueueBulkReactivatingFinished({
-    queue: voteAggregation,
+    queue: background,
     inputs: events,
     jobIdOf: event => event.jobId,
     enqueueBulk: inputs =>
@@ -180,7 +180,7 @@ export function enqueueUserElectionFanOut(
 /** Replays election targets without changing saved weights or administrator overrides. */
 export function enqueueBulkElectionUpdateReplay(userIds: string[]): EnqueueReturnType {
   return enqueueBulkReactivatingFinished({
-    queue: voteAggregation,
+    queue: background,
     inputs: userIds.map(userId => ({ userId, replayElectionsOnly: true })),
     jobIdOf: data => `voteWeight__${data.userId}__replay`,
     enqueueBulk: enqueueBulkRecalculateUserVoteWeightJobs,

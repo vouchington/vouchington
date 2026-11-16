@@ -9,11 +9,11 @@ import {
   createTestUser,
   readAllQueueJobs,
 } from '@voucha/test-helpers'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { describe, expect, it, vi } from 'vitest'
 
 function hasPostNotification(
-  jobs: Awaited<ReturnType<typeof notifications.getJobs>>,
+  jobs: Awaited<ReturnType<typeof background.getJobs>>,
   postId: string,
 ): boolean {
   return jobs.some(
@@ -35,7 +35,7 @@ describe('entity-relation notification transaction ownership', () => {
     })
 
     const pendingEnqueues: Promise<unknown>[] = []
-    trackBulkEnqueue(notifications, pendingEnqueues)
+    trackBulkEnqueue(background, pendingEnqueues)
     try {
       await runEntityRelationNotificationTestTransaction(async rollback => {
         await upsertEntityRelation(creator, relation, post, [topic], {
@@ -43,10 +43,10 @@ describe('entity-relation notification transaction ownership', () => {
           deferNotificationReconcile: true,
         })
         await settleEnqueues(pendingEnqueues)
-        expect(hasPostNotification(await readAllQueueJobs(notifications), post.id)).toBe(false)
+        expect(hasPostNotification(await readAllQueueJobs(background), post.id)).toBe(false)
       })
       await settleEnqueues(pendingEnqueues)
-      expect(hasPostNotification(await readAllQueueJobs(notifications), post.id)).toBe(false)
+      expect(hasPostNotification(await readAllQueueJobs(background), post.id)).toBe(false)
       expect(
         await getEntityRelations('post', post.id, 'category', 'topic', {
           viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
@@ -64,7 +64,7 @@ describe('entity-relation notification transaction ownership', () => {
         { commit: true },
       )
       await settleEnqueues(pendingEnqueues)
-      expect(hasPostNotification(await readAllQueueJobs(notifications), post.id)).toBe(true)
+      expect(hasPostNotification(await readAllQueueJobs(background), post.id)).toBe(true)
     } finally {
       vi.restoreAllMocks()
     }

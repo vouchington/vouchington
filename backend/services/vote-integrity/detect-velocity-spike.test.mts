@@ -9,7 +9,7 @@ import {
   YOUNG_ACCOUNT_AGE_DAYS,
 } from './config.mts'
 import { v7 as uuidv7 } from 'uuid'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 
 const AS_OF_MS = Date.UTC(2026, 1, 1, 0, 2)
 const AS_OF = new Date(AS_OF_MS)
@@ -94,7 +94,7 @@ describe('detect-velocity-spike', () => {
           postId,
           asOfMs - 86_400_000,
           voteAt,
-          offset === 0 ? getMinUUIDv7ForDate(new Date(cutoff)) : uuidv7({ msecs: voteAt }),
+          offset === 0 ? getMinUuidv7ForDate(new Date(cutoff)) : uuidv7({ msecs: voteAt }),
         )
       }
 
@@ -119,7 +119,7 @@ describe('detect-velocity-spike', () => {
       for (const offset of [-1, 0, 1]) {
         const userAt = accountCutoff + offset
         const userId =
-          offset === 0 ? getMinUUIDv7ForDate(new Date(accountCutoff)) : uuidv7({ msecs: userAt })
+          offset === 0 ? getMinUuidv7ForDate(new Date(accountCutoff)) : uuidv7({ msecs: userAt })
         await createTestUserWithId(userId, randomUsername())
         await insertTestPostVote(postId, userId, '1.2.3.4', 1, uuidv7({ msecs: asOfMs - 60_000 }))
       }

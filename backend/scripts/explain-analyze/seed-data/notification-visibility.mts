@@ -14,12 +14,11 @@ export const NOTIFICATION_VISIBILITY_SEED = {
 
 /** Historical subscription pages and live manual sends share one owned recipient. */
 export async function seedNotificationVisibility(): Promise<void> {
-  const s = NOTIFICATION_VISIBILITY_SEED
   await using q = await beginTransaction()
   await q(
     `/* seedNotificationVisibility:user */ INSERT INTO users(id,username)
     VALUES($1,'seed-notification-visibility')`,
-    [s.user],
+    [NOTIFICATION_VISIBILITY_SEED.user],
   )
   await q(
     `/* seedNotificationVisibility:posts */
@@ -29,43 +28,51 @@ export async function seedNotificationVisibility(): Promise<void> {
       CASE WHEN id=$3 THEN NULL ELSE CURRENT_TIMESTAMP END,
       decode(repeat('00',32),'hex'),decode(repeat('00',32),'hex')
     FROM UNNEST($1::uuid[]) id`,
-    [s.posts, s.user, s.posts[1]],
+    [
+      NOTIFICATION_VISIBILITY_SEED.posts,
+      NOTIFICATION_VISIBILITY_SEED.user,
+      NOTIFICATION_VISIBILITY_SEED.posts[1],
+    ],
   )
   await q(
     `/* seedNotificationVisibility:hostname */
     INSERT INTO url_hostnames(id,hostname) VALUES($1,'seed-notification-visibility.example.com')`,
-    [s.hostname],
+    [NOTIFICATION_VISIBILITY_SEED.hostname],
   )
   await q(
     `/* seedNotificationVisibility:topic */
     INSERT INTO topics(id,name,slug,created_via,bedrock_nova_multimodal_v1_content_sha256)
     VALUES($1,'Visibility seed','seed-notification-visibility','system',decode(repeat('00',32),'hex'))`,
-    [s.topic],
+    [NOTIFICATION_VISIBILITY_SEED.topic],
   )
   await q(
     `/* seedNotificationVisibility:url */
     INSERT INTO urls(id,url,hostname_id,search_params)
     VALUES($1,'https://seed-notification-visibility.example.com/feed.xml',$2,'{}'::jsonb)`,
-    [s.url, s.hostname],
+    [NOTIFICATION_VISIBILITY_SEED.url, NOTIFICATION_VISIBILITY_SEED.hostname],
   )
   await q(
     `/* seedNotificationVisibility:feed */
     INSERT INTO rss_feeds(id,rss_feed_url_id,topic_id,title,created_via)
     VALUES($1,$2,$3,'Visibility seed','system')`,
-    [s.feed, s.url, s.topic],
+    [
+      NOTIFICATION_VISIBILITY_SEED.feed,
+      NOTIFICATION_VISIBILITY_SEED.url,
+      NOTIFICATION_VISIBILITY_SEED.topic,
+    ],
   )
   await q(
     `/* seedNotificationVisibility:settings */
     INSERT INTO rss_feed_setting_changes(change_type,rss_feed_id,is_enabled,reason)
     VALUES('enablement',$1,TRUE,'owned visibility fixture'),
       ('discoverability',$1,TRUE,'owned visibility fixture')`,
-    [s.feed],
+    [NOTIFICATION_VISIBILITY_SEED.feed],
   )
   await q(
     `/* seedNotificationVisibility:guids */
     INSERT INTO rss_feed_item_guids(id,url_hostname_id,guid)
     SELECT id,$2,'seed-notification-visibility-'||id::text FROM UNNEST($1::uuid[]) id`,
-    [s.items, s.hostname],
+    [NOTIFICATION_VISIBILITY_SEED.items, NOTIFICATION_VISIBILITY_SEED.hostname],
   )
   await q(
     `/* seedNotificationVisibility:items */
@@ -73,13 +80,17 @@ export async function seedNotificationVisibility(): Promise<void> {
     SELECT id,$2,'{"title":"Visibility seed"}'::jsonb,
       CASE WHEN id=$3 THEN CURRENT_TIMESTAMP ELSE NULL END,decode(repeat('00',32),'hex')
     FROM UNNEST($1::uuid[]) id`,
-    [s.items, s.url, s.items[1]],
+    [
+      NOTIFICATION_VISIBILITY_SEED.items,
+      NOTIFICATION_VISIBILITY_SEED.url,
+      NOTIFICATION_VISIBILITY_SEED.items[1],
+    ],
   )
   await q(
     `/* seedNotificationVisibility:sources */
     INSERT INTO rss_feed_item_sources(rss_feed_id,rss_feed_item_id)
     SELECT $1,id FROM UNNEST($2::uuid[]) id`,
-    [s.feed, s.items],
+    [NOTIFICATION_VISIBILITY_SEED.feed, NOTIFICATION_VISIBILITY_SEED.items],
   )
   await q(
     `/* seedNotificationVisibility:notifications */
@@ -96,19 +107,27 @@ export async function seedNotificationVisibility(): Promise<void> {
       'Visibility seed','Visibility seed',
       CASE WHEN n<$2*3 THEN '/posts/seed-notification-visibility' ELSE '/rss-feed-items/seed-notification-visibility' END
     FROM generate_series(0,$2::int*5-1) n`,
-    [s.user, s.count, ...s.posts, ...s.items],
+    [
+      NOTIFICATION_VISIBILITY_SEED.user,
+      NOTIFICATION_VISIBILITY_SEED.count,
+      ...NOTIFICATION_VISIBILITY_SEED.posts,
+      ...NOTIFICATION_VISIBILITY_SEED.items,
+    ],
   )
   await q.commit()
 }
 
 /** Restore only owned manual targets before the harness's rollback-isolated DML plan passes. */
 export async function resetNotificationVisibilityContent(): Promise<void> {
-  const s = NOTIFICATION_VISIBILITY_SEED
   await write(
     `/* resetNotificationVisibilityContent */
     UPDATE notifications SET deleted_at=NULL,delete_reason=NULL
     WHERE user_id=$1 AND delivery_type='manual_send'
       AND (post_id=$2 OR rss_feed_item_id=$3)`,
-    [s.user, s.posts[1], s.items[1]],
+    [
+      NOTIFICATION_VISIBILITY_SEED.user,
+      NOTIFICATION_VISIBILITY_SEED.posts[1],
+      NOTIFICATION_VISIBILITY_SEED.items[1],
+    ],
   )
 }

@@ -9,7 +9,7 @@ import {
   getTestMembershipRaw,
 } from '@voucha/test-helpers'
 import { memberships } from '@queues/memberships/queues'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { background } from '@queues/background/queues'
 import { spyOnMembershipEntitlementAdmission } from '../../test-helpers/membership-entitlement-admission.mts'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { createMembership } from './create.mts'
@@ -174,10 +174,10 @@ describe('createMembership post-commit entitlement admission', () => {
       const membership = await createTestMembership({ user_id: member.id })
       const jobId = `voteWeight__${member.id}__force`
       const failure = new Error(`Owned vote-weight ${failureMode}`)
-      const originalAddBulk = voteAggregation.addBulk
-      const addBulk = vi.spyOn(voteAggregation, 'addBulk').mockImplementation(jobs => {
+      const originalAddBulk = background.addBulk
+      const addBulk = vi.spyOn(background, 'addBulk').mockImplementation(jobs => {
         if (!jobs.some(job => job.opts?.jobId === jobId))
-          return originalAddBulk.call(voteAggregation, jobs)
+          return originalAddBulk.call(background, jobs)
         return failureMode === 'factory rejection' ? Promise.reject(failure) : Promise.resolve([])
       })
       const originalWatch = GlideClient.prototype.watch

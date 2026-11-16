@@ -2,7 +2,7 @@ import { emptyModerationSummaryMetrics } from '@queues/background/enqueues/moder
 import { insertTestModerationSummaryCommunityCohort } from '@voucha/test-helpers/moderation-summary-count-fixture'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as ses from '@modules/aws/ses'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import {
   createTestUser,
   insertTestCommunity,
@@ -73,7 +73,7 @@ describe('moderator digest replacement-chain delivery', () => {
     const collection = createModerationSummaryCollection()
     collection.phase = 'discussions'
     collection.afterMembershipId = membership.id
-    collection.upperMembershipId = getMinUUIDv7ForDate(end)
+    collection.upperMembershipId = getMinUuidv7ForDate(end)
     collection.eligibleCount = 1
     collection.top = [
       {

@@ -78,21 +78,19 @@ export function ProfileLinks({ initialLinks }: Props) {
   }
   async function handleMoveUp(index: number) {
     if (index === 0) return
-    const prevLinks = links
     const newLinks = [...links]
     const moved = newLinks.splice(index, 1)[0]!
     newLinks.splice(index - 1, 0, moved)
     setLinks(newLinks)
-    await saveOrder(newLinks, prevLinks)
+    await saveOrder(newLinks, links)
   }
   async function handleMoveDown(index: number) {
     if (index === links.length - 1) return
-    const prevLinks = links
     const newLinks = [...links]
     const moved = newLinks.splice(index, 1)[0]!
     newLinks.splice(index + 1, 0, moved)
     setLinks(newLinks)
-    await saveOrder(newLinks, prevLinks)
+    await saveOrder(newLinks, links)
   }
   async function saveOrder(orderedLinks: ProfileLink[], prevLinks: ProfileLink[]) {
     setLoading(true)

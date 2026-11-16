@@ -110,9 +110,8 @@ export function useEntityBookmarkState({
   const handleToggle = async () => {
     if (isPending || !canToggle) return
     const next = !isActive
-    const requestKey = bookmarkKey
     setBookmarkState(state =>
-      state.key === requestKey ? { ...state, isActive: next, isPending: true } : state,
+      state.key === bookmarkKey ? { ...state, isActive: next, isPending: true } : state,
     )
     try {
       if (next) {
@@ -129,7 +128,7 @@ export function useEntityBookmarkState({
       }
       onChange?.(next)
     } catch (err) {
-      setBookmarkState(state => (state.key === requestKey ? { ...state, isActive: !next } : state))
+      setBookmarkState(state => (state.key === bookmarkKey ? { ...state, isActive: !next } : state))
       toast.error(
         getRelationLimitMessage(err, resolvedPredicate, t) ??
           (isRateLimitError(err)
@@ -139,7 +138,9 @@ export function useEntityBookmarkState({
               })),
       )
     } finally {
-      setBookmarkState(state => (state.key === requestKey ? { ...state, isPending: false } : state))
+      setBookmarkState(state =>
+        state.key === bookmarkKey ? { ...state, isPending: false } : state,
+      )
     }
   }
   return { isActive, isPending, canToggle, handleToggle }

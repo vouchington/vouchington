@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import sql from 'sql-template-strings'
 
 /** Indexed first rows prove intervening source days empty, including the gap after the sentinel user. */
@@ -8,7 +8,7 @@ export async function findNextReportingSourceDay(
   notBefore: Date,
   query: TransactionQuery,
 ): Promise<string> {
-  const firstId = getMinUUIDv7ForDate(notBefore)
+  const firstId = getMinUuidv7ForDate(notBefore)
   const { rows } =
     kind === 'growth'
       ? await query<{ day: string }>(sql`/* nextGrowthSourceDay */

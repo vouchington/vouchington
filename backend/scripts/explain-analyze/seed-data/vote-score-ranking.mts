@@ -14,7 +14,6 @@ export async function seedVoteScorePublisherAndPostFixture(): Promise<void> {
   const seedTopicId = seedUuid(0, '04')
   const seedUserId = seedUuid(0, '01')
   await using transaction = await beginTransaction()
-  const query = transaction
 
   for (
     let first = 1;
@@ -25,7 +24,7 @@ export async function seedVoteScorePublisherAndPostFixture(): Promise<void> {
       first + PUBLISHER_RELATION_SEED_BATCH_SIZE - 1,
       PUBLISHER_RELATION_FIXTURE_COUNT,
     )
-    await query(
+    await transaction(
       `/* seedVoteScoreRankingFixture:publisher-relations */
      INSERT INTO relation__topic__publisher_type__topic
        (subject_id, object_id, created_by_id, votes_score_up, votes_count_up)
@@ -40,13 +39,13 @@ export async function seedVoteScorePublisherAndPostFixture(): Promise<void> {
       [seedUserId, first, last],
     )
   }
-  const { rows: publisherTopics } = await query<{ id: string }>(
+  const { rows: publisherTopics } = await transaction<{ id: string }>(
     `/* seedVoteScoreRankingFixture:publisher-topic */
      SELECT id FROM topics WHERE slug = 'blog' AND deleted_at IS NULL LIMIT 1`,
   )
   const blogTopicId = publisherTopics[0]?.id
   if (!blogTopicId) throw new Error('The seeded blog publisher type topic is required')
-  await query(
+  await transaction(
     `/* seedVoteScoreRankingFixture:publisher-candidates */
      INSERT INTO relation__topic__publisher_type__topic
        (subject_id, object_id, created_by_id, votes_score_up, votes_count_up)
@@ -64,7 +63,7 @@ export async function seedVoteScorePublisherAndPostFixture(): Promise<void> {
       blogTopicId,
     ],
   )
-  await query(
+  await transaction(
     `/* seedVoteScoreRankingFixture:muted-publisher-type */
      INSERT INTO relation__user__mute__topic (subject_id, object_id, created_by_id)
      VALUES ($1, $2, $1)
@@ -73,7 +72,7 @@ export async function seedVoteScorePublisherAndPostFixture(): Promise<void> {
   )
 
   const relatedTopicIds = Array.from({ length: 12 }, (_, index) => seedUuid(2_488 + index, '04'))
-  await query(
+  await transaction(
     `/* seedVoteScoreRankingFixture:post-related-topics */
      INSERT INTO relation__post__category__topic
        (subject_id, object_id, created_by_id, votes_score_up, votes_count_up)
@@ -83,7 +82,7 @@ export async function seedVoteScorePublisherAndPostFixture(): Promise<void> {
     [seedPostId, seedUserId, relatedTopicIds],
   )
 
-  await query(
+  await transaction(
     `/* seedVoteScoreRankingFixture:analyze-publisher-and-post */
      ANALYZE relation__topic__publisher_type__topic, relation__post__category__topic`,
   )
@@ -96,11 +95,10 @@ export async function seedVoteScoreHostnameFixture(): Promise<void> {
   const seedTopicId = seedUuid(0, '04')
   const seedParentTopicId = seedUuid(500, '04')
   await using transaction = await beginTransaction()
-  const query = transaction
   // Active-topic triggers run for every row; bound each statement while preserving the full corpus.
   for (let first = 1; first <= HOSTNAME_FIXTURE_COUNT; first += HOSTNAME_SEED_BATCH_SIZE) {
     const last = Math.min(first + HOSTNAME_SEED_BATCH_SIZE - 1, HOSTNAME_FIXTURE_COUNT)
-    await query(
+    await transaction(
       `/* seedVoteScoreHostnameFixture */
      INSERT INTO url_hostnames
        (id, hostname, publicly_introduced_at, topic_id, votes_score_up, votes_count_up)
@@ -116,6 +114,6 @@ export async function seedVoteScoreHostnameFixture(): Promise<void> {
       [VOTED_HOSTNAME_COUNT, seedTopicId, seedParentTopicId, first, last],
     )
   }
-  await query(`/* seedVoteScoreHostnameFixture:analyze */ ANALYZE url_hostnames`)
+  await transaction(`/* seedVoteScoreHostnameFixture:analyze */ ANALYZE url_hostnames`)
   await transaction.commit()
 }

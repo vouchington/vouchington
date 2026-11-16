@@ -1,5 +1,5 @@
 import { read } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import type { CrawlHostnameDispatchCursor } from '@queues/crawl-dispatch/types'
 
@@ -33,7 +33,7 @@ export async function getCrawlHostnameCandidates(
       AND (uh.network_backoff_ends_at IS NULL
         OR uh.network_backoff_ends_at <= CURRENT_TIMESTAMP)
       AND uh.age_threshold_days = ${cursor.bucketDays}
-      AND uh.id < ${getMinUUIDv7ForDate(new Date(cursor.sweepStartedAt))}::uuid
+      AND uh.id < ${getMinUuidv7ForDate(new Date(cursor.sweepStartedAt))}::uuid
 `
   if (cursor.afterId) statement.append(sql` AND uh.id > ${cursor.afterId}::uuid`)
   statement.append(sql` ORDER BY uh.id LIMIT ${remaining}`)

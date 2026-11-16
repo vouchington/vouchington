@@ -16,7 +16,6 @@ import {
   updatePostModerationData,
 } from '@voucha/test-helpers'
 import { uuidBefore } from '@voucha/test-helpers/uuid-before'
-import { notifications } from '@queues/notifications/queues'
 import { background } from '@queues/background/queues'
 import { createPostModerationContent } from '@services/posts/content'
 import { getPostByAny } from '@services/posts/get'
@@ -64,7 +63,7 @@ describe('openai moderation single worker', () => {
       is_flagged_by_openai_omni_moderation: false,
     })
 
-    const notificationJobs = await readAllQueueJobs(notifications)
+    const notificationJobs = await readAllQueueJobs(background)
     expect(
       notificationJobs.some(
         job =>

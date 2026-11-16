@@ -2,7 +2,7 @@ import '@/test-helpers/i18n/mock-json-messages'
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import FeedReferralLinksMutualPage from './page'
-import { feedRouteConfigs } from '@/lib/feed-route-configs'
+import { feedRouteConfigData } from '@/lib/feed-route-config-data'
 
 const { mockFeedReferralLinksListPage } = vi.hoisted(() => ({
   mockFeedReferralLinksListPage: vi.fn<VitestLooseMock>(),
@@ -25,7 +25,7 @@ describe('FeedReferralLinksMutualPage', () => {
 
     expect(screen.getByText('mutual referral links page')).toBeDefined()
     expect(mockFeedReferralLinksListPage.mock.calls[0]![0]).toEqual({
-      config: feedRouteConfigs['referral-links/mutual'],
+      config: feedRouteConfigData['referral-links/mutual'],
     })
   })
 })

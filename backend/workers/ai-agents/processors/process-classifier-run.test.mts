@@ -5,7 +5,7 @@ import {
   classifierRunJobFor,
   dispatchApprovedClassifierPost,
   requestPostClassifierRun,
-  POST_CLASSIFIER_SLUG,
+  POST_CLASSIFIER_SYSTEM_USERNAME,
 } from '@voucha/test-helpers/classifier-run-worker'
 import {
   readClassifierRunDispatcherJobsForTest,
@@ -30,7 +30,7 @@ function runProcessAIAgent(job: unknown) {
 }
 import { processClassifierRun } from './process-classifier-run.mts'
 
-const runsOf = (postId: string) => getClassifierRunFacts(postId, POST_CLASSIFIER_SLUG)
+const runsOf = (postId: string) => getClassifierRunFacts(postId, POST_CLASSIFIER_SYSTEM_USERNAME)
 
 describe('classifier run dispatcher', () => {
   let release: (() => Promise<void>) | undefined
@@ -56,7 +56,7 @@ describe('classifier run dispatcher', () => {
     const jobs = await readClassifierRunJobsForTest(runs[0]!.id)
     expect(jobs).toHaveLength(1)
     expect(jobs[0]?.data).toMatchObject({
-      classifier: POST_CLASSIFIER_SLUG,
+      classifier: POST_CLASSIFIER_SYSTEM_USERNAME,
       postId: post.id,
       rssFeedItemId: null,
       inputSha256: inputSha256.toString('hex'),

@@ -160,7 +160,6 @@ async function seedMembershipSignals(): Promise<void> {
   const lineageId = seedUuid(sharedObservationIndex, 'a1')
   const observationId = seedUuid(sharedObservationIndex, 'a5')
   const effectiveAt = new Date(VOTE_WEIGHT_DISPATCH_ANCHOR_MS - 61_000)
-  const expiresAt = VOTE_WEIGHT_DISPATCH_WINDOW_START
   await using transaction = await beginTransaction()
   await transaction(
     `/* seedVoteWeightDispatch */ ${requested}
@@ -178,7 +177,14 @@ async function seedMembershipSignals(): Promise<void> {
        $${sharedValues.length + 2}::uuid, $${sharedValues.length + 3}::uuid,
        $${sharedValues.length + 4}::timestamptz, $${sharedValues.length + 5}::timestamptz
      FROM requested ON CONFLICT (membership_source_id) DO NOTHING`,
-    [...sharedValues, lineageId, observationId, productId, effectiveAt, expiresAt],
+    [
+      ...sharedValues,
+      lineageId,
+      observationId,
+      productId,
+      effectiveAt,
+      VOTE_WEIGHT_DISPATCH_WINDOW_START,
+    ],
   )
   await transaction(
     `/* seedVoteWeightDispatch */ ${requested}
@@ -187,7 +193,7 @@ async function seedMembershipSignals(): Promise<void> {
      SELECT membership_id, user_id, source_id, $${sharedValues.length + 1}::uuid,
        $${sharedValues.length + 2}::timestamptz, $${sharedValues.length + 3}::timestamptz
      FROM requested ON CONFLICT (id) DO NOTHING`,
-    [...sharedValues, productId, effectiveAt, expiresAt],
+    [...sharedValues, productId, effectiveAt, VOTE_WEIGHT_DISPATCH_WINDOW_START],
   )
   await transaction.commit()
 }

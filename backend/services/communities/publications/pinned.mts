@@ -123,13 +123,12 @@ export async function setPinnedPosts(
     pins = rows as CommunityPinnedPost[]
   }
   await query.commit()
-  const oldPins = prevPins
 
   // Log pin/unpin per changed post
-  const oldSet = new Set(oldPins)
+  const oldSet = new Set(prevPins)
   const newSet = new Set(postIds)
   const pinned = postIds.filter(id => !oldSet.has(id))
-  const unpinned = oldPins.filter((id: string) => !newSet.has(id))
+  const unpinned = prevPins.filter((id: string) => !newSet.has(id))
 
   await recordModeratorActions(currentUser.id, [
     ...pinned.map(postId => ({ actionType: 'pin' as const, communityId, postId })),

@@ -8,7 +8,7 @@ import {
 } from '@queues/background/enqueues/account-lifecycle-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import { accountLifecycle } from '../queues.mts'
+import { background } from '@queues/background/queues'
 
 const RECOVERY_INTERVAL_MS = 300_000
 
@@ -35,7 +35,7 @@ const enqueueBulkExportRequests = createBackgroundBulkEnqueue(
  */
 export function enqueueOrReactivateBulkExportRequests(requests: ExportRequestData[]) {
   return enqueueBulkReactivatingFinished({
-    queue: accountLifecycle,
+    queue: background,
     inputs: requests,
     jobIdOf: exportRequestJobId,
     enqueueBulk: enqueueBulkExportRequests,

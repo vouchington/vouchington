@@ -1,4 +1,4 @@
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 
 /** Case-local indexed age probes; paged legal and business proofs run before this statement. */
@@ -6,10 +6,10 @@ export function copyrightOperationalThreadEligibleSql(cutoff: Date, noticeId: st
   return sql`/* recheckCopyrightThreadCaseEligibility */
     SELECT notice.id FROM copyright_notices notice
     WHERE notice.id = ${noticeId}
-      AND notice.id < ${getMinUUIDv7ForDate(new Date(cutoff.getTime() + 1))}::uuid
+      AND notice.id < ${getMinUuidv7ForDate(new Date(cutoff.getTime() + 1))}::uuid
       AND NOT EXISTS (SELECT 1 FROM copyright_notice_lifecycle_changes event
         WHERE event.copyright_notice_id = notice.id
-          AND event.id >= ${getMinUUIDv7ForDate(new Date(cutoff.getTime() + 1))}::uuid
+          AND event.id >= ${getMinUuidv7ForDate(new Date(cutoff.getTime() + 1))}::uuid
           AND event.change_type <> 'media_delivery_registry_replayed')
       AND NOT EXISTS (SELECT 1 FROM copyright_notice_delivery_work_items intent
         WHERE intent.copyright_notice_id = notice.id AND intent.updated_at > ${cutoff})

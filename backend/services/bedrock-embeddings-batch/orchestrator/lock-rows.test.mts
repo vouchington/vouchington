@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { mintUUIDv7 } from '@modules/utils/ids'
+import { mintUuidv7 } from '@modules/utils/ids'
 import { createTestUserDirect, insertTestTopic } from '@voucha/test-helpers'
 import { mergeTopicForTest } from '@voucha/test-helpers/entities/topics/deletion'
 import { describe, expect, it } from 'vitest'
@@ -28,7 +28,7 @@ describe('topic embedding batch admission (real PG)', () => {
     try {
       await expect(
         insertBatchAndLockRows({
-          batchId: mintUUIDv7(),
+          batchId: mintUuidv7(),
           jobType: 'topics',
           entityCount: 2,
           entityIdsFilePath: filePath,

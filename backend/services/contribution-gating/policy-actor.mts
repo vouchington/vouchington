@@ -1,4 +1,4 @@
-import { getDateFromUUIDv7 } from '@modules/utils/ids'
+import { getDateFromUuidv7 } from '@modules/utils/ids'
 import { CONTRIBUTION_GATE_ACCOUNT_AGE_MS } from './config.mts'
 import type { ContributionLimitMembershipPlan, ContributionLimitTier } from './limit-types.mts'
 
@@ -16,7 +16,7 @@ export function createContributionPolicyActor(
 ): ContributionPolicyActor {
   if (membershipPlan === 'pro') return createActor('pro')
   if (membershipPlan === 'plus') return createActor('plus')
-  const createdAt = getDateFromUUIDv7(userId)
+  const createdAt = getDateFromUuidv7(userId)
   return createActor(
     createdAt !== null && now - createdAt.getTime() < CONTRIBUTION_GATE_ACCOUNT_AGE_MS
       ? 'just_joined'

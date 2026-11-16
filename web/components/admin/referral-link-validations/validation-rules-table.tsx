@@ -46,12 +46,11 @@ export function ValidationRulesTable({ validationId, initialRules }: ValidationR
 
   async function confirmDelete() {
     if (!pendingDeleteId) return
-    const ruleId = pendingDeleteId
     setPendingDeleteId(null)
-    setDeletingId(ruleId)
+    setDeletingId(pendingDeleteId)
     try {
-      await deleteReferralLinkValidationRule(validationId, ruleId)
-      setRules(prev => prev.filter(r => r.id !== ruleId))
+      await deleteReferralLinkValidationRule(validationId, pendingDeleteId)
+      setRules(prev => prev.filter(r => r.id !== pendingDeleteId))
       onSuccess(t('extracted.referralLinkValidations.validationRulesTable.ruleDeleted_92e561e3'))
     } catch (err) {
       onError(err, {

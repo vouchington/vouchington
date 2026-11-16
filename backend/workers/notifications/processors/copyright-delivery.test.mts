@@ -11,7 +11,7 @@ import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
 import { encodeUuidCursorBefore } from '@voucha/test-helpers/modules/pagination/uuid-cursors'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { emails } from '@queues/emails/queues'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { createOutboundCopyrightCorrespondence } from '@services/copyright-notices/correspondence'
 import { createCopyrightDeliveryIntent } from '@services/copyright-notices/delivery-intents'
 import { copyrightSweepConfig } from '@services/copyright-notices/work-limits'
@@ -95,7 +95,7 @@ async function createEmailIntent() {
   })
 }
 
-async function readJobsFor(queue: typeof notifications, intentId: string) {
+async function readJobsFor(queue: typeof background, intentId: string) {
   return (await readAllQueueJobs(queue))
     .filter(job => (job.data as { intentId?: string }).intentId === intentId)
     .map(job => ({ name: job.name, data: job.data as unknown }))
@@ -122,7 +122,7 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
       }),
     ).resolves.toMatchObject({ enqueued: 2 })
 
-    await expect(readJobsFor(notifications, inApp.id)).resolves.toEqual([
+    await expect(readJobsFor(background, inApp.id)).resolves.toEqual([
       { name: 'notifications.processDeliverCopyrightNotice', data: { intentId: inApp.id } },
     ])
     await expect(readJobsFor(emails, email.id)).resolves.toEqual([
@@ -141,11 +141,11 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
     await createInAppIntent()
     await createEmailIntent()
     const continuations: { pending?: string[]; cursors?: Record<string, unknown> }[] = []
-    const add = notifications.add
-    vi.spyOn(notifications, 'add').mockImplementation((name, ...args) => {
+    const add = background.add
+    vi.spyOn(background, 'add').mockImplementation((name, ...args) => {
       if (name === 'notifications.processReconcileCopyrightDeliveryIntents')
         continuations.push(args[0] as (typeof continuations)[number])
-      return add.call(notifications, name, ...args)
+      return add.call(background, name, ...args)
     })
 
     await expect(
@@ -159,13 +159,13 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
     expect(continuations[0]!.cursors).toEqual({
       in_app: encodeUuidCursorBefore(uuidAfter(inApp.id)),
     })
-    const queued = (await readAllQueueJobs(notifications)).filter(
+    const queued = (await readAllQueueJobs(background)).filter(
       job =>
         job.opts.deduplication?.id ===
         `copyright-delivery-reconciliation:${JSON.stringify(continuations[0])}`,
     )
     expect(queued.map(job => job.data)).toEqual([continuations[0]])
-    await expect(readJobsFor(notifications, inApp.id)).resolves.toEqual([
+    await expect(readJobsFor(background, inApp.id)).resolves.toEqual([
       { name: 'notifications.processDeliverCopyrightNotice', data: { intentId: inApp.id } },
     ])
 
@@ -184,8 +184,8 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
     await expect(readJobsFor(emails, email.id)).resolves.toEqual([
       { name: 'processSendCopyrightNoticeEmail', data: { intentId: email.id } },
     ])
-    await expect(readJobsFor(notifications, email.id)).resolves.toEqual([])
-    await expect(readJobsFor(notifications, inApp.id)).resolves.toHaveLength(1)
+    await expect(readJobsFor(background, email.id)).resolves.toEqual([])
+    await expect(readJobsFor(background, inApp.id)).resolves.toHaveLength(1)
   })
 
   it('reports nothing to enqueue when no intent follows the cursors', async () => {
@@ -210,7 +210,7 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
     })
     const inApp = await createInAppIntent()
     const enqueueFailure = new Error('enqueue failed')
-    vi.spyOn(notifications, 'addBulk').mockRejectedValue(enqueueFailure)
+    vi.spyOn(background, 'addBulk').mockRejectedValue(enqueueFailure)
 
     const failure = await processReconcileCopyrightDeliveryIntents({
       pending: ['in_app', 'email'],
@@ -224,7 +224,7 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
     expect(errors).toHaveLength(2)
     expect(errors).toContain(enqueueFailure)
     expect(errors.map(error => error.message)).toContain('Invalid copyright delivery intent cursor')
-    await expect(readJobsFor(notifications, inApp.id)).resolves.toEqual([])
+    await expect(readJobsFor(background, inApp.id)).resolves.toEqual([])
   })
 })
 

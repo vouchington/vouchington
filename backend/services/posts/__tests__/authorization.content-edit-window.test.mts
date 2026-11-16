@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createTestUser, insertTestPost } from '@voucha/test-helpers'
-import { getDateFromUUIDv7 } from '@modules/utils/ids'
+import { getDateFromUuidv7 } from '@modules/utils/ids'
 import { POST_CONTENT_EDIT_WINDOW_EXPIRED } from '@modules/on-error/error-codes'
 import { getPrivateUserByAny } from '@services/users/get'
 import type { PrivateUser } from '@services/users/types'
@@ -42,7 +42,7 @@ describe('post content edit window', () => {
     })
     const post = await getPostByAny(postId)
     if (!post) throw new Error('Expected persisted post')
-    expect(getDateFromUUIDv7(post.id)?.getTime()).toBe(createdAt.getTime())
+    expect(getDateFromUuidv7(post.id)?.getTime()).toBe(createdAt.getTime())
 
     const edge = createdAt.getTime() + ONE_DAY_MS
     expect(isPostContentEditable(creator, post, edge - 1)).toBe(true)
@@ -61,7 +61,7 @@ describe('post content edit window', () => {
     expect(isPostContentEditable(admin, post, edge + 1)).toBe(true)
     expect(() => assertPostContentEditable(admin, post, edge + 1)).not.toThrow()
     const nonV7Post = { ...post, id: randomUUID() }
-    expect(getDateFromUUIDv7(nonV7Post.id)).toBeNull()
+    expect(getDateFromUuidv7(nonV7Post.id)).toBeNull()
     expect(isPostContentEditable(creator, nonV7Post, edge + 1)).toBe(true)
     expect(() => assertPostContentEditable(creator, nonV7Post, edge + 1)).not.toThrow()
   })

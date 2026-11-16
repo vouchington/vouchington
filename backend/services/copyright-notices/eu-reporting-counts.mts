@@ -1,5 +1,5 @@
 import { read, type QueryExecutor } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type {
@@ -57,7 +57,7 @@ export async function readExistingEuCounts(
   queryExecutor: QueryExecutor = read,
 ): Promise<EuCounts> {
   if (noticeIds?.length === 0) return emptyEuCounts()
-  const [from, to] = [getMinUUIDv7ForDate(start), getMinUUIDv7ForDate(end)]
+  const [from, to] = [getMinUuidv7ForDate(start), getMinUuidv7ForDate(end)]
   const query = sql`/* readExistingEuCopyrightCounts */
     SELECT
       (SELECT count(*)::integer FROM copyright_territorial_notice_receipts receipt

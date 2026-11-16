@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { parseCsvRows } from '@modules/csv'
-import { mintUUIDv7 } from '@modules/utils/ids'
+import { mintUuidv7 } from '@modules/utils/ids'
 import { upsertSystemUser } from '@services/users/system-users'
 import { getPrivateUserByAny } from '@services/users/get'
 import { processTopicRow } from './process-topic-row.mts'
@@ -14,7 +14,7 @@ const SEED_DIR = join(import.meta.dirname, '..', '..', '..', 'seed')
 
 function makeSyntheticRow(inputData: Record<string, string>, rowIndex: number): ImportRow {
   return {
-    id: mintUUIDv7(),
+    id: mintUuidv7(),
     batch_id: '',
     row_index: rowIndex,
     input_data: inputData as Record<string, unknown>,

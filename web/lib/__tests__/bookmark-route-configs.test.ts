@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { MessageKey } from '@ts-shared/ui-messages'
 import { NAV_INTENTS } from '@/lib/navigation/intents'
-import { bookmarkRouteConfigs, getBookmarkCrossLinks } from '@/lib/bookmark-route-configs'
+import { getBookmarkCrossLinks } from '@/lib/bookmark-route-configs'
+import { bookmarkRouteConfigData } from '@/lib/bookmark-route-config-data'
 
 // This suite checks structural parity of the config data, not translated output, so an
 // identity translator is sufficient — it avoids depending on the message catalog.
@@ -9,7 +10,7 @@ const identityT = (key: MessageKey): string => key
 
 describe('bookmarkRouteConfigs parity', () => {
   it('all paths start with /my/', () => {
-    for (const [, config] of Object.entries(bookmarkRouteConfigs)) {
+    for (const [, config] of Object.entries(bookmarkRouteConfigData)) {
       expect(config.path).toMatch(/^\/my\//)
     }
   })
@@ -27,21 +28,21 @@ describe('bookmarkRouteConfigs parity', () => {
       'import-export',
       null,
     ])
-    for (const [, config] of Object.entries(bookmarkRouteConfigs)) {
+    for (const [, config] of Object.entries(bookmarkRouteConfigData)) {
       expect(validFamilies.has(config.family)).toBe(true)
     }
   })
 
   it('every family with ≥2 members produces a dropdown', () => {
     const familyCounts = new Map<string, number>()
-    for (const config of Object.values(bookmarkRouteConfigs)) {
+    for (const config of Object.values(bookmarkRouteConfigData)) {
       if (!config.family) continue
       familyCounts.set(config.family, (familyCounts.get(config.family) ?? 0) + 1)
     }
     for (const [family, count] of familyCounts) {
       if (count < 2) continue
       // Sample the first member of this family
-      const member = Object.values(bookmarkRouteConfigs).find(c => c.family === family)!
+      const member = Object.values(bookmarkRouteConfigData).find(c => c.family === family)!
       const links = getBookmarkCrossLinks(identityT, member.family, member.path)
       expect(links.length).toBeGreaterThanOrEqual(2)
     }
@@ -57,7 +58,7 @@ describe('bookmarkRouteConfigs parity', () => {
       '/my/friend-recommendations', // find-friends page (friends intent)
       '/my/lists', // lists management page (lists intent) — not a bookmark relation page
     ])
-    const registryPaths = new Set(Object.values(bookmarkRouteConfigs).map(c => c.path))
+    const registryPaths = new Set(Object.values(bookmarkRouteConfigData).map(c => c.path))
     const missing: string[] = []
     for (const intent of NAV_INTENTS) {
       for (const group of intent.groups) {
@@ -75,7 +76,7 @@ describe('bookmarkRouteConfigs parity', () => {
   })
 
   it('routeKey paths match their keys', () => {
-    for (const [key, config] of Object.entries(bookmarkRouteConfigs)) {
+    for (const [key, config] of Object.entries(bookmarkRouteConfigData)) {
       expect(config.path).toBe(`/my/${key}`)
     }
   })
@@ -93,7 +94,7 @@ describe('bookmarkRouteConfigs parity', () => {
   })
 
   it('singleton configs (family null) do not self-reference in breadcrumbs', () => {
-    for (const [, config] of Object.entries(bookmarkRouteConfigs)) {
+    for (const [, config] of Object.entries(bookmarkRouteConfigData)) {
       if (config.family !== null) continue
       expect(config.breadcrumb.path).not.toBe(config.path)
     }

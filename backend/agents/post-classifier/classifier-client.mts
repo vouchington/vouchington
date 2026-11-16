@@ -7,7 +7,7 @@ import {
   type StructuredDecisionFetch,
   type StructuredDecisionModelSelection,
 } from '@modules/structured-decisions'
-import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
+import { POST_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/post-classifier'
 
 type PostClassifierProviderAttemptHook = NonNullable<
   StructuredDecisionAttemptHooks['beforeAttempt']
@@ -42,7 +42,7 @@ export function createPostClassifierClient(
     apiKey: structuredDecisionApiKey(input.selection.provider, options.apiKey),
     fetch: options.fetch,
     hooks: createStructuredDecisionBillingHooks({
-      workload: POST_CLASSIFIER_SLUG,
+      workload: POST_CLASSIFIER_SYSTEM_USERNAME,
       classifierRunId: input.classifierRunId,
       postId: input.postId,
       communityId: input.communityId,

@@ -7,7 +7,7 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { voteWeightWorkConfig } from '@services/vote-weight/work-limits'
 import { gatherVoteWeightFactors } from '@services/vote-weight/gather-factors'
 import { calculateVoteWeight } from '@services/vote-weight/calculate'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { background } from '@queues/background/queues'
 import { processRecalculateUserVoteWeight, processVoteWeightDirtyMarkers } from './vote-weight.mts'
 
 describe('vote weight dispatcher processor', () => {
@@ -29,7 +29,7 @@ describe('vote weight dispatcher processor', () => {
     expect((await fixture.getUser())?.vote_weight_recalculated_at).toBeNull()
 
     await processVoteWeightDirtyMarkers({ afterId: fixture.afterId })
-    const job = await voteAggregation.getJob(`voteWeight__${fixture.userId}__dirtyMarker`)
+    const job = await background.getJob(`voteWeight__${fixture.userId}__dirtyMarker`)
     expect(job?.data).toMatchObject({ userId: fixture.userId })
     await processRecalculateUserVoteWeight({ userId: fixture.userId })
 

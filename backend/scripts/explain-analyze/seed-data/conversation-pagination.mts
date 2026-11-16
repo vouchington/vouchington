@@ -8,7 +8,6 @@ export async function seedConversationPaginationRows(count = 1000): Promise<void
 
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     for (let offset = 0; offset < count; offset += 500) {
       const batch = Math.min(500, count - offset)
       const directValues: unknown[] = []
@@ -33,12 +32,12 @@ export async function seedConversationPaginationRows(count = 1000): Promise<void
           `($${base}, 'modmail', $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4})`,
         )
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO conversations (id, channel_type, created_by_id, last_activity_at)
          VALUES ${directRows.join(', ')} ON CONFLICT DO NOTHING`,
         directValues,
       )
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO conversations (
            id, channel_type, community_id, subject_user_id, created_by_id, last_activity_at
          ) VALUES ${modmailRows.join(', ')} ON CONFLICT DO NOTHING`,
@@ -51,7 +50,6 @@ export async function seedConversationPaginationRows(count = 1000): Promise<void
 
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     for (let offset = 0; offset < count; offset += 500) {
       const batch = Math.min(500, count - offset)
       const values: unknown[] = []
@@ -61,7 +59,7 @@ export async function seedConversationPaginationRows(count = 1000): Promise<void
         const base = values.length - 1
         rows.push(`($${base}, $${base + 1}, 'owner', 1)`)
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO conversation_participants (
            conversation_id, user_id, role, participant_slot
          ) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,

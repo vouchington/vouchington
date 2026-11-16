@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { createCopyrightNoticeSchemaFixture } from '@voucha/test-helpers/data-stores/psql/copyright-notice-schema'
 import {
   positionCopyrightOperationalCursor,
@@ -135,7 +135,7 @@ describe('copyright operational thread retention', () => {
     const fresh = await createRetentionParsedEmail('fresh-after-retirement')
     await seedCopyrightThreadRetirement(
       notice.noticeId,
-      getMinUUIDv7ForDate(new Date(Date.now() - 180 * DAY_MS)),
+      getMinUuidv7ForDate(new Date(Date.now() - 180 * DAY_MS)),
     )
     await expect(
       linkCopyrightEmailIntakeToNotice({
