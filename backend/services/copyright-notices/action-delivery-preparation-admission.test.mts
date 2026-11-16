@@ -1,7 +1,6 @@
 import { readTestCopyrightGuestEventClocks } from '@voucha/test-helpers/copyright-guest-filing-constraints'
-import { beginTransaction } from '@data-stores/psql'
+import { openTestCopyrightPreparationTransaction } from '@voucha/test-helpers/copyright-preparation-transaction'
 import { markImageModerationFlagged } from '@voucha/test-helpers'
-import { readCopyrightActionPreparation } from './action-delivery-preparation-facts.mts'
 import { prepareUnavailableCopyrightRestore } from './action-delivery-preparation-unavailable.mts'
 import { withCopyrightPreparationTransaction } from './action-delivery-preparation-admission.mts'
 import {
@@ -89,10 +88,13 @@ describe('copyright preparation denial receipt', () => {
     await markImageModerationFlagged(scene.target.image_id)
     const claimed = await claimCopyrightActionIntent(scene.restore.id, scene.restorationAt)
     if (!claimed) throw new Error('Restore claim missing')
-    await using query = await beginTransaction()
-    const legal = await readCopyrightActionPreparation(claimed.id, claimed.lease_token, query)
+    await using prepared = await openTestCopyrightPreparationTransaction(
+      claimed.id,
+      claimed.lease_token,
+    )
+    const { query, legal } = prepared
     const current = await getImagePlacementForCopyright(scene.target.placement_id)
-    if (!legal || !current) throw new Error('Restore facts missing')
+    if (!current) throw new Error('Restore placement missing')
     await expect(
       failCopyrightActionIntent({
         intentId: claimed.id,
@@ -137,8 +139,11 @@ describe('copyright preparation denial receipt', () => {
     if (!claimed) throw new Error('Restore claim missing')
     let legal
     {
-      await using query = await beginTransaction()
-      legal = await readCopyrightActionPreparation(claimed.id, claimed.lease_token, query)
+      await using prepared = await openTestCopyrightPreparationTransaction(
+        claimed.id,
+        claimed.lease_token,
+      )
+      legal = prepared.legal
     }
     if (!legal) throw new Error('Restore facts missing')
     await failCopyrightActionIntent({
