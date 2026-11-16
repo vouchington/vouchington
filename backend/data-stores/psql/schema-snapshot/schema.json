@@ -1874,7 +1874,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_repeat_infringer_incident()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright repeat-infringer incidents are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.account_user_id IS DISTINCT FROM OLD.account_user_id\n    OR NEW.copyright_notice_id IS DISTINCT FROM OLD.copyright_notice_id THEN\n    RAISE EXCEPTION 'copyright repeat-infringer incident identity is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_copyright_restriction_assessment_scope": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_restriction_assessment_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND NEW.authorizing_assessment_id IS DISTINCT FROM OLD.authorizing_assessment_id THEN\n    RAISE EXCEPTION 'copyright restriction authorizing assessment is immutable'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF NOT EXISTS (\n    SELECT 1\n    FROM copyright_notice_submission_assessment_identities assessment\n    JOIN copyright_notice_submissions submission\n      ON submission.id = assessment.copyright_notice_submission_id\n    WHERE assessment.id = NEW.authorizing_assessment_id\n      AND assessment.copyright_notice_id = (\n        SELECT target.copyright_notice_id FROM copyright_notice_targets target\n        WHERE target.id = NEW.copyright_notice_target_id\n      )\n      AND submission.current_assessment_identity_id = assessment.id\n      AND submission.current_assessment_is_substantially_compliant\n      AND submission.kind = 'notice'\n      AND (\n        submission.source_kind <> 'guest_form'\n        OR EXISTS (\n          SELECT 1\n          FROM copyright_notice_form_intakes intake\n          JOIN copyright_notice_form_intake_reviews review\n            ON review.copyright_notice_form_intake_id = intake.id\n          WHERE intake.copyright_notice_submission_id = submission.id\n            AND review.is_accepted\n        )\n      )\n  ) THEN\n    RAISE EXCEPTION 'copyright restriction requires a current compliant notice assessment in the same case'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_restriction_assessment_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND ROW(NEW.authorizing_assessment_id, NEW.copyright_notice_submission_id)\n    IS DISTINCT FROM ROW(OLD.authorizing_assessment_id, OLD.copyright_notice_submission_id) THEN\n    RAISE EXCEPTION 'copyright restriction authorizing source is immutable'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.copyright_notice_submission_id IS NOT NULL THEN\n    IF NOT EXISTS (\n      SELECT 1 FROM copyright_notice_submissions submission\n      JOIN copyright_notice_targets target ON target.copyright_notice_id = submission.copyright_notice_id\n      JOIN copyright_notices notice ON notice.id = submission.copyright_notice_id\n      WHERE notice.jurisdiction = 'us_dmca' AND submission.id = NEW.copyright_notice_submission_id\n        AND submission.kind = 'court_or_ccb_hold'\n        AND target.id = NEW.copyright_notice_target_id\n    ) THEN\n      RAISE EXCEPTION 'copyright filing restriction requires a court or CCB submission in the same case'\n        USING ERRCODE = 'check_violation';\n    END IF;\n    RETURN NEW;\n  END IF;\n  IF NOT EXISTS (\n    SELECT 1\n    FROM copyright_notice_submission_assessment_identities assessment\n    JOIN copyright_notice_submissions submission\n      ON submission.id = assessment.copyright_notice_submission_id\n    WHERE assessment.id = NEW.authorizing_assessment_id\n      AND assessment.copyright_notice_id = (\n        SELECT target.copyright_notice_id FROM copyright_notice_targets target\n        WHERE target.id = NEW.copyright_notice_target_id\n      )\n      AND submission.current_assessment_identity_id = assessment.id\n      AND submission.current_assessment_is_substantially_compliant\n      AND submission.kind = 'notice'\n      AND (\n        submission.source_kind <> 'guest_form'\n        OR EXISTS (\n          SELECT 1\n          FROM copyright_notice_form_intakes intake\n          JOIN copyright_notice_form_intake_reviews review\n            ON review.copyright_notice_form_intake_id = intake.id\n          WHERE intake.copyright_notice_submission_id = submission.id\n            AND review.is_accepted\n        )\n      )\n  ) THEN\n    RAISE EXCEPTION 'copyright restriction requires a current compliant notice assessment in the same case'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_copyright_restriction_lifecycle": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_restriction_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright restrictions are retained legal records' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(OLD.copyright_notice_target_id, OLD.imposed_at, OLD.is_authorizing_assessment_automated)\n    IS DISTINCT FROM ROW(NEW.copyright_notice_target_id, NEW.imposed_at, NEW.is_authorizing_assessment_automated)\n    OR (OLD.imposed_by_id IS DISTINCT FROM NEW.imposed_by_id AND NEW.imposed_by_id IS NOT NULL) THEN\n    RAISE EXCEPTION 'copyright restriction origin is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.lifted_at IS NOT NULL\n    AND (OLD.lifted_at IS DISTINCT FROM NEW.lifted_at\n      OR (OLD.lifted_by_id IS DISTINCT FROM NEW.lifted_by_id AND NEW.lifted_by_id IS NOT NULL)) THEN\n    RAISE EXCEPTION 'copyright restriction lift is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.administrator_lift_decided_at IS NOT NULL\n    AND ROW(OLD.administrator_lift_decided_at, OLD.administrator_lift_decided_by_id,\n      OLD.administrator_lift_rationale_ciphertext)\n      IS DISTINCT FROM ROW(NEW.administrator_lift_decided_at, NEW.administrator_lift_decided_by_id,\n        NEW.administrator_lift_rationale_ciphertext)\n    AND NOT fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN\n    RAISE EXCEPTION 'copyright administrator lift decision is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.administrator_lift_decided_at IS NULL\n    AND NEW.administrator_lift_decided_at IS NOT NULL\n    AND NEW.administrator_lift_rationale_ciphertext IS NULL THEN\n    RAISE EXCEPTION 'administrator lift decision requires rationale' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.human_reviewed_at IS NOT NULL\n    AND (ROW(OLD.human_reviewed_at, OLD.human_review_action)\n      IS DISTINCT FROM ROW(NEW.human_reviewed_at, NEW.human_review_action)\n      OR (OLD.human_reviewed_by_id IS DISTINCT FROM NEW.human_reviewed_by_id\n        AND NEW.human_reviewed_by_id IS NOT NULL)) THEN\n    RAISE EXCEPTION 'copyright restriction human review is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.human_reviewed_at IS NULL\n    AND NEW.human_reviewed_at IS NOT NULL\n    AND NEW.human_reviewed_by_id IS NULL\n    AND NOT (\n      NEW.human_review_action = 'reverse'\n      AND NEW.is_authorizing_assessment_automated\n      AND EXISTS (\n        SELECT 1 FROM copyright_notice_submission_assessment_identities assessment\n        JOIN copyright_notice_submissions submission\n          ON submission.id = assessment.copyright_notice_submission_id\n        JOIN copyright_notice_form_intakes intake\n          ON intake.copyright_notice_submission_id = submission.id\n        JOIN copyright_notice_form_intake_reviews review\n          ON review.copyright_notice_form_intake_id = intake.id\n        WHERE assessment.id = NEW.authorizing_assessment_id\n          AND assessment.copyright_notice_id = NEW.copyright_notice_id\n          AND NOT review.is_accepted AND review.reviewed_by_id IS NULL\n      )\n    ) THEN\n    RAISE EXCEPTION 'copyright restriction human review requires an identified actor' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -45344,6 +45344,8 @@
     "copyright_restrictions": {
       "checkConstraints": {
         "chk_copyright_restrictions__administrator_lift": "CHECK ((((administrator_lift_decided_at IS NULL) AND (administrator_lift_decided_by_id IS NULL) AND (administrator_lift_rationale_ciphertext IS NULL)) OR ((administrator_lift_decided_at IS NOT NULL) AND (administrator_lift_decided_by_id IS NOT NULL) AND ((administrator_lift_rationale_ciphertext IS NULL) OR ((char_length(administrator_lift_rationale_ciphertext) >= 1) AND (char_length(administrator_lift_rationale_ciphertext) <= 1048576))))))",
+        "chk_copyright_restrictions__authorizing_source": "CHECK ((((authorizing_assessment_id IS NOT NULL) AND (copyright_notice_submission_id IS NULL)) OR ((authorizing_assessment_id IS NULL) AND (copyright_notice_submission_id IS NOT NULL))))",
+        "chk_copyright_restrictions__filing_assessment_automation": "CHECK (((copyright_notice_submission_id IS NULL) OR (NOT is_authorizing_assessment_automated)))",
         "copyright_restrictions_check": "CHECK (((lifted_at IS NULL) OR (lifted_at >= imposed_at)))",
         "copyright_restrictions_check1": "CHECK (((human_reviewed_at IS NULL) OR (human_reviewed_at >= imposed_at)))",
         "copyright_restrictions_check2": "CHECK ((((human_reviewed_at IS NULL) AND (human_review_action IS NULL) AND (human_reviewed_by_id IS NULL)) OR ((human_reviewed_at IS NOT NULL) AND (human_review_action IS NOT NULL))))",
@@ -45358,7 +45360,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "administrator_lift_decided_by_id": {
@@ -45369,7 +45371,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "uuid"
         },
         "administrator_lift_rationale_ciphertext": {
@@ -45380,17 +45382,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "text"
         },
         "authorizing_assessment_id": {
           "collation": null,
-          "comment": "Immutable exact compliant assessment that authorized this restriction.",
+          "comment": "Immutable exact compliant notice assessment that authorized an assessment-origin restriction; null for filing-origin withholding.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 3,
           "type": "uuid"
         },
@@ -45405,6 +45407,17 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
+        "copyright_notice_submission_id": {
+          "collation": null,
+          "comment": "Immutable court or CCB filing that originated withholding pending its legal-hold assessment; exclusive with assessment-origin restrictions.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
         "copyright_notice_target_id": {
           "collation": null,
           "comment": "Exact allegation target governed by this independent restriction.",
@@ -45413,7 +45426,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "created_at": {
@@ -45424,7 +45437,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "human_review_action": {
@@ -45435,7 +45448,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "copyright_restriction_human_review_actions"
         },
         "human_reviewed_at": {
@@ -45446,7 +45459,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "human_reviewed_by_id": {
@@ -45457,7 +45470,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "uuid"
         },
         "id": {
@@ -45479,7 +45492,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "imposed_by_id": {
@@ -45490,7 +45503,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "uuid"
         },
         "is_authorizing_assessment_automated": {
@@ -45501,7 +45514,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "boolean"
         },
         "lifted_at": {
@@ -45512,7 +45525,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "lifted_by_id": {
@@ -45523,7 +45536,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "uuid"
         },
         "updated_at": {
@@ -45534,7 +45547,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         }
       },
@@ -45583,6 +45596,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["copyright_notice_id", "id"],
           "referencedTable": "copyright_notice_submission_assessment_identities",
+          "validated": true
+        },
+        "fk_copyright_restrictions__filing_submission_notice": {
+          "columns": ["copyright_notice_id", "copyright_notice_submission_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id) REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["copyright_notice_id", "id"],
+          "referencedTable": "copyright_notice_submissions",
           "validated": true
         },
         "fk_copyright_restrictions__parent_notice": {
@@ -45679,6 +45701,33 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_restrictions__filing_submission_notice": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_restrictions__filing_submission_notice ON public.copyright_restrictions USING btree (copyright_notice_submission_id, copyright_notice_id) WHERE (copyright_notice_submission_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_submission_id",
+              "descending": false,
+              "expression": "copyright_notice_submission_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(copyright_notice_submission_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -45793,7 +45842,7 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_copyright_restriction_assessment_scope": "CREATE TRIGGER trigger_copyright_restriction_assessment_scope BEFORE INSERT OR UPDATE OF authorizing_assessment_id ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_restriction_assessment_scope()",
+        "trigger_copyright_restriction_assessment_scope": "CREATE TRIGGER trigger_copyright_restriction_assessment_scope BEFORE INSERT OR UPDATE OF authorizing_assessment_id, copyright_notice_submission_id ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_restriction_assessment_scope()",
         "trigger_copyright_restrictions_lifecycle_guard": "CREATE TRIGGER trigger_copyright_restrictions_lifecycle_guard BEFORE DELETE OR UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_restriction_lifecycle()",
         "trigger_copyright_restrictions_updated_at": "CREATE TRIGGER trigger_copyright_restrictions_updated_at BEFORE UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
         "trigger_copyright_thread_blocker_generation": "CREATE TRIGGER trigger_copyright_thread_blocker_generation AFTER INSERT OR DELETE OR UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_blocker_generation()",
