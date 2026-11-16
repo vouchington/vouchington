@@ -157,7 +157,7 @@
     "gh-pr-attach-screenshots": "^0.2.0",
     "glide-mq": "^0.20.0",
     "jscpd": "^5.4.3",
-    "jsdom": "^30.1.3",
+    "jsdom": "^31.0.1",
     "knip": "^6",
     "no-mistakes": "^0.109.62",
     "oxfmt": "^0.78.0",
