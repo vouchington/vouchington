@@ -11,7 +11,7 @@ async function readJobsNamed(jobName: string) {
 }
 
 /** Clears the provider's queued dispatch jobs, runs one trigger, and returns what it alone enqueued. */
-async function enqueuedBy(jobName: string, trigger: () => Promise<unknown>) {
+async function enqueuedBy(jobName: string, trigger: () => unknown) {
   const before = await readJobsNamed(jobName)
   await removeQueuedJobsById(
     findYourFriendsQueue,
