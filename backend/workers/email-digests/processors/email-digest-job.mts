@@ -6,6 +6,7 @@ import {
   processSendApiKeyExpiryReminder,
 } from './api-key-expiry.mts'
 import { processSendCommunityModerationSummaryEmail } from './community-moderation-summary.mts'
+import { processModerationSummaryStage } from './moderation-summary-stage.mts'
 import { processSendFollowNewsSourcesEmail } from './follow-news-sources.mts'
 import { processSendFollowTopicsEmail } from './follow-topics.mts'
 import { processSendPostReferralLinkEmail } from './post-referral-link.mts'
@@ -44,6 +45,12 @@ export async function processEmailDigestJob(
   switch (parsed.kind) {
     case 'api-key-expiry':
       return processSendApiKeyExpiryReminder(parsed.apiKeyId)
+    case 'moderation-summary-stage':
+      return processModerationSummaryStage(
+        parsed.stage,
+        parsed.input as never,
+        parsed.variables as never,
+      )
     case 'dispatcher':
       return runDispatcher(parsed.name, dispatchers, parsed.data)
     case 'template':

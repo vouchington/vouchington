@@ -359,8 +359,13 @@ per-period pending and sent claims prevent repeated summary construction without
 within-user progress. Eligibility changes do not strand the membership cursor.
 
 Moderator email digests assemble large moderation workloads incrementally so one recipient cannot
-monopolize shared workers. Because collection can outlive a membership or selected content,
-delivery revalidates current access and the references included in the email.
+monopolize shared workers. Each collection stage (memberships, reviews, applications, report posts,
+reports, evaders, members, activity posts, replies, card) is its own job with its own page size and
+batch cap in DynamicConfig, and the cursor and results later stages need travel in job data. The
+stages form one chain per recipient, because escalated counts accumulate across stages, and a
+per-recipient ordering lane keeps one stage running at a time. Because collection can outlive a
+membership or selected content, every stage and the send revalidate current access and the
+references included in the email.
 
 Apple notification recovery fixes its sweep end before dispatch and advances by every inspected
 pending-evidence row, including evidence for another provider. Empty Apple pages therefore still

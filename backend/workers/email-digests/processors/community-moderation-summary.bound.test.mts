@@ -11,12 +11,12 @@ import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entit
 import { createModerationSummaryCollection } from '@voucha/test-helpers/moderation-summary-collection'
 import { holdQueueAdmission } from '@voucha/test-helpers/queue-admission-hold'
 import { backgroundQueue } from '@voucha/test-helpers/shared-background-queue'
-import { EMAIL_DIGESTS_SEND_MODERATION_SUMMARY_JOB } from '@queues/background/enqueues/email-digests-jobs'
+import { EMAIL_DIGESTS_MODERATION_SUMMARY_STAGE_JOBS } from '@queues/background/enqueues/email-digests-jobs'
 import { updateUserFields } from '@services/users/update-fields'
-import { processSendCommunityModerationSummaryEmail } from './community-moderation-summary.mts'
+import { processModerationSummaryStage } from './moderation-summary-stage.mts'
 
 describe('moderator summary continuation admission', () => {
-  it('admits a distinct bounded continuation before finishing the collection job', async () => {
+  it('admits the next stage job before finishing the memberships job', async () => {
     const user = await createTestUser()
     await updateUserFields(user.id, { is_moderation_emails_enabled: true })
     const community = await insertTestCommunity({ createdById: user.id })
@@ -36,7 +36,7 @@ describe('moderator summary continuation admission', () => {
     const { trackingKey, windowEnd, dispatchTimeZone } = await claimCurrentModerationSummaryForTest(
       user.id,
     )
-    const jobName = EMAIL_DIGESTS_SEND_MODERATION_SUMMARY_JOB.name
+    const jobName = EMAIL_DIGESTS_MODERATION_SUMMARY_STAGE_JOBS.reviews.name
     const admission = holdQueueAdmission(
       backgroundQueue,
       jobName,
@@ -54,7 +54,8 @@ describe('moderator summary continuation admission', () => {
       entered = true
     })
     let settled = false
-    const operation = processSendCommunityModerationSummaryEmail(
+    const operation = processModerationSummaryStage(
+      'memberships',
       { userId: user.id, trackingKey, windowEnd },
       {
         generatedForDate: windowEnd.slice(0, 10),
@@ -82,9 +83,8 @@ describe('moderator summary continuation admission', () => {
         input: { userId: user.id, trackingKey },
         variables: {
           collection: {
-            phase: 'community',
             eligibleCount: 0,
-            scan: { communityId: community.id, stage: 'reviews' },
+            scan: { communityId: community.id },
           },
         },
       })

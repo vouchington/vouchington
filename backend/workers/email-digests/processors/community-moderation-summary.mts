@@ -7,80 +7,40 @@ import { isAwsThrottlingError } from '@modules/queue-errors'
 import { sendClassifiedEmail } from '@services/email-classification'
 import { createEmailUnsubscribeUrl } from '@services/users'
 import {
-  getModerationEmailCadence,
-  hasModerationEmailSent,
-  isModerationEmailsEnabled,
   markModerationEmailSent,
   resetRejectedModerationEmailSend,
   releaseUnsentModerationEmailClaim,
 } from '@services/communities/moderation-summary-emails'
-import { collectModerationSummaryPage } from '@services/communities/moderation-summary-collection'
-import { enqueueContinueCommunityModerationSummaryEmail } from '@queues/email-digests/enqueues'
+import { formatLocalDate } from '@services/communities/moderation-summary-schedule'
 import {
-  formatLocalDate,
-  getModerationActivityWindowStart,
-} from '@services/communities/moderation-summary-schedule'
-import { resolveEmailRecipient } from '@workers/emails/processors/recipient'
-import { isModerationSummaryJobCurrent } from '@services/communities/moderation-summary-retention'
+  readModerationSummaryWindow,
+  resolveModerationSummaryRecipient,
+} from './moderation-summary-guard.mts'
 
+/** The terminal job: rechecks the collected communities, renders and sends one summary. */
 export async function processSendCommunityModerationSummaryEmail(
   input: EmailTemplateInput,
   variables: ProcessSendCommunityModerationSummaryEmailVariables,
 ): Promise<unknown> {
   const now = new Date()
   let renderVariables = variables
-  const recipient = await resolveEmailRecipient(input)
-  if (recipient.status === 'skipped') {
-    if (input.trackingKey) {
-      await releaseUnsentModerationEmailClaim(recipient.userId, input.trackingKey)
-    }
-    return recipient
-  }
+  const recipient = await resolveModerationSummaryRecipient(input)
+  if ('skipped' in recipient) return recipient.skipped
   const emailAddress = recipient.emailAddress
   if (input.userId) {
-    if (!(await isModerationEmailsEnabled(input.userId))) return null
-    const timeZone = variables.dispatchTimeZone
-    if (
-      input.trackingKey &&
-      (!input.windowEnd ||
-        !isModerationSummaryJobCurrent(input.trackingKey, input.windowEnd, timeZone, now))
-    )
-      return null
-    if (input.trackingKey && (await hasModerationEmailSent(input.userId, input.trackingKey))) {
-      return null
-    }
-    const queuedWindowEnd = input.windowEnd ? new Date(input.windowEnd) : now
-    const windowEnd = new Date(Math.min(queuedWindowEnd.getTime(), now.getTime()))
-    const windowStart = input.windowStart
-      ? new Date(input.windowStart)
-      : getModerationActivityWindowStart(await getModerationEmailCadence(input.userId), windowEnd)
-    const collected = await collectModerationSummaryPage(
+    const window = await readModerationSummaryWindow(
       input.userId,
-      windowStart,
-      windowEnd,
-      queuedWindowEnd,
-      variables.collection,
-      variables.communities,
+      input,
+      variables.dispatchTimeZone,
+      now,
     )
-    const nextVariables = { ...variables, ...collected }
-    if (collected.collection.phase !== 'ready') {
-      await enqueueContinueCommunityModerationSummaryEmail(
-        {
-          userId: input.userId,
-          trackingKey: input.trackingKey!,
-          windowStart: windowStart.toISOString(),
-          windowEnd: queuedWindowEnd.toISOString(),
-          uiLocale: input.uiLocale,
-        },
-        nextVariables,
-      )
-      return { continued: true }
-    }
+    if (!window) return null
+    const { collection } = variables
     const communities = await recheckModerationSummaryCommunities(
       input.userId,
-      collected.communities,
-      queuedWindowEnd,
-      collected.collection.top,
+      variables.communities,
+      window.queuedWindowEnd,
+      collection.top,
     )
     if (communities.length === 0) {
       if (input.trackingKey)
@@ -88,13 +48,10 @@ export async function processSendCommunityModerationSummaryEmail(
       return null
     }
     renderVariables = {
-      ...nextVariables,
+      ...variables,
       communities,
-      remainingCommunityCount: Math.max(
-        0,
-        collected.collection.eligibleCount - collected.collection.top.length,
-      ),
-      generatedForDate: formatLocalDate(queuedWindowEnd, timeZone),
+      remainingCommunityCount: Math.max(0, collection.eligibleCount - collection.top.length),
+      generatedForDate: formatLocalDate(window.queuedWindowEnd, variables.dispatchTimeZone),
     }
   }
   const { subject, html, text } = await renderCommunityModerationSummaryEmail({
