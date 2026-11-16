@@ -1,6 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import { hasRetiredCopyrightEmailThreadIntakes } from './email-thread-source.mts'
 
 /**
  * Walk ancestor edge identities incrementally, stopping when the intake-plus-edge budget is
@@ -32,7 +31,11 @@ async function readBoundedCopyrightEmailAncestors(
   const roots = [...new Set(replyIds)].toSorted()
   if (roots.length > maxRows) return null
   if (roots.length === 0) return []
-  const { rows } = await transaction<{ reply_id: string; ancestor_id: string }>(sql`
+  const { rows } = await transaction<{
+    reply_id: string
+    ancestor_id: string
+    retired: boolean
+  }>(sql`
     /* readBoundedCopyrightEmailAncestorIds */
     WITH RECURSIVE reached(reply_id, ancestor_id) AS (
       SELECT root.intake_id, root.intake_id
@@ -48,19 +51,26 @@ async function readBoundedCopyrightEmailAncestors(
         LIMIT ${maxRows + 1}
       ) edge ON true
     )
-    SELECT reply_id, ancestor_id FROM reached LIMIT ${maxRows + 2}
+    SELECT reply_id, ancestor_id, EXISTS (
+      SELECT 1 FROM copyright_notice_email_intake_notice_links link
+      JOIN copyright_notice_thread_retention_activities retirement
+        ON retirement.copyright_notice_id = link.copyright_notice_id
+      WHERE link.copyright_notice_email_intake_id = reached.ancestor_id
+        AND retirement.retired_before_intake_bound > reached.ancestor_id
+    ) AS retired
+    FROM reached LIMIT ${maxRows + 2}
   `)
   const ancestors = new Set<string>(roots)
   const edges = new Set<string>()
   const reachedRoots = new Set<string>()
   for (const row of rows) {
+    if (row.retired) return null
     if (row.reply_id === row.ancestor_id && ancestors.has(row.reply_id)) continue
     ancestors.add(row.ancestor_id)
     reachedRoots.add(row.ancestor_id)
     edges.add(`${row.reply_id}:${row.ancestor_id}`)
     if (ancestors.size + edges.size > maxRows) return null
   }
-  if (await hasRetiredCopyrightEmailThreadIntakes(transaction, [...ancestors])) return null
   if (!includeRoots)
     for (const root of roots) {
       if (!reachedRoots.has(root)) ancestors.delete(root)
