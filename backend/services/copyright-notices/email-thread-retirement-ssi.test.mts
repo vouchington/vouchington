@@ -155,11 +155,43 @@ describe('copyright email reference and retirement SSI', () => {
     const intake = await createUnparsedCopyrightEmailIntake()
     await linkTestCopyrightEmailIntake(intake.id, notice.noticeId)
     await positionCopyrightOperationalCursor('email_thread_references', notice.noticeId)
+    const sweepOptions = {
+      now: new Date(Date.now() + 181 * DAY_MS),
+      replyDays: 180,
+      batchSize: 10,
+      noticeIds: [notice.noticeId],
+    }
+    // Commit the real bounded proof pages, stopping before the first destructive statement.
+    // The raced call below then owns exactly one destructive page, with no earlier page progress.
+    const proofComplete = new Error('Owned threading proofs reached the destructive boundary')
+    const restorePreparation = beforePostgresTransactionQueryForTest(
+      '/* retireCopyrightCaseThread */',
+      values => values.includes(notice.noticeId),
+      async () => {
+        restorePreparation()
+        throw proofComplete
+      },
+    )
+    try {
+      await expect(sweepCopyrightCaseThreads({ ...sweepOptions, maxBatches: 100 })).rejects.toBe(
+        proofComplete,
+      )
+    } finally {
+      restorePreparation()
+    }
     const beforeCursor = await readCopyrightThreadOperationalCursor()
+    expect(beforeCursor).toMatchObject({ cursor_legal_phase: 'done', cursor_phase: null })
+    expect(await readCopyrightThreadRetirementBound(notice.noticeId)).toBeNull()
+    expect(await readCopyrightThreadReferenceState(intake.id)).toEqual({
+      tokenId: null,
+      referenceCount: 0,
+    })
+    expect(await readCopyrightIntakeRetentionState(intake.id)).toMatchObject({ parseCount: 0 })
     const atProof = Promise.withResolvers<void>()
     const releaseProof = Promise.withResolvers<void>()
+    // Pause the actual destructive write after its snapshot read the old activity and facts.
     const restore = beforePostgresTransactionQueryForTest(
-      '/* lockCopyrightThreadPreservationGate */',
+      '/* retireCopyrightCaseThread */',
       values => values.includes(notice.noticeId),
       async () => {
         restore()
@@ -167,17 +199,13 @@ describe('copyright email reference and retirement SSI', () => {
         await releaseProof.promise
       },
     )
-    const sweep = runCopyrightOperationalRetentionCleanup({
-      activeFamilies: ['copyrightCaseThreads'],
-      now: new Date(Date.now() + 181 * DAY_MS),
-      limits: { batchSize: 10, maxBatches: 100 },
-    })
+    const sweep = sweepCopyrightCaseThreads({ ...sweepOptions, maxBatches: 1 })
     const settled = Promise.allSettled([sweep])
     try {
       await Promise.race([
         atProof.promise,
         sweep.then(() => {
-          throw new Error('Sweep completed before the preservation proof boundary')
+          throw new Error('Sweep completed before the destructive write boundary')
         }),
       ])
       await expect(
@@ -196,7 +224,7 @@ describe('copyright email reference and retirement SSI', () => {
       expect(await readCopyrightIntakeRetentionState(intake.id)).toMatchObject({ parseCount: 1 })
       releaseProof.resolve()
       const result = await sweep
-      expect(result.copyrightCaseThreads).toEqual({ scanned: 0, deleted: 0, hasMore: false })
+      expect(result).toEqual({ scanned: 0, deleted: 0, hasMore: false })
       await assertAbortedThreadPage(notice.noticeId, intake.id, references, beforeCursor)
       expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([
         { copyright_notice_id: notice.noticeId, link_kind: 'initial' },
