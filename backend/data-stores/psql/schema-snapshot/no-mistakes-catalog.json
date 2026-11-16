@@ -52009,6 +52009,10 @@
     },
     "copyright_trusted_flagger_changes": {
       "checkConstraints": {
+        "chk_copyright_trusted_flagger_changes__previous": {
+          "definition": "CHECK ((previous_copyright_trusted_flagger_change_id <> id))",
+          "validated": true
+        },
         "copyright_trusted_flagger_changes_reason_check": {
           "definition": "CHECK (((char_length(reason) >= 1) AND (char_length(reason) <= 4000)))",
           "validated": true
@@ -52023,7 +52027,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3
+          "ordinalPosition": 4
         },
         "changed_by_id": {
           "comment": "Retained identity of the administrator who recorded the transition.",
@@ -52033,7 +52037,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "copyright_trusted_flagger_id": {
           "comment": "Designation whose status changed.",
@@ -52053,7 +52057,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "id": {
           "comment": "UUIDv7 status-change identifier.",
@@ -52065,6 +52069,16 @@
           "nullable": false,
           "ordinalPosition": 1
         },
+        "previous_copyright_trusted_flagger_change_id": {
+          "comment": "Previous immutable transition for this designation; null only for the first change. Each transition has at most one successor.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
         "reason": {
           "comment": "Staff reason for the recorded status transition.",
           "dataType": "text",
@@ -52073,7 +52087,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         }
       },
       "comment": "Append-only status transitions; the latest change determines whether a designation is active, suspended or revoked.",
@@ -52094,6 +52108,18 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "copyright_trusted_flaggers",
+          "validated": true
+        },
+        "fk_copyright_trusted_flagger_changes__previous": {
+          "columns": [
+            "copyright_trusted_flagger_id",
+            "previous_copyright_trusted_flagger_change_id"
+          ],
+          "deferrable": false,
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["copyright_trusted_flagger_id", "id"],
+          "referencedTable": "copyright_trusted_flagger_changes",
           "validated": true
         }
       },
@@ -52175,6 +52201,93 @@
           "ready": true,
           "unique": false,
           "valid": true
+        },
+        "idx_copyright_trusted_flagger_changes__first": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_copyright_trusted_flagger_changes__first ON public.copyright_trusted_flagger_changes USING btree (copyright_trusted_flagger_id) WHERE (previous_copyright_trusted_flagger_change_id IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "copyright_trusted_flagger_id",
+              "descending": false,
+              "expression": "copyright_trusted_flagger_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(previous_copyright_trusted_flagger_change_id IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_trusted_flagger_changes__successor": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_copyright_trusted_flagger_changes__successor ON public.copyright_trusted_flagger_changes USING btree (copyright_trusted_flagger_id, previous_copyright_trusted_flagger_change_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "copyright_trusted_flagger_id",
+              "descending": false,
+              "expression": "copyright_trusted_flagger_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "previous_copyright_trusted_flagger_change_id",
+              "descending": false,
+              "expression": "previous_copyright_trusted_flagger_change_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_copyright_trusted_flagger_changes__flagger_id": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_copyright_trusted_flagger_changes__flagger_id ON public.copyright_trusted_flagger_changes USING btree (copyright_trusted_flagger_id, id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "copyright_trusted_flagger_id",
+              "descending": false,
+              "expression": "copyright_trusted_flagger_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "physicalPartition": null,
@@ -52190,7 +52303,11 @@
           "definition": "CREATE TRIGGER trigger_ensure_copyright_trusted_flagger_changes_actor BEFORE INSERT ON public.copyright_trusted_flagger_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id')"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "uq_copyright_trusted_flagger_changes__flagger_id": {
+          "columns": ["copyright_trusted_flagger_id", "id"]
+        }
+      }
     },
     "copyright_trusted_flagger_matches": {
       "checkConstraints": {},
