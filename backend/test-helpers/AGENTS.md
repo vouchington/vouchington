@@ -9,8 +9,9 @@
   event still resolves the wait; the default deadline rejects a stall by name before the project
   test budget. A caller that must outlast a longer clock passes its own deadline, still under that
   test's timeout. A bare `worker.once` on those events hangs the shard until the runner kills it.
-  Bare `delay-changed`, `added`, and `retrying` QueueEvents waits, and SQS `message-deleted` /
-  `poll-error` waits, still have no named deadline.
+  Bound a QueueEvents (`delay-changed`, `added`, `retrying`) or SQS consumer (`message-deleted`,
+  `poll-error`) wait with `waitForEmitterEvent`, which shares that deadline and rejects naming the
+  event. Create it before the action that emits the event.
 - Owned post-election and vote-route admission on the default project budget uses
   `admissionObservationDeadline`, the same bound as `waitForRealGlideEvent`, so a stalled owned
   job is named before that budget. User-vouch observation keeps a longer deadline because its

@@ -12,6 +12,7 @@ import {
   getSesInboundProcessJobOptions,
 } from '@ts-shared/ses-inbound-contract'
 import { processSesInboundSqsMessage } from '../processors.mts'
+import { waitForEmitterEvent } from '../../../test-helpers/real-glide-terminal-deadline.mts'
 
 // This file intentionally exercises real glide-mq rather than mocking it; the passthrough only
 // exists because the .real-glide.mock.test.mts filename (required for backend-real-glide-mq
@@ -98,9 +99,7 @@ describe('processSesInboundSqsMessage', () => {
       handleMessage: processSesInboundSqsMessage,
       port,
     })
-    const deleted = new Promise<SqsMessage>(resolve => {
-      consumer.once('message-deleted', resolve)
-    })
+    const deleted = waitForEmitterEvent<SqsMessage>(consumer, 'message-deleted')
     const deletedMessage = await deleted
     await consumer.close()
 
@@ -159,9 +158,7 @@ describe('processSesInboundSqsMessage', () => {
         handleMessage: processSesInboundSqsMessage,
         port,
       })
-      const deleted = new Promise<SqsMessage>(resolve => {
-        consumer.once('message-deleted', resolve)
-      })
+      const deleted = waitForEmitterEvent<SqsMessage>(consumer, 'message-deleted')
       expect(await deleted).toEqual(message)
       await consumer.close()
 
@@ -276,9 +273,7 @@ describe('processSesInboundSqsMessage', () => {
       handleMessage: processSesInboundSqsMessage,
       port,
     })
-    const deleted = new Promise<SqsMessage>(resolve => {
-      consumer.once('message-deleted', resolve)
-    })
+    const deleted = waitForEmitterEvent<SqsMessage>(consumer, 'message-deleted')
     const deletedMessage = await deleted
     await consumer.close()
 

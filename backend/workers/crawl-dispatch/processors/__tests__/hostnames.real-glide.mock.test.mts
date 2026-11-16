@@ -1,5 +1,4 @@
 import { backgroundCpu } from '@queues/background-cpu/queues'
-import { once } from 'node:events'
 import { randomUUID } from 'node:crypto'
 import { Queue, QueueEvents, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
@@ -17,6 +16,7 @@ import {
 import { deleteOldInvalidCrawls } from '@services/crawls/cleanup'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { processCrawlHostnamesJob } from '../hostnames.mts'
+import { waitForEmitterEvent } from '../../../../test-helpers/real-glide-terminal-deadline.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
@@ -88,7 +88,7 @@ describe('weekly hostname refresh cap through real GlideMQ', () => {
 
     try {
       await Promise.all([events.waitUntilReady(), worker.waitUntilReady()])
-      const delayed = once(events, 'delay-changed')
+      const delayed = waitForEmitterEvent<{ jobId: string }>(events, 'delay-changed')
       const job = await queue.add(
         'crawl.refresh_hostname_crawler_dispatcher',
         {
@@ -101,7 +101,7 @@ describe('weekly hostname refresh cap through real GlideMQ', () => {
       )
       if (!job) throw new Error('Expected the weekly hostname refresh dispatcher job')
       await pausedAtActive.promise
-      const [event] = await delayed
+      const event = await delayed
       await worker.close()
       workerToClose = undefined
 
@@ -172,10 +172,10 @@ describe('crawl cleanup retained work', () => {
         void cleanupWorker.pause(true).then(paused.resolve).catch(paused.reject)
       })
       await Promise.all([events.waitUntilReady(), cleanupWorker.waitUntilReady()])
-      const delayed = once(events, 'delay-changed')
+      const delayed = waitForEmitterEvent<{ jobId: string }>(events, 'delay-changed')
       const job = await queue.add('crawl.crawl_cleanup', {}, { attempts: 1 })
       if (!job) throw new Error('Expected the crawl cleanup job')
-      const [[event]] = await Promise.all([delayed, paused.promise])
+      const [event] = await Promise.all([delayed, paused.promise])
       await cleanupWorker.close()
       worker = undefined
 
