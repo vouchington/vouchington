@@ -1,8 +1,10 @@
 import { onTestFinished } from 'vitest'
 import type { QueryExecutor } from '@data-stores/psql'
-import { interceptPostgresTransactionsForTest } from './injected-postgres-transactions.mts'
+import {
+  beforePostgresTransactionQueryForTest,
+  interceptPostgresTransactionsForTest,
+} from './injected-postgres-transactions.mts'
 import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
-import { runTestCopyrightRenewalBoundary } from './copyright-denial-renewal-boundary.mts'
 import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
 
 /** Observe a real guest write waiting on completion's actual lifecycle transaction. */
@@ -77,17 +79,17 @@ export async function raceCopyrightCompletionWithGuestFiling<Action, Filing>(inp
   }
 }
 
-/** Start finalization inside the native observer while the filing owns its actual writes. */
+/** Race filing against completion, or the separately committed denial receipt. */
 export async function raceCopyrightFinalizationWithGuestFiling<Action, Filing>(input: {
   noticeId: string
+  intentId: string
   boundary: 'denial' | 'completion'
   action: () => Promise<Action>
   filing: () => Promise<Filing>
 }): Promise<[PromiseSettledResult<Action>, PromiseSettledResult<Filing>]> {
+  if (input.boundary === 'denial') return raceCopyrightDenialReceiptWithGuestFiling(input)
   const atFiling = Promise.withResolvers<number>()
-  const renewalReached = Promise.withResolvers<void>()
   const resumeFiling = Promise.withResolvers<void>()
-  let filingProcessId: number | undefined
   const pending: Promise<unknown>[] = []
   let paused = false
   const restore = interceptPostgresTransactionsForTest(
@@ -98,24 +100,10 @@ export async function raceCopyrightFinalizationWithGuestFiling<Action, Filing>(i
           const text = typeof statement === 'string' ? statement : statement.text
           const values =
             typeof statement === 'string' ? (parameters ?? []) : (statement.values ?? [])
-          if (
-            input.boundary === 'denial' &&
-            text.includes('/* renewCopyrightActionIntentLease */')
-          ) {
-            renewalReached.resolve()
-            if (filingProcessId === undefined) throw new Error('Filing holder was not captured')
-            return runTestCopyrightRenewalBoundary(target, args, filingProcessId, () =>
-              resumeFiling.resolve(),
-            )
-          }
           const result = await Reflect.apply(target, thisArgument, args)
           if (
             !paused &&
-            text.includes(
-              input.boundary === 'denial'
-                ? '/* appendCopyrightGuestFiling:event */'
-                : '/* appendCopyrightGuestFiling */',
-            ) &&
+            text.includes('/* appendCopyrightGuestFiling */') &&
             values.includes(input.noticeId)
           ) {
             paused = true
@@ -136,21 +124,6 @@ export async function raceCopyrightFinalizationWithGuestFiling<Action, Filing>(i
         throw new Error('Guest filing write was not reached')
       }),
     ])
-    filingProcessId = holderProcessId
-    if (input.boundary === 'denial') {
-      onTestFinished(() => resumeFiling.resolve())
-      const action = input.action()
-      pending.push(action)
-      const actionSettled = Promise.allSettled([action])
-      await Promise.race([
-        renewalReached.promise,
-        actionSettled.then(() => {
-          throw new Error('Copyright finalization settled before its lease-renewal boundary')
-        }),
-      ])
-      const [[actionOutcome], [filingOutcome]] = await Promise.all([actionSettled, filingSettled])
-      return [actionOutcome!, filingOutcome!]
-    }
     return await withTestOwnedPostgresWait(
       {
         holderProcessId,
@@ -174,6 +147,48 @@ export async function raceCopyrightFinalizationWithGuestFiling<Action, Filing>(i
     )
   } finally {
     resumeFiling.resolve()
+    restore()
+    await Promise.allSettled(pending)
+  }
+}
+
+/** Admit the filing after denial commit and receipt facts, before the actual terminal CAS. */
+async function raceCopyrightDenialReceiptWithGuestFiling<Action, Filing>(input: {
+  intentId: string
+  action: () => Promise<Action>
+  filing: () => Promise<Filing>
+}): Promise<[PromiseSettledResult<Action>, PromiseSettledResult<Filing>]> {
+  const atReceipt = Promise.withResolvers<void>()
+  const release = Promise.withResolvers<void>()
+  onTestFinished(() => release.resolve())
+  const pending: Promise<unknown>[] = []
+  const restore = beforePostgresTransactionQueryForTest(
+    '/* completeCopyrightActionIntentInTransaction */',
+    values => values.includes(input.intentId),
+    async () => {
+      atReceipt.resolve()
+      await release.promise
+    },
+  )
+  try {
+    const action = input.action()
+    pending.push(action)
+    const actionSettled = Promise.allSettled([action])
+    await Promise.race([
+      atReceipt.promise,
+      actionSettled.then(() => {
+        throw new Error('Finalization settled before its denial receipt CAS')
+      }),
+    ])
+    const filing = input.filing()
+    pending.push(filing)
+    const filingSettled = Promise.allSettled([filing])
+    await filingSettled
+    release.resolve()
+    const [[actionOutcome], [filingOutcome]] = await Promise.all([actionSettled, filingSettled])
+    return [actionOutcome!, filingOutcome!]
+  } finally {
+    release.resolve()
     restore()
     await Promise.allSettled(pending)
   }

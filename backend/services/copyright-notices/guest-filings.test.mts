@@ -138,6 +138,7 @@ describe('guest copyright filing and restore completion', () => {
       if (!claim) throw new Error('Restoration claim disappeared')
       const outcomes = await raceCopyrightFinalizationWithGuestFiling({
         noticeId: scene.notice.id,
+        intentId: scene.restore.id,
         boundary,
         action: () =>
           finalizeCopyrightActionAfterDelivery(

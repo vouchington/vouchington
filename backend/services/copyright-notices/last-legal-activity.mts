@@ -1,4 +1,3 @@
-import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 
@@ -20,9 +19,14 @@ export async function lockCopyrightNoticeForLegalWrite(
   query: TransactionQuery,
   noticeId: string,
 ): Promise<LockedCopyrightNotice | null> {
-  await lockCopyrightActionGenerationForWrite(noticeId, query)
   const { rows } = await query<{ jurisdiction: string }>(sql`/* lockCopyrightNoticeForLegalWrite */
-    SELECT jurisdiction FROM copyright_notices WHERE id = ${noticeId} FOR NO KEY UPDATE`)
+    WITH generation AS MATERIALIZED (
+      SELECT copyright_notice_id FROM copyright_notice_thread_blocker_generations
+      WHERE copyright_notice_id = ${noticeId}::uuid FOR UPDATE
+    )
+    SELECT jurisdiction FROM copyright_notices
+    WHERE id = COALESCE((SELECT copyright_notice_id FROM generation), ${noticeId}::uuid)
+    FOR NO KEY UPDATE`)
   return rows[0]
     ? ({ noticeId, jurisdiction: rows[0].jurisdiction } as LockedCopyrightNotice)
     : null

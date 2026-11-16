@@ -29,13 +29,27 @@ export async function createDeterministicCopyrightCorrespondencesInTransaction(
   inputs: readonly DeterministicCorrespondenceInput[],
   transaction: TransactionQuery,
 ): Promise<CopyrightCorrespondenceRecord[]> {
-  if (inputs.length === 0) return []
+  const [first, ...rest] = inputs
+  if (!first) return []
   for (const input of inputs)
     assert(input.bodyText.trim().length > 0, 422, 'Copyright correspondence body is required')
   await lockCopyrightActionGenerationsForWrite(
     inputs.map(input => input.noticeId),
     transaction,
   )
+  return createDeterministicCopyrightCorrespondencesWithLockedGenerations(
+    [first, ...rest],
+    transaction,
+  )
+}
+
+/** Caller owns the case generations; the clock UPDATE locks written notices in identity order. */
+export async function createDeterministicCopyrightCorrespondencesWithLockedGenerations(
+  inputs: readonly [DeterministicCorrespondenceInput, ...DeterministicCorrespondenceInput[]],
+  transaction: TransactionQuery,
+): Promise<CopyrightCorrespondenceRecord[]> {
+  for (const input of inputs)
+    assert(input.bodyText.trim().length > 0, 422, 'Copyright correspondence body is required')
   const ids = inputs.map(() => uuidv7())
   const { rows } = await transaction<CopyrightCorrespondenceRecord>(
     sql`/* createDeterministicCopyrightCorrespondencesInTransaction */`.append(
