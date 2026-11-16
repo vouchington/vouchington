@@ -148,8 +148,10 @@ describe('CommunityBansPanel', () => {
 
     await waitFor(() => expect(mockLiftBan).toHaveBeenCalledWith('test-community', 'ban-1'))
     await waitFor(() => expect(mockRefresh).toHaveBeenCalled())
-    expect(screen.getByText('Lifted')).toBeVisible()
-    expect(screen.getByText(/^Lifted: /).textContent).toMatch(/^Lifted: \d{4}-\d{2}-\d{2}$/)
+    expect(await screen.findByText('Lifted')).toBeVisible()
+    expect((await screen.findByText(/^Lifted: /)).textContent).toMatch(
+      /^Lifted: \d{4}-\d{2}-\d{2}$/,
+    )
   })
 
   it('lifts only the selected ban and keeps sibling bans unchanged', async () => {
@@ -169,7 +171,7 @@ describe('CommunityBansPanel', () => {
 
     await waitFor(() => expect(mockLiftBan).toHaveBeenCalledWith('test-community', 'ban-active'))
     const [activeRow, timedRow, expiredRow] = screen.getAllByTestId('community-ban-row')
-    expect(activeRow).toHaveTextContent('Lifted')
+    await waitFor(() => expect(activeRow).toHaveTextContent('Lifted'))
     expect(timedRow).toHaveTextContent('Active')
     expect(expiredRow).toHaveTextContent('Expired')
     expect(expiredRow).not.toHaveTextContent('Lifted')
@@ -211,7 +213,7 @@ describe('CommunityBansPanel', () => {
     expect(mockLiftAllBans).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('alertdialog').querySelector('button:last-child')!)
     await waitFor(() => expect(mockLiftAllBans).toHaveBeenCalledWith('test-community', 'u-1'))
-    expect(screen.getAllByText('Lifted')).toHaveLength(2)
+    await waitFor(() => expect(screen.getAllByText('Lifted')).toHaveLength(2))
   })
 
   it.each([
