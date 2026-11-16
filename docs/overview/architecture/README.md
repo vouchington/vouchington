@@ -41,7 +41,7 @@ System design, pipelines, and application-layer patterns for Voucha.
 | [MCP Tools](./mcp/README.md)                                                            | LLM tool registry: internal and MCP surfaces, type definitions, and tool implementation reference |
 | [Native Clients](./native-clients.md)                                                   | Platform ownership table and framework rationale (Swift: macOS/iOS/Android; MAUI: Windows)        |
 
-[client-dotnet-deep-linking]: https://github.com/vouchington/vouchington-clients/blob/main/docs/architecture/dotnet-deep-linking.md
+[client-dotnet-deep-linking]: https://github.com/vouchington/vouchington-clients/blob/main/docs/overview/architecture/dotnet-deep-linking.md
 
 ## Sync Rule
 
