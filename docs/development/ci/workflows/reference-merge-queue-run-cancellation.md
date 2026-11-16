@@ -41,12 +41,12 @@ Each leftover run holds a hosted runner until it finishes or times out.
   `github.event.merge_group.head_ref`.
 
 Neither workflow here uses `merge_group: destroyed`, which Actions does not document and actionlint
-rejects. The documented `pull_request_target` `dequeued` event covers the removal case, and
+rejects. The documented `pull_request` `dequeued` event covers the removal case, and
 `merge_group` `checks_requested` covers the rebuilt-entry case.
 
 ## Dequeued pull requests
 
-The dequeued workflow runs from `main` and checks out no pull-request content. Guards, in order:
+The dequeued workflow runs on the same-repo `pull_request` event and checks out no pull-request content. Guards, in order:
 
 1. **Reason allowlist.** Only reasons that mean the entry will not merge cancel runs. `MERGE`,
    `ALREADY_MERGED`, and unexplained reasons never act, and `CI_TIMEOUT` never acts because the
