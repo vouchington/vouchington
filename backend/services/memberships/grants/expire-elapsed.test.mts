@@ -2,16 +2,18 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
   attachTestStripeProductionProviderObservation,
+  createTestAdminGrantMembership,
   createTestSku,
   createTestUser,
   endTestMembershipProjection,
   getTestGrantQueue,
   getTestMembershipEntitlementEffects,
+  insertQueuedMembershipGrant,
   setTestMembershipGrantRemainingMilliseconds,
   updateTestMembershipExpiresAt,
   withTestMembershipUserLocked,
 } from '@voucha/test-helpers'
-import { createMembership, grantMembership } from '../create.mts'
+import { createMembership } from '../create.mts'
 import {
   expireElapsedMembershipsBatch,
   expireElapsedMembershipsForUsers,
@@ -26,10 +28,18 @@ describe('expireElapsedMembershipsForUsers', () => {
     const admin = await createTestUser({ administrator: true })
     const members = await Promise.all([createTestUser(), createTestUser()])
     const sku = await createTestSku({ plan: 'plus' })
-    // This tests expiry's shared budget; grant creation is setup, so avoid incidental grant contention.
+    // This tests expiry's shared budget; grant creation is setup, so use committed fixtures.
     const memberships = [
-      await grantMembership(admin.id, members[0]!.id, 'plus', sku.id, 30),
-      await grantMembership(admin.id, members[1]!.id, 'plus', sku.id, 30),
+      await createTestAdminGrantMembership({
+        grantedById: admin.id,
+        productId: sku.id,
+        userId: members[0]!.id,
+      }),
+      await createTestAdminGrantMembership({
+        grantedById: admin.id,
+        productId: sku.id,
+        userId: members[1]!.id,
+      }),
     ]
     await Promise.all(
       memberships.map(membership =>
@@ -76,7 +86,11 @@ describe('expireElapsedMembershipsForUsers', () => {
     })
     await endTestMembershipProjection(direct.id)
     const grantSku = await createTestSku({ plan: 'pro', interval: 'yearly' })
-    const grant = await grantMembership(admin.id, member.id, 'pro', grantSku.id, 30)
+    const grant = await createTestAdminGrantMembership({
+      grantedById: admin.id,
+      productId: grantSku.id,
+      userId: member.id,
+    })
     await updateTestMembershipExpiresAt(grant.id, new Date('2020-01-01T00:00:00.000Z'))
 
     await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({
@@ -96,9 +110,18 @@ describe('expireElapsedMembershipsForUsers', () => {
     const queuedGrantIssuer = await createTestUser({ administrator: true })
     const member = await createTestUser()
     const firstSku = await createTestSku({ plan: 'plus' })
-    const first = await grantMembership(admin.id, member.id, 'plus', firstSku.id, 30)
+    const first = await createTestAdminGrantMembership({
+      grantedById: admin.id,
+      productId: firstSku.id,
+      userId: member.id,
+    })
     const secondSku = await createTestSku({ plan: 'pro', interval: 'yearly' })
-    await grantMembership(queuedGrantIssuer.id, member.id, 'pro', secondSku.id, 30)
+    await insertQueuedMembershipGrant({
+      grantedById: queuedGrantIssuer.id,
+      productId: secondSku.id,
+      userId: member.id,
+      durationDays: 30,
+    })
     await updateTestMembershipExpiresAt(first.id, new Date('2020-01-01T00:00:00.000Z'))
 
     await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({
@@ -133,9 +156,18 @@ describe('expireElapsedMembershipsForUsers', () => {
     const admin = await createTestUser({ administrator: true })
     const member = await createTestUser()
     const firstSku = await createTestSku({ plan: 'plus' })
-    const first = await grantMembership(admin.id, member.id, 'plus', firstSku.id, 30)
+    const first = await createTestAdminGrantMembership({
+      grantedById: admin.id,
+      productId: firstSku.id,
+      userId: member.id,
+    })
     const secondSku = await createTestSku({ plan: 'pro', interval: 'yearly' })
-    await grantMembership(admin.id, member.id, 'pro', secondSku.id, 1)
+    await insertQueuedMembershipGrant({
+      grantedById: admin.id,
+      productId: secondSku.id,
+      userId: member.id,
+      durationDays: 1,
+    })
     const [firstGrantId, secondGrantId] = (await getTestGrantQueue(member.id)).grant_ids
     expect(firstGrantId).toBeDefined()
     expect(secondGrantId).toBeDefined()
@@ -153,7 +185,11 @@ describe('expireElapsedMembershipsForUsers', () => {
     const admin = await createTestUser({ administrator: true })
     const member = await createTestUser()
     const sku = await createTestSku({ plan: 'plus' })
-    const membership = await grantMembership(admin.id, member.id, 'plus', sku.id, 30)
+    const membership = await createTestAdminGrantMembership({
+      grantedById: admin.id,
+      productId: sku.id,
+      userId: member.id,
+    })
     await updateTestMembershipExpiresAt(membership.id, new Date('2020-01-01T00:00:00.000Z'))
 
     // SKIP LOCKED can underfill when another sweep holds the first global candidate.
@@ -164,7 +200,11 @@ describe('expireElapsedMembershipsForUsers', () => {
     const admin = await createTestUser({ administrator: true })
     const member = await createTestUser()
     const sku = await createTestSku({ plan: 'plus' })
-    const membership = await grantMembership(admin.id, member.id, 'plus', sku.id, 30)
+    const membership = await createTestAdminGrantMembership({
+      grantedById: admin.id,
+      productId: sku.id,
+      userId: member.id,
+    })
     await updateTestMembershipExpiresAt(membership.id, new Date('2020-01-01T00:00:00.000Z'))
 
     const result = await expireElapsedMembershipsBatch(1_000_000)
@@ -181,7 +221,11 @@ describe('expireElapsedMembershipsForUsers', () => {
     const admin = await createTestUser({ administrator: true })
     const member = await createTestUser()
     const sku = await createTestSku({ plan: 'plus' })
-    const membership = await grantMembership(admin.id, member.id, 'plus', sku.id, 30)
+    const membership = await createTestAdminGrantMembership({
+      grantedById: admin.id,
+      productId: sku.id,
+      userId: member.id,
+    })
     await updateTestMembershipExpiresAt(membership.id, new Date('2020-01-01T00:00:00.000Z'))
 
     await withTestMembershipUserLocked(member.id, async () => {

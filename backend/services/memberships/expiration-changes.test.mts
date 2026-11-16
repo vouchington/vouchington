@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
   beginTransaction,
+  createTestAdminGrantMembership,
   createTestSku,
   createTestUser,
   getTestGrantQueue,
   readTestMembershipExpirationChanges,
   setTestMembershipGrantRemainingMilliseconds,
 } from '@voucha/test-helpers'
-import { createMembership, grantMembership } from './create.mts'
+import { createMembership } from './create.mts'
 import { resumeGrantAfterDirectAccessSuspensionInTransaction as resumeDirect } from './grants/resume-after-direct-termination.mts'
 
 describe('exhausted paused grants on direct termination', () => {
@@ -15,7 +16,13 @@ describe('exhausted paused grants on direct termination', () => {
     const admin = await createTestUser({ administrator: true })
     const member = await createTestUser()
     const grantSku = await createTestSku({ plan: 'plus' })
-    await grantMembership(admin.id, member.id, 'plus', grantSku.id, 1)
+    // Committed fixture: the SERIALIZABLE grant writer is only setup here, and parallel tests'
+    // predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
+    await createTestAdminGrantMembership({
+      grantedById: admin.id,
+      productId: grantSku.id,
+      userId: member.id,
+    })
     const pausedGrantIds = (await getTestGrantQueue(member.id)).grant_ids
     const directSku = await createTestSku({ plan: 'pro', interval: 'yearly' })
     const stripeSubscriptionId = `sub_exhausted_changes_${member.id}`

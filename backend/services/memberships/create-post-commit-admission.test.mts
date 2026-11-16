@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { GlideClient } from '@glidemq/speedkey'
 import {
@@ -15,6 +16,11 @@ import { createMembership } from './create.mts'
 import { getMembershipByUserId } from './get.mts'
 import { updateMembershipFromEvent } from './update.mts'
 
+// Admission runs after any projected membership commits. A direct (Stripe-sourced) membership
+// commits at the default isolation level, so parallel tests' SERIALIZABLE predicate locks cannot
+// abort it with 40001; the SERIALIZABLE grant writer has its own tests in create.test.mts.
+const directSubscriptionId = () => `sub_admission_${randomUUID()}`
+
 describe('createMembership post-commit entitlement admission', () => {
   it('waits for owned admission after the membership is durable', async () => {
     const admission = Promise.withResolvers<void>()
@@ -28,7 +34,7 @@ describe('createMembership post-commit entitlement admission', () => {
         userId: member.id,
         plan: 'plus',
         skuId: sku.id,
-        durationDays: 30,
+        stripeSubscriptionId: directSubscriptionId(),
       }).then(result => {
         settled = true
         return result
@@ -101,7 +107,12 @@ describe('createMembership post-commit entitlement admission', () => {
     })
     try {
       await expect(
-        createMembership({ userId: member.id, plan: 'plus', skuId: sku.id, durationDays: 30 }),
+        createMembership({
+          userId: member.id,
+          plan: 'plus',
+          skuId: sku.id,
+          stripeSubscriptionId: directSubscriptionId(),
+        }),
       ).resolves.toMatchObject({ projected: true })
 
       await expect(getMembershipByUserId(member.id)).resolves.toMatchObject({
@@ -132,7 +143,7 @@ describe('createMembership post-commit entitlement admission', () => {
         userId: member.id,
         plan: 'plus',
         skuId: sku.id,
-        durationDays: 30,
+        stripeSubscriptionId: directSubscriptionId(),
       }).then(result => {
         settled = true
         return result
