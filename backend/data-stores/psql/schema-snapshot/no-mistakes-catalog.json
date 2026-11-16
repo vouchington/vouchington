@@ -32556,6 +32556,7 @@
       "foreignKeys": {
         "fk_copyright_notice_appeal_recommendation_runs__result": {
           "columns": ["copyright_notice_appeal_recommendation_id"],
+          "deferrable": false,
           "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
@@ -32564,6 +32565,7 @@
         },
         "fk_copyright_notice_appeal_recommendation_runs__submission": {
           "columns": ["copyright_notice_submission_id"],
+          "deferrable": false,
           "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
@@ -37830,6 +37832,7 @@
       "foreignKeys": {
         "fk_copyright_email_recommendation_runs__intake_receipt": {
           "columns": ["copyright_notice_email_intake_receipt_id"],
+          "deferrable": false,
           "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
@@ -37841,6 +37844,7 @@
             "copyright_notice_email_intake_receipt_id",
             "copyright_notice_email_intake_recommendation_id"
           ],
+          "deferrable": false,
           "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["copyright_notice_email_intake_receipt_id", "id"],
@@ -44471,6 +44475,7 @@
       "foreignKeys": {
         "fk_copyright_notice_submission_guidance_runs__result": {
           "columns": ["copyright_notice_submission_guidance_id"],
+          "deferrable": false,
           "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
@@ -44479,6 +44484,7 @@
         },
         "fk_copyright_notice_submission_guidance_runs__submission": {
           "columns": ["copyright_notice_submission_id"],
+          "deferrable": false,
           "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
