@@ -1368,6 +1368,47 @@
       }
     },
     {
+      // Source: backend/data-stores/valkey/AGENTS.md, "Batch complete key sets with MGET, Batch,
+      // or Lua instead of per-key sequential calls."
+      "files": ["**/backend/**/*.{mts,ts,cts}"],
+      "excludeFiles": ["**/*.test.*", "**/*.spec.*", "**/test-helpers/**"],
+      "rules": {
+        "no-mistakes/no-consecutive-unbatched-reads": [
+          "error",
+          {
+            "clients": [
+              "cacheValkeyClient",
+              "sessionValkeyClient",
+              "dynamicConfigValkeyClient",
+              "dynamicConfigPrimaryValkeyClient",
+              "rateLimiterValkeyClient",
+              "bloomValkeyClient"
+            ],
+            "readMethods": [
+              "get",
+              "mget",
+              "hget",
+              "hgetall",
+              "hmget",
+              "exists",
+              "ttl",
+              "pttl",
+              "smembers",
+              "sismember",
+              "zscore",
+              "zrange",
+              "zcard",
+              "scard",
+              "llen",
+              "type",
+              "strlen"
+            ],
+            "message": "Consecutive independent Valkey reads on the same client cost one round trip each. Batch the complete key set with MGET, Batch, or Lua."
+          }
+        ]
+      }
+    },
+    {
       // Source: backend/AGENTS.md line 10, "Runtime code uses `addGracefulShutdownCallback()`,
       // never `process.kill()` or direct `process.exit()`". Scoped to long-running runtime packages;
       // the graceful-shutdown owner (backend/data-stores), CLI scripts, entrypoints, and dev tooling
