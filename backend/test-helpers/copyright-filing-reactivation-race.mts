@@ -24,7 +24,7 @@ export async function raceCopyrightFilingWithReactivation<Filing, Activation>(in
           const result = await Reflect.apply(target, thisArgument, args)
           if (
             !paused &&
-            text.includes('/* denyCopyrightCourtFilingPlacements:tuples */') &&
+            text.includes('/* denyCopyrightCourtFilingPlacements:current */') &&
             values.includes(input.noticeId)
           ) {
             paused = true

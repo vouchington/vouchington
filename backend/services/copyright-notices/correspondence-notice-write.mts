@@ -1,12 +1,10 @@
-import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 
 /** Write each affected case clock in identity order before its correspondence children. */
-export async function advanceCopyrightCorrespondenceNotices(
+export function advanceCopyrightCorrespondenceNotices(
   inputs: readonly { noticeId: string; submissionId: string | null }[],
-  transaction: TransactionQuery,
-): Promise<void> {
-  await transaction(sql`/* advanceCopyrightCorrespondenceNotices */
+) {
+  return sql`
     WITH written_notices AS (
       SELECT notice.id FROM copyright_notices notice
       WHERE notice.id = ANY(${inputs.map(input => input.noticeId)}::uuid[])
@@ -24,9 +22,11 @@ export async function advanceCopyrightCorrespondenceNotices(
       )
       ORDER BY notice.id
       FOR NO KEY UPDATE OF notice
-    )
+    ), advanced AS (
     UPDATE copyright_notices notice
     SET last_legal_activity_at = GREATEST(notice.last_legal_activity_at, clock_timestamp())
     FROM written_notices WHERE notice.id = written_notices.id
-  `)
+    RETURNING notice.id
+    )
+  `
 }

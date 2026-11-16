@@ -121,8 +121,7 @@ async function resolveCopyrightLegalHoldInTransaction(
     now: input.resolvedAt,
     query: transaction,
   })
-  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
-  return {
+  const result = {
     resolution,
     intentIds: [
       ...new Set([
@@ -132,4 +131,6 @@ async function resolveCopyrightLegalHoldInTransaction(
       ]),
     ],
   }
+  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
+  return result
 }

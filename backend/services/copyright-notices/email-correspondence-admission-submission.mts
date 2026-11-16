@@ -1,5 +1,5 @@
 import { imposeCopyrightCourtFilingRestrictions } from './court-filing-restrictions.mts'
-import { denyCopyrightCourtFilingPlacements } from './guest-filing-denial.mts'
+import { stageCopyrightCourtFilingDenials } from './guest-filing-denial.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
@@ -39,7 +39,12 @@ export async function insertAdmittedCopyrightEmailSubmission(
       | CopyrightEmailOtherSubmission
   },
   pending: AdmittedEmailCorrespondencePending,
-): Promise<{ submissionId: string; correspondenceId: string; withholdIntentIds: string[] }> {
+): Promise<{
+  submissionId: string
+  correspondenceId: string
+  withholdIntentIds: string[]
+  denialRecordIds: string[]
+}> {
   const submissionId = uuidv7()
   // The caller already owns the notice it writes. Preempt under that notice before inserting
   // the admitted filing, matching completion's notice-before-work order.
@@ -58,6 +63,7 @@ export async function insertAdmittedCopyrightEmailSubmission(
   const submission = submissions[0]
   assert(submission, 500, 'Failed to record copyright email submission')
   let withholdIntentIds: string[] = []
+  let denialRecordIds: string[] = []
   if (input.kind === 'court_or_ccb_hold') {
     withholdIntentIds = await imposeCopyrightCourtFilingRestrictions(
       pending.notice_id,
@@ -65,7 +71,7 @@ export async function insertAdmittedCopyrightEmailSubmission(
       pending.received_at,
       transaction,
     )
-    await denyCopyrightCourtFilingPlacements(pending.notice_id, transaction)
+    denialRecordIds = await stageCopyrightCourtFilingDenials(pending.notice_id, transaction)
   }
   if (input.kind === 'complaint')
     await createGuestTerritorialComplaintFromEmail(
@@ -111,5 +117,10 @@ export async function insertAdmittedCopyrightEmailSubmission(
   `)
   const correspondence = correspondenceRows[0]
   assert(correspondence, 500, 'Failed to record copyright email correspondence')
-  return { submissionId: submission.id, correspondenceId: correspondence.id, withholdIntentIds }
+  return {
+    submissionId: submission.id,
+    correspondenceId: correspondence.id,
+    withholdIntentIds,
+    denialRecordIds,
+  }
 }

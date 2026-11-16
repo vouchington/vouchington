@@ -1,5 +1,8 @@
 import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
-import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
+import {
+  enqueueBulkApplyCopyrightActions,
+  enqueueBulkApplyMediaDeliveryRegistryRecords,
+} from '@queues/notifications/enqueues'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
@@ -138,7 +141,7 @@ async function admitCopyrightEmailCorrespondenceInOwnedTransaction(input: {
     422,
     'Correspondence kind does not apply to this jurisdiction',
   )
-  const { submissionId, correspondenceId, withholdIntentIds } =
+  const { submissionId, correspondenceId, withholdIntentIds, denialRecordIds } =
     await insertAdmittedCopyrightEmailSubmission(transaction, input, pending)
   const rationaleCiphertext = encryptSecret(
     input.rationale,
@@ -174,6 +177,7 @@ async function admitCopyrightEmailCorrespondenceInOwnedTransaction(input: {
     })
   }
   await transaction.commit()
+  if (denialRecordIds.length > 0) void enqueueBulkApplyMediaDeliveryRegistryRecords(denialRecordIds)
   if (withholdIntentIds.length > 0) void enqueueBulkApplyCopyrightActions(withholdIntentIds)
   return {
     noticeId: pending.notice_id,

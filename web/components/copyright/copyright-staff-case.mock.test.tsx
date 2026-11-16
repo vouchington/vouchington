@@ -77,6 +77,11 @@ describe('CopyrightStaffCase restriction decisions', () => {
         targets: busyCase.targets,
         restrictions: [
           {
+            ...busyCase.restrictions[1]!,
+            status: 'pending_review',
+            copyright_notice_submission_id: null,
+          },
+          {
             ...busyCase.restrictions[0]!,
             status,
             copyright_notice_submission_id: busyCase.legal_holds[0]!.submission_id,
@@ -95,13 +100,29 @@ describe('CopyrightStaffCase restriction decisions', () => {
           />,
         )
       })
-      const section = screen.getByRole('region', { name: /^Restriction review for/ })
+      const filingSection = screen.getByRole('region', {
+        name: `Restriction review for ${busyCase.targets[0]!.hosted_use_url}`,
+      })
+      const assessmentSection = screen.getByRole('region', {
+        name: `Restriction review for ${busyCase.targets[1]!.hosted_use_url}`,
+      })
       expect(
-        within(section).getByRole('link', { name: busyCase.targets[0]!.hosted_use_url }),
+        within(filingSection).getByRole('link', { name: busyCase.targets[0]!.hosted_use_url }),
       ).toBeInTheDocument()
-      expect(within(section).getByText(/Material withheld for a court/)).toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: 'Confirm restriction' })).not.toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: 'Reverse restriction' })).not.toBeInTheDocument()
+      expect(within(filingSection).getByText(/Material withheld for a court/)).toBeInTheDocument()
+      expect(
+        within(filingSection).queryByRole('button', { name: 'Confirm restriction' }),
+      ).not.toBeInTheDocument()
+      expect(
+        within(filingSection).queryByRole('button', { name: 'Reverse restriction' }),
+      ).not.toBeInTheDocument()
+      expect(
+        within(assessmentSection).getByRole('button', { name: 'Confirm restriction' }),
+      ).toBeInTheDocument()
+      expect(
+        within(assessmentSection).getByRole('button', { name: 'Reverse restriction' }),
+      ).toBeInTheDocument()
+      expect(within(assessmentSection).queryByText(/Material withheld for a court/)).toBeNull()
       expect(
         screen.getByRole('heading', { name: 'Court or Copyright Claims Board filing' }),
       ).toBeInTheDocument()

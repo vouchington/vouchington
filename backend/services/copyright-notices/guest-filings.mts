@@ -1,7 +1,9 @@
 import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
-import { imposeCopyrightCourtFilingRestrictions } from './court-filing-restrictions.mts'
-import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
-import { denyCopyrightCourtFilingPlacements } from './guest-filing-denial.mts'
+import {
+  enqueueBulkApplyCopyrightActions,
+  enqueueBulkApplyMediaDeliveryRegistryRecords,
+} from '@queues/notifications/enqueues'
+import { applyCopyrightCourtFiling } from './guest-filing-denial.mts'
 import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -11,7 +13,6 @@ import { recordClaimantMisuseEvent } from './claimant-misuse-ledger.mts'
 import { copyrightGuestCapabilityPurpose } from './guest-capabilities.mts'
 import { revokeCopyrightGuestCapabilitiesForWithdrawal } from './guest-capability-withdrawal.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
-import { preemptCopyrightRestorations } from './restore-preemption.mts'
 
 const guestFilingKinds = ['supplement', 'withdrawal', 'court_or_ccb_hold'] as const
 type GuestFilingKind = (typeof guestFilingKinds)[number]
@@ -72,6 +73,7 @@ async function appendCopyrightGuestFilingInOwnedTransaction(input: {
     input.kind === 'court_or_ccb_hold' ? { serializable: true } : {},
   )
   let withholdIds: string[] = []
+  let denialRecordIds: string[] = []
   const capabilityId = await lockGuestCapability(transaction, input)
   if (input.kind === 'court_or_ccb_hold') await assertNoGuestCourtHold(transaction, capabilityId)
   const lifecycleEvent = sql`/* appendCopyrightGuestFiling:event */
@@ -108,14 +110,12 @@ async function appendCopyrightGuestFilingInOwnedTransaction(input: {
       VALUES (${submission.id}, ${input.now})
     `)
     // The filing and its lifecycle are durable together before preemption can commit.
-    await preemptCopyrightRestorations(input.noticeId, transaction)
-    withholdIds = await imposeCopyrightCourtFilingRestrictions(
+    ;({ withholdIds, denialRecordIds } = await applyCopyrightCourtFiling(
       input.noticeId,
       submission.id,
       input.now,
       transaction,
-    )
-    await denyCopyrightCourtFilingPlacements(input.noticeId, transaction)
+    ))
   }
   if (input.kind === 'withdrawal') {
     await recordClaimantMisuseEvent(transaction, {
@@ -129,6 +129,7 @@ async function appendCopyrightGuestFilingInOwnedTransaction(input: {
     })
   }
   await transaction.commit()
+  if (denialRecordIds.length > 0) void enqueueBulkApplyMediaDeliveryRegistryRecords(denialRecordIds)
   if (withholdIds.length > 0) void enqueueBulkApplyCopyrightActions(withholdIds)
   return submission
 }

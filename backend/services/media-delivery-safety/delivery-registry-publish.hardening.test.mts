@@ -1,3 +1,4 @@
+import { readCopyrightFilingProjection } from '@voucha/test-helpers/copyright-filing-projection'
 import { createCopyrightCourtFilingScene } from '@voucha/test-helpers/copyright-court-filing-scene'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -28,7 +29,7 @@ describe('standalone delivery publication racing court admission', () => {
     vi.unstubAllEnvs()
   })
   it.each(['before_proof', 'after_proof'] as const)(
-    'rejects a conflicting filing when publication already reached %s',
+    'durably stages court denial when publication already reached %s',
     async boundary => {
       for (const [key, value] of Object.entries(await mediaDeliveryEdgeEnvironment()))
         vi.stubEnv(key, value)
@@ -71,14 +72,18 @@ describe('standalone delivery publication racing court admission', () => {
       })
       expect(outcomes[0]).toEqual({ status: 'fulfilled', value: 'completed' })
       expect(outcomes[1]).toMatchObject({
-        status: 'rejected',
-        reason: { status: 409, cause: { code: '40001' } },
+        status: 'fulfilled',
+        value: { kind: 'court_or_ccb_hold' },
       })
+      const [currentRecord] = await readCopyrightFilingProjection(tuple.placementId)
+      expect(currentRecord).toMatchObject({ desired_state: 'withheld', state: 'pending' })
+      if (!currentRecord) throw new Error('Committed court denial missing')
+      await processMediaDeliveryRegistryRecord(currentRecord.id)
       const after = await getCopyrightNoticePrivateAggregate(scene.notice.id)
-      expect(after?.submissions.filter(row => row.kind === 'court_or_ccb_hold')).toHaveLength(0)
+      expect(after?.submissions.filter(row => row.kind === 'court_or_ccb_hold')).toHaveLength(1)
       expect(
         after?.lifecycleEvents.filter(row => row.change_type === 'court_or_ccb_hold_received'),
-      ).toHaveLength(0)
+      ).toHaveLength(1)
       expect(after?.actionIntents.find(row => row.id === scene.restore.id)).toMatchObject({
         state: 'completed',
       })
@@ -90,12 +95,12 @@ describe('standalone delivery publication racing court admission', () => {
       )
       await processApplyMediaDeliveryRegistryRecord({ mediaDeliveryRegistryRecordId: recordId })
       const recovered = await readMediaDeliveryRegistryItem(key)
-      expect((await getImagePlacementForCopyright(tuple.placementId))?.withheld).toBe(false)
-      expect(recovered?.state).toBe('allow')
+      expect((await getImagePlacementForCopyright(tuple.placementId))?.withheld).toBe(true)
+      expect(recovered?.state).toBe('withheld')
     },
   )
 
-  it('commits denial of both old and current keys before a claimed standalone publisher resumes', async () => {
+  it('commits current denial work before a claimed standalone publisher resumes', async () => {
     for (const [key, value] of Object.entries(await mediaDeliveryEdgeEnvironment()))
       vi.stubEnv(key, value)
     const scene = await createCopyrightCourtFilingScene()
@@ -111,8 +116,7 @@ describe('standalone delivery publication racing court admission', () => {
     )
     let currentKey = ''
     let filingId = ''
-    let oldAtCommit: Awaited<ReturnType<typeof readMediaDeliveryRegistryItem>>
-    let currentAtCommit: Awaited<ReturnType<typeof readMediaDeliveryRegistryItem>>
+    let currentRecordId = ''
     const outcomes = await admitCopyrightFilingWhilePublisherPaused({
       placementId: tuple.placementId,
       publisher: () => processMediaDeliveryRegistryRecord(staged.mediaDeliveryRegistryRecordId),
@@ -127,18 +131,16 @@ describe('standalone delivery publication racing court admission', () => {
           revision: current.revision,
           imageId: current.imageId,
         })
-        oldAtCommit = await readMediaDeliveryRegistryItem(oldKey)
-        currentAtCommit = await readMediaDeliveryRegistryItem(currentKey)
+        const [currentRecord] = await readCopyrightFilingProjection(tuple.placementId)
+        expect(currentRecord).toMatchObject({ desired_state: 'withheld', state: 'pending' })
+        if (!currentRecord) throw new Error('Committed court denial missing')
+        currentRecordId = currentRecord.id
         return filing
       },
     })
-    expect(outcomes[0]).toMatchObject({
-      status: 'rejected',
-      reason: expect.objectContaining({ message: expect.stringContaining('generation changed') }),
-    })
+    expect(outcomes[0]).toEqual({ status: 'fulfilled', value: 'completed' })
     expect(outcomes[1]).toMatchObject({ status: 'fulfilled', value: { kind: 'court_or_ccb_hold' } })
-    expect(oldAtCommit).toMatchObject({ state: 'withheld' })
-    expect(currentAtCommit).toMatchObject({ state: 'withheld' })
+    await expect(processMediaDeliveryRegistryRecord(currentRecordId)).resolves.toBe('completed')
     expect(await readMediaDeliveryRegistryItem(oldKey)).toMatchObject({ state: 'withheld' })
     expect(await readMediaDeliveryRegistryItem(currentKey)).toMatchObject({ state: 'withheld' })
     const after = await getCopyrightNoticePrivateAggregate(scene.notice.id)

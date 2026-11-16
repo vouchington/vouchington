@@ -31,10 +31,11 @@ export async function createDeterministicCopyrightCorrespondencesInTransaction(
   if (inputs.length === 0) return []
   for (const input of inputs)
     assert(input.bodyText.trim().length > 0, 422, 'Copyright correspondence body is required')
-  await advanceCopyrightCorrespondenceNotices(inputs, transaction)
   const ids = inputs.map(() => uuidv7())
   const { rows } = await transaction<CopyrightCorrespondenceRecord>(
-    sql`/* createDeterministicCopyrightCorrespondencesInTransaction */
+    sql`/* createDeterministicCopyrightCorrespondencesInTransaction */`.append(
+      advanceCopyrightCorrespondenceNotices(inputs),
+    ).append(sql`
       INSERT INTO copyright_notice_correspondence_messages (
         id, copyright_notice_id, copyright_notice_submission_id, direction, correspondence_kind,
         composition_kind, body_ciphertext, drafted_by_id
@@ -48,7 +49,7 @@ export async function createDeterministicCopyrightCorrespondencesInTransaction(
         ${inputs.map(input => input.correspondenceKind)}::copyright_notice_correspondence_kinds[],
         ${inputs.map((input, index) => encryptSecret(input.bodyText, copyrightCorrespondencePurpose(ids[index]!)))}::text[]
       ) AS input(id, notice_id, submission_id, correspondence_kind, body_ciphertext)
-      JOIN copyright_notices notice ON notice.id = input.notice_id
+      JOIN advanced notice ON notice.id = input.notice_id
       WHERE input.submission_id IS NULL OR EXISTS (
           SELECT 1 FROM copyright_notice_submissions submission
           WHERE submission.id = input.submission_id AND submission.copyright_notice_id = notice.id
@@ -57,7 +58,7 @@ export async function createDeterministicCopyrightCorrespondencesInTransaction(
       RETURNING id, copyright_notice_id, copyright_notice_submission_id, copyright_notice_email_intake_id,
         direction, correspondence_kind, composition_kind, body_ciphertext, drafted_by_id,
         approved_at, approved_by_id, sent_at
-    `,
+    `),
   )
   const byId = new Map(rows.map(row => [row.id, row]))
   return ids.map(id => {
@@ -136,10 +137,11 @@ async function insertOutboundCopyrightCorrespondence(
   input: Parameters<typeof createOutboundCopyrightCorrespondence>[0],
   transaction: TransactionQuery,
 ): Promise<CopyrightCorrespondenceRecord> {
-  await advanceCopyrightCorrespondenceNotices([input], transaction)
   const id = input.id ?? uuidv7()
-  const { rows } =
-    await transaction<CopyrightCorrespondenceRecord>(sql`/* createOutboundCopyrightCorrespondence */
+  const { rows } = await transaction<CopyrightCorrespondenceRecord>(
+    sql`/* createOutboundCopyrightCorrespondence */`.append(
+      advanceCopyrightCorrespondenceNotices([input]),
+    ).append(sql`
     INSERT INTO copyright_notice_correspondence_messages (
       id, copyright_notice_id, copyright_notice_submission_id, direction, correspondence_kind,
       composition_kind, body_ciphertext, drafted_by_id
@@ -147,7 +149,7 @@ async function insertOutboundCopyrightCorrespondence(
     SELECT
       ${id}, ${input.noticeId}, ${input.submissionId}, 'outbound', ${input.correspondenceKind},
       ${input.compositionKind}, ${input.bodyCiphertext}, ${input.draftedById}
-    FROM copyright_notices notice
+    FROM advanced notice
     WHERE notice.id = ${input.noticeId}
       AND (
         ${input.submissionId}::uuid IS NULL
@@ -160,7 +162,8 @@ async function insertOutboundCopyrightCorrespondence(
     RETURNING id, copyright_notice_id, copyright_notice_submission_id, copyright_notice_email_intake_id,
       direction, correspondence_kind,
       composition_kind, body_ciphertext, drafted_by_id, approved_at, approved_by_id, sent_at
-  `)
+  `),
+  )
   const correspondence = rows[0]
   assert(correspondence, 404, 'Copyright notice or case submission not found')
   await transaction(sql`/* createOutboundCopyrightCorrespondence:event */

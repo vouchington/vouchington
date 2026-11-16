@@ -124,7 +124,9 @@ staff recorded that it came from the notifier or their agent (17 USC 512(g)(2)(C
 rather than threatened, identifies the same material, and (for the CCB) is a qualifying claim under
 17 USC 1507(d). Until staff assess a filing it blocks every target; afterwards only the targets it
 names. Admission retains the filing itself as immutable restriction authority and withholds the
-actual placement before committing its edge denial. It never invents a compliant notice assessment.
+actual placement and stages its registry denial in the same transaction. Edge publication follows
+commit through the existing delivery worker and recovery path, so provider failures leave durable
+denial work without holding the filing transaction open. It never invents a compliant notice assessment.
 The restriction and its initial decision notice remain visible to staff while qualification is
 pending, without offering an ordinary notice-assessment confirmation or reversal.
 

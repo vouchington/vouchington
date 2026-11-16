@@ -7,15 +7,13 @@ import {
   readMediaDeliveryRegistryItem,
 } from '@voucha/test-helpers/media-delivery-emulator'
 import { createCopyrightCourtFilingScene } from '@voucha/test-helpers/copyright-court-filing-scene'
-import { createTestCopyrightImageFixture } from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { getImagePlacementForCopyright } from '@services/images/placements'
-import {
-  stageImagePlacementDeliveryRecord,
-  publishStagedMediaDeliveryRecord,
-} from '@services/media-delivery-safety'
-import { getMediaDeliverySafetyWorkLimit } from '../media-delivery-safety/work-limits.mts'
+import { processMediaDeliveryRegistryRecord } from '@services/media-delivery-safety'
 import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
+import { readCopyrightFilingProjection } from '@voucha/test-helpers/copyright-filing-projection'
+import { getTestMediaDeliveryTransitionHistory } from '@voucha/test-helpers/entities/media-delivery-retry'
+import { listRecoverableMediaDeliveryRegistryIds } from '../media-delivery-safety/delivery-registry-recovery-scan.mts'
 
 describe('atomic court filing publication', () => {
   afterEach(() => {
@@ -23,53 +21,81 @@ describe('atomic court filing publication', () => {
     vi.unstubAllEnvs()
   })
 
-  it('denies every current tuple before commit across provider chunks', async () => {
+  it('commits current denial work before any provider publication and preserves historical generations', async () => {
     for (const [key, value] of Object.entries(await mediaDeliveryEdgeEnvironment()))
       vi.stubEnv(key, value)
-    const surfaces = await Promise.all(
-      Array.from({ length: getMediaDeliverySafetyWorkLimit('edge_publish_batch_size') + 1 }, () =>
-        createTestCopyrightImageFixture('user-profile-image'),
-      ),
+    const scene = await createCopyrightCourtFilingScene()
+    const [oldRecord] = await readCopyrightFilingProjection(scene.surface.placementId)
+    if (!oldRecord) throw new Error('Initial allow projection missing')
+    const historical = await getTestMediaDeliveryTransitionHistory(oldRecord.id)
+    const publish = vi.spyOn(edge, 'putMediaDeliveryRegistryRecord')
+    const reset = afterPostgresTransactionQueryForTest(
+      'stageImagePlacementDeliveryRecords',
+      values =>
+        values.some(value => Array.isArray(value) && value.includes(scene.surface.placementId)),
+      async () => {
+        expect(publish).not.toHaveBeenCalled()
+        const beforeCommit = await getCopyrightNoticePrivateAggregate(scene.notice.id)
+        expect(beforeCommit?.submissions.filter(row => row.kind === 'court_or_ccb_hold')).toEqual(
+          [],
+        )
+      },
     )
-    const scene = await createCopyrightCourtFilingScene({
-      surface: surfaces[0]!,
-      additionalSurfaces: surfaces.slice(1),
+    try {
+      await scene.file()
+    } finally {
+      reset()
+    }
+    expect(publish).not.toHaveBeenCalled()
+    const committed = await getCopyrightNoticePrivateAggregate(scene.notice.id)
+    expect(committed?.submissions.filter(row => row.kind === 'court_or_ccb_hold')).toHaveLength(1)
+    const [record] = await readCopyrightFilingProjection(scene.surface.placementId)
+    expect(record).toMatchObject({ desired_state: 'withheld', state: 'pending' })
+    if (!record) throw new Error('Committed denial projection missing')
+    expect(record.placement_revision).toBeGreaterThan(oldRecord.placement_revision)
+    expect(await getTestMediaDeliveryTransitionHistory(oldRecord.id)).toEqual(historical)
+    const recovery = await listRecoverableMediaDeliveryRegistryIds({
+      limit: 1,
+      scanBefore: new Date().toISOString(),
+      recordIds: [record.id],
     })
-    for (const surface of surfaces.slice(1)) {
-      const staged = await stageImagePlacementDeliveryRecord({
-        placementId: surface.placementId,
-        revision: surface.placementRevision,
-        imageId: surface.imageId,
-        state: 'allow',
-      })
-      await publishStagedMediaDeliveryRecord(staged.mediaDeliveryRegistryRecordId)
-    }
-    await scene.file()
-    for (const surface of surfaces) {
-      const current = await getImagePlacementForCopyright(surface.placementId)
-      if (!current) throw new Error('Filing target disappeared')
-      expect(current.withheld).toBe(true)
-      expect(
-        await readMediaDeliveryRegistryItem(
-          getImagePlacementDeliveryKey({
-            placementId: current.placementId,
-            revision: current.revision,
-            imageId: current.imageId,
-          }),
-        ),
-      ).toMatchObject({ state: 'withheld' })
-    }
+    expect(recovery.results).toEqual([record.id])
+    await expect(processMediaDeliveryRegistryRecord(record.id)).resolves.toBe('completed')
+    expect(publish).toHaveBeenCalledOnce()
+    const current = await getImagePlacementForCopyright(scene.surface.placementId)
+    if (!current) throw new Error('Filing target disappeared')
+    expect(
+      await readMediaDeliveryRegistryItem(
+        getImagePlacementDeliveryKey({
+          placementId: current.placementId,
+          revision: current.revision,
+          imageId: current.imageId,
+        }),
+      ),
+    ).toMatchObject({ state: 'withheld' })
   })
 
-  it('does not commit filing authority or placement withholding when provider denial fails', async () => {
+  it('rolls back staged denial work without publishing when admission fails before commit', async () => {
     for (const [key, value] of Object.entries(await mediaDeliveryEdgeEnvironment()))
       vi.stubEnv(key, value)
     const scene = await createCopyrightCourtFilingScene()
     const before = await getImagePlacementForCopyright(scene.surface.placementId)
-    vi.spyOn(edge, 'putMediaDeliveryRegistryRecord').mockRejectedValueOnce(
-      new Error('Owned provider denial failed'),
+    const projection = await readCopyrightFilingProjection(scene.surface.placementId)
+    const publish = vi.spyOn(edge, 'putMediaDeliveryRegistryRecord')
+    const reset = afterPostgresTransactionQueryForTest(
+      'stageImagePlacementDeliveryRecords',
+      values =>
+        values.some(value => Array.isArray(value) && value.includes(scene.surface.placementId)),
+      async () => {
+        throw new Error('Owned admission failed after staging')
+      },
     )
-    await expect(scene.file()).rejects.toThrow('Owned provider denial failed')
+    try {
+      await expect(scene.file()).rejects.toThrow('Owned admission failed after staging')
+    } finally {
+      reset()
+    }
+    expect(publish).not.toHaveBeenCalled()
     const after = await getCopyrightNoticePrivateAggregate(scene.notice.id)
     expect(after?.submissions.filter(row => row.kind === 'court_or_ccb_hold')).toEqual([])
     expect(after?.restrictions).toEqual([])
@@ -77,6 +103,29 @@ describe('atomic court filing publication', () => {
       after?.lifecycleEvents.filter(row => row.change_type === 'court_or_ccb_hold_received'),
     ).toEqual([])
     expect(await getImagePlacementForCopyright(scene.surface.placementId)).toEqual(before)
+    expect(await readCopyrightFilingProjection(scene.surface.placementId)).toEqual(projection)
+  })
+
+  it('keeps committed filing authority and recoverable work when postcommit provider publication fails', async () => {
+    for (const [key, value] of Object.entries(await mediaDeliveryEdgeEnvironment()))
+      vi.stubEnv(key, value)
+    const scene = await createCopyrightCourtFilingScene()
+    await scene.file()
+    const [record] = await readCopyrightFilingProjection(scene.surface.placementId)
+    if (!record) throw new Error('Committed denial projection missing')
+    vi.spyOn(edge, 'putMediaDeliveryRegistryRecord').mockRejectedValueOnce(
+      new Error('Owned provider failure'),
+    )
+    await expect(processMediaDeliveryRegistryRecord(record.id)).rejects.toThrow(
+      'Owned provider failure',
+    )
+    const committed = await getCopyrightNoticePrivateAggregate(scene.notice.id)
+    expect(committed?.submissions.filter(row => row.kind === 'court_or_ccb_hold')).toHaveLength(1)
+    expect(committed?.restrictions).toHaveLength(1)
+    expect((await getImagePlacementForCopyright(scene.surface.placementId))?.withheld).toBe(true)
+    const history = await getTestMediaDeliveryTransitionHistory(record.id)
+    expect(history.at(-1)).toMatchObject({ change_type: 'pending' })
+    expect(history.some(row => row.change_type === 'completed')).toBe(false)
   })
 
   it('rejects filing after a different case fully restores an already-withheld placement beyond its final tuple read', async () => {

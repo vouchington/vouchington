@@ -15,12 +15,21 @@ export async function beginCopyrightRestorePreparation(
   event: 'restoration_unavailable' | 'restoration_authorized_pending_delivery',
   query: TransactionQuery,
 ): Promise<LockedCopyrightActionDelivery | null> {
-  await query(sql`/* prepareCopyrightAction:savepoint */ SAVEPOINT copyright_restore_preparation`)
-  await insertCopyrightActionLifecycleEvent(legal, intentId, event, query)
+  await insertTentativeCopyrightRestorationEvent(legal, intentId, event, query)
   const refreshed = await readCopyrightActionPreparation(intentId, legal.lease_token, query)
   if (!refreshed || !(await renewCopyrightActionIntentLease(intentId, legal.lease_token, query)))
     return null
   return refreshed
+}
+
+async function insertTentativeCopyrightRestorationEvent(
+  legal: LockedCopyrightActionDelivery,
+  intentId: string,
+  event: 'restoration_unavailable' | 'restoration_authorized_pending_delivery',
+  query: TransactionQuery,
+): Promise<void> {
+  await query(sql`/* prepareCopyrightAction:savepoint */ SAVEPOINT copyright_restore_preparation`)
+  await insertCopyrightActionLifecycleEvent(legal, intentId, event, query)
 }
 
 export async function rollbackCopyrightRestorePreparation(query: TransactionQuery): Promise<void> {
