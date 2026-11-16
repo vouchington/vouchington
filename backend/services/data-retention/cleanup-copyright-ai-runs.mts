@@ -11,7 +11,6 @@ export type CopyrightAiRunCleanupOptions = {
   maxBatches: number
   retentionDays?: number
   now?: Date
-  runIds?: readonly string[]
 }
 
 /**
@@ -29,7 +28,7 @@ export async function cleanupCopyrightAiRuns(
   const results = await Promise.all(
     COPYRIGHT_AI_RUN_KINDS.map(kind =>
       runBoundedBatches(options, batchSize =>
-        deleteExpiredCopyrightAiRunBatch(kind, cutoffId, batchSize, options.runIds),
+        deleteExpiredCopyrightAiRunBatch(kind, cutoffId, batchSize),
       ),
     ),
   )

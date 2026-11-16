@@ -12,22 +12,19 @@ export type CopyrightAiRunKind = keyof typeof AI_RUN_TABLES
 export const COPYRIGHT_AI_RUN_KINDS = Object.keys(AI_RUN_TABLES) as CopyrightAiRunKind[]
 
 /**
- * Deletes at most `batchSize` runs of one kind whose id is older than `cutoffId`, optionally
- * limited to `runIds`. Returns the number of rows deleted.
+ * Deletes at most `batchSize` runs of one kind whose id is older than `cutoffId`. Returns the
+ * number of rows deleted.
  */
 export async function deleteExpiredCopyrightAiRunBatch(
   kind: CopyrightAiRunKind,
   cutoffId: string,
   batchSize: number,
-  runIds?: readonly string[],
 ): Promise<number> {
   const table = AI_RUN_TABLES[kind]
   const query = sql`/* deleteOldCopyrightAiRunBatch */
     WITH candidates AS (
       SELECT id FROM `.append(table).append(sql`
-      WHERE id < ${cutoffId}::uuid`)
-  if (runIds) query.append(sql` AND id = ANY(${runIds}::uuid[])`)
-  query.append(sql`
+      WHERE id < ${cutoffId}::uuid
       ORDER BY id LIMIT ${batchSize}
     )
     DELETE FROM `)
