@@ -100,24 +100,25 @@ async function fetchCrawlerHtml(
   try {
     // @vouchington/crawler-html currently accepts Uint8Array only. This read is bounded at 4 MiB;
     // the response, snapshot, and hash paths remain file/stream based.
-    output.content = await extractHtmlContent(
+    const content = await extractHtmlContent(
       await readFile(htmlFile.filePath),
       contentType,
       markdownOptions,
     )
-    if (!skipEmbedResolution) {
-      const plan = await planCrawlerEmbed(url, output.content)
-      if (plan !== undefined) {
-        output.embedMetadata = plan?.embed ?? null
-        output.embedOEmbedUrl = plan?.oEmbedUrl ?? null
-      }
+    const plan = skipEmbedResolution ? undefined : await planCrawlerEmbed(url, content)
+    return {
+      ...output,
+      content,
+      ...(plan !== undefined && {
+        embedMetadata: plan?.embed ?? null,
+        embedOEmbedUrl: plan?.oEmbedUrl ?? null,
+      }),
+      htmlFile,
     }
-    output.htmlFile = htmlFile
   } catch (err) {
     await htmlFile.cleanup()
     throw err
   }
-  return output
 }
 
 export default async function CrawlerHtml(

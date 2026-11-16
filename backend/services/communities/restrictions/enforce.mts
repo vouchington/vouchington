@@ -109,26 +109,16 @@ async function postInputContainsLink(updates: CreatePostInput): Promise<boolean>
       if (image.caption) parts.push(image.caption)
     }
   }
-  collectStructuredDataStrings(updates.structured_data, parts)
-  const combined = parts.join('\n')
+  const combined = [...parts, ...collectStructuredDataStrings(updates.structured_data)].join('\n')
   if (!combined) return false
   // image_urls not checked: no_links targets clickable brigade links, not image sources
   const { link_urls } = await extract(combined)
   return link_urls.length > 0
 }
 
-function collectStructuredDataStrings(value: unknown, acc: string[] = []): void {
-  if (typeof value === 'string') {
-    acc.push(value)
-  } else if (value && typeof value === 'object') {
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        collectStructuredDataStrings(item, acc)
-      }
-    } else {
-      for (const item of Object.values(value as Record<string, unknown>)) {
-        collectStructuredDataStrings(item, acc)
-      }
-    }
-  }
+function collectStructuredDataStrings(value: unknown): string[] {
+  if (typeof value === 'string') return [value]
+  if (!value || typeof value !== 'object') return []
+  const items = Array.isArray(value) ? value : Object.values(value as Record<string, unknown>)
+  return items.flatMap(item => collectStructuredDataStrings(item))
 }

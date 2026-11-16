@@ -87,28 +87,47 @@ export async function inspectBoilerplateCrawls(
       : []
   const headsByUrl = new Map(heads.map(head => [head.url_id, head]))
   const metadataByUrl = new Map(metadata.map(crawl => [crawl.url_id, crawl]))
-  const eligibleCrawls: InspectionResult['eligibleCrawls'] = []
-  let lastUrlId: string | undefined
-  for (const url of urls) {
-    if (!url.eligible) {
-      lastUrlId = url.id
-      continue
-    }
+  // Every inspected URL before a stop passed the checks below, so its head id is an eligible crawl.
+  const eligibleBefore = (end: number): InspectionResult['eligibleCrawls'] =>
+    urls.slice(0, end).flatMap(url => {
+      const headId = url.eligible ? headsByUrl.get(url.id)?.id : null
+      return headId ? [{ url_id: url.id, crawl_id: headId }] : []
+    })
+  for (const [index, url] of urls.entries()) {
+    if (!url.eligible) continue
     const head = headsByUrl.get(url.id)
-    if (!head) return { eligibleCrawls, lastUrlId, allUrlsInspected: false }
+    if (!head) {
+      return {
+        eligibleCrawls: eligibleBefore(index),
+        lastUrlId: urls[index - 1]?.id,
+        allUrlsInspected: false,
+      }
+    }
     if (head.id !== null) {
       if (limit === 1) {
-        return { eligibleCrawls, lastUrlId: url.id, crawlProbe: head.id, allUrlsInspected: false }
+        return {
+          eligibleCrawls: eligibleBefore(index),
+          lastUrlId: url.id,
+          crawlProbe: head.id,
+          allUrlsInspected: false,
+        }
       }
       const crawl = metadataByUrl.get(url.id)
       if (!crawl?.id || !isEligibleCrawl(crawl, options.cutoff)) {
-        return { eligibleCrawls, lastUrlId: url.id, crawlAfter: head.id, allUrlsInspected: false }
+        return {
+          eligibleCrawls: eligibleBefore(index),
+          lastUrlId: url.id,
+          crawlAfter: head.id,
+          allUrlsInspected: false,
+        }
       }
-      eligibleCrawls.push({ url_id: url.id, crawl_id: head.id })
     }
-    lastUrlId = url.id
   }
-  return { eligibleCrawls, lastUrlId, allUrlsInspected: true }
+  return {
+    eligibleCrawls: eligibleBefore(urls.length),
+    lastUrlId: urls.at(-1)?.id,
+    allUrlsInspected: true,
+  }
 }
 
 function settlePendingUrl(
