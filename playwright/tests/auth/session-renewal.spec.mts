@@ -15,7 +15,7 @@ test.describe('Session renewal page', () => {
       await route.fulfill({ status: 200, json: { session: { uid: 'renewed' } } })
     })
 
-    await page.goto(RENEWAL_URL, { waitUntil: 'domcontentloaded' })
+    await navigateTo(page, RENEWAL_URL, { waitUntil: 'load' })
 
     await expect(page.getByTestId('session-renewal-pending')).toBeVisible()
     releaseRenewal()

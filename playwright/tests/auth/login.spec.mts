@@ -79,7 +79,7 @@ test.describe('Login Page', () => {
     await expect(submitButton).toBeEnabled()
     await submitButton.click()
 
-    const codeStep = page.getByTestId('login-code-step')
+    const codeStep = page.getByTestId('login-code-panel').getByTestId('login-code-step')
     await expect(codeStep.getByTestId('login-verification-code-input')).toBeVisible()
     await expect(page.getByTestId('login-code-submit-button')).toBeVisible()
     await expect(page.getByTestId('login-code-back-button')).toBeVisible()

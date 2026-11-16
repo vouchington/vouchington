@@ -68,7 +68,10 @@ export function LoginCodePanel({
   }
 
   return (
-    <>
+    <div
+      className='contents'
+      data-pw='login-code-panel'
+    >
       <LoginCodeStep
         active={active}
         code={code}
@@ -79,7 +82,6 @@ export function LoginCodePanel({
         onResendCode={onResendCode}
         onSubmit={handleCodeSubmit}
         turnstileReady={turnstileToken !== null}
-        data-pw='login-code-step'
       />
       {step === 'mfa' && (
         <MfaStep
@@ -88,6 +90,6 @@ export function LoginCodePanel({
           onBack={handleMfaBack}
         />
       )}
-    </>
+    </div>
   )
 }
