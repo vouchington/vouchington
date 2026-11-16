@@ -1,6 +1,6 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { createTestMembership } from '../memberships.mts'
+import { createTestMembership } from './memberships.mts'
 
 type CreateTestAdminGrantMembershipOptions = {
   grantedById: string

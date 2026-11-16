@@ -107,7 +107,7 @@ export {
   holdUncommittedQueuedMembershipGrant,
   insertQueuedMembershipGrant,
 } from '../membership-queued-grant-hold.mts'
-export { createTestAdminGrantMembership } from './memberships/admin-grant.mts'
+export { createTestAdminGrantMembership } from './membership-admin-grant.mts'
 export * from './membership-change-references.mts'
 export * from './memberships/provider-lineages.mts'
 export {
