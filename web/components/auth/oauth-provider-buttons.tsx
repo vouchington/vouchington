@@ -54,108 +54,143 @@ export function FacebookLoginButton({ onAvailabilityChange, ...props }: OAuthBut
     )
   }
   return (
-    <ProviderButton
-      label='Facebook'
-      auth={auth}
-      provider='facebook'
-      buttonClassName={providerButtonClassNames.facebook}
-      getToken={async () => ({ provider: 'facebook', token: await auth.login() })}
-      {...props}
-    />
+    <div
+      className='contents'
+      data-pw='oauth-facebook-login-button'
+    >
+      <ProviderButton
+        label='Facebook'
+        auth={auth}
+        provider='facebook'
+        buttonClassName={providerButtonClassNames.facebook}
+        getToken={async () => ({ provider: 'facebook', token: await auth.login() })}
+        {...props}
+      />
+    </div>
   )
 }
 
 export function AppleLoginButton(props: OAuthButtonProps) {
   const auth = useAppleAuth()
   return (
-    <ProviderButton
-      label='Apple'
-      auth={auth}
-      provider='apple'
-      buttonClassName={providerButtonClassNames.apple}
-      getToken={async () => {
-        const result = await auth.login()
-        return {
-          provider: 'apple',
-          token: result.token,
-          nonce: result.nonce,
-          userData: result.userData,
-        }
-      }}
-      {...props}
-    />
+    <div
+      className='contents'
+      data-pw='oauth-apple-login-button'
+    >
+      <ProviderButton
+        label='Apple'
+        auth={auth}
+        provider='apple'
+        buttonClassName={providerButtonClassNames.apple}
+        getToken={async () => {
+          const result = await auth.login()
+          return {
+            provider: 'apple',
+            token: result.token,
+            nonce: result.nonce,
+            userData: result.userData,
+          }
+        }}
+        {...props}
+      />
+    </div>
   )
 }
 
 export function GoogleLoginButton(props: OAuthButtonProps) {
   const auth = useGoogleAuth()
   return (
-    <ProviderButton
-      label='Google'
-      auth={auth}
-      provider='google'
-      buttonClassName={providerButtonClassNames.google}
-      getToken={async () => ({
-        provider: 'google',
-        credential: await auth.login(),
-      })}
-      {...props}
-    />
+    <div
+      className='contents'
+      data-pw='oauth-google-login-button'
+    >
+      <ProviderButton
+        label='Google'
+        auth={auth}
+        provider='google'
+        buttonClassName={providerButtonClassNames.google}
+        getToken={async () => ({
+          provider: 'google',
+          credential: await auth.login(),
+        })}
+        {...props}
+      />
+    </div>
   )
 }
 
 export function XLoginButton(props: OAuthButtonProps) {
   const auth = useXAuth()
   return (
-    <ProviderButton
-      label='X'
-      auth={auth}
-      provider='x'
-      buttonClassName={providerButtonClassNames.x}
-      getToken={async () => ({ provider: 'x', ...(await auth.login()) })}
-      {...props}
-    />
+    <div
+      className='contents'
+      data-pw='oauth-x-login-button'
+    >
+      <ProviderButton
+        label='X'
+        auth={auth}
+        provider='x'
+        buttonClassName={providerButtonClassNames.x}
+        getToken={async () => ({ provider: 'x', ...(await auth.login()) })}
+        {...props}
+      />
+    </div>
   )
 }
 
 export function LinkedInLoginButton(props: OAuthButtonProps) {
   const auth = useLinkedInAuth()
   return (
-    <ProviderButton
-      label='LinkedIn'
-      auth={auth}
-      provider='linkedin'
-      buttonClassName={providerButtonClassNames.linkedin}
-      getToken={async () => ({ provider: 'linkedin', ...(await auth.login()) })}
-      {...props}
-    />
+    <div
+      className='contents'
+      data-pw='oauth-linkedin-login-button'
+    >
+      <ProviderButton
+        label='LinkedIn'
+        auth={auth}
+        provider='linkedin'
+        buttonClassName={providerButtonClassNames.linkedin}
+        getToken={async () => ({ provider: 'linkedin', ...(await auth.login()) })}
+        {...props}
+      />
+    </div>
   )
 }
 
 export function MicrosoftLoginButton(props: OAuthButtonProps) {
   const auth = useMicrosoftAuth()
   return (
-    <ProviderButton
-      label='Microsoft'
-      auth={auth}
-      provider='microsoft'
-      buttonClassName={providerButtonClassNames.microsoft}
-      getToken={async () => ({ provider: 'microsoft', ...(await auth.login()) })}
-      {...props}
-    />
+    <div
+      className='contents'
+      data-pw='oauth-microsoft-login-button'
+    >
+      <ProviderButton
+        label='Microsoft'
+        auth={auth}
+        provider='microsoft'
+        buttonClassName={providerButtonClassNames.microsoft}
+        getToken={async () => ({ provider: 'microsoft', ...(await auth.login()) })}
+        {...props}
+      />
+    </div>
   )
 }
 
 export function GithubLoginButton(props: OAuthButtonProps) {
   const auth = useGithubAuth()
   return (
-    <ProviderButton
-      label='GitHub'
-      auth={auth}
-      provider='github'
-      buttonClassName={providerButtonClassNames.github}
-      getToken={async () => ({ provider: 'github', ...(await auth.login()) })}
-      {...props}
-    />
+    <div
+      className='contents'
+      data-pw='oauth-github-login-button'
+    >
+      <ProviderButton
+        label='GitHub'
+        auth={auth}
+        provider='github'
+        buttonClassName={providerButtonClassNames.github}
+        getToken={async () => ({ provider: 'github', ...(await auth.login()) })}
+        {...props}
+      />
+    </div>
   )
 }
