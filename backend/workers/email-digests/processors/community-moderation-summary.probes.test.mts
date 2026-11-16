@@ -1,8 +1,6 @@
-import { emptyModerationSummaryMetrics } from '@queues/background/enqueues/moderation-summary-state'
 import { insertTestModerationSummaryCommunityCohort } from '@voucha/test-helpers/moderation-summary-count-fixture'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as ses from '@modules/aws/ses'
-import { getMinUUIDv7ForDate } from '@modules/utils'
 import {
   createTestUser,
   insertTestCommunity,
@@ -13,10 +11,7 @@ import {
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 import { claimTestModerationEmailSend } from '@voucha/test-helpers/moderation-summary-retention'
-import {
-  collectTestModerationSummaryState,
-  createModerationSummaryCollection,
-} from '@voucha/test-helpers/moderation-summary-collection'
+import { collectTestModerationSummaryState } from '@voucha/test-helpers/moderation-summary-collection'
 import { observeTestPostgresQueryPools } from '@voucha/test-helpers/postgres-query-pool-observer'
 import {
   hasModerationEmailSent,
@@ -39,7 +34,7 @@ describe('moderator digest replacement-chain delivery', () => {
     const user = await createTestUser()
     await updateUserFields(user.id, { is_moderation_emails_enabled: true })
     const community = await insertTestCommunity({ createdById: user.id })
-    const membership = await insertTestCommunityMember({
+    await insertTestCommunityMember({
       communityId: community.id,
       userId: user.id,
       role: 'owner',
@@ -70,25 +65,20 @@ describe('moderator digest replacement-chain delivery', () => {
       windowEnd,
       uiLocale: 'en-US',
     }
-    const collection = createModerationSummaryCollection()
-    collection.phase = 'discussions'
-    collection.afterMembershipId = membership.id
-    collection.upperMembershipId = getMinUUIDv7ForDate(end)
-    collection.eligibleCount = 1
-    collection.top = [
-      {
-        communityId: community.id,
-        pendingScore: 1,
-        discussionPostId: null,
-        metrics: { ...emptyModerationSummaryMetrics(), pending_post_reviews: 1 },
-      },
-    ]
+    const collected = await collectTestModerationSummaryState(
+      user.id,
+      new Date(end.getTime() - 86400000),
+      end,
+      end,
+    )
+    expect(collected.communities).toHaveLength(1)
+    const { collection } = collected
     const variables = {
       generatedForDate: windowEnd.slice(0, 10),
       dispatchTimeZone,
       settingsUrl: 'https://example.test/settings',
       remainingCommunityCount: 0,
-      communities: [],
+      communities: collected.communities,
       collection,
     }
     const oldRead = Promise.withResolvers<void>()

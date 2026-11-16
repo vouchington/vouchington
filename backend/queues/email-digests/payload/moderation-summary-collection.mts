@@ -1,6 +1,10 @@
 import { JobPayloadError } from '@queues/emails/payload/job-payload-error'
 import { asRecord, assertExactKeys, requiredString } from '@queues/emails/payload/job-payload-read'
-import { MODERATION_SUMMARY_METRIC_KEYS } from '@queues/background/enqueues/moderation-summary-state'
+import {
+  MODERATION_SUMMARY_METRIC_KEYS,
+  type ModerationSummaryNext,
+} from '@queues/background/enqueues/moderation-summary-state'
+const SCANLESS_STAGES: ReadonlySet<ModerationSummaryNext> = new Set(['memberships', 'send'])
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab0-9][0-9a-f]{3}-[0-9a-f]{12}$/i
 function identifier(record: Record<string, unknown>, key: string): void {
   requiredString(record, key)
@@ -23,12 +27,15 @@ function bestDiscussion(value: unknown): void {
   identifier(record, 'id')
   integer(record, 'replies', 100)
 }
-function scan(value: unknown): void {
-  if (value === null) return
+function scan(value: unknown, stage: ModerationSummaryNext): void {
+  if (value === null) {
+    if (!SCANLESS_STAGES.has(stage)) throw new JobPayloadError(`${stage} requires a community scan`)
+    return
+  }
+  if (SCANLESS_STAGES.has(stage)) throw new JobPayloadError(`${stage} takes no community scan`)
   const record = asRecord(value, 'community scan')
   assertExactKeys(record, [
     'communityId',
-    'stage',
     'afterId',
     'parentId',
     'afterChildId',
@@ -44,31 +51,26 @@ function scan(value: unknown): void {
   if (record.sourceUpperId !== null) identifier(record, 'sourceUpperId')
   if (record.childUpperId !== null) identifier(record, 'childUpperId')
   if (record.parentId !== null) identifier(record, 'parentId')
-  if (
-    ![
-      'reviews',
-      'applications',
-      'report-posts',
-      'reports',
-      'evaders',
-      'members',
-      'activity-posts',
-      'replies',
-      'complete',
-    ].includes(String(record.stage))
-  )
-    throw new JobPayloadError('Invalid community scan stage')
-  if (['reports', 'replies'].includes(String(record.stage)) && record.parentId === null)
+  if (['reports', 'replies'].includes(stage) && record.parentId === null)
     throw new JobPayloadError('Child scans require their parent')
   integer(record, 'childCount', 100)
   metrics(record.metrics)
   bestDiscussion(record.bestDiscussion)
 }
-export function parseModerationSummaryCollection(data: unknown): void {
+const DISCUSSION_STAGES: ReadonlySet<ModerationSummaryNext> = new Set([
+  'members',
+  'activityPosts',
+  'replies',
+  'card',
+])
+/** The job name is the stage: it decides which scan and window state the collection must carry. */
+export function parseModerationSummaryCollection(
+  data: unknown,
+  stage: ModerationSummaryNext,
+): void {
   const record = asRecord(data, 'collection')
   assertExactKeys(record, [
     'eventId',
-    'phase',
     'afterMembershipId',
     'upperMembershipId',
     'activityWindowEnd',
@@ -77,8 +79,6 @@ export function parseModerationSummaryCollection(data: unknown): void {
     'discussionCommunityIndex',
     'scan',
   ])
-  if (!['memberships', 'community', 'discussions', 'ready'].includes(String(record.phase)))
-    throw new JobPayloadError('Invalid moderation summary collection phase')
   identifier(record, 'eventId')
   identifier(record, 'afterMembershipId')
   if (
@@ -104,11 +104,13 @@ export function parseModerationSummaryCollection(data: unknown): void {
       throw new JobPayloadError('top communities must be unique')
     seen.add(String(row.communityId))
   }
-  scan(record.scan)
-  if (record.phase === 'community' && record.scan === null)
-    throw new JobPayloadError('Rank collection requires a scan')
+  scan(record.scan, stage)
+  if (stage !== 'memberships' && stage !== 'send' && record.activityWindowEnd === null)
+    throw new JobPayloadError(`${stage} requires the activity window end`)
   if (Number(record.discussionCommunityIndex) > record.top.length)
     throw new JobPayloadError('Discussion position exceeds selected communities')
+  if (DISCUSSION_STAGES.has(stage) && Number(record.discussionCommunityIndex) >= record.top.length)
+    throw new JobPayloadError(`${stage} requires its selected community`)
   if (Number(record.eligibleCount) < record.top.length)
     throw new JobPayloadError('Eligible count excludes selected communities')
 }

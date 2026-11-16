@@ -56,15 +56,16 @@ describe('moderator digest raw source pages', () => {
       submittedById: user.id,
     })
     await markTestPostDeletedBy(first, user.id)
-    const scan = createModerationSummaryScan(community.id, 'reviews')
-    await collectRankReviewPage(scan, 1)
-    expect(scan).toMatchObject({
-      afterId: first,
-      stage: 'reviews',
-      metrics: { pending_post_reviews: 0 },
+    const firstPage = await collectRankReviewPage(createModerationSummaryScan(community.id), 1)
+    expect(firstPage).toMatchObject({
+      state: { afterId: first, metrics: { pending_post_reviews: 0 } },
+      next: null,
     })
-    await collectRankReviewPage(scan, 1)
-    expect(scan).toMatchObject({ afterId: second, metrics: { pending_post_reviews: 1 } })
+    const secondPage = await collectRankReviewPage(firstPage.state, 1)
+    expect(secondPage.state).toMatchObject({
+      afterId: second,
+      metrics: { pending_post_reviews: 1 },
+    })
     const deletedReply = await insertTestPost({
       createdById: user.id,
       communityId: community.id,
@@ -88,12 +89,14 @@ describe('moderator digest raw source pages', () => {
     })
     await markTestPostDeletedBy(deletedReply, user.id)
     const replyUpper = getMinUUIDv7ForDate(new Date(Date.now() + 1000))
-    const replies = createModerationSummaryScan(community.id, 'replies')
-    replies.parentId = second
-    await collectModerationSummaryReplyPage(replies, replyUpper, 1)
-    expect(replies).toMatchObject({ afterChildId: deletedReply, childCount: 0, stage: 'replies' })
-    await collectModerationSummaryReplyPage(replies, replyUpper, 1)
-    expect(replies).toMatchObject({ afterChildId: liveReply, childCount: 1 })
+    const replies = { ...createModerationSummaryScan(community.id), parentId: second }
+    const deletedPage = await collectModerationSummaryReplyPage(replies, replyUpper, 1)
+    expect(deletedPage).toMatchObject({
+      state: { afterChildId: deletedReply, childCount: 0 },
+      next: null,
+    })
+    const livePage = await collectModerationSummaryReplyPage(deletedPage.state, replyUpper, 1)
+    expect(livePage.state).toMatchObject({ afterChildId: liveReply, childCount: 1 })
   })
 
   it('retains engagement from a deleted user while excluding that user from joined and total members', async () => {
@@ -116,16 +119,15 @@ describe('moderator digest raw source pages', () => {
     const end = new Date(Date.now() + 1000),
       start = new Date(end.getTime() - 86400000)
     const upper = getMinUUIDv7ForDate(end)
-    const scan = createModerationSummaryScan(community.id, 'members')
-    await collectModerationSummaryMemberPage(
-      scan,
+    const page = await collectModerationSummaryMemberPage(
+      createModerationSummaryScan(community.id),
       getMinUUIDv7ForDate(start),
       upper,
       start,
       end,
       25,
     )
-    expect(scan.metrics).toMatchObject({
+    expect(page.state.metrics).toMatchObject({
       new_members: 0,
       total_active_members: 0,
       active_member_count: 1,
@@ -155,23 +157,18 @@ describe('moderator digest raw source pages', () => {
       recommendedAction: 'escalate',
     })
     await markTestPostDeletedBy(postId, user.id)
-    const originalScan = createModerationSummaryScan(original.id, 'report-posts')
-    await collectRankReportPostPage(originalScan, 1)
-    expect(originalScan).toMatchObject({ stage: 'reports', parentId: postId })
-    await collectRankReportPage(originalScan, 1)
-    expect(originalScan.metrics).toMatchObject({ pending_reports: 1, escalated_items: 1 })
-    const retained = createModerationSummaryScan(original.id, 'reports')
-    retained.parentId = postId
+    const parents = await collectRankReportPostPage(createModerationSummaryScan(original.id), 1)
+    expect(parents).toMatchObject({ state: { parentId: postId }, next: 'reports' })
+    const counted = await collectRankReportPage(parents.state, 1)
+    expect(counted.state.metrics).toMatchObject({ pending_reports: 1, escalated_items: 1 })
+    const retained = { ...createModerationSummaryScan(original.id), parentId: postId }
     await moveTestModerationSummaryPost(postId, moved.id)
-    await collectRankReportPage(retained, 1)
-    expect(retained).toMatchObject({
-      stage: 'report-posts',
-      parentId: null,
-      metrics: { pending_reports: 0, escalated_items: 0 },
+    expect(await collectRankReportPage(retained, 1)).toMatchObject({
+      state: { parentId: null, metrics: { pending_reports: 0, escalated_items: 0 } },
+      next: 'reportPosts',
     })
-    const newScope = createModerationSummaryScan(moved.id, 'report-posts')
-    await collectRankReportPostPage(newScope, 1)
-    await collectRankReportPage(newScope, 1)
-    expect(newScope.metrics).toMatchObject({ pending_reports: 1, escalated_items: 1 })
+    const newParents = await collectRankReportPostPage(createModerationSummaryScan(moved.id), 1)
+    const newCounted = await collectRankReportPage(newParents.state, 1)
+    expect(newCounted.state.metrics).toMatchObject({ pending_reports: 1, escalated_items: 1 })
   })
 })

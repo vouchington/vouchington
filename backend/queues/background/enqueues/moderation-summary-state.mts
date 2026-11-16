@@ -17,18 +17,29 @@ export type ModerationSummaryMetrics = Record<
   number
 >
 export type ModerationSummaryBestDiscussion = { id: string; replies: number }
+/** One job name per collection stage: memberships, a rank scan per eligible community, then discussions. */
+export const MODERATION_SUMMARY_STAGES = [
+  'memberships',
+  'reviews',
+  'applications',
+  'reportPosts',
+  'reports',
+  'evaders',
+  'members',
+  'activityPosts',
+  'replies',
+  'card',
+] as const
+export type ModerationSummaryStage = (typeof MODERATION_SUMMARY_STAGES)[number]
+/** The local job name of a stage: `collectModerationSummaryReportPosts` for `reportPosts`. */
+export function moderationSummaryStageJobName(stage: ModerationSummaryStage): string {
+  return `collectModerationSummary${stage.charAt(0).toUpperCase()}${stage.slice(1)}`
+}
+/** The job that runs after a stage: another stage, or the terminal email send. */
+export type ModerationSummaryNext = ModerationSummaryStage | 'send'
+/** The cursor and counters of one community scan; the running job name is its stage. */
 export type ModerationSummaryScan = {
   communityId: string
-  stage:
-    | 'reviews'
-    | 'applications'
-    | 'report-posts'
-    | 'reports'
-    | 'evaders'
-    | 'members'
-    | 'activity-posts'
-    | 'replies'
-    | 'complete'
   afterId: string
   parentId: string | null
   afterChildId: string
@@ -46,7 +57,6 @@ export type ModerationSummaryRankedCommunity = {
 }
 export type ModerationSummaryCollection = {
   eventId: string
-  phase: 'memberships' | 'community' | 'discussions' | 'ready'
   afterMembershipId: string
   upperMembershipId: string | null
   activityWindowEnd: string | null
@@ -74,12 +84,10 @@ export function emptyModerationSummaryMetrics(): ModerationSummaryMetrics {
 }
 export function createModerationSummaryScan(
   communityId: string,
-  stage: ModerationSummaryScan['stage'],
   metrics = emptyModerationSummaryMetrics(),
 ): ModerationSummaryScan {
   return {
     communityId,
-    stage,
     afterId: MODERATION_SUMMARY_ZERO_ID,
     parentId: null,
     afterChildId: MODERATION_SUMMARY_ZERO_ID,
@@ -93,7 +101,6 @@ export function createModerationSummaryScan(
 export function createModerationSummaryCollection(): ModerationSummaryCollection {
   return {
     eventId: crypto.randomUUID(),
-    phase: 'memberships',
     afterMembershipId: MODERATION_SUMMARY_ZERO_ID,
     upperMembershipId: null,
     activityWindowEnd: null,
