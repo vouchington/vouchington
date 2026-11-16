@@ -30,7 +30,7 @@ start; two agents pushing fixes for the same failure collide with non-fast-forwa
 native stack, the loop posts once on the top PR and dispatches one worker for the whole stack; that
 worker owns polling and Git writes for every layer.
 
-Run the workspace-pinned CLI: one `pnpm exec pr-shepherd {{PR_NUMBER}} --until-terminal --quiet-status`
+Run the per-machine CLI: one `pr-shepherd {{PR_NUMBER}} --until-terminal --quiet-status`
 process, and follow its printed `## Instructions` exactly. Use a 4.5-minute timeout only for a
 bounded wait. `TRIAGE` means make and validate the required changes on `{{PR_HEAD_REF}}`. `CANCEL`,
 `CLOSED`, and `ESCALATE` mean stop and report. Never overwrite concurrent work.
@@ -42,13 +42,13 @@ exact lease so concurrent updates fail atomically. Do not create a new PR or run
 this flow.
 
 Yield for an explicit human override or out-of-scope external blocker: interrupt the poll, run one
-`pnpm exec pr-shepherd iterate {{PR_NUMBER}}` tick if needed, report it, and stop. Do not emulate
+`pr-shepherd iterate {{PR_NUMBER}}` tick if needed, report it, and stop. Do not emulate
 polling with repeated iterate calls or separate sleeps. When the PR is clean and CI is green, report
 that to the loop and stop; the loop decides whether to merge.
 
 For duplicate or stale ready-state checks, use `gh pr view {{PR_NUMBER}} --json statusCheckRollup`,
-then inspect relevant runs. Use `pnpm exec pr-shepherd iterate {{PR_NUMBER}}` to refresh state and
-`pnpm exec pr-shepherd admin log-file` for the per-worktree debug log.
+then inspect relevant runs. Use `pr-shepherd iterate {{PR_NUMBER}}` to refresh state and
+`pr-shepherd admin log-file` for the per-worktree debug log.
 
 When an automation-authored fix eventually updates the PR description, require `### Root cause`, `### Implementation choice`, and `### Options considered` `details` entries, including pros, cons, and implementation details for meaningful alternatives.
 

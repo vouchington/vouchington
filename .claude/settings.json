@@ -2,7 +2,6 @@
   "permissions": {
     "allow": [
       "Bash(pnpm exec *)",
-      "Bash(pnpm exec pr-shepherd *)",
       "Bash(pnpm exec tsc *)",
       "Bash(pnpm exec vitest *)",
       "Bash(pnpm exec playwright *)",
@@ -14,7 +13,6 @@
       "Bash(pnpm exec selene *)",
       "Bash(pnpm exec knip *)",
       "Bash(pnpm exec syncpack *)",
-      "Bash(npx pr-shepherd *)",
       "Bash(pr-shepherd *)",
       "Bash(npx vitest *)",
       "Bash(npx oxlint *)",

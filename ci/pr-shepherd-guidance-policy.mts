@@ -1,29 +1,28 @@
-// #7180: a global pr-shepherd shadowed the workspace install on PATH. Checked-in docs and
-// skills must invoke the workspace-pinned CLI and no retired (pre-v1) subcommands, flags,
-// or action names. The static repository-policy script supplies the live files.
+// pr-shepherd is a per-machine CLI on PATH, not a repo dependency. Checked-in docs and
+// skills must invoke plain `pr-shepherd` (never `pnpm exec`, `pnpm`, or `npx`) and no retired
+// (pre-v1) subcommands, flags, or action names. The static repository-policy script supplies
+// the live files.
 
-export const SHEPHERD_SUBAGENT_PROMPT = 'docs/prompts/automation/shepherd.md'
 export const REVISIT_FOLLOWUPS_SKILL = '.agents/skills/revisit-followups/SKILL.md'
-export const WORKSPACE_JOURNAL_EXTRACT_COMMAND =
-  'pnpm exec pr-shepherd journal extract --body-file <path>'
+export const JOURNAL_EXTRACT_COMMAND = 'pr-shepherd journal extract --body-file <path>'
 
 export const DEPRECATED_INVOCATIONS =
   /\b(?:pnpm exec )?pr-shepherd\s+(?:poll|resolve|journal(?!\s+extract(?:\s|$))|commit-suggestion|build-suggestion-patch(?:es)?|mark-files-as-viewed|log-file|clean)\b|\bpr-shepherd(?:[ \t]+(?:iterate|<[^>\s]+>|\d+))?[ \t]+--(?:stack|poll-mode)\b|\b(?:FIX_CODE|fix_code|fix-thrash|fix-code-loop)\b/u
-const BARE_LOCAL_COMMAND =
-  /`pr-shepherd\s+(?:iterate|apply|journal|suggest|stack|admin|<(?:pr|N|pr-number)>|\d+)(?:\s+[^`\n]+)?`|```(?:bash|sh|zsh|shell)?\n(?:(?!```)[^\n]*\n)*? {0,3}pr-shepherd\s+(?:iterate|apply|journal|suggest|stack|admin|<(?:pr|N|pr-number)>|\d+)(?:\s+[^\n]+)?(?=\n|$)/u
+const PACKAGE_RUNNER_COMMAND =
+  /\b(?:pnpm(?:[ \t]+exec)?|npx)(?:[ \t]+-{1,2}[\w-]+(?:=\S+)?)*[ \t]+pr-shepherd\b/u
 
 export function prShepherdGuidanceViolations(
   files: readonly { path: string; text: string }[],
 ): string[] {
   const violations: string[] = []
   const revisit = files.find(file => file.path === REVISIT_FOLLOWUPS_SKILL)
-  if (revisit === undefined || !revisit.text.includes(WORKSPACE_JOURNAL_EXTRACT_COMMAND)) {
-    violations.push(`${REVISIT_FOLLOWUPS_SKILL}: missing workspace journal extract command`)
+  if (revisit === undefined || !revisit.text.includes(JOURNAL_EXTRACT_COMMAND)) {
+    violations.push(`${REVISIT_FOLLOWUPS_SKILL}: missing journal extract command`)
   }
 
   for (const file of files) {
-    if (file.path !== SHEPHERD_SUBAGENT_PROMPT && BARE_LOCAL_COMMAND.test(file.text)) {
-      violations.push(`${file.path}: bare local pr-shepherd command`)
+    if (PACKAGE_RUNNER_COMMAND.test(file.text)) {
+      violations.push(`${file.path}: package-runner pr-shepherd command`)
     }
     if (DEPRECATED_INVOCATIONS.test(file.text)) {
       violations.push(`${file.path}: deprecated pr-shepherd invocation`)

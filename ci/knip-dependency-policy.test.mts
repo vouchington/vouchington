@@ -28,9 +28,7 @@ describe('Knip extracted workflow evidence', () => {
                 ? 'nodeRequire.resolve(`@fontsource/inter/fixture.woff`)'
                 : dependency === '@types/react'
                   ? "const name = '@types/react'"
-                  : dependency === 'pr-shepherd'
-                    ? '"Bash(pnpm exec pr-shepherd *)"'
-                    : `import {} from '${dependency}'`
+                  : `import {} from '${dependency}'`
           for (const file of evidenceFiles) files.set(file, `${files.get(file) ?? ''}${evidence}\n`)
         }
       }
