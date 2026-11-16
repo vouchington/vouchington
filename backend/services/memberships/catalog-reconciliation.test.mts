@@ -220,26 +220,33 @@ describe('Stripe membership catalog reconciliation', () => {
     expect(canonicalMappings(mappings)).toEqual(expectedCanonicalMappings('fk-hold'))
   })
 
-  it('returns conflicts for concurrent repeats and preserves one active catalog', async () => {
-    const results = await Promise.allSettled([
+  it('preserves a complete catalog when concurrent repeats succeed or conflict', async () => {
+    const outcomes = await Promise.allSettled([
       reconcileStripeMembershipCatalog({ context, resolvePrice: resolvePrice('same') }),
       reconcileStripeMembershipCatalog({ context, resolvePrice: resolvePrice('same') }),
     ])
-    expect(results.some(result => result.status === 'fulfilled')).toBe(true)
-    for (const failure of results.filter(result => result.status === 'rejected'))
-      expect(failure.reason).toMatchObject({ statusCode: 409, code: 'MEMBERSHIP_CATALOG_CONFLICT' })
-    await reconcileStripeMembershipCatalog({ context, resolvePrice: resolvePrice('same') })
 
-    const active = (
-      await getTestStripeCatalogMappings(context.applicationId, context.environment)
-    ).filter(mapping => mapping.retired_at === null)
-    expect(active).toHaveLength(4)
+    expect(outcomes.some(outcome => outcome.status === 'fulfilled')).toBe(true)
+    for (const outcome of outcomes) {
+      if (outcome.status !== 'rejected') continue
+      expect(outcome.reason).toMatchObject({
+        statusCode: 409,
+        code: 'MEMBERSHIP_CATALOG_CONFLICT',
+        cause: {
+          code: '23505',
+          constraint: expect.stringMatching(
+            /^idx_membership_provider_products__(active_sku|provider_identity)$/,
+          ),
+        },
+      })
+    }
     const mappings = await getTestStripeCatalogMappings(context.applicationId, context.environment)
     expect(mappings).toHaveLength(4)
     expect(canonicalMappings(mappings)).toEqual(expectedCanonicalMappings('same'))
   })
 
-  it('serializes a failed run before a later successful run', async () => {
+  it('keeps renewed active mappings after an older provider failure', async () => {
+    await reconcileStripeMembershipCatalog({ context, resolvePrice: resolvePrice('renewed') })
     let rejectFirst: (() => void) | undefined
     let firstStarted: (() => void) | undefined
     const started = new Promise<void>(resolve => {
@@ -260,16 +267,19 @@ describe('Stripe membership catalog reconciliation', () => {
     })
     const failureOutcome = failure.then(() => null).catch((err: unknown) => err as Error)
     await started
-    const success = reconcileStripeMembershipCatalog({
-      context,
-      resolvePrice: resolvePrice('later-success'),
-    })
-    rejectFirst?.()
+    try {
+      await reconcileStripeMembershipCatalog({
+        context,
+        resolvePrice: resolvePrice('renewed'),
+      })
+    } finally {
+      rejectFirst?.()
+      await failureOutcome
+    }
 
     await expect(failureOutcome).resolves.toMatchObject({ message: 'older provider failure' })
-    await success
     const mappings = await getTestStripeCatalogMappings(context.applicationId, context.environment)
-    expect(canonicalMappings(mappings)).toEqual(expectedCanonicalMappings('later-success'))
+    expect(canonicalMappings(mappings)).toEqual(expectedCanonicalMappings('renewed'))
   })
 
   it('rolls back every mapping when an existing catalog key points at another canonical product', async () => {

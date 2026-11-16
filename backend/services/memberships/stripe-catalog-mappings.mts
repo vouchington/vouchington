@@ -64,7 +64,7 @@ export async function publishStripeCatalogMapping({
       sql`/* publishStripeCatalogMapping: insert */
         INSERT INTO membership_provider_products (membership_product_id, membership_provider_context_id, provider_product_id, sku_id, price_minor_units, currency_code)
         VALUES (${membershipProductId}, fn_upsert_membership_provider_context_id('stripe', ${context.environment}, ${context.applicationId}), ${providerProductId}, ${skuId}, ${amount}, 'usd')
-        ON CONFLICT DO NOTHING`,
+        ON CONFLICT (membership_provider_context_id, provider_product_id, base_plan_id, offer_id, sku_id) DO NOTHING`,
       { query },
     )
   }
@@ -74,13 +74,13 @@ export async function publishStripeCatalogMapping({
   )
   if (exact.length !== 1) throw new Error(`Stripe catalog mapping ${skuId} is ambiguous`)
   const mapping = exact[0]!
-  if (mapping.retired_at === null) return
-  await assertStripeCatalogMappingCapacity(membershipProductId, context, query)
+  if (mapping.retired_at !== null)
+    await assertStripeCatalogMappingCapacity(membershipProductId, context, query)
+  // Publishing refreshes selected active mappings too: an older failed attempt must not retire them.
   await write(
-    sql`/* publishStripeCatalogMapping: reactivate */
+    sql`/* publishStripeCatalogMapping: publish */
       UPDATE membership_provider_products SET retired_at = NULL
       WHERE id = ${mapping.id}
-        AND retired_at IS NOT NULL
         AND provider_product_id = ${providerProductId}
         AND sku_id = ${skuId}
         AND membership_product_id = ${membershipProductId}
