@@ -139,6 +139,12 @@ requests and merge groups use the event base, while manual and scheduled runs co
 commit. An unavailable base blocks validation; it must not silently substitute the current tree.
 Local checks use `origin/main`, or an explicit `BASE_SHA` for a synthetic or alternate comparison.
 
+Checkouts are shallow. `fetch-depth: 0` fetches every branch and tag, so the cost grows with the
+repository's branch count and a slow fetch times out the 2 minute step before any test runs. A job
+that needs a base takes it with `fetch-base-ref` or a depth of 2, never a full-history checkout. The
+only exception is the weekly GHCR cleanup, which classifies images by reachability from main's whole
+history. `checkout-depth.test.mts` enforces this.
+
 The Backend area prepares one migrated PostgreSQL baseline per workflow run for every backend database
 consumer: unit shards, trusted provider tests, schema contracts, smoke tests, and EXPLAIN scenarios.
 The producer checks SQL safety, staging RSS and retained-relation bootstrap, and the canonical schema

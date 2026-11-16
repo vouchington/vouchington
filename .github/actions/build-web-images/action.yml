@@ -3,7 +3,7 @@ description: >
   Builds the web Docker image locally and runs the Docker smoke test against it, gating on a
   Trivy CRITICAL/HIGH scan before generating an SBOM. Produces a validated local image tagged
   sha-<sha> under the voucha-validation namespace; does not publish anywhere. The caller must run
-  actions/checkout (fetch-depth 0) before invoking this action, must set job env
+  actions/checkout (a shallow checkout is enough) before invoking this action, must set job env
   IMAGE_REPOSITORY and SHA_TAG, and must assume the AWS OIDC role (via
   the vouchington-tooling setup-aws action) before invoking this action, so AWS_ACCESS_KEY_ID,
   AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN, and AWS_REGION are already in the job environment
