@@ -11,8 +11,10 @@ import {
 import { spyOnMembershipEntitlementAdmission } from '../../../test-helpers/membership-entitlement-admission.mts'
 import { createMembership } from '../create.mts'
 import { getMembershipByUserId, getMembershipHistory } from '../get.mts'
+import { isolateSerializableWriterTests } from '../../../test-helpers/serializable-writer-isolation.mts'
 
 describe('createMembership with elapsed grants', () => {
+  isolateSerializableWriterTests()
   it('does not activate queued grants behind an active Stripe membership', async () => {
     const admin = await createTestUser({ administrator: true })
     const stripeUser = await createTestUser()

@@ -8,8 +8,10 @@ import {
 } from '@voucha/test-helpers'
 import { createMembership, grantMembership } from './create.mts'
 import { getMembershipByUserId } from './get.mts'
+import { isolateSerializableWriterTests } from '../../test-helpers/serializable-writer-isolation.mts'
 
 describe('administrator grants behind direct memberships', () => {
+  isolateSerializableWriterTests()
   it('queues the grant without replacing the paid projection', async () => {
     const admin = await createTestUser({ administrator: true })
     const user = await createTestUser()

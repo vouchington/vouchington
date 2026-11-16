@@ -9,8 +9,10 @@ import {
 } from '@voucha/test-helpers'
 import { grantMembership } from './create.mts'
 import { getMembershipHistory } from './get.mts'
+import { isolateSerializableWriterTests } from '../../test-helpers/serializable-writer-isolation.mts'
 
 describe('elapsed membership replacement', () => {
+  isolateSerializableWriterTests()
   it('expires a past-due scheduled cancellation before an admin grant replaces it', async () => {
     const admin = await createTestUser({ administrator: true })
     const member = await createTestUser()

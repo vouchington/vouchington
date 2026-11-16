@@ -11,8 +11,10 @@ import {
 } from '@voucha/test-helpers'
 import { createMembership, InvalidMembershipGrantSkuError } from './create.mts'
 import { getMembershipProductIdForCreation } from './create-source.mts'
+import { isolateSerializableWriterTests } from '../../test-helpers/serializable-writer-isolation.mts'
 
 describe('create source concurrency', () => {
+  isolateSerializableWriterTests()
   it('allows concurrent active-SKU validation for separate creations', async () => {
     const user = await createTestUser()
     const sku = await createTestSku({ plan: 'plus' })

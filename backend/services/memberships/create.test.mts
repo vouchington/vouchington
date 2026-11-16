@@ -19,8 +19,10 @@ import {
   InvalidMembershipGrantUserError,
 } from './create.mts'
 import { getMembershipByUserId, getMembershipHistory } from './get.mts'
+import { isolateSerializableWriterTests } from '../../test-helpers/serializable-writer-isolation.mts'
 
 describe('create', () => {
+  isolateSerializableWriterTests()
   let user: PrivateUser
   let admin: PrivateUser
 

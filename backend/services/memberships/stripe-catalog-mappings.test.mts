@@ -10,8 +10,10 @@ import { createMembership } from './create-membership.mts'
 import { getSkuByStripePriceIdForLifecycle } from './get-catalog.mts'
 import { MAX_ACTIVE_MEMBERSHIP_PROVIDER_MAPPINGS } from './provider-catalog.mts'
 import { publishStripeCatalogMapping } from './stripe-catalog-mappings.mts'
+import { isolateSerializableWriterTests } from '../../test-helpers/serializable-writer-isolation.mts'
 
 describe('membership catalog mapping capacity', () => {
+  isolateSerializableWriterTests()
   it('rejects insertion and reactivation above capacity and keeps a retired subscriber resolvable', async () => {
     const context = { environment: 'test' as const, applicationId: `catalog-cap-${randomUUID()}` }
     const mappings = []

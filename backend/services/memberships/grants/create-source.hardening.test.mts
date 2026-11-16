@@ -11,8 +11,10 @@ import { revokeMembershipGrant } from './revoke.mts'
 import { MAX_OUTSTANDING_MEMBERSHIP_GRANTS_PER_USER } from './outstanding.mts'
 import { createMembership, grantMembership } from '../create.mts'
 import { getMembershipByUserId, getMembershipHistory } from '../get.mts'
+import { isolateSerializableWriterTests } from '../../../test-helpers/serializable-writer-isolation.mts'
 
 describe('grant issuer snapshots', () => {
+  isolateSerializableWriterTests()
   let admin: PrivateUser
 
   beforeAll(async () => {

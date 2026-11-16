@@ -4,6 +4,7 @@ import { STRIPE_PROVIDER_ENVIRONMENT } from '@voucha/config'
 import { clearTestStripeCatalogMappings, getTestStripeCatalogMappings } from '@voucha/test-helpers'
 import { withPostgresQueryFailureForTest } from '@voucha/test-helpers/postgres-query-failure'
 import { reconcileStripeMembershipCatalog } from './stripe-catalog.mts'
+import { isolateSerializableWriterTests } from '../../test-helpers/serializable-writer-isolation.mts'
 
 const context = {
   applicationId: `stripe-catalog-retirement-failure-${randomUUID()}`,
@@ -18,6 +19,7 @@ function resolvePrice(revision: string) {
 }
 
 describe('Stripe membership catalog retirement failures', () => {
+  isolateSerializableWriterTests()
   afterEach(async () => {
     await clearTestStripeCatalogMappings(context.applicationId)
   })

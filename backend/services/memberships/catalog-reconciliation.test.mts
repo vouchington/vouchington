@@ -11,6 +11,7 @@ import {
 } from '@voucha/test-helpers'
 import { getSkuByStripePriceIdForLifecycle } from './get-catalog.mts'
 import { reconcileStripeMembershipCatalog } from './stripe-catalog.mts'
+import { isolateSerializableWriterTests } from '../../test-helpers/serializable-writer-isolation.mts'
 
 const context = {
   applicationId: `stripe-catalog-test-${randomUUID()}`,
@@ -84,6 +85,7 @@ function resolvePrice(revision: string) {
 }
 
 describe('Stripe membership catalog reconciliation', () => {
+  isolateSerializableWriterTests()
   afterEach(async () => {
     await clearTestStripeCatalogMappings(context.applicationId)
   })
