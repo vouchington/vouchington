@@ -18,6 +18,40 @@
     "node"
   ],
   "rules": {
+    // Repeats the root backend override (nested configs lose it).
+    "no-mistakes/no-consecutive-unbatched-reads": [
+      "error",
+      {
+        "clients": [
+          "cacheValkeyClient",
+          "sessionValkeyClient",
+          "dynamicConfigValkeyClient",
+          "dynamicConfigPrimaryValkeyClient",
+          "rateLimiterValkeyClient",
+          "bloomValkeyClient"
+        ],
+        "readMethods": [
+          "get",
+          "mget",
+          "hget",
+          "hgetall",
+          "hmget",
+          "exists",
+          "ttl",
+          "pttl",
+          "smembers",
+          "sismember",
+          "zscore",
+          "zrange",
+          "zcard",
+          "scard",
+          "llen",
+          "type",
+          "strlen"
+        ],
+        "message": "Consecutive independent Valkey reads on the same client cost one round trip each. Batch the complete key set with MGET, Batch, or Lua."
+      }
+    ],
     "no-mistakes/postgres-no-nonliteral-sql-registry-key": [
       "error",
       { "importSpecifier": "@data-stores/psql" }
@@ -61,6 +95,7 @@
         "**/test-helpers/**"
       ],
       "rules": {
+        "no-mistakes/no-consecutive-unbatched-reads": "off",
         "typescript/no-unsafe-call": "off",
         "typescript/no-unsafe-return": "off",
         "typescript/no-unsafe-argument": "off"
