@@ -28,5 +28,5 @@ export const NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOBS = {
   suspended: stageJob('processReconcileCopyrightSuspendedClaimantRestrictions'),
   blocked: stageJob('processReconcileCopyrightBlockedHoldRestorations'),
   restorations: stageJob('processReconcileCopyrightStatutoryRestorations'),
-  actions: stageJob('processReconcileCopyrightActionIntents'),
+  actions: stageJob('processReconcileCopyrightRecoverableActionIntents'),
 } as const satisfies Record<CopyrightActionReconcileStage, ReturnType<typeof stageJob>>

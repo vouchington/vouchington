@@ -22,7 +22,8 @@ describe('notification enqueue wiring', () => {
   it('throttles each action reconciliation stage to one five-minute schedule in one shared lane', async () => {
     await enqueueReconcileCopyrightActionStage('actions')
     const job = (await readAllQueueJobs(notifications)).find(
-      candidate => candidate.name === 'notifications.processReconcileCopyrightActionIntents',
+      candidate =>
+        candidate.name === 'notifications.processReconcileCopyrightRecoverableActionIntents',
     )
     expect(job?.data).toEqual({})
     expect(job?.opts).toMatchObject({
