@@ -68,6 +68,7 @@ async function assertPurgeFinished(input: {
     partyCount: 0,
     submissionCount: 0,
     artifactCount: 0,
+    threadRetentionActivityCount: 0,
   })
   expect([...input.phases]).toEqual(
     expect.arrayContaining([
@@ -127,6 +128,9 @@ describe('copyright case purge pages', () => {
     const entry = await createRetentionEmailCase()
     await settleCopyrightCasePurgeFixtureActions(entry.noticeId)
     await publishCopyrightCasePurgeCoverage(entry.noticeId)
+    expect((await readCopyrightCasePurgeFixture(entry.noticeId)).threadRetentionActivityCount).toBe(
+      1,
+    )
     for (const key of entry.evidenceKeys) await bucket.put(key, { versions: 3, deleteMarker: true })
     let data = firstPage(entry.noticeId)
     const phases = new Set<string>()

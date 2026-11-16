@@ -1,7 +1,7 @@
 import { createTestUser } from '@voucha/test-helpers'
 import { COPYRIGHT_EMAIL_THREAD_CHANGED } from '@modules/on-error/error-codes'
 import {
-  createUnparsedCopyrightEmailIntake,
+  createParsedCopyrightEmailIntake,
   readCopyrightEmailPromotionEffects,
 } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
@@ -25,7 +25,7 @@ describe('copyright email promotion and threading', () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const messageId = copyrightEmailMessageId()
     const parent = await promoteInitialCopyrightEmail({ moderator, messageId })
-    const intake = await createUnparsedCopyrightEmailIntake()
+    const intake = await createParsedCopyrightEmailIntake()
     const input = await copyrightEmailPromotionInput(moderator, intake.id)
 
     const [promotion, threadLink] = await Promise.allSettled([
@@ -91,7 +91,7 @@ describe('copyright email promotion and threading', () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const messageId = copyrightEmailMessageId()
     const parent = await promoteInitialCopyrightEmail({ moderator, messageId })
-    const intake = await createUnparsedCopyrightEmailIntake()
+    const intake = await createParsedCopyrightEmailIntake()
     const input = await copyrightEmailPromotionInput(moderator, intake.id)
     const evidenceInserted = Promise.withResolvers<void>()
     const releasePromotion = Promise.withResolvers<void>()
@@ -167,7 +167,7 @@ describe('copyright email promotion and threading', () => {
 
   it('admits one case when two promotions race on the same receipt', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const intake = await createUnparsedCopyrightEmailIntake()
+    const intake = await createParsedCopyrightEmailIntake()
     const input = await copyrightEmailPromotionInput(moderator, intake.id)
     const firstReviewed = Promise.withResolvers<void>()
     const releaseFirst = Promise.withResolvers<void>()

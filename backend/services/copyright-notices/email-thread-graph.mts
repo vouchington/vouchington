@@ -87,7 +87,11 @@ export async function readCopyrightEmailThreadGraph(
 
   // Follow every external ancestor, not just the first one. A parent's parent can belong to a
   // different notice even when the immediate parent belongs to this one.
-  const { rows: incoming } = await transaction<{ reply_id: string; ancestor_id: string }>(sql`
+  const { rows: incoming } = await transaction<{
+    reply_id: string
+    ancestor_id: string
+    retired: boolean
+  }>(sql`
     /* readCopyrightEmailThreadGraph:incoming */
     WITH RECURSIVE reached(reply_id, ancestor_id) AS (
       SELECT descendant.id, descendant.id
@@ -103,9 +107,17 @@ export async function readCopyrightEmailThreadGraph(
         LIMIT ${maxRows + 1}
       ) edge ON true
     )
-    SELECT reply_id, ancestor_id FROM reached LIMIT ${maxRows + 1}
+    SELECT reply_id, ancestor_id, EXISTS (
+      SELECT 1 FROM copyright_notice_email_intake_notice_links link
+      JOIN copyright_notice_thread_retention_activities retirement
+        ON retirement.copyright_notice_id = link.copyright_notice_id
+      WHERE link.copyright_notice_email_intake_id = reached.ancestor_id
+        AND retirement.retired_before_intake_bound > reached.ancestor_id
+    ) AS retired
+    FROM reached LIMIT ${maxRows + 1}
   `)
   for (const row of incoming) {
+    if (row.retired) throw copyrightEmailThreadChangedError()
     if (row.reply_id === row.ancestor_id && descendants.has(row.reply_id)) continue
     edges.add(`${row.reply_id}:${row.ancestor_id}`)
     intakeIds.add(row.reply_id)

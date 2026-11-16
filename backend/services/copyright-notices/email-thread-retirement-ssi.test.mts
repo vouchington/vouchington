@@ -16,59 +16,13 @@ import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-s
 import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
 import { createRetentionThreadSeedEmail } from '@voucha/test-helpers/services/copyright-notices/retention-parsed-email'
 import { runCopyrightOperationalRetentionCleanup } from '../data-retention/cleanup-copyright-operational.mts'
-import { recordCopyrightEmailThreadReferences } from './email-threading.mts'
+import { recordCopyrightEmailParse } from './email-intake-parses.mts'
+import { createUnparsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
+import { readCopyrightIntakeRetentionState } from '@voucha/test-helpers/copyright-email-retention-state'
+import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { sweepCopyrightCaseThreads } from './operational-retention-threading.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
-
-function assertMappedSerializationConflict(err: unknown): void {
-  expect(err).toMatchObject({
-    status: 409,
-    code: COPYRIGHT_EMAIL_THREAD_CHANGED,
-  })
-  expect(['40001', '40P01']).toContain((err as { cause?: { code?: string } }).cause?.code)
-}
-
-async function assertAbortedRetirementRun(
-  noticeId: string,
-  intakeId: string,
-  previousReferenceCount: number,
-  outcome: unknown,
-  writerRejected: boolean,
-): Promise<void> {
-  expect(await readCopyrightThreadRetirementBound(noticeId)).toBeNull()
-  if (writerRejected) assertMappedSerializationConflict(outcome)
-  const current = await readCopyrightThreadReferenceState(intakeId)
-  const allowedReferenceCounts = writerRejected
-    ? [previousReferenceCount, previousReferenceCount + 1]
-    : [previousReferenceCount + 1]
-  expect(allowedReferenceCounts).toContain(current.referenceCount)
-  expect(await readCopyrightEmailIntakeNoticeLinks(intakeId)).toEqual([
-    { copyright_notice_id: noticeId, link_kind: 'initial' },
-  ])
-}
-
-async function assertRetiredWriterRejected(
-  noticeId: string,
-  intakeId: string,
-  writer: Promise<
-    | {
-        status: 'fulfilled'
-        value: Awaited<ReturnType<typeof recordCopyrightEmailThreadReferences>>
-      }
-    | { status: 'rejected'; error: unknown }
-  >,
-  input: Parameters<typeof recordCopyrightEmailThreadReferences>[0],
-  afterRetirement: Awaited<ReturnType<typeof readCopyrightThreadReferenceState>>,
-): Promise<void> {
-  expect(await readCopyrightThreadRetirementBound(noticeId)).not.toBeNull()
-  const outcome = await writer
-  expect(outcome.status).toBe('rejected')
-  if (outcome.status === 'rejected') assertMappedSerializationConflict(outcome.error)
-  expect(await readCopyrightThreadReferenceState(intakeId)).toEqual(afterRetirement)
-  await expect(recordCopyrightEmailThreadReferences(input)).resolves.toBeNull()
-  expect(await readCopyrightThreadReferenceState(intakeId)).toEqual(afterRetirement)
-}
 
 async function assertAbortedThreadPage(
   noticeId: string,
@@ -79,23 +33,6 @@ async function assertAbortedThreadPage(
   expect(await readCopyrightThreadRetirementBound(noticeId)).toBeNull()
   expect(await readCopyrightThreadReferenceState(intakeId)).toEqual(references)
   expect(await readCopyrightThreadOperationalCursor()).toEqual(cursor)
-}
-
-async function assertCommittedThreadPage(noticeId: string, intakeId: string): Promise<void> {
-  expect(await readCopyrightThreadRetirementBound(noticeId)).not.toBeNull()
-  expect((await readCopyrightThreadReferenceState(intakeId)).referenceCount).toBe(0)
-}
-
-function assertAbortedThreadStats(stats: {
-  scanned: number
-  deleted: number
-  hasMore: boolean
-}): void {
-  expect(stats).toMatchObject({ scanned: 0, deleted: 0, hasMore: false })
-}
-
-function assertCommittedWriterReferenceCount(previousCount: number, currentCount: number): void {
-  expect(currentCount).toBe(previousCount + 1)
 }
 
 describe('copyright email reference and retirement SSI', () => {
@@ -143,133 +80,158 @@ describe('copyright email reference and retirement SSI', () => {
     },
   )
 
-  it('rejects a stale reference admission after retirement commits', async () => {
+  it('rejects a stale first parse and its reference facts after retirement commits', async () => {
     const notice = await createRetentionMinimalCase()
-    const intake = await createRetentionThreadSeedEmail('retirement-first', {
-      sesMessageId: notice.initialEmailSesMessageId,
-      messageId: `<seed-${randomUUID()}@example.test>`,
-    })
+    const intake = await createUnparsedCopyrightEmailIntake()
     await linkTestCopyrightEmailIntake(intake.id, notice.noticeId)
+    const existing = await createRetentionThreadSeedEmail('retirement-existing-source', {
+      messageId: `<existing-${randomUUID()}@example.test>`,
+    })
+    await linkTestCopyrightEmailIntake(existing.id, notice.noticeId, 'thread', notice.moderator.id)
+    expect((await readCopyrightThreadReferenceState(existing.id)).referenceCount).toBe(1)
     const before = await readCopyrightThreadReferenceState(intake.id)
-    expect(before.referenceCount).toBe(1)
+    expect(before).toEqual({ tokenId: null, referenceCount: 0 })
     await positionCopyrightOperationalCursor('email_thread_references', notice.noticeId)
     const atInsert = Promise.withResolvers<void>()
     const releaseInsert = Promise.withResolvers<void>()
-    const restore = runBeforePostgresStatementForTest(
+    const restore = beforePostgresTransactionQueryForTest(
       '/* insertCopyrightEmailThreadReferences */',
+      values => values.includes(intake.id),
       async () => {
+        restore()
         atInsert.resolve()
         await releaseInsert.promise
       },
     )
-    onTestFinished(restore)
     const input = {
-      intakeId: intake.id,
+      status: 'succeeded' as const,
+      fromEmail: `claimant-${randomUUID()}@example.test`,
+      subject: 'Copyright notice',
+      bodyText: 'A first parse racing retirement.',
       messageId: `<late-${randomUUID()}@example.test>`,
-      inReplyTo: [],
-      references: [],
+      replyReferences: [],
+      attachments: [],
     }
-    const writer = recordCopyrightEmailThreadReferences(input)
-      .then(value => ({ status: 'fulfilled' as const, value }))
-      .catch((err: unknown) => ({ status: 'rejected' as const, error: err }))
+    const writer = recordCopyrightEmailParse(intake, input)
+    const settled = Promise.allSettled([writer])
     try {
-      await atInsert.promise
-      const retired = await sweepCopyrightCaseThreads({
+      await Promise.race([
+        atInsert.promise,
+        writer.then(() => {
+          throw new Error('First parse completed before the reference insertion boundary')
+        }),
+      ])
+      await sweepCopyrightCaseThreads({
         now: new Date(Date.now() + 181 * DAY_MS),
         replyDays: 180,
         batchSize: 10,
         maxBatches: 100,
       })
-      if (retired.deleted === 0) {
-        // A concurrent SSI conflict ends this sweep run before the retirement high-water moves.
-        releaseInsert.resolve()
-        const outcome = await writer
-        await assertAbortedRetirementRun(
-          notice.noticeId,
-          intake.id,
-          before.referenceCount,
-          outcome.status === 'rejected' ? outcome.error : outcome.value,
-          outcome.status === 'rejected',
-        )
-        return
-      }
-      const afterRetirement = await readCopyrightThreadReferenceState(intake.id)
+      expect(await readCopyrightThreadRetirementBound(notice.noticeId)).not.toBeNull()
+      expect((await readCopyrightThreadReferenceState(existing.id)).referenceCount).toBe(0)
+      expect(await readCopyrightThreadReferenceState(intake.id)).toEqual(before)
       releaseInsert.resolve()
-      await assertRetiredWriterRejected(notice.noticeId, intake.id, writer, input, afterRetirement)
+      await expect(writer).rejects.toMatchObject({
+        status: 409,
+        code: COPYRIGHT_EMAIL_THREAD_CHANGED,
+      })
+      expect(await readCopyrightThreadReferenceState(intake.id)).toEqual(before)
+      expect(await readCopyrightIntakeRetentionState(intake.id)).toMatchObject({ parseCount: 0 })
+      await expect(recordCopyrightEmailParse(intake, input)).rejects.toMatchObject({
+        status: 409,
+        code: COPYRIGHT_EMAIL_THREAD_CHANGED,
+      })
+      expect(await readCopyrightThreadReferenceState(intake.id)).toEqual(before)
+      expect(await readCopyrightIntakeRetentionState(intake.id)).toMatchObject({ parseCount: 0 })
     } finally {
       releaseInsert.resolve()
-      await writer
       restore()
+      await settled
     }
   })
 
-  it('rolls back a sweep when a new reference commits after its first read', async () => {
+  it('rolls back a sweep when a first parse commits its references after the initial scan', async () => {
     const notice = await createRetentionMinimalCase()
-    const intake = await createRetentionThreadSeedEmail('writer-first', {
-      sesMessageId: notice.initialEmailSesMessageId,
-      messageId: `<seed-${randomUUID()}@example.test>`,
-    })
+    const intake = await createUnparsedCopyrightEmailIntake()
     await linkTestCopyrightEmailIntake(intake.id, notice.noticeId)
     await positionCopyrightOperationalCursor('email_thread_references', notice.noticeId)
-    const before = await readCopyrightThreadReferenceState(intake.id)
+    const sweepOptions = {
+      now: new Date(Date.now() + 181 * DAY_MS),
+      replyDays: 180,
+      batchSize: 10,
+    }
+    // Commit the real bounded proof pages, stopping before the first destructive statement.
+    // The raced call below then owns exactly one destructive page, with no earlier page progress.
+    const proofComplete = new Error('Owned threading proofs reached the destructive boundary')
+    const restorePreparation = beforePostgresTransactionQueryForTest(
+      '/* retireCopyrightCaseThread */',
+      values => values.includes(notice.noticeId),
+      async () => {
+        restorePreparation()
+        throw proofComplete
+      },
+    )
+    try {
+      await expect(sweepCopyrightCaseThreads({ ...sweepOptions, maxBatches: 100 })).rejects.toBe(
+        proofComplete,
+      )
+    } finally {
+      restorePreparation()
+    }
     const beforeCursor = await readCopyrightThreadOperationalCursor()
+    expect(beforeCursor).toMatchObject({ cursor_legal_phase: 'done', cursor_phase: null })
+    expect(await readCopyrightThreadRetirementBound(notice.noticeId)).toBeNull()
+    expect(await readCopyrightThreadReferenceState(intake.id)).toEqual({
+      tokenId: null,
+      referenceCount: 0,
+    })
+    expect(await readCopyrightIntakeRetentionState(intake.id)).toMatchObject({ parseCount: 0 })
     const atProof = Promise.withResolvers<void>()
     const releaseProof = Promise.withResolvers<void>()
-    const restore = runBeforePostgresStatementForTest(
-      '/* lockCopyrightThreadPreservationGate */',
+    // Pause the actual destructive write after its snapshot read the old activity and facts.
+    const restore = beforePostgresTransactionQueryForTest(
+      '/* retireCopyrightCaseThread */',
+      values => values.includes(notice.noticeId),
       async () => {
+        restore()
         atProof.resolve()
         await releaseProof.promise
       },
     )
-    onTestFinished(restore)
-    const options = {
-      activeFamilies: ['copyrightCaseThreads'] as const,
-      now: new Date(Date.now() + 181 * DAY_MS),
-      limits: { batchSize: 10, maxBatches: 100 },
-    }
-    const sweep = runCopyrightOperationalRetentionCleanup(options)
-      .then(value => ({ status: 'fulfilled' as const, value }))
-      .catch((err: unknown) => ({ status: 'rejected' as const, error: err }))
+    const sweep = sweepCopyrightCaseThreads({ ...sweepOptions, maxBatches: 1 })
+    const settled = Promise.allSettled([sweep])
     try {
-      await atProof.promise
-      const writerInput = {
-        intakeId: intake.id,
-        messageId: `<fresh-${randomUUID()}@example.test>`,
-        inReplyTo: [],
-        references: [],
-      }
-      const writer = await recordCopyrightEmailThreadReferences(writerInput)
-        .then(value => ({ status: 'fulfilled' as const, value }))
-        .catch((err: unknown) => ({ status: 'rejected' as const, error: err }))
-      if (writer.status === 'rejected') assertMappedSerializationConflict(writer.error)
-      const afterWriter = await readCopyrightThreadReferenceState(intake.id)
-      expect([before.referenceCount, before.referenceCount + 1]).toContain(
-        afterWriter.referenceCount,
-      )
-      if (writer.status === 'fulfilled')
-        assertCommittedWriterReferenceCount(before.referenceCount, afterWriter.referenceCount)
+      await Promise.race([
+        atProof.promise,
+        sweep.then(() => {
+          throw new Error('Sweep completed before the destructive write boundary')
+        }),
+      ])
+      await expect(
+        recordCopyrightEmailParse(intake, {
+          status: 'succeeded',
+          fromEmail: `claimant-${randomUUID()}@example.test`,
+          subject: 'Copyright notice',
+          bodyText: 'A first parse before the destructive page.',
+          messageId: `<fresh-${randomUUID()}@example.test>`,
+          replyReferences: [],
+          attachments: [],
+        }),
+      ).resolves.toBeNull()
+      const references = await readCopyrightThreadReferenceState(intake.id)
+      expect(references).toMatchObject({ referenceCount: 1, tokenId: expect.any(String) })
+      expect(await readCopyrightIntakeRetentionState(intake.id)).toMatchObject({ parseCount: 1 })
+      releaseProof.resolve()
+      const result = await sweep
+      expect(result).toEqual({ scanned: 0, deleted: 0, hasMore: false })
+      await assertAbortedThreadPage(notice.noticeId, intake.id, references, beforeCursor)
       expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([
         { copyright_notice_id: notice.noticeId, link_kind: 'initial' },
       ])
-      releaseProof.resolve()
-      const firstTick = await sweep
-      expect(firstTick.status).toBe('fulfilled')
-      if (firstTick.status === 'rejected') throw firstTick.error
-      const first = firstTick.value.copyrightCaseThreads!
-      if (afterWriter.referenceCount > before.referenceCount) {
-        assertAbortedThreadStats(first)
-        await assertAbortedThreadPage(notice.noticeId, intake.id, afterWriter, beforeCursor)
-      } else if (first.deleted > 0) {
-        await assertCommittedThreadPage(notice.noticeId, intake.id)
-      } else {
-        assertAbortedThreadStats(first)
-        await assertAbortedThreadPage(notice.noticeId, intake.id, afterWriter, beforeCursor)
-      }
     } finally {
       releaseProof.resolve()
-      await sweep
       restore()
+      await settled
     }
   })
 })

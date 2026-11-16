@@ -26,10 +26,10 @@ obligations. The runbook owns the activation procedure.
 Email thread assignment uses the references known when an intake is admitted. A later arriving
 message may extend or make that graph ambiguous without rewriting an immutable case link. The
 retained receipt prevents erased private evidence from being admitted again on replay.
-Reference digests are admitted against the live receipt and case retirement boundary before
-thread ancestry and case matching are derived from committed references. An interrupted derivation
-may leave hash-only references for replay; they do not authorize a case link or private evidence
-processing.
+Parsing and reference admission share one atomic boundary, so replay can finish an interrupted
+derivation without recreating retired facts. Staff manual-fallback promotion waits for parsing to
+finish, including a failed parse. Retained ancestry preserves historical evidence, but retired
+sources cannot authorize a new thread assignment or private evidence processing.
 
 ## Current screening authority
 

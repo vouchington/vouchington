@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import { beginTransaction, read, write, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
@@ -9,7 +9,7 @@ export async function readCopyrightThreadRetirementBound(noticeId: string): Prom
   const { rows } = await read<{ retired_before_intake_bound: string }>(sql`
     /* readCopyrightThreadRetirementBound */
     SELECT retired_before_intake_bound
-    FROM copyright_notice_email_thread_retirements
+    FROM copyright_notice_thread_retention_activities
     WHERE copyright_notice_id = ${noticeId}`)
   return rows[0]?.retired_before_intake_bound ?? null
 }
@@ -96,4 +96,31 @@ export async function insertCopyrightThreadReferenceWithoutToken(intakeId: strin
     INSERT INTO copyright_notice_email_thread_references (
       copyright_notice_email_intake_id, token_id, reference_kind
     ) VALUES (${intakeId}, NULL, 'message_id')`)
+}
+
+export async function seedCopyrightThreadRetirement(
+  noticeId: string,
+  retiredBeforeIntakeId: string,
+): Promise<void> {
+  await write(sql`/* seedCopyrightThreadRetirement */
+    INSERT INTO copyright_notice_thread_retention_activities
+      (copyright_notice_id, last_activity_at, retired_before_intake_bound)
+    VALUES (${noticeId}, CURRENT_TIMESTAMP, ${retiredBeforeIntakeId}::uuid)
+    ON CONFLICT (copyright_notice_id) DO UPDATE SET
+      retired_before_intake_bound = GREATEST(
+        COALESCE(copyright_notice_thread_retention_activities.retired_before_intake_bound,
+          EXCLUDED.retired_before_intake_bound),
+        EXCLUDED.retired_before_intake_bound)`)
+}
+
+/** Adds a historical case party after a proof page without adding a lifecycle event. */
+export async function seedCopyrightThreadPartySubmission(
+  noticeId: string,
+  submittedById: string,
+): Promise<void> {
+  await write(sql`/* seedCopyrightThreadPartySubmission */
+    INSERT INTO copyright_notice_submissions
+      (copyright_notice_id, submitted_by_id, kind, received_at, source_kind, body_ciphertext)
+    VALUES (${noticeId}, ${submittedById}, 'supplement', ${new Date(0)},
+      'signed_in_form', ${`v1:backdated-${randomUUID()}`})`)
 }

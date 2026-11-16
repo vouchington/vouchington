@@ -52,6 +52,7 @@ export async function readCopyrightCasePurgeFixture(noticeId: string): Promise<{
   partyCount: number
   submissionCount: number
   artifactCount: number
+  threadRetentionActivityCount: number
   rationaleIds: string[]
 }> {
   const { rows } = await read<{
@@ -60,6 +61,7 @@ export async function readCopyrightCasePurgeFixture(noticeId: string): Promise<{
     party_count: number
     submission_count: number
     artifact_count: number
+    thread_retention_activity_count: number
     rationale_ids: string[]
   }>(sql`/* readCopyrightCasePurgeFixture */
     SELECT
@@ -71,6 +73,8 @@ export async function readCopyrightCasePurgeFixture(noticeId: string): Promise<{
         WHERE copyright_notice_id = ${noticeId}::uuid) AS submission_count,
       (SELECT count(*)::int FROM copyright_notice_evidence_artifacts
         WHERE copyright_notice_id = ${noticeId}::uuid) AS artifact_count,
+      (SELECT count(*)::int FROM copyright_notice_thread_retention_activities
+        WHERE copyright_notice_id = ${noticeId}::uuid) AS thread_retention_activity_count,
       (SELECT COALESCE(array_agg(rationale.id), '{}') FROM copyright_decision_rationales rationale
         WHERE rationale.copyright_notice_id = ${noticeId}::uuid
           OR rationale.copyright_notice_email_intake_receipt_id IN (
@@ -84,6 +88,7 @@ export async function readCopyrightCasePurgeFixture(noticeId: string): Promise<{
     partyCount: row.party_count,
     submissionCount: row.submission_count,
     artifactCount: row.artifact_count,
+    threadRetentionActivityCount: row.thread_retention_activity_count,
     rationaleIds: row.rationale_ids,
   }
 }

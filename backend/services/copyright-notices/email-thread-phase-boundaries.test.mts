@@ -1,265 +1,173 @@
-import { randomBytes, randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import { COPYRIGHT_EMAIL_THREAD_CHANGED } from '@modules/on-error/error-codes'
-import { describe, expect, it, onTestFinished } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
 import { positionCopyrightOperationalCursor } from '@voucha/test-helpers/copyright-operational-retention'
-import {
-  linkTestCopyrightEmailIntake,
-  readCopyrightThreadReferenceState,
-} from '@voucha/test-helpers/copyright-operational-email-retention'
+import { createUnparsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
+import { createCommittedCopyrightEmailRoot } from '@voucha/test-helpers/copyright-email-committed-intake'
+import { createTestUser } from '@voucha/test-helpers'
+import { readCopyrightThreadReferenceState } from '@voucha/test-helpers/copyright-operational-email-retention'
 import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
-import { readCopyrightUnlinkedEmailOperationalCursor } from '@voucha/test-helpers/copyright-unlinked-email-cursor'
 import {
   readCopyrightEmailReceiptErasedAt,
   readCopyrightIntakeRetentionState,
 } from '@voucha/test-helpers/copyright-email-retention-state'
-import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
-import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
-import { createRetentionThreadSeedEmail } from '@voucha/test-helpers/services/copyright-notices/retention-parsed-email'
-import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
-import { createCopyrightEmailIntake } from './email-intakes.mts'
-import { buildCopyrightEmailThreadReferenceRows } from './email-thread-references.mts'
-import { admitCopyrightEmailReferenceFacts } from './email-thread-reference-facts.mts'
-import { recordCopyrightEmailThreadReferences } from './email-threading.mts'
+import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
+import { recordCopyrightEmailParse } from './email-intake-parses.mts'
 import { sweepUnlinkedCopyrightEmailIntakes } from './operational-retention-email-intakes.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-async function assertFirstReplayRolledBack(
-  err: unknown,
-  intakeId: string,
-  before: Awaited<ReturnType<typeof readCopyrightThreadReferenceState>>,
-  beforeRetention: Awaited<ReturnType<typeof readCopyrightIntakeRetentionState>>,
-): Promise<void> {
-  expect(err).toMatchObject({
-    status: 409,
-    code: COPYRIGHT_EMAIL_THREAD_CHANGED,
-    cause: { code: '40001' },
-  })
-  expect(await readCopyrightThreadReferenceState(intakeId)).toEqual(before)
-  expect(await readCopyrightEmailIntakeNoticeLinks(intakeId)).toEqual([])
-  expect(await readCopyrightIntakeRetentionState(intakeId)).toEqual(beforeRetention)
-}
-
-async function assertSecondReplayRolledBack(
-  err: unknown,
-  intakeId: string,
-  before: Awaited<ReturnType<typeof readCopyrightThreadReferenceState>>,
-  links: Awaited<ReturnType<typeof readCopyrightEmailIntakeNoticeLinks>>,
-  expectedAncestorCount: number,
-): Promise<void> {
-  expect(err).toMatchObject({
-    status: 409,
-    code: COPYRIGHT_EMAIL_THREAD_CHANGED,
-    cause: { code: '40001' },
-  })
-  expect(await readCopyrightEmailIntakeNoticeLinks(intakeId)).toEqual(links)
-  expect(await readCopyrightThreadReferenceState(intakeId)).toEqual(before)
-  expect((await readCopyrightIntakeRetentionState(intakeId)).ancestorCount).toBe(
-    expectedAncestorCount,
-  )
-}
-
 describe('copyright email reference admission and graph derivation', () => {
   useCopyrightOperationalCursorReservation()
 
-  it('declines reference admission when erasure commits after its preflight', async () => {
-    const sesMessageId = `ses-phase-erasure-preflight-${randomUUID()}`
-    const { intake } = await createCopyrightEmailIntake({
-      sesMessageId,
-      receivedAt: new Date(),
-      rawStorageKey: `email/${sesMessageId}/original.eml`,
-      rawSha256: randomBytes(32),
-      rawMimeType: 'message/rfc822',
-      rawByteSize: 12,
-      sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
-    })
+  it('rolls back the first parse when erasure commits after its live-source preflight', async () => {
+    const intake = await createUnparsedCopyrightEmailIntake()
     await positionCopyrightOperationalCursor('unlinked_email_intakes', intake.id)
-    const cursorBefore = await readCopyrightUnlinkedEmailOperationalCursor()
-    const atTokenInsert = Promise.withResolvers<void>()
-    const releaseTokenInsert = Promise.withResolvers<void>()
-    const restore = runBeforePostgresStatementForTest(
-      '/* resolveCopyrightEmailThreadTokenIds:insert */',
+    let erased = false
+    const restore = beforePostgresTransactionQueryForTest(
+      '/* recordCopyrightEmailParse */',
+      values => values.includes(intake.id),
       async () => {
-        atTokenInsert.resolve()
-        await releaseTokenInsert.promise
+        restore()
+        await expect(
+          sweepUnlinkedCopyrightEmailIntakes({
+            now: new Date(Date.now() + 91 * DAY_MS),
+            retentionDays: 90,
+            childLimit: 20,
+            maxBatches: 1,
+          }),
+        ).resolves.toEqual({ scanned: 1, erased: 1, hasMore: true })
+        erased = true
       },
     )
-    onTestFinished(restore)
-    const rows = buildCopyrightEmailThreadReferenceRows({
-      messageId: `<${randomUUID()}@example.test>`,
-      inReplyTo: [],
-      references: [],
-    })
-    const admission = Promise.allSettled([admitCopyrightEmailReferenceFacts(intake.id, rows)])
     try {
-      await atTokenInsert.promise
-      const erased = await sweepUnlinkedCopyrightEmailIntakes({
-        now: new Date(Date.now() + 91 * DAY_MS),
-        retentionDays: 90,
-        childLimit: 20,
-        maxBatches: 1,
+      await expect(
+        recordCopyrightEmailParse(intake, {
+          status: 'succeeded',
+          fromEmail: `claimant-${randomUUID()}@example.test`,
+          subject: 'Copyright notice',
+          bodyText: 'First immutable parse.',
+          messageId: `<${randomUUID()}@example.test>`,
+          replyReferences: [],
+          attachments: [],
+        }),
+      ).rejects.toMatchObject({
+        code: '23514',
+        message: 'copyright email intake is under retention erasure',
       })
-      releaseTokenInsert.resolve()
-      const [outcome] = await admission
-      const rejection =
-        outcome.status === 'rejected' && outcome.reason instanceof Error
-          ? (outcome.reason as Error & {
-              status?: number
-              code?: string
-              cause?: { code?: string }
-            })
-          : null
-      expect([
-        {
-          erasure: { scanned: 1, erased: 1, hasMore: true },
-          admission: false,
-          error: null,
-          erased: true,
-          references: 0,
-        },
-        {
-          erasure: { scanned: 1, erased: 1, hasMore: true },
-          admission: null,
-          error: { status: 409, code: COPYRIGHT_EMAIL_THREAD_CHANGED, causeCode: '40001' },
-          erased: true,
-          references: 0,
-        },
-        {
-          erasure: { scanned: 0, erased: 0, hasMore: false },
-          admission: true,
-          error: null,
-          erased: false,
-          references: rows.length,
-        },
-        {
-          erasure: { scanned: 0, erased: 0, hasMore: false },
-          admission: null,
-          error: { status: 409, code: COPYRIGHT_EMAIL_THREAD_CHANGED, causeCode: '40001' },
-          erased: false,
-          references: 0,
-        },
-      ]).toContainEqual({
-        erasure: erased,
-        admission: outcome.status === 'fulfilled' ? outcome.value : null,
-        error: rejection
-          ? { status: rejection.status, code: rejection.code, causeCode: rejection.cause?.code }
-          : null,
-        erased: (await readCopyrightEmailReceiptErasedAt(intake.id)) !== null,
-        references: (await readCopyrightThreadReferenceState(intake.id)).referenceCount,
-      })
-      expect((await readCopyrightIntakeRetentionState(intake.id)).receiptExists).toBe(true)
-      expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([])
-      // A committed marker can leave the child cursor in progress; an SSI loser cannot move it.
-      const cursorAfter = await readCopyrightUnlinkedEmailOperationalCursor()
-      expect(erased.erased === 0 ? cursorAfter : cursorBefore).toEqual(cursorBefore)
     } finally {
-      releaseTokenInsert.resolve()
-      await admission
       restore()
     }
+    expect(erased).toBe(true)
+    expect(await readCopyrightEmailReceiptErasedAt(intake.id)).not.toBeNull()
+    expect(await readCopyrightThreadReferenceState(intake.id)).toEqual({
+      tokenId: null,
+      referenceCount: 0,
+    })
+    expect(await readCopyrightIntakeRetentionState(intake.id)).toMatchObject({
+      intakeExists: true,
+      receiptExists: true,
+      parseCount: 0,
+    })
+    expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([])
   })
 
   it.each(['40001', '40P01'])(
-    'maps an admission %s conflict to 409 and rolls back reference facts',
+    'maps an admission %s conflict to 409 and rolls back the first parse and its facts',
     async code => {
-      const intake = await createRetentionThreadSeedEmail('phase-admission-conflict', {
-        messageId: `<seed-${randomUUID()}@example.test>`,
-      })
-      const before = await readCopyrightThreadReferenceState(intake.id)
-      const beforeRetention = await readCopyrightIntakeRetentionState(intake.id)
+      const intake = await createUnparsedCopyrightEmailIntake()
+      const before = await readCopyrightIntakeRetentionState(intake.id)
       const failure = Object.assign(new Error('reference admission serialization conflict'), {
         code,
       })
       let reachedInsert = false
-      const restore = runBeforePostgresStatementForTest(
+      const restore = beforePostgresTransactionQueryForTest(
         '/* insertCopyrightEmailThreadReferences */',
+        values => values.includes(intake.id),
         async () => {
           reachedInsert = true
           throw failure
         },
       )
-      onTestFinished(restore)
       try {
         await expect(
-          recordCopyrightEmailThreadReferences({
-            intakeId: intake.id,
-            messageId: `<new-${randomUUID()}@example.test>`,
-            inReplyTo: [],
-            references: [],
+          recordCopyrightEmailParse(intake, {
+            status: 'succeeded',
+            fromEmail: `claimant-${randomUUID()}@example.test`,
+            subject: 'Copyright notice',
+            bodyText: 'Atomic parse and references.',
+            messageId: `<${randomUUID()}@example.test>`,
+            replyReferences: [],
+            attachments: [],
           }),
         ).rejects.toMatchObject({
           status: 409,
           code: COPYRIGHT_EMAIL_THREAD_CHANGED,
           cause: failure,
         })
-        expect(reachedInsert).toBe(true)
-        expect(await readCopyrightThreadReferenceState(intake.id)).toEqual(before)
-        expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([])
-        expect(await readCopyrightIntakeRetentionState(intake.id)).toEqual(beforeRetention)
-        expect(await readCopyrightEmailReceiptErasedAt(intake.id)).toBeNull()
       } finally {
         restore()
       }
+      expect(reachedInsert).toBe(true)
+      expect(await readCopyrightThreadReferenceState(intake.id)).toEqual({
+        tokenId: null,
+        referenceCount: 0,
+      })
+      expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([])
+      expect(await readCopyrightIntakeRetentionState(intake.id)).toEqual(before)
+      expect(await readCopyrightEmailReceiptErasedAt(intake.id)).toBeNull()
     },
   )
 
-  it('derives the same case on replay after references commit without a graph link', async () => {
-    const notice = await createRetentionMinimalCase()
-    const parentMessageId = `<${randomUUID()}@example.test>`
-    const parent = await createRetentionThreadSeedEmail('phase-parent', {
-      messageId: parentMessageId,
-      sesMessageId: notice.initialEmailSesMessageId,
-    })
-    await linkTestCopyrightEmailIntake(parent.id, notice.noticeId)
-    const sesMessageId = `ses-phase-reply-${randomUUID()}`
-    const { intake: reply } = await createCopyrightEmailIntake({
-      sesMessageId,
-      receivedAt: new Date(),
-      rawStorageKey: `email/${sesMessageId}/original.eml`,
-      rawSha256: randomBytes(32),
-      rawMimeType: 'message/rfc822',
-      rawByteSize: 12,
-      sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
-    })
+  it('recovers derivation on parse replay without rewriting the committed reference facts', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const root = await createCommittedCopyrightEmailRoot(moderator.id)
+    const reply = await createUnparsedCopyrightEmailIntake()
     const input = {
-      intakeId: reply.id,
+      status: 'succeeded' as const,
+      fromEmail: `claimant-${randomUUID()}@example.test`,
+      subject: 'Copyright reply',
+      bodyText: 'Immutable parsed reply.',
       messageId: `<${randomUUID()}@example.test>`,
-      inReplyTo: [parentMessageId],
-      references: [] as string[],
+      replyReferences: [root.rootMessageId],
+      attachments: [],
     }
-    const rows = buildCopyrightEmailThreadReferenceRows(input)
-    expect(await admitCopyrightEmailReferenceFacts(reply.id, rows)).toBe(true)
+    const failure = new Error('Interrupted after facts committed')
+    let reachedDerivation = false
+    const restore = beforePostgresTransactionQueryForTest(
+      '/* recordCopyrightEmailThreadReferences:currentTokens */',
+      values => values.includes(reply.id),
+      async () => {
+        reachedDerivation = true
+        throw failure
+      },
+    )
+    try {
+      await expect(recordCopyrightEmailParse(reply, input)).rejects.toBe(failure)
+    } finally {
+      restore()
+    }
+    expect(reachedDerivation).toBe(true)
     const before = await readCopyrightThreadReferenceState(reply.id)
-    const beforeRetention = await readCopyrightIntakeRetentionState(reply.id)
-    expect(before.referenceCount).toBeGreaterThan(0)
+    expect(before).toMatchObject({ referenceCount: 2, tokenId: expect.any(String) })
+    expect(await readCopyrightIntakeRetentionState(reply.id)).toMatchObject({ parseCount: 1 })
     expect(await readCopyrightEmailIntakeNoticeLinks(reply.id)).toEqual([])
-
-    let firstReplay: Awaited<ReturnType<typeof recordCopyrightEmailThreadReferences>>
-    try {
-      firstReplay = await recordCopyrightEmailThreadReferences(input)
-    } catch (err) {
-      await assertFirstReplayRolledBack(err, reply.id, before, beforeRetention)
-      return
-    }
-    expect(firstReplay).toMatchObject({ noticeId: notice.noticeId, matchedIntakeId: parent.id })
+    await expect(recordCopyrightEmailParse(reply, input)).resolves.toMatchObject({
+      noticeId: root.noticeId,
+      matchedIntakeId: root.rootIntakeId,
+    })
     const linked = await readCopyrightEmailIntakeNoticeLinks(reply.id)
-    expect(linked).toHaveLength(1)
-    let secondReplay: Awaited<ReturnType<typeof recordCopyrightEmailThreadReferences>>
-    try {
-      secondReplay = await recordCopyrightEmailThreadReferences(input)
-    } catch (err) {
-      await assertSecondReplayRolledBack(
-        err,
-        reply.id,
-        before,
-        linked,
-        beforeRetention.ancestorCount + 1,
-      )
-      return
-    }
-    expect(secondReplay).toMatchObject({ noticeId: notice.noticeId, matchedIntakeId: parent.id })
+    expect(linked).toEqual([{ copyright_notice_id: root.noticeId, link_kind: 'thread' }])
+    await expect(recordCopyrightEmailParse(reply, input)).resolves.toMatchObject({
+      noticeId: root.noticeId,
+      matchedIntakeId: root.rootIntakeId,
+    })
     expect(await readCopyrightEmailIntakeNoticeLinks(reply.id)).toEqual(linked)
     expect(await readCopyrightThreadReferenceState(reply.id)).toEqual(before)
+    expect(await readCopyrightIntakeRetentionState(reply.id)).toMatchObject({
+      parseCount: 1,
+      ancestorCount: 1,
+    })
   })
 })

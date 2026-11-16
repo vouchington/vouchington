@@ -25,10 +25,12 @@ import {
   type CopyrightEmailParseInput,
 } from './email-intake-parse-input.mts'
 import {
+  buildCopyrightEmailThreadReferenceRows,
   copyrightEmailReplyHeaders,
   decryptCopyrightEmailReplyHeaders,
   encryptCopyrightEmailReplyHeaders,
 } from './email-thread-references.mts'
+import { admitCopyrightEmailReferenceFacts } from './email-thread-reference-facts.mts'
 import {
   decryptAgentIntake,
   type AttachmentCiphertexts,
@@ -43,15 +45,13 @@ export async function recordCopyrightEmailParse(
   validateCopyrightEmailParseInput(input)
   const purpose = copyrightEmailIntakePurpose(intake.amazon_ses_message_id)
   await using transaction = await beginTransaction()
-  // Serialize parser receipt eligibility with staff decisions before inserting parse rows.
   const { rows: liveRows } = await transaction<{
     id: string
-  }>(sql`/* recordCopyrightEmailParse:lock */
+  }>(sql`/* recordCopyrightEmailParse:liveIntake */
     SELECT id FROM copyright_notice_email_intakes
     WHERE id = ${intake.id} AND raw_storage_object_id IS NOT NULL
       AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
         WHERE receipt.id = ${intake.id} AND receipt.erased_at IS NULL)
-    FOR UPDATE
   `)
   if (liveRows.length === 0) throw new ErasedCopyrightEmailIntakeReplay()
   const { rowCount } = await transaction(sql`/* recordCopyrightEmailParse */
@@ -83,6 +83,16 @@ export async function recordCopyrightEmailParse(
         `)
       ).rows[0]
     : null
+  if (rowCount && input.status === 'succeeded') {
+    await admitCopyrightEmailReferenceFacts(
+      transaction,
+      intake.id,
+      buildCopyrightEmailThreadReferenceRows({
+        messageId: input.messageId,
+        ...copyrightEmailReplyHeaders(input),
+      }),
+    )
+  }
   if (rowCount && input.status === 'succeeded' && input.attachments.length > 0) {
     await insertCopyrightEmailAttachments(transaction, intake.id, input.attachments, purpose)
   }

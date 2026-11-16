@@ -2,6 +2,9 @@ import { randomUUID } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
+import { maintainCopyrightEmailThreadLinkActivity } from '../services/copyright-notices/email-thread-link-activity.mts'
+import { readBoundedCopyrightEmailAncestorSourceIds } from '../services/copyright-notices/email-thread-ancestor-graph.mts'
+import { getCopyrightEmailThreadGraphMaxRows } from '../services/copyright-notices/config.mts'
 import {
   copyrightEmailIntakePurpose,
   type CopyrightEmailIntake,
@@ -122,6 +125,18 @@ export async function createCommittedWaitingCopyrightEmailThread(reviewedById: s
     INSERT INTO copyright_notice_email_message_ancestors (
       reply_message_intake_receipt_id, ancestor_message_intake_receipt_id, reference_kind
     ) VALUES (${reply.id}, ${rootIntakeId}, 'references')`)
+  const authorizingAncestorIntakeIds = await readBoundedCopyrightEmailAncestorSourceIds(
+    transaction,
+    [reply.id],
+    await getCopyrightEmailThreadGraphMaxRows(),
+  )
+  if (!authorizingAncestorIntakeIds)
+    throw new Error('Committed waiting thread exceeds the thread ancestry bound')
+  await maintainCopyrightEmailThreadLinkActivity(transaction, {
+    noticeId,
+    intakeId: reply.id,
+    authorizingAncestorIntakeIds,
+  })
   await transaction.commit()
   return {
     rootMessageId,

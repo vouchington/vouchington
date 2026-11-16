@@ -98,12 +98,6 @@ async function sweepPage(
       : { rows: [] }
   // Preservation coordination remains scoped to the case and its actual legal holds.
   await lockCopyrightThreadPreservationGate(transaction, noticeId)
-  // Thread writers advance this projection in their own transaction. Hold its row until
-  // deletion commits so a late review, link, reference or edge cannot pass the recheck.
-  const { rows: activityRows } = await transaction<{ copyright_notice_id: string }>(sql`
-    /* lockCopyrightThreadRetentionActivity */
-    SELECT copyright_notice_id FROM copyright_notice_thread_retention_activities
-    WHERE copyright_notice_id = ${noticeId} FOR UPDATE`)
   const proof = await checkCopyrightThreadProofPage(
     transaction,
     noticeId,
@@ -120,7 +114,7 @@ async function sweepPage(
   const { rows: eligible } = await transaction<{ id: string }>(
     copyrightOperationalThreadEligibleSql(cutoff, noticeId),
   )
-  if (eligible.length === 0 || activityRows.length === 0) {
+  if (eligible.length === 0) {
     // The next fixed sweep rechecks this case if the blocker later clears.
     await advanceCopyrightThreadCaseCursor(transaction, noticeId, upperBound)
     await transaction.commit()
@@ -130,13 +124,11 @@ async function sweepPage(
   // recreate a removed reference between pages; a fresh source remains admissible.
   // ast-grep-ignore: no-three-sequential-awaits -- persist the retirement cutoff before deleting thread evidence so replay is fenced; save the cursor from the completed delete page progress
   await transaction(sql`/* retireCopyrightCaseThread */
-    INSERT INTO copyright_notice_email_thread_retirements
-      (copyright_notice_id, retired_before_intake_bound)
-    VALUES (${noticeId}, ${cutoffId}::uuid)
-    ON CONFLICT (copyright_notice_id) DO UPDATE SET
-      retired_before_intake_bound = GREATEST(
-        copyright_notice_email_thread_retirements.retired_before_intake_bound,
-        EXCLUDED.retired_before_intake_bound)`)
+    UPDATE copyright_notice_thread_retention_activities
+    SET retired_before_intake_bound = ${cutoffId}::uuid
+    WHERE copyright_notice_id = ${noticeId}
+      AND (retired_before_intake_bound IS NULL
+        OR retired_before_intake_bound < ${cutoffId}::uuid)`)
   const result = await deleteCaseThreadPage(
     transaction,
     now,

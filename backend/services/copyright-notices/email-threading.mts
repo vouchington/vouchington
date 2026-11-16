@@ -1,4 +1,3 @@
-import { admitCopyrightEmailReferenceFacts } from './email-thread-reference-facts.mts'
 import { deriveCopyrightEmailThread } from './email-thread-derive.mts'
 import {
   buildCopyrightEmailThreadReferenceRows,
@@ -13,6 +12,6 @@ export async function recordCopyrightEmailThreadReferences(
 ): Promise<CopyrightEmailThreadMatch | null> {
   const referenceRows = buildCopyrightEmailThreadReferenceRows(input)
   if (referenceRows.length === 0) return null
-  if (!(await admitCopyrightEmailReferenceFacts(input.intakeId, referenceRows))) return null
+  // Replays derive only from committed facts; a retired parse never recreates references.
   return deriveCopyrightEmailThread(input, referenceRows)
 }

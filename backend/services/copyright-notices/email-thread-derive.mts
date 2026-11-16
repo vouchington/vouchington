@@ -37,7 +37,7 @@ async function deriveCopyrightEmailThreadInTransaction(
   input: CopyrightEmailThreadInput,
   referenceRows: readonly CopyrightEmailThreadReferenceRow[],
 ): Promise<CopyrightEmailThreadMatch | null> {
-  await using transaction = await beginTransaction({ serializable: true })
+  await using transaction = await beginTransaction()
   if (!(await hasLiveCopyrightEmailSource(transaction, input.intakeId))) {
     await transaction.commit()
     return null

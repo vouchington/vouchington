@@ -6,7 +6,9 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { copyrightEmailThreadChangedError } from './email-thread-graph.mts'
+import { throwIfCopyrightEmailThreadWriteConflict } from './email-thread-write-conflict.mts'
 import { getCopyrightEmailThreadGraphMaxRows } from './config.mts'
+import { maintainCopyrightEmailThreadLinkActivity } from './email-thread-link-activity.mts'
 import {
   copyrightEmailAncestorNoticeConflictSql,
   copyrightEmailDuplicateMessageIdSql,
@@ -84,8 +86,12 @@ export async function associateCopyrightEmailIntakeWithNotice(
     ) VALUES (${intakeId}, ${noticeId}, 'thread', 'pending')
     ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
     RETURNING id
-  `)
+  `).catch((err: unknown) => {
+    throwIfCopyrightEmailThreadWriteConflict(err)
+    throw err
+  })
   if (!links[0]) throw copyrightEmailThreadChangedError()
+  await maintainCopyrightEmailThreadLinkActivity(transaction, { noticeId, intakeId })
   await transaction(sql`
     /* associateCopyrightEmailIntakeWithNotice:audit */
     INSERT INTO copyright_notice_lifecycle_changes (
