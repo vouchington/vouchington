@@ -80,32 +80,39 @@ function buildFields(value: 'number'): Record<string, 'number'> {
 }
 
 function buildDefaultFields(): Record<string, number> {
-  const fields: Record<string, number> = {}
-  for (const action of contributionLimitActions) {
-    if (action === 'article' || action === 'blog_post') continue
-    for (const tier of contributionLimitTiers) {
-      if (
-        contributionPolicyActions.includes(action as ContributionPolicyAction) &&
-        (tier === 'free' || tier === 'plus' || tier === 'pro')
-      )
-        continue
-      addDefaults(fields, action, tier, CONTRIBUTION_LIMIT_DEFAULTS[action][tier])
-    }
-  }
-  for (const action of contributionPolicyActions) {
-    for (const tier of contributionPolicyTiers) {
-      addDefaults(fields, action, tier, AUTHORED_CONTRIBUTION_POLICY_DEFAULTS[action][tier])
-    }
-  }
-  return fields
+  const limitEntries = contributionLimitActions.flatMap(action =>
+    action === 'article' || action === 'blog_post'
+      ? []
+      : contributionLimitTiers.flatMap(tier =>
+          usesAuthoredPolicyDefaults(action, tier)
+            ? []
+            : defaultEntries(action, tier, CONTRIBUTION_LIMIT_DEFAULTS[action][tier]),
+        ),
+  )
+  const policyEntries = contributionPolicyActions.flatMap(action =>
+    contributionPolicyTiers.flatMap(tier =>
+      defaultEntries(action, tier, AUTHORED_CONTRIBUTION_POLICY_DEFAULTS[action][tier]),
+    ),
+  )
+  return Object.fromEntries([...limitEntries, ...policyEntries])
+}
+
+/** A policy action's free, plus and pro tiers take their defaults from the authored policy table. */
+function usesAuthoredPolicyDefaults(
+  action: ContributionLimitAction,
+  tier: ContributionLimitTier,
+): boolean {
+  return (
+    contributionPolicyActions.includes(action as ContributionPolicyAction) &&
+    (tier === 'free' || tier === 'plus' || tier === 'pro')
+  )
 }
 
 function getAllFieldNames(): string[] {
   return Object.keys(buildDefaultFields())
 }
 
-function addDefaults(
-  fields: Record<string, number>,
+function defaultEntries(
   action: ContributionLimitAction | ContributionPolicyAction,
   tier: ContributionLimitTier | ContributionPolicyTier,
   defaults: {
@@ -114,11 +121,13 @@ function addDefaults(
     dailyLimit: number
     dailyWindowSeconds: number
   },
-): void {
-  fields[limitField(action, tier, 'short')] = defaults.shortLimit
-  fields[windowField(action, tier, 'short')] = defaults.shortWindowSeconds
-  fields[limitField(action, tier, 'daily')] = defaults.dailyLimit
-  fields[windowField(action, tier, 'daily')] = defaults.dailyWindowSeconds
+): [string, number][] {
+  return [
+    [limitField(action, tier, 'short'), defaults.shortLimit],
+    [windowField(action, tier, 'short'), defaults.shortWindowSeconds],
+    [limitField(action, tier, 'daily'), defaults.dailyLimit],
+    [windowField(action, tier, 'daily'), defaults.dailyWindowSeconds],
+  ]
 }
 
 function getConfigNumber(field: string): number {

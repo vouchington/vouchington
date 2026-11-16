@@ -1,11 +1,10 @@
-import { addAgentRun, addAgentTurns, NO_AGENT_TURNS } from './usage-report-agent-turns.mts'
+import { addAgentTurns, NO_AGENT_TURNS } from './usage-report-agent-turns.mts'
 import type {
   ClassifierContentVersionUsage,
   ClassifierEfficiency,
   ClassifierRunUsage,
 } from './usage-report-types.mts'
-
-type VersionEntry = { version: ClassifierContentVersionUsage; cost: bigint }
+import { addRun, emptyVersion, type VersionEntry } from './usage-report-version.mts'
 
 /**
  * Sums runs by content version: a classifier's runs for one subject at one input digest and
@@ -25,12 +24,7 @@ export function summarizeClassifierContentVersions(
       run.inputSha256,
       run.communityIdentityId,
     ])
-    let entry = versions.get(key)
-    if (!entry) {
-      entry = { version: emptyVersion(run), cost: 0n }
-      versions.set(key, entry)
-    }
-    addRun(entry, run)
+    versions.set(key, addRun(versions.get(key) ?? { version: emptyVersion(run), cost: 0n }, run))
   }
   return [...versions.values()]
     .map(({ version, cost }) => ({
@@ -53,80 +47,18 @@ export function summarizeClassifierEfficiency(
 ): ClassifierEfficiency[] {
   const byClassifier = new Map<string, { efficiency: ClassifierEfficiency; cost: bigint }>()
   for (const version of versions) {
-    let entry = byClassifier.get(version.classifier)
-    if (!entry) {
-      entry = { efficiency: emptyEfficiency(version.classifier), cost: 0n }
-      byClassifier.set(version.classifier, entry)
+    const entry = byClassifier.get(version.classifier) ?? {
+      efficiency: emptyEfficiency(version.classifier),
+      cost: 0n,
     }
-    addVersion(entry.efficiency, version)
-    entry.cost += BigInt(version.costMicrounits)
+    byClassifier.set(version.classifier, {
+      efficiency: addVersion(entry.efficiency, version),
+      cost: entry.cost + BigInt(version.costMicrounits),
+    })
   }
   return [...byClassifier.values()]
     .map(({ efficiency, cost }) => ({ ...efficiency, costMicrounits: cost.toString() }))
     .toSorted((a, b) => a.classifier.localeCompare(b.classifier))
-}
-
-function emptyVersion(run: ClassifierRunUsage): ClassifierContentVersionUsage {
-  return {
-    classifier: run.classifier,
-    subjectKind: run.subjectKind,
-    subjectId: run.subjectId,
-    inputSha256: run.inputSha256,
-    communityIdentityId: run.communityIdentityId,
-    runs: 0,
-    billedRuns: 0,
-    reclassifications: 0,
-    attemptsStarted: 0,
-    retries: 0,
-    sweepEnqueues: 0,
-    providerCalls: 0,
-    maxProviderCallsPerRun: 0,
-    runsOverOneCall: 0,
-    attemptsWithoutRecordedResponse: 0,
-    persistedDecisionCalls: 0,
-    unfinishedRuns: 0,
-    unpricedCalls: 0,
-    costMicrounits: '0',
-    latencyMsTotal: 0,
-    latencySamples: 0,
-    localDetectorRuns: 0,
-    ...NO_AGENT_TURNS,
-  }
-}
-
-/**
- * A run can still reserve a provider attempt while it has a remote batch, is neither completed nor
- * failed, and its outcomes are not durable: a claim then replays instead of calling. The batch is
- * fixed when the receipt is reserved, so a local-only run (no batch) never reaches the provider. A
- * superseded run counts, since the same update that leases it revives it once its content and
- * configuration are current again. An agent run reserves no batch, so it counts by its primitive.
- */
-function canStillCallProvider(run: ClassifierRunUsage): boolean {
-  if (run.batchId === null && run.primitive !== 'agent') return false
-  return (run.outcome === 'incomplete' || run.outcome === 'superseded') && !run.outcomesPersisted
-}
-
-function addRun(entry: VersionEntry, run: ClassifierRunUsage): void {
-  const { version } = entry
-  version.runs += 1
-  if (run.providerCalls > 0) version.billedRuns += 1
-  version.attemptsStarted += run.attemptsStarted
-  version.retries += run.retries
-  version.sweepEnqueues += run.sweepEnqueues
-  version.providerCalls += run.providerCalls
-  if (run.primitive === 'agent') addAgentRun(version, run)
-  else {
-    version.maxProviderCallsPerRun = Math.max(version.maxProviderCallsPerRun, run.providerCalls)
-    if (run.providerCalls > 1) version.runsOverOneCall += 1
-  }
-  version.attemptsWithoutRecordedResponse += run.attemptsWithoutRecordedResponse
-  version.persistedDecisionCalls += run.shardCount
-  if (canStillCallProvider(run)) version.unfinishedRuns += 1
-  version.unpricedCalls += run.unpricedCalls
-  version.latencyMsTotal += run.latencyMsTotal
-  version.latencySamples += run.latencySamples
-  if (run.localDetector !== null) version.localDetectorRuns += 1
-  entry.cost += BigInt(run.costMicrounits)
 }
 
 function emptyEfficiency(classifier: string): ClassifierEfficiency {
@@ -156,27 +88,31 @@ function emptyEfficiency(classifier: string): ClassifierEfficiency {
 function addVersion(
   efficiency: ClassifierEfficiency,
   version: ClassifierContentVersionUsage,
-): void {
-  efficiency.contentVersions += 1
-  efficiency.runs += version.runs
-  efficiency.providerCalls += version.providerCalls
-  efficiency.billedRuns += version.billedRuns
-  efficiency.maxProviderCallsPerRun = Math.max(
-    efficiency.maxProviderCallsPerRun,
-    version.maxProviderCallsPerRun,
-  )
-  efficiency.runsOverOneCall += version.runsOverOneCall
-  efficiency.reclassifications += version.reclassifications
-  efficiency.attemptsStarted += version.attemptsStarted
-  efficiency.retries += version.retries
-  efficiency.sweepEnqueues += version.sweepEnqueues
-  efficiency.attemptsWithoutRecordedResponse += version.attemptsWithoutRecordedResponse
-  efficiency.unfinishedRuns += version.unfinishedRuns
-  efficiency.unpricedCalls += version.unpricedCalls
-  efficiency.latencyMsTotal += version.latencyMsTotal
-  efficiency.latencySamples += version.latencySamples
-  efficiency.localDetectorRuns += version.localDetectorRuns
-  addAgentTurns(efficiency, version)
+): ClassifierEfficiency {
+  return {
+    ...efficiency,
+    contentVersions: efficiency.contentVersions + 1,
+    runs: efficiency.runs + version.runs,
+    providerCalls: efficiency.providerCalls + version.providerCalls,
+    billedRuns: efficiency.billedRuns + version.billedRuns,
+    maxProviderCallsPerRun: Math.max(
+      efficiency.maxProviderCallsPerRun,
+      version.maxProviderCallsPerRun,
+    ),
+    runsOverOneCall: efficiency.runsOverOneCall + version.runsOverOneCall,
+    reclassifications: efficiency.reclassifications + version.reclassifications,
+    attemptsStarted: efficiency.attemptsStarted + version.attemptsStarted,
+    retries: efficiency.retries + version.retries,
+    sweepEnqueues: efficiency.sweepEnqueues + version.sweepEnqueues,
+    attemptsWithoutRecordedResponse:
+      efficiency.attemptsWithoutRecordedResponse + version.attemptsWithoutRecordedResponse,
+    unfinishedRuns: efficiency.unfinishedRuns + version.unfinishedRuns,
+    unpricedCalls: efficiency.unpricedCalls + version.unpricedCalls,
+    latencyMsTotal: efficiency.latencyMsTotal + version.latencyMsTotal,
+    latencySamples: efficiency.latencySamples + version.latencySamples,
+    localDetectorRuns: efficiency.localDetectorRuns + version.localDetectorRuns,
+    ...addAgentTurns(efficiency, version),
+  }
 }
 
 function compareVersions(

@@ -1,20 +1,18 @@
 import type { UpdateCrawlOptions } from './types.mts'
 
-export function appendEmbedMetadataUpdate(
-  setClauses: string[],
-  values: unknown[],
+/** The `[column, value]` pairs of the embed fields an update sets; `undefined` values are skipped by the caller. */
+export function embedMetadataUpdates(
   options: Pick<
     UpdateCrawlOptions,
     'embed_metadata' | 'embed_oembed_url' | 'embed_oembed_resolved_at'
   >,
-) {
-  if (options.embed_metadata !== undefined) {
-    setClauses.push(`embed_metadata = $${values.push(JSON.stringify(options.embed_metadata))}`)
-  }
-  if (options.embed_oembed_url !== undefined) {
-    setClauses.push(`embed_oembed_url = $${values.push(options.embed_oembed_url)}`)
-  }
-  if (options.embed_oembed_resolved_at !== undefined) {
-    setClauses.push(`embed_oembed_resolved_at = $${values.push(options.embed_oembed_resolved_at)}`)
-  }
+): [string, unknown][] {
+  return [
+    [
+      'embed_metadata',
+      options.embed_metadata === undefined ? undefined : JSON.stringify(options.embed_metadata),
+    ],
+    ['embed_oembed_url', options.embed_oembed_url],
+    ['embed_oembed_resolved_at', options.embed_oembed_resolved_at],
+  ]
 }

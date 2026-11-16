@@ -7,23 +7,17 @@ export type CommunityReference = { id: string; slug: string }
 export async function getCommunitiesByReferenceBatch(
   references: readonly string[],
 ): Promise<Array<CommunityReference | null>> {
-  const ids: string[] = []
-  const idOrders: number[] = []
-  const slugs: string[] = []
-  const slugOrders: number[] = []
-  references.forEach((reference, index) => {
+  const entries = references.flatMap((reference, index) => {
     const trimmed = reference.trim()
-    if (!trimmed) return
-    if (isUUID(trimmed)) {
-      ids.push(trimmed)
-      idOrders.push(index)
-      return
-    }
-    slugs.push(trimmed.toLowerCase())
-    slugOrders.push(index)
+    return trimmed ? [{ trimmed, index }] : []
   })
-  const results: Array<CommunityReference | null> = references.map(() => null)
-  if (ids.length + slugs.length === 0) return results
+  const idEntries = entries.filter(entry => isUUID(entry.trimmed))
+  const slugEntries = entries.filter(entry => !isUUID(entry.trimmed))
+  const ids = idEntries.map(entry => entry.trimmed)
+  const idOrders = idEntries.map(entry => entry.index)
+  const slugs = slugEntries.map(entry => entry.trimmed.toLowerCase())
+  const slugOrders = slugEntries.map(entry => entry.index)
+  if (ids.length + slugs.length === 0) return references.map(() => null)
   const { rows } = await read<CommunityReference & { input_order: number }>(
     `/* getCommunitiesByReferenceBatch */
     WITH id_input AS (
@@ -48,6 +42,6 @@ export async function getCommunitiesByReferenceBatch(
     ORDER BY input_order, priority, id`,
     [ids, idOrders, slugs, slugOrders],
   )
-  for (const row of rows) results[row.input_order] = { id: row.id, slug: row.slug }
-  return results
+  const byOrder = new Map(rows.map(row => [row.input_order, { id: row.id, slug: row.slug }]))
+  return references.map((_reference, index) => byOrder.get(index) ?? null)
 }
