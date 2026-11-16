@@ -10,9 +10,9 @@ import {
   getTestGrantQueue,
   getTestMembershipGrant,
   getTestMembershipGrantRemainingMilliseconds,
+  insertQueuedMembershipGrant,
   beginTransaction,
 } from '@voucha/test-helpers'
-import { grantMembership } from '../../create.mts'
 import { getMembershipByUserId } from '../../get.mts'
 import { updateMembershipFromEvent } from '../../update.mts'
 import { restoreFallbackAfterCurrentAccessEndsInTransaction } from '../restore-after-current-access-ends.mts'
@@ -43,7 +43,14 @@ describe('fallback after a family projection ends over an open grant', () => {
       userId: user.id,
     })
     const queuedSku = await createTestSku({ plan: 'pro', interval: 'yearly' })
-    const queued = await grantMembership(admin.id, user.id, 'pro', queuedSku.id, 30)
+    // Committed fixtures: the SERIALIZABLE grant writer is only setup here, and parallel tests'
+    // predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
+    const queuedGrantId = await insertQueuedMembershipGrant({
+      grantedById: admin.id,
+      productId: queuedSku.id,
+      userId: user.id,
+      durationDays: 30,
+    })
     const remainingBefore = await getTestMembershipGrantRemainingMilliseconds(openGrantId!)
     const familyEndedAt = new Date()
 
@@ -59,7 +66,7 @@ describe('fallback after a family projection ends over an open grant', () => {
       status: 'active',
     })
     await expect(getTestGrantQueue(user.id)).resolves.toMatchObject({
-      active_grant_ids: [queued.grantId],
+      active_grant_ids: [queuedGrantId],
       open_activation_count: 1,
     })
     await expect(getTestMembershipGrant(openGrantId!)).resolves.toMatchObject({

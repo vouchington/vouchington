@@ -5,9 +5,11 @@ import {
   getTestGrantQueue,
   getTestMembershipRaw,
   updateTestMembershipExpiresAt,
+  createTestAdminGrantMembership,
+  insertQueuedMembershipGrant,
 } from '@voucha/test-helpers'
 import { spyOnMembershipEntitlementAdmission } from '../../../test-helpers/membership-entitlement-admission.mts'
-import { createMembership, grantMembership } from '../create.mts'
+import { createMembership } from '../create.mts'
 import { getMembershipByUserId, getMembershipHistory } from '../get.mts'
 
 describe('createMembership with elapsed grants', () => {
@@ -15,15 +17,20 @@ describe('createMembership with elapsed grants', () => {
     const admin = await createTestUser({ administrator: true })
     const stripeUser = await createTestUser()
     const firstGrantSku = await createTestSku({ plan: 'plus' })
-    const firstGrant = await grantMembership(admin.id, stripeUser.id, 'plus', firstGrantSku.id, 30)
+    // Committed fixtures: the SERIALIZABLE grant writer is only setup here, and parallel tests'
+    // predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
+    const firstGrant = await createTestAdminGrantMembership({
+      grantedById: admin.id,
+      productId: firstGrantSku.id,
+      userId: stripeUser.id,
+    })
     const queuedGrantSku = await createTestSku({ plan: 'plus', interval: 'yearly' })
-    const queuedGrant = await grantMembership(
-      admin.id,
-      stripeUser.id,
-      'plus',
-      queuedGrantSku.id,
-      30,
-    )
+    const queuedGrantId = await insertQueuedMembershipGrant({
+      grantedById: admin.id,
+      productId: queuedGrantSku.id,
+      userId: stripeUser.id,
+      durationDays: 30,
+    })
     await updateTestMembershipExpiresAt(firstGrant.id, new Date('2020-01-01T00:00:00Z'))
     const stripeSku = await createTestSku({ plan: 'pro' })
 
@@ -39,7 +46,7 @@ describe('createMembership with elapsed grants', () => {
       status: 'active',
     })
     await expect(getTestGrantQueue(stripeUser.id)).resolves.toMatchObject({
-      grant_ids: expect.arrayContaining([queuedGrant.grantId]),
+      grant_ids: expect.arrayContaining([queuedGrantId]),
       open_activation_count: 0,
     })
   })
@@ -48,9 +55,18 @@ describe('createMembership with elapsed grants', () => {
     const admin = await createTestUser({ administrator: true })
     const user = await createTestUser()
     const expiredGrantSku = await createTestSku({ plan: 'plus' })
-    const expiredGrant = await grantMembership(admin.id, user.id, 'plus', expiredGrantSku.id, 30)
+    const expiredGrant = await createTestAdminGrantMembership({
+      grantedById: admin.id,
+      productId: expiredGrantSku.id,
+      userId: user.id,
+    })
     const promotedGrantSku = await createTestSku({ plan: 'pro', interval: 'yearly' })
-    const promotedGrant = await grantMembership(admin.id, user.id, 'pro', promotedGrantSku.id, 30)
+    const promotedGrantId = await insertQueuedMembershipGrant({
+      grantedById: admin.id,
+      productId: promotedGrantSku.id,
+      userId: user.id,
+      durationDays: 30,
+    })
     await updateTestMembershipExpiresAt(expiredGrant.id, new Date('2020-01-01T00:00:00Z'))
     const terminalStripeSku = await createTestSku({ plan: 'plus' })
 
@@ -82,7 +98,7 @@ describe('createMembership with elapsed grants', () => {
       ]),
     )
     await expect(getTestGrantQueue(user.id)).resolves.toMatchObject({
-      grant_ids: expect.arrayContaining([promotedGrant.grantId]),
+      grant_ids: expect.arrayContaining([promotedGrantId]),
       open_activation_count: 1,
     })
   })
@@ -91,9 +107,18 @@ describe('createMembership with elapsed grants', () => {
     const admin = await createTestUser({ administrator: true })
     const grantUser = await createTestUser()
     const firstSku = await createTestSku({ plan: 'plus' })
-    const firstGrant = await grantMembership(admin.id, grantUser.id, 'plus', firstSku.id, 30)
+    const firstGrant = await createTestAdminGrantMembership({
+      grantedById: admin.id,
+      productId: firstSku.id,
+      userId: grantUser.id,
+    })
     const promotedSku = await createTestSku({ plan: 'pro', interval: 'yearly' })
-    const promotedGrant = await grantMembership(admin.id, grantUser.id, 'pro', promotedSku.id, 30)
+    const promotedGrantId = await insertQueuedMembershipGrant({
+      grantedById: admin.id,
+      productId: promotedSku.id,
+      userId: grantUser.id,
+      durationDays: 30,
+    })
     await updateTestMembershipExpiresAt(firstGrant.id, new Date('2020-01-01T00:00:00Z'))
     const queuedSku = await createTestSku({ plan: 'plus' })
     const queue = spyOnMembershipEntitlementAdmission()
@@ -118,7 +143,7 @@ describe('createMembership with elapsed grants', () => {
       status: 'active',
     })
     await expect(getTestGrantQueue(grantUser.id)).resolves.toMatchObject({
-      grant_ids: expect.arrayContaining([promotedGrant.grantId, queued.grantId]),
+      grant_ids: expect.arrayContaining([promotedGrantId, queued.grantId]),
       open_activation_count: 1,
     })
     await expect(getMembershipHistory(grantUser.id).then(page => page.results)).resolves.toEqual(

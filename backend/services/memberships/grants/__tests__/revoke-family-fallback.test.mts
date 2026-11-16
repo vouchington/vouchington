@@ -2,15 +2,18 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
   attachTestStripeProductionProviderObservation,
+  createTestAdminGrantMembership,
   createTestFamilyMembership,
   createTestSku,
   createTestUser,
   endTestMembershipProjection,
+  getTestGrantQueue,
   getTestMembershipEntitlementEffects,
+  insertQueuedMembershipGrant,
   getTestMembershipRaw,
   rejectTestMembershipProviderEvidence,
 } from '@voucha/test-helpers'
-import { createMembership, grantMembership } from '../../create.mts'
+import { createMembership } from '../../create.mts'
 import { getMembershipByUserId, getMembershipHistory } from '../../get.mts'
 import { updateMembershipFromEvent } from '../../update.mts'
 import { revokeMembershipGrant } from '../revoke.mts'
@@ -37,7 +40,13 @@ describe('revokeMembershipGrant family fallback', () => {
     })
     await endTestMembershipProjection(direct.id)
     const grantSku = await createTestSku({ plan: 'pro', interval: 'yearly' })
-    const grant = await grantMembership(admin.id, member.id, 'pro', grantSku.id, 30)
+    // Committed fixtures: the SERIALIZABLE grant writer is only setup here, and parallel tests'
+    // predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
+    const grant = await createTestAdminGrantMembership({
+      grantedById: admin.id,
+      productId: grantSku.id,
+      userId: member.id,
+    })
 
     await revokeMembershipGrant(admin.id, grant.grantId, 'grant revoked')
 
@@ -63,8 +72,14 @@ describe('revokeMembershipGrant family fallback', () => {
       userId: member.id,
     })
     const grantSku = await createTestSku({ plan: 'pro', interval: 'yearly' })
-    const grant = await grantMembership(admin.id, member.id, 'pro', grantSku.id, 30)
-    expect(grant.queued).toBe(false)
+    const grant = await createTestAdminGrantMembership({
+      grantedById: admin.id,
+      productId: grantSku.id,
+      userId: member.id,
+    })
+    await expect(getTestGrantQueue(member.id)).resolves.toMatchObject({
+      active_grant_ids: [grant.grantId],
+    })
 
     const revoked = await revokeMembershipGrant(admin.id, grant.grantId, 'grant revoked')
 
@@ -120,7 +135,12 @@ describe('revokeMembershipGrant family fallback', () => {
       stripeSubscriptionId: `sub_revoke_family_fallback_${randomUUID()}`,
     })
     const grantSku = await createTestSku({ plan: 'plus', interval: 'yearly' })
-    const grant = await grantMembership(admin.id, member.id, 'plus', grantSku.id, 30)
+    const grantId = await insertQueuedMembershipGrant({
+      grantedById: admin.id,
+      productId: grantSku.id,
+      userId: member.id,
+      durationDays: 30,
+    })
 
     await updateMembershipFromEvent(
       { membershipId: direct.id, status: 'paused' },
@@ -132,12 +152,12 @@ describe('revokeMembershipGrant family fallback', () => {
       status: 'active',
     })
 
-    const revoked = await revokeMembershipGrant(admin.id, grant.grantId, 'grant revoked')
+    const revoked = await revokeMembershipGrant(admin.id, grantId, 'grant revoked')
 
     expect(revoked).toMatchObject({
       activatedNextGrant: false,
       alreadyRevoked: false,
-      grantId: grant.grantId,
+      grantId,
     })
     const restored = await getMembershipByUserId(member.id)
     expect(restored).toMatchObject({ plan: 'plus', status: 'active' })
@@ -184,8 +204,14 @@ describe('revokeMembershipGrant family fallback', () => {
     })
     await rejectTestMembershipProviderEvidence(family.id)
     const grantSku = await createTestSku({ plan: 'pro', interval: 'yearly' })
-    const grant = await grantMembership(admin.id, member.id, 'pro', grantSku.id, 30)
-    expect(grant.queued).toBe(false)
+    const grant = await createTestAdminGrantMembership({
+      grantedById: admin.id,
+      productId: grantSku.id,
+      userId: member.id,
+    })
+    await expect(getTestGrantQueue(member.id)).resolves.toMatchObject({
+      active_grant_ids: [grant.grantId],
+    })
 
     await revokeMembershipGrant(admin.id, grant.grantId, 'grant revoked without valid family')
 

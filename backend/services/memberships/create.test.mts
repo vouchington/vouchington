@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import {
+  createTestAdminGrantMembership,
   createTestUser,
   createTestSku,
   createRetiredTestSku,
@@ -86,7 +87,12 @@ describe('create', () => {
     it('replaces an elapsed grant with a new Stripe membership', async () => {
       const stripeUser = await createTestUser()
       const grantSku = await createTestSku({ plan: 'plus' })
-      const elapsedGrant = await grantMembership(admin.id, stripeUser.id, 'plus', grantSku.id, 30)
+      // Committed fixture: the elapsed grant is setup; the Stripe replacement is the subject.
+      const elapsedGrant = await createTestAdminGrantMembership({
+        grantedById: admin.id,
+        productId: grantSku.id,
+        userId: stripeUser.id,
+      })
       await updateTestMembershipExpiresAt(elapsedGrant.id, new Date('2020-01-01T00:00:00Z'))
       const stripeSku = await createTestSku({ plan: 'pro' })
       const stripeMembership = await createMembership({
@@ -171,13 +177,12 @@ describe('create', () => {
       const retiredSku = await createRetiredTestSku({ plan: 'pro' })
       const retiredSkuUser = await createTestUser()
       const existingSku = await createTestSku({ plan: 'plus' })
-      const existing = await grantMembership(
-        admin.id,
-        retiredSkuUser.id,
-        'plus',
-        existingSku.id,
-        30,
-      )
+      // Committed fixture: only the retired-SKU grant below is the subject.
+      const existing = await createTestAdminGrantMembership({
+        grantedById: admin.id,
+        productId: existingSku.id,
+        userId: retiredSkuUser.id,
+      })
       await expect(
         grantMembership(admin.id, retiredSkuUser.id, 'pro', retiredSku.id, 30),
       ).rejects.toThrow(InvalidMembershipGrantSkuError)
@@ -214,7 +219,12 @@ describe('create', () => {
     it('queues a second grant FIFO while one is open', async () => {
       const replaceUser = await createTestUser()
       const oldSku = await createTestSku({ plan: 'plus' })
-      const oldResult = await grantMembership(admin.id, replaceUser.id, 'plus', oldSku.id, 30)
+      // Committed fixture: the open grant is setup; the queued second grant is the subject.
+      const oldResult = await createTestAdminGrantMembership({
+        grantedById: admin.id,
+        productId: oldSku.id,
+        userId: replaceUser.id,
+      })
       const newSku = await createTestSku({ plan: 'pro' })
       const queuedGrant = await grantMembership(admin.id, replaceUser.id, 'pro', newSku.id, 30)
       expect(queuedGrant).toMatchObject({ id: oldResult.id, queued: true })
@@ -248,7 +258,11 @@ describe('create', () => {
 
       // Grant initial plus membership
       const plusSku = await createTestSku({ plan: 'plus' })
-      const first = await grantMembership(admin.id, historyUser.id, 'plus', plusSku.id, 30)
+      const first = await createTestAdminGrantMembership({
+        grantedById: admin.id,
+        productId: plusSku.id,
+        userId: historyUser.id,
+      })
       await updateTestMembershipExpiresAt(first.id, new Date('2020-01-01T00:00:00Z'))
       const proSku = await createTestSku({ plan: 'pro' })
       const secondResult = await grantMembership(admin.id, historyUser.id, 'pro', proSku.id, 30)

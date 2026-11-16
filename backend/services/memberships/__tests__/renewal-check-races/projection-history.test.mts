@@ -7,8 +7,10 @@ import {
   createTestUser,
   endTestMembershipProjection,
   updateTestMembershipExpiresAt,
+  createTestAdminGrantMembership,
+  getTestGrantQueue,
 } from '@voucha/test-helpers'
-import { createMembership, grantMembership } from '../../create.mts'
+import { createMembership } from '../../create.mts'
 import { expireElapsedMembershipsForUsers } from '../../grants/expire-elapsed-batch.mts'
 import { getMembershipByUserId } from '../../get.mts'
 
@@ -65,8 +67,16 @@ async function createRetiredClaimOwner() {
 
   await endTestMembershipProjection(membership.id)
   const grantSku = await createTestSku({ plan: 'pro', interval: 'yearly' })
-  const firstGrant = await grantMembership(admin.id, user.id, 'pro', grantSku.id, 30)
-  expect(firstGrant.queued).toBe(false)
+  // Committed fixtures: the SERIALIZABLE grant writer is only setup here, and parallel tests'
+  // predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
+  const firstGrant = await createTestAdminGrantMembership({
+    grantedById: admin.id,
+    productId: grantSku.id,
+    userId: user.id,
+  })
+  await expect(getTestGrantQueue(user.id)).resolves.toMatchObject({
+    active_grant_ids: [firstGrant.grantId],
+  })
   await updateTestMembershipExpiresAt(firstGrant.id, new Date('2020-01-01T00:00:00.000Z'))
   await expect(expireElapsedMembershipsForUsers([user.id])).resolves.toEqual({
     expired: 1,

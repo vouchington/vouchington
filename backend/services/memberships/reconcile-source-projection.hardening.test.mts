@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { createTestSku, createTestUser } from '@voucha/test-helpers'
-import { createMembership, grantMembership } from './create.mts'
+import { createTestSku, createTestUser, createTestAdminGrantMembership } from '@voucha/test-helpers'
+import { createMembership } from './create.mts'
 import { getMembershipHistory } from './get.mts'
 
 describe('direct membership change classification', () => {
@@ -8,7 +8,13 @@ describe('direct membership change classification', () => {
     const admin = await createTestUser({ administrator: true })
     const member = await createTestUser()
     const grantSku = await createTestSku({ plan: 'plus' })
-    await grantMembership(admin.id, member.id, 'plus', grantSku.id, 30)
+    // Committed fixtures: the SERIALIZABLE grant writer is only setup here, and parallel tests'
+    // predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
+    await createTestAdminGrantMembership({
+      grantedById: admin.id,
+      productId: grantSku.id,
+      userId: member.id,
+    })
     const directSku = await createTestSku({ plan: 'pro' })
 
     const direct = await createMembership({

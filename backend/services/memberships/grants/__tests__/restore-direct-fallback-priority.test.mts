@@ -7,11 +7,12 @@ import {
   createTestSku,
   createTestUser,
   getTestGrantQueue,
+  insertQueuedMembershipGrant,
 } from '@voucha/test-helpers'
 import { setTestMembershipSourceEffectiveAt } from '../../../../test-helpers/membership-source-effective-at.mts'
 import { selectHighestPriorityMembershipSource } from '../../fallback/select-highest-priority-source.mts'
 import { selectDirectTerminationReplacement } from '../select-direct-termination-replacement.mts'
-import { createMembership, grantMembership } from '../../create.mts'
+import { createMembership } from '../../create.mts'
 import { getStripeMembershipSourceIdentity } from '../../create-types.mts'
 import { getMembershipByStripeSubscriptionId, getMembershipByUserId } from '../../get.mts'
 import { updateMembershipFromEvent } from '../../update.mts'
@@ -103,7 +104,14 @@ describe('direct fallback priority', () => {
       status: 'active',
     })
     const grantSku = await createTestSku({ plan: 'plus' })
-    const queued = await grantMembership(admin.id, member.id, 'plus', grantSku.id, 30)
+    // Committed fixtures: the SERIALIZABLE grant writer is only setup here, and parallel tests'
+    // predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
+    const queuedGrantId = await insertQueuedMembershipGrant({
+      grantedById: admin.id,
+      productId: grantSku.id,
+      userId: member.id,
+      durationDays: 30,
+    })
 
     await updateMembershipFromEvent(
       { membershipId: current.id, status: 'cancelled', terminalEffectiveAt: new Date() },
@@ -122,7 +130,7 @@ describe('direct fallback priority', () => {
       ),
     ).resolves.toMatchObject({ id: restored!.id })
     await expect(getTestGrantQueue(member.id)).resolves.toMatchObject({
-      grant_ids: expect.arrayContaining([queued.grantId]),
+      grant_ids: expect.arrayContaining([queuedGrantId]),
       open_activation_count: 0,
     })
   })
@@ -153,10 +161,25 @@ describe('direct fallback priority', () => {
       providerApplicationId: currentSku.provider_application_id,
     })
     const lowerSku = await createTestSku({ plan: 'plus' })
-    await grantMembership(admin.id, member.id, 'plus', lowerSku.id, 30)
+    await insertQueuedMembershipGrant({
+      grantedById: admin.id,
+      productId: lowerSku.id,
+      userId: member.id,
+      durationDays: 30,
+    })
     const grantSku = await createTestSku({ plan: 'pro' })
-    const queued = await grantMembership(admin.id, member.id, 'pro', grantSku.id, 30)
-    const later = await grantMembership(admin.id, member.id, 'pro', grantSku.id, 30)
+    const queuedGrantId = await insertQueuedMembershipGrant({
+      grantedById: admin.id,
+      productId: grantSku.id,
+      userId: member.id,
+      durationDays: 30,
+    })
+    const laterGrantId = await insertQueuedMembershipGrant({
+      grantedById: admin.id,
+      productId: grantSku.id,
+      userId: member.id,
+      durationDays: 30,
+    })
 
     await updateMembershipFromEvent(
       { membershipId: current.id, status: 'cancelled', terminalEffectiveAt: new Date() },
@@ -169,8 +192,8 @@ describe('direct fallback priority', () => {
       status: 'active',
     })
     await expect(getTestGrantQueue(member.id)).resolves.toMatchObject({
-      active_grant_ids: [queued.grantId],
-      grant_ids: expect.arrayContaining([later.grantId]),
+      active_grant_ids: [queuedGrantId],
+      grant_ids: expect.arrayContaining([laterGrantId]),
       open_activation_count: 1,
     })
   })

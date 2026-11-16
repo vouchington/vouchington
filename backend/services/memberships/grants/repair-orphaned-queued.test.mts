@@ -1,5 +1,6 @@
 import {
   commitMembershipGrantTransaction,
+  createTestAdminGrantMembership,
   createTestSku,
   createTestUser,
   getTestMembershipGrant,
@@ -10,7 +11,6 @@ import {
 import { acquireTestPostgresAdvisoryLock } from '../../../test-helpers/postgres-advisory-lock.mts'
 import { describe, expect, it } from 'vitest'
 import { getMembershipByUserId } from '../get.mts'
-import { grantMembership } from '../grant.mts'
 import {
   readOrphanedQueuedGrantRepairCursor,
   resumeExpireElapsedMemberships,
@@ -39,7 +39,13 @@ describe('repairOrphanedQueuedGrantsBatch', () => {
     const member = await createTestUser()
     const activeSku = await createTestSku({ plan: 'plus' })
     const queuedSku = await createTestSku({ plan: 'pro', interval: 'yearly' })
-    const active = await grantMembership(admin.id, member.id, 'plus', activeSku.id, 30)
+    // Committed fixtures: the SERIALIZABLE grant writer is only setup here, and parallel tests'
+    // predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
+    const active = await createTestAdminGrantMembership({
+      grantedById: admin.id,
+      productId: activeSku.id,
+      userId: member.id,
+    })
     const held = await holdUncommittedQueuedMembershipGrant({
       userId: member.id,
       productId: queuedSku.id,
@@ -81,7 +87,11 @@ describe('repairOrphanedQueuedGrantsBatch', () => {
     const member = await createTestUser()
     const activeSku = await createTestSku({ plan: 'plus' })
     const queuedSku = await createTestSku({ plan: 'pro' })
-    const active = await grantMembership(admin.id, member.id, 'plus', activeSku.id, 30)
+    const active = await createTestAdminGrantMembership({
+      grantedById: admin.id,
+      productId: activeSku.id,
+      userId: member.id,
+    })
     const queuedGrantId = await insertQueuedMembershipGrant({
       userId: member.id,
       productId: queuedSku.id,
@@ -223,7 +233,11 @@ async function createOrphanedQueuedGrant(
 ): Promise<{ coveringGrantId: string; queuedGrantId: string }> {
   const activeSku = await createTestSku({ plan: 'plus' })
   const queuedSku = await createTestSku({ plan: 'pro' })
-  const active = await grantMembership(adminId, userId, 'plus', activeSku.id, 30)
+  const active = await createTestAdminGrantMembership({
+    grantedById: adminId,
+    productId: activeSku.id,
+    userId,
+  })
   const revoked = await revokeMembershipGrant(adminId, active.grantId, 'coverage ended')
   expect(revoked).toMatchObject({ activatedNextGrant: false })
   const queuedGrantId = await insertQueuedMembershipGrant({

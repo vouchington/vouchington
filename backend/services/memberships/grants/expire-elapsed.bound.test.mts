@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { createTestUser, createTestSku, updateTestMembershipExpiresAt } from '@voucha/test-helpers'
+import {
+  createTestAdminGrantMembership,
+  createTestSku,
+  createTestUser,
+  getTestGrantQueue,
+  insertQueuedMembershipGrant,
+  updateTestMembershipExpiresAt,
+} from '@voucha/test-helpers'
 import { createTestHistoricalQueuedGrant } from '@voucha/test-helpers/entities/membership-historical-grants'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import { profileTestMembershipExpiry } from '@voucha/test-helpers/entities/membership-expiry-profile'
 import { membershipWorkConfig } from '../work-limits.mts'
-import { grantMembership } from '../create.mts'
 import { getMembershipByUserId, getMembershipHistory } from '../get.mts'
 import { expireElapsedMemberships } from './expire-elapsed.mts'
 import { expireElapsedMembershipsForUsers } from './expire-elapsed-batch.mts'
@@ -20,9 +26,25 @@ describe('membership expiry run budget', () => {
       const admin = await createTestUser({ administrator: true })
       const member = await createTestUser()
       const sku = await createTestSku({ plan: 'plus' })
-      const first = await grantMembership(admin.id, member.id, 'plus', sku.id, 30)
-      const second = await grantMembership(admin.id, member.id, 'plus', sku.id, 30)
-      expect(second.queued).toBe(true)
+      // Committed fixtures: the SERIALIZABLE grant writer is only setup here, and parallel tests'
+      // predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
+      const first = await createTestAdminGrantMembership({
+        grantedById: admin.id,
+        productId: sku.id,
+        userId: member.id,
+      })
+      const secondGrantId = await insertQueuedMembershipGrant({
+        grantedById: admin.id,
+        productId: sku.id,
+        userId: member.id,
+        durationDays: 30,
+      })
+      await expect(getTestGrantQueue(member.id)).resolves.toMatchObject({
+        active_grant_ids: [first.grantId],
+        grant_ids: [first.grantId, secondGrantId],
+      })
+      // The fixture grant is open-ended, so give it the 30-day term the writer would have set.
+      await updateTestMembershipExpiresAt(first.id, new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))
       const current = await getMembershipByUserId(member.id)
       if (!current?.expires_at) throw new Error('Expected a live grant expiry')
       const expiresThrough = new Date(current.expires_at.getTime() + 62 * 24 * 60 * 60 * 1000)
@@ -41,7 +63,7 @@ describe('membership expiry run budget', () => {
       expect(pages).toBe(expectedExpired)
       const expirations = page.history.filter(change => change.change_type === 'expiration')
       expect(expirations.map(change => change.membership_grant_id)).toEqual(
-        [first.grantId, second.grantId].slice(0, expectedExpired),
+        [first.grantId, secondGrantId].slice(0, expectedExpired),
       )
       expect(expirations.every(change => change.latest && change.effects === 1)).toBe(true)
     },
@@ -51,7 +73,11 @@ describe('membership expiry run budget', () => {
     const admin = await createTestUser({ administrator: true })
     const member = await createTestUser()
     const sku = await createTestSku({ plan: 'plus' })
-    const first = await grantMembership(admin.id, member.id, 'plus', sku.id, 30)
+    const first = await createTestAdminGrantMembership({
+      grantedById: admin.id,
+      productId: sku.id,
+      userId: member.id,
+    })
     await createTestHistoricalQueuedGrant(member.id, sku.id)
     await createTestHistoricalQueuedGrant(member.id, sku.id)
     await updateTestMembershipExpiresAt(first.id, new Date('2020-01-01T00:00:00Z'))

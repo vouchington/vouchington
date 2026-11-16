@@ -7,8 +7,9 @@ import {
   createTestUser,
   endTestMembershipProjection,
   beginTransaction,
+  insertQueuedMembershipGrant,
 } from '@voucha/test-helpers'
-import { createMembership, grantMembership, updateMembershipFromEvent } from '@services/memberships'
+import { createMembership, updateMembershipFromEvent } from '@services/memberships'
 import { getMembershipByUserId } from '@services/memberships/get'
 import { restoreFallbackAfterCurrentAccessEndsInTransaction } from '../fallback/restore-after-current-access-ends.mts'
 import { getManageableStripeSubscriptionByUserId } from './get-manageable-stripe-subscription.mts'
@@ -76,7 +77,17 @@ describe('manageable Stripe subscription lookup', () => {
     expect(latestRetainedProjection!.id).not.toBe(firstRetainedProjection.id)
     expect(latestRetainedProjection!.id).not.toBe(secondRetainedProjection!.id)
 
-    await grantMembership(administrator.id, member.id, 'pro', pro.id, 30)
+    // Committed fixtures: the SERIALIZABLE grant writer is only setup here, and parallel tests'
+    // predicate locks can abort it with 40001. Writer coverage lives in create.test.mts.
+    await insertQueuedMembershipGrant({
+      grantedById: administrator.id,
+
+      productId: pro.id,
+
+      userId: member.id,
+
+      durationDays: 30,
+    })
     await updateMembershipFromEvent(
       { membershipId: latestRetainedProjection!.id, status: 'paused' },
       async () => false,

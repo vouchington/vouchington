@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
+  createTestMembership,
   createTestSku,
   createTestUser,
   getTestMembershipRaw,
+  updateTestMembershipCancelAtPeriodEnd,
   updateTestMembershipExpiresAt,
 } from '@voucha/test-helpers'
-import { createMembership, grantMembership } from './create.mts'
+import { grantMembership } from './create.mts'
 import { getMembershipHistory } from './get.mts'
 
 describe('elapsed membership replacement', () => {
@@ -13,14 +15,15 @@ describe('elapsed membership replacement', () => {
     const admin = await createTestUser({ administrator: true })
     const member = await createTestUser()
     const pastDueSku = await createTestSku({ plan: 'plus' })
-    const elapsedMembership = await createMembership({
-      userId: member.id,
-      plan: 'plus',
-      skuId: pastDueSku.id,
-      durationDays: 30,
+    // Committed fixture: the elapsed term is only setup. The replacing grant below is the subject,
+    // so it stays on the SERIALIZABLE writer.
+    const elapsedMembership = await createTestMembership({
+      user_id: member.id,
+      sku_id: pastDueSku.id,
       status: 'past_due',
-      cancelAtPeriodEnd: true,
+      granted_by_id: admin.id,
     })
+    await updateTestMembershipCancelAtPeriodEnd(elapsedMembership.id, true)
     await updateTestMembershipExpiresAt(elapsedMembership.id, new Date('2020-01-01T00:00:00.000Z'))
     const replacementSku = await createTestSku({ plan: 'pro' })
 
