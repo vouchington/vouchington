@@ -27,7 +27,7 @@ again. Add a row here in the same change that moves a page out, before merging.
 | `docs/overview/infrastructure/reference-deployment-costs-per-environment-public-ipv4-subtotal.md`      | `reference-deployment-costs-per-environment-public-ipv4-subtotal.md`    | cost             |
 | `docs/overview/infrastructure/reference-deployment-costs-per-environment-steady-state.md`              | `reference-deployment-costs-per-environment-steady-state.md`            | cost             |
 | `articles/for-investors.md`                                                                            | `for-investors.md`                                                      | business         |
-| `docs/development/ci/workflows/reference-harness-automation-accepted-risk.md`                          | `reference-harness-automation-accepted-risk.md`                         | automation-trust |
+| `docs/development/ci/workflows/reference-harness-automation-accepted-risk.md`                          | `reference-triage-loop-accepted-risk.md`                                | automation-trust |
 | `docs/development/reference-merge-authority-accepted-automation-ci-risk.md`                            | `reference-merge-authority-accepted-automation-ci-risk.md`              | automation-trust |
 | `docs/development/reference-worker-performance-sizing-target.md`                                       | `reference-worker-performance-sizing-target.md`                         | cost             |
 | `docs/operations/private-docs-site.md`                                                                 | `private-docs-site.md`                                                  | operator-access  |
