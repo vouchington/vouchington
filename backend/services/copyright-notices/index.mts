@@ -93,6 +93,7 @@ export { recordEuCopyrightSupervisedComplaint } from './eu-supervised-complaint.
 export { readCopyrightReviewTargetBreaches } from './review-target-breaches.mts'
 export { getCopyrightReviewTargetMinutes } from './config.mts'
 export { sweepCopyrightOperationalRetention } from './operational-retention.mts'
+export { COPYRIGHT_AI_RUN_KINDS, deleteExpiredCopyrightAiRunBatch } from './ai-run-retention.mts'
 export { sweepUnlinkedCopyrightEmailIntakes } from './operational-retention-email-intakes.mts'
 export { sweepCopyrightReceiptReviews } from './retention-receipt-reviews.mts'
 export {
