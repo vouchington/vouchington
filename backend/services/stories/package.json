@@ -32,7 +32,6 @@
     "@queues/background-cpu": "workspace:^",
     "@queues/crawler": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
-    "@queues/notifications": "workspace:^",
     "@queues/story-post-related-url-projections": "workspace:^",
     "@services/bookmarks": "workspace:^",
     "@services/classifier-runs": "workspace:^",

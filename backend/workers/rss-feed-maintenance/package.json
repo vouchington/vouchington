@@ -28,7 +28,6 @@
   },
   "devDependencies": {
     "@queues/background": "workspace:^",
-    "@queues/notifications": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }

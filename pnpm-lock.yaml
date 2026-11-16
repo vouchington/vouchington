@@ -8015,9 +8015,6 @@ importers:
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
-      '@queues/article-sync':
-        specifier: workspace:^
-        version: link:../../queues/article-sync
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background
@@ -9601,9 +9598,6 @@ importers:
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background
-      '@queues/notifications':
-        specifier: workspace:^
-        version: link:../../queues/notifications
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -11278,9 +11272,6 @@ importers:
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
-      '@queues/notifications':
-        specifier: workspace:^
-        version: link:../../queues/notifications
       '@queues/story-post-related-url-projections':
         specifier: workspace:^
         version: link:../../queues/story-post-related-url-projections
@@ -14831,9 +14822,6 @@ importers:
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background
-      '@queues/notifications':
-        specifier: workspace:^
-        version: link:../../queues/notifications
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../../services/elections-votes

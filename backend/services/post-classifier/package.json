@@ -34,7 +34,6 @@
   },
   "devDependencies": {
     "@queues/background": "workspace:^",
-    "@queues/notifications": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }
