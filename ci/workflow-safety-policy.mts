@@ -114,20 +114,13 @@ export function workflowSafetyViolations(
   return violations
 }
 
-/** The base-owned dequeue handler is the only privileged PR-target workflow. */
+/** Pull requests are same-repo, so no workflow may use the privileged PR-target event. */
 export function privilegedWorkflowViolations(workflows: Record<string, SafetyWorkflow>): string[] {
-  const actual = Object.entries(workflows)
-    .flatMap(([path, workflow]) =>
-      workflowHasTrigger(workflow.on, 'pull_request_target')
-        ? [path.replace(/^\.github\/workflows\//, '')]
-        : [],
-    )
-    .toSorted()
-  const expected = ['cancel-dequeued-merge-group-runs.yml']
-  return actual.length === expected.length &&
-    actual.every((path, index) => path === expected[index])
-    ? []
-    : [
-        `Privileged workflows must be cancel-dequeued-merge-group-runs.yml; found ${actual.join(', ')}`,
-      ]
+  const violations: string[] = []
+  for (const [path, workflow] of Object.entries(workflows)) {
+    if (!workflowHasTrigger(workflow.on, 'pull_request_target')) continue
+    const name = path.replace(/^\.github\/workflows\//, '')
+    violations.push(`${name}: pull_request_target is forbidden; use pull_request`)
+  }
+  return violations.toSorted()
 }

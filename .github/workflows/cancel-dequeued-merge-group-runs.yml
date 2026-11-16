@@ -6,10 +6,10 @@ name: Cancel Dequeued Merge Group Runs
 # Cancel Replaced Merge Group Runs covers the other half: entries rebuilt behind a removed one.
 # See docs/development/ci/workflows/reference-merge-queue-run-cancellation.md.
 #
-# `pull_request_target` `dequeued` is the documented removal trigger (Merge Queue Ejection uses it
-# too); `merge_group` `destroyed` is not documented for Actions. The job runs from main's workflow
-# file and checks out nothing: the pull-request number and reason reach the script only through
-# `env:`. It is never a required check, so a failure cannot eject a queue entry.
+# `pull_request` `dequeued` is the documented removal trigger (Merge Queue Ejection uses it
+# too); `merge_group` `destroyed` is not documented for Actions. Every pull request here is
+# same-repo, so the job needs no privileged event. It checks out nothing: the pull-request number
+# and reason reach the script only through `env:`. It is never a required check, so a failure cannot eject a queue entry.
 #
 # The reason allowlist is the non-merge values of the webhook's `reason` enum, minus CI_TIMEOUT:
 # the ejection triage inspects the failed or timed-out runs, and a timed-out run is still running
@@ -21,7 +21,7 @@ name: Cancel Dequeued Merge Group Runs
 # onto the same parent commit, so only run order separates old runs from the fresh entry's runs.
 
 on:
-  pull_request_target:
+  pull_request:
     types: [dequeued]
     branches: [main]
 

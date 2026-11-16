@@ -14,21 +14,37 @@ describe('static workflow safety scan', () => {
     await exec('git', ['init', '--quiet', root])
     const workflows = join(root, '.github/workflows')
     await mkdir(workflows, { recursive: true })
-    const source = 'on: pull_request_target\njobs: {}\n'
+    const source = 'on: pull_request\njobs: {}\n'
     const dequeued = join(workflows, 'cancel-dequeued-merge-group-runs.yml')
     await writeFile(dequeued, source)
     await exec('git', ['-C', root, 'add', '.github/workflows'])
-    await writeFile(join(workflows, 'untracked.yml'), 'on: pull_request_target\njobs: {}\n')
+    await writeFile(join(workflows, 'untracked.yml'), 'on: pull_request\njobs: {}\n')
     const command = join(import.meta.dirname, 'check-workflow-safety-policy.mts')
     expect((await exec(process.execPath, [command, root])).stdout).toBe('')
     await writeFile(
       dequeued,
-      'on: pull_request_target\njobs:\n  update:\n    steps:\n      - run: git push origin update\n',
+      'on: pull_request\njobs:\n  update:\n    steps:\n      - run: git push origin update\n',
     )
     await expect(exec(process.execPath, [command, root])).rejects.toMatchObject({
       code: 1,
       stderr:
         'cancel-dequeued-merge-group-runs#update step 0: branch update must use -c core.hooksPath=/dev/null\n',
+    })
+  })
+
+  it('rejects the privileged PR-target trigger in any workflow', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'workflow-safety-privileged-'))
+    onTestFinished(() => rm(root, { recursive: true, force: true }))
+    await exec('git', ['init', '--quiet', root])
+    const workflows = join(root, '.github/workflows')
+    await mkdir(workflows, { recursive: true })
+    await writeFile(join(workflows, 'bad.yml'), 'on: pull_request_target\njobs: {}\n')
+    await exec('git', ['-C', root, 'add', '.github/workflows'])
+    await expect(
+      exec(process.execPath, [join(import.meta.dirname, 'check-workflow-safety-policy.mts'), root]),
+    ).rejects.toMatchObject({
+      code: 1,
+      stderr: 'bad.yml: pull_request_target is forbidden; use pull_request\n',
     })
   })
 
