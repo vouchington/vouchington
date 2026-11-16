@@ -33,13 +33,7 @@ import {
 
 import { processFollowerDistributionChunk } from '../process.mts'
 
-import {
-  assertDistributablePost,
-  getPostRouteSlug,
-  getPostSendTitle,
-  truncateText,
-  type DistributionPost,
-} from '../shared.mts'
+import { assertDistributablePost, getPostRouteSlug, type DistributionPost } from '../shared.mts'
 
 describe('processFollowerDistributionChunk', () => {
   it('handles post distribution helper branches', () => {
@@ -71,8 +65,6 @@ describe('processFollowerDistributionChunk', () => {
     expect(getPostRouteSlug('review')).toBe('reviews')
     expect(getPostRouteSlug('link')).toBe('link')
     expect(getPostRouteSlug('article')).toBe('articles')
-    expect(getPostSendTitle(null, 'data_point')).toBe('Someone sent you a data point')
-    expect(truncateText('abcdef', 5)).toBe('ab...')
   })
 
   it('processes all followers across queued chunks without including later followers', async () => {

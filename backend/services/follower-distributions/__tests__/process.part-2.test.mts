@@ -27,13 +27,7 @@ import {
 } from '../create.mts'
 import { processFollowerDistributionChunk } from '../process.mts'
 
-import {
-  assertDistributablePost,
-  getPostRouteSlug,
-  getPostSendTitle,
-  truncateText,
-  type DistributionPost,
-} from '../shared.mts'
+import { assertDistributablePost, getPostRouteSlug, type DistributionPost } from '../shared.mts'
 
 describe('processFollowerDistributionChunk', () => {
   it('marks a distribution failed when the post is no longer distributable', async () => {
@@ -272,8 +266,6 @@ describe('processFollowerDistributionChunk', () => {
   // keep generated shard import bindings live for typecheck
   void (0 as unknown as typeof assertDistributablePost)
   void (0 as unknown as typeof getPostRouteSlug)
-  void (0 as unknown as typeof getPostSendTitle)
-  void (0 as unknown as typeof truncateText)
   const keepDistributionPost: DistributionPost | null = null
   void (0 as unknown as typeof keepDistributionPost)
 })

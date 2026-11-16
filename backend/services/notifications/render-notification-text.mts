@@ -11,29 +11,6 @@ export type { NotificationText, NotificationTranslate }
 
 const PREFIX = 'notifications.kind.'
 const POST_TYPES = new Set(['review', 'discussion', 'data_point', 'link'])
-const SIMPLE_TITLES = new Set([
-  'post_removed',
-  'referral_click',
-  'report_reviewed',
-  'critical_moderation_alert',
-  'review_dispute_resolved',
-  'review_actioned_removed',
-  'review_actioned_note',
-  'user_warning',
-  'moderation_appeal_resolved',
-  'community_ban',
-  'direct_message',
-  'modmail',
-  'household_invitation',
-  'copyright_claimant_receipt',
-  'copyright_status_update',
-  'copyright_poster_restriction_notice',
-  'copyright_poster_review_notice',
-  'copyright_poster_restoration_notice',
-  'copyright_owner_information_notice',
-  'copyright_claimant_decision_notice',
-  'copyright_redress_decision_notice',
-])
 
 /** Renders a notification's localized title and body from its kind, params and hydrated facts. */
 export function renderNotificationText(
@@ -121,9 +98,29 @@ export function renderNotificationText(
       return { title: tk(`${kind}.title`, { community }), body: tk(`${kind}.body`, { community }) }
     case 'community_activity_digest':
       return { title: tk(`${kind}.title`), body: digestBody(t, notification, hydration) }
-    default:
+    case 'post_removed':
+    case 'referral_click':
+    case 'report_reviewed':
+    case 'critical_moderation_alert':
+    case 'review_dispute_resolved':
+    case 'review_actioned_removed':
+    case 'review_actioned_note':
+    case 'user_warning':
+    case 'moderation_appeal_resolved':
+    case 'community_ban':
+    case 'direct_message':
+    case 'modmail':
+    case 'household_invitation':
+    case 'copyright_claimant_receipt':
+    case 'copyright_status_update':
+    case 'copyright_poster_restriction_notice':
+    case 'copyright_poster_review_notice':
+    case 'copyright_poster_restoration_notice':
+    case 'copyright_owner_information_notice':
+    case 'copyright_claimant_decision_notice':
+    case 'copyright_redress_decision_notice':
       return {
-        title: SIMPLE_TITLES.has(kind) ? tk(`${kind}.title`) : '',
+        title: tk(`${kind}.title`),
         body: simpleBody(t, notification, hydration, owned),
       }
   }

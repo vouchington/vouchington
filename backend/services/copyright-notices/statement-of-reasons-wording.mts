@@ -10,7 +10,6 @@ import type {
   CopyrightStatementFields,
 } from './statement-of-reasons-types.mts'
 
-export { copyrightNotificationCopy } from './statement-of-reasons-notification-copy.mts'
 export {
   copyrightEmailSubject,
   copyrightIntakeRejectionText,

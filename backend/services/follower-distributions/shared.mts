@@ -50,15 +50,3 @@ export function getPostRouteSlug(postType: string): string {
       return `${postType}s`
   }
 }
-
-export function getPostSendTitle(username: string | null, postType: string): string {
-  const actor = username ? `@${username}` : 'Someone'
-  const entityType = postType === 'data_point' ? 'data point' : postType
-  return `${actor} sent you a ${entityType}`
-}
-
-export function truncateText(value: string | null | undefined, maxLength: number): string {
-  const text = value ?? ''
-  if (text.length <= maxLength) return text
-  return `${text.slice(0, Math.max(0, maxLength - 3))}...`
-}
