@@ -26,7 +26,7 @@ violation reasons (`sample-at-or-above-hard-ceiling` and
 `sample-at-or-above-600-seconds` / `five-sample-median-above-360-seconds`), and links to every
 sampled job and workflow run. State that the target is around
 eight minutes via fewer, longer-running shards, and ten minutes is a hard performance
-ceiling, not a timeout or CI failure threshold. Apply `github_actions`, `workflow`, and `automation`.
+ceiling, not a timeout or CI failure threshold. Apply `github_actions` and `automation`.
 Apply `priority: high` when any sample is at least ten minutes; otherwise apply `priority: medium`
 for a median-only violation. A comment must include the same current evidence and links.
 
