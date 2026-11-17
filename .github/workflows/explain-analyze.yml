@@ -106,7 +106,13 @@ jobs:
           echo "EXPLAIN_SEED_ANCHOR_DATE=$day" >> "$GITHUB_ENV"
           echo "date=$day" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 3
+        id: checkout
+        continue-on-error: true
+        timeout-minutes: 1
+      # Retry once after a network stall; the first attempt's failure stays in the log.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.checkout.outcome != 'success'
+        timeout-minutes: 1
       - uses: ./.github/actions/start-valkey
         timeout-minutes: 2
       - uses: ./.github/actions/setup-backend
@@ -232,7 +238,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 3
+        id: checkout-2
+        continue-on-error: true
+        timeout-minutes: 1
+      # Retry once after a network stall; the first attempt's failure stays in the log.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.checkout-2.outcome != 'success'
+        timeout-minutes: 1
       - uses: ./.github/actions/start-valkey
         timeout-minutes: 2
       - uses: ./.github/actions/setup-backend
@@ -343,7 +355,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 3
+        id: checkout-3
+        continue-on-error: true
+        timeout-minutes: 1
+      # Retry once after a network stall; the first attempt's failure stays in the log.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.checkout-3.outcome != 'success'
+        timeout-minutes: 1
       - uses: ./.github/actions/setup-backend
         timeout-minutes: 5
       - uses: ./.github/actions/download-artifact

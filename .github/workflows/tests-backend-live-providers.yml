@@ -65,10 +65,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 3
         with:
           fetch-depth: 1
           persist-credentials: false
+        id: checkout
+        continue-on-error: true
+        timeout-minutes: 1
+      # Retry once after a network stall; the first attempt's failure stays in the log.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+        if: steps.checkout.outcome != 'success'
+        timeout-minutes: 1
       - uses: ./.github/actions/setup-backend
         timeout-minutes: 6
       - uses: vouchington/vouchington-tooling/.github/actions/setup-aws@f6bc8f897aa97a8d6346dc2a49ab10e21a377c88 # v3.4.0
@@ -133,10 +142,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 3
         with:
           fetch-depth: 1
           persist-credentials: false
+        id: checkout-2
+        continue-on-error: true
+        timeout-minutes: 1
+      # Retry once after a network stall; the first attempt's failure stays in the log.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+        if: steps.checkout-2.outcome != 'success'
+        timeout-minutes: 1
       - uses: ./.github/actions/start-valkey
         timeout-minutes: 2
       - uses: ./.github/actions/setup-backend
@@ -220,10 +238,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 3
         with:
           fetch-depth: 1
           persist-credentials: false
+        id: checkout-3
+        continue-on-error: true
+        timeout-minutes: 1
+      # Retry once after a network stall; the first attempt's failure stays in the log.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+        if: steps.checkout-3.outcome != 'success'
+        timeout-minutes: 1
       - uses: ./.github/actions/start-valkey
         timeout-minutes: 2
       - uses: ./.github/actions/setup-backend
@@ -308,10 +335,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 3
         with:
           fetch-depth: 1
           persist-credentials: false
+        id: checkout-4
+        continue-on-error: true
+        timeout-minutes: 1
+      # Retry once after a network stall; the first attempt's failure stays in the log.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+        if: steps.checkout-4.outcome != 'success'
+        timeout-minutes: 1
       - uses: ./.github/actions/start-valkey
         timeout-minutes: 2
       - uses: ./.github/actions/setup-backend
@@ -383,10 +419,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 3
         with:
           fetch-depth: 1
           persist-credentials: false
+        id: checkout-5
+        continue-on-error: true
+        timeout-minutes: 1
+      # Retry once after a network stall; the first attempt's failure stays in the log.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+        if: steps.checkout-5.outcome != 'success'
+        timeout-minutes: 1
       - uses: ./.github/actions/setup-backend
         timeout-minutes: 6
       - name: Run Lightpanda live tests

@@ -31,7 +31,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 3
+        id: checkout
+        continue-on-error: true
+        timeout-minutes: 1
+      # Retry once after a network stall; the first attempt's failure stays in the log.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.checkout.outcome != 'success'
+        timeout-minutes: 1
       - name: Prepare disposable worktree
         timeout-minutes: 1
         run: source .github/workflows/initialize-smoke-test/prepare-worktree.sh

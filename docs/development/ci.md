@@ -145,6 +145,11 @@ that needs a base takes it with `fetch-base-ref` or a depth of 2, never a full-h
 only exception is the weekly GHCR cleanup, which classifies images by reachability from main's whole
 history. `checkout-depth.test.mts` enforces this.
 
+A checkout that stalls on the runner network is retried once: the first `actions/checkout` step has
+`timeout-minutes: 1` and `continue-on-error: true`, and an identical step runs only if it did not
+succeed, so the stall stays visible in the first step's log and the two attempts spend at most two minutes.
+`checkout-depth.test.mts` enforces the pair.
+
 The Backend area prepares one migrated PostgreSQL baseline per workflow run for every backend database
 consumer: unit shards, trusted provider tests, schema contracts, smoke tests, and EXPLAIN scenarios.
 The producer checks SQL safety, staging RSS and retained-relation bootstrap, and the canonical schema

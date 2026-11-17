@@ -50,9 +50,17 @@ jobs:
       shard-total: ${{ steps.shards.outputs.total }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 3
         with:
           fetch-depth: 1
+        id: checkout
+        continue-on-error: true
+        timeout-minutes: 1
+      # Retry once after a network stall; the first attempt's failure stays in the log.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+        if: steps.checkout.outcome != 'success'
+        timeout-minutes: 1
       - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@f6bc8f897aa97a8d6346dc2a49ab10e21a377c88 # v3.4.0
         timeout-minutes: 5
         with:
@@ -114,9 +122,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 3
         with:
           fetch-depth: 1
+        id: checkout-2
+        continue-on-error: true
+        timeout-minutes: 1
+      # Retry once after a network stall; the first attempt's failure stays in the log.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+        if: steps.checkout-2.outcome != 'success'
+        timeout-minutes: 1
       - uses: ./.github/actions/start-valkey
         timeout-minutes: 2
       # Repo-owned download exits once files are on disk; the upstream action hangs (#4328, #5453).
@@ -260,7 +276,13 @@ jobs:
       actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 2
+        id: checkout-3
+        continue-on-error: true
+        timeout-minutes: 1
+      # Retry once after a network stall; the first attempt's failure stays in the log.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.checkout-3.outcome != 'success'
+        timeout-minutes: 1
       # No setup-node: this dependency-free script runs on the ubuntu-slim image's built-in Node
       # (24.x, above package.json engines). Downloading Node 26 from GitHub Releases here twice
       # exceeded the step deadline in merge groups, and slim has no caching benefit.
