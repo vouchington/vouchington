@@ -12,7 +12,6 @@ import { getUserWarningById } from '@services/user-warnings'
 import { getCommunityBanById } from '@services/communities/bans/get'
 import { getUserSuspensionById } from '@services/users/suspension'
 import { fetchEntityContent } from '@services/moderation'
-import onError from '@modules/on-error'
 import { callAppealModel, type AppealModelCaller } from './model.mts'
 
 export type { AppealModelCaller } from './model.mts'
@@ -45,11 +44,10 @@ export async function runAppealResolutionAgent(
     return
   }
 
+  // The claim proved the appeal open and this run current; a deleted appeal cascades its runs.
+  // A later approval or newer run is caught atomically by the draft save, which expires this run.
   const appeal = await getModerationAppealByIdFromPrimary(appealId)
-  if (!appeal) {
-    onError(new Error(`runAppealResolutionAgent: appeal not found: ${appealId}`))
-    return
-  }
+  if (!appeal) return
 
   // Manual reruns bypass only existing-draft idempotency.
   if (!rerunById && appeal.ai_drafted_at != null) return
