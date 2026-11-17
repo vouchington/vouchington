@@ -9,7 +9,7 @@ import {
 } from '@voucha/test-helpers'
 import { updateTestMembershipExpiresAtRelativeToDatabaseNow } from '@voucha/test-helpers/entities/membership-expiry'
 import {
-  expireElapsedMembershipsBatch,
+  expireElapsedMembershipsForUsers,
   getLatestMembershipByUserId,
   grantMembership,
 } from '@services/memberships'
@@ -91,7 +91,7 @@ describe('DELETE /api/v1/membership-grants/:grantId', () => {
     const completed = await grantMembership(admin.id, member.id, 'pro', queuedSku.id, 1)
     await setTestMembershipGrantRemainingMilliseconds(completed.grantId, 0.5)
     await updateTestMembershipExpiresAtRelativeToDatabaseNow(active.id, -24 * 60 * 60 * 1000)
-    await expireElapsedMembershipsBatch(undefined, null, [member.id])
+    await expireElapsedMembershipsForUsers([member.id])
     const request = createRequest()
     await request.authenticateAs(admin)
 
