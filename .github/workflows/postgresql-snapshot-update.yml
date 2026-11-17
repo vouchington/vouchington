@@ -33,10 +33,19 @@ jobs:
       default_branch: ${{ steps.request.outputs.default_branch }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+        id: checkout
+        continue-on-error: true
+        timeout-minutes: 1
+      # Retry once after a network stall; the first attempt's failure stays in the log.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+        if: steps.checkout.outcome != 'success'
+        timeout-minutes: 1
       - name: Authorize request and bind PR revision
         id: request
         timeout-minutes: 2
@@ -74,10 +83,19 @@ jobs:
       NODE_ENV: test
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 3
         with:
           ref: ${{ needs.prepare.outputs.head_sha }}
           persist-credentials: false
+        id: checkout-2
+        continue-on-error: true
+        timeout-minutes: 1
+      # Retry once after a network stall; the first attempt's failure stays in the log.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.head_sha }}
+          persist-credentials: false
+        if: steps.checkout-2.outcome != 'success'
+        timeout-minutes: 1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         timeout-minutes: 2
         with:
@@ -128,11 +146,21 @@ jobs:
             }
           '
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 3
         with:
           ref: ${{ github.sha }}
           path: .trusted-snapshot-tooling
           persist-credentials: false
+        id: checkout-3
+        continue-on-error: true
+        timeout-minutes: 1
+      # Retry once after a network stall; the first attempt's failure stays in the log.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .trusted-snapshot-tooling
+          persist-credentials: false
+        if: steps.checkout-3.outcome != 'success'
+        timeout-minutes: 1
       - name: Package generated snapshot with provenance
         timeout-minutes: 1
         env:
@@ -164,16 +192,35 @@ jobs:
       actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 3
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+        id: checkout-4
+        continue-on-error: true
+        timeout-minutes: 1
+      # Retry once after a network stall; the first attempt's failure stays in the log.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 3
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+        if: steps.checkout-4.outcome != 'success'
+        timeout-minutes: 1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.prepare.outputs.head_sha }}
           path: candidate
           persist-credentials: false
+        id: checkout-5
+        continue-on-error: true
+        timeout-minutes: 1
+      # Retry once after a network stall; the first attempt's failure stays in the log.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.head_sha }}
+          path: candidate
+          persist-credentials: false
+        if: steps.checkout-5.outcome != 'success'
+        timeout-minutes: 1
       - name: Download exact generated snapshot
         timeout-minutes: 2
         env:

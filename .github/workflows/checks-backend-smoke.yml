@@ -35,9 +35,17 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 2
         with:
           persist-credentials: false
+        id: checkout
+        continue-on-error: true
+        timeout-minutes: 1
+      # Retry once after a network stall; the first attempt's failure stays in the log.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+        if: steps.checkout.outcome != 'success'
+        timeout-minutes: 1
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
         timeout-minutes: 2
         with:
@@ -98,7 +106,13 @@ jobs:
           --tmpfs /var/lib/postgresql:rw,size=1g
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 3
+        id: checkout-2
+        continue-on-error: true
+        timeout-minutes: 1
+      # Retry once after a network stall; the first attempt's failure stays in the log.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.checkout-2.outcome != 'success'
+        timeout-minutes: 1
       - uses: ./.github/actions/start-valkey
         timeout-minutes: 2
       - name: Set service ports

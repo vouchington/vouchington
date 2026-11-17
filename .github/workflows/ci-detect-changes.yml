@@ -107,7 +107,13 @@ jobs:
       # and the base branch (the merge-queue range's merge base). It never fetches every branch,
       # and the blobless filter skips file contents because every diff here reads names only.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 2
+        id: checkout
+        continue-on-error: true
+        timeout-minutes: 1
+      # Retry once after a network stall; the first attempt's failure stays in the log.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.checkout.outcome != 'success'
+        timeout-minutes: 1
       - uses: vouchington/vouchington-tooling/.github/actions/fetch-base-ref@f6bc8f897aa97a8d6346dc2a49ab10e21a377c88 # v3.4.0
         timeout-minutes: 2
         with:
