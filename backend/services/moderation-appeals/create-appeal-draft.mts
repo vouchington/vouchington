@@ -1,4 +1,4 @@
-import { read, withPrimaryReads, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
   aiDraftLifecycleMetadata,
@@ -105,31 +105,4 @@ async function findAppealId(appealId: string): Promise<string | undefined> {
     SELECT id FROM moderation_appeals WHERE id = ${appealId}
   `)
   return rows[0]?.id
-}
-
-/** Checks the committed request without fencing unrelated appeal readers or writers. */
-export async function isCurrentModerationAppealDraftRequest(
-  appealId: string,
-  runId: string,
-): Promise<boolean> {
-  return withPrimaryReads(async () => {
-    const { rows } = await read<{
-      ai_draft_requested_run_id: string | null
-      approved_at: Date | null
-      sent_at: Date | null
-      resolved_at: Date | null
-    }>(sql`
-      /* isCurrentModerationAppealDraftRequest */
-      SELECT ai_draft_requested_run_id, approved_at, sent_at, resolved_at
-      FROM moderation_appeals
-      WHERE id = ${appealId}
-    `)
-    const appeal = rows[0]
-    return (
-      appeal?.ai_draft_requested_run_id === runId &&
-      appeal.approved_at === null &&
-      appeal.sent_at === null &&
-      appeal.resolved_at === null
-    )
-  })
 }

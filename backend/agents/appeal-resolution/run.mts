@@ -4,7 +4,6 @@ import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst
 import {
   getModerationAppealByIdFromPrimary,
   createModerationAppealDraft,
-  isCurrentModerationAppealDraftRequest,
   getAppealResolutionRunStatus,
   claimAppealResolutionRun,
   markAppealResolutionRunExpired,
@@ -48,19 +47,7 @@ export async function runAppealResolutionAgent(
 
   const appeal = await getModerationAppealByIdFromPrimary(appealId)
   if (!appeal) {
-    await markAppealResolutionRunExpired(appealId, runId)
     onError(new Error(`runAppealResolutionAgent: appeal not found: ${appealId}`))
-    return
-  }
-
-  if (appeal.approved_at != null || appeal.sent_at != null || appeal.resolved_at != null) {
-    await markAppealResolutionRunExpired(appealId, runId)
-    return
-  }
-
-  const currentRequest = await isCurrentModerationAppealDraftRequest(appealId, runId)
-  if (!currentRequest) {
-    await markAppealResolutionRunExpired(appealId, runId)
     return
   }
 
