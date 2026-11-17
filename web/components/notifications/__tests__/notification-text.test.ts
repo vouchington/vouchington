@@ -8,10 +8,6 @@ import type { NotificationT } from '../notification-text-types'
 
 let t: NotificationT
 
-beforeAll(async () => {
-  t = createTranslator('en', await loadJsonMessages('en')) as NotificationT
-})
-
 const hydration = {
   actors: { 'user-1': { username: 'ada' } },
   communities: { 'community-1': { name: 'Makers' } },
@@ -52,6 +48,10 @@ function render(
 }
 
 describe('renderNotificationText', () => {
+  beforeAll(async () => {
+    t = createTranslator('en', await loadJsonMessages('en')) as NotificationT
+  })
+
   it('names hydrated actors and falls back to anonymous copy when they are gone', () => {
     expect(render('follow', { actor_user_id: 'user-1' }).title).toBe('@ada started following you')
     expect(render('follow').title).toBe('Someone started following you')
