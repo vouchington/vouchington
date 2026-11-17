@@ -6,7 +6,7 @@ import { runRenderDocsCli } from './render-docs-cli.mts'
 import { htmlPage, renderMarkdownToHtml } from './render-docs-page.mts'
 
 const __dirname = import.meta.dirname
-const DEFAULT_SCHEMA_DIR = resolve(__dirname, '..', 'docs/development/postgresql/schema-snapshot')
+const DEFAULT_SCHEMA_DIR = resolve(__dirname, '..', 'docs/generated/postgresql/schema-snapshot')
 const DEFAULT_SCHEMA_JSON = resolve(
   __dirname,
   '..',
@@ -24,9 +24,12 @@ function markdownForHtml(markdown: string): string {
 function markdownWithPublishedAssetPaths(path: string, markdown: string): string {
   if (path !== 'README.md') return markdown
   return markdown
-    .replaceAll('[schema-snapshot/README.md](../README.md)', '`schema-snapshot/README.md`')
     .replaceAll(
-      '](../../../../../backend/data-stores/psql/schema-snapshot/schema.json)',
+      '[schema-snapshot/README.md](../../../development/postgresql/schema-snapshot/README.md)',
+      '`schema-snapshot/README.md`',
+    )
+    .replaceAll(
+      '](../../../../backend/data-stores/psql/schema-snapshot/schema.json)',
       '](schema.json)',
     )
 }
@@ -48,11 +51,10 @@ async function readSchemaSnapshotFile(path: string): Promise<string> {
 }
 
 async function schemaMarkdownFiles(schemaDir: string): Promise<Map<string, string>> {
-  const markdownRoot = join(schemaDir, 'markdown')
-  const entries = await readdir(markdownRoot, { recursive: true, withFileTypes: true }).catch(
+  const entries = await readdir(schemaDir, { recursive: true, withFileTypes: true }).catch(
     (err: unknown) => {
       throw new Error(
-        `Cannot read PostgreSQL schema Markdown directory at ${markdownRoot}: ${err instanceof Error ? err.message : String(err)}`,
+        `Cannot read PostgreSQL schema Markdown directory at ${schemaDir}: ${err instanceof Error ? err.message : String(err)}`,
       )
     },
   )
@@ -61,7 +63,7 @@ async function schemaMarkdownFiles(schemaDir: string): Promise<Map<string, strin
     if (entry.isFile() && entry.name.endsWith('.md')) {
       fileReads.push(
         (async () => {
-          const relativePath = join(relative(markdownRoot, entry.parentPath), entry.name)
+          const relativePath = join(relative(schemaDir, entry.parentPath), entry.name)
           return [
             relativePath,
             await readSchemaSnapshotFile(join(entry.parentPath, entry.name)),
@@ -89,9 +91,7 @@ export async function renderPsqlDocs({
   const json = await readSchemaSnapshotFile(schemaJsonPath)
   const indexMarkdown = markdownFiles.get('README.md')
   if (!indexMarkdown)
-    throw new Error(
-      `Cannot read PostgreSQL schema index at ${join(schemaDir, 'markdown/README.md')}`,
-    )
+    throw new Error(`Cannot read PostgreSQL schema index at ${join(schemaDir, 'README.md')}`)
 
   await mkdir(outputDir, { recursive: true })
   const leafWrites: Promise<unknown>[] = []

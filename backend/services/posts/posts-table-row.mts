@@ -3,7 +3,7 @@ import type { PostBroadcast, PostPrivacy, PostType } from '@voucha/types/entitie
 import type { ContentCreationChannel } from '@voucha/types/entities/content-provenance'
 
 // `INSERT INTO posts ... RETURNING *` reads table `posts`, not `view_posts`.
-// Column nullability follows backend/data-stores/psql/schema-snapshot/markdown/tables/posts.md.
+// Column nullability follows docs/generated/postgresql/schema-snapshot/tables/posts.md.
 // node-pg parses timestamptz as Date, bytea as Buffer, xid8/tsvector as text, and vector as number[].
 export type PostsTableRow = {
   id: string

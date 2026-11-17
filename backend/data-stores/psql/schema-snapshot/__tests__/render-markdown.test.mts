@@ -16,9 +16,11 @@ describe('renderSchemaMarkdown header rewrite', () => {
     const readme = files.get('README.md')
 
     expect(readme).toContain('pnpm run db:snapshot:update')
-    expect(readme).toContain('[schema-snapshot/README.md](../README.md)')
     expect(readme).toContain(
-      '[`schema.json`](../../../../../backend/data-stores/psql/schema-snapshot/schema.json)',
+      '[schema-snapshot/README.md](../../../development/postgresql/schema-snapshot/README.md)',
+    )
+    expect(readme).toContain(
+      '[`schema.json`](../../../../backend/data-stores/psql/schema-snapshot/schema.json)',
     )
     expect([...files.values()].join('\n')).not.toContain('Generated schema snapshot.')
   })

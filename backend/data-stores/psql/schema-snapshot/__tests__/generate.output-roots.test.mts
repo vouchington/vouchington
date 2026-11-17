@@ -34,10 +34,7 @@ describe('schema snapshot output roots', () => {
     await expect(check()).rejects.toThrow(join(root, 'schema.json'))
     await expect(check()).rejects.toThrow(join(root, 'markdown/README.md'))
     await expect(check()).rejects.not.toThrow(
-      resolve(
-        schemaSnapshotDirectory,
-        '../../../../docs/development/postgresql/schema-snapshot/markdown',
-      ),
+      resolve(schemaSnapshotDirectory, '../../../../docs/generated/postgresql/schema-snapshot'),
     )
   })
 

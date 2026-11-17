@@ -105,9 +105,9 @@ describe('Area CI triggers', () => {
 
   it('runs backend and tooling consumers for generated schema Markdown without selecting runtime builds', () => {
     const paths = [
-      'docs/development/postgresql/schema-snapshot/markdown/README.md',
-      'docs/development/postgresql/schema-snapshot/markdown/views.md',
-      'docs/development/postgresql/schema-snapshot/markdown/tables/widgets.md',
+      'docs/generated/postgresql/schema-snapshot/README.md',
+      'docs/generated/postgresql/schema-snapshot/views.md',
+      'docs/generated/postgresql/schema-snapshot/tables/widgets.md',
     ]
     expectFilterMatches('backend', paths)
     expectFilterMatches('tooling', paths)
