@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { buildCoverageReport, formatCoverageReport, reportCoverage } from '../explain-coverage.mts'
 
 describe('EXPLAIN coverage for incomplete SQL', () => {
-  it('keeps incomplete composed search SQL unclassified despite matching names', async () => {
+  it('never covers incomplete composed search SQL despite matching names', async () => {
     const names = ['searchUrls', 'getPostIdsByUrlIds']
     const sources = [
       'backend/services/urls/search.mts',
@@ -28,18 +28,17 @@ describe('EXPLAIN coverage for incomplete SQL', () => {
       scenario_id: 'fixture',
     }))
     const report = buildCoverageReport(facts, captures)
-    expect(report).toMatchObject({ reads: 0, coveredReads: 0 })
-    expect(report.unclassifiedStatements).toEqual(
-      sources.map(({ fileName }) =>
-        expect.objectContaining({
-          fileName,
-          name: '(annotation unavailable)',
-          reason: expect.any(String),
-        }),
-      ),
-    )
-    expect(report.unclassifiedStatements.every(statement => statement.reason.length > 0)).toBe(true)
-    expect(report.ambiguousReads).toEqual([])
+    expect(report).toMatchObject({ reads: 1, coveredReads: 0 })
+    expect(report.ambiguousReads).toEqual([
+      expect.objectContaining({ name: 'searchUrls', fileName: sources[0].fileName }),
+    ])
+    expect(report.unclassifiedStatements).toEqual([
+      expect.objectContaining({
+        fileName: sources[1].fileName,
+        name: '(annotation unavailable)',
+        reason: 'unresolved-sql-fragment',
+      }),
+    ])
   })
 
   it('reports an incomplete write without counting it as a read', async () => {
