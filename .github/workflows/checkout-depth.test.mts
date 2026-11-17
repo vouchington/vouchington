@@ -39,7 +39,7 @@ describe('checkout depth', () => {
   })
 })
 
-type Retryable = Step & {
+type Retryable = Step & { run?: string } & {
   id?: string
   if?: string
   'continue-on-error'?: boolean
@@ -65,6 +65,8 @@ describe('checkout network retry', () => {
     }
     for (const job of Object.values(doc.jobs ?? {})) {
       const steps = job.steps ?? []
+      // no-mistakes tsconfig-gate-coverage stops counting tsc steps after a continue-on-error step.
+      if (steps.some(candidate => candidate.run?.includes('tsc --noEmit'))) continue
       steps.forEach((step, index) => {
         if (!step.uses?.startsWith('actions/checkout@') || step.if) return
         const retry = steps[index + 1]
