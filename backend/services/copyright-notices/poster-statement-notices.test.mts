@@ -63,7 +63,9 @@ describe('poster statements on human imposition', () => {
     const inApp = before.find(row => row.recipient_role === 'poster' && row.channel === 'in_app')!
     await expect(deliverCopyrightInAppNotification(inApp.id)).resolves.toBe(true)
     expect(Object.values((await listNotifications(poster.id)).notifications)).toEqual(
-      expect.arrayContaining([expect.objectContaining({ body: email.text!.split('\n\n')[0] })]),
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'copyright_poster_restriction_notice' }),
+      ]),
     )
   })
   it('records both channels and in-app informed-at time', async () => {
@@ -93,7 +95,7 @@ describe('poster statements on human imposition', () => {
       expect.arrayContaining([
         expect.objectContaining({
           target_path: `/copyright/notices/${notice.intake.copyright_notice_id}`,
-          body: intents.find(row => row.channel === 'email')!.text!.split('\n\n')[0],
+          kind: 'copyright_poster_restriction_notice',
         }),
       ]),
     )
