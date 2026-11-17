@@ -24,12 +24,10 @@ type InspectedGrantRow = {
 export async function repairOrphanedQueuedGrantsBatch(
   cursor: OrphanedQueuedGrantCursor | null,
   batchSize = getMembershipWorkLimits().batchSize,
-  userIds?: readonly string[],
 ): Promise<{ repaired: number; hasMore: boolean; nextCursor: OrphanedQueuedGrantCursor | null }> {
   if (!Number.isInteger(batchSize) || batchSize < 1)
     throw new RangeError('Membership orphan repair batch size must be a positive integer')
-  if (userIds && userIds.length === 0) return { repaired: 0, hasMore: false, nextCursor: cursor }
-  const inspected = await readOrphanedQueuedGrantUserPage(cursor, batchSize, userIds)
+  const inspected = await readOrphanedQueuedGrantUserPage(cursor, batchSize)
   const repaired = await repairOrphanedQueuedGrantUsers(matchingUserIds(inspected.rows))
   const last = inspected.rows.at(-1)
   // The cap counts grant rows read. hasMore means a later grant row remains after this keyset.
@@ -43,19 +41,14 @@ export async function repairOrphanedQueuedGrantsBatch(
 async function readOrphanedQueuedGrantUserPage(
   cursor: OrphanedQueuedGrantCursor | null,
   batchSize: number,
-  userIds?: readonly string[],
 ): Promise<{ rows: InspectedGrantRow[]; hasMore: boolean }> {
   await using query = await beginTransaction()
-  const rows = await readOrphanedQueuedGrantRows(cursor, batchSize, query, userIds)
+  const rows = await readOrphanedQueuedGrantRows(cursor, batchSize, query)
   const last = rows.at(-1)
   const hasMore =
     rows.length === batchSize &&
     last !== undefined &&
-    (await orphanedQueuedGrantRemainsAfter(
-      { userId: last.user_id, grantId: last.id },
-      query,
-      userIds,
-    ))
+    (await orphanedQueuedGrantRemainsAfter({ userId: last.user_id, grantId: last.id }, query))
   await query.commit()
   return { rows, hasMore }
 }
@@ -63,14 +56,11 @@ async function readOrphanedQueuedGrantUserPage(
 async function orphanedQueuedGrantRemainsAfter(
   cursor: OrphanedQueuedGrantCursor,
   query: QueryExecutor,
-  userIds?: readonly string[],
 ): Promise<boolean> {
-  const statement = sql`/* repairOrphanedQueuedGrantsBatch: hasMore */
+  const { rows } = await query(sql`/* repairOrphanedQueuedGrantsBatch: hasMore */
     SELECT 1 FROM membership_grants grant_row
-    WHERE (grant_row.user_id, grant_row.id) > (${cursor.userId}::uuid, ${cursor.grantId}::uuid)`
-  if (userIds) statement.append(sql` AND grant_row.user_id = ANY(${[...userIds]}::uuid[])`)
-  statement.append(' LIMIT 1')
-  const { rows } = await query(statement)
+    WHERE (grant_row.user_id, grant_row.id) > (${cursor.userId}::uuid, ${cursor.grantId}::uuid)
+    LIMIT 1`)
   return rows.length > 0
 }
 
@@ -78,9 +68,8 @@ export async function readOrphanedQueuedGrantUserIds(
   cursor: OrphanedQueuedGrantCursor | null,
   batchSize: number,
   query: QueryExecutor,
-  userIds?: readonly string[],
 ): Promise<string[]> {
-  const inspected = await readOrphanedQueuedGrantRows(cursor, batchSize, query, userIds)
+  const inspected = await readOrphanedQueuedGrantRows(cursor, batchSize, query)
   return matchingUserIds(inspected)
 }
 
@@ -99,7 +88,6 @@ async function readOrphanedQueuedGrantRows(
   cursor: OrphanedQueuedGrantCursor | null,
   batchSize: number,
   query: QueryExecutor,
-  userIds?: readonly string[],
 ): Promise<InspectedGrantRow[]> {
   if (!Number.isInteger(batchSize) || batchSize < 1)
     throw new RangeError('Membership orphan repair batch size must be a positive integer')
@@ -135,7 +123,6 @@ async function readOrphanedQueuedGrantRows(
       SELECT grant_row.id, grant_row.user_id, grant_row.membership_source_id, grant_row.revoked_at
       FROM membership_grants grant_row
       WHERE (grant_row.user_id, grant_row.id) > (${bound.userId}::uuid, ${bound.grantId}::uuid)`
-  if (userIds) statement.append(sql` AND grant_row.user_id = ANY(${[...userIds]}::uuid[])`)
   statement.append(`
       ORDER BY grant_row.user_id, grant_row.id
       LIMIT `)
