@@ -14,6 +14,7 @@ import RewardsProgramsLoading from '@/app/(topics)/rewards-programs/loading'
 import SourcesLoading from '@/app/(topics)/sources/loading'
 import SpendingCategoriesLoading from '@/app/(topics)/spending-categories/loading'
 import TopicsLoading from '@/app/(topics)/topics/loading'
+import WebSearchLoading from '@/app/(topics)/web-search/loading'
 import VideosLoading from '@/app/(videos)/videos/loading'
 import ChannelsLoading from '@/app/channels/loading'
 import NewsLoading from '@/app/news/loading'
@@ -100,6 +101,13 @@ const loadingBoundaries: Array<{
     skeletonProps: { showFilters: true },
   },
   { aside: AsideSkeleton, loading: TopicsLoading, name: 'topics', skeleton: TopicListSkeleton },
+  {
+    loading: WebSearchLoading,
+    name: 'web search',
+    showFooter: false,
+    skeleton: SourceListSkeleton,
+    skeletonProps: { showFilters: true },
+  },
   { aside: AsideSkeleton, loading: VideosLoading, name: 'videos', skeleton: NewsListSkeleton },
   { aside: AsideSkeleton, loading: NewsLoading, name: 'news', skeleton: NewsListSkeleton },
 ]
