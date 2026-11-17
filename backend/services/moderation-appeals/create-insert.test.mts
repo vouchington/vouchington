@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { beginTransaction } from '@data-stores/psql'
-import { createTestUser, insertTestPost, WEB_PROVENANCE } from '@voucha/test-helpers'
+import {
+  beginTransaction,
+  createTestUser,
+  insertTestPost,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import type { AppealTargetContext } from './create-target-types.mts'
 import { insertModerationAppeal } from './create-insert.mts'
