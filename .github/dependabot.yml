@@ -16,7 +16,7 @@ updates:
       cronjob: '0 4 * * *'
       timezone: 'America/Los_Angeles'
     cooldown:
-      default-days: 2
+      default-days: 7
       exclude:
         - '@jongleberry/*'
         - '@vouchington/*'
@@ -189,7 +189,10 @@ updates:
       cronjob: '0 4 * * *'
       timezone: 'America/Los_Angeles'
     cooldown:
-      default-days: 2
+      default-days: 7
+      exclude:
+        - 'ghcr.io/vouchington/*'
+        - 'vouchington/*'
     open-pull-requests-limit: 5
 
   # Web Docker image
@@ -200,7 +203,10 @@ updates:
       cronjob: '0 4 * * *'
       timezone: 'America/Los_Angeles'
     cooldown:
-      default-days: 2
+      default-days: 7
+      exclude:
+        - 'ghcr.io/vouchington/*'
+        - 'vouchington/*'
     open-pull-requests-limit: 5
 
   # GitHub Actions
@@ -214,7 +220,7 @@ updates:
       cronjob: '0 4 * * *'
       timezone: 'America/Los_Angeles'
     cooldown:
-      default-days: 2
+      default-days: 7
       exclude:
         - 'jonathanong/*'
         - 'vouchington/*'

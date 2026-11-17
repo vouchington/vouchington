@@ -131,7 +131,7 @@ describe('dependency update configuration', () => {
     )
   })
 
-  it('keeps every configured release delay at two days', () => {
+  it('keeps the Dependabot cooldown at seven days and no shorter than the pnpm release age', () => {
     const workspace = parseYaml(readRepoFile('pnpm-workspace.yaml')) as {
       minimumReleaseAge?: number
     }
@@ -150,7 +150,14 @@ describe('dependency update configuration', () => {
 
     expect(workspace.minimumReleaseAge).toBe(2880)
     expect(cooldowns).toHaveLength(dependabot.updates?.length ?? 0)
-    expect(cooldowns.every(days => days === 2)).toBe(true)
+    expect(cooldowns.every(days => days === 7)).toBe(true)
+    const cooldownMinutes = cooldowns.map(days => {
+      if (days === undefined) throw new Error('Dependabot cooldown is missing default-days')
+      return days * 24 * 60
+    })
+    expect(cooldownMinutes.every(minutes => minutes >= (workspace.minimumReleaseAge ?? 0))).toBe(
+      true,
+    )
     expect(renovateReleaseAges.every(age => age === '2 days')).toBe(true)
   })
 })

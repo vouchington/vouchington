@@ -12,7 +12,9 @@ and Renovate sets `automerge: false`; neither bot arms GitHub auto-merge. This d
 CI trust boundary: a human who queues a same-repository dependency-bot PR still causes a merge-group
 run with the existing CI credential policy. Review the PR before placing it in the merge queue.
 
-All configured release delays match: Dependabot's cooldown and pnpm's `minimumReleaseAge`.
+Dependabot waits seven days after a release (`cooldown`), except for first-party packages. pnpm's own
+`minimumReleaseAge` stays at two days for now because the lockfile pins releases younger than seven
+days; it can rise to match once those age out. Dependabot's cooldown must never be shorter than pnpm's age.
 
 `engines.node` is a floor, not the runtime pin. Dependabot's hosted updater runs the active Node LTS
 and cannot be configured, and `engineStrict` makes every pnpm call there fail when the floor is above
