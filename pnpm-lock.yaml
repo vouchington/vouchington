@@ -235,9 +235,6 @@ importers:
       '@modules/model-providers':
         specifier: workspace:^
         version: link:../../modules/model-providers
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
       '@services/communities':
         specifier: workspace:^
         version: link:../../services/communities
