@@ -6217,6 +6217,7 @@
 {"descriptor":null,"id":"copy.notifications.kind.follow.byUser"},
 {"descriptor":null,"id":"copy.notifications.kind.follow_referral_signup.anonymous"},
 {"descriptor":null,"id":"copy.notifications.kind.follow_referral_signup.byUser"},
+{"descriptor":null,"id":"copy.notifications.kind.generic.title"},
 {"descriptor":null,"id":"copy.notifications.kind.moderation_appeal_resolved.title"},
 {"descriptor":null,"id":"copy.notifications.kind.modmail.title"},
 {"descriptor":null,"id":"copy.notifications.kind.post_manual_send.data_point.anonymous"},
