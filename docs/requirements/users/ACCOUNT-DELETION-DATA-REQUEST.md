@@ -125,8 +125,10 @@ The check runs in the request transaction under the user and author lifecycle lo
 privacy fence, so a refused request changes nothing. The single message does not say which case
 applies, so it does not tell the account holder that legal process exists. `deleteUser` is the only
 path that sets `deleted_at`. The immediate erasure phases act only on accounts that are already
-soft-deleted and do not check preservation holds. The final retention purge checks again under the
-user advisory lock, so a hold placed after soft deletion cannot race the hard delete.
+soft-deleted and do not check preservation holds. Final purge and preservation-hold admission use serializable transactions so a conflicting hold
+and hard delete cannot both commit. A final-purge collision aborts that page without retry or
+continuation; the next scheduled run rediscovers the account. Incoming references remain unchanged
+until the final user deletion applies their existing null-on-delete behavior.
 
 An operative repeat-infringer incident does not block deletion. The normal deletion phases erase
 the account's personal data. Incident rows and repeat-infringer review outcomes and dates remain

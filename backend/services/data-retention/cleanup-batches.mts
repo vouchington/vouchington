@@ -3,6 +3,7 @@ import { assertWhitelistedSqlIdentifier, write } from '@data-stores/psql'
 import { DELETED_USER_ID } from '@services/users/constants'
 import sql from 'sql-template-strings'
 import { cleanupSoftDeletedUser } from './cleanup-soft-deleted-user.mts'
+import { reportScheduledUserPurgeCollision } from './cleanup-user-page-collision.mts'
 import { DEFAULT_DATA_RETENTION_CONFIG } from './config.mts'
 import {
   allowedOAuthAccountIdIdentifiers,
@@ -27,7 +28,8 @@ export async function cleanupSoftDeletedUserBatch(
       batchSize,
       { remainingRows: batchSize },
       cursor,
-    )
+    ).catch(reportScheduledUserPurgeCollision)
+    if (!result) return { deleted: 0, hasMore: false }
     // Completion or eligibility loss resumes global discovery on a fresh job.
     return { ...result, hasMore: true }
   }
@@ -80,7 +82,8 @@ export async function cleanupSoftDeletedUserBatch(
       lowerBoundDate,
       batchSize,
       budget,
-    )
+    ).catch(reportScheduledUserPurgeCollision)
+    if (!result) return { deleted, hasMore: false }
     // An eligibility loss or empty attempt still consumes one bounded user attempt.
     if (before === budget.remainingRows) budget.remainingRows--
     deleted += result.deleted

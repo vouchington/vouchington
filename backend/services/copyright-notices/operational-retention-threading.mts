@@ -1,12 +1,9 @@
 import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
 import { beginTransaction } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import { copyrightOperationalThreadEligibleSql } from './operational-retention-thread-eligibility.mts'
-import {
-  lockCopyrightThreadPreservationGate,
-  lockCopyrightThreadRetentionNotice,
-} from './operational-retention-thread-lock.mts'
 import { deleteCaseThreadPage, type ThreadPhase } from './operational-retention-thread-page.mts'
 import { isCopyrightEmailTokenGcConflict } from './operational-retention-token-gc.mts'
 import {
@@ -28,143 +25,143 @@ async function sweepPage(
   cutoffId: string,
   batchSize: number,
 ): Promise<PageResult> {
-  await using transaction = await beginTransaction({ serializable: true })
-  await transaction(sql`/* seedCopyrightThreadRetentionCursor */
-    INSERT INTO copyright_notice_operational_retention_cursors (kind)
-    VALUES ('email_thread_references') ON CONFLICT DO NOTHING`)
-  const { rows: cursorRows } = await transaction<
-    ThreadProofCursor & {
-      cursor_record_id: string | null
-      sweep_upper_bound_record_id: string | null
-      cursor_child_id: string | null
-      cursor_edge_id: string | null
-      cursor_phase: ThreadPhase | null
+  return conflictOnSerializationFailure(async () => {
+    await using transaction = await beginTransaction({ serializable: true })
+    await transaction(sql`/* seedCopyrightThreadRetentionCursor */
+      INSERT INTO copyright_notice_operational_retention_cursors (kind)
+      VALUES ('email_thread_references') ON CONFLICT DO NOTHING`)
+    const { rows: cursorRows } = await transaction<
+      ThreadProofCursor & {
+        cursor_record_id: string | null
+        sweep_upper_bound_record_id: string | null
+        cursor_child_id: string | null
+        cursor_edge_id: string | null
+        cursor_phase: ThreadPhase | null
+      }
+    >(sql`/* lockCopyrightThreadRetentionCursor */
+      SELECT cursor_record_id, sweep_upper_bound_record_id,
+        cursor_child_id, cursor_edge_id, cursor_phase,
+        cursor_legal_phase, cursor_legal_child_id, cursor_legal_hold_generation,
+        cursor_case_party_generation, cursor_legal_latest_release_at,
+        cursor_blocker_phase, cursor_blocker_child_id, cursor_blocker_assessment_identity_id,
+        cursor_blocker_generation
+      FROM copyright_notice_operational_retention_cursors
+      WHERE kind = 'email_thread_references' FOR UPDATE`)
+    const cursor = cursorRows[0]!
+    const upperBound = cursor.sweep_upper_bound_record_id ?? cutoffId
+    const { rows: candidates } = await transaction<{ id: string }>(sql`/* scanCopyrightThreadCase */
+      SELECT id FROM copyright_notices
+      WHERE id > COALESCE(${cursor.cursor_record_id}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
+        AND id < LEAST(${upperBound}::uuid, ${cutoffId}::uuid)
+      ORDER BY id LIMIT 1`)
+    const noticeId = candidates[0]?.id
+    if (!noticeId) {
+      await resetCopyrightThreadRetentionCursor(transaction)
+      await transaction.commit()
+      return { scanned: 0, deleted: 0, hasMore: false }
     }
-  >(sql`/* lockCopyrightThreadRetentionCursor */
-    SELECT cursor_record_id, sweep_upper_bound_record_id,
-      cursor_child_id, cursor_edge_id, cursor_phase,
-      cursor_legal_phase, cursor_legal_child_id, cursor_legal_hold_generation,
-      cursor_case_party_generation, cursor_legal_latest_release_at,
-      cursor_blocker_phase, cursor_blocker_child_id, cursor_blocker_assessment_identity_id,
-      cursor_blocker_generation
-    FROM copyright_notice_operational_retention_cursors
-    WHERE kind = 'email_thread_references' FOR UPDATE`)
-  const cursor = cursorRows[0]!
-  const upperBound = cursor.sweep_upper_bound_record_id ?? cutoffId
-  const { rows: candidates } = await transaction<{ id: string }>(sql`/* scanCopyrightThreadCase */
-    SELECT id FROM copyright_notices
-    WHERE id > COALESCE(${cursor.cursor_record_id}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
-      AND id < LEAST(${upperBound}::uuid, ${cutoffId}::uuid)
-    ORDER BY id LIMIT 1`)
-  const noticeId = candidates[0]?.id
-  if (!noticeId) {
-    await resetCopyrightThreadRetentionCursor(transaction)
-    await transaction.commit()
-    return { scanned: 0, deleted: 0, hasMore: false }
-  }
 
-  // One raw case link is selected by the (notice_id, id) index. An incomplete link remains
-  // selected on the next tick; the phase and edge key are persisted with the case cursor.
-  const { rows: links } = await transaction<{
-    id: string
-    copyright_notice_email_intake_id: string
-    matched_token_id: string | null
-  }>(sql`/* scanCopyrightThreadCaseLink */
-    WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id)
-    SELECT link.id, link.copyright_notice_email_intake_id, link.matched_token_id
-    FROM owner CROSS JOIN LATERAL (
-      SELECT id, copyright_notice_email_intake_id, matched_token_id
-      FROM copyright_notice_email_intake_notice_links link
-      WHERE link.copyright_notice_id = owner.notice_id
-        AND link.id > COALESCE(${cursor.cursor_child_id}::uuid,
-          '00000000-0000-0000-0000-000000000000'::uuid)
-      ORDER BY link.id LIMIT 1
-    ) link`)
-  const link = links[0]
-  if (!link) {
-    await advanceCopyrightThreadCaseCursor(transaction, noticeId, upperBound)
-    await transaction.commit()
-    return { scanned: 1, deleted: 0, hasMore: true }
-  }
+    // One raw case link is selected by the (notice_id, id) index. An incomplete link remains
+    // selected on the next tick; the phase and edge key are persisted with the case cursor.
+    const { rows: links } = await transaction<{
+      id: string
+      copyright_notice_email_intake_id: string
+      matched_token_id: string | null
+    }>(sql`/* scanCopyrightThreadCaseLink */
+      WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id)
+      SELECT link.id, link.copyright_notice_email_intake_id, link.matched_token_id
+      FROM owner CROSS JOIN LATERAL (
+        SELECT id, copyright_notice_email_intake_id, matched_token_id
+        FROM copyright_notice_email_intake_notice_links link
+        WHERE link.copyright_notice_id = owner.notice_id
+          AND link.id > COALESCE(${cursor.cursor_child_id}::uuid,
+            '00000000-0000-0000-0000-000000000000'::uuid)
+        ORDER BY link.id LIMIT 1
+      ) link`)
+    const link = links[0]
+    if (!link) {
+      await advanceCopyrightThreadCaseCursor(transaction, noticeId, upperBound)
+      await transaction.commit()
+      return { scanned: 1, deleted: 0, hasMore: true }
+    }
 
-  const phase = cursor.cursor_phase ?? 'references'
-  const { rows: references } =
-    phase === 'references'
-      ? await transaction<{ id: string }>(sql`
-        /* scanCopyrightThreadIntakeReferences */
-        WITH owner AS MATERIALIZED (
-          SELECT ${link.copyright_notice_email_intake_id}::uuid AS intake_id
-        ), page AS MATERIALIZED (
-          SELECT id FROM copyright_notice_email_thread_references
-          WHERE copyright_notice_email_intake_id = (SELECT intake_id FROM owner)
-          ORDER BY id LIMIT ${batchSize}
-        )
-        SELECT page.id FROM page`)
-      : { rows: [] }
-  // Preservation coordination remains scoped to the case and its actual legal holds.
-  await lockCopyrightThreadPreservationGate(transaction)
-  const proof = await readCopyrightThreadProofPage(
-    transaction,
-    noticeId,
-    now,
-    cutoff,
-    batchSize,
-    cursor,
-  )
-  const ready =
-    !proof.legal.blocked &&
-    proof.legal.phase === 'done' &&
-    proof.blocker !== null &&
-    !proof.blocker.blocked &&
-    proof.blocker.done
-  if (!ready) {
+    const phase = cursor.cursor_phase ?? 'references'
+    const { rows: references } =
+      phase === 'references'
+        ? await transaction<{ id: string }>(sql`
+          /* scanCopyrightThreadIntakeReferences */
+          WITH owner AS MATERIALIZED (
+            SELECT ${link.copyright_notice_email_intake_id}::uuid AS intake_id
+          ), page AS MATERIALIZED (
+            SELECT id FROM copyright_notice_email_thread_references
+            WHERE copyright_notice_email_intake_id = (SELECT intake_id FROM owner)
+            ORDER BY id LIMIT ${batchSize}
+          )
+          SELECT page.id FROM page`)
+        : { rows: [] }
+    // Preservation coordination remains scoped to the case and its actual legal holds.
+    const proof = await readCopyrightThreadProofPage(
+      transaction,
+      noticeId,
+      now,
+      cutoff,
+      batchSize,
+      cursor,
+    )
+    const ready =
+      !proof.legal.blocked &&
+      proof.legal.phase === 'done' &&
+      proof.blocker !== null &&
+      !proof.blocker.blocked &&
+      proof.blocker.done
+    if (!ready) {
+      await saveCopyrightThreadPageProof(transaction, noticeId, upperBound, proof)
+      await transaction.commit()
+      return { scanned: 1, deleted: 0, hasMore: true }
+    }
+    // Only the references phase's real link UPDATE writes the blocker generation.
+    if (phase === 'references' && references.length === 0 && link.matched_token_id !== null)
+      await lockCopyrightActionGenerationForWrite(noticeId, transaction)
     await saveCopyrightThreadPageProof(transaction, noticeId, upperBound, proof)
+    const { rows: eligible } = await transaction<{ id: string }>(
+      copyrightOperationalThreadEligibleSql(cutoff, noticeId),
+    )
+    if (eligible.length === 0) {
+      // The next fixed sweep rechecks this case if the blocker later clears.
+      await advanceCopyrightThreadCaseCursor(transaction, noticeId, upperBound)
+      await transaction.commit()
+      return { scanned: 1, deleted: 0, hasMore: true }
+    }
+    // The marker and first irreversible delete commit together. Old-source replay cannot
+    // recreate a removed reference between pages; a fresh source remains admissible.
+    // ast-grep-ignore: no-three-sequential-awaits -- persist the retirement cutoff before deleting thread evidence so replay is fenced; save the cursor from the completed delete page progress
+    await transaction(sql`/* retireCopyrightCaseThread */
+      UPDATE copyright_notice_thread_retention_activities
+      SET retired_before_intake_bound = ${cutoffId}::uuid
+      WHERE copyright_notice_id = ${noticeId}
+        AND (retired_before_intake_bound IS NULL
+          OR retired_before_intake_bound < ${cutoffId}::uuid)`)
+    const result = await deleteCaseThreadPage(
+      transaction,
+      now,
+      noticeId,
+      link.copyright_notice_email_intake_id,
+      phase,
+      cursor.cursor_edge_id,
+      batchSize,
+      references.map(row => row.id),
+      link.matched_token_id,
+    )
+    await transaction(sql`/* advanceCopyrightThreadRetentionCursor */
+      UPDATE copyright_notice_operational_retention_cursors
+      SET cursor_child_id = ${result.phase === null ? link.id : cursor.cursor_child_id}::uuid,
+        cursor_edge_id = ${result.edgeCursor}::uuid,
+        cursor_phase = ${result.phase},
+        sweep_upper_bound_record_id = ${upperBound}::uuid
+      WHERE kind = 'email_thread_references'`)
     await transaction.commit()
-    return { scanned: 1, deleted: 0, hasMore: true }
-  }
-  // Only the references phase's real link UPDATE writes the blocker generation.
-  if (phase === 'references' && references.length === 0 && link.matched_token_id !== null)
-    await lockCopyrightActionGenerationForWrite(noticeId, transaction)
-  await lockCopyrightThreadRetentionNotice(transaction, noticeId)
-  await saveCopyrightThreadPageProof(transaction, noticeId, upperBound, proof)
-  const { rows: eligible } = await transaction<{ id: string }>(
-    copyrightOperationalThreadEligibleSql(cutoff, noticeId),
-  )
-  if (eligible.length === 0) {
-    // The next fixed sweep rechecks this case if the blocker later clears.
-    await advanceCopyrightThreadCaseCursor(transaction, noticeId, upperBound)
-    await transaction.commit()
-    return { scanned: 1, deleted: 0, hasMore: true }
-  }
-  // The marker and first irreversible delete commit together. Old-source replay cannot
-  // recreate a removed reference between pages; a fresh source remains admissible.
-  // ast-grep-ignore: no-three-sequential-awaits -- persist the retirement cutoff before deleting thread evidence so replay is fenced; save the cursor from the completed delete page progress
-  await transaction(sql`/* retireCopyrightCaseThread */
-    UPDATE copyright_notice_thread_retention_activities
-    SET retired_before_intake_bound = ${cutoffId}::uuid
-    WHERE copyright_notice_id = ${noticeId}
-      AND (retired_before_intake_bound IS NULL
-        OR retired_before_intake_bound < ${cutoffId}::uuid)`)
-  const result = await deleteCaseThreadPage(
-    transaction,
-    now,
-    noticeId,
-    link.copyright_notice_email_intake_id,
-    phase,
-    cursor.cursor_edge_id,
-    batchSize,
-    references.map(row => row.id),
-    link.matched_token_id,
-  )
-  await transaction(sql`/* advanceCopyrightThreadRetentionCursor */
-    UPDATE copyright_notice_operational_retention_cursors
-    SET cursor_child_id = ${result.phase === null ? link.id : cursor.cursor_child_id}::uuid,
-      cursor_edge_id = ${result.edgeCursor}::uuid,
-      cursor_phase = ${result.phase},
-      sweep_upper_bound_record_id = ${upperBound}::uuid
-    WHERE kind = 'email_thread_references'`)
-  await transaction.commit()
-  return { scanned: 1, deleted: result.deleted, hasMore: true }
+    return { scanned: 1, deleted: result.deleted, hasMore: true }
+  })
 }
 
 export async function sweepCopyrightCaseThreads(options: {

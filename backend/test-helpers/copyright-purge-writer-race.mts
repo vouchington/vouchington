@@ -55,10 +55,7 @@ async function raceCopyrightRetentionWithCorrespondence<Page>(
         const [statement] = args
         const text = typeof statement === 'string' ? statement : statement.text
         const values = typeof statement === 'string' ? [] : statement.values
-        const boundary =
-          kind === 'purge'
-            ? text.includes('readCopyrightCasePurgeProof') && text.includes('FOR UPDATE')
-            : text.includes('lockCopyrightThreadRetentionNotice')
+        const boundary = text.includes('lockCopyrightActionGenerationForWrite')
         if (!captured && boundary && values.includes(noticeId)) {
           captured = true
           ready.resolve(await getTestPostgresBackendProcessId(target))
@@ -72,7 +69,9 @@ async function raceCopyrightRetentionWithCorrespondence<Page>(
   const page = purge()
   const pageSettled = Promise.allSettled([page])
   void page
-    .then(() => ready.reject(new Error('Retention page exited before its case gate')))
+    .then(() =>
+      ready.reject(new Error('Retention page exited before its actual generation write lock')),
+    )
     .catch(ready.reject)
   try {
     const holderProcessId = await ready.promise
@@ -121,4 +120,32 @@ export async function readCopyrightPurgeAssessmentPointers(noticeId: string) {
       count(current_assessment_identity_id)::integer AS remaining
     FROM copyright_notice_submissions WHERE copyright_notice_id = ${noticeId}::uuid`)
   return rows[0]!
+}
+
+/** Commits a real legal writer after the page's SSI snapshot, before its first GEN write. */
+export async function commitCopyrightCorrespondenceAfterPurgeSnapshot<Result>(
+  noticeId: string,
+  operation: () => Promise<Result>,
+) {
+  const { observeTestPostgresClientQueries } = await import('./postgres-query-pool-observer.mts')
+  let message: Awaited<ReturnType<typeof createOutboundCopyrightCorrespondence>> | undefined
+  let applied = false
+  const { result } = await observeTestPostgresClientQueries(operation, async query => {
+    if (
+      !applied &&
+      query.text.includes('readPendingCopyrightAccountClockSync') &&
+      query.values.includes(noticeId)
+    ) {
+      applied = true
+      message = await createOutboundCopyrightCorrespondence({
+        noticeId,
+        submissionId: null,
+        correspondenceKind: 'status_update',
+        compositionKind: 'staff',
+        bodyCiphertext: `retention-snapshot-${crypto.randomUUID()}`,
+        draftedById: null,
+      })
+    }
+  })
+  return { result, message }
 }

@@ -86,7 +86,7 @@ export async function runCopyrightCasePurgeScenarios(): Promise<void> {
     'copyright-case-purge-proof',
     async () => {
       await using transaction = await beginTransaction()
-      const { rows } = await transaction<{ id: string }>(copyrightCasePurgeProofSql(dueId, true))
+      const { rows } = await transaction<{ id: string }>(copyrightCasePurgeProofSql(dueId))
       await transaction.rollback()
       assert.equal(rows[0]?.id, dueId)
     },
