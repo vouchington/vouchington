@@ -130,22 +130,40 @@ export async function commitCopyrightCorrespondenceAfterPurgeSnapshot<Result>(
   const { observeTestPostgresClientQueries } = await import('./postgres-query-pool-observer.mts')
   let message: Awaited<ReturnType<typeof createOutboundCopyrightCorrespondence>> | undefined
   let applied = false
-  const { result } = await observeTestPostgresClientQueries(operation, async query => {
-    if (
-      !applied &&
-      query.text.includes('readPendingCopyrightAccountClockSync') &&
-      query.values.includes(noticeId)
-    ) {
-      applied = true
-      message = await createOutboundCopyrightCorrespondence({
-        noticeId,
-        submissionId: null,
-        correspondenceKind: 'status_update',
-        compositionKind: 'staff',
-        bodyCiphertext: `retention-snapshot-${crypto.randomUUID()}`,
-        draftedById: null,
-      })
-    }
-  })
-  return { result, message }
+  let failure: unknown
+  const restore = interceptBoundedRetentionTransaction(
+    transaction =>
+      new Proxy(transaction, {
+        async apply(target, receiver, args: Parameters<QueryExecutor>) {
+          try {
+            return await Reflect.apply(target, receiver, args)
+          } catch (err) {
+            failure = err
+            throw err
+          }
+        },
+      }),
+  )
+  try {
+    const { result } = await observeTestPostgresClientQueries(operation, async query => {
+      if (
+        !applied &&
+        query.text.includes('readPendingCopyrightAccountClockSync') &&
+        query.values.includes(noticeId)
+      ) {
+        applied = true
+        message = await createOutboundCopyrightCorrespondence({
+          noticeId,
+          submissionId: null,
+          correspondenceKind: 'status_update',
+          compositionKind: 'staff',
+          bodyCiphertext: `retention-snapshot-${crypto.randomUUID()}`,
+          draftedById: null,
+        })
+      }
+    })
+    return { result, message, failure }
+  } finally {
+    restore()
+  }
 }

@@ -53,10 +53,8 @@ function observePurgeTransaction(
       throw err
     }
   }
+  transaction.commit = observedCommit
   return new Proxy(transaction, {
-    get(target, property, receiver) {
-      return property === 'commit' ? observedCommit : Reflect.get(target, property, receiver)
-    },
     async apply(target, receiver, args: Parameters<QueryExecutor>) {
       const [statement, parameters] = args
       const text = typeof statement === 'string' ? statement : statement.text

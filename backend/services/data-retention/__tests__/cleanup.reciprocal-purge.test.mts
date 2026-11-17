@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { runExplicitCommitActionProbe } from '../../../test-helpers/data-stores/psql/post-commit-actions.mts'
+import { createTestUser, getTestUserRaw } from '../../../test-helpers/entities/index.mts'
 import { cleanupSoftDeletedUserBatch } from '../cleanup-batches.mts'
 import { cleanupSoftDeletedUser } from '../cleanup-soft-deleted-user.mts'
 import {
@@ -12,6 +14,19 @@ import {
 } from '../../../test-helpers/reciprocal-user-purge-scene.mts'
 
 describe('reciprocal final user purges', () => {
+  it('settles owned post-commit actions before an observed attempt returns', async () => {
+    const user = await createTestUser()
+    let settled = false
+    const observed = await observeTestUserPurgeAttempt(() =>
+      runExplicitCommitActionProbe(async () => {
+        expect(await getTestUserRaw(user.id)).toEqual(expect.objectContaining({ id: user.id }))
+        settled = true
+      }),
+    )
+    expect(observed).toEqual({ result: false, failures: [] })
+    expect(settled).toBe(true)
+  })
+
   it.each(['direct', 'scheduled'] as const)(
     'preserves native-aborted %s attempts and completes every unheld account on one next tick',
     async mode => {

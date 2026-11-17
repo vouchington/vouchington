@@ -19,11 +19,12 @@ describe('copyright case purge native conflict', () => {
     }
     const updateData = vi.fn<(data: CopyrightCasePurgeJobData) => Promise<void>>()
     const moveToDelayed = vi.fn<(timestamp: number) => Promise<never>>()
-    const { result, message } = await commitCopyrightCorrespondenceAfterPurgeSnapshot(
+    const { result, message, failure } = await commitCopyrightCorrespondenceAfterPurgeSnapshot(
       entry.noticeId,
       () => processCopyrightCasePurge({ data, updateData, moveToDelayed }),
     )
     expect(message).toBeDefined()
+    expect(failure).toEqual(expect.objectContaining({ code: '40001' }))
     expect(result).toEqual({ data, hasMore: false })
     expect(updateData).not.toHaveBeenCalled()
     expect(moveToDelayed).not.toHaveBeenCalled()
