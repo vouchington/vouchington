@@ -151,7 +151,13 @@ describe('dependency update configuration', () => {
     expect(workspace.minimumReleaseAge).toBe(2880)
     expect(cooldowns).toHaveLength(dependabot.updates?.length ?? 0)
     expect(cooldowns.every(days => days === 7)).toBe(true)
-    expect(cooldowns.every(days => days * 24 * 60 >= (workspace.minimumReleaseAge ?? 0))).toBe(true)
+    const cooldownMinutes = cooldowns.map(days => {
+      if (days === undefined) throw new Error('Dependabot cooldown is missing default-days')
+      return days * 24 * 60
+    })
+    expect(cooldownMinutes.every(minutes => minutes >= (workspace.minimumReleaseAge ?? 0))).toBe(
+      true,
+    )
     expect(renovateReleaseAges.every(age => age === '2 days')).toBe(true)
   })
 })
