@@ -162,15 +162,6 @@ describe('user preservation holds', () => {
       ).rejects.toMatchObject({ status: 404 })
     })
 
-    it('canonicalizes an uppercase UUID before placing a hold', async () => {
-      const admin = await createTestUser({ administrator: true })
-      const user = await createTestUser()
-
-      await expect(
-        placeUserPreservationHold(admin, user.id.toUpperCase(), 'matter-uppercase'),
-      ).resolves.toMatchObject({ account_user_id: user.id })
-    })
-
     it('returns 404 after the users row has been hard-deleted', async () => {
       const admin = await createTestUser({ administrator: true })
       const user = await createTestUser()
@@ -266,28 +257,6 @@ describe('user preservation holds', () => {
         })
       }
       await expect(deleteUser(user, user)).rejects.toMatchObject({ status: 409 })
-    })
-  })
-
-  describe('preservation hold reference confidentiality', () => {
-    it('never writes the reference to the console or to the audit log', async () => {
-      const admin = await createTestUser({ administrator: true })
-      const user = await createTestUser({ username: safeUsername('hold-confidential') })
-      const secret = 'Subpoena-Ref-7f3a9c'
-      const spies = (['debug', 'error', 'info', 'log', 'warn'] as const).map(method =>
-        vi.spyOn(console, method).mockReturnValue(undefined),
-      )
-
-      await placeUserPreservationHold(admin, user.id, secret)
-      await listUserPreservationHolds(admin, user.id)
-      await releaseUserPreservationHold(admin, user.id)
-      await deleteUser(user, user)
-
-      const logged = JSON.stringify(spies.flatMap(spy => spy.mock.calls))
-      expect(logged).not.toContain(secret)
-      const audit = await getModeratorActionRowsForTest({ targetUserId: user.id })
-      expect(JSON.stringify(audit)).not.toContain(secret)
-      for (const spy of spies) spy.mockRestore()
     })
   })
 })

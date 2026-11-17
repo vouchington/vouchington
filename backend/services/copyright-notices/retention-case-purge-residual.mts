@@ -12,7 +12,7 @@ export async function deleteCopyrightCaseResidualPartyPage(data: CopyrightCasePu
     statementTimeoutMs: 20_000,
   })
   const { rows: live } = await query<{ id: string }>(sql`/* recheckCopyrightCaseResidualRoot */
-    SELECT id FROM copyright_notices WHERE id = ${data.noticeId}::uuid FOR UPDATE`)
+    SELECT id FROM copyright_notices WHERE id = ${data.noticeId}::uuid`)
   if (live.length > 0) {
     await query.commit()
     return { data: enterCopyrightCasePurgePhase(data, 'final'), hasMore: true }

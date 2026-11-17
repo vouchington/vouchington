@@ -13,7 +13,7 @@ import { revokeMembershipGrant } from '../../memberships/grants/revoke.mts'
 import { runDataRetentionCleanup } from '../cleanup.mts'
 
 describe('membership grant cleanup concurrency', () => {
-  it('preserves a concurrent grant revocation while completing final account deletion', async () => {
+  it('preserves revocation committed before the overlapping cleanup reads eligibility', async () => {
     const window = createTestRetentionWindow()
     const [administrator, member, excludedMember] = await Promise.all([
       createTestUserDirect(),
@@ -29,6 +29,7 @@ describe('membership grant cleanup concurrency', () => {
     ])
     const excludedBeforeCleanup = await getTestUserRaw(excludedMember.id)
 
+    let revocation: ReturnType<typeof revokeMembershipGrant>
     const revocationReady = Promise.withResolvers<void>()
     const releaseRevocation = Promise.withResolvers<void>()
     let restoreCleanup: (() => void) | undefined
@@ -38,17 +39,18 @@ describe('membership grant cleanup concurrency', () => {
       async () => {
         restoreRevocation()
         restoreCleanup = beforePostgresTransactionQueryForTest(
-          'cleanupSoftDeletedUserBatch: terminate retained membership grants',
+          'cleanupSoftDeletedUserBatch: check target',
           values => values.includes(member.id),
           async () => {
             releaseRevocation.resolve()
+            await revocation
           },
         )
         revocationReady.resolve()
         await releaseRevocation.promise
       },
     )
-    const revocation = revokeMembershipGrant(administrator.id, grant.grantId, 'concurrent cleanup')
+    revocation = revokeMembershipGrant(administrator.id, grant.grantId, 'concurrent cleanup')
     const revocationOutcome = Promise.allSettled([revocation])
     let cleanupOutcome:
       | Promise<PromiseSettledResult<{ deleted: number; hasMore: boolean }>[]>

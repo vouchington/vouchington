@@ -96,6 +96,10 @@ export async function runLockedPage(
       return verifyCopyrightCaseReportCoveragePage(query, data, notice.jurisdiction, pageSize)
     case 'evidence': {
       if (data.phaseIndex > 1) {
+        // Strong writer ownership conflicts with rationale admission's existing KEY SHARE guard.
+        await query(sql`/* lockCopyrightCaseEvidenceErasureNotice */
+          SELECT id FROM copyright_notices
+          WHERE id = ${data.noticeId}::uuid FOR UPDATE`)
         await query(sql`/* finishCopyrightCaseEvidenceErasure */
           UPDATE copyright_notices SET evidence_erased_at = COALESCE(evidence_erased_at, clock_timestamp())
           WHERE id = ${data.noticeId}::uuid`)

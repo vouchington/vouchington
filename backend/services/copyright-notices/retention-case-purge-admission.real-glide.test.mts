@@ -37,7 +37,7 @@ import type {
 import type { CopyrightCasePurgeAdmissionData } from '../../queues/background/enqueues/notifications-domain.mts'
 import { processCopyrightAccountClockSync } from '../../workers/psql/processors/copyright-account-clock-sync.mts'
 import { processCopyrightCasePurge } from '../../workers/psql/processors/copyright-case-purge.mts'
-import { placeUserPreservationHold } from '../users/preservation-holds.mts'
+import { createTestPreservationHold } from '@voucha/test-helpers/entities/user-legal-preservation-holds'
 import { runCopyrightAccountClockSyncPage } from './retention-account-clock-sync.mts'
 import { admitCopyrightCasePurgePage } from './retention-case-purge-admission.mts'
 
@@ -58,7 +58,9 @@ describe('copyright purge admission and clock sync', () => {
       addCopyrightCasePurgeFixtureParty(secondCase.noticeId, secondCase.posterId),
     ])
     await Promise.all(
-      accountIds.map(accountId => placeUserPreservationHold(admin, accountId, `admission-${v7()}`)),
+      accountIds.map(accountId =>
+        createTestPreservationHold(accountId, admin.id, `admission-${v7()}`),
+      ),
     )
     onTestFinished(async () => {
       await Promise.all(
@@ -123,7 +125,7 @@ describe('copyright purge admission and clock sync', () => {
     await Promise.all(
       noticeIds.map(noticeId => addCopyrightCasePurgeFixtureParty(noticeId, account.id)),
     )
-    const hold = await placeUserPreservationHold(admin, account.id, `clock-sync-${v7()}`)
+    const hold = await createTestPreservationHold(account.id, admin.id, `clock-sync-${v7()}`)
     expect((await readCopyrightCasePurgeFixtureAccountClock(account.id)).pending).toBe(true)
 
     const worker = await startRealGlideBackgroundLifecycle({

@@ -2096,7 +2096,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_guest_capability_activity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    -- Expired unused capability material may retire; its completed lifetime stays on the case.\n    UPDATE copyright_notices notice\n    SET last_guest_capability_activity_at = GREATEST(\n      notice.last_guest_capability_activity_at, OLD.updated_at,\n      CASE WHEN OLD.revoked_at IS NULL THEN OLD.expires_at ELSE NULL END)\n    WHERE notice.id = OLD.copyright_notice_id;\n    RETURN OLD;\n  END IF;\n  -- Planned future expiry belongs to the live capability, not the monotonic activity clock.\n  UPDATE copyright_notices notice\n  SET last_guest_capability_activity_at = GREATEST(\n    notice.last_guest_capability_activity_at, NEW.updated_at)\n  WHERE notice.id = NEW.copyright_notice_id;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_update_copyright_preservation_generation": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_preservation_generation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM pg_advisory_xact_lock(hashtextextended('copyright-preservation-retention', 0));\n  UPDATE copyright_notice_retention_generations\n    SET preservation_generation = preservation_generation + 1 WHERE is_global;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_preservation_generation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE copyright_notice_retention_generations\n    SET preservation_generation = preservation_generation + 1 WHERE is_global;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_update_copyright_storage_reference_generation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_storage_reference_generation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  old_object_id uuid;\n  new_object_id uuid;\nBEGIN\n  IF TG_OP <> 'INSERT' THEN\n    old_object_id := NULLIF(to_jsonb(OLD) ->> TG_ARGV[0], '')::uuid;\n  END IF;\n  IF TG_OP <> 'DELETE' THEN\n    new_object_id := NULLIF(to_jsonb(NEW) ->> TG_ARGV[0], '')::uuid;\n  END IF;\n  IF old_object_id IS NOT NULL AND old_object_id IS DISTINCT FROM new_object_id THEN\n    UPDATE copyright_notice_storage_objects\n      SET reference_generation = reference_generation + 1 WHERE id = old_object_id;\n  END IF;\n  IF new_object_id IS NOT NULL AND new_object_id IS DISTINCT FROM old_object_id THEN\n    UPDATE copyright_notice_storage_objects\n      SET reference_generation = reference_generation + 1 WHERE id = new_object_id;\n  END IF;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -40559,7 +40559,7 @@
           "type": "bigint"
         }
       },
-      "comment": "Global legal-preservation change generation for bounded case-party proof; the gate serializes concurrent hold writes with retention.",
+      "comment": "Global legal-preservation change generation for bounded case-party proof; hold changes invalidate prior bounded proof pages.",
       "foreignKeys": {},
       "growth": "bounded",
       "indexes": {

@@ -1,6 +1,7 @@
 import { beginTransaction, read, type QueryExecutor } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { decryptSecret } from '@modules/token-secrets'
+import { v7 as uuidv7 } from 'uuid'
+import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import type { getUserPreservationHoldState } from '../../services/users/preservation-holds.mts'
 
 type UserPreservationHold = Awaited<
@@ -23,6 +24,28 @@ export async function insertPreservationHoldInTransactionForTest(
     INSERT INTO user_legal_preservation_holds
       (account_user_id, placed_by_id, reference_ciphertext)
     VALUES (${accountUserId}, ${accountUserId}, 'synthetic partition hold')`)
+}
+
+/** Seeds an encrypted hold and its ordinary account-clock propagation signal for consumer tests. */
+export async function createTestPreservationHold(
+  accountUserId: string,
+  placedById: string,
+  reference: string,
+): Promise<{ placed_at: Date }> {
+  const id = uuidv7()
+  const ciphertext = encryptSecret(reference, `user-legal-preservation-hold:${id}`)
+  await using query = await beginTransaction()
+  const { rows } = await query<{ created_at: Date }>(sql`/* createTestPreservationHold */
+    INSERT INTO user_legal_preservation_holds
+      (id, account_user_id, placed_by_id, reference_ciphertext)
+    VALUES (${id}, ${accountUserId}, ${placedById}, ${ciphertext}) RETURNING created_at`)
+  await query(sql`/* markTestPreservationHoldClockPending */
+    UPDATE retained_user_identities identity
+    SET is_copyright_case_clock_sync_pending = EXISTS (
+      SELECT 1 FROM copyright_notice_party_identities party WHERE party.account_user_id=identity.id)
+    WHERE identity.id=${accountUserId}`)
+  await query.commit()
+  return { placed_at: rows[0]!.created_at }
 }
 
 /** Inserts a hold directly so schema tests can exercise constraints the service never violates. */

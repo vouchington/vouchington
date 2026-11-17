@@ -55,7 +55,7 @@ describe('MCP copyright audit after evidence erasure', () => {
     const { destroyed } = await runCopyrightAdmissionWinsDestructionRace({
       admissionMarker: '/* recordMcpCallAudit:legalRationales */',
       admissionBinding: fixture.noticeId,
-      destructionMarker: 'readCopyrightCasePurgeProof',
+      destructionMarker: 'readPendingCopyrightAccountClockSync',
       admit: () =>
         recordMcpCallAudit(context, [
           {
