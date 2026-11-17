@@ -1,4 +1,6 @@
 import { beginTransaction, write } from '@data-stores/psql'
+import { seedMediaDeliveryReplayNotice } from '../scripts/explain-analyze/seed-data/media-delivery-replay.mts'
+import { MEDIA_REPLAY_ACTOR_ID } from '../scripts/explain-analyze/seed-data/media-delivery-replay-cohort.mts'
 
 export async function readCopyrightNoticeIdentityCounts(noticeId: string) {
   const { rows } = await write<{ notices: number; identities: number }>(
@@ -23,5 +25,12 @@ export async function deleteCopyrightNoticeKeepingIdentity(noticeId: string): Pr
     `/* deleteCopyrightNoticeKeepingIdentity */ DELETE FROM copyright_notices WHERE id = $1`,
     [noticeId],
   )
+  await transaction.commit()
+}
+
+/** Commits one repeat of the real seed statement, as the replay seed does. */
+export async function seedMediaDeliveryReplayNoticeCommitted(noticeId: string): Promise<void> {
+  await using transaction = await beginTransaction()
+  await seedMediaDeliveryReplayNotice(transaction, noticeId, MEDIA_REPLAY_ACTOR_ID)
   await transaction.commit()
 }
