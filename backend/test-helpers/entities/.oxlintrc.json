@@ -33,7 +33,7 @@
     ],
     "no-mistakes/postgres-no-async-sql-builder": [
       "error",
-      { "builders": [{ "callees": ["sql"] }] }
+      { "builders": [{ "callees": ["sql"], "source": "sql-template-strings" }] }
     ],
     "no-mistakes/postgres-no-manual-transaction": [
       "error",
