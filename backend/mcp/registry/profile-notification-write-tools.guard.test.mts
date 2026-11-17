@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { notifications } from '@queues/notifications/queues'
+import { background as notifications } from '@queues/background/queues'
 import {
   createTestUser,
   insertTestImage,

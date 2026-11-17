@@ -1,7 +1,7 @@
 import { encodeScopedUuidCursor } from '@modules/pagination'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { getTestMediaDeliveryRecordSnapshot } from '@voucha/test-helpers'
-import { notifications } from '../../queues/notifications/queues.mts'
+import { background } from '@queues/background/queues'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   settleReplayFixtureOperations,
@@ -60,7 +60,7 @@ describe('media delivery replay jobs', () => {
         await processReplayMediaDeliveryRegistry(data, recordIds, 1)
       }
       expect(
-        await notifications.searchJobs({
+        await background.searchJobs({
           name: 'notifications.processReplayMediaDeliveryRegistry',
           data: { ...data, after: keys[0] },
         }),
@@ -71,7 +71,7 @@ describe('media delivery replay jobs', () => {
         processReplayMediaDeliveryRegistry(next, recordIds, 1),
       ])
       await processReplayMediaDeliveryRegistry(next, recordIds, 1)
-      const continuationJobs = await notifications.searchJobs({
+      const continuationJobs = await background.searchJobs({
         name: 'notifications.processReplayMediaDeliveryRegistry',
         data: { actorUserId: data.actorUserId },
       })

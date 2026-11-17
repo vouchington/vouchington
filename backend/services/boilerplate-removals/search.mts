@@ -1,6 +1,6 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
-import { getMaxUUIDv7ForDate, getMinUUIDv7ForDate } from '@modules/utils'
+import { getMaxUuidv7ForDate, getMinUuidv7ForDate } from '@modules/utils'
 import {
   CRAWL_HTML_SNAPSHOT_RETENTION_DAYS,
   CRAWL_CLEANUP_MAX_AGE_DAYS,
@@ -36,8 +36,8 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
   const recentCutoffDate = new Date(
     sampledNowMs - CRAWL_HTML_SNAPSHOT_RETENTION_DAYS * 24 * 60 * 60 * 1000,
   )
-  const recentCutoffId = getMaxUUIDv7ForDate(recentCutoffDate)
-  const crawlIdFloor = getMinUUIDv7ForDate(
+  const recentCutoffId = getMaxUuidv7ForDate(recentCutoffDate)
+  const crawlIdFloor = getMinUuidv7ForDate(
     new Date(recentCutoffDate.getTime() - CRAWL_CLEANUP_MAX_AGE_DAYS * 24 * 60 * 60 * 1000),
   )
   const query = sql`/* searchParentPathsNeedingBoilerplateRemoval */

@@ -1,4 +1,4 @@
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import type {
   FederationRetentionPosition,
   FederationRetentionQuery,
@@ -14,7 +14,7 @@ export async function listRetentionCandidates(
      SELECT id FROM follower_distributions
      WHERE id < $1::uuid AND (completed_at IS NOT NULL OR failed_at IS NOT NULL)
      ORDER BY id LIMIT $2 FOR UPDATE SKIP LOCKED`,
-    [getMinUUIDv7ForDate(cutoffAt), limit],
+    [getMinUuidv7ForDate(cutoffAt), limit],
   )
   return rows.map(row => ({ id: row.id }))
 }

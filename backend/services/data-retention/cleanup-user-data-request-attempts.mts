@@ -1,5 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { DATA_RETENTION_MAX_VALUES } from './config.mts'
 import { runPersistedRetentionPages } from './run-persisted-pages.mts'
 
@@ -21,8 +21,8 @@ export async function cleanupExpiredUserDataRequestAttempts(options: Options): P
   const now = options.now ?? new Date()
   const requestCutoff = new Date(now.getTime() - 30 * 86_400_000)
   const objectCutoff = new Date(now.getTime() - 7 * 86_400_000)
-  const upperId = getMinUUIDv7ForDate(requestCutoff)
-  const lowerId = options.lowerBoundDate ? getMinUUIDv7ForDate(options.lowerBoundDate) : null
+  const upperId = getMinUuidv7ForDate(requestCutoff)
+  const lowerId = options.lowerBoundDate ? getMinUuidv7ForDate(options.lowerBoundDate) : null
   return runPersistedRetentionPages(
     options,
     batchSize => deleteAttemptPage(batchSize, requestCutoff, objectCutoff, upperId, lowerId),

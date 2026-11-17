@@ -6,7 +6,7 @@ import {
   insertOldInvalidCrawlForTest,
   getCrawlData,
 } from '@voucha/test-helpers'
-import { getDateFromUUIDv7, getMinUUIDv7ForDate } from '@modules/utils'
+import { getDateFromUuidv7, getMinUuidv7ForDate } from '@modules/utils'
 import { getTestCrawlPreviousMonthInstant } from '@voucha/test-helpers/crawl-fixture-time'
 import {
   deleteDynamicConfigFieldsForTest,
@@ -27,7 +27,7 @@ describe('invalid crawl cleanup bounds', () => {
     const neighborId = await insertOldInvalidCrawlForTest(urlId)
     const neighborBefore = await getCrawlData(urlId, neighborId)
     expect(neighborBefore).toBeDefined()
-    const cutoffId = getMinUUIDv7ForDate(new Date(getTestCrawlPreviousMonthInstant().getTime() + 1))
+    const cutoffId = getMinUuidv7ForDate(new Date(getTestCrawlPreviousMonthInstant().getTime() + 1))
     await expect(deleteOldInvalidCrawls({ cutoffId, ids, limit: 1 })).resolves.toEqual({
       deleted: 1,
       hasMore: true,
@@ -56,13 +56,13 @@ describe('invalid crawl cleanup bounds', () => {
       vi.useFakeTimers({ toFake: ['Date'] })
       vi.setSystemTime(new Date(now))
       expect(getCrawlCleanupLimits().ageDays).toBe(30)
-      expect(getDateFromUUIDv7(getCrawlCleanupCutoff())?.toISOString()).toBe(expected)
+      expect(getDateFromUuidv7(getCrawlCleanupCutoff())?.toISOString()).toBe(expected)
       const restoreCap = overrideDynamicConfigFieldsForTest(crawlDispatchConfig, {
         cleanup_age_days: 31,
       })
       try {
         expect(getCrawlCleanupLimits().ageDays).toBe(30)
-        expect(getDateFromUUIDv7(getCrawlCleanupCutoff())?.toISOString()).toBe(expected)
+        expect(getDateFromUuidv7(getCrawlCleanupCutoff())?.toISOString()).toBe(expected)
       } finally {
         restoreCap()
       }
@@ -76,8 +76,8 @@ describe('invalid crawl cleanup bounds', () => {
     const hostname = `${createRandomString(12)}.example.com`
     const hostnameId = await insertTestUrlHostname({ hostname })
     const urlId = await insertTestUrl({ hostnameId, url: `https://${hostname}/abandoned` })
-    const cutoffId = getMinUUIDv7ForDate(getTestCrawlPreviousMonthInstant())
-    const cutoffAt = getDateFromUUIDv7(cutoffId)
+    const cutoffId = getMinUuidv7ForDate(getTestCrawlPreviousMonthInstant())
+    const cutoffAt = getDateFromUuidv7(cutoffId)
     if (!cutoffAt) throw new Error('Crawl cleanup cutoff must be a UUIDv7')
 
     const oldId = await insertOldInvalidCrawlForTest(urlId, {

@@ -1,5 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import {
   lockPaymentCleanupCursor,
@@ -28,7 +28,7 @@ export async function cleanupStripeEventPage(
   } else {
     // An event is received no earlier than it occurred, so ids below the cutoff are old enough.
     statement.append(
-      sql`event.id < ${getMinUUIDv7ForDate(fiscalCutoff)}
+      sql`event.id < ${getMinUuidv7ForDate(fiscalCutoff)}
         AND (${cursorId}::uuid IS NULL OR event.id > ${cursorId}::uuid)`,
     )
   }

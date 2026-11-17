@@ -66,6 +66,7 @@
     "no-void": "off",
     "no-await-in-loop": "off",
     "react/jsx-no-target-blank": "off",
+    "no-mistakes/ts-no-const-aliases": "off",
     "nextjs/no-html-link-for-pages": "off"
   },
   "overrides": [

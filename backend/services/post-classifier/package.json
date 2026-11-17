@@ -33,7 +33,7 @@
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
-    "@queues/notifications": "workspace:^",
+    "@queues/background": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

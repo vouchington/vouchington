@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { getRetentionCutoffDate } from './cleanup-options.mts'
 import type { HistoryKind } from './cleanup-histories-candidates.mts'
 
@@ -36,7 +36,7 @@ export async function mutatePage(
                AND newer.change_type = old.change_type AND newer.id > old.id
              ORDER BY newer.id ASC LIMIT 1
            ) < $2::uuid`,
-        [ids, getMinUUIDv7ForDate(cutoff)],
+        [ids, getMinUuidv7ForDate(cutoff)],
       )
       return result.rowCount ?? 0
     }
@@ -50,7 +50,7 @@ export async function mutatePage(
              WHERE newer.topic_id = old.topic_id AND newer.id > old.id
              ORDER BY newer.id ASC LIMIT 1
            ) < $2::uuid`,
-        [ids, getMinUUIDv7ForDate(cutoff)],
+        [ids, getMinUuidv7ForDate(cutoff)],
       )
       return result.rowCount ?? 0
     }
@@ -84,7 +84,7 @@ export async function mutatePage(
          DELETE FROM user_import_requests
          WHERE id = ANY($1::uuid[]) AND followed_at IS NULL
            AND id < $2::uuid`,
-        [ids, getMinUUIDv7ForDate(cutoff)],
+        [ids, getMinUuidv7ForDate(cutoff)],
       )
       return result.rowCount ?? 0
     }

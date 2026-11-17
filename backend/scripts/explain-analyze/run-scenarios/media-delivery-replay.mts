@@ -105,13 +105,12 @@ export async function runMediaDeliveryReplayScenarios() {
         localSettings: { statement_timeout: '30000', lock_timeout: '5000' },
         exactCapturedNames: QUERY_NAMES,
         afterCapture: async () => {
-          const result = replayResult
-          if (!result) throw new Error(`Media replay ${scenario.id} returned no result`)
+          if (!replayResult) throw new Error(`Media replay ${scenario.id} returned no result`)
           if (
-            result.replayed !== MEDIA_REPLAY_PAGE_SIZE ||
-            !result.hasMore ||
-            !result.after ||
-            decodeScopedUuidCursor(result.after, scope, 'Invalid media replay cursor').id !==
+            replayResult.replayed !== MEDIA_REPLAY_PAGE_SIZE ||
+            !replayResult.hasMore ||
+            !replayResult.after ||
+            decodeScopedUuidCursor(replayResult.after, scope, 'Invalid media replay cursor').id !==
               scenario.expected.at(-1)
           )
             throw new Error(`Media replay ${scenario.id} did not commit its exact full UUID page`)
@@ -136,9 +135,12 @@ export async function runMediaDeliveryReplayScenarios() {
             scenario: scenario.id,
             beforeAudit,
             afterAudit: rows[0].events,
-            lastRecordId: decodeScopedUuidCursor(result.after, scope, 'Invalid media replay cursor')
-              .id,
-            replayed: result.replayed,
+            lastRecordId: decodeScopedUuidCursor(
+              replayResult.after,
+              scope,
+              'Invalid media replay cursor',
+            ).id,
+            replayed: replayResult.replayed,
           })
           // Capture came from the actual committing service. Restore only its known seeded page so
           // every independently rolled-back EXPLAIN INSERT sees failed rows, not an empty plan.

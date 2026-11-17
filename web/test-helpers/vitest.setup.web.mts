@@ -4,7 +4,6 @@ import { cleanup } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
 import { installJsdomStubs, installMemoryLocalStorage } from 'vouchington-tooling/jsdom-stubs'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
-import { serializeCatalog } from '@ts-shared/ui-messages/catalog-bootstrap'
 import { flushPendingDynamicImports } from '@/test-helpers/components/topics/next-link-dynamic-mocks'
 
 const englishCatalog = await loadJsonMessages('en')
@@ -13,7 +12,7 @@ if (typeof window !== 'undefined') {
   // fallback seed: broken browser bootstrap must reach the rejecting API fixture.
   Reflect.set(window, '__UI_MESSAGES__', {
     locale: 'en',
-    catalog: structuredClone(serializeCatalog(englishCatalog)),
+    catalog: structuredClone(englishCatalog),
   })
   await vi.importActual<typeof import('@/lib/i18n/use-translations')>('@/lib/i18n/use-translations')
 } else {

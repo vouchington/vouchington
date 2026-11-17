@@ -12,10 +12,8 @@ function requirePost(postType: Post['post_type']): Post {
   return post
 }
 
-const foundReviewPost = posts.find(post => post.post_type === 'review')
-if (!foundReviewPost) throw new Error('Fixture posts are missing a review post')
+export const reviewPost = requirePost('review')
 
-export const reviewPost = foundReviewPost
 export const discussionPost = requirePost('discussion')
 export const dataPointPost = requirePost('data_point')
 export const commentPost = requirePost('comment')
@@ -58,12 +56,13 @@ export const communityOptions = [
   },
 ]
 
-const alex = publicUsers[0]
-const official = publicUsers[1]
-if (!alex || !official) throw new Error('Fixture users are incomplete')
+export const alexUser = requireFixtureUser(publicUsers[0])
+export const officialUser = requireFixtureUser(publicUsers[1])
 
-export const alexUser = alex
-export const officialUser = official
+function requireFixtureUser<T>(user: T | undefined): T {
+  if (!user) throw new Error('Fixture users are incomplete')
+  return user
+}
 
 export const administrator: User = {
   ...storyCurrentUser,
@@ -72,8 +71,8 @@ export const administrator: User = {
 
 export const postAuthor: User = {
   ...storyCurrentUser,
-  id: alex.id,
-  username: alex.username,
+  id: alexUser.id,
+  username: alexUser.username,
   roles: ['administrator'],
 }
 
@@ -91,7 +90,7 @@ const incomeRange = {
 }
 
 export const financialProfile: FinancialProfile = {
-  user_id: alex.id,
+  user_id: alexUser.id,
   currency: 'usd',
   credit_score_range: '670-739',
   stated_income_range: incomeRange,

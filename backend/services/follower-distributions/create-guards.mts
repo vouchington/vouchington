@@ -1,6 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { write } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { getPostByAny } from '@services/posts/get'
 import { getRssFeedItemById } from '@services/rss-feed-items'
 import type { PrivateUser } from '@services/users/types'
@@ -70,7 +70,7 @@ export async function assertCanDistribute(
   selectedRecipientIds: string[] | null,
   query: TransactionQuery,
 ): Promise<string[] | null> {
-  const recentCutoffId = getMinUUIDv7ForDate(new Date(Date.now() - 24 * 60 * 60 * 1000))
+  const recentCutoffId = getMinUuidv7ForDate(new Date(Date.now() - 24 * 60 * 60 * 1000))
   const statement = sql`/* assertCanDistribute */
     SELECT EXISTS (`
   statement.append(recentDistributionQuery(senderUserId, action, entityId, recentCutoffId))

@@ -7,7 +7,6 @@ import {
   POST_CLASSIFIER_MODEL_PROVIDER,
   POST_CLASSIFIER_POLICY_PROMPT,
   POST_CLASSIFIER_REMOTE_QUESTIONS,
-  POST_CLASSIFIER_SLUG,
 } from '@voucha/types/entities/post-classifier'
 import { MODERATOR_CONFIGS } from '@voucha/types/entities/moderator-configs'
 import {
@@ -98,8 +97,7 @@ describe('fixed global post classifier catalog', () => {
       expect(POST_CLASSIFIER_POLICY_PROMPT.split(policy)).toHaveLength(2)
     }
     expect(POST_CLASSIFIER_POLICY_PROMPT).not.toContain('Respond with:')
-    expect(POST_CLASSIFIER_SLUG).toBe('post-classifier')
-    expect(POST_CLASSIFIER_SYSTEM_USERNAME).toBe(POST_CLASSIFIER_SLUG)
+    expect(POST_CLASSIFIER_SYSTEM_USERNAME).toBe('post-classifier')
     expect(POST_CLASSIFIER_MODEL_NAME).toBe('gpt-6-luna')
     expect(POST_CLASSIFIER_MODEL_PROVIDER).toBe('openai')
     expect(POST_CLASSIFIER_ACTION_POLICY_REVISION).toBe('1')

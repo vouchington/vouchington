@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { Queue, QueueEvents, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { crawlDispatchConfig } from '@services/crawls/work-limits'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
@@ -29,12 +29,12 @@ describe('weekly hostname refresh cap through real GlideMQ', () => {
     onTestFinished(restoreLimits)
 
     const firstIdTime = Date.UTC(1970, 0, 1) + 1_000 + parseInt(randomUUID().slice(0, 7), 16)
-    const secondHostnameId = getMinUUIDv7ForDate(new Date(firstIdTime + 1))
+    const secondHostnameId = getMinUuidv7ForDate(new Date(firstIdTime + 1))
     const sweepStartedAt = new Date(firstIdTime + 2).toISOString()
     const hostnameIds = await Promise.all(
       [0, 1, 2].map(index =>
         insertTestUrlHostname({
-          id: getMinUUIDv7ForDate(new Date(firstIdTime + index)),
+          id: getMinUuidv7ForDate(new Date(firstIdTime + index)),
           hostname: `weekly-refresh-cap-${randomUUID()}.example.com`,
           is_crawlable: true,
         }),
@@ -93,7 +93,7 @@ describe('weekly hostname refresh cap through real GlideMQ', () => {
         'crawl.refresh_hostname_crawler_dispatcher',
         {
           cursor: {
-            afterId: getMinUUIDv7ForDate(new Date(firstIdTime - 1)),
+            afterId: getMinUuidv7ForDate(new Date(firstIdTime - 1)),
             sweepStartedAt,
           },
         },

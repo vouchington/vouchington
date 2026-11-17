@@ -2,7 +2,7 @@ import { reconcileOwnedRssCategorySnapshotBatch } from '@voucha/test-helpers/rss
 import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
 import { describe, expect, it } from 'vitest'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import {
   getTestRssFeedItemCategorySnapshotReconciliation,
   beginTransaction,
@@ -74,7 +74,7 @@ describe('RSS feed item category snapshot reconciliation', () => {
     ])
     // The notification job is prioritized, which `getJobs('waiting')` excludes until a worker
     // promotes it, so search every state.
-    const jobs = await notifications.searchJobs({
+    const jobs = await background.searchJobs({
       name: 'notifications.processReconcileRssFeedItemNotifications',
       data: { rssFeedItemId: item!.id },
     })

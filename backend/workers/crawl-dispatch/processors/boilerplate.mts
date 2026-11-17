@@ -32,21 +32,16 @@ async function readHtmlFiles(files: CrawlHtmlTempFile[]): Promise<Buffer[]> {
   return htmlPages
 }
 
-let extractQueue = Promise.resolve()
+let extractQueue: Promise<unknown> = Promise.resolve()
 
-async function extractDomRemovalsExclusively(files: CrawlHtmlTempFile[]) {
-  const previous = extractQueue
-  let release: () => void = () => undefined
-  extractQueue = new Promise<void>(resolve => {
-    release = resolve
-  })
-  await previous
-  try {
-    return await extractDomRemovals(await readHtmlFiles(files))
-  } finally {
-    release()
-  }
+function extractDomRemovalsExclusively(files: CrawlHtmlTempFile[]) {
+  const run = extractQueue.then(async () => extractDomRemovals(await readHtmlFiles(files)))
+  extractQueue = run.catch(ignoreSettledFailure)
+  return run
 }
+
+/** The caller observes the rejection through the returned promise; the queue only needs settlement. */
+function ignoreSettledFailure(): void {}
 
 export const processBoilerplateRemovalDispatcher = (
   admit: (candidates: ParentPathCandidate[]) => Promise<void>,

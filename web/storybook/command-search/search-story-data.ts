@@ -79,7 +79,7 @@ export const searchResults: SearchResults = {
   fediverse: [fediverseItem],
 }
 
-export const emptySearchResults = EMPTY_RESULTS
+export { EMPTY_RESULTS }
 
 export const pageShortcut = {
   href: '/reviews',

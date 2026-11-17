@@ -89,7 +89,6 @@ interface QueryWarnings {
 
 export function getResourcePressureFingerprints(result: ExplainResult): string[] {
   const nodes = collectNodes(result.plan)
-  const walThreshold = HIGH_WAL_BYTES_THRESHOLD
 
   const fingerprints = nodes.flatMap(node => {
     const nodeIdentity = `${node.nodeType}:${node.relationName ?? '-'}`
@@ -98,7 +97,7 @@ export function getResourcePressureFingerprints(result: ExplainResult): string[]
     if (node.tempWrittenBlocks > 0) nodeFingerprints.push(`${nodeIdentity}:temp-written`)
     if (node.diskSpill) nodeFingerprints.push(`${nodeIdentity}:disk-spill`)
     if (node.hashBatches > 1) nodeFingerprints.push(`${nodeIdentity}:hash-batches`)
-    if (node.walBytes >= walThreshold) nodeFingerprints.push(`${nodeIdentity}:wal`)
+    if (node.walBytes >= HIGH_WAL_BYTES_THRESHOLD) nodeFingerprints.push(`${nodeIdentity}:wal`)
     return nodeFingerprints
   })
 
@@ -107,8 +106,8 @@ export function getResourcePressureFingerprints(result: ExplainResult): string[]
   // the threshold at their shared ancestor while no individual node's exclusive share does.
   // Only add this when no node already crossed the threshold, so one real spike still reports
   // as a single fingerprint instead of two.
-  const anyNodeCrossedWalThreshold = nodes.some(n => n.walBytes >= walThreshold)
-  if (!anyNodeCrossedWalThreshold && getTotalWalBytes(result.plan) >= walThreshold) {
+  const anyNodeCrossedWalThreshold = nodes.some(n => n.walBytes >= HIGH_WAL_BYTES_THRESHOLD)
+  if (!anyNodeCrossedWalThreshold && getTotalWalBytes(result.plan) >= HIGH_WAL_BYTES_THRESHOLD) {
     fingerprints.push('query:wal-aggregate')
   }
 
@@ -117,7 +116,6 @@ export function getResourcePressureFingerprints(result: ExplainResult): string[]
 
 export function analyzeResult(result: ExplainResult): QueryWarnings {
   const nodes = collectNodes(result.plan)
-  const walThreshold = HIGH_WAL_BYTES_THRESHOLD
 
   const seqScans = nodes.flatMap(n => {
     if (!(n.seqScan && n.relationName && isLargeTable(n.relationName))) return []
@@ -170,7 +168,7 @@ export function analyzeResult(result: ExplainResult): QueryWarnings {
       n.tempWrittenBlocks > 0 ||
       n.diskSpill ||
       n.hashBatches > 1 ||
-      n.walBytes >= walThreshold,
+      n.walBytes >= HIGH_WAL_BYTES_THRESHOLD,
   )
 
   return {

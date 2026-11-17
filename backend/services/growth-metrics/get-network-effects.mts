@@ -1,6 +1,6 @@
 import { read } from '@data-stores/psql'
 import { query } from '@data-stores/analytics'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { GrowthRange, NetworkEffects } from './types.mts'
 
@@ -8,7 +8,7 @@ export async function getNetworkEffects(
   _range: GrowthRange,
   periodStart: Date,
 ): Promise<NetworkEffects> {
-  const periodStartUuid = getMinUUIDv7ForDate(periodStart)
+  const periodStartUuid = getMinUuidv7ForDate(periodStart)
   const statement = sql`/* getNetworkEffects */ WITH referral_summary AS (`
   statement.append(referralSummarySql(periodStartUuid)).append(sql`),
       topic_coverage AS (

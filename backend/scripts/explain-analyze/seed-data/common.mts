@@ -37,7 +37,7 @@ const { dayAnchorMs: POST_SEED_ANCHOR_MS, crawlUuidv7Prefix } = resolveSeedAncho
   process.env.EXPLAIN_SEED_ANCHOR_DATE,
 )
 
-export const CRAWL_SEED_PREFIX = crawlUuidv7Prefix
+export { crawlUuidv7Prefix }
 
 export function seedUuid(index: number, tableTag = '00'): string {
   const indexHex = index.toString(16).padStart(12, '0')
@@ -101,7 +101,7 @@ export function commentSeedTimestampMs(rootPostIndex: number, tier: 1 | 2 | 3): 
 export function crawlSeedUuid(index: number, tableTag = '00'): string {
   const indexHex = index.toString(16).padStart(12, '0')
   const tt = tableTag.padStart(2, '0').slice(0, 2)
-  return `${CRAWL_SEED_PREFIX}-${tt}00-7000-8000-${indexHex}`
+  return `${crawlUuidv7Prefix}-${tt}00-7000-8000-${indexHex}`
 }
 
 export function contentHash(s: string): Buffer {

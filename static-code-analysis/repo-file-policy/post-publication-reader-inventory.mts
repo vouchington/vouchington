@@ -24,18 +24,17 @@ export function checkPostPublicationReaderInventory(ctx: SharedContext, errors: 
     return
   }
 
-  let parsed: unknown
+  let inventory: unknown
   try {
-    parsed = JSON.parse(content) as unknown
+    inventory = JSON.parse(content) as unknown
   } catch {
     errors.push(`${INVENTORY_PATH}: invalid JSON`)
     return
   }
-  if (!isInventory(parsed)) {
+  if (!isInventory(inventory)) {
     errors.push(`${INVENTORY_PATH}: expected an inventory object with all reader arrays`)
     return
   }
-  const inventory = parsed
 
   if (inventory.version !== 1) errors.push(`${INVENTORY_PATH}: expected version 1`)
   if (inventory.canonical_builder !== CANONICAL_BUILDER) {

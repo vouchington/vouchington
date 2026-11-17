@@ -2,7 +2,7 @@ import { createBackgroundEnqueue } from '@queues/background/enqueues'
 import { ARTICLE_SYNC_PROCESS_JOB } from '@queues/background/enqueues/article-sync-jobs'
 import type { JobOptions } from 'glide-mq'
 import { ARTICLE_SYNC_DEDUP_TTL_MS } from './config.mts'
-import { articleSync } from './queues.mts'
+import { background } from '@queues/background/queues'
 
 const enqueueArticleSyncJob = createBackgroundEnqueue(ARTICLE_SYNC_PROCESS_JOB)
 
@@ -21,6 +21,6 @@ export function enqueueArticleSync(userId: string) {
  * another domain reads as no job rather than leaking that job's state to the caller.
  */
 export async function readArticleSyncJob(jobId: string) {
-  const job = await articleSync.getJob(jobId)
+  const job = await background.getJob(jobId)
   return job?.name === ARTICLE_SYNC_PROCESS_JOB.name ? job : undefined
 }

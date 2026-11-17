@@ -33,7 +33,7 @@ describe('reporting daily recomputation', () => {
   })
 
   it('preserves the strict UUID lower boundary even when the range begins at midnight', async () => {
-    const { getMinUUIDv7ForDate, getMaxUUIDv7ForDate } = await import('@modules/utils')
+    const { getMinUuidv7ForDate, getMaxUuidv7ForDate } = await import('@modules/utils')
     const { getContentProduction } = await import('../growth-metrics/get-content-production.mts')
     const lowerAuthor = await createTestUser()
     const upperAuthor = await createTestUser()
@@ -42,8 +42,8 @@ describe('reporting daily recomputation', () => {
     const ids: string[] = []
     try {
       for (const [id, author] of [
-        [getMinUUIDv7ForDate(date), lowerAuthor],
-        [getMaxUUIDv7ForDate(date), upperAuthor],
+        [getMinUuidv7ForDate(date), lowerAuthor],
+        [getMaxUuidv7ForDate(date), upperAuthor],
       ] as const) {
         ids.push(
           await insertTestPost({

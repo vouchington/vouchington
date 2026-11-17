@@ -74,15 +74,14 @@ export function useElectionVote<TChoice extends Exclude<VoteChoice, null>>(
     async (next: TChoice | null) => {
       if (options.disabled || isLoading || next === entry.currentVote) return
 
-      const requestKey = localKey
       const rollback = store?.applyOptimistic(entityType, electionId, next)
       const optimisticEntry = store ? undefined : nextEntryFor(entry, next)
-      if (optimisticEntry) setLocalEntry({ key: requestKey, value: optimisticEntry })
+      if (optimisticEntry) setLocalEntry({ key: localKey, value: optimisticEntry })
 
       setPendingKeys(current => {
-        if (current.has(requestKey)) return current
+        if (current.has(localKey)) return current
         const nextKeys = new Set(current)
-        nextKeys.add(requestKey)
+        nextKeys.add(localKey)
         return nextKeys
       })
       try {
@@ -90,14 +89,14 @@ export function useElectionVote<TChoice extends Exclude<VoteChoice, null>>(
         else await options.submitVote(next)
       } catch (err) {
         rollback?.()
-        if (optimisticEntry) setLocalEntry({ key: requestKey, value: entry })
+        if (optimisticEntry) setLocalEntry({ key: localKey, value: entry })
         if (isEmailVerificationRequired(err)) emailRecovery?.openEmailVerificationRecovery()
         else options.onError?.(err)
       } finally {
         setPendingKeys(current => {
-          if (!current.has(requestKey)) return current
+          if (!current.has(localKey)) return current
           const nextKeys = new Set(current)
-          nextKeys.delete(requestKey)
+          nextKeys.delete(localKey)
           return nextKeys
         })
       }

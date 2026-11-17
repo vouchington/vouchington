@@ -74,6 +74,7 @@
   },
   "devDependencies": {
     "@glidemq/speedkey": "^0.4.2",
+    "@queues/background": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^"
   }

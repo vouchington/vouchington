@@ -3,7 +3,7 @@ import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import type { getEntityReconciliationLimits } from './work-limits.mts'
 import type { CursorRunResult } from '@data-stores/psql/bounded-cursor-api'
 import sql from 'sql-template-strings'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import type { EntityReconciliationWindow, EntityReconciliationCandidate } from './types.mts'
 
 export function streamEntityReconciliationRows(
@@ -15,8 +15,8 @@ export function streamEntityReconciliationRows(
   },
 ) {
   const after = options.after
-  const firstRevisionId = getMinUUIDv7ForDate(window.start)
-  const afterLastRevisionId = getMinUUIDv7ForDate(new Date(window.end.getTime() + 1))
+  const firstRevisionId = getMinUuidv7ForDate(window.start)
+  const afterLastRevisionId = getMinUuidv7ForDate(new Date(window.end.getTime() + 1))
   const statement = sql`/* streamEntityReconciliationCandidateBatches */
       SELECT entity_type, entity_id, changed_at_epoch_us, change_id, details
       FROM (

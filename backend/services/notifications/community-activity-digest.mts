@@ -1,7 +1,7 @@
 import { getNotificationsWorkLimit } from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { listCommunityActivityDigestRecipientPage } from './community-activity-digest-recipients.mts'
 import { buildCommunityActivityDigestBody } from './community-activity-digest-body.mts'
 import { aggregateCommunityActivityDigestBatch } from './community-activity-digest-aggregation.mts'
@@ -36,8 +36,8 @@ export async function createCommunityActivityDigestBatch(input: {
     windowStart: input.windowStart,
     windowEnd: input.windowEnd,
     now: input.now ?? new Date(),
-    windowStartId: getMinUUIDv7ForDate(input.windowStart),
-    windowEndId: getMinUUIDv7ForDate(input.windowEnd),
+    windowStartId: getMinUuidv7ForDate(input.windowStart),
+    windowEndId: getMinUuidv7ForDate(input.windowEnd),
   })
   const eventKey = `community-activity-digest:${input.windowStart.toISOString()}`
   const inserts = digestRows.map(row => ({

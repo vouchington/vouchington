@@ -1,6 +1,6 @@
 import { getPublicRssPostSnapshotsCached } from '@services/posts/public-rss-snapshots'
 import { getPostIdsCached } from '@services/entity-fetch/search-caches'
-import { getTopicByAnyCachedBatch, getAnonymousUserPublicByAnyCached } from '@services/entity-fetch'
+import { getTopicByAnyCachedBatch, getUserPublicByAnyFromCache } from '@services/entity-fetch'
 import { getPostRouteSegment } from '@services/entity-links/routes'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import { buildRssXml, type RssChannel, type RssItem } from './xml-builder.mts'
@@ -71,7 +71,7 @@ async function buildPostsRssFeedImpl(options: PostsFeedOptions): Promise<string>
   // Look up user if username provided
   let userId: string | undefined
   if (username) {
-    const user = await getAnonymousUserPublicByAnyCached(username)
+    const user = await getUserPublicByAnyFromCache(username)
     if (!user) {
       const channel: RssChannel = {
         title: `Posts by @${username}`,

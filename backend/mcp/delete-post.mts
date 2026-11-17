@@ -1,7 +1,11 @@
 import { deletePostWrite } from '@services/post-writes'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { requireActiveToolUser } from './private-user.mts'
-import { loadWritablePost, POST_ID_SCHEMA, POST_WRITE_SCOPES } from './post-write-tool-support.mts'
+import {
+  loadWritablePost,
+  postReferenceSchema,
+  POST_WRITE_SCOPES,
+} from './post-write-tool-support.mts'
 import { successSchema } from '@vouchington/mcp-server/schema'
 import type { PrivateUser } from '@services/users/types'
 
@@ -13,7 +17,7 @@ const tool: Tool<{ id: string }, { success: true }> = {
       'Delete a post or comment when you have the same delete permission as on the website. A deleted or missing target is not found.',
     parameters: {
       type: 'object',
-      properties: { id: POST_ID_SCHEMA },
+      properties: { id: postReferenceSchema },
       required: ['id'],
       additionalProperties: false,
     },

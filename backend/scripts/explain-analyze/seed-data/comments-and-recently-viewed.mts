@@ -12,7 +12,6 @@ export async function seedComments(): Promise<void> {
   const l3TimestampMs = commentSeedTimestampMs(0, 3)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     const l1Values: unknown[] = []
     const l1Rows: string[] = []
     for (let i = 0; i < 5; i++) {
@@ -24,7 +23,7 @@ export async function seedComments(): Promise<void> {
         `($${base}, 'comment'::post_types, $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, 'system')`,
       )
     }
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO posts (
         id, post_type, created_by_id, markdown, parent_post_id, root_post_id,
         bedrock_nova_multimodal_v1_content_sha256,
@@ -45,7 +44,7 @@ export async function seedComments(): Promise<void> {
         `($${base}, 'comment'::post_types, $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, 'system')`,
       )
     }
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO posts (
         id, post_type, created_by_id, markdown, parent_post_id, root_post_id,
         bedrock_nova_multimodal_v1_content_sha256,
@@ -66,7 +65,7 @@ export async function seedComments(): Promise<void> {
         `($${base}, 'comment'::post_types, $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, 'system')`,
       )
     }
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO posts (
         id, post_type, created_by_id, markdown, parent_post_id, root_post_id,
         bedrock_nova_multimodal_v1_content_sha256,

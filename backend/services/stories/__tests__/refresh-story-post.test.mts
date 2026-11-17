@@ -21,8 +21,7 @@ import {
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import type { PrivateUser } from '@services/users/types'
 import { upsertSystemUser } from '@services/users/system-users'
-import { voteAggregation } from '../../../queues/vote-aggregation/queues.mts'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { prepareStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
 import { processOwnedStoryProjectionPage } from '../../../test-helpers/services/stories/story-post-related-url-projection.mts'
@@ -201,7 +200,7 @@ describe('refreshStoryPostForStory', () => {
     )) as Array<{ id: string }>
     expect(relation).toBeDefined()
 
-    const electionJobs = await readAllQueueJobs(voteAggregation)
+    const electionJobs = await readAllQueueJobs(background)
     expect(
       electionJobs.some(job => {
         const data = job.data as { electionId?: string; relationTable?: string }
@@ -213,7 +212,7 @@ describe('refreshStoryPostForStory', () => {
     ).toBe(false)
 
     await expect(
-      notifications.searchJobs({
+      background.searchJobs({
         name: 'notifications.processReconcilePostNotifications',
         data: { postId: post.id },
       }),

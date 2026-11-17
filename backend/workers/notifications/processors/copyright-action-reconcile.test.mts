@@ -10,7 +10,7 @@ import {
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import {
   rejectPostgresWriteForTest,
   rejectNextPostgresTransactionForTest,
@@ -66,7 +66,7 @@ describe('copyright action reconcile stage jobs', () => {
     const ids = [rejected.id, accepted.copyright_notice_submission_id]
     await expect(stages.forms({ evaluatedAt: new Date().toISOString() }, ids)).rejects.toBe(failure)
     expect(
-      (await readAllQueueJobs(notifications)).filter(
+      (await readAllQueueJobs(background)).filter(
         job => job.name === 'notifications.processReconcileCopyrightFormReviews',
       ),
     ).toEqual([])
@@ -139,7 +139,7 @@ describe('copyright action reconcile stage jobs', () => {
       enqueued: 1,
       hasMore: false,
     })
-    const jobs = await readAllQueueJobs(notifications)
+    const jobs = await readAllQueueJobs(background)
     expect(
       jobs.filter(
         job =>
@@ -187,7 +187,7 @@ describe('copyright action reconcile stage jobs', () => {
         intent => intent.id === neighbor.restore.id,
       )?.state,
     ).toBe('blocked')
-    const jobs = await readAllQueueJobs(notifications)
+    const jobs = await readAllQueueJobs(background)
     expect(
       jobs.filter(
         job =>
@@ -257,7 +257,7 @@ describe('copyright action reconcile stage jobs', () => {
       (await getCopyrightNoticePrivateAggregate(enforcement.notice.id))?.restrictions,
     ).toHaveLength(1)
     expect((await getCopyrightNoticePrivateAggregate(neighbor.notice.id))?.restrictions).toEqual([])
-    const jobs = await readAllQueueJobs(notifications)
+    const jobs = await readAllQueueJobs(background)
     expect(
       jobs.filter(
         job =>

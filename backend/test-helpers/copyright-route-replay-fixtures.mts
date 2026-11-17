@@ -2,7 +2,7 @@ import { withFailingTestMediaDeliveryEdge } from '@voucha/test-helpers/copyright
 // Route replay assertions are service-owned test support, not route registration.
 import { expect, onTestFinished, vi } from 'vitest'
 import * as mediaReplayEnqueues from '@queues/notifications/enqueues/media-delivery-registry'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { readEnqueuedJob } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -76,7 +76,7 @@ export async function verifyMediaDeliveryReplayRoute(): Promise<true> {
   expect(acceptedReplay).toHaveBeenCalledExactlyOnceWith({ actorUserId: fixture.moderator.id })
   const accepted = acceptedReplay.mock.results[0]
   if (accepted?.type !== 'return') throw new Error('Replay route did not accept its real queue job')
-  const job = await readEnqueuedJob(notifications, await accepted.value)
+  const job = await readEnqueuedJob(background, await accepted.value)
   expect(job).toMatchObject({
     name: 'notifications.processReplayMediaDeliveryRegistry',
     data: { actorUserId: fixture.moderator.id },

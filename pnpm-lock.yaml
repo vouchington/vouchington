@@ -2199,6 +2199,9 @@ importers:
         specifier: ^0.15.0
         version: 0.15.0
     devDependencies:
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../queues/background
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
@@ -4085,6 +4088,9 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
     devDependencies:
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@types/node':
         specifier: ^26.6.6
         version: 26.6.6
@@ -4179,6 +4185,9 @@ importers:
       '@queues/article-sync':
         specifier: workspace:^
         version: link:../../queues/article-sync
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
@@ -4579,6 +4588,9 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
     devDependencies:
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -5631,6 +5643,9 @@ importers:
         specifier: ^0.15.0
         version: 0.15.0
     devDependencies:
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@ts-shared/url-signing':
         specifier: workspace:^
         version: link:../../../ts-shared/url-signing
@@ -8000,9 +8015,9 @@ importers:
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
-      '@queues/article-sync':
+      '@queues/background':
         specifier: workspace:^
-        version: link:../../queues/article-sync
+        version: link:../../queues/background
       '@services/comments':
         specifier: workspace:^
         version: link:../comments
@@ -8076,6 +8091,9 @@ importers:
         specifier: ^0.15.0
         version: 0.15.0
     devDependencies:
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -8167,6 +8185,9 @@ importers:
       '@glidemq/speedkey':
         specifier: ^0.4.2
         version: 0.4.2
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
@@ -8857,6 +8878,9 @@ importers:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@services/bookmarks':
         specifier: workspace:^
         version: link:../bookmarks
@@ -9503,6 +9527,9 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
@@ -9568,9 +9595,9 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
-      '@queues/notifications':
+      '@queues/background':
         specifier: workspace:^
-        version: link:../../queues/notifications
+        version: link:../../queues/background
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -10794,6 +10821,9 @@ importers:
         specifier: ^0.15.0
         version: 0.15.0
     devDependencies:
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@services/read-states':
         specifier: workspace:^
         version: link:../read-states
@@ -11242,9 +11272,6 @@ importers:
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
-      '@queues/notifications':
-        specifier: workspace:^
-        version: link:../../queues/notifications
       '@queues/story-post-related-url-projections':
         specifier: workspace:^
         version: link:../../queues/story-post-related-url-projections
@@ -11327,6 +11354,9 @@ importers:
         specifier: ^0.15.0
         version: 0.15.0
     devDependencies:
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -12468,6 +12498,9 @@ importers:
       '@modules/csv':
         specifier: workspace:^
         version: link:../../modules/csv
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@services/bluesky-accounts':
         specifier: workspace:^
         version: link:../bluesky-accounts
@@ -12566,6 +12599,9 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
     devDependencies:
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
@@ -12618,6 +12654,9 @@ importers:
         specifier: ^0.15.0
         version: 0.15.0
     devDependencies:
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -13285,6 +13324,9 @@ importers:
       '@data-stores/valkey-core':
         specifier: workspace:^
         version: link:../../data-stores/valkey-core
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -14777,9 +14819,9 @@ importers:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
-      '@queues/notifications':
+      '@queues/background':
         specifier: workspace:^
-        version: link:../../queues/notifications
+        version: link:../../queues/background
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../../services/elections-votes

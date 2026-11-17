@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { randomUUID } from 'node:crypto'
 import { read } from '@data-stores/psql'
-import { mintUUIDv7 } from '@modules/utils/ids'
+import { mintUuidv7 } from '@modules/utils/ids'
 import { backgroundCpu } from '../queues/background-cpu/queues.mts'
 import { onEnqueueAdmission } from '@vouchington/worker-runtime/glide-mq'
 import {
@@ -90,7 +90,7 @@ export async function createOwnedBedrockRouterFixtures(
     })
     const insert = (stale: boolean) =>
       owner.run(async () => {
-        const id = mintUUIDv7()
+        const id = mintUuidv7()
         const arn = `arn:aws:bedrock:us-east-1:123456789012:model-invocation-job/${randomUUID()}`
         await insertTestEmbeddingsBatch({
           id,

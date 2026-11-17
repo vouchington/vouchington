@@ -1,5 +1,5 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { getRetentionCutoffDate, normalizeRetentionDays } from './cleanup-options.mts'
 import { DEFAULT_BATCH_SIZE } from './cleanup-batches.mts'
 import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
@@ -53,7 +53,7 @@ async function cleanupModerationOperation(
   const retentionDays = normalizeRetentionDays(options.retentionDays, config.retentionDays)
   const requestedCutoffDate = getRetentionCutoffDate(retentionDays, options.now)
   const lowerBoundId = options.lowerBoundDate
-    ? getMinUUIDv7ForDate(options.lowerBoundDate)
+    ? getMinUuidv7ForDate(options.lowerBoundDate)
     : undefined
   const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
   const maxBatches = assertPositiveInteger(options.maxBatches, 'maxBatches')
@@ -100,7 +100,7 @@ async function deleteModerationOperationBatch(
   )
   const cursorId = cursorRows[0]?.cursor_id ?? null
   const cutoffDate = cursorRows[0]?.sweep_cutoff_at ?? requestedCutoffDate
-  const cutoffId = getMinUUIDv7ForDate(cutoffDate)
+  const cutoffId = getMinUuidv7ForDate(cutoffDate)
   const candidates = await listCandidates(
     query,
     config.source,

@@ -1,5 +1,5 @@
 import { write } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 
 type Fixture = {
@@ -14,7 +14,7 @@ export async function createDataRequestAttemptRetentionFixture(
   userId: string,
   fixture: Fixture,
 ): Promise<string> {
-  const requestId = getMinUUIDv7ForDate(fixture.createdAt)
+  const requestId = getMinUuidv7ForDate(fixture.createdAt)
   await write(sql`/* createDataRequestAttemptRetentionFixture:request */
     INSERT INTO user_data_requests
       (id, user_id, requested_by_id, processing_started_at, completed_at, s3_key, expires_at)

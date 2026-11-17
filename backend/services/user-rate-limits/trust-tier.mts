@@ -1,4 +1,4 @@
-import { getDateFromUUIDv7 } from '@modules/utils/ids'
+import { getDateFromUuidv7 } from '@modules/utils/ids'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import type { TrustTierContext } from './types.mts'
 
@@ -37,7 +37,7 @@ export function hasOAuthAccount(user: TrustTierUser): boolean {
 }
 
 export function getAccountAgeMs(user: TrustTierUser): number {
-  const createdAt = getDateFromUUIDv7(user.id)
+  const createdAt = getDateFromUuidv7(user.id)
   // Non-UUIDv7 IDs (e.g. seeded test fixtures with all-zero UUIDs) carry no
   // timestamp. Treat them as ancient accounts so age gates do not block them.
   if (!createdAt) return Number.POSITIVE_INFINITY

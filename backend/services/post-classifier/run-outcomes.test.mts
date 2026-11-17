@@ -12,7 +12,7 @@ import {
   makePostClassifierLocalOutcome,
   remoteDecisionFor,
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/outcomes'
-import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
+import { POST_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/post-classifier'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { getTopicElectionVote } from '@services/elections-votes/topic'
 import {
@@ -24,7 +24,7 @@ import {
 } from '@services/classifier-runs'
 
 const facts = async (setup: PostClassifierExecutionFixture) =>
-  (await getClassifierRunFacts(setup.post.id, POST_CLASSIFIER_SLUG))[0]!
+  (await getClassifierRunFacts(setup.post.id, POST_CLASSIFIER_SYSTEM_USERNAME))[0]!
 
 async function expectNoOutcomes(setup: PostClassifierExecutionFixture) {
   expect(await facts(setup)).toMatchObject({

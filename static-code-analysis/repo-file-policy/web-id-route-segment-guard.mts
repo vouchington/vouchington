@@ -5,7 +5,6 @@ const ROUTE_FILE_RE = /\/(?:page|route)\.[^/]+$/
 const ROUTE_GROUP_RE = /^\(.+\)$/
 export const webIdRouteSegmentAllowlistFile =
   'static-code-analysis/repo-file-policy/web-id-route-segment-allowlist.mts'
-const ALLOWLIST_FILE = webIdRouteSegmentAllowlistFile
 
 /** Route patterns (route groups removed) of every id-looking dynamic segment in `trackedFiles`. */
 export function collectIdRouteSegments(trackedFiles: readonly string[]): Set<string> {
@@ -34,14 +33,14 @@ export function checkWebIdRouteSegments(
   for (const [route, reason] of allowlist) {
     if (reason.trim() !== '') continue
     errors.push(
-      `::error file=${ALLOWLIST_FILE}::web id route allowlist entry ${route} needs a one-line ` +
+      `::error file=${webIdRouteSegmentAllowlistFile}::web id route allowlist entry ${route} needs a one-line ` +
         '"no natural key" reason',
     )
   }
   for (const route of [...found].toSorted()) {
     if (allowlist.has(route)) continue
     errors.push(
-      `::error file=${ALLOWLIST_FILE}::web/app route ${route} routes by an id; use a slug or ` +
+      `::error file=${webIdRouteSegmentAllowlistFile}::web/app route ${route} routes by an id; use a slug or ` +
         'unique natural key (username, hostname, URL, owner plus slug), or add the route to the ' +
         'allowlist with a one-line "no natural key" reason ' +
         '(docs/development/web-agent-rules.md#identifiers)',
@@ -50,7 +49,7 @@ export function checkWebIdRouteSegments(
   for (const route of [...allowlist.keys()].toSorted()) {
     if (found.has(route)) continue
     errors.push(
-      `::error file=${ALLOWLIST_FILE}::stale web id route allowlist entry ${route}; the route no ` +
+      `::error file=${webIdRouteSegmentAllowlistFile}::stale web id route allowlist entry ${route}; the route no ` +
         'longer exists, remove the entry',
     )
   }

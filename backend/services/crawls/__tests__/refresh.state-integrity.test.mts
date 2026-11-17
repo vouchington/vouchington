@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { mintUUIDv7 } from '@modules/utils/ids'
+import { mintUuidv7 } from '@modules/utils/ids'
 import { describe, expect, it } from 'vitest'
 import { addUrl } from '@services/urls'
 import { beginTransaction, insertTestUrl, insertTestUrlHostname } from '@voucha/test-helpers'
@@ -53,7 +53,7 @@ describe('URL crawl-state integrity', () => {
   it('rolls back an inserted URL and its trigger-created crawl state together', async () => {
     const hostname = `crawl-state-rollback-${randomUUID()}.example.com`
     const hostnameId = await insertTestUrlHostname({ hostname })
-    const urlId = mintUUIDv7()
+    const urlId = mintUuidv7()
     {
       await using transaction = await beginTransaction()
       const options = { query: transaction }

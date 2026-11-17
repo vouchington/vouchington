@@ -2,7 +2,7 @@ import { createSearchCache } from '@services/entity-cache/search-cache'
 import { clampLimit } from '@services/pagination'
 import { read } from '@data-stores/psql'
 import { sliceRawKeysetPage } from '@modules/pagination'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import assert from 'http-assert'
 import type { ViewUrl } from '@services/urls/types'
 import { getWebSearchChunkCap } from './config.mts'
@@ -34,7 +34,7 @@ export async function searchWeb(options: WebSearchOptions): Promise<WebSearchRes
 
   const scope = getWebSearchCursorScope(query)
   const cursor = options.after === undefined ? null : decodeWebSearchCursor(options.after, scope)
-  const recentCrawlCutoffId = getMinUUIDv7ForDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
+  const recentCrawlCutoffId = getMinUuidv7ForDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
   const escapedQuery = query.replace(/[\\%_]/g, '\\$&')
   const safeLimit = Math.trunc(clampLimit(options.limit, 100))
 

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { beforeAll, expect, it, describe } from 'vitest'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
 import {
@@ -144,7 +144,7 @@ describe('refresh.generated', () => {
       Date.UTC(2090, 0, 15, 12) + parseInt(randomUUID().slice(0, 7), 16),
     )
     const idAt = (offsetMs: number) =>
-      getMinUUIDv7ForDate(new Date(sweepStartedAt.getTime() + offsetMs))
+      getMinUuidv7ForDate(new Date(sweepStartedAt.getTime() + offsetMs))
     const beforeCursorId = idAt(-3_000)
     const afterCursorId = idAt(-1_000)
     const beyondSweepId = idAt(1)

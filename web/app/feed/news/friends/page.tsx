@@ -1,4 +1,4 @@
-import { feedRouteConfigs } from '@/lib/feed-route-configs'
+import { feedRouteConfigData } from '@/lib/feed-route-config-data'
 import { FeedNewsListPage } from '@/components/feed/feed-news-list-page'
 import type { Metadata } from 'next'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
@@ -6,7 +6,7 @@ import { getTranslations } from '@/lib/i18n/get-translations'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations()
-  return createNoIndexMetadata(t(feedRouteConfigs['news/friends'].title))
+  return createNoIndexMetadata(t(feedRouteConfigData['news/friends'].title))
 }
 
 export const dynamic = 'force-dynamic'
@@ -18,7 +18,7 @@ export default async function FeedNewsFriendsPage({
 }) {
   return (
     <FeedNewsListPage
-      config={feedRouteConfigs['news/friends']}
+      config={feedRouteConfigData['news/friends']}
       searchParams={await searchParams}
     />
   )

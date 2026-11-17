@@ -2,7 +2,7 @@ import { clampLimit } from '@services/pagination'
 import type { PrivateUser } from '@services/users/types'
 import type { RssFeedItemFeedOptions, RssFeedItemFeedResponse } from '../types.mts'
 import { read } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import createHttpError from 'http-errors'
 import {
   buildRssFeedItemFeedPageInfo,
@@ -42,7 +42,7 @@ export async function getRssFeedItemFeedIds(
   const sevenDayCutoff = new Date(decisionInstant.getTime() - 7 * 24 * 60 * 60 * 1000)
   const cutoffDate =
     requestedCutoff && requestedCutoff > sevenDayCutoff ? requestedCutoff : sevenDayCutoff
-  const itemCutoffId = getMinUUIDv7ForDate(cutoffDate)
+  const itemCutoffId = getMinUuidv7ForDate(cutoffDate)
   const includeDirectItems = feed_type !== 'follow_users'
   const includeSharedItems =
     !!currentUserId && !communityId && (feed_type === 'follow_users' || feed_type === 'any')

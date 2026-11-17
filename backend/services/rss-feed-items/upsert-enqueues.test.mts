@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { ai_agents } from '@queues/ai-agents/queues'
 import { PRIORITY_DEFAULT } from '@queues/content-analysis/config'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { insertTestRssFeedDirect } from '@voucha/test-helpers'
 import { upsertRssFeedItems } from './upsert.mts'
 import { rssFeedItemsWorkConfig } from './work-limits.mts'
@@ -114,7 +114,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
             name: 'autotagger-rss-feed-item',
             data: { rss_feed_item_id: result.id },
           }),
-          notifications.searchJobs({
+          background.searchJobs({
             name: 'notifications.processReconcileRssFeedItemNotifications',
             data: { rssFeedItemId: result.id },
           }),
@@ -153,7 +153,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
     firstLanguage.close()
     await removeOwnedLanguageJobs(created.id)
     const language = observeAddedJobs(backgroundCpu)
-    const notification = observeAddedJobs(notifications)
+    const notification = observeAddedJobs(background)
     try {
       await expect(upsertRssFeedItems(secondFeed.id, [item])).resolves.toEqual([])
       await language.waitFor(languageJobFor(created.id))
@@ -232,7 +232,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
     linkedLanguage.close()
     await removeOwnedLanguageJobs(createdFanout.id)
     const language = observeAddedJobs(backgroundCpu)
-    const notification = observeAddedJobs(notifications)
+    const notification = observeAddedJobs(background)
     try {
       const result = await upsertRssFeedItems(secondFeed.id, [
         { ...fanoutItem, title: 'Revised title' },

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mintUUIDv7 } from '@modules/utils/ids'
+import { mintUuidv7 } from '@modules/utils/ids'
 import { AUTHORED_CONTRIBUTION_POLICY_DEFAULTS } from './limit-defaults.mts'
 import { contributionLimitActions } from './limit-types.mts'
 import { createContributionPolicyActor } from './policy-actor.mts'
@@ -137,7 +137,7 @@ describe('contribution policy', () => {
   })
 
   it('blocks just-joined actors without exposing an exemption mint', () => {
-    const joined = createContributionPolicyActor(mintUUIDv7(), null)
+    const joined = createContributionPolicyActor(mintUuidv7(), null)
     expect(policy.resolveContributionPolicy(snapshot(), joined, 'review')).toMatchObject({
       global: { short: { limit: 0 } },
       type: { daily: { limit: 0 } },

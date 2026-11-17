@@ -6,7 +6,7 @@ import { invalidate } from '@services/entity-cache/invalidate'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { recordPostPublicationChange } from '@services/post-publication'
 import { getModerationSystemUserId } from '@services/users/system-users'
-import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
+import { POST_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/post-classifier'
 import { TAGGING_CLASSIFIER_SLUG } from '@voucha/types/entities/tagging-classifier'
 import { POST_MODERATION_POLICY_REVISION } from './moderation-ledger-types.mts'
 
@@ -14,7 +14,10 @@ import { POST_MODERATION_POLICY_REVISION } from './moderation-ledger-types.mts'
  * Classifiers that run on an approved post, each through the shared classifier-run lifecycle: C5
  * (post classifier) and C6 (tagging).
  */
-const APPROVAL_CLASSIFIER_SLUGS = [POST_CLASSIFIER_SLUG, TAGGING_CLASSIFIER_SLUG] as const
+const APPROVAL_CLASSIFIER_SLUGS = [
+  POST_CLASSIFIER_SYSTEM_USERNAME,
+  TAGGING_CLASSIFIER_SLUG,
+] as const
 
 /** Projects the current moderation version into the coarse post lifecycle. */
 export async function checkPostClearance(postId: string): Promise<void> {

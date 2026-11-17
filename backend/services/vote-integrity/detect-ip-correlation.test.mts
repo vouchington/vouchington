@@ -5,7 +5,7 @@ import { createTestUserWithId, insertTestPostVote, insertTestPost } from '@vouch
 import { detectIpCorrelation } from './detect-ip-correlation.mts'
 import { IP_CORRELATION_THRESHOLD, IP_CORRELATION_WINDOW_MINUTES } from './config.mts'
 import { v7 as uuidv7 } from 'uuid'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 
 const AS_OF_MS = Date.UTC(2026, 1, 1, 0, 2)
 const AS_OF = new Date(AS_OF_MS)
@@ -95,7 +95,7 @@ describe('detect-ip-correlation', () => {
           postId,
           sharedIp,
           voteAt,
-          offset === 0 ? getMinUUIDv7ForDate(new Date(cutoff)) : uuidv7({ msecs: voteAt }),
+          offset === 0 ? getMinUuidv7ForDate(new Date(cutoff)) : uuidv7({ msecs: voteAt }),
         )
       }
 

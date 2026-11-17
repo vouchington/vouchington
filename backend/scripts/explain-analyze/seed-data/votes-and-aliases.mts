@@ -11,7 +11,6 @@ export async function seedVotes(postVoteCount = 2000, topicVoteCount = 500): Pro
   // compute the ids directly instead, same as feed-and-metrics.mts's post-votes-by-user scenario.
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     for (let i = 0; i < postVoteCount; i += 500) {
       const batch = Math.min(500, postVoteCount - i)
       const values: unknown[] = []
@@ -25,7 +24,7 @@ export async function seedVotes(postVoteCount = 2000, topicVoteCount = 500): Pro
         const base = values.length - 2
         rows.push(`($${base}, $${base + 1}, $${base + 2})`)
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO post_votes (post_id, user_id, score) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
         values,
       )
@@ -39,8 +38,7 @@ export async function seedVotes(postVoteCount = 2000, topicVoteCount = 500): Pro
   // other already-seeded users to push the net positive once aggregated.
   {
     await using transaction = await beginTransaction()
-    const query = transaction
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO post_votes (post_id, user_id, score) VALUES ($1, $2, 1), ($1, $3, 1) ON CONFLICT DO NOTHING`,
       [seedUuid(0, '05'), seedUuid(1, '01'), seedUuid(2, '01')],
     )
@@ -54,7 +52,6 @@ export async function seedVotes(postVoteCount = 2000, topicVoteCount = 500): Pro
   const topicIds = topicRows.rows.map(r => r.id)
   if (topicIds.length > 0) {
     await using transaction = await beginTransaction()
-    const query = transaction
     for (let i = 0; i < topicVoteCount; i += 500) {
       const batch = Math.min(500, topicVoteCount - i)
       const values: unknown[] = []
@@ -67,7 +64,7 @@ export async function seedVotes(postVoteCount = 2000, topicVoteCount = 500): Pro
         const base = values.length - 2
         rows.push(`($${base}, $${base + 1}, $${base + 2})`)
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO topic_votes (topic_id, user_id, score) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
         values,
       )
@@ -81,7 +78,6 @@ export async function seedProfileLinks(userCount = 1000): Promise<void> {
   const linkTypes = ['twitter', 'github', 'linkedin'] as const
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     for (let i = 0; i < userCount; i += 500) {
       const batch = Math.min(500, userCount - i)
       const values: unknown[] = []
@@ -98,7 +94,7 @@ export async function seedProfileLinks(userCount = 1000): Promise<void> {
           )
         })
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO user_profile_links (id, user_id, link_type, sort_order, handle) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
         values,
       )
@@ -111,7 +107,6 @@ export async function seedTopicAliases(count = 2500): Promise<void> {
   console.log(`Seeding ${count} topic aliases...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     for (let i = 0; i < count; i += 1000) {
       const batch = Math.min(1000, count - i)
       const values: unknown[] = []
@@ -124,7 +119,7 @@ export async function seedTopicAliases(count = 2500): Promise<void> {
         const base = values.length - 1
         rows.push(`($${base}, $${base + 1})`)
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO topic_aliases (topic_id, alias) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
         values,
       )

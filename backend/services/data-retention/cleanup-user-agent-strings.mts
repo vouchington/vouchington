@@ -4,7 +4,7 @@ import {
   type TransactionQuery,
 } from '@data-stores/psql'
 import { VOTE_TABLE_IDENTIFIERS } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { voteTables } from './vote-ballot-tables.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1_000
@@ -39,7 +39,7 @@ export async function cleanupOrphanedUserAgentStrings(
   if (userAgentStringIds && userAgentStringIds.length > batchSize + 1) {
     throw new RangeError('Scoped user-agent rows must fit one page')
   }
-  const cutoffId = getMinUUIDv7ForDate(new Date(now.getTime() - DAY_MS))
+  const cutoffId = getMinUuidv7ForDate(new Date(now.getTime() - DAY_MS))
   await using ownedQuery = borrowedQuery ? undefined : await beginTransaction()
   const query = borrowedQuery ?? ownedQuery!
   const { rows: candidates } = await query<{ id: string }>(

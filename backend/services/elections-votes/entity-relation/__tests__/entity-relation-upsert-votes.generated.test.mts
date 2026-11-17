@@ -9,7 +9,7 @@ import {
   hardDeleteEntityRelationTest,
 } from '@voucha/test-helpers'
 import { insertTestEntityRelationVote } from '../../../../test-helpers/entities/entity-relation-votes.mts'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { background } from '@queues/background/queues'
 import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
 import { holdQueueBulkAdmission } from '@voucha/test-helpers/queue-admission-hold'
 import { removeEnqueuedJobs } from '@voucha/test-helpers/queue-jobs'
@@ -48,7 +48,7 @@ describe('upsert.generated (votes)', () => {
 
     const jobName = VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name
     const admission = holdQueueBulkAdmission(
-      voteAggregation,
+      background,
       jobName,
       data =>
         typeof data === 'object' &&
@@ -72,7 +72,7 @@ describe('upsert.generated (votes)', () => {
       await expect(operation).resolves.toEqual([])
       const jobs = await admission.admitted
       expect(jobs).toHaveLength(1)
-      expect(await voteAggregation.getJob(jobs[0]!.id)).toMatchObject({
+      expect(await background.getJob(jobs[0]!.id)).toMatchObject({
         name: jobName,
         data: {
           electionId: relationId,

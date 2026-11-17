@@ -2,7 +2,7 @@ import {
   COPYRIGHT_AI_RUN_KINDS,
   deleteExpiredCopyrightAiRunBatch,
 } from '@services/copyright-notices'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { getRetentionCutoffDate, normalizeRetentionDays } from './cleanup-options.mts'
 import { runBoundedBatches } from './run-bounded-batches.mts'
 
@@ -22,7 +22,7 @@ export type CopyrightAiRunCleanupOptions = {
 export async function cleanupCopyrightAiRuns(
   options: CopyrightAiRunCleanupOptions,
 ): Promise<{ deleted: number; hasMore: boolean }> {
-  const cutoffId = getMinUUIDv7ForDate(
+  const cutoffId = getMinUuidv7ForDate(
     getRetentionCutoffDate(normalizeRetentionDays(options.retentionDays, 90), options.now),
   )
   const results = await Promise.all(

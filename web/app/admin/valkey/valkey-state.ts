@@ -171,13 +171,15 @@ export function useValkeyAdminState() {
 
   const confirmAction = async () => {
     if (!pendingAction) return
-    const action = pendingAction
     setPendingAction(null)
-    if (action.type === 'rebuild') await handleRebuild(action.target)
-    else if (action.type === 'clear') await handleClearGroup(action.target)
-    else if (action.type === 'clearAll') await handleClearAll()
-    else if (action.type === 'flush') {
-      await handleFlush(action.concern, FLUSH_CONCERN_METADATA[action.concern].requiresForce)
+    if (pendingAction.type === 'rebuild') await handleRebuild(pendingAction.target)
+    else if (pendingAction.type === 'clear') await handleClearGroup(pendingAction.target)
+    else if (pendingAction.type === 'clearAll') await handleClearAll()
+    else if (pendingAction.type === 'flush') {
+      await handleFlush(
+        pendingAction.concern,
+        FLUSH_CONCERN_METADATA[pendingAction.concern].requiresForce,
+      )
     }
   }
 

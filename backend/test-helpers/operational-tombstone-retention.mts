@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import type { TransactionQuery } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 
 type Family =
   | 'remote_actors'
@@ -98,7 +98,7 @@ export async function insertOperationalAttestationKeyForTest(
   query: TransactionQuery,
   input: { usedAt: Date | null; createdAt?: Date },
 ): Promise<string> {
-  const id = input.createdAt ? getMinUUIDv7ForDate(input.createdAt) : undefined
+  const id = input.createdAt ? getMinUuidv7ForDate(input.createdAt) : undefined
   const { rows } = await query<{ id: string }>(
     `/* insertOperationalAttestationKeyForTest */
      INSERT INTO app_attestation_keys

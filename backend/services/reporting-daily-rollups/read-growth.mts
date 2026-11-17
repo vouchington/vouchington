@@ -1,5 +1,5 @@
 import { read } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import sql from 'sql-template-strings'
 import { getReportingDayBounds, getReportingWindows } from './windows.mts'
 
@@ -40,9 +40,9 @@ function buildGrowthDayCounts(
   scope: 'all' | 'content' | 'users' | 'engagement' | 'user-follow-totals',
 ) {
   const windows = getGrowthReadWindows(periodStart, now, strictStart)
-  const firstStart = getMinUUIDv7ForDate(windows.firstPartial?.start ?? windows.today.start)
-  const firstEnd = getMinUUIDv7ForDate(windows.firstPartial?.end ?? windows.today.start)
-  const todayStart = getMinUUIDv7ForDate(windows.today.start)
+  const firstStart = getMinUuidv7ForDate(windows.firstPartial?.start ?? windows.today.start)
+  const firstEnd = getMinUuidv7ForDate(windows.firstPartial?.end ?? windows.today.start)
+  const todayStart = getMinUuidv7ForDate(windows.today.start)
   const postPredicate = sql`((id > ${firstStart} AND id < ${firstEnd}) OR (id > ${todayStart} OR (id = ${todayStart} AND ${!strictStart || periodStart < windows.today.start})))`
   const statement = sql`WITH source_counts AS (
     SELECT day, user_count, post_count, review_count, data_point_count, discussion_count,
@@ -110,9 +110,9 @@ export async function countGrowthActiveAuthors(
 
 function buildGrowthActiveAuthors(periodStart: Date, now: Date) {
   const windows = getGrowthReadWindows(periodStart, now, true)
-  const firstStart = getMinUUIDv7ForDate(windows.firstPartial?.start ?? windows.today.start)
-  const firstEnd = getMinUUIDv7ForDate(windows.firstPartial?.end ?? windows.today.start)
-  const todayStart = getMinUUIDv7ForDate(windows.today.start)
+  const firstStart = getMinUuidv7ForDate(windows.firstPartial?.start ?? windows.today.start)
+  const firstEnd = getMinUuidv7ForDate(windows.firstPartial?.end ?? windows.today.start)
+  const todayStart = getMinUuidv7ForDate(windows.today.start)
   return sql`
     SELECT count(DISTINCT author_user_id)::int AS count FROM (
       SELECT authors.author_user_id FROM growth_metric_daily_post_authors authors

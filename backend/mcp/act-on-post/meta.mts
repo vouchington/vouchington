@@ -7,7 +7,7 @@ import { POST_WRITE_SCOPES } from '../post-write-tool-support.mts'
 import { postReferenceSchema } from '../entity-reference-schema.mts'
 
 /** The post id or slug of a post the caller can read; the REST twin resolves either form. */
-export const POST_TARGET_SCHEMA = postReferenceSchema
+export { postReferenceSchema }
 
 /**
  * Every `act_on_post` option shares these declared gates. The hints are the most conservative

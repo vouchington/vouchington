@@ -1,5 +1,5 @@
 import type { OwnedTransaction } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import sql from 'sql-template-strings'
 import { getRetentionCutoffDate } from './cleanup-options.mts'
 import { sweepClassifierChildren } from './cleanup-classifier-children.mts'
@@ -51,8 +51,8 @@ export type ClassifierCleanupResult = {
 export async function cleanupClassifierRecords(
   options: ClassifierCleanupOptions,
 ): Promise<ClassifierCleanupResult> {
-  const cutoffId = getMinUUIDv7ForDate(getRetentionCutoffDate(options.retentionDays, options.now))
-  const lowerBoundId = getMinUUIDv7ForDate(options.lowerBoundDate ?? new Date(0))
+  const cutoffId = getMinUuidv7ForDate(getRetentionCutoffDate(options.retentionDays, options.now))
+  const lowerBoundId = getMinUuidv7ForDate(options.lowerBoundDate ?? new Date(0))
   const { batchSize, maxBatches } = options
   const active = (sweep: keyof ClassifierCleanupResult) =>
     options.activeSweeps === undefined || options.activeSweeps.includes(sweep)
@@ -90,7 +90,7 @@ export async function cleanupClassifierRecords(
   const requests = active('requests')
     ? await sweepClassifierPages(
         'requests',
-        getMinUUIDv7ForDate(options.now ?? new Date()),
+        getMinUuidv7ForDate(options.now ?? new Date()),
         lowerBoundId,
         batchSize,
         maxBatches,
@@ -101,7 +101,7 @@ export async function cleanupClassifierRecords(
   const deletedSubjects = active('deletedSubjectIdentities')
     ? await sweepClassifierPages(
         'identities',
-        getMinUUIDv7ForDate(options.now ?? new Date()),
+        getMinUuidv7ForDate(options.now ?? new Date()),
         lowerBoundId,
         batchSize,
         maxBatches,
@@ -110,7 +110,7 @@ export async function cleanupClassifierRecords(
     : skip
   const oldVersions = active('versionedIdentities')
     ? await sweepClassifierVersionedIdentities(
-        getMinUUIDv7ForDate(options.now ?? new Date()),
+        getMinUuidv7ForDate(options.now ?? new Date()),
         lowerBoundId,
         batchSize,
         maxBatches,

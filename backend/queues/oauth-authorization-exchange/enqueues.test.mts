@@ -7,7 +7,7 @@ import {
   enqueueOAuthAuthorizationExchange,
   enqueueOAuthAuthorizationExchangeDispatcher,
 } from './enqueues.mts'
-import { oauthAuthorizationExchangeQueue } from './queues.mts'
+import { background } from '@queues/background/queues'
 
 describe('OAuth authorization exchange enqueues', () => {
   it('enqueues only the durable authorization ID with stable job and deduplication IDs', async () => {
@@ -15,7 +15,7 @@ describe('OAuth authorization exchange enqueues', () => {
 
     await enqueueOAuthAuthorizationExchange(authorizationId)
 
-    const job = await oauthAuthorizationExchangeQueue.getJob(authorizationId)
+    const job = await background.getJob(authorizationId)
     expect(job?.data).toEqual({ authorizationId })
     expect(job?.name).toBe('oauth-authorization-exchange.exchangeOAuthAuthorization')
     expect(job?.opts).toMatchObject({
@@ -35,7 +35,7 @@ describe('OAuth authorization exchange enqueues', () => {
     await enqueueOAuthAuthorizationExchangeDispatcher({ deduplicationId })
     await enqueueOAuthAuthorizationExchangeDispatcher({ deduplicationId })
 
-    const allJobs = await readAllQueueJobs(oauthAuthorizationExchangeQueue)
+    const allJobs = await readAllQueueJobs(background)
     const jobs = allJobs.filter(
       job =>
         job.name === OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB.name &&
@@ -68,7 +68,7 @@ describe('OAuth authorization exchange enqueues', () => {
     ).resolves.toBe(0)
 
     for (const authorizationId of authorizationIds) {
-      const job = await oauthAuthorizationExchangeQueue.getJob(authorizationId)
+      const job = await background.getJob(authorizationId)
       expect(job?.data).toEqual({ authorizationId })
       expect(job?.opts).toMatchObject({
         jobId: authorizationId,

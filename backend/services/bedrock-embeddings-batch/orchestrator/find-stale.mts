@@ -1,5 +1,5 @@
 import { read } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import { getBatchListingPageSize } from '@services/bedrock-embeddings/batch/config'
 import type {
   BatchListingCursor,
@@ -11,7 +11,7 @@ export async function getStaleBatches(
   cursor?: BatchListingCursor,
 ): Promise<BatchListingPage<{ id: string; job_arn: string }>> {
   const limit = getBatchListingPageSize()
-  const throughId = cursor?.throughId ?? getMinUUIDv7ForDate(new Date(Date.now() + 1))
+  const throughId = cursor?.throughId ?? getMinUuidv7ForDate(new Date(Date.now() + 1))
   const { rows } = await read<{ id: string; job_arn: string | null; stale: boolean }>(
     `/* getStaleBatches */
     WITH raw_page AS MATERIALIZED (
@@ -27,16 +27,15 @@ export async function getStaleBatches(
     FROM raw_page ORDER BY id`,
     [ttlHours, cursor?.afterId ?? '00000000-0000-0000-0000-000000000000', throughId, limit],
   )
-  const rawPage = rows
   // A full raw page may be the tail; the next empty page resolves that without
   // reading a lookahead row outside the configured physical page budget.
   // ast-grep-ignore: pagination-no-exact-limit-has-next -- worker continuation conservatively confirms an exact-full raw page with a separate empty page instead of reading an out-of-budget lookahead row.
   const hasMore = rows.length === limit
   return {
-    batches: rawPage
+    batches: rows
       .filter((row): row is typeof row & { job_arn: string } => row.stale && row.job_arn !== null)
       .map(({ id, job_arn }) => ({ id, job_arn })),
     hasMore,
-    ...(hasMore && { nextCursor: { afterId: rawPage.at(-1)!.id, throughId } }),
+    ...(hasMore && { nextCursor: { afterId: rows.at(-1)!.id, throughId } }),
   }
 }

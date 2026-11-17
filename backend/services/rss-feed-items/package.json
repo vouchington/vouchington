@@ -66,6 +66,7 @@
     "valkyries": "^0.15.0"
   },
   "devDependencies": {
+    "@queues/background": "workspace:^",
     "@services/read-states": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^"

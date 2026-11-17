@@ -1,5 +1,5 @@
 import { query } from '@data-stores/psql/clients'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import { STRIPE_PROVIDER_ENVIRONMENT } from '@voucha/config'
 
 interface SeedAssertion {
@@ -185,7 +185,7 @@ function playwrightWebSearchSeedAssertion(markdownToken: string, now: Date): See
     `,
     values: [
       `%${markdownToken}%`,
-      getMinUUIDv7ForDate(new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)),
+      getMinUuidv7ForDate(new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)),
     ],
   }
 }

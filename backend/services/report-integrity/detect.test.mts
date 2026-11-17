@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import { randomBytes, randomInt } from 'node:crypto'
 import assert from 'node:assert/strict'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { createTestUserWithId, insertTestModerationReport } from '@voucha/test-helpers'
 import { detectMassReportCampaign } from './detect.mts'
 import {
@@ -121,7 +121,7 @@ describe('detectMassReportCampaign', () => {
       await insertTestModerationReport({
         reporterUserId: reporterIds[index]!,
         createdAt: new Date(cutoff + offset),
-        id: offset === 0 ? getMinUUIDv7ForDate(new Date(cutoff)) : undefined,
+        id: offset === 0 ? getMinUuidv7ForDate(new Date(cutoff)) : undefined,
         entityType: 'user',
         entityId: targetId,
       })
@@ -140,7 +140,7 @@ describe('detectMassReportCampaign', () => {
     for (const [index, offset] of [-1, 0, 1].entries()) {
       const reporterId =
         offset === 0
-          ? getMinUUIDv7ForDate(new Date(accountCutoff))
+          ? getMinUuidv7ForDate(new Date(accountCutoff))
           : uuidv7({ msecs: accountCutoff + offset, seq: index })
       await createTestUserWithId(reporterId, randomUsername())
       await insertTestModerationReport({

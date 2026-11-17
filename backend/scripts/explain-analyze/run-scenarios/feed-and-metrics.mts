@@ -4,7 +4,7 @@ import { buildPostSearchQuery } from '@services/posts/search/query-builder'
 import { SEED_PREFIX, runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { seedUuid } from '../seed-data/common.mts'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import {
   getCommentAncestorsByAny,
   getConversationMessagesByConversationId,
@@ -84,8 +84,8 @@ export async function runFeedAndMetricScenarios() {
       recipientIds: [seedUser.id, `${SEED_PREFIX}-0100-7000-8000-000000000001`],
       windowStart: digestWindowStart,
       windowEnd: digestWindowEnd,
-      windowStartId: getMinUUIDv7ForDate(digestWindowStart),
-      windowEndId: getMinUUIDv7ForDate(digestWindowEnd),
+      windowStartId: getMinUuidv7ForDate(digestWindowStart),
+      windowEndId: getMinUuidv7ForDate(digestWindowEnd),
     }),
   )
   const seedConversationId = `${SEED_PREFIX}-0b00-7000-8000-000000000000`

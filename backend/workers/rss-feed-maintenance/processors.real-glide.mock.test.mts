@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import '@services/elections-votes'
 import type { Job } from 'glide-mq'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { QUEUE_NAME } from '@queues/rss-feed-maintenance/config'
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import { topicsWorkConfig } from '@services/topics/work-limits'
@@ -190,7 +190,7 @@ describe('merged RSS feed maintenance worker with real GlideMQ', () => {
       cursor: { topicAliasId: alias!.id, afterPostId: first },
     })
     await runJob('processInvalidatePostsForTopicAliases', pages[0]!.data as Record<string, unknown>)
-    const original = await notifications.searchJobs({
+    const original = await background.searchJobs({
       name: 'notifications.processReconcilePostNotifications',
       data: { changeId },
     })
@@ -199,7 +199,7 @@ describe('merged RSS feed maintenance worker with real GlideMQ', () => {
       posts.map(post => post.id).toSorted(),
     )
     await runJob('processInvalidatePostsForTopicAliases', { ...data, changeId: laterChangeId })
-    const later = await notifications.searchJobs({
+    const later = await background.searchJobs({
       name: 'notifications.processReconcilePostNotifications',
       data: { changeId: laterChangeId },
     })

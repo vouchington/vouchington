@@ -70,17 +70,16 @@ export async function admitCopyrightCasePurgePage(data: CopyrightCasePurgeAdmiss
       WHERE is_copyright_case_clock_sync_pending `.append(accountCursor).append(sql`
       ORDER BY id LIMIT ${pageSize}`),
     )
-    const page = accounts
-    if (page.length > 0)
-      await enqueueCopyrightAccountClockSyncBatch(page.map(account => account.id))
+    if (accounts.length > 0)
+      await enqueueCopyrightAccountClockSyncBatch(accounts.map(account => account.id))
     return {
       hasMore: true,
       next: {
         ...data,
         pendingAccountsComplete: accounts.length < pageSize,
-        pendingAccountAfterId: accounts.length === pageSize ? page.at(-1)!.id : undefined,
+        pendingAccountAfterId: accounts.length === pageSize ? accounts.at(-1)!.id : undefined,
       },
-      admitted: page.length,
+      admitted: accounts.length,
       stalled: false,
     }
   }
@@ -104,9 +103,8 @@ export async function admitCopyrightCasePurgePage(data: CopyrightCasePurgeAdmiss
     jurisdiction: CopyrightCasePurgeAdmissionCursor['jurisdiction']
     last_legal_activity_at: Date
   }>(copyrightCasePurgeAdmissionStatement(after, pageSize))
-  const page = rows
-  if (page.length > 0) await enqueueCopyrightCasePurgeBatch(page.map(row => row.id))
-  const last = page.at(-1)
+  if (rows.length > 0) await enqueueCopyrightCasePurgeBatch(rows.map(row => row.id))
+  const last = rows.at(-1)
   return {
     hasMore: true,
     next: last
@@ -120,7 +118,7 @@ export async function admitCopyrightCasePurgePage(data: CopyrightCasePurgeAdmiss
           },
         }
       : { ...data, caseCandidatesComplete: true },
-    admitted: page.length,
+    admitted: rows.length,
     stalled: false,
   }
 }

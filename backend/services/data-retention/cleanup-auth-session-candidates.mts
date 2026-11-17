@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 
 export type CleanupName =
   | 'email_address_login_tokens'
@@ -26,13 +26,13 @@ export async function listCandidates(
   const isToken = name === 'email_address_login_tokens' || name === 'phone_number_login_tokens'
   const timestampColumn = name === 'user_sessions' ? 'expires_at' : 'deleted_at'
   const alias = name === 'web_push_subscriptions' ? 'subscription' : 'source'
-  const parameters: unknown[] = [isToken ? getMinUUIDv7ForDate(cutoff) : cutoff]
+  const parameters: unknown[] = [isToken ? getMinUuidv7ForDate(cutoff) : cutoff]
   let predicate = isToken
     ? `${alias}.id < $1::uuid`
     : `${alias}.${timestampColumn} < $1::timestamptz`
   if (name === 'web_push_subscriptions') predicate += ` AND ${alias}.deleted_at IS NOT NULL`
   if (lowerBoundDate) {
-    parameters.push(isToken ? getMinUUIDv7ForDate(lowerBoundDate) : lowerBoundDate)
+    parameters.push(isToken ? getMinUuidv7ForDate(lowerBoundDate) : lowerBoundDate)
     predicate += isToken
       ? ` AND ${alias}.id >= $${parameters.length}::uuid`
       : ` AND ${alias}.${timestampColumn} >= $${parameters.length}::timestamptz`

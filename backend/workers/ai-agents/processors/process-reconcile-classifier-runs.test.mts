@@ -7,7 +7,7 @@ import {
   createClassifierRunSweepScope,
   dispatchApprovedClassifierPost,
   requestPostClassifierRun,
-  POST_CLASSIFIER_SLUG,
+  POST_CLASSIFIER_SYSTEM_USERNAME,
 } from '@voucha/test-helpers/classifier-run-worker'
 import {
   readClassifierRunDispatcherJobsForTest,
@@ -31,7 +31,9 @@ import { getClassifierRunHandler } from './classifier-run-registry.mts'
 import { processClassifierRun, processClassifierRunDispatcher } from './process-classifier-run.mts'
 import { processReconcileClassifierRuns } from './process-reconcile-classifier-runs.mts'
 
-const scope = createClassifierRunSweepScope(getClassifierRunHandler(POST_CLASSIFIER_SLUG))
+const scope = createClassifierRunSweepScope(
+  getClassifierRunHandler(POST_CLASSIFIER_SYSTEM_USERNAME),
+)
 const sweep = (data = {}, pageSize = 2) =>
   processReconcileClassifierRuns(data, scope.ids(), pageSize)
 
@@ -42,8 +44,8 @@ async function dispatchTracked(remote: boolean) {
 }
 
 const runFacts = async (postId: string) =>
-  (await getClassifierRunFacts(postId, POST_CLASSIFIER_SLUG))[0]!
-const requests = { phase: 'requests', classifier: POST_CLASSIFIER_SLUG } as const
+  (await getClassifierRunFacts(postId, POST_CLASSIFIER_SYSTEM_USERNAME))[0]!
+const requests = { phase: 'requests', classifier: POST_CLASSIFIER_SYSTEM_USERNAME } as const
 const noRequests = { kind: 'requests', dispatched: 0, hasNext: false }
 
 describe('classifier run recovery sweep: request discovery', () => {
@@ -77,7 +79,7 @@ describe('classifier run recovery sweep: request discovery', () => {
     await processClassifierRunDispatcher(classifierRunDispatcherJobFor(post.id))
     await sweep(requests)
 
-    const runs = await getClassifierRunFacts(post.id, POST_CLASSIFIER_SLUG)
+    const runs = await getClassifierRunFacts(post.id, POST_CLASSIFIER_SYSTEM_USERNAME)
     expect(runs).toHaveLength(1)
     expect(await readClassifierRunJobsForTest(runs[0]!.id)).toHaveLength(1)
   })
@@ -99,13 +101,13 @@ describe('classifier run recovery sweep: request discovery', () => {
     await sweep(requests)
     const [dispatcher] = await readClassifierRunDispatcherJobsForTest(post.id)
 
-    await getClassifierRunHandler(POST_CLASSIFIER_SLUG).reserve({
+    await getClassifierRunHandler(POST_CLASSIFIER_SYSTEM_USERNAME).reserve({
       postId: post.id,
       rssFeedItemId: null,
     })
 
     expect(dispatcher?.data).toEqual({
-      classifier: POST_CLASSIFIER_SLUG,
+      classifier: POST_CLASSIFIER_SYSTEM_USERNAME,
       postId: post.id,
       rssFeedItemId: null,
     })
@@ -211,7 +213,7 @@ describe('classifier run recovery sweep: incomplete runs', () => {
     expect(alarms).toHaveLength(1)
     expect(alarms[0]?.[1].tags).toMatchObject({
       alarm_kind: 'client-unavailable',
-      classifier: POST_CLASSIFIER_SLUG,
+      classifier: POST_CLASSIFIER_SYSTEM_USERNAME,
     })
   })
 

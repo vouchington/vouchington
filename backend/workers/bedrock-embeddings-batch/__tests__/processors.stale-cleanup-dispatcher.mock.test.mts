@@ -1,4 +1,4 @@
-import { mintUUIDv7 } from '../../../modules/utils/ids.mts'
+import { mintUuidv7 } from '../../../modules/utils/ids.mts'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BedrockControlClient } from '@modules/aws/bedrock-control'
 import {
@@ -26,7 +26,7 @@ vi.mock<typeof import('@modules/aws/bedrock-control')>(
 const createdBatchIds: string[] = []
 
 function batchId() {
-  const id = mintUUIDv7()
+  const id = mintUuidv7()
   createdBatchIds.push(id)
   return id
 }

@@ -7,11 +7,11 @@ import {
   updatePostTitleMarkdown,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { preparePostWithCommunityReviews } from '../create.mts'
 
 function categoryNotificationCount(
-  jobs: Awaited<ReturnType<typeof notifications.getJobs>>,
+  jobs: Awaited<ReturnType<typeof background.getJobs>>,
   postId: string,
 ): number {
   return jobs.filter(
@@ -47,7 +47,7 @@ describe('create transaction-captured categories', () => {
     const postId = prepared.response.post.id
     await query.commit()
 
-    const jobs = await readAllQueueJobs(notifications)
+    const jobs = await readAllQueueJobs(background)
     expect(categoryNotificationCount(jobs, postId)).toBe(1)
 
     await updatePostTitleMarkdown(postId, `Later title ${suffix}`, `Later body ${suffix}`)

@@ -4,7 +4,7 @@ import type { MessageKey } from '@ts-shared/ui-messages'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
-  REPORT_REASONS,
+  MODERATION_REPORT_REASON_OPTIONS,
   type ReportableEntityType,
   type ReportReason,
 } from '@/lib/api/client/reports'
@@ -77,7 +77,7 @@ export function ReportReasonFieldset({ entityType, reason, onSelect }: Props) {
 }
 
 function getVisibleReportReasonOptions(entityType: ReportableEntityType) {
-  return REPORT_REASONS.filter(
+  return MODERATION_REPORT_REASON_OPTIONS.filter(
     option => option.value !== 'vote_manipulation' || entityType === 'post',
   )
 }

@@ -17,17 +17,16 @@ export const POST_URL_CAPACITY_SEED = {
 
 /** Hot subjects amid many sparse owners expose generic-plan subject estimates and deleted history. */
 export async function seedPostUrlCapacity(): Promise<void> {
-  const s = POST_URL_CAPACITY_SEED
   await using query = await beginTransaction()
   await query(
     `/* seedPostUrlCapacity:user */
     INSERT INTO users (id, username) VALUES ($1, 'seed-post-url-capacity')`,
-    [s.user],
+    [POST_URL_CAPACITY_SEED.user],
   )
   await query(
     `/* seedPostUrlCapacity:hostname */
     INSERT INTO url_hostnames (id, hostname) VALUES ($1, 'seed-post-url-capacity.example.com')`,
-    [s.hostname],
+    [POST_URL_CAPACITY_SEED.hostname],
   )
   await query(
     `/* seedPostUrlCapacity:posts */
@@ -36,7 +35,7 @@ export async function seedPostUrlCapacity(): Promise<void> {
     SELECT id, $2, 'discussion', 'Capacity seed', 'Capacity seed', 'system',
       decode(repeat('00',32),'hex'), decode(repeat('00',32),'hex')
     FROM unnest($1::uuid[]) input(id)`,
-    [s.posts, s.user],
+    [POST_URL_CAPACITY_SEED.posts, POST_URL_CAPACITY_SEED.user],
   )
   await query(
     `/* seedPostUrlCapacity:urls */
@@ -44,7 +43,7 @@ export async function seedPostUrlCapacity(): Promise<void> {
     SELECT ('019e0000-f600-7000-8000-' || lpad(to_hex(n+100),12,'0'))::uuid,
       'https://seed-post-url-capacity.example.com/' || n, $1, '{}'::jsonb
     FROM generate_series(0,21000) n`,
-    [s.hostname],
+    [POST_URL_CAPACITY_SEED.hostname],
   )
   await query(
     `/* seedPostUrlCapacity:relations */
@@ -56,48 +55,56 @@ export async function seedPostUrlCapacity(): Promise<void> {
     WHERE url.id >= $4 AND url.id < $5
       AND (url.id < ('019e0000-f600-7000-8000-' || lpad(to_hex(input.active_count+100),12,'0'))::uuid
         OR (input.position <= 3 AND url.id >= $3))`,
-    [s.posts, s.user, s.deletedUrl, s.urlStart, s.newUrl, s.activeCounts],
+    [
+      POST_URL_CAPACITY_SEED.posts,
+      POST_URL_CAPACITY_SEED.user,
+      POST_URL_CAPACITY_SEED.deletedUrl,
+      POST_URL_CAPACITY_SEED.urlStart,
+      POST_URL_CAPACITY_SEED.newUrl,
+      POST_URL_CAPACITY_SEED.activeCounts,
+    ],
   )
   const { rows } = await query<{ count: number }>(
     `/* countSeededPostUrlCapacity */ SELECT count(*)::integer AS count
       FROM relation__post__related__url WHERE subject_id = ANY($1::uuid[])`,
-    [s.posts],
+    [POST_URL_CAPACITY_SEED.posts],
   )
-  assert.equal(rows[0]?.count, s.relationRows)
+  assert.equal(rows[0]?.count, POST_URL_CAPACITY_SEED.relationRows)
   await query.commit()
 }
 
 export async function cleanupPostUrlCapacity(): Promise<void> {
-  const s = POST_URL_CAPACITY_SEED
   await using query = await beginTransaction()
   await query(
     `/* cleanupPostUrlCapacity:relations */
     DELETE FROM relation__post__related__url WHERE subject_id = ANY($1::uuid[])`,
-    [s.posts],
+    [POST_URL_CAPACITY_SEED.posts],
   )
   await query(`/* cleanupPostUrlCapacity:posts */ DELETE FROM posts WHERE id = ANY($1::uuid[])`, [
-    s.posts,
+    POST_URL_CAPACITY_SEED.posts,
   ])
   await query(`/* cleanupPostUrlCapacity:urls */ DELETE FROM urls WHERE id >= $1 AND id < $2`, [
-    s.urlStart,
-    s.urlEnd,
+    POST_URL_CAPACITY_SEED.urlStart,
+    POST_URL_CAPACITY_SEED.urlEnd,
   ])
   await query(`/* cleanupPostUrlCapacity:hostname */ DELETE FROM url_hostnames WHERE id = $1`, [
-    s.hostname,
+    POST_URL_CAPACITY_SEED.hostname,
   ])
-  await query(`/* cleanupPostUrlCapacity:user */ DELETE FROM users WHERE id = $1`, [s.user])
+  await query(`/* cleanupPostUrlCapacity:user */ DELETE FROM users WHERE id = $1`, [
+    POST_URL_CAPACITY_SEED.user,
+  ])
   await query(
     `/* cleanupPostUrlCapacity:postIdentities */ DELETE FROM retained_post_identities WHERE id = ANY($1::uuid[])`,
-    [s.posts],
+    [POST_URL_CAPACITY_SEED.posts],
   )
   await query(
     `/* cleanupPostUrlCapacity:userIdentity */ DELETE FROM retained_user_identities WHERE id = $1`,
-    [s.user],
+    [POST_URL_CAPACITY_SEED.user],
   )
   const { rows } = await query<{ count: number }>(
     `/* countCleanedPostUrlCapacity */ SELECT count(*)::integer AS count
       FROM relation__post__related__url WHERE subject_id = ANY($1::uuid[])`,
-    [s.posts],
+    [POST_URL_CAPACITY_SEED.posts],
   )
   assert.equal(rows[0]?.count, 0)
   await query.commit()

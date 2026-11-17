@@ -1,6 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import { buildPublicPostEligibilityFilter } from '@modules/feed-query-builders'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import { getPostsWorkLimit } from '@services/posts/work-limits'
 import sql from 'sql-template-strings'
 import { seedUuid } from './common.mts'
@@ -30,18 +30,31 @@ export const POST_TOPIC_SEMI_JOIN_FIXTURE = {
 } as const
 
 export async function seedPostTopicSemiJoinFixture(): Promise<void> {
-  const fixture = POST_TOPIC_SEMI_JOIN_FIXTURE
-  const topicIds = [fixture.sparseTopicId, fixture.denseTopicId]
-  const aliasIds = [...fixture.sparseAliasIds, ...fixture.denseAliasIds]
+  const topicIds = [
+    POST_TOPIC_SEMI_JOIN_FIXTURE.sparseTopicId,
+    POST_TOPIC_SEMI_JOIN_FIXTURE.denseTopicId,
+  ]
+  const aliasIds = [
+    ...POST_TOPIC_SEMI_JOIN_FIXTURE.sparseAliasIds,
+    ...POST_TOPIC_SEMI_JOIN_FIXTURE.denseAliasIds,
+  ]
   const topicNames = ['Post semi-join sparse', 'Post semi-join dense']
   const topicSlugs = ['post-semi-join-sparse', 'post-semi-join-dense']
   const aliasTopicIds = [
-    ...fixture.sparseAliasIds.map(() => fixture.sparseTopicId),
-    ...fixture.denseAliasIds.map(() => fixture.denseTopicId),
+    ...POST_TOPIC_SEMI_JOIN_FIXTURE.sparseAliasIds.map(
+      () => POST_TOPIC_SEMI_JOIN_FIXTURE.sparseTopicId,
+    ),
+    ...POST_TOPIC_SEMI_JOIN_FIXTURE.denseAliasIds.map(
+      () => POST_TOPIC_SEMI_JOIN_FIXTURE.denseTopicId,
+    ),
   ]
   const aliasNames = [
-    ...fixture.sparseAliasIds.map((_, index) => `post-semi-join-sparse-${index}`),
-    ...fixture.denseAliasIds.map((_, index) => `post-semi-join-dense-${index}`),
+    ...POST_TOPIC_SEMI_JOIN_FIXTURE.sparseAliasIds.map(
+      (_, index) => `post-semi-join-sparse-${index}`,
+    ),
+    ...POST_TOPIC_SEMI_JOIN_FIXTURE.denseAliasIds.map(
+      (_, index) => `post-semi-join-dense-${index}`,
+    ),
   ]
 
   await using transaction = await beginTransaction()
@@ -95,7 +108,7 @@ export async function seedPostTopicSemiJoinFixture(): Promise<void> {
     throw new Error('Post topic fixture needs exactly 10000 distinct public discussion posts')
 
   const sparsePostIds = POST_TOPIC_OWNED_IDS.slice(-SPARSE_POST_COUNT).toReversed()
-  const sparseAliasIds = fixture.sparseAliasIds.slice(0, SPARSE_POST_COUNT)
+  const sparseAliasIds = POST_TOPIC_SEMI_JOIN_FIXTURE.sparseAliasIds.slice(0, SPARSE_POST_COUNT)
   await transaction(
     `/* seedPostTopicSemiJoinFixture:sparse-memberships */
      INSERT INTO relation__post__category__topic_alias
@@ -107,7 +120,7 @@ export async function seedPostTopicSemiJoinFixture(): Promise<void> {
   )
 
   const denseAliasIds = densePostIds.map(
-    (_, index) => fixture.denseAliasIds[index % ALIASES_PER_TOPIC]!,
+    (_, index) => POST_TOPIC_SEMI_JOIN_FIXTURE.denseAliasIds[index % ALIASES_PER_TOPIC]!,
   )
   await transaction(
     `/* seedPostTopicSemiJoinFixture:dense-memberships */
@@ -133,7 +146,7 @@ export async function seedPostTopicSemiJoinFixture(): Promise<void> {
     WITH raw_direct_prefix AS MATERIALIZED (
       SELECT posts.id FROM posts
       WHERE posts.deleted_at IS NULL
-        AND posts.id >= ${getMinUUIDv7ForDate(lowerCutoff)}::uuid
+        AND posts.id >= ${getMinUuidv7ForDate(lowerCutoff)}::uuid
       ORDER BY posts.id DESC
       LIMIT ${rawDirectPrefix}
     )

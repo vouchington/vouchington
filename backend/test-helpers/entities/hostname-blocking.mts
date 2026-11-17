@@ -1,5 +1,5 @@
 import { write } from '@data-stores/psql'
-import { getDateFromUUIDv7 } from '@modules/utils/ids'
+import { getDateFromUuidv7 } from '@modules/utils/ids'
 import { v7 as uuidv7 } from 'uuid'
 
 export async function insertTestPostRelatedUrlBatch(options: {
@@ -12,8 +12,8 @@ export async function insertTestPostRelatedUrlBatch(options: {
 }): Promise<void> {
   const relationIds = options.postIds.map((postId, index) => {
     const parentTime = Math.max(
-      getDateFromUUIDv7(postId)!.getTime(),
-      getDateFromUUIDv7(options.urlIds[index]!)!.getTime(),
+      getDateFromUuidv7(postId)!.getTime(),
+      getDateFromUuidv7(options.urlIds[index]!)!.getTime(),
     )
     return uuidv7({ msecs: parentTime + 1 })
   })

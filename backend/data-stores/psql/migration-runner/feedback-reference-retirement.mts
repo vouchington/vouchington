@@ -1,4 +1,4 @@
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import { parseMonthlyPartitionName } from '@vouchington/postgres/partitions'
 import type { QueryExecutor } from '../types.mts'
 import type { PartitionDropCandidate } from './partition-drop-guard.mts'
@@ -12,8 +12,8 @@ export async function clearBoundedFeedbackReferences(
   if (!Number.isSafeInteger(batchSize) || batchSize <= 0)
     throw new RangeError('Feedback reference batch size must be a positive safe integer')
   const parsed = parseMonthlyPartitionName(candidate.partition)!
-  const lower = getMinUUIDv7ForDate(new Date(Date.UTC(parsed.year, parsed.month - 1, 1)))
-  const upper = getMinUUIDv7ForDate(candidate.upperBound!)
+  const lower = getMinUuidv7ForDate(new Date(Date.UTC(parsed.year, parsed.month - 1, 1)))
+  const upper = getMinUuidv7ForDate(candidate.upperBound!)
   await transaction(
     `/* cleanupPartitions:clearFeedbackReferences */
     WITH selected AS (

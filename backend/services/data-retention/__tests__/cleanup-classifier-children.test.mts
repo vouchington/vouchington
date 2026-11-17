@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { OwnedTransaction } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import type { SQLStatement } from 'sql-template-strings'
 import { sweepClassifierChildPageWithQuery } from '../cleanup-classifier-children.mts'
 
-const lowerBoundId = getMinUUIDv7ForDate(new Date('2020-01-01T00:00:00.000Z'))
-const cutoffId = getMinUUIDv7ForDate(new Date('2020-02-01T00:00:00.000Z'))
-const runId = getMinUUIDv7ForDate(new Date('2020-01-02T00:00:00.000Z'))
-const nextRunId = getMinUUIDv7ForDate(new Date('2020-01-03T00:00:00.000Z'))
+const lowerBoundId = getMinUuidv7ForDate(new Date('2020-01-01T00:00:00.000Z'))
+const cutoffId = getMinUuidv7ForDate(new Date('2020-02-01T00:00:00.000Z'))
+const runId = getMinUuidv7ForDate(new Date('2020-01-02T00:00:00.000Z'))
+const nextRunId = getMinUuidv7ForDate(new Date('2020-01-03T00:00:00.000Z'))
 const topicId = '00000000-0000-4000-8000-000000000001'
 
 type Progress = {

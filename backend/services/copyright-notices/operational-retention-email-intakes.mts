@@ -1,6 +1,6 @@
 import { beginBoundedTransaction } from '@data-stores/psql'
 import type { QueryExecutor, TransactionQuery } from '@data-stores/psql/types'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import { eraseIntakePage, type EdgeCursor } from './operational-retention-email-intake-page.mts'
 
@@ -81,7 +81,7 @@ export async function sweepUnlinkedCopyrightEmailIntakes(options: {
 }): Promise<PageResult> {
   const now = options.now ?? new Date()
   const cutoff = new Date(now.getTime() - options.retentionDays * DAY_MS)
-  const cutoffId = getMinUUIDv7ForDate(cutoff)
+  const cutoffId = getMinUuidv7ForDate(cutoff)
   let scanned = 0
   let erased = 0
   let hasMore = false

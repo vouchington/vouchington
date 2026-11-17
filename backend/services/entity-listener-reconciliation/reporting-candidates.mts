@@ -1,5 +1,5 @@
 import sql from 'sql-template-strings'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import type { EntityReconciliationWindow, EntityReconciliationCandidate } from './types.mts'
 
 export function reportingCandidateUnion(
@@ -7,8 +7,8 @@ export function reportingCandidateUnion(
   after: EntityReconciliationCandidate | undefined,
   maxRows: number,
 ) {
-  const firstRevisionId = getMinUUIDv7ForDate(window.start)
-  const afterLastRevisionId = getMinUUIDv7ForDate(new Date(window.end.getTime() + 1))
+  const firstRevisionId = getMinUuidv7ForDate(window.start)
+  const afterLastRevisionId = getMinUuidv7ForDate(new Date(window.end.getTime() + 1))
   return sql`
         UNION ALL
         (SELECT * FROM (

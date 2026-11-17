@@ -5,7 +5,7 @@ import { insertTestPost } from './entities/posts.mts'
 import { insertTestPostImage } from './entities/images.mts'
 import { getTestPostImagePlacement } from './entities/post-images.mts'
 import { readAllQueueJobs } from './queue-jobs.mts'
-import { notifications } from '../queues/notifications/queues.mts'
+import { background } from '@queues/background/queues'
 import type { ReconcileMediaDeliveryRegistryData } from '../queues/notifications/enqueues.mts'
 import {
   getMediaDeliveryRegistryScanBefore,
@@ -130,7 +130,7 @@ export async function stageTestImagePlacementDeliveryRecordsForImageIds(
 export async function readTestAppliedMediaRegistryJobs(recordIds: readonly string[]) {
   const found = await Promise.all(
     recordIds.map(mediaDeliveryRegistryRecordId =>
-      notifications.searchJobs({
+      background.searchJobs({
         name: 'notifications.processApplyMediaDeliveryRegistryRecord',
         data: { mediaDeliveryRegistryRecordId },
       }),
@@ -143,7 +143,7 @@ export async function readTestAppliedMediaRegistryJobs(recordIds: readonly strin
 export async function readTestMediaRegistryReconcileJobs(
   matches: (data: ReconcileMediaDeliveryRegistryData) => boolean,
 ) {
-  return (await readAllQueueJobs(notifications)).filter(
+  return (await readAllQueueJobs(background)).filter(
     job =>
       job.name === 'notifications.processReconcileMediaDeliveryRegistry' &&
       matches(job.data as ReconcileMediaDeliveryRegistryData),

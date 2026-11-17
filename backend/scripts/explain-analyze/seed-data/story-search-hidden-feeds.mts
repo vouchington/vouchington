@@ -49,14 +49,13 @@ export async function seedHiddenFeedStorySearch(initiatedById: string): Promise<
     itemUrlIds.push(hidden ? (index % 2 === 0 ? disabledUrlId : quietUrlId) : visibleUrlId)
   }
   await using transaction = await beginTransaction()
-  const query = transaction
-  await query(
+  await transaction(
     `/* seedHiddenFeedStorySearch:feeds */ INSERT INTO url_hostnames (id, hostname)
      VALUES ($1, 'story-search-hidden.example')
      ON CONFLICT DO NOTHING`,
     [hostnameId],
   )
-  await query(
+  await transaction(
     `/* seedHiddenFeedStorySearch:topics */ INSERT INTO topics (
        id, name, slug, created_via, bedrock_nova_multimodal_v1_content_sha256)
      VALUES
@@ -65,7 +64,7 @@ export async function seedHiddenFeedStorySearch(initiatedById: string): Promise<
      ON CONFLICT DO NOTHING`,
     [disabledTopicId, quietTopicId],
   )
-  await query(
+  await transaction(
     `/* seedHiddenFeedStorySearch:urls */ INSERT INTO urls (id, url, hostname_id, search_params)
      VALUES
        ($1, 'https://story-search-hidden.example/disabled.xml', $3, '{}'::jsonb),
@@ -73,7 +72,7 @@ export async function seedHiddenFeedStorySearch(initiatedById: string): Promise<
      ON CONFLICT DO NOTHING`,
     [disabledUrlId, quietUrlId, hostnameId],
   )
-  await query(
+  await transaction(
     `/* seedHiddenFeedStorySearch:rss */ INSERT INTO rss_feeds (
        id, rss_feed_url_id, topic_id, title, created_via)
      VALUES
@@ -82,7 +81,7 @@ export async function seedHiddenFeedStorySearch(initiatedById: string): Promise<
      ON CONFLICT DO NOTHING`,
     [disabledFeedId, disabledUrlId, disabledTopicId, quietFeedId, quietUrlId, quietTopicId],
   )
-  await query(
+  await transaction(
     `/* seedHiddenFeedStorySearch:settings */ INSERT INTO rss_feed_setting_changes (
        change_type, rss_feed_id, is_enabled, reason)
      VALUES
@@ -92,20 +91,20 @@ export async function seedHiddenFeedStorySearch(initiatedById: string): Promise<
        ('discoverability', $2, FALSE, 'story search hidden feed')`,
     [disabledFeedId, quietFeedId],
   )
-  await query(
+  await transaction(
     `/* seedHiddenFeedStorySearch:stories */ INSERT INTO stories (id, title)
      SELECT id, 'Story search seed' FROM UNNEST($1::uuid[]) AS seed(id)
      ON CONFLICT DO NOTHING`,
     [storyIds],
   )
-  await query(
+  await transaction(
     `/* seedHiddenFeedStorySearch:guids */ INSERT INTO rss_feed_item_guids (id, url_hostname_id, guid)
      SELECT id, hostname_id, 'story-search-' || id::text
      FROM UNNEST($1::uuid[], $2::uuid[]) AS seed(id, hostname_id)
      ON CONFLICT DO NOTHING`,
     [itemIds, itemHostnameIds],
   )
-  await query(
+  await transaction(
     `/* seedHiddenFeedStorySearch:items */ INSERT INTO rss_feed_items (
        id, url_id, data, story_id, bedrock_nova_multimodal_v1_content_sha256)
      SELECT id, url_id, '{"title":"Story search seed"}'::jsonb, story_id, decode(repeat('ab', 32), 'hex')
@@ -113,7 +112,7 @@ export async function seedHiddenFeedStorySearch(initiatedById: string): Promise<
      ON CONFLICT DO NOTHING`,
     [itemIds, itemUrlIds, storyIds],
   )
-  await query(
+  await transaction(
     `/* seedHiddenFeedStorySearch:sources */ INSERT INTO rss_feed_item_sources (
        rss_feed_id, rss_feed_item_id, published_at)
      SELECT feed_id, item_id, '2020-01-01T00:00:00Z'
@@ -121,7 +120,7 @@ export async function seedHiddenFeedStorySearch(initiatedById: string): Promise<
      ON CONFLICT DO NOTHING`,
     [feedIds, itemIds],
   )
-  await query(
+  await transaction(
     `/* seedHiddenFeedStorySearch:posts */ INSERT INTO posts (
        id, created_via, post_type, title, created_by_id, approved_at, votes_score_up,
        bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256)
@@ -131,14 +130,14 @@ export async function seedHiddenFeedStorySearch(initiatedById: string): Promise<
      ON CONFLICT DO NOTHING`,
     [postIds, initiatedById, titles, votes],
   )
-  await query(
+  await transaction(
     `/* seedHiddenFeedStorySearch:links */ INSERT INTO story_posts (post_id, story_id, initiated_by_id)
      SELECT post_id, story_id, $3
      FROM UNNEST($1::uuid[], $2::uuid[]) AS seed(post_id, story_id)
      ON CONFLICT DO NOTHING`,
     [postIds, storyIds, initiatedById],
   )
-  const counted = await query<{ hidden: string; visible: string }>(
+  const counted = await transaction<{ hidden: string; visible: string }>(
     `/* seedHiddenFeedStorySearch:count */ SELECT
        COUNT(*) FILTER (
          WHERE posts.title = 'Hidden feed story' AND NOT (feed.is_enabled AND feed.is_discoverable)

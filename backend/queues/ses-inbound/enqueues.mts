@@ -15,7 +15,7 @@ import {
   getSesInboundRetainedFailedJobScanLimit,
   SES_INBOUND_RECONCILE_INTERVAL_MS,
 } from './config.mts'
-import { sesInboundQueue } from './queues.mts'
+import { background } from '@queues/background/queues'
 
 export const enqueueBulkSesInboundProcess = createBackgroundBulkEnqueue(
   SES_INBOUND_PROCESS_JOB,
@@ -29,7 +29,7 @@ export type RetryableSesInboundJob = {
 }
 
 export function readRetainedFailedSesInboundProcessJobs(): Promise<RetryableSesInboundJob[]> {
-  return sesInboundQueue.searchJobs({
+  return background.searchJobs({
     state: 'failed',
     name: SES_INBOUND_PROCESS_JOB.name,
     limit: getSesInboundRetainedFailedJobScanLimit(),

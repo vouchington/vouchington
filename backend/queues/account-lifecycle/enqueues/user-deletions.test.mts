@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { readEnqueuedJob } from '../../../test-helpers/queue-jobs.mts'
 import { enqueueRecoverUserDeletions, enqueueUserDeletion } from './user-deletions.mts'
-import { accountLifecycle } from '../queues.mts'
+import { background } from '@queues/background/queues'
 
 describe('user-deletions enqueues', () => {
   it('uses the request and processing attempt as the stable job identity', async () => {
@@ -11,7 +11,7 @@ describe('user-deletions enqueues', () => {
 
     await enqueueUserDeletion(data)
 
-    await expect(readEnqueuedJob(accountLifecycle, { id: expectedId })).resolves.toMatchObject({
+    await expect(readEnqueuedJob(background, { id: expectedId })).resolves.toMatchObject({
       id: expectedId,
       name: 'account-lifecycle.processUserDeletion',
       data,
@@ -34,7 +34,7 @@ describe('user-deletions enqueues', () => {
 
     await enqueueUserDeletion(data)
 
-    await expect(readEnqueuedJob(accountLifecycle, { id: expectedId })).resolves.toMatchObject({
+    await expect(readEnqueuedJob(background, { id: expectedId })).resolves.toMatchObject({
       data: { requestId: data.requestId, processingAttemptId: data.processingAttemptId },
       opts: { delay: 60_000 },
     })

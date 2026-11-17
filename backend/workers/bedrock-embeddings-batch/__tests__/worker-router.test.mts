@@ -2,7 +2,7 @@ import { BedrockControlClient } from '@modules/aws/bedrock-control'
 import { createAwsReplayRequestHandler } from '@voucha/test-helpers/aws-replay-request-handler'
 import { createOwnedBedrockRouterFixtures } from '@voucha/test-helpers/bedrock-router-owned-fixtures'
 import { randomBytes, randomUUID } from 'node:crypto'
-import { mintUUIDv7 } from '../../../modules/utils/ids.mts'
+import { mintUuidv7 } from '../../../modules/utils/ids.mts'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import type { Job } from 'glide-mq'
 import { UnrecoverableError } from '@vouchington/queue-errors'
@@ -288,7 +288,7 @@ function makeJob(
 
 async function blockBatchCreation(): Promise<void> {
   overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, { max_inflight_jobs: 1 })
-  const id = mintUUIDv7()
+  const id = mintUuidv7()
   createdBatchIds.push(id)
   await insertTestEmbeddingsBatch({
     id,

@@ -14,7 +14,7 @@ export const CLASSIFIER_REQUEST_AGE_ALARM_MS = 26 * HOUR_MS
  * A live feed item with no request is given this long before it counts: the producer writes the
  * request in the item's own upsert transaction, so any wait at all means the write was skipped.
  */
-export const CLASSIFIER_UNREQUESTED_GRACE_MS = HOUR_MS
+export const CLASSIFIER_UNREQUESTED_GRACE_MS = 60 * 60 * 1000
 
 /** The scan reads feed items created inside this window, so it stays an index range scan on `id`. */
 export const CLASSIFIER_UNREQUESTED_LOOKBACK_MS = 7 * 24 * HOUR_MS

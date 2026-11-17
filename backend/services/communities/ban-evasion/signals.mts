@@ -1,7 +1,7 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import onError from '@modules/on-error'
-import { getMaxUUIDv7ForDate } from '@modules/utils/ids'
+import { getMaxUuidv7ForDate } from '@modules/utils/ids'
 import {
   BAN_EVASION_BAN_LOOKBACK_DAYS,
   BAN_EVASION_EMBEDDING_SIMILARITY_THRESHOLD,
@@ -9,7 +9,7 @@ import {
 import type { BanEvasionSignalResult } from './types.mts'
 
 function getBanLookbackId(): string {
-  return getMaxUUIDv7ForDate(
+  return getMaxUuidv7ForDate(
     new Date(Date.now() - BAN_EVASION_BAN_LOOKBACK_DAYS * 24 * 60 * 60 * 1000),
   )
 }

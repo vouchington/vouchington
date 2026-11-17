@@ -122,11 +122,10 @@ export function useManageSourcePage(id: string, initialData?: Partial<ManageSour
   const handleLoadMoreHostnames = async () => {
     const cursor = state.additionalHostnamesPageInfo.end_cursor
     if (!state.additionalHostnamesPageInfo.has_next_page || !cursor) return
-    const requestId = id
     const generation = idGenerationRef.current
     dispatch({ loadingMoreHostnames: true, hostnamesFetchError: null })
     try {
-      const page = await fetchAdditionalHostnames(requestId, { after: cursor })
+      const page = await fetchAdditionalHostnames(id, { after: cursor })
       // Skip applying results if `id` changed while this request was in flight — the
       // dedup/append below runs against the reducer's own current state, but a stale
       // response must never be attributed to whatever topic is now mounted.

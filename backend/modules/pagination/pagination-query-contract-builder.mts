@@ -1,4 +1,4 @@
-import { VALID_TIME_RANGES } from '@voucha/types/feed'
+import { VALID_FEED_TIME_RANGES } from '@voucha/types/feed'
 import type { PaginationQueryContract } from './pagination-query-contract.mts'
 import type { FiltersConfig, PaginationConfig } from './types.mts'
 import { VALID_MEDIA_TYPES, VALID_POST_TYPES, VALID_TOPIC_TYPES } from './filters.mts'
@@ -68,7 +68,7 @@ const paginationFilterContractBuilders = {
     'timeRange',
     function buildTimeRangeContract(filters) {
       if (!filters.timeRange) return {}
-      return { time_range: queryEnum(VALID_TIME_RANGES) }
+      return { time_range: queryEnum(VALID_FEED_TIME_RANGES) }
     },
   ),
   sort: definePaginationFilterContractBuilder('sort', function buildSortContract(filters) {

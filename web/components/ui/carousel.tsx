@@ -6,8 +6,14 @@ import useEmblaCarousel from 'embla-carousel-react'
 
 import { cn } from '@/lib/utils'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { InternalCarouselNext, InternalCarouselPrevious } from './carousel/controls'
-import { InternalCarouselContent, InternalCarouselItem } from './carousel/layout'
+import {
+  InternalCarouselNext as CarouselNext,
+  InternalCarouselPrevious as CarouselPrevious,
+} from './carousel/controls'
+import {
+  InternalCarouselContent as CarouselContent,
+  InternalCarouselItem as CarouselItem,
+} from './carousel/layout'
 
 import { CarouselContext, type CarouselApi, type CarouselProps } from './carousel/context'
 export { useCarousel, type CarouselApi } from './carousel/context'
@@ -130,10 +136,5 @@ function Carousel({
 }
 /* oxlint-enable jsx-a11y/prefer-tag-over-role */
 Carousel.displayName = 'Carousel'
-
-const CarouselContent = InternalCarouselContent
-const CarouselItem = InternalCarouselItem
-const CarouselPrevious = InternalCarouselPrevious
-const CarouselNext = InternalCarouselNext
 
 export { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext }

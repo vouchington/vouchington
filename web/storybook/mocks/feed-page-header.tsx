@@ -1,6 +1,7 @@
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { TitleRouteDropdown } from '@/components/shared/title-route-dropdown'
-import { feedRouteConfigs, type FeedCategory } from '@/lib/feed-route-configs'
+import type { FeedCategory } from '@/lib/feed-route-configs'
+import { feedRouteConfigData } from '@/lib/feed-route-config-data'
 
 // Storybook stub — the real FeedPageHeader is an async Server Component (calls
 // getTranslations(), which reaches next/headers). React 19 cannot render async components
@@ -34,27 +35,27 @@ export function FeedPageHeader({
           items={[
             {
               label: feedTitleLabels.posts,
-              href: feedRouteConfigs.posts.path,
+              href: feedRouteConfigData.posts.path,
               active: category === 'posts',
             },
             {
               label: feedTitleLabels.news,
-              href: feedRouteConfigs.news.path,
+              href: feedRouteConfigData.news.path,
               active: category === 'news',
             },
             {
               label: feedTitleLabels.podcasts,
-              href: feedRouteConfigs.podcasts.path,
+              href: feedRouteConfigData.podcasts.path,
               active: category === 'podcasts',
             },
             {
               label: feedTitleLabels.videos,
-              href: feedRouteConfigs.videos.path,
+              href: feedRouteConfigData.videos.path,
               active: category === 'videos',
             },
             {
               label: feedTitleLabels['referral-links'],
-              href: feedRouteConfigs['referral-links'].path,
+              href: feedRouteConfigData['referral-links'].path,
               active: category === 'referral-links',
             },
           ]}

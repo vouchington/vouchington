@@ -1,11 +1,11 @@
 import { write } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { getCrawlCleanupLimits } from './work-limits.mts'
 import sql from 'sql-template-strings'
 
 export function getCrawlCleanupCutoff(): string {
   const { ageDays } = getCrawlCleanupLimits()
-  return getMinUUIDv7ForDate(new Date(Date.now() - ageDays * 24 * 60 * 60 * 1000))
+  return getMinUuidv7ForDate(new Date(Date.now() - ageDays * 24 * 60 * 60 * 1000))
 }
 
 /** Deletion is the durable resume marker; each retained run removes only its configured allowance. */

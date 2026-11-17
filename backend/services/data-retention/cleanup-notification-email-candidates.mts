@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 
 export type NotificationEmailCleanupName =
   | 'ses_bounce_events'
@@ -30,14 +30,14 @@ export async function listNotificationEmailCandidates(
       ? 'amazon_ses_bounce_events'
       : 'user_moderation_email_sends'
   const alias = 'source'
-  const parameters: unknown[] = [notification ? cutoff : getMinUUIDv7ForDate(cutoff)]
+  const parameters: unknown[] = [notification ? cutoff : getMinUuidv7ForDate(cutoff)]
   let predicate = notification
     ? `${alias}.deleted_at < $1::timestamptz AND ${alias}.deleted_at IS NOT NULL AND ${alias}.delete_reason = '${name === 'system_pruned_notifications' ? 'system_pruned' : 'user_deleted'}'`
     : `${alias}.id < $1::uuid`
   if (notification)
     predicate += ` AND ${alias}.event_key IS NULL AND ${alias}.entity_type <> 'copyright_notice'`
   if (lowerBoundDate) {
-    parameters.push(notification ? lowerBoundDate : getMinUUIDv7ForDate(lowerBoundDate))
+    parameters.push(notification ? lowerBoundDate : getMinUuidv7ForDate(lowerBoundDate))
     predicate += notification
       ? ` AND ${alias}.deleted_at >= $${parameters.length}::timestamptz`
       : ` AND ${alias}.id >= $${parameters.length}::uuid`

@@ -1,6 +1,6 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { CRAWL_HTML_SNAPSHOT_RETENTION_DAYS, CRAWL_CLEANUP_MAX_AGE_DAYS } from '@voucha/config'
 import sql from 'sql-template-strings'
 import { inspectBoilerplateCrawls } from './inspect-boilerplate-crawls.mts'
@@ -31,7 +31,7 @@ export const searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId = async (
   const recentCutoffDate = new Date(
     sampledNowMs - CRAWL_HTML_SNAPSHOT_RETENTION_DAYS * 24 * 60 * 60 * 1000,
   )
-  const crawlIdFloor = getMinUUIDv7ForDate(
+  const crawlIdFloor = getMinUuidv7ForDate(
     new Date(recentCutoffDate.getTime() - CRAWL_CLEANUP_MAX_AGE_DAYS * 24 * 60 * 60 * 1000),
   )
 

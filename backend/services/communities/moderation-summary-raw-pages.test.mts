@@ -13,7 +13,7 @@ import {
   insertTestReportJudgement,
 } from '@voucha/test-helpers/entities/moderation-reports'
 import { moveTestModerationSummaryPost } from '@voucha/test-helpers/moderation-summary-count-fixture'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { createModerationSummaryScan } from '@queues/background/enqueues/moderation-summary-state'
 import { collectRankReviewPage } from './moderation-summary-rank-direct.mts'
 import {
@@ -87,7 +87,7 @@ describe('moderator digest raw source pages', () => {
       rootId: second,
     })
     await markTestPostDeletedBy(deletedReply, user.id)
-    const replyUpper = getMinUUIDv7ForDate(new Date(Date.now() + 1000))
+    const replyUpper = getMinUuidv7ForDate(new Date(Date.now() + 1000))
     const replies = createModerationSummaryScan(community.id, 'replies')
     replies.parentId = second
     await collectModerationSummaryReplyPage(replies, replyUpper, 1)
@@ -115,11 +115,11 @@ describe('moderator digest raw source pages', () => {
     await softDeleteUserAt(member.id, new Date())
     const end = new Date(Date.now() + 1000),
       start = new Date(end.getTime() - 86400000)
-    const upper = getMinUUIDv7ForDate(end)
+    const upper = getMinUuidv7ForDate(end)
     const scan = createModerationSummaryScan(community.id, 'members')
     await collectModerationSummaryMemberPage(
       scan,
-      getMinUUIDv7ForDate(start),
+      getMinUuidv7ForDate(start),
       upper,
       start,
       end,

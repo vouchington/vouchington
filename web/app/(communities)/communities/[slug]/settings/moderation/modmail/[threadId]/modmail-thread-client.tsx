@@ -52,41 +52,27 @@ export function ModmailThreadClient({
     const cursor = endCursorRef.current
     if (!cursor || loadingMoreRef.current) return
     const generation = generationRef.current
-    const contextSlug = communitySlug
     const contextThreadId = thread.id
     loadingMoreRef.current = true
     setLoadingMore(true)
     setLoadMoreError(null)
     try {
-      const res = await getModmailMessagesClient(contextSlug, contextThreadId, {
+      const res = await getModmailMessagesClient(communitySlug, contextThreadId, {
         after: cursor,
       })
-      if (
-        generation !== generationRef.current ||
-        contextSlug !== communitySlug ||
-        contextThreadId !== thread.id
-      )
-        return
+      if (generation !== generationRef.current || contextThreadId !== thread.id) return
       setMessages(prev => prependUniqueMessages(prev, res.results))
       setHasMore(res.page_info.has_next_page)
       endCursorRef.current = res.page_info.end_cursor
     } catch (err) {
-      if (
-        generation === generationRef.current &&
-        contextSlug === communitySlug &&
-        contextThreadId === thread.id
-      ) {
+      if (generation === generationRef.current && contextThreadId === thread.id) {
         setLoadMoreError(err instanceof Error ? err : new Error(String(err)))
         onError(err, {
           fallback: t('extracted.threadid.modmailThreadClient.failedToLoadMoreMessages_d37c5429'),
         })
       }
     } finally {
-      if (
-        generation === generationRef.current &&
-        contextSlug === communitySlug &&
-        contextThreadId === thread.id
-      ) {
+      if (generation === generationRef.current && contextThreadId === thread.id) {
         loadingMoreRef.current = false
         setLoadingMore(false)
       }

@@ -1,5 +1,5 @@
 import { readSubjectTopicRelationFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/subject-topic-relations'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { getEntityRelationElectionVote } from '@services/elections-votes/entity-relation/votes-get'
 import { upsertEntityRelation } from '@services/entity-relations'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
@@ -20,7 +20,7 @@ import {
   getPostClearanceChanges,
   getPostClearanceStatus,
 } from '@voucha/test-helpers/entities/post-clearance-reads'
-import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
+import { POST_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/post-classifier'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { completeClassifierRun, persistClassifierRunOutcomes } from '@services/classifier-runs'
 
@@ -40,7 +40,7 @@ async function persist(
 }
 
 const facts = async (setup: PostClassifierExecutionFixture) =>
-  (await getClassifierRunFacts(setup.post.id, POST_CLASSIFIER_SLUG))[0]!
+  (await getClassifierRunFacts(setup.post.id, POST_CLASSIFIER_SYSTEM_USERNAME))[0]!
 
 const topicIds = (setup: PostClassifierExecutionFixture) => {
   const { local, remote } = setup.lease.resolved.configuration
@@ -53,7 +53,7 @@ const relationTopicIds = async (postId: string) =>
     .toSorted()
 
 function hasPostNotification(
-  jobs: Awaited<ReturnType<typeof notifications.getJobs>>,
+  jobs: Awaited<ReturnType<typeof background.getJobs>>,
   postId: string,
 ): boolean {
   return jobs.some(
@@ -126,7 +126,7 @@ describe('post classifier effects on the shared lifecycle (real PG)', () => {
       await readSubjectTopicRelationFacts({ postId: setup.post.id, rssFeedItemId: null }),
     ).toEqual([])
     expect(await facts(setup)).toMatchObject({ completed_at: null })
-    expect(hasPostNotification(await readAllQueueJobs(notifications), setup.post.id)).toBe(false)
+    expect(hasPostNotification(await readAllQueueJobs(background), setup.post.id)).toBe(false)
     expect(await completeClassifierRun(setup.adapter, setup.lease)).toMatchObject({
       kind: 'completed',
     })

@@ -21,7 +21,7 @@ import {
 import { useDsaStatementSubmissions } from '@voucha/test-helpers/dsa-switches'
 import { copyrightConfig } from '@services/copyright-notices/config'
 import { enqueueSubmitDsaStatementOfReasons } from '@queues/notifications/enqueues'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { replayDsaStatementSubmission } from '@services/copyright-notices/dsa-statement-submission-replay'
 import {
   createTestCopyrightImageFixture,
@@ -48,7 +48,7 @@ describe('DSA submission notification processor with the audited switch enabled'
     vi.stubEnv('DSA_TRANSPARENCY_DATABASE_URL', `${DSA_TEST_PROVIDER_ORIGIN}/api/v1`)
     vi.stubEnv('DSA_TRANSPARENCY_DATABASE_TOKEN', 'synthetic-token')
     const id = await createTestDsaSubmission()
-    const job = await readEnqueuedJob(notifications, await enqueueSubmitDsaStatementOfReasons(id))
+    const job = await readEnqueuedJob(background, await enqueueSubmitDsaStatementOfReasons(id))
     expect(job.name).toBe('notifications.processSubmitDsaStatementOfReasons')
     expect(job.data).toEqual({ submissionId: id })
     const provider = stubDsaTransparencyDatabaseProvider()
@@ -76,7 +76,7 @@ describe('DSA submission notification processor with the audited switch enabled'
     expect(provider.requests).toBe(0)
     const administrator = await createTestUser({ extraRoles: ['administrator'] })
     expect(await replayDsaStatementSubmission(administrator.id, id)).toBe(true)
-    const job = await readEnqueuedJob(notifications, await enqueueSubmitDsaStatementOfReasons(id))
+    const job = await readEnqueuedJob(background, await enqueueSubmitDsaStatementOfReasons(id))
     expect(job.data).toEqual({ submissionId: id })
     await expect(
       processSubmitDsaStatementOfReasons(job.data as { submissionId: string }),
@@ -99,7 +99,7 @@ describe('DSA submission notification processor while disabled', () => {
 
   it('keeps a queued durable row pending without making an external call', async () => {
     const id = await createTestDsaSubmission()
-    const job = await readEnqueuedJob(notifications, await enqueueSubmitDsaStatementOfReasons(id))
+    const job = await readEnqueuedJob(background, await enqueueSubmitDsaStatementOfReasons(id))
     const restore = overrideDynamicConfigFieldsForTest(copyrightConfig, { dsaSorDatabase: false })
     try {
       const provider = stubDsaTransparencyDatabaseProvider()
@@ -142,7 +142,7 @@ describe('DSA statement reconciliation notification processor', () => {
       expect((await readTestDsaSubmission(excludedId)).lease_token).toBeNull()
       expect(await countTestDsaSubmissionsForRestriction(excludedRestriction.restrictionId)).toBe(0)
       expect(
-        (await readAllQueueJobs(notifications)).filter(
+        (await readAllQueueJobs(background)).filter(
           job =>
             job.name === 'notifications.processSubmitDsaStatementOfReasons' &&
             [submissionId, excludedId].includes(
@@ -173,7 +173,7 @@ describe('DSA statement reconciliation notification processor', () => {
         2,
       ),
     ).resolves.toEqual({ enqueued: 2, hasMore: false })
-    const enqueuedJobs = (await readAllQueueJobs(notifications)).filter(
+    const enqueuedJobs = (await readAllQueueJobs(background)).filter(
       job =>
         job.name === 'notifications.processSubmitDsaStatementOfReasons' &&
         [firstId, secondId, excludedId].includes(
@@ -236,7 +236,7 @@ describe('DSA statement reconciliation notification processor', () => {
       expect((await readTestDsaSubmission(excludedId)).lease_token).toBeNull()
       expect(await countTestDsaSubmissionsForRestriction(excludedRestriction.restrictionId)).toBe(0)
       expect(
-        (await readAllQueueJobs(notifications)).filter(
+        (await readAllQueueJobs(background)).filter(
           job =>
             job.name === 'notifications.processSubmitDsaStatementOfReasons' &&
             [submissionId, excludedId].includes(

@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { setPostClassifierToggleForTest } from '@voucha/test-helpers/entities/post-classifier-toggles'
 import {
   POST_CLASSIFIER_PROMPT,
-  POST_CLASSIFIER_SLUG,
+  POST_CLASSIFIER_SYSTEM_USERNAME,
 } from '@voucha/types/entities/post-classifier'
 import { installEfficiencyProvider } from '@voucha/test-helpers/classifier-call-efficiency-provider'
 import { postClassifierEfficiencyDriver } from '@voucha/test-helpers/classifier-call-efficiency-driver-post-classifier'
@@ -85,17 +85,21 @@ describe('C5 post classifier local-only call efficiency (real PG, deterministic 
     const { post, inputSha256 } = await createApprovedClassifierPost(false, true)
     const seed = { subject: { postId: post.id, rssFeedItemId: null }, inputSha256 } as const
     await withCurrentClassifierUsage(async trackRunId => {
-      const run = await reserveSeededRun(POST_CLASSIFIER_SLUG, seed)
+      const run = await reserveSeededRun(POST_CLASSIFIER_SYSTEM_USERNAME, seed)
       trackRunId(run.runId)
-      expect(await deliverRun(POST_CLASSIFIER_SLUG, run)).toBe('completed')
-      expect(await deliverRun(POST_CLASSIFIER_SLUG, run)).toBe('replay')
+      expect(await deliverRun(POST_CLASSIFIER_SYSTEM_USERNAME, run)).toBe('completed')
+      expect(await deliverRun(POST_CLASSIFIER_SYSTEM_USERNAME, run)).toBe('replay')
 
       expect(provider.requests).toEqual([])
       expect(await listAiUsageRecordsForClassifierRun(run.runId)).toEqual([])
-      expect(await getSubjectClassifierRunFacts(seed.subject, POST_CLASSIFIER_SLUG)).toMatchObject([
-        { provider_attempts_started: 0, completed_at: expect.any(Date) },
-      ])
-      const { version } = await reportedContentVersion(window, POST_CLASSIFIER_SLUG, seed)
+      expect(
+        await getSubjectClassifierRunFacts(seed.subject, POST_CLASSIFIER_SYSTEM_USERNAME),
+      ).toMatchObject([{ provider_attempts_started: 0, completed_at: expect.any(Date) }])
+      const { version } = await reportedContentVersion(
+        window,
+        POST_CLASSIFIER_SYSTEM_USERNAME,
+        seed,
+      )
       expect(version).toMatchObject({
         runs: 1,
         billedRuns: 0,
@@ -123,9 +127,9 @@ describe('C5 post classifier local-only call efficiency (real PG, deterministic 
     const { post, inputSha256 } = await createApprovedClassifierPost(false, true)
     const seed = { subject: { postId: post.id, rssFeedItemId: null }, inputSha256 } as const
     await withCurrentClassifierUsage(async trackRunId => {
-      const run = await reserveSeededRun(POST_CLASSIFIER_SLUG, seed)
+      const run = await reserveSeededRun(POST_CLASSIFIER_SYSTEM_USERNAME, seed)
       trackRunId(run.runId)
-      expect(await deliverRun(POST_CLASSIFIER_SLUG, run)).toBe('completed')
+      expect(await deliverRun(POST_CLASSIFIER_SYSTEM_USERNAME, run)).toBe('completed')
       const outcome = await getPostClassifierLocalOutcomeFacts(run.runId)
       expect(outcome).toMatchObject({
         run_id: run.runId,
@@ -148,13 +152,15 @@ describe('C5 post classifier local-only call efficiency (real PG, deterministic 
           votes: [{ userId: actorId, score: 1 }],
         },
       ])
-      expect(await deliverRun(POST_CLASSIFIER_SLUG, run)).toBe('replay')
+      expect(await deliverRun(POST_CLASSIFIER_SYSTEM_USERNAME, run)).toBe('replay')
       expect(await getPostClassifierLocalOutcomeFacts(run.runId)).toEqual(outcome)
       expect(await readSubjectTopicRelationFacts(seed.subject)).toEqual(relations)
       expect(vurst.detectAiGeneratedText).toHaveBeenCalledTimes(1)
       expect(provider.requests).toEqual([])
       expect(await listAiUsageRecordsForClassifierRun(run.runId)).toEqual([])
-      expect(await getSubjectClassifierRunFacts(seed.subject, POST_CLASSIFIER_SLUG)).toMatchObject([
+      expect(
+        await getSubjectClassifierRunFacts(seed.subject, POST_CLASSIFIER_SYSTEM_USERNAME),
+      ).toMatchObject([
         { id: run.runId, provider_attempts_started: 0, completed_at: expect.any(Date) },
       ])
     })
@@ -169,28 +175,34 @@ describe('C5 post classifier local-only call efficiency (real PG, deterministic 
     )
     const seed = { subject: { postId: post.id, rssFeedItemId: null }, inputSha256 } as const
     await withCurrentClassifierUsage(async trackRunId => {
-      const first = await reserveSeededRun(POST_CLASSIFIER_SLUG, seed)
+      const first = await reserveSeededRun(POST_CLASSIFIER_SYSTEM_USERNAME, seed)
       trackRunId(first.runId)
-      expect(await deliverRun(POST_CLASSIFIER_SLUG, first)).toBe('completed')
+      expect(await deliverRun(POST_CLASSIFIER_SYSTEM_USERNAME, first)).toBe('completed')
       await setPostClassifierToggleForTest(community.id, 'politics-averse', true)
-      const second = await reserveSeededRun(POST_CLASSIFIER_SLUG, seed)
+      const second = await reserveSeededRun(POST_CLASSIFIER_SYSTEM_USERNAME, seed)
       trackRunId(second.runId)
       expect(second.runId).not.toBe(first.runId)
       expect(second.configurationSha256.equals(first.configurationSha256)).toBe(false)
-      expect(await deliverRun(POST_CLASSIFIER_SLUG, second)).toBe('completed')
+      expect(await deliverRun(POST_CLASSIFIER_SYSTEM_USERNAME, second)).toBe('completed')
       expect(provider.requests).toHaveLength(2)
       expect(provider.requests[0]).toHaveLength(1)
       expect(provider.requests[1]).toHaveLength(2)
       expect(await listAiUsageRecordsForClassifierRun(first.runId)).toHaveLength(1)
       expect(await listAiUsageRecordsForClassifierRun(second.runId)).toHaveLength(1)
-      expect(await getSubjectClassifierRunFacts(seed.subject, POST_CLASSIFIER_SLUG)).toMatchObject([
+      expect(
+        await getSubjectClassifierRunFacts(seed.subject, POST_CLASSIFIER_SYSTEM_USERNAME),
+      ).toMatchObject([
         { id: first.runId, provider_attempts_started: 1 },
         { id: second.runId, provider_attempts_started: 1 },
       ])
       expect(
-        await getSubjectClassifierRunRequestFacts(seed.subject, POST_CLASSIFIER_SLUG),
+        await getSubjectClassifierRunRequestFacts(seed.subject, POST_CLASSIFIER_SYSTEM_USERNAME),
       ).toMatchObject([{ run_identity_id: second.runId, run_settled_at: expect.any(Date) }])
-      const { version, runs } = await reportedContentVersion(window, POST_CLASSIFIER_SLUG, seed)
+      const { version, runs } = await reportedContentVersion(
+        window,
+        POST_CLASSIFIER_SYSTEM_USERNAME,
+        seed,
+      )
       expect(runs).toHaveLength(2)
       expect(version).toMatchObject({
         runs: 2,
@@ -213,9 +225,9 @@ describe('C5 post classifier local-only call efficiency (real PG, deterministic 
     try {
       await rotatePostClassifierPrompt(POST_CLASSIFIER_PROMPT, 'typesafe/jev-1.13', 'openrouter')
       await withCurrentClassifierUsage(async trackRunId => {
-        const run = await reserveSeededRun(POST_CLASSIFIER_SLUG, seed)
+        const run = await reserveSeededRun(POST_CLASSIFIER_SYSTEM_USERNAME, seed)
         trackRunId(run.runId)
-        expect(await deliverRun(POST_CLASSIFIER_SLUG, run)).toBe('completed')
+        expect(await deliverRun(POST_CLASSIFIER_SYSTEM_USERNAME, run)).toBe('completed')
         const [[url, init]] = vi.mocked(fetchStructuredDecisionProvider).mock.calls
         expect(url).toContain('openrouter.ai')
         expect(JSON.stringify(init?.body)).toContain('typesafe/jev-1.13')

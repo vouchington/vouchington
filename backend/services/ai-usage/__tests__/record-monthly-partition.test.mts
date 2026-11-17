@@ -19,7 +19,7 @@ import {
   reserveTestAiUsageRetentionSweep,
 } from '@voucha/test-helpers/entities/ai-usage-rollups'
 import { retireMonthlyPartitionCandidate } from '@data-stores/psql/migration-runner/monthly-partitions'
-import { getDateFromUUIDv7, mintUUIDv7 } from '../../../modules/utils/ids.mts'
+import { getDateFromUuidv7, mintUuidv7 } from '../../../modules/utils/ids.mts'
 import { recordAiUsage } from '../record.mts'
 import { getCommunityAiCostTotals } from '../totals.mts'
 import { prepareAiUsageMonth } from '@data-stores/psql/ai-usage-monthly-partition'
@@ -97,7 +97,7 @@ describe('backdated AI usage on retired monthly history', () => {
     )
     const ids = await readTestAiUsageIdsForMonth(createdAt, agentSlug)
     expect(ids).toHaveLength(1)
-    expect(getDateFromUUIDv7(ids[0]!)?.toISOString().slice(0, 10)).toBe(
+    expect(getDateFromUuidv7(ids[0]!)?.toISOString().slice(0, 10)).toBe(
       createdAt.toISOString().slice(0, 10),
     )
     expect(await isTestAiUsagePartitionAttached(partition)).toBe(true)
@@ -191,10 +191,10 @@ describe('backdated AI usage on retired monthly history', () => {
     const ids = await readTestAiUsageIdsForMonth(createdAt, agentSlug)
     expect(ids).toHaveLength(1)
     ownedIds.push(ids[0]!)
-    expect(getDateFromUUIDv7(ids[0]!)?.toISOString().slice(0, 10)).toBe(
+    expect(getDateFromUuidv7(ids[0]!)?.toISOString().slice(0, 10)).toBe(
       createdAt.toISOString().slice(0, 10),
     )
-    const responseId = await insertTestAiUsageResponseKey(mintUUIDv7(), ids[0]!)
+    const responseId = await insertTestAiUsageResponseKey(mintUuidv7(), ids[0]!)
     expect(await retireMonthlyPartitionCandidate(candidate, new Date(), 1)).toMatchObject({
       outcome: 'refused',
       reason: 'in-flight',

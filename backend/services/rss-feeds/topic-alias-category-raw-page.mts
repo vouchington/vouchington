@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { getMaxUUIDv7ForDate } from '@modules/utils/ids'
+import { getMaxUuidv7ForDate } from '@modules/utils/ids'
 
 const NIL_UUID = '00000000-0000-0000-0000-000000000000'
 const MAX_UUID = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
@@ -51,7 +51,7 @@ export async function readAliasCategoryRawPage(
   if (cursor.phase === 'completed') return { rows: [], cursor, hasMore: false }
 
   // The sweep's id bounds come from its start time; later rows fall to the next sweep.
-  const sweepUpperId = getMaxUUIDv7ForDate(new Date())
+  const sweepUpperId = getMaxUuidv7ForDate(new Date())
   const upperItemId = cursor.sweep_upper_bound_item_id ?? sweepUpperId
   const upperFeedId = cursor.sweep_upper_bound_feed_id ?? sweepUpperId
   let rows: AliasCategoryRawRow[]

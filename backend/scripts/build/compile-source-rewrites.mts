@@ -57,10 +57,10 @@ function rewriteModuleSource(source: string, modulePath: string, repoRoot: strin
   // playwright-core requires its own JSON manifests through a computed path, which would load
   // them from the build machine; the relative form is bundled.
   if (modulePath.endsWith('/node_modules/playwright-core/lib/coreBundle.js')) {
-    const before = rewritten
-    rewritten = rewritten.replace(PLAYWRIGHT_PACKAGE_JSON_REQUIRE, 'require("../$1")')
-    if (rewritten === before)
+    const next = rewritten.replace(PLAYWRIGHT_PACKAGE_JSON_REQUIRE, 'require("../$1")')
+    if (next === rewritten)
       throw new Error('playwright-core no longer requires its package JSON by path')
+    rewritten = next
   }
   if (rewritten.includes('undici')) {
     rewritten = rewritten.replace(

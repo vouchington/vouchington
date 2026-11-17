@@ -14,16 +14,21 @@ import {
   ineligibleCollectionPageIds,
 } from '../seed-data/ineligible-collection-pages.mts'
 
-const LIMIT = INELIGIBLE_COLLECTION_PAGE_LIMIT
-const FILL = INELIGIBLE_COLLECTION_PAGE_COUNT
-const ids = ineligibleCollectionPageIds
+const { userId, listId, communityId, subjectPostId } = ineligibleCollectionPageIds
 const viewerUser = {
   __entity_type: 'user' as const,
-  id: ids.userId,
+  id: userId,
   username: 'seeduser7',
   roles: [] as readonly string[],
 } as PrivateUser
-const relationViewer = { kind: 'user' as const, userId: ids.userId, staffRole: null }
+const relationViewer = {
+  kind: 'user' as const,
+  userId,
+  staffRole: null,
+}
+
+const pageLimit = { limit: INELIGIBLE_COLLECTION_PAGE_LIMIT }
+const listOptions = { ...pageLimit, currentUserId: viewerUser.id }
 
 function bounded(relation: string, indexes: readonly string[]) {
   return {
@@ -44,14 +49,14 @@ function bounded(relation: string, indexes: readonly string[]) {
     seededRows: {
       [relation]:
         relation === 'community_list_posts'
-          ? FILL * (1 + INELIGIBLE_COLLECTION_NOISE_COMMUNITY_COUNT)
-          : FILL,
+          ? INELIGIBLE_COLLECTION_PAGE_COUNT * (1 + INELIGIBLE_COLLECTION_NOISE_COMMUNITY_COUNT)
+          : INELIGIBLE_COLLECTION_PAGE_COUNT,
     },
   }
 }
 
 function assertFilledPage(length: number, hasNextPage: boolean, label: string): void {
-  if (length !== LIMIT || !hasNextPage) {
+  if (length !== INELIGIBLE_COLLECTION_PAGE_LIMIT || !hasNextPage) {
     throw new Error(`${label} did not fill while eligible rows remain`)
   }
 }
@@ -75,9 +80,7 @@ export async function runIneligibleCollectionPageScenarios(): Promise<void> {
     'relation__user__save__post',
     ['idx_relation__user__save__post__subject__newest'],
     async () => {
-      const page = await getUserPostsCollection(viewerUser, viewerUser.id, 'saved', {
-        limit: LIMIT,
-      })
+      const page = await getUserPostsCollection(viewerUser, viewerUser.id, 'saved', pageLimit)
       return { length: page.results.length, hasNextPage: page.page_info.has_next_page }
     },
   )
@@ -91,7 +94,7 @@ export async function runIneligibleCollectionPageScenarios(): Promise<void> {
       'user_list_posts_pkey',
     ],
     async () => {
-      const page = await searchListItems(ids.listId, { limit: LIMIT, currentUserId: viewerUser.id })
+      const page = await searchListItems(listId, listOptions)
       return { length: page.results.length, hasNextPage: page.page_info.has_next_page }
     },
   )
@@ -102,10 +105,10 @@ export async function runIneligibleCollectionPageScenarios(): Promise<void> {
       { kind: 'maxProcessedRows', relation: 'user_list_rss_feed_items', max: 64 },
       { kind: 'maxProcessedRows', relation: 'posts', max: 128 },
     ],
-    seededRows: { user_list_posts: FILL },
+    seededRows: { user_list_posts: INELIGIBLE_COLLECTION_PAGE_COUNT },
   })
   await runAndCapture('collection-list-union-ineligible-page', () =>
-    searchListItems(ids.listId, { limit: LIMIT, currentUserId: viewerUser.id }),
+    searchListItems(listId, listOptions),
   )
 
   await captureFilled(
@@ -113,7 +116,7 @@ export async function runIneligibleCollectionPageScenarios(): Promise<void> {
     'community_list_posts',
     ['idx_community_list_posts__community_id__order_index__id'],
     async () => {
-      const page = await searchCommunityListItems(ids.communityId, 'post', { limit: LIMIT })
+      const page = await searchCommunityListItems(communityId, 'post', pageLimit)
       return { length: page.results.length, hasNextPage: page.page_info.has_next_page }
     },
   )
@@ -123,7 +126,7 @@ export async function runIneligibleCollectionPageScenarios(): Promise<void> {
     'community_list_url_hostnames',
     ['idx_community_list_url_hostnames__community_id__order_index__id'],
     async () => {
-      const page = await searchCommunityListItems(ids.communityId, 'url_hostname', { limit: LIMIT })
+      const page = await searchCommunityListItems(communityId, 'url_hostname', pageLimit)
       return { length: page.results.length, hasNextPage: page.page_info.has_next_page }
     },
   )
@@ -133,7 +136,7 @@ export async function runIneligibleCollectionPageScenarios(): Promise<void> {
     'community_list_topics',
     ['idx_community_list_topics__community_id__order_index__id'],
     async () => {
-      const page = await searchCommunityListItems(ids.communityId, 'topic', { limit: LIMIT })
+      const page = await searchCommunityListItems(communityId, 'topic', pageLimit)
       return { length: page.results.length, hasNextPage: page.page_info.has_next_page }
     },
   )
@@ -148,9 +151,14 @@ export async function runIneligibleCollectionPageScenarios(): Promise<void> {
   )
   await runAndCapture('collection-community-list-import-ineligible-page', async () => {
     const { rows } = await read(
-      importCommunityListPostsSourceSql(ids.listId, ids.communityId, relationViewer, LIMIT),
+      importCommunityListPostsSourceSql(
+        listId,
+        communityId,
+        relationViewer,
+        INELIGIBLE_COLLECTION_PAGE_LIMIT,
+      ),
     )
-    if (rows.length !== LIMIT)
+    if (rows.length !== INELIGIBLE_COLLECTION_PAGE_LIMIT)
       throw new Error('Import source did not fill from eligible memberships')
   })
 
@@ -162,10 +170,10 @@ export async function runIneligibleCollectionPageScenarios(): Promise<void> {
       'relation__post__related__post_subject_id_created_at_object__idx',
     ],
     async () => {
-      const page = await getEntityRelationsPage('post', ids.subjectPostId, 'related', 'post', {
+      const page = await getEntityRelationsPage('post', subjectPostId, 'related', 'post', {
         viewer: relationViewer,
         sort: 'newest',
-        limit: LIMIT,
+        ...pageLimit,
       })
       return { length: page.results.length, hasNextPage: page.hasNextPage }
     },
@@ -178,10 +186,10 @@ export async function runIneligibleCollectionPageScenarios(): Promise<void> {
       'relation__post__related__post_subject_id_votes_score_sort_c_idx',
     ],
     async () => {
-      const page = await getEntityRelationsPage('post', ids.subjectPostId, 'related', 'post', {
+      const page = await getEntityRelationsPage('post', subjectPostId, 'related', 'post', {
         viewer: relationViewer,
         sort: 'best',
-        limit: LIMIT,
+        ...pageLimit,
       })
       return { length: page.results.length, hasNextPage: page.hasNextPage }
     },

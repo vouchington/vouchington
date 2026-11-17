@@ -1,6 +1,6 @@
 import { Readable } from 'node:stream'
 import { randomInt, randomUUID } from 'node:crypto'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CreateModelInvocationJobCommand } from '@aws-sdk/client-bedrock'
 import { createTestUser, insertTestImage } from '@voucha/test-helpers'
@@ -74,7 +74,7 @@ describe('embedding scan caps', () => {
     const ids: string[] = []
     const baseMs = randomInt(1_000_000_000, 2_000_000_000)
     for (let index = 0; index < 3; index++)
-      ids.push(await insertTestImage(owner.id, getMinUUIDv7ForDate(new Date(baseMs + index))))
+      ids.push(await insertTestImage(owner.id, getMinUuidv7ForDate(new Date(baseMs + index))))
     const initialCursor = { sweepStartedAt: new Date(baseMs + 1_000).toISOString() }
     overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
       min_records_per_job: 2,
@@ -141,7 +141,7 @@ describe('embedding scan caps', () => {
     const ids: string[] = []
     const baseMs = randomInt(1_000_000_000, 2_000_000_000)
     for (let index = 0; index < 4; index++)
-      ids.push(await insertTestImage(owner.id, getMinUUIDv7ForDate(new Date(baseMs + index))))
+      ids.push(await insertTestImage(owner.id, getMinUuidv7ForDate(new Date(baseMs + index))))
     const initialCursor = { sweepStartedAt: new Date(baseMs + 1_000).toISOString() }
     overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
       min_records_per_job: 3,

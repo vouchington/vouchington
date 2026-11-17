@@ -18,9 +18,8 @@ type ClaimRow = { userId: string; requestedAt: Date; leaseToken: string }
 export async function dispatchDuePauseCollectionWork(
   limit = getMembershipWorkLimit('pending_operations_page_size'),
 ): Promise<PauseCollectionDispatch[]> {
-  const cap = limit
-  const expired = await claimExpiredPauseCollection(Math.ceil(cap / 2))
-  const unleasedCap = cap - expired.length
+  const expired = await claimExpiredPauseCollection(Math.ceil(limit / 2))
+  const unleasedCap = limit - expired.length
   const unleased = unleasedCap > 0 ? await claimUnleasedPauseCollection(unleasedCap) : []
   return [...expired, ...unleased].map(publish)
 }

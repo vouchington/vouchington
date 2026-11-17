@@ -1,7 +1,7 @@
 import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import { write } from '@data-stores/psql'
 import { decodeScopedTimestampUuidCursor, encodeCursor } from '@modules/pagination'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import createHttpError from 'http-errors'
 import {
   MODERATION_TRANSPARENCY_DELAY_MS,
@@ -107,7 +107,7 @@ function getAllTimePeriodEnd(after: string, scope: string): Date {
     timestamp < 1 ||
     timestamp > MAX_UUIDV7_TIMESTAMP_MS ||
     !isUtcMonthBoundary(boundary) ||
-    id !== getMinUUIDv7ForDate(boundary)
+    id !== getMinUuidv7ForDate(boundary)
   ) {
     throw createHttpError(400, 'Invalid moderation transparency cursor')
   }
@@ -186,7 +186,7 @@ function hasReleasedDailyCohort(rows: unknown[], cutoff: Date): boolean {
 function encodeTransparencyCursor(periodStart: Date, scope: string): string {
   return encodeCursor({
     timestamp: periodStart.getTime(),
-    id: getMinUUIDv7ForDate(periodStart),
+    id: getMinUuidv7ForDate(periodStart),
     scope,
   })
 }

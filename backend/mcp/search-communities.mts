@@ -27,11 +27,10 @@ import { closedObject, foundOrNotFoundSchema } from './read-tool-output-schema.m
 import { clampToolLimit } from './search-system.mts'
 
 // The sorts GET /api/v1/communities accepts.
-const COMMUNITY_SORTS = COMMUNITY_SORT_MODES
 
 type ToolArgs = {
   q?: string
-  sort?: (typeof COMMUNITY_SORTS)[number]
+  sort?: (typeof COMMUNITY_SORT_MODES)[number]
   limit?: number
   after?: string
   feed_category?: 'posts' | 'news' | 'news_sources' | 'news_topics'
@@ -57,7 +56,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         q: { type: 'string', description: 'Keyword search. Same as GET /api/v1/communities q.' },
         sort: {
           type: 'string',
-          enum: [...COMMUNITY_SORTS],
+          enum: [...COMMUNITY_SORT_MODES],
           description:
             'Sort order: name (A to Z, the default), members (most members first), virtual_subscriptions (most follows first), trending (most activity over the last 30 days first)',
         },

@@ -45,8 +45,7 @@ export async function seedRelatedUrlPostRelations(): Promise<void> {
   )
 
   await using transaction = await beginTransaction()
-  const query = transaction
-  await query(
+  await transaction(
     `/* seedExplainData */ INSERT INTO relation__post__related__url
        (id, subject_id, object_id, created_by_id)
      SELECT id, post_id, url_id, creator_id
@@ -60,7 +59,7 @@ export async function seedRelatedUrlPostRelations(): Promise<void> {
       noise.map(row => row.creatorId),
     ],
   )
-  await query(
+  await transaction(
     `/* seedExplainData */ INSERT INTO relation__post__related__url
        (id, subject_id, object_id, created_by_id, deleted_at)
      SELECT id, post_id, $4, creator_id, uuid_extract_timestamp(id)
@@ -74,7 +73,7 @@ export async function seedRelatedUrlPostRelations(): Promise<void> {
       seedUuid(0, '03'),
     ],
   )
-  await query(
+  await transaction(
     `/* seedExplainData */ INSERT INTO relation__post__related__url
        (id, subject_id, object_id, created_by_id)
      SELECT id, post_id, url_id, $4
@@ -87,7 +86,7 @@ export async function seedRelatedUrlPostRelations(): Promise<void> {
       voterId,
     ],
   )
-  await query(
+  await transaction(
     `/* seedExplainData */ INSERT INTO relation__post__related__url__votes
        (user_id, subject_id, entity_relation_id, score)
      SELECT $1, post_id, relation_id, 1

@@ -1,4 +1,4 @@
-import { getMinUUIDv7ForDate, mintUUIDv7 } from '@modules/utils/ids'
+import { getMinUuidv7ForDate, mintUuidv7 } from '@modules/utils/ids'
 import { afterEach, describe, expect, it, onTestFinished } from 'vitest'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { bedrockEmbeddingsBatchConfig } from '../../config.mts'
@@ -23,7 +23,7 @@ describe('getPendingBatches', () => {
   })
 
   function batchId() {
-    const id = mintUUIDv7()
+    const id = mintUuidv7()
     createdBatchIds.push(id)
     return id
   }
@@ -35,12 +35,12 @@ describe('getPendingBatches', () => {
       }),
     )
     const timestamp = Date.now() + 86_400_000 + Math.floor(Math.random() * 1_000_000_000)
-    const ids = [0, 1, 2].map(offset => getMinUUIDv7ForDate(new Date(timestamp + offset)))
+    const ids = [0, 1, 2].map(offset => getMinUuidv7ForDate(new Date(timestamp + offset)))
     onTestFinished(() => cleanupTestEmbeddingsBatches(ids))
     await Promise.all(ids.map(id => insertTestEmbeddingsBatch({ id, bedrockStatus: 'Submitted' })))
     const first = await getPendingBatches({
-      afterId: getMinUUIDv7ForDate(new Date(timestamp - 1)),
-      throughId: getMinUUIDv7ForDate(new Date(timestamp + 2)),
+      afterId: getMinUuidv7ForDate(new Date(timestamp - 1)),
+      throughId: getMinUuidv7ForDate(new Date(timestamp + 2)),
     })
     expect(first.batches.map(row => row.id)).toEqual([ids[0]])
     expect(first.hasMore).toBe(true)
@@ -84,7 +84,7 @@ describe('getActiveBatchStats', () => {
   })
 
   function batchId() {
-    const id = mintUUIDv7()
+    const id = mintUuidv7()
     createdBatchIds.push(id)
     return id
   }
@@ -138,7 +138,7 @@ describe('getBatchIdByJobArn', () => {
   })
 
   function batchId() {
-    const id = mintUUIDv7()
+    const id = mintUuidv7()
     createdBatchIds.push(id)
     return id
   }
@@ -168,7 +168,7 @@ describe('getBatchInfo', () => {
   })
 
   function batchId() {
-    const id = mintUUIDv7()
+    const id = mintUuidv7()
     createdBatchIds.push(id)
     return id
   }
@@ -192,15 +192,15 @@ describe('getBatchInfo', () => {
   })
 
   it('returns null when the batch does not exist', async () => {
-    await expect(getBatchInfo(mintUUIDv7())).resolves.toBeNull()
+    await expect(getBatchInfo(mintUuidv7())).resolves.toBeNull()
   })
 })
 
 describe('getBatchRecordsCreatedInLastHour', () => {
   it('counts a current UUIDv7 batch but excludes a batch from two hours ago', async () => {
     const referenceTime = new Date()
-    const recentId = mintUUIDv7()
-    const oldId = getMinUUIDv7ForDate(new Date(referenceTime.getTime() - 2 * 60 * 60 * 1000))
+    const recentId = mintUuidv7()
+    const oldId = getMinUuidv7ForDate(new Date(referenceTime.getTime() - 2 * 60 * 60 * 1000))
     await withEmbeddingQuotaSnapshot(async query => {
       const baseline = await getBatchRecordsCreatedInLastHour(referenceTime, { query })
       await insertTestEmbeddingsBatch({ id: recentId, records: 7 }, { query })
@@ -218,7 +218,7 @@ describe('getBatchRecordsCreatedInLastHour', () => {
     )
     const strictOneHourBoundary = new Date(referenceTime.getTime() - 60 * 60 * 1000)
     const ids = [0, 1, 2].map(offset =>
-      getMinUUIDv7ForDate(new Date(strictOneHourBoundary.getTime() + offset)),
+      getMinUuidv7ForDate(new Date(strictOneHourBoundary.getTime() + offset)),
     )
     await withEmbeddingQuotaSnapshot(async query => {
       const baseline = await getBatchRecordsCreatedInLastHour(referenceTime, { query })

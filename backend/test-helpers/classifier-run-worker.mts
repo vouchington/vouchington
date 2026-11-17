@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect } from 'vitest'
 import { write } from '@data-stores/psql'
 import { rejectNextClassifierRunDispatcherAddForTest } from './injected-failures.mts'
 import { followTopicAsReader } from './data-stores/psql/classifier-runs/autotagger-agent-fixture.mts'
-import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
+import { POST_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/post-classifier'
 import type { ClassifierRunJobData } from '../queues/ai-agents/types.mts'
 import { spendCapConfig } from '../services/ai-usage/index.mts'
 import { overrideDynamicConfigFieldsForTest } from './dynamic-config.mts'
@@ -31,11 +31,14 @@ import {
   requestPostClassifierRun,
 } from './data-stores/psql/post-classifier/execution.mts'
 
-export { POST_CLASSIFIER_SLUG, requestPostClassifierRun }
+export { POST_CLASSIFIER_SYSTEM_USERNAME, requestPostClassifierRun }
 
 type DispatcherJob = Parameters<typeof processClassifierRunDispatcher>[0]
 type RunJob = Parameters<typeof processClassifierRun>[0]
-export function classifierRunDispatcherJobFor(postId: string, classifier = POST_CLASSIFIER_SLUG) {
+export function classifierRunDispatcherJobFor(
+  postId: string,
+  classifier = POST_CLASSIFIER_SYSTEM_USERNAME,
+) {
   return {
     id: randomUUID(),
     name: 'classifier-run-dispatcher',
@@ -60,10 +63,10 @@ export async function dispatchApprovedClassifierPost(remote: boolean) {
   const setup = await createApprovedClassifierPost(remote, true)
   await requestPostClassifierRun(setup.post, setup.inputSha256)
   await processClassifierRunDispatcher(classifierRunDispatcherJobFor(setup.post.id))
-  const run = (await getClassifierRunFacts(setup.post.id, POST_CLASSIFIER_SLUG))[0]
+  const run = (await getClassifierRunFacts(setup.post.id, POST_CLASSIFIER_SYSTEM_USERNAME))[0]
   if (!run) throw new Error('Expected the dispatcher to reserve a classifier run')
   const data: ClassifierRunJobData = {
-    classifier: POST_CLASSIFIER_SLUG,
+    classifier: POST_CLASSIFIER_SYSTEM_USERNAME,
     runId: run.id,
     postId: setup.post.id,
     rssFeedItemId: null,
@@ -77,7 +80,7 @@ export async function dispatchApprovedClassifierPost(remote: boolean) {
 export async function createTestClassifierSweepNeighbor(handler: ClassifierRunHandler) {
   async function requestedSubject() {
     const fixture =
-      handler.slug === POST_CLASSIFIER_SLUG
+      handler.slug === POST_CLASSIFIER_SYSTEM_USERNAME
         ? await createApprovedClassifierPost(true, true)
         : await createAutotaggerPostFixture()
     const subject = { postId: fixture.post.id, rssFeedItemId: null } as const
@@ -119,7 +122,7 @@ export function createClassifierRunSweepScope(realHandler: ClassifierRunHandler)
   beforeEach(async () => {
     await spendCapConfig.waitForInitialization()
     restoreSpendCap = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
-    if ([POST_CLASSIFIER_SLUG, TAGGING_CLASSIFIER_SLUG].includes(realHandler.slug))
+    if ([POST_CLASSIFIER_SYSTEM_USERNAME, TAGGING_CLASSIFIER_SLUG].includes(realHandler.slug))
       neighbor = await createTestClassifierSweepNeighbor(realHandler)
   })
   afterEach(async () => {

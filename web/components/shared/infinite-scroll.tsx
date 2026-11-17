@@ -54,7 +54,6 @@ export function InfiniteScroll({
     // Only stamp the guard once onLoadMore confirms it actually started a request — an
     // explicit `false` means it no-opped (e.g. a stale query token or an in-flight request
     // already owns this cursor), and the next trigger for this cursor must get a real attempt.
-    const cursorAtRequestStart = endCursor
     const generationAtRequestStart = resetGenerationRef.current
     let loadStarted = true
     void onLoadMore()
@@ -67,7 +66,7 @@ export function InfiniteScroll({
         // to a query that no longer exists — stamping now would resurrect the exact
         // coincidental-cursor stall the reset effect below exists to clear.
         if (loadStarted && resetGenerationRef.current === generationAtRequestStart) {
-          attemptedCursorRef.current = cursorAtRequestStart
+          attemptedCursorRef.current = endCursor
         }
         loadingRef.current = false
       })

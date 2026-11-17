@@ -3,7 +3,7 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB } from '@queues/background/enqueues/account-lifecycle-jobs'
-import { articleSync } from '@queues/article-sync/queues'
+import { background } from '@queues/background/queues'
 import { ARTICLE_SYNC_PROCESS_JOB } from '@queues/background/enqueues/article-sync-jobs'
 import type { PrivateUser } from '@services/users/types'
 
@@ -36,7 +36,7 @@ describe('article-syncs', () => {
       const res = await request.post('/api/v1/article-syncs').expect(202)
       expect(res.body).toEqual({ jobId: expect.any(String) })
 
-      const job = await articleSync.getJob(res.body.jobId)
+      const job = await background.getJob(res.body.jobId)
       expect(job?.name).toBe(ARTICLE_SYNC_PROCESS_JOB.name)
       expect(job?.data).toEqual({ userId: admin.id })
       await expectStaffOperationHistory(admin.id, 'article_sync_run')
@@ -59,7 +59,7 @@ describe('article-syncs', () => {
       const request = createRequest()
       await request.authenticateAs(admin)
       // The POST route's throttle admits one sync per window, so this job is added directly.
-      const job = await articleSync.add(
+      const job = await background.add(
         ARTICLE_SYNC_PROCESS_JOB.name,
         { userId: admin.id },
         ARTICLE_SYNC_PROCESS_JOB.options,
@@ -71,7 +71,7 @@ describe('article-syncs', () => {
     it('returns 404 for a job that belongs to another domain of the shared queue', async () => {
       const request = createRequest()
       await request.authenticateAs(admin)
-      const other = await articleSync.add(
+      const other = await background.add(
         ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB.name,
         {},
         ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB.options,

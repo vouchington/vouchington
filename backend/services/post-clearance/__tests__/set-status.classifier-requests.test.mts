@@ -19,7 +19,7 @@ import {
   requestPostClassifierRun,
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/execution'
 import { setPostClassifierPostHashForTest } from '@voucha/test-helpers/data-stores/psql/post-classifier/run-facts'
-import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
+import { POST_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/post-classifier'
 import { TAGGING_CLASSIFIER_SLUG } from '@voucha/types/entities/tagging-classifier'
 import { createAutotaggerAgentRunAdapter } from '../../autotagger/agent/adapter.mts'
 import {
@@ -33,7 +33,7 @@ type Fixture = { post: { id: string }; inputSha256: Buffer }
 
 const classifiers = [
   {
-    slug: POST_CLASSIFIER_SLUG,
+    slug: POST_CLASSIFIER_SYSTEM_USERNAME,
     create: (): Promise<Fixture> => createApprovedClassifierPost(),
     request: (fixture: Fixture) => requestPostClassifierRun(fixture.post, fixture.inputSha256),
     sweptPostIds: () => sweepablePostIds(createTestPostClassifierAdapter()),

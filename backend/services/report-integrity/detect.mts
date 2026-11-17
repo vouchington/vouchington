@@ -1,5 +1,5 @@
 import { read } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import {
   ENTITY_TYPE_TO_FLAG_FK,
@@ -62,10 +62,10 @@ export async function detectMassReportCampaign(
   if (!fkColumn) return empty
 
   const windowStart = new Date(asOfMs - MASS_REPORT_WINDOW_MINUTES * 60 * 1000)
-  const windowStartId = getMinUUIDv7ForDate(windowStart)
+  const windowStartId = getMinUuidv7ForDate(windowStart)
   // User IDs are UUIDv7 — use id comparison for account-age filtering.
   const youngAccountCutoff = new Date(asOfMs - NEW_ACCOUNT_AGE_DAYS * 24 * 60 * 60 * 1000)
-  const youngAccountCutoffId = getMinUUIDv7ForDate(youngAccountCutoff)
+  const youngAccountCutoffId = getMinUuidv7ForDate(youngAccountCutoff)
 
   const query = sql`/* detectMassReportCampaign */
     SELECT

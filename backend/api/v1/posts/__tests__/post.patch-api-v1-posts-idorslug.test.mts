@@ -5,7 +5,7 @@ import type { PrivateUser } from '@services/users/types'
 
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { insertTestPost, createTestUser, followUser } from '@voucha/test-helpers'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
 
 describe('post', () => {
@@ -124,7 +124,7 @@ describe('post', () => {
 
       it('should return 403 when creator tries to update title after 1 day', async () => {
         const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
-        const oldId = getMinUUIDv7ForDate(twoDaysAgo)
+        const oldId = getMinUuidv7ForDate(twoDaysAgo)
         const postId = await insertTestPost({
           id: oldId,
           title: 'Old Post',
@@ -145,7 +145,7 @@ describe('post', () => {
 
       it('should return 403 when creator tries to update markdown after 1 day', async () => {
         const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
-        const oldId = getMinUUIDv7ForDate(twoDaysAgo)
+        const oldId = getMinUuidv7ForDate(twoDaysAgo)
         const postId = await insertTestPost({
           id: oldId,
           title: 'Old Post',
@@ -167,7 +167,7 @@ describe('post', () => {
       it('should return 403 when creator tries to update categories after 1 day', async () => {
         const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
         const postId = await insertTestPost({
-          id: getMinUUIDv7ForDate(twoDaysAgo),
+          id: getMinUuidv7ForDate(twoDaysAgo),
           title: 'Old category post',
           slug: `old-post-categories-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           createdById: creator.id,
@@ -186,7 +186,7 @@ describe('post', () => {
 
       it('should allow creator to update broadcast after 1 day', async () => {
         const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
-        const oldId = getMinUUIDv7ForDate(twoDaysAgo)
+        const oldId = getMinUuidv7ForDate(twoDaysAgo)
         const postId = await insertTestPost({
           id: oldId,
           title: 'Old Post',
@@ -209,7 +209,7 @@ describe('post', () => {
 
       it('should allow admin to update title after 1 day', async () => {
         const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
-        const oldId = getMinUUIDv7ForDate(twoDaysAgo)
+        const oldId = getMinUuidv7ForDate(twoDaysAgo)
         const postId = await insertTestPost({
           id: oldId,
           title: 'Old Post',

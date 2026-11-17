@@ -19,7 +19,7 @@ export {
   sanitizeLinkUrl,
 }
 
-export const extractScheme = extractUrlScheme
+export { extractUrlScheme }
 
 export const isHostname = (hostname: string): boolean =>
   !!hostname && /^[a-z0-9.-]+$/.test(hostname)
@@ -37,4 +37,4 @@ export const extractDomain = (url: string): string => extractUrlHostname(url) ??
  *   /about -> /
  *   / -> null
  */
-export const computeParentPath = getFirstPathSegment
+export { getFirstPathSegment }

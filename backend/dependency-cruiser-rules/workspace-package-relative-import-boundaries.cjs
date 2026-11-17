@@ -68,11 +68,10 @@ function discoverWorkspacePackageRoots() {
       : []
   if (!Array.isArray(patterns)) throw new TypeError('backend workspaces must be an array')
   /** @type {unknown[]} */
-  const workspaces = patterns
   /** @type {Set<string>} */
   const roots = new Set()
 
-  for (const pattern of workspaces) {
+  for (const pattern of patterns) {
     if (typeof pattern !== 'string')
       throw new TypeError('backend workspace patterns must be strings')
     for (const directory of expandWorkspacePattern(pattern)) {

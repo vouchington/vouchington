@@ -1,5 +1,5 @@
 import { v7 as uuidv7 } from 'uuid'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { insertTestAgentModeration } from './entities/post-llm-moderations.mts'
@@ -56,7 +56,7 @@ export async function createTestAgentModerationRetentionDailyContinuationPage() 
     ...fixture,
     initialBlockedId,
     initialDeletedId,
-    initialUpperBoundId: getMinUUIDv7ForDate(new Date('2026-07-31T00:00:00Z')),
+    initialUpperBoundId: getMinUuidv7ForDate(new Date('2026-07-31T00:00:00Z')),
   }
 }
 

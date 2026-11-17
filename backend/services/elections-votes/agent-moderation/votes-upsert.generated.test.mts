@@ -11,7 +11,7 @@ import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vo
 import { holdQueueBulkAdmission } from '@voucha/test-helpers/queue-admission-hold'
 import { removeEnqueuedJobs } from '@voucha/test-helpers/queue-jobs'
 import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { background } from '@queues/background/queues'
 import { caches } from '@services/entity-cache/caches'
 import { getAgentModerationElectionsByIdBatch } from './get-election-batch.mts'
 import { getAgentModerationElectionVote } from './votes-get.mts'
@@ -153,7 +153,7 @@ describe('votes-upsert.generated', () => {
 
     const jobName = VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name
     const admission = holdQueueBulkAdmission(
-      voteAggregation,
+      background,
       jobName,
       data =>
         typeof data === 'object' &&

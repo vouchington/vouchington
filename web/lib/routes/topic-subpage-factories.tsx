@@ -30,7 +30,6 @@ interface SubPageProps {
 export function createTopicRootPage(slug: string) {
   // The root page always redirects so its metadata is never served; the direct
   // assignment satisfies both the lint rules and this no-op metadata requirement.
-  const generateMetadata = createNoIndexMetadata
 
   async function TopicRootPage({ params }: RootPageProps) {
     const { id } = await params
@@ -40,7 +39,7 @@ export function createTopicRootPage(slug: string) {
     redirect(`/${slug}/${id}/${defaultSubpage}`)
   }
 
-  return { generateMetadata, default: TopicRootPage }
+  return { generateMetadata: createNoIndexMetadata, default: TopicRootPage }
 }
 
 export function createTopicPostsPage(slug: string) {

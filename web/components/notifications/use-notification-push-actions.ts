@@ -109,8 +109,7 @@ export function useNotificationPushActions(
   }, [subscriptionIdentity, setCurrentBinding])
 
   async function handleEnablePush() {
-    const publicKey = webPushPublicKey
-    if (!publicKey) {
+    if (!webPushPublicKey) {
       toast.error('Web push is not configured.')
       return
     }
@@ -134,7 +133,7 @@ export function useNotificationPushActions(
       }
 
       /* c8 ignore next 3 -- requires service worker and push notification browser APIs */
-      const saved = await registerAndSavePush(publicKey)
+      const saved = await registerAndSavePush(webPushPublicKey)
       setCurrentBinding({ endpoint: saved.endpoint, subscription_id: saved.id })
       setCreatedSubscriptions(prev => [saved, ...prev.filter(item => item.id !== saved.id)])
       setDeletedIds(prev => {

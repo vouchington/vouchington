@@ -55,7 +55,6 @@ export async function fetchInner(
 
   const maintenanceResponse = getMaintenanceResponse(request, env)
   if (maintenanceResponse) return maintenanceResponse
-  const rejectByIdentityLimit = getIdentityRateLimitRejection
   const ip = request.headers.get('cf-connecting-ip')
   const method = request.method
   const pathname = url.pathname
@@ -66,10 +65,10 @@ export async function fetchInner(
   const isExternalIngress = isExternalServerToServerIngress(method, pathname)
   const basicAuthRateLimit = await getBasicAuthRateLimitRejection(request, env, url, ip)
   if (basicAuthRateLimit.response) return basicAuthRateLimit.response
-  const getRejection = (isRateLimitExempt: boolean, isServerAction = false) =>
+  const getRejection = (exempt: boolean, serverAction = false) =>
     basicAuthRateLimit.applies
       ? Promise.resolve(null)
-      : rejectByIdentityLimit(env, method, pathname, ip, isRateLimitExempt, botTier, isServerAction)
+      : getIdentityRateLimitRejection(env, method, pathname, ip, exempt, botTier, serverAction)
   const basicAuthResponse = getBasicAuthResponse(request, env, url)
   if (basicAuthResponse) return basicAuthResponse
   if (canaryFault === 'unexpected-throw') throw new Error('Injected staging canary failure')

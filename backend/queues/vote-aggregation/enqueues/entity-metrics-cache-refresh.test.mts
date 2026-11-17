@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { VOTE_AGGREGATION_REFRESH_POST_METRICS_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
-import { voteAggregation } from '../queues.mts'
+import { background } from '@queues/background/queues'
 import { enqueueBulkRefreshPostMetricsById } from './entity-metrics-cache-refresh.mts'
 
 describe('entity metrics cache refresh enqueues', () => {
   it('refreshes metrics at the requested priority', async () => {
-    const addBulk = vi.spyOn(voteAggregation, 'addBulk').mockResolvedValueOnce([])
+    const addBulk = vi.spyOn(background, 'addBulk').mockResolvedValueOnce([])
     const id = randomUUID()
 
     try {

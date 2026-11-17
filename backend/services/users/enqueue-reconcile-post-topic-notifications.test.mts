@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import {
   createTestPost,
   createTestTopic,
@@ -38,7 +38,7 @@ describe('enqueueReconcileNotificationsForPostCategoryVotes', () => {
       },
     ])
 
-    const jobs = await readAllQueueJobs(notifications)
+    const jobs = await readAllQueueJobs(background)
     expect(
       jobs.filter(
         job =>

@@ -1,5 +1,5 @@
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
-import { mintUUIDv7 } from '@modules/utils/ids'
+import { mintUuidv7 } from '@modules/utils/ids'
 import { expect, onTestFinished } from 'vitest'
 import { advisoryLockPool, read } from '@data-stores/psql'
 import type { PoolClient } from '@data-stores/psql/types'
@@ -82,7 +82,7 @@ export async function acquireEmbeddingQuotaFixture() {
     },
     insertCompletedControl: (records = 1) => {
       assertOpen()
-      const id = mintUUIDv7()
+      const id = mintUuidv7()
       ids.push(id)
       const write = Promise.resolve().then(async () => {
         assertOpen()
@@ -101,7 +101,7 @@ export async function acquireEmbeddingQuotaFixture() {
     },
     insertActiveSizeControl: (inputSizeMB: number) => {
       assertOpen()
-      const id = mintUUIDv7()
+      const id = mintUuidv7()
       ids.push(id)
       const write = Promise.resolve().then(async () => {
         assertOpen()

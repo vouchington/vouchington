@@ -10,7 +10,7 @@ import { readClassifierRunDispatcherJobsForTest } from '@voucha/test-helpers/cla
 import { getClassifierRunRequestFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
 import { initializePostClassifierExecutionTests } from '@voucha/test-helpers/data-stores/psql/post-classifier/execution'
 import { getPostClassifierPostHashForTest } from '@voucha/test-helpers/data-stores/psql/post-classifier/run-facts'
-import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
+import { POST_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/post-classifier'
 import { TAGGING_CLASSIFIER_SLUG } from '@voucha/types/entities/tagging-classifier'
 import { checkPostClearance, resetPostClearance } from '../index.mts'
 
@@ -42,7 +42,7 @@ describe('checkPostClearance requests a classifier run on approval', () => {
     })
   }
 
-  it.each([POST_CLASSIFIER_SLUG, TAGGING_CLASSIFIER_SLUG])(
+  it.each([POST_CLASSIFIER_SYSTEM_USERNAME, TAGGING_CLASSIFIER_SLUG])(
     'writes the durable %s request in the approval and queues one dispatcher, however often it re-approves',
     async classifier => {
       const postId = await pendingPost('clearance-request')
@@ -81,7 +81,7 @@ describe('checkPostClearance requests a classifier run on approval', () => {
 
     const requests = await getClassifierRunRequestFacts(postId)
     expect(requests.map(request => request.classifier_slug).toSorted()).toEqual(
-      [POST_CLASSIFIER_SLUG, TAGGING_CLASSIFIER_SLUG].toSorted(),
+      [POST_CLASSIFIER_SYSTEM_USERNAME, TAGGING_CLASSIFIER_SLUG].toSorted(),
     )
     expect(await readClassifierRunDispatcherJobsForTest(postId)).toHaveLength(2)
   })

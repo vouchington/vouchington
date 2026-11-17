@@ -5,7 +5,7 @@ import {
   createTestClassifierSweepNeighbor,
   dispatchApprovedClassifierPost,
   requestPostClassifierRun,
-  POST_CLASSIFIER_SLUG,
+  POST_CLASSIFIER_SYSTEM_USERNAME,
 } from '@voucha/test-helpers/classifier-run-worker'
 import {
   readClassifierRunJobsForTest,
@@ -20,10 +20,12 @@ import { ai_agents } from '@queues/ai-agents/queues'
 import { getClassifierRunHandler } from './classifier-run-registry.mts'
 import { processReconcileClassifierRuns } from './process-reconcile-classifier-runs.mts'
 
-const scope = createClassifierRunSweepScope(getClassifierRunHandler(POST_CLASSIFIER_SLUG))
+const scope = createClassifierRunSweepScope(
+  getClassifierRunHandler(POST_CLASSIFIER_SYSTEM_USERNAME),
+)
 const sweep = (data = {}, pageSize = 2) =>
   processReconcileClassifierRuns(data, scope.ids(), pageSize)
-const requests = { phase: 'requests', classifier: POST_CLASSIFIER_SLUG } as const
+const requests = { phase: 'requests', classifier: POST_CLASSIFIER_SYSTEM_USERNAME } as const
 const noRequests = { kind: 'requests', dispatched: 0, hasNext: false }
 
 async function dispatchTracked(remote: boolean) {
@@ -48,15 +50,15 @@ describe('classifier recovery pagination', () => {
     await requestPostClassifierRun(first.post, first.inputSha256)
     await requestPostClassifierRun(second.post, second.inputSha256)
     const requestIds = [
-      (await getClassifierRunRequestFacts(first.post.id, POST_CLASSIFIER_SLUG))[0]!.id,
-      (await getClassifierRunRequestFacts(second.post.id, POST_CLASSIFIER_SLUG))[0]!.id,
+      (await getClassifierRunRequestFacts(first.post.id, POST_CLASSIFIER_SYSTEM_USERNAME))[0]!.id,
+      (await getClassifierRunRequestFacts(second.post.id, POST_CLASSIFIER_SYSTEM_USERNAME))[0]!.id,
     ].toSorted()
     const outside = await createTestClassifierSweepNeighbor(
-      getClassifierRunHandler(POST_CLASSIFIER_SLUG),
+      getClassifierRunHandler(POST_CLASSIFIER_SYSTEM_USERNAME),
     )
     const [outsideRequest] = await getClassifierRunRequestFacts(
       outside.pendingSubject.postId,
-      POST_CLASSIFIER_SLUG,
+      POST_CLASSIFIER_SYSTEM_USERNAME,
     )
     expect(outsideRequest!.id.localeCompare(requestIds[1]!)).toBeGreaterThan(0)
     const chained = requestIds[0]!
@@ -77,14 +79,18 @@ describe('classifier recovery pagination', () => {
     await sweep()
 
     const jobIds = (await readAllQueueJobs(ai_agents)).map(job => job.id)
-    const next = `reconcile_classifier_runs_requests_${POST_CLASSIFIER_SLUG}_${chained}`
+    const next = `reconcile_classifier_runs_requests_${POST_CLASSIFIER_SYSTEM_USERNAME}_${chained}`
     expect(jobIds.filter(id => id === next)).toHaveLength(1)
     expect(
       jobIds.filter(
-        id => id === `reconcile_classifier_runs_requests_${POST_CLASSIFIER_SLUG}_${requestIds[1]}`,
+        id =>
+          id ===
+          `reconcile_classifier_runs_requests_${POST_CLASSIFIER_SYSTEM_USERNAME}_${requestIds[1]}`,
       ),
     ).toHaveLength(1)
-    expect(jobIds).toContain(`reconcile_classifier_runs_requests_${POST_CLASSIFIER_SLUG}_start`)
+    expect(jobIds).toContain(
+      `reconcile_classifier_runs_requests_${POST_CLASSIFIER_SYSTEM_USERNAME}_start`,
+    )
     await outside.assertUnchanged()
   })
 
@@ -94,7 +100,7 @@ describe('classifier recovery pagination', () => {
     removeClassifierRunJobForTest(first.runId)
     removeClassifierRunJobForTest(second.runId)
     const outside = await createTestClassifierSweepNeighbor(
-      getClassifierRunHandler(POST_CLASSIFIER_SLUG),
+      getClassifierRunHandler(POST_CLASSIFIER_SYSTEM_USERNAME),
     )
     expect(outside.runId.localeCompare(first.runId)).toBeGreaterThan(0)
     expect(outside.runId.localeCompare(second.runId)).toBeGreaterThan(0)

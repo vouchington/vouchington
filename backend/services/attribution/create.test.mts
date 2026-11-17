@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUserDirect, getSessionReferralAttributions } from '@voucha/test-helpers'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { v7 as uuidv7 } from 'uuid'
 import { createSessionReferralAttribution } from './create.mts'
 import { updateAttributionSignup } from './update-signup.mts'
@@ -26,7 +26,7 @@ describe('append-only referral clicks', () => {
     expect(rows).toHaveLength(2)
     expect(rows[0]).toEqual(first)
     expect(rows[1]).toMatchObject({ landing_url: 'https://example.com/second', user_id: null })
-    const jobs = await notifications.searchJobs({
+    const jobs = await background.searchJobs({
       name: 'notifications.processReferralClickNotification',
       data: { referrerId: referrer.id },
     })

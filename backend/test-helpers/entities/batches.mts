@@ -1,5 +1,5 @@
 import { read, write } from '@data-stores/psql'
-import { mintUUIDv7 } from '@modules/utils/ids'
+import { mintUuidv7 } from '@modules/utils/ids'
 
 /**
  * Creates a test batch record with batch entities
@@ -12,7 +12,7 @@ export const createTestBatch = async (
     records?: number
   } = {},
 ) => {
-  const batchId = mintUUIDv7()
+  const batchId = mintUuidv7()
   const jobType = options.jobType || 'topics'
   const records = options.records || options.entityIds?.length || 0
   const entityIds = options.entityIds || []

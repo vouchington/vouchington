@@ -165,12 +165,11 @@ export async function searchRssFeedCrawls(
   if (after) query.append(sql` AND id < ${after.id}`)
   query.append(sql` ORDER BY id DESC LIMIT ${limit + 1}`)
   const { rows } = await read<RssFeedCrawlSummary>(query)
-  const crawls = rows
-  const results = crawls.slice(0, limit)
+  const results = rows.slice(0, limit)
   return {
     results,
     page_info: buildPageInfo(results, {
-      hasNextPage: crawls.length > limit,
+      hasNextPage: rows.length > limit,
       getCursor: crawl => ({ id: crawl.id, scope: cursorScope }),
     }),
   }

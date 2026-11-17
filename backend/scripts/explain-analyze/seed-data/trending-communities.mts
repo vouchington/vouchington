@@ -43,7 +43,6 @@ export async function seedTrendingCommunityPostIds(
   const createdById = seedUuid(0, '01')
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     for (let i = 0; i < total; i += 500) {
       const batch = Math.min(500, total - i)
       const reviewValues: unknown[] = []
@@ -62,14 +61,14 @@ export async function seedTrendingCommunityPostIds(
         postIds.push(postId)
         postIdsByCommunity.set(communityId, postIds)
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO community_post_reviews
            (community_id, post_id, submitted_by_id, reviewed_at, approved_at)
          VALUES ${reviewRows.join(', ')} ON CONFLICT DO NOTHING`,
         reviewValues,
       )
       for (const [communityId, postIds] of postIdsByCommunity) {
-        await query(
+        await transaction(
           `/* seedExplainData */ UPDATE posts SET community_id = $1 WHERE id = ANY($2::uuid[])`,
           [communityId, postIds],
         )
@@ -91,7 +90,6 @@ export async function seedCommunityProxyFollowsAndMutes(
   )
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     const followValues: unknown[] = []
     const followRows: string[] = []
     const muteValues: unknown[] = []
@@ -112,14 +110,14 @@ export async function seedCommunityProxyFollowsAndMutes(
       }
     }
     if (followRows.length > 0) {
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO relation__user__proxy_follow__community (subject_id, object_id)
          VALUES ${followRows.join(', ')} ON CONFLICT DO NOTHING`,
         followValues,
       )
     }
     if (muteRows.length > 0) {
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO relation__user__proxy_mute__community (subject_id, object_id)
          VALUES ${muteRows.join(', ')} ON CONFLICT DO NOTHING`,
         muteValues,

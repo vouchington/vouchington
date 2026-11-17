@@ -29,6 +29,7 @@
     "@modules/utils": "workspace:^",
     "@queues/admin-imports": "workspace:^",
     "@queues/article-sync": "workspace:^",
+    "@queues/background": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/referral-program-link-validations": "workspace:^",

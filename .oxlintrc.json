@@ -1099,6 +1099,7 @@
       }
     ],
     "no-mistakes/ts-no-function-aliases": "error",
+    "no-mistakes/ts-no-const-aliases": "error",
     "no-mistakes/ts-preserve-null-option-defaults": [
       "error",
       {
@@ -1541,6 +1542,20 @@
         "typescript/no-unsafe-call": "off",
         "typescript/no-unsafe-return": "off",
         "typescript/no-unsafe-argument": "off"
+      }
+    },
+    {
+      "files": [
+        "**/*.test.{mts,ts,tsx}",
+        "**/*.spec.{mts,ts,tsx}",
+        "**/*.mock.test.{mts,ts,tsx}",
+        "**/__tests__/**/*.{mts,ts,tsx}",
+        "**/test-helpers/**",
+        "**/*.stories.{ts,tsx}",
+        "**/*-tests/**"
+      ],
+      "rules": {
+        "no-mistakes/ts-no-const-aliases": "off"
       }
     },
     {

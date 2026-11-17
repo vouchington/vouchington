@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import { placeTestAccountPreservationHold } from '@voucha/test-helpers/copyright-mcp-audit'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
@@ -36,7 +36,7 @@ describe('security evidence preservation', () => {
       requestId: pending.requestId,
       occurredAt,
     })
-    await positionTestOAuthEventRetentionCursor(query, getMinUUIDv7ForDate(occurredAt))
+    await positionTestOAuthEventRetentionCursor(query, getMinUuidv7ForDate(occurredAt))
     await placeTestAccountPreservationHold(query, user.id, user.id)
     await cleanupSecuritySourcePageInTransaction(query, 'oauth_events', 32, now)
     expect(await testOAuthEventExists(query, eventId)).toBe(true)

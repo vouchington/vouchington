@@ -52,11 +52,10 @@ export function PostDetailOverflowMenu({
 
   const showPin = !!(isCommunityMod && communitySlug && post.can_unpublish_from_community)
 
-  const hasGroup1 = showShare
   const hasGroup2 = showReport || canEdit
   const hasGroup3 = showDelete || showLock || showUnpublish || showPin
 
-  const hasAnyItem = hasGroup1 || hasGroup2 || hasGroup3
+  const hasAnyItem = showShare || hasGroup2 || hasGroup3
 
   const entityId = post.slug ?? post.id
   const actions = useFollowerShareActions({
@@ -83,14 +82,14 @@ export function PostDetailOverflowMenu({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align='end'>
-          {hasGroup1 && (
+          {showShare && (
             <FollowerShareMenuItems
               isSharePending={actions.isSharePending}
               onShare={actions.handleShare}
               onSendOpen={actions.handleSendDialogOpen}
             />
           )}
-          {hasGroup1 && hasGroup2 && <DropdownMenuSeparator />}
+          {showShare && hasGroup2 && <DropdownMenuSeparator />}
           {canEdit && (
             <DropdownMenuItem asChild>
               <Link
@@ -108,7 +107,7 @@ export function PostDetailOverflowMenu({
               entityId={post.id}
             />
           )}
-          {(hasGroup1 || hasGroup2) && hasGroup3 && <DropdownMenuSeparator />}
+          {(showShare || hasGroup2) && hasGroup3 && <DropdownMenuSeparator />}
           {showLock && (
             <PostLockMenuItem
               postIdOrSlug={post.slug ?? post.id}

@@ -4,7 +4,7 @@ import {
   OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB,
   OAUTH_AUTHORIZATION_EXCHANGE_JOB,
 } from '@queues/background/enqueues/oauth-authorization-exchange-jobs'
-import { oauthAuthorizationExchangeQueue } from '@queues/oauth-authorization-exchange/queues'
+import { background } from '@queues/background/queues'
 import {
   deleteTestOAuthAuthorizationFixtures,
   insertTestOAuthAuthorization,
@@ -26,7 +26,7 @@ describe('OAuth authorization exchange worker processors', () => {
     const result = await processDispatchOAuthAuthorizationExchanges([authorizationId])
 
     expect(result.enqueued).toBe(1)
-    expect(await oauthAuthorizationExchangeQueue.getJob(authorizationId)).toMatchObject({
+    expect(await background.getJob(authorizationId)).toMatchObject({
       data: { authorizationId },
     })
   })

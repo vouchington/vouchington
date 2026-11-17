@@ -27,34 +27,35 @@ export function buildPostSearchQuery(
   const rawSort = detectSearchSort(requestedOptions)
   const sort = rawSort === 'following_new' && !currentUser ? 'new' : rawSort
   const capped = usesCappedTopicWalk(requestedOptions, sort)
-  const options = requestedOptions
-  const limit = capped ? TOPIC_WALK_ROW_CAP : options.limit
+  const limit = capped ? TOPIC_WALK_ROW_CAP : requestedOptions.limit
   const rankingScoreExpression = buildPostRankingScoreExpression({
     hasTextSearch,
     hasSemanticSearch,
   })
   const followingRankExpression =
-    options.following_phase === 'followed'
+    requestedOptions.following_phase === 'followed'
       ? sql`1`
-      : options.following_phase === 'other'
+      : requestedOptions.following_phase === 'other'
         ? sql`0`
         : sort === 'following_new' && currentUser
           ? sql`CASE WHEN viewer_following.object_id IS NULL THEN 0 ELSE 1 END`
           : null
   const query = sql``.append(
-    `/* ${capped && options.inspectedTail ? 'buildTopicWalkTailQuery' : 'buildPostSearchQuery'} */\n  `,
+    `/* ${capped && requestedOptions.inspectedTail ? 'buildTopicWalkTailQuery' : 'buildPostSearchQuery'} */\n  `,
   )
 
   const ctes = buildPostSearchCtes({
-    ...options,
+    ...requestedOptions,
     hasSemanticSearch,
     hasTextSearch,
   })
   if (hasSemanticSearch)
-    ctes.push(buildSemanticPostCandidates(currentUser, options, hasTextSearch, decisionInstant))
+    ctes.push(
+      buildSemanticPostCandidates(currentUser, requestedOptions, hasTextSearch, decisionInstant),
+    )
   appendCtes(query, ctes)
   // Community lists keep the checked candidate_posts name: one sort-key walk, then the page.
-  const candidateWalk = options.community_id !== undefined || capped
+  const candidateWalk = requestedOptions.community_id !== undefined || capped
   if (candidateWalk) {
     query.append(
       ctes.length > 0
@@ -69,7 +70,7 @@ export function buildPostSearchQuery(
     followingRankExpression,
     hasSemanticSearch,
     hasTextSearch,
-    options,
+    options: requestedOptions,
     rankingScoreExpression,
     sort,
   })
@@ -79,7 +80,7 @@ export function buildPostSearchQuery(
     followingRankExpression,
     hasSemanticSearch,
     hasTextSearch,
-    options,
+    options: requestedOptions,
     rankingScoreExpression,
     sort,
   }
@@ -93,19 +94,19 @@ export function buildPostSearchQuery(
     omitLimit,
     omitOrderBy,
     // A phase walk has a constant rank, so its order is the id key alone.
-    sort: options.following_phase === undefined ? sort : 'new',
+    sort: requestedOptions.following_phase === undefined ? sort : 'new',
   })
   if (candidateWalk) {
     appendCommunityCandidatePage(query, {
       outerPage: capped
         ? {
-            tail: options.inspectedTail === true,
-            limit: options.limit ?? 100,
+            tail: requestedOptions.inspectedTail === true,
+            limit: requestedOptions.limit ?? 100,
             appendWhere: () =>
               appendPostSearchWhereClause(query, {
                 ...whereArgs,
                 paginationOnly: false,
-                options: { ...options, topicMembershipColumn: 'candidate_posts.id' },
+                options: { ...requestedOptions, topicMembershipColumn: 'candidate_posts.id' },
               }),
           }
         : null,

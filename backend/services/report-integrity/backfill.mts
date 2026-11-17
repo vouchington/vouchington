@@ -1,6 +1,6 @@
 import { getReportIntegrityWorkLimit } from './work-limits.mts'
 import { read } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import { MASS_REPORT_WINDOW_MINUTES } from './config.mts'
 
@@ -30,7 +30,7 @@ export async function listPendingReportEntityPage(
   if (!Number.isFinite(now)) throw new Error('now must be a finite number')
 
   const limit = getReportIntegrityWorkLimit('backfill_batch_size')
-  const windowStartId = getMinUUIDv7ForDate(new Date(now - MASS_REPORT_WINDOW_MINUTES * 60 * 1000))
+  const windowStartId = getMinUuidv7ForDate(new Date(now - MASS_REPORT_WINDOW_MINUTES * 60 * 1000))
   const query = sql`/* listPendingReportEntityPage */
     SELECT mr.id, CASE
       WHEN mr.reviewed_at IS NOT NULL THEN NULL

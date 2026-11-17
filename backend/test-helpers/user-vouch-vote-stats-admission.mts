@@ -6,7 +6,7 @@ import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB } from '../queues/background/enque
 
 export async function withOwnedVouchStats<Result>(targetId: string, action: () => Promise<Result>) {
   const retry = await import('../data-stores/valkey-glide-mq/glide-mq-retry.mts')
-  const queue = (await import('../queues/vote-aggregation/queues.mts')).voteAggregation
+  const queue = (await import('@queues/background/queues')).background
   const worker = getSharedBackgroundWorker()
   type Admission = { jobs?: Promise<unknown>; owned: boolean }
   type End = { failed: boolean; reason?: unknown }

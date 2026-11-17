@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { Queue, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
-import { getMaxUUIDv7ForDate } from '@modules/utils'
+import { getMaxUuidv7ForDate } from '@modules/utils'
 import { BACKGROUND_CPU_QUEUE_NAME as QUEUE_NAME } from '@queues/background-cpu/config'
 import { deleteOldInvalidCrawls } from '@services/crawls/cleanup'
 import { crawlDispatchConfig } from '@services/crawls/work-limits'
@@ -64,7 +64,7 @@ async function isolatedTierUrl() {
   const msecs =
     Date.UTC(1971, 0, 1) +
     Number(BigInt(`0x${randomUUID().replaceAll('-', '').slice(0, 12)}`) % BigInt(historicalRangeMs))
-  const upperId = getMaxUUIDv7ForDate(new Date(msecs))
+  const upperId = getMaxUuidv7ForDate(new Date(msecs))
   const upper = BigInt(`0x${upperId.replaceAll('-', '')}`)
   const previous = (upper - 1n).toString(16).padStart(32, '0')
   const afterId = `${previous.slice(0, 8)}-${previous.slice(8, 12)}-${previous.slice(12, 16)}-${previous.slice(16, 20)}-${previous.slice(20)}`

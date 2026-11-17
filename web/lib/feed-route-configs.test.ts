@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import {
-  feedRouteConfigs,
   getFeedSubFilters,
   type FeedCategory,
   type PostFeedRouteConfig,
   type NewsFeedType,
   type ReferralLinksFeedRouteConfig,
 } from './feed-route-configs'
+import { feedRouteConfigData } from './feed-route-config-data'
 import { VALID_POST_FEED_TYPES, VALID_RSS_FEED_ITEM_FEED_TYPES } from '@ts-shared/feed-capabilities'
 
 const FOLLOWING_LABEL_KEY = 'extracted.lib.feedRouteConfigData.following_344b4271'
@@ -119,7 +119,7 @@ describe('feedRouteConfigs', () => {
       'videos',
       'referral-links',
     ]
-    for (const config of Object.values(feedRouteConfigs)) {
+    for (const config of Object.values(feedRouteConfigData)) {
       expect(config.title).toBeTruthy()
       expect(config.path).toMatch(/^\/feed\//)
       expect(config.feedType).toBeTruthy()
@@ -132,7 +132,7 @@ describe('feedRouteConfigs', () => {
     const validTypes: PostFeedRouteConfig['feedType'][] = VALID_POST_FEED_TYPES.filter(
       (type): type is PostFeedRouteConfig['feedType'] => type !== 'all',
     )
-    const postConfigs = Object.values(feedRouteConfigs).filter(c => c.category === 'posts')
+    const postConfigs = Object.values(feedRouteConfigData).filter(c => c.category === 'posts')
     for (const config of postConfigs) {
       expect(validTypes).toContain(config.feedType)
     }
@@ -142,7 +142,7 @@ describe('feedRouteConfigs', () => {
     const validTypes: NewsFeedType[] = VALID_RSS_FEED_ITEM_FEED_TYPES.filter(
       (type): type is NewsFeedType => type !== 'all',
     )
-    const newsConfigs = Object.values(feedRouteConfigs).filter(c => c.category === 'news')
+    const newsConfigs = Object.values(feedRouteConfigData).filter(c => c.category === 'news')
     for (const config of newsConfigs) {
       expect(validTypes).toContain(config.feedType)
     }
@@ -152,7 +152,7 @@ describe('feedRouteConfigs', () => {
     const validTypes: NewsFeedType[] = VALID_RSS_FEED_ITEM_FEED_TYPES.filter(
       (type): type is NewsFeedType => type !== 'all',
     )
-    const podcastConfigs = Object.values(feedRouteConfigs).filter(c => c.category === 'podcasts')
+    const podcastConfigs = Object.values(feedRouteConfigData).filter(c => c.category === 'podcasts')
     expect(podcastConfigs.length).toBe(4)
     for (const config of podcastConfigs) {
       expect(validTypes).toContain(config.feedType)
@@ -163,7 +163,7 @@ describe('feedRouteConfigs', () => {
     const validTypes: NewsFeedType[] = VALID_RSS_FEED_ITEM_FEED_TYPES.filter(
       (type): type is NewsFeedType => type !== 'all',
     )
-    const videoConfigs = Object.values(feedRouteConfigs).filter(c => c.category === 'videos')
+    const videoConfigs = Object.values(feedRouteConfigData).filter(c => c.category === 'videos')
     expect(videoConfigs.length).toBe(4)
     for (const config of videoConfigs) {
       expect(validTypes).toContain(config.feedType)
@@ -175,7 +175,7 @@ describe('feedRouteConfigs', () => {
       'follow_users',
       'mutual_follows',
     ]
-    const configs = Object.values(feedRouteConfigs).filter(c => c.category === 'referral-links')
+    const configs = Object.values(feedRouteConfigData).filter(c => c.category === 'referral-links')
     expect(configs.length).toBe(2)
     for (const config of configs) {
       expect(validTypes).toContain(config.feedType)

@@ -105,19 +105,17 @@ async function searchUrlCrawlPage<Row extends UrlCrawlIdRow>(
     filters.push(sql`id < ${cursor.id}`)
   }
 
-  const query = selectFromWhere
-
   filters.forEach((filter, index) => {
-    if (index > 0) query.append(sql` AND `)
-    query.append(filter)
+    if (index > 0) selectFromWhere.append(sql` AND `)
+    selectFromWhere.append(filter)
   })
 
-  query.append(sql`
+  selectFromWhere.append(sql`
     ORDER BY id DESC
     LIMIT ${safeLimit + 1}
   `)
 
-  const { rows } = await readRows(query)
+  const { rows } = await readRows(selectFromWhere)
   const crawls = rows.map(row => ({
     __entity_type: 'crawl' as const,
     ...row,

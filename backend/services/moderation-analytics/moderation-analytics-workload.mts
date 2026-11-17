@@ -1,4 +1,4 @@
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import { getReportingWindows } from '@services/reporting-daily-rollups/windows'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -19,9 +19,9 @@ export async function getModeratorWorkload(
 ): Promise<ModeratorWorkloadMetrics> {
   const communityId = getCommunityId(scope)
   const windows = getReportingWindows(periodStart, now)
-  const partialStart = getMinUUIDv7ForDate(windows.firstPartial?.start ?? windows.today.start)
-  const partialEnd = getMinUUIDv7ForDate(windows.firstPartial?.end ?? windows.today.start)
-  const todayStart = getMinUUIDv7ForDate(windows.today.start)
+  const partialStart = getMinUuidv7ForDate(windows.firstPartial?.start ?? windows.today.start)
+  const partialEnd = getMinUuidv7ForDate(windows.firstPartial?.end ?? windows.today.start)
+  const todayStart = getMinUuidv7ForDate(windows.today.start)
   const { rows } = await read(sql`/* getModerationModeratorWorkload */
     WITH facts AS (
       SELECT ma.actor_user_id, ma.action_type::TEXT AS action_type,

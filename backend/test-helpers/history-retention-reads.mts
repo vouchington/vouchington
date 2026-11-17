@@ -1,7 +1,7 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { onTestFinished } from 'vitest'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import type { HistoryKind } from '../services/data-retention/cleanup-histories.mts'
 import { acquireTestPostgresAdvisoryLock } from './postgres-advisory-lock.mts'
 
@@ -24,7 +24,7 @@ export async function reserveHistoryRetentionFixtureIds(kind: HistoryKind): Prom
 }
 
 export async function positionHistoryCursorForTest(kind: HistoryKind, before: Date): Promise<void> {
-  const cursorId = getMinUUIDv7ForDate(before)
+  const cursorId = getMinUuidv7ForDate(before)
   await write(sql`/* positionHistoryCursorForTest */
     INSERT INTO history_retention_cursors (cleanup_name, cursor_id)
     VALUES (${kind}::history_retention_cleanup_names, ${cursorId}::uuid)

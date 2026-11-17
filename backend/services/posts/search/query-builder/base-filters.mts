@@ -21,20 +21,21 @@ export function buildBaseFilters(
     user_id,
   }: PostSearchOptions,
 ): SQLStatement[] {
-  const viewer = currentUser
-  const isAdmin = isAdminUser(viewer ?? null)
+  const isAdmin = isAdminUser(currentUser ?? null)
   return [
     sql`posts.deleted_at IS NULL`,
     // Profile facet counts retain their existing global-post scope; discovery accepts communities.
     ...(profileCountPostType ? [sql`posts.community_id IS NULL`] : []),
     // A profile count's only post_type predicate is its literal, so the partial index can be proved.
     ...(!profileCountPostType && !post_types?.length ? [sql`posts.post_type != 'comment'`] : []),
-    buildDiscoveryEligibility(viewer, isAdmin, include_archived_communities === true),
-    ...(following_phase && viewer ? [buildFollowingPhaseFilter(viewer.id, following_phase)] : []),
+    buildDiscoveryEligibility(currentUser, isAdmin, include_archived_communities === true),
+    ...(following_phase && currentUser
+      ? [buildFollowingPhaseFilter(currentUser.id, following_phase)]
+      : []),
     ...(exclude_for_user_id ? buildUserExclusionFilters(exclude_for_user_id) : []),
     ...(user_id
       ? buildUserFilter({
-          currentUser: viewer,
+          currentUser,
           isAdmin,
           user_id,
           anonymousEqualsFalse: profileCountPostType !== undefined,

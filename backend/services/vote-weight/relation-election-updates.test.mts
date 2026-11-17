@@ -11,7 +11,7 @@ import {
   insertTestEntityRelationVote,
   readTestEntityRelationUserVotePage,
 } from '@voucha/test-helpers/entities/entity-relation-votes'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { background } from '@queues/background/queues'
 import { enqueueElectionUpdatePageForUser } from './enqueue-election-updates.mts'
 import type { UserElectionFanOutCursor } from '@queues/vote-aggregation/enqueues/types-vote-weight'
 import { findUsersForElectionVoteReplay } from './relation-election-updates.mts'
@@ -41,7 +41,7 @@ describe('relation election fanout', () => {
     do {
       const page = await enqueueElectionUpdatePageForUser(fixture.viewer.id, cursor, 1)
       expect(page.jobIds.length).toBeLessThanOrEqual(1)
-      const jobs = await Promise.all(page.jobIds.map(id => voteAggregation.getJob(id)))
+      const jobs = await Promise.all(page.jobIds.map(id => background.getJob(id)))
       for (const job of jobs) {
         expect(job?.name).toBe('vote-aggregation.processUpdateElectionVoteStats')
         targets.push(job!.data as { electionId: string; relationTable: string })

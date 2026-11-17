@@ -33,34 +33,33 @@ export async function runCommunityDigestRecipientScenarios(): Promise<void> {
       batchSize * 2 < communityIds.length,
       'The membership fixture must contain two full pages',
     )
-    const userId = COMMUNITY_MEMBERSHIP_CAP_USER_ID
     let nextCommunityId: string | null = null
     registerScenarioContract('community-activity-digest-archived-first', contract)
     await runAndCapture('community-activity-digest-archived-first', async () => {
       const page = await listCommunityActivityDigestRecipientPage(
         undefined,
-        userId,
-        [userId],
+        COMMUNITY_MEMBERSHIP_CAP_USER_ID,
+        [COMMUNITY_MEMBERSHIP_CAP_USER_ID],
         batchSize,
       )
       assert.deepEqual(page.page, [])
       assert.equal(page.hasMore, true)
-      assert.equal(page.nextUserId, userId)
+      assert.equal(page.nextUserId, COMMUNITY_MEMBERSHIP_CAP_USER_ID)
       assert.equal(page.nextCommunityId, communityIds[batchSize - 1])
       nextCommunityId = page.nextCommunityId
     })
     registerScenarioContract('community-activity-digest-archived-later', contract)
     await runAndCapture('community-activity-digest-archived-later', async () => {
       const page = await listCommunityActivityDigestRecipientPage(
-        userId,
-        userId,
-        [userId],
+        COMMUNITY_MEMBERSHIP_CAP_USER_ID,
+        COMMUNITY_MEMBERSHIP_CAP_USER_ID,
+        [COMMUNITY_MEMBERSHIP_CAP_USER_ID],
         batchSize,
         nextCommunityId,
       )
       assert.deepEqual(page.page, [])
       assert.equal(page.hasMore, true)
-      assert.equal(page.nextUserId, userId)
+      assert.equal(page.nextUserId, COMMUNITY_MEMBERSHIP_CAP_USER_ID)
       assert.equal(page.nextCommunityId, communityIds[batchSize * 2 - 1])
     })
   })

@@ -84,13 +84,12 @@ export async function updateMemberRole(
   await query.commit()
   const shouldDeactivatePrompts = targetMembership.role === 'moderator' && role === 'member'
   const previousRole = targetMembership.role
-  const updated = changed
-  const notification = notificationInTransaction
-  if (notification) await enqueueCommunityLifecycleNotificationPush([notification])
+  if (notificationInTransaction)
+    await enqueueCommunityLifecycleNotificationPush([notificationInTransaction])
 
   let roleChangeEmailEnqueue: ReturnType<typeof enqueueSendCommunityRoleChangeEmail> | null = null
   // Only log when the role actually changed — PostgreSQL reports rowCount=1 even for no-ops
-  if (updated && previousRole !== role) {
+  if (changed && previousRole !== role) {
     const [, , targetUser] = await Promise.all([
       recordModeratorAction(currentUserId, {
         actionType: 'change_role',

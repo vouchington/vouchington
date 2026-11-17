@@ -8,12 +8,11 @@ export async function seedPointValuations(count = POINT_VALUATION_SEED_COUNT): P
   console.log(`Seeding ${count} point valuations...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     const rewardsProgramCount = Math.ceil(count / POINT_VALUATION_SEED_OWNER_COUNT)
     const programValues = Array.from({ length: rewardsProgramCount }, (_, index) =>
       seedUuid(index, '04'),
     )
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO rewards_program_topics (topic_id)
        SELECT id FROM UNNEST($1::UUID[]) AS id
        ON CONFLICT DO NOTHING`,
@@ -32,7 +31,7 @@ export async function seedPointValuations(count = POINT_VALUATION_SEED_COUNT): P
         const base = values.length - 2
         rows.push(`($${base}, $${base + 1}, $${base + 2}, 35000, 'usd')`)
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO individual_rewards_program_point_valuations
            (id, individual_id, rewards_program_topic_id, value_microunits_per_point, currency_code)
          VALUES ${rows.join(', ')}

@@ -10,7 +10,7 @@ import {
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { enqueueBulkUpdatePostElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { background } from '@queues/background/queues'
 import {
   enqueueElectionUpdatePageForUser,
   enqueueElectionUpdatesForUser,
@@ -71,19 +71,19 @@ describe('enqueueElectionUpdatesForUser', () => {
         completed.resolve()
     }
     worker.on('completed', onCompleted)
-    voteAggregation.on('added', onAdded)
+    background.on('added', onAdded)
     try {
       await expect(enqueueElectionUpdatesForUser(user!.id)).resolves.toBeUndefined()
       await completed.promise
       expect(admitted).toHaveLength(1)
       const [jobId] = admitted
       if (!jobId) throw new Error('Missing owned election job id')
-      const job = await voteAggregation.getJob(jobId)
+      const job = await background.getJob(jobId)
       if (!job) throw new Error('Missing persisted owned election job')
       expect(job.data).toMatchObject({ electionId: postId })
     } finally {
       worker.off('completed', onCompleted)
-      voteAggregation.off('added', onAdded)
+      background.off('added', onAdded)
     }
   })
 
@@ -105,7 +105,7 @@ describe('enqueueElectionUpdatesForUser', () => {
       )
         admitted.push(job.id)
     }
-    voteAggregation.on('added', onAdded)
+    background.on('added', onAdded)
     const restore = overrideDynamicConfigFieldsForTest(pagedDispatchConfig, {
       elections_page_size: 2,
     })
@@ -129,11 +129,11 @@ describe('enqueueElectionUpdatesForUser', () => {
       }
     } finally {
       restore()
-      voteAggregation.off('added', onAdded)
+      background.off('added', onAdded)
     }
 
     expect(admitted).toHaveLength(postIds.length)
-    const jobs = (await Promise.all(admitted.map(jobId => voteAggregation.getJob(jobId)))).filter(
+    const jobs = (await Promise.all(admitted.map(jobId => background.getJob(jobId)))).filter(
       (job): job is NonNullable<typeof job> => job !== null,
     )
     expect(jobs).toHaveLength(postIds.length)
@@ -154,7 +154,7 @@ describe('enqueueElectionUpdatePageForUser', () => {
     ])
     expect(page).toEqual({ jobIds: [], nextCursor: null })
 
-    const unrelatedJob = await voteAggregation.getJob(unrelatedJobs[0]!.id)
+    const unrelatedJob = await background.getJob(unrelatedJobs[0]!.id)
     expect(unrelatedJob?.data).toMatchObject({ electionId: unrelatedPostId })
   })
 
@@ -165,7 +165,7 @@ describe('enqueueElectionUpdatePageForUser', () => {
 
     const page = await enqueueElectionUpdatePageForUser(user!.id, null)
     expect(page.jobIds).toHaveLength(2)
-    const jobs = await Promise.all(page.jobIds.map(jobId => voteAggregation.getJob(jobId)))
+    const jobs = await Promise.all(page.jobIds.map(jobId => background.getJob(jobId)))
     const foundElectionIds = jobs.map(job => {
       if (!job) throw new Error('Expected a persisted election job')
       return (job.data as { electionId: string }).electionId
@@ -184,7 +184,7 @@ describe('enqueueElectionUpdatePageForUser', () => {
     expect(jobIds).toHaveLength(1)
     const submittedJobId = jobIds[0]
     if (submittedJobId === undefined) throw new Error('Expected one post election job id')
-    const job = await voteAggregation.getJob(submittedJobId)
+    const job = await background.getJob(submittedJobId)
     expect(job?.id).toBe(submittedJobId)
     expect(job?.name).toBe(ELECTION_JOB_NAME)
     expect(job?.opts).toMatchObject({
@@ -207,7 +207,7 @@ describe('enqueueElectionUpdatePageForUser', () => {
     expect(jobIds).toHaveLength(1)
     const submittedJobId = jobIds[0]
     if (submittedJobId === undefined) throw new Error('Expected one user vouch election job id')
-    const job = await voteAggregation.getJob(submittedJobId)
+    const job = await background.getJob(submittedJobId)
     expect(job?.id).toBe(submittedJobId)
     expect(job?.opts).toMatchObject({
       deduplication: {
@@ -229,7 +229,7 @@ describe('enqueueElectionUpdatePageForUser', () => {
     ])
     expect(page.jobIds).toEqual([])
 
-    const unrelatedJob = await voteAggregation.getJob(unrelatedJobs[0]!.id)
+    const unrelatedJob = await background.getJob(unrelatedJobs[0]!.id)
     expect(unrelatedJob?.data).toMatchObject({ electionId: unrelatedPostId })
   })
 
@@ -264,7 +264,7 @@ describe('enqueueElectionUpdatePageForUser', () => {
     const covered: string[] = []
     for (const page of pages) {
       for (const jobId of page.jobIds) {
-        const job = await voteAggregation.getJob(jobId)
+        const job = await background.getJob(jobId)
         expect(job!.name).toBe(ELECTION_JOB_NAME)
         covered.push((job!.data as { electionId: string }).electionId)
       }

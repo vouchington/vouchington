@@ -5,7 +5,6 @@ export async function seedUserRemovedPlatformPosts(count = 2000): Promise<void> 
   console.log(`Seeding ${count} owner-scoped platform removals...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     for (let i = 0; i < count; i += 500) {
       const batch = Math.min(500, count - i)
       const values: unknown[] = []
@@ -23,7 +22,7 @@ export async function seedUserRemovedPlatformPosts(count = 2000): Promise<void> 
           `($${base}, 'discussion', $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 4}, $${base + 5}::timestamptz, 'system')`,
         )
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO posts (
           id, post_type, title, markdown, created_by_id,
           bedrock_nova_multimodal_v1_content_sha256,

@@ -57,17 +57,17 @@ export async function buildCopyrightRestrictionDecisionDeliveries(
   const { claimant_user_id } = await readCopyrightNoticeForClaimantDecision(noticeId, transaction)
   // The facts, recipients, claimant address and decision flags are independent reads of the
   // post-lock snapshot.
-  const { facts, parties, claimantEmail, claimantDecisionFlags } =
-    await selectCopyrightDeliveryInputs(noticeId, transaction, {
-      authorities: inputs.map(input => ({
-        targetId: input.targetId,
-        restrictionId: input.restrictionId,
-      })),
-      targetIds: [...new Set(inputs.map(input => input.targetId))],
-      purposes: [...new Set(inputs.flatMap(posterPurposes))],
-      claimantDecisionFlags: true,
-    })
-  const flags = claimantDecisionFlags!
+  const deliveryInputs = await selectCopyrightDeliveryInputs(noticeId, transaction, {
+    authorities: inputs.map(input => ({
+      targetId: input.targetId,
+      restrictionId: input.restrictionId,
+    })),
+    targetIds: [...new Set(inputs.map(input => input.targetId))],
+    purposes: [...new Set(inputs.flatMap(posterPurposes))],
+    claimantDecisionFlags: true,
+  })
+  const { facts, parties, claimantEmail } = deliveryInputs
+  const flags = deliveryInputs.claimantDecisionFlags!
   // The claimant's address is decrypted once, and only when a claimant is told.
   const claimantAddress = inputs.some(input => claimantDecisionIsOwed(flags, input.event))
     ? decryptCopyrightClaimantEmail(claimantEmail)

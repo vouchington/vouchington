@@ -62,8 +62,6 @@ export function EntityBookmarkButton({
   const resolvedVariant = variant ?? presetConfig?.variant ?? 'default'
   const resolvedLoadingTooltip =
     loadingTooltip ?? (presetConfig?.loadingTooltip ? t(presetConfig.loadingTooltip) : undefined)
-  const resolvedActiveTooltip = activeTooltip
-  const resolvedInactiveTooltip = inactiveTooltip
   if (!resolvedPredicate || !resolvedActiveLabel || !resolvedInactiveLabel) {
     throw new Error('EntityBookmarkButton requires a preset or predicate and labels.')
   }
@@ -94,8 +92,7 @@ export function EntityBookmarkButton({
       {buttonLabel}
     </Button>
   )
-  const stateTooltip =
-    tooltip !== undefined ? tooltip : isActive ? resolvedActiveTooltip : resolvedInactiveTooltip
+  const stateTooltip = tooltip !== undefined ? tooltip : isActive ? activeTooltip : inactiveTooltip
   const currentTooltip =
     resolvedLoadingTooltip && !canToggle ? resolvedLoadingTooltip : stateTooltip
   const tooltipTrigger =

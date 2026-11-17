@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { createTestUserDirect, insertTestPost } from '@voucha/test-helpers'
 import { insertUndispatchedTestUserFollow } from '@voucha/test-helpers/activitypub-distribution-state'
 import { insertPendingOutboundLikeForTest } from '@voucha/test-helpers/entities/post-election-votes'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import { getMaximumActivityAgeDays } from '@services/ap-inbox-activities/config'
 import {
   listPendingOutboundDistributionPage,
@@ -30,7 +30,7 @@ describe('expired outbound activities and recovery sweeps', () => {
       markdown: 'Expired Like',
     })
     const expiredId = () =>
-      getMinUUIDv7ForDate(new Date(Date.now() - (getMaximumActivityAgeDays() + 1) * 86_400_000))
+      getMinUuidv7ForDate(new Date(Date.now() - (getMaximumActivityAgeDays() + 1) * 86_400_000))
     const followId = await insertUndispatchedTestUserFollow(source.id, target.id, expiredId())
     const likeId = expiredId()
     await insertPendingOutboundLikeForTest(source.id, postId, likeId)

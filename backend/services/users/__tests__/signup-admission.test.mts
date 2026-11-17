@@ -7,7 +7,7 @@ import {
 } from '@voucha/test-helpers'
 import { holdQueueAdmission } from '@voucha/test-helpers/queue-admission-hold'
 import { emails } from '@queues/emails/queues'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { upsertUser } from '../create.mts'
 import { getPrivateUserByAny } from '../get.mts'
 
@@ -19,7 +19,7 @@ describe('signup notification admission', () => {
     const emailAddress = createRandomEmailAddress()
     let newUserId: string | undefined
     const referral = holdQueueAdmission(
-      notifications,
+      background,
       'notifications.processReferralSignupNotification',
       data => {
         if (

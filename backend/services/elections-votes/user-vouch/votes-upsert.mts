@@ -45,8 +45,6 @@ export async function upsertUserVouchElectionVotes(
   if (disengageTargetIds.length > 0)
     await upsertUserMuteRelations(userId, disengageTargetIds, { query })
   await query.commit()
-  const insertedVotes = insertedVotesInTransaction
-  const deletedFollowRelations = deletedFollowRelationsInTransaction
 
   const undoAdmission = enqueueUndoFollowSideEffects(
     getEntityRelationMetadataOrThrow({
@@ -54,11 +52,11 @@ export async function upsertUserVouchElectionVotes(
       predicate: 'follow',
       objectType: 'user',
     }),
-    deletedFollowRelations,
+    deletedFollowRelationsInTransaction,
   )
   const statsAdmission = awaitReportedEnqueueAdmission(() =>
     enqueueBulkUpdateUserVouchElectionVoteStats([...new Set(votes.map(vote => vote.entityId))]),
   )
   await Promise.all([undoAdmission, statsAdmission])
-  return insertedVotes
+  return insertedVotesInTransaction
 }

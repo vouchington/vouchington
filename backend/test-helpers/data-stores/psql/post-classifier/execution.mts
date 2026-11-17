@@ -2,7 +2,7 @@ import { write } from '@data-stores/psql'
 import { runConfigDrivenStatementsInTransaction } from '@data-stores/psql/migration-runner/config-driven-statements'
 import generateSeed from '@data-stores/psql/config-driven/0635-00-03-seed-post-classifier'
 import type { StructuredDecisionResult } from '@vouchington/ai/structured-decisions'
-import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
+import { POST_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/post-classifier'
 import { moderationConfig } from '../../../../services/moderation/config.mts'
 import {
   claimClassifierRun,
@@ -45,7 +45,7 @@ export function requestPostClassifierRun(post: { id: string }, inputSha256: Buff
   return requestClassifierRuns(write, {
     subject: { postId: post.id, rssFeedItemId: null },
     inputSha256,
-    classifierSlugs: [POST_CLASSIFIER_SLUG],
+    classifierSlugs: [POST_CLASSIFIER_SYSTEM_USERNAME],
   })
 }
 

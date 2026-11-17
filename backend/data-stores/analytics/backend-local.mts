@@ -45,9 +45,8 @@ export function writeRecord<T extends AnalyticsTableName>(
 
   if (buffer.length >= MAX_RECORDS || bufferedBytes >= MAX_BYTES) {
     // Flush immediately when thresholds exceeded
-    const timerHandle = flushTimer
+    if (flushTimer !== null) clearTimeout(flushTimer)
     flushTimer = null
-    if (timerHandle !== null) clearTimeout(timerHandle)
     flush().catch(onError)
     return
   }
@@ -58,9 +57,8 @@ export function writeRecord<T extends AnalyticsTableName>(
 export function flush(): Promise<void> {
   if (activeFlushPromise) return activeFlushPromise
   if (buffer.length === 0) return Promise.resolve()
-  const timerHandle = flushTimer
+  if (flushTimer !== null) clearTimeout(flushTimer)
   flushTimer = null
-  if (timerHandle !== null) clearTimeout(timerHandle)
   activeFlushPromise = Promise.resolve().then(drainBufferedRecords)
   return activeFlushPromise
 }

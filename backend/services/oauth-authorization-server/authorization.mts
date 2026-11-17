@@ -130,13 +130,12 @@ export async function validateOAuthAuthorizationRequest(
     resolveResource: findOAuthProtectedResource,
     clients: { findClient },
   })
-  const client = foundClient
-  if (!client || !validated.scopes.every(isApiScope)) {
+  if (!foundClient || !validated.scopes.every(isApiScope)) {
     throw new OAuthProtocolError('server_error', 'authorization request validation failed', 503)
   }
-  assertOAuthClientMayAuthorizeResource(client, validated.resource)
+  assertOAuthClientMayAuthorizeResource(foundClient, validated.resource)
   return {
-    client,
+    client: foundClient,
     codeChallenge: validated.codeChallenge,
     redirectUri: validated.redirectUri,
     resource: validated.resource,

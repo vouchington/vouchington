@@ -22,7 +22,7 @@ import type {
   VoteWeightDispatchWindow,
   VoteWeightRejectedEvidenceKeyset,
 } from '@queues/background/enqueues/vote-weight-dispatch-types'
-import { voteAggregation } from '../queues.mts'
+import { background } from '@queues/background/queues'
 
 const BACKFILL_DEDUPLICATION_TTL_MS = 60 * 60_000
 
@@ -118,7 +118,7 @@ export function enqueueVoteWeightAgeMilestones(
     (safeData.milestoneIndex !== undefined || safeData.afterId !== undefined)
   ) {
     return enqueueBulkReactivatingFinished({
-      queue: voteAggregation,
+      queue: background,
       inputs: [safeData],
       jobIdOf: () => ageJobId(safeData),
       enqueueBulk: inputs => enqueueBulkAgeContinuations(inputs.map(safeAgeMilestonesData)),
@@ -134,7 +134,7 @@ export function enqueueVoteWeightMembershipExpirations(
   const safeData = safeMembershipExpirationsData(data)
   if (safeData.window && safeData.after) {
     return enqueueBulkReactivatingFinished({
-      queue: voteAggregation,
+      queue: background,
       inputs: [safeData],
       jobIdOf: () => expirationJobId(safeData),
       enqueueBulk: inputs =>
@@ -151,7 +151,7 @@ export function enqueueVoteWeightFamilySourceChanges(
   const safeData = safeFamilySourceChangesData(data)
   if (safeData.window && safeData.branches) {
     return enqueueBulkReactivatingFinished({
-      queue: voteAggregation,
+      queue: background,
       inputs: [safeData],
       jobIdOf: () => familyJobId(safeData),
       enqueueBulk: inputs =>
@@ -168,7 +168,7 @@ export function enqueueVoteWeightDirtyMarkers(
   const safeData = safeDirtyMarkersData(data)
   if (safeData.afterId) {
     return enqueueBulkReactivatingFinished({
-      queue: voteAggregation,
+      queue: background,
       inputs: [safeData],
       jobIdOf: () => dirtyJobId(safeData),
       enqueueBulk: inputs => enqueueBulkDirtyContinuations(inputs.map(safeDirtyMarkersData)),

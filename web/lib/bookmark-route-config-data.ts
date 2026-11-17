@@ -1,6 +1,6 @@
 /**
  * Raw route config data for bookmark pages.
- * Imported by bookmark-route-configs.ts — do not import this directly.
+ * Consumers import this module directly; bookmark-route-configs.ts holds the derived helpers.
  */
 import type { BookmarkRouteConfig } from './bookmark-route-config-types'
 import { bookmarkRouteConfigDataMedia } from './bookmark-route-config-data-media'

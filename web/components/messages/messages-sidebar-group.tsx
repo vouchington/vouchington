@@ -27,14 +27,13 @@ export function MessagesSidebarGroup() {
 
   useEffect(() => {
     if (isLoaded || !replaceFirstPage) return undefined
-    const replaceLoadedFirstPage = replaceFirstPage
     let cancelled = false
     let retryTimer: ReturnType<typeof setTimeout> | null = null
 
-    function fetchFirstPage(attempt: number) {
+    const fetchFirstPage = (attempt: number): void => {
       getMyMessagesClient()
         .then(result => {
-          if (!cancelled) replaceLoadedFirstPage(result.results, result.page_info)
+          if (!cancelled) replaceFirstPage(result.results, result.page_info)
         })
         .catch((err: unknown) => {
           if (!cancelled) {

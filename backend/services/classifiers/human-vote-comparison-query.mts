@@ -1,4 +1,4 @@
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import { classifierRetentionCutoff } from './retention-window.mts'
 import {
   CLASSIFIER_COMPARISON_BUCKET_COUNT,
@@ -102,10 +102,10 @@ export function buildHumanVoteComparisonQuery(
 } {
   const values: unknown[] = [
     options.classifierId,
-    getMinUUIDv7ForDate(
+    getMinUuidv7ForDate(
       new Date(Math.max(options.from.getTime(), classifierRetentionCutoff().getTime())),
     ),
-    getMinUUIDv7ForDate(options.to),
+    getMinUuidv7ForDate(options.to),
     maxBatches + 1,
     maxBatches,
   ]

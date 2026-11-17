@@ -66,20 +66,19 @@ export function DirectMessagePageClient({
     const cursor = endCursorRef.current
     if (!cursor || loadingMoreRef.current) return
     const generation = generationRef.current
-    const contextConversationId = conversationId
     loadingMoreRef.current = true
     setLoadingMore(true)
     setLoadMoreError(null)
     try {
-      const result = await getDirectMessageThreadClient(contextConversationId, {
+      const result = await getDirectMessageThreadClient(conversationId, {
         after: cursor,
       })
-      if (generation !== generationRef.current || contextConversationId !== conversationId) return
+      if (generation !== generationRef.current) return
       setMessages(prev => prependUniqueMessages(prev, result.results))
       setHasMore(result.page_info.has_next_page)
       endCursorRef.current = result.page_info.end_cursor
     } catch (err) {
-      if (generation === generationRef.current && contextConversationId === conversationId) {
+      if (generation === generationRef.current) {
         setLoadMoreError(err instanceof Error ? err : new Error(String(err)))
         onError(err, {
           fallback: t(
@@ -88,7 +87,7 @@ export function DirectMessagePageClient({
         })
       }
     } finally {
-      if (generation === generationRef.current && contextConversationId === conversationId) {
+      if (generation === generationRef.current) {
         loadingMoreRef.current = false
         setLoadingMore(false)
       }

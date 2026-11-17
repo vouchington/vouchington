@@ -1,6 +1,6 @@
 import { getLanguageDetectionWorkLimit } from './work-limits.mts'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
-import { getMaxUUIDv7ForDate } from '@modules/utils/ids'
+import { getMaxUuidv7ForDate } from '@modules/utils/ids'
 import sql from 'sql-template-strings'
 
 // Number of IDs accumulated before a batch is yielded for bulk enqueue.
@@ -39,7 +39,7 @@ export function streamPostsNeedingLanguageDetection(
       `
   if (entityIds) query.append(sql` AND id = ANY(${entityIds}::uuid[])`)
   if (afterId) query.append(sql` AND id > ${afterId}::uuid`)
-  query.append(sql` AND id <= ${getMaxUUIDv7ForDate(new Date(sweepStartedAt))}::uuid`)
+  query.append(sql` AND id <= ${getMaxUuidv7ForDate(new Date(sweepStartedAt))}::uuid`)
   query.append(sql` ORDER BY id LIMIT ${maxRows}`)
   return streamIdBatches(
     createAsyncGeneratorFromCursor<{ id: string }>(query, { batchSize: batchSize }),
@@ -63,7 +63,7 @@ export function streamRssFeedItemsNeedingLanguageDetection(
       `
   if (entityIds) query.append(sql` AND id = ANY(${entityIds}::uuid[])`)
   if (afterId) query.append(sql` AND id > ${afterId}::uuid`)
-  query.append(sql` AND id <= ${getMaxUUIDv7ForDate(new Date(sweepStartedAt))}::uuid`)
+  query.append(sql` AND id <= ${getMaxUuidv7ForDate(new Date(sweepStartedAt))}::uuid`)
   query.append(sql` ORDER BY id LIMIT ${maxRows}`)
   return streamIdBatches(
     createAsyncGeneratorFromCursor<{ id: string }>(query, { batchSize: batchSize }),
@@ -94,7 +94,7 @@ export function streamCrawlsNeedingLanguageDetection(
       `
   if (entityIds) query.append(sql` AND id = ANY(${entityIds}::uuid[])`)
   if (afterId) query.append(sql` AND id > ${afterId}::uuid`)
-  query.append(sql` AND id <= ${getMaxUUIDv7ForDate(new Date(sweepStartedAt))}::uuid`)
+  query.append(sql` AND id <= ${getMaxUuidv7ForDate(new Date(sweepStartedAt))}::uuid`)
   query.append(sql` ORDER BY id LIMIT ${maxRows}`)
   return streamIdBatches(
     createAsyncGeneratorFromCursor<{ id: string }>(query, { batchSize: batchSize }),
@@ -118,7 +118,7 @@ export function streamCommunitiesNeedingLanguageDetection(
       `
   if (entityIds) query.append(sql` AND id = ANY(${entityIds}::uuid[])`)
   if (afterId) query.append(sql` AND id > ${afterId}::uuid`)
-  query.append(sql` AND id <= ${getMaxUUIDv7ForDate(new Date(sweepStartedAt))}::uuid`)
+  query.append(sql` AND id <= ${getMaxUuidv7ForDate(new Date(sweepStartedAt))}::uuid`)
   query.append(sql` ORDER BY id LIMIT ${maxRows}`)
   return streamIdBatches(
     createAsyncGeneratorFromCursor<{ id: string }>(query, { batchSize: batchSize }),
@@ -144,7 +144,7 @@ export function streamUsersNeedingLanguageDetection(
           AND deleted_at IS NULL`
   if (userIds) query.append(sql` AND id = ANY(${userIds}::uuid[])`)
   if (afterId) query.append(sql` AND id > ${afterId}::uuid`)
-  query.append(sql` AND id <= ${getMaxUUIDv7ForDate(new Date(sweepStartedAt))}::uuid`)
+  query.append(sql` AND id <= ${getMaxUuidv7ForDate(new Date(sweepStartedAt))}::uuid`)
   query.append(sql` ORDER BY id LIMIT ${maxRows}`)
   return streamIdBatches(
     createAsyncGeneratorFromCursor<{ id: string }>(query, { batchSize: batchSize }),
@@ -169,7 +169,7 @@ export function streamTopicsNeedingLanguageDetection(
       `
   if (entityIds) query.append(sql` AND id = ANY(${entityIds}::uuid[])`)
   if (afterId) query.append(sql` AND id > ${afterId}::uuid`)
-  query.append(sql` AND id <= ${getMaxUUIDv7ForDate(new Date(sweepStartedAt))}::uuid`)
+  query.append(sql` AND id <= ${getMaxUuidv7ForDate(new Date(sweepStartedAt))}::uuid`)
   query.append(sql` ORDER BY id LIMIT ${maxRows}`)
   return streamIdBatches(
     createAsyncGeneratorFromCursor<{ id: string }>(query, { batchSize: batchSize }),

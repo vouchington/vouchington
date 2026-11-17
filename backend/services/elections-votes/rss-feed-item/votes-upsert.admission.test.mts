@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { background } from '@queues/background/queues'
 import { createTestUser } from '@voucha/test-helpers'
 import { createTestStoryMembers } from '@voucha/test-helpers/entities/story-member-pages'
 import { holdQueueBulkAdmission } from '@voucha/test-helpers/queue-admission-hold'
@@ -15,7 +15,7 @@ describe('RSS feed item vote admission', () => {
     const itemId = (await createTestStoryMembers(1)).itemIds[0]!
     const jobName = VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name
     const admission = holdQueueBulkAdmission(
-      voteAggregation,
+      background,
       jobName,
       data =>
         typeof data === 'object' &&
@@ -69,10 +69,10 @@ describe('RSS feed item vote admission', () => {
     const user = await createTestUser()
     const itemId = (await createTestStoryMembers(1)).itemIds[0]!
     const admissionError = new Error('Injected RSS vote stats admission failure')
-    const originalAddBulk = voteAggregation.addBulk
+    const originalAddBulk = background.addBulk
     const reportsBefore = sentryCaptureExceptionMock.mock.calls.length
     let matchingAdmissions = 0
-    const addBulkSpy = vi.spyOn(voteAggregation, 'addBulk').mockImplementation(jobs => {
+    const addBulkSpy = vi.spyOn(background, 'addBulk').mockImplementation(jobs => {
       if (
         jobs.some(
           job =>
@@ -88,7 +88,7 @@ describe('RSS feed item vote admission', () => {
         matchingAdmissions += 1
         return Promise.reject(admissionError)
       }
-      return originalAddBulk.call(voteAggregation, jobs)
+      return originalAddBulk.call(background, jobs)
     })
 
     try {

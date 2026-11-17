@@ -1,6 +1,6 @@
 import { read, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
-import { getMaxUUIDv7ForDate } from '@modules/utils/ids'
+import { getMaxUuidv7ForDate } from '@modules/utils/ids'
 import sql from 'sql-template-strings'
 import { getUrlHostnameCrawlerDetailsById } from '@services/urls-hostnames'
 import { getOrCreateCrawlerForHostname } from './get-or-create.mts'
@@ -29,7 +29,7 @@ export const searchHostnameIdsNeedingCrawlerRefresh = async (
   if (cursor?.afterId) query.append(sql` AND h.id > ${cursor.afterId}::uuid`)
   const sweepStartedAt = cursor?.sweepStartedAt ?? new Date().toISOString()
   if (cursor) {
-    const sweepMaxId = getMaxUUIDv7ForDate(new Date(sweepStartedAt))
+    const sweepMaxId = getMaxUuidv7ForDate(new Date(sweepStartedAt))
     query.append(sql` AND h.id <= ${sweepMaxId}::uuid`)
   }
   query.append(sql`

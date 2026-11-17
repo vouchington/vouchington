@@ -18,15 +18,14 @@ const DAYS_BEFORE_WINDOW = 40
 export async function seedSelectiveDataPointMatches(createdById: string): Promise<void> {
   const postIds = selectivePostIds()
   await using transaction = await beginTransaction()
-  const query = transaction
-  await query(
+  await transaction(
     `/* seedSelectiveDataPointMatches:topic */ INSERT INTO topics (
        id, name, slug, created_via, bedrock_nova_multimodal_v1_content_sha256)
      VALUES ($1, 'Selective data point', 'selective-data-point-search', 'system',
        decode(repeat('ab', 32), 'hex'))`,
     [SELECTIVE_TOPIC_ID],
   )
-  await query(
+  await transaction(
     `/* seedSelectiveDataPointMatches:posts */ INSERT INTO posts (
        id, created_via, post_type, title, created_by_id, approved_at,
        bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256,
@@ -37,7 +36,7 @@ export async function seedSelectiveDataPointMatches(createdById: string): Promis
      FROM UNNEST($1::uuid[]) AS seed(id)`,
     [postIds, createdById],
   )
-  await query(
+  await transaction(
     `/* seedSelectiveDataPointMatches:links */ INSERT INTO post_data_point_topics (post_id, topic_id)
      SELECT id, $2::uuid FROM UNNEST($1::uuid[]) AS seed(id)`,
     [postIds, SELECTIVE_TOPIC_ID],
@@ -47,12 +46,11 @@ export async function seedSelectiveDataPointMatches(createdById: string): Promis
 
 export async function deleteSelectiveDataPointMatches(): Promise<void> {
   await using transaction = await beginTransaction()
-  const query = transaction
-  await query(
+  await transaction(
     `/* deleteSelectiveDataPointMatches:posts */ DELETE FROM posts WHERE id = ANY($1::uuid[])`,
     [selectivePostIds()],
   )
-  await query(
+  await transaction(
     `/* deleteSelectiveDataPointMatches:topic */ DELETE FROM topics WHERE id = $1::uuid`,
     [SELECTIVE_TOPIC_ID],
   )

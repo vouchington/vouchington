@@ -49,7 +49,7 @@ function isAbortError(error: unknown): boolean {
     (error as { name?: unknown }).name === 'AbortError'
   )
 }
-function EntityAutocompleteInner<T>({
+export function EntityAutocomplete<T>({
   queryLabel = '',
   search,
   results: controlledResults,
@@ -197,4 +197,3 @@ function EntityAutocompleteInner<T>({
     </Command>
   )
 }
-export const EntityAutocomplete = EntityAutocompleteInner

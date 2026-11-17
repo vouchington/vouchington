@@ -11,7 +11,7 @@ import {
 } from '@voucha/test-helpers'
 import { markJwtStaleBatch } from '@data-stores/valkey/jwt-stale'
 import { enqueueBulkRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { background } from '@queues/background/queues'
 import { completeMembershipEntitlementEffects } from './entitlement-effects.mts'
 import { recordMembershipChange } from './changes.mts'
 
@@ -48,7 +48,7 @@ describe('membership entitlement effect replay', () => {
     expect(await getTestMembershipEntitlementEffects(rawMembership.latest_change_id)).toEqual([
       expect.objectContaining({ delivered_at: expect.any(Date), delivery_claim_token: null }),
     ])
-    const jobs = await readAllQueueJobs(voteAggregation)
+    const jobs = await readAllQueueJobs(background)
     expect(jobs).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ data: { userId: user.id, forceRecalculate: true } }),

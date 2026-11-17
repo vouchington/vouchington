@@ -4,7 +4,7 @@ import {
 } from '../category-snapshot-reconciliations.mts'
 import '@services/elections-votes'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import {
   getTestRssFeedItemCategorySnapshotReconciliation,
   insertTestRssFeedDirect,
@@ -28,7 +28,7 @@ describe('RSS category snapshot notification identity', () => {
     const feed = await insertTestRssFeedDirect({})
     const [item] = await upsertRssFeedItems(feed.id, [itemInput(suffix, [`first-${suffix}`])])
     const jobs = () =>
-      notifications.searchJobs({
+      background.searchJobs({
         name: 'notifications.processReconcileRssFeedItemNotifications',
         data: { rssFeedItemId: item!.id },
       })

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeParentPath, extractDomain, isHostname } from './urls.mts'
+import { getFirstPathSegment, extractDomain, isHostname } from './urls.mts'
 
 describe('isHostname', () => {
   it('validates lowercase hostnames and IP-like values', () => {
@@ -32,16 +32,16 @@ describe('extractDomain', () => {
 
 describe('computeParentPath', () => {
   it('returns null for root path', () => {
-    expect(computeParentPath('/')).toBe(null)
+    expect(getFirstPathSegment('/')).toBe(null)
   })
 
   it('returns / for a single-level path', () => {
-    expect(computeParentPath('/about')).toBe('/')
+    expect(getFirstPathSegment('/about')).toBe('/')
   })
 
   it('returns the first-level directory for nested paths', () => {
-    expect(computeParentPath('/blog/2024/my-post')).toBe('/blog')
-    expect(computeParentPath('/blog/post')).toBe('/blog')
-    expect(computeParentPath('/a/b/c/d')).toBe('/a')
+    expect(getFirstPathSegment('/blog/2024/my-post')).toBe('/blog')
+    expect(getFirstPathSegment('/blog/post')).toBe('/blog')
+    expect(getFirstPathSegment('/a/b/c/d')).toBe('/a')
   })
 })

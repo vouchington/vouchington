@@ -1,5 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { readDataRetentionField } from './config.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1_000
@@ -23,7 +23,7 @@ export async function cleanupVoteIntegrityDetails(
   }
   if (flagIds && flagIds.length > batchSize + 1)
     throw new RangeError('Scoped flags must fit one page')
-  const cutoffId = getMinUUIDv7ForDate(
+  const cutoffId = getMinUuidv7ForDate(
     new Date(now.getTime() - readDataRetentionField('vote_integrity_detail_days') * DAY_MS),
   )
   await using query = await beginTransaction()

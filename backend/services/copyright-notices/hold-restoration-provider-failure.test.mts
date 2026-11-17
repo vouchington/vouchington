@@ -1,7 +1,7 @@
 import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { replayTestAutomaticCopyrightRestore } from '@voucha/test-helpers/services/copyright-notices/hold-restoration'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
@@ -78,8 +78,8 @@ describe('automatic hold restoration preserves provider failures', () => {
         )
         const ownedIntentIds = new Set([scene.restore.id, scene.sibling.restore.id])
         const admissions: Promise<unknown>[] = []
-        const originalAddBulk = notifications.addBulk
-        const addBulkSpy = vi.spyOn(notifications, 'addBulk').mockImplementation(jobs => {
+        const originalAddBulk = background.addBulk
+        const addBulkSpy = vi.spyOn(background, 'addBulk').mockImplementation(jobs => {
           const hasOwnedAction = jobs.some(
             job =>
               job.name === 'notifications.processApplyCopyrightAction' &&
@@ -89,9 +89,9 @@ describe('automatic hold restoration preserves provider failures', () => {
               typeof job.data.intentId === 'string' &&
               ownedIntentIds.has(job.data.intentId),
           )
-          if (!hasOwnedAction) return originalAddBulk.call(notifications, jobs)
+          if (!hasOwnedAction) return originalAddBulk.call(background, jobs)
           batches.push(jobs.map(({ name, data }) => ({ name, data })))
-          const admission = originalAddBulk.call(notifications, jobs)
+          const admission = originalAddBulk.call(background, jobs)
           admissions.push(admission)
           return admission
         })

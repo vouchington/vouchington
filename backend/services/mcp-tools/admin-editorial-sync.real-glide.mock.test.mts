@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { readStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
-import { articleSync } from '@queues/article-sync/queues'
+import { background } from '@queues/background/queues'
 import { workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { callMcpTool } from './call-tool.mts'
 import { ADMIN_MCP_SERVER_CONFIG } from './config.mts'
@@ -35,7 +35,7 @@ describe('registered article sync on an owned real queue namespace', () => {
       const result = await invoke()
       expect(result.isError).not.toBe(true)
       const jobId = result.structuredContent!['jobId'] as string
-      const job = await articleSync.getJob(jobId)
+      const job = await background.getJob(jobId)
       expect(job?.data).toEqual({ userId: admin.id })
       const history = await readStaffActionHistory(admin.id)
       expect(history).toEqual([
@@ -62,9 +62,9 @@ describe('registered article sync on an owned real queue namespace', () => {
         operation_request_action_id: after[2]?.id,
         metadata: expect.objectContaining({ phase: 'finished', outcome: 'failed' }),
       })
-      expect((await articleSync.getJob(jobId))?.data).toEqual({ userId: admin.id })
+      expect((await background.getJob(jobId))?.data).toEqual({ userId: admin.id })
     } finally {
-      await articleSync.close()
+      await background.close()
     }
   })
 })

@@ -1,4 +1,4 @@
-import { feedRouteConfigs } from '@/lib/feed-route-configs'
+import { feedRouteConfigData } from '@/lib/feed-route-config-data'
 import { FeedNewsListPage } from '@/components/feed/feed-news-list-page'
 import { AddSourceButton } from '@/components/sources/add-source-button'
 import type { Metadata } from 'next'
@@ -7,7 +7,7 @@ import { getTranslations } from '@/lib/i18n/get-translations'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations()
-  return createNoIndexMetadata(t(feedRouteConfigs['videos'].title))
+  return createNoIndexMetadata(t(feedRouteConfigData['videos'].title))
 }
 
 export const dynamic = 'force-dynamic'
@@ -19,7 +19,7 @@ export default async function FeedVideosPage({
 }) {
   return (
     <FeedNewsListPage
-      config={feedRouteConfigs['videos']}
+      config={feedRouteConfigData['videos']}
       searchParams={await searchParams}
       action={<AddSourceButton kind='video' />}
     />

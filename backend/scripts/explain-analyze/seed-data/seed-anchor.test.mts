@@ -35,7 +35,7 @@ function idsOf(common: CommonModule) {
     relation: common.seedRelationIdAfterPost(3, 1),
     freshRelation: common.seedFreshRelationId(1),
     crawl: common.crawlSeedUuid(0),
-    crawlPrefix: common.CRAWL_SEED_PREFIX,
+    crawlPrefix: common.crawlUuidv7Prefix,
   }
 }
 
@@ -74,7 +74,7 @@ describe('seed anchor across the seed and run processes (#2110)', () => {
     const common = await loadCommonAt('2026-12-25T08:00:00.000Z')
 
     expect(common.postSeedTimestampMs(0)).toBe(Date.UTC(2026, 9, 5, 12))
-    expect(common.CRAWL_SEED_PREFIX).toBe(OCTOBER_05_PREFIX)
+    expect(common.crawlUuidv7Prefix).toBe(OCTOBER_05_PREFIX)
   })
 
   it('moves every anchored id when the pinned day changes', async () => {

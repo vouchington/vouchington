@@ -34,15 +34,14 @@ export async function rollbackPostImages(
     return false
   }
   async function rollbackImagesInTransaction() {
-    const imageIds = deliveryImageIds
     let rollbackImagesAvailable = true
-    if (imageIds.length > 0) {
+    if (deliveryImageIds.length > 0) {
       const imageLock = query<{
         id: string
       }>(sql`/* rollbackPostImages:lockImages */
         SELECT id
         FROM images
-        WHERE id = ANY(${imageIds}::uuid[])
+        WHERE id = ANY(${deliveryImageIds}::uuid[])
           AND upload_completed_at IS NOT NULL
           AND deleted_at IS NULL
           AND quarantine_pending_at IS NULL
@@ -50,7 +49,7 @@ export async function rollbackPostImages(
       `)
       options?.onImageLockQuery?.()
       const { rows: availableImages } = await imageLock
-      rollbackImagesAvailable = availableImages.length === imageIds.length
+      rollbackImagesAvailable = availableImages.length === deliveryImageIds.length
     }
     const { rows: postRows } = await query<{
       llm_moderation_content_sha256: Buffer | null

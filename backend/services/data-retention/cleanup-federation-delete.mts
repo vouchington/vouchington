@@ -1,4 +1,4 @@
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import type {
   FederationRetentionPosition,
   FederationRetentionQuery,
@@ -19,7 +19,7 @@ export async function deleteRetentionCandidates(
          AND (completed_at IS NOT NULL OR failed_at IS NOT NULL)
        ORDER BY id LIMIT $3 FOR UPDATE
      ) DELETE FROM follower_distributions target USING page WHERE target.id = page.id`,
-    [ids, getMinUUIDv7ForDate(cutoffAt), batchSize],
+    [ids, getMinUuidv7ForDate(cutoffAt), batchSize],
   )
   return rowCount ?? 0
 }

@@ -1,6 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
-import { getDateFromUUIDv7 } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils'
+import { getDateFromUuidv7 } from '@modules/utils/ids'
 import { cleanupPartitions } from '@data-stores/psql/migration-runner/monthly-partitions'
 import sql from 'sql-template-strings'
 import { getRetentionCutoffDate, normalizeRetentionDays } from './cleanup-options.mts'
@@ -23,13 +23,13 @@ export async function cleanupAiUsageRecords(
     now,
   )
   // #3544 owns 90-day key retirement: a backdated usage id must not cascade a younger replay key.
-  const responseKeyCutoff = getMinUUIDv7ForDate(getRetentionCutoffDate(90, now))
-  const cutoff = getMinUUIDv7ForDate(
+  const responseKeyCutoff = getMinUuidv7ForDate(getRetentionCutoffDate(90, now))
+  const cutoff = getMinUuidv7ForDate(
     options.upperBoundDate && options.upperBoundDate < retentionCutoff
       ? options.upperBoundDate
       : retentionCutoff,
   )
-  const lowerBound = options.lowerBoundDate ? getMinUUIDv7ForDate(options.lowerBoundDate) : null
+  const lowerBound = options.lowerBoundDate ? getMinUuidv7ForDate(options.lowerBoundDate) : null
   let result: AiUsageCleanupResult = { deleted: 0, hasMore: false, cursorId: null }
   for (let batch = 0; batch < maxBatches; batch++) {
     // no-mistakes-disable-next-line query-reached-per-item: at most maxBatches transactions each lock a UUIDv7 keyset page, fold and delete its rows atomically, then checkpoint; the next page depends on that commit.
@@ -174,8 +174,8 @@ async function cleanupAiUsagePage(
 
   const hasMore = rows.length > batchSize
   const nextCursorId = hasMore ? scannedIds.at(-1)! : null
-  const lastScannedAt = scannedIds.length > 0 ? getDateFromUUIDv7(scannedIds.at(-1)!) : null
-  const nextAt = rows.length > batchSize ? getDateFromUUIDv7(rows[batchSize]!.id) : null
+  const lastScannedAt = scannedIds.length > 0 ? getDateFromUuidv7(scannedIds.at(-1)!) : null
+  const nextAt = rows.length > batchSize ? getDateFromUuidv7(rows[batchSize]!.id) : null
   const completedMonth =
     lastScannedAt &&
     (!nextAt ||

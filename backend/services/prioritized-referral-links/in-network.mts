@@ -1,7 +1,7 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { buildViewerPostDiscoveryEligibilityFilter } from '@modules/feed-query-builders'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { RECENT_VOTE_LIMIT } from './config.mts'
 import { appendLinkUserJoin, toLinksWithUsers, type LinkRow } from './link-rows.mts'
 import { networkGroupsSql } from './network-groups.mts'
@@ -35,7 +35,7 @@ export async function getInNetworkLinks(
     isAdministrator: false,
   })
   // Votes on posts older than the window do not count; the post id bound also prunes partitions.
-  const minVotedPostId = getMinUUIDv7ForDate(
+  const minVotedPostId = getMinUuidv7ForDate(
     new Date(Date.now() - getVotedPostMaxAgeDays() * MILLISECONDS_PER_DAY),
   )
   const query = sql`/* getInNetworkReferralLinks */

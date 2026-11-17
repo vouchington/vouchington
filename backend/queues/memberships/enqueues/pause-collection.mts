@@ -11,7 +11,6 @@ import { createMembershipEnqueueFunction } from './typed-job.mts'
 
 const DISPATCH_JOB_NAME = 'dispatchMembershipPauseCollection' satisfies MembershipsJobs
 const SYNC_JOB_NAME = 'syncMembershipPauseCollection' satisfies MembershipsJobs
-const INTERVAL_MS = MEMBERSHIP_PAUSE_COLLECTION_INTERVAL_MS
 
 const enqueueDispatchJob = createMembershipEnqueueFunction(DISPATCH_JOB_NAME)
 const enqueueSyncJob = createMembershipEnqueueFunction(SYNC_JOB_NAME, {
@@ -22,21 +21,21 @@ const enqueueSyncJob = createMembershipEnqueueFunction(SYNC_JOB_NAME, {
 })
 
 function enqueueDispatchMembershipPauseCollection(): EnqueueReturnType {
-  const bucket = Math.floor(Date.now() / INTERVAL_MS)
+  const bucket = Math.floor(Date.now() / MEMBERSHIP_PAUSE_COLLECTION_INTERVAL_MS)
   return enqueueDispatchJob({}, {
     jobId: `membership-pause-collection-dispatch__${bucket}`,
     priority: PRIORITY_DISPATCHER,
     deduplication: {
       id: 'membership-pause-collection-dispatch',
       mode: 'throttle',
-      ttl: INTERVAL_MS,
+      ttl: MEMBERSHIP_PAUSE_COLLECTION_INTERVAL_MS,
     },
   } satisfies Partial<JobOptions>)
 }
 
 export const pauseCollectionSchedule = {
   schedulerId: DISPATCH_JOB_NAME,
-  repeat: { every: INTERVAL_MS },
+  repeat: { every: MEMBERSHIP_PAUSE_COLLECTION_INTERVAL_MS },
   template: {
     name: DISPATCH_JOB_NAME,
     data: {},

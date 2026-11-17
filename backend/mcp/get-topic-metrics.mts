@@ -6,7 +6,7 @@ import { resolveTopic } from './resolve-topic.mts'
 import { outcomeSchema } from '@vouchington/mcp-server/schema'
 import {
   CONTENT_COUNT_PROPERTIES,
-  FOLLOWERS_SCHEMA,
+  countSchema,
   RATINGS_COUNT_SCHEMA,
 } from './topic-output-schema-parts.mts'
 
@@ -56,7 +56,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     outputSchema: outcomeSchema('success', {
       topic_id: { type: 'string' },
       ...CONTENT_COUNT_PROPERTIES,
-      followers: FOLLOWERS_SCHEMA,
+      followers: countSchema,
       ratings: RATINGS_COUNT_SCHEMA,
     }),
   },

@@ -8,7 +8,6 @@ export async function seedIndividualCards(count = INDIVIDUAL_CARD_SEED_COUNT): P
   console.log(`Seeding ${count} individual cards...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     const ownerCount = Math.min(INDIVIDUAL_CARD_SEED_OWNER_COUNT, count)
     const ownerValues: unknown[] = []
     const ownerRows: string[] = []
@@ -16,13 +15,13 @@ export async function seedIndividualCards(count = INDIVIDUAL_CARD_SEED_COUNT): P
       ownerValues.push(seedUuid(owner, '1b'))
       ownerRows.push(`($${ownerValues.length})`)
     }
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO individuals (id)
        VALUES ${ownerRows.join(', ')}
        ON CONFLICT DO NOTHING`,
       ownerValues,
     )
-    await query(
+    await transaction(
       `/* seedExplainData */ UPDATE users
        SET individual_id = individuals.id
        FROM (VALUES ${Array.from(
@@ -50,7 +49,7 @@ export async function seedIndividualCards(count = INDIVIDUAL_CARD_SEED_COUNT): P
         const base = values.length - 2
         rows.push(`($${base}, $${base + 1}, $${base + 2})`)
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO individual_cards (id, individual_id, card_topic_id)
          VALUES ${rows.join(', ')}
          ON CONFLICT (id) DO UPDATE

@@ -1,6 +1,6 @@
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 
 /** Shared 30/90-day counts for the REST aggregate and bounded MCP actor pages. */
 export function buildModeratorActionCountsQuery(options: {
@@ -8,7 +8,7 @@ export function buildModeratorActionCountsQuery(options: {
   windowDays: 30 | 90
 }) {
   assert(options.windowDays === 30 || options.windowDays === 90, 422, 'windowDays must be 30 or 90')
-  const windowStart = getMinUUIDv7ForDate(
+  const windowStart = getMinUuidv7ForDate(
     new Date(Date.now() - options.windowDays * 24 * 60 * 60 * 1000),
   )
   return sql`

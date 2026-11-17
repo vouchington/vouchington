@@ -4,7 +4,7 @@ import { getProfileCountCap } from '@services/users/profile-count-cap'
 import { getTopicsWorkLimit, topicsWorkMaxValues } from '@services/topics/work-limits'
 import sql from 'sql-template-strings'
 import { postSeedTimestampMs, seedUuid } from './common.mts'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 
 const FIXTURE_ID_START = 2_500_000
 
@@ -48,7 +48,7 @@ export async function seedManyAliasTopicViewerCounts(): Promise<void> {
     FROM posts candidate_post
     JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
     WHERE candidate_post.post_type = 'discussion'
-      AND candidate_post.id < ${getMinUUIDv7ForDate(new Date(postSeedTimestampMs(0)))}::uuid
+      AND candidate_post.id < ${getMinUuidv7ForDate(new Date(postSeedTimestampMs(0)))}::uuid
       AND `
     .append(eligibility)
     .append(sql` ORDER BY candidate_post.id DESC LIMIT ${positiveCount}`)

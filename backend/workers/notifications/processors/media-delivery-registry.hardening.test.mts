@@ -19,7 +19,7 @@ import {
   enqueueContinueMediaDeliveryRegistryReconciliation,
   type ReconcileMediaDeliveryRegistryData,
 } from '@queues/notifications/enqueues'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { processReconcileMediaDeliveryRegistry } from './media-delivery-registry.mts'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
@@ -107,7 +107,7 @@ describe('durable media registry recovery hardening', () => {
       })
 
       for (const mediaDeliveryRegistryRecordId of recordIds.slice(1)) {
-        const jobs = await notifications.searchJobs({
+        const jobs = await background.searchJobs({
           name: 'notifications.processApplyMediaDeliveryRegistryRecord',
           data: { mediaDeliveryRegistryRecordId },
         })

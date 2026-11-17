@@ -4,7 +4,7 @@ import {
 } from '@voucha/test-helpers/services/user-deletions/user-deletion-sweep-neighbor'
 import { describe, expect, it, vi } from 'vitest'
 import { enqueueUserDeletion } from '@queues/account-lifecycle/enqueues/user-deletions'
-import { accountLifecycle } from '@queues/account-lifecycle/queues'
+import { background } from '@queues/background/queues'
 import { createUserDeletionRequest } from '@services/user-deletions'
 import { createTestUser } from '@voucha/test-helpers'
 import {
@@ -31,14 +31,14 @@ describe('user deletion recovery with a retained failed job under the attempt to
     try {
       await enqueueUserDeletion(attempt)
       // A job that stalls past its limit, or fails before it claims the token, leaves exactly this.
-      await expect(accountLifecycle.revoke(jobId)).resolves.toBe('revoked')
-      await expect((await accountLifecycle.getJob(jobId))?.getState()).resolves.toBe('failed')
+      await expect(background.revoke(jobId)).resolves.toBe('revoked')
+      await expect((await background.getJob(jobId))?.getState()).resolves.toBe('failed')
       await makeUserDeletionRecoverableForTest(request.id, 'unstarted')
 
       await expect(recoverUserDeletions([request.id], 1)).resolves.toEqual({ enqueued: 1 })
       expect(await readUserDeletionSweepNeighbor(neighbor.id)).toEqual(neighbor.before)
 
-      const redispatched = await accountLifecycle.getJob(jobId)
+      const redispatched = await background.getJob(jobId)
       if (!redispatched) throw new Error('Expected recovery to dispatch the attempt again')
       await expect(redispatched.getState()).resolves.not.toMatch(/^(completed|failed)$/)
       expect(redispatched.data).toEqual(attempt)
@@ -55,7 +55,7 @@ describe('user deletion recovery with a retained failed job under the attempt to
     } finally {
       await Promise.all(
         [jobId, successorJobId].map(async id =>
-          id ? (await accountLifecycle.getJob(id))?.remove() : undefined,
+          id ? (await background.getJob(id))?.remove() : undefined,
         ),
       )
     }
@@ -70,7 +70,7 @@ describe('user deletion recovery with a retained failed job under the attempt to
 
     try {
       await enqueueUserDeletion({ ...attempt, delayMs: 3_600_000 })
-      const queued = await accountLifecycle.getJob(jobId)
+      const queued = await background.getJob(jobId)
       await expect(queued?.getState()).resolves.toBe('delayed')
       await makeUserDeletionRecoverableForTest(request.id, 'unstarted')
       const staleDispatchedAt = await getUserDeletionDispatchedAtForTest(request.id)
@@ -81,12 +81,12 @@ describe('user deletion recovery with a retained failed job under the attempt to
       // Recovery claimed the request, so it considered this exact token and left the job alone.
       const dispatchedAt = await getUserDeletionDispatchedAtForTest(request.id)
       expect(dispatchedAt?.getTime()).toBeGreaterThan(staleDispatchedAt?.getTime() ?? Infinity)
-      const after = await accountLifecycle.getJob(jobId)
+      const after = await background.getJob(jobId)
       await expect(after?.getState()).resolves.toBe('delayed')
       expect(after?.timestamp).toBe(queued?.timestamp)
       expect(after?.opts.delay).toBe(3_600_000)
     } finally {
-      await (await accountLifecycle.getJob(jobId))?.remove()
+      await (await background.getJob(jobId))?.remove()
     }
   })
 })

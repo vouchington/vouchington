@@ -1,4 +1,4 @@
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import { getBatchListingPageSize } from '../config.mts'
 import {
   toBatchListingPage,
@@ -12,7 +12,7 @@ export const getPendingBatches = async (
   cursor?: BatchListingCursor,
 ): Promise<BatchListingPage<{ id: string }>> => {
   const limit = getBatchListingPageSize()
-  const throughId = cursor?.throughId ?? getMinUUIDv7ForDate(new Date(Date.now() + 1))
+  const throughId = cursor?.throughId ?? getMinUuidv7ForDate(new Date(Date.now() + 1))
   const { rows } = await read<{ id: string }>(
     `/* getPendingBatches */
     SELECT id FROM bedrock_embedding_batches

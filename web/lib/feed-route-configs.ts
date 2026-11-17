@@ -2,7 +2,7 @@
  * Route configurations for feed pages (/feed/posts, /feed/news, etc.)
  * Config data lives in feed-route-config-data.ts to stay within the 200-line limit.
  */
-import { feedRouteConfigData as _feedRouteConfigs } from './feed-route-config-data'
+import { feedRouteConfigData } from './feed-route-config-data'
 
 export const FEED_PAGE_LIMIT = 25
 
@@ -33,9 +33,7 @@ type FeedRouteConfig =
 
 type AnyFeedRouteConfig = FeedRouteConfig
 
-export const feedRouteConfigs = _feedRouteConfigs
-
-type FeedRouteKey = keyof typeof feedRouteConfigs
+type FeedRouteKey = keyof typeof feedRouteConfigData
 
 const feedSubFilterOrder: Record<FeedCategory, FeedRouteKey[]> = {
   posts: ['posts', 'posts/friends', 'posts/topics'],
@@ -46,11 +44,11 @@ const feedSubFilterOrder: Record<FeedCategory, FeedRouteKey[]> = {
 }
 
 const feedSubFiltersByCategory: Record<FeedCategory, AnyFeedRouteConfig[]> = {
-  posts: feedSubFilterOrder.posts.map(key => feedRouteConfigs[key]),
-  news: feedSubFilterOrder.news.map(key => feedRouteConfigs[key]),
-  podcasts: feedSubFilterOrder.podcasts.map(key => feedRouteConfigs[key]),
-  videos: feedSubFilterOrder.videos.map(key => feedRouteConfigs[key]),
-  'referral-links': feedSubFilterOrder['referral-links'].map(key => feedRouteConfigs[key]),
+  posts: feedSubFilterOrder.posts.map(key => feedRouteConfigData[key]),
+  news: feedSubFilterOrder.news.map(key => feedRouteConfigData[key]),
+  podcasts: feedSubFilterOrder.podcasts.map(key => feedRouteConfigData[key]),
+  videos: feedSubFilterOrder.videos.map(key => feedRouteConfigData[key]),
+  'referral-links': feedSubFilterOrder['referral-links'].map(key => feedRouteConfigData[key]),
 }
 
 export function getFeedSubFilters(category: FeedCategory): AnyFeedRouteConfig[] {

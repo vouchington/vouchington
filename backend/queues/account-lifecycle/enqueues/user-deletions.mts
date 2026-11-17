@@ -7,7 +7,7 @@ import {
 } from '@queues/background/enqueues/account-lifecycle-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
 import { USER_DELETIONS_RECOVERY_INTERVAL_MS } from '../config.mts'
-import { accountLifecycle } from '../queues.mts'
+import { background } from '@queues/background/queues'
 import type { UserDeletionEnqueueData } from './types-user-deletions.mts'
 
 const enqueueProcessUserDeletionJob = createBackgroundEnqueue(ACCOUNT_LIFECYCLE_USER_DELETION_JOB)
@@ -27,7 +27,7 @@ export const enqueueBulkUserDeletions = createBackgroundBulkEnqueue(
  */
 export function enqueueOrReactivateBulkUserDeletions(attempts: UserDeletionJobData[]) {
   return enqueueBulkReactivatingFinished({
-    queue: accountLifecycle,
+    queue: background,
     inputs: attempts,
     jobIdOf: userDeletionJobId,
     enqueueBulk: enqueueBulkUserDeletions,

@@ -3,7 +3,7 @@ import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.s
 import { randomInt, randomUUID } from 'node:crypto'
 import assert from 'node:assert/strict'
 import { v7 as uuidv7 } from 'uuid'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import {
   createTestUserWithId,
   getTestVoteIntegrityFlagTypesByPostId,
@@ -44,7 +44,7 @@ describe('vote integrity worker failures', () => {
         voterId,
         sharedIp,
         1,
-        index === 0 ? getMinUUIDv7ForDate(new Date(cutoff)) : uuidv7({ msecs: cutoff, seq: index }),
+        index === 0 ? getMinUuidv7ForDate(new Date(cutoff)) : uuidv7({ msecs: cutoff, seq: index }),
       )
     }
 

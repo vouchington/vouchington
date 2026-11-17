@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { background } from '@queues/background/queues'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import {
@@ -52,7 +52,7 @@ function ownsVote(data: unknown, relationId: string): boolean {
 describe('entity relation vote admission', () => {
   it('keeps an owned mutation pending at admission after its ballot commits', async () => {
     const fixture = await createFixture()
-    const gate = holdQueueBulkAdmission(voteAggregation, jobName, data =>
+    const gate = holdQueueBulkAdmission(background, jobName, data =>
       ownsVote(data, fixture.relationId),
     )
     let entered = false
@@ -78,7 +78,7 @@ describe('entity relation vote admission', () => {
       ])
       const jobs = await gate.admitted
       expect(jobs).toHaveLength(1)
-      expect(await voteAggregation.getJob(jobs[0]!.id)).toMatchObject({
+      expect(await background.getJob(jobs[0]!.id)).toMatchObject({
         name: jobName,
         data: {
           electionId: fixture.relationId,
@@ -119,7 +119,7 @@ describe('entity relation vote admission', () => {
     )
     await using transaction = await beginTransaction()
     const gate = holdQueueBulkAdmission(
-      voteAggregation,
+      background,
       jobName,
       data => ownsVote(data, fixture.relationId) || ownsVote(data, otherId),
     )
@@ -153,7 +153,7 @@ describe('entity relation vote admission', () => {
       await committing
       const jobs = await gate.admitted
       expect(jobs).toHaveLength(1)
-      expect(await voteAggregation.getJob(jobs[0]!.id)).toMatchObject({
+      expect(await background.getJob(jobs[0]!.id)).toMatchObject({
         name: jobName,
         data: {
           electionId: fixture.relationId,
@@ -173,7 +173,7 @@ describe('entity relation vote admission', () => {
   it('publishes no ballot or admission when its borrowed owner rolls back', async () => {
     const fixture = await createFixture()
     await using transaction = await beginTransaction()
-    const gate = holdQueueBulkAdmission(voteAggregation, jobName, data =>
+    const gate = holdQueueBulkAdmission(background, jobName, data =>
       ownsVote(data, fixture.relationId),
     )
     let entered = false
@@ -203,14 +203,14 @@ describe('entity relation vote admission', () => {
     const fixture = await createFixture()
     const failure = new Error('Injected entity relation stats admission failure')
     const reportsBefore = sentryCaptureExceptionMock.mock.calls.length
-    const originalAddBulk = voteAggregation.addBulk
+    const originalAddBulk = background.addBulk
     let matchingAdmissions = 0
-    const spy = vi.spyOn(voteAggregation, 'addBulk').mockImplementation(jobs => {
+    const spy = vi.spyOn(background, 'addBulk').mockImplementation(jobs => {
       if (jobs.some(job => job.name === jobName && ownsVote(job.data, fixture.relationId))) {
         matchingAdmissions += 1
         return Promise.reject(failure)
       }
-      return originalAddBulk.call(voteAggregation, jobs)
+      return originalAddBulk.call(background, jobs)
     })
     try {
       await expect(

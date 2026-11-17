@@ -11,7 +11,7 @@ import { observePostgresReadRoutingForTest } from '@voucha/test-helpers/postgres
 import { updateUserFields } from '@services/users/update-fields'
 import { getOrCreateActorKeyPair } from '@services/ap-actor-keys'
 import { getUndoFollowActivityId } from '@queues/activitypub/enqueues/delivery'
-import { getMinUUIDv7ForDate, mintUUIDv7 } from '@modules/utils/ids'
+import { getMinUuidv7ForDate, mintUuidv7 } from '@modules/utils/ids'
 import { getMaximumActivityAgeDays } from '@services/ap-inbox-activities/config'
 import type { DistributeActivityData } from '@queues/background/enqueues/activitypub-domain'
 import { deliverActivity, distributeActivity } from './delivery.mts'
@@ -54,7 +54,7 @@ async function followScene({ sourceFederated = true, targetFederated = true } = 
   const target = targetFederated ? await createFederatedUser() : await createTestUserDirect()
   const followers = await createRemoteFollowersForTest(source.id, 2)
   const followData: DistributeActivityData = {
-    activityId: mintUUIDv7(),
+    activityId: mintUuidv7(),
     activityType: 'Follow',
     sourceUserId: source.id,
     targetUserId: target.id,
@@ -63,7 +63,7 @@ async function followScene({ sourceFederated = true, targetFederated = true } = 
 }
 
 const expiredActivityId = () =>
-  getMinUUIDv7ForDate(new Date(Date.now() - (getMaximumActivityAgeDays() + 1) * 86_400_000))
+  getMinUuidv7ForDate(new Date(Date.now() - (getMaximumActivityAgeDays() + 1) * 86_400_000))
 
 describe('distributeActivity', () => {
   it.each([
@@ -138,7 +138,7 @@ describe('distributeActivity', () => {
       broadcast: 'users',
       privacy: 'private',
     })
-    const activityId = mintUUIDv7()
+    const activityId = mintUuidv7()
     await expect(
       distributeActivity({
         activityId,
@@ -210,7 +210,7 @@ describe('ActivityPub terminal eligibility reads', () => {
       updateUserFields(target.id, { is_fediverse_federation_enabled: true }),
     ])
     const data = {
-      activityId: mintUUIDv7(),
+      activityId: mintUuidv7(),
       activityType: 'Follow' as const,
       sourceUserId: source.id,
       targetUserId: target.id,
@@ -253,7 +253,7 @@ describe('ActivityPub terminal eligibility reads', () => {
       await expect(
         routing.run(() =>
           deliverActivity({
-            activityId: mintUUIDv7(),
+            activityId: mintUuidv7(),
             activityType: 'Follow',
             sourceUserId: source.id,
             targetUserId: target.id,

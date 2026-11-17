@@ -4,7 +4,7 @@ import {
   VOTE_AGGREGATION_USER_ELECTION_FAN_OUT_JOB,
   VOTE_AGGREGATION_VOTE_WEIGHT_DISPATCHER_JOB,
 } from '@queues/background/enqueues/vote-aggregation-jobs'
-import { voteAggregation } from '../queues.mts'
+import { background } from '@queues/background/queues'
 import {
   enqueueRecalculateVoteWeightDispatcher,
   enqueueRecalculateUserVoteWeight,
@@ -17,7 +17,7 @@ describe('vote weight enqueues', () => {
   })
 
   function interceptAdd() {
-    return vi.spyOn(voteAggregation, 'add').mockResolvedValueOnce({ id: 'admitted' } as never)
+    return vi.spyOn(background, 'add').mockResolvedValueOnce({ id: 'admitted' } as never)
   }
 
   it('throttles the vote weight dispatcher under a caller-named deduplication id', async () => {

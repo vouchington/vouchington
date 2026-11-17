@@ -1,6 +1,6 @@
 import { randomInt } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import {
   cleanupClassifierChildRetentionFixture,
   countClassifierRows,
@@ -30,8 +30,8 @@ describe('classifier child retention on owned PostgreSQL rows', () => {
     const terminalId = terminalIds[0]!
     try {
       await seedClassifierChildRowsForRetentionTest([terminalId, pendingId], topic.id)
-      const lowerBoundId = getMinUUIDv7ForDate(new Date(at.getTime() - 1))
-      const cutoffId = getMinUUIDv7ForDate(new Date(at.getTime() + 1_000))
+      const lowerBoundId = getMinUuidv7ForDate(new Date(at.getTime() - 1))
+      const cutoffId = getMinUuidv7ForDate(new Date(at.getTime() + 1_000))
 
       expect(await readClassifierChildRetentionCounts([terminalId, pendingId])).toEqual({
         run_candidates: 2,

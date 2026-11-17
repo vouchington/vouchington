@@ -10,7 +10,6 @@ export async function seedRewardsProgramStatuses(
   console.log(`Seeding ${count} rewards program statuses...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     const statusIds = Array.from(
       { length: Math.ceil(count / REWARDS_PROGRAM_STATUS_SEED_OWNER_COUNT) },
       (_, index) => seedUuid(index, '1f'),
@@ -25,14 +24,14 @@ export async function seedRewardsProgramStatuses(
       (_, index) =>
         `($${index * 4 + 1}, $${index * 4 + 2}, $${index * 4 + 3}, $${index * 4 + 4}, 'system')`,
     )
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO topics
          (id, name, slug, bedrock_nova_multimodal_v1_content_sha256, created_via)
        VALUES ${topicRows.join(', ')}
        ON CONFLICT DO NOTHING`,
       topicValues,
     )
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO rewards_program_status_topics (topic_id)
        SELECT id FROM UNNEST($1::UUID[]) AS id
        ON CONFLICT DO NOTHING`,
@@ -51,7 +50,7 @@ export async function seedRewardsProgramStatuses(
         const base = values.length - 2
         rows.push(`($${base}, $${base + 1}, $${base + 2})`)
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO individual_rewards_program_statuses
            (id, individual_id, rewards_program_status_topic_id)
          VALUES ${rows.join(', ')}

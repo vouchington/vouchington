@@ -121,8 +121,7 @@ export async function runAgentModerationRetentionScenarios(): Promise<void> {
   await runAndCapture(
     'agent-moderation-retention-delete',
     async () => {
-      const nextContinuation = continuation
-      if (nextContinuation === null) {
+      if (continuation === null) {
         throw new Error('The first raw page must return durable continuation')
       }
       const result = await cleanupObsoleteAgentModerations({
@@ -130,7 +129,7 @@ export async function runAgentModerationRetentionScenarios(): Promise<void> {
         maxBatches: 1,
         now: anchor,
         lowerBoundDate,
-        continuation: nextContinuation,
+        continuation: continuation,
       })
       assert.equal(result.scanned, PAGE_SIZE)
       assert.equal(result.hasMore, true)

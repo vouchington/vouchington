@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { background } from '@queues/background/queues'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { createTestPost, createTestTopic, createTestUser } from '@voucha/test-helpers'
@@ -62,7 +62,7 @@ describe('refreshEntityRelationVoteStatsFromPrimaryWithFallback', () => {
   it('enqueues a reconciliation job for the complete target when the primary refresh fails', async () => {
     const { target } = await createVotedRelation()
     const gate = holdQueueBulkAdmission(
-      voteAggregation,
+      background,
       jobName,
       data =>
         typeof data === 'object' &&
@@ -84,7 +84,7 @@ describe('refreshEntityRelationVoteStatsFromPrimaryWithFallback', () => {
     const jobs = await gate.admitted
     try {
       expect(jobs).toHaveLength(1)
-      expect(await voteAggregation.getJob(jobs[0]!.id)).toMatchObject({
+      expect(await background.getJob(jobs[0]!.id)).toMatchObject({
         name: jobName,
         data: {
           electionId: target.entityRelationId,
@@ -116,7 +116,7 @@ describe('refreshEntityRelationVoteStatsFromPrimaryWithFallback', () => {
   it('describes a non-Error primary failure when the fallback enqueue also fails', async () => {
     const { target } = await createVotedRelation()
     const restoreWrite = rejectPostgresWriteForTest(AGGREGATE_MARKER, 'primary unavailable')
-    vi.spyOn(voteAggregation, 'addBulk').mockRejectedValueOnce(new Error('queue unavailable'))
+    vi.spyOn(background, 'addBulk').mockRejectedValueOnce(new Error('queue unavailable'))
 
     try {
       await expect(refreshEntityRelationVoteStatsFromPrimaryWithFallback(target)).rejects.toThrow(

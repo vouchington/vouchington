@@ -2,10 +2,7 @@
 
 import { ApiError } from '@vouchington/api-client'
 import { getImageUploadState } from './image-upload-api'
-import {
-  InternalImageBlockedError,
-  InternalImageProcessingTimeoutError,
-} from './image-upload-errors'
+import { ImageBlockedError, ImageProcessingTimeoutError } from './image-upload-errors'
 import { POLL_INTERVAL_MS, POLL_MAX_ERRORS, POLL_TIMEOUT_MS } from './image-upload-polling'
 import { getImageUploadRetryAfterMs } from './image-upload-retry-after'
 
@@ -24,7 +21,7 @@ export async function pollImageUntilUploaded(
       const request = createTimeoutSignal(options.signal, remainingMs)
       const state = await getImageUploadState(imageId, request.signal).finally(request.cleanup)
       errors = 0
-      if (state.blocked) throw new InternalImageBlockedError(imageId)
+      if (state.blocked) throw new ImageBlockedError(imageId)
       if (state.upload_status === 'failed') {
         throw new ApiError(state.upload_error ?? 'Image processing failed', 422)
       }
@@ -32,7 +29,7 @@ export async function pollImageUntilUploaded(
     } catch (err) {
       if (isAbortError(err)) {
         throwIfAborted(options.signal)
-        throw new InternalImageProcessingTimeoutError(imageId)
+        throw new ImageProcessingTimeoutError(imageId)
       }
       if (!(err instanceof ApiError) || (err.status < 500 && err.status !== 429)) throw err
       const retryAfterMs = getImageUploadRetryAfterMs(err)
@@ -54,7 +51,7 @@ export async function pollImageUntilUploaded(
 
 function getRemainingMs(timeoutAt: number, imageId: string): number {
   const remainingMs = timeoutAt - Date.now()
-  if (remainingMs <= 0) throw new InternalImageProcessingTimeoutError(imageId)
+  if (remainingMs <= 0) throw new ImageProcessingTimeoutError(imageId)
   return remainingMs
 }
 

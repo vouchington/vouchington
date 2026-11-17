@@ -4,7 +4,7 @@ import {
   callStructuredMcpTool,
 } from '@voucha/test-helpers/mcp-tool-contract'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { notifications } from '@queues/notifications/queues'
+import { background as notifications } from '@queues/background/queues'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'

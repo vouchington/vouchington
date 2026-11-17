@@ -25,8 +25,7 @@ async function seedPrioritizedReferralLink(
 
   {
     await using transaction = await beginTransaction()
-    const query = transaction
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO topics
          (id, topic_type, name, slug, bedrock_nova_multimodal_v1_content_sha256, created_via)
        VALUES ($1, 'referral_program', $2, $3, $4, 'system') ON CONFLICT DO NOTHING`,
@@ -37,12 +36,12 @@ async function seedPrioritizedReferralLink(
         contentHash(`referral-program-${programIndex}`),
       ],
     )
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO referral_program_topics (topic_id)
        VALUES ($1) ON CONFLICT DO NOTHING`,
       [referralProgramId],
     )
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO user_referral_program_links (user_id, referral_program_topic_id, url_id, created_via)
        VALUES ($1, $2, $3, 'system') ON CONFLICT DO NOTHING`,
       [linkOwnerId, referralProgramId, urlId],
@@ -64,8 +63,7 @@ export async function seedFriendRecommendation(): Promise<void> {
 
   {
     await using transaction = await beginTransaction()
-    const query = transaction
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO facebook_accounts (user_id, facebook_user_id, facebook_user_data)
        VALUES ($1, $2, $3), ($4, $5, $6)
        ON CONFLICT DO NOTHING`,
@@ -78,7 +76,7 @@ export async function seedFriendRecommendation(): Promise<void> {
         JSON.stringify({ name: 'Seed User 3' }),
       ],
     )
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO facebook_friends
        (facebook_account_id, facebook_friend_id, friend_facebook_account_id)
        SELECT owner.id, $2,

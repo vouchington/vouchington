@@ -12,7 +12,7 @@ import {
   insertTestTopic,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import { POST_CONTENT_EDIT_WINDOW_EXPIRED } from '@modules/on-error/error-codes'
 import type { PrivateUser } from '@services/users/types'
 import { createPost } from '../create.mts'
@@ -135,7 +135,7 @@ describe('removePostHashtag', () => {
     })
     await approveTestPost(post.id)
     const agedId = await insertTestPost({
-      id: getMinUUIDv7ForDate(new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)),
+      id: getMinUuidv7ForDate(new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)),
       title: `Aged remove ${suffix}`,
       markdown: 'Aged content',
       slug: `aged-remove-${suffix}`,

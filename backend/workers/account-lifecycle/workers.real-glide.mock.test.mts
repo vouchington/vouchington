@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { createDataRequest } from '@services/account-data-requests'
 import { createUserDeletionRequest } from '@services/user-deletions'
-import { accountLifecycle } from '@queues/account-lifecycle/queues'
+import { background } from '@queues/background/queues'
 import {
   ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB,
   ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB,
@@ -130,14 +130,14 @@ describe('account-lifecycle real worker', () => {
     let successorId: string | undefined
     try {
       await runJob(ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB.name, {}, 100)
-      expect((await accountLifecycle.getJob(exportJobId))?.data).toEqual({
+      expect((await background.getJob(exportJobId))?.data).toEqual({
         requestId: exportRequest.id,
         userId: exportUser.id,
         processingAttemptId: exportRequest.processing_attempt_id,
       })
 
       await runJob(ACCOUNT_LIFECYCLE_RECOVER_DELETIONS_JOB.name, {}, 100)
-      expect((await accountLifecycle.getJob(deletionJobId))?.data).toEqual({
+      expect((await background.getJob(deletionJobId))?.data).toEqual({
         requestId: deletionRequest.id,
         processingAttemptId: deletionRequest.processingAttemptId,
       })
@@ -154,7 +154,7 @@ describe('account-lifecycle real worker', () => {
       }
     } finally {
       for (const id of [exportJobId, deletionJobId, successorId]) {
-        if (id) await (await accountLifecycle.getJob(id))?.remove()
+        if (id) await (await background.getJob(id))?.remove()
       }
     }
   })

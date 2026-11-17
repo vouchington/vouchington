@@ -6,7 +6,7 @@ import {
   safeUsername,
 } from '@voucha/test-helpers'
 import { holdQueueBulkAdmission } from '@voucha/test-helpers/queue-admission-hold'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { background } from '@queues/background/queues'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { revokeVoteWeightPenalty } from './revoke-penalty.mts'
 
@@ -34,7 +34,7 @@ describe('revokeVoteWeightPenalty', () => {
     const penaltyId = await insertTestVoteWeightPenalty(penalizedUser!.id, adminUser!.id)
     const jobId = `voteWeight__${penalizedUser!.id}__force`
     const admission = holdQueueBulkAdmission(
-      voteAggregation,
+      background,
       'vote-aggregation.processRecalculateUserVoteWeight',
       data =>
         typeof data === 'object' &&
@@ -70,7 +70,7 @@ describe('revokeVoteWeightPenalty', () => {
       const [result, jobs] = await Promise.all([operation, admittedJobsPromise])
       expect(result).toMatchObject({ id: penaltyId })
       expect(jobs).toHaveLength(1)
-      expect(await voteAggregation.getJob(jobId)).toMatchObject({
+      expect(await background.getJob(jobId)).toMatchObject({
         data: {
           userId: penalizedUser!.id,
           forceRecalculate: true,
@@ -94,10 +94,10 @@ describe('revokeVoteWeightPenalty', () => {
     const jobId = `voteWeight__${penalizedUser!.id}__force`
     const failure = new Error('Owned vote-weight revoke admission failure')
     const reportOffset = sentryCaptureExceptionMock.mock.calls.length
-    const originalAddBulk = voteAggregation.addBulk
-    const addBulk = vi.spyOn(voteAggregation, 'addBulk').mockImplementation(jobs => {
+    const originalAddBulk = background.addBulk
+    const addBulk = vi.spyOn(background, 'addBulk').mockImplementation(jobs => {
       if (jobs.some(job => job.opts?.jobId === jobId)) return Promise.reject(failure)
-      return originalAddBulk.call(voteAggregation, jobs)
+      return originalAddBulk.call(background, jobs)
     })
 
     try {

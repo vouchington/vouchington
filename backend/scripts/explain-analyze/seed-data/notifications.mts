@@ -5,7 +5,6 @@ export async function seedNotifications(count = 500): Promise<void> {
   console.log(`Seeding ${count} notifications...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     for (let i = 0; i < count; i += 500) {
       const batch = Math.min(500, count - i)
       const values: unknown[] = []
@@ -27,7 +26,7 @@ export async function seedNotifications(count = 500): Promise<void> {
           `($${base}, $${base + 1}::notification_entity_types, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5})`,
         )
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO notifications (user_id, entity_type, post_id, title, body, target_path) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
         values,
       )
@@ -42,8 +41,7 @@ export async function seedConversations(messageCount = 100): Promise<void> {
   const createdById = seedUuid(0, '01')
   {
     await using transaction = await beginTransaction()
-    const query = transaction
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO conversations (id, created_by_id, title) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
       [conversationId, createdById, 'Seed Conversation'],
     )
@@ -52,7 +50,6 @@ export async function seedConversations(messageCount = 100): Promise<void> {
   }
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     for (let i = 0; i < messageCount; i += 500) {
       const batch = Math.min(500, messageCount - i)
       const values: unknown[] = []
@@ -65,7 +62,7 @@ export async function seedConversations(messageCount = 100): Promise<void> {
         const base = values.length - 2
         rows.push(`($${base}, $${base + 1}, 'system', $${base + 2}::jsonb)`)
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO conversation_messages (conversation_id, created_by_id, created_via, content) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
         values,
       )

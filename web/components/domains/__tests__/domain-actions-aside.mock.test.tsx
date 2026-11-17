@@ -35,7 +35,7 @@ vi.mock(
   () =>
     ({
       submitReport: vi.fn<VitestLooseMock>().mockResolvedValue({ report: { id: 'r1' } }),
-      REPORT_REASONS: [{ value: 'spam', label: 'Spam' }],
+      MODERATION_REPORT_REASON_OPTIONS: [{ value: 'spam', label: 'Spam' }],
     }) as unknown as typeof import('@/lib/api/client/reports'),
 )
 

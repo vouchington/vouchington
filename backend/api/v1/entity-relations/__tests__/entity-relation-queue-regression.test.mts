@@ -8,7 +8,7 @@ import {
   insertTestTopic,
   readAllQueueJobs,
 } from '@voucha/test-helpers'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { background } from '@queues/background/queues'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
 
@@ -61,6 +61,6 @@ async function createPost(createdById: string): Promise<string> {
 }
 
 async function hasQueuedReconciliation(relationId: string): Promise<boolean> {
-  const jobs = await readAllQueueJobs(voteAggregation)
+  const jobs = await readAllQueueJobs(background)
   return jobs.some(job => (job.data as { electionId?: string }).electionId === relationId)
 }

@@ -3,7 +3,6 @@ import {
   POST_CLASSIFIER_MODEL_NAME,
   POST_CLASSIFIER_POLICY_PROMPT,
   POST_CLASSIFIER_REMOTE_QUESTIONS,
-  POST_CLASSIFIER_SLUG,
 } from '@voucha/types/entities/post-classifier'
 import { POST_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/user-constants'
 import { runConfigDrivenStatementsInTransaction } from '../../migration-runner/config-driven-statements.mts'
@@ -41,7 +40,7 @@ describe('post classifier config-driven seed (real DB)', () => {
     const second = await getPostClassifierSeedState()
 
     expect(second).toEqual(first)
-    expect(second.classifierSlug).toBe(POST_CLASSIFIER_SLUG)
+    expect(second.classifierSlug).toBe(POST_CLASSIFIER_SYSTEM_USERNAME)
     expect(second.modelName).toBe(POST_CLASSIFIER_MODEL_NAME)
     expect(second.activePromptIds).toHaveLength(1)
     expect(second.candidates.map(candidate => candidate.topicSlug)).toEqual(

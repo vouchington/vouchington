@@ -3,7 +3,6 @@ import {
   POST_CLASSIFIER_MODEL_PROVIDER,
   POST_CLASSIFIER_PROMPT,
   POST_CLASSIFIER_REMOTE_QUESTIONS,
-  POST_CLASSIFIER_SLUG,
 } from '@voucha/types/entities/post-classifier'
 import { POST_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/user-constants'
 import { buildSystemUserUpsertSQL } from './utils/system-user-seed.mts'
@@ -26,14 +25,14 @@ DO $post_classifier_topics$ BEGIN
 END $post_classifier_topics$;
 
 INSERT INTO classifiers (slug, primitive, candidate_kind, activated_at, created_by_id)
-SELECT '${POST_CLASSIFIER_SLUG}', 'noul', 'topic', CURRENT_TIMESTAMP, actor.id
+SELECT '${POST_CLASSIFIER_SYSTEM_USERNAME}', 'noul', 'topic', CURRENT_TIMESTAMP, actor.id
 FROM users actor
 WHERE actor.username = '${POST_CLASSIFIER_SYSTEM_USERNAME}' AND actor.platform_account_kind = 'system'
 ON CONFLICT (slug) DO NOTHING;
 
 UPDATE classifier_prompt_versions
 SET deactivated_at = CURRENT_TIMESTAMP
-WHERE classifier_id = (SELECT id FROM classifiers WHERE slug = '${POST_CLASSIFIER_SLUG}')
+WHERE classifier_id = (SELECT id FROM classifiers WHERE slug = '${POST_CLASSIFIER_SYSTEM_USERNAME}')
   AND activated_at IS NOT NULL AND deactivated_at IS NULL AND deleted_at IS NULL
   AND (
     prompt != $post_classifier_prompt$${POST_CLASSIFIER_PROMPT}$post_classifier_prompt$
@@ -53,7 +52,7 @@ SELECT classifier.id, $post_classifier_prompt$${POST_CLASSIFIER_PROMPT}$post_cla
 FROM classifiers classifier
 JOIN users actor ON actor.username = '${POST_CLASSIFIER_SYSTEM_USERNAME}'
   AND actor.platform_account_kind = 'system'
-WHERE classifier.slug = '${POST_CLASSIFIER_SLUG}'
+WHERE classifier.slug = '${POST_CLASSIFIER_SYSTEM_USERNAME}'
   AND NOT EXISTS (
     SELECT 1 FROM classifier_prompt_versions prompt
     WHERE prompt.classifier_id = classifier.id
@@ -71,7 +70,7 @@ JOIN users actor ON actor.username = '${POST_CLASSIFIER_SYSTEM_USERNAME}'
 JOIN (VALUES ${topicValues}) AS required(slug) ON TRUE
 JOIN topics topic ON topic.slug = required.slug AND topic.topic_type = 'topic'
   AND topic.deleted_at IS NULL AND topic.merged_into_topic_id IS NULL
-WHERE classifier.slug = '${POST_CLASSIFIER_SLUG}'
+WHERE classifier.slug = '${POST_CLASSIFIER_SYSTEM_USERNAME}'
   AND NOT EXISTS (
     SELECT 1 FROM classifier_candidates candidate
     WHERE candidate.classifier_id = classifier.id AND candidate.topic_id = topic.id
@@ -96,7 +95,7 @@ JOIN topics topic ON topic.id = candidate.topic_id
   AND topic.deleted_at IS NULL AND topic.merged_into_topic_id IS NULL
 JOIN users actor ON actor.username = '${POST_CLASSIFIER_SYSTEM_USERNAME}'
   AND actor.platform_account_kind = 'system'
-WHERE classifier.slug = '${POST_CLASSIFIER_SLUG}'
+WHERE classifier.slug = '${POST_CLASSIFIER_SYSTEM_USERNAME}'
   AND NOT EXISTS (
     SELECT 1 FROM classifier_candidate_thresholds threshold
     WHERE threshold.candidate_id = candidate.id AND threshold.prompt_version_id = prompt.id

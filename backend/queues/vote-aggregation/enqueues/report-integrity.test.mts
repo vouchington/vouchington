@@ -4,7 +4,7 @@ import {
   VOTE_AGGREGATION_BACKFILL_REPORT_INTEGRITY_JOB,
   VOTE_AGGREGATION_REPORT_INTEGRITY_JOB,
 } from '@queues/background/enqueues/vote-aggregation-jobs'
-import { voteAggregation } from '../queues.mts'
+import { background } from '@queues/background/queues'
 import {
   enqueueContinueBackfillReportIntegrity,
   enqueueReportIntegrityCheck,
@@ -16,7 +16,7 @@ describe('report integrity enqueues', () => {
   })
 
   it('debounces a report integrity check per entity', async () => {
-    const add = vi.spyOn(voteAggregation, 'add')
+    const add = vi.spyOn(background, 'add')
     const entityId = randomUUID()
 
     await enqueueReportIntegrityCheck('user', entityId)
@@ -34,7 +34,7 @@ describe('report integrity enqueues', () => {
   })
 
   it('names a backfill continuation by the cursor it resumes from', async () => {
-    const add = vi.spyOn(voteAggregation, 'add')
+    const add = vi.spyOn(background, 'add')
     const afterReportId = randomUUID()
 
     await enqueueContinueBackfillReportIntegrity(afterReportId)

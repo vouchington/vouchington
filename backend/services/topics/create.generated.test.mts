@@ -3,7 +3,7 @@ import { onTestFinished, it, expect, describe, vi } from 'vitest'
 import { ENTITY_LISTENERS_TOPIC_CREATED_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
 import { NOTIFICATIONS_RECONCILE_POST_JOB } from '@queues/background/enqueues/notifications-jobs'
 import { backgroundQueue as entitiesListeners } from '@voucha/test-helpers/shared-background-queue'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { getTopicByAny } from './get.mts'
 import { createTopic } from './create.mts'
 import { createUnlinkedTopicAlias } from './aliases.mts'
@@ -155,7 +155,7 @@ describe('create.generated', () => {
       authoredToken: `#${slug}`,
     })
     const queueGate = holdQueueBulkAdmission(
-      notifications,
+      background,
       NOTIFICATIONS_RECONCILE_POST_JOB.name,
       data =>
         typeof data === 'object' && data !== null && 'postId' in data && data.postId === post.id,
@@ -205,7 +205,7 @@ describe('create.generated', () => {
       expect(admitted).toHaveLength(1)
       const created = await creation
       expect(created.slug).toBe(slug)
-      expect(await readEnqueuedJob(notifications, admitted[0])).toMatchObject({
+      expect(await readEnqueuedJob(background, admitted[0])).toMatchObject({
         name: NOTIFICATIONS_RECONCILE_POST_JOB.name,
         data: { postId: post.id },
       })

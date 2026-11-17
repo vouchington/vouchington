@@ -14,9 +14,8 @@ export async function seedSemanticRssFeedItems(): Promise<void> {
   console.log(`Seeding ${SEMANTIC_RSS_ITEM_COUNT} semantic RSS feed items...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
-    await seedSemanticStories(query)
-    await attachSemanticVectorsAndStories(query)
+    await seedSemanticStories(transaction)
+    await attachSemanticVectorsAndStories(transaction)
 
     await transaction.commit()
   }

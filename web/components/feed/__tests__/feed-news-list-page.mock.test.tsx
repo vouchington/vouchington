@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FeedNewsListPage } from '../feed-news-list-page'
-import { feedRouteConfigs } from '@/lib/feed-route-configs'
+import { feedRouteConfigData } from '@/lib/feed-route-config-data'
 import type { RssFeedItemsFeedResponseBody } from '@/types/rss-feed-items'
 
 const { mockGetRssFeedItemsFeed } = vi.hoisted(() => ({
@@ -68,7 +68,7 @@ describe('FeedNewsListPage', () => {
 
   it('does not pass community scope to friends-only news', async () => {
     const ui = await FeedNewsListPage({
-      config: feedRouteConfigs['news/friends'],
+      config: feedRouteConfigData['news/friends'],
       searchParams: { community: 'source-list' },
     })
 
@@ -83,7 +83,7 @@ describe('FeedNewsListPage', () => {
 
   it('does not pass community scope to source news', async () => {
     const ui = await FeedNewsListPage({
-      config: feedRouteConfigs['news/sources'],
+      config: feedRouteConfigData['news/sources'],
       searchParams: { community: 'source-list' },
     })
 
@@ -97,7 +97,7 @@ describe('FeedNewsListPage', () => {
 
   it('passes search query to source news', async () => {
     await FeedNewsListPage({
-      config: feedRouteConfigs['news/sources'],
+      config: feedRouteConfigData['news/sources'],
       searchParams: { q: 'travel #awards' },
     })
 
@@ -108,7 +108,7 @@ describe('FeedNewsListPage', () => {
 
   it('passes media_type=audio for podcasts feed', async () => {
     await FeedNewsListPage({
-      config: feedRouteConfigs['podcasts'],
+      config: feedRouteConfigData['podcasts'],
       searchParams: {},
     })
 
@@ -119,7 +119,7 @@ describe('FeedNewsListPage', () => {
 
   it('passes media_type=video for videos feed', async () => {
     await FeedNewsListPage({
-      config: feedRouteConfigs['videos'],
+      config: feedRouteConfigData['videos'],
       searchParams: {},
     })
 
@@ -130,7 +130,7 @@ describe('FeedNewsListPage', () => {
 
   it('passes media_type=article for news feed', async () => {
     await FeedNewsListPage({
-      config: feedRouteConfigs['news'],
+      config: feedRouteConfigData['news'],
       searchParams: {},
     })
 

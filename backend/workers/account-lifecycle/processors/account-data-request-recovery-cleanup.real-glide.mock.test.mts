@@ -1,7 +1,7 @@
 import { createTestDataRequestSweepNeighbor } from '@voucha/test-helpers/account-data-request-sweep-neighbor'
 import { describe, expect, it, vi } from 'vitest'
 import { enqueueExportRequest } from '@queues/account-lifecycle/enqueues/account-data-requests'
-import { accountLifecycle } from '@queues/account-lifecycle/queues'
+import { background } from '@queues/background/queues'
 import { createDataRequest, markDataRequestProcessing } from '@services/account-data-requests'
 import { createTestUser, makeUserDataRequestRecoverableForTest } from '@voucha/test-helpers'
 import { recoverExportRequests } from './account-data-request-recovery-cleanup.mts'
@@ -25,13 +25,13 @@ describe('account data export recovery with a retained failed job under the atte
     try {
       await enqueueExportRequest(attempt.requestId, attempt.userId, attempt.processingAttemptId)
       // A job that stalls past its limit, or fails before it claims the token, leaves exactly this.
-      await expect(accountLifecycle.revoke(jobId)).resolves.toBe('revoked')
-      await expect((await accountLifecycle.getJob(jobId))?.getState()).resolves.toBe('failed')
+      await expect(background.revoke(jobId)).resolves.toBe('revoked')
+      await expect((await background.getJob(jobId))?.getState()).resolves.toBe('failed')
       await makeUserDataRequestRecoverableForTest(request.id, 'unstarted')
 
       await recoverExportRequests([request.id], 1)
 
-      const redispatched = await accountLifecycle.getJob(jobId)
+      const redispatched = await background.getJob(jobId)
       if (!redispatched) throw new Error('Expected recovery to dispatch the attempt again')
       await expect(redispatched.getState()).resolves.not.toMatch(/^(completed|failed)$/)
       expect(redispatched.data).toEqual(attempt)
@@ -42,7 +42,7 @@ describe('account data export recovery with a retained failed job under the atte
         markDataRequestProcessing(attempt.requestId, attempt.processingAttemptId),
       ).resolves.toBe(true)
     } finally {
-      await (await accountLifecycle.getJob(jobId))?.remove()
+      await (await background.getJob(jobId))?.remove()
     }
   })
 })

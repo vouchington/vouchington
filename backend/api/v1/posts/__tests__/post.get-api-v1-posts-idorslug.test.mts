@@ -19,7 +19,7 @@ import {
 } from '@voucha/test-helpers/entities/communities'
 import { createCommunityPostFixture } from '@voucha/test-helpers/services/posts/test-support'
 
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 
 describe('post', () => {
   describe('Post Individual Routes', () => {
@@ -209,7 +209,7 @@ describe('post', () => {
 
       it('should include can_edit_content: false for creator on an old post', async () => {
         const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
-        const oldId = getMinUUIDv7ForDate(twoDaysAgo)
+        const oldId = getMinUuidv7ForDate(twoDaysAgo)
         const postId = await insertTestPost({
           id: oldId,
           title: 'Old Post',

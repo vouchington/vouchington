@@ -103,10 +103,9 @@ async function persistEntityRelationVoteStats(
   ) {
     await recordPostTopicRelationPublicationChanges(query, target.relationTable, [updated])
   }
-  const result = updated
 
   await query.commit()
-  return result
+  return updated
 }
 
 async function enqueuePublisherTypeTopicDiscoverabilityIfUpdated(

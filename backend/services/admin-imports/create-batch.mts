@@ -69,10 +69,9 @@ export async function createImportBatch(
       )
       allRows.push(...(chunkRows as ImportRow[]))
     }
-    const rows = allRows
-    const rowIds = rows.map(r => r.id)
+    const rowIds = allRows.map(r => r.id)
 
-    const result = { batch, rows, rowIds }
+    const result = { batch, rows: allRows, rowIds }
 
     await recordModeratorAction(
       creator.id,

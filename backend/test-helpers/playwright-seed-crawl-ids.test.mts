@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getDateFromUUIDv7, getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getDateFromUuidv7, getMinUuidv7ForDate } from '@modules/utils/ids'
 import {
   PLAYWRIGHT_SEED_CRAWL_ANCHOR_ENV,
   pinPlaywrightSeedCrawlAnchor,
@@ -41,9 +41,9 @@ describe('recentSeedCrawlId', () => {
   it('stays inside the web-search recency window at a 31-day-month end', () => {
     const now = new Date('2026-08-31T00:16:00.000Z')
     const crawlId = recentSeedCrawlId(2, now)
-    const cutoff = getMinUUIDv7ForDate(new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000))
+    const cutoff = getMinUuidv7ForDate(new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000))
 
-    expect(getDateFromUUIDv7(crawlId)).toEqual(new Date('2026-08-30T00:00:00.000Z'))
+    expect(getDateFromUuidv7(crawlId)).toEqual(new Date('2026-08-30T00:00:00.000Z'))
     expect(crawlId.localeCompare(cutoff)).toBeGreaterThanOrEqual(0)
   })
 })

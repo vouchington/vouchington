@@ -12,7 +12,7 @@ import { insertTestCrawlDispatchPlanUrls } from '@voucha/test-helpers/entities/c
 import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
-import { getMaxUUIDv7ForDate } from '@modules/utils'
+import { getMaxUuidv7ForDate } from '@modules/utils'
 import { crawlDispatchConfig } from './work-limits.mts'
 import { dispatchCrawlUrlsPerHostname } from './dispatch-per-hostname.mts'
 import { dispatchTier1CrawlUrls, dispatchTier2CrawlUrls } from './dispatch-tier-urls.mts'
@@ -25,7 +25,7 @@ function ownedUrlWindow(size: number) {
         BigInt(`0x${randomUUID().replaceAll('-', '').slice(0, 12)}`) % BigInt(historicalRangeMs),
       ),
   )
-  const upperId = getMaxUUIDv7ForDate(time)
+  const upperId = getMaxUuidv7ForDate(time)
   const upper = BigInt(`0x${upperId.replaceAll('-', '')}`)
   const idAtOffset = (offset: number) => {
     const hex = (upper - BigInt(offset)).toString(16).padStart(32, '0')

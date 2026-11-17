@@ -1,4 +1,4 @@
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
 import { randomUUID } from 'node:crypto'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
@@ -102,7 +102,7 @@ describe('hostname paged dispatcher through the shared CPU queue', () => {
   it('enqueues a hostname needing crawler refresh', async () => {
     const hostnameTime = Date.UTC(1971, 0, 1) + parseInt(randomUUID().slice(0, 7), 16)
     const hostnameId = await insertTestUrlHostname({
-      id: getMinUUIDv7ForDate(new Date(hostnameTime)),
+      id: getMinUuidv7ForDate(new Date(hostnameTime)),
       hostname: `refresh-${randomUUID()}.example.com`,
       is_crawlable: true,
     })

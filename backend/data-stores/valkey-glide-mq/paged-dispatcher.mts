@@ -73,9 +73,9 @@ export async function processPagedDispatcher<TData extends object, TResult>(
   const fences = createPagedDispatchFences(options.target.name, job.id, options.targetPrefix)
   type Receipt = { result: TResult; next?: TData; nextAdmitted?: boolean }
   const data = job.data as TData & { dispatchReceipt?: Receipt }
-  let receipt = data.dispatchReceipt
+  let page = data.dispatchReceipt
   let afterDispatch: (() => Promise<void>) | undefined
-  if (!receipt) {
+  if (!page) {
     // Capacity gates new row work. A durable receipt must still be allowed to retire its
     // admission fences and finish, including when control jobs themselves fill the queue.
     const counts = await options.target.getJobCounts()
@@ -91,13 +91,12 @@ export async function processPagedDispatcher<TData extends object, TResult>(
       () => options.readAndDispatch(getPagedDispatchLimit(`${options.dispatcher}_page_size`)),
       fences.checkpoint,
     )
-    const { afterDispatch: commit, ...page } = admitted.value
+    const { afterDispatch: commit, ...admittedPage } = admitted.value
     afterDispatch = commit
-    receipt = page
+    page = admittedPage
     // A retry after admission reuses this result instead of reading and admitting another page.
-    await job.updateData({ ...job.data, dispatchReceipt: receipt })
+    await job.updateData({ ...job.data, dispatchReceipt: page })
   }
-  const page = receipt
   let continuationDedupId: string | undefined
   if (page.next) {
     const pageId = createHash('sha256')

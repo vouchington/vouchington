@@ -1,5 +1,5 @@
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import { getRetentionCutoffDate, normalizeRetentionDays } from './cleanup-options.mts'
 import { DEFAULT_BATCH_SIZE } from './cleanup-batches.mts'
@@ -33,10 +33,10 @@ function getPaymentCleanupPageBounds(options: PaymentOperationCleanupOptions) {
     normalizeRetentionDays(options.retentionDays, 30),
     options.now,
   )
-  const idCutoff = getMinUUIDv7ForDate(
+  const idCutoff = getMinUuidv7ForDate(
     options.upperBoundDate && options.upperBoundDate < cutoff ? options.upperBoundDate : cutoff,
   )
-  const idLowerBound = options.lowerBoundDate ? getMinUUIDv7ForDate(options.lowerBoundDate) : null
+  const idLowerBound = options.lowerBoundDate ? getMinUuidv7ForDate(options.lowerBoundDate) : null
   return { batchSize, cutoff, idCutoff, idLowerBound }
 }
 

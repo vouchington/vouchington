@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import {
   assertClassifierBatchWithinRetention,
   assertClassifierWindowWithinRetention,
@@ -13,18 +13,18 @@ describe('classifier retention boundary', () => {
     const cutoff = classifierRetentionCutoff(now)
     const before = new Date(cutoff.getTime() - 1)
 
-    expect(() => assertClassifierBatchWithinRetention(getMinUUIDv7ForDate(before), now)).toThrow(
+    expect(() => assertClassifierBatchWithinRetention(getMinUuidv7ForDate(before), now)).toThrow(
       RangeError,
     )
     expect(() => assertClassifierWindowWithinRetention(before, now)).toThrow(RangeError)
     expect(() =>
-      assertClassifierBatchWithinRetention(getMinUUIDv7ForDate(cutoff), now),
+      assertClassifierBatchWithinRetention(getMinUuidv7ForDate(cutoff), now),
     ).not.toThrow()
     expect(() =>
-      assertClassifierBatchWithinRetention(getMinUUIDv7ForDate(cutoff).toUpperCase(), now),
+      assertClassifierBatchWithinRetention(getMinUuidv7ForDate(cutoff).toUpperCase(), now),
     ).not.toThrow()
     expect(() => assertClassifierWindowWithinRetention(cutoff, now)).not.toThrow()
-    expect(isClassifierBatchWithinRetention(getMinUUIDv7ForDate(before), now)).toBe(false)
-    expect(isClassifierBatchWithinRetention(getMinUUIDv7ForDate(cutoff), now)).toBe(true)
+    expect(isClassifierBatchWithinRetention(getMinUuidv7ForDate(before), now)).toBe(false)
+    expect(isClassifierBatchWithinRetention(getMinUuidv7ForDate(cutoff), now)).toBe(true)
   })
 })

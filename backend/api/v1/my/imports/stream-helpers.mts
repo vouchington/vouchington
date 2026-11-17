@@ -93,12 +93,12 @@ export function pipeImportProgressToSSE(options: {
 
     function flushPending(): void {
       if (!pendingChunk || settled) return
-      const chunk = pendingChunk
-      pendingChunk = null
       try {
-        emit({ event: 'progress', data: chunk })
+        emit({ event: 'progress', data: pendingChunk })
       } catch {
         // client gone
+      } finally {
+        pendingChunk = null
       }
     }
 

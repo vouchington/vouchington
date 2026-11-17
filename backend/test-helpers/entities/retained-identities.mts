@@ -1,5 +1,5 @@
 import { assertNever } from '@modules/utils/assert-never'
-import { mintUUIDv7 } from '@modules/utils/ids'
+import { mintUuidv7 } from '@modules/utils/ids'
 import { beginTransaction, read, write, type QueryOptions } from '@data-stores/psql'
 import { getRetainedRelationConfig } from './retained-relation-config.mts'
 
@@ -137,7 +137,7 @@ export async function insertTestRetainedIdentityRoot(
 }
 
 export async function createTestRetainedMembershipIdentity(): Promise<string> {
-  const id = mintUUIDv7()
+  const id = mintUuidv7()
   await insertTestRetainedIdentityRoot('membership', id)
   return id
 }

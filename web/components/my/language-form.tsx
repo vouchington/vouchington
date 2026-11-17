@@ -43,14 +43,13 @@ export function LanguageForm({ initialUser }: { initialUser: LanguageFormInitial
 
   async function handleCountryChange(value: string) {
     const newCountry = value === NO_COUNTRY ? null : value
-    const previousValue = optimisticCountry
     setOptimisticCountry(value)
     setPending(true)
     try {
       await updateMyUser(currentUserId, { country: newCountry })
       onSuccess(t('settings.language.countrySaveSuccess'))
     } catch (err) {
-      setOptimisticCountry(previousValue)
+      setOptimisticCountry(optimisticCountry)
       /* c8 ignore next -- error path requires injecting a save country failure */
       onError(err, { fallback: t('settings.language.countrySaveError') })
     } finally {
@@ -60,14 +59,13 @@ export function LanguageForm({ initialUser }: { initialUser: LanguageFormInitial
 
   async function handleUiLocaleChange(value: string) {
     const newUiLocale = value === SITE_DEFAULT ? null : value
-    const previousValue = optimisticUiLocale
     setOptimisticUiLocale(value)
     setPending(true)
     try {
       await updateMyUser(currentUserId, { ui_locale: newUiLocale })
       onSuccess(t('settings.language.saveSuccess'))
     } catch (err) {
-      setOptimisticUiLocale(previousValue)
+      setOptimisticUiLocale(optimisticUiLocale)
       onError(err, { fallback: t('settings.language.saveError') })
     } finally {
       setPending(false)

@@ -31,8 +31,7 @@ export async function seedVoteAggregation(): Promise<void> {
 
   {
     await using transaction = await beginTransaction()
-    const query = transaction
-    await query(
+    await transaction(
       `/* seedExplainData */ WITH inserted AS (INSERT INTO relation__post__category__topic__votes
          (user_id, subject_id, entity_relation_id, score) VALUES ($1, $2, $3, 1))
        INSERT INTO relation__topic__publisher_type__topic__votes
@@ -83,8 +82,7 @@ export async function seedPostCategoryRelationVoteDensity(): Promise<void> {
 
   {
     await using transaction = await beginTransaction()
-    const query = transaction
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO relation__post__category__topic__votes
          (user_id, subject_id, entity_relation_id, score)
        SELECT voter_id, post_id, relation_id, 1
@@ -115,12 +113,11 @@ export async function seedHostnameVoteAggregation(): Promise<void> {
 
   {
     await using transaction = await beginTransaction()
-    const query = transaction
-    await query(`/* seedExplainData */ UPDATE url_hostnames SET topic_id = $1 WHERE id = $2`, [
-      topicId,
-      hostnameId,
-    ])
-    await query(
+    await transaction(
+      `/* seedExplainData */ UPDATE url_hostnames SET topic_id = $1 WHERE id = $2`,
+      [topicId, hostnameId],
+    )
+    await transaction(
       `/* seedExplainData */ INSERT INTO hostname_votes (hostname_id, user_id, score)
        VALUES ($1, $2, 1) ON CONFLICT DO NOTHING`,
       [hostnameId, voterId],

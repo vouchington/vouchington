@@ -9,7 +9,7 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { backgroundCpu as contentAnalysisQueue } from '@queues/background-cpu/queues'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { background } from '@queues/background/queues'
 import {
   streamEntityReconciliationCandidateBatches,
   type EntityReconciliationCandidate,
@@ -44,7 +44,7 @@ function trackEnqueues() {
       return enqueued
     }) as never)
   }
-  const voteWeightAdd = track(voteAggregation)
+  const voteWeightAdd = track(background)
   track(contentAnalysisQueue)
   return {
     settle: () => Promise.all(pending),
@@ -104,7 +104,7 @@ async function reconcileUsers(
 }
 
 async function hasVoteWeightJob(userId: string): Promise<boolean> {
-  const jobs = await voteAggregation.searchJobs({
+  const jobs = await background.searchJobs({
     name: 'vote-aggregation.processRecalculateUserVoteWeight',
     data: { userId },
   })

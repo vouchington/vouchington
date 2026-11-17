@@ -39,6 +39,7 @@
   },
   "devDependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
+    "@queues/background": "workspace:^",
     "@services/bookmarks": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
     "@services/urls": "workspace:^",

@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FeedReferralLinksListPage } from '../feed-referral-links-list-page'
-import { feedRouteConfigs } from '@/lib/feed-route-configs'
+import { feedRouteConfigData } from '@/lib/feed-route-config-data'
 import { ApiError } from '@vouchington/api-client'
 import type { ReferralLinkFeedResponse } from '@/types/api-responses'
 
@@ -51,7 +51,7 @@ describe('FeedReferralLinksListPage', () => {
 
   it('renders feed top section and empty state when there are no results', async () => {
     const ui = await FeedReferralLinksListPage({
-      config: feedRouteConfigs['referral-links'],
+      config: feedRouteConfigData['referral-links'],
     })
 
     render(ui)
@@ -86,7 +86,7 @@ describe('FeedReferralLinksListPage', () => {
     mockGetReferralLinksFeed.mockResolvedValue(responseWithResults)
 
     const ui = await FeedReferralLinksListPage({
-      config: feedRouteConfigs['referral-links'],
+      config: feedRouteConfigData['referral-links'],
     })
 
     render(ui)
@@ -98,7 +98,7 @@ describe('FeedReferralLinksListPage', () => {
     mockGetReferralLinksFeed.mockRejectedValue(new ApiError('bad request', 400))
 
     const ui = await FeedReferralLinksListPage({
-      config: feedRouteConfigs['referral-links'],
+      config: feedRouteConfigData['referral-links'],
     })
 
     render(ui)
@@ -108,7 +108,7 @@ describe('FeedReferralLinksListPage', () => {
 
   it('passes correct feedType from mutual config', async () => {
     await FeedReferralLinksListPage({
-      config: feedRouteConfigs['referral-links/mutual'],
+      config: feedRouteConfigData['referral-links/mutual'],
     })
 
     expect(mockGetReferralLinksFeed).toHaveBeenCalledWith('mutual_follows', {

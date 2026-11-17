@@ -52,9 +52,8 @@ export function writeRecord<T extends AnalyticsTableName>(
   bufferedBytes += data.byteLength
 
   if (buffer.length >= MAX_RECORDS || bufferedBytes >= MAX_BATCH_BYTES) {
-    const timerHandle = flushTimer
+    if (flushTimer !== null) clearTimeout(flushTimer)
     flushTimer = null
-    if (timerHandle !== null) clearTimeout(timerHandle)
     flush().catch(onError)
     return
   }
@@ -69,9 +68,8 @@ export async function flush(): Promise<void> {
     return
   }
   if (buffer.length === 0) return
-  const timerHandle = flushTimer
+  if (flushTimer !== null) clearTimeout(flushTimer)
   flushTimer = null
-  if (timerHandle !== null) clearTimeout(timerHandle)
   isFlushing = true
   activeFlushPromise = flushBufferedRecords()
 

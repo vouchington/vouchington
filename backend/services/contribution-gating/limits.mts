@@ -1,5 +1,5 @@
 import { RateLimiter } from '@data-stores/valkey-rate-limiter'
-import { getDateFromUUIDv7 } from '@modules/utils/ids'
+import { getDateFromUuidv7 } from '@modules/utils/ids'
 import type { BasicUser } from '@voucha/types/entities/user'
 import { CONTRIBUTION_GATE_ACCOUNT_AGE_MS } from './config.mts'
 import { getContributionLimitValue, getContributionLimitWindowSeconds } from './limits-config.mts'
@@ -31,7 +31,7 @@ export function getContributionLimitTier(
   if (currentUser.roles.includes('administrator')) return 'admin'
   if (membershipPlan === 'pro') return 'pro'
   if (membershipPlan === 'plus') return 'plus'
-  const createdAt = getDateFromUUIDv7(currentUser.id)
+  const createdAt = getDateFromUuidv7(currentUser.id)
   if (createdAt && Date.now() - createdAt.getTime() < CONTRIBUTION_GATE_ACCOUNT_AGE_MS) {
     return 'just_joined'
   }

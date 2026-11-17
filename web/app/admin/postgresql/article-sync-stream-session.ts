@@ -61,10 +61,9 @@ export function createArticleSyncStreamSession(options: {
     try {
       const status = await options.readStatus(jobId)
       if (activeJobId !== jobId) return
-      const current = stream
-      if (!current) return
+      if (!stream) return
       if (status.status !== 'active') {
-        finish(status, current)
+        finish(status, stream)
         return
       }
       endStream()
@@ -75,8 +74,7 @@ export function createArticleSyncStreamSession(options: {
         recovery.schedule()
         return
       }
-      const current = stream
-      if (current) fail(current, err)
+      if (stream) fail(stream, err)
     }
   }
 

@@ -2,7 +2,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { reconsiderChangedPost } from './cleanup-agent-moderation-hash-work.mts'
 import { deleteAgentModerationRetentionPage } from './delete-agent-moderation-retention-page.mts'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { DEFAULT_BATCH_SIZE } from './cleanup-batches.mts'
 import { getRetentionCutoffDate } from './cleanup-options.mts'
 import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
@@ -45,15 +45,15 @@ export async function cleanupObsoleteAgentModerations(
   const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
   const maxBatches = assertPositiveInteger(options.maxBatches, 'maxBatches')
   const now = options.now ?? new Date()
-  const cutoffId = getMinUUIDv7ForDate(getRetentionCutoffDate(AGENT_MODERATION_RETENTION_DAYS, now))
+  const cutoffId = getMinUuidv7ForDate(getRetentionCutoffDate(AGENT_MODERATION_RETENTION_DAYS, now))
   const lowerBoundId = options.lowerBoundDate
-    ? getMinUUIDv7ForDate(options.lowerBoundDate)
+    ? getMinUuidv7ForDate(options.lowerBoundDate)
     : ZERO_UUID
   const lowerBoundDueAt = options.lowerBoundDate
     ? new Date(options.lowerBoundDate.getTime() + AGENT_MODERATION_RETENTION_DAYS * 86_400_000)
     : new Date(0)
   const upperBoundId = options.upperBoundDate
-    ? getMinUUIDv7ForDate(options.upperBoundDate)
+    ? getMinUuidv7ForDate(options.upperBoundDate)
     : cutoffId
   const requestedUpperBoundId = upperBoundId < cutoffId ? upperBoundId : cutoffId
   const sweepUpperBoundId = options.continuation?.upperBoundId ?? requestedUpperBoundId

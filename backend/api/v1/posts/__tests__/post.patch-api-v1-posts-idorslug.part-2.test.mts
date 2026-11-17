@@ -11,7 +11,7 @@ import {
   followUser,
   CONTRIBUTING_USER_AGE_MS,
 } from '@voucha/test-helpers'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 
 describe('post', () => {
   describe('Post Individual Routes', () => {
@@ -102,5 +102,5 @@ describe('post', () => {
     })
   })
   // keep generated shard bindings live for typecheck
-  void (0 as unknown as typeof getMinUUIDv7ForDate)
+  void (0 as unknown as typeof getMinUuidv7ForDate)
 })

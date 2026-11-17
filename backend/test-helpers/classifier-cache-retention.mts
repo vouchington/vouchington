@@ -1,5 +1,5 @@
 import { beginTransaction, write } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMinUuidv7ForDate } from '@modules/utils/ids'
 import sql from 'sql-template-strings'
 import { deleteOldClassifierRuns } from '../services/data-retention/cleanup-classifier-runs.mts'
 import { sweepClassifierVersionedIdentityPageWithQuery } from '../services/data-retention/cleanup-classifier-identity-versions.mts'
@@ -92,8 +92,8 @@ export async function probeVersionedClassifierCachePageForTest(input: {
   startedAt: Date
 }): Promise<{ scanned: number; deleted: number; oldInside: boolean; newInside: boolean }> {
   await using query = await beginTransaction()
-  const lowerBoundId = getMinUUIDv7ForDate(input.startedAt)
-  const cutoffId = getMinUUIDv7ForDate(new Date(Date.now() + 60_000))
+  const lowerBoundId = getMinUuidv7ForDate(input.startedAt)
+  const cutoffId = getMinUuidv7ForDate(new Date(Date.now() + 60_000))
   await query(sql`/* ensureVersionedClassifierCacheProbeCursor */
     INSERT INTO classifier_retention_cursors (sweep) VALUES ('versioned_identities')
     ON CONFLICT DO NOTHING`)

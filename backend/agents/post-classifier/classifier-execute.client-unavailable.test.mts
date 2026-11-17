@@ -4,7 +4,7 @@ import { createStructuredDecisionClient } from '@modules/structured-decisions'
 import { readClassifierRunOutcomes } from '@services/classifier-runs'
 import { getClassifierRunFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
 import { getPostClassifierLocalOutcomeFacts } from '@voucha/test-helpers/data-stores/psql/post-classifier/run-facts'
-import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
+import { POST_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/post-classifier'
 import {
   createPostClassifierExecutionFixture,
   initializePostClassifierExecutionTests,
@@ -44,18 +44,18 @@ const failingClient: Dependencies['createClient'] = () => {
 function expectAlarm(runId: string, errorName: string) {
   expect(sentryCaptureMessageMock).toHaveBeenCalledExactlyOnceWith('classifier_run_alarm', {
     level: 'error',
-    fingerprint: ['classifier_run_alarm', 'client-unavailable', POST_CLASSIFIER_SLUG],
+    fingerprint: ['classifier_run_alarm', 'client-unavailable', POST_CLASSIFIER_SYSTEM_USERNAME],
     tags: {
       reason: 'classifier_run_alarm',
       alarm_kind: 'client-unavailable',
-      classifier: POST_CLASSIFIER_SLUG,
+      classifier: POST_CLASSIFIER_SYSTEM_USERNAME,
     },
-    extra: { classifier: POST_CLASSIFIER_SLUG, runId, errorName },
+    extra: { classifier: POST_CLASSIFIER_SYSTEM_USERNAME, runId, errorName },
   })
 }
 
 const facts = async (input: { post: { id: string } }) =>
-  (await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]!
+  (await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SYSTEM_USERNAME))[0]!
 
 describe('post classifier execution when the provider client cannot be built', () => {
   let release: (() => Promise<void>) | undefined

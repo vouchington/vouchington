@@ -91,8 +91,7 @@ export async function seedFollowRssFeedRelations(count = 500): Promise<void> {
   for (let i = 0; i < count; i++) {
     const subjectId = seedUuid(i % 20_000, '01') // user
     const objectId = seedUuid(i % 2500, '08') // rss_feed
-    const userId = subjectId
-    values.push(subjectId, objectId, userId)
+    values.push(subjectId, objectId, subjectId)
     const base = values.length - 2
     rows.push(`($${base}, $${base + 1}, $${base + 2})`)
   }
@@ -114,8 +113,7 @@ export async function seedFollowTopicRelations(count = 500): Promise<void> {
   for (let i = 0; i < count; i++) {
     const subjectId = seedUuid(i % 20_000, '01') // user
     const objectId = seedUuid(i % 2500, '04') // topic
-    const userId = subjectId
-    values.push(subjectId, objectId, userId)
+    values.push(subjectId, objectId, subjectId)
     const base = values.length - 2
     rows.push(`($${base}, $${base + 1}, $${base + 2})`)
   }

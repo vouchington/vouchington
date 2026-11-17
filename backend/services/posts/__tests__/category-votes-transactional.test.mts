@@ -14,7 +14,7 @@ import {
 } from '@voucha/test-helpers'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { softDeleteEntityRelation } from '@services/entity-relations/delete'
-import { notifications } from '@queues/notifications/queues'
+import { background } from '@queues/background/queues'
 import { createPost } from '../create.mts'
 import { updatePost } from '../update.mts'
 import { syncPostHashtagCategoriesInTransaction } from '../hashtags.mts'
@@ -189,8 +189,8 @@ describe('transactional post category votes', () => {
     const suffix = Math.random().toString(36).slice(2, 12)
     const post = await createTestPost({ user: owner, title: `Rollback category ${suffix}` })
     const tag = `rolledback-${suffix}`
-    const notificationsBefore = await readAllQueueJobs(notifications)
-    const countForPost = (jobs: Awaited<ReturnType<typeof notifications.getJobs>>) =>
+    const notificationsBefore = await readAllQueueJobs(background)
+    const countForPost = (jobs: Awaited<ReturnType<typeof background.getJobs>>) =>
       jobs.filter(
         job =>
           job.name === 'notifications.processReconcilePostNotifications' &&
@@ -210,6 +210,6 @@ describe('transactional post category votes', () => {
 
     await expect(getTopicAliasIdForTest(tag)).resolves.toBeNull()
     await expect(getPostHashtagSourcesForTest(post.id)).resolves.toEqual([])
-    expect(countForPost(await readAllQueueJobs(notifications))).toBe(beforeCount)
+    expect(countForPost(await readAllQueueJobs(background))).toBe(beforeCount)
   })
 })

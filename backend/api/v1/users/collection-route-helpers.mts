@@ -55,20 +55,19 @@ export async function resolveTargetUser(
         : await getPublicUserByIdOrSlug(idOrSlug)
 
   ctx.assert(target, 404, 'User not found')
-  const targetUser = target
 
   if (options.privateCollection) {
-    ctx.assert(currentUserCanAccessUser(currentUser, targetUser.id), 403, 'Forbidden')
+    ctx.assert(currentUserCanAccessUser(currentUser, target.id), 403, 'Forbidden')
   }
 
   if (options.visibilityField && !options.privateCollection && !isSelf) {
-    const settings = await getUserPrivacySettings(targetUser.id)
+    const settings = await getUserPrivacySettings(target.id)
     const audience = settings[options.visibilityField]
-    const canView = await currentUserCanViewUserContent(currentUser, targetUser.id, audience)
+    const canView = await currentUserCanViewUserContent(currentUser, target.id, audience)
     ctx.assert(canView, 404, 'User not found')
   }
 
-  return { currentUser, target: targetUser, privateCollection: options.privateCollection }
+  return { currentUser, target: target, privateCollection: options.privateCollection }
 }
 
 export function applyCacheHeaders(

@@ -1,6 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import {
   copyrightEmailTokenGcCutoffId,
@@ -130,7 +130,7 @@ export async function sweepCopyrightOperationalRetention(
 ): Promise<SweepResult> {
   const now = options.now ?? new Date()
   const cutoff = new Date(now.getTime() - options.retentionDays * DAY_MS)
-  const cutoffId = getMinUUIDv7ForDate(cutoff)
+  const cutoffId = getMinUuidv7ForDate(cutoff)
   const tokenGcCutoffId = copyrightEmailTokenGcCutoffId(now)
   let scanned = 0
   let deleted = 0

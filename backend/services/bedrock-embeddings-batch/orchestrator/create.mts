@@ -7,7 +7,7 @@ import { write } from '@data-stores/psql'
 import { BedrockControlClient } from '@modules/aws/bedrock-control'
 import { S3BedrockBatchBucket, S3BedrockBatchClient } from '@modules/aws/s3-bedrock-batch'
 import onError from '@modules/on-error'
-import { mintUUIDv7 } from '@modules/utils/ids'
+import { mintUuidv7 } from '@modules/utils/ids'
 import { BEDROCK_NOVA_MULTIMODAL_MODEL_ID } from '@services/bedrock-embeddings/config'
 import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
 import type { BatchMetadata, BatchSource } from './shared.mts'
@@ -41,7 +41,7 @@ export const createBatch = async (
   beforeSubmit: (preparingBatchId: string) => Promise<void>,
   isLeaseHeld: () => boolean,
 ): Promise<string> => {
-  const batchId = mintUUIDv7()
+  const batchId = mintUuidv7()
   const inputKey = `bedrock-embeddings-input/${batchId}/input.jsonl`
   const outputPrefix = `bedrock-embeddings-output/${batchId}/`
   const inputS3Uri = `s3://${S3BedrockBatchBucket}/${inputKey}`

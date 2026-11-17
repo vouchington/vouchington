@@ -42,7 +42,6 @@ export async function captureTopUrlTriggerWrites(): Promise<void> {
     ['topUrlRanking.insertLater', 'topUrlRanking.insertLatest'],
   )
 
-  const originalFeedUrl = TOP_URL_MOVE_TARGET
   registerScenarioContract('top-url-feed-move', {
     expectations: [
       { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 2 },
@@ -59,16 +58,16 @@ export async function captureTopUrlTriggerWrites(): Promise<void> {
         `/* topUrlRanking.feedMove */ UPDATE rss_feeds SET rss_feed_url_id = $1
        WHERE id = $2 AND rss_feed_url_id = $3 AND is_enabled
          AND deleted_at IS NULL RETURNING id`,
-        [TOP_URL_HOT, TOP_URL_FEED, originalFeedUrl],
+        [TOP_URL_HOT, TOP_URL_FEED, TOP_URL_MOVE_TARGET],
       )
       assert.equal(moved.rows.length, 1)
       const { rows } = await query<{ id: string; feed_rank: number }>(
         `/* topUrlRanking.feedRanks */ SELECT id, feed_rank FROM urls
        WHERE id = ANY($1::uuid[]) ORDER BY id`,
-        [[originalFeedUrl, TOP_URL_HOT]],
+        [[TOP_URL_MOVE_TARGET, TOP_URL_HOT]],
       )
       assert.equal(rows.length, 2)
-      assert.equal(rows.find(row => row.id === originalFeedUrl)?.feed_rank, 1)
+      assert.equal(rows.find(row => row.id === TOP_URL_MOVE_TARGET)?.feed_rank, 1)
       assert.equal(rows.find(row => row.id === TOP_URL_HOT)?.feed_rank, 0)
     },
     undefined,

@@ -1,5 +1,5 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { MINIMUM_TERMINAL_IDENTITY_RETENTION_DAYS } from '@services/ap-inbox-activities/config'
 import { POST_VOTE_RETENTION_TALLY_SQL } from './cleanup-vote-ballot-candidates.mts'
 
@@ -18,7 +18,7 @@ export async function cleanupDeferredPostVoteBallots(
   if (options.voteIds && options.voteIds.length > batchSize)
     throw new RangeError('Scoped deferred post ballots must fit one page')
   if (options.voteIds?.length === 0) return { scanned: 0, deleted: 0, hasMore: false }
-  const cutoffId = getMinUUIDv7ForDate(
+  const cutoffId = getMinUuidv7ForDate(
     new Date(now.getTime() - MINIMUM_TERMINAL_IDENTITY_RETENTION_DAYS * DAY_MS),
   )
   await using ownedQuery = options.query ? undefined : await beginTransaction()

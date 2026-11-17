@@ -15,9 +15,8 @@ export async function seedPosts(
   const diagnostics = new PostSeedDiagnostics()
   try {
     await using transaction = await diagnostics.operation('begin', null, () => beginTransaction())
-    const query = transaction
     const { rows: backendRows } = await diagnostics.operation('backend_context', null, () =>
-      query<SeedBackend>(
+      transaction<SeedBackend>(
         `/* explainSeedBackendPid */ SELECT pg_backend_pid() AS pid,
               current_setting('jit') AS jit,
               current_setting('work_mem') AS work_mem,
@@ -66,7 +65,7 @@ export async function seedPosts(
           structuredDataValues.push(structuredData)
         }
         await diagnostics.operation('insert', batchIndex, () =>
-          query(
+          transaction(
             `/* seedExplainData */ INSERT INTO posts (
           created_via, id, post_type, title, markdown, created_by_id,
           bedrock_nova_multimodal_v1_content_sha256,
@@ -93,7 +92,7 @@ export async function seedPosts(
           ),
         )
         await diagnostics.operation('clearance', batchIndex, () =>
-          query(
+          transaction(
             `/* seedExplainData */
              WITH seed_posts AS (SELECT UNNEST($1::uuid[]) AS post_id),
              inserted_change AS (
@@ -116,7 +115,7 @@ export async function seedPosts(
       })
       if (batchIndex === 0) {
         await diagnostics.operation('analyze_post_stats', batchIndex, () =>
-          query('/* explainSeedPostStats */ ANALYZE retained_post_identities, posts'),
+          transaction('/* explainSeedPostStats */ ANALYZE retained_post_identities, posts'),
         )
       }
     }

@@ -8,8 +8,7 @@ export async function seedDisabledRssFeed(feedCount = 2500): Promise<void> {
   console.log('Seeding a disabled RSS feed for the search-disabled scenario...')
   {
     await using transaction = await beginTransaction()
-    const query = transaction
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
        VALUES ('enablement', $1, FALSE, 'explain seed disabled fixture')`,
       [seedUuid(feedCount - 1, '08')],

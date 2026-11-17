@@ -13,7 +13,7 @@ import {
 import { withOwnedReferralDispatchAdmissions } from '@voucha/test-helpers/referral-dispatch-admissions'
 import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { getDateFromUUIDv7, mintUUIDv7 } from '@modules/utils'
+import { getDateFromUuidv7, mintUuidv7 } from '@modules/utils'
 import { backgroundCpu as crawlReferralLinksQueue } from '@queues/background-cpu/queues'
 import type { ReferralCrawlDispatchData } from '@queues/crawl-referral-links/types'
 import { referralCrawlDispatchConfig } from '../work-limits.mts'
@@ -26,15 +26,15 @@ describe('indexed referral crawl candidates', () => {
   it('selects a bounded due page before retry filtering and advances past skipped candidates', async () => {
     const owner = await createTestUser()
     const referralProgramId = await insertTestReferralProgram({ createdById: owner.id })
-    const base = (await insertTestUrlDirect(owner.id, `https://${mintUUIDv7()}.example.com/base`))!
-    const urlIds = Array.from({ length: 7 }, () => mintUUIDv7())
+    const base = (await insertTestUrlDirect(owner.id, `https://${mintUuidv7()}.example.com/base`))!
+    const urlIds = Array.from({ length: 7 }, () => mintUuidv7())
     await insertTestCrawlDispatchPlanUrls({
       ids: urlIds,
       hostname: base.hostname.hostname,
       hostnameId: base.hostname.id,
       actorId: owner.id,
     })
-    const baseCreatedAt = getDateFromUUIDv7(base.id)
+    const baseCreatedAt = getDateFromUuidv7(base.id)
     if (!baseCreatedAt) throw new Error('Expected owned native UUIDv7 anchor')
     const requestedAt = new Date(baseCreatedAt.getTime() + 86_400_000).toISOString()
     await insertTestReferralCrawlPlanLinks({

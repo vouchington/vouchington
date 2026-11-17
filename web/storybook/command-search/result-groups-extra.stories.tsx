@@ -7,7 +7,7 @@ import {
 } from '@/components/command-search/result-groups-extra'
 import { Command, CommandList } from '@/components/ui/command'
 import { StoryFrame } from '@/storybook/story-frame'
-import { emptySearchResults, searchResults } from './search-story-data'
+import { EMPTY_RESULTS, searchResults } from './search-story-data'
 
 const meta = {
   title: 'Command Search/Result Groups Extra',
@@ -17,7 +17,7 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 function ExtraResults({ empty }: { empty?: boolean }) {
-  const results = empty ? emptySearchResults : searchResults
+  const results = empty ? EMPTY_RESULTS : searchResults
   const groups = (
     <>
       <CommunityResults

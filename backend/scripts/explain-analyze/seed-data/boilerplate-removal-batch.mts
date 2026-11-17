@@ -1,4 +1,4 @@
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { write } from '@data-stores/psql'
 import { crawlSeedUuid, SEED_PREFIX, seedUuid, seedUuidAtTimestamp } from './common.mts'
 import { resolveSeedAnchor } from './seed-anchor.mts'
@@ -117,7 +117,7 @@ async function seedBoilerplateRemovalBatch(): Promise<void> {
     ON CONFLICT DO NOTHING`,
     [JSON.stringify(history)],
   )
-  const oldPrefix = getMinUUIDv7ForDate(new Date(Date.now() - 40 * 86_400_000)).slice(0, 24)
+  const oldPrefix = getMinUuidv7ForDate(new Date(Date.now() - 40 * 86_400_000)).slice(0, 24)
   await write(
     `/* seedBoilerplateRemovalBatch:oldHistory */ INSERT INTO hostname_path_boilerplate_removals(id,hostname_id,parent_path)
      SELECT ($1 || lpad(n::text,12,'0'))::uuid,$2,'/section-0' FROM generate_series(1,10000)n`,

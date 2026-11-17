@@ -51,12 +51,10 @@ export const BedrockEmbeddingsClient = new Proxy({} as BedrockRuntimeClient, {
 })
 
 async function closeBedrockRuntimeClients(): Promise<void> {
-  const direct = directBedrockRuntimeClient
-  const proxied = proxiedBedrockRuntimeClient
+  directBedrockRuntimeClient?.destroy()
+  proxiedBedrockRuntimeClient?.destroy()
   directBedrockRuntimeClient = undefined
   proxiedBedrockRuntimeClient = undefined
-  direct?.destroy()
-  proxied?.destroy()
 }
 
 addGracefulShutdownDrainCallback(closeBedrockRuntimeClients)

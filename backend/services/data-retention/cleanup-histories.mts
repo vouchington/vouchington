@@ -1,5 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
 import { DEFAULT_BATCH_SIZE } from './cleanup-batches.mts'
 import { getRetentionCutoffDate } from './cleanup-options.mts'
@@ -46,8 +46,8 @@ async function cleanupHistory(kind: HistoryKind, options: HistoryCleanupOptions)
   const maxBatches = assertPositiveInteger(options.maxBatches, 'maxBatches')
   const now = options.now ?? new Date()
   const cutoff = cutoffFor(kind, now)
-  const lowerBoundId = options.lowerBoundDate ? getMinUUIDv7ForDate(options.lowerBoundDate) : null
-  const upperBoundId = options.upperBoundDate ? getMinUUIDv7ForDate(options.upperBoundDate) : null
+  const lowerBoundId = options.lowerBoundDate ? getMinUuidv7ForDate(options.lowerBoundDate) : null
+  const upperBoundId = options.upperBoundDate ? getMinUuidv7ForDate(options.upperBoundDate) : null
   let scanned = 0
   let changed = 0
   let hasMore = false
@@ -114,7 +114,7 @@ async function cleanupHistoryPage(
   await using transaction = await beginTransaction()
   const persistent = lowerBoundId === null || persistentCursorForTest
   let cursorId = testCursorId
-  let sweepCutoffId = getMinUUIDv7ForDate(cutoff)
+  let sweepCutoffId = getMinUuidv7ForDate(cutoff)
   let sweepComplete = false
   if (upperBoundId && upperBoundId < sweepCutoffId) sweepCutoffId = upperBoundId
   if (persistent) {

@@ -17,7 +17,6 @@ import { createMembershipEnqueueFunction } from './typed-job.mts'
 
 const JOB = 'processStripePurchaseCollisionWork' satisfies MembershipsJobs
 const RECOVERY = 'recoverStripePurchaseCollisions' satisfies MembershipsJobs
-const interval = STRIPE_PURCHASE_COLLISION_RECOVERY_INTERVAL_MS
 
 export const enqueueBulkProcessStripePurchaseCollisions = createBulkEnqueueFunction({
   queue: memberships,
@@ -62,8 +61,12 @@ export function enqueueRecoverStripePurchaseCollisions(
   options: Partial<JobOptions> = {},
 ) {
   return enqueueRecovery(data, {
-    jobId: `stripe-purchase-collision-recovery__${Math.floor(Date.now() / interval)}`,
-    deduplication: { id: 'stripe-purchase-collision-recovery', mode: 'throttle', ttl: interval },
+    jobId: `stripe-purchase-collision-recovery__${Math.floor(Date.now() / STRIPE_PURCHASE_COLLISION_RECOVERY_INTERVAL_MS)}`,
+    deduplication: {
+      id: 'stripe-purchase-collision-recovery',
+      mode: 'throttle',
+      ttl: STRIPE_PURCHASE_COLLISION_RECOVERY_INTERVAL_MS,
+    },
     priority: PRIORITY_DISPATCHER,
     ordering: stripePurchaseCollisionOrdering(true),
     ...options,
@@ -72,7 +75,7 @@ export function enqueueRecoverStripePurchaseCollisions(
 
 export const stripePurchaseCollisionSchedule = {
   schedulerId: RECOVERY,
-  repeat: { every: interval },
+  repeat: { every: STRIPE_PURCHASE_COLLISION_RECOVERY_INTERVAL_MS },
   template: {
     name: RECOVERY,
     data: {},

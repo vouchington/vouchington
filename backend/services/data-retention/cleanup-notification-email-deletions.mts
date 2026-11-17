@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import type {
   Candidate,
   NotificationEmailCleanupName,
@@ -26,7 +26,7 @@ export async function deleteNotificationEmailPage(
       `/* deleteSesBouncePage */
        DELETE FROM amazon_ses_bounce_events
        WHERE id = ANY($1::uuid[]) AND id < $2::uuid`,
-      [ids, getMinUUIDv7ForDate(cutoff)],
+      [ids, getMinUuidv7ForDate(cutoff)],
     )
     await query(
       `/* endSesBounceRetention */

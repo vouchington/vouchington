@@ -1,7 +1,7 @@
 import { getModerationReportsWorkLimit } from './work-limits.mts'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { getMaxUUIDv7ForDate, getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMaxUuidv7ForDate, getMinUuidv7ForDate } from '@modules/utils/ids'
 
 export async function markJudgementDispatched(judgementId: string): Promise<void> {
   await write(
@@ -23,10 +23,10 @@ export async function getUndispatchedJudgements(): Promise<
 > {
   const WORK_PAGE_SIZE = getModerationReportsWorkLimit('dispatch_batch_size')
   const now = Date.now()
-  const olderThanId = getMinUUIDv7ForDate(
+  const olderThanId = getMinUuidv7ForDate(
     new Date(now - getModerationReportsWorkLimit('dispatch_min_age_seconds') * 1000),
   )
-  const newerThanId = getMaxUUIDv7ForDate(
+  const newerThanId = getMaxUuidv7ForDate(
     new Date(now - getModerationReportsWorkLimit('dispatch_max_age_seconds') * 1000),
   )
   const { rows } = await read<{

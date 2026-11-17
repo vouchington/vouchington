@@ -183,11 +183,10 @@ export async function dispatchToCachedOrigin(input: CacheDispatchInput): Promise
   // outer gateway adds Cookie/Authorization to Vary so a browser cannot reuse anonymous bytes
   // after authentication state changes. Newly minted cookies make only the final response
   // no-store in withEdgeSessionCookies below.
-  const isSessionSensitive = isHtml
   const responseForClient = withHeaders(withFailureNoStoreHeaders(rewritten), {
     'server-timing': `origin;dur=${dispatchDuration}`,
     'x-voucha-cache': 'DISPATCHED',
-    ...(isSessionSensitive ? { 'cache-control': 'no-store, max-age=0, must-revalidate' } : {}),
+    ...(isHtml ? { 'cache-control': 'no-store, max-age=0, must-revalidate' } : {}),
   })
   return withEdgeSessionCookies(responseForClient, input.edgeSession, input.isProduction)
 }

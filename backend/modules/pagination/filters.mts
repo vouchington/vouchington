@@ -5,7 +5,7 @@
 
 import type { PostType } from '@voucha/types/entities/post'
 import type { TopicTypes } from '@voucha/types/entities/topic'
-import { VALID_TIME_RANGES, type TimeRange } from '@voucha/types/feed'
+import { VALID_FEED_TIME_RANGES, type TimeRange } from '@voucha/types/feed'
 import { VALID_FILTERABLE_POST_TYPES, isCatalogValue } from '@ts-shared/feed-capabilities'
 import { parseStringArray } from '@ts-shared/utils/query'
 
@@ -68,7 +68,7 @@ export function validateTopicTypes(value: unknown): TopicTypes[] | undefined {
  */
 export function validateTimeRange(value: unknown): TimeRange | undefined {
   if (typeof value !== 'string') return undefined
-  return isCatalogValue(VALID_TIME_RANGES, value) ? value : undefined
+  return isCatalogValue(VALID_FEED_TIME_RANGES, value) ? value : undefined
 }
 
 /**

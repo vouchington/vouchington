@@ -1,4 +1,4 @@
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { collectModerationSummaryPage } from './moderation-summary-collection.mts'
 import { collectModerationSummaryMemberPage } from './moderation-summary-activity-pages.mts'
 import { describe, expect, it } from 'vitest'
@@ -116,8 +116,8 @@ describe('moderation digest backlog boundaries', () => {
       scan: { communityId: community.id },
     })
     const scan = createModerationSummaryScan(community.id, 'members')
-    const lower = getMinUUIDv7ForDate(start),
-      upper = getMinUUIDv7ForDate(end)
+    const lower = getMinUuidv7ForDate(start),
+      upper = getMinUuidv7ForDate(end)
     await collectModerationSummaryMemberPage(scan, lower, upper, start, end, 1)
     expect(scan).toMatchObject({
       sourceUpperId: member.id,

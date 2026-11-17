@@ -9,7 +9,7 @@ import { runMembershipReversalReadScenarios } from './membership-reversal-case-r
 import { runMembershipReversalBindingScenarios } from './membership-reversal-case-bindings.mts'
 import { beginTransaction, write } from '@data-stores/psql'
 import type { StripeInvoiceWithAllPayments } from '../../../modules/stripe/invoices.mts'
-import { mintUUIDv7 } from '@modules/utils/ids'
+import { mintUuidv7 } from '@modules/utils/ids'
 import { getStripeMembershipSourceIdentity } from '@services/memberships/create-types'
 import { createProviderMembershipSource } from '@services/memberships/provider-source'
 import { recordIneligibleStripePurchaseCaseForCollision } from '@services/memberships/ineligible-stripe-purchase-reversal/case-creation'
@@ -18,7 +18,7 @@ import { runAndCapture, seedUser } from '../run-support.mts'
 import { seedLedgerOperations } from './payment-ledger-retention-seed.mts'
 
 export async function runMembershipReversalCaseCreationScenario(): Promise<void> {
-  const userId = mintUUIDv7()
+  const userId = mintUuidv7()
   const suffix = randomUUID()
   const prefix = `mr${suffix.slice(0, 8)}`
   await seedMembershipReversalPlanNoise(prefix)
@@ -49,7 +49,7 @@ export async function runMembershipReversalCaseCreationScenario(): Promise<void>
     sourceTransaction,
   )
   await sourceTransaction.commit()
-  const familyUserId = mintUUIDv7()
+  const familyUserId = mintUuidv7()
   await write(`/* seedReversalWinnerUser */ INSERT INTO users (id, username) VALUES ($1, $2)`, [
     familyUserId,
     `exfam-${suffix.slice(0, 8)}`,

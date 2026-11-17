@@ -8,7 +8,6 @@ export async function seedCommunities(communityCount = 5, pubsPerCommunity = 200
   const createdById = seedUuid(0, '01')
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     const values: unknown[] = []
     const rows: string[] = []
     for (let i = 0; i < communityCount; i++) {
@@ -19,7 +18,7 @@ export async function seedCommunities(communityCount = 5, pubsPerCommunity = 200
       const base = values.length - 3
       rows.push(`($${base}, $${base + 1}, $${base + 2}, $${base + 3}, 'system')`)
     }
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO communities (id, name, slug, created_by_id, created_via) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
       values,
     )
@@ -28,7 +27,6 @@ export async function seedCommunities(communityCount = 5, pubsPerCommunity = 200
   }
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     const values: unknown[] = []
     const rows: string[] = []
     for (let i = 0; i < communityCount; i++) {
@@ -41,7 +39,7 @@ export async function seedCommunities(communityCount = 5, pubsPerCommunity = 200
         rows.push(`($${base}, $${base + 1}, $${base + 2}::community_member_roles)`)
       }
     }
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO community_members (community_id, user_id, role)
        VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
       values,
@@ -52,7 +50,6 @@ export async function seedCommunities(communityCount = 5, pubsPerCommunity = 200
   const totalPubs = communityCount * pubsPerCommunity
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     for (let i = 0; i < totalPubs; i += 500) {
       const batch = Math.min(500, totalPubs - i)
       const values: unknown[] = []
@@ -65,7 +62,7 @@ export async function seedCommunities(communityCount = 5, pubsPerCommunity = 200
         const base = values.length - 2
         rows.push(`($${base}, $${base + 1}, $${base + 2}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`)
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO community_post_reviews
            (community_id, post_id, submitted_by_id, reviewed_at, approved_at)
          VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
@@ -81,7 +78,6 @@ export async function seedPostDataPointTopics(count = 1000, postTypeCount = coun
   console.log(`Seeding ${count} post data point topic relations...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     for (let i = 0; i < count; i += 1000) {
       const batch = Math.min(1000, count - i)
       const values: unknown[] = []
@@ -94,7 +90,7 @@ export async function seedPostDataPointTopics(count = 1000, postTypeCount = coun
         const base = values.length - 1
         rows.push(`($${base}, $${base + 1}, 0)`)
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO post_data_point_topics (post_id, topic_id, order_index)
          VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
         values,
@@ -111,7 +107,6 @@ export async function seedPostReviewTopicRatings(
   console.log(`Seeding ${count} post review topic ratings...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     for (let i = 0; i < count; i += 1000) {
       const batch = Math.min(1000, count - i)
       const values: unknown[] = []
@@ -125,7 +120,7 @@ export async function seedPostReviewTopicRatings(
         const base = values.length - 2
         rows.push(`($${base}, $${base + 1}, $${base + 2})`)
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO post_review_topic_ratings (post_id, topic_id, rating)
          VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
         values,
@@ -143,8 +138,7 @@ export async function seedAnchorPostReviewTopicRating(): Promise<void> {
   console.log('Seeding a post review topic rating for the anchor seed post...')
   {
     await using transaction = await beginTransaction()
-    const query = transaction
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO post_review_topic_ratings (post_id, topic_id, rating)
        VALUES ($1, $2, 5) ON CONFLICT DO NOTHING`,
       [seedUuid(0, '05'), seedUuid(0, '04')],
@@ -160,8 +154,7 @@ export async function seedCommunityListItemTopic(): Promise<void> {
   console.log('Seeding a community list item (topic) for community 0...')
   {
     await using transaction = await beginTransaction()
-    const query = transaction
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO community_list_topics (community_id, topic_id, added_by_id)
        VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
       [seedUuid(0, '14'), seedUuid(0, '04'), seedUuid(0, '01')],
@@ -183,12 +176,11 @@ export async function seedCommunityPosts(): Promise<void> {
   const pendingPostId = seedUuid(10, '05')
   {
     await using transaction = await beginTransaction()
-    const query = transaction
-    await query(
+    await transaction(
       `/* seedExplainData */ UPDATE posts SET community_id = $1 WHERE id = ANY($2::uuid[])`,
       [communityId, [approvedPostId, pendingPostId]],
     )
-    await query(
+    await transaction(
       `/* seedExplainData */ UPDATE community_post_reviews SET approved_at = NULL
        WHERE community_id = $1 AND post_id = $2`,
       [communityId, pendingPostId],

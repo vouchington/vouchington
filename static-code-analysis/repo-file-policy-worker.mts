@@ -1,4 +1,4 @@
-import { parentPort, workerData } from 'node:worker_threads'
+import { type MessagePort, parentPort, workerData } from 'node:worker_threads'
 
 import { checkRepoFilePolicy } from './repo-file-policy/index.mts'
 import {
@@ -37,13 +37,16 @@ function isWorkerData(value: unknown): value is RepoFilePolicyWorkerData {
   )
 }
 
+function createSender(port: MessagePort): (message: RepoFilePolicyWorkerMessage) => void {
+  return message => {
+    Reflect.apply(port.postMessage, port, [message])
+  }
+}
+
 async function run(): Promise<void> {
   if (parentPort === null) throw new Error('repo-file-policy worker requires a parent port')
   if (!isWorkerData(workerData)) throw new Error('repo-file-policy worker received invalid data')
-  const port = parentPort
-  const send = (message: RepoFilePolicyWorkerMessage): void => {
-    Reflect.apply(port.postMessage, port, [message])
-  }
+  const send = createSender(parentPort)
 
   try {
     // The parent thread already resolved the tracked-file list (buildSharedContext) before

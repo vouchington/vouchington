@@ -7,7 +7,6 @@ export async function seedUsers(count = 2000): Promise<void> {
   console.log(`Seeding ${count} users...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     for (let i = 0; i < count; i += 500) {
       const batch = Math.min(500, count - i)
       const values: unknown[] = []
@@ -20,14 +19,14 @@ export async function seedUsers(count = 2000): Promise<void> {
         const base = values.length - 1
         rows.push(`($${base}, $${base + 1})`)
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO users (id, username) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
         values,
       )
       if (i === 0) {
         // The restored baseline has tiny-table statistics. User insert triggers look up and
         // update these rows as the corpus grows, so settle their plans after the first batch.
-        await query(
+        await transaction(
           '/* seedExplainUsersStats */ ANALYZE users, retained_user_identities, individuals, households',
         )
       }
@@ -63,7 +62,6 @@ export async function seedHostnames(count = HOSTNAME_COUNT): Promise<void> {
   console.log(`Seeding ${count} hostnames...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     const values: unknown[] = []
     const rows: string[] = []
     for (let i = 0; i < count; i++) {
@@ -73,7 +71,7 @@ export async function seedHostnames(count = HOSTNAME_COUNT): Promise<void> {
       const base = values.length - 1
       rows.push(`($${base}, $${base + 1})`)
     }
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO url_hostnames (id, hostname, publicly_introduced_at)
        SELECT input.id::uuid, input.hostname, CURRENT_TIMESTAMP
        FROM (VALUES ${rows.join(', ')}) AS input(id, hostname)
@@ -88,7 +86,6 @@ export async function seedUrls(count = FEED_URL_COUNT + ITEM_URL_POOL): Promise<
   console.log(`Seeding ${count} URLs...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     for (let i = 0; i < count; i += 500) {
       const batch = Math.min(500, count - i)
       const values: unknown[] = []
@@ -102,7 +99,7 @@ export async function seedUrls(count = FEED_URL_COUNT + ITEM_URL_POOL): Promise<
         const base = values.length - 3
         rows.push(`($${base}, $${base + 1}, $${base + 2}, $${base + 3}::jsonb)`)
       }
-      await query(
+      await transaction(
         `/* seedExplainData */ INSERT INTO urls (id, url, hostname_id, search_params) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
         values,
       )
@@ -115,7 +112,6 @@ export async function seedTopics(count = 100): Promise<void> {
   console.log(`Seeding ${count} topics...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     const values: unknown[] = []
     const rows: string[] = []
     for (let i = 0; i < count; i++) {
@@ -127,7 +123,7 @@ export async function seedTopics(count = 100): Promise<void> {
       const base = values.length - 3
       rows.push(`($${base}, $${base + 1}, $${base + 2}, $${base + 3}, 'system')`)
     }
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO topics (id, name, slug, bedrock_nova_multimodal_v1_content_sha256, created_via)
        VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
       values,
@@ -141,7 +137,6 @@ export async function seedTopicParentRelations(count = 500): Promise<void> {
   console.log(`Seeding ${count} topic parent relations...`)
   {
     await using transaction = await beginTransaction()
-    const query = transaction
     const values: unknown[] = []
     const rows: string[] = []
     for (let i = 0; i < count; i++) {
@@ -152,7 +147,7 @@ export async function seedTopicParentRelations(count = 500): Promise<void> {
       const base = values.length - 2
       rows.push(`($${base}, $${base + 1}, $${base + 2})`)
     }
-    await query(
+    await transaction(
       `/* seedExplainData */ INSERT INTO relation__topic__parent__topic (subject_id, object_id, created_by_id)
        VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
       values,

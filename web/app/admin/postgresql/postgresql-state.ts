@@ -144,18 +144,15 @@ export function usePostgreSQLAdminState() {
 
   async function confirmPartitionAction() {
     if (!pendingAction) return
-    const action = pendingAction
-    const range = pendingClassifierRange
-    const requestRange = pendingRequestRange
     setPendingAction(null)
     setPendingClassifierRange(null)
     setPendingRequestRange(null)
     await handleAction(
-      action,
-      range || requestRange
+      pendingAction,
+      pendingClassifierRange || pendingRequestRange
         ? {
-            ...(range ? { classifierRange: range } : {}),
-            ...(requestRange ? { requestRange } : {}),
+            ...(pendingClassifierRange ? { classifierRange: pendingClassifierRange } : {}),
+            ...(pendingRequestRange ? { requestRange: pendingRequestRange } : {}),
           }
         : undefined,
     )

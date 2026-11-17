@@ -1,5 +1,5 @@
 import type { QueryExecutor } from '@data-stores/psql/types'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import { MODERATION_APPEAL_HISTORY_RETENTION_MONTHS } from '@services/moderation-appeals/config'
 import type { ModerationHistoryCleanupKind } from './cleanup-moderation-kinds.mts'
@@ -140,9 +140,9 @@ function daysBefore(now: Date, days: number): Date {
 }
 
 function systemActionUpperId(now: Date): string {
-  return getMinUUIDv7ForDate(daysBefore(now, 90))
+  return getMinUuidv7ForDate(daysBefore(now, 90))
 }
 
 function sixMonthUpperId(now: Date): string {
-  return getMinUUIDv7ForDate(daysBefore(now, 180))
+  return getMinUuidv7ForDate(daysBefore(now, 180))
 }

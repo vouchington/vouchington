@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMinUuidv7ForDate } from '@modules/utils'
 import { getCutoffDateForTimeRange } from './query-utils.mts'
 
 describe('RSS feed cutoff', () => {
@@ -17,7 +17,7 @@ describe('RSS feed cutoff', () => {
     const cutoff = new Date('2024-03-02T00:00:00.000Z')
     expect(getCutoffDateForTimeRange('1m', now)).toEqual({
       cutoffDate: cutoff,
-      itemCutoffId: getMinUUIDv7ForDate(cutoff),
+      itemCutoffId: getMinUuidv7ForDate(cutoff),
     })
     expect(getCutoffDateForTimeRange('all', now)).toEqual({
       cutoffDate: null,

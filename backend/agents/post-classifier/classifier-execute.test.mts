@@ -14,7 +14,7 @@ import {
 } from '@services/classifier-runs'
 import { getClassifierRunFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
 import { getPostClassifierLocalOutcomeFacts } from '@voucha/test-helpers/data-stores/psql/post-classifier/run-facts'
-import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
+import { POST_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/post-classifier'
 import { getClassifierBorrowedDecisionFacts } from '@voucha/test-helpers/data-stores/psql/classifier-borrowed-transactions'
 import { setPostClassifierToggleForTest } from '@voucha/test-helpers/entities/post-classifier-toggles'
 import {
@@ -63,6 +63,9 @@ function makeDependencies(
   return { calls, dependencies }
 }
 
+const runFactsOf = async (postId: string) =>
+  (await getClassifierRunFacts(postId, POST_CLASSIFIER_SYSTEM_USERNAME))[0]
+
 describe('post classifier execution with real receipts', () => {
   let release: (() => Promise<void>) | undefined
   beforeAll(async () => {
@@ -87,7 +90,7 @@ describe('post classifier execution with real receipts', () => {
       local: { is_flagged: true },
       remoteDecision: { batchId: input.lease.decisionBatchId },
     })
-    expect((await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]).toMatchObject({
+    expect(await runFactsOf(input.post.id)).toMatchObject({
       provider_attempts_started: 1,
       outcomes_persisted_at: expect.any(Date),
       completed_at: null,
@@ -110,10 +113,7 @@ describe('post classifier execution with real receipts', () => {
     expect(await executePostClassifierRun(input, dependencies)).toBe('persisted')
     expect(calls.requests).toBe(Number(remote))
     expect(calls.detector).toHaveLength(Number(local))
-    expect(
-      (await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]
-        ?.provider_attempts_started,
-    ).toBe(Number(remote))
+    expect((await runFactsOf(input.post.id))?.provider_attempts_started).toBe(Number(remote))
   })
   it('rejects stale post identity and hash before work', async () => {
     const input = await createPostClassifierExecutionFixture()
@@ -166,7 +166,7 @@ describe('post classifier execution with real receipts', () => {
             : 'request timed out',
       )
       expect(await readClassifierRunOutcomes(input.adapter, input.lease)).toBeNull()
-      expect((await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]).toMatchObject({
+      expect(await runFactsOf(input.post.id)).toMatchObject({
         lease_token: null,
         provider_attempts_started: 1,
         terminal_failed_at: null,
@@ -184,9 +184,7 @@ describe('post classifier execution with real receipts', () => {
       'terminal',
     )
     expect(calls.requests).toBe(0)
-    expect(
-      (await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]?.terminal_failed_at,
-    ).toBeInstanceOf(Date)
+    expect((await runFactsOf(input.post.id))?.terminal_failed_at).toBeInstanceOf(Date)
   })
   it('keeps persistence validation errors out of provider failure accounting', async () => {
     const input = await createPostClassifierExecutionFixture()
@@ -199,7 +197,7 @@ describe('post classifier execution with real receipts', () => {
     await expect(executePostClassifierRun(input, dependencies)).rejects.toThrow(
       'local outcome does not match',
     )
-    expect((await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]).toMatchObject({
+    expect(await runFactsOf(input.post.id)).toMatchObject({
       lease_token: input.lease.leaseToken,
       provider_attempts_started: 1,
       outcomes_persisted_at: null,
@@ -246,7 +244,7 @@ describe('post classifier execution with real receipts', () => {
       }[kind],
     )
     expect(fetches).toBe(1)
-    const row = (await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]!
+    const row = (await runFactsOf(input.post.id))!
     expect(row.provider_attempts_started).toBe(1)
     expect(row.lease_token).toBeNull()
     expect(row.terminal_failed_at !== null).toBe(kind === 'terminal')
@@ -269,7 +267,7 @@ describe('post classifier execution with real receipts', () => {
       'terminal',
     )
 
-    expect((await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]).toMatchObject({
+    expect(await runFactsOf(input.post.id)).toMatchObject({
       terminal_failure_kind: 'provider-error',
       outcomes_persisted_at: null,
     })
