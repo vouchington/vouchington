@@ -42,9 +42,10 @@ candidates. The candidate batch therefore moved from nine ambient declarations t
 
 ## Additional Oxlint Rules
 
-- `pnpm run oxlint` runs oxlint in type-aware mode through `oxlint-tsgolint`, so the TypeScript
-  rules that require compiler information run in the same static analysis pass as the syntax-only
-  rules. The full-repo type-aware run is part of CI; keep that run reliable before promoting
+- `pnpm run oxlint` runs oxlint in type-aware mode through `tsrs-lint` from the `tsrs` package, so
+  the TypeScript rules that require compiler information run in the same static analysis pass as the
+  syntax-only rules. tsrs-lint replaced `oxlint-tsgolint` because it implements the same rules
+  with roughly half the CPU time and peak memory on this repository. The full-repo type-aware run is part of CI; keep that run reliable before promoting
   additional type-aware-only rules or stricter severities.
 - `.bind()` member access is banned by `no-restricted-properties`. Prefer direct method calls.
   When a receiver must be preserved, use a named helper that calls the method directly on its owner

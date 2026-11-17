@@ -30,7 +30,8 @@
       ],
       // Extracted workflow scripts run `pnpm exec coverage-check`; Knip does not read sourced
       // shell bodies, so the policy check follows each workflow's script for the evidence.
-      "ignoreDependencies": ["coverage-check"],
+      // `oxlint --type-aware` spawns tsrs's `tsrs-lint` binary at runtime, outside the import graph.
+      "ignoreDependencies": ["coverage-check", "tsrs"],
       // Hook modules are loaded by the harness outside the import graph.
       "includeEntryExports": false,
     },

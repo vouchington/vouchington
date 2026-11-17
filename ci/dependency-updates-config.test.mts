@@ -127,7 +127,7 @@ describe('dependency update configuration', () => {
 
     expect(rootNpmUpdates).toHaveLength(1)
     expect(rootNpmUpdates[0]?.groups?.oxc?.patterns).toEqual(
-      expect.arrayContaining(['oxlint', 'oxfmt', 'oxlint-tsgolint']),
+      expect.arrayContaining(['oxlint', 'oxfmt', 'tsrs', '@tsrs/*']),
     )
   })
 

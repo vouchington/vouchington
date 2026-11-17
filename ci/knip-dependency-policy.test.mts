@@ -26,7 +26,9 @@ describe('Knip extracted workflow evidence', () => {
               ? 'nodeRequire.resolve(`@fontsource/inter/fixture.woff`)'
               : dependency === '@types/react'
                 ? "const name = '@types/react'"
-                : `import {} from '${dependency}'`
+                : dependency === 'tsrs'
+                  ? '"oxlint": "oxlint --type-aware"'
+                  : `import {} from '${dependency}'`
           for (const file of evidenceFiles) files.set(file, `${files.get(file) ?? ''}${evidence}\n`)
         }
       }
