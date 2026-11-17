@@ -1,4 +1,4 @@
-import { renderListedNotification } from '@services/notifications/render-listed-notification'
+import { renderListedNotification } from '../../test-helpers/services/notifications/render-listed-notification.mts'
 import { describe, expect, it } from 'vitest'
 import { bookmarkEntity } from '@services/bookmarks/upsert'
 import { createPostRemovedNotification } from './create-post-removed-notification.mts'

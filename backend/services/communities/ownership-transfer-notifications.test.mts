@@ -5,7 +5,7 @@ import {
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
 import { listNotifications } from '@services/notifications/list'
-import { renderListedNotification } from '@services/notifications/render-listed-notification'
+import { renderListedNotification } from '../../test-helpers/services/notifications/render-listed-notification.mts'
 import { getCommunityMember } from './members/get.mts'
 import { initiateOwnershipTransfer } from './ownership-transfer.mts'
 

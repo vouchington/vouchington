@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
-import { listNotifications, renderListedNotification } from '@services/notifications'
+import { listNotifications } from '@services/notifications'
+import { renderListedNotification } from '../../test-helpers/services/notifications/render-listed-notification.mts'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import {
   approveJurisdictionPolicy,

@@ -46,7 +46,7 @@ describe('PATCH /api/v1/reports/:id', () => {
         expect.objectContaining({
           entity_type: 'moderation_report',
           moderation_report_id: reportId,
-          title: 'Your report was reviewed',
+          kind: 'report_reviewed',
           target_path: null,
           target_intent: 'notifications_inbox',
         }),
@@ -96,7 +96,7 @@ describe('PATCH /api/v1/reports/:id', () => {
         expect.objectContaining({
           entity_type: 'moderation_report',
           moderation_report_id: reportId,
-          title: 'Your report was reviewed',
+          kind: 'report_reviewed',
           target_path: null,
           target_intent: 'notifications_inbox',
         }),
@@ -117,7 +117,7 @@ describe('PATCH /api/v1/reports/:id', () => {
         expect.objectContaining({
           entity_type: 'moderation_report',
           moderation_report_id: reportId,
-          title: 'Your report was reviewed',
+          kind: 'report_reviewed',
           target_path: null,
           target_intent: 'notifications_inbox',
         }),

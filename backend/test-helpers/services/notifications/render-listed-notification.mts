@@ -1,6 +1,9 @@
-import { notificationTranslator } from './notification-translator.mts'
-import { renderNotificationText, type NotificationText } from './render-notification-text.mts'
-import type { Notification, NotificationHydration } from './types.mts'
+import { notificationTranslator } from '../../../services/notifications/notification-translator.mts'
+import {
+  renderNotificationText,
+  type NotificationText,
+} from '../../../services/notifications/render-notification-text.mts'
+import type { Notification, NotificationHydration } from '../../../services/notifications/types.mts'
 
 /** Renders one notification of a listed page in the reader's UI locale, the way push does. */
 export function renderListedNotification(

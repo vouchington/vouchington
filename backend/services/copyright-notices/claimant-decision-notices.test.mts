@@ -1,4 +1,5 @@
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
+import { renderListedNotification } from '../../test-helpers/services/notifications/render-listed-notification.mts'
 import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 import { listNotifications } from '@services/notifications'
 import { deliverCopyrightInAppNotification } from './delivery-transport.mts'
@@ -133,9 +134,16 @@ describe('claimant copyright decision notices', () => {
           copyright_notice_id: notice.intake.copyright_notice_id,
           target_path: null,
           target_intent: 'notifications_inbox',
-          body: expect.stringContaining('/copyright/notices/new'),
+          kind: 'copyright_claimant_decision_notice',
         }),
       ]),
+    )
+    const notifierPage = await listNotifications(notification.recipient_user_id!)
+    const decisionNotification = Object.values(notifierPage.notifications).find(
+      row => row.kind === 'copyright_claimant_decision_notice',
+    )!
+    expect(renderListedNotification(notifierPage, decisionNotification.id).body).toContain(
+      '/copyright/notices/new',
     )
     expect(decision.find(row => row.channel === 'email')?.text).toContain('/copyright/notices/new')
     expect(decision.find(row => row.channel === 'email')?.text).toContain(

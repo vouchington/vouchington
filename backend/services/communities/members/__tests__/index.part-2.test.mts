@@ -31,7 +31,7 @@ import type { PrivateUser } from '@services/users/types'
 
 import type { Community } from '../../types.mts'
 import { listNotifications } from '@services/notifications/list'
-import { renderListedNotification } from '@services/notifications/render-listed-notification'
+import { renderListedNotification } from '../../../../test-helpers/services/notifications/render-listed-notification.mts'
 
 describe('index', () => {
   let owner: PrivateUser

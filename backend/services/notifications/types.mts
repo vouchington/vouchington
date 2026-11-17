@@ -5,8 +5,6 @@ export type {
   NotificationCommunity,
   NotificationCopyrightNotice,
   NotificationHydration,
-  NotificationKind,
-  NotificationParams,
   NotificationPost,
   NotificationResult,
   NotificationRssFeedItem,

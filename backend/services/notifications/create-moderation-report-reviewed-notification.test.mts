@@ -1,4 +1,4 @@
-import { renderListedNotification } from '@services/notifications/render-listed-notification'
+import { renderListedNotification } from '../../test-helpers/services/notifications/render-listed-notification.mts'
 import {
   createTestUserDirect,
   insertTestModerationReport,

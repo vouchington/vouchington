@@ -21,7 +21,7 @@ import { withTestDigestClock } from '@voucha/test-helpers/community-activity-dig
 import { getCommunityActivityDigestDispatchData } from '@queues/notifications/enqueues/community-activity-digest'
 import { deleteNotification } from './mutations.mts'
 import { listNotifications } from './list.mts'
-import { renderListedNotification } from '@services/notifications/render-listed-notification'
+import { renderListedNotification } from '../../test-helpers/services/notifications/render-listed-notification.mts'
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 
 describe('community activity digest', () => {

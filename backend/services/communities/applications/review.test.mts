@@ -18,7 +18,7 @@ import { getSiteUrl } from '@modules/utils'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '../types.mts'
 import { listNotifications } from '@services/notifications/list'
-import { renderListedNotification } from '@services/notifications/render-listed-notification'
+import { renderListedNotification } from '../../../test-helpers/services/notifications/render-listed-notification.mts'
 
 /** The English text of the one notification of a kind in a listed page. */
 function renderedOfKind(page: Awaited<ReturnType<typeof listNotifications>>, kind: string) {

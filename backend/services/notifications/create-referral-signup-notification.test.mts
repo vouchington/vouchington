@@ -1,4 +1,4 @@
-import { renderListedNotification } from '@services/notifications/render-listed-notification'
+import { renderListedNotification } from '../../test-helpers/services/notifications/render-listed-notification.mts'
 import { it, expect, describe } from 'vitest'
 import { createTestUserDirect } from '@voucha/test-helpers'
 import { createReferralSignupNotification } from './create-referral-signup-notification.mts'
