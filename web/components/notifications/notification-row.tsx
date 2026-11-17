@@ -1,29 +1,32 @@
 'use client'
 
+import { EMPTY_NOTIFICATION_HYDRATION } from './empty-notification-hydration'
 import { TimeAgo } from '@/components/shared/time-ago'
 import { EntityActionIcons } from '@/components/shared/entity-action-icons'
 import { Button } from '@/components/ui/button'
 import type { NotificationListNotification } from './notification-list-notification'
 import { NotificationIcon } from './notification-icon'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import type { NotificationHydration } from '@/types/api-responses'
+import { renderNotificationText } from './notification-text'
 
 interface NotificationRowProps {
   notification: NotificationListNotification
+  hydration?: Partial<NotificationHydration>
   onOpen: (notification: NotificationListNotification) => void
   onDelete: (notificationId: string) => void
   compact?: boolean
 }
 
-export function NotificationRow({ notification, onOpen, onDelete, compact }: NotificationRowProps) {
+export function NotificationRow({
+  notification,
+  hydration = EMPTY_NOTIFICATION_HYDRATION,
+  onOpen,
+  onDelete,
+  compact,
+}: NotificationRowProps) {
   const t = useTranslations()
-  const title =
-    notification.entity_type === 'household_invitation'
-      ? t('settings.householdInvitations.notificationTitle')
-      : notification.title
-  const body =
-    notification.entity_type === 'household_invitation'
-      ? t('settings.householdInvitations.notificationBody')
-      : notification.body
+  const { title, body } = renderNotificationText({ t, notification, hydration })
   const DismissNotificationIcon = EntityActionIcons.notificationDismiss
 
   if (compact) {

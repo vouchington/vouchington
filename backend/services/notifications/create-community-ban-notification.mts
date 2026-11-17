@@ -8,18 +8,16 @@ export async function createCommunityBanNotification(userId: string, banId: stri
       user_id,
       entity_type,
       community_ban_id,
+      kind,
       delivery_type,
-      title,
-      body,
       target_path
     )
     VALUES (
       ${userId},
       'community_ban',
       ${banId},
+      'community_ban',
       'subscription',
-      'You have been banned from a community',
-      'A moderator has banned you from a community. You may file an appeal if you believe this was in error.',
       '/my/bans'
     )
     ON CONFLICT DO NOTHING

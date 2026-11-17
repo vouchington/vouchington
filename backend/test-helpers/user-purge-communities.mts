@@ -49,8 +49,8 @@ export async function createTestUserPurgeCascadeRows(
   const { rows: notifications } = await query<{
     id: string
   }>(sql`/* createTestUserPurgeCascadeRows:notifications */
-    INSERT INTO notifications (user_id, entity_type, delivery_type, sent_by_id, post_id, title, body, target_path)
-    SELECT ${userId}, 'post', 'manual_send', ${userId}, ${postId}, 'Purge fixture', 'Owned notification', '/discussion/' || ${postId}
+    INSERT INTO notifications (user_id, entity_type, kind, delivery_type, sent_by_id, post_id, target_path)
+    SELECT ${userId}, 'post', 'post_manual_send', 'manual_send', ${userId}, ${postId}, '/discussion/' || ${postId}
     FROM generate_series(1, 2) RETURNING id`)
   const subscriptionId = await insertTestRetentionTombstone(query, userId, new Date())
   for (const notification of notifications) {

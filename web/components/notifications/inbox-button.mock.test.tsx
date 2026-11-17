@@ -1,3 +1,4 @@
+import { EMPTY_NOTIFICATION_HYDRATION } from '@/components/notifications/empty-notification-hydration'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
@@ -90,25 +91,26 @@ const emptySummary = {
   unread_count: 0,
   results: [],
   notifications: {},
+  ...EMPTY_NOTIFICATION_HYDRATION,
 }
 
 const notificationId = 'notif-1'
 const summaryWithNotification = {
   unread_count: 1,
   results: [{ id: notificationId }],
+  ...EMPTY_NOTIFICATION_HYDRATION,
   notifications: {
     [notificationId]: {
       __entity_type: 'notification' as const,
       id: notificationId,
       user_id: 'user-1',
-      entity_type: 'post' as const,
-      post_id: 'post-1',
+      entity_type: 'referral_click' as const,
+      kind: 'referral_click' as const,
+      params: {},
+      post_id: null,
       rss_feed_item_id: null,
       actor_user_id: null,
-      title: 'Test notification',
-      body: 'Test body',
-      actor_label: null,
-      target_path: '/posts/post-1',
+      target_path: '/my/referrals',
       read_at: null,
       pushed_at: null,
       created_at: '2024-01-01T00:00:00.000Z',
@@ -204,13 +206,13 @@ describe('inbox-button', () => {
       mockGetMyUnreadNotificationsSummaryClient.mockResolvedValue(summaryWithNotification)
       render(<InboxButton />)
       await waitFor(() => {
-        expect(screen.getByText('Test notification')).toBeInTheDocument()
+        expect(screen.getByText('Someone clicked your referral link')).toBeInTheDocument()
       })
-      fireEvent.click(screen.getByText('Test notification'))
+      fireEvent.click(screen.getByText('Someone clicked your referral link'))
       await waitFor(() => {
         expect(mockMarkMyNotificationRead).toHaveBeenCalledWith(notificationId)
       })
-      expect(mockPush).toHaveBeenCalledWith('/posts/post-1')
+      expect(mockPush).toHaveBeenCalledWith('/my/referrals')
     })
 
     it('opens the target for a suspended account without recording the read', async () => {
@@ -224,10 +226,10 @@ describe('inbox-button', () => {
         expect(screen.getByText('1')).toBeInTheDocument()
       })
 
-      fireEvent.click(screen.getByText('Test notification'))
+      fireEvent.click(screen.getByText('Someone clicked your referral link'))
 
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith('/posts/post-1')
+        expect(mockPush).toHaveBeenCalledWith('/my/referrals')
       })
       expect(mockMarkMyNotificationRead).toHaveBeenCalledWith(notificationId)
       expect(toast.error).not.toHaveBeenCalled()
@@ -240,10 +242,10 @@ describe('inbox-button', () => {
       vi.mocked(toast.error).mockClear()
       render(<InboxButton />)
       await waitFor(() => {
-        expect(screen.getByText('Test notification')).toBeInTheDocument()
+        expect(screen.getByText('Someone clicked your referral link')).toBeInTheDocument()
       })
 
-      fireEvent.click(screen.getByText('Test notification'))
+      fireEvent.click(screen.getByText('Someone clicked your referral link'))
 
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith('Failed to open notification.')

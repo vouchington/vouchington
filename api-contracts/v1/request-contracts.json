@@ -26135,16 +26135,6 @@
         "__entity_type": {
           "const": "notification"
         },
-        "actor_label": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
         "actor_user_id": {
           "anyOf": [
             {
@@ -26154,9 +26144,6 @@
               "type": "string"
             }
           ]
-        },
-        "body": {
-          "type": "string"
         },
         "community_id": {
           "anyOf": [
@@ -26195,6 +26182,7 @@
           "enum": [
             "community_activity_digest",
             "community_application_decision",
+            "community_ban",
             "community_ownership_transfer",
             "community_role_change",
             "copyright_notice",
@@ -26202,6 +26190,7 @@
             "direct_message",
             "follow",
             "household_invitation",
+            "moderation_appeal",
             "moderation_report",
             "modmail",
             "post",
@@ -26349,9 +26338,6 @@
             }
           ]
         },
-        "title": {
-          "type": "string"
-        },
         "updated_at": {
           "type": "string"
         },
@@ -26367,31 +26353,142 @@
               "type": "string"
             }
           ]
+        },
+        "kind": {
+          "enum": [
+            "community_activity_digest",
+            "community_application_approved",
+            "community_application_rejected",
+            "community_ban",
+            "community_ownership_received",
+            "community_ownership_transferred_away",
+            "community_role_changed",
+            "copyright_claimant_decision_notice",
+            "copyright_claimant_receipt",
+            "copyright_owner_information_notice",
+            "copyright_poster_restoration_notice",
+            "copyright_poster_restriction_notice",
+            "copyright_poster_review_notice",
+            "copyright_redress_decision_notice",
+            "copyright_status_update",
+            "critical_moderation_alert",
+            "direct_message",
+            "follow",
+            "follow_referral_signup",
+            "household_invitation",
+            "moderation_appeal_resolved",
+            "modmail",
+            "post_manual_send",
+            "post_new",
+            "post_removed",
+            "post_reply",
+            "referral_click",
+            "referral_signup",
+            "report_reviewed",
+            "review_actioned_note",
+            "review_actioned_removed",
+            "review_dispute_resolved",
+            "rss_item_manual_send",
+            "rss_item_new",
+            "user_warning"
+          ],
+          "type": "string"
+        },
+        "params": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "properties": {},
+          "type": "object"
+        },
+        "top_post_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "sent_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "moderation_appeal_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "copyright_notice_delivery_work_item_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "community_application_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         }
       },
       "required": [
         "__entity_type",
-        "actor_label",
         "actor_user_id",
-        "body",
+        "community_application_id",
         "community_id",
         "conversation_id",
+        "copyright_notice_delivery_work_item_id",
         "copyright_notice_id",
         "created_at",
         "entity_type",
         "event_key",
-        "id",
         "household_id",
+        "id",
+        "kind",
+        "moderation_appeal_id",
         "moderation_report_id",
+        "params",
         "post_id",
         "pushed_at",
         "read_at",
         "review_dispute_id",
         "rss_feed_item_id",
+        "sent_by_id",
         "target_entity",
         "target_intent",
         "target_path",
-        "title",
+        "top_post_id",
         "updated_at",
         "user_id",
         "user_warning_id"
@@ -26451,9 +26548,34 @@
         },
         "unread_count": {
           "type": "number"
+        },
+        "actors": {
+          "$ref": "#/components/schemas/Record_string_NotificationActor"
+        },
+        "posts": {
+          "$ref": "#/components/schemas/Record_string_NotificationPost"
+        },
+        "rss_feed_items": {
+          "$ref": "#/components/schemas/Record_string_NotificationRssFeedItem"
+        },
+        "copyright_notices": {
+          "$ref": "#/components/schemas/Record_string_NotificationCopyrightNotice"
+        },
+        "public_texts": {
+          "$ref": "#/components/schemas/Record_string_string"
         }
       },
-      "required": ["communities", "notifications", "results", "unread_count"],
+      "required": [
+        "actors",
+        "communities",
+        "copyright_notices",
+        "notifications",
+        "posts",
+        "public_texts",
+        "results",
+        "rss_feed_items",
+        "unread_count"
+      ],
       "type": "object"
     },
     "OAuthAccountInfo": {
@@ -42006,6 +42128,112 @@
         }
       },
       "required": ["post"]
+    },
+    "NotificationActor": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "username"],
+      "type": "object"
+    },
+    "NotificationPost": {
+      "additionalProperties": false,
+      "properties": {
+        "actor_user_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "community_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "post_type": {
+          "type": "string"
+        },
+        "snippet": {
+          "type": "string"
+        }
+      },
+      "required": ["actor_user_id", "community_id", "id", "post_type", "snippet"],
+      "type": "object"
+    },
+    "NotificationRssFeedItem": {
+      "additionalProperties": false,
+      "properties": {
+        "feed_name": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "snippet": {
+          "type": "string"
+        }
+      },
+      "required": ["feed_name", "id", "snippet"],
+      "type": "object"
+    },
+    "NotificationCopyrightNotice": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "jurisdiction": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "jurisdiction"],
+      "type": "object"
+    },
+    "Record_string_NotificationActor": {
+      "additionalProperties": {
+        "$ref": "#/components/schemas/NotificationActor"
+      },
+      "properties": {},
+      "type": "object"
+    },
+    "Record_string_NotificationPost": {
+      "additionalProperties": {
+        "$ref": "#/components/schemas/NotificationPost"
+      },
+      "properties": {},
+      "type": "object"
+    },
+    "Record_string_NotificationRssFeedItem": {
+      "additionalProperties": {
+        "$ref": "#/components/schemas/NotificationRssFeedItem"
+      },
+      "properties": {},
+      "type": "object"
+    },
+    "Record_string_NotificationCopyrightNotice": {
+      "additionalProperties": {
+        "$ref": "#/components/schemas/NotificationCopyrightNotice"
+      },
+      "properties": {},
+      "type": "object"
     }
   },
   "operations": {

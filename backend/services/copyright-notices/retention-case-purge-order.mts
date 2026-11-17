@@ -19,7 +19,6 @@ const CASE_PATHS = [
   ...COPYRIGHT_CASE_PURGE_PATH_3,
   ...COPYRIGHT_CASE_PURGE_PATH_4,
   ...COPYRIGHT_CASE_PURGE_PATH_5,
-  ...COPYRIGHT_CASE_PURGE_PATH_5_REST,
 ] as const
 
 // These two legal child tables cite private email rows. They must drain while
@@ -31,8 +30,11 @@ const BEFORE_EMAIL_TABLES = new Set([
 const beforeEmail = CASE_PATHS.filter(phase => BEFORE_EMAIL_TABLES.has(phase[0]))
 const afterEmail = CASE_PATHS.filter(phase => !BEFORE_EMAIL_TABLES.has(phase[0]))
 
+// Member notifications cite their delivery work item (ON DELETE RESTRICT), so their phases drain
+// before every phase that deletes a work item, including the email-intake receipt paths.
 /** Static child-first paths; each page follows only indexed FK and primary-key ranges. */
 export const COPYRIGHT_CASE_PURGE_PHASES = [
+  ...COPYRIGHT_CASE_PURGE_PATH_5_REST,
   ...beforeEmail,
   ...COPYRIGHT_CASE_EMAIL_PRIVATE_PATHS,
   COPYRIGHT_CASE_EMAIL_LINK_PHASE,
@@ -40,4 +42,6 @@ export const COPYRIGHT_CASE_PURGE_PHASES = [
 ] as const
 
 export const COPYRIGHT_CASE_EMAIL_LINK_PHASE_INDEX =
-  beforeEmail.length + COPYRIGHT_CASE_EMAIL_PRIVATE_PATHS.length
+  COPYRIGHT_CASE_PURGE_PATH_5_REST.length +
+  beforeEmail.length +
+  COPYRIGHT_CASE_EMAIL_PRIVATE_PATHS.length

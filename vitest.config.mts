@@ -1,4 +1,5 @@
 import './backend/test-helpers/s3-test-environment.mts'
+import './backend/test-helpers/localization-test-environment.mts'
 import { vitestCiReporterOptions } from './test-helpers/vitest-ci-reporter-options.mts'
 import { defineConfig } from 'vitest/config'
 import { ciOutputFile, ciReporters } from 'vouchington-tooling/vitest-diagnostics'

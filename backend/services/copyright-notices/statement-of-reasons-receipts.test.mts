@@ -3,7 +3,6 @@ import {
   copyrightEmailSubject,
   copyrightEuReceiptText,
   copyrightIntakeRejectionText,
-  copyrightNotificationCopy,
 } from './statement-of-reasons-wording.mts'
 
 const ORIGIN = 'https://voucha.test'
@@ -39,13 +38,9 @@ describe('copyright receipts and subjects', () => {
     )
   })
 
-  it('writes absolute routes into the intake rejection and US fallback copy', () => {
-    for (const text of [
-      copyrightIntakeRejectionText(new Date(), false),
-      copyrightNotificationCopy('claimant_decision_notice').body,
-    ])
-      expect(text).toContain(
-        `New notice: ${ORIGIN}/copyright/notices/new. Designated agent: ${ORIGIN}/copyright/designated-agent.`,
-      )
+  it('writes absolute routes into the intake rejection copy', () => {
+    expect(copyrightIntakeRejectionText(new Date(), false)).toContain(
+      `New notice: ${ORIGIN}/copyright/notices/new. Designated agent: ${ORIGIN}/copyright/designated-agent.`,
+    )
   })
 })

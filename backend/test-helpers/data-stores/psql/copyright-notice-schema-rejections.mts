@@ -8,10 +8,10 @@ export function rejectCopyrightNotificationWithAnotherEntity(
 ) {
   return write(sql`/* rejectCopyrightNotificationWithAnotherEntity */
     INSERT INTO notifications (
-      user_id, entity_type, copyright_notice_id, actor_user_id, delivery_type, title, body, target_path
+      user_id, entity_type, kind, copyright_notice_id, actor_user_id, delivery_type, target_path
     ) VALUES (
-      ${fixture.actorUserId}, 'copyright_notice', ${fixture.noticeId}, ${fixture.actorUserId},
-      'subscription', 'copyright', 'copyright', '/copyright/notices/test'
+      ${fixture.actorUserId}, 'copyright_notice', 'copyright_status_update', ${fixture.noticeId}, ${fixture.actorUserId},
+      'subscription', '/copyright/notices/test'
     )`)
 }
 

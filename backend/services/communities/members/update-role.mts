@@ -72,10 +72,9 @@ export async function updateMemberRole(
           {
             userId: targetUserId,
             communityId,
-            entityType: 'community_role_change',
+            kind: 'community_role_changed',
             eventKey: `community-role-change:${communityId}:${targetUserId}:${transition.updated_at.toISOString()}`,
-            title: `Your role in ${community.name} changed`,
-            body: `Your community role changed from ${targetMembership.role} to ${role}.`,
+            params: { from_role: targetMembership.role, to_role: role },
           },
         ],
         options,

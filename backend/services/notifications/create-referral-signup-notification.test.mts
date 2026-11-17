@@ -1,3 +1,4 @@
+import { renderListedNotification } from '../../test-helpers/services/notifications/render-listed-notification.mts'
 import { it, expect, describe } from 'vitest'
 import { createTestUserDirect } from '@voucha/test-helpers'
 import { createReferralSignupNotification } from './create-referral-signup-notification.mts'
@@ -14,13 +15,14 @@ describe('create-referral-signup-notification', () => {
     expect(result).toHaveLength(1)
     expect(result[0]!.user_id).toBe(referrer.id)
 
-    const { notifications } = await listNotifications(referrer.id)
-    const notification = notifications[result[0]!.id]
+    const page = await listNotifications(referrer.id)
+    const notification = page.notifications[result[0]!.id]
     expect(notification?.entity_type).toBe('referral_signup')
     expect(notification?.actor_user_id).toBe(newUser.id)
-    expect(notification?.title).toBe(`@${username} signed up through your referral!`)
     expect(notification?.target_path).toBe(`/user/${username}`)
-    expect(notification?.body).toMatch(/You now have \d+ referral/)
+    const text = renderListedNotification(page, result[0]!.id)
+    expect(text.title).toBe(`@${username} signed up through your referral!`)
+    expect(text.body).toMatch(/You now have \d+ referral/)
   })
 
   it('creates referral signup notification with null username', async () => {
@@ -32,11 +34,14 @@ describe('create-referral-signup-notification', () => {
     expect(result).toHaveLength(1)
     expect(result[0]!.user_id).toBe(referrer.id)
 
-    const { notifications } = await listNotifications(referrer.id)
-    const notification = notifications[result[0]!.id]
+    const page = await listNotifications(referrer.id)
+    const notification = page.notifications[result[0]!.id]
     expect(notification?.entity_type).toBe('referral_signup')
     expect(notification?.actor_user_id).toBe(newUser.id)
-    expect(notification?.title).toBe('Someone signed up through your referral!')
     expect(notification?.target_path).toBe('/')
+    // The name is read from the new user's profile when the row is read, not stored.
+    expect(renderListedNotification(page, result[0]!.id).title).toBe(
+      `@${newUser.username} signed up through your referral!`,
+    )
   })
 })

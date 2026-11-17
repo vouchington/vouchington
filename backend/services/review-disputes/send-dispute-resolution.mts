@@ -60,11 +60,7 @@ export async function sendApprovedReviewDisputeResolution(
 
   // Deliver the human-approved response to the disputant. Awaited so a delivery
   // failure surfaces to the caller instead of being silently swallowed.
-  await createReviewDisputeResolvedNotification(
-    result.disputant_user_id,
-    disputeId,
-    result.public_response ?? '',
-  )
+  await createReviewDisputeResolvedNotification(result.disputant_user_id, disputeId)
 
   return getReviewDisputeAfterMutation(disputeId)
 }

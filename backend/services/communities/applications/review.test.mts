@@ -18,6 +18,14 @@ import { getSiteUrl } from '@modules/utils'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '../types.mts'
 import { listNotifications } from '@services/notifications/list'
+import { renderListedNotification } from '../../../test-helpers/services/notifications/render-listed-notification.mts'
+
+/** The English text of the one notification of a kind in a listed page. */
+function renderedOfKind(page: Awaited<ReturnType<typeof listNotifications>>, kind: string) {
+  const found = Object.values(page.notifications).find(item => item.kind === kind)
+  if (!found) throw new Error(`Expected a ${kind} notification`)
+  return renderListedNotification(page, found.id)
+}
 
 describe('review', () => {
   let owner: PrivateUser
@@ -46,15 +54,10 @@ describe('review', () => {
 
       const membership = await getCommunityMember(community.id, applicant.id)
       expect(membership).not.toBeNull()
-      const response = await listNotifications(applicant.id)
-      expect(Object.values(response.notifications)).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            entity_type: 'community_application_decision',
-            title: `Your application to ${community.name} was approved`,
-          }),
-        ]),
-      )
+      expect(
+        renderedOfKind(await listNotifications(applicant.id), 'community_application_approved')
+          .title,
+      ).toBe(`Your application to ${community.name} was approved`)
     })
 
     it('approving an application removes the applicant’s pending invites', async () => {
@@ -131,16 +134,12 @@ describe('review', () => {
       expect(updated?.rejected_at).not.toBeNull()
       expect(updated?.rejection_reason).toBe('Not a good fit')
       expect(updated?.approved_at).toBeNull()
-      const response = await listNotifications(applicant.id)
-      expect(Object.values(response.notifications)).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            entity_type: 'community_application_decision',
-            title: `Your application to ${community.name} was not approved`,
-            body: 'Reason: Not a good fit',
-          }),
-        ]),
-      )
+      expect(
+        renderedOfKind(await listNotifications(applicant.id), 'community_application_rejected'),
+      ).toEqual({
+        title: `Your application to ${community.name} was not approved`,
+        body: 'Reason: Not a good fit',
+      })
     })
 
     it('non-member cannot reject application', async () => {
@@ -179,15 +178,12 @@ describe('review', () => {
 
       const { decisionEmailEnqueue } = await rejectApplication(owner, app.id)
 
-      expect(Object.values((await listNotifications(applicant.id)).notifications)).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            entity_type: 'community_application_decision',
-            title: `Your application to ${community.name} was not approved`,
-            body: `Your application to ${community.name} was not approved.`,
-          }),
-        ]),
-      )
+      expect(
+        renderedOfKind(await listNotifications(applicant.id), 'community_application_rejected'),
+      ).toEqual({
+        title: `Your application to ${community.name} was not approved`,
+        body: `Your application to ${community.name} was not approved.`,
+      })
 
       expect(decisionEmailEnqueue).not.toBeNull()
       const job = await readEnqueuedJob(emails, await decisionEmailEnqueue)

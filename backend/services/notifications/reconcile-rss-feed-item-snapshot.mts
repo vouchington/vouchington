@@ -9,21 +9,6 @@ export async function getRssFeedItemNotificationSnapshot(
   const query = sql`/* getRssFeedItemNotificationSnapshot */
     SELECT
       rss_feed_items.id AS rss_feed_item_id,
-      COALESCE(rss_feeds.title, urls.url, 'RSS Feed') AS feed_name,
-      COALESCE(
-        NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(rss_feed_items.data->>'title', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''),
-        NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(rss_feed_items.data->>'summary', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''),
-        NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(rss_feed_items.data->>'description', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''),
-        NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(rss_feed_items.data->>'media:description', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''),
-        'New RSS Feed Item'
-      ) AS title,
-      COALESCE(
-        NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(rss_feed_items.data->>'summary', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''),
-        NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(rss_feed_items.data->>'description', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''),
-        NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(rss_feed_items.data->>'contentSnippet', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''),
-        NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(rss_feed_items.data->>'media:description', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''),
-        ''
-      ) AS description,
       urls.url,
       rss_feed_items.deleted_at,
       (rss_feed_items.deleted_at IS NULL AND `

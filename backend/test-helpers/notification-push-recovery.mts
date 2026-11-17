@@ -86,9 +86,9 @@ async function createTestNotificationPushRecoveryBacklog(input: {
   const neighborNotificationIds = Object.freeze(ownedNotificationIds.slice(input.count))
   await using transaction = await beginTransaction()
   await transaction(sql`/* createTestNotificationPushRecoveryBacklog */
-        INSERT INTO notifications (id, user_id, entity_type, delivery_type, title, body, target_path)
-        SELECT notification_id, ${input.userId}::uuid, 'referral_click', 'subscription',
-          'Recovery page notification', 'Durable push recovery fixture', '/my/referrals'
+        INSERT INTO notifications (id, user_id, entity_type, kind, delivery_type, target_path)
+        SELECT notification_id, ${input.userId}::uuid, 'referral_click', 'referral_click', 'subscription',
+          '/my/referrals'
         FROM UNNEST(${ownedNotificationIds}::uuid[]) AS fixture(notification_id)
       `)
   // Capture the transaction's common timestamp as text: JavaScript Date would lose microseconds.

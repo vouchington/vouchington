@@ -12,12 +12,13 @@ import {
 } from '@/lib/api/client/my'
 import { hasErrorCode } from '@vouchington/api-client'
 import { resolveNotificationTarget } from './utils'
+import { EMPTY_NOTIFICATION_HYDRATION } from './empty-notification-hydration'
 
 const EMPTY_SUMMARY: NotificationsUnreadSummaryResponseBody = {
   unread_count: 0,
   results: [],
   notifications: {},
-  communities: {},
+  ...EMPTY_NOTIFICATION_HYDRATION,
 }
 
 interface InboxSnapshot {
@@ -148,11 +149,11 @@ function removeNotification(
   notificationId: string,
 ): NotificationsUnreadSummaryResponseBody {
   return {
+    ...summary,
     unread_count: Math.max(summary.unread_count - 1, 0),
     results: summary.results.filter(result => result.id !== notificationId),
     notifications: Object.fromEntries(
       Object.entries(summary.notifications).filter(([id]) => id !== notificationId),
     ),
-    communities: summary.communities,
   }
 }

@@ -3,7 +3,6 @@ import {
   buildCopyrightStatementOfReasons,
   type CopyrightStatementInput,
 } from './statement-of-reasons.mts'
-import { copyrightNotificationCopy } from './statement-of-reasons-wording.mts'
 
 const ORIGIN = 'https://voucha.test'
 const noticeId = crypto.randomUUID()
@@ -245,9 +244,6 @@ describe('copyright statement wording', () => {
       expect(summary).toContain('internal complaint')
       expect(summary).toContain('certified out-of-court dispute settlement body')
       expect(summary).toContain('judicial redress through a court')
-      expect(copyrightNotificationCopy('claimant_decision_notice', 'eu_dsa').body).toContain(
-        'internal complaint',
-      )
     })
 
     it.each(AUDIENCES)('lists only the court for a %s UK statement', audience => {
@@ -257,9 +253,6 @@ describe('copyright statement wording', () => {
         expect(text).not.toContain('out-of-court')
         expect(text).not.toContain('internal complaint')
       }
-      expect(copyrightNotificationCopy('claimant_decision_notice', 'uk').body).not.toContain(
-        'internal complaint',
-      )
     })
   })
 })

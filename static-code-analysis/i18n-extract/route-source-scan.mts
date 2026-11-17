@@ -12,6 +12,7 @@ const ALIAS_NAMESPACES = [
   'extracted',
   'moderation',
   'nav',
+  'notifications',
   'settings',
   'shared',
 ]

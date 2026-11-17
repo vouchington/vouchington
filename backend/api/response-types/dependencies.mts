@@ -11,6 +11,7 @@ export type { ViewRssFeed } from '@services/rss-feeds/types'
 export type { ViewRssFeedItem } from '@services/rss-feed-items/types'
 export type {
   Notification,
+  NotificationHydration,
   NotificationResult,
   WebPushSubscriptionRecord,
 } from '@services/notifications/types'

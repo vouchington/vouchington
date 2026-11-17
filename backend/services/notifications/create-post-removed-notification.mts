@@ -11,18 +11,16 @@ export async function createPostRemovedNotification(
       user_id,
       entity_type,
       post_id,
+      kind,
       delivery_type,
-      title,
-      body,
       target_path
     )
     VALUES (
       ${authorUserId}::uuid,
       'post',
       ${postId}::uuid,
+      'post_removed',
       'subscription',
-      'Your post has been removed',
-      'A moderator has removed your post. You may file an appeal if you believe this was in error.',
       '/my/appeals'
     )
     ON CONFLICT DO NOTHING

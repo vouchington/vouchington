@@ -60,6 +60,8 @@ export type {
 export type {
   Notification as BackendNotification,
   NotificationResult as BackendNotificationResult,
+  NotificationHydration,
+  NotificationKind,
   WebPushSubscriptionRecord,
 } from '@voucha/types/entities/notification'
 export type { PageInfo, ListResponse, PaginatedResult } from '@voucha/types/pagination'

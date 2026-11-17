@@ -13,8 +13,9 @@ type Story = StoryObj<typeof meta>
 const reply: NotificationListNotification = {
   id: '019f38fe-0000-7000-8000-0000000000n1',
   entity_type: 'post',
-  title: 'Alex Morgan replied to your Sapphire Reserve review',
-  body: 'The restaurant category still earns 3x on the card I keep.',
+  kind: 'post_reply',
+  params: {},
+  post_id: 'fixture-reply',
   read_at: null,
   created_at: '2026-09-20T14:30:00.000Z',
   target_path: '/reviews/fixture-review',
@@ -23,11 +24,25 @@ const reply: NotificationListNotification = {
 const follow: NotificationListNotification = {
   id: '019f38fe-0000-7000-8000-0000000000n2',
   entity_type: 'follow',
-  title: 'Alex Morgan followed you',
-  body: '',
+  kind: 'follow',
+  params: {},
+  actor_user_id: 'user-alex',
   read_at: '2026-09-21T10:00:00.000Z',
   created_at: '2026-09-21T09:40:00.000Z',
   target_path: '/@alex',
+}
+
+const hydration = {
+  actors: { 'user-alex': { id: 'user-alex', username: 'alex' } },
+  posts: {
+    'fixture-reply': {
+      id: 'fixture-reply',
+      post_type: 'comment',
+      snippet: 'The restaurant category still earns 3x on the card I keep.',
+      actor_user_id: 'user-alex',
+      community_id: null,
+    },
+  },
 }
 
 export const UnreadReply: Story = {
@@ -35,6 +50,7 @@ export const UnreadReply: Story = {
     <StoryFrame width='max-w-xl'>
       <NotificationRow
         notification={reply}
+        hydration={hydration}
         onOpen={() => {}}
         onDelete={() => {}}
       />
@@ -47,6 +63,7 @@ export const ReadFollow: Story = {
     <StoryFrame width='max-w-xl'>
       <NotificationRow
         notification={follow}
+        hydration={hydration}
         onOpen={() => {}}
         onDelete={() => {}}
       />

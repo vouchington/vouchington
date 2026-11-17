@@ -5,6 +5,7 @@ import {
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
 import { listNotifications } from '@services/notifications/list'
+import { renderListedNotification } from '../../test-helpers/services/notifications/render-listed-notification.mts'
 import { getCommunityMember } from './members/get.mts'
 import { initiateOwnershipTransfer } from './ownership-transfer.mts'
 
@@ -28,22 +29,14 @@ describe('ownership transfer notifications', () => {
       listNotifications(owner.id),
       listNotifications(moderator.id),
     ])
-    expect(Object.values(previousOwner.notifications)).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          entity_type: 'community_ownership_transfer',
-          title: `Ownership of ${community.name} was transferred`,
-        }),
-      ]),
+    const titleOf = (page: typeof previousOwner, kind: string) => {
+      const found = Object.values(page.notifications).find(item => item.kind === kind)
+      return found ? renderListedNotification(page, found.id).title : undefined
+    }
+    expect(titleOf(previousOwner, 'community_ownership_transferred_away')).toBe(
+      `Ownership of ${community.name} was transferred`,
     )
-    expect(Object.values(newOwner.notifications)).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          entity_type: 'community_ownership_transfer',
-          title: `You now own ${community.name}`,
-        }),
-      ]),
-    )
+    expect(titleOf(newOwner, 'community_ownership_received')).toBe(`You now own ${community.name}`)
   })
 
   it('rolls back roles and notification rows when the target is ineligible', async () => {

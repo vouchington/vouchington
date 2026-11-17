@@ -3,8 +3,8 @@ import { write } from '@data-stores/psql'
 export function insertNotificationWithBothTargets(userId: string): Promise<unknown> {
   return write(
     `/* insertNotificationWithBothTargets */ INSERT INTO notifications
-      (user_id, entity_type, event_key, title, target_path, target_intent)
-      VALUES ($1, 'referral_click', 'two-targets', 'Digest', '/legacy', 'notifications_inbox')`,
+      (user_id, entity_type, kind, event_key, target_path, target_intent)
+      VALUES ($1, 'referral_click', 'referral_click', 'two-targets', '/legacy', 'notifications_inbox')`,
     [userId],
   )
 }
@@ -12,8 +12,8 @@ export function insertNotificationWithBothTargets(userId: string): Promise<unkno
 export function insertNotificationWithEmptyEventKey(userId: string): Promise<unknown> {
   return write(
     `/* insertNotificationWithEmptyEventKey */ INSERT INTO notifications
-      (user_id, entity_type, event_key, title, target_intent)
-      VALUES ($1, 'community_activity_digest', '', 'Digest', 'notifications_inbox')`,
+      (user_id, entity_type, kind, event_key, params, target_intent)
+      VALUES ($1, 'community_activity_digest', 'community_activity_digest', '', '{"community_count":1,"joins":0,"departures":0,"discussions":0,"reviews":0,"data_points":0,"comments":0,"active_posters":0,"total_members":1,"moderation_workload":0}', 'notifications_inbox')`,
     [userId],
   )
 }
@@ -21,8 +21,8 @@ export function insertNotificationWithEmptyEventKey(userId: string): Promise<unk
 export function insertNotificationWithOversizedEventKey(userId: string): Promise<unknown> {
   return write(
     `/* insertNotificationWithOversizedEventKey */ INSERT INTO notifications
-      (user_id, entity_type, event_key, title, target_intent)
-      VALUES ($1, 'community_activity_digest', $2, 'Digest', 'notifications_inbox')`,
+      (user_id, entity_type, kind, event_key, params, target_intent)
+      VALUES ($1, 'community_activity_digest', 'community_activity_digest', $2, '{"community_count":1,"joins":0,"departures":0,"discussions":0,"reviews":0,"data_points":0,"comments":0,"active_posters":0,"total_members":1,"moderation_workload":0}', 'notifications_inbox')`,
     [userId, 'x'.repeat(301)],
   )
 }
@@ -33,8 +33,8 @@ export async function insertDismissedDigestNotification(
 ): Promise<void> {
   await write(
     `/* insertDismissedDigestNotification */ INSERT INTO notifications
-      (user_id, entity_type, event_key, title, target_intent)
-      VALUES ($1, 'community_activity_digest', $2, 'Digest', 'notifications_inbox')`,
+      (user_id, entity_type, kind, event_key, params, target_intent)
+      VALUES ($1, 'community_activity_digest', 'community_activity_digest', $2, '{"community_count":1,"joins":0,"departures":0,"discussions":0,"reviews":0,"data_points":0,"comments":0,"active_posters":0,"total_members":1,"moderation_workload":0}', 'notifications_inbox')`,
     [userId, eventKey],
   )
   await write(
@@ -50,8 +50,8 @@ export function insertDuplicateDigestNotification(
 ): Promise<unknown> {
   return write(
     `/* insertDuplicateDigestNotification */ INSERT INTO notifications
-      (user_id, entity_type, event_key, title, target_intent)
-      VALUES ($1, 'community_activity_digest', $2, 'Digest', 'notifications_inbox')`,
+      (user_id, entity_type, kind, event_key, params, target_intent)
+      VALUES ($1, 'community_activity_digest', 'community_activity_digest', $2, '{"community_count":1,"joins":0,"departures":0,"discussions":0,"reviews":0,"data_points":0,"comments":0,"active_posters":0,"total_members":1,"moderation_workload":0}', 'notifications_inbox')`,
     [userId, eventKey],
   )
 }
@@ -75,8 +75,9 @@ export function insertLifecycleNotificationWithIntent(
 ): Promise<unknown> {
   return write(
     `/* insertLifecycleNotificationWithIntent */ INSERT INTO notifications
-      (user_id, entity_type, event_key, community_id, title, target_intent)
-      VALUES ($1, 'community_application_decision', 'lifecycle-intent', $2, 'Decision', 'notifications_inbox')`,
+      (user_id, entity_type, kind, event_key, community_id, params, target_intent)
+      VALUES ($1, 'community_role_change', 'community_role_changed', 'lifecycle-intent', $2,
+        '{"from_role":"member","to_role":"moderator"}', 'notifications_inbox')`,
     [userId, communityId],
   )
 }
@@ -84,8 +85,9 @@ export function insertLifecycleNotificationWithIntent(
 export function insertLifecycleNotificationWithoutCommunity(userId: string): Promise<unknown> {
   return write(
     `/* insertLifecycleNotificationWithoutCommunity */ INSERT INTO notifications
-      (user_id, entity_type, event_key, title)
-      VALUES ($1, 'community_role_change', 'lifecycle-no-community', 'Role changed')`,
+      (user_id, entity_type, kind, event_key, params)
+      VALUES ($1, 'community_role_change', 'community_role_changed', 'lifecycle-no-community',
+        '{"from_role":"member","to_role":"moderator"}')`,
     [userId],
   )
 }
@@ -93,9 +95,8 @@ export function insertLifecycleNotificationWithoutCommunity(userId: string): Pro
 export function insertLifecycleNotificationWithWrongCommunity(userId: string): Promise<unknown> {
   return write(
     `/* insertLifecycleNotificationWithWrongCommunity */ INSERT INTO notifications
-      (user_id, entity_type, event_key, community_id, title)
-      VALUES ($1, 'community_ownership_transfer', 'lifecycle-wrong-community', $2,
-        'Ownership transferred')`,
+      (user_id, entity_type, kind, event_key, community_id)
+      VALUES ($1, 'community_ownership_transfer', 'community_ownership_received', 'lifecycle-wrong-community', $2)`,
     [userId, userId],
   )
 }
@@ -106,8 +107,8 @@ export function insertDigestNotificationWithCommunity(
 ): Promise<unknown> {
   return write(
     `/* insertDigestNotificationWithCommunity */ INSERT INTO notifications
-      (user_id, entity_type, event_key, community_id, title, target_intent)
-      VALUES ($1, 'community_activity_digest', 'digest-community', $2, 'Digest', 'notifications_inbox')`,
+      (user_id, entity_type, kind, event_key, community_id, params, target_intent)
+      VALUES ($1, 'community_activity_digest', 'community_activity_digest', 'digest-community', $2, '{"community_count":1,"joins":0,"departures":0,"discussions":0,"reviews":0,"data_points":0,"comments":0,"active_posters":0,"total_members":1,"moderation_workload":0}', 'notifications_inbox')`,
     [userId, communityId],
   )
 }
@@ -115,8 +116,8 @@ export function insertDigestNotificationWithCommunity(
 export function insertDigestNotificationWithEntity(userId: string): Promise<unknown> {
   return write(
     `/* insertDigestNotificationWithEntity */ INSERT INTO notifications
-      (user_id, entity_type, event_key, title, target_path)
-      VALUES ($1, 'community_activity_digest', 'digest-entity', 'Digest', '/my/notifications')`,
+      (user_id, entity_type, kind, event_key, params, target_path)
+      VALUES ($1, 'community_activity_digest', 'community_activity_digest', 'digest-entity', '{"community_count":1,"joins":0,"departures":0,"discussions":0,"reviews":0,"data_points":0,"comments":0,"active_posters":0,"total_members":1,"moderation_workload":0}', '/my/notifications')`,
     [userId],
   )
 }

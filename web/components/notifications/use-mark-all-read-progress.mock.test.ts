@@ -6,6 +6,7 @@ import type {
   NotificationsResponseBody,
   NotificationsUnreadSummaryResponseBody,
 } from '@/types/api-responses'
+import { EMPTY_NOTIFICATION_HYDRATION } from './empty-notification-hydration'
 import { useMarkAllReadProgress } from './use-mark-all-read-progress'
 
 vi.mock(import('@/lib/api/client'), () => ({ getPaginatedPage: vi.fn<VitestLooseMock>() }))
@@ -16,14 +17,14 @@ vi.mock(import('@/lib/api/client/my'), () => ({
 const page: NotificationsResponseBody = {
   results: [],
   notifications: {},
-  communities: {},
+  ...EMPTY_NOTIFICATION_HYDRATION,
   page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
 }
 const summary = (unread_count: number): NotificationsUnreadSummaryResponseBody => ({
   unread_count,
   results: [],
   notifications: {},
-  communities: {},
+  ...EMPTY_NOTIFICATION_HYDRATION,
 })
 
 describe('useMarkAllReadProgress', () => {

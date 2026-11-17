@@ -79,10 +79,8 @@ async function runLifecycleNotifications(communityId: string): Promise<void> {
         [seedUser.id, heavyFollowUser.id].map(userId => ({
           userId,
           communityId,
-          entityType: 'community_ownership_transfer' as const,
+          kind: 'community_ownership_received' as const,
           eventKey: `explain-lifecycle:${randomUUID()}`,
-          title: 'Ownership transferred',
-          body: 'Ownership transferred.',
         })),
         { query: transaction },
       )

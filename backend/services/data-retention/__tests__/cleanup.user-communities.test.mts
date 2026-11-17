@@ -58,7 +58,10 @@ describe('community preservation during final user purge', () => {
       expect(transfers).toEqual(
         expect.arrayContaining(
           communities.map(community =>
-            expect.objectContaining({ title: `You now own ${community.name}` }),
+            expect.objectContaining({
+              kind: 'community_ownership_received',
+              community_id: community.id,
+            }),
           ),
         ),
       )
@@ -162,7 +165,9 @@ describe('community preservation during final user purge', () => {
     const transfers = Object.values((await listNotifications(successor.id)).notifications).filter(
       notification => notification.entity_type === 'community_ownership_transfer',
     )
-    expect(transfers).toEqual([expect.objectContaining({ title: `You now own ${community.name}` })])
+    expect(transfers).toEqual([
+      expect.objectContaining({ kind: 'community_ownership_received', community_id: community.id }),
+    ])
     expect(
       sentryCaptureExceptionMock.mock.calls.filter(([reported]) => reported === failure.error),
     ).toHaveLength(1)

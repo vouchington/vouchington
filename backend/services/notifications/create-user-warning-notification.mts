@@ -5,26 +5,22 @@ import { enqueueBulkDeliverNotificationPushIntents } from '@queues/notifications
 export async function createUserWarningNotification(
   userId: string,
   warningId: string,
-  publicMessage: string | null,
 ): Promise<void> {
-  const body = (publicMessage ?? 'A moderator has issued a warning to your account.').slice(0, 1000)
   const { rows } = await write(sql`/* createUserWarningNotification */
     INSERT INTO notifications (
       user_id,
       entity_type,
       user_warning_id,
+      kind,
       delivery_type,
-      title,
-      body,
       target_path
     )
     VALUES (
       ${userId}::uuid,
       'user_warning',
       ${warningId}::uuid,
+      'user_warning',
       'subscription',
-      'You received a warning',
-      ${body},
       '/my/warnings'
     )
     ON CONFLICT DO NOTHING

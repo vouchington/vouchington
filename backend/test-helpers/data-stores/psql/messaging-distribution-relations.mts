@@ -7,8 +7,8 @@ export async function insertNotificationWithMissingPublicationPost(
 ): Promise<unknown> {
   return write(
     `/* insertNotificationWithMissingPublicationPost */ INSERT INTO notifications
-      (user_id, entity_type, title, target_intent, publication_post_id)
-      VALUES ($1, 'referral_click', 'Missing post', 'notifications_inbox', $2)`,
+      (user_id, entity_type, kind, target_intent, publication_post_id)
+      VALUES ($1, 'referral_click', 'referral_click', 'notifications_inbox', $2)`,
     [userId, v7()],
   )
 }
@@ -18,8 +18,8 @@ export async function insertNotificationWithUserAsPublicationPost(
 ): Promise<unknown> {
   return write(
     `/* insertNotificationWithUserAsPublicationPost */ INSERT INTO notifications
-      (user_id, entity_type, title, target_intent, publication_post_id)
-      VALUES ($1, 'referral_click', 'Wrong owner', 'notifications_inbox', $2)`,
+      (user_id, entity_type, kind, target_intent, publication_post_id)
+      VALUES ($1, 'referral_click', 'referral_click', 'notifications_inbox', $2)`,
     [userId, userId],
   )
 }
@@ -29,8 +29,8 @@ export async function insertNotificationWithMissingPublicationRssItem(
 ): Promise<unknown> {
   return write(
     `/* insertNotificationWithMissingPublicationRssItem */ INSERT INTO notifications
-      (user_id, entity_type, title, target_intent, publication_rss_feed_item_id)
-      VALUES ($1, 'referral_click', 'Missing item', 'notifications_inbox', $2)`,
+      (user_id, entity_type, kind, target_intent, publication_rss_feed_item_id)
+      VALUES ($1, 'referral_click', 'referral_click', 'notifications_inbox', $2)`,
     [userId, v7()],
   )
 }

@@ -94,7 +94,7 @@ export async function seedNotificationVisibility(): Promise<void> {
   )
   await q(
     `/* seedNotificationVisibility:notifications */
-    INSERT INTO notifications(user_id,id,entity_type,post_id,rss_feed_item_id,delivery_type,sent_by_id,deleted_at,delete_reason,title,body,target_path)
+    INSERT INTO notifications(user_id,id,entity_type,post_id,rss_feed_item_id,delivery_type,sent_by_id,deleted_at,delete_reason,kind,target_path)
     SELECT $1,('019e0000-fe00-7000-8000-'||lpad(to_hex(n),12,'0'))::uuid,
       CASE WHEN n<$2*3 THEN 'post'::notification_entity_types ELSE 'rss_feed_item' END,
       CASE WHEN n<$2 THEN $3::uuid WHEN n<$2*2 THEN $4::uuid WHEN n<$2*3 THEN $5::uuid END,
@@ -104,7 +104,8 @@ export async function seedNotificationVisibility(): Promise<void> {
       CASE WHEN n<$2 OR (n>=$2*3 AND n<$2*4) THEN NULL ELSE $1::uuid END,
       CASE WHEN n<$2 OR (n>=$2*3 AND n<$2*4) THEN CURRENT_TIMESTAMP ELSE NULL END,
       CASE WHEN n<$2 OR (n>=$2*3 AND n<$2*4) THEN 'system_pruned'::notification_delete_reasons ELSE NULL END,
-      'Visibility seed','Visibility seed',
+      CASE WHEN n<$2*3 THEN (CASE WHEN n<$2 THEN 'post_new' ELSE 'post_manual_send' END)::notification_kinds
+        ELSE (CASE WHEN n<$2*4 THEN 'rss_item_new' ELSE 'rss_item_manual_send' END)::notification_kinds END,
       CASE WHEN n<$2*3 THEN '/posts/seed-notification-visibility' ELSE '/rss-feed-items/seed-notification-visibility' END
     FROM generate_series(0,$2::int*5-1) n`,
     [

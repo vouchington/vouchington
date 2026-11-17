@@ -172,10 +172,9 @@ export async function insertTestSameIdNotificationTombstones(
     await query(
       `/* insertTestSameIdNotificationTombstone */
        INSERT INTO notifications
-         (user_id, id, entity_type, delivery_type, sent_by_id,
-          publication_rss_feed_item_id, title, body, target_path, deleted_at, delete_reason)
-       VALUES ($1, $2, 'rss_feed_item', 'manual_send', $1, $4,
-               'Retention fixture', 'Shared notification ID',
+         (user_id, id, entity_type, kind, delivery_type, sent_by_id,
+          publication_rss_feed_item_id, target_path, deleted_at, delete_reason)
+       VALUES ($1, $2, 'rss_feed_item', 'rss_item_manual_send', 'manual_send', $1, $4,
                'https://example.com/test', $3, 'user_deleted')`,
       [userId, id, at, publicationRssFeedItemId],
     )

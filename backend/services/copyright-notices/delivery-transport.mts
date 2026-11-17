@@ -1,11 +1,5 @@
-import { getCopyrightNoticeJurisdiction } from './notice-jurisdiction.mts'
-import { getCopyrightStatementInAppSummary } from './statement-in-app-summary.mts'
 import { copyrightInAppDecisionWasAiAssisted } from './ai-assistance-disclosure.mts'
-import {
-  COPYRIGHT_AI_ASSISTED_SENTENCE,
-  copyrightEmailSubject,
-  copyrightNotificationCopy,
-} from './statement-of-reasons-wording.mts'
+import { copyrightEmailSubject } from './statement-of-reasons-wording.mts'
 import { decryptSecret } from '@modules/token-secrets'
 import { getVerifiedEmailAddress } from '@services/contribution-gating'
 import { createCopyrightNoticeNotification } from '@services/notifications'
@@ -47,11 +41,6 @@ export async function deliverCopyrightInAppNotification(intentId: string): Promi
       422,
       'Copyright delivery kind is not sent in-app',
     )
-    const [summary, jurisdiction] = await Promise.all([
-      getCopyrightStatementInAppSummary(intent.id),
-      getCopyrightNoticeJurisdiction(intent.copyright_notice_id),
-    ])
-    const copy = copyrightNotificationCopy(intent.delivery_kind, jurisdiction)
     const aiAssisted =
       intent.delivery_kind === 'status_update'
         ? await copyrightInAppDecisionWasAiAssisted(intent.id)
@@ -62,12 +51,11 @@ export async function deliverCopyrightInAppNotification(intentId: string): Promi
       'Informed owner delivery requires a community path',
     )
     await createCopyrightNoticeNotification({
-      statementCopy: {
-        title: copy.title,
-        body: (summary ?? copy.body) + (aiAssisted ? `\n\n${COPYRIGHT_AI_ASSISTED_SENTENCE}` : ''),
-      },
+      kind: `copyright_${intent.delivery_kind}`,
+      aiAssisted,
       userId: intent.recipient_user_id,
       noticeId: intent.copyright_notice_id,
+      intentId: intent.id,
       eventKey: `copyright-delivery:${intent.id}`,
       targetPath: intent.target_path ?? undefined,
     })

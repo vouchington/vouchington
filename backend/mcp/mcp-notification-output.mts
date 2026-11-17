@@ -1,4 +1,8 @@
-import type { Notification, NotificationResult } from '@services/notifications'
+import type {
+  Notification,
+  NotificationHydration,
+  NotificationResult,
+} from '@services/notifications'
 import type { ToolApiEndpoint } from '@services/openai-agents/tool-types'
 import { externalText, iso, sanitizedTitle } from './mcp-read-output.mts'
 import { routeResponseSchema } from './route-response-schema.mts'
@@ -9,15 +13,14 @@ const UNREAD_SUMMARY = {
   path: '/api/v1/my/notifications/unread',
 } as const satisfies ToolApiEndpoint
 
-type NotificationCommunity = { id: string; name: string; slug: string }
-
 type DatedFields = 'read_at' | 'pushed_at' | 'created_at' | 'updated_at'
 
 type JsonSchema = Record<string, unknown>
 
 /**
- * A notification as an MCP client reads it: its timestamps are ISO strings, its text is clean and
- * it has no `target_path`. That field is a frontend route; what a notification is about comes as
+ * A notification as an MCP client reads it: its timestamps are ISO strings and it has no
+ * `target_path`. Its facts are the `kind`, `params` and ids; the user-authored text it points at
+ * (usernames, snippets, moderator responses) arrives in the hydration maps, sanitized. That field is a frontend route; what a notification is about comes as
  * the structured `target_entity`, `target_intent` and the ids of the records it points at.
  */
 type McpNotification = Omit<Notification, DatedFields | 'target_path'> & {
@@ -31,43 +34,24 @@ type McpNotification = Omit<Notification, DatedFields | 'target_path'> & {
 export type McpNotificationBody = {
   results: { __entity_type: 'notification'; id: string; read_at: string | null }[]
   notifications: Record<string, McpNotification>
-  communities: Record<string, NotificationCommunity>
-}
+} & NotificationHydration
 
 type NotificationSource = {
   results: NotificationResult[]
   notifications: Record<string, Notification>
-  communities: Record<string, NotificationCommunity>
-}
+} & NotificationHydration
 
 const isoOrNull = (value: Date | string | null): string | null => (value ? iso(value) : null)
 
-/**
- * The title and the actor label can carry another user's words (a post title, a display name) and
- * the body can quote them, so the title and label are sanitized like titles and the body is
- * sanitized and fenced as external content. An empty body stays an empty string, the REST type.
- */
-async function toMcpNotification(notification: Notification): Promise<McpNotification> {
-  const [title, body, actorLabel] = await Promise.all([
-    sanitizedTitle(notification.title),
-    externalText(notification.body, 'notification', 'notification_body'),
-    notification.actor_label === null ? null : sanitizedTitle(notification.actor_label),
-  ])
+function toMcpNotification(notification: Notification): McpNotification {
   const { target_path: _frontendRoute, ...structured } = notification
   return {
     ...structured,
-    title,
-    body: body ?? '',
-    actor_label: actorLabel,
     read_at: isoOrNull(notification.read_at),
     pushed_at: isoOrNull(notification.pushed_at),
     created_at: iso(notification.created_at),
     updated_at: iso(notification.updated_at),
   }
-}
-
-async function toMcpCommunity(community: NotificationCommunity): Promise<NotificationCommunity> {
-  return { ...community, name: await sanitizedTitle(community.name) }
 }
 
 async function mapRecord<TIn, TOut>(
@@ -80,13 +64,33 @@ async function mapRecord<TIn, TOut>(
   return Object.fromEntries(entries)
 }
 
-/** The notification references, notifications and communities of a REST body, with clean text. */
+/** The notification references, notifications and hydration maps of a REST body, with clean text. */
 export async function toMcpNotificationBody(
   source: NotificationSource,
 ): Promise<McpNotificationBody> {
-  const [notifications, communities] = await Promise.all([
-    mapRecord(source.notifications, toMcpNotification),
-    mapRecord(source.communities, toMcpCommunity),
+  const [communities, actors, posts, rssFeedItems, publicTexts] = await Promise.all([
+    mapRecord(source.communities, async community => ({
+      ...community,
+      name: await sanitizedTitle(community.name),
+    })),
+    mapRecord(source.actors, async actor => ({
+      ...actor,
+      username: await sanitizedTitle(actor.username),
+    })),
+    mapRecord(source.posts, async post => ({
+      ...post,
+      snippet:
+        (await externalText(post.snippet, 'notification', 'notification_post_snippet')) ?? '',
+    })),
+    mapRecord(source.rss_feed_items, async item => ({
+      ...item,
+      feed_name: await sanitizedTitle(item.feed_name),
+      snippet: (await externalText(item.snippet, 'notification', 'notification_rss_snippet')) ?? '',
+    })),
+    mapRecord(
+      source.public_texts,
+      async text => (await externalText(text, 'notification', 'notification_public_text')) ?? '',
+    ),
   ])
   return {
     results: source.results.map(result => ({
@@ -94,8 +98,15 @@ export async function toMcpNotificationBody(
       id: result.id,
       read_at: isoOrNull(result.read_at),
     })),
-    notifications,
+    notifications: Object.fromEntries(
+      Object.entries(source.notifications).map(([id, value]) => [id, toMcpNotification(value)]),
+    ),
     communities,
+    actors,
+    posts,
+    rss_feed_items: rssFeedItems,
+    copyright_notices: source.copyright_notices,
+    public_texts: publicTexts,
   }
 }
 
@@ -124,6 +135,11 @@ export function notificationOutputProperties() {
     results: routePropertySchema(summary, 'results'),
     notifications: withoutTargetPath(routePropertySchema(summary, 'notifications')),
     communities: routePropertySchema(summary, 'communities'),
+    actors: routePropertySchema(summary, 'actors'),
+    posts: routePropertySchema(summary, 'posts'),
+    rss_feed_items: routePropertySchema(summary, 'rss_feed_items'),
+    copyright_notices: routePropertySchema(summary, 'copyright_notices'),
+    public_texts: routePropertySchema(summary, 'public_texts'),
   }
 }
 

@@ -16,11 +16,7 @@ describe('createReviewDisputeResolvedNotification', () => {
   it('creates one notification linked to the review dispute', async () => {
     const { claimant, disputeId } = await createReviewDisputeFixture()
 
-    await createReviewDisputeResolvedNotification(
-      claimant.id,
-      disputeId,
-      'The disputed review has been resolved.',
-    )
+    await createReviewDisputeResolvedNotification(claimant.id, disputeId)
 
     const notifications = await listNotifications(claimant.id)
     const notification = Object.values(notifications.notifications).find(
@@ -30,8 +26,7 @@ describe('createReviewDisputeResolvedNotification', () => {
       expect.objectContaining({
         entity_type: 'review_dispute',
         review_dispute_id: disputeId,
-        title: 'Your review dispute has been resolved',
-        body: 'The disputed review has been resolved.',
+        kind: 'review_dispute_resolved',
         target_path: '/my/disputes',
       }),
     )

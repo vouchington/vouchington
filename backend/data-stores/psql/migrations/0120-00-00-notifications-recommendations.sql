@@ -3,6 +3,7 @@
 -- edited-in-place: added user_warning entity type and user_warning_id column
 -- edited-in-place: added direct_message and modmail notification entity types and conversation_id FK
 -- edited-in-place: removed drops of event_key constraints no migration creates
+-- edited-in-place: notifications store kind, params and relation ids; title, body and actor_label are removed
 -- edited-in-place: added moderation_appeal_id and community_ban_id columns (FK wired in 0450-00-00)
 -- edited-in-place: added critical_moderation_alert entity type
 -- edited-in-place: community navigation is community_id; target_entity is derived, not stored
@@ -16,6 +17,10 @@ DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'notification_entity_types') THEN
     CREATE TYPE notification_entity_types AS ENUM ('post', 'rss_feed_item', 'follow', 'referral_signup', 'referral_click', 'moderation_report', 'review_dispute', 'user_warning', 'moderation_appeal', 'community_ban', 'direct_message', 'modmail', 'critical_moderation_alert', 'community_application_decision', 'community_role_change', 'community_ownership_transfer', 'community_activity_digest', 'household_invitation', 'copyright_notice');
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'notification_kinds') THEN
+    CREATE TYPE notification_kinds AS ENUM ('post_new', 'post_reply', 'post_manual_send', 'post_removed', 'rss_item_new', 'rss_item_manual_send', 'follow', 'follow_referral_signup', 'referral_signup', 'referral_click', 'report_reviewed', 'critical_moderation_alert', 'review_dispute_resolved', 'review_actioned_removed', 'review_actioned_note', 'user_warning', 'moderation_appeal_resolved', 'community_ban', 'direct_message', 'modmail', 'community_application_approved', 'community_application_rejected', 'community_role_changed', 'community_ownership_received', 'community_ownership_transferred_away', 'community_activity_digest', 'household_invitation', 'copyright_claimant_receipt', 'copyright_status_update', 'copyright_poster_restriction_notice', 'copyright_poster_review_notice', 'copyright_poster_restoration_notice', 'copyright_owner_information_notice', 'copyright_claimant_decision_notice', 'copyright_redress_decision_notice');
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'notification_delivery_types') THEN
@@ -39,6 +44,11 @@ CREATE TABLE IF NOT EXISTS notifications (
   PRIMARY KEY (user_id, id),
 
   entity_type notification_entity_types NOT NULL,
+  kind notification_kinds NOT NULL,
+  params jsonb NOT NULL DEFAULT '{}'::jsonb,
+  top_post_id UUID REFERENCES posts(id) ON DELETE SET NULL,
+  community_application_id UUID,
+  copyright_notice_delivery_work_item_id UUID,
   post_id UUID REFERENCES posts(id) ON DELETE SET NULL,
   rss_feed_item_id UUID REFERENCES rss_feed_items(id) ON DELETE SET NULL,
   publication_post_id UUID,
@@ -228,9 +238,86 @@ CREATE TABLE IF NOT EXISTS notifications (
       OR (delivery_type = 'manual_send' AND sent_by_id IS NOT NULL)
     ),
 
-  title TEXT NOT NULL DEFAULT '' CHECK (length(title) <= 300),
-  body TEXT NOT NULL DEFAULT '' CHECK (length(body) <= 1000),
-  actor_label TEXT CHECK (actor_label IS NULL OR length(actor_label) <= 100),
+  CONSTRAINT chk_notifications__kind_entity_type CHECK (
+    (entity_type = 'post' AND kind IN ('post_new', 'post_reply', 'post_manual_send', 'post_removed'))
+    OR (entity_type = 'rss_feed_item' AND kind IN ('rss_item_new', 'rss_item_manual_send'))
+    OR (entity_type = 'follow' AND kind IN ('follow', 'follow_referral_signup'))
+    OR (entity_type = 'referral_signup' AND kind = 'referral_signup')
+    OR (entity_type = 'referral_click' AND kind = 'referral_click')
+    OR (entity_type = 'moderation_report' AND kind = 'report_reviewed')
+    OR (entity_type = 'critical_moderation_alert' AND kind = 'critical_moderation_alert')
+    OR (entity_type = 'review_dispute'
+      AND kind IN ('review_dispute_resolved', 'review_actioned_removed', 'review_actioned_note'))
+    OR (entity_type = 'user_warning' AND kind = 'user_warning')
+    OR (entity_type = 'moderation_appeal' AND kind = 'moderation_appeal_resolved')
+    OR (entity_type = 'community_ban' AND kind = 'community_ban')
+    OR (entity_type = 'direct_message' AND kind = 'direct_message')
+    OR (entity_type = 'modmail' AND kind = 'modmail')
+    OR (entity_type = 'community_application_decision'
+      AND kind IN ('community_application_approved', 'community_application_rejected'))
+    OR (entity_type = 'community_role_change' AND kind = 'community_role_changed')
+    OR (entity_type = 'community_ownership_transfer'
+      AND kind IN ('community_ownership_received', 'community_ownership_transferred_away'))
+    OR (entity_type = 'community_activity_digest' AND kind = 'community_activity_digest')
+    OR (entity_type = 'household_invitation' AND kind = 'household_invitation')
+    OR (entity_type = 'copyright_notice' AND kind IN (
+      'copyright_claimant_receipt', 'copyright_status_update', 'copyright_poster_restriction_notice',
+      'copyright_poster_review_notice', 'copyright_poster_restoration_notice',
+      'copyright_owner_information_notice', 'copyright_claimant_decision_notice',
+      'copyright_redress_decision_notice'))
+  ),
+  CONSTRAINT chk_notifications__params_shape CHECK (
+    jsonb_typeof(params) = 'object'
+    AND octet_length(params::text) <= 2048
+    AND CASE kind
+      WHEN 'referral_signup' THEN params ?& ARRAY['referral_count']
+        AND params - 'referral_count' = '{}'::jsonb
+        AND jsonb_typeof(params -> 'referral_count') = 'number'
+      WHEN 'community_role_changed' THEN params ?& ARRAY['from_role', 'to_role']
+        AND params - 'from_role' - 'to_role' = '{}'::jsonb
+        AND params ->> 'from_role' IN ('owner', 'moderator', 'member')
+        AND params ->> 'to_role' IN ('owner', 'moderator', 'member')
+        AND jsonb_typeof(params -> 'from_role') = 'string'
+        AND jsonb_typeof(params -> 'to_role') = 'string'
+      WHEN 'community_activity_digest' THEN params ?& ARRAY[
+          'community_count', 'joins', 'departures', 'discussions', 'reviews', 'data_points',
+          'comments', 'active_posters', 'total_members', 'moderation_workload']
+        AND params - 'community_count' - 'joins' - 'departures' - 'discussions' - 'reviews'
+          - 'data_points' - 'comments' - 'active_posters' - 'total_members'
+          - 'moderation_workload' - 'top_discussion_replies' = '{}'::jsonb
+        AND jsonb_typeof(params -> 'community_count') = 'number'
+        AND jsonb_typeof(params -> 'joins') = 'number'
+        AND jsonb_typeof(params -> 'departures') = 'number'
+        AND jsonb_typeof(params -> 'discussions') = 'number'
+        AND jsonb_typeof(params -> 'reviews') = 'number'
+        AND jsonb_typeof(params -> 'data_points') = 'number'
+        AND jsonb_typeof(params -> 'comments') = 'number'
+        AND jsonb_typeof(params -> 'active_posters') = 'number'
+        AND jsonb_typeof(params -> 'total_members') = 'number'
+        AND jsonb_typeof(params -> 'moderation_workload') = 'number'
+        AND (NOT params ? 'top_discussion_replies'
+          OR jsonb_typeof(params -> 'top_discussion_replies') = 'number')
+      WHEN 'copyright_status_update' THEN params - 'ai_assisted' = '{}'::jsonb
+        AND (NOT params ? 'ai_assisted' OR params -> 'ai_assisted' = 'true'::jsonb)
+      ELSE params = '{}'::jsonb
+    END
+  ),
+  CONSTRAINT chk_notifications__top_post_digest_only CHECK (
+    top_post_id IS NULL OR kind = 'community_activity_digest'
+  ),
+  CONSTRAINT chk_notifications__application_decision_shape CHECK (
+    (entity_type = 'community_application_decision') = (community_application_id IS NOT NULL)
+  ),
+  CONSTRAINT chk_notifications__copyright_delivery_shape CHECK (
+    (kind IN (
+      'copyright_claimant_receipt', 'copyright_status_update', 'copyright_poster_restriction_notice',
+      'copyright_poster_review_notice', 'copyright_poster_restoration_notice',
+      'copyright_owner_information_notice', 'copyright_claimant_decision_notice',
+      'copyright_redress_decision_notice')) = (copyright_notice_delivery_work_item_id IS NOT NULL)
+  ),
+  CONSTRAINT chk_notifications__manual_send_kind CHECK (
+    (kind IN ('post_manual_send', 'rss_item_manual_send')) = (delivery_type = 'manual_send')
+  ),
   target_path TEXT CHECK (target_path IS NULL OR length(target_path) > 0),
   target_intent notification_target_intents,
   CONSTRAINT chk_notifications__target
@@ -408,6 +495,10 @@ WHERE entity_type = 'follow'
   AND delivery_type = 'subscription';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_notifications__top_post_id
+ON notifications (top_post_id)
+WHERE top_post_id IS NOT NULL;
+
 CREATE INDEX IF NOT EXISTS idx_notifications__user_id__id_desc
 ON notifications (user_id, id DESC)
 WHERE deleted_at IS NULL;
@@ -471,9 +562,11 @@ COMMENT ON COLUMN notifications.rss_feed_item_id IS 'The RSS feed item this noti
 COMMENT ON COLUMN notifications.actor_user_id IS 'The user who performed the action triggering this notification. For follow: the follower. For referral_signup: the newly signed-up user (not the referrer). Required for follow and referral_signup types.';
 COMMENT ON COLUMN notifications.delivery_type IS 'How the notification was triggered: subscription (automatic) or manual_send.';
 COMMENT ON COLUMN notifications.sent_by_id IS 'The user who manually sent this notification; set when delivery_type is manual_send.';
-COMMENT ON COLUMN notifications.title IS 'Notification title text.';
-COMMENT ON COLUMN notifications.body IS 'Notification body text.';
-COMMENT ON COLUMN notifications.actor_label IS 'Optional display label for the actor who triggered the notification.';
+COMMENT ON COLUMN notifications.kind IS 'Precise notification code the clients and push renderer map to catalog copy; display text is never stored.';
+COMMENT ON COLUMN notifications.params IS 'Small non-entity facts for the kind (role slugs, counts, flags), validated per kind; every relation id has its own foreign key column.';
+COMMENT ON COLUMN notifications.top_post_id IS 'Most-replied discussion in a community activity digest; its title is hydrated when read.';
+COMMENT ON COLUMN notifications.community_application_id IS 'Application whose decision this notification reports; its applicant-visible reason is hydrated when read.';
+COMMENT ON COLUMN notifications.copyright_notice_delivery_work_item_id IS 'Legal delivery obligation this member notification projects; its stored summary is hydrated and decrypted when read.';
 COMMENT ON COLUMN notifications.target_path IS 'URL path the notification links to. Producers that navigate by path still write this column.';
 COMMENT ON COLUMN notifications.target_intent IS 'Structured application navigation intent. Community and household entity targets are derived from relational IDs instead of a stored document.';
 COMMENT ON COLUMN notifications.household_id IS 'Household associated with an invitation notification; deletion cascades its notifications.';

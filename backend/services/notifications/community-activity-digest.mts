@@ -3,7 +3,6 @@ import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getMinUuidv7ForDate } from '@modules/utils'
 import { listCommunityActivityDigestRecipientPage } from './community-activity-digest-recipients.mts'
-import { buildCommunityActivityDigestBody } from './community-activity-digest-body.mts'
 import { aggregateCommunityActivityDigestBatch } from './community-activity-digest-aggregation.mts'
 import { ensureNotificationPushIntents } from './ensure-push-intents.mts'
 
@@ -40,20 +39,21 @@ export async function createCommunityActivityDigestBatch(input: {
     windowEndId: getMinUuidv7ForDate(input.windowEnd),
   })
   const eventKey = `community-activity-digest:${input.windowStart.toISOString()}`
-  const inserts = digestRows.map(row => ({
-    userId: row.user_id,
-    body: buildCommunityActivityDigestBody(row),
+  const inserts = digestRows.map(({ user_id: userId, top_post_id: topPostId, ...params }) => ({
+    userId,
+    topPostId,
+    params: topPostId ? params : { ...params, top_discussion_replies: undefined },
     eventKey,
   }))
   const { rows } = await write<{ user_id: string; id: string }>(sql`
     /* insertCommunityActivityDigestBatch */
     WITH input AS (
       SELECT * FROM jsonb_to_recordset(${JSON.stringify(inserts)}::jsonb)
-        AS x("userId" uuid, body text, "eventKey" text)
+        AS x("userId" uuid, "topPostId" uuid, params jsonb, "eventKey" text)
     ), inserted AS (
-      INSERT INTO notifications (user_id, entity_type, event_key, title, body, target_intent)
-      SELECT "userId", 'community_activity_digest', "eventKey",
-        'Your weekly community activity', body, 'notifications_inbox'
+      INSERT INTO notifications (user_id, entity_type, kind, event_key, top_post_id, params, target_intent)
+      SELECT "userId", 'community_activity_digest', 'community_activity_digest', "eventKey",
+        "topPostId", params, 'notifications_inbox'
       FROM input ORDER BY "userId", "eventKey"
       ON CONFLICT (user_id, event_key) WHERE event_key IS NOT NULL DO NOTHING RETURNING user_id, id
     )

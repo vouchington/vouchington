@@ -1,12 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import {
-  assertDistributablePost,
-  getPostRouteSlug,
-  getPostSendTitle,
-  truncateText,
-  type DistributionPost,
-} from './shared.mts'
+import { assertDistributablePost, getPostRouteSlug, type DistributionPost } from './shared.mts'
 import type { DistributionRow, ProcessTargetRowsResult } from './process-types.mts'
 import {
   ensureDeliveryRows,
@@ -81,8 +75,6 @@ export async function insertPostManualSendNotifications(
   }
 
   const routePath = `/${getPostRouteSlug(post.post_type)}/${post.slug ?? post.id}`
-  const title = getPostSendTitle(distribution.sender_username, post.post_type)
-  const body = truncateText(post.title || post.markdown, 180)
 
   await ensureDeliveryRows(distribution.id, recipientIds, query)
   await query(sql`/* insertPostManualSendNotifications */
@@ -90,24 +82,20 @@ export async function insertPostManualSendNotifications(
       user_id,
       id,
       entity_type,
+      kind,
       delivery_type,
       sent_by_id,
       post_id,
-      title,
-      body,
-      actor_label,
       target_path
     )
     SELECT
       deliveries.recipient_user_id,
       deliveries.delivery_id,
       'post',
+      'post_manual_send',
       'manual_send',
       ${distribution.sender_user_id},
       ${post.id},
-      ${title},
-      ${body},
-      ${distribution.sender_username},
       ${routePath}
     FROM follower_distribution_deliveries deliveries
     WHERE deliveries.distribution_id = ${distribution.id}

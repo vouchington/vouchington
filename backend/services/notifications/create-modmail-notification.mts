@@ -13,14 +13,13 @@ export async function createModmailNotifications(
       user_id,
       entity_type,
       conversation_id,
+      kind,
       delivery_type,
-      title,
-      body,
       target_path
     )
     SELECT DISTINCT recipient.user_id, 'modmail'::notification_entity_types,
-      ${conversationId}::uuid, 'subscription'::notification_delivery_types,
-      'New modmail message', '', ${targetPath}
+      ${conversationId}::uuid, 'modmail'::notification_kinds,
+      'subscription'::notification_delivery_types, ${targetPath}
     FROM unnest(${userIds}::uuid[]) AS recipient(user_id)
     ORDER BY recipient.user_id ASC NULLS LAST
     ON CONFLICT (user_id, conversation_id, entity_type)

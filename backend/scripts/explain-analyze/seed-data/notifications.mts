@@ -13,21 +13,14 @@ export async function seedNotifications(count = 500): Promise<void> {
         const idx = i + j
         const userId = seedUuid(0, '01')
         const postId = seedUuid(idx % 100_000, '05')
-        values.push(
-          userId,
-          'post',
-          postId,
-          `Seed notification ${idx}`,
-          `Body for notification ${idx}`,
-          `/posts/seed-${idx}`,
-        )
-        const base = values.length - 5
+        values.push(userId, 'post', postId, `/posts/seed-${idx}`)
+        const base = values.length - 3
         rows.push(
-          `($${base}, $${base + 1}::notification_entity_types, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5})`,
+          `($${base}, $${base + 1}::notification_entity_types, 'post_new', $${base + 2}, $${base + 3})`,
         )
       }
       await transaction(
-        `/* seedExplainData */ INSERT INTO notifications (user_id, entity_type, post_id, title, body, target_path) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
+        `/* seedExplainData */ INSERT INTO notifications (user_id, entity_type, kind, post_id, target_path) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
         values,
       )
     }

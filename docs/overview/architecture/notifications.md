@@ -25,6 +25,16 @@ flowchart TD
 
 ## Why it is shaped this way
 
+- **Rows store facts, readers render text.** A notification keeps its kind, a small validated
+  params object and relation ids; it never stores display text. Each reader (web, REST, MCP and
+  push) renders from the localization catalog by kind in the viewer's locale, so a locale change
+  or a copy fix reaches existing rows. Live facts such as an actor username, a post snippet or a
+  community name are hydrated by id when a page is read; a post or item that has since gone away
+  or become ineligible drops its text and the row falls back to a generic title. Moderator-authored
+  text (dispute and appeal outcomes, warnings, application reasons, copyright summaries) stays
+  with its owning row and is read through that relation. REST and MCP return the kind, params and
+  hydration maps, and clients render by kind; push delivery renders in the recipient's
+  stored locale from the same catalog keys.
 - **Reconciliation, not event handlers.** Notifications are derived by idempotent reconcile jobs
   that run repeatedly, because topic and tag classification completes asynchronously. Flagged or
   deleted content does not notify, read notifications are kept even if the entity later stops

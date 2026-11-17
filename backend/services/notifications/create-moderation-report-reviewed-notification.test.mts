@@ -1,3 +1,4 @@
+import { renderListedNotification } from '../../test-helpers/services/notifications/render-listed-notification.mts'
 import {
   createTestUserDirect,
   insertTestModerationReport,
@@ -26,16 +27,16 @@ describe('createModerationReportReviewedNotification', () => {
         post_id: null,
         rss_feed_item_id: null,
         actor_user_id: null,
-        actor_label: null,
-        title: 'Your report was reviewed',
-        body: 'Thanks for helping keep Voucha safe.',
+        kind: 'report_reviewed',
         target_path: null,
         target_entity: null,
         target_intent: 'notifications_inbox',
       }),
     )
-    expect(notification?.title).not.toContain('Notification report target')
-    expect(notification?.body).not.toMatch(/appeal|moderator|reporter/i)
+    const text = renderListedNotification(notifications, notification!.id)
+    expect(text.title).toBe('Your report was reviewed')
+    expect(text.body).toBe('Thanks for helping keep Voucha safe.')
+    expect(text.body).not.toMatch(/appeal|moderator|reporter/i)
   })
 
   it('deduplicates repeated calls for the same report', async () => {

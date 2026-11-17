@@ -17,10 +17,9 @@ describe('createCommunityLifecycleNotifications', () => {
         {
           userId: user.id,
           communityId: community.id,
-          entityType: 'community_role_change',
+          kind: 'community_role_changed',
           eventKey,
-          title: 'Your role changed',
-          body: 'Your community role changed from member to moderator.',
+          params: { from_role: 'member', to_role: 'moderator' },
         },
       ],
       {},
@@ -31,6 +30,8 @@ describe('createCommunityLifecycleNotifications', () => {
     const notification = response.notifications[created!.notificationId]
     expect(notification).toMatchObject({
       entity_type: 'community_role_change',
+      kind: 'community_role_changed',
+      params: { from_role: 'member', to_role: 'moderator' },
       community_id: community.id,
       event_key: eventKey,
       target_entity: { __entity_type: 'community', id: community.id },
@@ -48,10 +49,9 @@ describe('createCommunityLifecycleNotifications', () => {
           {
             userId: user.id,
             communityId: community.id,
-            entityType: 'community_role_change',
+            kind: 'community_role_changed',
             eventKey,
-            title: 'Duplicate',
-            body: 'Duplicate',
+            params: { from_role: 'member', to_role: 'owner' },
           },
         ],
         {},
@@ -65,10 +65,8 @@ describe('createCommunityLifecycleNotifications', () => {
     const input = (userId: string, eventKey: string) => ({
       userId,
       communityId: community.id,
-      entityType: 'community_ownership_transfer' as const,
+      kind: 'community_ownership_received' as const,
       eventKey,
-      title: 'Ownership changed',
-      body: 'Ownership changed.',
     })
     const firstKey = `lifecycle-batch:${community.id}:first`
     await createCommunityLifecycleNotifications([input(first!.id, firstKey)], {})

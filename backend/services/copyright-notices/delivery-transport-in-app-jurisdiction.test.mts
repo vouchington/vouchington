@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { listNotifications } from '@services/notifications'
+import { renderListedNotification } from '../../test-helpers/services/notifications/render-listed-notification.mts'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import {
   approveJurisdictionPolicy,
@@ -28,12 +29,12 @@ async function deliverDecisionNotice(jurisdiction: 'eu_dsa' | 'uk'): Promise<str
     idempotencyKey: `copyright-in-app-jurisdiction:${crypto.randomUUID()}`,
   })
   await expect(deliverCopyrightInAppNotification(intent.id)).resolves.toBe(true)
-  const { notifications } = await listNotifications(claimant.id)
-  const notification = Object.values(notifications).find(
+  const page = await listNotifications(claimant.id)
+  const notification = Object.values(page.notifications).find(
     item => item.copyright_notice_id === noticeId,
   )
   if (!notification) throw new Error('Expected the in-app decision notice')
-  return notification.body
+  return renderListedNotification(page, notification.id).body
 }
 
 describe('copyright in-app decision notice by jurisdiction', () => {

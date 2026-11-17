@@ -350,6 +350,16 @@ COMMENT ON COLUMN community_applications.reviewed_by_id IS 'Moderator who review
 COMMENT ON COLUMN community_applications.approved_at IS 'When the application was approved. Mutually exclusive with rejected_at.';
 COMMENT ON COLUMN community_applications.rejected_at IS 'When the application was rejected. Mutually exclusive with approved_at.';
 COMMENT ON COLUMN community_applications.rejection_reason IS 'Optional reason provided to the applicant on rejection.';
+
+ALTER TABLE notifications
+  ADD CONSTRAINT fk_notifications__community_application_id
+  FOREIGN KEY (community_application_id) REFERENCES community_applications(id) ON DELETE CASCADE
+  NOT VALID;
+ALTER TABLE notifications
+  VALIDATE CONSTRAINT fk_notifications__community_application_id;
+CREATE INDEX IF NOT EXISTS idx_notifications__community_application_id
+  ON notifications (community_application_id)
+  WHERE community_application_id IS NOT NULL;
 COMMENT ON COLUMN community_applications.message IS 'Optional freeform message from the applicant when submitting an application.';
 
 -- community_application_answers

@@ -9,11 +9,11 @@ export async function createTestManualPostNotification(input: {
 }): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* createTestManualPostNotification */
     INSERT INTO notifications (
-      id, user_id, entity_type, delivery_type, sent_by_id, post_id, title, body, target_path
+      id, user_id, entity_type, kind, delivery_type, sent_by_id, post_id, target_path
     )
     VALUES (
-      COALESCE(${input.id ?? null}::uuid, uuidv7()), ${input.userId}, 'post', 'manual_send', ${input.sentByUserId}, ${input.postId},
-      'Someone sent you a post', 'Test content notification', ${`/discussion/${input.postId}`}
+      COALESCE(${input.id ?? null}::uuid, uuidv7()), ${input.userId}, 'post', 'post_manual_send', 'manual_send', ${input.sentByUserId}, ${input.postId},
+      ${`/discussion/${input.postId}`}
     )
     RETURNING id
   `)
@@ -26,11 +26,11 @@ export async function createTestManualRssFeedItemNotification(input: {
 }): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* createTestManualRssFeedItemNotification */
     INSERT INTO notifications (
-      user_id, entity_type, delivery_type, sent_by_id, rss_feed_item_id, title, body, target_path
+      user_id, entity_type, kind, delivery_type, sent_by_id, rss_feed_item_id, target_path
     )
     VALUES (
-      ${input.userId}, 'rss_feed_item', 'manual_send', ${input.sentByUserId}, ${input.rssFeedItemId},
-      'Someone sent you an article', 'Test content notification', 'https://example.com/test'
+      ${input.userId}, 'rss_feed_item', 'rss_item_manual_send', 'manual_send', ${input.sentByUserId}, ${input.rssFeedItemId},
+      'https://example.com/test'
     )
     RETURNING id
   `)

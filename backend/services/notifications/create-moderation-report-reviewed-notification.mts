@@ -23,18 +23,16 @@ export async function createModerationReportReviewedNotifications(
         user_id,
         entity_type,
         moderation_report_id,
+        kind,
         delivery_type,
-        title,
-        body,
         target_intent
       )
       SELECT
         reporter_user_id,
         'moderation_report',
         id,
+        'report_reviewed',
         'subscription',
-        'Your report was reviewed',
-        'Thanks for helping keep Voucha safe.',
         'notifications_inbox'
       FROM moderation_reports
       WHERE id = ANY(${reportIds}::uuid[])

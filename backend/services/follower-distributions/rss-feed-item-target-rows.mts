@@ -1,8 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import { firstVisibleRssTextField } from '@modules/utils'
 import type { DistributionRow, ProcessTargetRowsResult } from './process-types.mts'
-import { truncateText } from './shared.mts'
 import {
   ensureDeliveryRows,
   getUnpushedNotificationsForDeliveries,
@@ -58,33 +56,17 @@ export async function insertRssFeedItemManualSendNotifications(
   const { rows } = await query(sql`/* insertRssFeedItemManualSendNotifications:getItem */
     SELECT
       rss_feed_items.id,
-      rss_feed_items.data,
       urls.url
 	    FROM rss_feed_items
 	    JOIN urls ON urls.id = rss_feed_items.url_id
 	    WHERE rss_feed_items.id = ${distribution.rss_feed_item_id}
 	      AND rss_feed_items.deleted_at IS NULL
 	  `)
-  const item = rows[0] as
-    | { id: string; data: Record<string, string | undefined> | null; url: string }
-    | undefined
+  const item = rows[0] as { id: string; url: string } | undefined
   if (!item) {
     await markDistributionFailed(distribution.id, 'RSS feed item not found', query)
     return { failed: true, notificationsToDeliver: [] }
   }
-
-  const title = `${distribution.sender_username ? `@${distribution.sender_username}` : 'Someone'} sent you an article`
-  const data = item.data ?? {}
-  const body = truncateText(
-    firstVisibleRssTextField([
-      data.title,
-      data.contentSnippet,
-      data.description,
-      data.summary,
-      data['media:description'],
-    ]),
-    180,
-  )
 
   await ensureDeliveryRows(distribution.id, recipientIds, query)
   await query(sql`/* insertRssFeedItemManualSendNotifications */
@@ -92,24 +74,20 @@ export async function insertRssFeedItemManualSendNotifications(
       user_id,
       id,
       entity_type,
+      kind,
       delivery_type,
       sent_by_id,
       rss_feed_item_id,
-      title,
-      body,
-      actor_label,
       target_path
     )
     SELECT
       deliveries.recipient_user_id,
       deliveries.delivery_id,
       'rss_feed_item',
+      'rss_item_manual_send',
       'manual_send',
       ${distribution.sender_user_id},
       ${item.id},
-      ${title},
-      ${body},
-      ${distribution.sender_username},
       ${item.url}
     FROM follower_distribution_deliveries deliveries
     WHERE deliveries.distribution_id = ${distribution.id}

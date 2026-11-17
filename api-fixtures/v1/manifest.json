@@ -39201,20 +39201,6 @@
                   "value": "notification"
                 }
               },
-              "actor_label": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
               "actor_user_id": {
                 "required": true,
                 "schema": {
@@ -39229,10 +39215,18 @@
                   ]
                 }
               },
-              "body": {
+              "community_application_id": {
                 "required": true,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "community_id": {
@@ -39250,6 +39244,20 @@
                 }
               },
               "conversation_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "copyright_notice_delivery_work_item_id": {
                 "required": true,
                 "schema": {
                   "type": "union",
@@ -39298,6 +39306,10 @@
                     },
                     {
                       "type": "literal",
+                      "value": "community_ban"
+                    },
+                    {
+                      "type": "literal",
                       "value": "community_ownership_transfer"
                     },
                     {
@@ -39323,6 +39335,10 @@
                     {
                       "type": "literal",
                       "value": "household_invitation"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "moderation_appeal"
                     },
                     {
                       "type": "literal",
@@ -39393,6 +39409,168 @@
                   "type": "string"
                 }
               },
+              "kind": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "community_activity_digest"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "community_application_approved"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "community_application_rejected"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "community_ban"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "community_ownership_received"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "community_ownership_transferred_away"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "community_role_changed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "copyright_claimant_decision_notice"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "copyright_claimant_receipt"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "copyright_owner_information_notice"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "copyright_poster_restoration_notice"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "copyright_poster_restriction_notice"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "copyright_poster_review_notice"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "copyright_redress_decision_notice"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "copyright_status_update"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "critical_moderation_alert"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "direct_message"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "follow"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "follow_referral_signup"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "household_invitation"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "moderation_appeal_resolved"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "modmail"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "post_manual_send"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "post_new"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "post_removed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "post_reply"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "referral_click"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "referral_signup"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "report_reviewed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "review_actioned_note"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "review_actioned_removed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "review_dispute_resolved"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "rss_item_manual_send"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "rss_item_new"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "user_warning"
+                    }
+                  ]
+                }
+              },
+              "moderation_appeal_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
               "moderation_report_id": {
                 "required": true,
                 "schema": {
@@ -39405,6 +39583,13 @@
                       "type": "string"
                     }
                   ]
+                }
+              },
+              "params": {
+                "required": true,
+                "schema": {
+                  "name": "Record<string,string|number|boolean>",
+                  "type": "ref"
                 }
               },
               "post_id": {
@@ -39464,6 +39649,20 @@
                 }
               },
               "rss_feed_item_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "sent_by_id": {
                 "required": true,
                 "schema": {
                   "type": "union",
@@ -39555,10 +39754,18 @@
                   ]
                 }
               },
-              "title": {
+              "top_post_id": {
                 "required": true,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "updated_at": {
@@ -39590,6 +39797,24 @@
             },
             "type": "object"
           },
+          "NotificationActor": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "username": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          },
           "NotificationCommunity": {
             "additionalProperties": false,
             "properties": {
@@ -39606,6 +39831,100 @@
                 }
               },
               "slug": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "NotificationCopyrightNotice": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "jurisdiction": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "NotificationPost": {
+            "additionalProperties": false,
+            "properties": {
+              "actor_user_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "community_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "post_type": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "snippet": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "NotificationRssFeedItem": {
+            "additionalProperties": false,
+            "properties": {
+              "feed_name": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "snippet": {
                 "required": true,
                 "schema": {
                   "type": "string"
@@ -39641,10 +39960,67 @@
             "properties": {},
             "type": "object"
           },
+          "Record<string,NotificationActor>": {
+            "additionalProperties": {
+              "name": "NotificationActor",
+              "type": "ref"
+            },
+            "properties": {},
+            "type": "object"
+          },
           "Record<string,NotificationCommunity>": {
             "additionalProperties": {
               "name": "NotificationCommunity",
               "type": "ref"
+            },
+            "properties": {},
+            "type": "object"
+          },
+          "Record<string,NotificationCopyrightNotice>": {
+            "additionalProperties": {
+              "name": "NotificationCopyrightNotice",
+              "type": "ref"
+            },
+            "properties": {},
+            "type": "object"
+          },
+          "Record<string,NotificationPost>": {
+            "additionalProperties": {
+              "name": "NotificationPost",
+              "type": "ref"
+            },
+            "properties": {},
+            "type": "object"
+          },
+          "Record<string,NotificationRssFeedItem>": {
+            "additionalProperties": {
+              "name": "NotificationRssFeedItem",
+              "type": "ref"
+            },
+            "properties": {},
+            "type": "object"
+          },
+          "Record<string,string>": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "properties": {},
+            "type": "object"
+          },
+          "Record<string,string|number|boolean>": {
+            "additionalProperties": {
+              "type": "union",
+              "variants": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
             },
             "properties": {},
             "type": "object"
@@ -39653,10 +40029,24 @@
         "root": {
           "additionalProperties": false,
           "properties": {
+            "actors": {
+              "required": true,
+              "schema": {
+                "name": "Record<string,NotificationActor>",
+                "type": "ref"
+              }
+            },
             "communities": {
               "required": true,
               "schema": {
                 "name": "Record<string,NotificationCommunity>",
+                "type": "ref"
+              }
+            },
+            "copyright_notices": {
+              "required": true,
+              "schema": {
+                "name": "Record<string,NotificationCopyrightNotice>",
                 "type": "ref"
               }
             },
@@ -39710,6 +40100,20 @@
                 "type": "object"
               }
             },
+            "posts": {
+              "required": true,
+              "schema": {
+                "name": "Record<string,NotificationPost>",
+                "type": "ref"
+              }
+            },
+            "public_texts": {
+              "required": true,
+              "schema": {
+                "name": "Record<string,string>",
+                "type": "ref"
+              }
+            },
             "results": {
               "required": true,
               "schema": {
@@ -39743,6 +40147,13 @@
                   ]
                 },
                 "type": "array"
+              }
+            },
+            "rss_feed_items": {
+              "required": true,
+              "schema": {
+                "name": "Record<string,NotificationRssFeedItem>",
+                "type": "ref"
               }
             }
           },
@@ -110016,7 +110427,7 @@
         "limit": "20"
       },
       "responseSchema": {
-        "hash": "2679b80ed6406e7170b80f3bd2ffaee5079bda66c9826982d3e04a1c333d3e73",
+        "hash": "675ed40c74866b20b4b6a2d47f88560f281d29f5fb997b7d2dfe6bedff7f61d1",
         "key": "swift.notifications.default"
       },
       "route": {

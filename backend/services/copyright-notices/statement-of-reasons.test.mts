@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildCopyrightStatementOfReasons } from './statement-of-reasons.mts'
-import {
-  COPYRIGHT_AI_ASSISTED_SENTENCE,
-  copyrightNotificationCopy,
-} from './statement-of-reasons-wording.mts'
+import { COPYRIGHT_AI_ASSISTED_SENTENCE } from './statement-of-reasons-wording.mts'
 
 const input = {
   audience: 'poster' as const,
@@ -154,9 +151,6 @@ describe('copyright statements of reasons', () => {
       expect(statement.text).not.toContain('/copyright/notices/new')
       expect(statement.text).not.toContain('/copyright/designated-agent')
       expect(JSON.stringify(statement.fields)).not.toContain('Sentinel no-action explanation.')
-      expect(
-        copyrightNotificationCopy('claimant_decision_notice', jurisdiction).body,
-      ).not.toContain('/copyright/')
     },
   )
   it('rejects an unknown jurisdiction or legal basis', () => {
@@ -191,9 +185,6 @@ describe('copyright statements of reasons', () => {
       explanation: 'Sentinel ignored US explanation.',
     })
     expect(after).toEqual(before)
-    expect(copyrightNotificationCopy('claimant_decision_notice').body).toContain(
-      '/copyright/designated-agent',
-    )
   })
   it('provides notifier redress without exposing target URLs', () => {
     const statement = buildCopyrightStatementOfReasons({

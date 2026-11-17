@@ -103,3 +103,14 @@ COMMENT ON COLUMN notifications.copyright_notice_id IS 'Private copyright case a
 COMMENT ON TABLE copyright_notice_delivery_recipients IS 'Intent-scoped encrypted email recipients for legal delivery. This avoids reusing or guessing evidence-encryption purposes.';
 COMMENT ON COLUMN copyright_notice_delivery_recipients.copyright_notice_delivery_work_item_id IS 'Email delivery obligation that owns this recipient address.';
 COMMENT ON COLUMN copyright_notice_delivery_recipients.email_ciphertext IS 'Intent-scoped encrypted recipient email address.';
+
+ALTER TABLE notifications
+  ADD CONSTRAINT fk_notifications__copyright_notice_delivery_work_item
+  FOREIGN KEY (copyright_notice_delivery_work_item_id)
+  REFERENCES copyright_notice_delivery_work_items(id) ON DELETE RESTRICT
+  NOT VALID;
+ALTER TABLE notifications
+  VALIDATE CONSTRAINT fk_notifications__copyright_notice_delivery_work_item;
+CREATE INDEX IF NOT EXISTS idx_notifications__copyright_notice_delivery_work_item_id
+  ON notifications (copyright_notice_delivery_work_item_id)
+  WHERE copyright_notice_delivery_work_item_id IS NOT NULL;

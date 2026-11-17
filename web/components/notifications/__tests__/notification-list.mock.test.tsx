@@ -25,8 +25,9 @@ vi.mock(
 const notification: NotificationListNotification = {
   id: 'notification-1',
   entity_type: 'follow',
-  title: '@alice started following you',
-  body: 'Alice followed your profile.',
+  kind: 'follow',
+  params: {},
+  actor_user_id: 'user-alice',
   read_at: null,
   created_at: '2026-05-12T10:00:00.000Z',
   target_path: '/user/alice',
@@ -41,6 +42,7 @@ describe('NotificationList', () => {
         notifications={{
           results: [{ id: notification.id }],
           notifications: { [notification.id]: notification },
+          actors: { 'user-alice': { id: 'user-alice', username: 'alice' } },
         }}
         onOpen={onOpen}
         onDelete={onDelete}

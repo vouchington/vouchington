@@ -56,8 +56,8 @@ export async function insertDeletedConversationFixtureForTest(
   )
   const { rows: notifications } = await query<{ id: string }>(
     `/* insertDeletedConversationNotificationForTest */
-     INSERT INTO notifications (user_id, entity_type, conversation_id, target_path)
-     VALUES ($1, 'direct_message', $2, '/messages') RETURNING id`,
+     INSERT INTO notifications (user_id, entity_type, kind, conversation_id, target_path)
+     VALUES ($1, 'direct_message', 'direct_message', $2, '/messages') RETURNING id`,
     [userId, id],
   )
   const notificationId = notifications[0]!.id
@@ -99,8 +99,8 @@ export async function insertDeletedConversationNotificationForTest(
 ): Promise<string> {
   const { rows } = await query<{ id: string }>(
     `/* insertDeletedConversationNotificationPageFixtureForTest */
-     INSERT INTO notifications (user_id, entity_type, conversation_id, target_path, deleted_at, delete_reason)
-     VALUES ($1, 'direct_message', $2, '/messages', CURRENT_TIMESTAMP, 'system_pruned') RETURNING id`,
+     INSERT INTO notifications (user_id, entity_type, kind, conversation_id, target_path, deleted_at, delete_reason)
+     VALUES ($1, 'direct_message', 'direct_message', $2, '/messages', CURRENT_TIMESTAMP, 'system_pruned') RETURNING id`,
     [conversation.userId, conversation.id],
   )
   const notificationId = rows[0]!.id
@@ -116,8 +116,8 @@ export async function insertDeletedConversationNotificationBacklogForTest(
   const { rows } = await query<{ id: string }>(
     `/* insertDeletedConversationNotificationBacklogForTest */
      INSERT INTO notifications
-       (user_id, entity_type, conversation_id, target_path, deleted_at, delete_reason)
-     SELECT $1::uuid, 'direct_message', $2::uuid, '/messages', CURRENT_TIMESTAMP, 'system_pruned'
+       (user_id, entity_type, kind, conversation_id, target_path, deleted_at, delete_reason)
+     SELECT $1::uuid, 'direct_message', 'direct_message', $2::uuid, '/messages', CURRENT_TIMESTAMP, 'system_pruned'
      FROM generate_series(1, $3::integer)
      RETURNING id`,
     [conversation.userId, conversation.id, count],

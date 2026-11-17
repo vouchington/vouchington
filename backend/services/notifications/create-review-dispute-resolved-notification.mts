@@ -5,26 +5,22 @@ import { enqueueBulkDeliverNotificationPushIntents } from '@queues/notifications
 export async function createReviewDisputeResolvedNotification(
   userId: string,
   disputeId: string,
-  publicResponse: string,
 ): Promise<void> {
-  const body = publicResponse.slice(0, 1000)
   const { rows } = await write(sql`/* createReviewDisputeResolvedNotification */
     INSERT INTO notifications (
       user_id,
       entity_type,
       review_dispute_id,
+      kind,
       delivery_type,
-      title,
-      body,
       target_path
     )
     VALUES (
       ${userId},
       'review_dispute',
       ${disputeId},
+      'review_dispute_resolved',
       'subscription',
-      'Your review dispute has been resolved',
-      ${body},
       '/my/disputes'
     )
     ON CONFLICT DO NOTHING

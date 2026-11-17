@@ -21,7 +21,7 @@ import { withTestDigestClock } from '@voucha/test-helpers/community-activity-dig
 import { getCommunityActivityDigestDispatchData } from '@queues/notifications/enqueues/community-activity-digest'
 import { deleteNotification } from './mutations.mts'
 import { listNotifications } from './list.mts'
-import { buildCommunityActivityDigestBody } from './community-activity-digest-body.mts'
+import { renderListedNotification } from '../../test-helpers/services/notifications/render-listed-notification.mts'
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 
 describe('community activity digest', () => {
@@ -87,9 +87,12 @@ describe('community activity digest', () => {
       )
       const own = result.created.filter(item => item.userId === owner.id)
       expect(own).toHaveLength(1)
-      const notification = (await listNotifications(owner.id)).notifications[own[0]!.notificationId]
-      expect(notification?.body).toContain('1 community: 1 joined')
-      expect(notification?.body).toContain('1 total members')
+      const { body } = renderListedNotification(
+        await listNotifications(owner.id),
+        own[0]!.notificationId,
+      )
+      expect(body).toContain('1 community: 1 joined')
+      expect(body).toContain('1 total members')
     }),
   )
 
@@ -152,29 +155,15 @@ describe('community activity digest', () => {
         now,
       )
       const row = result.created.find(item => item.userId === owner.id)!
-      const notification = (await listNotifications(owner.id)).notifications[row.notificationId]
-      expect(notification?.body).toContain('0 discussions, 1 reviews, 1 data points, 1 comments')
-      expect(notification?.body).toContain('Top discussion (1 replies)')
+      const { body } = renderListedNotification(
+        await listNotifications(owner.id),
+        row.notificationId,
+      )
+      expect(body).toContain('0 discussions, 1 reviews, 1 data points, 1 comments')
+      expect(body).toContain('top discussion: ')
+      expect(body).toContain('(1 replies)')
     }),
   )
-
-  it('omits an unavailable top discussion and caps the body at the notification limit', () => {
-    const body = buildCommunityActivityDigestBody({
-      community_count: 1,
-      joins: 0,
-      departures: 0,
-      discussions: 0,
-      reviews: 0,
-      data_points: 0,
-      comments: 1,
-      active_posters: 1,
-      total_members: 1,
-      moderation_workload: 0,
-      top_discussion: null,
-    })
-    expect(body).not.toContain('top discussion')
-    expect(body.length).toBeLessThanOrEqual(1000)
-  })
 
   it.each([
     { role: 'owner', suppress: true, expired: false, delivered: false },
@@ -290,9 +279,9 @@ describe('community activity digest', () => {
         now,
       )
       const row = result.created.find(item => item.userId === owner.id)!
-      expect((await listNotifications(owner.id)).notifications[row.notificationId]?.body).toContain(
-        '1 items awaiting moderation',
-      )
+      expect(
+        renderListedNotification(await listNotifications(owner.id), row.notificationId).body,
+      ).toContain('1 items awaiting moderation')
     }),
   )
 })
