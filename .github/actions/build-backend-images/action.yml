@@ -3,7 +3,7 @@ description: >
   Builds the backend api/worker-cpu/worker-io Docker images locally, runs the API and worker
   smoke tests against them, and gates on a Trivy CRITICAL/HIGH scan before generating SBOMs.
   Produces validated local images tagged sha-<sha> under the voucha-validation namespace; does
-  not publish anywhere. The caller must run actions/checkout (fetch-depth 0) before
+  not publish anywhere. The caller must run actions/checkout (a shallow checkout is enough) before
   invoking this action, must run ./.github/actions/start-valkey (which exports VALKEY_URL), must
   set job env IMAGE_REPOSITORY and SHA_TAG, and must assume the AWS OIDC role (via
   the vouchington-tooling setup-aws action) before invoking this action, so AWS_ACCESS_KEY_ID,
