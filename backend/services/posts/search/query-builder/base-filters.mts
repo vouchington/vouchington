@@ -29,7 +29,9 @@ export function buildBaseFilters(
     // A profile count's only post_type predicate is its literal, so the partial index can be proved.
     ...(!profileCountPostType && !post_types?.length ? [sql`posts.post_type != 'comment'`] : []),
     buildDiscoveryEligibility(currentUser, isAdmin, include_archived_communities === true),
-    ...(following_phase && currentUser ? [buildFollowingPhaseFilter(currentUser.id, following_phase)] : []),
+    ...(following_phase && currentUser
+      ? [buildFollowingPhaseFilter(currentUser.id, following_phase)]
+      : []),
     ...(exclude_for_user_id ? buildUserExclusionFilters(exclude_for_user_id) : []),
     ...(user_id
       ? buildUserFilter({
