@@ -1,4 +1,4 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
 import { seedUuid } from './common.mts'
 
 import {
@@ -17,22 +17,7 @@ const BATCH_SIZE = 250
 export async function seedMediaDeliveryReplay(): Promise<void> {
   {
     await using transaction = await beginTransaction()
-    await transaction(
-      `/* seedMediaDeliveryReplay:actor */
-    INSERT INTO users (id, username) VALUES ($1, 'seed-media-replay-actor')
-    ON CONFLICT (id) DO NOTHING`,
-      [MEDIA_REPLAY_ACTOR_ID],
-    )
-    await transaction(
-      `/* seedMediaDeliveryReplay:notice */
-    INSERT INTO copyright_notices
-      (id, jurisdiction, legal_basis, received_at, claimant_user_id,
-       claimant_contact_ciphertext, work_description, policy_version)
-    VALUES ($1, 'us_dmca', 'copyright', '2026-07-01T12:00:00Z', $2,
-      'synthetic-ciphertext', 'EXPLAIN UUID replay fixture', 'explain-fixture')
-    ON CONFLICT (id) DO NOTHING`,
-      [MEDIA_REPLAY_NOTICE_ID, MEDIA_REPLAY_ACTOR_ID],
-    )
+    await seedMediaDeliveryReplayNotice(transaction, MEDIA_REPLAY_NOTICE_ID, MEDIA_REPLAY_ACTOR_ID)
     await transaction.commit()
   }
   for (let start = 0; start < MEDIA_REPLAY_RECORD_COUNT; start += BATCH_SIZE) {
@@ -102,6 +87,34 @@ export async function seedMediaDeliveryReplay(): Promise<void> {
     await rearmMediaDeliveryReplayPage(failedIds.slice(start, start + BATCH_SIZE))
   await analyzeMediaDeliveryReplayRelations()
   await assertMediaDeliveryReplayPopulation()
+}
+
+/**
+ * The BEFORE INSERT trigger registers the retained identity before an outer ON CONFLICT could
+ * skip the row, so an existing live notice must be filtered out here. A retained identity whose
+ * live notice was deleted still rejects the insert (23505): that resurrection protection stays.
+ */
+export async function seedMediaDeliveryReplayNotice(
+  query: TransactionQuery,
+  noticeId: string,
+  actorId: string,
+): Promise<void> {
+  await query(
+    `/* seedMediaDeliveryReplay:actor */
+    INSERT INTO users (id, username) VALUES ($1, 'seed-media-replay-actor')
+    ON CONFLICT (id) DO NOTHING`,
+    [actorId],
+  )
+  await query(
+    `/* seedMediaDeliveryReplay:notice */
+    INSERT INTO copyright_notices
+      (id, jurisdiction, legal_basis, received_at, claimant_user_id,
+       claimant_contact_ciphertext, work_description, policy_version)
+    SELECT $1::uuid, 'us_dmca', 'copyright', '2026-07-01T12:00:00Z', $2::uuid,
+      'synthetic-ciphertext', 'EXPLAIN UUID replay fixture', 'explain-fixture'
+    WHERE NOT EXISTS (SELECT 1 FROM copyright_notices WHERE id = $1::uuid)`,
+    [noticeId, actorId],
+  )
 }
 
 /** New failed cycles only for this fixture's bounded page; never reset or delete other owners. */
