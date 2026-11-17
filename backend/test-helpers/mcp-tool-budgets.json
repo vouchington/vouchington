@@ -215,8 +215,8 @@
       },
       "read_my_notifications": {
         "measured": {
-          "list": 8711,
-          "core": 1522
+          "list": 8555,
+          "core": 1366
         },
         "max": {
           "list": 9000,
