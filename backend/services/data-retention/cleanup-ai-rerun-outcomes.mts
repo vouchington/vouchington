@@ -60,7 +60,12 @@ async function deleteReportJudgementRunBatch(
   return rowCount ?? 0
 }
 
-/** Only terminal runs retire; an active run, the run an appeal last requested, and the run behind its saved draft stay. */
+/**
+ * Only terminal runs retire; an active run, the run an appeal last requested, and the run behind
+ * its saved draft stay. The references are checked once, in the page query: a terminal run cannot
+ * gain one (claims and draft saves need an active run), the foreign keys still refuse it, and a
+ * second check in the delete would scan the appeals table.
+ */
 async function deleteAppealResolutionRunBatch(
   cutoffId: string,
   batchSize: number,
@@ -81,8 +86,6 @@ async function deleteAppealResolutionRunBatch(
     WHERE run.id = ANY(ARRAY(SELECT id FROM candidates))
       AND run.id < ${cutoffId}::uuid
       AND (run.completed_at IS NOT NULL OR run.failed_at IS NOT NULL OR run.expired_at IS NOT NULL)
-      AND NOT EXISTS (SELECT 1 FROM moderation_appeals ma WHERE ma.ai_draft_run_id = run.id)
-      AND NOT EXISTS (SELECT 1 FROM moderation_appeals ma WHERE ma.ai_draft_requested_run_id = run.id)
     RETURNING run.id`)
   const { rowCount } = await write(query)
   return rowCount ?? 0
