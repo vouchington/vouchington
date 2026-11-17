@@ -242,12 +242,15 @@ describe('posts', () => {
           markdown: 'archived content',
         })
 
+        // The generation key is shared by every test file on this Valkey. Fence the whole warm,
+        // archive, read sequence: only an unchanged generation proves that every anonymous read
+        // used one namespace, so a legal-removal test advancing it mid-sequence cannot fail this.
+        const generation = await getAnonymousCacheGeneration()
         const request = createRequest()
         const beforeArchive = await request
           .get(`/api/v1/posts?creator=${archiveUser.id}`)
           .expect(200)
         expect(beforeArchive.body.results.map((r: { id: string }) => r.id)).toContain(postId)
-        const generation = await getAnonymousCacheGeneration()
 
         const archiveRequest = createRequest()
         await archiveRequest.authenticateAs(archiveUser)
