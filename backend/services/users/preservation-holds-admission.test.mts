@@ -28,22 +28,14 @@ describe('preservation hold admission outcomes', () => {
     const user = await createTestUser()
 
     const before = await readCopyrightCasePurgeFixtureAccountClock(user.id)
-    const [outcome] = await Promise.allSettled([
-      placeUserPreservationHold(admin, user.id.toUpperCase(), 'matter-uppercase'),
-    ])
-    expect(outcome).toMatchObject(
-      outcome!.status === 'fulfilled'
-        ? { status: 'fulfilled', value: { account_user_id: user.id } }
-        : { status: 'rejected', reason: { status: 409, cause: { code: '40001' } } },
-    )
+    const placed = await placeUserPreservationHold(admin, user.id.toUpperCase(), 'matter-uppercase')
+    expect(placed.account_user_id).toBe(user.id)
     const placedAccountIds = (await listUserPreservationHolds(admin, user.id)).map(
       hold => hold.account_user_id,
     )
-    expect(placedAccountIds).toEqual(outcome!.status === 'fulfilled' ? [user.id] : [])
+    expect(placedAccountIds).toEqual([user.id])
     expect(await readCopyrightCasePurgeFixtureAccountClock(user.id)).toEqual(before)
-    expect(await getModeratorActionRowsForTest({ targetUserId: user.id })).toHaveLength(
-      outcome!.status === 'fulfilled' ? 1 : 0,
-    )
+    expect(await getModeratorActionRowsForTest({ targetUserId: user.id })).toHaveLength(1)
   })
 
   describe('preservation hold reference confidentiality', () => {
@@ -56,29 +48,26 @@ describe('preservation hold admission outcomes', () => {
       )
 
       const before = await readCopyrightCasePurgeFixtureAccountClock(user.id)
-      const [outcome] = await Promise.allSettled([
-        placeUserPreservationHold(admin, user.id, secret),
+      await placeUserPreservationHold(admin, user.id, secret)
+      expect(await listUserPreservationHolds(admin, user.id)).toEqual([
+        expect.objectContaining({ account_user_id: user.id, reference: secret, released_at: null }),
       ])
-      expect(outcome).toMatchObject(
-        outcome!.status === 'fulfilled'
-          ? { status: 'fulfilled' }
-          : { status: 'rejected', reason: { status: 409, cause: { code: '40001' } } },
-      )
-      if (outcome!.status === 'fulfilled') {
-        await listUserPreservationHolds(admin, user.id)
-        await releaseUserPreservationHold(admin, user.id)
-        await deleteUser(user, user)
-      }
-      expect(await listUserPreservationHolds(admin, user.id)).toHaveLength(
-        outcome!.status === 'fulfilled' ? 1 : 0,
-      )
+      await releaseUserPreservationHold(admin, user.id)
+      await deleteUser(user, user)
+      expect(await listUserPreservationHolds(admin, user.id)).toEqual([
+        expect.objectContaining({
+          account_user_id: user.id,
+          reference: secret,
+          released_at: expect.any(Date),
+        }),
+      ])
       expect(await readCopyrightCasePurgeFixtureAccountClock(user.id)).toEqual(before)
 
       const logged = JSON.stringify(spies.flatMap(spy => spy.mock.calls))
       expect(logged).not.toContain(secret)
       const audit = await getModeratorActionRowsForTest({ targetUserId: user.id })
       expect(JSON.stringify(audit)).not.toContain(secret)
-      expect(audit).toHaveLength(outcome!.status === 'fulfilled' ? 2 : 0)
+      expect(audit).toHaveLength(2)
       for (const spy of spies) spy.mockRestore()
     })
   })
