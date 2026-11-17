@@ -83,24 +83,22 @@ export async function completeMembershipEntitlementEffects(
   effects: readonly MembershipEntitlementEffect[],
 ): Promise<number> {
   if (effects.length === 0) return 0
-  const effectsByToken = Map.groupBy(effects, effect => effect.deliveryClaimToken)
-  const completions = await Promise.all(
-    [...effectsByToken].map(async ([deliveryClaimToken, claimedEffects]) => {
-      await using query = await beginTransaction()
-      const { rows } = await query(sql`/* completeMembershipEntitlementEffects */
-        UPDATE membership_entitlement_effects
-        SET delivered_at = CURRENT_TIMESTAMP,
-            delivery_claim_token = NULL,
-            delivery_claimed_at = NULL
-        WHERE id = ANY(${claimedEffects.map(effect => effect.id)}::uuid[])
-          AND delivered_at IS NULL
-          AND delivery_claim_token = ${deliveryClaimToken}
-        RETURNING id`)
-      await query.commit()
-      return rows.length
-    }),
-  )
-  return completions.reduce((total, completion) => total + completion, 0)
+  await using query = await beginTransaction()
+  const { rows } = await query(sql`/* completeMembershipEntitlementEffects */
+    UPDATE membership_entitlement_effects effect
+    SET delivered_at = CURRENT_TIMESTAMP,
+        delivery_claim_token = NULL,
+        delivery_claimed_at = NULL
+    FROM unnest(
+      ${effects.map(item => item.id)}::uuid[],
+      ${effects.map(item => item.deliveryClaimToken)}::text[]
+    ) AS claimed(id, delivery_claim_token)
+    WHERE effect.id = claimed.id
+      AND effect.delivered_at IS NULL
+      AND effect.delivery_claim_token = claimed.delivery_claim_token
+    RETURNING effect.id`)
+  await query.commit()
+  return rows.length
 }
 
 /**
