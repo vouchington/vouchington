@@ -76,7 +76,8 @@ updates:
         patterns:
           - 'oxlint'
           - 'oxfmt'
-          - 'oxlint-tsgolint'
+          - 'tsrs'
+          - '@tsrs/*'
       ast-grep:
         applies-to: 'version-updates'
         patterns:

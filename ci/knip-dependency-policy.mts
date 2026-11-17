@@ -31,6 +31,11 @@ export const allowedWorkspaceIgnoreDependencies = new Map<
         ],
         evidencePattern: /\bpnpm exec coverage-check\b/,
       },
+      {
+        dependency: 'tsrs',
+        evidenceFiles: ['package.json'],
+        evidencePattern: /"oxlint --type-aware\b/,
+      },
     ],
   ],
   [
