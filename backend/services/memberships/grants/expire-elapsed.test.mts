@@ -208,7 +208,11 @@ describe('expireElapsedMembershipsForUsers', () => {
 
     // The scan is global: a concurrent sweep may expire the owned member first, so assert the
     // owned persisted state rather than this invocation's count.
-    await expireElapsedMembershipsBatch(1_000_000, null, [member.id])
+    // Start the orphan repair past every grant so this global sweep cannot repair another test's rows.
+    await expireElapsedMembershipsBatch(1_000_000, {
+      userId: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
+      grantId: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
+    })
 
     // The blocking per-user expiry waits for any in-flight competitor, then rechecks.
     await expireElapsedMembershipsForUsers([member.id])

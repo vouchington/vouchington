@@ -14,10 +14,9 @@ type MembershipExpiryBatchResult = MembershipExpiryResult & {
 
 export async function resumeExpireElapsedMemberships(
   batchSize = getMembershipWorkLimits().batchSize,
-  repairUserIds?: readonly string[],
 ): Promise<MembershipExpiryBatchResult> {
   const repairCursor = await readOrphanedQueuedGrantRepairCursor()
-  const result = await expireElapsedMembershipsBatch(batchSize, repairCursor, repairUserIds)
+  const result = await expireElapsedMembershipsBatch(batchSize, repairCursor)
   // A finished pass stores null so the next scheduled run revisits changed eligibility.
   await saveOrphanedQueuedGrantRepairCursor(result.repairNextCursor)
   return result
@@ -49,12 +48,11 @@ export async function saveOrphanedQueuedGrantRepairCursor(
 export async function expireElapsedMembershipsBatch(
   batchSize = getMembershipWorkLimits().batchSize,
   repairCursor: OrphanedQueuedGrantCursor | null = null,
-  repairUserIds?: readonly string[],
 ): Promise<MembershipExpiryBatchResult> {
   const limits = getMembershipWorkLimits()
   const [result, repair] = await Promise.all([
     expireSelectedMembershipUsers(batchSize, limits),
-    repairOrphanedQueuedGrantsBatch(repairCursor, batchSize, repairUserIds),
+    repairOrphanedQueuedGrantsBatch(repairCursor, batchSize),
   ])
   const elapsedRemains = await elapsedMembershipWorkRemains()
   return {
