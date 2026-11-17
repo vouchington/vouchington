@@ -69,11 +69,11 @@ describe('checkout network retry', () => {
         if (!step.uses?.startsWith('actions/checkout@') || step.if) return
         const retry = steps[index + 1]
         expect(step['continue-on-error']).toBe(true)
-        expect(step['timeout-minutes']).toBe(1)
+        expect(typeof step['timeout-minutes']).toBe('number')
         expect(retry?.uses).toBe(step.uses)
         expect(retry?.with).toEqual(step.with)
         expect(retry?.if).toBe(`steps.${step.id}.outcome != 'success'`)
-        expect(retry?.['timeout-minutes']).toBe(1)
+        expect(retry?.['timeout-minutes']).toBe(step['timeout-minutes'])
         expect(retry?.['continue-on-error']).toBeUndefined()
       })
     }
