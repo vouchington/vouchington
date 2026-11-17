@@ -31,7 +31,7 @@ dev/certs/
 .claude/.cc-writes/
 agents.md
 !**/AGENTS.md
-!docs/development/postgresql/schema-snapshot/markdown/tables/agents.md
+!docs/generated/postgresql/schema-snapshot/tables/agents.md
 # Agent instructions live in AGENTS.md. CLAUDE.md overrides AGENTS.md in Claude Code.
 CLAUDE.md
 Claude.md

@@ -13,17 +13,17 @@ import { describe, expect, it } from 'vitest'
 import { main, renderPsqlDocs } from './render-psql-docs.mts'
 
 const SAMPLE_INDEX =
-  '# PostgreSQL Schema Snapshot\n\nSee [schema-snapshot/README.md](../README.md). [JSON](../../../../../backend/data-stores/psql/schema-snapshot/schema.json)\n\n- [Widgets](tables/widgets.md)\n'
+  '# PostgreSQL Schema Snapshot\n\nSee [schema-snapshot/README.md](../../../development/postgresql/schema-snapshot/README.md). [JSON](../../../../backend/data-stores/psql/schema-snapshot/schema.json)\n\n- [Widgets](tables/widgets.md)\n'
 const SAMPLE_TABLE =
   '# Table `widgets`\n\n[Schema index](../README.md)\n\n| Column | Type |\n| --- | --- |\n| `id` | `uuid` |\n'
 const SAMPLE_SECTION = '# Views\n\n[Schema index](README.md)\n'
 const SAMPLE_SCHEMA_JSON = JSON.stringify({ tables: [{ name: 'widgets' }] }, null, 2)
 
 function writeSampleSchema(schemaDir: string, schemaJsonPath: string): void {
-  mkdirSync(join(schemaDir, 'markdown/tables'), { recursive: true })
-  writeFileSync(join(schemaDir, 'markdown/README.md'), SAMPLE_INDEX)
-  writeFileSync(join(schemaDir, 'markdown/tables/widgets.md'), SAMPLE_TABLE)
-  writeFileSync(join(schemaDir, 'markdown/views.md'), SAMPLE_SECTION)
+  mkdirSync(join(schemaDir, 'tables'), { recursive: true })
+  writeFileSync(join(schemaDir, 'README.md'), SAMPLE_INDEX)
+  writeFileSync(join(schemaDir, 'tables/widgets.md'), SAMPLE_TABLE)
+  writeFileSync(join(schemaDir, 'views.md'), SAMPLE_SECTION)
   mkdirSync(join(schemaJsonPath, '..'), { recursive: true })
   writeFileSync(schemaJsonPath, SAMPLE_SCHEMA_JSON)
 }
@@ -39,12 +39,9 @@ describe('renderPsqlDocs', () => {
 
     expect(readFileSync(join(outputDir, 'schema.md'), 'utf8')).toBe(
       SAMPLE_INDEX.replace(
-        '[schema-snapshot/README.md](../README.md)',
+        '[schema-snapshot/README.md](../../../development/postgresql/schema-snapshot/README.md)',
         '`schema-snapshot/README.md`',
-      ).replace(
-        '../../../../../backend/data-stores/psql/schema-snapshot/schema.json',
-        'schema.json',
-      ),
+      ).replace('../../../../backend/data-stores/psql/schema-snapshot/schema.json', 'schema.json'),
     )
     expect(readFileSync(join(outputDir, 'schema.json'), 'utf8')).toBe(SAMPLE_SCHEMA_JSON)
     expect(readFileSync(join(outputDir, 'tables/widgets.md'), 'utf8')).toBe(
@@ -116,12 +113,9 @@ describe('render-psql-docs entrypoint', () => {
     expect(readFileSync(join(outputDir, 'schema.json'), 'utf8')).toBe(SAMPLE_SCHEMA_JSON)
     expect(readFileSync(join(outputDir, 'schema.md'), 'utf8')).toBe(
       SAMPLE_INDEX.replace(
-        '[schema-snapshot/README.md](../README.md)',
+        '[schema-snapshot/README.md](../../../development/postgresql/schema-snapshot/README.md)',
         '`schema-snapshot/README.md`',
-      ).replace(
-        '../../../../../backend/data-stores/psql/schema-snapshot/schema.json',
-        'schema.json',
-      ),
+      ).replace('../../../../backend/data-stores/psql/schema-snapshot/schema.json', 'schema.json'),
     )
     expect(readFileSync(join(outputDir, 'tables/widgets.html'), 'utf8')).toContain('<table>')
   })

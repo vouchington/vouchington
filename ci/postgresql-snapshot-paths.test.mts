@@ -12,11 +12,8 @@ describe('snapshot artifact destinations', () => {
       'no-mistakes-catalog.json',
       'backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json',
     ],
-    ['markdown/README.md', 'docs/development/postgresql/schema-snapshot/markdown/README.md'],
-    [
-      'markdown/tables/widgets.md',
-      'docs/development/postgresql/schema-snapshot/markdown/tables/widgets.md',
-    ],
+    ['markdown/README.md', 'docs/generated/postgresql/schema-snapshot/README.md'],
+    ['markdown/tables/widgets.md', 'docs/generated/postgresql/schema-snapshot/tables/widgets.md'],
   ])('maps the unchanged artifact path %s to its repository owner', (artifactPath, expected) => {
     const destination = snapshotRepositoryPath(artifactPath)
     expect(destination).toBe(expected)
@@ -31,7 +28,7 @@ describe('snapshot artifact destinations', () => {
   it.each([
     'backend/data-stores/psql/schema-snapshot/generate.mts',
     'backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.test.mts',
-    'backend/data-stores/psql/schema-snapshot/markdown/README.md',
+    'backend/data-stores/psql/schema-snapshot/rendered/README.md',
     'docs/development/postgresql/schema-snapshot/README.md',
     `${snapshotMarkdownPath}-other/README.md`,
     `${snapshotMarkdownPath}/tables/file.sql`,

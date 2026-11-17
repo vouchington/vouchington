@@ -126,7 +126,7 @@ async function publicationFixture() {
   const candidate = join(root, 'candidate')
   const remote = join(root, 'remote.git')
   const snapshot = join(candidate, 'backend/data-stores/psql/schema-snapshot')
-  const markdown = join(candidate, 'docs/development/postgresql/schema-snapshot/markdown')
+  const markdown = join(candidate, 'docs/generated/postgresql/schema-snapshot')
   await mkdir(markdown, { recursive: true })
   await mkdir(snapshot, { recursive: true })
   await writeFile(join(snapshot, 'generate.mts'), '// source sentinel\n')
@@ -285,8 +285,8 @@ describe('PostgreSQL snapshot controller process', () => {
     ).toEqual([
       'backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json',
       'backend/data-stores/psql/schema-snapshot/schema.json',
-      'docs/development/postgresql/schema-snapshot/markdown/README.md',
-      'docs/development/postgresql/schema-snapshot/markdown/orphan.md',
+      'docs/generated/postgresql/schema-snapshot/README.md',
+      'docs/generated/postgresql/schema-snapshot/orphan.md',
     ])
     expect(await readFile(join(snapshot, 'generate.mts'), 'utf8')).toBe('// source sentinel\n')
     expect(await readFile(join(markdown, '../README.md'), 'utf8')).toBe('# Documentation owner\n')

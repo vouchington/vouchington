@@ -3,7 +3,7 @@ import { isGeneratedSnapshotPath } from './postgresql-snapshot-update-core.mts'
 export const snapshotJsonPath = 'backend/data-stores/psql/schema-snapshot/schema.json'
 export const snapshotCatalogPath =
   'backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json'
-export const snapshotMarkdownPath = 'docs/development/postgresql/schema-snapshot/markdown'
+export const snapshotMarkdownPath = 'docs/generated/postgresql/schema-snapshot'
 
 export function snapshotRepositoryPath(artifactPath: string): string {
   if (!isGeneratedSnapshotPath(artifactPath)) {

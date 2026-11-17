@@ -92,7 +92,7 @@ describe('CI fixture documentation classifier', () => {
   it.each(['README.md', 'views.md', 'tables/widgets.md', 'nested/schema.md'])(
     'keeps generated Markdown fixture %s out of docs-only skipping and selects the tooling area',
     file => {
-      const path = `docs/development/postgresql/schema-snapshot/markdown/${file}`
+      const path = `docs/generated/postgresql/schema-snapshot/${file}`
       expect(docsOnly([path])).toBe(false)
       expect(docsOnly([path, 'docs/development/tests.md'])).toBe(false)
       expect(toolingFilter().some(glob => picomatch.isMatch(path, glob))).toBe(true)
@@ -101,9 +101,7 @@ describe('CI fixture documentation classifier', () => {
 
   it('keeps unrelated schema documentation eligible for docs-only skipping', () => {
     expect(docsOnly(['docs/development/postgresql/schema-snapshot/notes.md'])).toBe(true)
-    expect(docsOnly(['docs/development/postgresql/schema-snapshot/markdown-other/README.md'])).toBe(
-      true,
-    )
+    expect(docsOnly(['docs/generated/postgresql/schema-snapshot-other/README.md'])).toBe(true)
   })
 
   it('does not put living pin-policy pages on TEST_FIXTURE_DOCS just to run the pin guard', () => {

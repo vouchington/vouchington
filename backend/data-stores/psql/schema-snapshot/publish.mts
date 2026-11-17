@@ -11,7 +11,7 @@ import { writeNoMistakesCatalog } from './no-mistakes-catalog.mts'
 const __dirname = import.meta.dirname
 const committedMarkdownRoot = resolve(
   __dirname,
-  '../../../../docs/development/postgresql/schema-snapshot/markdown',
+  '../../../../docs/generated/postgresql/schema-snapshot',
 )
 
 function resolveSchemaSnapshotOutputRoots({

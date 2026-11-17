@@ -4,8 +4,8 @@ The [generator](../../../../backend/data-stores/psql/schema-snapshot/generate.mt
 PostgreSQL schema snapshot from `pg_catalog`/`information_schema` introspection. The
 [runtime JSON catalog](../../../../backend/data-stores/psql/schema-snapshot/schema.json) stays in its
 backend package beside the [no-mistakes catalog](#no-mistakes-catalog); the
-[generated Markdown index](markdown/README.md) and table/reference pages live
-here under `markdown/`. The snapshot
+[generated Markdown index](../../../generated/postgresql/schema-snapshot/README.md) and table/reference
+pages live under `docs/generated/postgresql/schema-snapshot/`. The snapshot
 exists because the backend schema is assembled from migrations, config-driven definitions, and
 views and `pg_dump`/`psql \d` output is unusable as a diffable artifact: it enumerates every
 partition child individually (24+ partitioned parents × many children) and is not byte-stable across
@@ -23,7 +23,7 @@ every DDL-affecting change must regenerate and commit the snapshot alongside it.
   the current branch's open pull request in the repository `gh repo view` resolves. The command only
   dispatches CI; it does not read or change the worktree database.
 - The workflow migrates a fresh PostgreSQL 18 service from the exact PR head and commits only
-  `schema.json`, `no-mistakes-catalog.json`, and generated `markdown/` files to that head. An
+  `schema.json`, `no-mistakes-catalog.json`, and generated Markdown files to that head. An
   unchanged snapshot creates no commit. The artifact format is those three whitelisted artifact paths
   (`schema.json`, `no-mistakes-catalog.json`, `markdown/**`); the publisher requires all of them and
   maps each to its separate repository owner. Fetch the publisher commit before
@@ -75,7 +75,7 @@ only.
 
 - Generation engines live in `@vouchington/postgres/pg-schema-snapshot`. This repository keeps the
   runtime JSON catalog and live `read()` catalog adapter in the backend package. Generated Markdown
-  lives under `docs/development/postgresql/schema-snapshot/markdown`; the writer accepts a separate
+  lives under `docs/generated/postgresql/schema-snapshot`; the writer accepts a separate
   Markdown root while preserving the JSON package asset. The source package also owns the
   `PARTITION_POLICIES` / `UNBOUNDED_UNPARTITIONED_TABLES` growth maps.
 - `catalog-queries.mts` — wraps platform catalog SQL with a `@data-stores/psql` transaction pinned
@@ -105,7 +105,7 @@ only.
   `generateSchemaSnapshot({ check })` and `writeSchemaSnapshot({ snapshot, markdown, catalog, check, root, markdownRoot })`
   for unit testing against temporary JSON and Markdown directories; the direct-execution guard at the bottom only runs when
   invoked as a script. It detects missing, changed, legacy, and orphaned generated Markdown files;
-  update mode removes only legacy `schema.md` and proven orphans in `markdown/`. Before comparing or
+  update mode removes only legacy `schema.md` and proven orphans in the generated Markdown directory. Before comparing or
   writing, generated files are passed through oxfmt's `format()` API so committed bytes match
   `oxfmt --check`.
 
