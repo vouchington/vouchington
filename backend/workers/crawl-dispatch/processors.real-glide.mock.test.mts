@@ -67,8 +67,8 @@ const fixtures = [
     label: 'friends',
     queue: findYourFriendsQueue,
     manifest: friendsManifest,
-    schedulerId: 'dispatchFindYourFriends',
-    work: 'dispatchFindYourFriends',
+    schedulerId: 'dispatchFacebookFriends',
+    work: 'dispatchFacebookFriends',
   },
 ] as const
 

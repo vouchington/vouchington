@@ -12,11 +12,11 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { friendsDispatchConfig } from '@services/friend-recommendations/work-limits'
 import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
 import type { FriendsDispatchData } from '@queues/find-your-friends/types'
-import { processFindYourFriendsDispatcher } from './processors.mts'
+import { processFriendsProviderDispatch } from './processors.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
-describe('friend dispatcher continuations', () => {
+describe('friend provider dispatch continuations', () => {
   beforeAll(() =>
     vi.stubEnv(
       'VOUCHA_STORED_SECRET_ENCRYPTION_KEYS',
@@ -37,22 +37,22 @@ describe('friend dispatcher continuations', () => {
     await connectTestOAuthAccount('facebook', owner.id, second)
     await setTestOAuthAccountTokens('facebook', second, { accessToken: 'synthetic-access-token' })
     overrideDynamicConfigFieldsForTest(friendsDispatchConfig, {
-      batch_size: 1,
-      max_rows_per_provider_per_run: 1,
+      facebook_batch_size: 1,
+      facebook_max_rows_per_run: 1,
     })
     const data: FriendsDispatchData = {
       sweepStartedAt: await readTestDatabaseTimestamp(),
-      upperIds: { facebook: window.secondId, x: null, github: null },
-      afterIds: { facebook: window.afterId },
+      upperId: window.secondId,
+      afterId: window.afterId,
     }
     const saved: FriendsDispatchData[] = []
     expect(
-      await processFindYourFriendsDispatcher(data, async next => {
+      await processFriendsProviderDispatch('facebook', data, async next => {
         saved.push(next)
       }),
     ).toEqual({ count: 0, hasMore: true })
-    expect(saved.at(-1)?.afterIds?.facebook).toBe(window.firstId)
-    expect(await processFindYourFriendsDispatcher(saved.at(-1)!)).toEqual({
+    expect(saved.at(-1)?.afterId).toBe(window.firstId)
+    expect(await processFriendsProviderDispatch('facebook', saved.at(-1)!)).toEqual({
       count: 1,
       hasMore: true,
     })
@@ -72,54 +72,48 @@ describe('friend dispatcher continuations', () => {
         await setTestOAuthAccountTokens(provider, id, { accessToken: 'synthetic-access-token' })
       }
       overrideDynamicConfigFieldsForTest(friendsDispatchConfig, {
-        batch_size: 1,
-        max_rows_per_provider_per_run: 1,
+        [`${provider}_batch_size`]: 1,
+        [`${provider}_max_rows_per_run`]: 1,
       })
       // The sweep cutoff is `created_at <= sweepStartedAt`. The runner clock can lag PostgreSQL,
       // so a timestamp taken here can fall before the last insert and drop that tail row.
       const sweepStartedAt = await readTestDatabaseTimestamp()
       const data: FriendsDispatchData = {
         sweepStartedAt,
-        upperIds: { facebook: null, x: null, github: null, [provider]: accountIds[2]! },
-        afterIds: { [provider]: window.afterId },
+        upperId: accountIds[2]!,
+        afterId: window.afterId,
       }
       expect(
-        await processFindYourFriendsDispatcher({
+        await processFriendsProviderDispatch(provider, {
           ...data,
           sweepStartedAt: '1970-01-01T00:00:00.000Z',
         }),
       ).toEqual({ count: 0, hasMore: true })
       expect(
-        await processFindYourFriendsDispatcher({
-          ...data,
-          upperIds: { facebook: null, x: null, github: null, [provider]: accountIds[0]! },
-        }),
+        await processFriendsProviderDispatch(provider, { ...data, upperId: accountIds[0]! }),
       ).toEqual({ count: 1, hasMore: true })
       const saved: FriendsDispatchData[] = []
       expect(
-        await processFindYourFriendsDispatcher(data, async next => {
+        await processFriendsProviderDispatch(provider, data, async next => {
           saved.push(next)
         }),
       ).toEqual({ count: 1, hasMore: true })
       const resumed = saved.at(-1)!
-      expect(resumed.afterIds?.[provider]).toBe(accountIds[0])
+      expect(resumed.afterId).toBe(accountIds[0])
       const laterId = `${prefix}-bb`
       const laterOwner = await createTestUser()
       const laterAccountId = (await insertTestOAuthAccount(provider, laterId)).account_id!
       await connectTestOAuthAccount(provider, laterOwner.id, laterId)
       await setTestOAuthAccountTokens(provider, laterId, { accessToken: 'synthetic-access-token' })
-      expect(await processFindYourFriendsDispatcher(resumed)).toEqual({
+      expect(await processFriendsProviderDispatch(provider, resumed)).toEqual({
         count: 1,
         hasMore: true,
       })
       expect(
-        await processFindYourFriendsDispatcher({
-          ...resumed,
-          afterIds: { ...resumed.afterIds, [provider]: accountIds[1]! },
-        }),
+        await processFriendsProviderDispatch(provider, { ...resumed, afterId: accountIds[1]! }),
       ).toEqual({ count: 1, hasMore: true })
       // No sync job has run: the first account remains eligible and is retried on a new sweep.
-      expect(await processFindYourFriendsDispatcher(data)).toEqual({
+      expect(await processFriendsProviderDispatch(provider, data)).toEqual({
         count: 1,
         hasMore: true,
       })

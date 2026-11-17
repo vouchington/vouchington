@@ -6,6 +6,7 @@ import {
   FIND_YOUR_FRIENDS_DEFAULTS,
   FIND_YOUR_FRIENDS_ORDERING,
   FIND_YOUR_FRIENDS_RATE_LIMITS,
+  FRIEND_DISPATCH_JOBS,
   PRIORITY_DEFAULT,
   PRIORITY_DISPATCHER,
   QUEUE_NAME,
@@ -13,6 +14,7 @@ import {
 import { findYourFriendsQueue } from './queues.mts'
 import { createHash } from 'node:crypto'
 import type {
+  FriendDispatchProvider,
   FriendSyncResume,
   FindYourFriendsJobPayloads,
   FindYourFriendsSyncJobs,
@@ -165,7 +167,11 @@ const githubSync = createSyncEnqueues<typeof GITHUB_JOB_NAME>({
   ordering: githubOrdering,
 })
 
-const enqueueDispatchFindYourFriendsJob = createFriendsEnqueueFunction('dispatchFindYourFriends')
+const enqueueDispatchJobs = {
+  facebook: createFriendsEnqueueFunction(FRIEND_DISPATCH_JOBS.facebook),
+  x: createFriendsEnqueueFunction(FRIEND_DISPATCH_JOBS.x),
+  github: createFriendsEnqueueFunction(FRIEND_DISPATCH_JOBS.github),
+} as const satisfies Record<FriendDispatchProvider, unknown>
 
 export const enqueueSyncFacebookFriends = facebookSync.one
 export const enqueueSyncXFriends = xSync.one
@@ -177,12 +183,16 @@ export const enqueueBulkSyncFacebookFriends = facebookSync.bulk
 export const enqueueBulkSyncXFriends = xSync.bulk
 export const enqueueBulkSyncGithubFriends = githubSync.bulk
 
-export function enqueueDispatchFindYourFriends(): EnqueueReturnType {
-  return enqueueDispatchFindYourFriendsJob(
+/** Enqueues one provider's dispatch job; the provider is part of its dedup id. */
+export function enqueueDispatchFriendsProvider(
+  provider: FriendDispatchProvider,
+): EnqueueReturnType {
+  return enqueueDispatchJobs[provider](
     {},
     {
       priority: PRIORITY_DISPATCHER,
-      deduplication: { id: 'friends-dispatcher', mode: 'simple' },
+      deduplication: { id: `friends-dispatcher:${provider}`, mode: 'simple' },
+      ordering: FIND_YOUR_FRIENDS_ORDERING.dispatch_friends,
     },
   )
 }

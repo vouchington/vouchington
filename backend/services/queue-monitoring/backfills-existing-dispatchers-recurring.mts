@@ -3,7 +3,8 @@ import {
   createBackfillDispatcherTrigger,
   createPriorityBackfillTrigger,
 } from './backfills-trigger-helpers.mts'
-import { enqueueDispatchFindYourFriends } from '@queues/find-your-friends/enqueues'
+import { FRIEND_DISPATCH_JOBS, FRIEND_DISPATCH_PROVIDERS } from '@queues/find-your-friends/config'
+import { enqueueDispatchFriendsProvider } from '@queues/find-your-friends/enqueues'
 import { enqueueBackfillBloomFilter } from '@queues/bloom-filters/enqueues'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import {
@@ -142,15 +143,15 @@ export const EXISTING_RECURRING_DISPATCHER_BACKFILLS: BackfillEntry[] = [
       return result
     }),
   },
-  {
-    id: 'find-your-friends-dispatch',
+  ...FRIEND_DISPATCH_PROVIDERS.map(provider => ({
+    id: `find-your-friends-dispatch-${provider}`,
     queue_name: 'find-your-friends',
-    job_name: 'dispatchFindYourFriends',
-    description: 'Dispatch find-your-friends social sync jobs',
-    source_table: 'facebook_accounts, x_accounts, github_accounts',
-    trigger: createBackfillDispatcherTrigger(
-      'find-your-friends-dispatch',
-      enqueueDispatchFindYourFriends,
-    ),
-  },
+    job_name: FRIEND_DISPATCH_JOBS[provider],
+    description: `Dispatch find-your-friends ${provider} account sync jobs`,
+    source_table: `${provider}_accounts`,
+    trigger: createBackfillDispatcherTrigger(`find-your-friends-dispatch-${provider}`, async () => {
+      const result = await enqueueDispatchFriendsProvider(provider)
+      return result
+    }),
+  })),
 ]
