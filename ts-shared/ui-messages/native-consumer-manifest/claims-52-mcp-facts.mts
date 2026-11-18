@@ -1,6 +1,6 @@
 import type { NativeConsumerManifestEntry } from './types.mts'
 
-/** MCP tool result facts that native chat renders; adoption is pending in both clients. */
+/** MCP tool result facts that native chat renders. */
 export const NATIVE_CONSUMER_MANIFEST_CLAIMS_52_MCP_FACTS = [
   'financialProfile.cardsOpened24m',
   'financialProfile.creditScoreRange',
@@ -36,5 +36,4 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_52_MCP_FACTS = [
 ].map(name => ({
   key: `native.mcpFacts.${name}`,
   consumers: ['dotnet', 'swift'],
-  pending: true,
 })) as readonly NativeConsumerManifestEntry[]
