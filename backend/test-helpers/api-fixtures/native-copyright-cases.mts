@@ -54,7 +54,6 @@ export const nativeCopyrightApiFixtureCases: ApiFixtureCase[] = [
   },
   {
     id: 'web.copyright.staff-queue.default',
-    pending: true,
     method: 'GET',
     path: '/api/v1/copyright-notices/review-queue',
     route: { routeTemplate: '/api/v1/copyright-notices/review-queue' },

@@ -29,7 +29,6 @@ export const nativeModerationDisputeApiFixtureCases = [
   }),
   fixtureCase({
     id: 'native.moderation.disputes.detail.default',
-    pending: true,
     backendResponseContractKey: 'GET:/api/v1/disputes/:id#staff',
     method: 'GET',
     path: `/api/v1/disputes/${disputeId}`,
@@ -133,7 +132,6 @@ export const nativeModerationDisputeApiFixtureCases = [
   ),
   fixtureCase({
     id: 'native.moderation.disputes.resolution-drafts.default',
-    pending: true,
     backendResponseContractKey: 'POST:/api/v1/disputes/:id/resolution-drafts#staff',
     method: 'POST',
     path: `/api/v1/disputes/${disputeId}/resolution-drafts`,

@@ -113512,7 +113512,6 @@
       "method": "GET",
       "migratedFrom": ["backend/api/v1/disputes/disputes.mts"],
       "path": "/api/v1/disputes/00000000-0000-7000-8000-000000000201",
-      "pending": true,
       "responseSchema": {
         "hash": "bbb669da270df947dd7ddbb5cef632546130cbc65ea7e858d60fbe02637ea828",
         "key": "native.moderation.disputes.detail.default"
@@ -113750,7 +113749,6 @@
       "method": "POST",
       "migratedFrom": ["backend/api/v1/disputes/disputes.mts"],
       "path": "/api/v1/disputes/00000000-0000-7000-8000-000000000201/resolution-drafts",
-      "pending": true,
       "responseSchema": {
         "hash": "dcdd714dddfac7e1552b4392112159658c36250bab5a33f8c6ec1705762646ee",
         "key": "native.moderation.disputes.resolution-drafts.default"
@@ -115979,7 +115977,6 @@
         "web/lib/api/server/copyright-notices.ts"
       ],
       "path": "/api/v1/copyright-notices/review-queue",
-      "pending": true,
       "responseSchema": {
         "hash": "07a9dde025e697ace5f8a86b11657615a791130c5c24b126eb3bcff639882f0d",
         "key": "web.copyright.staff-queue.default"

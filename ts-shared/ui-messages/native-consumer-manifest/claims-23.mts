@@ -127,7 +127,7 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_23 = [
   { key: 'native.swift.settings.mcp', consumers: ['swift'] },
   { key: 'native.swift.settings.verificationCodeLength', consumers: ['dotnet', 'swift'] },
   { key: 'native.swift.settings.moderationCadence', consumers: ['swift'] },
-  { key: 'native.swift.settings.moderationDays', consumers: ['dotnet', 'swift'], pending: true },
+  { key: 'native.swift.settings.moderationDays', consumers: ['dotnet', 'swift'] },
   { key: 'native.swift.settings.moderationEmails', consumers: ['swift'] },
   { key: 'native.swift.settings.moderationTime', consumers: ['swift'] },
   { key: 'native.swift.settings.moderationTimezone', consumers: ['swift'] },
