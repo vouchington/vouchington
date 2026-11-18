@@ -59,3 +59,11 @@ receipt stores the result before admitting a deterministic, distinct child, and 
 contains only unfinished families. Retained child jobs collapse ordinary admission retries; job
 trimming or a crash before the receipt can replay bounded, idempotent cleanup. A scheduled or
 operator seed restarts from durable cursor state after queue loss or a terminal failure.
+
+Automatic moderation-appeal and review-dispute resolution runs commit with their parent row, and the
+queue job is admitted after the commit. If that admission fails, the error is only logged. No failed
+job exists for `reconcile-ai-agent-failures` to find, so the run stays active and no AI draft is
+produced. Staff can still rerun the resolution manually, which admits a run and enqueues it again.
+The draft loss is accepted. [#5952](https://github.com/vouchington/vouchington/issues/5952) adds a
+bounded sweep that expires stale active runs in both tables so they record an outcome; expiring a
+run does not recover its draft.

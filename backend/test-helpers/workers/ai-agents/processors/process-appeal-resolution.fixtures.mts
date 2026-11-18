@@ -52,7 +52,12 @@ async function captureAppealResolutionEnqueue(
       key: `appeal_resolution_${appealId}`,
       concurrency: 1,
     })
-    job = { id: runId, name, data: appealData, opts } as Job<AppealResolutionJobData>
+    job = {
+      id: `appeal_resolution_${runId}`,
+      name,
+      data: appealData,
+      opts,
+    } as Job<AppealResolutionJobData>
     return job
   })
   try {
@@ -61,6 +66,6 @@ async function captureAppealResolutionEnqueue(
     add.mockRestore()
   }
   if (!job) throw new Error(`Appeal-resolution rerun did not enqueue a job for ${appealId}`)
-  expect(admittedRunId).toBe(job.id)
+  expect(admittedRunId).toBe(job.data.run_id)
   return job
 }
