@@ -83,4 +83,27 @@ describe('parseSendFollowersInput', () => {
       }),
     ).toThrow('Unexpected request fields')
   })
+
+  it.each([null, undefined, 'all_followers', 7])('rejects a non-object body: %s', body => {
+    expect(() => parseSendFollowersInput(body)).toThrow('Invalid request body')
+  })
+
+  it.each([{}, { audience: 'everyone' }, { audience: null }])(
+    'rejects an unknown or missing audience: %j',
+    body => {
+      expect(() => parseSendFollowersInput(body)).toThrow('Invalid audience')
+    },
+  )
+
+  it.each([undefined, 'not-an-array', { 0: 'x' }])(
+    'requires an array of selected recipients: %j',
+    recipientUserIds => {
+      expect(() =>
+        parseSendFollowersInput({
+          audience: 'selected_followers',
+          recipient_user_ids: recipientUserIds,
+        }),
+      ).toThrow('recipient_user_ids is required for selected_followers')
+    },
+  )
 })
