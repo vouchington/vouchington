@@ -22,7 +22,7 @@ import {
 export async function runModerationRerunOutcomeScenarios(): Promise<void> {
   const fixture = await seedModerationRerunOutcomes()
   const reportRunIds = fixture.reportRunIds
-  const { reportId, appealId, appealRequestToken } = fixture
+  const { reportId, appealId } = fixture
   try {
     register('report-rerun-admission')
     let successfulReportRunId = ''
@@ -147,7 +147,7 @@ export async function runModerationRerunOutcomeScenarios(): Promise<void> {
       },
     )
 
-    await runAppealScenarios(appealId, appealRequestToken)
+    await runAppealScenarios(appealId)
     await runModerationRerunRetentionScenarios(reportId, appealId)
   } finally {
     await cleanupModerationRerunOutcomes(appealId, reportRunIds)

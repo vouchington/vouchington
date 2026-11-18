@@ -5,20 +5,24 @@ import { AI_AGENTS_QUEUE_NAME, AI_AGENTS_DEFAULTS, AGENT_PRIORITY } from '../con
 import type { AppealResolutionJobData } from '../types.mts'
 import { addAIAgentJob } from './create-enqueue.mts'
 
+export function appealResolutionJobId(runId: string): string {
+  return `appeal_resolution_${runId}`
+}
+
 function buildAppealResolutionJob(
   appealId: string,
-  requestToken: string,
+  runId: string,
   rerunById?: string | null,
 ): { data: AppealResolutionJobData; opts: JobOptions } {
   const isManualRerun = rerunById != null
   return {
     data: {
       appeal_id: appealId,
-      ai_draft_request_token: requestToken,
+      run_id: runId,
       rerun_by_id: rerunById ?? null,
     } satisfies AppealResolutionJobData,
     opts: {
-      jobId: `appeal_resolution_${requestToken}`,
+      jobId: appealResolutionJobId(runId),
       attempts: AI_AGENTS_DEFAULTS.attempts,
       backoff: AI_AGENTS_DEFAULTS.backoff,
       removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
@@ -50,10 +54,10 @@ function buildAppealResolutionJob(
  */
 export function enqueueAppealResolution(
   appealId: string,
-  requestToken: string,
+  runId: string,
   rerunById?: string | null,
 ): void {
-  const { data, opts } = buildAppealResolutionJob(appealId, requestToken, rerunById)
+  const { data, opts } = buildAppealResolutionJob(appealId, runId, rerunById)
   addAIAgentJob('appeal-resolution', data, opts).catch(onError)
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'appeal-resolution')
 }
@@ -64,12 +68,11 @@ export function enqueueAppealResolution(
  */
 export async function enqueueAppealResolutionQueued(
   appealId: string,
-  requestToken: string,
+  runId: string,
   rerunById?: string | null,
-): Promise<string> {
-  const { data, opts } = buildAppealResolutionJob(appealId, requestToken, rerunById)
+): Promise<void> {
+  const { data, opts } = buildAppealResolutionJob(appealId, runId, rerunById)
   const job = await addAIAgentJob('appeal-resolution', data, opts)
   if (!job) throw new Error('Appeal resolution rerun was not admitted to the queue')
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'appeal-resolution')
-  return job.id
 }

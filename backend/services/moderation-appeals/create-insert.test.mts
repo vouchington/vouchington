@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
+import {
+  beginTransaction,
+  createTestUser,
+  insertTestPost,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import type { AppealTargetContext } from './create-target-types.mts'
 import { insertModerationAppeal } from './create-insert.mts'
+import { createModerationAppeal } from './create.mts'
+import { resolveAppealTarget } from './create-target.mts'
+import { parseCreateModerationAppealInput } from './parse.mts'
 
 type Query = Parameters<typeof insertModerationAppeal>[0]
 
@@ -44,5 +52,40 @@ describe('insertModerationAppeal when no appeal can be read back', () => {
 
     // The insert, then the read of the open appeal that should have won.
     expect(statements).toHaveLength(2)
+  })
+})
+
+describe('insertModerationAppeal when another open appeal wins', () => {
+  it('reads the winning appeal back as a duplicate the target check missed', async () => {
+    const appellant = await createTestUser()
+    const postId = await insertTestPost({
+      title: `Appeal Removal Race ${crypto.randomUUID().slice(0, 8)}`,
+      slug: `appeal-removal-race-${crypto.randomUUID().slice(0, 8)}`,
+      createdById: appellant.id,
+      markdown: 'My post content',
+      clearanceStatus: 'rejected',
+    })
+    const input = parseCreateModerationAppealInput({
+      target_type: 'removal',
+      target_id: postId,
+      appeal_reason: 'Please review this removal.',
+    })
+    // Resolved before the winner commits, as a concurrent submission's target check would be.
+    const target = await resolveAppealTarget(appellant, input)
+    expect(target.duplicate).toBeFalsy()
+    const winner = await createModerationAppeal(appellant, WEB_PROVENANCE, input)
+
+    await using query = await beginTransaction()
+    const loser = await insertModerationAppeal(
+      query,
+      appellant,
+      WEB_PROVENANCE,
+      input.appealReason,
+      target,
+    )
+    await query.commit()
+
+    expect(winner.isDuplicate).toBe(false)
+    expect(loser).toMatchObject({ isDuplicate: true, appeal: { id: winner.appeal.id } })
   })
 })

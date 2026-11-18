@@ -112567,7 +112567,7 @@
       "id": "native.moderation.appeals.resolution-draft-run.active",
       "method": "GET",
       "migratedFrom": ["backend/api/v1/appeals/appeals-staff.mts"],
-      "path": "/api/v1/appeals/00000000-0000-7000-8000-000000000102/resolution-drafts/appeal_resolution_00000000-0000-7000-8000-000000000303",
+      "path": "/api/v1/appeals/00000000-0000-7000-8000-000000000102/resolution-drafts/00000000-0000-7000-8000-000000000306",
       "responseSchema": {
         "hash": "c6298fa203b867aefb96fb9bc72067125edf7db8bfd649d4daf3d1b082b5dfd2",
         "key": "native.moderation.appeals.resolution-draft-run.active"
@@ -112575,7 +112575,7 @@
       "route": {
         "pathParams": {
           "id": "00000000-0000-7000-8000-000000000102",
-          "runId": "appeal_resolution_00000000-0000-7000-8000-000000000303"
+          "runId": "00000000-0000-7000-8000-000000000306"
         },
         "routeTemplate": "/api/v1/appeals/:id/resolution-drafts/:runId"
       },
@@ -112592,7 +112592,7 @@
       "id": "native.moderation.appeals.resolution-draft-run.succeeded",
       "method": "GET",
       "migratedFrom": ["backend/api/v1/appeals/appeals-staff.mts"],
-      "path": "/api/v1/appeals/00000000-0000-7000-8000-000000000102/resolution-drafts/appeal_resolution_00000000-0000-7000-8000-000000000303",
+      "path": "/api/v1/appeals/00000000-0000-7000-8000-000000000102/resolution-drafts/00000000-0000-7000-8000-000000000306",
       "responseSchema": {
         "hash": "efd5e722b647d5f6823732c5765674167e6bd73064064172b0917868bd06967d",
         "key": "native.moderation.appeals.resolution-draft-run.succeeded"
@@ -112600,7 +112600,7 @@
       "route": {
         "pathParams": {
           "id": "00000000-0000-7000-8000-000000000102",
-          "runId": "appeal_resolution_00000000-0000-7000-8000-000000000303"
+          "runId": "00000000-0000-7000-8000-000000000306"
         },
         "routeTemplate": "/api/v1/appeals/:id/resolution-drafts/:runId"
       },
@@ -112617,7 +112617,7 @@
       "id": "native.moderation.appeals.resolution-draft-run.failed",
       "method": "GET",
       "migratedFrom": ["backend/api/v1/appeals/appeals-staff.mts"],
-      "path": "/api/v1/appeals/00000000-0000-7000-8000-000000000102/resolution-drafts/appeal_resolution_00000000-0000-7000-8000-000000000303",
+      "path": "/api/v1/appeals/00000000-0000-7000-8000-000000000102/resolution-drafts/00000000-0000-7000-8000-000000000306",
       "responseSchema": {
         "hash": "c6298fa203b867aefb96fb9bc72067125edf7db8bfd649d4daf3d1b082b5dfd2",
         "key": "native.moderation.appeals.resolution-draft-run.failed"
@@ -112625,7 +112625,7 @@
       "route": {
         "pathParams": {
           "id": "00000000-0000-7000-8000-000000000102",
-          "runId": "appeal_resolution_00000000-0000-7000-8000-000000000303"
+          "runId": "00000000-0000-7000-8000-000000000306"
         },
         "routeTemplate": "/api/v1/appeals/:id/resolution-drafts/:runId"
       },
@@ -112642,7 +112642,7 @@
       "id": "native.moderation.appeals.resolution-draft-run.expired",
       "method": "GET",
       "migratedFrom": ["backend/api/v1/appeals/appeals-staff.mts"],
-      "path": "/api/v1/appeals/00000000-0000-7000-8000-000000000102/resolution-drafts/appeal_resolution_00000000-0000-7000-8000-000000000303",
+      "path": "/api/v1/appeals/00000000-0000-7000-8000-000000000102/resolution-drafts/00000000-0000-7000-8000-000000000306",
       "responseSchema": {
         "hash": "c6298fa203b867aefb96fb9bc72067125edf7db8bfd649d4daf3d1b082b5dfd2",
         "key": "native.moderation.appeals.resolution-draft-run.expired"
@@ -112650,7 +112650,7 @@
       "route": {
         "pathParams": {
           "id": "00000000-0000-7000-8000-000000000102",
-          "runId": "appeal_resolution_00000000-0000-7000-8000-000000000303"
+          "runId": "00000000-0000-7000-8000-000000000306"
         },
         "routeTemplate": "/api/v1/appeals/:id/resolution-drafts/:runId"
       },

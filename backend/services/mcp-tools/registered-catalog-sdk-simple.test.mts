@@ -154,7 +154,7 @@ describe('registered catalog SDK', () => {
       expect(detail).toMatchObject({
         appeal: {
           id: fixture.id,
-          ai_draft_requested_run_id: expect.stringMatching(/^appeal_resolution_/),
+          ai_draft_requested_run_id: null,
           ai_draft_requested_run_status: null,
           ai_draft_run_id: null,
         },

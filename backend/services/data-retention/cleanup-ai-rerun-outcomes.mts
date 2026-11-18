@@ -60,6 +60,15 @@ async function deleteReportJudgementRunBatch(
   return rowCount ?? 0
 }
 
+/**
+ * Only terminal runs retire; an active run, the run an appeal last requested, and the run behind
+ * its saved draft stay. The references are checked once, in the page query: a terminal run cannot
+ * gain one (claims and draft saves need an active run), the foreign keys still refuse it, and a
+ * second check in the delete would scan the appeals table. The page keeps both checks under one
+ * NOT (... OR ...) so they stay per-row filters on the id-ordered index walk: as top-level
+ * NOT EXISTS they become anti joins, and an underestimated terminal count lets the planner hash
+ * and sort every old run.
+ */
 async function deleteAppealResolutionRunBatch(
   cutoffId: string,
   batchSize: number,
@@ -67,8 +76,13 @@ async function deleteAppealResolutionRunBatch(
 ): Promise<number> {
   const query = sql`/* deleteOldAppealResolutionRunBatch */
     WITH candidates AS (
-      SELECT id FROM moderation_appeal_resolution_runs
-      WHERE id < ${cutoffId}::uuid`
+      SELECT id FROM moderation_appeal_resolution_runs run
+      WHERE id < ${cutoffId}::uuid
+        AND (completed_at IS NOT NULL OR failed_at IS NOT NULL OR expired_at IS NOT NULL)
+        AND NOT (
+          EXISTS (SELECT 1 FROM moderation_appeals ma WHERE ma.ai_draft_run_id = run.id)
+          OR EXISTS (SELECT 1 FROM moderation_appeals ma WHERE ma.ai_draft_requested_run_id = run.id)
+        )`
   if (runIds) query.append(sql` AND id = ANY(${runIds}::uuid[])`)
   query.append(sql`
       ORDER BY id LIMIT ${batchSize}
@@ -76,6 +90,7 @@ async function deleteAppealResolutionRunBatch(
     DELETE FROM moderation_appeal_resolution_runs AS run
     WHERE run.id = ANY(ARRAY(SELECT id FROM candidates))
       AND run.id < ${cutoffId}::uuid
+      AND (run.completed_at IS NOT NULL OR run.failed_at IS NOT NULL OR run.expired_at IS NOT NULL)
     RETURNING run.id`)
   const { rowCount } = await write(query)
   return rowCount ?? 0

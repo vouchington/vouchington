@@ -18,24 +18,24 @@ describe('enqueueAppealResolution', () => {
 
   it('admits each manual request after automatic work with its own durable run ID', async () => {
     const appealId = randomUUID()
-    const automaticToken = randomUUID()
-    const firstManualToken = randomUUID()
-    const secondManualToken = randomUUID()
+    const automaticRunId = randomUUID()
+    const firstManualRunId = randomUUID()
+    const secondManualRunId = randomUUID()
     appealIds.push(appealId)
 
-    const runIds = await Promise.all([
-      enqueueAppealResolutionQueued(appealId, automaticToken),
-      enqueueAppealResolutionQueued(appealId, firstManualToken, randomUUID()),
-      enqueueAppealResolutionQueued(appealId, secondManualToken, randomUUID()),
-    ])
-    expect(runIds).toEqual([
-      `appeal_resolution_${automaticToken}`,
-      `appeal_resolution_${firstManualToken}`,
-      `appeal_resolution_${secondManualToken}`,
+    await Promise.all([
+      enqueueAppealResolutionQueued(appealId, automaticRunId),
+      enqueueAppealResolutionQueued(appealId, firstManualRunId, randomUUID()),
+      enqueueAppealResolutionQueued(appealId, secondManualRunId, randomUUID()),
     ])
 
     const jobs = (await getAppealResolutionJobs()).filter(
       candidate => candidate.data.appeal_id === appealId,
+    )
+    expect(jobs.map(job => job.id).toSorted()).toEqual(
+      [automaticRunId, firstManualRunId, secondManualRunId]
+        .map(runId => `appeal_resolution_${runId}`)
+        .toSorted(),
     )
     expect(jobs).toHaveLength(3)
     expect(jobs.filter(job => job.data.rerun_by_id !== null)).toHaveLength(2)

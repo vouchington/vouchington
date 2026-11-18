@@ -79044,7 +79044,7 @@
           "ordinalPosition": 4
         },
         "id": {
-          "comment": null,
+          "comment": "Request identity: only this run may save an AI draft, independent of queue job IDs.",
           "dataType": "uuid",
           "defaultExpression": "uuidv7()",
           "generated": null,
@@ -79064,7 +79064,7 @@
           "ordinalPosition": 7
         },
         "moderation_appeal_id": {
-          "comment": "Appeal owning this exact admitted request token.",
+          "comment": "Appeal owning this exact admitted request.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -79235,25 +79235,25 @@
         }
       },
       "columns": {
-        "ai_draft_request_token": {
-          "comment": "Durable opaque request token; only the current request may save an AI draft, independent of queue job IDs.",
+        "ai_draft_requested_run_id": {
+          "comment": "Latest admitted AI draft request; only that run may save a draft, and its outcome is read from the run, which retention keeps while referenced.",
           "dataType": "uuid",
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 21
-        },
-        "ai_draft_run_id": {
-          "comment": "Queue run that saved the current AI draft; retained across later human lifecycle changes for result polling.",
-          "dataType": "text",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
           "ordinalPosition": 22
+        },
+        "ai_draft_run_id": {
+          "comment": "Identity of the resolution run that saved the current AI draft; retention keeps that run row while this reference exists.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 21
         },
         "ai_drafted_at": {
           "comment": "When the AI agent drafted the recommended_action and responses.",
@@ -79608,6 +79608,24 @@
       },
       "comment": "Appeals filed against moderation actions. Resolved appeals and lifecycle changes are deleted after 24 months; pending appeals remain visible to their members.",
       "foreignKeys": {
+        "fk_moderation_appeals__ai_draft_requested_run_id": {
+          "columns": ["id", "ai_draft_requested_run_id"],
+          "deferrable": false,
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["moderation_appeal_id", "id"],
+          "referencedTable": "moderation_appeal_resolution_runs",
+          "validated": true
+        },
+        "fk_moderation_appeals__ai_draft_run_id": {
+          "columns": ["id", "ai_draft_run_id"],
+          "deferrable": false,
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["moderation_appeal_id", "id"],
+          "referencedTable": "moderation_appeal_resolution_runs",
+          "validated": true
+        },
         "fk_moderation_appeals__user_suspension_id": {
           "columns": ["user_suspension_id"],
           "deferrable": false,
@@ -79727,6 +79745,52 @@
         }
       },
       "indexes": {
+        "idx_moderation_appeals__ai_draft_requested_run_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_appeals__ai_draft_requested_run_id ON public.moderation_appeals USING btree (ai_draft_requested_run_id) WHERE (ai_draft_requested_run_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "ai_draft_requested_run_id",
+              "descending": false,
+              "expression": "ai_draft_requested_run_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(ai_draft_requested_run_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderation_appeals__ai_draft_run_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_appeals__ai_draft_run_id ON public.moderation_appeals USING btree (ai_draft_run_id) WHERE (ai_draft_run_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "ai_draft_run_id",
+              "descending": false,
+              "expression": "ai_draft_run_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(ai_draft_run_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_moderation_appeals__appellant": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -80204,29 +80268,6 @@
           "unique": false,
           "valid": true
         },
-        "moderation_appeals_ai_draft_request_token_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX moderation_appeals_ai_draft_request_token_key ON public.moderation_appeals USING btree (ai_draft_request_token)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "ai_draft_request_token",
-              "descending": false,
-              "expression": "ai_draft_request_token",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
         "moderation_appeals_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -80285,11 +80326,7 @@
           "definition": "CREATE TRIGGER trigger_moderation_transparency_appeals_update_rollup AFTER UPDATE ON public.moderation_appeals REFERENCING OLD TABLE AS old_appeals NEW TABLE AS new_appeals FOR EACH STATEMENT EXECUTE FUNCTION fn_project_moderation_transparency_appeals_update_rollup()"
         }
       },
-      "uniqueConstraints": {
-        "moderation_appeals_ai_draft_request_token_key": {
-          "columns": ["ai_draft_request_token"]
-        }
-      }
+      "uniqueConstraints": {}
     },
     "moderation_cases": {
       "checkConstraints": {

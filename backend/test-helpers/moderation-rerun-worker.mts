@@ -42,6 +42,6 @@ export async function admitModerationRerunForTest(kind: 'report' | 'appeal') {
     path,
     runId,
     resultPath: `${path}/${runId}`,
-    jobId: kind === 'report' ? `report_judgement_${runId}` : runId,
+    jobId: kind === 'report' ? `report_judgement_${runId}` : `appeal_resolution_${runId}`,
   }
 }

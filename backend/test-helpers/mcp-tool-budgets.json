@@ -1221,7 +1221,7 @@
       },
       "read_moderation_appeal": {
         "measured": {
-          "list": 9417,
+          "list": 9421,
           "core": 815
         },
         "max": {
@@ -1241,7 +1241,7 @@
       },
       "draft_review_response": {
         "measured": {
-          "list": 8974,
+          "list": 8978,
           "core": 741
         },
         "max": {
@@ -1251,7 +1251,7 @@
       },
       "approve_review_response": {
         "measured": {
-          "list": 8851,
+          "list": 8855,
           "core": 614
         },
         "max": {
@@ -1261,7 +1261,7 @@
       },
       "deliver_review_response": {
         "measured": {
-          "list": 8850,
+          "list": 8854,
           "core": 614
         },
         "max": {
@@ -1281,7 +1281,7 @@
       },
       "resolve_review_case": {
         "measured": {
-          "list": 9252,
+          "list": 9256,
           "core": 1021
         },
         "max": {

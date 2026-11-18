@@ -3,7 +3,7 @@ import { nativeModerationFixtureCase as fixtureCase } from './native-moderation-
 const reportId = '019f6559-6b31-7171-b5b1-ccd9d702c45e'
 const appealId = '00000000-0000-7000-8000-000000000102'
 const token = '00000000-0000-7000-8000-000000000303'
-const appealRunId = `appeal_resolution_${token}`
+const appealRunId = '00000000-0000-7000-8000-000000000306'
 
 export const nativeModerationRerunApiFixtureCases = [
   ...(['succeeded', 'failed', 'expired'] as const).map(status =>

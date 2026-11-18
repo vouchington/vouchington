@@ -20,9 +20,9 @@ export async function rerunModerationAppealResolutionDraft(
     staffUserId,
     { actionType: 'appeal_resolution_draft_rerun', moderationAppealId: appealId },
     async () => {
-      const { requestToken, runId } = await enqueueAppealRerun(staffUserId, appealId)
+      const runId = await enqueueAppealRerun(staffUserId, appealId)
       // The worker may start before this acknowledgement. Both paths use the same monotonic claim.
-      await claimAppealResolutionRun(appealId, requestToken)
+      await claimAppealResolutionRun(appealId, runId)
       return runId
     },
   )
@@ -30,10 +30,10 @@ export async function rerunModerationAppealResolutionDraft(
 
 async function enqueueAppealRerun(staffUserId: string, appealId: string) {
   // Commit the outcome before enqueue without invalidating the previous paid generation.
-  const [requestToken, { enqueueAppealResolutionQueued }] = await Promise.all([
+  const [runId, { enqueueAppealResolutionQueued }] = await Promise.all([
     createAppealResolutionRun(write, appealId),
     import('@queues/ai-agents/enqueues/appeal-resolution'),
   ])
-  const runId = await enqueueAppealResolutionQueued(appealId, requestToken, staffUserId)
-  return { requestToken, runId }
+  await enqueueAppealResolutionQueued(appealId, runId, staffUserId)
+  return runId
 }

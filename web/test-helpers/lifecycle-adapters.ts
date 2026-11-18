@@ -49,8 +49,7 @@ function appealFor(source: Record<string, LifecycleJson>): ModerationAppeal {
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: '2026-01-01T00:00:00.000Z',
     target_context: null,
-    ai_draft_requested_run_id:
-      stringValue(source, 'requestedRunId') ?? 'appeal_resolution_lifecycle-request',
+    ai_draft_requested_run_id: stringValue(source, 'requestedRunId') ?? 'lifecycle-request',
     ai_draft_run_id: nullableStringValue(source, 'savedRunId'),
   }
 }

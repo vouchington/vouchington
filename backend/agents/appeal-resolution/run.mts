@@ -4,7 +4,6 @@ import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst
 import {
   getModerationAppealByIdFromPrimary,
   createModerationAppealDraft,
-  isCurrentModerationAppealDraftRequest,
   getAppealResolutionRunStatus,
   claimAppealResolutionRun,
   markAppealResolutionRunExpired,
@@ -13,14 +12,13 @@ import { getUserWarningById } from '@services/user-warnings'
 import { getCommunityBanById } from '@services/communities/bans/get'
 import { getUserSuspensionById } from '@services/users/suspension'
 import { fetchEntityContent } from '@services/moderation'
-import onError from '@modules/on-error'
 import { callAppealModel, type AppealModelCaller } from './model.mts'
 
 export type { AppealModelCaller } from './model.mts'
 
 export interface AppealModelInput {
   appealId: string
-  requestToken: string
+  /** The admitted resolution run; its row id is the request identity. */
   runId: string
   rerunById?: string | null
 }
@@ -36,35 +34,20 @@ export async function runAppealResolutionAgent(
   selection: ModelSelection,
   callModel: AppealModelCaller = callAppealModel,
 ): Promise<void> {
-  const { appealId, requestToken, rerunById, runId } = input
+  const { appealId, runId, rerunById } = input
 
-  if (rerunById) {
-    const runStatus = await getAppealResolutionRunStatus(appealId, requestToken)
-    // A missing outcome is inconclusive, and terminal work must never make another paid call.
-    if (runStatus !== 'active') return
-    if (!(await claimAppealResolutionRun(appealId, requestToken))) {
-      await markAppealResolutionRunExpired(appealId, requestToken)
-      return
-    }
+  const runStatus = await getAppealResolutionRunStatus(appealId, runId)
+  // A missing outcome is inconclusive, and terminal work must never make another paid call.
+  if (runStatus !== 'active') return
+  if (!(await claimAppealResolutionRun(appealId, runId))) {
+    await markAppealResolutionRunExpired(appealId, runId)
+    return
   }
 
+  // The claim proved the appeal open and this run current; a deleted appeal cascades its runs.
+  // A later approval or newer run is caught atomically by the draft save, which expires this run.
   const appeal = await getModerationAppealByIdFromPrimary(appealId)
-  if (!appeal) {
-    if (rerunById) await markAppealResolutionRunExpired(appealId, requestToken)
-    onError(new Error(`runAppealResolutionAgent: appeal not found: ${appealId}`))
-    return
-  }
-
-  if (appeal.approved_at != null || appeal.sent_at != null || appeal.resolved_at != null) {
-    if (rerunById) await markAppealResolutionRunExpired(appealId, requestToken)
-    return
-  }
-
-  const currentRequest = await isCurrentModerationAppealDraftRequest(appealId, requestToken)
-  if (!currentRequest) {
-    if (rerunById) await markAppealResolutionRunExpired(appealId, requestToken)
-    return
-  }
+  if (!appeal) return
 
   // Manual reruns bypass only existing-draft idempotency.
   if (!rerunById && appeal.ai_drafted_at != null) return
@@ -129,14 +112,13 @@ export async function runAppealResolutionAgent(
 
   const savedDraft = await createModerationAppealDraft({
     appealId,
-    requestToken,
     runId,
     recommendedAction: result.output.recommended_action,
     aiPublicResponse: result.output.public_response,
     aiInternalResponse: result.output.internal_response,
     model: result.model,
   })
-  if (!savedDraft && rerunById) await markAppealResolutionRunExpired(appealId, requestToken)
+  if (!savedDraft) await markAppealResolutionRunExpired(appealId, runId)
 }
 
 function getPostRemovalActionLabel(kind: 'platform' | 'community' | null): string {

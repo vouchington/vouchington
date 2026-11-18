@@ -48,7 +48,7 @@ export const APPEAL_SELECT = sql`
   END AS status,
   ma.recommended_action, ma.ai_public_response, ma.ai_internal_response,
   ma.model, ma.ai_drafted_at, ma.ai_draft_run_id,
-  ('appeal_resolution_' || ma.ai_draft_request_token::text) AS ai_draft_requested_run_id,
+  ma.ai_draft_requested_run_id,
   requested_run.status AS ai_draft_requested_run_status,
   ma.public_response, ma.internal_notes, ma.drafted_at, ma.edited_at, ma.edited_by_id,
   ma.approved_at, ma.approved_by_id, ma.sent_at, ma.resolved_at, ma.resolved_by_id,
@@ -90,7 +90,7 @@ const APPEAL_TARGET_JOINS = sql`
 export const APPEAL_JOINS = sql`
   LEFT JOIN view_users_public appellant ON appellant.id = ma.appellant_user_id
   LEFT JOIN moderation_appeal_resolution_runs requested_run
-    ON requested_run.id = ma.ai_draft_request_token AND requested_run.moderation_appeal_id = ma.id
+    ON requested_run.id = ma.ai_draft_requested_run_id
 `.append(APPEAL_TARGET_JOINS).append(sql`
   LEFT JOIN retained_user_identities decision_actor_ref ON decision_actor_ref.id = ma.original_decided_by_id
   LEFT JOIN view_users_public decision_actor ON decision_actor.id = decision_actor_ref.id

@@ -42,11 +42,11 @@ async function captureAppealResolutionEnqueue(
     expect(name).toBe('appeal-resolution')
     const appealData = data as AppealResolutionJobData
     expect(appealData).toMatchObject({ appeal_id: appealId, rerun_by_id: staffUserId })
-    expect(appealData.ai_draft_request_token).toMatch(
+    expect(appealData.run_id).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
     )
-    const runId = `appeal_resolution_${appealData.ai_draft_request_token}`
-    expect(opts?.jobId).toBe(runId)
+    const runId = appealData.run_id
+    expect(opts?.jobId).toBe(`appeal_resolution_${runId}`)
     expect(opts?.deduplication).toBeUndefined()
     expect(opts?.ordering).toEqual({
       key: `appeal_resolution_${appealId}`,

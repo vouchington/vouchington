@@ -43,6 +43,7 @@ describe('createModerationAppeal', () => {
       expect(isDuplicate).toBe(false)
       expect(appeal.post_id).toBe(postId)
       expect(appeal.status).toBe('pending')
+      expect(appeal.ai_draft_requested_run_status).toBe('active')
       expect(appeal.target_context).toMatchObject({
         type: 'post_removal',
         id: postId,
@@ -63,26 +64,6 @@ describe('createModerationAppeal', () => {
         verified_display_name: null,
         profile_image_id: null,
       })
-    })
-    it('returns the same appeal when removal submissions race', async () => {
-      const postId = await insertTestPost({
-        title: `Appeal Removal Race ${crypto.randomUUID().slice(0, 8)}`,
-        slug: `appeal-removal-race-${crypto.randomUUID().slice(0, 8)}`,
-        createdById: appellant.id,
-        markdown: 'My post content',
-        clearanceStatus: 'rejected',
-      })
-      const input = parseCreateModerationAppealInput({
-        target_type: 'removal',
-        target_id: postId,
-        appeal_reason: 'Please review this removal.',
-      })
-      const results = await Promise.all([
-        createModerationAppeal(appellant, WEB_PROVENANCE, input),
-        createModerationAppeal(appellant, WEB_PROVENANCE, input),
-      ])
-      expect(new Set(results.map(result => result.appeal.id)).size).toBe(1)
-      expect(results.filter(result => result.isDuplicate)).toHaveLength(1)
     })
     it('stores requested community removal kind when platform rejection also exists', async () => {
       const community = await insertTestCommunity({

@@ -157,7 +157,7 @@ describe('appeals client api helpers', () => {
       const admission = {
         queued: true as const,
         rerun_by_id: 'staff-1',
-        run_id: 'appeal_resolution_00000000-0000-7000-8000-000000000101',
+        run_id: '00000000-0000-7000-8000-000000000101',
       }
       mockPost.mockResolvedValueOnce(admission)
 

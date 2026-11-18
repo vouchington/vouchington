@@ -11,15 +11,14 @@ export async function processAppealResolution(
   await runAppealResolutionAgent(
     {
       appealId: job.data.appeal_id,
-      requestToken: job.data.ai_draft_request_token,
+      runId: job.data.run_id,
       rerunById: job.data.rerun_by_id ?? null,
-      runId: job.id,
     },
     await loadServiceModelSelection('appeal-resolution'),
     callModel,
   )
-  if (job.data.rerun_by_id) {
-    await markAppealResolutionRunExpired(job.data.appeal_id, job.data.ai_draft_request_token)
-  }
+  // The agent returned without failing. A run that saved a draft is already complete; any other
+  // return means this request no longer applies, so it must not block the next admission.
+  await markAppealResolutionRunExpired(job.data.appeal_id, job.data.run_id)
   return { success: true }
 }

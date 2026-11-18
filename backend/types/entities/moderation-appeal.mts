@@ -21,7 +21,7 @@ export interface ModerationAppeal {
   model: string | null
   ai_drafted_at: Date | null
   ai_draft_run_id: string | null
-  ai_draft_requested_run_id: string
+  ai_draft_requested_run_id: string | null
   public_response: string | null
   internal_notes: string | null
   drafted_at: Date | null

@@ -1,6 +1,9 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import assert from 'http-assert'
+import {
+  aiDraftLifecycleMetadata,
+  settleRunGatedAiDraft,
+} from '@services/moderator-actions/ai-draft-save'
 import type { ReviewDispute, ReviewDisputeRecommendedAction } from './config.mts'
 
 export interface AiDraftInput {
@@ -70,7 +73,7 @@ export async function createReviewDisputeDraft(input: AiDraftInput): Promise<Rev
         updated.id,
         'ai_draft',
         NULL,
-        ${JSON.stringify({ model: input.model, recommended_action: input.recommendedAction, run_id: input.runId })}::jsonb
+        ${aiDraftLifecycleMetadata(input)}::jsonb
       FROM updated
       CROSS JOIN lifecycle_change_id
     ),
@@ -86,12 +89,13 @@ export async function createReviewDisputeDraft(input: AiDraftInput): Promise<Rev
     )
     SELECT * FROM updated
   `)
-  const result = rows[0]
-  if (result) return result
-  const { rows: current } = await write<{ id: string }>(sql`
+  return settleRunGatedAiDraft(rows[0], () => findDisputeId(input.disputeId), 'Dispute not found')
+}
+
+async function findDisputeId(disputeId: string): Promise<string | undefined> {
+  const { rows } = await write<{ id: string }>(sql`
     /* createReviewDisputeDraft:checkDispute */
-    SELECT id FROM review_disputes WHERE id = ${input.disputeId}
+    SELECT id FROM review_disputes WHERE id = ${disputeId}
   `)
-  assert(current[0], 404, 'Dispute not found')
-  return null
+  return rows[0]?.id
 }

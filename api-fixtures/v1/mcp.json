@@ -36753,7 +36753,7 @@
                           "additionalProperties": false,
                           "properties": {
                             "ai_draft_requested_run_id": {
-                              "type": "string"
+                              "$ref": "#/$defs/S3"
                             },
                             "ai_draft_run_id": {
                               "$ref": "#/$defs/S3"
@@ -38256,7 +38256,7 @@
                       "additionalProperties": false,
                       "properties": {
                         "ai_draft_requested_run_id": {
-                          "type": "string"
+                          "$ref": "#/$defs/S1"
                         },
                         "ai_draft_run_id": {
                           "$ref": "#/$defs/S1"
@@ -39032,7 +39032,7 @@
                       "additionalProperties": false,
                       "properties": {
                         "ai_draft_requested_run_id": {
-                          "type": "string"
+                          "$ref": "#/$defs/S1"
                         },
                         "ai_draft_run_id": {
                           "$ref": "#/$defs/S1"
@@ -39808,7 +39808,7 @@
                       "additionalProperties": false,
                       "properties": {
                         "ai_draft_requested_run_id": {
-                          "type": "string"
+                          "$ref": "#/$defs/S1"
                         },
                         "ai_draft_run_id": {
                           "$ref": "#/$defs/S1"
@@ -40688,7 +40688,7 @@
                       "additionalProperties": false,
                       "properties": {
                         "ai_draft_requested_run_id": {
-                          "type": "string"
+                          "$ref": "#/$defs/S1"
                         },
                         "ai_draft_run_id": {
                           "$ref": "#/$defs/S1"

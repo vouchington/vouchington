@@ -2165,7 +2165,14 @@
               "additionalProperties": false,
               "properties": {
                 "ai_draft_requested_run_id": {
-                  "type": "string"
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 },
                 "ai_draft_run_id": {
                   "anyOf": [
@@ -3939,7 +3946,14 @@
                   "additionalProperties": false,
                   "properties": {
                     "copyright_notice_submission_id": {
-                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "id": {
                       "type": "string"
@@ -6353,7 +6367,14 @@
           "additionalProperties": false,
           "properties": {
             "ai_draft_requested_run_id": {
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
             },
             "ai_draft_run_id": {
               "anyOf": [
@@ -7650,7 +7671,14 @@
           "additionalProperties": false,
           "properties": {
             "ai_draft_requested_run_id": {
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
             },
             "ai_draft_run_id": {
               "anyOf": [
@@ -8231,7 +8259,14 @@
           "additionalProperties": false,
           "properties": {
             "ai_draft_requested_run_id": {
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
             },
             "ai_draft_run_id": {
               "anyOf": [
@@ -8812,7 +8847,14 @@
           "additionalProperties": false,
           "properties": {
             "ai_draft_requested_run_id": {
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
             },
             "ai_draft_run_id": {
               "anyOf": [
@@ -16775,10 +16817,24 @@
       "additionalProperties": false,
       "properties": {
         "authorizing_assessment_id": {
-          "anyOf": [{ "type": "null" }, { "type": "string" }]
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         },
         "copyright_notice_submission_id": {
-          "anyOf": [{ "type": "null" }, { "type": "string" }]
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         },
         "copyright_notice_target_id": {
           "type": "string"
@@ -25304,7 +25360,14 @@
           ]
         },
         "ai_draft_requested_run_id": {
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         },
         "ai_draft_requested_run_status": {
           "anyOf": [
