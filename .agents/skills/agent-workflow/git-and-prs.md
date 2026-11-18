@@ -57,7 +57,7 @@ onto `origin/main`; never run the non-stack form on a mid-stack branch.
 - Run [before-push checks](before-pushing.md), push the branch, then create or update a draft with
   the `pr_create` or `pr_update` tool of the `vouchington-tooling` MCP server. Follow
   [PR description](../pr-description/SKILL.md); `pr_update` validates the body and preserves the
-  live Shepherd Journal. PreToolUse does not intercept raw `gh pr create` or `gh pr edit --body*`.
+  live Shepherd Journal. Raw `gh pr create` and `gh pr edit --body*` skip that validation, so use the tools.
 - Pass `workspaceSetup` for the `Workspace setup:` line. Agent, Device, and Worktree lines are
   tool-injected.
   Keep the title and body accurate as scope and validation change.
@@ -80,7 +80,6 @@ onto `origin/main`; never run the non-stack form on a mid-stack branch.
   A native stack merge lands every ready bottom layer at once; the approval must cover every layer
   it lands. See [merge authority](../../../docs/development/merge-authority.md) and
   [stacked-prs](../stacked-prs/SKILL.md#merge-every-ready-bottom-layer-at-once).
-- After PR creation, set `pnpm exec vouchington tmux name <topic>-pr<number>` outside the sandbox.
   For an ordinary authored PR, mark ready when required checks pass and actionable review is resolved. Hand-off: the authoring agent shepherds its own PR with pr-shepherd (see
   [Shepherding](#shepherding)). Posting a literal `/shepherd` comment is an optional delegation to the
   attended triage loop, for example when the session must end or the owner asks.

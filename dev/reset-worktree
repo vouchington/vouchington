@@ -21,7 +21,6 @@ Resets a worktree to a clean state for the next agent task:
   - Creates a new random branch, then hard-resets it to origin/main
   - Removes worktree-local generated build and test output
   - Runs ./dev/initialize monorepo so pnpm exec tools work immediately
-  - Clears the tmux window and pane title (if running inside tmux)
 
 Refuses if there are uncommitted or untracked changes; use --force to
 discard them. Run ./dev/initialize backend afterwards for DB/Valkey-backed

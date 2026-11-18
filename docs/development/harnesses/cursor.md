@@ -9,7 +9,7 @@ in this repository. It does **not** get copied skills or `AGENTS.md` files.
 - Skills load from [`.agents/skills/`](../../../.agents/skills) (Cursor also discovers
   `.claude/skills/`).
 - Hooks load through Cursor's Claude-compat from [`.claude/settings.json`](../../../.claude/settings.json);
-  policy stays in [`dev/codex-hooks/`](../../../dev/codex-hooks). Do not add a `hooks.json` here: a
+  they run advisory lint and session context only. Do not add a `hooks.json` here: a
   second hook source double-fires.
 - MCP: no repository file registers a server. vouchington-machines registers `vouchington-tooling`
   in `~/.cursor/mcp.json` and pre-approves `Mcp(vouchington-tooling:*)`. Cursor also keeps its
@@ -29,9 +29,9 @@ in this repository. It does **not** get copied skills or `AGENTS.md` files.
   `The "path" argument must be of type string. Received an instance of Array`.
   Full `./dev/initialize web` stays agent-driven.
 - Capability map: [agent-harness-parity.md](../agent-harness-parity.md).
-- Session id: Cursor does not inject a session-id env into the agent Shell. The SessionStart
-  check prints the payload id for the MCP tools (the
-  [`blackboard` skill](../../../.agents/skills/blackboard/SKILL.md)); with no line the agent stops
-  journaling and reports it. Pass `--session-id` or `--jsonl` for transcript facts.
+- Session id: Cursor does not inject a session-id env into the agent Shell. The MCP tools
+  `session_ensure` and `journal_append` create the session on demand (the
+  [`blackboard` skill](../../../.agents/skills/blackboard/SKILL.md)); if they are unavailable the
+  agent stops journaling and reports it. Pass `--session-id` or `--jsonl` for transcript facts.
 
 `worktrees/` is gitignored runtime state.

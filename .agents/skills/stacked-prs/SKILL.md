@@ -17,8 +17,11 @@ adapter alone. Do not reload a canonical skill or adapter already read.
 [Git And PRs](../agent-workflow/git-and-prs.md) decides when work must stack, sets the ten-layer
 cap, and requires one source issue per PR. `main` is the default branch. Use the native `gh stack`
 commands as `pr-shepherd:pr-shepherd` describes them.
-The published pre-tool-use policy enforces the local command allowlist via
-`dev/codex-hooks/policy/stack-policy.mts` and rejects an off-trunk root. Area workflows must not filter `pull_request`
+The `pr_create` policy (`dev/agent-policy/stack-policy.mts`) rejects an off-trunk root. No hook
+guards `gh stack`; `.claude/settings.json` `permissions.deny` refuses `gh stack modify`, `switch`,
+`trunk`, `submit --open`, `link --open`, and the bare interactive forms of `submit`, `checkout`, and
+`merge`. Pass a layer number or `--auto` instead; `gh stack submit --auto` and
+`gh stack merge --squash 12` still run. Area workflows must not filter `pull_request`
 branches: submission creates mid-stack PRs before GitHub registers the stack.
 
 After `gh stack submit --auto`, update each draft with the `vouchington-tooling` MCP `pr_update`

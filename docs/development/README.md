@@ -119,8 +119,6 @@ binary.
 - [Supply-chain policy](reference-dependency-updates-supply-chain-policy.md)
 - [DynamicConfig Cleanup](reference-dynamicconfig-cleanup.md)
 - [Explain Test Selection and Vitest Ownership](reference-explain-test-selection-and-vitest-ownership.md)
-- [Decision flow](reference-merge-authority-decision-flow.md)
-- [Automation contexts](reference-merge-authority-why-automation-means-github-actions.md)
 - [E2E and Visual](reference-tests-e2e-and-visual.md)
 - [Local Web Validation Recovery](reference-tests-local-web-validation-recovery.md)
 - [Schema Checks](reference-tests-schema-checks.md)

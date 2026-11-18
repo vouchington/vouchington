@@ -14,7 +14,6 @@ sessions belongs to the [`blackboard` skill](../../.agents/skills/blackboard/SKI
 flowchart LR
   parent[Parent agent] -->|assignment + parent session id| child[Child agent]
   child -->|session_ensure with own id + parent id| mcp
-  hook[SessionStart hook prints sessionId] --> parent
   parent -->|journal_append and the other tools| mcp[Machine-registered vouchington-tooling server]
   scripts[Vouchington retro and probe scripts] --> js[agent-blackboard JS client]
   manual[pnpm exec manual commands] --> cli[root-installed agent-blackboard CLI]
@@ -26,8 +25,7 @@ flowchart LR
 
 Every process with the hosted connection uses the same durable store; there is no local/CI split.
 The Lambda and DynamoDB infrastructure live in the separate `agent-blackboard` repository, which
-owns redeploying, scaling, and repair. The Bash gates never see MCP calls, so no `PreToolUse`
-matcher covers `mcp__` tools.
+owns redeploying, scaling, and repair.
 
 ## Setup (human runbook)
 
@@ -62,14 +60,10 @@ eligibility and redaction rules live in the
 export or `session_archive`, the root drains every worktree's outbox, because an archived session
 refuses later delivery and would strand a retained record.
 
-## SessionStart availability check
+## Session start and availability
 
-The hook runs `vouchington agent-blackboard session-start` at every SessionStart. If tooling has not
-been initialized, or the installed CLI lacks this command, it gives a fixed setup advisory; run
-`./dev/initialize monorepo` from the worktree root. Until then, use the harness session id as the
-[blackboard skill](../../.agents/skills/blackboard/SKILL.md) directs. Once available, the CLI
-prints the `Blackboard sessionId:` line from the hook's own payload (no inherited environment or
-persisted file can leak in) and probes the hosted deployment, asking the user to fix a missing
-credential or unreachable service. In a sandbox it skips the probe and reports the withheld
-credential and egress instead of a false outage. It cannot see whether a harness connected the MCP
-server; an agent finds out by searching for `journal_append`.
+No hook starts a session. An agent's first `session_ensure` or `journal_append` call creates it on
+demand through the machine-registered MCP server. An agent finds out whether a harness connected the server by searching for
+`journal_append`. If tooling has not been initialized, run `./dev/initialize monorepo` from the
+worktree root. Until the server is available, use the harness session id as the
+[blackboard skill](../../.agents/skills/blackboard/SKILL.md) directs.

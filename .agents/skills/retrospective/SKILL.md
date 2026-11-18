@@ -20,7 +20,7 @@ stack handoff, under [Close-out](../agent-workflow/git-and-prs.md#close-out). Us
 `retrospective_save`. If an already reported merge later changes the outcome, append the short
 journal note prescribed by Close-out instead of another retrospective.
 
-The tools use the SessionStart `sessionId` from [blackboard](../blackboard/SKILL.md). For a PR
+The tools use the session id from [blackboard](../blackboard/SKILL.md). For a PR
 in another repository, give `compose.facts`
 `{status: "not-assessed", reason}`. Local document structure and validation live in
 [fact contracts](fact-contracts.md) and [saving](saving.md); read them only when that detail is

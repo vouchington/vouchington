@@ -20,10 +20,10 @@ it is unregistered, use vouchington-machines' `./configure-agents.sh` and
 `./diagnose-agents.sh --repo <checkout>`, then reconnect the MCP client. Do not add repository
 MCP registration or a credential fallback.
 
-The SessionStart hook prints `Blackboard sessionId: <id>`. An explicitly assigned child id takes
-precedence; otherwise use the current harness's own `CODEX_THREAD_ID`,
-`CLAUDE_CODE_SESSION_ID`, or `GROK_SESSION_ID` when the printed line is absent. Cursor uses its
-SessionStart line. Never use another harness's id or synthesize one. An attended session uses
+No hook starts the session: the `vouchington-tooling` MCP tools `session_ensure` and
+`journal_append` create it on demand. An explicitly assigned child id takes precedence; otherwise
+use the current harness's own `CODEX_THREAD_ID`, `CLAUDE_CODE_SESSION_ID`, or `GROK_SESSION_ID`.
+Never use another harness's id or synthesize one. An attended session uses
 `interactive` mode; Scheduled and shepherd runs use `autonomous` mode.
 
 Hooks do not journal on the agent's behalf. These Vouchington triggers are additional to the

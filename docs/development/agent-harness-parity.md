@@ -1,6 +1,6 @@
 # Agent Harness Parity — Claude, Codex, Grok, Cursor, and OpenCode
 
-Local coding agents in this repository share one instruction source and one policy runner.
+Local coding agents in this repository share one instruction source.
 `.claude/settings.json` is the only hook source for Claude, Cursor, and Grok; `.codex/config.toml`
 is Codex's. Grok does not get a copied `.grok/hooks`, `.grok/skills`, or permission allowlist, and
 Cursor does not get a `.cursor/hooks.json`: both run the Claude hooks through Claude-compat. Each
@@ -55,26 +55,23 @@ flowchart LR
   claudeHooks[.claude/settings.json] --> claude
   claudeHooks --> grokCompat[Grok Claude-compat]
   claudeHooks --> cursorCompat[Cursor Claude-compat]
-  hookRunner[vouchington-tooling hook runner] --> claudeHooks
-  localPolicy[dev/codex-hooks policy table and adapters] --> hookRunner
-  hookRunner --> codexConfig[.codex/config.toml]
+  codexConfig[.codex/config.toml] --> codex
   cursorConfig[".cursor/ permissions, worktrees"] --> cursor
 ```
 
 ## Capability matrix
 
-| Capability    | Claude                                                       | Codex                                                         | Grok                                                              |
-| ------------- | ------------------------------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Instructions  | Nested `AGENTS.md`; `CLAUDE.md` is gitignored                | Nested `AGENTS.md`; no `project_doc_fallback_filenames`       | Nested `AGENTS.md`; do not add `CLAUDE.md`                        |
-| Skills        | Domain plugin + `.claude/skills` → `.agents/skills` overlays | Domain plugin + Skill tool / local overlays                   | `.agents/skills` overlays load installed Vouchington skills       |
-| Hooks         | `.claude/settings.json`                                      | `.codex/config.toml`                                          | Claude hooks via compat; the PreToolUse command sets a `timeout`  |
-| Permissions   | `.claude/settings.json` allow/deny                           | `.codex/rules/default.rules`                                  | Claude permission strings via compat                              |
-| Sandbox       | User's config; only `dev/` script exclusions in the project  | User's config; allow prefixes run outside it without a prompt | User's config: off, because a sandboxed Grok cannot escalate `gh` |
-| MCP           | Registered per machine; no repository file                   | Registered per machine; every tool pre-approved               | Imports Claude's machine registration                             |
-| Session id    | `CLAUDE_CODE_SESSION_ID`                                     | `CODEX_THREAD_ID`                                             | Shell and hook `GROK_SESSION_ID`                                  |
-| Merge confirm | Silent allow for one plain merge when attended               | Empty hook output (best-effort)                               | Empty confirm (best-effort)                                       |
-| Folder trust  | Always loads project settings                                | Loads project hooks                                           | Project Claude hooks need `/hooks-trust`                          |
-| CI            | When the route selects it                                    | When the route selects it                                     | When the route selects it                                         |
+| Capability   | Claude                                                       | Codex                                                         | Grok                                                              |
+| ------------ | ------------------------------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Instructions | Nested `AGENTS.md`; `CLAUDE.md` is gitignored                | Nested `AGENTS.md`; no `project_doc_fallback_filenames`       | Nested `AGENTS.md`; do not add `CLAUDE.md`                        |
+| Skills       | Domain plugin + `.claude/skills` → `.agents/skills` overlays | Domain plugin + Skill tool / local overlays                   | `.agents/skills` overlays load installed Vouchington skills       |
+| Hooks        | `.claude/settings.json`                                      | `.codex/config.toml`                                          | Claude hooks via compat                                           |
+| Permissions  | `.claude/settings.json` allow/deny                           | `.codex/rules/default.rules`                                  | Claude permission strings via compat                              |
+| Sandbox      | User's config; only `dev/` script exclusions in the project  | User's config; allow prefixes run outside it without a prompt | User's config: off, because a sandboxed Grok cannot escalate `gh` |
+| MCP          | Registered per machine; no repository file                   | Registered per machine; every tool pre-approved               | Imports Claude's machine registration                             |
+| Session id   | `CLAUDE_CODE_SESSION_ID`                                     | `CODEX_THREAD_ID`                                             | Shell and hook `GROK_SESSION_ID`                                  |
+| Folder trust | Always loads project settings                                | Loads project hooks                                           | Project Claude hooks need `/hooks-trust`                          |
+| CI           | When the route selects it                                    | When the route selects it                                     | When the route selects it                                         |
 
 Scheduled prompts, ejection and `main`-failure triage, and shepherding run in attended or local
 sessions driven by the triage loop; the hook-harness event relay feeds them events.
@@ -91,12 +88,10 @@ Do not copy those files into `.grok/`: a second hook source would double-fire.
 Grok prefix-matches Claude `permissions.deny` strings with no word boundary, so a deny must not be a
 prefix of a sanctioned command: `Bash(git push --force)` matches `git push --force-with-lease`.
 Plain force pushes stay out of the deny list for that reason. `.husky/pre-push` rejects `--force`,
-`-f`, and a `+` refspec and allows `--force-with-lease`; the PreToolUse hook blocks the same push
-for harness agents. `dev/claude-settings-grok-bash-deny.test.mts` locks the deny-list absence.
-
-The shared runner reads Grok's hook dialect (payload field names, `Hook denied: <reason>`, `deny`
-rather than `block` in stdout JSON, a fail-open default timeout) and lists both Claude and
-Grok tool names in the PreToolUse matcher so the policy fires even if name aliases are off.
+`-f`, and a `+` refspec and allows `--force-with-lease`; `dev/claude-settings-grok-bash-deny.test.mts` locks the deny-list absence.
+The same no-word-boundary matching means the bare `Bash(gh stack submit)`, `Bash(gh stack checkout)`,
+and `Bash(gh stack merge)` denies also refuse `gh stack submit --auto` for Grok; Claude matches them
+exactly.
 
 ## Cursor through Claude-compat
 
@@ -104,9 +99,7 @@ Cursor CLI runs the `.claude/settings.json` hooks through its Claude-compat load
 not add `.cursor/hooks.json`: Cursor loads it as well, so every hook would double-fire.
 `dev/agent-sandbox-config.test.mts` fails if it (or `.grok/hooks/`) comes back. Cursor's agent
 shell has no session-id env, and Grok's exports `GROK_SESSION_ID`. Hooks fail
-open on a crash or timeout; accepted, because the hook is a mistake guardrail, not a security
-boundary. Without `.cursor/hooks.json`, Cursor never fires `UserPromptSubmit`, so it gets no tmux
-nudge on prompt submit.
+open on a crash or timeout; accepted, because the hooks are advisory context and formatting only.
 
 ## Privacy
 
