@@ -20,7 +20,10 @@ import { stripHtmlTags } from '@/lib/utils/strip-html-tags'
 import { topicHref } from '@/lib/links/entity-href'
 import { getTranslations } from '@/lib/i18n/get-translations'
 import { HackerNewsReferencesAside } from '@/components/hacker-news/hacker-news-references-aside'
-import { getContentLanguageDir } from '@ts-shared/languages/content-languages'
+import {
+  getContentLanguageDir,
+  getEffectiveContentLanguage,
+} from '@ts-shared/languages/content-languages'
 import {
   selectAuthorizedPlayerUrl,
   selectEmbedAudio,
@@ -43,14 +46,9 @@ function toUrlSearchParams(searchParams: SearchParams): URLSearchParams {
   }
   return nextSearchParams
 }
-function buildModalUrl(pathname: string, searchParams: SearchParams, itemId?: string): string {
+function buildModalUrl(pathname: string, searchParams: SearchParams): string {
   const nextSearchParams = toUrlSearchParams(searchParams)
   nextSearchParams.delete(RSS_ITEM_PARAM)
-
-  if (itemId) {
-    nextSearchParams.set(RSS_ITEM_PARAM, itemId)
-  }
-
   const query = nextSearchParams.toString()
   return query ? `${pathname}?${query}` : pathname
 }
@@ -91,7 +89,9 @@ export async function RssFeedItemModal({
       )
     : null
   const viewerBookmarks = response.bookmarks?.[item.id]
-  const contentLanguage = item.lingua_rs_detected_language ?? undefined
+  const contentLanguage = getEffectiveContentLanguage({
+    detectedLanguage: item.lingua_rs_detected_language,
+  })
   const rawTitle = preview.title ?? item.data.title ?? null
   const authoredTitle = rawTitle ? decodeHtmlEntities(rawTitle) : null
   const audio = selectEmbedAudio(embed, item.data)
