@@ -25,8 +25,7 @@
   or template required.
 - Search [docs](docs/README.md); update owning page. Docs hold only why, impact, architecture,
   runbooks, and unenforced invariants; no restated code or drifting numbers ([rules](docs/AGENTS.md)).
-- Agent behavior is enforced by harness permission settings and auto mode, not repository hooks; the
-  only hooks are advisory session context and post-edit lint ([parity](docs/development/agent-harness-parity.md)).
+- Agent hooks and harness config: [parity](docs/development/agent-harness-parity.md).
   Keep shared `AGENTS.md`; no shadowing `CLAUDE.md` files.
 - No local AST parsers; ask a human first. Voucha-specific parsing and Oxlint plugins go in
   `vouchington-tooling`, generic rules in `no-mistakes`; ast-grep and Oxlint rules may live here.
