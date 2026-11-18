@@ -64,5 +64,6 @@ Automatic moderation-appeal and review-dispute resolution runs commit with their
 queue job is admitted after the commit. If that admission fails, the error is only logged. No failed
 job exists for `reconcile-ai-agent-failures` to find, so the run stays active and no AI draft is
 produced. Staff can still rerun the resolution manually, which admits a run and enqueues it again.
-This loss is accepted until [#5952](https://github.com/vouchington/vouchington/issues/5952) adds a
-bounded sweep that expires stale active runs in both tables.
+The draft loss is accepted. [#5952](https://github.com/vouchington/vouchington/issues/5952) adds a
+bounded sweep that expires stale active runs in both tables so they record an outcome; expiring a
+run does not recover its draft.
