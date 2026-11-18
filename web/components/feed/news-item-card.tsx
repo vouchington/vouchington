@@ -10,6 +10,7 @@ import { RSS_ITEM_PARAM } from '@/lib/rss-item-modal'
 import type { PublicUser } from '@/types/user'
 import { stripHtmlTags } from '@/lib/utils/strip-html-tags'
 import { decodeHtmlEntities } from '@ts-shared/utils/html'
+import { getEffectiveContentLanguage } from '@ts-shared/languages/content-languages'
 import { selectEmbedAudio, selectEmbedPreview } from '@/lib/embeds/embed-preview'
 import type { UrlEmbed } from '@/types/api-responses/posts-topics-and-feeds'
 import { appendUtm, isExternalHref, OUTBOUND_UTM } from '@/lib/url/utm'
@@ -84,7 +85,9 @@ function NewsItemCardContent({
     item.data['media:description'],
     item.data.summary,
   )
-  const contentLanguage = item.lingua_rs_detected_language ?? undefined
+  const contentLanguage = getEffectiveContentLanguage({
+    detectedLanguage: item.lingua_rs_detected_language,
+  })
 
   const modalSearchParams = new URLSearchParams(currentSearchParams?.toString() ?? '')
   modalSearchParams.set(RSS_ITEM_PARAM, item.id)

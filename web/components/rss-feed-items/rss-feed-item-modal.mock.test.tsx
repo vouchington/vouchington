@@ -150,10 +150,13 @@ describe('RssFeedItemModal', () => {
     )
   })
 
-  it('marks plain-text fallback content with the detected item language', async () => {
+  it.each([
+    ['ar', 'ar', 'rtl'],
+    ['unknown', null, 'auto'],
+  ])('marks plain-text fallback content for detected language %s', async (detected, lang, dir) => {
     mockGetResolvedUiLocale.mockResolvedValue('en')
     mockGetRssFeedItem.mockResolvedValue({
-      rss_feed_item: { ...rssFeedItem, lingua_rs_detected_language: 'ar' },
+      rss_feed_item: { ...rssFeedItem, lingua_rs_detected_language: detected },
       rss_feed_item_election: null,
       content_html: null,
       bookmarks: {},
@@ -169,8 +172,8 @@ describe('RssFeedItemModal', () => {
     const fallback = screen
       .getByText('Description from the YouTube RSS media payload.')
       .closest('p')
-    expect(fallback).toHaveAttribute('lang', 'ar')
-    expect(fallback).toHaveAttribute('dir', 'rtl')
+    expect(fallback?.getAttribute('lang')).toBe(lang)
+    expect(fallback).toHaveAttribute('dir', dir)
   })
 
   it('uses embed preview text when the RSS item has no title or summary', async () => {
