@@ -10,6 +10,9 @@ import {
   createCompletedModerationImage,
   createImageModerationResult,
 } from '@voucha/test-helpers/services/openai-moderation/image-moderation'
+import { insertTestCommunity } from '@voucha/test-helpers/entities/communities'
+import { getModeratorActionRowsForTest } from '@voucha/test-helpers/sql-moderation'
+import { getModerationSystemUserId } from '@services/users/system-users'
 import { afterAll, it, expect, afterEach, vi, beforeAll, beforeEach, describe } from 'vitest'
 import * as moderation from '@modules/openai-utils/moderate'
 import { processPendingImageQuarantinePage } from '../delete-flagged.mts'
@@ -185,4 +188,41 @@ describe('image quarantine', () => {
     await expect(storage.storedRenderKeys()).resolves.toEqual([])
     await expect(getImageByAny(image.id)).resolves.toBeNull()
   })
+
+  it.each([
+    ['sexual/minors', 'openai_image_quarantine_csam'],
+    ['harassment', 'openai_image_moderation'],
+  ] as const)(
+    'a %s image removal leaves an automod modlog entry on the community post it was attached to',
+    async (category, reason) => {
+      const image = await createCompletedModerationImage(user)
+      await seedImageQuarantineStorage(image)
+      const community = await insertTestCommunity({ createdById: user.id })
+      const suffix = crypto.randomUUID()
+      const postId = await insertTestPost({
+        title: `Moderated image ${suffix}`,
+        slug: `moderated-image-${suffix}`,
+        markdown: 'Post with an image removed by moderation',
+        createdById: user.id,
+        communityId: community.id,
+      })
+      await insertTestPostImage({ postId, imageId: image.id })
+      requestOpenAIModeration.mockResolvedValueOnce(
+        createOpenAIModerationResponse(true, { [category]: true }),
+      )
+
+      await upsertImageOpenAIModeration(image.id)
+
+      const automodUserId = await getModerationSystemUserId()
+      await expect(
+        getModeratorActionRowsForTest({ actorId: automodUserId, postId }),
+      ).resolves.toEqual([
+        expect.objectContaining({
+          action_type: 'remove',
+          community_id: community.id,
+          metadata: { reason, imageId: image.id },
+        }),
+      ])
+    },
+  )
 })
