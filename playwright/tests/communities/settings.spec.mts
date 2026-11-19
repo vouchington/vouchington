@@ -8,6 +8,7 @@ import { loginAsAdmin, loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import {
   createTestUserWithAge,
+  getTestCommunityMember,
   insertTestCommunityMember,
   CONTRIBUTING_USER_AGE_MS,
 } from '../../../backend/test-helpers/index.mts'
@@ -66,15 +67,14 @@ test.describe('Community Settings', () => {
       COMMUNITY_ID = communityId
     })
 
-    await insertTestCommunityMember({
-      communityId: COMMUNITY_ID,
-      userId: TEST_USER_ID,
-      role: 'owner',
-    }).catch((err: unknown) => {
-      const msg = err instanceof Error ? err.message : String(err)
-      if (!msg.includes('unique') && !msg.includes('duplicate') && !msg.includes('already exists'))
-        throw err
-    })
+    // Community creation already makes the admin the owner; only insert when it did not.
+    if (!(await getTestCommunityMember(COMMUNITY_ID, TEST_USER_ID))) {
+      await insertTestCommunityMember({
+        communityId: COMMUNITY_ID,
+        userId: TEST_USER_ID,
+        role: 'owner',
+      })
+    }
 
     const moderator = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     if (!moderator) throw new Error('Failed to create moderator test user')
