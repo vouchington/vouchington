@@ -65,9 +65,10 @@ owning transaction's commit. The application-specific AST-grep guard rejects dir
 including mutations inside CTEs and appended fragments. Bootstrap seeds and test fixtures have
 separate lifecycles; production membership changes cannot use those exceptions.
 
-The `backend-no-enqueue-and-wait` ast-grep rule rejects queue result waits and misleading
-`enqueue*AndWait` names across backend code, including tests. Queue admission may still be awaited;
-the forbidden operation is waiting for another job's completion instead of durable state.
+no-mistakes `queues` checks reject queue result waits and misleading `enqueue*AndWait` names
+across backend code, including tests, through `queues.factories` in `.no-mistakes.yml`. Queue
+admission may still be awaited; the forbidden operation is waiting for another job's completion
+instead of durable state.
 
 Markdown reachability and structure-budget gates run without baselines: fix violations by linking, splitting, or reorganizing, not with an exception registry. Reachability requires every included document to be discoverable from a tracked `AGENTS.md` through `README.md` indexes. A long document may contain at most one table and one Mermaid fence. Run the check with `pnpm run no-mistakes`; do not force the root `--tsconfig`, which lacks package aliases such as the web `@/*` mapping and hides reachable imports from graph checks.
 
