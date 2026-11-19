@@ -22,6 +22,7 @@ import {
   type ChannelSubscription,
   type DataRequestStreamStatus,
 } from '@data-stores/valkey-pubsub'
+import { signExportDownloadUrlOrReport } from './data-request-download-url.mts'
 import { startSSE, pipeChannelToSSE, watchForAbortBeforeSSE } from '../../sse-helpers.mts'
 
 // An administrator can run an export for any account through the subject's own route (for example
@@ -170,7 +171,7 @@ app.route('/api/v1/users/:idOrSlug/data-request/stream').get(async (ctx: Context
     if (isTerminalStatus(request.status)) {
       let downloadUrl: string | null = null
       if (request.status === 'ready' && request.s3_key) {
-        downloadUrl = await getExportDownloadUrl(request.s3_key).catch(() => null)
+        downloadUrl = await signExportDownloadUrlOrReport(request.s3_key)
       }
       initialValue = { status: request.status, download_url: downloadUrl }
     }
