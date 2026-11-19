@@ -6211,6 +6211,7 @@
 {"id":"copy.notifications.kind.follow.byUser","value":"@{username} a commencé à vous suivre"},
 {"id":"copy.notifications.kind.follow_referral_signup.anonymous","value":"Votre filleul s’est inscrit et vous suit !"},
 {"id":"copy.notifications.kind.follow_referral_signup.byUser","value":"Votre filleul @{username} s’est inscrit et vous suit !"},
+{"id":"copy.notifications.kind.generic.title","value":"Nouvelle notification"},
 {"id":"copy.notifications.kind.moderation_appeal_resolved.title","value":"Votre appel de modération a été traité"},
 {"id":"copy.notifications.kind.modmail.title","value":"Nouveau message modmail"},
 {"id":"copy.notifications.kind.post_manual_send.data_point.anonymous","value":"Quelqu’un vous a envoyé une donnée"},
