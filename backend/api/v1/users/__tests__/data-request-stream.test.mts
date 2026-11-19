@@ -11,6 +11,7 @@ import {
   markDataRequestReady,
 } from '@services/account-data-requests'
 import * as accountDataRequests from '@services/account-data-requests'
+import * as onErrorModule from '@modules/on-error'
 import * as sseHelpers from '../../../sse-helpers.mts'
 
 const subscribeSpy = vi.spyOn(valkey.dataRequestPubSub, 'subscribe')
@@ -103,6 +104,29 @@ describe('GET /api/v1/users/:idOrSlug/data-request/stream', () => {
     expect(pipeOptions.isTerminal({ status: 'ready', download_url: null })).toBe(true)
     expect(pipeOptions.isTerminal({ status: 'processing' })).toBe(false)
     expect(pipeOptions.abortSignal).toBeInstanceOf(AbortSignal)
+  })
+
+  it('reports a signing failure and still sends ready status without a download URL', async () => {
+    const user = await createTestUser({ username: safeUsername('dr-stream-sign-fail') })
+    const dr = await createDataRequest(user.id, user.id)
+    await markDataRequestProcessing(dr.id)
+    await markDataRequestReady(
+      dr.id,
+      `account-data-requests/${dr.id}.zip`,
+      new Date(Date.now() + 60_000),
+    )
+    const failure = new Error('signing credentials unavailable')
+    getExportDownloadUrlSpy.mockRejectedValue(failure)
+    const reportError = vi.spyOn(onErrorModule, 'default').mockReturnValue(undefined)
+    const request = createRequest()
+    await request.authenticateAs(user)
+
+    const response = await request.get(`/api/v1/users/${user.id}/data-request/stream`).expect(200)
+
+    expect(response.text).toContain('"status":"ready"')
+    expect(response.text).toContain('"download_url":null')
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ cause: failure }))
+    reportError.mockRestore()
   })
 
   it('sends failed status as initial terminal value when request has already failed', async () => {
