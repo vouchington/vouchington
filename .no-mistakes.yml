@@ -1,1 +1,5 @@
 reportUnusedDisableDirectives: report
+queues:
+  factories:
+    enqueueAndWaitPatterns: ['^enqueue\w*AndWait$']
+    forbidEnqueueAndWaitDeclarations: true
