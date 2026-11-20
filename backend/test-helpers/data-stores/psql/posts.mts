@@ -20,11 +20,11 @@ export async function insertLocalTestPost(data: {
       gemini_embedding_2_content_sha256,
       llm_moderation_content_sha256,
       created_via
-    , bedrock_nova_multimodal_v1_content_sha256) VALUES (
+    ) VALUES (
       'discussion', ${data.title}, ${data.markdown}, ${data.createdById},
       ${sha256}, ${sha256},
       'system'
-    , ${sha256})
+    )
     RETURNING id
   `,
   )

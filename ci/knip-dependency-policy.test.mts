@@ -21,9 +21,8 @@ describe('Knip extracted workflow evidence', () => {
       for (const [workspace, allowed] of allowedWorkspaceIgnoreDependencies) {
         workspaces[workspace] = { ignoreDependencies: allowed.map(item => item.dependency) }
         for (const { dependency, evidenceFiles } of allowed) {
-          const evidence = dependency.includes('bedrock')
-            ? `${JSON.stringify(dependency)}: "workspace:*"`
-            : dependency === '@fontsource/inter'
+          const evidence =
+            dependency === '@fontsource/inter'
               ? 'nodeRequire.resolve(`@fontsource/inter/fixture.woff`)'
               : dependency === '@types/react'
                 ? "const name = '@types/react'"

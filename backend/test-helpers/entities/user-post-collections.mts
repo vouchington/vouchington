@@ -56,11 +56,11 @@ export async function insertTestSavedPostCollection(options: {
         gemini_embedding_2_content_sha256,
         llm_moderation_content_sha256,
         created_via
-      , bedrock_nova_multimodal_v1_content_sha256)
+      )
       SELECT id, (CASE WHEN id = ANY(${filteredPostIds}::uuid[]) THEN 'topic_recommendation' ELSE 'discussion' END)::post_types,
         title, markdown, ${options.ownerId}::uuid,
         ${`\\x${'0'.repeat(64)}`}, ${`\\x${'0'.repeat(64)}`}, 'system'
-      , ${`\\x${'0'.repeat(64)}`} FROM source
+      FROM source
       RETURNING id
     ), clearance AS (
       INSERT INTO post_clearance_changes (post_id, change_type, changed_by_id)

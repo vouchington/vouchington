@@ -131,7 +131,6 @@ async function createTopicInDatabase(
         topic_type = ${topicType},
         updated_by_id = ${creator.id},
         gemini_embedding_2_content_sha256 = ${content_sha256},
-        bedrock_nova_multimodal_v1_content_sha256 = ${content_sha256},
         homepage_url_id = ${updates.homepage_url_id ?? null}
       WHERE id = (SELECT id FROM source_alias_owner)
       RETURNING id
@@ -146,7 +145,7 @@ async function createTopicInDatabase(
         homepage_url_id,
         created_via,
         created_via_oauth_client_id
-      , bedrock_nova_multimodal_v1_content_sha256)
+      )
       SELECT
         ${updates.name},
         ${updates.slug},
@@ -156,7 +155,7 @@ async function createTopicInDatabase(
         ${updates.homepage_url_id ?? null},
         ${provenance.createdVia},
         ${provenance.oauthClientId}
-      , ${content_sha256} WHERE NOT EXISTS (SELECT 1 FROM source_alias_owner)
+      WHERE NOT EXISTS (SELECT 1 FROM source_alias_owner)
       RETURNING id
     )
     SELECT id FROM revived_topic

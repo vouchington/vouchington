@@ -8,7 +8,6 @@ const buckets = {
   S3_BUCKET_CRAWLS: 'test-crawls',
   S3_BUCKET_USER_EXPORTS: 'test-user-exports',
   S3_BUCKET_QUARANTINE: 'test-quarantine',
-  S3_BUCKET_BEDROCK_BATCH: 'test-bedrock-batch',
 }
 
 for (const [name, value] of Object.entries(buckets)) {

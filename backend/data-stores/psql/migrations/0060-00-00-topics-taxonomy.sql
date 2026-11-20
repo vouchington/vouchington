@@ -91,16 +91,7 @@ CREATE TABLE IF NOT EXISTS topics (
   hero_image_id UUID REFERENCES images ON DELETE SET NULL,
   homepage_url_id UUID REFERENCES urls ON DELETE SET NULL,
 
-  -- bedrock nova multimodal v1 embedding
-  bedrock_nova_multimodal_v1_content_sha256 BYTEA NOT NULL,
-  CHECK (OCTET_LENGTH(bedrock_nova_multimodal_v1_content_sha256) = 32),
-  bedrock_nova_multimodal_v1_input_sha256 BYTEA,
-  CHECK (bedrock_nova_multimodal_v1_input_sha256 IS NULL OR OCTET_LENGTH(bedrock_nova_multimodal_v1_input_sha256) = 32),
-  bedrock_nova_multimodal_v1_embedding VECTOR(1024),
-  bedrock_nova_multimodal_v1_embedding_created_at TIMESTAMPTZ,
-  bedrock_nova_multimodal_v1_input_token_count INT,
-  CHECK (bedrock_nova_multimodal_v1_input_token_count IS NULL OR bedrock_nova_multimodal_v1_input_token_count >= 0),
-
+  -- gemini embedding 2
   gemini_embedding_2_content_sha256 BYTEA NOT NULL,
   CHECK (OCTET_LENGTH(gemini_embedding_2_content_sha256) = 32),
   gemini_embedding_2_input_sha256 BYTEA,
@@ -1096,28 +1087,28 @@ EXECUTE FUNCTION fn_project_latest_change('fediverse_instance_topics', 'topic_id
 
 -- 1. Insert category topics
 -- Using digest() from pgcrypto extension (already installed for embeddings)
-INSERT INTO topics (created_via, id, name, slug, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
+INSERT INTO topics (created_via, id, name, slug, gemini_embedding_2_content_sha256)
 VALUES
-  ('system', uuidv7(), 'Voucha', 'voucha', digest('Voucha' || E'\n\n', 'sha256'), digest('Voucha' || E'\n\n', 'sha256')),
-  ('system', uuidv7(), 'Books', 'books', digest('Books' || E'\n\n', 'sha256'), digest('Books' || E'\n\n', 'sha256')),
-  ('system', uuidv7(), 'Courses', 'courses', digest('Courses' || E'\n\n', 'sha256'), digest('Courses' || E'\n\n', 'sha256')),
-  ('system', uuidv7(), 'Events', 'events', digest('Events' || E'\n\n', 'sha256'), digest('Events' || E'\n\n', 'sha256')),
-  ('system', uuidv7(), 'Local Businesses', 'local-businesses', digest('Local Businesses' || E'\n\n', 'sha256'), digest('Local Businesses' || E'\n\n', 'sha256')),
-  ('system', uuidv7(), 'Movies', 'movies', digest('Movies' || E'\n\n', 'sha256'), digest('Movies' || E'\n\n', 'sha256')),
-  ('system', uuidv7(), 'Products', 'products', digest('Products' || E'\n\n', 'sha256'), digest('Products' || E'\n\n', 'sha256')),
-  ('system', uuidv7(), 'Software Products', 'software-products', digest('Software Products' || E'\n\n', 'sha256'), digest('Software Products' || E'\n\n', 'sha256')),
-  ('system', uuidv7(), 'Hardware Products', 'hardware-products', digest('Hardware Products' || E'\n\n', 'sha256'), digest('Hardware Products' || E'\n\n', 'sha256')),
-  ('system', uuidv7(), 'Recipes', 'recipes', digest('Recipes' || E'\n\n', 'sha256'), digest('Recipes' || E'\n\n', 'sha256')),
-  ('system', uuidv7(), 'Creative Work Seasons', 'creative-work-seasons', digest('Creative Work Seasons' || E'\n\n', 'sha256'), digest('Creative Work Seasons' || E'\n\n', 'sha256')),
-  ('system', uuidv7(), 'TV Show Seasons', 'tv-show-seasons', digest('TV Show Seasons' || E'\n\n', 'sha256'), digest('TV Show Seasons' || E'\n\n', 'sha256')),
-  ('system', uuidv7(), 'Creative Work Series', 'creative-work-series', digest('Creative Work Series' || E'\n\n', 'sha256'), digest('Creative Work Series' || E'\n\n', 'sha256')),
-  ('system', uuidv7(), 'TV Shows', 'tv-shows', digest('TV Shows' || E'\n\n', 'sha256'), digest('TV Shows' || E'\n\n', 'sha256')),
-  ('system', uuidv7(), 'Creative Work Episodes', 'creative-work-episodes', digest('Creative Work Episodes' || E'\n\n', 'sha256'), digest('Creative Work Episodes' || E'\n\n', 'sha256')),
-  ('system', uuidv7(), 'TV Show Episodes', 'tv-show-episodes', digest('TV Show Episodes' || E'\n\n', 'sha256'), digest('TV Show Episodes' || E'\n\n', 'sha256')),
-  ('system', uuidv7(), 'Games', 'games', digest('Games' || E'\n\n', 'sha256'), digest('Games' || E'\n\n', 'sha256')),
-  ('system', uuidv7(), 'Songs', 'songs', digest('Songs' || E'\n\n', 'sha256'), digest('Songs' || E'\n\n', 'sha256')),
-  ('system', uuidv7(), 'Playlists', 'playlists', digest('Playlists' || E'\n\n', 'sha256'), digest('Playlists' || E'\n\n', 'sha256')),
-  ('system', uuidv7(), 'Organizations', 'organizations', digest('Organizations' || E'\n\n', 'sha256'), digest('Organizations' || E'\n\n', 'sha256'))
+  ('system', uuidv7(), 'Voucha', 'voucha', digest('Voucha' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Books', 'books', digest('Books' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Courses', 'courses', digest('Courses' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Events', 'events', digest('Events' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Local Businesses', 'local-businesses', digest('Local Businesses' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Movies', 'movies', digest('Movies' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Products', 'products', digest('Products' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Software Products', 'software-products', digest('Software Products' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Hardware Products', 'hardware-products', digest('Hardware Products' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Recipes', 'recipes', digest('Recipes' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Creative Work Seasons', 'creative-work-seasons', digest('Creative Work Seasons' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'TV Show Seasons', 'tv-show-seasons', digest('TV Show Seasons' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Creative Work Series', 'creative-work-series', digest('Creative Work Series' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'TV Shows', 'tv-shows', digest('TV Shows' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Creative Work Episodes', 'creative-work-episodes', digest('Creative Work Episodes' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'TV Show Episodes', 'tv-show-episodes', digest('TV Show Episodes' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Games', 'games', digest('Games' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Songs', 'songs', digest('Songs' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Playlists', 'playlists', digest('Playlists' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Organizations', 'organizations', digest('Organizations' || E'\n\n', 'sha256'))
 ON CONFLICT DO NOTHING;
 
 -- Every active topic's current slug is an alias. Runtime creates and slug updates maintain this;
@@ -1232,18 +1223,3 @@ CREATE TRIGGER trigger_fediverse_instance_integration_changes_append_only BEFORE
 CREATE INDEX idx_fediverse_instance_integration_changes__changed_by_id ON fediverse_instance_integration_changes(changed_by_id) WHERE changed_by_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_topics__merged_into_topic_id__id ON topics(merged_into_topic_id,id) WHERE merged_into_topic_id IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS idx_topics__bedrock_nova_multimodal_v1_input_sha256
-ON topics (bedrock_nova_multimodal_v1_input_sha256)
-WHERE bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS idx_topics__bedrock_nova_multimodal_v1_embedding
-ON topics USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops)
-WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS idx_topics__bedrock_nova_multimodal_v1_to_update
-ON topics (id)
-WHERE (
-  bedrock_nova_multimodal_v1_input_sha256 IS NULL
-  OR (bedrock_nova_multimodal_v1_input_sha256 != bedrock_nova_multimodal_v1_content_sha256)
-);

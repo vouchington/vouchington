@@ -45,7 +45,6 @@ jobs:
       provider: all
       prepared_database: true
     secrets:
-      AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       LIGHTPANDA_TOKEN: ${{ secrets.LIGHTPANDA_TOKEN }}

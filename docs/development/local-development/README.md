@@ -22,7 +22,3 @@ auth, CSP, caching, and `/api/*` routing, so it is never valid for browsing or b
 ## Reference index
 
 - [Seed Data](../../../seed/README.md)
-
-## Bedrock embeddings local
-
-[Bedrock local provider setup](reference-bedrock-embeddings-local.md)

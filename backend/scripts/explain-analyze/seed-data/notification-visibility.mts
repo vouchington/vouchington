@@ -23,11 +23,11 @@ export async function seedNotificationVisibility(): Promise<void> {
   await q(
     `/* seedNotificationVisibility:posts */
     INSERT INTO posts(id,created_by_id,post_type,title,markdown,created_via,approved_at,
-      gemini_embedding_2_content_sha256,llm_moderation_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
+      gemini_embedding_2_content_sha256,llm_moderation_content_sha256)
     SELECT id,$2,'discussion','Visibility seed','Visibility seed','system',
       CASE WHEN id=$3 THEN NULL ELSE CURRENT_TIMESTAMP END,
       decode(repeat('00',32),'hex'),decode(repeat('00',32),'hex')
-    , decode(repeat('00',32),'hex') FROM UNNEST($1::uuid[]) id`,
+    FROM UNNEST($1::uuid[]) id`,
     [
       NOTIFICATION_VISIBILITY_SEED.posts,
       NOTIFICATION_VISIBILITY_SEED.user,
@@ -41,8 +41,8 @@ export async function seedNotificationVisibility(): Promise<void> {
   )
   await q(
     `/* seedNotificationVisibility:topic */
-    INSERT INTO topics(id,name,slug,created_via,gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
-    VALUES($1,'Visibility seed','seed-notification-visibility','system',decode(repeat('00',32),'hex'), decode(repeat('00',32),'hex'))`,
+    INSERT INTO topics(id,name,slug,created_via,gemini_embedding_2_content_sha256)
+    VALUES($1,'Visibility seed','seed-notification-visibility','system',decode(repeat('00',32),'hex'))`,
     [NOTIFICATION_VISIBILITY_SEED.topic],
   )
   await q(
@@ -76,10 +76,10 @@ export async function seedNotificationVisibility(): Promise<void> {
   )
   await q(
     `/* seedNotificationVisibility:items */
-    INSERT INTO rss_feed_items(id,url_id,data,deleted_at,gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
+    INSERT INTO rss_feed_items(id,url_id,data,deleted_at,gemini_embedding_2_content_sha256)
     SELECT id,$2,'{"title":"Visibility seed"}'::jsonb,
       CASE WHEN id=$3 THEN CURRENT_TIMESTAMP ELSE NULL END,decode(repeat('00',32),'hex')
-    , decode(repeat('00',32),'hex') FROM UNNEST($1::uuid[]) id`,
+    FROM UNNEST($1::uuid[]) id`,
     [
       NOTIFICATION_VISIBILITY_SEED.items,
       NOTIFICATION_VISIBILITY_SEED.url,

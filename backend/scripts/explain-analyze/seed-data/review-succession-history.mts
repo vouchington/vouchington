@@ -21,8 +21,8 @@ export async function seedReviewSuccessionHistory(): Promise<void> {
   )
   await query(
     `/* seedReviewSuccessionHistory */ INSERT INTO topics
-       (id, name, slug, created_by_id, created_via, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
-     VALUES ($1, 'Review succession history', 'seed-review-succession-history', $2, 'system', $3, $3)
+       (id, name, slug, created_by_id, created_via, gemini_embedding_2_content_sha256)
+     VALUES ($1, 'Review succession history', 'seed-review-succession-history', $2, 'system', $3)
      ON CONFLICT DO NOTHING`,
     [topic, author, contentHash('review-succession-history-topic')],
   )
@@ -70,8 +70,8 @@ async function insertReviewPosts(
   await query(
     `/* seedReviewSuccessionHistory */ INSERT INTO posts
        (id, post_type, title, created_by_id, created_via, archived_at,
-        gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256)
-     SELECT id, 'review', 'Review succession history', $2::uuid, 'system', $3::timestamptz, $4, $4, $4
+        gemini_embedding_2_content_sha256, llm_moderation_content_sha256)
+     SELECT id, 'review', 'Review succession history', $2::uuid, 'system', $3::timestamptz, $4, $4
      FROM unnest($1::uuid[]) AS input(id) ON CONFLICT DO NOTHING`,
     [ids, author, archivedAt, contentHash('review-succession-history-post')],
   )

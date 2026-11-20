@@ -28,7 +28,6 @@
     "@data-stores/valkey-pubsub": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",
-    "@queues/bedrock-embeddings-batch": "workspace:^",
     "@queues/gemini-embeddings-batch": "workspace:^",
     "@services/analytics": "workspace:^",
     "@services/images": "workspace:^",

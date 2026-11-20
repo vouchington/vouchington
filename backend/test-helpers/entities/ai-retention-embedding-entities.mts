@@ -8,10 +8,10 @@ export async function insertEmbeddingRetentionPosts(query: TransactionQuery, cou
     `/* insertEmbeddingRetentionPosts */
     INSERT INTO posts (post_type, title, markdown, created_by_id,
       broadcast, privacy, is_anonymous, created_via,
-      gemini_embedding_2_content_sha256, llm_moderation_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
+      gemini_embedding_2_content_sha256, llm_moderation_content_sha256)
     SELECT 'discussion', 'Embedding retention fixture', 'Owned association fixture', $1::uuid,
       'everyone', 'public', FALSE, 'system', decode(repeat('00', 32), 'hex'), decode(repeat('00', 32), 'hex')
-    , decode(repeat('00', 32), 'hex') FROM generate_series(1, $2::integer) RETURNING id`,
+    FROM generate_series(1, $2::integer) RETURNING id`,
     [users[0]!.id, count],
   )
   return rows.map(row => row.id)

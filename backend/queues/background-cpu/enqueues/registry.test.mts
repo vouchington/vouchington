@@ -77,6 +77,6 @@ describe('background CPU registry contracts', () => {
     expect(() => requireBackgroundCpuJob('crawl.unknown')).toThrow(
       'Unregistered background-cpu job',
     )
-    expect(getBackgroundCpuWorkerBaseline()).toBe(56)
+    expect(getBackgroundCpuWorkerBaseline()).toBe(45)
   })
 })

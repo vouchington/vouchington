@@ -103,7 +103,6 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     jobLabel: 'backend-live-providers',
     invocation: 'literal',
     projects: [
-      { project: 'backend-bedrock', credential: 'AWS tests role + Bedrock' },
       { project: 'backend-openai', credential: 'OPENAI_API_KEY' },
       { project: 'backend-openrouter', credential: 'OPENROUTER_API_KEY' },
       { project: 'backend-lightpanda', credential: 'LIGHTPANDA_TOKEN' },

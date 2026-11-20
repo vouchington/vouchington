@@ -22,7 +22,6 @@
     "@modules/queue-config": "workspace:^",
     "@queues/bloom-filters": "workspace:^",
     "@services/api-keys": "workspace:^",
-    "@services/bedrock-embeddings": "workspace:^",
     "@services/bookmarks": "workspace:^",
     "@services/embeddings": "workspace:^",
     "@services/entity-cache": "workspace:^",

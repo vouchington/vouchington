@@ -73,10 +73,6 @@ export const ENV_REVIEW_REASONS = new Map<string, string>([
   ],
   ['RSS_CACHE_TTL_SECONDS', 'Runtime cache tuning; keep environment-scoped for operator override.'],
   [
-    'S3_BUCKET_BEDROCK_BATCH',
-    'Deployment bucket name; keep environment-scoped with infrastructure wiring.',
-  ],
-  [
     'S3_BUCKET_CRAWLS',
     'Deployment bucket name; keep environment-scoped with infrastructure wiring.',
   ],

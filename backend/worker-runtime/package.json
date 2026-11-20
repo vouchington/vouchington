@@ -27,7 +27,6 @@
     "@queues/heartbeat": "workspace:^",
     "@services/analytics": "workspace:^",
     "@services/api-keys": "workspace:^",
-    "@services/bedrock-embeddings": "workspace:^",
     "@services/bloom-filter-maintenance": "workspace:^",
     "@services/embeddings": "workspace:^",
     "@services/entity-cache": "workspace:^",

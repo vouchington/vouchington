@@ -33,7 +33,7 @@ export async function insertTestLinkPostWithAudio(data: {
       media_type,
       enclosure_url,
       gemini_embedding_2_content_sha256
-    , bedrock_nova_multimodal_v1_content_sha256)
+    )
     SELECT
       identity.id,
       ${urlId},
@@ -41,7 +41,7 @@ export async function insertTestLinkPostWithAudio(data: {
       'audio'::rss_feed_item_media_types,
       ${enclosureUrl},
       ${sha256}
-    , ${sha256} FROM identity
+    FROM identity
     ON CONFLICT (id) DO UPDATE SET
       url_id = EXCLUDED.url_id,
       data = EXCLUDED.data,
@@ -97,11 +97,11 @@ export async function insertTestLinkPostWithPodcastEpisode(data: {
     INSERT INTO rss_feed_items (
       id, url_id, data, media_type, enclosure_url,
       gemini_embedding_2_content_sha256
-    , bedrock_nova_multimodal_v1_content_sha256)
+    )
     SELECT
       identity.id, ${url.id}, '{}'::jsonb,
       'audio'::rss_feed_item_media_types, ${enclosureUrl}, ${sha256}
-    , ${sha256} FROM identity
+    FROM identity
     ON CONFLICT (id) DO UPDATE SET
       url_id = EXCLUDED.url_id,
       data = EXCLUDED.data,

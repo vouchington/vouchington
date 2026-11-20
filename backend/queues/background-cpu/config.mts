@@ -23,7 +23,6 @@ export const PRIORITY_DISPATCH = 100
  */
 export const BACKGROUND_CPU_DOMAINS = [
   'crawl',
-  'bedrock-embeddings',
   'gemini-embeddings',
   'ai-spend-cap',
   'content-analysis',

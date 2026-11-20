@@ -77,9 +77,9 @@ export async function insertExplainBloomRepairSources(
   )
   await transaction(
     `/* insertExplainBloomRepairSources */
-    INSERT INTO rss_feed_items (id, url_id, data, gemini_embedding_2_content_sha256, updated_at, bedrock_nova_multimodal_v1_content_sha256)
+    INSERT INTO rss_feed_items (id, url_id, data, gemini_embedding_2_content_sha256, updated_at)
     SELECT identity.id, $3::uuid, jsonb_build_object('title', fixture.key), sha256(fixture.key::bytea), fixture.updated_at
-    , sha256(fixture.key::bytea) FROM jsonb_to_recordset($1::jsonb) fixture(key text, updated_at timestamptz)
+    FROM jsonb_to_recordset($1::jsonb) fixture(key text, updated_at timestamptz)
     JOIN rss_feed_item_guids identity ON identity.url_hostname_id = $2::uuid AND identity.guid = fixture.key
     ON CONFLICT DO NOTHING`,
     [JSON.stringify(rows), owners.hostnameId, owners.urlId],

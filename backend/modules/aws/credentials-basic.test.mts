@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
-  getBedrockCredentials,
   getFirehoseCredentials,
   getSESCredentials,
   getS3Credentials,
   getSqsCredentials,
-  hasBedrockCredentials,
   hasFirehoseCredentials,
   hasSESCredentials,
   hasS3Credentials,
@@ -84,41 +82,6 @@ describe('credentials', () => {
       expect(getSESCredentials()).toEqual({
         accessKeyId: 'ses-akid',
         secretAccessKey: 'ses-secret',
-      })
-    })
-
-    it('hasBedrockCredentials ignores missing and whitespace-only values', () => {
-      setEnv('BEDROCK_AWS_ACCESS_KEY_ID', ' ')
-      setEnv('BEDROCK_AWS_SECRET_ACCESS_KEY', '\n\t')
-      setEnv('AWS_ACCESS_KEY_ID', undefined)
-      setEnv('AWS_SECRET_ACCESS_KEY', undefined)
-
-      expect(hasBedrockCredentials()).toBe(false)
-      expect(() => getBedrockCredentials()).toThrow('Missing Bedrock credentials')
-    })
-
-    it('getBedrockCredentials falls back to shared AWS credentials and trims values', () => {
-      setEnv('BEDROCK_AWS_ACCESS_KEY_ID', undefined)
-      setEnv('BEDROCK_AWS_SECRET_ACCESS_KEY', '   ')
-      setEnv('AWS_ACCESS_KEY_ID', '  fallback-bedrock-akid ')
-      setEnv('AWS_SECRET_ACCESS_KEY', '  fallback-bedrock-secret ')
-
-      expect(hasBedrockCredentials()).toBe(true)
-      expect(getBedrockCredentials()).toEqual({
-        accessKeyId: 'fallback-bedrock-akid',
-        secretAccessKey: 'fallback-bedrock-secret',
-      })
-    })
-
-    it('getBedrockCredentials prefers Bedrock-specific credentials over shared AWS credentials', () => {
-      setEnv('BEDROCK_AWS_ACCESS_KEY_ID', 'bedrock-akid')
-      setEnv('BEDROCK_AWS_SECRET_ACCESS_KEY', 'bedrock-secret')
-      setEnv('AWS_ACCESS_KEY_ID', 'fallback-akid')
-      setEnv('AWS_SECRET_ACCESS_KEY', 'fallback-secret')
-
-      expect(getBedrockCredentials()).toEqual({
-        accessKeyId: 'bedrock-akid',
-        secretAccessKey: 'bedrock-secret',
       })
     })
 

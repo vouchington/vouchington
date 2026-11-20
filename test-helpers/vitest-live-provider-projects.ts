@@ -1,8 +1,6 @@
 // Exact live-provider project exceptions, including the dispatch-only eval projects; keyless projects keep the normal host allowlist.
 const LIVE_PROVIDER_PROJECTS = new Set([
-  ...'anthropic,aws,bedrock,lightpanda,openai,openrouter,stripe'
-    .split(',')
-    .map(name => `backend-${name}`),
+  ...'anthropic,aws,lightpanda,openai,openrouter,stripe'.split(',').map(name => `backend-${name}`),
   'backend-evals-anthropic',
   'backend-evals-openrouter',
 ])

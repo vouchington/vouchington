@@ -36,7 +36,6 @@
     "@queues/rss-feed-maintenance": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
     "@services/batch-lookup": "workspace:^",
-    "@services/bedrock-embeddings": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/embeddings": "workspace:^",
     "@services/entity-cache": "workspace:^",

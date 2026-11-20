@@ -126,16 +126,4 @@ export const backendCredentialedTestProjects: TestProjectConfiguration[] = [
       hookTimeout: 5_000,
     },
   },
-  {
-    extends: true,
-    test: {
-      pool: 'forks',
-      isolate: false,
-      name: 'backend-bedrock',
-      include: ['backend/**/*.bedrock.test.mts'],
-      exclude: ['**/node_modules/**', '**/.git/**'],
-      testTimeout: 5_000,
-      hookTimeout: 5_000,
-    },
-  },
 ]

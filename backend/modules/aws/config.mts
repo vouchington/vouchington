@@ -4,7 +4,6 @@ import type { IncomingMessage } from 'node:http'
 import { Readable } from 'node:stream'
 
 export const AWS_REGION = process.env.AWS_REGION ?? 'us-west-2'
-export const BEDROCK_AWS_REGION = process.env.BEDROCK_AWS_REGION ?? 'us-east-1'
 
 class AwsResponseBodyTimeoutError extends Error {
   override readonly name = 'TimeoutError'

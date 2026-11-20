@@ -71,7 +71,7 @@ describe('backend live-provider workflow', () => {
     expect(workflow.permissions).not.toHaveProperty('id-token')
     expect(
       providerJobs.filter(([, job]) => job.permissions?.['id-token'] === 'write').map(([id]) => id),
-    ).toEqual(['backend-bedrock', 'backend-anthropic'])
+    ).toEqual(['backend-anthropic'])
   })
 
   it('bounds every job below the sum of its step deadlines', () => {
