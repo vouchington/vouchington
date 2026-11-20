@@ -1,4 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
+import assert from 'http-assert'
 import sql from 'sql-template-strings'
 
 /** Acquire the existing row this transaction's work mutation writes through its trigger. */
@@ -22,4 +23,17 @@ export async function lockCopyrightActionGenerationsForWrite(
     WHERE copyright_notice_id = ANY(${noticeIds}::uuid[])
     ORDER BY copyright_notice_id FOR UPDATE
   `)
+}
+
+/** Own the generation of the case a submission belongs to; its case id is an immutable FK read unlocked. */
+export async function lockCopyrightActionGenerationForSubmission(
+  submissionId: string,
+  query: TransactionQuery,
+): Promise<void> {
+  const { rows } = await query<{ copyright_notice_id: string }>(sql`
+    /* lockCopyrightActionGenerationForSubmission */
+    SELECT copyright_notice_id FROM copyright_notice_submissions WHERE id = ${submissionId}
+  `)
+  assert(rows[0], 404, 'Copyright submission not found')
+  await lockCopyrightActionGenerationForWrite(rows[0].copyright_notice_id, query)
 }

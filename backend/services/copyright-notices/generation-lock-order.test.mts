@@ -131,7 +131,6 @@ describe('copyright generation-first lock order', () => {
     const { moderator, noticeId, submissionId } = await createAcceptedFormDecision()
     const assessment = await runWhileCopyrightGenerationsHeld({
       heldNoticeIds: [noticeId],
-      waitMarker: 'appendCopyrightSubmissionAssessment:lockSubmission',
       start: () =>
         appendCopyrightSubmissionAssessment({
           submissionId,
