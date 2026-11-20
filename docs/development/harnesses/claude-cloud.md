@@ -31,8 +31,6 @@ dependencies. Background processes are not cached; run `backend` or `web` in the
   those suites.
 - The session's GitHub proxy only serves `api.github.com` for repositories attached to the session,
   so `mise install` can fail on restricted networks; `./dev/initialize` reports a warning.
-- The Agent Blackboard hook needs `AGENT_BLACKBOARD_URL` and `AGENT_BLACKBOARD_TOKEN` in the cloud
-  environment's variables; see [Agent Blackboard](../agent-blackboard.md).
 - Cloud sessions do not install the plugins in the
   [Claude configuration](../../../.claude/README.md#required-agent-plugins); adapters read the
   `vouchington-tooling` copy from `node_modules` instead.

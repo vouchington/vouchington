@@ -14,8 +14,8 @@ MCP journal and outbox procedure and the evidence-minimization boundary.
 
 ## Vouchington additions
 
-Vouchington's machine configuration registers the `vouchington-tooling` MCP server. Follow
-[agent-blackboard](../../../docs/development/agent-blackboard.md) for the hosted connection. If
+Vouchington's machine configuration registers the `vouchington-tooling` MCP server. The
+`vouchington-tooling` plugin and MCP server provide the blackboard. If
 it is unregistered, use vouchington-machines' `./configure-agents.sh` and
 `./diagnose-agents.sh --repo <checkout>`, then reconnect the MCP client. Do not add repository
 MCP registration or a credential fallback.

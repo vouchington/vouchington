@@ -43,7 +43,6 @@ function filterMatches(globs: string[] | undefined, path: string, every = false)
 const pr9389Files = [
   '.agents/skills/stacked-prs/SKILL.md',
   '.agents/skills/staging-qa/SKILL.md',
-  '.agents/skills/triage-prs/SKILL.md',
   'ci/agent-workflow-docs.test.mts',
 ] as const
 
