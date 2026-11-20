@@ -1,9 +1,12 @@
 import { hasSemanticSearch, hasTextSearch } from '@modules/search-utils'
+import { getPostsWorkLimit } from '../../work-limits.mts'
 import type { PostSearchOptions, PostSearchSort } from '../types.mts'
 import { hasTopicMembershipFilters } from './topic-filters.mts'
 
 /** Posts a topic-filtered page inspects before it returns what matched and a continuation cursor. */
-export const TOPIC_WALK_ROW_CAP = 1000
+export function getTopicWalkRowCap(): number {
+  return getPostsWorkLimit('topic_walk_row_cap')
+}
 
 /** A capped walk reads the sort key page by page; counts and phased walks stay uncapped. */
 export function usesCappedTopicWalk(options: PostSearchOptions, sort: PostSearchSort): boolean {

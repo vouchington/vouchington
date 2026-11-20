@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
 import { getPostIds } from '../get-ids.mts'
 import { buildPostSearchQuery } from '../query-builder.mts'
-import { TOPIC_WALK_ROW_CAP } from '../query-builder/topic-walk.mts'
+import { getTopicWalkRowCap } from '../query-builder/topic-walk.mts'
+import { postsWorkConfig } from '../../work-limits.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { appendPostSearchOrderAndLimit } from '../query-builder/order-and-limit.mts'
 
 const COMMUNITY_ID = '019e0000-1400-7000-8000-000000000064'
@@ -78,10 +80,21 @@ describe('discovery search branches', () => {
     )
   })
 
-  it('caps a topic walk at its inspected rows and probes membership per row outside', () => {
+  it('caps a topic walk at its inspected rows and probes membership per row outside', async () => {
     const walk = buildPostSearchQuery(USER, { universal_topic_ids: [COMMUNITY_ID], limit: 25 })
     expect(walk.sql).toContain('candidate_posts AS NOT MATERIALIZED')
-    expect(walk.values).toContain(TOPIC_WALK_ROW_CAP)
+    expect(walk.values).toContain(getTopicWalkRowCap())
+    await postsWorkConfig.waitForInitialization()
+    const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, { topic_walk_row_cap: 7 })
+    try {
+      const configured = buildPostSearchQuery(USER, {
+        universal_topic_ids: [COMMUNITY_ID],
+        limit: 25,
+      })
+      expect(configured.values).toContain(7)
+    } finally {
+      restore()
+    }
     expect(walk.sql).toContain('JOIN posts ON posts.id = candidate_posts.id')
     expect(walk.sql).toContain('direct_relation.subject_id = candidate_posts.id')
     expect(walk.sql).not.toContain(' IN (SELECT')

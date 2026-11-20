@@ -2,6 +2,7 @@ import { read } from '@data-stores/psql'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import sql from 'sql-template-strings'
 import type { ClassifierRunUsage, ClassifierUsageWindow } from './usage-report-types.mts'
+import { getClassifierRunsWorkLimit } from './work-limits.mts'
 import { assertClassifierWindowWithinRetention } from '@services/classifiers/retention-window'
 
 /**
@@ -11,9 +12,6 @@ import { assertClassifierWindowWithinRetention } from '@services/classifiers/ret
  * at the window's start.
  */
 const LEDGER_CLOCK_SKEW_MS = 60_000
-
-/** One row per run, so a window past this many runs is rejected rather than silently cut short. */
-const CLASSIFIER_USAGE_REPORT_MAX_RUNS = 20_000
 
 type RunRow = {
   run_id: string
@@ -64,14 +62,14 @@ export function assertClassifierUsageWindow({ from, to }: ClassifierUsageWindow)
 /**
  * Reads every run reserved inside the window with its ledger usage. The window is an index range
  * on the run `id`. The ledger join has only a lower bound: a retry is billed after the run was
- * reserved, so its row can land after the window ends and must still count. `maxRuns` is the
- * guard's size, a parameter only so a test can reach it with two runs instead of twenty thousand.
+ * reserved, so its row can land after the window ends and must still count. One row per run, so a
+ * window past `usage_report_max_runs` runs is rejected rather than silently cut short.
  */
 export async function readClassifierRunUsage(
   window: ClassifierUsageWindow,
-  maxRuns = CLASSIFIER_USAGE_REPORT_MAX_RUNS,
 ): Promise<ClassifierRunUsage[]> {
   assertClassifierUsageWindow(window)
+  const maxRuns = getClassifierRunsWorkLimit('usage_report_max_runs')
   const lowerBound = timestampToUuidv7LowerBound(window.from.getTime())
   const upperBound = timestampToUuidv7LowerBound(window.to.getTime())
   const ledgerLowerBound = timestampToUuidv7LowerBound(window.from.getTime() - LEDGER_CLOCK_SKEW_MS)

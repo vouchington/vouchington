@@ -13,7 +13,7 @@ import { appendPostSearchOrderAndLimit } from './query-builder/order-and-limit.m
 import { appendPostSearchSelectAndJoins } from './query-builder/select-and-joins.mts'
 import { appendPostSearchWhereClause } from './query-builder/where-clause.mts'
 import { buildSemanticPostCandidates } from './query-builder/semantic-candidates.mts'
-import { TOPIC_WALK_ROW_CAP, usesCappedTopicWalk } from './query-builder/topic-walk.mts'
+import { getTopicWalkRowCap, usesCappedTopicWalk } from './query-builder/topic-walk.mts'
 
 export function buildPostSearchQuery(
   currentUser?: BasicUser,
@@ -27,7 +27,7 @@ export function buildPostSearchQuery(
   const rawSort = detectSearchSort(requestedOptions)
   const sort = rawSort === 'following_new' && !currentUser ? 'new' : rawSort
   const capped = usesCappedTopicWalk(requestedOptions, sort)
-  const limit = capped ? TOPIC_WALK_ROW_CAP : requestedOptions.limit
+  const limit = capped ? getTopicWalkRowCap() : requestedOptions.limit
   const rankingScoreExpression = buildPostRankingScoreExpression({
     hasTextSearch,
     hasSemanticSearch,

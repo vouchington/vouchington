@@ -11,7 +11,9 @@ import { softDeleteScoredPostTopicCategoryRelation } from '@voucha/test-helpers/
 import { softDeleteTopic } from '@voucha/test-helpers/entities/topics/deletion'
 import { describe, expect, it } from 'vitest'
 import { mergeReferencedTopicsForTest } from '@voucha/test-helpers/merge-topic-lifecycle'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { captureAutotaggerAgentCandidateTopicIds } from './candidates.mts'
+import { autotaggerAgentWorkConfig } from './work-limits.mts'
 
 // The paying-follower pool is global, so parallel files add followed topics of their own. Every
 // assertion is about the topics a test created: present, absent or ranked, never an exact list.
@@ -182,6 +184,20 @@ describe('C7 candidate capture (real PG)', () => {
     await Promise.all(topics.map(topic => followTopicAsReader(topic.id)))
 
     expect(await capture(fixture)).toEqual(topics.slice(0, 10).map(topic => topic.id))
+  })
+
+  it('asks about no more topics than the configured candidate limit', async () => {
+    const fixture = await createAutotaggerPostFixture({ topicCount: 0 })
+    await Promise.all([followedTopic(fixture.embedding), followedTopic(fixture.embedding)])
+    await autotaggerAgentWorkConfig.waitForInitialization()
+    const restore = overrideDynamicConfigFieldsForTest(autotaggerAgentWorkConfig, {
+      max_candidates: 1,
+    })
+    try {
+      expect(await capture(fixture)).toHaveLength(1)
+    } finally {
+      restore()
+    }
   })
 
   it('offers followed topics for an RSS feed item the same way', async () => {

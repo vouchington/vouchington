@@ -1,6 +1,6 @@
 import type { BasicUser } from '@services/users/types'
 import { buildPostSearchQuery } from './query-builder.mts'
-import { TOPIC_WALK_ROW_CAP, usesCappedTopicWalk } from './query-builder/topic-walk.mts'
+import { getTopicWalkRowCap, usesCappedTopicWalk } from './query-builder/topic-walk.mts'
 import { executePostSearchQuery } from './execute-query.mts'
 import type { PostSearchOptions, PostSearchSort } from './types.mts'
 import type { PostSearchRow } from './get-ids-types.mts'
@@ -18,5 +18,5 @@ export async function readInspectedTail(
     hasSemanticSearch,
   )
   const [tail] = rows
-  return tail && Number(tail.walk_rows) >= TOPIC_WALK_ROW_CAP ? tail : undefined
+  return tail && Number(tail.walk_rows) >= getTopicWalkRowCap() ? tail : undefined
 }

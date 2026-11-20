@@ -3,13 +3,7 @@ import type { ClassifierRunSubject } from '@services/classifier-runs'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { entityRelationElectionTables } from '@services/elections-votes/entity-relation/target'
 import sql from 'sql-template-strings'
-
-/**
- * The most topics one reasoning autotagger run asks about. It bounds the provider call (one Noul
- * probability per candidate) however many topics paying users follow, and it is the only bound:
- * the candidates are ranked by how close they are to the subject, so the cut keeps the likeliest.
- */
-const AUTOTAGGER_AGENT_MAX_CANDIDATES = 10
+import { getAutotaggerAgentWorkLimit } from './work-limits.mts'
 
 /**
  * Roles whose follows are staff curation, not a paying reader's interest. There is no shared SQL
@@ -32,6 +26,9 @@ const STAFF_ROLE_SLUGS = ['administrator', 'moderator', 'developer']
  * - A deleted or merged-away topic is never a candidate.
  * - A topic the subject has any relation row for is excluded, live or soft-deleted: a deleted tag
  *   was removed on purpose and is not offered again.
+ * - At most `max_candidates` topics are asked about. That bounds the provider call (one Noul
+ *   probability per candidate) however many topics paying users follow, and it is the only bound:
+ *   the candidates are ranked by how close they are to the subject, so the cut keeps the likeliest.
  * - It starts from the follows, never from the embedding-miss universe, and ranks by the distance
  *   between the topic and the subject (topics without an embedding last).
  */
@@ -83,7 +80,7 @@ export async function captureAutotaggerAgentCandidateTopicIds(
     )
     ORDER BY (topic.bedrock_nova_multimodal_v1_embedding <=> subject.bedrock_nova_multimodal_v1_embedding)
       NULLS LAST, topic.id
-    LIMIT ${AUTOTAGGER_AGENT_MAX_CANDIDATES}
+    LIMIT ${getAutotaggerAgentWorkLimit('max_candidates')}
   `)
   const { rows } = await query<{ id: string }>(statement)
   return rows.length === 0 ? null : rows.map(row => row.id)

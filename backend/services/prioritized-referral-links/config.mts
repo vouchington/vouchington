@@ -1,6 +1,3 @@
-/** Newest votes read when finding authors the viewer rated positively. */
-export const RECENT_VOTE_LIMIT = 1000
-
 /**
  * `priority_group` values: 1-4 are the viewer's network groups (see network-groups.mts), so the
  * official links rank after every personalized group and before everyone else. 5 only ever means

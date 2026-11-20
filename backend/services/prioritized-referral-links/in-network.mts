@@ -2,12 +2,11 @@ import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { buildViewerPostDiscoveryEligibilityFilter } from '@modules/feed-query-builders'
 import { getMinUuidv7ForDate } from '@modules/utils'
-import { RECENT_VOTE_LIMIT } from './config.mts'
 import { appendLinkUserJoin, toLinksWithUsers, type LinkRow } from './link-rows.mts'
 import { networkGroupsSql } from './network-groups.mts'
 import { RANK_ORDER_SQL, RANKED_COLUMNS_SQL, rankingCtesSql } from './ranking-ctes.mts'
 import type { ReferralLinksWithUsers } from './types.mts'
-import { getVotedPostMaxAgeDays } from './work-limits.mts'
+import { getRecentVoteLimit, getVotedPostMaxAgeDays } from './work-limits.mts'
 
 const MILLISECONDS_PER_DAY = 86_400_000
 
@@ -45,7 +44,7 @@ WITH recent_votes AS (
   FROM post_votes
   WHERE user_id = ${viewerId} AND post_id >= ${minVotedPostId}
   ORDER BY id DESC
-  LIMIT ${RECENT_VOTE_LIMIT}
+  LIMIT ${getRecentVoteLimit()}
 ),
 rated_positively AS (
   SELECT DISTINCT p.created_by_id AS user_id

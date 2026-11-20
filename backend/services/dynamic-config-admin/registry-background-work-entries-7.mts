@@ -35,6 +35,9 @@ export const backgroundWorkRegistryEntries7 = {
     descriptions: {
       semantic_post_candidate_limit: 'Maximum post candidates in a semantic search window.',
       feed_inspected_row_cap: 'Maximum sort-index rows inspected per post feed page.',
+      topic_walk_row_cap:
+        'Maximum sort-index rows one topic-filtered post search page inspects before it returns a continuation cursor.',
+      max_posts_per_url: 'Most related posts shown for each RSS feed item URL.',
       review_succession_candidate_page_size:
         'Review succession candidate page size for posts processing.',
     },
@@ -56,6 +59,8 @@ export const backgroundWorkRegistryEntries7 = {
     maxValues: storiesWorkMaxValues,
     descriptions: {
       crawl_effect_page_size: 'Crawl effect page size for stories processing.',
+      cluster_candidate_limit:
+        'Most nearest-neighbor candidates one story clustering run asks the model about; more raises prompt size and cost.',
     },
   }),
   'topics-work-config': defineBoundedWorkNamespace({

@@ -6,6 +6,8 @@ import { insertTestUrlHostname } from '@voucha/test-helpers/entities/url-hostnam
 import { createEntityRelationWithElection } from '@voucha/test-helpers/entities/dispatch'
 import { insertTestLinkPostBare } from '@voucha/test-helpers/entities/link-posts'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { postsWorkConfig } from '../work-limits.mts'
 
 describe('get-posts-by-url-ids', () => {
   it('returns empty map for empty url_ids', async () => {
@@ -96,6 +98,32 @@ describe('get-posts-by-url-ids', () => {
     expect(result[urlId]).toHaveLength(5)
     expect(new Set(result[urlId]).size).toBe(5)
     expect(result[urlId]).toEqual(expect.arrayContaining([...relatedPostIds, linkPostId]))
+  })
+
+  it('returns at most the configured number of posts for each URL', async () => {
+    const user = await createTestUser()
+    const suffix = crypto.randomUUID()
+    const hostnameId = await insertTestUrlHostname({ hostname: `max-posts-${suffix}.com` })
+    const urlId = await insertTestUrl({ url: `https://max-posts-${suffix}.com/a`, hostnameId })
+    const postIds = await Promise.all(
+      Array.from({ length: 4 }, (_, index) =>
+        insertTestPost({
+          title: `Max posts ${suffix}-${index}`,
+          slug: `max-posts-${suffix}-${index}`,
+          createdById: user.id,
+          markdown: '',
+        }),
+      ),
+    )
+    for (const postId of postIds) await createEntityRelationWithElection(postId, urlId, user.id, 1)
+    await postsWorkConfig.waitForInitialization()
+    const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, { max_posts_per_url: 2 })
+    try {
+      expect((await getPostIdsByUrlIds(null, [urlId]))[urlId]).toHaveLength(2)
+    } finally {
+      restore()
+    }
+    expect((await getPostIdsByUrlIds(null, [urlId]))[urlId]).toHaveLength(4)
   })
 
   it('returns link posts matched by posts.url_id', async () => {
