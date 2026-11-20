@@ -159,7 +159,7 @@
     "jscpd": "^5.4.3",
     "jsdom": "^31.0.1",
     "knip": "^6",
-    "no-mistakes": "^0.109.95",
+    "no-mistakes": "^0.109.96",
     "oxfmt": "^0.78.0",
     "oxlint": "^1.93.0",
     "oxlint-plugin-react-doctor": "^0.9.23",
