@@ -24,4 +24,4 @@ Schema and migration rules live in [`backend/data-stores/psql/AGENTS.md`](../../
 ## Indexes
 
 - A measured index fix needs no separate approval; keep it in the query's PR with before/after plans.
-- An index change rechecks every query that depends on its predicate, join, ordering, or columns, not only the one being fixed. Validate them with the [EXPLAIN ANALYZE harness](../../../docs/prompts/scheduled/postgresql-explain-analyze.md) and add or update scenarios and plan gates under `backend/scripts/explain-analyze/`.
+- Recheck an index change's dependent queries with the [EXPLAIN ANALYZE harness](../../../docs/prompts/scheduled/postgresql-explain-analyze.md) and add or update scenarios and plan gates under `backend/scripts/explain-analyze/`.

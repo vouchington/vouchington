@@ -29,7 +29,6 @@ agents:
           - '.grok/**'
           - '.cursor/**'
           - '.opencode/**'
-          - '.pr-shepherd/**'
           - '**/SKILL.md'
 
 github_actions:

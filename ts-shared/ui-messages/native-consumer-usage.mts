@@ -10,7 +10,7 @@ import { xamlMessageKeys } from './native-xaml-message-keys.mts'
 
 export type { NativeProductSource }
 
-const SWIFT_IDENTIFIER_PREFIX = '(?:common|extracted|native|nav|settings|shared)'
+const SWIFT_IDENTIFIER_PREFIX = '(?:common|extracted|native|nav|notificationsKind|settings|shared)'
 const INTERNAL_VARIANT_SUFFIX = /\.(?:__plural\.(?:one|other)|__select\.[^.]+\.(?:one|other))$/
 
 export function nativeKeyIdentifier(key: string, consumer: NativeConsumer): string {
