@@ -80,7 +80,7 @@ jobs:
         timeout-minutes: 1
       - uses: ./.github/actions/setup-backend
         timeout-minutes: 6
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-aws@f6bc8f897aa97a8d6346dc2a49ab10e21a377c88 # v3.4.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-aws@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
         timeout-minutes: 2
         with:
           role-arn: ${{ secrets.AWS_TEST_ROLE_ARN }}
