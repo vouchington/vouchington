@@ -79,10 +79,7 @@ export function ExposureCooldownModal({
           </DialogDescription>
         </DialogHeader>
 
-        <p
-          className='text-center text-sm'
-          data-pw='exposure-count'
-        >
+        <p className='text-center text-sm'>
           {t(
             countCapped
               ? 'moderation.exposureCooldownModal.reviewedCountCapped'

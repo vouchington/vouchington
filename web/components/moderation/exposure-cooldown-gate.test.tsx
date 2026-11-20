@@ -61,8 +61,6 @@ describe('ExposureCooldownGate', () => {
       </ExposureCooldownGate>,
     )
 
-    expect(document.querySelector('[data-pw="exposure-count"]')).toHaveTextContent(
-      `Sensitive items revealed this hour: ${text}`,
-    )
+    expect(screen.getByText(`Sensitive items revealed this hour: ${text}`)).toBeInTheDocument()
   })
 })
