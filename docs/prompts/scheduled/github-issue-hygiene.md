@@ -3,7 +3,7 @@ Organize all existing open GitHub issues with the approved labels and milestones
 <!-- harness-scheduled-completion: issue -->
 <!-- harness-scheduled-scope: existing-issues -->
 
-Invoke `$organize-github-issues` and follow its guardrails. Fetch and process one stable ascending
+Invoke `vouchington-workflow:organize-github-issues` and follow its guardrails. Fetch and process one stable ascending
 issue-number page of at most 50 existing open issues, idempotently using the live labels and open
 milestones. Do not claim that issues outside that page were inspected. Normalize each supplied issue to
 exactly one canonical priority, add or remove supported existing labels, and assign or move an

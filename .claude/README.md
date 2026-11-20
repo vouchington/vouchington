@@ -51,7 +51,7 @@ both its `.claude-plugin` and `.codex-plugin` manifests. Do not fork portable gu
 
 No repository file registers an MCP server: vouchington-machines registers `vouchington-tooling`
 once per machine and pre-approves its tools. The server and its tools are
-documented in [Agent Blackboard](../docs/development/agent-blackboard.md).
+provided by the `vouchington-tooling` plugin and MCP server.
 
 ## See Also
 

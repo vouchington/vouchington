@@ -15,7 +15,6 @@
     "no-mistakes": "^0.109.96",
     "oxfmt": "^0.78.0",
     "picomatch": "^4.0.4",
-    "smol-toml": "^1.9.1",
     "vouchington-tooling": "^3.4.0",
     "yaml": "^2.9.1"
   },

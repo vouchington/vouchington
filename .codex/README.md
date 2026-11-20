@@ -17,8 +17,8 @@ codex plugin marketplace list
 codex plugin list
 ```
 
-Plugin installation is local agent state, not a `.codex/config.toml` project setting. See
-[Agent Blackboard](../docs/development/agent-blackboard.md) for the MCP server.
+Plugin installation is local agent state, not a `.codex/config.toml` project setting. The blackboard
+MCP server is provided by the `vouchington-tooling` plugin.
 
 See [Agent Harness Parity](../docs/development/agent-harness-parity.md) for the shared ownership
 model and [`.claude/README.md`](../.claude/README.md) for Claude Code marketplace provisioning.

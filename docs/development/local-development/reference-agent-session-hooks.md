@@ -12,7 +12,7 @@ through Claude-compat ([harness parity](../agent-harness-parity.md)); Codex has 
   commits, and the current PR): advisory context only. They report whether the branch is fresh against
   `origin/main` (unknown freshness is reported, never silently trusted, and the reset-or-rebase
   decision is made after Plan Mode), nudge `./dev/initialize web` before UI work. The Blackboard session starts from the
-  `vouchington-tooling` MCP tools, not a hook ([Blackboard](../agent-blackboard.md#session-start-and-availability)).
+  `vouchington-tooling` MCP tools, not a hook (the `vouchington-tooling` plugin provides them).
 - **PostToolUse** (`dev/hooks/post-edit-lint.sh`, Claude, Cursor, and Grok): reads the edited path once and
   dispatches by extension: Oxlint `--fix`, an Oxlint report, and Oxfmt for JS and TS; `tsc --noEmit`
   for the owning project of a TS file; the offline link check for Markdown; `rustfmt` for Rust;
