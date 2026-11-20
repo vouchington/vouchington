@@ -289,7 +289,7 @@
       - { file: backend/services/articles/sync-process.mts, callee: 'updatePost' }
       # Chunk loop: advances batchSize markdown files per iteration (sync.mts:50), one prepared batch per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - { file: backend/services/articles/sync.mts, callee: 'processPreparedArticles' }
-      # Per stale batch (stale-cleanup.mts:26): the Bedrock provider stop and lock cleanup differ per batch and run serially so one quota failure cannot fan out; the page is capped by the getBatchListingPageSize() LIMIT in gemini-embeddings-batch/orchestrator/find-stale.mts:13.
+      # Per stale batch (stale-cleanup.mts:26): the Vertex provider status check and lock cleanup differ per batch and run serially so one quota failure cannot fan out; the page is capped by the getBatchListingPageSize() LIMIT in backend/services/embeddings-batch/orchestrator/find-stale.mts:13.
       - {
           file: backend/services/embeddings-batch/orchestrator/stale-cleanup.mts,
           callee: 'cleanupBatchLocks',
@@ -568,7 +568,7 @@
         }
       # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: loops the fixed literal statements array of processUserDeletionCredentialsBatch; each statement deletes at most batchSize rows and the first non-empty one ends the page.
       - { file: backend/services/users/delete-phase-credentials.mts, callee: 'query', line: 63 }
-      # Real exception: one UPDATE per stale batch after that batch provider stop and lock cleanup, serial by design so one Bedrock quota failure cannot fan out; the page is capped by the getBatchListingPageSize() LIMIT in gemini-embeddings-batch/orchestrator/find-stale.mts:13.
+      # Real exception: one UPDATE per stale batch after that batch Vertex status check and lock cleanup, serial by design so one Vertex quota failure cannot fan out; the page is capped by the getBatchListingPageSize() LIMIT in backend/services/embeddings-batch/orchestrator/find-stale.mts:13.
       - {
           file: backend/services/embeddings-batch/orchestrator/stale-cleanup.mts,
           callee: 'write',

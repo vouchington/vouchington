@@ -11,19 +11,41 @@ export function requireVertexEnvironment(name: string): string {
   return value
 }
 
-function createAuth(): AwsClient {
+const CLOUD_PLATFORM_SCOPE = 'https://www.googleapis.com/auth/cloud-platform'
+const AWS_SUBJECT_TOKEN_TYPE = 'urn:ietf:params:aws:token-type:aws4_request'
+const VERTEX_REQUIRED_ENVIRONMENT = [
+  'VERTEX_PROJECT_ID',
+  'VERTEX_PROJECT_NUMBER',
+  'VERTEX_BATCH_BUCKET',
+  'VERTEX_WIF_POOL_ID',
+  'VERTEX_WIF_PROVIDER_ID',
+  'VERTEX_SERVICE_ACCOUNT_EMAIL',
+] as const
+
+/** Fails fast on a missing or invalid `VERTEX_*` input; API and worker boot call it when deployed. */
+export function assertVertexEnvironment(): void {
+  wifConfig()
+  for (const name of VERTEX_REQUIRED_ENVIRONMENT) requireVertexEnvironment(name)
+}
+
+function wifConfig(): { audience: string; impersonationUrl: string } {
   if (requireVertexEnvironment('VERTEX_LOCATION') !== 'us')
     throw new Error('VERTEX_LOCATION must be us for embeddings')
   const projectNumber = requireVertexEnvironment('VERTEX_PROJECT_NUMBER')
   const pool = requireVertexEnvironment('VERTEX_WIF_POOL_ID')
   const provider = requireVertexEnvironment('VERTEX_WIF_PROVIDER_ID')
   const serviceAccount = requireVertexEnvironment('VERTEX_SERVICE_ACCOUNT_EMAIL')
-  return new AwsClient({
+  return {
     audience: `//iam.googleapis.com/projects/${projectNumber}/locations/global/workloadIdentityPools/${pool}/providers/${provider}`,
-    subject_token_type: 'urn:ietf:params:aws:token-type:aws4_request',
-    token_url: 'https://sts.googleapis.com/v1/token',
-    service_account_impersonation_url: `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${encodeURIComponent(serviceAccount)}:generateAccessToken`,
-    scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+    impersonationUrl: `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${encodeURIComponent(serviceAccount)}:generateAccessToken`,
+  }
+}
+
+// Only signs the AWS subject token; the STS and IAM exchange is done by hand below.
+function createSubjectTokenSigner(audience: string): AwsClient {
+  return new AwsClient({
+    audience,
+    subject_token_type: AWS_SUBJECT_TOKEN_TYPE,
     aws_security_credentials_supplier: {
       async getAwsRegion() {
         return (
@@ -40,10 +62,6 @@ function createAuth(): AwsClient {
         }
       },
     },
-    transporterOptions: {
-      timeout: 30_000,
-      fetchImplementation: getProviderFetch('gemini_embeddings_enabled'),
-    },
   })
 }
 
@@ -59,22 +77,25 @@ export async function getVertexAccessToken(): Promise<string> {
 /* no-mistakes: integration=google */
 async function exchangeAwsIdentity(): Promise<{ token: string; expiresAt: number }> {
   const signal = AbortSignal.timeout(30_000)
-  const auth = createAuth()
-  const subjectToken = await untilAborted(auth.retrieveSubjectToken(), signal)
+  const { audience, impersonationUrl } = wifConfig()
+  const subjectToken = await untilAborted(
+    createSubjectTokenSigner(audience).retrieveSubjectToken(),
+    signal,
+  )
   const providerFetch = getProviderFetch('gemini_embeddings_enabled')
-  // Keep both STS and IAM on the same provider transport. AwsClient's built-in refresh
-  // constructs its STS transporter separately from the configured IAM transporter.
+  // Keep both STS and IAM on the provider transport. AwsClient's built-in refresh builds its
+  // own STS transporter outside it, so it only signs the subject token here.
   const sts = await providerFetch('https://sts.googleapis.com/v1/token', {
     method: 'POST',
     signal,
     headers: { 'content-type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
-      audience: `//iam.googleapis.com/projects/${requireVertexEnvironment('VERTEX_PROJECT_NUMBER')}/locations/global/workloadIdentityPools/${requireVertexEnvironment('VERTEX_WIF_POOL_ID')}/providers/${requireVertexEnvironment('VERTEX_WIF_PROVIDER_ID')}`,
+      audience,
       requested_token_type: 'urn:ietf:params:oauth:token-type:access_token',
-      subject_token_type: 'urn:ietf:params:aws:token-type:aws4_request',
+      subject_token_type: AWS_SUBJECT_TOKEN_TYPE,
       subject_token: subjectToken,
-      scope: 'https://www.googleapis.com/auth/cloud-platform',
+      scope: CLOUD_PLATFORM_SCOPE,
     }).toString(),
   })
   if (!sts.ok) {
@@ -83,22 +104,18 @@ async function exchangeAwsIdentity(): Promise<{ token: string; expiresAt: number
   }
   const identity = (await sts.json()) as { access_token?: string }
   if (!identity.access_token) throw new Error('Google STS returned no access token')
-  const serviceAccount = requireVertexEnvironment('VERTEX_SERVICE_ACCOUNT_EMAIL')
-  const iam = await providerFetch(
-    `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${encodeURIComponent(serviceAccount)}:generateAccessToken`,
-    {
-      method: 'POST',
-      signal,
-      headers: {
-        authorization: `Bearer ${identity.access_token}`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        scope: ['https://www.googleapis.com/auth/cloud-platform'],
-        lifetime: '3600s',
-      }),
+  const iam = await providerFetch(impersonationUrl, {
+    method: 'POST',
+    signal,
+    headers: {
+      authorization: `Bearer ${identity.access_token}`,
+      'content-type': 'application/json',
     },
-  )
+    body: JSON.stringify({
+      scope: [CLOUD_PLATFORM_SCOPE],
+      lifetime: '3600s',
+    }),
+  })
   if (!iam.ok) {
     await iam.body?.cancel()
     throw new Error(`Google IAM authentication failed (${iam.status})`)

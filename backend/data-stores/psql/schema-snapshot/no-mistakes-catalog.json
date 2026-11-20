@@ -57328,6 +57328,7 @@
       "foreignKeys": {
         "fk_gemini_embedding_batch_entities__crawl_chunk": {
           "columns": ["crawl_id", "crawl_order_index"],
+          "deferrable": false,
           "onDelete": "CASCADE",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["crawl_id", "order_index"],
@@ -57336,6 +57337,7 @@
         },
         "gemini_embedding_batch_entities_batch_id_fkey": {
           "columns": ["batch_id"],
+          "deferrable": false,
           "onDelete": "CASCADE",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
@@ -57344,6 +57346,7 @@
         },
         "gemini_embedding_batch_entities_image_id_fkey": {
           "columns": ["image_id"],
+          "deferrable": false,
           "onDelete": "CASCADE",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
@@ -57352,6 +57355,7 @@
         },
         "gemini_embedding_batch_entities_post_id_fkey": {
           "columns": ["post_id"],
+          "deferrable": false,
           "onDelete": "CASCADE",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
@@ -57360,6 +57364,7 @@
         },
         "gemini_embedding_batch_entities_rss_feed_item_id_fkey": {
           "columns": ["rss_feed_item_id"],
+          "deferrable": false,
           "onDelete": "CASCADE",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
@@ -57368,6 +57373,7 @@
         },
         "gemini_embedding_batch_entities_topic_id_fkey": {
           "columns": ["topic_id"],
+          "deferrable": false,
           "onDelete": "CASCADE",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
@@ -57720,6 +57726,7 @@
       "foreignKeys": {
         "gemini_embedding_batches_crawl_id_fkey": {
           "columns": ["crawl_id"],
+          "deferrable": false,
           "onDelete": "SET NULL",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
@@ -57728,6 +57735,7 @@
         },
         "gemini_embedding_batches_url_id_fkey": {
           "columns": ["url_id"],
+          "deferrable": false,
           "onDelete": "SET NULL",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],

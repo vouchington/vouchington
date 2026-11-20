@@ -1623,6 +1623,9 @@ importers:
       '@services/classifier-runs':
         specifier: workspace:^
         version: link:../../services/classifier-runs
+      '@services/embeddings':
+        specifier: workspace:^
+        version: link:../../services/embeddings
       '@services/entity-listener-reconciliation':
         specifier: workspace:^
         version: link:../../services/entity-listener-reconciliation

@@ -10,11 +10,14 @@ import {
   sweepBookmarkBloomFiltersMissingTtl,
 } from '@services/bloom-filter-maintenance'
 import onError from '@modules/on-error'
+import { assertVertexEnvironment } from '@services/embeddings/vertex'
+import { isDeployedEnvironment } from '@ts-shared/deploy-environment'
 
 export async function setup(): Promise<void> {
   if (!process.env.API_KEY_CHECKSUM_SECRET) {
     throw new Error('API_KEY_CHECKSUM_SECRET is not set — worker cannot start without it')
   }
+  if (isDeployedEnvironment()) assertVertexEnvironment()
   warmUpApiKeyBloomFilter().catch((err: unknown) => {
     onError(err instanceof Error ? err : new Error(String(err)))
   })

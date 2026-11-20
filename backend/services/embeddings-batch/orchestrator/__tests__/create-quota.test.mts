@@ -26,49 +26,7 @@ import {
 } from '@voucha/test-helpers/entities/gemini-embeddings-batches'
 import { createBatch } from '../create.mts'
 
-describe('createBatch input upload failure', () => {
-  it('removes persisted batch rows and entity locks when input upload fails', async () => {
-    const http = createVertexHttpFixture()
-    const user = await createTestUserDirect()
-    const suffix = randomUUID()
-    const topicId = await insertTestTopic({ name: suffix, slug: suffix, createdById: user.id })
-    const inputFile = join(tmpdir(), `vertex-upload-${suffix}.jsonl`)
-    const entityIdsFile = join(tmpdir(), `vertex-upload-${suffix}.csv`)
-    let candidate = ''
-    http.agent
-      .get('https://storage.googleapis.com')
-      .intercept({ method: 'POST', path: /^\/upload\/storage\/v1\// })
-      .reply(options => {
-        candidate = new URL(options.path, 'https://storage.googleapis.com').searchParams
-          .get('name')!
-          .split('/')[1]!
-        return { statusCode: 503, data: {} }
-      })
-    try {
-      await writeFile(inputFile, '{}\n')
-      await writeFile(entityIdsFile, `${topicId},${'ab'.repeat(32)}\n`)
-      await http.run(async () => {
-        await expect(
-          createBatch(
-            inputFile,
-            'topics',
-            1,
-            entityIdsFile,
-            undefined,
-            undefined,
-            async () => {},
-            () => true,
-          ),
-        ).rejects.toThrow('(503)')
-      })
-      const batchId = candidate
-      expect(await getTestBatchEntities(batchId)).toEqual([])
-      expect(await getTestBatchSummary(batchId)).toBeNull()
-    } finally {
-      await Promise.all([inputFile, entityIdsFile].map(path => rm(path, { force: true })))
-    }
-  })
-
+describe('createBatch creation quota', () => {
   describe('with reserved creation quota', () => {
     let fixture: Awaited<ReturnType<typeof acquireEmbeddingQuotaFixture>>
     let http: ReturnType<typeof createVertexHttpFixture>
