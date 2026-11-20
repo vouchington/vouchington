@@ -1,6 +1,6 @@
 import { type TransactionQuery, write } from '@data-stores/psql'
 import createHttpError from 'http-errors'
-import { MAX_ACTIVE_MEMBERSHIP_PROVIDER_MAPPINGS } from './provider-catalog.mts'
+import { getMembershipWorkLimit } from './work-limits.mts'
 import sql from 'sql-template-strings'
 import type { StripeCatalogContext } from './get-catalog.mts'
 
@@ -127,6 +127,7 @@ async function assertStripeCatalogMappingCapacity(
   context: StripeCatalogContext,
   query: TransactionQuery,
 ): Promise<void> {
+  const cap = getMembershipWorkLimit('active_provider_mappings')
   const { rows } = await query(sql`/* assertStripeCatalogMappingCapacity */
     SELECT mapping.id
     FROM membership_provider_products mapping
@@ -137,8 +138,8 @@ async function assertStripeCatalogMappingCapacity(
       AND provider_context.provider = 'stripe'
       AND provider_context.environment = ${context.environment}
       AND provider_context.application_id = ${context.applicationId}
-    LIMIT ${MAX_ACTIVE_MEMBERSHIP_PROVIDER_MAPPINGS}`)
-  if (rows.length >= MAX_ACTIVE_MEMBERSHIP_PROVIDER_MAPPINGS)
+    LIMIT ${cap}`)
+  if (rows.length >= cap)
     throw createHttpError(409, 'Active membership catalog mapping limit reached', {
       code: 'MEMBERSHIP_CATALOG_MAPPING_LIMIT_REACHED',
     })

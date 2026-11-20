@@ -10,8 +10,7 @@ import { recordModeratorAction } from '@services/moderator-actions'
 import { isAdminUser } from './authorization.mts'
 import { parsePreservationHoldReference } from './preservation-hold-reference.mts'
 import type { PrivateUser } from './types.mts'
-
-const HISTORY_LIMIT = 100
+import { getUsersWorkLimit } from './work-limits.mts'
 
 type HoldRow = {
   id: string
@@ -168,7 +167,7 @@ async function queryUserPreservationHolds(
     FROM user_legal_preservation_holds
     WHERE account_user_id = ${userId}
     ORDER BY id DESC
-    LIMIT ${HISTORY_LIMIT}
+    LIMIT ${getUsersWorkLimit('preservation_hold_history_limit')}
   `)
   return rows.map(toHold)
 }

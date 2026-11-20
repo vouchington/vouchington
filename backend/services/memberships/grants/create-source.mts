@@ -2,10 +2,8 @@ import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import createHttpError from 'http-errors'
 
-import {
-  getOutstandingMembershipGrantIds,
-  MAX_OUTSTANDING_MEMBERSHIP_GRANTS_PER_USER,
-} from './outstanding.mts'
+import { getMembershipWorkLimit } from '../work-limits.mts'
+import { getOutstandingMembershipGrantIds } from './outstanding.mts'
 
 export class InvalidMembershipGrantUserError extends Error {
   override readonly name: string = 'InvalidMembershipGrantUserError'
@@ -35,7 +33,7 @@ export async function createGrantSource(
     throw new RangeError('Admin grants require durationDays between 1 and 3660')
   // Admission checks committed grant rows; concurrent issuers may each pass and exceed this cap.
   const outstanding = await getOutstandingMembershipGrantIds(options.userId, query)
-  if (outstanding.length >= MAX_OUTSTANDING_MEMBERSHIP_GRANTS_PER_USER)
+  if (outstanding.length >= getMembershipWorkLimit('outstanding_grants_per_user'))
     throw createHttpError(409, 'Outstanding membership grant limit reached', {
       code: 'MEMBERSHIP_GRANT_LIMIT_REACHED',
     })

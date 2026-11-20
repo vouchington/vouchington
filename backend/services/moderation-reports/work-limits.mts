@@ -7,6 +7,7 @@ const defaultFields = {
   dispatch_batch_size: 200,
   dispatch_min_age_seconds: 120,
   dispatch_max_age_seconds: 1800,
+  judgement_report_sample_cap: 50,
 }
 
 /** Hard ceilings for the current runtime configuration contract. */
@@ -16,6 +17,7 @@ export const moderationReportsWorkMaxValues = {
   dispatch_batch_size: 2000,
   dispatch_min_age_seconds: 600,
   dispatch_max_age_seconds: 86400,
+  judgement_report_sample_cap: 500,
 }
 
 // Even at the largest minimum age, leave ten minutes for the five-minute recovery sweep.
@@ -29,6 +31,7 @@ export const moderationReportsWorkConfig = new DynamicConfig({
     dispatch_batch_size: 'number',
     dispatch_min_age_seconds: 'number',
     dispatch_max_age_seconds: 'number',
+    judgement_report_sample_cap: 'number',
   },
   defaultFields,
 })

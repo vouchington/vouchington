@@ -15,10 +15,8 @@ import {
   leaseDueRefundReconciliation,
 } from './refund-reconciliation/ledger.mts'
 import { createOrRetrieveIneligiblePurchaseReversalRefund } from './ineligible-stripe-purchase-reversal-provider.mts'
-import {
-  MAX_LOCAL_STRIPE_REFUND_ISSUANCES_PER_CHARGE,
-  recordRefundReconciliationAttempt,
-} from './refund-issuance.mts'
+import { recordRefundReconciliationAttempt } from './refund-issuance.mts'
+import { membershipAdditionalWorkDefaults } from './work-limits.mts'
 
 describe('local Stripe refund issuance capacity', () => {
   afterEach(() => vi.restoreAllMocks())
@@ -33,7 +31,11 @@ describe('local Stripe refund issuance capacity', () => {
     let metadataAttempt
     let metadataLease
     let firstAttempt
-    for (let index = 0; index < MAX_LOCAL_STRIPE_REFUND_ISSUANCES_PER_CHARGE - 1; index++) {
+    for (
+      let index = 0;
+      index < membershipAdditionalWorkDefaults.local_stripe_refund_issuances_per_charge - 1;
+      index++
+    ) {
       const scopedRequest = { ...request, idempotencyKey: `refund-cap-${randomUUID()}` }
       const operation = await claimAdministratorRefundRequest(scopedRequest)
       firstRequest ??= scopedRequest

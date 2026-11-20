@@ -1,8 +1,8 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { membershipAdditionalWorkMaxValues } from '../work-limits.mts'
 
-export const MAX_OUTSTANDING_MEMBERSHIP_GRANTS_PER_USER = 10
-
+/** Reads up to the hard ceiling so lowering the configured cap never hides existing grants. */
 export async function getOutstandingMembershipGrantIds(
   userId: string,
   query: QueryExecutor,
@@ -15,6 +15,6 @@ export async function getOutstandingMembershipGrantIds(
     WHERE grant_row.user_id = ${userId}
       AND grant_row.revoked_at IS NULL AND source_state.expired_at IS NULL
     ORDER BY grant_row.id
-    LIMIT ${MAX_OUTSTANDING_MEMBERSHIP_GRANTS_PER_USER}`)
+    LIMIT ${membershipAdditionalWorkMaxValues.outstanding_grants_per_user}`)
   return rows.map(row => row.id)
 }
