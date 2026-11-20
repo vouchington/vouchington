@@ -199,6 +199,20 @@ describe('native consumer usage manifest', () => {
     ).not.toThrow()
   })
 
+  it('accepts Swift notification-kind keys passed as message-key arguments', () => {
+    expect(() =>
+      validateNativeConsumerUsage(
+        [entry('notifications.kind.follow.byUser', ['swift'])],
+        [
+          source(
+            'swift-clients/ui/Sources/Feature/Renderer.swift',
+            'render(.notificationsKindFollowByUser, actor: name)',
+          ),
+        ],
+      ),
+    ).not.toThrow()
+  })
+
   it('rejects native keys whose generated identifiers collide', () => {
     expect(() =>
       validateNativeConsumerUsage(
