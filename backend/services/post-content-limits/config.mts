@@ -4,6 +4,7 @@ import onError from '@modules/on-error'
 export type PostContentLimitsConfig = {
   data_point_topic_ids_max_items: number
   review_topic_ratings_max_items: number
+  post_images_max: number
 }
 
 export const POST_CONTENT_LIMITS_CONFIG_KEY = 'post-content-limits-config'
@@ -11,21 +12,26 @@ export const POST_CONTENT_LIMITS_CONFIG_KEY = 'post-content-limits-config'
 export const DEFAULT_POST_CONTENT_LIMITS: PostContentLimitsConfig = {
   data_point_topic_ids_max_items: 5,
   review_topic_ratings_max_items: 5,
+  post_images_max: 20,
 }
 
 const fieldTypes: Record<keyof PostContentLimitsConfig, 'number'> = {
   data_point_topic_ids_max_items: 'number',
   review_topic_ratings_max_items: 'number',
+  post_images_max: 'number',
 }
 
 export const POST_CONTENT_LIMITS_MIN_VALUES: PostContentLimitsConfig = {
   data_point_topic_ids_max_items: 1,
   review_topic_ratings_max_items: 2,
+  post_images_max: 1,
 }
 
 export const POST_CONTENT_LIMITS_MAX_VALUES: PostContentLimitsConfig = {
   data_point_topic_ids_max_items: 100,
   review_topic_ratings_max_items: 100,
+  // Stored images per post are read back with this bound, so it also caps one post's image read.
+  post_images_max: 50,
 }
 
 export const postContentLimitsConfig = new DynamicConfig({

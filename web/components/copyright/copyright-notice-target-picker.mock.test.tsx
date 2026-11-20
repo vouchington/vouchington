@@ -156,7 +156,7 @@ describe('CopyrightNoticeTargetPicker', () => {
     expect([...copies]).toHaveLength(1)
   })
 
-  it('does not select more than twenty hosted images', async () => {
+  it('does not select more than the configured number of hosted images', async () => {
     const many: CopyrightNoticeResolvedTarget[] = Array.from({ length: 21 }, (_, index) => ({
       surface: 'post-image',
       post_id: '019f0000-0000-7000-8000-000000000001',
@@ -171,6 +171,7 @@ describe('CopyrightNoticeTargetPicker', () => {
       <CopyrightNoticeTargetPicker
         targets={many.slice(0, 20)}
         onChange={onChange}
+        maxTargets={20}
       />,
     )
     fireEvent.change(screen.getByLabelText('Hosted use URL'), {
@@ -182,6 +183,7 @@ describe('CopyrightNoticeTargetPicker', () => {
       <CopyrightNoticeTargetPicker
         targets={many.slice(0, 20)}
         onChange={onChange}
+        maxTargets={20}
       />,
     )
     onChange.mockClear()

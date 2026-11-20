@@ -15571,6 +15571,42 @@
       "source": "backend/api/v1/communities/reports.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/content-limits": {
+      "bodyKind": "content",
+      "hash": "b88a0a25c8431857806eda971949531ed1f32d50c00c20c2299f915cda4ec63f",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/content-limits",
+      "schema": {
+        "definitions": {
+          "ContentLimitsResponse": {
+            "additionalProperties": false,
+            "properties": {
+              "copyright_claimant_targets_max": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "post_images_max": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "name": "ContentLimitsResponse",
+          "type": "ref"
+        }
+      },
+      "source": "backend/api/v1/content-limits/content-limits.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/copyright-email-intakes/:id/raw": {
       "bodyKind": "content",
       "hash": "11115901eecde79a3b5f6be7e3b6ccb54ea38fc4ca9098c4c58e75a7740944eb",
@@ -106818,6 +106854,28 @@
       },
       "route": {
         "routeTemplate": "/api/v1/captcha-config"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/dynamic-config-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "none",
+      "backendResponseContractKey": "GET:/api/v1/content-limits",
+      "bodyFile": "responses/native.content-limits.default.json",
+      "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.content-limits.default",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/content-limits/content-limits.mts"],
+      "path": "/api/v1/content-limits",
+      "pending": true,
+      "responseSchema": {
+        "hash": "192a578c12172bf23d2a45b5454b617c3da259886efe681e2c8ab386294b415c",
+        "key": "native.content-limits.default"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/content-limits"
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/dynamic-config-cases.mts"

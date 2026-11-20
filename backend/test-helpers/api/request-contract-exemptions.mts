@@ -31,6 +31,7 @@ export const REQUEST_CONTRACT_EXEMPTIONS: Readonly<Record<string, RequestContrac
     'GET:/api/v1/auth/oauth/providers': 'no-input',
     'GET:/api/v1/captcha-config': 'no-input',
     'GET:/api/v1/copyright-jurisdiction-availability': 'no-input',
+    'GET:/api/v1/content-limits': 'no-input',
     'GET:/api/v1/countries': 'no-input',
     'GET:/api/v1/dynamic-config/namespaces': 'no-input',
     'GET:/api/v1/feature-flags': 'no-input',

@@ -37,6 +37,7 @@
     "@services/moderation-training": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/notifications": "workspace:^",
+    "@services/post-content-limits": "workspace:^",
     "@services/post-publication": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",

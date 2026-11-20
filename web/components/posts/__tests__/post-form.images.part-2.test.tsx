@@ -96,7 +96,7 @@ describe('PostForm image state', () => {
     expect(mockUploadImageFile).not.toHaveBeenCalled()
   })
 
-  it('disables Add Image button at 20 images', async () => {
+  it('disables Add Image button at the configured image cap', async () => {
     const postWith20Images: Post = {
       ...mockDiscussion,
       images: Array.from({ length: 20 }, (_, i) => ({
@@ -113,7 +113,9 @@ describe('PostForm image state', () => {
         post={postWith20Images}
       />,
     )
-    const addButton = screen.getByText('Add Image').closest('button') as HTMLButtonElement
-    expect(addButton.disabled).toBe(true)
+    await waitFor(() => {
+      const addButton = screen.getByText('Add Image').closest('button') as HTMLButtonElement
+      expect(addButton.disabled).toBe(true)
+    })
   })
 })

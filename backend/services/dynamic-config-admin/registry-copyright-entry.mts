@@ -1,5 +1,6 @@
 import {
   COPYRIGHT_CLAIMANT_MISUSE_WINDOW_MAX,
+  COPYRIGHT_CLAIMANT_TARGETS_MAX,
   copyrightConfig,
 } from '@services/copyright-notices/config'
 import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
@@ -43,6 +44,13 @@ export const copyrightRegistryEntry = defineDynamicConfigNamespace({
         'Maximum total email intakes and ancestor edges inspected when a staff approval links waiting replies. A larger graph still opens the notice and leaves replies for staff review.',
       minValue: 1,
       maxValue: 1000,
+      integer: true,
+    },
+    claimantTargetsMax: {
+      description:
+        'Maximum hosted images one copyright notice form may identify. Lowering it rejects new forms above it; stored forms stay readable.',
+      minValue: 1,
+      maxValue: COPYRIGHT_CLAIMANT_TARGETS_MAX,
       integer: true,
     },
     staydownMatching: {

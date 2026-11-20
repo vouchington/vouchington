@@ -4,13 +4,19 @@
 // field-named message. `cf_turnstile_response` is optional because an App Attest caller sends none;
 // an explicit `null` is a malformed token and is rejected.
 import type { ApiArrayContract } from '@vouchington/utils/api-response-contract'
+import type { COPYRIGHT_CLAIMANT_TARGETS_MAX } from '@services/copyright-notices/config'
 import type { CopyrightNoticeTargetRequest } from './request-types.mts'
 
 type TerritorialPostTargetRequest = Extract<CopyrightNoticeTargetRequest, { surface: 'post-image' }>
 type TerritorialDecisionRequest = {
   public_explanation: string
   outcome: 'restrict' | 'no_action'
-  targets?: ApiArrayContract<TerritorialPostTargetRequest, 1, 20, false>
+  targets?: ApiArrayContract<
+    TerritorialPostTargetRequest,
+    1,
+    typeof COPYRIGHT_CLAIMANT_TARGETS_MAX,
+    false
+  >
 }
 
 export type CopyrightTerritorialNoticeRequest = {

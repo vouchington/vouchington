@@ -8,6 +8,7 @@ import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { appendCopyrightSubmissionAssessmentInTransaction } from './compliance.mts'
 import { createCopyrightClaimantDecisionNoticeInTransaction } from './claimant-decision-notices.mts'
+import { COPYRIGHT_CLAIMANT_TARGETS_MAX } from './config.mts'
 import { enforceCopyrightAssessment } from './enforce-assessment.mts'
 import { insertCopyrightNoticeTargetsInTransaction } from './notice-targets.mts'
 import {
@@ -53,7 +54,11 @@ export async function recordTerritorialCopyrightDecision(
     422,
     'Decision targets do not match outcome',
   )
-  assert(input.targets.length <= 20, 422, 'Too many territorial decision targets')
+  assert(
+    input.targets.length <= COPYRIGHT_CLAIMANT_TARGETS_MAX,
+    422,
+    'Too many territorial decision targets',
+  )
   assert(
     new Set(input.targets.map(target => `${target.postId}:${target.imageId}`)).size ===
       input.targets.length,

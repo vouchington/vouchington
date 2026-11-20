@@ -4,18 +4,14 @@ import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch
 import { turnstileConfig } from '@services/captcha/config'
 import { moderationConfig } from '@services/moderation/config'
 import { admissionLimitRegistryEntries } from './registry-community-membership-entry.mts'
-import {
-  DEFAULT_POST_CONTENT_LIMITS,
-  POST_CONTENT_LIMITS_MAX_VALUES,
-  POST_CONTENT_LIMITS_MIN_VALUES,
-  postContentLimitsConfig,
-} from '@services/post-content-limits'
+import { postContentLimitsRegistryEntry } from './registry-post-content-limits-entry.mts'
 import { recaptchaConfig } from '@services/recaptcha/config'
 import { requestClientInfoConfig } from '@services/request-client-info/config'
 import { validateBedrockBatchConfig } from './registry-bedrock-validator.mts'
 import { bedrockField } from './registry-bedrock-field.mts'
 import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 import { validateRequestSigningModeConfig } from './product-config-validators.mts'
+
 export const coreDynamicConfigRegistryEntries = [
   ...admissionLimitRegistryEntries,
   communityAgentPromptsRegistryEntry,
@@ -81,29 +77,7 @@ export const coreDynamicConfigRegistryEntries = [
       always_approve: { description: 'Staging skip of siteverify and missing-token checks.' },
     },
   }),
-  defineDynamicConfigNamespace({
-    namespace: 'post-content-limits-config',
-    label: 'Post Content Limits',
-    description: 'Limits for topic IDs and review ratings in post payloads.',
-    config: postContentLimitsConfig,
-    access: { update_roles: ['moderator'] },
-    fields: Object.fromEntries(
-      Object.keys(DEFAULT_POST_CONTENT_LIMITS).map(name => [
-        name,
-        {
-          description:
-            name === 'data_point_topic_ids_max_items'
-              ? 'Maximum topic IDs allowed in one data point payload.'
-              : 'Maximum review topic ratings allowed in one review payload.',
-          minValue:
-            POST_CONTENT_LIMITS_MIN_VALUES[name as keyof typeof POST_CONTENT_LIMITS_MIN_VALUES],
-          maxValue:
-            POST_CONTENT_LIMITS_MAX_VALUES[name as keyof typeof POST_CONTENT_LIMITS_MAX_VALUES],
-          integer: true,
-        },
-      ]),
-    ),
-  }),
+  postContentLimitsRegistryEntry,
   defineDynamicConfigNamespace({
     namespace: 'moderation-config',
     label: 'Moderation',

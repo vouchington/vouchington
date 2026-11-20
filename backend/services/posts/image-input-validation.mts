@@ -1,4 +1,5 @@
-import { MAX_POST_IMAGES, type PostImageInput } from './images-types.mts'
+import { getPostContentLimitsConfig } from '@services/post-content-limits'
+import type { PostImageInput } from './images-types.mts'
 import { createCodedError } from '@vouchington/sentry'
 import { POST_IMAGE_LIMIT_REACHED } from '@modules/on-error/error-codes'
 import { read } from '@data-stores/psql'
@@ -44,7 +45,7 @@ export async function validatePostImageInputs(
   userId: string,
   isAdmin: boolean,
 ): Promise<void> {
-  if (images.length > MAX_POST_IMAGES)
+  if (images.length > getPostContentLimitsConfig().post_images_max)
     throw createCodedError(400, 'Post image limit reached', POST_IMAGE_LIMIT_REACHED)
 
   const imageIds = images.map(img => img.image_id)

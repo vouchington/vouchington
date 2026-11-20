@@ -1,4 +1,5 @@
 import { read } from '@data-stores/psql'
+import { POST_CONTENT_LIMITS_MAX_VALUES } from '@services/post-content-limits'
 import { buildPageInfo, decodeUuidCursor, isSimpleCursor } from '@modules/pagination'
 import sql from 'sql-template-strings'
 import type { PageInfo } from '@voucha/types/pagination'
@@ -168,8 +169,8 @@ export async function searchPostsForAdminReview(
           AND i.upload_completed_at IS NOT NULL
           AND i.quarantine_pending_at IS NULL
         ORDER BY pi.order_index, pi.image_id
-        -- Current post schema accepts at most 20 images (posts/image-input-validation.mts).
-        LIMIT 20
+        -- Bind the configurable post image cap's hard max so lowering the cap never hides stored rows.
+        LIMIT ${POST_CONTENT_LIMITS_MAX_VALUES.post_images_max}
       ) bounded_images
     ) media ON true
     WHERE (p.rejected_at IS NOT NULL OR p.in_review_at IS NOT NULL)

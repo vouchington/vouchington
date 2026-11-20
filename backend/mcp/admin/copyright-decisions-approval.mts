@@ -1,6 +1,7 @@
 import type { PrivateUser } from '@services/users/types'
 import { assertCopyrightIntakeEnabled } from '@services/copyright-notices'
 import { approveCopyrightEmailIntakeDecision } from '@services/copyright-notices/copyright-email-decision-actions'
+import { COPYRIGHT_CLAIMANT_TARGETS_MAX } from '@services/copyright-notices/config'
 import { parseCopyrightNoticeForm } from '@services/copyright-notices/http-input'
 import {
   parseCopyrightManualFallbackReason,
@@ -77,7 +78,12 @@ export const APPROVE_COPYRIGHT_EMAIL_INTAKE_PROPERTIES = {
   has_good_faith_belief: { type: 'boolean' },
   has_accuracy_authority_under_penalty_of_perjury: { type: 'boolean' },
   electronic_signature: text(500),
-  targets: { type: 'array', minItems: 1, maxItems: 20, items: TARGET_INPUT },
+  targets: {
+    type: 'array',
+    minItems: 1,
+    maxItems: COPYRIGHT_CLAIMANT_TARGETS_MAX,
+    items: TARGET_INPUT,
+  },
 }
 
 /**

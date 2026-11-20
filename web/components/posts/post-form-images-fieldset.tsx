@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { useContentLimits } from '@/hooks/use-content-limits'
 
 interface ImageEntryFields {
   key: string
@@ -37,6 +38,7 @@ export function ImagesFieldset({
   removeImage: (index: number) => void
 }) {
   const t = useTranslations()
+  const maxImages = useContentLimits()?.post_images_max
   return (
     <fieldset className='space-y-2'>
       <legend className='text-sm font-medium leading-none'>
@@ -46,10 +48,10 @@ export function ImagesFieldset({
         onUploaded={onImageUploaded}
         onUploadStart={() => setIsUploading(true)}
         onUploadEnd={() => setIsUploading(false)}
-        disabled={images.length >= 20}
+        disabled={maxImages !== undefined && images.length >= maxImages}
         label={t('extracted.posts.postFormImagesFieldset.addImage_d0e5e03b')}
         multiple
-        maxFiles={20 - images.length}
+        maxFiles={maxImages === undefined ? undefined : Math.max(maxImages - images.length, 0)}
         data-pw='post-image-upload'
       />
       {images.map((img, index) => (

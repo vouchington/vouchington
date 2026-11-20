@@ -14,6 +14,9 @@ import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
 import { CopyrightNoticeTargetPicker } from './copyright-notice-target-picker'
 import type { SubmitReview } from './copyright-staff-review-buttons'
 
+// The backend's hard ceiling on targets in one territorial decision (COPYRIGHT_CLAIMANT_TARGETS_MAX).
+const TERRITORIAL_DECISION_TARGETS_MAX = 50
+
 export function CopyrightStaffTerritorialDecision({
   item,
   pending,
@@ -146,6 +149,7 @@ export function CopyrightStaffTerritorialDecision({
             hint={null}
             initialUrl={territorial.hosted_use_url}
             legend='Post images named in the notice'
+            maxTargets={TERRITORIAL_DECISION_TARGETS_MAX}
             onChange={setTargets}
             postImagesOnly
             targets={targets}

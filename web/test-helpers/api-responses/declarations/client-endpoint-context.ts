@@ -16,6 +16,7 @@ export interface WebFixtureClientEndpointContext {
   >
   readonly auth: Pick<typeof import('@/lib/api/client/auth'), 'acknowledgeOAuthAuthorization'>
   readonly captchaConfig: typeof import('@/lib/api/client/captcha-config')
+  readonly contentLimits: typeof import('@/lib/api/client/content-limits')
   readonly hackerNewsConfig: typeof import('@/lib/api/client/hacker-news-config')
   readonly communities: Pick<
     typeof import('@/lib/api/client/communities'),

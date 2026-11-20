@@ -34,6 +34,7 @@ describe('getPostContentLimitsConfig', () => {
     expect(getPostContentLimitsConfig()).toEqual({
       data_point_topic_ids_max_items: 7,
       review_topic_ratings_max_items: 5,
+      post_images_max: 20,
     })
     expect(captureException).not.toHaveBeenCalled()
   })

@@ -1,4 +1,5 @@
 import type { ApiUuidContract } from '../../request-contract-types.mts'
+import type { COPYRIGHT_CLAIMANT_TARGETS_MAX } from '@services/copyright-notices/config'
 import type { ApiArrayContract } from '@vouchington/utils/api-response-contract'
 
 // Closed request bodies for the notice, appeal, and counter-notice routes. The generated request
@@ -59,7 +60,12 @@ export type CopyrightNoticeFormRequest = {
   has_good_faith_belief: true
   has_accuracy_authority_under_penalty_of_perjury: true
   electronic_signature: string
-  targets: ApiArrayContract<CopyrightNoticeTargetRequest, 1, 20, false>
+  targets: ApiArrayContract<
+    CopyrightNoticeTargetRequest,
+    1,
+    typeof COPYRIGHT_CLAIMANT_TARGETS_MAX,
+    false
+  >
   cf_turnstile_response?: string
 }
 

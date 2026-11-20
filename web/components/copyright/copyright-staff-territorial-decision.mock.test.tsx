@@ -187,4 +187,29 @@ describe('territorial staff decision', () => {
     ).toHaveValue('This photograph matches the notified work.')
     expect(screen.getByRole('button', { name: 'Record decision' })).toBeDisabled()
   })
+
+  it('stops the restrict selection at the 50-image decision ceiling', async () => {
+    const many: CopyrightNoticeResolvedTarget[] = Array.from({ length: 51 }, (_, index) => ({
+      ...post,
+      image_id: `image-${index + 1}`,
+      order_index: index,
+      caption: `Image ${index + 1}`,
+    }))
+    mockResolve.mockResolvedValue(many)
+    render(
+      <CopyrightStaffTerritorialDecision
+        item={item()}
+        pending={false}
+        onReview={vi.fn<SubmitReview>()}
+      />,
+    )
+    fireEvent.click(screen.getByRole('radio', { name: 'Restrict' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Find hosted material' }))
+    expect(await screen.findByLabelText('Hosted image 51: Image 51')).toBeEnabled()
+    for (let index = 1; index <= 50; index += 1) {
+      fireEvent.click(screen.getByLabelText(`Hosted image ${index}: Image ${index}`))
+    }
+    expect(screen.getAllByRole('checkbox', { checked: true })).toHaveLength(50)
+    expect(screen.getByRole('checkbox', { name: /Image 51/ })).toBeDisabled()
+  })
 })

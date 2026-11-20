@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { TurnstileField } from '@/components/shared/turnstile-field'
+import { useContentLimits } from '@/hooks/use-content-limits'
 import { useTurnstileToken } from '@/hooks/use-turnstile-token'
 import { createCopyrightNotice } from '@/lib/api/client/copyright-notices'
 import {
@@ -22,6 +23,7 @@ export function CopyrightNoticeForm() {
   const router = useRouter()
   const { currentUser } = useAuth()
   const turnstile = useTurnstileToken('copyright-notices.create')
+  const maxTargets = useContentLimits()?.copyright_claimant_targets_max
   const [pending, startTransition] = useTransition()
   const [values, setValues] = useState({
     name: '',
@@ -133,6 +135,7 @@ export function CopyrightNoticeForm() {
       <CopyrightNoticeTargetPicker
         targets={targets}
         onChange={setTargets}
+        maxTargets={maxTargets}
       />
       <DeclarationCheckbox
         id='copyright-good-faith-belief'

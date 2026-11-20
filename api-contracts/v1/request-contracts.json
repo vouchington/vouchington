@@ -15505,7 +15505,7 @@
           "items": {
             "$ref": "#/components/schemas/CopyrightNoticeTargetRequest"
           },
-          "maxItems": 20,
+          "maxItems": 50,
           "minItems": 1,
           "type": "array",
           "uniqueItems": false
@@ -16451,7 +16451,7 @@
           "items": {
             "$ref": "#/components/schemas/CopyrightNoticeTargetRequest"
           },
-          "maxItems": 20,
+          "maxItems": 50,
           "minItems": 1,
           "type": "array",
           "uniqueItems": false

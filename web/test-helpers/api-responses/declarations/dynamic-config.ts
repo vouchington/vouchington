@@ -1,4 +1,5 @@
 import nativeCaptchaConfigDefault from '../../../../api-fixtures/v1/responses/native.captcha-config.default.json'
+import nativeContentLimitsDefault from '../../../../api-fixtures/v1/responses/native.content-limits.default.json'
 import nativeDynamicConfigHistoryDefault from '../../../../api-fixtures/v1/responses/native.dynamic-config.history.default.json'
 import nativeDynamicConfigNamespaceInteger from '../../../../api-fixtures/v1/responses/native.dynamic-config.namespace.integer.json'
 import nativeDynamicConfigNamespacesDeveloper from '../../../../api-fixtures/v1/responses/native.dynamic-config.namespaces.developer.json'
@@ -9,6 +10,7 @@ import nativeDynamicConfigUpdateNoOp from '../../../../api-fixtures/v1/responses
 import nativeFeatureFlagsDefault from '../../../../api-fixtures/v1/responses/native.feature-flags.default.json'
 import nativeHackerNewsConfigDefault from '../../../../api-fixtures/v1/responses/native.hacker-news-config.default.json'
 import type { CaptchaConfigResponse } from '@/lib/api/client/captcha-config'
+import type { ContentLimitsResponse } from '@/lib/api/client/content-limits'
 import type {
   DynamicConfigHistoryEntry,
   DynamicConfigNamespace,
@@ -23,6 +25,11 @@ export const DYNAMIC_CONFIG_DECLARATIONS = [
     'native.captcha-config.default',
     nativeCaptchaConfigDefault,
     context => context.client.captchaConfig.fetchCaptchaConfig(),
+  ),
+  defineWebApiFixture<ContentLimitsResponse>()(
+    'native.content-limits.default',
+    nativeContentLimitsDefault,
+    context => context.client.contentLimits.fetchContentLimits(),
   ),
   defineWebApiFixture<HackerNewsConfig>()(
     'native.hacker-news-config.default',
