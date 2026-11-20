@@ -144,7 +144,9 @@ describe('schema growth registry', () => {
     expect(entry).toMatchObject({
       growth: 'bounded',
       partition: null,
-      noPartitionRationale: expect.stringContaining('immutable stripe_events'),
+      noPartitionRationale: expect.stringContaining(
+        'stripe_events retain deduplication until their own fiscal retention',
+      ),
       reconsiderPartitioningWhen: 'If the documented bounded-cardinality invariant changes.',
     })
     expect(entry?.noPartitionRationale).toContain('terminal work older than 30 days')
