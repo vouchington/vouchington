@@ -47,13 +47,14 @@ export async function runStuckAppealExpiryScenario(appealId: string): Promise<vo
       undefined,
       'listStuckAppealResolutionRuns',
       {
-        afterCapture: () =>
-          write(
+        afterCapture: async () => {
+          await write(
             `/* restoreStuckAppealExpiry */
              UPDATE moderation_appeal_resolution_runs SET expired_at = NULL
              WHERE id = ANY($1::uuid[])`,
             [stuckIds],
-          ),
+          )
+        },
       },
     )
   } finally {
