@@ -9,7 +9,7 @@ status line, plugins, marketplaces, and MCP servers. vouchington-machines writes
 again ([contract](https://github.com/vouchington/vouchington-machines/blob/main/docs/agent-config.md)).
 Keeping it out of the checkout lets Claude Code cloud sessions, which have no OS sandbox, start here.
 
-This repository keeps project policy only: the PreToolUse hooks, `permissions.allow` and `deny`
+This repository keeps project policy only: `permissions.allow` and `deny`
 for this repository's commands and contribution rules, Codex `prefix_rule`s, worktree setup, and
 the one sandbox key it must own, `sandbox.excludedCommands` for its own `dev/` scripts (each as an
 exact entry plus a ` *` twin). Host-safety denies (`sudo`, `rm -rf` of `/`, `~` or `.`, pipe-to-shell,
@@ -23,38 +23,23 @@ outside Codex's sandbox without a prompt, so keep them narrow. `git rebase`, `gi
 `git cherry-pick`, `gh run`, `gh api`, and `gh workflow` are deliberately not pre-approved, so
 review sees the argv.
 
-## Two independent containment layers
+## Enforcement
 
-Every agent tool call passes through two layers that don't overlap:
+This repository has no command-policy hook. Agent behavior (force-push, `--amend`, dev-server
+launches, [merge authority](merge-authority.md)) is enforced by the harness's permission settings
+and auto mode in the user's agent config, plus the `permissions.deny` and Codex `prefix_rule`s this
+repository keeps. Two further layers do not depend on the agent:
 
-1. **The PreToolUse policy hook** (`dev/codex-hooks/`): semantic gating such as force-push,
-   `--amend`, dev-server launches, hook self-mutation, and [merge authority](merge-authority.md).
-   It fires regardless of whether the command is OS-sandboxed.
-2. **The OS sandbox**: filesystem and network scoping owned by the user's agent config, including
+1. **The OS sandbox**: filesystem and network scoping owned by the user's agent config, including
    which commands bypass it ([credential deny list](#sandbox-credential-deny-list)). Codex allow
    prefix rules also bypass it.
+2. **`.husky/pre-push` and branch protection on `main`**: reject plain force pushes and `--no-verify`
+   style bypasses and protect `main` regardless of the harness.
 
-Narrowing a machine's exclusions only affects layer 2; it adds or removes no semantic gate.
-
-## Hook threat model
-
-Layer 1 is a guardrail against a cooperative agent's honest mistakes, such as a habitual
-force-push, a `--no-verify` retry, a merge from automation, or a PR opened ready instead of draft.
-It is not a security boundary. A command can always reach the same effect through forms the hook
-never sees (`python -c`, `node -e`, a script file, `echo … | bash`), so the hook does not parse
-obfuscated or indirect forms, and bypass reports of that kind are out of scope. The boundaries are
-the OS sandbox (layer 2), branch protection on `main`, and the harness permission prompt when the
-session's approval mode asks for one. Codex `--ask-for-approval never` skips the prompt and leaves
-the first two; `--dangerously-bypass-approvals-and-sandbox` also drops the OS sandbox and leaves only
-branch protection (see [the decision flow](reference-merge-authority-decision-flow.md)).
-
-The hook blocks coarsely and allows precisely. A block may overmatch, and any block in a command
-beats an allow. In automation, for example, any command text the hook reads that names `gh`
-together with a merge blocks, quoted or not; the
-[decision flow](reference-merge-authority-decision-flow.md) names its accepted overmatches and the
-forms it never reads. The one allow is a single plain merge in an attended Claude session (see
-[Merge Authority](merge-authority.md)). Rules for changing the hooks live in
-[dev/codex-hooks/AGENTS.md](../../dev/codex-hooks/AGENTS.md).
+Narrowing a machine's exclusions only affects layer 1; it adds or removes no semantic gate. A
+permission rule is a guardrail against a cooperative agent's honest mistakes, not a security
+boundary: a command can reach the same effect through forms a prefix rule never sees (`python -c`,
+`node -e`, a script file).
 
 ## Claude and Codex sandbox semantics are different, not parallel
 
@@ -66,7 +51,7 @@ forms it never reads. The one allow is a single plain merge in an attended Claud
 A Codex allow therefore removes OS containment, so Codex pre-approves less than Claude lets
 through. Grok has no command-prefix file; it reuses `.claude/settings.json` allow/deny via
 Claude-compat (see [Agent Harness Parity](agent-harness-parity.md)). The two-token `["gh","pr"]` and
-`["git","branch"]` prefixes remain intentionally; merge stays hook-gated.
+`["git","branch"]` prefixes remain intentionally; merge stays a human decision ([Merge Authority](merge-authority.md)).
 
 ## Why generic tools need the OS-sandbox bypass
 
@@ -88,9 +73,8 @@ so run it serially, or use `node_modules/.bin/<tool>` for parallelism.
 Claude's OS sandbox unsets every name in the user config's `sandbox.credentials.envVars` before a
 sandboxed command starts, and Codex's `shell_environment_policy.exclude` hides the same names from
 its shell commands. Each Claude entry is `mode` `deny`. A command that bypasses the sandbox still
-receives the variables. The `vouchington agent-blackboard session-start` hook runs outside it for
-that reason: a sandboxed probe cannot tell a withheld `AGENT_BLACKBOARD_TOKEN` from an outage
-([SessionStart availability check](agent-blackboard.md#sessionstart-availability-check)).
+receives the variables. A sandboxed shell probe of the hosted deployment cannot tell a withheld
+`AGENT_BLACKBOARD_TOKEN` from an outage, so agents use the `vouchington-tooling` MCP tools instead.
 
 The machine-registered `vouchington-tooling` server receives `AGENT_BLACKBOARD_URL` and
 `AGENT_BLACKBOARD_TOKEN` through its own registration (Codex `env_vars`), a separate control from
@@ -121,8 +105,8 @@ spelling of a path that climbs out of `dev/`. They are a guardrail, not a bounda
 can spell the same path.
 
 Accepted risk: the rules trust whatever is under `dev/` when the command runs. An agent can write a
-`dev/` file and run it without review of the run. The PreToolUse hook blocks edits to its own code
-only ([Hook threat model](#hook-threat-model)). An ask rule for
+`dev/` file and run it without review of the run. No repository hook gates
+edits to `dev/` or the agent config. An ask rule for
 `Bash(dangerouslyDisableSandbox:true)` would close the unsandboxed retry path but would prompt on
 every retry, including `git push` and `gh`.
 
@@ -141,7 +125,7 @@ Claude Code matching limits: every subcommand of a compound command must match (
 worktree> && git rebase --skip` and `git -C <dir>` go to review; run these bare from the session's
 own worktree); an allow does not match past a leading environment assignment, so the
 `GIT_EDITOR=true` form has its own literal rule; and `*` also admits a lease push that adds
-`--force`, `-f`, or a `+` refspec, which the PreToolUse hook and `.husky/pre-push` block rather than
+`--force`, `-f`, or a `+` refspec, which `.husky/pre-push` blocks rather than
 a deny rule ([How Grok reuses Claude rules](agent-harness-parity.md#how-grok-reuses-claude-rules)).
 
 Accepted risk: `git *` already runs outside the OS sandbox, and a lease push with `--receive-pack=`
@@ -180,5 +164,5 @@ excluded) is the one that can die halfway. Retry that command unsandboxed.
 ## See also
 
 - [Sandbox & Permission Audit](../../.agents/skills/retrospective/sandbox-audit.md)
-- [Merge Authority](merge-authority.md) — the PreToolUse hook's semantic gating.
+- [Merge Authority](merge-authority.md)
 - [Agent Harness Parity](agent-harness-parity.md)

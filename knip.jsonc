@@ -8,8 +8,8 @@
   "workspaces": {
     ".": {
       "entry": [
-        "dev/codex-hooks/policy.mts",
         "dev/agent-policy.mts",
+        "dev/hooks/post-edit-checks.mts",
         "dev/agent-issue-labels/**/*.mts",
         "dev/otel-register.mts",
         "dev/launch-services.mts",

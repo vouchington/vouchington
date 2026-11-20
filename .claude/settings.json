@@ -30,7 +30,6 @@
       "Bash(./dev/stop-services *)",
       "Bash(./dev/status)",
       "Bash(./dev/status *)",
-      "Bash(node node_modules/vouchington-tooling/bin/vouchington.mjs agent-blackboard session-start *)",
       "Bash(./dev/reset)",
       "Bash(./dev/reset *)",
       "Bash(./dev/rebase-onto-main)",
@@ -110,7 +109,13 @@
       "Bash(git pull --rebase*)",
       "Bash(git pull -r*)",
       "Bash(git stash)",
-      "Bash(git stash pop*)"
+      "Bash(git stash pop*)",
+      "Bash(gh stack modify*)",
+      "Bash(gh stack switch*)",
+      "Bash(gh stack trunk*)",
+      "Bash(gh stack submit --open*)",
+      "Bash(gh stack link --open*)",
+      "Bash(gh stack merge)"
     ]
   },
   "hooks": {
@@ -123,31 +128,11 @@
           },
           {
             "type": "command",
-            "command": "pnpm exec vouchington tmux agent-reminder session-start"
-          },
-          {
-            "type": "command",
             "command": "\"$(git rev-parse --show-toplevel)/dev/check-fresh-base\""
           },
           {
             "type": "command",
             "command": "\"$(git rev-parse --show-toplevel)/dev/check-web-init\""
-          },
-          {
-            "type": "command",
-            "command": "repo=\"$(git rev-parse --show-toplevel 2>/dev/null)\" || exit 0; cli=\"$repo/node_modules/vouchington-tooling/bin/vouchington.mjs\"; if [ -f \"$cli\" ]; then help=\"$(node \"$cli\" --help)\" || exit $?; case \"$help\" in *\"agent-blackboard session-start\"*) exec node \"$cli\" agent-blackboard session-start --docs-path docs/development/agent-blackboard.md --setup-hint \"Run ./dev/initialize monorepo from the Vouchington worktree root, then continue this session.\" ;; esac; fi; printf '%s\\n' '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"vouchington-tooling session-start is unavailable in this worktree. Run ./dev/initialize monorepo from the Vouchington worktree root, then continue this session.\"}}'"
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Bash|Write|Edit|run_terminal_command|search_replace",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/node_modules/vouchington-tooling/bin/vouchington.mjs\" hook pre-tool-use --harness claude --policy \"$(git rev-parse --show-toplevel)/dev/codex-hooks/policy.mts\" --root \"$(git rev-parse --show-toplevel)\"",
-            "timeout": 30
           }
         ]
       }
@@ -158,54 +143,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=$(jq -r \".tool_input.file_path // .toolInput.file_path // .toolInput.filePath // .toolInput.path // empty\" 2>/dev/null); case \"$f\" in *.ts|*.tsx|*.mts|*.mjs|*.js|*.jsx) pnpm exec oxlint --type-aware --fix --quiet \"$f\" 2>/dev/null || true ;; esac"
+            "command": "\"$(git rev-parse --show-toplevel)/dev/hooks/post-edit-lint.sh\""
           },
           {
             "type": "command",
-            "command": "f=$(jq -r \".tool_input.file_path // .toolInput.file_path // .toolInput.filePath // .toolInput.path // empty\" 2>/dev/null); case \"$f\" in *.ts|*.tsx|*.mts|*.mjs|*.js|*.jsx) pnpm exec oxlint --type-aware \"$f\" 2>&1 || true ;; esac"
-          },
-          {
-            "type": "command",
-            "command": "f=$(jq -r \".tool_input.file_path // .toolInput.file_path // .toolInput.filePath // .toolInput.path // empty\" 2>/dev/null); case \"$f\" in *.ts|*.tsx|*.mts|*.mjs|*.js|*.jsx) pnpm exec oxfmt \"$f\" 2>/dev/null || true ;; esac"
-          },
-          {
-            "type": "command",
-            "command": "f=$(jq -r \".tool_input.file_path // .toolInput.file_path // .toolInput.filePath // .toolInput.path // empty\" 2>/dev/null); case \"$f\" in *.ts|*.tsx|*.mts) repo_root=\"$(git rev-parse --show-toplevel)\"; rel=\"${f#\"$repo_root\"/}\"; case \"$rel\" in backend/*) cd \"$repo_root\" && pnpm exec tsc --noEmit --incremental --project backend/tsconfig.json 2>/dev/null ;; email-templates/*) cd \"$repo_root\" && pnpm exec tsc --noEmit --incremental --project email-templates/tsconfig.json 2>/dev/null ;; web/*) cd \"$repo_root\" && pnpm exec tsc --noEmit --incremental --project web/tsconfig.json 2>/dev/null ;; cloudflare-worker/*) cd \"$repo_root\" && pnpm exec tsc --noEmit --incremental --project cloudflare-worker/tsconfig.json 2>/dev/null ;; lambdas/*) cd \"$repo_root\" && pnpm exec tsc --noEmit --incremental --project lambdas/tsconfig.json 2>/dev/null ;; ts-shared/*) cd \"$repo_root\" && pnpm exec tsc --noEmit --incremental --project ts-shared/tsconfig.json 2>/dev/null ;; *) cd \"$repo_root\" && pnpm exec tsc --noEmit --incremental --project tsconfig.json 2>/dev/null ;; esac || true ;; esac"
-          },
-          {
-            "type": "command",
-            "command": "f=$(jq -r \".tool_input.file_path // .toolInput.file_path // .toolInput.filePath // .toolInput.path // empty\" 2>/dev/null); repo_root=\"$(git rev-parse --show-toplevel)\"; case \"$f\" in *.md) [ -n \"$f\" ] && path=\"$f\" && case \"$path\" in \"$repo_root\"/*) path=\"${path#\"$repo_root\"/}\";; esac && (cd \"$repo_root\" && \"$repo_root/ci/lint-links.sh\" --offline \"$path\" 2>/dev/null) || true ;; esac"
-          },
-          {
-            "type": "command",
-            "command": "f=$(jq -r \".tool_input.file_path // .toolInput.file_path // .toolInput.filePath // .toolInput.path // empty\" 2>/dev/null); case \"$f\" in *.rs) rustfmt \"$f\" 2>/dev/null || true ;; esac"
-          },
-          {
-            "type": "command",
-            "command": "f=$(jq -r \".tool_input.file_path // .toolInput.file_path // .toolInput.filePath // .toolInput.path // empty\" 2>/dev/null); case \"$f\" in *.lua) selene --config selene.toml \"$f\" 2>/dev/null || true ;; esac"
-          },
-          {
-            "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/node_modules/vouchington-tooling/bin/vouchington.mjs\" hook post-tool-use --harness claude --policy \"$(git rev-parse --show-toplevel)/dev/codex-hooks/policy.mts\" --root \"$(git rev-parse --show-toplevel)\" 2>&1 || true"
-          }
-        ]
-      },
-      {
-        "matcher": "ExitPlanMode|Bash|run_terminal_command",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/node_modules/vouchington-tooling/bin/vouchington.mjs\" hook post-tool-use --harness claude --policy \"$(git rev-parse --show-toplevel)/dev/codex-hooks/policy.mts\" --root \"$(git rev-parse --show-toplevel)\" 2>/dev/null || true"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "pnpm exec vouchington tmux agent-reminder user-prompt"
+            "command": "node \"$(git rev-parse --show-toplevel)/dev/hooks/post-edit-checks.mts\""
           }
         ]
       }

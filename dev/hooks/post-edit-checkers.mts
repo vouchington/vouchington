@@ -1,33 +1,52 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { execFileSync, spawnSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import * as path from 'node:path'
 
-import { gitHeadPathExists, oxfmtFailure, playwrightSpecsContain } from './local-process.mts'
-import type { PostToolUseChecker, PostToolUseWarning } from 'vouchington-tooling/command-policy'
+export type PostEditWarning = { level: 'warn'; message: string }
+export type PostEditChecker = {
+  matches: (filePath: string, worktreeRoot: string) => boolean
+  check: (filePath: string, worktreeRoot: string) => PostEditWarning[]
+}
 
-const FMT_EXTS = /\.(md|json|jsonc|yml|yaml|toml)$/
+const GIT_WORKTREE_OVERRIDE_ENV = new Set([
+  'GIT_DIR',
+  'GIT_WORK_TREE',
+  'GIT_INDEX_FILE',
+  'GIT_PREFIX',
+])
 
-const autoFormatChecker: PostToolUseChecker = {
-  matches: filePath => FMT_EXTS.test(filePath),
-  check: (filePath, worktreeRoot) => {
-    const fullPath = path.isAbsolute(filePath) ? filePath : path.resolve(worktreeRoot, filePath)
-    if (!existsSync(fullPath)) return []
-    const failure = oxfmtFailure(worktreeRoot, fullPath)
-    if (failure === undefined) {
-      return []
-    }
-    return [
-      {
-        level: 'warn' as const,
-        message: `oxfmt failed on ${path.basename(filePath)}: ${failure}`,
-      },
-    ]
-  },
+function gitEnv(): NodeJS.ProcessEnv {
+  return Object.fromEntries(
+    Object.entries(process.env).filter(([key]) => !GIT_WORKTREE_OVERRIDE_ENV.has(key)),
+  )
+}
+
+export function gitHeadPathExists(cwd: string, relativePath: string): boolean {
+  try {
+    execFileSync('git', ['show', `HEAD:${relativePath}`], {
+      cwd,
+      env: gitEnv(),
+      stdio: 'ignore',
+      timeout: 5_000,
+    })
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function playwrightSpecsContain(cwd: string, value: string): boolean {
+  const result = spawnSync('grep', ['-rlF', '--', value, 'playwright/tests'], {
+    cwd,
+    encoding: 'utf8',
+  })
+  return Boolean(result.stdout?.trim())
 }
 
 const INTERNAL_MOCK_RE =
   /vi\.mock\(\s*['"`]((@services|@queues|@data-stores)\/|.*\.\.(\/?\.\.)*\/(services|queues|data-stores)\/)/
 
-const nonWebMockPolicyChecker: PostToolUseChecker = {
+export const nonWebMockPolicyChecker: PostEditChecker = {
   matches: (filePath, worktreeRoot) => {
     if (/\.(test\.mts|test\.ts)$/.test(filePath)) {
       const rel = path.relative(worktreeRoot, filePath)
@@ -45,7 +64,7 @@ const nonWebMockPolicyChecker: PostToolUseChecker = {
     if (INTERNAL_MOCK_RE.test(content)) {
       return [
         {
-          level: 'warn' as const,
+          level: 'warn',
           message:
             'Non-web test mocks an internal module — move the seam behind @modules/<provider> and tag it with `/* no-mistakes: integration=<provider> */` per the vitest-test-authoring skill (.agents/skills/vitest-test-authoring/SKILL.md)',
         },
@@ -57,7 +76,7 @@ const nonWebMockPolicyChecker: PostToolUseChecker = {
 
 const DATA_PW_RE = /data-pw="([^"]+)"/g
 
-const dataPwSpecChecker: PostToolUseChecker = {
+export const dataPwSpecChecker: PostEditChecker = {
   matches: (filePath, worktreeRoot) => {
     const rel = path.relative(worktreeRoot, filePath)
     return (
@@ -71,7 +90,7 @@ const dataPwSpecChecker: PostToolUseChecker = {
     } catch {
       return []
     }
-    const warnings: PostToolUseWarning[] = []
+    const warnings: PostEditWarning[] = []
     const seen = new Set<string>()
     for (const match of content.matchAll(DATA_PW_RE)) {
       const value = match[1]!
@@ -88,20 +107,30 @@ const dataPwSpecChecker: PostToolUseChecker = {
   },
 }
 
-const servicePackageChecker: PostToolUseChecker = {
+export const servicePackageChecker: PostEditChecker = {
   matches: (filePath, worktreeRoot) =>
     /^backend\/services\/[^/]+\/package\.json$/.test(path.relative(worktreeRoot, filePath)),
   check: (filePath, worktreeRoot) => {
     const rel = path.relative(worktreeRoot, filePath)
     const msg =
       'New backend service — add to backend/entrypoints/api, worker-io, worker-cpu package.json; the runtime audit enforces this in CI.'
-    return gitHeadPathExists(worktreeRoot, rel) ? [] : [{ level: 'warn' as const, message: msg }]
+    return gitHeadPathExists(worktreeRoot, rel) ? [] : [{ level: 'warn', message: msg }]
   },
 }
 
-export const productPostToolUseCheckers: readonly PostToolUseChecker[] = [
-  autoFormatChecker,
+export const postEditCheckers: readonly PostEditChecker[] = [
   nonWebMockPolicyChecker,
   dataPwSpecChecker,
   servicePackageChecker,
 ]
+
+export function checkFile(
+  filePath: string,
+  worktreeRoot: string,
+  checkers: readonly PostEditChecker[] = postEditCheckers,
+): PostEditWarning[] {
+  const absolute = path.isAbsolute(filePath) ? filePath : path.resolve(worktreeRoot, filePath)
+  return checkers.flatMap(checker =>
+    checker.matches(absolute, worktreeRoot) ? checker.check(absolute, worktreeRoot) : [],
+  )
+}

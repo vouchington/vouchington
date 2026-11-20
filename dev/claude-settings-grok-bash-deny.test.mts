@@ -114,4 +114,22 @@ describe('Claude settings deny list under Grok Bash matching', () => {
       false,
     )
   })
+
+  it.each([
+    'gh stack modify',
+    'gh stack switch',
+    'gh stack trunk main',
+    'gh stack submit --open',
+    'gh stack link --open',
+    'gh stack merge',
+  ])('denies the interactive gh stack form %s', command => {
+    expect(grokBashDenied(denyRules, command)).toBe(true)
+  })
+
+  it.each(['gh stack submit --auto', 'gh stack checkout 12'])(
+    'allows the non-interactive gh stack form %s',
+    command => {
+      expect(grokBashDenied(denyRules, command)).toBe(false)
+    },
+  )
 })

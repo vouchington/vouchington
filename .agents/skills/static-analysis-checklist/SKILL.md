@@ -13,8 +13,8 @@ Claude Code, Codex, and Grok load the plugin skill `skills:static-analysis-check
 
 Use this checklist when changing analyzer enforcement in `static-code-analysis/`, `ast-grep-rules/`,
 or `no-mistakes`/oxlint configuration. Agent permission and hook configuration belongs to
-[`dev/codex-hooks/AGENTS.md`](../../../dev/codex-hooks/AGENTS.md); load this checklist only when the
-same change also changes analyzer enforcement.
+[agent harness parity](../../../docs/development/agent-harness-parity.md); load this checklist only
+when the same change also changes analyzer enforcement.
 Treat [`static-code-analysis/README.md`](../../../docs/development/quality/static-code-analysis/README.md) as canonical.
 Read its rule-placement, guard-authoring, migration-cleanup, and rollout sections before choosing
 an implementation. When `no-mistakes` cannot read a dynamic SQL builder, extend its bounded evaluator or add the

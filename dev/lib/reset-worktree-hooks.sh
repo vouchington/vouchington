@@ -39,11 +39,6 @@ reset_post() {
     echo -e "${YELLOW}Initializing monorepo tools...${NC}"
     "$REPO_ROOT/dev/initialize" monorepo
     echo ""
-
-    # Clear tmux pane/window so the prior task label doesn't persist
-    if ! "$REPO_ROOT/node_modules/.bin/vouchington" tmux name ""; then
-        echo "Warning: tmux title cleanup was skipped because the pane binding could not be verified." >&2
-    fi
 }
 
 case "${1:-}" in

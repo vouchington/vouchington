@@ -1,21 +1,7 @@
 # Codex reads checked-in AGENTS.md files. Do not add a CLAUDE.md fallback.
 # Sandbox, approval, and model settings belong to the user's Codex config (vouchington-machines).
 
-[[hooks.PreToolUse]]
-matcher = "Bash|Edit|Write|apply_patch"
-
-[[hooks.PreToolUse.hooks]]
-type = "command"
-command = 'node "$(git rev-parse --show-toplevel)/node_modules/vouchington-tooling/bin/vouchington.mjs" hook pre-tool-use --harness codex --policy "$(git rev-parse --show-toplevel)/dev/codex-hooks/policy.mts" --root "$(git rev-parse --show-toplevel)"'
-timeout = 30
-statusMessage = "Checking repository command policy"
-
 [[hooks.SessionStart]]
-
-[[hooks.SessionStart.hooks]]
-type = "command"
-command = 'pnpm exec vouchington tmux agent-reminder session-start'
-timeout = 10
 
 [[hooks.SessionStart.hooks]]
 type = "command"
@@ -28,34 +14,3 @@ type = "command"
 command = '"$(git rev-parse --show-toplevel)/dev/check-web-init"'
 timeout = 10
 statusMessage = "Checking web stack initialization"
-
-[[hooks.SessionStart.hooks]]
-type = "command"
-command = '''repo="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0; cli="$repo/node_modules/vouchington-tooling/bin/vouchington.mjs"; if [ -f "$cli" ]; then help="$(node "$cli" --help)" || exit $?; case "$help" in *"agent-blackboard session-start"*) exec node "$cli" agent-blackboard session-start --docs-path docs/development/agent-blackboard.md --setup-hint "Run ./dev/initialize monorepo from the Vouchington worktree root, then continue this session." ;; esac; fi; printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"vouchington-tooling session-start is unavailable in this worktree. Run ./dev/initialize monorepo from the Vouchington worktree root, then continue this session."}}''''
-timeout = 15
-statusMessage = "Checking agent-blackboard availability"
-
-[[hooks.UserPromptSubmit]]
-
-[[hooks.UserPromptSubmit.hooks]]
-type = "command"
-command = 'pnpm exec vouchington tmux agent-reminder user-prompt'
-timeout = 10
-
-[[hooks.PostToolUse]]
-matcher = "ExitPlanMode|Bash"
-
-[[hooks.PostToolUse.hooks]]
-type = "command"
-command = 'node "$(git rev-parse --show-toplevel)/node_modules/vouchington-tooling/bin/vouchington.mjs" hook post-tool-use --harness codex --policy "$(git rev-parse --show-toplevel)/dev/codex-hooks/policy.mts" --root "$(git rev-parse --show-toplevel)" 2>/dev/null || true'
-timeout = 30
-statusMessage = "Checking tmux reminder"
-
-[[hooks.PostToolUse]]
-matcher = "Edit|Write|apply_patch"
-
-[[hooks.PostToolUse.hooks]]
-type = "command"
-command = 'node "$(git rev-parse --show-toplevel)/node_modules/vouchington-tooling/bin/vouchington.mjs" hook post-tool-use --harness codex --policy "$(git rev-parse --show-toplevel)/dev/codex-hooks/policy.mts" --root "$(git rev-parse --show-toplevel)" 2>&1 || true'
-timeout = 30
-statusMessage = "Running post-edit checks"
