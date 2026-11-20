@@ -155,16 +155,6 @@ restoration and `/infra/ping` `200`/`pong` evidence before QA. Because Valkey se
 retained while database users are removed, start with a fresh authenticated browser context after a
 reset. Never replace the private workflow with ad hoc AWS or SQL commands.
 
-## Grok workflow
-
-Optional orchestrator: `.grok/workflows/staging-qa.rhai`. Prompts must tell
-child agents to read this skill and the named matrix file. Do not paste those
-tables into the script.
-
-```text
-/workflow staging-qa email=<operator-email> scope=full
-```
-
 ## See Also
 
 - [chrome-qa](../chrome-qa/SKILL.md) — local stack only

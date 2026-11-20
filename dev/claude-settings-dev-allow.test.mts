@@ -10,9 +10,8 @@ import { plainForcePushReason } from './plain-force-push.mts'
 // text; a trailing ` *` that is the rule's only wildcard also matches the bare command. The
 // blanket dev/ allow rules skip review for every checked-in dev/ entrypoint; each dev/ command in
 // `sandbox.excludedCommands` (the only project sandbox key; the rest of the sandbox is machine
-// policy) also keeps a narrow allow rule, because auto mode may drop the blanket ones and Claude
-// Code documents that it keeps narrow rules. The `/../` deny rules refuse the plain spelling of a
-// path that escapes dev/. Rationale:
+// policy) needs no narrow allow rule of its own. The `/../` deny rules refuse the plain spelling
+// of a path that escapes dev/. Rationale:
 // docs/development/agent-sandbox.md#claude-review-skip-for-dev-commands.
 
 type ClaudeSettings = {
@@ -45,11 +44,8 @@ const isDevCommand = (command: string) =>
   command.startsWith('./dev') || command.startsWith('node dev')
 
 describe('Claude review-skip for dev/ commands', () => {
-  it('pre-approves dev/ commands through the blanket rules plus one narrow rule per unsandboxed command', () => {
-    const unsandboxedDevCommands = claudeSettings.sandbox.excludedCommands.filter(isDevCommand)
-    expect(allowPatterns.filter(isDevCommand).toSorted()).toEqual(
-      ['./dev/*', 'node dev/*', ...unsandboxedDevCommands].toSorted(),
-    )
+  it('pre-approves dev/ commands through the two blanket rules only', () => {
+    expect(allowPatterns.filter(isDevCommand).toSorted()).toEqual(['./dev/*', 'node dev/*'])
   })
 
   it('excludes only dev/ scripts from the sandbox, each as an exact entry plus a wildcard twin', () => {

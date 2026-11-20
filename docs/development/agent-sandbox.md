@@ -94,13 +94,11 @@ Blackboard credential contract: a developer shell can export a credential this c
 
 Claude `permissions.allow` pre-approves every `dev/` entrypoint with two blanket rules,
 `Bash(./dev/*)` and `Bash(node dev/*)`, so a new `dev/` script skips the permission prompt without a
-settings change. Grok reuses these strings through Claude-compat. Every `dev/` command in
-`sandbox.excludedCommands` also keeps a narrow exact-plus-wildcard allow pair, because auto mode may
-drop the blanket rules but keeps narrow ones.
+settings change. Grok reuses these strings through Claude-compat. A `dev/` command in
+`sandbox.excludedCommands` needs no narrow allow pair of its own.
 
 This is review-skip only. OS escalation stays per-script: a `dev/` command that must leave the OS
-sandbox needs its own `sandbox.excludedCommands` pair, the matching allow pair, and a Codex
-`prefix_rule`. Two deny rules, `Bash(./dev*/../*)` and `Bash(node dev*/../*)`, refuse the plain
+sandbox needs its own `sandbox.excludedCommands` pair and a Codex `prefix_rule`. Two deny rules, `Bash(./dev*/../*)` and `Bash(node dev*/../*)`, refuse the plain
 spelling of a path that climbs out of `dev/`. They are a guardrail, not a boundary, since quoting
 can spell the same path.
 
