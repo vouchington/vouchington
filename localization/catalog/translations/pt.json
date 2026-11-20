@@ -6165,7 +6165,6 @@
 {"id":"copy.native.taxonomy.moderation.noAction","value":"Sem ação"},
 {"id":"copy.native.taxonomy.moderation.rejected","value":"Rejeitado"},
 {"id":"copy.native.taxonomy.moderation.unpublished","value":"Retirado"},
-{"id":"copy.native.taxonomy.notification.genericTitle","value":"Notificação"},
 {"id":"copy.native.taxonomy.posts.story","value":"Notícia"},
 {"id":"copy.native.taxonomy.topics.rssFeed","value":"Feed RSS"},
 {"id":"copy.notifications.kind.community_activity_digest.body","value":"{communities}: {joins} entradas, {departures} saídas (líquido {net}); {total} membros no total; {discussions} discussões, {reviews} avaliações, {dataPoints} dados, {comments} comentários; {active} membros ativos ({rate}%); {moderation} itens a aguardar moderação."},
