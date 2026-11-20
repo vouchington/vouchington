@@ -21,4 +21,4 @@ through Claude-compat ([harness parity](../agent-harness-parity.md)); Codex has 
   as advisory context when a non-web test mocks an internal module, a `data-pw` value has no
   Playwright spec, or a new `backend/services/*/package.json` appears.
   No hook records session evidence or appends Blackboard journal entries; agents write their own
-  ([blackboard skill](../../../.agents/skills/blackboard/SKILL.md)).
+  (`vouchington-workflow:blackboard` skill).

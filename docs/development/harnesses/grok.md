@@ -17,7 +17,7 @@ copied hooks, skills, or permission allowlists.
   escalation, so `gh` and the toolchain caches fail inside it.
 - Capability map: [agent-harness-parity.md](../agent-harness-parity.md).
 - Session id: Grok's own shell and its hook processes both export `GROK_SESSION_ID`, which matches
-  the session id herdr reports. The agent reads that variable (the [`blackboard` skill](../../../.agents/skills/blackboard/SKILL.md)); with no id
+  the session id herdr reports. The agent reads that variable (the `vouchington-workflow:blackboard` skill); with no id
   it stops journaling and reports it. Do not add a `.grok/hooks/` tree: a second hook
   source double-fires.
 

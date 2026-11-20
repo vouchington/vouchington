@@ -80,7 +80,7 @@ The machine-registered `vouchington-tooling` server receives `AGENT_BLACKBOARD_U
 `AGENT_BLACKBOARD_TOKEN` through its own registration (Codex `env_vars`), a separate control from
 this deny list, so the token stays hidden from sandboxed Claude and Codex shell commands while the server can still use it.
 The token is meant for the server; agents journal through it, and never ask for an unsandboxed run
-just to obtain the token (see the [blackboard skill](../../.agents/skills/blackboard/SKILL.md)). The exposure differs by harness: an
+just to obtain the token (see the `vouchington-workflow:blackboard` skill). The exposure differs by harness: an
 unsandboxed Claude command still receives the denied variables, Codex hides them from its shell
 commands even unsandboxed, and Cursor and OpenCode pass the agent's environment to shell commands,
 so a token exported to them is visible to the commands they run.
@@ -143,7 +143,7 @@ rebase-lifecycle rules above. `rga` and `tokei` are not pinned, so they are not 
 
 [`dev/agent-sandbox-config.test.mts`](../../dev/agent-sandbox-config.test.mts) is the ownership and
 narrowness guard. See
-[sandbox-audit.md](../../.agents/skills/retrospective/sandbox-audit.md#decision-criteria) for when an
+the sandbox audit in the `vouchington-workflow:retrospective` skill for when an
 escalation is a genuine bypass candidate.
 
 ## Checkout of sandbox-protected paths
@@ -163,6 +163,5 @@ excluded) is the one that can die halfway. Retry that command unsandboxed.
 
 ## See also
 
-- [Sandbox & Permission Audit](../../.agents/skills/retrospective/sandbox-audit.md)
 - [Merge Authority](merge-authority.md)
 - [Agent Harness Parity](agent-harness-parity.md)

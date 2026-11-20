@@ -1435,8 +1435,6 @@
         reason: First-party UUIDv7 generation, validation, bounds, and conversion primitives published by the repo author.
       - name: '@vouchington/worker-runtime'
         reason: First-party generic worker runtime (queue selection, GlideMQ factory and enqueue helpers, SQS consumers, lifecycle, schedule manifests) published by the repo author.
-      - name: agent-blackboard
-        reason: First-party agent session client and MCP server published by the repo author.
       - name: coverage-check
         reason: First-party test coverage utility published by the repo author.
       - name: eslint-plugin-no-mistakes
@@ -1657,21 +1655,6 @@
       - sharp
       - '@jongleberry/vurst-ai'
       - '@entrypoints/worker-cpu'
-    dependencyTypes:
-      - dependencies
-      - optionalDependencies
-    lockfile: pnpm-lock.yaml
-
-- name: production entrypoint closures exclude agent-blackboard
-  rule: forbidden-workspace-closure
-  scope: repository
-  options:
-    packages:
-      - '@entrypoints/api'
-      - '@entrypoints/worker-cpu'
-      - '@entrypoints/worker-io'
-    forbidden:
-      - agent-blackboard
     dependencyTypes:
       - dependencies
       - optionalDependencies

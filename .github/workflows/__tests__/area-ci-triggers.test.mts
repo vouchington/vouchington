@@ -182,7 +182,7 @@ describe('Area CI triggers', () => {
       '.github/workflows/example.yaml',
       '.github/workflows/secret-context.test.mts',
       '.coverage-rules.yml',
-      '.agents/skills/blackboard/SKILL.md',
+      '.agents/skills/local-site-testing/SKILL.md',
       'AGENTS.md',
       'docs/development/ci.md',
       'docs/prompts/SCHEDULED.md',
