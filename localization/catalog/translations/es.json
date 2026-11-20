@@ -6163,7 +6163,6 @@
 {"id":"copy.native.taxonomy.moderation.noAction","value":"Sin acción"},
 {"id":"copy.native.taxonomy.moderation.rejected","value":"Rechazado"},
 {"id":"copy.native.taxonomy.moderation.unpublished","value":"Retirado"},
-{"id":"copy.native.taxonomy.notification.genericTitle","value":"Notificación"},
 {"id":"copy.native.taxonomy.posts.story","value":"Historia"},
 {"id":"copy.native.taxonomy.topics.rssFeed","value":"Fuente RSS"},
 {"id":"copy.notifications.kind.community_activity_digest.body","value":"{communities}: {joins} se unieron, {departures} se fueron (neto {net}); {total} miembros en total; {discussions} discusiones, {reviews} reseñas, {dataPoints} datos, {comments} comentarios; {active} miembros activos ({rate}%); {moderation} elementos pendientes de moderación."},

@@ -6169,7 +6169,6 @@
 {"descriptor":null,"id":"copy.native.taxonomy.moderation.noAction"},
 {"descriptor":null,"id":"copy.native.taxonomy.moderation.rejected"},
 {"descriptor":null,"id":"copy.native.taxonomy.moderation.unpublished"},
-{"descriptor":null,"id":"copy.native.taxonomy.notification.genericTitle"},
 {"descriptor":null,"id":"copy.native.taxonomy.posts.story"},
 {"descriptor":null,"id":"copy.native.taxonomy.topics.rssFeed"},
 {"descriptor":null,"id":"copy.notifications.kind.community_activity_digest.body"},

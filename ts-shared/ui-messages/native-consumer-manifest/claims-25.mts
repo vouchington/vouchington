@@ -19,7 +19,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_25 = [
   { key: 'native.taxonomy.moderation.remove', consumers: ['dotnet', 'swift'] },
   { key: 'native.taxonomy.moderation.resolved', consumers: ['swift'] },
   { key: 'native.taxonomy.moderation.unpublished', consumers: ['swift'] },
-  { key: 'native.taxonomy.notification.genericTitle', consumers: ['dotnet'] },
   { key: 'native.taxonomy.posts.comment', consumers: ['dotnet'] },
   { key: 'native.taxonomy.posts.story', consumers: ['dotnet'] },
   { key: 'native.taxonomy.posts.topicRecommendation', consumers: ['dotnet'] },
