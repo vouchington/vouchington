@@ -89,7 +89,6 @@ export const REGISTRY_ORDER = [
   'moderation-reports-work-config',
   'communities-work-config',
   'moderation-summary-work-config',
-  'stuck-resolution-run-expiry-config',
   'reporting-rollup-work-config',
   'admin-imports-work-config',
   'follower-distributions-work-config',
@@ -127,6 +126,7 @@ export const REGISTRY_ORDER = [
   'oauth-authorization-broker',
   'oauth-authorization-exchange-work-config',
   'api-egress-proxy',
+  'stuck-resolution-run-expiry-config',
 ] as const
 
 export type RegisteredDynamicConfigKey = (typeof REGISTRY_ORDER)[number]
