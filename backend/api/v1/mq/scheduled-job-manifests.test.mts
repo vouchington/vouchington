@@ -49,6 +49,8 @@ const EXPECTED_SCHEDULED_JOBS = [
   'background/accountDataRequestRecovery',
   'background/activitypub-outbound-follows-recovery',
   'background/activitypub-outbound-votes-recovery',
+  'ai_agents/expireStuckAppealResolutionRuns',
+  'ai_agents/expireStuckDisputeResolutionRuns',
   'ai_agents/reconcileAutoDispatchJudgements',
   'ai_agents/reconcileAIAgentFailures',
   'ai_agents/reconcileCopyrightAgentDispatches',

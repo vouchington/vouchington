@@ -11,6 +11,7 @@ import {
 } from '@services/moderation-reports/rerun-outcomes'
 import { runAppealScenarios } from './moderation-rerun-appeals.mts'
 import { runModerationRerunRetentionScenarios } from './moderation-rerun-retention.mts'
+import { runStuckAppealExpiryScenario } from './moderation-rerun-stuck-expiry.mts'
 import { registerModerationRerunScenario as register } from './moderation-rerun-contract.mts'
 import { runAndCapture } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
@@ -149,6 +150,7 @@ export async function runModerationRerunOutcomeScenarios(): Promise<void> {
 
     await runAppealScenarios(appealId)
     await runModerationRerunRetentionScenarios(reportId, appealId)
+    await runStuckAppealExpiryScenario(appealId)
   } finally {
     await cleanupModerationRerunOutcomes(appealId, reportRunIds)
   }

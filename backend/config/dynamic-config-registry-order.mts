@@ -89,6 +89,7 @@ export const REGISTRY_ORDER = [
   'moderation-reports-work-config',
   'communities-work-config',
   'moderation-summary-work-config',
+  'stuck-resolution-run-expiry-config',
   'reporting-rollup-work-config',
   'admin-imports-work-config',
   'follower-distributions-work-config',

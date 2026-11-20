@@ -139,11 +139,24 @@ export async function markAppealResolutionRunExpired(
   appealId: string,
   runId: string,
 ): Promise<void> {
-  await write(sql`/* markAppealResolutionRunExpired */
-    UPDATE moderation_appeal_resolution_runs
-    SET expired_at = now()
-    WHERE moderation_appeal_id = ${appealId}::uuid AND id = ${runId}::uuid
-      AND completed_at IS NULL AND failed_at IS NULL AND expired_at IS NULL
-    RETURNING id
+  await markAppealResolutionRunsExpired([{ appealId, runId }])
+}
+
+/** Expires still-active runs only; a run that finished meanwhile is left untouched. */
+export async function markAppealResolutionRunsExpired(
+  runs: readonly { appealId: string; runId: string }[],
+): Promise<number> {
+  if (runs.length === 0) return 0
+  const uniqueRuns = [...new Map(runs.map(run => [`${run.appealId}:${run.runId}`, run])).values()]
+  const appealIds = uniqueRuns.map(run => run.appealId)
+  const runIds = uniqueRuns.map(run => run.runId)
+  const { rowCount } = await write(sql`/* markAppealResolutionRunsExpired */
+    UPDATE moderation_appeal_resolution_runs run SET expired_at = now()
+    FROM unnest(${appealIds}::uuid[], ${runIds}::uuid[]) AS requested(appeal_id, run_id)
+    WHERE run.id = requested.run_id AND run.moderation_appeal_id = requested.appeal_id
+      AND run.id = ANY(${runIds}::uuid[])
+      AND run.completed_at IS NULL AND run.failed_at IS NULL AND run.expired_at IS NULL
+    RETURNING run.id
   `)
+  return rowCount ?? 0
 }

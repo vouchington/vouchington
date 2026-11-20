@@ -8365,6 +8365,9 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
 
   backend/services/moderation-analytics:
     dependencies:
@@ -13230,6 +13233,9 @@ importers:
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../../modules/structured-decisions
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
@@ -13257,6 +13263,9 @@ importers:
       '@services/copyright-notices':
         specifier: workspace:^
         version: link:../../services/copyright-notices
+      '@services/data-retention':
+        specifier: workspace:^
+        version: link:../../services/data-retention
       '@services/feeds':
         specifier: workspace:^
         version: link:../../services/feeds

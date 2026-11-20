@@ -210,6 +210,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_review_dispute_resolution_runs__one_active
   ON review_dispute_resolution_runs (review_dispute_id)
   WHERE completed_at IS NULL AND failed_at IS NULL AND expired_at IS NULL;
 
+-- Serves the bounded stuck-run expiry sweep: active runs in id (creation) order.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_review_dispute_resolution_runs__active_id
+  ON review_dispute_resolution_runs (id)
+  WHERE completed_at IS NULL AND failed_at IS NULL AND expired_at IS NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_review_dispute_resolution_runs__lifecycle_change_id
   ON review_dispute_resolution_runs (latest_lifecycle_change_id)

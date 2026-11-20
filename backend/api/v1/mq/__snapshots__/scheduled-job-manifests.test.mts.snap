@@ -137,6 +137,72 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Expire appeal AI resolution runs left active after a failed queue admission",
+        "id": "expireStuckAppealResolutionRuns",
+        "kind": "scheduled-jobs",
+        "schedule": "17 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "ai_agents",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "17 * * * *",
+    },
+    "schedulerId": "expireStuckAppealResolutionRuns",
+    "template": {
+      "data": {},
+      "name": "expire-stuck-appeal-resolution-runs",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": false,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Expire dispute AI resolution runs left active after a failed queue admission",
+        "id": "expireStuckDisputeResolutionRuns",
+        "kind": "scheduled-jobs",
+        "schedule": "47 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "ai_agents",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "47 * * * *",
+    },
+    "schedulerId": "expireStuckDisputeResolutionRuns",
+    "template": {
+      "data": {},
+      "name": "expire-stuck-dispute-resolution-runs",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": false,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Recover copyright intake emails still present in S3",
         "id": "ses-inbound-reconciliation",
         "kind": "scheduled-jobs",
@@ -4310,6 +4376,22 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "ai_agents",
     "schedule": "*/5 * * * *",
     "triggerName": "enqueueReconcileAIAgentFailures",
+  },
+  {
+    "description": "Expire appeal AI resolution runs left active after a failed queue admission",
+    "id": "expireStuckAppealResolutionRuns",
+    "job_name": "expire-stuck-appeal-resolution-runs",
+    "queue_name": "ai_agents",
+    "schedule": "17 * * * *",
+    "triggerName": "enqueueExpireStuckAppealResolutionRuns",
+  },
+  {
+    "description": "Expire dispute AI resolution runs left active after a failed queue admission",
+    "id": "expireStuckDisputeResolutionRuns",
+    "job_name": "expire-stuck-dispute-resolution-runs",
+    "queue_name": "ai_agents",
+    "schedule": "47 * * * *",
+    "triggerName": "enqueueExpireStuckDisputeResolutionRuns",
   },
   {
     "description": "Re-enqueue unassessed copyright email and form agent work",

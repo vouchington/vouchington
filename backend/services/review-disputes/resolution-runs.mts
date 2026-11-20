@@ -93,11 +93,20 @@ export async function markReviewDisputeResolutionRunsFailed(
 
 /** Marks a worker's confirmed no-result completion; a run that saved a draft is left untouched. */
 export async function markReviewDisputeResolutionRunExpired(runId: string): Promise<void> {
-  await write(sql`/* markReviewDisputeResolutionRunExpired */
+  await markReviewDisputeResolutionRunsExpired([runId])
+}
+
+/** Expires still-active runs only; a run that finished meanwhile is left untouched. */
+export async function markReviewDisputeResolutionRunsExpired(
+  runIds: readonly string[],
+): Promise<number> {
+  if (runIds.length === 0) return 0
+  const { rowCount } = await write(sql`/* markReviewDisputeResolutionRunsExpired */
     UPDATE review_dispute_resolution_runs
     SET expired_at = now()
-    WHERE id = ${runId}::uuid
+    WHERE id = ANY(${[...new Set(runIds)]}::uuid[])
       AND completed_at IS NULL AND failed_at IS NULL AND expired_at IS NULL
     RETURNING id
   `)
+  return rowCount ?? 0
 }
