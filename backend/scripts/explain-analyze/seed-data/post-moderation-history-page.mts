@@ -42,9 +42,9 @@ export async function seedPostModerationHistoryPage(postId: string): Promise<voi
   await write(
     `/* seedPostModerationHistoryParent */
     INSERT INTO posts (id, created_by_id, post_type, title, markdown, created_via,
-      gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256)
+      gemini_embedding_2_content_sha256, llm_moderation_content_sha256)
     VALUES ($1::uuid, $2::uuid, 'discussion', 'Moderation history plan', 'Moderation history plan',
-      'system', decode(repeat('00', 32), 'hex'), decode(repeat('00', 32), 'hex'), decode(repeat('00', 32), 'hex'))
+      'system', decode(repeat('00', 32), 'hex'), decode(repeat('00', 32), 'hex'))
     ON CONFLICT (id) DO NOTHING`,
     [postId, seedUuid(0, '01')],
   )

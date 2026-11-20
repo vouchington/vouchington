@@ -28,7 +28,11 @@ export async function seedNotificationVisibility(): Promise<void> {
       CASE WHEN id=$3 THEN NULL ELSE CURRENT_TIMESTAMP END,
       decode(repeat('00',32),'hex'),decode(repeat('00',32),'hex')
     FROM UNNEST($1::uuid[]) id`,
-    [NOTIFICATION_VISIBILITY_SEED.posts, NOTIFICATION_VISIBILITY_SEED.user, NOTIFICATION_VISIBILITY_SEED.posts[1]],
+    [
+      NOTIFICATION_VISIBILITY_SEED.posts,
+      NOTIFICATION_VISIBILITY_SEED.user,
+      NOTIFICATION_VISIBILITY_SEED.posts[1],
+    ],
   )
   await q(
     `/* seedNotificationVisibility:hostname */
@@ -76,7 +80,11 @@ export async function seedNotificationVisibility(): Promise<void> {
     SELECT id,$2,'{"title":"Visibility seed"}'::jsonb,
       CASE WHEN id=$3 THEN CURRENT_TIMESTAMP ELSE NULL END,decode(repeat('00',32),'hex')
     FROM UNNEST($1::uuid[]) id`,
-    [NOTIFICATION_VISIBILITY_SEED.items, NOTIFICATION_VISIBILITY_SEED.url, NOTIFICATION_VISIBILITY_SEED.items[1]],
+    [
+      NOTIFICATION_VISIBILITY_SEED.items,
+      NOTIFICATION_VISIBILITY_SEED.url,
+      NOTIFICATION_VISIBILITY_SEED.items[1],
+    ],
   )
   await q(
     `/* seedNotificationVisibility:sources */

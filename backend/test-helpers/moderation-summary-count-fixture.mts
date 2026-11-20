@@ -12,9 +12,9 @@ export async function insertTestModerationSummaryReviewCohort(
   await write(sql`/* insertTestModerationSummaryReviewCohort */
     WITH created AS (
       INSERT INTO posts(id,post_type,title,markdown,created_by_id,community_id,broadcast,privacy,
-        is_anonymous,gemini_embedding_2_content_sha256,bedrock_nova_multimodal_v1_content_sha256,llm_moderation_content_sha256,created_via)
+        is_anonymous,gemini_embedding_2_content_sha256,llm_moderation_content_sha256,created_via)
       SELECT id,'discussion','Digest boundary fixture','Digest boundary fixture',${userId},${communityId},'everyone','public',
-        FALSE,decode(repeat('00',32),'hex'),decode(repeat('00',32),'hex'),decode(repeat('00',32),'hex'),'system'
+        FALSE,decode(repeat('00',32),'hex'),decode(repeat('00',32),'hex'),'system'
       FROM unnest(${ids}::uuid[]) AS cohort(id)
       RETURNING id
     )
@@ -37,9 +37,9 @@ export async function insertTestModerationSummaryCommunityCohort(
       SELECT id,${userId},'owner' FROM created RETURNING id
     ), created_posts AS (
       INSERT INTO posts(post_type,title,markdown,created_by_id,community_id,broadcast,privacy,is_anonymous,
-        gemini_embedding_2_content_sha256,bedrock_nova_multimodal_v1_content_sha256,llm_moderation_content_sha256,created_via)
+        gemini_embedding_2_content_sha256,llm_moderation_content_sha256,created_via)
       SELECT 'discussion','Digest community fixture','Pending',${userId},id,'everyone','public',FALSE,
-        decode(repeat('00',32),'hex'),decode(repeat('00',32),'hex'),decode(repeat('00',32),'hex'),'system' FROM created
+        decode(repeat('00',32),'hex'),decode(repeat('00',32),'hex'),'system' FROM created
       RETURNING id,community_id
     ), reviews AS (
       INSERT INTO community_post_reviews(community_id,post_id,submitted_by_id)

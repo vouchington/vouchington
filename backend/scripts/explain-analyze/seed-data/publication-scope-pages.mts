@@ -98,7 +98,12 @@ export async function seedPublicationScopePages(): Promise<void> {
     SELECT ('019e0000-e500-7000-8000-' || lpad(to_hex(n),12,'0'))::uuid,
       $1,$2,'comment','Scope seed','Scope seed','system',$3,$3,decode(repeat('00',32),'hex'),decode(repeat('00',32),'hex')
     FROM generate_series(0,$4::int-1) n ON CONFLICT DO NOTHING`,
-    [PUBLICATION_SCOPE_SEED.author, PUBLICATION_SCOPE_SEED.community, PUBLICATION_SCOPE_SEED.root, PUBLICATION_SCOPE_SEED.count],
+    [
+      PUBLICATION_SCOPE_SEED.author,
+      PUBLICATION_SCOPE_SEED.community,
+      PUBLICATION_SCOPE_SEED.root,
+      PUBLICATION_SCOPE_SEED.count,
+    ],
   )
   await query(
     `/* seedPublicationScopePages:relations */
