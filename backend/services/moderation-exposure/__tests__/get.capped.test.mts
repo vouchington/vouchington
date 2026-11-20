@@ -7,6 +7,7 @@ import { getExposureState } from '../get.mts'
 import {
   EXPOSURE_BREAK_THRESHOLD,
   EXPOSURE_COOLDOWN_MINUTES,
+  EXPOSURE_COUNT_DISPLAY_CAP_MAX,
   getExposureCountDisplayCap,
   moderationExposureConfig,
 } from '../config.mts'
@@ -69,7 +70,7 @@ describe('getExposureState - capped count', () => {
 
     beforeAll(async () => {
       moderator = await createTestUser()
-      thresholdAt = await seedReveals(moderator, DISPLAY_CAP + 25)
+      thresholdAt = await seedReveals(moderator, EXPOSURE_COUNT_DISPLAY_CAP_MAX + 2)
     })
 
     it('clamps count to the cap and sets count_capped', async () => {
