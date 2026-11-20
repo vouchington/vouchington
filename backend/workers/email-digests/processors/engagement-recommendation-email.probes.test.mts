@@ -81,11 +81,11 @@ describe('engagement email preference suppression', () => {
   it('stops selecting and sending engagement emails once processing is restricted', async () => {
     const user = await createTestUser()
     await expect(getFollowTopicsRecipients([user!.id])).resolves.toHaveLength(1)
-    await claimEngagementEmailSend(user!.id, 'follow_topics')
 
     await updateUserFields(user!.id, { processing_restricted_at: true })
 
     await expect(getFollowTopicsRecipients([user!.id])).resolves.toEqual([])
+    await claimEngagementEmailSend(user!.id, 'follow_topics')
     await expect(
       processSendFollowTopicsEmail(
         { emailAddress: 'tests+user@voucha.ai', userId: user!.id },
