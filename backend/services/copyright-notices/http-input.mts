@@ -1,6 +1,7 @@
 import assert from 'http-assert'
 import { isUUID } from '@modules/utils'
 import { isEmailAddress } from '@ts-shared/utils/validation-core'
+import { getCopyrightClaimantTargetsMax } from './config.mts'
 import type { CopyrightJurisdiction } from './types.mts'
 import type { CopyrightImageSelector } from './placement-resolution.mts'
 
@@ -36,7 +37,7 @@ export function parseCopyrightNoticeForm(body: Record<string, unknown>) {
     'has_accuracy_authority_under_penalty_of_perjury must be accepted',
   )
   assert(boundedString(electronicSignature, 500), 422, 'electronic_signature is required')
-  const targets = parseCopyrightTargets(body.targets)
+  const targets = parseCopyrightTargets(body.targets, getCopyrightClaimantTargetsMax())
   return {
     jurisdiction: jurisdiction as CopyrightJurisdiction,
     claimantDisplayName: claimantDisplayName as string | null,
@@ -50,11 +51,14 @@ export function parseCopyrightNoticeForm(body: Record<string, unknown>) {
   }
 }
 
-export function parseCopyrightTargets(value: unknown): CopyrightImageSelector[] {
+export function parseCopyrightTargets(
+  value: unknown,
+  maxTargets: number,
+): CopyrightImageSelector[] {
   assert(
-    Array.isArray(value) && value.length > 0 && value.length <= 20,
+    Array.isArray(value) && value.length > 0 && value.length <= maxTargets,
     422,
-    'targets must contain 1 to 20 hosted images',
+    `targets must contain 1 to ${maxTargets} hosted images`,
   )
   const targets: CopyrightImageSelector[] = value.map(target => {
     assert(

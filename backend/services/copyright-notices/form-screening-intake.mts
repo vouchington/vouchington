@@ -1,5 +1,6 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { COPYRIGHT_CLAIMANT_TARGETS_MAX } from './config.mts'
 
 /** Structured form fields the screening agent may see. Contact, email, and signature values never enter it. */
 export type CopyrightFormIntakeForScreening = {
@@ -39,8 +40,9 @@ export async function getCopyrightFormIntakeForScreening(
       notice.claimant_display_name,
       ARRAY(
         SELECT target.hosted_use_url FROM copyright_notice_targets target
-        -- Current intake contract permits at most 20 claimant targets (form-input-validation.mts).
-        WHERE target.copyright_notice_id = notice.id ORDER BY target.id LIMIT 20
+        -- Bind the claimant-targets cap's hard max so lowering the cap never hides stored rows.
+        WHERE target.copyright_notice_id = notice.id ORDER BY target.id
+        LIMIT ${COPYRIGHT_CLAIMANT_TARGETS_MAX}
       ) AS hosted_use_urls,
       char_length(notice.claimant_contact_ciphertext) > 0 AS has_claimant_contact,
       EXISTS (
@@ -57,7 +59,6 @@ export async function getCopyrightFormIntakeForScreening(
         FROM copyright_notice_targets target
         JOIN copyright_notice_target_images target_image
           ON target_image.copyright_notice_target_id = target.id
-        -- Current intake contract permits at most 20 claimant targets (form-input-validation.mts).
         WHERE target.copyright_notice_id = notice.id
           AND char_length(btrim(target.hosted_use_url)) > 0
       ) AS has_hosted_target,

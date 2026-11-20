@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, onTestFinished } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
@@ -8,6 +8,8 @@ import {
   insertTestPostImage,
   markImageDeleted,
 } from '@voucha/test-helpers'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { postContentLimitsConfig } from '@services/post-content-limits'
 import type { PrivateUser } from '@services/users/types'
 import { encodeCursor } from '@modules/pagination'
 import {
@@ -146,7 +148,7 @@ describe('GET /api/v1/posts/review-queue media', () => {
     })
   })
 
-  it('caps ordered completed non-deleted media at twenty images', async () => {
+  it('returns every stored completed non-deleted image after the cap is lowered', async () => {
     const prefix = crypto.randomUUID().replaceAll('-', '').slice(0, 9)
     const twentyImageId = `ffffffff-ffff-7fff-8000-${prefix}001`
     const overTwentyImageId = `ffffffff-ffff-7fff-8000-${prefix}002`
@@ -164,6 +166,9 @@ describe('GET /api/v1/posts/review-queue media', () => {
         clearanceStatus: 'rejected',
       })
     }
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(postContentLimitsConfig, { post_images_max: 5 }),
+    )
     const twentyIds = await attachCompletedImages(twentyImageId, regularUser.id, 20)
     const overTwentyIds = await attachCompletedImages(overTwentyImageId, regularUser.id, 21)
     const pendingId = await insertPendingTestImage(regularUser.id)
@@ -199,9 +204,6 @@ describe('GET /api/v1/posts/review-queue media', () => {
     )
 
     expect(byId.get(twentyImageId)?.map(image => image.image_id)).toEqual(twentyIds)
-    expect(byId.get(overTwentyImageId)?.map(image => image.image_id)).toEqual(
-      overTwentyIds.slice(0, 20),
-    )
-    expect(byId.get(overTwentyImageId)).toHaveLength(20)
+    expect(byId.get(overTwentyImageId)?.map(image => image.image_id)).toEqual(overTwentyIds)
   })
 })

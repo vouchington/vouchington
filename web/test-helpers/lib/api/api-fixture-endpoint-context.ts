@@ -4,6 +4,7 @@ import * as clientAdminOAuthClients from '../../../lib/api/client/admin-oauth-cl
 import * as clientApiKeys from '../../../lib/api/client/api-keys'
 import * as clientAuth from '../../../lib/api/client/auth'
 import * as clientCaptchaConfig from '../../../lib/api/client/captcha-config'
+import * as clientContentLimits from '../../../lib/api/client/content-limits'
 import * as clientHackerNewsConfig from '../../../lib/api/client/hacker-news-config'
 import * as clientCommunities from '../../../lib/api/client/communities'
 import * as clientCommunityBans from '../../../lib/api/client/community-bans'
@@ -83,6 +84,7 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     apiKeys: clientApiKeys,
     auth: clientAuth,
     captchaConfig: clientCaptchaConfig,
+    contentLimits: clientContentLimits,
     hackerNewsConfig: clientHackerNewsConfig,
     communities: clientCommunities,
     communityBans: clientCommunityBans,

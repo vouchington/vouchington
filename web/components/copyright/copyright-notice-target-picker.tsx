@@ -17,8 +17,6 @@ import {
 import onError from '@/lib/on-error'
 import { copyrightStaffPostImageChoices } from './copyright-notice-target-picker-staff'
 
-const MAX_NOTICE_TARGETS = 20
-
 export function CopyrightNoticeTargetPicker({
   targets,
   onChange,
@@ -28,6 +26,7 @@ export function CopyrightNoticeTargetPicker({
   postImagesOnly = false,
   lockUrl = false,
   surface,
+  maxTargets,
 }: {
   targets: CopyrightNoticeResolvedTarget[]
   onChange: (targets: CopyrightNoticeResolvedTarget[]) => void
@@ -37,7 +36,10 @@ export function CopyrightNoticeTargetPicker({
   postImagesOnly?: boolean
   lockUrl?: boolean
   surface?: CopyrightNoticeResolvedTarget['surface']
+  /** The server's cap on selected images; undefined applies no client-side cap. */
+  maxTargets?: number
 }) {
+  const atCap = (count: number) => maxTargets !== undefined && count >= maxTargets
   const instanceId = useId()
   const [targetUrl, setTargetUrl] = useState(initialUrl)
   const [resolvedTargets, setResolvedTargets] = useState<CopyrightNoticeResolvedTarget[]>([])
@@ -84,7 +86,7 @@ export function CopyrightNoticeTargetPicker({
   }
 
   function toggle(target: CopyrightNoticeResolvedTarget, checked: boolean) {
-    if (checked && targets.length >= MAX_NOTICE_TARGETS) return
+    if (checked && atCap(targets.length)) return
     onChange(
       checked
         ? [...targets, target]
@@ -156,7 +158,7 @@ export function CopyrightNoticeTargetPicker({
                   checked={targets.some(selected => copyrightNoticeTargetKey(selected) === key)}
                   disabled={
                     !targets.some(selected => copyrightNoticeTargetKey(selected) === key) &&
-                    targets.length >= MAX_NOTICE_TARGETS
+                    atCap(targets.length)
                   }
                   onCheckedChange={checked => toggle(target, checked === true)}
                 />
@@ -166,10 +168,10 @@ export function CopyrightNoticeTargetPicker({
           })}
         </div>
       )}
-      {resolvedTargets.length > MAX_NOTICE_TARGETS && (
+      {maxTargets !== undefined && resolvedTargets.length > maxTargets && (
         <p className='text-sm text-muted-foreground'>
-          A notice can identify up to {MAX_NOTICE_TARGETS} images. Deselect an image to choose a
-          different one.
+          A notice can identify up to {maxTargets} images. Deselect an image to choose a different
+          one.
         </p>
       )}
     </fieldset>

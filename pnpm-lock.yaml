@@ -1112,6 +1112,9 @@ importers:
       '@services/post-clearance':
         specifier: workspace:^
         version: link:../services/post-clearance
+      '@services/post-content-limits':
+        specifier: workspace:^
+        version: link:../services/post-content-limits
       '@services/post-writes':
         specifier: workspace:^
         version: link:../services/post-writes
@@ -9676,6 +9679,9 @@ importers:
       '@services/notifications':
         specifier: workspace:^
         version: link:../notifications
+      '@services/post-content-limits':
+        specifier: workspace:^
+        version: link:../post-content-limits
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication

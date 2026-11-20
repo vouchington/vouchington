@@ -1,4 +1,4 @@
-import { MAX_POST_IMAGES } from './images-types.mts'
+import { getPostContentLimitsConfig } from '@services/post-content-limits'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { createCodedError } from '@vouchington/sentry'
@@ -167,7 +167,7 @@ export async function assertPostImagePlacementCapacity(
   query: TransactionQuery,
 ): Promise<void> {
   const distinctImageIds = [...new Set(imageIds)]
-  if (distinctImageIds.length > MAX_POST_IMAGES)
+  if (distinctImageIds.length > getPostContentLimitsConfig().post_images_max)
     throw createCodedError(400, 'Post image limit reached', POST_IMAGE_LIMIT_REACHED)
   if (distinctImageIds.length === 0) return
   const { rows: activating } = await query<{ image_id: string }>(sql`

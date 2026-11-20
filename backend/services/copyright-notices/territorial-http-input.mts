@@ -32,7 +32,7 @@ export function parseTerritorialDecisionBody(
     assert(body.targets === undefined, 422, 'no_action must not name targets')
     return { text, publicExplanation, outcome: body.outcome, targets: [] }
   }
-  const targets = parseCopyrightTargets(body.targets)
+  const targets = parseCopyrightTargets(body.targets, 20)
   assert(
     targets.every(target => target.surfaceKind === 'post-image'),
     422,

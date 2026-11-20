@@ -14,6 +14,9 @@ import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
 import { CopyrightNoticeTargetPicker } from './copyright-notice-target-picker'
 import type { SubmitReview } from './copyright-staff-review-buttons'
 
+// The territorial decision route's own static cap, separate from the configurable form cap.
+const TERRITORIAL_DECISION_TARGETS_MAX = 20
+
 export function CopyrightStaffTerritorialDecision({
   item,
   pending,
@@ -146,6 +149,7 @@ export function CopyrightStaffTerritorialDecision({
             hint={null}
             initialUrl={territorial.hosted_use_url}
             legend='Post images named in the notice'
+            maxTargets={TERRITORIAL_DECISION_TARGETS_MAX}
             onChange={setTargets}
             postImagesOnly
             targets={targets}

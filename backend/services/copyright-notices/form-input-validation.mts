@@ -1,5 +1,6 @@
 import { isEmailAddress } from '@ts-shared/utils/validation-core'
 import assert from 'http-assert'
+import { getCopyrightClaimantTargetsMax } from './config.mts'
 import type { CopyrightJurisdiction } from './types.mts'
 
 export type StructuredCopyrightNoticeForm = {
@@ -48,7 +49,8 @@ export function assertStructuredNoticeStatutoryFields(
     'electronic signature is required',
   )
   assert(
-    request.claimantTargets.length > 0 && request.claimantTargets.length <= 20,
+    request.claimantTargets.length > 0 &&
+      request.claimantTargets.length <= getCopyrightClaimantTargetsMax(),
     422,
     'at least one hosted target is required',
   )

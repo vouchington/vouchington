@@ -15,6 +15,7 @@ export const copyrightConfig = new DynamicConfig({
     evidenceRetentionDeletion: 'boolean',
     claimantMisuseWindowSize: 'number',
     emailThreadGraphMaxRows: 'number',
+    claimantTargetsMax: 'number',
     staydownMatching: 'boolean',
     trustedFlaggerPriority: 'boolean',
     dsaTransparencyReports: 'boolean',
@@ -34,6 +35,7 @@ export const copyrightConfig = new DynamicConfig({
     evidenceRetentionDeletion: true,
     claimantMisuseWindowSize: 1000,
     emailThreadGraphMaxRows: 1000,
+    claimantTargetsMax: 20,
     staydownMatching: false,
     trustedFlaggerPriority: false,
     dsaTransparencyReports: false,
@@ -166,5 +168,19 @@ export async function getCopyrightClaimantMisuseWindowSize(): Promise<number> {
   return getBoundedPositiveIntegerField(copyrightConfig, 'claimantMisuseWindowSize', {
     defaultValue: 1000,
     maxValue: COPYRIGHT_CLAIMANT_MISUSE_WINDOW_MAX,
+  })
+}
+
+/**
+ * Hard max of the claimant-targets cap. Stored intakes are read back with this bound and the
+ * static request schemas admit up to it, so lowering the configured cap never hides stored rows.
+ */
+export const COPYRIGHT_CLAIMANT_TARGETS_MAX = 50
+
+/** Hosted images one copyright notice form may identify. */
+export function getCopyrightClaimantTargetsMax(): number {
+  return getBoundedPositiveIntegerField(copyrightConfig, 'claimantTargetsMax', {
+    defaultValue: 20,
+    maxValue: COPYRIGHT_CLAIMANT_TARGETS_MAX,
   })
 }

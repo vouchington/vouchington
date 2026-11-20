@@ -43,6 +43,12 @@ vi.mock(import('@/lib/api/client/post-mutations'), () => ({
   setPostImages: vi.fn<VitestLooseMock>(),
 }))
 
+vi.mock(import('@/lib/api/client/content-limits'), () => ({
+  fetchContentLimits: vi
+    .fn<VitestLooseMock>()
+    .mockResolvedValue({ post_images_max: 20, copyright_claimant_targets_max: 20 }),
+}))
+
 vi.mock(import('@/lib/api/client/images'), () => {
   class ImageBlockedError extends Error {}
   class ImageProcessingTimeoutError extends Error {}

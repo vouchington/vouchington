@@ -1,0 +1,54 @@
+import { describe, expect, it, onTestFinished } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { createSignedInCopyrightForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
+import { copyrightConfig } from './config.mts'
+import { getCopyrightFormIntakeForScreening } from './form-screening-intake.mts'
+import { parseCopyrightNoticeForm } from './http-input.mts'
+
+function httpForm(targetCount: number): Record<string, unknown> {
+  return {
+    jurisdiction: 'us_dmca',
+    claimant_display_name: 'Claimant',
+    claimant_contact: 'claimant@example.test',
+    claimant_email: 'claimant@example.test',
+    work_description: 'Original photograph',
+    has_good_faith_belief: true,
+    has_accuracy_authority_under_penalty_of_perjury: true,
+    electronic_signature: 'Claimant',
+    targets: Array.from({ length: targetCount }, () => ({
+      surface: 'post-image',
+      post_id: crypto.randomUUID(),
+      image_id: crypto.randomUUID(),
+      target_url: 'https://voucha.ai/posts/example',
+    })),
+  }
+}
+
+describe('configured copyright claimant targets cap', () => {
+  it('rejects a form above a lowered cap and accepts exactly the cap', async () => {
+    onTestFinished(overrideDynamicConfigFieldsForTest(copyrightConfig, { claimantTargetsMax: 2 }))
+    await expect(createSignedInCopyrightForm(3)).rejects.toMatchObject({ status: 422 })
+    await expect(createSignedInCopyrightForm(2)).resolves.toBeDefined()
+    expect(() => parseCopyrightNoticeForm(httpForm(3))).toThrow(/1 to 2 hosted images/)
+  })
+
+  it('accepts more targets than the default once the cap is raised', async () => {
+    onTestFinished(overrideDynamicConfigFieldsForTest(copyrightConfig, { claimantTargetsMax: 25 }))
+    const stored = await createSignedInCopyrightForm(21)
+    expect(stored.intake.copyright_notice_submission_id).toBeDefined()
+    expect(() => parseCopyrightNoticeForm(httpForm(21))).not.toThrow()
+  })
+
+  it('reads every stored target after the cap is lowered', async () => {
+    const restoreRaised = overrideDynamicConfigFieldsForTest(copyrightConfig, {
+      claimantTargetsMax: 25,
+    })
+    const stored = await createSignedInCopyrightForm(21)
+    restoreRaised()
+    onTestFinished(overrideDynamicConfigFieldsForTest(copyrightConfig, { claimantTargetsMax: 2 }))
+    const intake = await getCopyrightFormIntakeForScreening(
+      stored.intake.copyright_notice_submission_id,
+    )
+    expect(intake?.hostedUseUrls).toHaveLength(21)
+  })
+})

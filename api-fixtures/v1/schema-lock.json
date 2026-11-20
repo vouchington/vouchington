@@ -350,6 +350,10 @@
       "fixtureIds": ["native.community.pending-reports.paginated"],
       "hash": "70337b443e94a9fcadccb6d8d2babbb263f871f9f6bb3ffee595a2c75c277486"
     },
+    "GET:/api/v1/content-limits": {
+      "fixtureIds": ["native.content-limits.default"],
+      "hash": "b88a0a25c8431857806eda971949531ed1f32d50c00c20c2299f915cda4ec63f"
+    },
     "GET:/api/v1/copyright-email-intakes/:id/raw": {
       "fixtureIds": [],
       "hash": "11115901eecde79a3b5f6be7e3b6ccb54ea38fc4ca9098c4c58e75a7740944eb"
@@ -2191,6 +2195,10 @@
     "native.community.pending-reports.paginated": {
       "fixtureIds": ["native.community.pending-reports.paginated"],
       "hash": "e50d0e43b8d7c9b8b1d31a98593248bc1f5754cbf3687ea03ff2729e32825b2f"
+    },
+    "native.content-limits.default": {
+      "fixtureIds": ["native.content-limits.default"],
+      "hash": "192a578c12172bf23d2a45b5454b617c3da259886efe681e2c8ab386294b415c"
     },
     "native.copyright.repeat-infringer-accounts": {
       "fixtureIds": ["native.copyright.repeat-infringer-accounts"],

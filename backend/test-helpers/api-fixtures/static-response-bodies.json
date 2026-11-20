@@ -3255,6 +3255,10 @@
   "native.captcha-config.default": {
     "always_approve": false
   },
+  "native.content-limits.default": {
+    "post_images_max": 20,
+    "copyright_claimant_targets_max": 20
+  },
   "native.hacker-news-config.default": {
     "references_visible": true,
     "post_time_range_cap": "1y"
