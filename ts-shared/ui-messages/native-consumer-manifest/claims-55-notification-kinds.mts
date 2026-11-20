@@ -1,6 +1,6 @@
 import type { NativeConsumerManifestEntry } from './types.mts'
 
-/** Notification copy native clients render from each row's kind and params, plus their generic row; adoption is pending. */
+/** Notification copy native clients render from each row's kind and params, plus their generic row. */
 export const NATIVE_CONSUMER_MANIFEST_CLAIMS_55_NOTIFICATION_KINDS = [
   'notifications.kind.community_activity_digest.body',
   'notifications.kind.community_activity_digest.bodyWithTop',
@@ -97,5 +97,4 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_55_NOTIFICATION_KINDS = [
 ].map(key => ({
   key,
   consumers: ['dotnet', 'swift'],
-  pending: true,
 })) as readonly NativeConsumerManifestEntry[]
