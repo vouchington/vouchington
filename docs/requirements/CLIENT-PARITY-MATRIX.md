@@ -70,9 +70,9 @@ matching MCP tool. Native adoption is the dependent follow-up
 [vouchington-clients#737](https://github.com/vouchington/vouchington-clients/issues/737) and does not
 gate the producer change.
 
-| Behavior                                                 | Web  | Swift                                                                         | .NET                                                                          |
-| -------------------------------------------------------- | ---- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Show the capped reveal count as "N+" in the break prompt | Full | Pending [#737](https://github.com/vouchington/vouchington-clients/issues/737) | Pending [#737](https://github.com/vouchington/vouchington-clients/issues/737) |
+Web: Full. Swift and .NET: Pending
+[vouchington-clients#737](https://github.com/vouchington/vouchington-clients/issues/737) (show the capped
+reveal count as "N+" in the break prompt).
 
 ## Input capacity errors
 
