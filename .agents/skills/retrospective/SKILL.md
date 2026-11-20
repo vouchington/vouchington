@@ -15,10 +15,10 @@ composition, and preview/save procedure.
 ## Vouchington additions
 
 Write one retrospective when handing an ordinary PR to the human as ready, or one for a native
-stack handoff, under [Close-out](../agent-workflow/git-and-prs.md#close-out). Use that handoff's
+stack handoff. Use that handoff's
 `sourceEventId` (for example `handoff-pr<number>`) in both `retrospective_check` and
-`retrospective_save`. If an already reported merge later changes the outcome, append the short
-journal note prescribed by Close-out instead of another retrospective.
+`retrospective_save`. If an already reported merge later changes the outcome, append a short
+journal note instead of another retrospective.
 
 The tools use the session id from [blackboard](../blackboard/SKILL.md). For a PR
 in another repository, give `compose.facts`

@@ -31,15 +31,12 @@ describe('living docs pin guard', () => {
         'docs/development/reference-dependency-updates-manually-maintained-pins.md': `Current SHA\n| \`abcdef1234567890\` |\n${'a'.repeat(64)}`,
         'docs/development/dependency-updates.md': 'Canonical pin policy',
         'docs/development/system-dependencies.md': 'build-tools;1.2.3',
-        '.agents/skills/agent-workflow/implementation.md':
-          'tool version pin in `.mise.toml`, update the corresponding doc',
       }),
     ).toEqual([
       expect.stringContaining('Current SHA'),
       expect.stringContaining('abcdef1234567890'),
       expect.stringContaining('a'.repeat(64)),
       expect.stringContaining('build-tools;1.2.3'),
-      expect.stringContaining('tool version pin in'),
     ])
   })
 
@@ -51,7 +48,6 @@ describe('living docs pin guard', () => {
           'docs/development/reference-dependency-updates-manually-maintained-pins.md':
             'See the owner file for current pins.',
           'docs/development/system-dependencies.md': 'See dependency policy.',
-          '.agents/skills/agent-workflow/implementation.md': 'See dependency policy.',
         },
         ['docs/development/dependency-updates.md'],
       ),
@@ -60,9 +56,6 @@ describe('living docs pin guard', () => {
         'reference-dependency-updates-manually-maintained-pins.md: living-docs pin policy page is not tracked',
       ),
       expect.stringContaining('system-dependencies.md: living-docs pin policy page is not tracked'),
-      expect.stringContaining(
-        'agent-workflow/implementation.md: living-docs pin policy page is not tracked',
-      ),
     ])
   })
 
@@ -73,7 +66,6 @@ describe('living docs pin guard', () => {
         'docs/development/reference-dependency-updates-manually-maintained-pins.md':
           'See the owner file for current pins.',
         'docs/development/system-dependencies.md': 'See dependency policy.',
-        '.agents/skills/agent-workflow/implementation.md': 'See dependency policy.',
       }),
     ).toEqual([])
   })

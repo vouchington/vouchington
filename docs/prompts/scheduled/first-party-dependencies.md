@@ -69,7 +69,7 @@ Verified tracked or fixed state takes precedence over an untracked classificatio
 
 - For an untracked upstream defect, create or materially update only one Vouchington issue, labeled
   `dependencies`, whose body includes the copy-paste-ready upstream section from the
-  [github-issue skill](../../../.agents/skills/github-issue/SKILL.md) Issue Body template. Place
+  [github-issue skill](https://github.com/jonathanong/harness-plugins/blob/main/skills/github-issue/SKILL.md) Issue Body template. Place
   the marker in its body.
 - When upstream already fixed or tracked the defect, create or materially update only one Vouchington
   issue, labeled `dependencies`. Reference the upstream issue, pull request, release, or public API,

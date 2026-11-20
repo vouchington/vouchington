@@ -119,7 +119,7 @@ flowchart LR
   B -->|bounded enqueue| Q
 ```
 
-For sweeps and cleanup jobs, apply the [bounded-iteration adapter](../../.agents/skills/bounded-iteration/SKILL.md).
+For sweeps and cleanup jobs, apply the [bounded-iteration skill](https://github.com/jonathanong/harness-plugins/blob/main/skills/bounded-iteration/SKILL.md).
 
 ## Replay and payload safety
 

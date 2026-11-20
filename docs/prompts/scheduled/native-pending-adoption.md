@@ -55,7 +55,7 @@ missing consumers, introduction commit/date, and current client-main evidence in
 in `vouchington/vouchington-clients`. Never open a PR to delete those items.
 
 This prompt alone has the scheduled wrapper's narrow authorization to create or materially update
-that issue. Use the [GitHub issue workflow](../../../.agents/skills/github-issue/SKILL.md) and live
+that issue. Use the [GitHub issue workflow](https://github.com/jonathanong/harness-plugins/blob/main/skills/github-issue/SKILL.md) and live
 clients taxonomy. Use this stable issue-body marker:
 
 `<!-- native-pending-adoption: vouchington/vouchington -->`

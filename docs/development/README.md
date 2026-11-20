@@ -56,8 +56,7 @@ Use git worktrees; each gets its own ports, database, and Valkey container. Non-
 Valkey names hash the canonical physical worktree root, not the branch or directory name, so moving a
 checkout changes its identity: rerun `./dev/initialize web`, then `./dev/cleanup` removes orphaned
 resources ([Cleanup](local-development/reference-cleanup.md)). Agent-created temporary or subagent
-worktrees go under the OS tmpdir per
-[Start Of Work](../../.agents/skills/agent-workflow/start-of-work.md). Run `./dev/tmux` from outside
+worktrees go under the OS tmpdir. Run `./dev/tmux` from outside
 tmux. See [dev/AGENTS.md](../../dev/AGENTS.md) for worktree documentation.
 
 ### Fresh-base planning
@@ -81,11 +80,9 @@ flowchart TD
 Plan Mode is read-only with respect to branch history: inspect `origin/main` with `git diff` and
 `git show` instead of resetting or rebasing during planning. Once the plan is accepted, use unforced
 `./dev/reset-worktree` for a new task planned from `origin/main`, or preserve the branch and run
-`./dev/rebase-onto-main` for resumed work, after reading both sides in
-[Reading both sides before a rebase](../../.agents/skills/agent-workflow/git-and-prs.md#reading-both-sides-before-a-rebase) so a
+`./dev/rebase-onto-main` for resumed work, after reading both sides so a
 rewritten `origin/<branch>` is not replayed onto local `main`. Never infer permission to discard
-changes or add `--force`. The procedure lives in
-[Start Of Work](../../.agents/skills/agent-workflow/start-of-work.md); the hook roster is in
+changes or add `--force`. The hook roster is in
 [Agent Session Hooks](local-development/README.md#agent-session-hooks).
 
 ## Troubleshooting

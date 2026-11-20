@@ -31,6 +31,6 @@ under the canonical rule.
 
 The root uses [Vouchington distilling policy](distilling.md) for current-repository verification,
 scheduled prompts, redaction, and issue routing. File through the
-[github-issue adapter](../github-issue/SKILL.md), applying its taxonomy and authorization gate.
+`jong-skills:github-issue`, applying its taxonomy and authorization gate.
 Vouchington authorizes archival of eligible sessions when this skill is invoked; retain sessions
 whose themes were deferred or whose issue mutation failed, as the canonical procedure requires.

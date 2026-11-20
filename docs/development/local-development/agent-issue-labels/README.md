@@ -7,7 +7,7 @@ Source entrypoint: [dev/agent-issue-labels/README.md](../../../../dev/agent-issu
 `batch-issues.mts` validates a batch of proposed Vouchington issues from one agent-authored manifest.
 It fetches the live label and milestone taxonomy once, preflights every entry fail-closed, and never
 creates or mutates an issue. Each approved write runs separately through the
-[github-issue skill](../../../../.agents/skills/github-issue/SKILL.md), which revalidates
+[github-issue skill](https://github.com/jonathanong/harness-plugins/blob/main/skills/github-issue/SKILL.md), which revalidates
 repository authority immediately before the mutation and reads the result back.
 
 Scope is deliberately narrow: plain issues in `vouchington/vouchington` only. `Plan:` issues, epics,

@@ -1,6 +1,6 @@
 # Image resize Lambda
 
-- Use [Lambda docs](../../docs/overview/infrastructure/lambdas/image-resize/README.md) for request/cache/SSRF contracts and load [Vitest authoring](../../.agents/skills/vitest-test-authoring/SKILL.md) for tests/fixtures/mocks.
+- Use [Lambda docs](../../docs/overview/infrastructure/lambdas/image-resize/README.md) for request/cache/SSRF contracts.
 - Resize changes bump `CACHE_VERSION` for immutable S3 renders. OG bypasses that cache; renderer/font/layout changes bump `OG_RENDERER_VERSION` in `web/lib/seo/og-image-url.ts` for immutable edge-cache keys. The Lambda ignores that signed-payload field.
 - Sideload preserves HMAC auth, public-address DNS validation, and redirect-target revalidation. OG uses the same HMAC keys/path-only signature, but no arbitrary-URL DNS validation.
 - OG never fetches outbound HTTP; avatars come from S3 through `fetchImageFromS3`.

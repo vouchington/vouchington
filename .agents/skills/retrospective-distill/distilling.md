@@ -8,5 +8,5 @@ For `## Scheduled Prompt Suggestions`, read [the rotation](../../../docs/prompts
 and `docs/prompts/scheduled/` once per run. Classify each theme as a new prompt or a specific
 strengthening of an existing prompt. Name the target file and change in `## Proposed fixes`.
 
-File Vouchington issues through the [github-issue adapter](../github-issue/SKILL.md), which owns
+File Vouchington issues through `jong-skills:github-issue`, which owns
 priority and component labels, milestones, projects, and external repository routing.

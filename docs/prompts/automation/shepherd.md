@@ -53,7 +53,7 @@ then inspect relevant runs. Use `pr-shepherd iterate {{PR_NUMBER}}` to refresh s
 When an automation-authored fix eventually updates the PR description, require `### Root cause`, `### Implementation choice`, and `### Options considered` `details` entries, including pros, cons, and implementation details for meaningful alternatives.
 
 For any PR body this workflow is authorized to create or update, follow the
-[PR-description standard](../../../.agents/skills/pr-description/SKILL.md): keep `## Summary`
+[PR-description standard](https://github.com/jonathanong/harness-plugins/blob/main/skills/pr-description/SKILL.md): keep `## Summary`
 and `## Impact` visible, including the concrete outcome, affected audience, and material risks.
 Keep the required `### Root cause`, `### Implementation choice`, and `### Options considered`
 `details` entries and long supporting evidence inside a collapsed `<details>` section. Use before/after

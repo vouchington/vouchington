@@ -1,6 +1,6 @@
 # Development tools
 
-- Use [start of work](../.agents/skills/agent-workflow/start-of-work.md), [local site testing](../.agents/skills/local-site-testing/SKILL.md), and [command catalog](../docs/development/local-development/README.md). Load [Vitest authoring](../.agents/skills/vitest-test-authoring/SKILL.md) for tests/fixtures/mocks.
+- Use [local site testing](../.agents/skills/local-site-testing/SKILL.md), and [command catalog](../docs/development/local-development/README.md).
 - Run commands from the current worktree root. Agents start the web stack with `./dev/initialize web` then `./dev/tmux`; individual services are human diagnostics, not startup fallbacks. Use [recovery](../docs/development/tests.md#local-web-validation-recovery) only after this fails.
 - Schema/destructive targets resolve through [`lib/db-target.sh`](lib/db-target.sh). `DATABASE_URL` is authoritative; non-local writes require operation-specific catalog opt-ins.
 - Parse worktrees through the `git-worktrees.sh` helper published in `node_modules/vouchington-tooling/scripts/worktree/` (recovery commands need `./dev/initialize monorepo` first). `./dev/reset-worktree` wraps the published reset with product hooks in [`lib/reset-worktree-hooks.sh`](lib/reset-worktree-hooks.sh). Main owns shared `voucha`/`voucha-valkey`; never bypass main-reset guards or globally export `FORCE_MAIN_RESET=1`. Full `.grok/worktrees`/temporary clones are not main; non-main stale databases follow root ephemeral-state policy.

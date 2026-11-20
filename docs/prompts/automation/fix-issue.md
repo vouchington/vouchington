@@ -37,7 +37,7 @@ choice, return the `## Problem`, `## Options`, and `## Recommendation` report. N
 already pushed. Do not comment on GitHub yourself.
 
 For any PR body this workflow is authorized to create or update, follow the
-[PR-description standard](../../../.agents/skills/pr-description/SKILL.md): keep `## Summary`
+[PR-description standard](https://github.com/jonathanong/harness-plugins/blob/main/skills/pr-description/SKILL.md): keep `## Summary`
 and `## Impact` visible, including the concrete outcome, affected audience, and material risks.
 Keep the required `### Root cause`, `### Implementation choice`, and `### Options considered`
 `details` entries and long supporting evidence inside a collapsed `<details>` section. Use before/after

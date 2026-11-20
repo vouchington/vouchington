@@ -37,8 +37,7 @@ let dailyAiCostTotalRefresh: Pick<DailyAiCostTotalCacheEntry, 'day' | 'promise'>
  * help here -- the in-process cache below keeps the aggregation off the per-job hot path.
  *
  * Reads via `write()` (primary), not `read()`: this backs a spend-ceiling breach check, which must
- * observe just-written rows rather than risk `READ_DATABASE_URL` replica lag under-reporting spend
- * (`.agents/skills/postgres-node-performance-tuning/SKILL.md`, lag-sensitive reads).
+ * observe just-written rows rather than risk `READ_DATABASE_URL` replica lag under-reporting spend.
  * Only the current UTC day is queried. Raw usage is retained for at least 180 days, so a monthly
  * rollup must never be substituted into this spend-ceiling check or obscure unpriced calls.
  * Unpriced rows have NULL cost and do not contribute to the known spend total.

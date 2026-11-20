@@ -3,7 +3,7 @@
 ## Decision
 
 Agents may create or mutate GitHub issues in a public or private repository only when the human
-caller authorizes that operation and the portable `skills:github-issue` gate verifies
+caller authorizes that operation and the portable `jong-skills:github-issue` gate verifies
 the exact target immediately before the write. Repository ownership, name prefixes, and visibility
 are not allowlists: live collaborator permission and operation-specific capability are authoritative.
 

@@ -19,8 +19,6 @@
   [client parity matrix](docs/requirements/CLIENT-PARITY-MATRIX.md).
 - Before editing, read every target's `AGENTS.md` ancestry and
   [skill instructions](.agents/skills/AGENTS.md); startup omits subtrees.
-- Use the [local workflow](.agents/skills/agent-workflow/SKILL.md) phase and adapters
-  from the [skill catalog](.agents/catalog/README.md).
 - Save plans outside Git in an issue/comment, PR description or native plan file; no new Plan issue
   or template required.
 - Search [docs](docs/README.md); update owning page. Docs hold only why, impact, architecture,

@@ -1,6 +1,6 @@
 # Cloudflare Worker
 
-- Use [Worker docs](../docs/overview/infrastructure/cloudflare-worker/README.md), [tests](../docs/development/tests.md), and [script/runbook index](../docs/overview/infrastructure/cloudflare-worker/scripts/README.md); load [Vitest authoring](../.agents/skills/vitest-test-authoring/SKILL.md) for tests/fixtures/mocks.
+- Use [Worker docs](../docs/overview/infrastructure/cloudflare-worker/README.md), [tests](../docs/development/tests.md), and [script/runbook index](../docs/overview/infrastructure/cloudflare-worker/scripts/README.md).
 - `NOINDEX=true` adds staging robots headers, disallows `/robots.txt` crawling, and removes sitemap discovery from every public surface.
 - Rate-limit staging Basic Auth before validating credentials. Exempt path/method pairs belong in `src/basic-auth.mts`; strip both Basic headers before origin/cache RPCs.
 - `/infra/edge-cache-canary` and fault-control headers are undiscoverable, stripped before origins, and disabled under `PRODUCTION=true`. Operators own authenticated live staging checks; the private receiver lacks those credentials. Follow [Basic Auth operations](../docs/operations/cloudflare-worker-staging-auth.md).

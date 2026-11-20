@@ -1,6 +1,5 @@
 # CI/CD workflows
 
-- Load [github-actions-checklist](../../.agents/skills/github-actions-checklist/SKILL.md) before changing workflows or composite actions.
 - Choose each job's runner with the decision procedure in the checklist's [Runner demand](../../docs/checklists/github-actions.md#judgment) bullet. `.github/runner-policy.json` is the closed runner-label and job-placement policy; `static-code-analysis.yml` runs the released `vouchington runner-policy` check.
 - Preserve exactly these required `Main` gates: `static`, `backend`, `web`, `cloudflare-worker`, `lambdas`, `tooling`, `gitleaks`. Each area gate keeps its area name, runs with `!cancelled()` (or on a merge group also after a cancelled run, so the gate fails on the real failed job), and passes when its area is skipped. Other scans are report-only unless they feed a gate.
 - Every gate-feeding job has a checkout-free `cancel-<job>` job (`failure() && github.event_name == 'merge_group'`, job-level `actions: write`); never grant `actions: write` to a job that runs checked-out code, and informational and static jobs get no cancel job. See [merge queue fail fast](../../docs/development/ci/workflows/reference-merge-queue-fail-fast.md) and keep `merge-group-self-cancel.test.mts` passing.

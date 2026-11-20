@@ -19,10 +19,6 @@ export const LIVING_DOCS_PIN_CASES: readonly LivingDocsPinCase[] = [
     path: 'docs/development/system-dependencies.md',
     patterns: [/build-tools;\d+\.\d+\.\d+/u],
   },
-  {
-    path: '.agents/skills/agent-workflow/implementation.md',
-    patterns: [/tool version pin in `\.mise\.toml`, update the corresponding doc/u],
-  },
 ]
 
 const PIN_POLICY =

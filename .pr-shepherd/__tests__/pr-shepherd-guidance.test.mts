@@ -3,8 +3,6 @@ import { describe, expect, it } from 'vitest'
 import {
   DEPRECATED_INVOCATIONS,
   prShepherdGuidanceViolations,
-  REVISIT_FOLLOWUPS_SKILL,
-  JOURNAL_EXTRACT_COMMAND,
 } from '../../ci/pr-shepherd-guidance-policy.mts'
 
 // pr-shepherd is a per-machine CLI, not a repo dependency. Command behavior,
@@ -12,10 +10,6 @@ import {
 // by ci/check-pr-shepherd-guidance.mts in static CI.
 
 const currentGuidance = [
-  {
-    path: REVISIT_FOLLOWUPS_SKILL,
-    text: `Run ${JOURNAL_EXTRACT_COMMAND} when the journal is the source.`,
-  },
   { path: 'docs/example.md', text: 'Use pr-shepherd stack 42 --until-terminal.' },
 ]
 
@@ -36,17 +30,10 @@ describe('pr-shepherd guidance', () => {
 
   it('reports guidance violations from the supplied files', () => {
     expect(prShepherdGuidanceViolations(currentGuidance)).toEqual([])
-    expect(prShepherdGuidanceViolations([])).toEqual([
-      `${REVISIT_FOLLOWUPS_SKILL}: missing journal extract command`,
-    ])
+    expect(prShepherdGuidanceViolations([])).toEqual([])
     expect(
-      prShepherdGuidanceViolations([
-        { path: REVISIT_FOLLOWUPS_SKILL, text: 'pr-shepherd journal 42' },
-      ]),
-    ).toEqual([
-      `${REVISIT_FOLLOWUPS_SKILL}: missing journal extract command`,
-      `${REVISIT_FOLLOWUPS_SKILL}: deprecated pr-shepherd invocation`,
-    ])
+      prShepherdGuidanceViolations([{ path: 'docs/old.md', text: 'pr-shepherd journal 42' }]),
+    ).toEqual(['docs/old.md: deprecated pr-shepherd invocation'])
     expect(
       prShepherdGuidanceViolations([
         ...currentGuidance,

@@ -116,7 +116,7 @@ exact allow and deny shapes.
 ## Claude review-skip for the rebase lifecycle
 
 Claude `permissions.allow` pre-approves the commands the
-[git workflow](../../.agents/skills/agent-workflow/git-and-prs.md) runs once a rebase has started:
+git workflow runs once a rebase has started:
 `git rebase --continue`, `--skip`, `--abort`, and `git push --force-with-lease=*`. Without them the
 auto-mode classifier refused commands the workflow requires. None can start a rebase; starting one
 goes through `./dev/rebase-onto-main`.

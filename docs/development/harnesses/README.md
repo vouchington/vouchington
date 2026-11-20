@@ -10,7 +10,6 @@ contract lives in [agent-harness parity](../agent-harness-parity.md).
 
 ## Reference index
 
-- [Claude adapter catalog](../../../.claude/catalog/README.md)
 - [Codex configuration](../../../.codex/README.md)
 - [Cursor Configuration](../../../.cursor/README.md)
 - [Grok configuration](../../../.grok/README.md)

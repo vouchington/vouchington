@@ -1,7 +1,6 @@
 # Backend
 
 - Use [backend docs and command catalog](../docs/overview/architecture/backend/README.md), [setup](../docs/development/README.md), and [auth/session architecture](../docs/overview/architecture/auth-overview.md).
-- Load [package-json-checklist](../.agents/skills/package-json-checklist/SKILL.md) before creating services or changing manifests; load [backend Vitest authoring](../.agents/skills/backend-vitest-test-authoring/SKILL.md) for tests, fixtures, helpers, or mocks.
 - Check API fields against caller privileges (anonymous, user, owner, moderator, staff, admin); keep internal/admin fields out of lower-privilege responses.
 - Database lists use `@modules/pagination` cursor pagination and [the cross-surface contract](../docs/overview/architecture/pagination.md). Anonymous endpoints use `clampAnonLimit` (`ANON_MAX_LIMIT = 25`).
 - Atomic writes use `await using transaction = await beginTransaction()` from `@data-stores/psql`; commit only after successful writes and pass `{ query: transaction }` to nested helpers. Selected pools/borrowed idle clients use `beginTransaction({ client })`; `withTransactionOptions` only joins an existing transaction.

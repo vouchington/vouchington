@@ -130,7 +130,7 @@ Do not dump unbounded log pages into the session.
 
 If a user-visible 5xx or silent failure has **no** matching CloudWatch line and
 **no** Sentry event, that is a missing log. Do not edit backend or web mid-QA.
-File it via [github-issue](../github-issue/SKILL.md), or open a follow-up
+File it via `jong-skills:github-issue`, or open a follow-up
 branch and PR after the run. The owning service should add it through backend
 `onError`, web `onError`, or the existing structured logger. Do not invent a
 second logging stack. Expected 4xx stays suppressed per the error-handling
@@ -139,7 +139,7 @@ contract.
 ## Issues
 
 File only independently verified ❌ product bugs through
-[github-issue](../github-issue/SKILL.md). Search first. When there are several,
+`jong-skills:github-issue`. Search first. When there are several,
 preflight the manifest once, then authorize and create each issue separately. Do
 not file skipped persona cells, empty-data, or 📄 unless
 the mismatch is itself a docs bug.

@@ -1,6 +1,6 @@
 # Playwright
 
-Source entrypoint: [playwright/README.md](../../../../playwright/README.md). Run `pnpm run test:playwright`. Agent rules: [playwright/AGENTS.md](../../../../playwright/AGENTS.md) and the [playwright-authoring skill](../../../../.agents/skills/playwright-authoring/SKILL.md). Suite-level constraints (timeouts, production builds, credentialed suite) are in [E2E and Visual](../../reference-tests-e2e-and-visual.md).
+Source entrypoint: [playwright/README.md](../../../../playwright/README.md). Run `pnpm run test:playwright`. Agent rules: [playwright/AGENTS.md](../../../../playwright/AGENTS.md). Suite-level constraints (timeouts, production builds, credentialed suite) are in [E2E and Visual](../../reference-tests-e2e-and-visual.md).
 
 ## Scope
 

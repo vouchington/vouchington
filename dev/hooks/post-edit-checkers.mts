@@ -66,7 +66,7 @@ export const nonWebMockPolicyChecker: PostEditChecker = {
         {
           level: 'warn',
           message:
-            'Non-web test mocks an internal module — move the seam behind @modules/<provider> and tag it with `/* no-mistakes: integration=<provider> */` per the vitest-test-authoring skill (.agents/skills/vitest-test-authoring/SKILL.md)',
+            'Non-web test mocks an internal module — move the seam behind @modules/<provider> and tag it with `/* no-mistakes: integration=<provider> */`',
         },
       ]
     }

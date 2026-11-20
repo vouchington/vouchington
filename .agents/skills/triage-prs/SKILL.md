@@ -23,17 +23,15 @@ parameters after reading it:
   Here, apply the `automation` label (`gh pr edit <N> --add-label automation`, idempotent) to
   every PR it hands off; it marks agent- and loop-created PRs. This skill is run by the loop's own batch
   callers, which run the shepherd worker directly, so it never posts a `/shepherd` comment. Any
-  other author hands a PR over with the standard `/shepherd` handoff in
-  [Git and PRs](../agent-workflow/git-and-prs.md#shepherding), once, and stops.
-- **Provider-PR handoff:** [triage-security](../triage-security/SKILL.md) applies its own
+  other author hands a PR over with the standard `/shepherd` handoff, once, and stops.
+- **Provider-PR handoff:** `jong-skills:triage-codex-security` applies its own
   ready-and-label check; this skill never accepts that handoff.
 - **Feedback source and rubric:** only exact paths in `docs/prompts/**` can be
   changed by the bounded feedback flow. Apply the
   agent-authored PR creation feedback procedure in `references/feedback.md` of
   `vouchington-workflow:triage-prs` and persist results through [retrospective](../retrospective/SKILL.md).
   A feedback PR carries `<!-- pr-creation-feedback-origin: triage-prs -->`.
-- **Merge authority:** follow [Git and PRs](../agent-workflow/git-and-prs.md)
-  and [merge authority](../../../docs/development/merge-authority.md).
+- **Merge authority:** follow [merge authority](../../../docs/development/merge-authority.md).
   Native stacks use [stacked PRs](../stacked-prs/SKILL.md).
-- **CI failures:** diagnose with [review-ci-logs](../review-ci-logs/SKILL.md)
+- **CI failures:** diagnose with `jong-skills:review-ci-logs`
   and rerun only a branch that is current with `main`; otherwise fix the root cause.

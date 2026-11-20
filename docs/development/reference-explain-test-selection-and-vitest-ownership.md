@@ -10,8 +10,6 @@ The planner is a local diagnostic: CI never selects individual test files and ru
 
 Reading a plan:
 
-- `groups[].type: "direct"` holds test files that were themselves changed. A source-only plan does not include its colocated test; append directly modified tests as in the [before-push commands](../../.agents/skills/agent-workflow/before-pushing.md).
+- `groups[].type: "direct"` holds test files that were themselves changed. A source-only plan does not include its colocated test; append directly modified tests.
 - A two-node reason whose `via` is `["test"]` is the paired source-to-test relationship. Longer reasons with `dependency` steps are broader graph dependents; inspect them with `tests why` before treating a distant test as the source's primary contract.
 - "Same-package contract" is a Vouchington review heuristic, not a planner group: prefer returned tests under the changed source's nearest `package.json`, but keep cross-package results whose dependency path describes a real public contract.
-
-For cross-language parity, package-legality, and queue-impact fallbacks, follow the local [impact-map recipes](../../.agents/skills/agent-workflow/impact-recipes.md).

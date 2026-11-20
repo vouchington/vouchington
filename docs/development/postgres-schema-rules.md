@@ -302,8 +302,7 @@ a lock order or assuming one writer must win.
 Inside a transaction that holds row or advisory locks, a check over many rows is one set-based
 statement (for example `= ANY($1)` or a `VALUES`/`unnest` join), not a loop of awaited queries. A
 loop multiplies lock hold time by the row count, so every writer waiting on those locks queues behind
-it. See [lock scope](postgresql/reference-transactions.md#lock-scope) for which rows may be locked and
-[set-based IO](../../.agents/skills/postgres-node-performance-tuning/SKILL.md) for batching.
+it. See [lock scope](postgresql/reference-transactions.md#lock-scope) for which rows may be locked.
 The configured `query-reached-per-item` check reports statically traceable PostgreSQL and Valkey
 effects reached from per-item loops. Lock scope remains a separate review invariant.
 

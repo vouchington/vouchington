@@ -48,10 +48,10 @@ describe('validatePrBody', () => {
     const result = validatePrBody('## Summary\n\nNo related issues or workspace setup.\n')
     expect(result.ok).toBe(false)
     expect(result.errors).toContain(
-      'PR body must include a "## Related issues" section (e.g. a heading followed by "Closes #123"). See .agents/skills/agent-workflow/git-and-prs.md.',
+      'PR body must include a "## Related issues" section (e.g. a heading followed by "Closes #123").',
     )
     expect(result.errors).toContain(
-      'PR body must include a "Workspace setup:" line (e.g. "Workspace setup: ./dev/initialize monorepo"). See .agents/skills/agent-workflow/start-of-work.md.',
+      'PR body must include a "Workspace setup:" line (e.g. "Workspace setup: ./dev/initialize monorepo").',
     )
   })
 
@@ -59,7 +59,7 @@ describe('validatePrBody', () => {
     const result = validatePrBody(withoutSection(VALID_BODY, '## Related issues'))
     expect(result.ok).toBe(false)
     expect(result.errors).toContain(
-      'PR body must include a "## Related issues" section (e.g. a heading followed by "Closes #123"). See .agents/skills/agent-workflow/git-and-prs.md.',
+      'PR body must include a "## Related issues" section (e.g. a heading followed by "Closes #123").',
     )
   })
 
@@ -67,7 +67,7 @@ describe('validatePrBody', () => {
     const result = validatePrBody(VALID_BODY.replace('Workspace setup:', 'Setup:'))
     expect(result.ok).toBe(false)
     expect(result.errors).toContain(
-      'PR body must include a "Workspace setup:" line (e.g. "Workspace setup: ./dev/initialize monorepo"). See .agents/skills/agent-workflow/start-of-work.md.',
+      'PR body must include a "Workspace setup:" line (e.g. "Workspace setup: ./dev/initialize monorepo").',
     )
   })
 
@@ -77,7 +77,7 @@ describe('validatePrBody', () => {
       const result = validatePrBody(VALID_BODY.replace('Closes #123', reference))
       expect(result.ok).toBe(false)
       expect(result.errors).toContain(
-        'PR body must include at least one GitHub closing keyword (e.g. "Closes #123") in the "## Related issues" section, or the exact interactive direct-user-request no-source representation, scheduled no-source representation, or partial-batch representation after its single Refs entry. See .agents/skills/agent-workflow/git-and-prs.md.',
+        'PR body must include at least one GitHub closing keyword (e.g. "Closes #123") in the "## Related issues" section, or the exact interactive direct-user-request no-source representation, scheduled no-source representation, or partial-batch representation after its single Refs entry.',
       )
     },
   )

@@ -28,8 +28,7 @@ Never use another harness's id or synthesize one. An attended session uses
 
 Hooks do not journal on the agent's behalf. These Vouchington triggers are additional to the
 canonical journaling triggers, not a replacement: denied or escalated commands, first-party tool
-surprises, and each CI root cause. A repeated fix push or plan change alone is not an added trigger. The one exception is the merge-outcome note required by
-[Close-out](../agent-workflow/git-and-prs.md#close-out).
+surprises, and each CI root cause. A repeated fix push or plan change alone is not an added trigger.
 Use the canonical sandbox block in `blackboard/SKILL.md`
 and its journal grammar. For a GitHub Actions failure, include the affected check and run,
 root diagnostic, disposition, and whether `no-mistakes` impact selected the failing test or

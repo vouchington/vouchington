@@ -55,7 +55,7 @@ the earliest click. User-linked clicks share the same finite retention window.
 
 ## Partition drop or sweep
 
-See the canonical [partition drop or sweep rule](https://github.com/jonathanong/skills/blob/main/skills/postgres-partitioning-uuid-v7/SKILL.md).
+See the canonical [partition drop or sweep rule](https://github.com/jonathanong/harness-plugins/blob/main/skills/postgres-partitioning-uuid-v7/SKILL.md).
 
 Whole-range age retirement is unsuitable for
 [`moderation_appeal_resolution_runs`](https://github.com/vouchington/vouchington/pull/5884) and

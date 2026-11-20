@@ -78,17 +78,14 @@ Take the first of these that applies:
   analyzer improvement. The fix must keep the query's results.
 - An index needs no approval. Show the plan before and after it.
 - For extended statistics, match the kind to the predicate shape and gate every stat-object change
-  on measured before/after evidence — see
-  [extended statistics](../../../.agents/skills/postgres-node-performance-tuning/SKILL.md#extended-statistics-create-statistics).
+  on measured before/after evidence.
 - For composite keyset pagination, verify the WHERE tuple matches the ORDER BY tuple and direction.
   For example, `(created_at, object_id) < (...)` must line up with
   `ORDER BY created_at DESC, object_id DESC`.
 - For each composite keyset query, confirm the plan uses the expected composite index for the
   filtered table rather than a sequential scan. Name the expected index in the PR notes when a query
   depends on one.
-- When a table's indexes changed, confirm every consumer was re-traced per the
-  [Query → Index Impact recipe](../../../.agents/skills/postgres-node-performance-tuning/SKILL.md#query--index-impact)
-  rather than assuming the reshaped index is a drop-in replacement.
+- When a table's indexes changed, confirm every consumer was re-traced rather than assuming the reshaped index is a drop-in replacement.
 - A budget change records the measured numbers before and after in the PR.
 
 Schema-growth and partition classification audits run from
