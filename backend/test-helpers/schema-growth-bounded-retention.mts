@@ -29,7 +29,15 @@ export const RETENTION_BOUNDED_TABLES = new Map<string, string>([
   ],
   [
     'stripe_event_processing_work_items',
-    'Unfinished Stripe processing state remains while terminal work older than 30 days is deleted by bounded UUIDv7 keyset cleanup; immutable stripe_events retain deduplication.',
+    'Unfinished Stripe processing state remains while terminal work older than 30 days is deleted by bounded UUIDv7 keyset cleanup; stripe_events retain deduplication until their own fiscal retention.',
+  ],
+  [
+    'stripe_events',
+    'Bounded UUIDv7 keyset cleanup deletes each event once its UTC fiscal year is eight years past and no processing work item references it; a persisted cursor passes over unfinished events.',
+  ],
+  [
+    'membership_refunds',
+    'Deleted with their operation by the bounded fiscal-retention cleanup, after its refund attempts and before the operation row.',
   ],
   [
     'membership_purchase_intents',

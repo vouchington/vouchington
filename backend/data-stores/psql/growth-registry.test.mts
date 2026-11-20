@@ -90,6 +90,13 @@ describe('schema growth classification', () => {
       ),
     ).toBe(false)
   })
+
+  it('classifies fiscal-retention payment ledgers as bounded, not retention-free', () => {
+    for (const table of ['stripe_events', 'membership_refunds']) {
+      expect(EXPLICIT_BOUNDED_TABLES.get(table)).toContain('fiscal')
+      expect(UNBOUNDED_UNPARTITIONED_TABLES.has(table)).toBe(false)
+    }
+  })
 })
 
 describe('schema growth registry', () => {
