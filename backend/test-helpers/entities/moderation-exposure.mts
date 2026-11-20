@@ -18,3 +18,36 @@ export async function insertTestModerationMediaReveals(
     `)
   }
 }
+
+/**
+ * Bulk-insert `total` distinct reveals in one statement. The oldest `oldestCount` are 5 minutes
+ * old and the rest 1 minute old, each 1ms apart. Returns the revealed_at of the `oldestCount`-th
+ * oldest row, which is the row the exposure cooldown is anchored to.
+ */
+export async function seedTestModerationMediaRevealsOldestFirst(
+  moderatorId: string,
+  total: number,
+  oldestCount: number,
+): Promise<Date> {
+  const { rows } = await write<{
+    thresholdAt: Date
+  }>(sql`/* seedTestModerationMediaRevealsOldestFirst */
+    WITH inserted AS (
+      INSERT INTO moderation_media_reveals (moderator_user_id, surface, revealed_at)
+      SELECT
+        ${moderatorId},
+        'mod_queue',
+        CASE
+          WHEN n <= ${oldestCount}
+            THEN now() - interval '5 minutes' + n * interval '1 millisecond'
+          ELSE now() - interval '1 minute' + n * interval '1 millisecond'
+        END
+      FROM generate_series(1, ${total}) AS n
+      RETURNING revealed_at
+    )
+    SELECT max(revealed_at) AS "thresholdAt"
+    FROM inserted
+    WHERE revealed_at < now() - interval '2 minutes'
+  `)
+  return rows[0]!.thresholdAt
+}

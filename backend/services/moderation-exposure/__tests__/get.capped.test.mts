@@ -1,6 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { seedTestModerationMediaRevealsOldestFirst } from '@voucha/test-helpers/entities/moderation-exposure'
 import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { getExposureState } from '../get.mts'
@@ -10,28 +9,8 @@ import {
   EXPOSURE_COUNT_DISPLAY_CAP,
 } from '../config.mts'
 
-/** Inserts `total` distinct anonymous reveals; the oldest threshold-many are 5 minutes old. */
-async function seedReveals(moderator: PrivateUser, total: number): Promise<Date> {
-  const { rows } = await write<{ thresholdAt: Date }>(sql`/* seedExposureReveals */
-    WITH inserted AS (
-      INSERT INTO moderation_media_reveals (moderator_user_id, surface, revealed_at)
-      SELECT
-        ${moderator.id},
-        'mod_queue',
-        CASE
-          WHEN n <= ${EXPOSURE_BREAK_THRESHOLD}
-            THEN now() - interval '5 minutes' + n * interval '1 millisecond'
-          ELSE now() - interval '1 minute' + n * interval '1 millisecond'
-        END
-      FROM generate_series(1, ${total}) AS n
-      RETURNING revealed_at
-    )
-    SELECT revealed_at AS "thresholdAt"
-    FROM inserted
-    ORDER BY revealed_at
-    OFFSET ${EXPOSURE_BREAK_THRESHOLD - 1} LIMIT 1
-  `)
-  return rows[0]!.thresholdAt
+function seedReveals(moderator: PrivateUser, total: number): Promise<Date> {
+  return seedTestModerationMediaRevealsOldestFirst(moderator.id, total, EXPOSURE_BREAK_THRESHOLD)
 }
 
 function expectedCooldownEnd(thresholdAt: Date): string {
