@@ -1,6 +1,6 @@
 # Services
 
-- Use [service architecture](../../docs/overview/architecture/services/README.md) for authorization, errors, deduplication, and batching; load [backend Vitest authoring](../../.agents/skills/backend-vitest-test-authoring/SKILL.md) for tests/provider mocks.
+- Use [service architecture](../../docs/overview/architecture/services/README.md) for authorization, errors, deduplication, and batching.
 - Stay within domain tables; LLM orchestration belongs in `backend/agents/*`.
 - Put `currentUserCan*` authorization in `authorization.mts`. Services may throw structured HTTP-status errors, but never handle responses, cookies, headers, or redirects.
 - Store tokens/shared secrets through [`@modules/token-secrets`](../../docs/overview/architecture/backend/README.md).

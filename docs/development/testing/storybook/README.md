@@ -1,6 +1,6 @@
 # Storybook
 
-Source entrypoint: [web/storybook/README.md](../../../../web/storybook/README.md). Authoring rules are in [AGENTS.md](../../../../web/storybook/AGENTS.md) and the [Storybook authoring skill](../../../../.agents/skills/storybook-authoring/SKILL.md).
+Source entrypoint: [web/storybook/README.md](../../../../web/storybook/README.md). Authoring rules are in [AGENTS.md](../../../../web/storybook/AGENTS.md).
 
 ## Component story coverage
 

@@ -31,8 +31,6 @@ into this page and `docs/catalog/README.md`.
 - Keep navigation within the configured three-link reachability budget. Configured indexes (`README.md`
   and `SCHEDULED.md`) are the supported intermediate pages; do not add instruction files solely to make a page reachable.
 
-For implementation workflow and validation, use the [agent-workflow skill](../.agents/skills/agent-workflow/implementation.md).
-
 ## Reference index
 
 - [Contributor Covenant Code of Conduct](../CODE_OF_CONDUCT.md)

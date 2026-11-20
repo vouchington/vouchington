@@ -48,8 +48,7 @@ scoped rules under [`backend/queues/`](../../../backend/queues/AGENTS.md),
   load through the queue's ordering lane and concurrency.
 
 For sweep and phase details, read the canonical public
-[bounded-iteration skill](https://github.com/jonathanong/skills/blob/main/skills/bounded-iteration/SKILL.md).
-For sweeps and cleanup jobs, apply [bounded-iteration](../bounded-iteration/SKILL.md).
+[bounded-iteration skill](https://github.com/jonathanong/harness-plugins/blob/main/skills/bounded-iteration/SKILL.md).
 
 Load the installed `glide-mq` skill only when generic GlideMQ API detail is needed; repository
 ownership, replayability, and validation policy remain authoritative here.

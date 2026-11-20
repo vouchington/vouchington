@@ -15,7 +15,7 @@ Consolidated lifecycle and edit checklists for the Voucha monorepo. Each checkli
 
 ## See Also
 
-- Skills: [.agents/skills/git-commit-checklist](../../.agents/skills/git-commit-checklist/SKILL.md), [package-json-checklist](../../.agents/skills/package-json-checklist/SKILL.md), [github-actions-checklist](../../.agents/skills/github-actions-checklist/SKILL.md), [voucha-queue-authoring](../../.agents/skills/voucha-queue-authoring/SKILL.md)
+- Skills: [voucha-queue-authoring](../../.agents/skills/voucha-queue-authoring/SKILL.md)
 - [docs/README.md](../README.md) — Full documentation index
 
 ## Reference index

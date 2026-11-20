@@ -16,8 +16,7 @@ import { sanitizedLines } from '../pr-description/sanitized-lines.mts'
 import { runAdvisorySupersessionSearch } from '../pr-description/supersession.mts'
 
 /**
- * Large additions are the trigger to split a PR rather than ship it whole — see
- * `.agents/skills/agent-workflow/git-and-prs.md`. Dependency, not size, decides whether that
+ * Large additions are the trigger to split a PR rather than ship it whole. Dependency, not size, decides whether that
  * split is a native GitHub stack or independent PRs against `main`; this only forces the split
  * decision to be made consciously instead of skipped by default. Deletion-heavy retirement work
  * can remain coherent at a larger limit. Counts include generated files so the full diff stays
@@ -36,7 +35,7 @@ function formatLargeDiffRefusal(
     `PR create refused: this diff adds ${changes.added} and deletes ${changes.deleted} lines ` +
     `against origin/${base}. PRs may add at most ~${thresholds.addedLines} lines and ` +
     `delete at most ~${thresholds.deletedLines} lines before the split decision is ` +
-    'required (see .agents/skills/agent-workflow/git-and-prs.md).\n' +
+    'required.\n' +
     'Decide the split before opening this PR: if the parts cannot compile, test, or land ' +
     'independently, split it into a native GitHub stack (.agents/skills/stacked-prs/SKILL.md); ' +
     'if they can land in any order, open separate PRs targeting main instead.\n' +

@@ -18,7 +18,7 @@ Use this checklist before every `git commit`. GitHub Actions is the full gate af
 
 ## Before Pushing
 
-Before the first push, run these cheap local steps (also covered in [agent-workflow skill § Before Pushing](../../.agents/skills/agent-workflow/before-pushing.md)). GitHub Actions is the full gate.
+Before the first push, run these cheap local steps. GitHub Actions is the full gate.
 
 1. `pnpm exec oxlint --deny-warnings --type-aware <changed TS/MTS files and their direct dependents>`
 2. `pnpm exec vitest run <directly changed test files> --bail=3`
@@ -34,8 +34,6 @@ of every area whose path filter matches ([area test suites](../development/ci.md
 
 ## See Also
 
-- [git-commit-checklist skill](../../.agents/skills/git-commit-checklist/SKILL.md) — skill entry point
-- [agent-workflow skill § Before Pushing](../../.agents/skills/agent-workflow/before-pushing.md) — full before-push workflow
 - [docs/development/tests.md](../development/tests.md) — local reproduce commands
 - [docs/development/ci.md](../development/ci.md) — CI owners
 - [AGENTS.md](../../AGENTS.md) — root instructions

@@ -20,7 +20,6 @@ Use this checklist when adding a dependency, editing a workspace `package.json`,
 
 ## See Also
 
-- [package-json-checklist skill](../../.agents/skills/package-json-checklist/SKILL.md) — skill entry point
 - [backend/AGENTS.md](../../backend/AGENTS.md) — new service registration rules
 - [docs/development/dependency-updates.md](../development/dependency-updates.md) — Dependabot/Renovate policy and docs pinning policy
 - [AGENTS.md](../../AGENTS.md) — root instructions

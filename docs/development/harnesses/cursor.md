@@ -20,8 +20,7 @@ in this repository. It does **not** get copied skills or `AGENTS.md` files.
   [`permissions.json`](../../../.cursor/permissions.json).
 - OS sandbox: no project file. The user's `~/.cursor/cli-config.json` (vouchington-machines) selects
   the sandbox mode. Private/RFC1918 and localhost stay hard-blocked by Cursor, so Docker, Postgres,
-  Valkey, and local stack commands still need unsandboxed runs — see
-  [start-of-work.md](../../../.agents/skills/agent-workflow/start-of-work.md).
+  Valkey, and local stack commands still need unsandboxed runs.
 - Agents Window / `agent --worktree` setup: [`worktrees.json`](../../../.cursor/worktrees.json)
   runs `./dev/initialize monorepo` through the generic `setup-worktree`
   command array. Do not put a command array on `setup-worktree-unix`: Cursor

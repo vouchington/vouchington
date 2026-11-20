@@ -36,7 +36,7 @@ inventing a theme.
 
 Ask the user whether to **file issues**, **make a PR**, or **defer**:
 
-- **File issues:** deduplicate by root cause, use the shared [github-issue](../github-issue/SKILL.md)
+- **File issues:** deduplicate by root cause, use the shared `jong-skills:github-issue`
   workflow, and record each issue link.
 - **Make a PR:** when multiple unrelated themes exist, ask which single theme to implement; reuse or
   create its tracking issue, make one coherent draft PR, do not merge it, and record the PR link.

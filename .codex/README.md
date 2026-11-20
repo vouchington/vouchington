@@ -1,22 +1,23 @@
 # Codex configuration
 
-Codex reads checked-in `AGENTS.md` files and discovers local adapters under `.agents/skills/`.
+Codex reads checked-in `AGENTS.md` files and discovers local skills under `.agents/skills/`.
 No repository file installs a plugin or registers an MCP server. vouchington-machines'
-`install-dependencies.sh` installs the `skills` (marketplace `jonathanong-skills`),
+`install-dependencies.sh` installs the `jong-skills` (marketplace `harness-plugins`),
 `vouchington-workflow` and `pr-shepherd` plugins for Codex, and `./configure-agents.sh`
 registers `vouchington-tooling` in the user's Codex config and pre-approves its tools. Run
 `./diagnose-agents.sh --repo <worktree>` there to check; the hand-run `codex plugin` install steps
 are retired.
 
-Verify the current unpinned marketplace manifests before invoking an adapter:
+Install and verify the unpinned marketplace manifests:
 
 ```bash
+codex plugin marketplace add jonathanong/harness-plugins --ref main
+codex plugin add jong-skills@harness-plugins
 codex plugin marketplace list
 codex plugin list
 ```
 
-Plugin installation is local agent state, not a `.codex/config.toml` project setting. If a required
-plugin is unavailable, the adapter stops rather than applying its overlay alone. See
+Plugin installation is local agent state, not a `.codex/config.toml` project setting. See
 [Agent Blackboard](../docs/development/agent-blackboard.md) for the MCP server.
 
 See [Agent Harness Parity](../docs/development/agent-harness-parity.md) for the shared ownership

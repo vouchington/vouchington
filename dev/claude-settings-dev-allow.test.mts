@@ -84,7 +84,7 @@ describe('Claude review-skip for dev/ commands', () => {
   })
 })
 
-// The documented rebase lifecycle (.agents/skills/agent-workflow/git-and-prs.md) skips review only
+// The documented rebase lifecycle skips review only
 // as bare commands; starting a rebase stays on ./dev/rebase-onto-main. Raw force pushes are left
 // to .husky/pre-push. Rationale:
 // docs/development/agent-sandbox.md#claude-review-skip-for-the-rebase-lifecycle.

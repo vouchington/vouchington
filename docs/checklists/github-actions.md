@@ -36,6 +36,5 @@ Enforced rules name their check; the check owns the detail. Judgment calls stay 
 
 ## See Also
 
-- [github-actions-checklist skill](../../.agents/skills/github-actions-checklist/SKILL.md) — skill entry point
 - [.github/workflows/AGENTS.md](../../.github/workflows/AGENTS.md) — scoped workflow invariants and canonical-doc routing
 - [docs/development/ci/README.md](../development/ci/README.md) — CI documentation index

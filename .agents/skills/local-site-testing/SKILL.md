@@ -6,8 +6,7 @@ user-invocable: true
 
 # Local Site Testing
 
-Use this skill for full-site local validation. It complements the repo workflow in
-[agent-workflow](../agent-workflow/SKILL.md) and the command reference in
+Use this skill for full-site local validation. It complements the command reference in
 [local-development index](../../../docs/development/local-development/README.md).
 
 ## Setup

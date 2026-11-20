@@ -72,9 +72,6 @@ deploy backend acceptance of the new value at or before the web starts requestin
 
 ## Related
 
-- [Endpoint Migration recipe](../../../.agents/skills/agent-workflow/impact-recipes.md#endpoint-migration) —
-  current producers and consumers, including an already-issued URL or key-rotation list
-
 - The `vouchington-infra` Operator Secrets Checklist (`opentofu/OPERATOR-SECRETS-CHECKLIST.md` in
   the private `vouchington-infra` repository) — condensed what-do-I-set checklist for standing up
   staging or production

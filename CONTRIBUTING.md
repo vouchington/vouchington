@@ -20,23 +20,13 @@ workspaces fit together.
 
 ## Workflow
 
-Agent and human contributors alike follow the
-[agent workflow skill](.agents/skills/agent-workflow/SKILL.md), which is the
-canonical source for how work here is planned, implemented, and shipped:
-
-- [Start of Work](.agents/skills/agent-workflow/start-of-work.md)
-- [Implementation](.agents/skills/agent-workflow/implementation.md)
-- [Git and PRs](.agents/skills/agent-workflow/git-and-prs.md)
-
 Root project principles and directory-scoped rules are in
 [AGENTS.md](AGENTS.md).
 
 ## Pull requests
 
 Within the project, new PRs are opened as **drafts** and only marked ready for
-review once the change is genuinely shippable — see
-[Git and PRs](.agents/skills/agent-workflow/git-and-prs.md) for the exact
-flow.
+review once the change is genuinely shippable.
 
 ## Licensing of contributions
 

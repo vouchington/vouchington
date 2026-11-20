@@ -75,8 +75,7 @@ Every flaky test and every defect in this repository gets one fix PR per group:
    current `main` and rerun the focused validation.
 5. **Implement and validate** the smallest complete change. When the fix adds or tightens an
    assertion, first show that the assertion fails for the expected reason against the pre-fix
-   source, per [Implementation](../../../.agents/skills/agent-workflow/implementation.md)'s
-   regression-test rule, and record that evidence under `### Implementation choice`. When the
+   source, and record that evidence under `### Implementation choice`. When the
    failing job runs many scenarios in one process, such as explain-analyze, the evidence is a full
    run of that job with no failure, not the failing scenario passing alone: a sibling scenario can
    share the cause.
@@ -90,12 +89,8 @@ Every flaky test and every defect in this repository gets one fix PR per group:
    `automation` label, then re-fetch the PR and require it. Never merge or arm auto-merge; the
    triage loop decides within its grant.
 
-When the PR body defers work to another repository, resolve the target per
-[Implementation](../../../.agents/skills/agent-workflow/implementation.md)'s deferral-target
-resolution rule.
-
 For any PR body this session is authorized to create or update, follow the
-[PR-description standard](../../../.agents/skills/pr-description/SKILL.md): keep `## Summary` and
+[PR-description standard](https://github.com/jonathanong/harness-plugins/blob/main/skills/pr-description/SKILL.md): keep `## Summary` and
 `## Impact` visible, including the concrete outcome, affected audience, and material risks. Keep
 the required `### Root cause`, `### Implementation choice`, and `### Options considered` headings
 in `details`, with long supporting evidence inside a collapsed `<details>` element there. Use before/after tables and

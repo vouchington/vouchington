@@ -20,15 +20,12 @@ when creating a worktree in the desktop app; see [Codex local environments](http
 - Claude Code loads native `AGENTS.md` with ancestor and lazily read subtree instructions. A
   `CLAUDE.md` shadows `AGENTS.md` in the same directory, so keep it gitignored, and automatic
   discovery skips `.agents`; explicitly read [skill instructions](../../.agents/skills/AGENTS.md).
-- Prefer the local adapter before the canonical plugin. Canonical `nextjs-vitest-test-authoring`
-  maps to local `web-vitest-test-authoring`; other adapter names match their canonical name.
 - Installation prerequisite closure makes resources available; it does not require reading every
   installed skill. Load the current phase and relevant authoring procedure only.
 
 ## Reusable domain skills
 
-Local adapters under `.agents/skills` are overlays, not standalone workflows; the current list is
-in [`.agents/catalog/README.md`](../../.agents/catalog/README.md) and its bijection with
+Local skills live under `.agents/skills`; their bijection with
 `.claude/skills` is enforced by `finite-set-consistency` in [the rules policy](../../.no-mistakes/rules/policies.yml). Claude Code and Codex
 load each canonical source from the `vouchington-workflow`, `vouchington-testing`, or
 `vouchington-database` plugin; Grok, Cursor, and OpenCode load it from

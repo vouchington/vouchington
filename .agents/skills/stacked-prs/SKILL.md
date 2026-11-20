@@ -14,8 +14,7 @@ adapter alone. Do not reload a canonical skill or adapter already read.
 
 ## Vouchington additions
 
-[Git And PRs](../agent-workflow/git-and-prs.md) decides when work must stack, sets the ten-layer
-cap, and requires one source issue per PR. `main` is the default branch. Use the native `gh stack`
+Stack only when code depends on a lower layer; the cap is ten layers, with one source issue per PR. `main` is the default branch. Use the native `gh stack`
 commands as `pr-shepherd:pr-shepherd` describes them.
 The `pr_create` policy (`dev/agent-policy/stack-policy.mts`) rejects an off-trunk root. No hook
 guards `gh stack`; `.claude/settings.json` `permissions.deny` refuses `gh stack modify`, `switch`,
@@ -38,13 +37,7 @@ replays commits already on `origin/main`, abort it and run that `--onto` rebase 
 ### Who runs the stack
 
 Use the `triage-loop` ownership and worker rules. A Vouchington layer reaches decent shape after its
-before-push checks pass; the parent never runs the stack shepherd. When the session hands off a
-stack, follow [Close-out](../agent-workflow/git-and-prs.md#close-out).
-
-### Upper-only fast-forward
-
-Follow the forge check in [Before Pushing](../agent-workflow/before-pushing.md) while a lower layer
-is queued.
+before-push checks pass; the parent never runs the stack shepherd.
 
 ### Merge every ready bottom layer at once
 

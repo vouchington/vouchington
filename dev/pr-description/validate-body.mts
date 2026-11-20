@@ -52,13 +52,13 @@ export function validatePrBody(
     extractPartialBatchSourceRef(body) === undefined
   ) {
     errors.push(
-      'PR body must include at least one GitHub closing keyword (e.g. "Closes #123") in the "## Related issues" section, or the exact interactive direct-user-request no-source representation, scheduled no-source representation, or partial-batch representation after its single Refs entry. See .agents/skills/agent-workflow/git-and-prs.md.',
+      'PR body must include at least one GitHub closing keyword (e.g. "Closes #123") in the "## Related issues" section, or the exact interactive direct-user-request no-source representation, scheduled no-source representation, or partial-batch representation after its single Refs entry.',
     )
   }
 
   if (!WORKSPACE_SETUP_RE.test(body)) {
     errors.push(
-      'PR body must include a "Workspace setup:" line (e.g. "Workspace setup: ./dev/initialize monorepo"). See .agents/skills/agent-workflow/start-of-work.md.',
+      'PR body must include a "Workspace setup:" line (e.g. "Workspace setup: ./dev/initialize monorepo").',
     )
   }
 

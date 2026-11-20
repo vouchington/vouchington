@@ -12,7 +12,7 @@ performance budget, not a timeout or CI failure threshold. The scheduled
 of the ceiling into one issue, and the scheduled
 [`ci-log-quality.md`](../prompts/scheduled/ci-log-quality.md) prompt selects one bounded,
 diagnostics-preserving log fix. Use the
-[`review-ci-logs` skill](../../.agents/skills/review-ci-logs/SKILL.md) to separate real failures
+[`review-ci-logs` skill](https://github.com/jonathanong/harness-plugins/blob/main/skills/review-ci-logs/SKILL.md) to separate real failures
 from source echo, cascades, and volume-only output.
 
 CI is expensive, including GitHub Actions artifact and cache storage, so every artifact and the

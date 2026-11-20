@@ -20,8 +20,7 @@ not met. Include the audited scope, setup
 and checks completed with their results, concrete candidates considered, and why each was excluded.
 An incomplete setup, skipped required check, or unexamined required scope is not a no-op; name the
 blocker and report `Outcome: incomplete`. Do not create a log-only PR for either outcome.
-Use the relevant authoring skill and [implementation guidance](../../../.agents/skills/agent-workflow/implementation.md)
-for validation. For a bug fix, prove a necessary regression test fails before the fix and passes
+Use the relevant authoring skill for validation. For a bug fix, prove a necessary regression test fails before the fix and passes
 afterward. For removed deadlines or changed policy-table rows, record the replacement bound or
 caller proof and reconcile affected sibling rows. Verify cross-repository follow-up targets;
 this run cannot file issues, so report out-of-scope work as recommendations only. The sole exception
@@ -55,7 +54,7 @@ Apply the `automation` label to the draft PR, then re-fetch it and require it to
 reporting completion.
 
 For any PR body this workflow is authorized to create or update, follow the
-[PR-description standard](../../../.agents/skills/pr-description/SKILL.md): keep `## Summary`
+[PR-description standard](https://github.com/jonathanong/harness-plugins/blob/main/skills/pr-description/SKILL.md): keep `## Summary`
 and `## Impact` visible, including the concrete outcome, affected audience, and material risks.
 Keep the required `### Root cause`, `### Implementation choice`, and `### Options considered`
 `details` entries and long supporting evidence inside a collapsed `<details>` section. Use before/after

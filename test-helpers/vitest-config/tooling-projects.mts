@@ -18,7 +18,7 @@ export const toolingProjects = [
       name: 'dev-tools',
       testTimeout: 5_000,
       hookTimeout: 5_000,
-      include: ['dev/**/*.test.mts', '.pr-shepherd/**/*.test.mts', '.agents/catalog/**/*.test.mts'],
+      include: ['dev/**/*.test.mts', '.pr-shepherd/**/*.test.mts'],
       exclude: defaultExcludes,
       setupFiles: [isolatedSetupFile],
     },
