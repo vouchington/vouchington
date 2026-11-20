@@ -121,17 +121,15 @@ describe('Claude settings deny list under Grok Bash matching', () => {
     'gh stack trunk main',
     'gh stack submit --open',
     'gh stack link --open',
-    'gh stack submit',
-    'gh stack checkout',
     'gh stack merge',
   ])('denies the interactive gh stack form %s', command => {
     expect(grokBashDenied(denyRules, command)).toBe(true)
   })
 
-  it.each(['Bash(gh stack submit)', 'Bash(gh stack checkout)', 'Bash(gh stack merge)'])(
-    'keeps %s exact so Claude allows the non-interactive forms',
-    rule => {
-      expect(denyRules).toContain(rule)
+  it.each(['gh stack submit --auto', 'gh stack checkout 12'])(
+    'allows the non-interactive gh stack form %s',
+    command => {
+      expect(grokBashDenied(denyRules, command)).toBe(false)
     },
   )
 })

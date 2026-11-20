@@ -89,9 +89,9 @@ Grok prefix-matches Claude `permissions.deny` strings with no word boundary, so 
 prefix of a sanctioned command: `Bash(git push --force)` matches `git push --force-with-lease`.
 Plain force pushes stay out of the deny list for that reason. `.husky/pre-push` rejects `--force`,
 `-f`, and a `+` refspec and allows `--force-with-lease`; `dev/claude-settings-grok-bash-deny.test.mts` locks the deny-list absence.
-The same no-word-boundary matching means the bare `Bash(gh stack submit)`, `Bash(gh stack checkout)`,
-and `Bash(gh stack merge)` denies also refuse `gh stack submit --auto` for Grok; Claude matches them
-exactly.
+For the same reason the bare interactive `gh stack submit` and `gh stack checkout` are not denied: the
+rule would also refuse `gh stack submit --auto` and `gh stack checkout <branch>` for Grok. The bare
+`Bash(gh stack merge)` deny stays; for Grok it refuses every `gh stack merge`, which needs a human anyway.
 
 ## Cursor through Claude-compat
 

@@ -115,8 +115,6 @@
       "Bash(gh stack trunk*)",
       "Bash(gh stack submit --open*)",
       "Bash(gh stack link --open*)",
-      "Bash(gh stack submit)",
-      "Bash(gh stack checkout)",
       "Bash(gh stack merge)"
     ]
   },

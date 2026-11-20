@@ -19,8 +19,8 @@ cap, and requires one source issue per PR. `main` is the default branch. Use the
 commands as `pr-shepherd:pr-shepherd` describes them.
 The `pr_create` policy (`dev/agent-policy/stack-policy.mts`) rejects an off-trunk root. No hook
 guards `gh stack`; `.claude/settings.json` `permissions.deny` refuses `gh stack modify`, `switch`,
-`trunk`, `submit --open`, `link --open`, and the bare interactive forms of `submit`, `checkout`, and
-`merge`. Pass a layer number or `--auto` instead; `gh stack submit --auto` and
+`trunk`, `submit --open`, `link --open`, and a bare `merge`. The bare `submit` and `checkout` open a
+prompt an agent cannot answer, so pass a branch, layer number, or `--auto` instead; `gh stack submit --auto` and
 `gh stack merge --squash 12` still run. Area workflows must not filter `pull_request`
 branches: submission creates mid-stack PRs before GitHub registers the stack.
 
