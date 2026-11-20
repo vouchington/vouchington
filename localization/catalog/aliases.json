@@ -9338,6 +9338,8 @@
 {"alias":"moderation.communityBans.liftFailed","consumer":"web","copyId":"copy.community-bans.liftFailed"},
 {"alias":"moderation.communityBans.lifted","consumer":"web","copyId":"copy.moderation.communityBans.lifted"},
 {"alias":"moderation.communityBans.lifting","consumer":"web","copyId":"copy.moderation.communityBans.lifting"},
+{"alias":"moderation.exposureCooldownModal.reviewedCount","consumer":"web","copyId":"copy.moderation.exposureCooldownModal.reviewedCount"},
+{"alias":"moderation.exposureCooldownModal.reviewedCountCapped","consumer":"web","copyId":"copy.moderation.exposureCooldownModal.reviewedCountCapped"},
 {"alias":"moderation.penaltyReviews.confirm","consumer":"web","copyId":"copy.moderation.penaltyReviews.confirm"},
 {"alias":"moderation.penaltyReviews.description","consumer":"web","copyId":"copy.moderation.penaltyReviews.description"},
 {"alias":"moderation.penaltyReviews.due","consumer":"web","copyId":"copy.moderation.penaltyReviews.due"},

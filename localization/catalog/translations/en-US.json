@@ -3684,6 +3684,8 @@
 {"id":"copy.moderation.communityBans.liftBan","value":"Lift ban"},
 {"id":"copy.moderation.communityBans.lifted","value":"Lifted"},
 {"id":"copy.moderation.communityBans.lifting","value":"Lifting…"},
+{"id":"copy.moderation.exposureCooldownModal.reviewedCount","value":"Sensitive items revealed this hour: {count}"},
+{"id":"copy.moderation.exposureCooldownModal.reviewedCountCapped","value":"Sensitive items revealed this hour: {count}+"},
 {"id":"copy.moderation.penaltyReviews.confirm","value":"Confirm continued penalty"},
 {"id":"copy.moderation.penaltyReviews.description","value":"Active penalties remain in place after review until staff revokes them."},
 {"id":"copy.moderation.penaltyReviews.due","value":"Review due"},

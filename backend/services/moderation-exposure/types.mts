@@ -1,8 +1,10 @@
 export type ModMediaRevealSurface = 'mod_queue' | 'review_queue' | 'reports' | 'post_page'
 
 export type ExposureState = {
-  /** Distinct-entity reveal count within the current window. */
+  /** Distinct-entity reveal count within the current window, at most the display cap. */
   count: number
+  /** True when more distinct reveals exist than `count` reports; render "N+". */
+  count_capped: boolean
   /** Threshold before the break prompt fires. */
   threshold: number
   /** True when count >= threshold AND the cooldown window has not yet elapsed. */

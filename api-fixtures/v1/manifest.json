@@ -33477,6 +33477,12 @@
                   "type": "number"
                 }
               },
+              "count_capped": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
               "in_cooldown": {
                 "required": true,
                 "schema": {
@@ -95185,6 +95191,12 @@
                   "type": "number"
                 }
               },
+              "count_capped": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
               "in_cooldown": {
                 "required": true,
                 "schema": {
@@ -113907,7 +113919,7 @@
       "migratedFrom": ["backend/api/v1/moderation-exposure.mts"],
       "path": "/api/v1/moderation/exposure",
       "responseSchema": {
-        "hash": "a1fa6267ac88a7a6eae436d9ba7695bffa0a9d949a16231dd35e17245368df40",
+        "hash": "33984f966ff6317f502c4cdbebcf70de131e6b1b31800adcaac288b17a4b01a7",
         "key": "native.moderation.exposure.default"
       },
       "route": {
@@ -113932,7 +113944,7 @@
         "surface": "review_queue"
       },
       "responseSchema": {
-        "hash": "a1fa6267ac88a7a6eae436d9ba7695bffa0a9d949a16231dd35e17245368df40",
+        "hash": "33984f966ff6317f502c4cdbebcf70de131e6b1b31800adcaac288b17a4b01a7",
         "key": "native.moderation.reveals.default"
       },
       "route": {

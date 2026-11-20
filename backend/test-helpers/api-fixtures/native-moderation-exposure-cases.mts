@@ -2,6 +2,7 @@ import { nativeModerationFixtureCase as fixtureCase } from './native-moderation-
 
 const exposure = {
   count: 1,
+  count_capped: false,
   threshold: 10,
   in_cooldown: false,
   cooldown_ends_at: null,

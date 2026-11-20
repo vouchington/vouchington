@@ -3678,6 +3678,8 @@
 {"id":"copy.moderation.communityBans.liftBan","value":"Revogar banimento"},
 {"id":"copy.moderation.communityBans.lifted","value":"Revogado"},
 {"id":"copy.moderation.communityBans.lifting","value":"Revogando…"},
+{"id":"copy.moderation.exposureCooldownModal.reviewedCount","value":"Conteúdos sensíveis revelados nesta hora: {count}"},
+{"id":"copy.moderation.exposureCooldownModal.reviewedCountCapped","value":"Conteúdos sensíveis revelados nesta hora: {count}+"},
 {"id":"copy.moderation.penaltyReviews.confirm","value":"Confirmar a continuidade da penalidade"},
 {"id":"copy.moderation.penaltyReviews.description","value":"As penalizações ativas mantêm-se após a revisão até que a equipa as revogue."},
 {"id":"copy.moderation.penaltyReviews.due","value":"Revisão pendente"},

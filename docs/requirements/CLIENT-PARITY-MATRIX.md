@@ -60,6 +60,20 @@ before the client PR.
 
 The moderation-results read has no matching MCP tool. Browser challenge context is described below.
 
+## Moderation exposure count
+
+`GET /api/v1/moderation/exposure` and `POST /api/v1/moderation/reveals` return a capped distinct
+reveal count: `count` never exceeds the display cap and `count_capped` is true when more reveals
+exist. The cap is never below the break threshold, so `in_cooldown` and `cooldown_ends_at` stay
+exact. Clients render "N+" from translation catalog copy, never from API text. Neither route has a
+matching MCP tool. Native adoption is the dependent follow-up
+[vouchington-clients#737](https://github.com/vouchington/vouchington-clients/issues/737) and does not
+gate the producer change.
+
+| Behavior                                                 | Web  | Swift                                                                         | .NET                                                                          |
+| -------------------------------------------------------- | ---- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Show the capped reveal count as "N+" in the break prompt | Full | Pending [#737](https://github.com/vouchington/vouchington-clients/issues/737) | Pending [#737](https://github.com/vouchington/vouchington-clients/issues/737) |
+
 ## Input capacity errors
 
 Admission limits protect complete reads without silently truncating an account's credentials,

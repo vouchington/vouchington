@@ -2,6 +2,7 @@
   "exposure": {
     "cooldown_ends_at": null,
     "count": 1,
+    "count_capped": false,
     "in_cooldown": false,
     "threshold": 10
   }

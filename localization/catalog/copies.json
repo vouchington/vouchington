@@ -3684,6 +3684,8 @@
 {"descriptor":null,"id":"copy.moderation.communityBans.liftBan"},
 {"descriptor":null,"id":"copy.moderation.communityBans.lifted"},
 {"descriptor":null,"id":"copy.moderation.communityBans.lifting"},
+{"descriptor":null,"id":"copy.moderation.exposureCooldownModal.reviewedCount"},
+{"descriptor":null,"id":"copy.moderation.exposureCooldownModal.reviewedCountCapped"},
 {"descriptor":null,"id":"copy.moderation.penaltyReviews.confirm"},
 {"descriptor":null,"id":"copy.moderation.penaltyReviews.description"},
 {"descriptor":null,"id":"copy.moderation.penaltyReviews.due"},

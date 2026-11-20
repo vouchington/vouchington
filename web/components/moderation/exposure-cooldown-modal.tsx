@@ -15,6 +15,8 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 interface ExposureCooldownModalProps {
   open: boolean
   cooldownEndsAt: string | null
+  count: number
+  countCapped: boolean
   onDismiss: () => void
 }
 
@@ -26,6 +28,8 @@ interface ExposureCooldownModalProps {
 export function ExposureCooldownModal({
   open,
   cooldownEndsAt,
+  count,
+  countCapped,
   onDismiss,
 }: ExposureCooldownModalProps) {
   // Store the current timestamp as state so `secondsLeft` can be derived purely at render time
@@ -74,6 +78,18 @@ export function ExposureCooldownModal({
             {t('extracted.moderation.exposureCooldownModal.youVeReviewedSeveralPiecesOf_cf88040b')}
           </DialogDescription>
         </DialogHeader>
+
+        <p
+          className='text-center text-sm'
+          data-pw='exposure-count'
+        >
+          {t(
+            countCapped
+              ? 'moderation.exposureCooldownModal.reviewedCountCapped'
+              : 'moderation.exposureCooldownModal.reviewedCount',
+            { count },
+          )}
+        </p>
 
         {countdownLabel !== null && (
           <p

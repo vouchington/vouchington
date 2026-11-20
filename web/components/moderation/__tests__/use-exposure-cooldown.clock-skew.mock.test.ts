@@ -16,9 +16,16 @@ vi.mock(import('@/lib/on-error'), () => ({ default: mockOnError }))
 
 import { useExposureCooldown } from '../use-exposure-cooldown'
 
-const neutralExposure = { count: 0, threshold: 10, in_cooldown: false, cooldown_ends_at: null }
+const neutralExposure = {
+  count: 0,
+  count_capped: false,
+  threshold: 10,
+  in_cooldown: false,
+  cooldown_ends_at: null,
+}
 const serverCooldown = {
   count: 10,
+  count_capped: false,
   threshold: 10,
   in_cooldown: true,
   cooldown_ends_at: '2026-01-01T00:01:00Z',

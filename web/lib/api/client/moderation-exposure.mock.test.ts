@@ -18,7 +18,13 @@ vi.mock(
 
 import { getExposureState, recordMediaReveal } from './moderation-exposure'
 
-const exposure = { count: 0, threshold: 10, in_cooldown: false, cooldown_ends_at: null }
+const exposure = {
+  count: 0,
+  count_capped: false,
+  threshold: 10,
+  in_cooldown: false,
+  cooldown_ends_at: null,
+}
 
 describe('moderation-exposure client helpers', () => {
   beforeEach(() => {

@@ -45,7 +45,13 @@ vi.mock(import('@/lib/api/client/moderation-exposure'), () => ({
   recordMediaReveal: mockRecordMediaReveal,
 }))
 
-const neutralExposure = { count: 0, threshold: 10, in_cooldown: false, cooldown_ends_at: null }
+const neutralExposure = {
+  count: 0,
+  count_capped: false,
+  threshold: 10,
+  in_cooldown: false,
+  cooldown_ends_at: null,
+}
 
 describe('PostDetailImages sensitive media', () => {
   beforeEach(() => {
@@ -61,6 +67,7 @@ describe('PostDetailImages sensitive media', () => {
     mockGetExposureState.mockResolvedValueOnce({
       exposure: {
         count: 10,
+        count_capped: false,
         threshold: 10,
         in_cooldown: true,
         cooldown_ends_at: '2099-01-01T00:00:00Z',

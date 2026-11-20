@@ -80,6 +80,7 @@ describe('POST /api/v1/moderation/reveals', () => {
     expect(exposure.count).toBe(before.body.exposure.count + 1)
     expect(typeof exposure.threshold).toBe('number')
     expect(typeof exposure.in_cooldown).toBe('boolean')
+    expect(exposure.count_capped).toBe(false)
   })
 
   it('accepts an optional postId in the body', async () => {
@@ -118,6 +119,7 @@ describe('GET /api/v1/moderation/exposure', () => {
     expect(typeof exposure.count).toBe('number')
     expect(typeof exposure.threshold).toBe('number')
     expect(typeof exposure.in_cooldown).toBe('boolean')
+    expect(exposure.count_capped).toBe(false)
   })
 
   it('returns exposure state for an admin user', async () => {

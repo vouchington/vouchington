@@ -2710,7 +2710,7 @@
     },
     "native.moderation.exposure.default": {
       "fixtureIds": ["native.moderation.exposure.default"],
-      "hash": "a1fa6267ac88a7a6eae436d9ba7695bffa0a9d949a16231dd35e17245368df40"
+      "hash": "33984f966ff6317f502c4cdbebcf70de131e6b1b31800adcaac288b17a4b01a7"
     },
     "native.moderation.mod-notes.create.default": {
       "fixtureIds": ["native.moderation.mod-notes.create.default"],
@@ -2850,7 +2850,7 @@
     },
     "native.moderation.reveals.default": {
       "fixtureIds": ["native.moderation.reveals.default"],
-      "hash": "a1fa6267ac88a7a6eae436d9ba7695bffa0a9d949a16231dd35e17245368df40"
+      "hash": "33984f966ff6317f502c4cdbebcf70de131e6b1b31800adcaac288b17a4b01a7"
     },
     "native.moderation.review-queue.default": {
       "fixtureIds": ["native.moderation.review-queue.default"],

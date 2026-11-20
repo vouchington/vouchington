@@ -17,6 +17,8 @@ export function ExposureCooldownGate({ children, cooldown }: ExposureCooldownGat
       <div data-pw='exposure-cooldown-gate'>{children}</div>
       <ExposureCooldownModal
         cooldownEndsAt={exposureState?.cooldown_ends_at ?? null}
+        count={exposureState?.count ?? 0}
+        countCapped={exposureState?.count_capped ?? false}
         open={showBreakPrompt}
         onDismiss={dismissBreakPrompt}
       />
