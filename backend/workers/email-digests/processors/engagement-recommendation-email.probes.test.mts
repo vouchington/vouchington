@@ -9,6 +9,7 @@ import {
 } from '@voucha/test-helpers/moderation-summary-collection'
 import { claimEngagementEmailSend } from '@services/users/engagement-emails'
 import { updateUserFields } from '@services/users/update-fields'
+import { getFollowTopicsRecipients } from '@services/engagement-emails/engagement-email-recipients'
 import { processSendFollowTopicsEmail } from './follow-topics.mts'
 
 const quietModerationCommunity = {
@@ -71,6 +72,26 @@ describe('engagement email preference suppression', () => {
           ...createTestModerationEmailFooter(),
           ...moderationSummaryVariableDefaults(),
           communities: [quietModerationCommunity],
+        },
+      ),
+    ).resolves.toBeNull()
+    expect(ses.sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('stops selecting and sending engagement emails once processing is restricted', async () => {
+    const user = await createTestUser()
+    await expect(getFollowTopicsRecipients([user!.id])).resolves.toHaveLength(1)
+
+    await updateUserFields(user!.id, { processing_restricted_at: true })
+
+    await expect(getFollowTopicsRecipients([user!.id])).resolves.toEqual([])
+    await claimEngagementEmailSend(user!.id, 'follow_topics')
+    await expect(
+      processSendFollowTopicsEmail(
+        { emailAddress: 'tests+user@voucha.ai', userId: user!.id },
+        {
+          topics: [{ name: 'Travel', url: 'https://voucha.ai/topic/travel' }],
+          ...createTestNotificationEmailFooter(),
         },
       ),
     ).resolves.toBeNull()
