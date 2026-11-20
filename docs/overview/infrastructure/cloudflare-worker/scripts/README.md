@@ -2,17 +2,9 @@
 
 Source entrypoint: [cloudflare-worker/scripts/README.md](../../../../../cloudflare-worker/scripts/README.md)
 
-Helpers used during local Cloudflare Worker development and CI smoke testing.
-
-| Path                                                                                                                      | Purpose                                                              |
-| ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| [`wrangler/dev.mts`](../../../../../cloudflare-worker/scripts/wrangler/dev.mts)                                           | Boots live `wrangler dev` with repo-local runtime paths.             |
-| [`wrangler/start.mts`](../../../../../cloudflare-worker/scripts/wrangler/start.mts)                                       | Boots `wrangler dev` with the worktree-specific port and env config. |
-| [`tests/smoke-test-cloudflare-worker.sh`](../../../../../cloudflare-worker/scripts/tests/smoke-test-cloudflare-worker.sh) | Smoke test that hits the locally running worker.                     |
-
 ## `wrangler dev` restart budget
 
-`wrangler dev` can crash mid-suite (a known upstream `workers-sdk` cause). `start.mts` auto-restarts the crashed child, but bounds how many times it
+`wrangler dev` can crash mid-suite (a known upstream `workers-sdk` cause). [`start.mts`](../../../../../cloudflare-worker/scripts/wrangler/start.mts) auto-restarts the crashed child, but bounds how many times it
 will do so via [`wrangler/restart-policy.mts`](../../../../../cloudflare-worker/scripts/wrangler/restart-policy.mts).
 
 `MAX_RESTARTS` is a **burst-window** budget, not a lifetime cap: an attempt that stays up for at
