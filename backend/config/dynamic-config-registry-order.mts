@@ -130,6 +130,7 @@ export const REGISTRY_ORDER = [
   'oauth-authorization-broker',
   'oauth-authorization-exchange-work-config',
   'api-egress-proxy',
+  'stuck-resolution-run-expiry-config',
 ] as const
 
 export type RegisteredDynamicConfigKey = (typeof REGISTRY_ORDER)[number]

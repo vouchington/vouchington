@@ -9,6 +9,10 @@ import { enqueueReconcileAutoDispatchJudgements } from './reconcile-auto-dispatc
 import { enqueueReconcileCopyrightAgentDispatches } from './reconcile-copyright-agent-dispatches.mts'
 import { enqueueReconcileClassifierRuns } from './reconcile-classifier-runs.mts'
 import { enqueueReconcileAIAgentFailures } from './reconcile-ai-agent-failures.mts'
+import {
+  enqueueExpireStuckAppealResolutionRuns,
+  enqueueExpireStuckDisputeResolutionRuns,
+} from './expire-stuck-resolution-runs.mts'
 
 function reconcilerOptions(name: keyof typeof AGENT_PRIORITY): JobOptions {
   return {
@@ -89,6 +93,42 @@ export const scheduledJobManifest = defineScheduledJobManifest(AI_AGENTS_QUEUE_N
         schedule: '*/5 * * * *',
         description: 'Re-enqueue undispatched AI moderation judgements (crash recovery)',
         trigger: enqueueReconcileAutoDispatchJudgements,
+      },
+    ],
+  },
+  {
+    schedulerId: 'expireStuckAppealResolutionRuns',
+    repeat: { pattern: '17 * * * *' },
+    template: {
+      name: 'expire-stuck-appeal-resolution-runs',
+      data: {},
+      opts: () => reconcilerOptions('expire-stuck-appeal-resolution-runs'),
+    },
+    operatorSurfaces: [
+      {
+        kind: 'scheduled-jobs',
+        id: 'expireStuckAppealResolutionRuns',
+        schedule: '17 * * * *',
+        description: 'Expire appeal AI resolution runs left active after a failed queue admission',
+        trigger: enqueueExpireStuckAppealResolutionRuns,
+      },
+    ],
+  },
+  {
+    schedulerId: 'expireStuckDisputeResolutionRuns',
+    repeat: { pattern: '47 * * * *' },
+    template: {
+      name: 'expire-stuck-dispute-resolution-runs',
+      data: {},
+      opts: () => reconcilerOptions('expire-stuck-dispute-resolution-runs'),
+    },
+    operatorSurfaces: [
+      {
+        kind: 'scheduled-jobs',
+        id: 'expireStuckDisputeResolutionRuns',
+        schedule: '47 * * * *',
+        description: 'Expire dispute AI resolution runs left active after a failed queue admission',
+        trigger: enqueueExpireStuckDisputeResolutionRuns,
       },
     ],
   },

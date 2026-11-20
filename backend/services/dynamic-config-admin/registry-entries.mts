@@ -1,4 +1,5 @@
 import { communityApplicationLimitsRegistryEntry } from './registry-community-application-limits-entry.mts'
+import { stuckResolutionRunExpiryRegistryEntry } from './registry-stuck-resolution-run-expiry-entry.mts'
 import { reportingRollupWorkRegistryEntry } from './registry-reporting-rollup-work-entry.mts'
 import { moderationSummaryWorkRegistryEntry } from './registry-moderation-summary-work-entry.mts'
 import { householdLimitsRegistryEntry } from './registry-household-limits-entry.mts'
@@ -42,6 +43,7 @@ import { orderDynamicConfigRegistryEntries } from './registry-order.mts'
 
 const unorderedRegistryEntries = [
   moderationSummaryWorkRegistryEntry,
+  stuckResolutionRunExpiryRegistryEntry,
   reportingRollupWorkRegistryEntry,
   sessionLimitsRegistryEntry,
   relationLimitsRegistryEntry,

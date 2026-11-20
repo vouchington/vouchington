@@ -98,6 +98,8 @@ export type AIAgentJobName =
   | 'recover-background-response'
   | 'reconcile-copyright-agent-dispatches'
   | 'reconcile-ai-agent-failures'
+  | 'expire-stuck-appeal-resolution-runs'
+  | 'expire-stuck-dispute-resolution-runs'
 
 export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   'classifier-run-dispatcher': 8,
@@ -118,6 +120,8 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   'recover-background-response': 100,
   'reconcile-copyright-agent-dispatches': 100,
   'reconcile-ai-agent-failures': 100,
+  'expire-stuck-appeal-resolution-runs': 100,
+  'expire-stuck-dispute-resolution-runs': 100,
 }
 
 // Which job types can incur billed provider generation spend, and are therefore subject to the
@@ -161,4 +165,6 @@ export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   'recover-background-response': false,
   'reconcile-copyright-agent-dispatches': false,
   'reconcile-ai-agent-failures': false,
+  'expire-stuck-appeal-resolution-runs': false,
+  'expire-stuck-dispute-resolution-runs': false,
 }

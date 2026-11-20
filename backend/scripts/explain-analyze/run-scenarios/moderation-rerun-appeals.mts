@@ -126,7 +126,7 @@ export async function runAppealScenarios(appealId: string): Promise<void> {
       assert.equal(await getAppealResolutionRunStatus(appealId, expiredRunId), 'expired')
     },
     undefined,
-    'markAppealResolutionRunExpired',
+    'markAppealResolutionRunsExpired',
     {
       afterCapture: () => restoreAppealOutcome(expiredRunId, 'expired_at'),
     },

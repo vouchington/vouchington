@@ -287,6 +287,12 @@ BEGIN
   END IF;
 END $$;
 
+-- Serves the bounded stuck-run expiry sweep: active runs in id (creation) order.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderation_appeal_resolution_runs__active_id
+  ON moderation_appeal_resolution_runs (id)
+  WHERE completed_at IS NULL AND failed_at IS NULL AND expired_at IS NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_appeal_resolution_runs__lifecycle_change_id
   ON moderation_appeal_resolution_runs (latest_lifecycle_change_id)

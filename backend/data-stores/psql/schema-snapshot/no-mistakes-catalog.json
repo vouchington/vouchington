@@ -79116,6 +79116,29 @@
         }
       },
       "indexes": {
+        "idx_moderation_appeal_resolution_runs__active_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_appeal_resolution_runs__active_id ON public.moderation_appeal_resolution_runs USING btree (id) WHERE ((completed_at IS NULL) AND (failed_at IS NULL) AND (expired_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((completed_at IS NULL) AND (failed_at IS NULL) AND (expired_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_moderation_appeal_resolution_runs__lifecycle_change_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -135473,6 +135496,29 @@
         }
       },
       "indexes": {
+        "idx_review_dispute_resolution_runs__active_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_review_dispute_resolution_runs__active_id ON public.review_dispute_resolution_runs USING btree (id) WHERE ((completed_at IS NULL) AND (failed_at IS NULL) AND (expired_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((completed_at IS NULL) AND (failed_at IS NULL) AND (expired_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_review_dispute_resolution_runs__lifecycle_change_id": {
           "accessMethod": "btree",
           "constraintBacked": false,

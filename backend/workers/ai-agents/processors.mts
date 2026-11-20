@@ -18,6 +18,10 @@ import { processAutoDispatchJudgement } from './processors/process-auto-dispatch
 import { processReconcileAutoDispatchJudgements } from './processors/process-reconcile-auto-dispatch-judgements.mts'
 import { processReconcileCopyrightAgentDispatches } from './processors/process-reconcile-copyright-agent-dispatches.mts'
 import { processReconcileClassifierRuns } from './processors/process-reconcile-classifier-runs.mts'
+import {
+  processExpireStuckAppealResolutionRuns,
+  processExpireStuckDisputeResolutionRuns,
+} from './processors/process-expire-stuck-resolution-runs.mts'
 import { processReconcileAIAgentFailures } from './processors/reconcile-ai-agent-failures.mts'
 
 type AIAgentJob = NamedQueueJob<AIAgentJobPayloads>
@@ -43,6 +47,8 @@ const processors = {
   },
   'reconcile-copyright-agent-dispatches': job => processReconcileCopyrightAgentDispatches(job.data),
   'reconcile-ai-agent-failures': () => processReconcileAIAgentFailures(),
+  'expire-stuck-appeal-resolution-runs': () => processExpireStuckAppealResolutionRuns(),
+  'expire-stuck-dispute-resolution-runs': () => processExpireStuckDisputeResolutionRuns(),
 } satisfies {
   [TName in keyof AIAgentJobPayloads]: (
     job: Extract<AIAgentJob, { name: TName }>,

@@ -53,6 +53,14 @@ describe('processAIAgent routing', () => {
     expect(result).toMatchObject({ scanned: expect.any(Number), hasMore: expect.any(Boolean) })
   })
 
+  it.each(['expire-stuck-appeal-resolution-runs', 'expire-stuck-dispute-resolution-runs'])(
+    'routes %s to its bounded expiry sweep',
+    async name => {
+      const result = await runProcessAIAgent({ name, data: {} })
+      expect(result).toMatchObject({ deleted: expect.any(Number), hasMore: expect.any(Boolean) })
+    },
+  )
+
   it.each(['chat', 'reconcile-chat-runtime-generations'])(
     'rejects the removed hosted-chat job name %s through the unknown-job path',
     name => {

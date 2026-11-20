@@ -75,6 +75,8 @@ const SCHEDULED_JOB_API_ORDER = [
   'reconcileStoryPostRelatedUrlProjections',
   'reconcileAutoDispatchJudgements',
   'reconcileAIAgentFailures',
+  'expireStuckAppealResolutionRuns',
+  'expireStuckDisputeResolutionRuns',
   'reconcileCopyrightAgentDispatches',
   'reconcileClassifierRuns',
   'bedrock-embeddings:poll-dispatcher',

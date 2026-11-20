@@ -63,7 +63,10 @@ operator seed restarts from durable cursor state after queue loss or a terminal 
 Automatic moderation-appeal and review-dispute resolution runs commit with their parent row, and the
 queue job is admitted after the commit. If that admission fails, the error is only logged. No failed
 job exists for `reconcile-ai-agent-failures` to find, so the run stays active and no AI draft is
-produced. Staff can still rerun the resolution manually, which admits a run and enqueues it again.
-The draft loss is accepted. [#5952](https://github.com/vouchington/vouchington/issues/5952) adds a
-bounded sweep that expires stale active runs in both tables so they record an outcome; expiring a
-run does not recover its draft.
+produced until a sweep ends it. Two scheduled jobs, `expire-stuck-appeal-resolution-runs` and
+`expire-stuck-dispute-resolution-runs`, each expire the active runs older than a configured age in
+bounded pages. Each reads an active-run partial index below a UUIDv7 bound computed once per run and
+expires only rows still active, so a run that finished meanwhile is untouched. The age, page size,
+and page cap live in the `stuck-resolution-run-expiry-config` namespace. Expiring a run records its
+outcome and releases the next admission; it does not recover the draft. Staff rerun the resolution
+manually, which admits a new run and enqueues it again.
