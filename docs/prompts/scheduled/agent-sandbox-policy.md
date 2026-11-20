@@ -32,15 +32,18 @@ Review the project agent integration for Claude, Codex, Grok, and Cursor for sta
   settings with `--settings-path ~/.claude/settings.json`. Frequency alone never authorizes a bypass.
   Never paste raw commands or credentials into public issues.
 - Declare boundaries before proposing a change: `supply-chain-security.md` owns CI/CD least
-  privilege, not this prompt. `security.md` is application-layer only. The credential deny list
+  privilege, not this prompt. `agent-skill-docs.md` owns comparing `.codex/agents/*.toml` model,
+  reasoning-effort, and sandbox settings against the agent-workflow routing table; do not re-own
+  per-agent `.toml` drift here. `security.md` is application-layer only. The credential deny list
   and its inventory live in vouchington-machines
   ([pointer](../../development/agent-sandbox.md#sandbox-credential-deny-list)); do not rebuild a
   copy in this checkout.
 - Documented decisions that are not targets. Claude `Bash(./dev/*)` / `Bash(node dev/*)` and their
   `/../` deny rules are a review-skip decision
   ([Claude review-skip for dev/ commands](../../development/agent-sandbox.md#claude-review-skip-for-dev-commands),
-  guarded by `dev/claude-settings-dev-allow.test.mts`). There are no per-script `dev/` allow entries; do not re-propose
-  them, and do not read the blanket rules' breadth as a reason to widen
+  guarded by `dev/claude-settings-dev-allow.test.mts`). The only per-script `dev/` allow entries are
+  the narrow twins of `dev/` entries in `sandbox.excludedCommands`; do not re-propose per-script
+  entries for other `dev/` scripts, and do not read the blanket rules' breadth as a reason to widen
   `sandbox.excludedCommands`.
   Claude's rebase lifecycle rules (`git rebase --continue` / `--skip` / `--abort` and the
   `git push --force-with-lease=*` lease push) are a separate documented decision that cannot start a
