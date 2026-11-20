@@ -24,11 +24,11 @@ Review the project agent integration for Claude, Codex, Grok, and Cursor for sta
   compatibility as the sole Cursor and Grok hook source.
 - Stay static-config-driven. Reconciling policy against real observed escalations needs local
   session transcripts read by `pnpm exec vouchington sandbox-command-audit --rules dev/sandbox-command-audit/rules.mts`
-  ([sandbox-audit.md](../../../.agents/skills/retrospective/sandbox-audit.md)), which this scheduled
+  (the sandbox audit in the `vouchington-workflow:retrospective` skill), which this scheduled
   triage-loop subagent does not read. Scope this rotation to what a repo checkout alone can verify:
   staleness (an entry naming a script, path, or tool no longer in the repo), breadth drift against
   the documented narrowness rule, doc-vs-config drift in `agent-sandbox.md`, and missing guard
-  coverage. Treat `sandbox-audit.md` as the complementary human-run half; it reads the machine
+  coverage. Treat that sandbox audit as the complementary human-run half; it reads the machine
   settings with `--settings-path ~/.claude/settings.json`. Frequency alone never authorizes a bypass.
   Never paste raw commands or credentials into public issues.
 - Declare boundaries before proposing a change: `supply-chain-security.md` owns CI/CD least

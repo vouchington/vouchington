@@ -90,7 +90,6 @@ describe('portability path filters', () => {
   it('does not use directory-wide ci/ or dev/ globs', () => {
     expect(portability()).not.toContain('ci/**')
     expect(portability()).not.toContain('dev/**')
-    expect(portability()).not.toContain('.agents/skills/retrospective/SKILL.md')
   })
 
   it('does not start on the #9389 ci-tools contract test', () => {

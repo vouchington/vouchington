@@ -30,7 +30,7 @@ in this repository. It does **not** get copied skills or `AGENTS.md` files.
 - Capability map: [agent-harness-parity.md](../agent-harness-parity.md).
 - Session id: Cursor does not inject a session-id env into the agent Shell. The MCP tools
   `session_ensure` and `journal_append` create the session on demand (the
-  [`blackboard` skill](../../../.agents/skills/blackboard/SKILL.md)); if they are unavailable the
+  `vouchington-workflow:blackboard` skill); if they are unavailable the
   agent stops journaling and reports it. Pass `--session-id` or `--jsonl` for transcript facts.
 
 `worktrees/` is gitignored runtime state.
