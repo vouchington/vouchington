@@ -21094,6 +21094,9 @@
         "count": {
           "type": "number"
         },
+        "count_capped": {
+          "type": "boolean"
+        },
         "in_cooldown": {
           "type": "boolean"
         },
@@ -21101,7 +21104,7 @@
           "type": "number"
         }
       },
-      "required": ["cooldown_ends_at", "count", "in_cooldown", "threshold"],
+      "required": ["cooldown_ends_at", "count", "count_capped", "in_cooldown", "threshold"],
       "type": "object"
     },
     "FeatureFlags": {

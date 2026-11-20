@@ -6479,6 +6479,9 @@ importers:
       '@services/moderation-analytics':
         specifier: workspace:^
         version: link:../moderation-analytics
+      '@services/moderation-exposure':
+        specifier: workspace:^
+        version: link:../moderation-exposure
       '@services/moderation-reports':
         specifier: workspace:^
         version: link:../moderation-reports
@@ -8540,12 +8543,18 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@services/users':
         specifier: workspace:^
         version: link:../users
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^

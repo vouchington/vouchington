@@ -18,6 +18,7 @@ const queue = (
 const baseCooldown: UseExposureCooldownReturn = {
   exposureState: {
     count: 3,
+    count_capped: false,
     threshold: 8,
     in_cooldown: false,
     cooldown_ends_at: null,
@@ -46,6 +47,7 @@ export const BreakPrompt: Story = {
       ...baseCooldown,
       exposureState: {
         count: 8,
+        count_capped: false,
         threshold: 8,
         in_cooldown: true,
         cooldown_ends_at: '2099-01-01T00:00:00.000Z',

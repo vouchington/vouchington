@@ -78,7 +78,13 @@ import { ModQueue } from './mod-queue'
 import { initialModQueueState, modQueueReducer } from './mod-queue-state'
 
 describe('ModQueue', () => {
-  const neutralExposure = { count: 0, threshold: 10, in_cooldown: false, cooldown_ends_at: null }
+  const neutralExposure = {
+    count: 0,
+    count_capped: false,
+    threshold: 10,
+    in_cooldown: false,
+    cooldown_ends_at: null,
+  }
 
   beforeEach(() => {
     mockNav.reset()

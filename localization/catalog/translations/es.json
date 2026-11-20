@@ -3678,6 +3678,8 @@
 {"id":"copy.moderation.communityBans.liftBan","value":"Levantar ban"},
 {"id":"copy.moderation.communityBans.lifted","value":"Levantado"},
 {"id":"copy.moderation.communityBans.lifting","value":"Levantando…"},
+{"id":"copy.moderation.exposureCooldownModal.reviewedCount","value":"Contenidos sensibles revelados esta hora: {count}"},
+{"id":"copy.moderation.exposureCooldownModal.reviewedCountCapped","value":"Contenidos sensibles revelados esta hora: {count}+"},
 {"id":"copy.moderation.penaltyReviews.confirm","value":"Confirmar que la penalización continúa"},
 {"id":"copy.moderation.penaltyReviews.description","value":"Las penalizaciones activas siguen vigentes después de la revisión hasta que el personal las revoque."},
 {"id":"copy.moderation.penaltyReviews.due","value":"Revisión pendiente"},

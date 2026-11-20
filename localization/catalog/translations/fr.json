@@ -3678,6 +3678,8 @@
 {"id":"copy.moderation.communityBans.liftBan","value":"Lever le bannissement"},
 {"id":"copy.moderation.communityBans.lifted","value":"Levée"},
 {"id":"copy.moderation.communityBans.lifting","value":"Levée en cours…"},
+{"id":"copy.moderation.exposureCooldownModal.reviewedCount","value":"Contenus sensibles révélés cette heure : {count}"},
+{"id":"copy.moderation.exposureCooldownModal.reviewedCountCapped","value":"Contenus sensibles révélés cette heure : {count}+"},
 {"id":"copy.moderation.penaltyReviews.confirm","value":"Confirmer le maintien de la pénalité"},
 {"id":"copy.moderation.penaltyReviews.description","value":"Les sanctions actives restent en vigueur après leur examen jusqu’à leur révocation par le personnel."},
 {"id":"copy.moderation.penaltyReviews.due","value":"Révision prévue"},

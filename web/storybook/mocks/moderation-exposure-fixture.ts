@@ -3,7 +3,13 @@ import type { ExposureResponse } from '@/lib/api/client/moderation-exposure'
 import '@/storybook/mocks/client-api-instance'
 
 const exposureResponse: ExposureResponse = {
-  exposure: { count: 3, threshold: 8, in_cooldown: false, cooldown_ends_at: null },
+  exposure: {
+    count: 3,
+    count_capped: false,
+    threshold: 8,
+    in_cooldown: false,
+    cooldown_ends_at: null,
+  },
 }
 
 let previousGet: ClientRequest['get'] | null = null
