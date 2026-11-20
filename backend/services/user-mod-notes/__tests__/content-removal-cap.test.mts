@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { deletePost, getPostByAny } from '@services/posts'
+import { write } from '@data-stores/psql'
+import sql from 'sql-template-strings'
 import { createTestUser, insertTestPost, safeUsername } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { usersWorkConfig } from '@services/users/work-limits'
@@ -18,7 +19,9 @@ describe('moderation context content removal cap', () => {
         createdById: target.id,
         markdown: 'Removed content',
       })
-      await deletePost(staff, (await getPostByAny(postId))!)
+      await write(
+        sql`/* removalCapTest:softDelete */ UPDATE posts SET deleted_at = now(), deleted_by_id = ${staff.id} WHERE id = ${postId}`,
+      )
     }
 
     await expect(getUserModerationContext(staff, target, true)).resolves.toMatchObject({
