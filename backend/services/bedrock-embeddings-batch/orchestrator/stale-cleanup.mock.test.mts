@@ -7,7 +7,7 @@ import {
   cleanupTestEmbeddingsBatches,
   getTestBatchSummary,
   insertTestEmbeddingsBatch,
-} from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
+} from '@voucha/test-helpers/bedrock-legacy-entities-bedrock-embeddings-batches'
 import { runStaleCleanup } from './stale-cleanup.mts'
 import { uuidAfter, uuidBefore } from '@voucha/test-helpers/uuid-before'
 

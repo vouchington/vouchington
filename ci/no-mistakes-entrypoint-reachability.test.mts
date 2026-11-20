@@ -71,6 +71,7 @@ describe('required entrypoint reachability configuration', () => {
         name: 'scheduled job manifests are registered in the API catalog',
         rule: 'required-entrypoint-reachability',
         scope: 'repository',
+        exclude: ['backend/queues/bedrock-embeddings-batch/enqueues/schedules.mts'],
         options: {
           sourceGlobs: ['backend/queues/*/enqueues/schedules.mts'],
           entrypoints: ['backend/services/queue-monitoring/scheduled-job-manifests.mts'],
@@ -81,6 +82,7 @@ describe('required entrypoint reachability configuration', () => {
         name: 'scheduled job manifests are registered in a worker runtime',
         rule: 'required-entrypoint-reachability',
         scope: 'repository',
+        exclude: ['backend/queues/bedrock-embeddings-batch/enqueues/schedules.mts'],
         options: {
           sourceGlobs: ['backend/queues/*/enqueues/schedules.mts'],
           entrypoints: [
@@ -94,7 +96,11 @@ describe('required entrypoint reachability configuration', () => {
         name: 'worker modules are registered in a runtime definition root',
         rule: 'required-entrypoint-reachability',
         scope: 'repository',
-        exclude: ['backend/workers/**/*.test.mts', 'backend/workers/**/__tests__/**'],
+        exclude: [
+          'backend/workers/bedrock-batch-sqs/workers.mts',
+          'backend/workers/**/*.test.mts',
+          'backend/workers/**/__tests__/**',
+        ],
         options: {
           sourceGlobs: ['backend/workers/*/workers.mts', 'backend/workers/*/workers/*.mts'],
           entrypoints: [

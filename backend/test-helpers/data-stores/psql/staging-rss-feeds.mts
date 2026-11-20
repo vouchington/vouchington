@@ -102,11 +102,11 @@ export async function insertActiveFeedUnderOtherTopic(
   await tx(
     sql`/* insertActiveFeedUnderOtherTopic:topic */
     INSERT INTO topics (
-      name, slug, topic_type, hostname_id, created_via, bedrock_nova_multimodal_v1_content_sha256
-    )
+      name, slug, topic_type, hostname_id, created_via, gemini_embedding_2_content_sha256
+    , bedrock_nova_multimodal_v1_content_sha256)
     SELECT ${topicName}, ${topicSlug}, 'rss_feed', h.id, 'system',
       sha256(convert_to(${topicName}, 'UTF8'))
-    FROM url_hostnames h WHERE h.hostname = ${feed.hostname}`,
+    , sha256(convert_to(${topicName}, 'UTF8')) FROM url_hostnames h WHERE h.hostname = ${feed.hostname}`,
   )
   await tx(
     sql`/* insertActiveFeedUnderOtherTopic:rssFeed */

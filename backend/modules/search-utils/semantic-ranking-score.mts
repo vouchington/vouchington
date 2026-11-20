@@ -4,7 +4,7 @@ import sql, { type SQLStatement } from 'sql-template-strings'
  * Builds a geometric-mean-style semantic ranking score expression.
  * Each active signal contributes a `1/(1+distance)` factor; they are multiplied together.
  *
- * @param embeddingColumn - Raw SQL column reference, e.g. `t.bedrock_nova_multimodal_v1_embedding`
+ * @param embeddingColumn - Raw SQL column reference, e.g. `t.gemini_embedding_2_embedding`
  * @param signals - Which similarity CTEs are present in the query
  */
 export function buildSemanticRankingScore(

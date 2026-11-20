@@ -31,10 +31,10 @@ export async function seedReferralFeedPages(): Promise<void> {
   }))
   await write(
     `/* seedReferralFeedPageTopics */ INSERT INTO topics
-    (id, topic_type, name, slug, created_via, bedrock_nova_multimodal_v1_content_sha256)
+    (id, topic_type, name, slug, created_via, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
     SELECT topic_id, 'referral_program', 'Referral walk ' || topic_id,
       'referral-walk-' || topic_id, 'system', decode(repeat('c4', 32), 'hex')
-    FROM jsonb_to_recordset($1::jsonb) AS input(topic_id uuid)
+    , decode(repeat('c4', 32), 'hex') FROM jsonb_to_recordset($1::jsonb) AS input(topic_id uuid)
     ON CONFLICT (id) DO NOTHING`,
     [JSON.stringify(rows)],
   )

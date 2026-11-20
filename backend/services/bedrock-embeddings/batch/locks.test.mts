@@ -8,7 +8,7 @@ import {
   insertTestRssFeed,
   insertTestRssFeedItem,
   insertTestTopic,
-} from '@voucha/test-helpers'
+} from '@voucha/test-helpers/bedrock-legacy'
 import { isEntityLockedForBatch } from './locks.mts'
 
 describe('isEntityLockedForBatch', () => {

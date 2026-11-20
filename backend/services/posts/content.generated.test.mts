@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { sha256 } from '@modules/utils'
 import type { Post } from './types.mts'
 import { createPostTextEmbeddingContent } from './content.mts'
 
@@ -29,7 +28,9 @@ describe('createPostTextEmbeddingContent', () => {
     expect(result.content).toContain('Recommended topic aliases: nested alias')
     expect(result.content).toContain('Recommended primary hostname: example.com')
     expect(result.content).toContain('Recommended hostnames:\nexample.com')
-    expect(result.content_sha256).toStrictEqual(sha256(result.content))
+    expect(result.title).toBe('Recommendation rationale')
+    expect(result.body).not.toContain('Recommendation rationale')
+    expect(result.body).toContain('This topic should exist.')
   })
 
   it('includes flat topic recommendation fields in embedding content', () => {
@@ -53,6 +54,8 @@ describe('createPostTextEmbeddingContent', () => {
     expect(result.content).toContain('Recommended topic aliases: flat alias')
     expect(result.content).toContain('Recommended primary hostname: example.com')
     expect(result.content).toContain('Recommended hostnames:\nexample.com')
-    expect(result.content_sha256).toStrictEqual(sha256(result.content))
+    expect(result.title).toBe('Flat recommendation rationale')
+    expect(result.body).not.toContain('Flat recommendation rationale')
+    expect(result.body).toContain('This is a flat update payload.')
   })
 })

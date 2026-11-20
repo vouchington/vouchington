@@ -33,6 +33,10 @@ docker run -d --name "$NAME" --network "${SMOKE_DOCKER_NETWORK:-host}" \
   -e CLOUDFLARE_TURNSTILE_SECRET_KEY=synthetic-smoke-turnstile-secret \
   -e CF_WORKER_SECRET=synthetic-smoke-worker-secret-0123456789 \
   -e VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64="$SESSION_KEY" \
+  -e VERTEX_LOCATION=us -e VERTEX_PROJECT_ID=synthetic-smoke -e VERTEX_PROJECT_NUMBER=0 \
+  -e VERTEX_BATCH_BUCKET=synthetic-smoke-vertex-batch -e VERTEX_WIF_POOL_ID=synthetic-smoke \
+  -e VERTEX_WIF_PROVIDER_ID=synthetic-smoke \
+  -e VERTEX_SERVICE_ACCOUNT_EMAIL=synthetic-smoke@example.test \
   -e VALKEY_URL \
   "$@" "$IMAGE" >/dev/null
 

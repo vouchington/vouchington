@@ -42,11 +42,11 @@ export async function readUnrequestedClassifierFeedItems<C, L, E>(
     SELECT count(*)::int AS total, min(request.eligible_since) AS oldest_since
     FROM (
       SELECT NULL::uuid AS post_id, item.id AS rss_feed_item_id,
-        item.bedrock_nova_multimodal_v1_content_sha256 AS input_sha256,
+        item.gemini_embedding_2_content_sha256 AS input_sha256,
         item.updated_at AS eligible_since
       FROM rss_feed_items item
       WHERE item.id >= ${since} AND item.deleted_at IS NULL
-        AND item.bedrock_nova_multimodal_v1_content_sha256 IS NOT NULL
+        AND item.gemini_embedding_2_content_sha256 IS NOT NULL
         AND item.updated_at <= ${settledBefore}
         AND (${itemIds}::uuid[] IS NULL OR item.id = ANY(${itemIds}::uuid[]))
     ) request

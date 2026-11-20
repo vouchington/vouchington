@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { isDeduplicatedEnqueue, readAllQueueJobs, readEnqueuedJob } from '@voucha/test-helpers'
+import {
+  isDeduplicatedEnqueue,
+  readAllQueueJobs,
+  readEnqueuedJob,
+} from '@voucha/test-helpers/bedrock-legacy'
 import {
   enqueueReconcileExistingEmbeddings,
   reconciliationJobOptions,

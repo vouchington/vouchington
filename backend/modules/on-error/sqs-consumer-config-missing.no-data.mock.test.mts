@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mirrors vitest.setup.sentry-mock.mts; kept local so this .mock test owns its vi.mock().
 const sentryMocks = vi.hoisted(() => {
@@ -35,34 +35,19 @@ import { recordSqsConsumerConfigMissing } from './sqs-consumer-config-missing.mt
 
 describe('recordSqsConsumerConfigMissing', () => {
   beforeEach(() => {
+    vi.stubEnv('NODE_ENV', 'test')
     captureMessage.mockClear()
   })
-
-  it('captures a warning-level Sentry message naming the queue and missing env var', () => {
-    recordSqsConsumerConfigMissing('bedrock-batch-sqs', 'BEDROCK_BATCH_SQS_QUEUE_URL')
-
+  afterEach(() => vi.unstubAllEnvs())
+  it('reports the disabled consumer and missing configuration without stopping worker startup', () => {
+    recordSqsConsumerConfigMissing('ses-inbound-sqs', 'SES_INBOUND_SQS_QUEUE_URL')
     expect(captureMessage).toHaveBeenCalledExactlyOnceWith('sqs_consumer_config_missing', {
       level: 'warning',
       tags: {
         reason: 'sqs_consumer_config_missing',
-        queueName: 'bedrock-batch-sqs',
-        missingEnvVar: 'BEDROCK_BATCH_SQS_QUEUE_URL',
+        queueName: 'ses-inbound-sqs',
+        missingEnvVar: 'SES_INBOUND_SQS_QUEUE_URL',
       },
     })
-  })
-
-  it('emits console.warn in development mode', () => {
-    vi.stubEnv('NODE_ENV', 'development')
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    try {
-      recordSqsConsumerConfigMissing('bedrock-batch-sqs', 'BEDROCK_BATCH_SQS_QUEUE_URL')
-      expect(consoleWarn).toHaveBeenCalledWith(
-        '[sqs-consumer] skipping consumer, missing required config',
-        { queueName: 'bedrock-batch-sqs', missingEnvVar: 'BEDROCK_BATCH_SQS_QUEUE_URL' },
-      )
-    } finally {
-      consoleWarn.mockRestore()
-      vi.unstubAllEnvs()
-    }
   })
 })

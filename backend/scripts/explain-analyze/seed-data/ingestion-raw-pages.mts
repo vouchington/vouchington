@@ -3,7 +3,7 @@ import { postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from './common.mts
 
 export const INGESTION_ACCOUNT_ROW_COUNT = 1_200
 export const INGESTION_UNQUALIFIED_ACCOUNT_COUNT = 1_000
-export const INGESTION_BEDROCK_ROW_COUNT = 1_200
+export const INGESTION_GEMINI_ROW_COUNT = 1_200
 
 const PROVIDERS = [
   { name: 'facebook', idColumn: 'facebook_user_id', dataColumn: 'facebook_user_data' },
@@ -54,16 +54,16 @@ export async function seedIngestionRawPages(): Promise<void> {
     )
   }
 
-  const batches = Array.from({ length: INGESTION_BEDROCK_ROW_COUNT }, (_, offset) => ({
+  const batches = Array.from({ length: INGESTION_GEMINI_ROW_COUNT }, (_, offset) => ({
     id: seedUuid(offset + 1, 'b4'),
     position_index: offset,
   }))
   await write(
-    `/* seedIngestionRawPages */ INSERT INTO bedrock_embedding_batches
-      (id, job_arn, model_id, job_type, submitted_at, completed_at)
+    `/* seedIngestionRawPages */ INSERT INTO gemini_embedding_batches
+      (id, job_name, model_id, job_type, submitted_at, completed_at)
      SELECT id,
-       'arn:aws:bedrock:us-west-2:123456789012:model-invocation-job/' || id::text,
-       'synthetic-explain-model', 'topics'::bedrock_embedding_batch_job_types,
+       'projects/synthetic-project/locations/us/batchPredictionJobs/' || id::text,
+       'synthetic-explain-model', 'topics'::gemini_embedding_batch_job_types,
        CASE WHEN position_index < 800 THEN CURRENT_TIMESTAMP
             ELSE CURRENT_TIMESTAMP - INTERVAL '48 hours' END,
        CASE WHEN position_index >= 1000 THEN CURRENT_TIMESTAMP ELSE NULL END

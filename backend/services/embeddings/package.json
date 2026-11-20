@@ -1,0 +1,50 @@
+{
+  "name": "@services/embeddings",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./search": {
+      "types": "./search/index.mts",
+      "import": "./search/index.mts",
+      "default": "./search/index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
+    "@data-stores/valkey-rate-limiter": "workspace:^",
+    "@modules/api-egress-proxy": "workspace:^",
+    "@modules/aws": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@queues/bloom-filters": "workspace:^",
+    "@services/analytics": "workspace:^",
+    "@services/bloom-filter-config": "workspace:^",
+    "@vouchington/queue-errors": "^0.2.1",
+    "google-auth-library": "^11.3.4",
+    "pg-copy-streams": "^7.0.0",
+    "valkyries": "^0.15.0"
+  },
+  "devDependencies": {
+    "@types/pg-copy-streams": "^1.2.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

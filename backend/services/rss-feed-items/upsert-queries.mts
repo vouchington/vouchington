@@ -9,7 +9,7 @@ export type ExistingRssFeedItemRow = {
   id: string
   guid: string
   url_id: string
-  bedrock_nova_multimodal_v1_content_sha256: Buffer | null
+  gemini_embedding_2_content_sha256: Buffer | null
   media_star_rating: unknown
   media_statistics: unknown
   chapters_url: string | null
@@ -63,7 +63,7 @@ export function buildExistingRssFeedItemsMap(
       id: row.id,
       guid: row.guid,
       url_id: row.url_id,
-      content_sha256: row.bedrock_nova_multimodal_v1_content_sha256,
+      content_sha256: row.gemini_embedding_2_content_sha256,
       media_star_rating: row.media_star_rating,
       media_statistics: row.media_statistics,
       chapters_url: row.chapters_url,

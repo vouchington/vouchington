@@ -8,10 +8,10 @@ export async function insertEmbeddingRetentionPosts(query: TransactionQuery, cou
     `/* insertEmbeddingRetentionPosts */
     INSERT INTO posts (post_type, title, markdown, created_by_id,
       broadcast, privacy, is_anonymous, created_via,
-      bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256)
+      gemini_embedding_2_content_sha256, llm_moderation_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
     SELECT 'discussion', 'Embedding retention fixture', 'Owned association fixture', $1::uuid,
       'everyone', 'public', FALSE, 'system', decode(repeat('00', 32), 'hex'), decode(repeat('00', 32), 'hex')
-    FROM generate_series(1, $2::integer) RETURNING id`,
+    , decode(repeat('00', 32), 'hex') FROM generate_series(1, $2::integer) RETURNING id`,
     [users[0]!.id, count],
   )
   return rows.map(row => row.id)
@@ -24,7 +24,7 @@ export async function insertEmbeddingBatchEntitiesForRetentionTest(
 ): Promise<void> {
   await query(
     `/* insertEmbeddingBatchEntitiesForRetentionTest */
-    INSERT INTO bedrock_embedding_batch_entities (batch_id, entity_type, post_id)
+    INSERT INTO gemini_embedding_batch_entities (batch_id, entity_type, post_id)
     SELECT $1::uuid, 'posts', unnest($2::uuid[])`,
     [batchId, postIds],
   )
@@ -36,7 +36,7 @@ export async function countEmbeddingBatchEntitiesForRetentionTest(
 ): Promise<number> {
   const { rows } = await query<{ count: number }>(
     `/* countEmbeddingBatchEntitiesForRetentionTest */
-    SELECT count(*)::int AS count FROM bedrock_embedding_batch_entities WHERE batch_id = $1::uuid`,
+    SELECT count(*)::int AS count FROM gemini_embedding_batch_entities WHERE batch_id = $1::uuid`,
     [batchId],
   )
   return rows[0]!.count

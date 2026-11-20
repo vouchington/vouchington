@@ -1,9 +1,9 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { defineQueryContract, queryInteger } from '@vouchington/pagination'
-import { enqueueCreateImageEmbeddingsBatch } from '@queues/bedrock-embeddings-batch/enqueues'
+import { enqueueCreateImageEmbeddingsBatch } from '@queues/gemini-embeddings-batch/enqueues'
 import onError from '@modules/on-error'
-import { findCopyrightImageSimilarityCandidates } from '@services/bedrock-embeddings-batch/image-similarity'
+import { findCopyrightImageSimilarityCandidates } from '@services/embeddings-batch/image-similarity'
 import {
   currentUserCanReviewCopyrightNotices,
   reviewCopyrightStaydownMatch,

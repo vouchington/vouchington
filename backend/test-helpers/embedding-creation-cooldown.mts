@@ -6,7 +6,7 @@ import { rateLimiterValkeyClient } from '@data-stores/valkey-rate-limiter'
 import { claimEmbeddingQuotaLease } from './embedding-creation-quota-lease.mts'
 
 const reservationKey = 'embedding-creation-cooldown-fixture'
-const cooldownKey = 'background-cpu:provider-cooldown:{bedrock-embeddings:creation}'
+const cooldownKey = 'background-cpu:provider-cooldown:{gemini-embeddings:creation}'
 
 /** Coordinate the shared marker independently of global quota/configuration ownership. */
 export async function acquireEmbeddingCreationCooldown(signal: AbortSignal) {

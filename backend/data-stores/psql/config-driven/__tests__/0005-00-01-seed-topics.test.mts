@@ -1,8 +1,35 @@
+import { getSeededTopicEmbeddingIdentities } from '@voucha/test-helpers/seeded-topic-embedding-identity'
+import { createTopicEmbeddingContent } from '@voucha/types/entities/topic'
 import { describe, expect, it } from 'vitest'
 import generateSeedTopicsSQL from '../0005-00-01-seed-topics.mts'
 import { SEEDED_TOPICS } from '../utils/seeded-topics.mts'
 
 describe('0005-00-01-seed-topics idempotent', () => {
+  it('bootstraps canonical stored hashes from actual projected aliases', async () => {
+    const slugs = [
+      ...new Set([
+        ...SEEDED_TOPICS.map(topic => topic.slug),
+        'amex-referral-program',
+        'publisher-types',
+        'mainstream-media',
+        'public-media',
+      ]),
+    ]
+    const rows = await getSeededTopicEmbeddingIdentities(slugs)
+    expect(rows.map(row => row.slug).toSorted()).toEqual(slugs.toSorted())
+    expect(rows.find(row => row.slug === 'mainstream-media')?.aliases).toContain('msm')
+    for (const row of rows) {
+      expect(row.created_via).toBe('system')
+      expect(row.content_sha256).toEqual(
+        createTopicEmbeddingContent({
+          name: row.name,
+          aliases: row.aliases,
+          markdown: row.markdown ?? '',
+        }).content_sha256,
+      )
+    }
+  })
+
   it('generates SQL for every seeded topic', () => {
     const sql = generateSeedTopicsSQL()
     for (const topic of SEEDED_TOPICS) {
@@ -16,16 +43,6 @@ describe('0005-00-01-seed-topics idempotent', () => {
     expect(sql).toContain('INSERT INTO topics')
     expect(sql).toContain('WHERE NOT EXISTS')
     expect(sql).toContain("topic_type = 'topic'")
-  })
-
-  it('records seeded topics as platform-created content', () => {
-    const sql = generateSeedTopicsSQL()
-    const inserts = sql.match(/INSERT INTO topics \([^)]*\)\s+SELECT [^\n]*/g) ?? []
-
-    expect(inserts).toHaveLength(SEEDED_TOPICS.length + 1)
-    for (const insert of inserts) {
-      expect(insert).toMatch(/, created_via\)\s+SELECT .*, 'system'$/)
-    }
   })
 
   it('generates alias inserts for aliased topics', () => {

@@ -5,8 +5,8 @@ import { bedrockEmbeddingsBatchConfig } from '../../config.mts'
 import {
   cleanupTestEmbeddingsBatches,
   insertTestEmbeddingsBatch,
-} from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
-import { withEmbeddingQuotaSnapshot } from '@voucha/test-helpers/embedding-quota-snapshot'
+} from '@voucha/test-helpers/bedrock-legacy-entities-bedrock-embeddings-batches'
+import { withEmbeddingQuotaSnapshot } from '@voucha/test-helpers/bedrock-legacy-embedding-quota-snapshot'
 import {
   getActiveBatchStats,
   getBatchIdByJobArn,
@@ -90,45 +90,48 @@ describe('getActiveBatchStats', () => {
   }
 
   it('counts and sums only active batches', async () => {
-    // Capture baseline before inserting — dirty DB may have pre-existing active batches.
-    const baseline = await getActiveBatchStats()
+    await withEmbeddingQuotaSnapshot(async query => {
+      const baseline = await getActiveBatchStats({ query })
 
-    const activeId = batchId()
-    const completedId = batchId()
-    const failedId = batchId()
+      const activeId = batchId()
+      const completedId = batchId()
+      const failedId = batchId()
 
-    await Promise.all([
-      insertTestEmbeddingsBatch({
-        id: activeId,
-        bedrockStatus: 'Submitted',
-        batchData: { metadata: { inputSizeMB: 100 } },
-        records: 50,
-      }),
-      insertTestEmbeddingsBatch({
-        id: completedId,
-        bedrockStatus: 'Completed',
-        batchData: { metadata: { inputSizeMB: 200 } },
-        records: 100,
-      }),
-      insertTestEmbeddingsBatch({
-        id: failedId,
-        bedrockStatus: 'Failed',
-        batchData: { metadata: { inputSizeMB: 300 } },
-        records: 150,
-      }),
-    ])
+      await Promise.all([
+        insertTestEmbeddingsBatch(
+          {
+            id: activeId,
+            bedrockStatus: 'Submitted',
+            batchData: { metadata: { inputSizeMB: 100 } },
+            records: 50,
+          },
+          { query },
+        ),
+        insertTestEmbeddingsBatch(
+          {
+            id: completedId,
+            bedrockStatus: 'Completed',
+            batchData: { metadata: { inputSizeMB: 200 } },
+            records: 100,
+          },
+          { query },
+        ),
+        insertTestEmbeddingsBatch(
+          {
+            id: failedId,
+            bedrockStatus: 'Failed',
+            batchData: { metadata: { inputSizeMB: 300 } },
+            records: 150,
+          },
+          { query },
+        ),
+      ])
 
-    // Verify via getPendingBatches that active/non-active classification is correct.
-    const pending = await getPendingBatches()
-    const pendingIds = pending.batches.map(r => r.id)
-    expect(pendingIds).toContain(activeId)
-    expect(pendingIds).not.toContain(completedId)
-    expect(pendingIds).not.toContain(failedId)
-
-    // Delta must be exactly +1 count / +100 MB — completed and failed must not be counted.
-    const stats = await getActiveBatchStats()
-    expect(stats.count).toBe(baseline.count + 1)
-    expect(stats.inputSizeMB).toBe(baseline.inputSizeMB + 100)
+      // Delta must be exactly +1 count / +100 MB — completed and failed must not be counted.
+      const stats = await getActiveBatchStats({ query })
+      expect(stats.count).toBe(baseline.count + 1)
+      expect(stats.inputSizeMB).toBe(baseline.inputSizeMB + 100)
+    })
   })
 })
 

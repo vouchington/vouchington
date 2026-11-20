@@ -59,10 +59,10 @@ export async function recordSemanticPostFailure(
   const query = sql`/* recordSemanticPostFailure */ WITH eligible AS MATERIALIZED (`.append(
     eligibleQuery(options),
   ).append(sql`), nearest AS MATERIALIZED (
-      SELECT id, bedrock_nova_multimodal_v1_embedding <=> ${embedding}::vector AS distance,
+      SELECT id, gemini_embedding_2_embedding <=> ${embedding}::halfvec(1536) AS distance,
         approved_at, community_id, archived_at, deleted_at, post_type
-      FROM posts WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL
-      ORDER BY bedrock_nova_multimodal_v1_embedding <=> ${embedding}::vector LIMIT 3000
+      FROM posts WHERE gemini_embedding_2_embedding IS NOT NULL
+      ORDER BY gemini_embedding_2_embedding <=> ${embedding}::halfvec(1536) LIMIT 3000
     ) SELECT nearest.*, EXISTS(SELECT 1 FROM eligible WHERE eligible.id = nearest.id) AS eligible,
       current_setting('hnsw.iterative_scan') AS iterative_scan,
       current_setting('hnsw.ef_search') AS ef_search,

@@ -12,14 +12,21 @@ export async function beforeRetireMonthlyPartition(
   const table = assertSafeSqlIdentifier(partition.table)
   const partitionName = assertSafeSqlIdentifier(partition.partitionName)
   if (table === 'crawl_chunks') {
-    await query(`/* retireMonthlyPartition:deleteChunkBatchEntities */
+    await query(`/* retireMonthlyPartition:deleteBedrockChunkBatchEntities */
       DELETE FROM bedrock_embedding_batch_entities AS entity
+      USING ${partitionName} AS chunk
+      WHERE entity.crawl_id = chunk.crawl_id AND entity.crawl_order_index = chunk.order_index`)
+    await query(`/* retireMonthlyPartition:deleteChunkBatchEntities */
+      DELETE FROM gemini_embedding_batch_entities AS entity
       USING ${partitionName} AS chunk
       WHERE entity.crawl_id = chunk.crawl_id AND entity.crawl_order_index = chunk.order_index`)
   } else if (table === 'crawls') {
     await Promise.all([
-      query(`/* retireMonthlyPartition:clearBatchCrawls */
+      query(`/* retireMonthlyPartition:clearBedrockBatchCrawls */
         UPDATE bedrock_embedding_batches SET crawl_id = NULL
+        WHERE crawl_id IN (SELECT id FROM ${partitionName})`),
+      query(`/* retireMonthlyPartition:clearBatchCrawls */
+        UPDATE gemini_embedding_batches SET crawl_id = NULL
         WHERE crawl_id IN (SELECT id FROM ${partitionName})`),
       query(`/* retireMonthlyPartition:clearReferralCrawls */
         UPDATE user_referral_program_links SET last_crawl_id = NULL

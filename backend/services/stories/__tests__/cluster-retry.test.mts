@@ -28,7 +28,7 @@ let feedId: string
 async function makeAssignedItem(storyId: string): Promise<string> {
   const random = Math.random().toString(36).slice(2, 10)
   const itemData = { title: `Cluster retry item ${random}`, link: `https://example.com/${random}` }
-  const embedding = Array<number>(1024).fill(0)
+  const embedding = Array<number>(1536).fill(0)
   embedding[0] = 1
   const itemId = await insertTestRssFeedItem({
     rssFeedId: feedId,

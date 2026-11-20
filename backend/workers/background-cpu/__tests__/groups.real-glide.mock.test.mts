@@ -12,10 +12,10 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => i
 
 const url = requireBackgroundCpuJob('crawl.crawl_url')
 const referral = requireBackgroundCpuJob('crawl.crawl_referral_link')
-const single = requireBackgroundCpuJob('bedrock-embeddings.post')
-const singleTopic = requireBackgroundCpuJob('bedrock-embeddings.topic')
-const creation = requireBackgroundCpuJob('bedrock-embeddings.create_posts')
-const imageCreation = requireBackgroundCpuJob('bedrock-embeddings.create_images')
+const single = requireBackgroundCpuJob('gemini-embeddings.post')
+const singleTopic = requireBackgroundCpuJob('gemini-embeddings.topic')
+const creation = requireBackgroundCpuJob('gemini-embeddings.create_posts')
+const imageCreation = requireBackgroundCpuJob('gemini-embeddings.create_images')
 
 describe('background-cpu groups through real GlideMQ', () => {
   it('gives URL and referral crawls the same hostname ordering options', async () => {
@@ -46,9 +46,9 @@ describe('background-cpu groups through real GlideMQ', () => {
     }
   })
 
-  it('keeps Bedrock single definitions in the same production ordering group', () => {
+  it('keeps Gemini single definitions in the same production ordering group', () => {
     expect(single.options.ordering).toEqual({
-      key: 'bedrock-embeddings:single',
+      key: 'gemini-embeddings:single',
       concurrency: 2,
       rateLimit: { max: 10, duration: 1_000 },
     })
@@ -57,11 +57,11 @@ describe('background-cpu groups through real GlideMQ', () => {
 
   it('configures separate single-slot lanes for creation types', () => {
     expect(creation.options.ordering).toEqual({
-      key: 'bedrock-embeddings:creation:posts',
+      key: 'gemini-embeddings:creation:posts',
       concurrency: 1,
     })
     expect(imageCreation.options.ordering).toEqual({
-      key: 'bedrock-embeddings:creation:images',
+      key: 'gemini-embeddings:creation:images',
       concurrency: 1,
     })
   })

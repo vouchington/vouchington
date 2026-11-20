@@ -4,7 +4,7 @@ import { scheduledJobManifest as crawlDispatch } from '@queues/crawl-dispatch/en
 import { scheduledJobManifest as crawlReferral } from '@queues/crawl-referral-links/enqueues/schedules'
 import { scheduledJobManifest as crawlUnfurl } from '@queues/unfurl-referral-links/enqueues/schedules'
 import { scheduledJobManifest as contentAnalysis } from '@queues/content-analysis/enqueues/schedules'
-import { scheduledJobManifest as bedrock } from '@queues/bedrock-embeddings-batch/enqueues/schedules'
+import { scheduledJobManifest as gemini } from '@queues/gemini-embeddings-batch/enqueues/schedules'
 import { Queue } from 'glide-mq'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { upsertBackgroundCpuSchedules } from './background-cpu-schedules.mts'
@@ -25,7 +25,7 @@ describe('background-cpu schedules', () => {
       }
     })
 
-    const manifests = [crawlDispatch, crawlReferral, crawlUnfurl, contentAnalysis, bedrock]
+    const manifests = [crawlDispatch, crawlReferral, crawlUnfurl, contentAnalysis, gemini]
     const expected = manifests
       .flatMap(manifest => manifest.jobs.map(job => job.schedulerId))
       .toSorted()
@@ -45,7 +45,7 @@ describe('background-cpu schedules', () => {
     expect(first).toContain('crawl:referral-links-dispatcher')
     expect(first).toContain('crawl:unfurl-referral-links-dispatcher')
     expect(first).toContain('content-analysis:cleanup-abandoned-uploads-schedule')
-    expect(first).toContain('bedrock-embeddings:creation-dispatcher')
+    expect(first).toContain('gemini-embeddings:creation-dispatcher')
 
     await upsertBackgroundCpuSchedules(queue)
     expect((await queue.getRepeatableJobs()).map(entry => entry.name).toSorted()).toEqual(expected)

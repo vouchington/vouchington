@@ -13,13 +13,13 @@ export async function searchTopicsByPostEmbedding(
   const queryStatement = sql`/* searchTopicsByPostEmbedding */
     SELECT id, name FROM (
       SELECT t.id, t.name,
-        (t.bedrock_nova_multimodal_v1_embedding <=> p.bedrock_nova_multimodal_v1_embedding) AS dist
+        (t.gemini_embedding_2_embedding <=> p.gemini_embedding_2_embedding) AS dist
       FROM topics t
       JOIN posts p ON p.id = ${postId}
       WHERE t.deleted_at IS NULL
         AND t.merged_into_topic_id IS NULL
-        AND t.bedrock_nova_multimodal_v1_embedding IS NOT NULL
-        AND p.bedrock_nova_multimodal_v1_embedding IS NOT NULL
+        AND t.gemini_embedding_2_embedding IS NOT NULL
+        AND p.gemini_embedding_2_embedding IS NOT NULL
     ) sub
     WHERE dist < 0.75
     ORDER BY dist, id

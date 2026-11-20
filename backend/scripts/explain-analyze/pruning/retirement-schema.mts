@@ -9,6 +9,13 @@ CREATE TABLE crawl_chunks (
   order_index int NOT NULL, PRIMARY KEY (crawl_id, order_index)
 ) PARTITION BY RANGE (crawl_id);
 CREATE TABLE crawl_chunks__p_2019_01 PARTITION OF crawl_chunks FOR VALUES FROM (MINVALUE) TO ('10000000-0000-7000-8000-000000000000');
+CREATE TABLE gemini_embedding_batches (id uuid PRIMARY KEY, crawl_id uuid REFERENCES crawls ON DELETE SET NULL);
+CREATE TABLE gemini_embedding_batch_entities (
+  batch_id uuid REFERENCES gemini_embedding_batches ON DELETE CASCADE,
+  crawl_id uuid, crawl_order_index int,
+  FOREIGN KEY (crawl_id, crawl_order_index) REFERENCES crawl_chunks ON DELETE CASCADE
+);
+-- Lower-only retained provider relations; the upper stack layer removes these with its hook.
 CREATE TABLE bedrock_embedding_batches (id uuid PRIMARY KEY, crawl_id uuid REFERENCES crawls ON DELETE SET NULL);
 CREATE TABLE bedrock_embedding_batch_entities (
   batch_id uuid REFERENCES bedrock_embedding_batches ON DELETE CASCADE,
@@ -21,6 +28,8 @@ CREATE TABLE rss_feed_crawls (id uuid PRIMARY KEY) PARTITION BY RANGE (id);
 CREATE TABLE rss_feed_crawls__p_2019_01 PARTITION OF rss_feed_crawls FOR VALUES FROM (MINVALUE) TO (MAXVALUE);
 INSERT INTO crawls VALUES ('00000000-0000-7000-8000-000000000001');
 INSERT INTO crawl_chunks VALUES ('00000000-0000-7000-8000-000000000001', 0);
+INSERT INTO gemini_embedding_batches VALUES ('${MONTHLY_RETIREMENT_BATCH_ID}', '00000000-0000-7000-8000-000000000001');
+INSERT INTO gemini_embedding_batch_entities VALUES ('${MONTHLY_RETIREMENT_BATCH_ID}', '00000000-0000-7000-8000-000000000001', 0);
 INSERT INTO bedrock_embedding_batches VALUES ('${MONTHLY_RETIREMENT_BATCH_ID}', '00000000-0000-7000-8000-000000000001');
 INSERT INTO bedrock_embedding_batch_entities VALUES ('${MONTHLY_RETIREMENT_BATCH_ID}', '00000000-0000-7000-8000-000000000001', 0);
 INSERT INTO user_referral_program_links VALUES ('10000000-0000-7000-8000-000000000002', '00000000-0000-7000-8000-000000000001');

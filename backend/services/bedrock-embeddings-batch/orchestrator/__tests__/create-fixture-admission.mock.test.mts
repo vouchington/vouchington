@@ -2,12 +2,12 @@ import { randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BedrockControlClient } from '@modules/aws/bedrock-control'
 import { S3BedrockBatchClient } from '@modules/aws/s3-bedrock-batch'
-import { createTestBatch, createTestUserDirect } from '@voucha/test-helpers'
-import { getTestBatchEntities } from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
+import { createTestBatch, createTestUserDirect } from '@voucha/test-helpers/bedrock-legacy'
+import { getTestBatchEntities } from '@voucha/test-helpers/bedrock-legacy-entities-bedrock-embeddings-batches'
 import {
   createLockedEntityId,
   writeBatchFixtureFile as writeTempFile,
-} from '@voucha/test-helpers/bedrock-batch-creation-fixtures'
+} from '@voucha/test-helpers/bedrock-legacy-bedrock-batch-creation-fixtures'
 import { createBatch as submitBatch } from '../create.mts'
 
 const createBatch = (file: string, count: number, ids: string) =>

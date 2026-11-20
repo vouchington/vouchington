@@ -53,9 +53,9 @@ async function runCanonicalProbe(
   const moderationContentSha = sha256([title, '', '', '', ''].join('\n'))
   const { rows: posts } = await query<{ id: string }>(
     `/* createSharedGuardProbeParent */ INSERT INTO posts (
-      post_type, title, created_via, bedrock_nova_multimodal_v1_content_sha256,
+      post_type, title, created_via, gemini_embedding_2_content_sha256,
       llm_moderation_content_sha256
-    ) VALUES ('discussion', $1, 'system', $2, $3) RETURNING id`,
+    , bedrock_nova_multimodal_v1_content_sha256) VALUES ('discussion', $1, 'system', $2, $3, $2) RETURNING id`,
     [title, embeddingContentSha, moderationContentSha],
   )
   const postId = posts[0]?.id

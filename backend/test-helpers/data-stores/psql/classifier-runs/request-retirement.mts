@@ -54,7 +54,7 @@ export async function setFeedItemContentHashForTest(
   inputSha256: Buffer,
 ): Promise<void> {
   await write(sql`/* setFeedItemContentHashForTest */
-    UPDATE rss_feed_items SET bedrock_nova_multimodal_v1_content_sha256 = ${inputSha256}
+    UPDATE rss_feed_items SET gemini_embedding_2_content_sha256 = ${inputSha256}
     WHERE id = ${itemId}
   `)
 }

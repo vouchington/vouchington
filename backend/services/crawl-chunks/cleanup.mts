@@ -16,7 +16,7 @@ export const finalizeChunksIfCompleteForMany = async (crawlIds: string[]): Promi
       WHERE NOT EXISTS (
         SELECT 1 FROM crawl_chunks cc
         WHERE cc.crawl_id = p.crawl_id
-          AND cc.bedrock_nova_multimodal_v1_embedding_created_at IS NULL
+          AND cc.gemini_embedding_2_embedding_created_at IS NULL
       )
     ),
     updated_crawls AS (

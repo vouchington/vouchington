@@ -13,7 +13,7 @@ const QUEUE_NAME = 'stripe-events-sqs'
 // as of this PR, but nothing delivers to it yet -- Phase 4a's spike gates the EventBridge rule/target
 // that would (see README.md). Read the URL lazily so a missing value (e.g. local dev without the var
 // set) reports a gap instead of throwing at module-eval time and taking down every other
-// worker-io/worker-cpu queue with it (same reasoning as loadBedrockBatchSqs).
+// worker-io/worker-cpu queue with it (same reasoning as loadEmbeddingBatchSqs).
 export async function loadStripeEventsSqs(): Promise<SqsConsumer | null> {
   const queueUrl = process.env.STRIPE_EVENTS_SQS_QUEUE_URL
   if (!queueUrl) {

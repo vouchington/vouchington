@@ -67,7 +67,7 @@ import { seedOAuthClientVerification } from './seed-data/oauth-client-verificati
 import { seedClassifierHumanVoteComparison } from './seed-data/classifier-human-vote-comparison.mts'
 import { seedPostFeedShares } from './seed-data/post-feed-shares.mts'
 import { seedAdminEmails } from './seed-data/admin-emails.mts'
-import { seedSemanticPosts } from './seed-data/semantic-posts.mts'
+import { buildSemanticPostIndex, seedSemanticPosts } from './seed-data/semantic-posts.mts'
 import { seedHostnameCrawlSweeps } from './seed-data/hostname-crawl-sweeps.mts'
 import {
   seedHostnameFlags,
@@ -185,6 +185,7 @@ async function main() {
   await seedRelationVoteReads()
   await seedFinalExplainFixtures()
   await runAnalyze()
+  await buildSemanticPostIndex()
   await refreshExplainMaterializedViews(refreshMaterializedView, statement => write(statement))
   await printRowCounts()
   console.log('\nSeed complete.')

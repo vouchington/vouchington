@@ -15,7 +15,7 @@ namespace:
 - `x_oauth_enabled`
 - `bluesky_oauth_enabled`
 - `fediverse_search_enabled`
-- `bedrock_embeddings_enabled`
+- `gemini_embeddings_enabled`
 
 Flags default on in staging and production and off locally. The API installs the DynamicConfig
 resolver during bootstrap, and each operation reads its provider flag at request time. Worker

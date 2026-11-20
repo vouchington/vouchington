@@ -22,8 +22,8 @@ export function buildSearchAndSimilarityFilters(
 
 function buildEmbeddingDistance(embeddingCteAlias: string): SQLStatement[] {
   return [
-    sql`posts.bedrock_nova_multimodal_v1_embedding IS NOT NULL`,
-    sql`(posts.bedrock_nova_multimodal_v1_embedding <=> `
+    sql`posts.gemini_embedding_2_embedding IS NOT NULL`,
+    sql`(posts.gemini_embedding_2_embedding <=> `
       .append(`${embeddingCteAlias}.embedding`)
       .append(sql`) < ${EMBEDDING_DISTANCE_THRESHOLD}`),
   ]

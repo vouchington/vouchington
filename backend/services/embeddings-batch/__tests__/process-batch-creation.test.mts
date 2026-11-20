@@ -1,0 +1,296 @@
+import { createVertexHttpFixture } from '@voucha/test-helpers/vertex-http'
+import { getEmbeddingCreationRetryDelayMs } from '@services/embeddings/batch/config'
+import type { EmbeddingScanCursor } from '@queues/gemini-embeddings-batch/types'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
+import {
+  processBatchCreation,
+  processImageBatchCreation as processActualImageBatchCreation,
+} from '../utils.mts'
+
+const mocks = vi.hoisted(() => ({
+  getBatchCreationLimits: vi.fn<VitestLooseMock>(),
+  createBatch: vi.fn<VitestLooseMock>(),
+}))
+
+const captureException = sentryCaptureExceptionMock
+
+const dependencies = {
+  getBatchCreationLimits: mocks.getBatchCreationLimits,
+  createBatch: mocks.createBatch,
+}
+
+describe('utils', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.getBatchCreationLimits.mockResolvedValue({
+      allowed: true,
+      maxRecords: 10,
+      maxSizeMB: 32,
+      minRecords: 3,
+    })
+    mocks.createBatch.mockResolvedValue(undefined)
+  })
+
+  describe('processBatchCreation', () => {
+    it('retains a continuation when creation is rate limited', async () => {
+      mocks.getBatchCreationLimits.mockResolvedValue({
+        allowed: false,
+        reason: 'inflight_job_limit_exceeded',
+      })
+      const cursor = { sweepStartedAt: new Date().toISOString(), afterId: 'pending-topic-id' }
+      const reEnqueue = vi.fn<(nextCursor?: EmbeddingScanCursor) => Promise<void>>(async () => {})
+      expect(
+        await processBatchCreation(
+          {
+            jobType: 'topics',
+            cursor,
+            streamPending: () => streamEntities([]),
+            isLeaseHeld: () => true,
+            reEnqueue,
+          },
+          dependencies,
+        ),
+      ).toEqual({ reEnqueued: true, reason: 'inflight_job_limit_exceeded', hasMore: true })
+      expect(reEnqueue).toHaveBeenCalledExactlyOnceWith(cursor, getEmbeddingCreationRetryDelayMs())
+    })
+
+    it('returns empty when undersized and never submits a batch', async () => {
+      const result = await processBatchCreation(
+        {
+          jobType: 'topics',
+          streamPending: () =>
+            streamEntities([
+              { id: 'topic-1', content: 'a', content_sha256: hexBuf('a') },
+              { id: 'topic-2', content: 'b', content_sha256: hexBuf('b') },
+            ]),
+          isLeaseHeld: () => true,
+          reEnqueue: vi.fn<VitestLooseMock>(),
+        },
+        dependencies,
+      )
+
+      expect(result).toEqual({ empty: true, hasMore: false })
+      expect(mocks.createBatch).not.toHaveBeenCalled()
+      expect(captureException).not.toHaveBeenCalled()
+    })
+
+    it('returns empty when the stream is empty', async () => {
+      const result = await processBatchCreation(
+        {
+          jobType: 'crawl_chunks',
+          streamPending: () => streamEntities([]),
+          isLeaseHeld: () => true,
+          reEnqueue: vi.fn<VitestLooseMock>(),
+        },
+        dependencies,
+      )
+
+      expect(result).toEqual({ empty: true, hasMore: false })
+      expect(mocks.createBatch).not.toHaveBeenCalled()
+      expect(captureException).not.toHaveBeenCalled()
+    })
+
+    it('creates a batch when entity count meets the minimum', async () => {
+      const result = await processBatchCreation(
+        {
+          jobType: 'posts',
+          streamPending: () =>
+            streamEntities([
+              { id: 'post-1', content: 'a', content_sha256: hexBuf('a') },
+              { id: 'post-2', content: 'b', content_sha256: hexBuf('b') },
+              { id: 'post-3', content: 'c', content_sha256: hexBuf('c') },
+            ]),
+          isLeaseHeld: () => true,
+          reEnqueue: vi.fn<VitestLooseMock>(),
+        },
+        dependencies,
+      )
+
+      expect(result).toEqual({ success: true, hasMore: false })
+      expect(mocks.createBatch).toHaveBeenCalledTimes(1)
+      expect(captureException).not.toHaveBeenCalled()
+    })
+
+    it('re-enqueues itself when batch creation limits disallow new batches', async () => {
+      mocks.getBatchCreationLimits.mockResolvedValueOnce({
+        allowed: false,
+        reason: 'inflight_job_limit_exceeded',
+      })
+      const reEnqueue = vi.fn<VitestLooseMock>()
+
+      const result = await processBatchCreation(
+        {
+          jobType: 'topics',
+          streamPending: () => streamEntities([]),
+          isLeaseHeld: () => true,
+          reEnqueue,
+        },
+        dependencies,
+      )
+
+      expect(result).toEqual({
+        reEnqueued: true,
+        reason: 'inflight_job_limit_exceeded',
+        hasMore: true,
+      })
+      expect(reEnqueue).toHaveBeenCalledTimes(1)
+      expect(mocks.createBatch).not.toHaveBeenCalled()
+    })
+
+    it('streams provider work after checking capacity', async () => {
+      const streamPending = vi.fn<VitestLooseMock>(() => streamEntities([]))
+
+      const result = await processBatchCreation(
+        {
+          jobType: 'topics',
+          streamPending,
+          isLeaseHeld: () => true,
+          reEnqueue: vi.fn<VitestLooseMock>(),
+        },
+        dependencies,
+      )
+
+      expect(result).toEqual({ empty: true, hasMore: false })
+      const limitsOrder = mocks.getBatchCreationLimits.mock.invocationCallOrder[0]
+      const streamOrder = streamPending.mock.invocationCallOrder[0]
+      expect(limitsOrder).toBeLessThan(streamOrder)
+    })
+  })
+
+  describe('processImageBatchCreation', () => {
+    let fixture: ReturnType<typeof createVertexHttpFixture>
+    const processImageBatchCreation: typeof processActualImageBatchCreation = (params, inputs) =>
+      fixture.run(() => processActualImageBatchCreation(params, inputs))
+    beforeEach(() => {
+      fixture = createVertexHttpFixture()
+      fixture.agent
+        .get('https://storage.googleapis.com')
+        .intercept({ method: 'POST', path: /\/upload\/storage\/v1\// })
+        .reply(200, {})
+        .persist()
+    })
+    it('returns explicit failure when all pending images fail before batch file creation', async () => {
+      const result = await processImageBatchCreation(
+        {
+          streamPending: () => streamImages([{ id: 'image-1' }, { id: 'image-2' }]),
+          addImageToBatch: () => Promise.reject(new Error('preprocess failed')),
+          isLeaseHeld: () => true,
+          reEnqueue: vi.fn<VitestLooseMock>(),
+        },
+        dependencies,
+      )
+
+      expect(result).toEqual({
+        hasMore: false,
+        failed: true,
+        reason: 'Failed to add 2/2 images to Vertex batch input',
+        attempted: 2,
+      })
+      expect(mocks.createBatch).not.toHaveBeenCalled()
+      expect(captureException).toHaveBeenCalledTimes(3)
+    })
+
+    it('returns empty without creating an undersized image batch', async () => {
+      const result = await processImageBatchCreation(
+        {
+          streamPending: () => streamImages([{ id: 'image-1' }, { id: 'image-2' }]),
+          addImageToBatch: (fileBuilder, image, maxSizeMB) =>
+            fileBuilder.addImageIfFits(
+              {
+                entity_id: image.id,
+                image_sha_256: Buffer.from('0'.repeat(64), 'hex'),
+                format: 'jpeg',
+                bytes: 'YWJj',
+              },
+              maxSizeMB,
+            ),
+          isLeaseHeld: () => true,
+          reEnqueue: vi.fn<VitestLooseMock>(),
+        },
+        dependencies,
+      )
+
+      expect(result).toEqual({ empty: true, hasMore: false })
+      expect(mocks.createBatch).not.toHaveBeenCalled()
+      expect(captureException).not.toHaveBeenCalled()
+    })
+
+    it('skips and reports failures for images with a non-public URL origin', async () => {
+      // Image preparation fails before the provider batch can be created.
+      // catches via onError and continues; with all images failing and none added, returns a
+      // failure summary rather than null.
+      const result = await processImageBatchCreation(
+        {
+          streamPending: () => streamImages([{ id: 'image-1' }, { id: 'image-2' }]),
+          addImageToBatch: () =>
+            Promise.reject(new Error('Refusing to fetch non-public image URL for image image-1')),
+          isLeaseHeld: () => true,
+          reEnqueue: vi.fn<VitestLooseMock>(),
+        },
+        dependencies,
+      )
+
+      expect(result).toEqual({
+        hasMore: false,
+        failed: true,
+        reason: 'Failed to add 2/2 images to Vertex batch input',
+        attempted: 2,
+      })
+      expect(mocks.createBatch).not.toHaveBeenCalled()
+      expect(captureException).toHaveBeenCalledTimes(3) // 2 per-image errors + 1 aggregate
+    })
+
+    it('creates an image batch when image count meets the minimum', async () => {
+      const result = await processImageBatchCreation(
+        {
+          streamPending: () =>
+            streamImages([{ id: 'image-1' }, { id: 'image-2' }, { id: 'image-3' }]),
+          addImageToBatch: (fileBuilder, image, maxSizeMB) =>
+            fileBuilder.addImageIfFits(
+              {
+                entity_id: image.id,
+                image_sha_256: Buffer.from('1'.repeat(64), 'hex'),
+                format: 'jpeg',
+                bytes: 'YWJj',
+              },
+              maxSizeMB,
+            ),
+          isLeaseHeld: () => true,
+          reEnqueue: vi.fn<VitestLooseMock>(),
+        },
+        dependencies,
+      )
+
+      expect(result).toEqual({ success: true, hasMore: false })
+      expect(mocks.createBatch).toHaveBeenCalledWith(
+        expect.any(String),
+        'images',
+        3,
+        expect.any(String),
+        expect.objectContaining({ inputSizeMB: expect.any(Number) }),
+        {},
+        expect.any(Function),
+        expect.any(Function),
+      )
+    })
+  })
+
+  async function* streamEntities(
+    entities: Array<{ id: string; content: string; content_sha256: Buffer }>,
+  ): AsyncGenerator<{ id: string; content: string; content_sha256: Buffer }> {
+    for (const entity of entities) {
+      yield entity
+    }
+  }
+
+  async function* streamImages(images: Array<{ id: string }>): AsyncGenerator<{ id: string }> {
+    for (const image of images) {
+      yield image
+    }
+  }
+
+  function hexBuf(letter: string): Buffer {
+    return Buffer.from(letter.repeat(64), 'hex')
+  }
+})

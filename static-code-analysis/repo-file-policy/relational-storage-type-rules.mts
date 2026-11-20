@@ -67,6 +67,7 @@ const KNOWN_NON_DOMAIN_TYPES = new Set([
   'varbit',
   'varchar',
   'vector',
+  'halfvec',
   'xid',
   'xid8',
   'xml',

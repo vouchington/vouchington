@@ -36,7 +36,7 @@ describe('getRssFeedItemFeedIds', () => {
     await followRssFeed(user, feedId)
 
     const sharedIsoDate = new Date(Date.now() - 60_000).toISOString()
-    const embedding = new Array(1024).fill(0.01)
+    const embedding = new Array(1536).fill(0.01)
 
     const createItemWithSharedSortTs = async (guid: string) => {
       const url = await addUrl(null, `https://example.com/${guid}`, { content_type: 'text/html' })

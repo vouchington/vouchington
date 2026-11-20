@@ -3,8 +3,8 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import {
   cleanupTestEmbeddingsBatches,
   insertTestEmbeddingsBatch,
-} from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
-import { withEmbeddingQuotaSnapshot } from '@voucha/test-helpers/embedding-quota-snapshot'
+} from '@voucha/test-helpers/bedrock-legacy-entities-bedrock-embeddings-batches'
+import { withEmbeddingQuotaSnapshot } from '@voucha/test-helpers/bedrock-legacy-embedding-quota-snapshot'
 import type { QueryOptions } from '@data-stores/psql/types'
 import {
   overrideDynamicConfigFieldsForTest,

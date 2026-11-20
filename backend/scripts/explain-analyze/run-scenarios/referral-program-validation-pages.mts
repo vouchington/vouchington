@@ -29,10 +29,10 @@ async function seedProgramValidationPages(): Promise<void> {
   const programs = [programId, otherProgramId, emptyProgramId, ...fanoutPrograms]
   await write(
     `/* seedExplainProgramValidationTopics */
-    INSERT INTO topics (id, topic_type, name, slug, bedrock_nova_multimodal_v1_content_sha256, created_via)
+    INSERT INTO topics (id, topic_type, name, slug, gemini_embedding_2_content_sha256, created_via, bedrock_nova_multimodal_v1_content_sha256)
     SELECT id, 'referral_program', 'EXPLAIN validation program ' || ordinal,
       'explain-validation-program-' || ordinal, digest(id::text, 'sha256'), 'system'
-    FROM unnest($1::uuid[]) WITH ORDINALITY AS seed(id, ordinal)
+    , digest(id::text, 'sha256') FROM unnest($1::uuid[]) WITH ORDINALITY AS seed(id, ordinal)
     ON CONFLICT (id) DO NOTHING`,
     [programs],
   )

@@ -218,7 +218,7 @@ importers:
         version: link:../../services/ai-usage
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -252,10 +252,10 @@ importers:
         version: link:../../services/users
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       openai:
         specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -304,7 +304,7 @@ importers:
         version: link:../../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
     devDependencies:
       '@ts-shared/utils':
         specifier: workspace:^
@@ -338,7 +338,7 @@ importers:
         version: link:../../services/classifiers
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -360,7 +360,7 @@ importers:
         version: link:../../services/classifiers
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
 
   backend/agents/community-moderation:
     dependencies:
@@ -428,7 +428,7 @@ importers:
         version: link:../../test-helpers
       openai:
         specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
 
   backend/agents/copyright-appeal-recommendation:
     dependencies:
@@ -508,7 +508,7 @@ importers:
         version: link:../../../ts-shared/utils
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -542,10 +542,10 @@ importers:
         version: link:../../services/topic-claims
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       openai:
         specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
     devDependencies:
       '@services/users':
         specifier: workspace:^
@@ -591,7 +591,7 @@ importers:
         version: link:../../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -625,10 +625,10 @@ importers:
         version: link:../../services/moderation-reports
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       openai:
         specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -690,10 +690,10 @@ importers:
         version: link:../../services/stories
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       openai:
         specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -824,6 +824,9 @@ importers:
       '@queues/follower-distributions':
         specifier: workspace:^
         version: link:../queues/follower-distributions
+      '@queues/gemini-embeddings-batch':
+        specifier: workspace:^
+        version: link:../queues/gemini-embeddings-batch
       '@queues/heartbeat':
         specifier: workspace:^
         version: link:../queues/heartbeat
@@ -968,6 +971,9 @@ importers:
       '@services/email-address-validator':
         specifier: workspace:^
         version: link:../services/email-address-validator
+      '@services/embeddings-batch':
+        specifier: workspace:^
+        version: link:../services/embeddings-batch
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../services/entity-cache
@@ -1617,6 +1623,9 @@ importers:
       '@services/classifier-runs':
         specifier: workspace:^
         version: link:../../services/classifier-runs
+      '@services/embeddings':
+        specifier: workspace:^
+        version: link:../../services/embeddings
       '@services/entity-listener-reconciliation':
         specifier: workspace:^
         version: link:../../services/entity-listener-reconciliation
@@ -1738,6 +1747,9 @@ importers:
       '@queues/crawl-referral-links':
         specifier: workspace:^
         version: link:../../queues/crawl-referral-links
+      '@queues/gemini-embeddings-batch':
+        specifier: workspace:^
+        version: link:../../queues/gemini-embeddings-batch
       '@queues/heartbeat':
         specifier: workspace:^
         version: link:../../queues/heartbeat
@@ -2458,7 +2470,7 @@ importers:
         version: link:../utils
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
 
   backend/modules/on-error:
     dependencies:
@@ -2491,7 +2503,7 @@ importers:
         version: link:../utils
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       '@vouchington/queue-errors':
         specifier: ^0.2.1
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
@@ -2500,7 +2512,7 @@ importers:
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       openai:
         specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
 
   backend/modules/openrouter-utils:
     dependencies:
@@ -2512,10 +2524,10 @@ importers:
         version: link:../utils
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       openai:
         specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
 
   backend/modules/pagination:
     dependencies:
@@ -2666,7 +2678,7 @@ importers:
         version: link:../../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       undici:
         specifier: ^8.12.4
         version: 8.12.4
@@ -3200,6 +3212,55 @@ importers:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+
+  backend/queues/gemini-embeddings:
+    dependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../background-cpu
+      '@services/analytics':
+        specifier: workspace:^
+        version: link:../../services/analytics
+      '@services/embeddings':
+        specifier: workspace:^
+        version: link:../../services/embeddings
+      glide-mq:
+        specifier: ^0.20.0
+        version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+
+  backend/queues/gemini-embeddings-batch:
+    dependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@modules/scheduled-job-manifest':
+        specifier: workspace:^
+        version: link:../../modules/scheduled-job-manifest
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../background-cpu
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
+      '@vouchington/worker-runtime':
+        specifier: ^0.3.1
+        version: 0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+      glide-mq:
+        specifier: ^0.20.0
+        version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -3764,6 +3825,9 @@ importers:
       '@services/email-address-validator':
         specifier: workspace:^
         version: link:../services/email-address-validator
+      '@services/embeddings-batch':
+        specifier: workspace:^
+        version: link:../services/embeddings-batch
       '@services/engagement-emails':
         specifier: workspace:^
         version: link:../services/engagement-emails
@@ -3967,7 +4031,7 @@ importers:
         version: link:../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       '@vouchington/mcp-server':
         specifier: ^0.2.0
         version: 0.2.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))
@@ -4269,7 +4333,7 @@ importers:
         version: link:../../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       '@vouchington/postgres':
         specifier: ^0.6.1
         version: 0.6.1
@@ -5676,12 +5740,12 @@ importers:
       '@jongleberry/vurst-markdown':
         specifier: ^0.4.3
         version: 0.4.3
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
       '@services/bedrock-embeddings':
         specifier: workspace:^
         version: link:../bedrock-embeddings
+      '@services/embeddings':
+        specifier: workspace:^
+        version: link:../embeddings
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -6428,6 +6492,9 @@ importers:
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
+      '@services/embeddings':
+        specifier: workspace:^
+        version: link:../embeddings
       '@services/engagement-emails':
         specifier: workspace:^
         version: link:../engagement-emails
@@ -6800,6 +6867,131 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
+  backend/services/embeddings:
+    dependencies:
+      '@data-stores/psql':
+        specifier: workspace:^
+        version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
+      '@data-stores/valkey-rate-limiter':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-rate-limiter
+      '@modules/api-egress-proxy':
+        specifier: workspace:^
+        version: link:../../modules/api-egress-proxy
+      '@modules/aws':
+        specifier: workspace:^
+        version: link:../../modules/aws
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
+      '@queues/bloom-filters':
+        specifier: workspace:^
+        version: link:../../queues/bloom-filters
+      '@services/analytics':
+        specifier: workspace:^
+        version: link:../analytics
+      '@services/bloom-filter-config':
+        specifier: workspace:^
+        version: link:../bloom-filter-config
+      '@vouchington/queue-errors':
+        specifier: ^0.2.1
+        version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+      google-auth-library:
+        specifier: ^11.3.4
+        version: 11.3.4(supports-color@10.2.2)
+      pg-copy-streams:
+        specifier: ^7.0.0
+        version: 7.0.0
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
+    devDependencies:
+      '@types/pg-copy-streams':
+        specifier: ^1.2.5
+        version: 1.2.5
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+
+  backend/services/embeddings-batch:
+    dependencies:
+      '@data-stores/psql':
+        specifier: workspace:^
+        version: link:../../data-stores/psql
+      '@modules/api-egress-proxy':
+        specifier: workspace:^
+        version: link:../../modules/api-egress-proxy
+      '@modules/aws':
+        specifier: workspace:^
+        version: link:../../modules/aws
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../../modules/pagination
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
+      '@queues/gemini-embeddings-batch':
+        specifier: workspace:^
+        version: link:../../queues/gemini-embeddings-batch
+      '@services/communities':
+        specifier: workspace:^
+        version: link:../communities
+      '@services/crawl-chunks':
+        specifier: workspace:^
+        version: link:../crawl-chunks
+      '@services/embeddings':
+        specifier: workspace:^
+        version: link:../embeddings
+      '@services/images':
+        specifier: workspace:^
+        version: link:../images
+      '@services/posts':
+        specifier: workspace:^
+        version: link:../posts
+      '@services/rss-feed-items':
+        specifier: workspace:^
+        version: link:../rss-feed-items
+      '@services/stories':
+        specifier: workspace:^
+        version: link:../stories
+      '@services/topics':
+        specifier: workspace:^
+        version: link:../topics
+      '@ts-shared/deploy-environment':
+        specifier: workspace:^
+        version: link:../../../ts-shared/deploy-environment
+      '@vouchington/image-resize':
+        specifier: ^0.2.0
+        version: 0.2.0(@types/node@26.6.6)
+      pg-copy-streams:
+        specifier: ^7.0.0
+        version: 7.0.0
+    devDependencies:
+      '@queues/ai-agents':
+        specifier: workspace:^
+        version: link:../../queues/ai-agents
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../copyright-notices
+      '@services/topic-recommendations':
+        specifier: workspace:^
+        version: link:../topic-recommendations
+      '@types/pg-copy-streams':
+        specifier: ^1.2.5
+        version: 1.2.5
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+
   backend/services/engagement-emails:
     dependencies:
       '@data-stores/psql':
@@ -7030,6 +7222,9 @@ importers:
       '@services/bedrock-embeddings':
         specifier: workspace:^
         version: link:../bedrock-embeddings
+      '@services/embeddings':
+        specifier: workspace:^
+        version: link:../embeddings
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
@@ -9423,10 +9618,10 @@ importers:
         version: link:../ai-usage
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       openai:
         specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -9452,6 +9647,9 @@ importers:
       '@queues/bedrock-embeddings-batch':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings-batch
+      '@queues/gemini-embeddings-batch':
+        specifier: workspace:^
+        version: link:../../queues/gemini-embeddings-batch
       '@services/analytics':
         specifier: workspace:^
         version: link:../analytics
@@ -9857,6 +10055,9 @@ importers:
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
+      '@queues/gemini-embeddings':
+        specifier: workspace:^
+        version: link:../../queues/gemini-embeddings
       '@queues/moderation-signals':
         specifier: workspace:^
         version: link:../../queues/moderation-signals
@@ -9893,6 +10094,9 @@ importers:
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
+      '@services/embeddings':
+        specifier: workspace:^
+        version: link:../embeddings
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
@@ -10160,6 +10364,9 @@ importers:
       '@queues/follower-distributions':
         specifier: workspace:^
         version: link:../../queues/follower-distributions
+      '@queues/gemini-embeddings-batch':
+        specifier: workspace:^
+        version: link:../../queues/gemini-embeddings-batch
       '@queues/hacker-news':
         specifier: workspace:^
         version: link:../../queues/hacker-news
@@ -10766,6 +10973,9 @@ importers:
       '@queues/content-analysis':
         specifier: workspace:^
         version: link:../../queues/content-analysis
+      '@queues/gemini-embeddings':
+        specifier: workspace:^
+        version: link:../../queues/gemini-embeddings
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
@@ -10790,6 +11000,9 @@ importers:
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
+      '@services/embeddings':
+        specifier: workspace:^
+        version: link:../embeddings
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
@@ -11696,6 +11909,9 @@ importers:
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
+      '@services/embeddings':
+        specifier: workspace:^
+        version: link:../embeddings
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
@@ -12898,7 +13114,7 @@ importers:
         version: link:../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       '@vouchington/http-transport':
         specifier: ^0.1.1
         version: 0.1.1
@@ -12937,7 +13153,7 @@ importers:
         version: 0.109.100(vitest@5.1.0)
       openai:
         specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
       otpauth:
         specifier: ^9.6.0
         version: 9.6.0
@@ -13035,6 +13251,9 @@ importers:
       '@services/bloom-filter-maintenance':
         specifier: workspace:^
         version: link:../services/bloom-filter-maintenance
+      '@services/embeddings':
+        specifier: workspace:^
+        version: link:../services/embeddings
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../services/entity-cache
@@ -13343,7 +13562,7 @@ importers:
         version: link:../../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       '@vouchington/queue-errors':
         specifier: ^0.2.1
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
@@ -13352,7 +13571,7 @@ importers:
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       openai:
         specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
       p-map:
         specifier: ^7.1.1
         version: 7.1.1
@@ -13614,6 +13833,9 @@ importers:
       '@services/bedrock-embeddings':
         specifier: workspace:^
         version: link:../../services/bedrock-embeddings
+      '@services/embeddings':
+        specifier: workspace:^
+        version: link:../../services/embeddings
       '@services/images':
         specifier: workspace:^
         version: link:../../services/images
@@ -13644,6 +13866,12 @@ importers:
       '@workers/crawler':
         specifier: workspace:^
         version: link:../crawler
+      '@workers/gemini-embeddings':
+        specifier: workspace:^
+        version: link:../gemini-embeddings
+      '@workers/gemini-embeddings-batch':
+        specifier: workspace:^
+        version: link:../gemini-embeddings-batch
       '@workers/unfurl-referral-links':
         specifier: workspace:^
         version: link:../unfurl-referral-links
@@ -13660,9 +13888,6 @@ importers:
       '@data-stores/valkey-core':
         specifier: workspace:^
         version: link:../../data-stores/valkey-core
-      '@modules/aws':
-        specifier: workspace:^
-        version: link:../../modules/aws
       '@queues/bedrock-embeddings-batch':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings-batch
@@ -13672,6 +13897,9 @@ importers:
       '@queues/crawler':
         specifier: workspace:^
         version: link:../../queues/crawler
+      '@queues/gemini-embeddings-batch':
+        specifier: workspace:^
+        version: link:../../queues/gemini-embeddings-batch
       '@queues/image-uploads':
         specifier: workspace:^
         version: link:../../queues/image-uploads
@@ -13813,6 +14041,9 @@ importers:
       '@services/bookmarks':
         specifier: workspace:^
         version: link:../../services/bookmarks
+      '@services/embeddings':
+        specifier: workspace:^
+        version: link:../../services/embeddings
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../../services/entity-cache
@@ -14246,6 +14477,9 @@ importers:
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
+      '@queues/gemini-embeddings':
+        specifier: workspace:^
+        version: link:../../queues/gemini-embeddings
       '@queues/moderation-signals':
         specifier: workspace:^
         version: link:../../queues/moderation-signals
@@ -14401,6 +14635,83 @@ importers:
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+
+  backend/workers/gemini-embeddings:
+    dependencies:
+      '@queues/ai-agents':
+        specifier: workspace:^
+        version: link:../../queues/ai-agents
+      '@queues/gemini-embeddings-batch':
+        specifier: workspace:^
+        version: link:../../queues/gemini-embeddings-batch
+      '@services/embeddings-batch':
+        specifier: workspace:^
+        version: link:../../services/embeddings-batch
+      '@services/posts':
+        specifier: workspace:^
+        version: link:../../services/posts
+      '@services/rss-feed-items':
+        specifier: workspace:^
+        version: link:../../services/rss-feed-items
+      '@services/stories':
+        specifier: workspace:^
+        version: link:../../services/stories
+      '@services/topics':
+        specifier: workspace:^
+        version: link:../../services/topics
+      glide-mq:
+        specifier: ^0.20.0
+        version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+
+  backend/workers/gemini-embeddings-batch:
+    dependencies:
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../../modules/pagination
+      '@queues/gemini-embeddings':
+        specifier: workspace:^
+        version: link:../../queues/gemini-embeddings
+      '@queues/gemini-embeddings-batch':
+        specifier: workspace:^
+        version: link:../../queues/gemini-embeddings-batch
+      '@services/embeddings':
+        specifier: workspace:^
+        version: link:../../services/embeddings
+      '@services/embeddings-batch':
+        specifier: workspace:^
+        version: link:../../services/embeddings-batch
+      '@services/posts':
+        specifier: workspace:^
+        version: link:../../services/posts
+      '@vouchington/queue-errors':
+        specifier: ^0.2.1
+        version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+      glide-mq:
+        specifier: ^0.20.0
+        version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
+    devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
+      '@services/crawl-chunks':
+        specifier: workspace:^
+        version: link:../../services/crawl-chunks
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/workers/hacker-news:
     dependencies:
@@ -14734,7 +15045,7 @@ importers:
         version: link:../../test-helpers
       openai:
         specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
 
   backend/workers/post-mentions:
     dependencies:
@@ -21199,6 +21510,9 @@ packages:
     resolution: {integrity: sha512-3XSA2cR/h/73EzlXXdU6YNycmYI7+kicTxks4eJg2g39biHR84slg2+des+p7iHYhbRg/udIS4TD53WabcOUkw==}
     engines: {node: '>= 0.4'}
 
+  base64-js@1.5.1:
+    resolution: {integrity: sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==}
+
   base64id@2.0.0:
     resolution: {integrity: sha512-lGe34o6EHj9y3Kts9R4ZYs/Gr+6N7MCaMlIFA3F1R2O5/m7K06AxfSeO5530PEERE6/WyEg3lsuyw4GHlPZHog==}
     engines: {node: ^4.5.0 || >= 5.9}
@@ -22149,9 +22463,17 @@ packages:
     resolution: {integrity: sha512-YGGyuEdVIjqxkxVH1pUTMY/XtmmsApXrCVv5EU25iX6inEPbV+VakJfLealkBtJN69AQmh1eGOdCl9Sm1UP6XQ==}
     engines: {node: '>=18'}
 
+  gaxios@8.3.3:
+    resolution: {integrity: sha512-zqPbbtW5bAOZ8BRjS7bxj5VG7PBY5PwKRxpku9NplLqAPmYMoXExL1KOdaK5fHvwRETu3bPplLEsFGDdUUlrpw==}
+    engines: {node: '>=22'}
+
   gcp-metadata@8.1.4:
     resolution: {integrity: sha512-iJ9KMsiu+xKtNRX0PmGLSaIU3bUBAyzWTyqKemKPzNPsmmsBCQYmlNg+brEbES7IHSXtdVwzBPzx1vz3FAaipw==}
     engines: {node: '>=18'}
+
+  gcp-metadata@9.2.3:
+    resolution: {integrity: sha512-d2OI/dJJ3IIaeOz3c9jvr5j5G5beI5fQzbgilNiWhDKGwvJN9o10Qub70NkbF6PNJSUoNKZ77JKYGz0Fs4+9Lg==}
+    engines: {node: '>=22'}
 
   geist@1.9.2:
     resolution: {integrity: sha512-UU1x2q5Khob0+i4csFvXk1Ki4DePdu7xISuXyEcj1tzQMg64oN7Kbuy4e5z5QhcUWbbvOMJNs3ZxYQqpsEMV3w==}
@@ -22241,9 +22563,17 @@ packages:
   globrex@0.1.2:
     resolution: {integrity: sha512-uHJgbwAMwNFf5mLst7IWLNg14x1CkeqglJb/K3doi4dw6q2IvAAmM/Y81kevy83wP+Sst+nutFTYOGg3d1lsxg==}
 
+  google-auth-library@11.3.4:
+    resolution: {integrity: sha512-RaYCDoeYIIFTRgH8hesSxqLrmtC2l+DB3cSCS/SN1TPGjI2VpPdJmF3bfRLUn8VvP/4I2Af9fsktw2f9SvVSVg==}
+    engines: {node: '>=22'}
+
   google-logging-utils@1.1.3:
     resolution: {integrity: sha512-eAmLkjDjAFCVXg7A1unxHsLf961m6y17QFqXqAXGj/gVkKFrEICfStRfwUlGNfeCEjNRa32JEWOUTlYXPyyKvA==}
     engines: {node: '>=14'}
+
+  google-logging-utils@2.2.0:
+    resolution: {integrity: sha512-Q6HuSEyoaxi0AgqUrOYb2gc77fDl4QugRoHpreI8VpW/VzPsoKyxjL8tGKLmZpWlvC1uVBXM85tykoQpCGBF5g==}
+    engines: {node: '>=22'}
 
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
@@ -29705,12 +30035,12 @@ snapshots:
       convert-source-map: 2.0.0
       tinyrainbow: 3.2.0
 
-  '@vouchington/ai@0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))':
+  '@vouchington/ai@0.4.1(@anthropic-ai/sdk@1.8.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))':
     dependencies:
       ajv: 8.20.0
     optionalDependencies:
       '@anthropic-ai/sdk': 1.8.0(zod@3.25.76)
-      openai: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+      openai: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
 
   '@vouchington/api-client@0.3.0(react@19.3.1)':
     optionalDependencies:
@@ -30163,6 +30493,8 @@ snapshots:
   balanced-match@4.0.4: {}
 
   base64-js@0.0.8: {}
+
+  base64-js@1.5.1: {}
 
   base64id@2.0.0: {}
 
@@ -31149,10 +31481,26 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  gaxios@8.3.3(supports-color@10.2.2):
+    dependencies:
+      extend: 3.0.2
+      https-proxy-agent: 7.0.6(supports-color@10.2.2)
+      node-fetch: 3.3.2
+    transitivePeerDependencies:
+      - supports-color
+
   gcp-metadata@8.1.4(supports-color@10.2.2):
     dependencies:
       gaxios: 7.1.3(supports-color@10.2.2)
       google-logging-utils: 1.1.3
+      json-bigint: 1.0.0
+    transitivePeerDependencies:
+      - supports-color
+
+  gcp-metadata@9.2.3(supports-color@10.2.2):
+    dependencies:
+      gaxios: 8.3.3(supports-color@10.2.2)
+      google-logging-utils: 2.2.0
       json-bigint: 1.0.0
     transitivePeerDependencies:
       - supports-color
@@ -31245,7 +31593,20 @@ snapshots:
 
   globrex@0.1.2: {}
 
+  google-auth-library@11.3.4(supports-color@10.2.2):
+    dependencies:
+      base64-js: 1.5.1
+      ecdsa-sig-formatter: 1.0.11
+      gaxios: 8.3.3(supports-color@10.2.2)
+      gcp-metadata: 9.2.3(supports-color@10.2.2)
+      google-logging-utils: 2.2.0
+      jws: 4.0.1
+    transitivePeerDependencies:
+      - supports-color
+
   google-logging-utils@1.1.3: {}
+
+  google-logging-utils@2.2.0: {}
 
   gopd@1.2.0: {}
 
@@ -32416,10 +32777,11 @@ snapshots:
       is-inside-container: 1.0.0
       wsl-utils: 0.1.0
 
-  openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76):
+  openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@11.3.4(supports-color@10.2.2))(undici@8.12.4)(ws@8.23.0)(zod@3.25.76):
     optionalDependencies:
       '@aws-sdk/credential-provider-node': 3.972.97
       '@smithy/signature-v4': 5.7.5
+      google-auth-library: 11.3.4(supports-color@10.2.2)
       undici: 8.12.4
       ws: 8.23.0
       zod: 3.25.76

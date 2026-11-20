@@ -18,7 +18,6 @@ export {
   disableQueryCapture,
   enableQueryCapture,
   getCapturedQueries,
-  runWithCapturedQueries,
 } from './query-capture.mts'
 
 export interface ExplainResult {

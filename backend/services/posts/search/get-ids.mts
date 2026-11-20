@@ -4,7 +4,7 @@ import type { PostSearchOptions, PostSearchResult } from './types.mts'
 import { buildPostSearchQuery } from './query-builder.mts'
 import { executePostSearchQuery } from './execute-query.mts'
 import { readFollowingNewRows } from './get-ids-following.mts'
-import { getCachedSearchEmbedding } from '@services/bedrock-embeddings/search/get-cached'
+import { getCachedSearchEmbedding } from '@services/embeddings/search/get-cached'
 import {
   hasSemanticSearch as hasSemanticSearchFn,
   hasTextSearch as hasTextSearchFn,

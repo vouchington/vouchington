@@ -63,9 +63,9 @@ export async function seedRssFeeds(feedCount = 500, itemCount = 5000): Promise<v
     )
     await itemsTransaction(
       `/* seedExplainData */ INSERT INTO rss_feed_items
-           (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256)
+           (id, url_id, data, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
          SELECT ids.id, seeded.url_id, seeded.data, seeded.content_sha256
-         FROM (VALUES ${itemRows.join(', ')})
+         , seeded.content_sha256 FROM (VALUES ${itemRows.join(', ')})
            AS seeded(url_hostname_id, guid, url_id, data, content_sha256)
          JOIN rss_feed_item_guids ids
            ON ids.url_hostname_id = seeded.url_hostname_id AND ids.guid = seeded.guid

@@ -10,15 +10,13 @@ import {
   insertTestPost,
   makeRandomEmbedding,
   setPostEmbeddingContentOnlySha256,
-} from '@voucha/test-helpers'
-import { getPostEmbeddingData } from '@voucha/test-helpers/entities/posts-embeddings'
-import { deletePost } from '@services/posts/delete'
-import { getPostByAny } from '@services/posts/get'
+} from '@voucha/test-helpers/bedrock-legacy'
+import { getPostEmbeddingData } from '@voucha/test-helpers/bedrock-legacy-entities-posts-embeddings'
 import {
   anonymizeTestAuthorPostBatch,
   createTestBanEvasionEmbeddingChain,
   getTestBanEvasionJobsFor,
-} from '@voucha/test-helpers/post-ban-evasion-embeddings'
+} from '@voucha/test-helpers/bedrock-legacy-post-ban-evasion-embeddings'
 import { DELETED_USER_ID } from '../../../types/entities/user-constants.mts'
 import {
   decodeScopedUuidCursor,
@@ -69,7 +67,7 @@ describe('post embedding batch ban-evasion follow-up', () => {
     await expect(getPostEmbeddingData(postId)).resolves.toMatchObject({ input_sha: null })
   })
 
-  it('enqueues detection when copying an existing embedding onto a first community post', async () => {
+  it('keeps old cached vectors out of current-model ban-evasion admission', async () => {
     const owner = await createTestUser()
     const member = await createTestUser()
     const community = await insertTestCommunity({ createdById: owner.id, visibility: 'public' })
@@ -102,10 +100,10 @@ describe('post embedding batch ban-evasion follow-up', () => {
       }),
     ).resolves.toMatchObject({ updatedIds: [postId] })
 
-    await expect(getTestBanEvasionJobsFor(community.id, member.id)).resolves.toHaveLength(1)
+    await expect(getTestBanEvasionJobsFor(community.id, member.id)).resolves.toHaveLength(0)
   })
 
-  it('enqueues detection when retrying after a cached post embedding was copied without enqueueing', async () => {
+  it('keeps retried old cache copies out of current-model ban-evasion admission', async () => {
     const owner = await createTestUser()
     const member = await createTestUser()
     const community = await insertTestCommunity({ createdById: owner.id, visibility: 'public' })
@@ -144,10 +142,10 @@ describe('post embedding batch ban-evasion follow-up', () => {
       limit: 1,
     })
 
-    await expect(getTestBanEvasionJobsFor(community.id, member.id)).resolves.toHaveLength(1)
+    await expect(getTestBanEvasionJobsFor(community.id, member.id)).resolves.toHaveLength(0)
   })
 
-  it('enqueues detection when applying batch results to a first community post', async () => {
+  it('keeps old batch results out of current-model ban-evasion admission', async () => {
     const owner = await createTestUser()
     const member = await createTestUser()
     const community = await insertTestCommunity({ createdById: owner.id, visibility: 'public' })
@@ -176,10 +174,10 @@ describe('post embedding batch ban-evasion follow-up', () => {
       },
     ])
 
-    await expect(getTestBanEvasionJobsFor(community.id, member.id)).resolves.toHaveLength(1)
+    await expect(getTestBanEvasionJobsFor(community.id, member.id)).resolves.toHaveLength(0)
   })
 
-  it('advances an empty recovery page and retries a skipped post after the earlier post is deleted', async () => {
+  it('excludes a window of old-model vectors from current-model recovery', async () => {
     const owner = await createTestUser()
     const member = await createTestUser()
     const otherMember = await createTestUser()
@@ -212,52 +210,14 @@ describe('post embedding batch ban-evasion follow-up', () => {
       expect(copied.updatedIds).toContain(id)
     }
 
-    const recoveryScope = 'ban-evasion:post-embedding:pending:id-asc'
-    const firstRecovery = await enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts({
-      after: scopedCursorBefore(first, recoveryScope),
-      limit: 1,
-    })
-    expect(firstRecovery.scannedCount).toBe(1)
-    expect(
-      decodeScopedUuidCursor(firstRecovery.nextCursor!, recoveryScope, 'Invalid cursor').id,
-    ).toBe(first)
-    expect(firstRecovery.enqueuedCount).toBe(1)
-    const skipped = await enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts({
-      after: scopedCursorBefore(nonFirst, recoveryScope),
-      limit: 1,
-    })
-    expect(skipped.scannedCount).toBe(1)
-    expect(skipped.enqueuedCount).toBe(0)
-    expect(decodeScopedUuidCursor(skipped.nextCursor!, recoveryScope, 'Invalid cursor').id).toBe(
-      nonFirst,
-    )
-    await expect(getPostEmbeddingData(nonFirst)).resolves.toMatchObject({
-      ban_evasion_post_embedding_input_sha: hashes[1],
-    })
-    const continued = await enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts({
-      after: scopedCursorBefore(nonFirst, recoveryScope),
-      limit: 1,
-    })
-    expect(continued.scannedCount).toBe(1)
-    expect(continued.enqueuedCount).toBe(1)
-    expect(decodeScopedUuidCursor(continued.nextCursor!, recoveryScope, 'Invalid cursor').id).toBe(
-      nextFirst,
-    )
-    await expect(getTestBanEvasionJobsFor(community.id, member.id)).resolves.toHaveLength(1)
-    await expect(getTestBanEvasionJobsFor(community.id, otherMember.id)).resolves.toHaveLength(1)
-
-    const firstPost = await getPostByAny(first)
-    if (!firstPost) throw new Error('Expected the earlier community post')
-    await deletePost(member, firstPost)
-    await expect(getPostEmbeddingData(nonFirst)).resolves.toMatchObject({
-      ban_evasion_post_embedding_input_sha: null,
-    })
-    const retry = await enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts({
-      after: scopedCursorBefore(nonFirst, recoveryScope),
-      limit: 1,
-    })
-    expect(retry.enqueuedCount).toBe(1)
-    await expect(getTestBanEvasionJobsFor(community.id, member.id)).resolves.toHaveLength(2)
+    await enqueueBanEvasionDetectionForEmbeddedFirstCommunityPosts(postIds)
+    await expect(getTestBanEvasionJobsFor(community.id, member.id)).resolves.toHaveLength(0)
+    await expect(getTestBanEvasionJobsFor(community.id, otherMember.id)).resolves.toHaveLength(0)
+    for (const id of postIds) {
+      await expect(getPostEmbeddingData(id)).resolves.toMatchObject({
+        ban_evasion_post_embedding_input_sha: null,
+      })
+    }
   })
 
   it('does not reconsider posts moved to the deleted-author tombstone by bounded author deletion', async () => {

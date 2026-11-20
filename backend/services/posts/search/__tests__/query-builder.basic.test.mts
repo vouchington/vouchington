@@ -39,19 +39,19 @@ describe('query-builder (basic)', () => {
 
   it('buildPostSearchQuery defaults to sort=relevance when semantic search is provided', () => {
     // Pre-computed embedding is required for semantic search
-    const testEmbedding = Array(1024).fill(0.1) // Bedrock Nova embedding dimension
+    const testEmbedding = Array(1536).fill(0.1)
     const query = buildPostSearchQuery(undefined, {
       semantic_search_query: 'test query',
       semanticSearchEmbedding: testEmbedding,
     })
 
     expect(query.sql).toContain('ranking_score')
-    expect(query.sql).toContain('bedrock_nova_multimodal_v1_embedding')
+    expect(query.sql).toContain('gemini_embedding_2_embedding')
   })
 
   it('buildPostSearchQuery includes both text and semantic ranking for hybrid search', () => {
     // Pre-computed embedding is required for semantic search
-    const testEmbedding = Array(1024).fill(0.1) // Bedrock Nova embedding dimension
+    const testEmbedding = Array(1536).fill(0.1)
     const query = buildPostSearchQuery(undefined, {
       text_search_query: 'test query',
       semantic_search_query: 'test query',
@@ -60,7 +60,7 @@ describe('query-builder (basic)', () => {
 
     expect(query.sql).toContain('ranking_score')
     expect(query.sql).toContain('ts_rank')
-    expect(query.sql).toContain('bedrock_nova_multimodal_v1_embedding')
+    expect(query.sql).toContain('gemini_embedding_2_embedding')
   })
 
   it('buildPostSearchQuery filters by user_id', () => {

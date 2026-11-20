@@ -1,6 +1,6 @@
 // createTopicEmbeddingContent relocated to @voucha/types (pure content-hashing helper, no
-// service dependencies) so that backend/services/bedrock-embeddings can compute topic embedding
-// content without creating a bedrock-embeddings -> topics workspace cycle. Re-exported here for
+// service dependencies) so that backend/services/embeddings can compute topic embedding
+// content without creating a gemini-embeddings -> topics workspace cycle. Re-exported here for
 // call-site stability, and imported locally for use by updateTopicEmbeddingContentHash below.
 import { createTopicEmbeddingContent } from '@voucha/types/entities/topic'
 import { write } from '@data-stores/psql'
@@ -21,7 +21,7 @@ export const updateTopicEmbeddingContentHash = async (topicId: string) => {
   await write(
     `/* updateTopicEmbeddingContentHash */
     UPDATE topics
-    SET bedrock_nova_multimodal_v1_content_sha256 = $1
+    SET gemini_embedding_2_content_sha256 = $1, bedrock_nova_multimodal_v1_content_sha256 = $1
     WHERE id = $2
   `,
     [content_sha256, topicId],

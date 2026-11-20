@@ -20,6 +20,16 @@ function makeStartupDeps(overrides: Partial<StartupDeps> = {}): StartupDeps {
 function configureDeployedEnvironment(environment: string): void {
   vi.stubEnv('ENVIRONMENT', environment)
   vi.stubEnv('PLAYWRIGHT_TEST', 'false')
+  vi.stubEnv('VERTEX_LOCATION', 'us')
+  for (const name of [
+    'VERTEX_PROJECT_ID',
+    'VERTEX_PROJECT_NUMBER',
+    'VERTEX_BATCH_BUCKET',
+    'VERTEX_WIF_POOL_ID',
+    'VERTEX_WIF_PROVIDER_ID',
+    'VERTEX_SERVICE_ACCOUNT_EMAIL',
+  ])
+    vi.stubEnv(name, 'synthetic')
   vi.stubEnv('VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64', encodeJwkSetForEnv([testPrivateKey]))
   vi.stubEnv(
     'VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64',
@@ -83,6 +93,23 @@ describe('startApiServer', () => {
       expect(server.listen).not.toHaveBeenCalled()
       await Promise.resolve()
       expect(deps.exitWithFailure).toHaveBeenCalledOnce()
+    },
+  )
+
+  it.each(['staging', 'production'])(
+    'rejects missing %s Vertex configuration before binding',
+    async environment => {
+      configureDeployedEnvironment(environment)
+      vi.stubEnv('VERTEX_WIF_POOL_ID', '')
+      const { server } = makeServer()
+      const deps = makeStartupDeps()
+
+      await startApiServer(server, 4321, deps)
+
+      expect(deps.reportFatalError).toHaveBeenCalledWith(
+        expect.objectContaining({ message: expect.stringContaining('VERTEX_WIF_POOL_ID') }),
+      )
+      expect(server.listen).not.toHaveBeenCalled()
     },
   )
 

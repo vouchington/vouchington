@@ -16,7 +16,7 @@ flowchart TD
   listener --> votes[Creator auto-vote]
   listener --> subscribe[Auto-subscribe creator]
   listener --> mentions[background post-mentions]
-  listener --> embeddings[Nova multimodal embeddings]
+  listener --> embeddings[Gemini embeddings]
   listener --> omni[OpenAI omni moderation]
   omni --> clearance[checkPostClearance]
   clearance -->|approved| request[classifier_run_requests for post-classifier and tagging]

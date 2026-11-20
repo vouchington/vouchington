@@ -12,7 +12,7 @@ import {
   makeRandomEmbedding,
   setPostEmbeddingContentOnlySha256,
   setTopicEmbeddingContentSha256,
-} from '@voucha/test-helpers'
+} from '@voucha/test-helpers/bedrock-legacy'
 import { reusableEmbeddingMissingClause, type PendingEntity } from './shared.mts'
 import { streamPendingPosts } from './posts.mts'
 import { streamPendingRssFeedItems } from './rss-feed-items.mts'
