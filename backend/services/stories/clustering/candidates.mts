@@ -1,11 +1,8 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import type { ClassifierRunSubject, StoryRunCandidate } from '@services/classifier-runs'
 import { itemHasDiscoverableSourceSql } from '@services/rss-feeds/discoverability-sql'
-import {
-  STORY_CLUSTER_CANDIDATE_LIMIT,
-  STORY_DISTANCE_THRESHOLD,
-  STORY_WINDOW_DAYS,
-} from '@voucha/config'
+import { getStoriesWorkLimit } from '../work-limits.mts'
+import { STORY_DISTANCE_THRESHOLD, STORY_WINDOW_DAYS } from '@voucha/config'
 import sql from 'sql-template-strings'
 
 type SubjectRow = {
@@ -89,7 +86,7 @@ async function findNeighbors(
             AND ${publishedAt}::timestamptz + (${STORY_WINDOW_DAYS} * INTERVAL '1 day'))
         )
       ORDER BY distance ASC, c.id ASC
-      LIMIT ${STORY_CLUSTER_CANDIDATE_LIMIT}
+      LIMIT ${getStoriesWorkLimit('cluster_candidate_limit')}
     ) neighbor
     WHERE neighbor.distance < ${STORY_DISTANCE_THRESHOLD}
     ORDER BY neighbor.distance ASC, neighbor.id ASC`,

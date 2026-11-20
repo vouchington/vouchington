@@ -6,6 +6,7 @@ const defaultFields = {
   personalized_link_limit: 5,
   personalized_link_max_limit: 25,
   voted_post_max_age_days: 90,
+  recent_vote_limit: 1000,
 }
 
 /** Reading cost grows with the window, so the ceiling stays at one year. */
@@ -13,6 +14,7 @@ export const prioritizedReferralLinksWorkMaxValues = {
   personalized_link_limit: 25,
   personalized_link_max_limit: 25,
   voted_post_max_age_days: 365,
+  recent_vote_limit: 10_000,
 }
 
 export const prioritizedReferralLinksWorkConfig = new DynamicConfig({
@@ -21,6 +23,7 @@ export const prioritizedReferralLinksWorkConfig = new DynamicConfig({
     personalized_link_limit: 'number',
     personalized_link_max_limit: 'number',
     voted_post_max_age_days: 'number',
+    recent_vote_limit: 'number',
   },
   defaultFields,
 })
@@ -35,6 +38,14 @@ export function getVotedPostMaxAgeDays(): number {
       maxValue: prioritizedReferralLinksWorkMaxValues.voted_post_max_age_days,
     },
   )
+}
+
+/** Newest votes read when finding authors the viewer rated positively. */
+export function getRecentVoteLimit(): number {
+  return getBoundedPositiveIntegerField(prioritizedReferralLinksWorkConfig, 'recent_vote_limit', {
+    defaultValue: defaultFields.recent_vote_limit,
+    maxValue: prioritizedReferralLinksWorkMaxValues.recent_vote_limit,
+  })
 }
 
 /**

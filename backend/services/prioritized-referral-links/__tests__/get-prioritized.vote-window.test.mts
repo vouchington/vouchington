@@ -9,7 +9,8 @@ import {
 } from '@voucha/test-helpers'
 import { createUserReferralLink } from '@services/user-referral-program-links'
 import { getPrioritizedReferralLinks } from '../get-prioritized.mts'
-import { getVotedPostMaxAgeDays } from '../work-limits.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { getVotedPostMaxAgeDays, prioritizedReferralLinksWorkConfig } from '../work-limits.mts'
 
 const MILLISECONDS_PER_DAY = 86_400_000
 
@@ -75,5 +76,39 @@ describe('get-prioritized rated-positively vote window', () => {
     const byUser = Object.fromEntries(result.links.map(l => [l.user_id, l.priority_group]))
     expect(byUser[recentAuthor.user.id]).toBe(4)
     expect(byUser[staleAuthor.user.id]).toBeUndefined()
+  })
+
+  it('reads only the newest votes up to the configured recent vote limit', async () => {
+    const [viewer, olderAuthor, newerAuthor] = await Promise.all([
+      createTestUser(),
+      createAuthorWithLink('older'),
+      createAuthorWithLink('newer'),
+    ])
+    const [olderPostId, newerPostId] = await Promise.all(
+      [olderAuthor, newerAuthor].map(author =>
+        insertTestPost({
+          title: `Vote limit ${createRandomString(8)}`,
+          slug: `vote-limit-${createRandomString(8)}`,
+          createdById: author.user.id,
+          markdown: 'content',
+        }),
+      ),
+    )
+    // Votes are read newest id first, so the vote cast second is the one a limit of one keeps.
+    await insertPostElectionVote(viewer.id, olderPostId, 1)
+    await insertPostElectionVote(viewer.id, newerPostId, 1)
+    await prioritizedReferralLinksWorkConfig.waitForInitialization()
+    const restore = overrideDynamicConfigFieldsForTest(prioritizedReferralLinksWorkConfig, {
+      recent_vote_limit: 1,
+    })
+    try {
+      const result = await getPrioritizedReferralLinks(viewer.id, referralProgramId)
+
+      const byUser = Object.fromEntries(result.links.map(l => [l.user_id, l.priority_group]))
+      expect(byUser[newerAuthor.user.id]).toBe(4)
+      expect(byUser[olderAuthor.user.id]).toBeUndefined()
+    } finally {
+      restore()
+    }
   })
 })

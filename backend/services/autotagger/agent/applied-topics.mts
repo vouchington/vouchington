@@ -4,14 +4,14 @@ import { entityRelationElectionTables } from '@services/elections-votes/entity-r
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import sql from 'sql-template-strings'
 
-/** More topics than this on one subject adds nothing the reasoning pass needs to see. */
-const MAX_APPLIED_TOPIC_NAMES = 50
+import { getAutotaggerAgentWorkLimit } from './work-limits.mts'
 
 /**
  * The display names of the topics currently applied to the subject (a live relation with a
  * positive net vote, on a topic that still exists), which is everything the first stage added plus
  * what people tagged. The reasoning pass reads them as context so it never argues for a topic the
- * subject already has; the candidate set it asks about already excludes them.
+ * subject already has; the candidate set it asks about already excludes them. More topics than
+ * `max_applied_topic_names` on one subject adds nothing the reasoning pass needs to see.
  */
 export async function readAutotaggerAppliedTopicNames(
   subject: ClassifierRunSubject,
@@ -39,7 +39,7 @@ export async function readAutotaggerAppliedTopicNames(
       AND relation.deleted_at IS NULL AND relation.votes_score_net > 0
       AND topic.deleted_at IS NULL
     ORDER BY topic.name, topic.id
-    LIMIT ${MAX_APPLIED_TOPIC_NAMES}
+    LIMIT ${getAutotaggerAgentWorkLimit('max_applied_topic_names')}
   `)
   const { rows } = await write<{ name: string }>(statement)
   return rows.map(row => row.name)

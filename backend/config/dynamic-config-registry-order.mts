@@ -72,6 +72,7 @@ export const REGISTRY_ORDER = [
   'elections-votes-work-config',
   'classifiers-work-config',
   'classifier-runs-work-config',
+  'autotagger-agent-work-config',
   'urls-domains-blacklist-work-config',
   'bookmarks-work-config',
   'notifications-work-config',

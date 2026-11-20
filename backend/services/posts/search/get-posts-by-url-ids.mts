@@ -1,12 +1,11 @@
 import type { PrivateUser } from '@services/users/types'
 import sql from 'sql-template-strings'
 import { read } from '@data-stores/psql'
+import { getPostsWorkLimit } from '../work-limits.mts'
 import {
   buildPublicPostEligibilityFilter,
   buildViewerPostDiscoveryEligibilityFilter,
 } from '@modules/feed-query-builders'
-
-const MAX_POSTS_PER_URL = 5
 
 /**
  * Given an array of url_id UUIDs (from RSS feed items), find posts
@@ -81,7 +80,7 @@ export async function getPostIdsByUrlIds(
     )
     SELECT origin_url_id, post_id
     FROM ranked_posts
-    WHERE rn <= ${MAX_POSTS_PER_URL}
+    WHERE rn <= ${getPostsWorkLimit('max_posts_per_url')}
   `)
 
   const { rows } = await read(query)

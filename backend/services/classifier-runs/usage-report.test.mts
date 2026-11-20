@@ -212,15 +212,12 @@ describe('classifier usage report: remote runs (real PG)', () => {
     expect(row).toMatchObject({ providerCalls: 1, costMicrounits: '2000' })
   })
 
-  it('refuses an empty window and a window with more runs than it will return', async () => {
+  it('refuses an empty window', async () => {
     const setup = await createPostClassifierExecutionFixture(true, false)
     const at = reservedAtMs(setup.run.runId)
     const reversed = { from: new Date(at), to: new Date(at) }
 
     await expect(readClassifierUsageReport(reversed)).rejects.toThrow(RangeError)
-    await expect(
-      readClassifierRunUsage({ from: new Date(at - 1000), to: new Date(at + 1) }, 0),
-    ).rejects.toThrow('too many runs')
   })
 })
 

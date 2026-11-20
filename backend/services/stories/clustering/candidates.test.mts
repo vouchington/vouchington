@@ -2,7 +2,9 @@ import { reserveClassifierRun } from '@services/classifier-runs'
 import { updateRssFeedById } from '@services/rss-feeds'
 import { evaluateRssFeedDiscoverability } from '@services/rss-feeds/evaluate-discoverability'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
-import { STORY_CLUSTER_CANDIDATE_LIMIT, STORY_WINDOW_DAYS } from '@voucha/config'
+import { STORY_WINDOW_DAYS } from '@voucha/config'
+import { getStoriesWorkLimit, storiesWorkConfig } from '../work-limits.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   addRssFeedItemSource,
   deleteTestStory,
@@ -72,24 +74,35 @@ describe('story clustering candidate capture (real PG)', () => {
     expect(await captured(item)).toEqual([{ storyId: first.id }, { storyId: second.id }])
   })
 
-  it('caps the question at the candidate limit, keeping the nearest', async () => {
+  it('caps the question at the candidate limit, keeping the nearest, and follows the configuration', async () => {
+    await storiesWorkConfig.waitForInitialization()
+    const limit = getStoriesWorkLimit('cluster_candidate_limit')
+    const byDefault = await captureAmongNeighbors(limit)
+    expect(byDefault.result).toEqual(byDefault.nearest.slice(0, limit))
+
+    const restore = overrideDynamicConfigFieldsForTest(storiesWorkConfig, {
+      cluster_candidate_limit: 2,
+    })
+    try {
+      const configured = await captureAmongNeighbors(2)
+      expect(configured.result).toEqual(configured.nearest.slice(0, 2))
+    } finally {
+      restore()
+    }
+  })
+
+  async function captureAmongNeighbors(limit: number) {
     const { unit, at } = makeStoryClusteringVectors()
     const feed = await createTestRssFeed({})
-    const similarities = Array.from(
-      { length: STORY_CLUSTER_CANDIDATE_LIMIT + 2 },
-      (_, i) => 0.99 - i * 0.02,
-    )
+    const similarities = Array.from({ length: limit + 2 }, (_, i) => 0.99 - i * 0.02)
     const neighbors = await Promise.all(
       similarities.map(similarity =>
         createStoryClusteringItem({ feedId: feed.id, embedding: at(similarity) }),
       ),
     )
     const item = await createStoryClusteringItem({ feedId: feed.id, embedding: unit })
-
-    expect(await captured(item)).toEqual(
-      neighbors.slice(0, STORY_CLUSTER_CANDIDATE_LIMIT).map(standalone),
-    )
-  })
+    return { result: await captured(item), nearest: neighbors.map(standalone) }
+  }
 
   it('settles as no work, with no model call to make, when nothing is near', async () => {
     const { unit, far } = makeStoryClusteringVectors()

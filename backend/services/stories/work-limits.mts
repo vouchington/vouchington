@@ -3,17 +3,20 @@ import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 const defaultFields = {
   crawl_effect_page_size: 100,
+  cluster_candidate_limit: 5,
 }
 
 /** Hard ceilings for the current runtime configuration contract. */
 export const storiesWorkMaxValues = {
   crawl_effect_page_size: 1000,
+  cluster_candidate_limit: 50,
 }
 
 export const storiesWorkConfig = new DynamicConfig({
   key: 'stories-work-config',
   fieldTypes: {
     crawl_effect_page_size: 'number',
+    cluster_candidate_limit: 'number',
   },
   defaultFields,
 })

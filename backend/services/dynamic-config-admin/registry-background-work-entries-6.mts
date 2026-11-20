@@ -7,6 +7,10 @@ import {
   classifierRunsWorkConfig,
   classifierRunsWorkMaxValues,
 } from '@services/classifier-runs/work-limits'
+import {
+  autotaggerAgentWorkConfig,
+  autotaggerAgentWorkMaxValues,
+} from '@services/autotagger/agent/work-limits'
 import { classifiersWorkConfig, classifiersWorkMaxValues } from '@services/classifiers/work-limits'
 import {
   electionsVotesWorkConfig,
@@ -30,6 +34,18 @@ export const backgroundWorkRegistryEntries6 = {
         'Rebuild retries while the replica has not yet replayed the latest blocklist commit.',
     },
   }),
+  'autotagger-agent-work-config': defineBoundedWorkNamespace({
+    namespace: 'autotagger-agent-work-config',
+    config: autotaggerAgentWorkConfig,
+    label: 'Autotagger agent',
+    maxValues: autotaggerAgentWorkMaxValues,
+    descriptions: {
+      max_candidates:
+        'Most topics one reasoning autotagger run asks about; bounds the provider call, and the cut keeps the topics nearest the subject.',
+      max_applied_topic_names:
+        'Most already-applied topic names shown to the reasoning autotagger as context.',
+    },
+  }),
   'classifier-runs-work-config': defineBoundedWorkNamespace({
     namespace: 'classifier-runs-work-config',
     config: classifierRunsWorkConfig,
@@ -37,6 +53,8 @@ export const backgroundWorkRegistryEntries6 = {
     maxValues: classifierRunsWorkMaxValues,
     descriptions: {
       discovery_page_size: 'Discovery page size for classifier runs processing.',
+      usage_report_max_runs:
+        'Most runs one classifier usage report window may hold; a larger window is rejected, never cut short.',
     },
   }),
   'classifiers-work-config': defineBoundedWorkNamespace({
