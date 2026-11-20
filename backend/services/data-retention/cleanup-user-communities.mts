@@ -7,7 +7,7 @@ import { invalidateCommunityMemberUserMetrics } from '@services/communities/memb
 import { runSequentially } from '@modules/utils/run-sequentially'
 import sql from 'sql-template-strings'
 import { archiveUserOwnedCommunities } from './archive-user-owned-communities.mts'
-import { getCommunityPurgeBatchSize, getCommunityModeratorScanPageSize } from './config.mts'
+import { readDataRetentionField } from './config.mts'
 import {
   NO_MODERATOR_CURSOR,
   selectUserPurgeSuccessors,
@@ -32,7 +32,7 @@ export async function cleanupUserOwnedCommunities(
   limit: number,
   cursor?: UserPurgeCursor,
 ): Promise<CommunityPage> {
-  const pageLimit = Math.min(limit, getCommunityPurgeBatchSize())
+  const pageLimit = Math.min(limit, readDataRetentionField('community_purge_batch_size'))
   const { rows: communities } =
     await query<Community>(sql`/* cleanupUserOwnedCommunities:candidates */
     SELECT community.id, community.name, community.slug
@@ -46,7 +46,10 @@ export async function cleanupUserOwnedCommunities(
   // Splitting the row budget keeps the page's total scan within `limit`; one community keeps it all.
   const pageSize = Math.max(
     1,
-    Math.min(getCommunityModeratorScanPageSize(), Math.floor(limit / communities.length)),
+    Math.min(
+      readDataRetentionField('community_moderator_scan_page_size'),
+      Math.floor(limit / communities.length),
+    ),
   )
   const afterModeratorId = cursor?.afterModeratorId ?? NO_MODERATOR_CURSOR
   const scan = () => selectUserPurgeSuccessors(query, userId, ids, pageSize, afterModeratorId)

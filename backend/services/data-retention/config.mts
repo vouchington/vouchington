@@ -27,6 +27,8 @@ export type DataRetentionConfig = {
   copyright_unlinked_email_intake_days: number
   copyright_email_thread_reply_days: number
   copyright_ai_run_days: number
+  config_history_retained_revisions_per_key: number
+  agent_prompt_history_retained_revisions_per_community: number
 }
 
 /** The per-cleanup limits one retention run applies. Every cleanup in the run takes both. */
@@ -64,6 +66,8 @@ export const DEFAULT_DATA_RETENTION_CONFIG: DataRetentionConfig = {
   copyright_unlinked_email_intake_days: 90,
   copyright_email_thread_reply_days: 180,
   copyright_ai_run_days: 90,
+  config_history_retained_revisions_per_key: 50,
+  agent_prompt_history_retained_revisions_per_community: 200,
 }
 
 export const DATA_RETENTION_MAX_VALUES: DataRetentionConfig = {
@@ -93,6 +97,8 @@ export const DATA_RETENTION_MAX_VALUES: DataRetentionConfig = {
   copyright_unlinked_email_intake_days: 3_650,
   copyright_email_thread_reply_days: 3_650,
   copyright_ai_run_days: 3_650,
+  config_history_retained_revisions_per_key: 500,
+  agent_prompt_history_retained_revisions_per_community: 2_000,
 }
 
 export const dataRetentionConfig = new DynamicConfig({
@@ -124,6 +130,8 @@ export const dataRetentionConfig = new DynamicConfig({
     copyright_unlinked_email_intake_days: 'number',
     copyright_email_thread_reply_days: 'number',
     copyright_ai_run_days: 'number',
+    config_history_retained_revisions_per_key: 'number',
+    agent_prompt_history_retained_revisions_per_community: 'number',
   },
   defaultFields: DEFAULT_DATA_RETENTION_CONFIG,
 })
@@ -185,14 +193,6 @@ export function getAIRetentionPageLimits(): DataRetentionLimits {
     batchSize: readDataRetentionField('ai_retention_page_size'),
     maxBatches: readDataRetentionField('ai_retention_max_pages_per_run'),
   }
-}
-
-export function getCommunityPurgeBatchSize(): number {
-  return readDataRetentionField('community_purge_batch_size')
-}
-
-export function getCommunityModeratorScanPageSize(): number {
-  return readDataRetentionField('community_moderator_scan_page_size')
 }
 
 export function getAiUsageRawRetentionDays(): number {

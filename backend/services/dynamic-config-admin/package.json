@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/model-providers": "workspace:^",
     "@queues/admin-imports": "workspace:^",
@@ -73,6 +74,7 @@
     "@services/images": "workspace:^",
     "@services/individuals-households": "workspace:^",
     "@services/jwt-session": "workspace:^",
+    "@services/landing-page-analytics": "workspace:^",
     "@services/language-detection": "workspace:^",
     "@services/lists": "workspace:^",
     "@services/media-delivery-safety": "workspace:^",
