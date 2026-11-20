@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createTestStripeRefundRejection } from '@voucha/test-helpers/stripe-refund-rejection'
 import { createTestAdministratorRefundRequest as request } from '@voucha/test-helpers/membership-administrator-refund-request'
 import * as stripeRefunds from '@modules/stripe/refunds'
-import { MAX_LOCAL_STRIPE_REFUND_ISSUANCES_PER_CHARGE } from '../refund-issuance.mts'
+import { membershipAdditionalWorkDefaults } from '../work-limits.mts'
 import {
   claimAdministratorRefundRequest,
   leaseDueRefundReconciliation,
@@ -17,7 +17,11 @@ describe('administrator refund crash admission', () => {
     const refundRequest = await request()
     let replayLease: Awaited<ReturnType<typeof leaseDueRefundReconciliation>> = null
     let replayAttempt: Awaited<ReturnType<typeof recordRefundReconciliationAttempt>> | null = null
-    for (let index = 0; index < MAX_LOCAL_STRIPE_REFUND_ISSUANCES_PER_CHARGE; index++) {
+    for (
+      let index = 0;
+      index < membershipAdditionalWorkDefaults.local_stripe_refund_issuances_per_charge;
+      index++
+    ) {
       const operation = await claimAdministratorRefundRequest({
         ...refundRequest,
         idempotencyKey: `crash-cap-${randomUUID()}`,

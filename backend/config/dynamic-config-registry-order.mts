@@ -47,6 +47,7 @@ export const REGISTRY_ORDER = [
   'moderation-analytics-work-config',
   'post-clearance-work-config',
   'users-work-config',
+  'moderation-work-config',
   'vote-weight-work-config',
   'crawl-boilerplate-removal-work-config',
   'find-your-friends-work-config',

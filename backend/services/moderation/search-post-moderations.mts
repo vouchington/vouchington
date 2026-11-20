@@ -1,8 +1,7 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { AgentModerationStoredResults } from './results.mts'
-
-const MAX_MODERATIONS_PER_POST = 10
+import { getModerationWorkLimit } from './work-limits.mts'
 
 export type AgentModerationResult = {
   id: string
@@ -34,7 +33,7 @@ export async function searchPostModerationsByPostIds(
       FROM agent_moderations
       WHERE post_id = requested.post_id AND deleted_at IS NULL
       ORDER BY id DESC
-      LIMIT ${MAX_MODERATIONS_PER_POST}
+      LIMIT ${getModerationWorkLimit('post_moderations_per_post')}
     ) am
     LEFT JOIN moderator_agents agm ON agm.agent_id = am.agent_id
     ORDER BY am.post_id, am.id DESC

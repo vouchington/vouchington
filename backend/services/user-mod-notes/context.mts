@@ -3,16 +3,14 @@ import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
 import { computeTrustTier, getAccountAgeMs } from '@services/user-rate-limits/trust-tier'
 import { getUserRateLimitContext } from '@services/user-rate-limits/context'
-
-/** content_removal_count saturates here so a heavily moderated author cannot make the count scan unbounded. */
-export const CONTENT_REMOVAL_COUNT_CAP = 1000
+import { getUsersWorkLimit } from '@services/users/work-limits'
 
 export interface UserModerationContext {
   account_age_ms: number
   trust_tier: number | null
   active_suspension: { suspended_at: Date; suspended_reason: string | null } | null
   content_removal_count: number
-  /** true when content_removal_count reached CONTENT_REMOVAL_COUNT_CAP, so the real count is at least that */
+  /** true when content_removal_count reached the configured content_removal_count_cap, so the real count is at least that */
   content_removal_count_capped: boolean
   community_removal_count: number
 }
@@ -38,6 +36,8 @@ export async function getUserModerationContext(
         }
       : null
 
+  // content_removal_count saturates here so a heavily moderated author cannot make the scan unbounded.
+  const removalCountCap = getUsersWorkLimit('content_removal_count_cap')
   const { rows } = await read(sql`/* getUserModerationContextCounts */
     SELECT
       (
@@ -46,7 +46,7 @@ export async function getUserModerationContext(
           WHERE created_by_id = ${targetUser.id}
             AND deleted_by_id IS NOT NULL
             AND deleted_by_id <> created_by_id
-          LIMIT ${CONTENT_REMOVAL_COUNT_CAP}
+          LIMIT ${removalCountCap}
         ) AS removed_posts
       ) AS content_removal_count,
       (
@@ -65,7 +65,7 @@ export async function getUserModerationContext(
     trust_tier,
     active_suspension,
     content_removal_count: counts.content_removal_count,
-    content_removal_count_capped: counts.content_removal_count >= CONTENT_REMOVAL_COUNT_CAP,
+    content_removal_count_capped: counts.content_removal_count >= removalCountCap,
     community_removal_count: counts.community_removal_count,
   }
 }

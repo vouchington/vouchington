@@ -1,6 +1,6 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { MAX_LOCAL_STRIPE_REFUND_ISSUANCES_PER_CHARGE } from '../refund-issuance.mts'
+import { getMembershipWorkLimit } from '../work-limits.mts'
 import type { AdministratorRefundOperation } from './administrator-request-matching.mts'
 
 export async function getLockedAdministratorRefundOperation(
@@ -8,6 +8,7 @@ export async function getLockedAdministratorRefundOperation(
   membershipId: string,
   query: QueryExecutor,
 ): Promise<(AdministratorRefundOperation & { refundLimitReached: boolean }) | null> {
+  const cap = getMembershipWorkLimit('local_stripe_refund_issuances_per_charge')
   const { rows } = await query(sql`/* getLockedAdministratorRefundOperation */
     SELECT operation.id, operation.completed_at IS NOT NULL AS completed,
       (SELECT COUNT(*) FROM (
@@ -18,8 +19,8 @@ export async function getLockedAdministratorRefundOperation(
         WHERE refund_operation.membership_provider_context_id = operation.membership_provider_context_id
           AND refund_operation.provider_charge_id = operation.provider_charge_id
           AND attempt.rejected_at IS NULL
-        LIMIT ${MAX_LOCAL_STRIPE_REFUND_ISSUANCES_PER_CHARGE}
-      ) outstanding) >= ${MAX_LOCAL_STRIPE_REFUND_ISSUANCES_PER_CHARGE}
+        LIMIT ${cap}
+      ) outstanding) >= ${cap}
         AND NOT EXISTS (
           SELECT 1 FROM membership_administrator_refund_operation_requests existing_request
           WHERE existing_request.membership_operation_id = operation.id

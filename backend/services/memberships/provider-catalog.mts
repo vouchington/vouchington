@@ -5,8 +5,7 @@ import { getMembershipProviderContext } from '@voucha/config/membership-provider
 import sql from 'sql-template-strings'
 import type { MembershipBillingInterval, MembershipPlanSlug } from './types.mts'
 import type { MembershipPurchaseProvider } from './purchase-intents.mts'
-
-export const MAX_ACTIVE_MEMBERSHIP_PROVIDER_MAPPINGS = 5
+import { membershipAdditionalWorkMaxValues } from './work-limits.mts'
 
 const CATALOG_PROVIDERS = ['stripe', 'apple_app_store', 'google_play', 'microsoft_store'] as const
 
@@ -66,7 +65,7 @@ export async function getActiveMembershipCatalogFromPrimary(): Promise<Membershi
     WHERE product.retired_at IS NULL
     ORDER BY product.plan, product.billing_interval, context.provider, context.application_id,
       mapping.id DESC
-    LIMIT ${4 * CATALOG_PROVIDERS.length * MAX_ACTIVE_MEMBERSHIP_PROVIDER_MAPPINGS}`)
+    LIMIT ${4 * CATALOG_PROVIDERS.length * membershipAdditionalWorkMaxValues.active_provider_mappings}`)
   const products = new Map<string, MembershipCatalogProduct>()
   for (const row of rows) {
     const product = products.get(row.id) ?? {

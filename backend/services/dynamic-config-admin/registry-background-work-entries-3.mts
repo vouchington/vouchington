@@ -32,6 +32,8 @@ export const backgroundWorkEntries3 = [
       dispatch_batch_size: 'Dispatch batch size for moderation reports processing.',
       dispatch_min_age_seconds: 'Minimum age of judgements eligible for auto-dispatch.',
       dispatch_max_age_seconds: 'Maximum age of judgements eligible for auto-dispatch.',
+      judgement_report_sample_cap:
+        'Reports sampled into one judgement agent prompt; bounds prompt size and cost.',
     },
   }),
   defineBoundedWorkNamespace({

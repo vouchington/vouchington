@@ -1,4 +1,4 @@
-/** Above MAX_REPORTS_FOR_JUDGEMENT, so the per-entity report cap is exercised. */
+/** Above the judgement_report_sample_cap default, so the per-entity report cap is exercised. */
 export const REPORT_CONTEXT_REPORTS_PER_ENTITY = 60
 export const REPORT_CONTEXT_POST_COUNT = 4
 export const REPORT_CONTEXT_REPORTED_USER_COUNT = 3

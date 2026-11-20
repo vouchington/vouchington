@@ -8352,6 +8352,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
     devDependencies:
       '@services/posts':
         specifier: workspace:^

@@ -8,7 +8,7 @@ import {
   updateTestMembershipExpiresAt,
 } from '@voucha/test-helpers'
 import { revokeMembershipGrant } from './revoke.mts'
-import { MAX_OUTSTANDING_MEMBERSHIP_GRANTS_PER_USER } from './outstanding.mts'
+import { membershipAdditionalWorkDefaults } from '../work-limits.mts'
 import { createMembership, grantMembership } from '../create.mts'
 import { getMembershipByUserId, getMembershipHistory } from '../get.mts'
 
@@ -31,7 +31,11 @@ describe('grant issuer snapshots', () => {
     })
     await updateTestMembershipExpiresAt(elapsed.id, new Date('2020-01-02T00:00:00.000Z'))
     const grants: string[] = []
-    for (let index = 0; index < MAX_OUTSTANDING_MEMBERSHIP_GRANTS_PER_USER; index++) {
+    for (
+      let index = 0;
+      index < membershipAdditionalWorkDefaults.outstanding_grants_per_user;
+      index++
+    ) {
       const grant = await grantMembership(admin.id, recipient.id, 'plus', sku.id, 30)
       grants.push(grant.grantId)
     }
@@ -55,7 +59,11 @@ describe('grant issuer snapshots', () => {
   it('checks concurrent grants against committed outstanding grants', async () => {
     const recipient = await createTestUser()
     const sku = await createTestSku({ plan: 'plus' })
-    for (let index = 0; index < MAX_OUTSTANDING_MEMBERSHIP_GRANTS_PER_USER - 1; index++)
+    for (
+      let index = 0;
+      index < membershipAdditionalWorkDefaults.outstanding_grants_per_user - 1;
+      index++
+    )
       await grantMembership(admin.id, recipient.id, 'plus', sku.id, 30)
     const results = await Promise.allSettled([
       grantMembership(admin.id, recipient.id, 'plus', sku.id, 30),

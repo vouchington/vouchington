@@ -8,7 +8,7 @@ import {
 } from '@voucha/test-helpers'
 import { createMembership } from './create-membership.mts'
 import { getSkuByStripePriceIdForLifecycle } from './get-catalog.mts'
-import { MAX_ACTIVE_MEMBERSHIP_PROVIDER_MAPPINGS } from './provider-catalog.mts'
+import { membershipAdditionalWorkDefaults } from './work-limits.mts'
 import { publishStripeCatalogMapping } from './stripe-catalog-mappings.mts'
 
 describe('membership catalog mapping capacity', () => {
@@ -16,7 +16,7 @@ describe('membership catalog mapping capacity', () => {
     const context = { environment: 'test' as const, applicationId: `catalog-cap-${randomUUID()}` }
     const mappings = []
     const seedSku = `catalog-old-${randomUUID()}`
-    for (let index = 0; index < MAX_ACTIVE_MEMBERSHIP_PROVIDER_MAPPINGS; index++)
+    for (let index = 0; index < membershipAdditionalWorkDefaults.active_provider_mappings; index++)
       mappings.push(
         await createTestSku({
           plan: 'plus',

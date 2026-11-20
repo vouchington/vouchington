@@ -11,9 +11,6 @@ import {
   reportEntityFkColumn,
 } from './config.mts'
 
-/** Cap on reports fed to the judgement agent — bounds prompt size / cost for popular entities. */
-export const MAX_REPORTS_FOR_JUDGEMENT = 50
-
 // Literal outcomes retain index selectivity under generic planning; both pending markers
 // make the pending ordered indexes usable without relying on CHECK-constraint inference.
 const REPORT_OUTCOME_FILTERS = {
@@ -70,10 +67,12 @@ export async function getReportJudgementContextsForEntitiesBatch(
   }
 
   const cap = getModerationReportsWorkLimit('cluster_report_count_cap')
-  const rows = await selectReportContextRows(byFk, cap)
+  // Bounds prompt size / cost for popular entities.
+  const sampleCap = Math.min(cap, getModerationReportsWorkLimit('judgement_report_sample_cap'))
+  const rows = await selectReportContextRows(byFk, cap, sampleCap)
   for (const row of rows) {
     const context = buildReportJudgementContext(
-      row.reports.slice(0, Math.min(cap, MAX_REPORTS_FOR_JUDGEMENT)),
+      row.reports.slice(0, sampleCap),
       Math.min(row.report_count, cap),
       row.report_count > cap,
     )
@@ -101,6 +100,7 @@ function reportReasonSeverityRank(reason: ModerationReportReason): number {
 async function selectReportContextRows(
   byFk: Map<string, string[]>,
   cap: number,
+  sampleCap: number,
 ): Promise<ReportContextRow[]> {
   const query = sql`/* getReportJudgementContextsForEntitiesBatch */ `
   let first = true
@@ -112,7 +112,7 @@ async function selectReportContextRows(
     query.append(sql`SELECT ${fkColumn}::text AS fk_column, entity.id AS entity_id,
       COUNT(sample.id)::integer AS report_count,
       COALESCE(jsonb_agg(jsonb_build_object('id', sample.id, 'reason', sample.reason, 'note', sample.note)
-        ORDER BY sample.id DESC) FILTER (WHERE sample.report_rank <= ${Math.min(cap, MAX_REPORTS_FOR_JUDGEMENT)}), '[]'::jsonb) AS reports
+        ORDER BY sample.id DESC) FILTER (WHERE sample.report_rank <= ${sampleCap}), '[]'::jsonb) AS reports
       FROM unnest(${ids}::uuid[]) entity(id)
       LEFT JOIN LATERAL (SELECT bounded.*, row_number() OVER (ORDER BY bounded.id DESC) AS report_rank FROM (
         SELECT * FROM (`)

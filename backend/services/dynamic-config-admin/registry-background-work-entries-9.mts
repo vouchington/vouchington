@@ -7,6 +7,7 @@ import {
   moderationAnalyticsWorkConfig,
   moderationAnalyticsWorkMaxValues,
 } from '@services/moderation-analytics/work-limits'
+import { moderationWorkConfig, moderationWorkMaxValues } from '@services/moderation/work-limits'
 import { usersWorkConfig, usersWorkMaxValues } from '@services/users/work-limits'
 import {
   postClearanceWorkConfig,
@@ -82,6 +83,16 @@ export const backgroundWorkRegistryEntries9 = {
     maxValues: moderationAnalyticsWorkMaxValues,
     descriptions: { leaderboard_page_size: 'Moderators included in the activity leaderboard.' },
   }),
+  'moderation-work-config': defineBoundedWorkNamespace({
+    namespace: 'moderation-work-config',
+    config: moderationWorkConfig,
+    label: 'Moderation',
+    maxValues: moderationWorkMaxValues,
+    descriptions: {
+      post_moderations_per_post:
+        'Newest agent moderation results listed per post in the administrator view.',
+    },
+  }),
   'users-work-config': defineBoundedWorkNamespace({
     namespace: 'users-work-config',
     config: usersWorkConfig,
@@ -89,6 +100,10 @@ export const backgroundWorkRegistryEntries9 = {
     maxValues: usersWorkMaxValues,
     descriptions: {
       engagement_claim_hours: 'Engagement claim hours for background processing.',
+      preservation_hold_history_limit:
+        'Newest legal preservation holds an administrator view lists per account.',
+      content_removal_count_cap:
+        'Moderator-removed posts counted for a user moderation context before the count saturates.',
     },
   }),
   'post-clearance-work-config': defineBoundedWorkNamespace({

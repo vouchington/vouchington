@@ -7,8 +7,7 @@ import {
   type ReconciliationAttemptRow,
 } from './refund-reconciliation/ledger-mappers.mts'
 import type { RefundReconciliationAttempt } from './refund-reconciliation/types.mts'
-
-export const MAX_LOCAL_STRIPE_REFUND_ISSUANCES_PER_CHARGE = 10
+import { getMembershipWorkLimit } from './work-limits.mts'
 
 /** Commits the real provider attempt before issuing a refund; webhook receipts never use admission. */
 export async function recordRefundReconciliationAttempt(
@@ -73,6 +72,7 @@ export async function assertLocalStripeRefundCapacity(
   providerPaymentReference: string,
   query: QueryExecutor,
 ): Promise<void> {
+  const cap = getMembershipWorkLimit('local_stripe_refund_issuances_per_charge')
   const { rows } = await query(sql`/* assertLocalStripeRefundCapacity */
     SELECT attempt.id
     FROM membership_operations operation
@@ -80,8 +80,8 @@ export async function assertLocalStripeRefundCapacity(
     WHERE operation.membership_provider_context_id = ${providerContextId}
       AND operation.provider_charge_id = ${providerPaymentReference}
       AND attempt.rejected_at IS NULL
-    LIMIT ${MAX_LOCAL_STRIPE_REFUND_ISSUANCES_PER_CHARGE}`)
-  if (rows.length >= MAX_LOCAL_STRIPE_REFUND_ISSUANCES_PER_CHARGE)
+    LIMIT ${cap}`)
+  if (rows.length >= cap)
     throw createHttpError(409, 'Local Stripe refund issuance limit reached', {
       code: 'MEMBERSHIP_REFUND_LIMIT_REACHED',
     })
