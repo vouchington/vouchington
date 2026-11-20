@@ -6,6 +6,7 @@ import {
   insertTestPost,
 } from '@voucha/test-helpers'
 import { getMaxUuidv7ForDate, getMinUuidv7ForDate } from '@modules/utils'
+import { readGrowthRequestFacts } from '@services/reporting-daily-rollups/read-growth'
 import { getGrowthMetrics } from './get-growth-metrics.mts'
 import { getUserGrowth } from './get-user-growth.mts'
 import { getContentProduction } from './get-content-production.mts'
@@ -19,7 +20,10 @@ describe('getUserGrowth', () => {
   it('returns expected shape with non-negative numbers', async () => {
     const periodStart = new Date()
     periodStart.setDate(periodStart.getDate() - 30)
-    const result = await getUserGrowth('30d', periodStart)
+    // dau and mau must come from one statement snapshot: with the facts-less path they are
+    // separate queries, so rows inserted by concurrent tests between them can make dau > mau.
+    const facts = await readGrowthRequestFacts(periodStart, new Date())
+    const result = await getUserGrowth('30d', periodStart, facts)
 
     expect(typeof result.total_users).toBe('number')
     expect(typeof result.new_users).toBe('number')
