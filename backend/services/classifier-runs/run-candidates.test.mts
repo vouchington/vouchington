@@ -8,6 +8,8 @@ import {
 import { reserveSyntheticRunId } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-run'
 import { mergeTopicForTest } from '@voucha/test-helpers/entities/topics/deletion'
 import { describe, expect, it } from 'vitest'
+import { classifierDecisionLimitsConfig } from '@services/classifiers/decision-result-limits'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
 describe('classifier run candidate capture (real PG)', () => {
   it('does not capture a topic merged after candidate discovery', async () => {
@@ -31,24 +33,59 @@ describe('classifier run candidate capture (real PG)', () => {
     expect(await getClassifierRunCandidateTopicIdsForTest(runId)).toEqual([activeId])
   })
 
-  it('refuses to capture more topics than the classifier ceiling', async () => {
+  it('refuses to capture more topics than the configured limit', async () => {
     const runId = await reserveSyntheticRunId()
-    const topicIds = Array.from({ length: 21 }, () => randomUUID())
-
-    await expect(captureClassifierRunCandidatesForTest(runId, topicIds)).rejects.toThrow(
-      'Classifier captured topics exceed its limit (20)',
-    )
+    const restore = overrideDynamicConfigFieldsForTest(classifierDecisionLimitsConfig, {
+      topic_candidates: 2,
+    })
+    try {
+      await expect(
+        captureClassifierRunCandidatesForTest(runId, [randomUUID(), randomUUID(), randomUUID()]),
+      ).rejects.toThrow('Classifier captured topics exceed its limit (2)')
+    } finally {
+      restore()
+    }
   })
 
-  it('refuses to capture more stories than the classifier ceiling', async () => {
+  it('replays every stored topic after the configured limit is lowered', async () => {
+    const creator = await createTestUser()
     const runId = await reserveSyntheticRunId()
-    const candidates = Array.from({ length: 21 }, () => ({
+    const topicIds = await Promise.all(
+      Array.from({ length: 3 }, () => {
+        const suffix = randomUUID().slice(0, 8)
+        return insertTestTopic({
+          name: `Replay ${suffix}`,
+          slug: `replay-${suffix}`,
+          createdById: creator.id,
+        })
+      }),
+    )
+    await captureClassifierRunCandidatesForTest(runId, topicIds)
+    const restore = overrideDynamicConfigFieldsForTest(classifierDecisionLimitsConfig, {
+      topic_candidates: 1,
+    })
+    try {
+      expect(await getClassifierRunCandidateTopicIdsForTest(runId)).toHaveLength(3)
+    } finally {
+      restore()
+    }
+  })
+
+  it('refuses to capture more stories than the configured limit', async () => {
+    const runId = await reserveSyntheticRunId()
+    const candidates = Array.from({ length: 3 }, () => ({
       kind: 'story' as const,
       storyId: randomUUID(),
     }))
-
-    await expect(captureClassifierRunStoryCandidatesForTest(runId, candidates)).rejects.toThrow(
-      'Classifier captured stories exceed its limit (20)',
-    )
+    const restore = overrideDynamicConfigFieldsForTest(classifierDecisionLimitsConfig, {
+      story_candidates: 2,
+    })
+    try {
+      await expect(captureClassifierRunStoryCandidatesForTest(runId, candidates)).rejects.toThrow(
+        'Classifier captured stories exceed its limit (2)',
+      )
+    } finally {
+      restore()
+    }
   })
 })

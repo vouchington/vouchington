@@ -2,6 +2,7 @@ import type { QueryExecutor } from '@data-stores/psql'
 import {
   CLASSIFIER_MAX_STORY_CANDIDATES,
   CLASSIFIER_MAX_TOPIC_CANDIDATES,
+  getClassifierResultLimit,
 } from '@services/classifiers/decision-result-limits'
 import sql from 'sql-template-strings'
 import type { StoryRunCandidate } from './types.mts'
@@ -13,10 +14,7 @@ export async function insertClassifierRunCandidates(
   topicIds: readonly string[],
   limit: number | null,
 ): Promise<void> {
-  const ceiling = Math.min(
-    limit ?? CLASSIFIER_MAX_TOPIC_CANDIDATES,
-    CLASSIFIER_MAX_TOPIC_CANDIDATES,
-  )
+  const ceiling = Math.min(limit ?? Infinity, getClassifierResultLimit('topic'))
   if (topicIds.length > ceiling) {
     throw new Error(`Classifier captured topics exceed its limit (${ceiling})`)
   }
@@ -48,10 +46,9 @@ export async function insertClassifierRunStoryCandidates(
   runId: string,
   candidates: readonly StoryRunCandidate[],
 ): Promise<void> {
-  if (candidates.length > CLASSIFIER_MAX_STORY_CANDIDATES) {
-    throw new Error(
-      `Classifier captured stories exceed its limit (${CLASSIFIER_MAX_STORY_CANDIDATES})`,
-    )
+  const ceiling = getClassifierResultLimit('story')
+  if (candidates.length > ceiling) {
+    throw new Error(`Classifier captured stories exceed its limit (${ceiling})`)
   }
   await query(sql`/* insertClassifierRunStoryCandidates */
     INSERT INTO classifier_run_candidates (run_id, story_id, rss_feed_item_id, ordinal)

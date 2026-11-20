@@ -1,5 +1,5 @@
 import { DynamicConfig } from '@data-stores/valkey'
-import { CLASSIFIER_MAX_TOPIC_CANDIDATES } from '@services/classifiers/decision-result-limits'
+import { getClassifierResultLimit } from '@services/classifiers/decision-result-limits'
 
 // Paid-tier caps for the autotagger LLM agent (#8246). Separate from `manual-tag-limits`
 // (`@services/tag-limits`) -- that namespace caps human-added tags per relation; this one caps
@@ -91,6 +91,6 @@ export function getAutotaggerPaidLimitsFields(): AutotaggerPaidLimitsFields {
 
 function boundedTopicLimit(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value)
-    ? Math.min(CLASSIFIER_MAX_TOPIC_CANDIDATES, Math.max(0, Math.trunc(value)))
+    ? Math.min(getClassifierResultLimit('topic'), Math.max(0, Math.trunc(value)))
     : fallback
 }
