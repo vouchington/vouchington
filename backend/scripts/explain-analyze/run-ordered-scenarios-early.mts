@@ -24,6 +24,7 @@ import { runOAuthClientVerificationScenarios } from './run-scenarios/oauth-clien
 import { runPostFeedShareScenarios } from './run-scenarios/post-feed-shares.mts'
 import { runStoryMemberPageScenarios } from './run-scenarios/story-member-pages.mts'
 import { runStoryByIdScenario } from './run-scenarios/story-by-id.mts'
+import { runUsersByReferenceBatchScenario } from './run-scenarios/users-by-reference-batch.mts'
 import { runHostnameCrawlSweepScenarios } from './run-scenarios/hostname-crawl-sweeps.mts'
 import { runCrawlerBoilerplateScenario } from './run-scenarios/crawler-boilerplate.mts'
 import { runHostnameBlocklistScenario } from './run-scenarios/hostname-blocklist.mts'
@@ -53,6 +54,7 @@ export const EARLY_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runPostFeedShareScenarios,
   runStoryMemberPageScenarios,
   runStoryByIdScenario,
+  runUsersByReferenceBatchScenario,
   runSearchAndFacetScenarios,
   runSpamSignalScenarios,
   runOAuthClientVerificationScenarios,

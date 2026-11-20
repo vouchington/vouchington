@@ -8,6 +8,7 @@ export const USERS_AND_VOTES_SCENARIOS = [
   'user-bookmark-counts',
   ...SESSION_LIMIT_SCENARIO_IDS,
   'user-by-username',
+  'users-by-reference-batch',
   ...(['user-profile-metrics', 'profile-post-type-counts'] as const),
   'user-removed-posts-page',
   ...(['vote-aggregation-post', 'vote-aggregation-topic'] as const),
