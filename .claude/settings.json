@@ -85,6 +85,13 @@
       "Bash(./node_modules/.bin/vitest run *)"
     ],
     "deny": [
+      "Bash(FORCE_MAIN_RESET=*)",
+      "Bash(export FORCE_MAIN_RESET*)",
+      "Bash(next dev*)",
+      "Bash(npx next dev*)",
+      "Bash(pnpm exec next dev*)",
+      "Bash(./dev/teardown --remove*)",
+      "Bash(./dev/teardown * --remove*)",
       "Bash(./dev*/../*)",
       "Bash(node dev*/../*)",
       "Bash(rm *..*)",

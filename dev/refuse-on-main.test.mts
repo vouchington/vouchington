@@ -91,6 +91,8 @@ describe('refuse-on-main', () => {
     } else {
       delete env.FORCE_MAIN_RESET
     }
+    // The suite may itself run inside Claude Code; each case opts in to the agent-shell marker.
+    delete env.CLAUDECODE
     if (processTmpdir !== undefined) {
       env.TMPDIR = processTmpdir
     }
@@ -217,6 +219,20 @@ describe('refuse-on-main', () => {
       expect(code).toBe(0)
       expect(stderr).toContain('WARNING')
       expect(stderr).toContain('FORCE_MAIN_RESET=1')
+    })
+
+    it('ignores FORCE_MAIN_RESET=1 inside a Claude Code shell', async () => {
+      const gitToplevel = await makeToplevel()
+      const { code, stderr } = await run({
+        gitToplevel,
+        isMainWorktree: true,
+        forceMainReset: true,
+        processTmpdir: await makeIsolatedTmp(),
+        extraEnv: { CLAUDECODE: '1' },
+      })
+      expect(code).toBe(1)
+      expect(stderr).toContain('human-only')
+      expect(stderr).not.toContain('WARNING')
     })
 
     it('uses an explicit repo root instead of the caller cwd', async () => {
