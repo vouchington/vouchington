@@ -9,4 +9,4 @@
 | `pgcrypto`           | 1.4     |
 | `plpgsql`            | 1.0     |
 | `unaccent`           | 1.1     |
-| `vector`             | 0.8.7   |
+| `vector`             | 0.8.6   |
