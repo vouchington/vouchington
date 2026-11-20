@@ -1,6 +1,7 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getCachedCommunityModerators } from '@services/entity-cache/community-memberships'
+import { getNotificationsWorkLimit } from './work-limits.mts'
 
 export type ConversationNotificationContext = {
   channel_type: 'direct_message' | 'modmail' | 'mod_internal'
@@ -8,9 +9,6 @@ export type ConversationNotificationContext = {
   subject_user_id: string | null
   participant_user_ids: string[]
 }
-
-/** Hard cap on participant rows. Inlined so notifications does not depend on messaging. */
-const MOD_INTERNAL_PARTICIPANT_READ_LIMIT = 50
 
 export async function getConversationNotificationContext(
   conversationId: string,
@@ -161,7 +159,7 @@ async function readModInternalRecipients(
         AND cp.user_id IS NOT NULL`)
   if (excludeSenderId) modQuery.append(sql` AND cp.user_id != ${excludeSenderId}`)
   modQuery.append(sql`
-      LIMIT ${MOD_INTERNAL_PARTICIPANT_READ_LIMIT}
+      LIMIT ${getNotificationsWorkLimit('mod_internal_participant_read_limit')}
     ) participants`)
   const { rows } = await read(modQuery)
   return rows as Array<{ user_id: string }>

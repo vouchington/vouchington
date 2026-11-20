@@ -10,6 +10,7 @@ const defaultFields = {
   content_visibility_page_size: 500,
   push_intent_recovery_page_size: 100,
   mark_all_read_page_size: 100,
+  mod_internal_participant_read_limit: 50,
 }
 
 /** Hard ceilings for the current runtime configuration contract. */
@@ -21,6 +22,7 @@ export const notificationsWorkMaxValues = {
   content_visibility_page_size: 5000,
   push_intent_recovery_page_size: 1000,
   mark_all_read_page_size: 1000,
+  mod_internal_participant_read_limit: 500,
 }
 
 export const notificationsWorkConfig = new DynamicConfig({
@@ -33,6 +35,7 @@ export const notificationsWorkConfig = new DynamicConfig({
     content_visibility_page_size: 'number',
     push_intent_recovery_page_size: 'number',
     mark_all_read_page_size: 'number',
+    mod_internal_participant_read_limit: 'number',
   },
   defaultFields,
 })
