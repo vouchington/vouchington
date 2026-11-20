@@ -182,31 +182,21 @@ describe('native consumer usage manifest', () => {
     ).not.toThrow()
   })
 
-  it('accepts labeled and explicitly typed Swift message-key consumers', () => {
+  it('accepts labeled, explicitly typed and argument Swift message-key consumers', () => {
     expect(() =>
       validateNativeConsumerUsage(
-        [entry('native.feature.title', ['swift'])],
+        [
+          entry('native.feature.title', ['swift']),
+          entry('notifications.kind.follow.byUser', ['swift']),
+        ],
         [
           source(
             'swift-clients/ui/Sources/Feature/View.swift',
             [
               'let row = Row(title: .nativeFeatureTitle)',
               'let title: UiMessageKey = .nativeFeatureTitle',
+              'render(.notificationsKindFollowByUser, actor: name)',
             ].join('\n'),
-          ),
-        ],
-      ),
-    ).not.toThrow()
-  })
-
-  it('accepts Swift notification-kind keys passed as message-key arguments', () => {
-    expect(() =>
-      validateNativeConsumerUsage(
-        [entry('notifications.kind.follow.byUser', ['swift'])],
-        [
-          source(
-            'swift-clients/ui/Sources/Feature/Renderer.swift',
-            'render(.notificationsKindFollowByUser, actor: name)',
           ),
         ],
       ),
