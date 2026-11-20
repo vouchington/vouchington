@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { read } from '@data-stores/psql'
 import {
   createRandomString,
   CONTRIBUTING_USER_AGE_MS,
@@ -7,10 +6,10 @@ import {
   insertTestCard,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
+import { getPostDataPointTopicIdsForTest } from '@voucha/test-helpers/post-data-point-topics'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { postContentLimitsConfig } from '@services/post-content-limits'
 import { manualTagLimitConfig } from '@services/tag-limits'
-import sql from 'sql-template-strings'
 import { createPost } from '../create.mts'
 import { updatePost } from '../update.mts'
 
@@ -52,10 +51,7 @@ describe('data-point topic replacement', () => {
         structured_data: makeStructuredData([replacementId!]),
       })
 
-      const { rows } = await read<{ topic_id: string }>(sql`/* readTestDataPointTopics */
-        SELECT topic_id FROM post_data_point_topics WHERE post_id = ${post!.id}
-      `)
-      expect(rows.map(row => row.topic_id)).toEqual([replacementId])
+      expect(await getPostDataPointTopicIdsForTest(post!.id)).toEqual([replacementId])
     } finally {
       restoreTagLimits()
       restoreContentLimits()
