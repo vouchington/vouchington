@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { useContentLimits } from '@/hooks/use-content-limits'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Textarea } from '@/components/ui/textarea'
@@ -15,7 +16,6 @@ import { CopyrightNoticeTargetPicker } from './copyright-notice-target-picker'
 import type { SubmitReview } from './copyright-staff-review-buttons'
 
 // The territorial decision route's own static cap, separate from the configurable form cap.
-const TERRITORIAL_DECISION_TARGETS_MAX = 20
 
 export function CopyrightStaffTerritorialDecision({
   item,
@@ -28,6 +28,7 @@ export function CopyrightStaffTerritorialDecision({
 }) {
   const territorial = item.territorial
   const reopened = Boolean(territorial?.reopened_at)
+  const maxTargets = useContentLimits()?.copyright_claimant_targets_max
   const [outcome, setOutcome] = useState<'restrict' | 'no_action'>(
     reopened ? 'restrict' : 'no_action',
   )
@@ -149,7 +150,7 @@ export function CopyrightStaffTerritorialDecision({
             hint={null}
             initialUrl={territorial.hosted_use_url}
             legend='Post images named in the notice'
-            maxTargets={TERRITORIAL_DECISION_TARGETS_MAX}
+            maxTargets={maxTargets}
             onChange={setTargets}
             postImagesOnly
             targets={targets}

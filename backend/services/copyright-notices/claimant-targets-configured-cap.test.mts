@@ -34,6 +34,7 @@ describe('configured copyright claimant targets cap', () => {
 
   it('accepts more targets than the default once the cap is raised', async () => {
     onTestFinished(overrideDynamicConfigFieldsForTest(copyrightConfig, { claimantTargetsMax: 25 }))
+    onTestFinished(restoreRaised)
     const stored = await createSignedInCopyrightForm(21)
     expect(stored.intake.copyright_notice_submission_id).toBeDefined()
     expect(() => parseCopyrightNoticeForm(httpForm(21))).not.toThrow()
@@ -43,6 +44,7 @@ describe('configured copyright claimant targets cap', () => {
     const restoreRaised = overrideDynamicConfigFieldsForTest(copyrightConfig, {
       claimantTargetsMax: 25,
     })
+    onTestFinished(restoreRaised)
     const stored = await createSignedInCopyrightForm(21)
     restoreRaised()
     onTestFinished(overrideDynamicConfigFieldsForTest(copyrightConfig, { claimantTargetsMax: 2 }))
