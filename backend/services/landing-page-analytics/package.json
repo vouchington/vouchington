@@ -26,15 +26,14 @@
   "dependencies": {
     "@data-stores/analytics": "workspace:^",
     "@data-stores/psql": "workspace:^",
-    "@data-stores/valkey": "workspace:^",
     "@modules/membership-helpers": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/analytics": "workspace:^",
+    "@services/my": "workspace:^",
     "@services/users": "workspace:^",
     "http-assert": "^1.5.0",
     "sql-template-strings": "^2.2.2",
-    "uuid": "^14.0.3",
-    "valkyries": "^0.15.0"
+    "uuid": "^14.0.3"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

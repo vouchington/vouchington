@@ -8,7 +8,7 @@ import path from 'node:path'
 import { v7 } from 'uuid'
 import { getLandingPageAnalyticsByPageId } from './get-analytics.mts'
 import { recordLandingPageVisit } from './record-visit.mts'
-import { landingPageAnalyticsWorkConfig } from './work-limits.mts'
+import { landingPageLimitsConfig } from '@services/my/landing-pages/limits'
 
 describe('landing page UTM sources limit', () => {
   let landingPageId: string
@@ -32,13 +32,13 @@ describe('landing page UTM sources limit', () => {
   })
 
   it('lists only the configured number of top sources', async () => {
-    const restore = overrideDynamicConfigFieldsForTest(landingPageAnalyticsWorkConfig, {
+    const restore = overrideDynamicConfigFieldsForTest(landingPageLimitsConfig, {
       utm_sources_listed: 2,
     })
     try {
       const limited = await getLandingPageAnalyticsByPageId(landingPageId)
       expect(limited.utm_sources.map(source => source.utm_source)).toEqual(['alpha', 'beta'])
-      overrideDynamicConfigFieldsForTest(landingPageAnalyticsWorkConfig, { utm_sources_listed: 3 })
+      overrideDynamicConfigFieldsForTest(landingPageLimitsConfig, { utm_sources_listed: 3 })
       const widened = await getLandingPageAnalyticsByPageId(landingPageId)
       expect(widened.utm_sources.map(source => source.utm_source)).toEqual([
         'alpha',

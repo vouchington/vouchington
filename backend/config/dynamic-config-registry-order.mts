@@ -49,7 +49,6 @@ export const REGISTRY_ORDER = [
   'moderation-analytics-work-config',
   'post-clearance-work-config',
   'dynamic-config-admin-work-config',
-  'landing-page-analytics-work-config',
   'users-work-config',
   'moderation-work-config',
   'vote-weight-work-config',

@@ -1,9 +1,5 @@
 import { defineBoundedWorkNamespace } from './registry-bounded-work-entry.mts'
 import { dynamicConfigAdminWorkConfig, dynamicConfigAdminWorkMaxValues } from './work-limits.mts'
-import {
-  landingPageAnalyticsWorkConfig,
-  landingPageAnalyticsWorkMaxValues,
-} from '@services/landing-page-analytics/work-limits'
 import { imagesWorkConfig, imagesWorkMaxValues } from '@services/images/work-limits'
 import {
   openaiModerationWorkConfig,
@@ -77,15 +73,6 @@ export const backgroundWorkEntries2 = [
     descriptions: {
       namespace_history_rows:
         'Newest audit revisions returned for one dynamic configuration namespace history.',
-    },
-  }),
-  defineBoundedWorkNamespace({
-    namespace: 'landing-page-analytics-work-config',
-    config: landingPageAnalyticsWorkConfig,
-    label: 'Landing Page Analytics',
-    maxValues: landingPageAnalyticsWorkMaxValues,
-    descriptions: {
-      utm_sources_listed: 'Top UTM sources listed in one landing page analytics dashboard.',
     },
   }),
 ]

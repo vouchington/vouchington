@@ -3,7 +3,7 @@ import { query } from '@data-stores/analytics'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { isUUID } from '@modules/utils'
-import { getLandingPageAnalyticsWorkLimit } from './work-limits.mts'
+import { getLandingPageUtmSourcesLimit } from '@services/my/landing-pages/limits'
 import type {
   LandingPageAnalytics,
   LandingPageItemClickStats,
@@ -102,7 +102,7 @@ export async function getLandingPageAnalyticsByPageId(
       ORDER BY 2 DESC
       LIMIT $2
     `,
-      [landingPageId, getLandingPageAnalyticsWorkLimit('utm_sources_listed')],
+      [landingPageId, getLandingPageUtmSourcesLimit()],
     ),
   ])
 

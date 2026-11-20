@@ -4,17 +4,24 @@ import { createCodedError } from '@vouchington/sentry'
 import { LANDING_PAGE_ITEM_LIMIT_REACHED } from '@modules/on-error/error-codes'
 import type { LandingPageItemInput } from './types.mts'
 
-export const LANDING_PAGE_LIMIT_MAX_VALUES = { items_per_page: 1000 }
+export const LANDING_PAGE_LIMIT_MAX_VALUES = { items_per_page: 1000, utm_sources_listed: 200 }
 export const landingPageLimitsConfig = new DynamicConfig({
   key: 'landing-page-limits-config',
-  fieldTypes: { items_per_page: 'number' },
-  defaultFields: { items_per_page: 100 },
+  fieldTypes: { items_per_page: 'number', utm_sources_listed: 'number' },
+  defaultFields: { items_per_page: 100, utm_sources_listed: 20 },
 })
 
 export function getLandingPageItemLimit(): number {
   return getBoundedPositiveIntegerField(landingPageLimitsConfig, 'items_per_page', {
     defaultValue: 100,
     maxValue: LANDING_PAGE_LIMIT_MAX_VALUES.items_per_page,
+  })
+}
+
+export function getLandingPageUtmSourcesLimit(): number {
+  return getBoundedPositiveIntegerField(landingPageLimitsConfig, 'utm_sources_listed', {
+    defaultValue: 20,
+    maxValue: LANDING_PAGE_LIMIT_MAX_VALUES.utm_sources_listed,
   })
 }
 

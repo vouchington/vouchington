@@ -7815,9 +7815,6 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
-      '@data-stores/valkey':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey
       '@modules/membership-helpers':
         specifier: workspace:^
         version: link:../../modules/membership-helpers
@@ -7827,6 +7824,9 @@ importers:
       '@services/analytics':
         specifier: workspace:^
         version: link:../analytics
+      '@services/my':
+        specifier: workspace:^
+        version: link:../my
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -7839,9 +7839,6 @@ importers:
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
-      valkyries:
-        specifier: ^0.15.0
-        version: 0.15.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
