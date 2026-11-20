@@ -1,6 +1,9 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import { getMinUuidv7ForDate } from '@modules/utils'
-import { readDataRetentionField } from './config.mts'
+import {
+  getAgentPromptHistoryRetainedRevisions,
+  getConfigHistoryRetainedRevisions,
+} from './history-retained-revisions.mts'
 import { getRetentionCutoffDate } from './cleanup-options.mts'
 import type { HistoryKind } from './cleanup-histories-candidates.mts'
 
@@ -13,7 +16,7 @@ export async function mutatePage(
 ): Promise<number> {
   switch (kind) {
     case 'dynamic_configuration_revisions': {
-      const retained = readDataRetentionField('config_history_retained_revisions_per_key')
+      const retained = getConfigHistoryRetainedRevisions()
       const result = await query(
         `/* deleteOldConfigHistoryPage */
          DELETE FROM dynamic_configuration_revisions AS old
@@ -57,9 +60,7 @@ export async function mutatePage(
       return result.rowCount ?? 0
     }
     case 'community_agent_prompt_revisions': {
-      const retained = readDataRetentionField(
-        'agent_prompt_history_retained_revisions_per_community',
-      )
+      const retained = getAgentPromptHistoryRetainedRevisions()
       const result = await query(
         `/* deleteOldPromptHistoryPage */
          DELETE FROM community_agent_prompt_revisions AS old
