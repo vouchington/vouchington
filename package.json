@@ -150,7 +150,7 @@
     "agent-blackboard": "^0.7.0",
     "coverage-check": "^0.18.1",
     "dependency-cruiser": "^18.7.2",
-    "eslint-plugin-no-mistakes": "^0.109.96",
+    "eslint-plugin-no-mistakes": "^0.109.99",
     "eslint-plugin-playwright": "^2.12.2",
     "eslint-plugin-react-you-might-not-need-an-effect": "^1.2.0",
     "eslint-plugin-vouchington": "^0.2.0",
@@ -159,7 +159,7 @@
     "jscpd": "^5.4.3",
     "jsdom": "^31.0.1",
     "knip": "^6",
-    "no-mistakes": "^0.109.96",
+    "no-mistakes": "^0.109.100",
     "oxfmt": "^0.78.0",
     "oxlint": "^1.93.0",
     "oxlint-plugin-react-doctor": "^0.9.23",
@@ -170,7 +170,7 @@
     "tsrs": "^0.25.0-ts7.1.0-beta",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^5.1.0",
-    "vouchington-tooling": "^3.4.0",
+    "vouchington-tooling": "^3.5.0",
     "yaml": "^2.9.1"
   },
   "engines": {
