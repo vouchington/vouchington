@@ -39,8 +39,7 @@ Follow [`docs/checklists/backend-queues.md`](../../../docs/checklists/backend-qu
 
 ## Vouchington additions
 
-- Every queue has a non-DLQ terminal recovery path: a backfill, a self-healing/reconciliation
-  dispatcher, or a documented accepted loss. Follow
+- Terminal recovery paths follow
   [job replayability](../../../docs/requirements/platform/JOB-REPLAYABILITY.md#rules-for-new-jobs).
 - Post-commit admission settles the API response, not worker completion. Canonical post
   create/update and URL-created service call sites await the queue-owned `BestEffort` admission
