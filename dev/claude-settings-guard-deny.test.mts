@@ -5,9 +5,9 @@ import { describe, expect, it } from 'vitest'
 
 // Harness guards that replace prose rules: no main-database reset override, no Next.js dev
 // server, and no worktree-deleting teardown. Claude Code matches a Bash rule against the whole
-// command with `*` as any text. Grok's Claude-compat matcher also treats a rule without `*` as a
-// character prefix, so `pnpm dev` and `pnpm run dev` would refuse `pnpm dev:storybook`; those two
-// forms are left out and only `next dev` spellings are denied.
+// command with `*` as any text. Grok matching of the same rules is covered in
+// claude-settings-grok-bash-deny.test.mts; its prefix matcher is why `pnpm dev` and
+// `pnpm run dev` are not denied (they would refuse `pnpm dev:storybook`).
 
 type ClaudeSettings = { permissions: { deny: string[] } }
 
@@ -21,10 +21,6 @@ const denyPatterns = claudeSettings.permissions.deny.flatMap(rule => {
 const globMatches = (pattern: string, command: string) =>
   new RegExp(`^${RegExp.escape(pattern).replaceAll('\\*', '.*')}$`, 's').test(command)
 const claudeDenied = (command: string) => denyPatterns.some(p => globMatches(p, command))
-const grokDenied = (command: string) =>
-  denyPatterns.some(p =>
-    p.includes('*') ? command.startsWith(p) || globMatches(p, command) : command.startsWith(p),
-  )
 
 const guarded = [
   'FORCE_MAIN_RESET=1 ./dev/reset',
@@ -35,6 +31,7 @@ const guarded = [
   'pnpm exec next dev --turbo',
   './dev/teardown --remove',
   './dev/teardown --yes --remove',
+  './dev/teardown -y --remove',
 ]
 
 const allowed = [
@@ -48,14 +45,12 @@ const allowed = [
 ]
 
 describe('harness guard deny rules', () => {
-  it.each(guarded)('denies %s under Claude and Grok matching', command => {
+  it.each(guarded)('denies %s', command => {
     expect(claudeDenied(command)).toBe(true)
-    expect(grokDenied(command)).toBe(true)
   })
 
-  it.each(allowed)('does not deny %s under Claude or Grok matching', command => {
+  it.each(allowed)('does not deny %s', command => {
     expect(claudeDenied(command)).toBe(false)
-    expect(grokDenied(command)).toBe(false)
   })
 
   it('forbids the same commands in the Codex rules', () => {
@@ -67,6 +62,8 @@ describe('harness guard deny rules', () => {
       '["npx", "next", "dev"]',
       '["pnpm", "exec", "next", "dev"]',
       '["./dev/teardown", "--remove"]',
+      '["./dev/teardown", "--yes", "--remove"]',
+      '["./dev/teardown", "-y", "--remove"]',
     ]) {
       expect(rules).toContain(`prefix_rule(pattern=${pattern}, decision="forbidden")`)
     }

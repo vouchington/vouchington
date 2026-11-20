@@ -34,8 +34,9 @@ path disposable.
 
 `./dev/reset` recreates the DB, flushes Valkey, and re-migrates; `./dev/teardown` removes services,
 DB, and Valkey. Both, plus `./dev/reset-worktree` and `db:clean`, **refuse to run on the main
-worktree** (which owns the shared `voucha` DB and `voucha-valkey` container); set `FORCE_MAIN_RESET=1`
-for that one command to override and never export it globally. Full clones under `.grok/worktrees`
+worktree** (which owns the shared `voucha` DB and `voucha-valkey` container). The
+`FORCE_MAIN_RESET=1` override is human-only: agent harnesses deny it, and the scripts ignore it when
+`CLAUDECODE=1` is set. A human sets it for one command and never exports it. Full clones under `.grok/worktrees`
 or the temp directory are disposable and get worktree-owned databases.
 
 `./dev/reset-worktree` (`--force` discards uncommitted changes) prepares a worktree for the next
