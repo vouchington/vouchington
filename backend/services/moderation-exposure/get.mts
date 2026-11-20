@@ -3,14 +3,16 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import {
   EXPOSURE_BREAK_THRESHOLD,
-  EXPOSURE_COUNT_DISPLAY_CAP,
+  EXPOSURE_COUNT_DISPLAY_CAP_MAX,
+  getExposureCountDisplayCap,
   EXPOSURE_WINDOW_MINUTES,
   EXPOSURE_COOLDOWN_MINUTES,
 } from './config.mts'
 import type { ExposureState } from './types.mts'
 
-// The cap is never below the threshold, so the threshold row is always inside the read.
-const EXPOSURE_READ_LIMIT = Math.max(EXPOSURE_BREAK_THRESHOLD, EXPOSURE_COUNT_DISPLAY_CAP) + 1
+// Bound to the hard ceiling, never the configured cap, so lowering the config cannot change the
+// rows read or drop the threshold row.
+const EXPOSURE_READ_LIMIT = Math.max(EXPOSURE_BREAK_THRESHOLD, EXPOSURE_COUNT_DISPLAY_CAP_MAX) + 1
 
 export async function getExposureState(
   moderatorId: string,
@@ -64,13 +66,14 @@ export async function getExposureState(
   )
 
   const distinctCount = parseInt(rows[0]?.distinct_count ?? '0', 10)
-  const count = Math.min(distinctCount, EXPOSURE_COUNT_DISPLAY_CAP)
+  const displayCap = getExposureCountDisplayCap()
+  const count = Math.min(distinctCount, displayCap)
   const inCooldown = rows[0]?.in_cooldown ?? false
   const cooldownEndsAt = rows[0]?.cooldown_ends_at ?? null
 
   return {
     count,
-    count_capped: distinctCount > EXPOSURE_COUNT_DISPLAY_CAP,
+    count_capped: distinctCount > displayCap,
     threshold: EXPOSURE_BREAK_THRESHOLD,
     in_cooldown: inCooldown,
     cooldown_ends_at: inCooldown && cooldownEndsAt ? cooldownEndsAt.toISOString() : null,

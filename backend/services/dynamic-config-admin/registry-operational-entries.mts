@@ -24,6 +24,7 @@ import {
 import { scoreField } from './registry-entry-utils.mts'
 import { activityPubInboxRegistryEntry } from './registry-activitypub-entry.mts'
 import { membershipBillingRegistryEntry } from './registry-membership-billing-entry.mts'
+import { moderationExposureRegistryEntry } from './registry-moderation-exposure-entry.mts'
 import { commentPlaceholderRegistryEntry } from './registry-comment-placeholder-entry.mts'
 import { dataRetentionRegistryEntry } from './registry-data-retention-entry.mts'
 import { postRelatedUrlDisplayRegistryEntries } from './registry-post-related-url-entries.mts'
@@ -131,6 +132,7 @@ export const operationalDynamicConfigRegistryEntries = [
   }),
   dataRetentionRegistryEntry,
   commentPlaceholderRegistryEntry,
+  moderationExposureRegistryEntry,
   defineDynamicConfigNamespace({
     namespace: 'web-risk-config',
     label: 'Web Risk',
