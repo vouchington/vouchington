@@ -70716,7 +70716,7 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "idx_membership_refunds__issued_by_id": {
           "accessMethod": "btree",
@@ -135144,7 +135144,7 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "idx_stripe_events__customer_id": {
           "accessMethod": "btree",
