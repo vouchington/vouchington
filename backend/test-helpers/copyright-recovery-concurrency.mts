@@ -16,7 +16,10 @@ export async function appendTestCopyrightAssessmentWhileRecoveryWaits<Result>(
     copyright_notice_id: string
   }>(sql`/* appendTestCopyrightAssessmentWhileRecoveryWaits:owner */
     SELECT copyright_notice_id FROM copyright_notice_submissions WHERE id = ${input.submissionId}`)
-  await lockCopyrightActionGenerationForWrite(owners[0]!.copyright_notice_id, transaction)
+  const locked = await lockCopyrightActionGenerationForWrite(
+    owners[0]!.copyright_notice_id,
+    transaction,
+  )
   await transaction(sql`/* appendTestCopyrightAssessmentWhileRecoveryWaits:lock */
     SELECT submission.id FROM copyright_notice_submissions submission
     JOIN copyright_notices notice ON notice.id = submission.copyright_notice_id
@@ -33,7 +36,7 @@ export async function appendTestCopyrightAssessmentWhileRecoveryWaits<Result>(
     async waitForLock => {
       const pending = recover()
       await waitForLock(pending)
-      await appendCopyrightSubmissionAssessmentInTransaction(input, transaction)
+      await appendCopyrightSubmissionAssessmentInTransaction(input, transaction, locked)
       await transaction.commit()
       return pending
     },

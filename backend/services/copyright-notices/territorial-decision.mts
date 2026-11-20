@@ -61,7 +61,8 @@ export async function recordTerritorialCopyrightDecision(
     'Territorial decision targets must be unique',
   )
   await using transaction = await beginTransaction()
-  assert(await lockCopyrightNoticeForLegalWrite(transaction, noticeId), 404, labels.noticeNotFound)
+  const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
+  assert(lockedNotice, 404, labels.noticeNotFound)
   const { rows: receipts } = await transaction<{ id: string; received_at: Date }>(sql`
     /* recordTerritorialCopyrightDecision:receipt */
     SELECT id, received_at FROM copyright_territorial_notice_receipts
@@ -124,6 +125,7 @@ export async function recordTerritorialCopyrightDecision(
         substantiallyCompliant: true,
       },
       transaction,
+      lockedNotice,
     )
     assessmentId = assessment.id
   }

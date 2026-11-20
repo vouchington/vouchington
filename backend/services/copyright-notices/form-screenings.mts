@@ -1,5 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
 import { appendCopyrightSubmissionAssessmentInTransaction } from './compliance.mts'
 import { checkAutomaticWithholdingEligibility } from './automatic-withholding-gates.mts'
 import { refuseAutomaticWithholding } from './automatic-withholding-refusals.mts'
@@ -58,6 +59,7 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
     await transaction.commit()
     return
   }
+  const locked = await lockCopyrightActionGenerationForWrite(intake.notice_id, transaction)
   const { rows: existingAssessments } = await transaction<{
     id: string
   }>(sql`/* applyNonSpamSignedInCopyrightFormScreening:existingAssessment */
@@ -112,6 +114,7 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
         supersedesAssessmentId: currentAssessment?.id,
       },
       transaction,
+      locked,
     ))
   await transaction.commit()
   await enforceCopyrightAssessment(assessment.id)

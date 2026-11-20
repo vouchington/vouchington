@@ -1,11 +1,14 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+import type { LockedCopyrightGeneration } from './action-delivery-generation.mts'
 
 declare const lockedNotice: unique symbol
 
-/** Proof that this transaction took the notice row lock before any child-row lock or insert. */
-export type LockedCopyrightNotice = {
-  readonly noticeId: string
+/**
+ * Proof that this transaction took the notice row lock before any child-row lock or insert. It
+ * takes the case generation first, so it also proves that lock.
+ */
+export type LockedCopyrightNotice = LockedCopyrightGeneration & {
   readonly jurisdiction: string
   readonly [lockedNotice]: true
 }

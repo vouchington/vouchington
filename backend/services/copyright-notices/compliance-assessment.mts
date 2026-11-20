@@ -1,7 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import { lockCopyrightActionGenerationForSubmission } from './action-delivery-generation.mts'
+import type { LockedCopyrightGeneration } from './action-delivery-generation.mts'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { createCopyrightClaimantDecisionNoticeInTransaction } from './claimant-decision-notices.mts'
 import { recordClaimantMisuseEvent } from './claimant-misuse-ledger.mts'
@@ -15,13 +15,13 @@ import type {
 export async function appendCopyrightSubmissionAssessmentInTransaction(
   input: AssessmentInput,
   transaction: Awaited<ReturnType<typeof beginTransaction>>,
+  locked: LockedCopyrightGeneration,
 ): Promise<CopyrightNoticeSubmissionAssessmentRecord> {
   assert(
     input.currentUser === null || currentUserCanReviewCopyrightNotices(input.currentUser),
     403,
     'Forbidden',
   )
-  await lockCopyrightActionGenerationForSubmission(input.submissionId, transaction)
   const { rows: submissionRows } = await transaction<{
     copyright_notice_id: string
     kind: CopyrightSubmissionKind
@@ -62,6 +62,7 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
     FOR UPDATE OF n, s
   `)
   assert(submissionRows[0], 404, 'Copyright submission not found')
+  assert(submissionRows[0].copyright_notice_id === locked.noticeId, 500, 'Wrong case lock')
   assert(!submissionRows[0].evidence_erased, 410, 'Copyright case evidence was erased')
   assert(
     submissionRows[0].source_kind === 'signed_in_form' || input.currentUser !== null,
