@@ -3,6 +3,7 @@ import { query } from '@data-stores/analytics'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { isUUID } from '@modules/utils'
+import { getLandingPageUtmSourcesLimit } from '@services/my/landing-pages/limits'
 import type {
   LandingPageAnalytics,
   LandingPageItemClickStats,
@@ -99,10 +100,9 @@ export async function getLandingPageAnalyticsByPageId(
         AND event_date >= current_date - INTERVAL '30 days'
       GROUP BY 1
       ORDER BY 2 DESC
-      -- Dashboard contract: Top 20 sources (docs/requirements/admin/LANDING-PAGE-ANALYTICS.md).
-      LIMIT 20
+      LIMIT $2
     `,
-      [landingPageId],
+      [landingPageId, getLandingPageUtmSourcesLimit()],
     ),
   ])
 

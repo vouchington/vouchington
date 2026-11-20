@@ -29,6 +29,7 @@
     "@modules/membership-helpers": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/analytics": "workspace:^",
+    "@services/my": "workspace:^",
     "@services/users": "workspace:^",
     "http-assert": "^1.5.0",
     "sql-template-strings": "^2.2.2",

@@ -12,6 +12,7 @@ import {
   validateDynamicConfigUpdate,
 } from 'valkyries/dynamic-config'
 import { recordDynamicConfigChange } from '@services/dynamic-config-audit'
+import { getDynamicConfigAdminWorkLimit } from './work-limits.mts'
 import { deriveAutomaticWithholdingSince } from '@services/copyright-notices/config'
 import sql from 'sql-template-strings'
 import { currentUserCanAccessDynamicConfigNamespace } from './authorization.mts'
@@ -130,8 +131,7 @@ export async function listDynamicConfigNamespaceHistory(
     LEFT JOIN users ON users.id = dcl.revised_by_id AND users.deleted_at IS NULL
     WHERE dcl.configuration_key = ${namespace}
     ORDER BY dcl.id DESC
-    -- API/MCP contract: latest 50 audit rows.
-    LIMIT 50
+    LIMIT ${getDynamicConfigAdminWorkLimit('namespace_history_rows')}
   `)
 
   return rows.map(row => {

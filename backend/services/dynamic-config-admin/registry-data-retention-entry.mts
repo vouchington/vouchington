@@ -165,6 +165,20 @@ export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
       maxValue: DATA_RETENTION_MAX_VALUES.copyright_email_thread_reply_days,
       integer: true,
     },
+    config_history_retained_revisions_per_key: {
+      description:
+        'Newest dynamic configuration revisions kept per namespace before older ones past the age cutoff are deleted.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.config_history_retained_revisions_per_key,
+      integer: true,
+    },
+    agent_prompt_history_retained_revisions_per_community: {
+      description:
+        'Newest community agent prompt revisions kept per community before older ones past the age cutoff are deleted.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.agent_prompt_history_retained_revisions_per_community,
+      integer: true,
+    },
     post_moderation_retention_days: {
       description:
         'Minimum age of a successor before deleting its previous post moderation version, and age before clearing current automated pass evidence.',

@@ -17,5 +17,11 @@ export const landingPageLimitsRegistryEntry = defineDynamicConfigNamespace({
       minValue: 1,
       maxValue: LANDING_PAGE_LIMIT_MAX_VALUES.items_per_page,
     },
+    utm_sources_listed: {
+      description: 'Top UTM sources listed in one landing page analytics dashboard.',
+      integer: true,
+      minValue: 1,
+      maxValue: LANDING_PAGE_LIMIT_MAX_VALUES.utm_sources_listed,
+    },
   },
 })

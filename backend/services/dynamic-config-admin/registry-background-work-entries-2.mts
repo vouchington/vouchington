@@ -1,4 +1,5 @@
 import { defineBoundedWorkNamespace } from './registry-bounded-work-entry.mts'
+import { dynamicConfigAdminWorkConfig, dynamicConfigAdminWorkMaxValues } from './work-limits.mts'
 import { imagesWorkConfig, imagesWorkMaxValues } from '@services/images/work-limits'
 import {
   openaiModerationWorkConfig,
@@ -62,6 +63,16 @@ export const backgroundWorkEntries2 = [
       url_scan_batch_size: 'URL registry scan page size for hostname blocking.',
       penalty_enqueue_batch_size: 'Vote-weight penalty enqueue page size for hostname blocking.',
       recovery_batch_size: 'Pending hostname block recovery page size.',
+    },
+  }),
+  defineBoundedWorkNamespace({
+    namespace: 'dynamic-config-admin-work-config',
+    config: dynamicConfigAdminWorkConfig,
+    label: 'Dynamic Config Admin',
+    maxValues: dynamicConfigAdminWorkMaxValues,
+    descriptions: {
+      namespace_history_rows:
+        'Newest audit revisions returned for one dynamic configuration namespace history.',
     },
   }),
 ]
