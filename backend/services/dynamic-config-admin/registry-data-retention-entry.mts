@@ -168,14 +168,14 @@ export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
     config_history_retained_revisions_per_key: {
       description:
         'Newest dynamic configuration revisions kept per namespace before older ones past the age cutoff are deleted.',
-      minValue: 1,
+      minValue: 50,
       maxValue: DATA_RETENTION_MAX_VALUES.config_history_retained_revisions_per_key,
       integer: true,
     },
     agent_prompt_history_retained_revisions_per_community: {
       description:
         'Newest community agent prompt revisions kept per community before older ones past the age cutoff are deleted.',
-      minValue: 1,
+      minValue: 200,
       maxValue: DATA_RETENTION_MAX_VALUES.agent_prompt_history_retained_revisions_per_community,
       integer: true,
     },
