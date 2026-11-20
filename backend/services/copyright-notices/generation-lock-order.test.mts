@@ -1,9 +1,13 @@
 import { randomUUID } from 'node:crypto'
-import sql from 'sql-template-strings'
 import { describe, expect, it } from 'vitest'
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
 import { createCopyrightFormFixture } from '@voucha/test-helpers/copyright-route-fixtures'
+import {
+  lockAssessmentRowsAsHolder,
+  lockNoticeRowAsHolder,
+  lockRejectionRowsAsHolder,
+} from '@voucha/test-helpers/copyright-generation-order-holder-writes'
 import { runWhileCopyrightGenerationsHeld } from '@voucha/test-helpers/copyright-generation-order-race'
 import { createTestCopyrightFormIntakeReview } from '@voucha/test-helpers/data-stores/psql/copyright-form-reviews'
 import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
@@ -100,15 +104,7 @@ describe('copyright generation-first lock order', () => {
           recommendationId: null,
           manualFallbackReason: 'Agent output is unavailable.',
         }),
-      holderWrites: async holder => {
-        await holder(sql`/* testGenerationOrder:rejectionRows */
-          SELECT notice.id FROM copyright_notices notice
-          JOIN copyright_notice_email_intake_notice_links link
-            ON link.copyright_notice_id = notice.id
-          JOIN copyright_notice_email_intakes intake
-            ON intake.id = link.copyright_notice_email_intake_id
-          WHERE intake.id = ${intake.id} FOR UPDATE OF notice, link, intake`)
-      },
+      holderWrites: holder => lockRejectionRowsAsHolder(holder, intake.id),
     })
     expect(result).toEqual({ noticeId: notice.noticeId, isDuplicate: false })
   })
@@ -138,12 +134,7 @@ describe('copyright generation-first lock order', () => {
           currentUser: moderator,
           substantiallyCompliant: true,
         }),
-      holderWrites: async holder => {
-        await holder(sql`/* testGenerationOrder:assessmentRows */
-          SELECT submission.id FROM copyright_notice_submissions submission
-          JOIN copyright_notices notice ON notice.id = submission.copyright_notice_id
-          WHERE submission.id = ${submissionId} FOR UPDATE OF notice, submission`)
-      },
+      holderWrites: holder => lockAssessmentRowsAsHolder(holder, submissionId),
     })
     expect(assessment.copyright_notice_submission_id).toBe(submissionId)
   })
@@ -165,10 +156,7 @@ describe('copyright generation-first lock order', () => {
         return created
       },
       // The holder locks the notice the batch must not have key-shared before its generation.
-      holderWrites: async holder => {
-        await holder(sql`/* testGenerationOrder:batchRows */
-          SELECT id FROM copyright_notices WHERE id = ${low!.noticeId} FOR UPDATE`)
-      },
+      holderWrites: holder => lockNoticeRowAsHolder(holder, low!.noticeId),
     })
     expect(intents.map(created => created.copyright_notice_id)).toEqual([
       low!.noticeId,

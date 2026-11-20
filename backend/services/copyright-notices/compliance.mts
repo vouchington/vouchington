@@ -9,6 +9,7 @@ export async function appendCopyrightSubmissionAssessment(
   input: AssessmentInput,
 ): Promise<CopyrightNoticeSubmissionAssessmentRecord> {
   await using transaction = await beginTransaction()
+  // ast-grep-ignore: no-three-sequential-awaits -- The form lock, then the case generation lock, must precede the assessment write, which takes the generation proof; all run on one transaction client.
   await lockAssessmentForm(input.submissionId, transaction)
   const locked = await lockCopyrightActionGenerationForSubmission(input.submissionId, transaction)
   const assessment = await appendCopyrightSubmissionAssessmentInTransaction(

@@ -71,6 +71,7 @@ export async function recoverMissingDecisionAssessments(
   const page = rows.slice(0, limit)
   // Own the generations this page writes first, in case-id order like every other writer, then
   // lock only the submissions it updates. The separate insert statement observes their commits.
+  // ast-grep-ignore: no-three-sequential-awaits -- The generation lock must be held before the submission row lock, and the insert must observe both; all run on one transaction client, so they cannot be parallelized.
   await lockCopyrightActionGenerationsForWrite(
     [...new Set(page.map(row => row.copyright_notice_id))].toSorted(),
     transaction,
