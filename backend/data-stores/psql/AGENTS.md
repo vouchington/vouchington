@@ -1,5 +1,6 @@
 # PostgreSQL
 
+- Load the [vouchington-postgres skill](../../../.agents/skills/vouchington-postgres/SKILL.md) for queries, transactions, locks, views, and indexes. This file holds schema and migration rules.
 - Use [PostgreSQL docs](../../../docs/development/postgresql/README.md), [schema quality rules](../../../docs/development/postgres-schema-rules.md), and [schema object buckets](../../../docs/development/postgresql/reference-migrations-views-and-config-driven.md).
 - Apply [R1–R7](../../../docs/development/postgres-schema-rules.md#r1--names-explain-the-stored-thing-in-full-words).
 - Keep creators idempotent where possible and SQL lintable with `pnpm run squawk`. Hardcoded UUIDs are UUIDv7 (version nibble `7`).
@@ -8,14 +9,7 @@
 - Every FK declares `ON DELETE`; cross-file FK/check constraints use `NOT VALID` then `VALIDATE CONSTRAINT`. Fixed migrations and ledger inserts are transactional; never add manual `BEGIN`/`COMMIT` or online index-upgrade migrations.
 - Vote schema uses [`election-schema-config.mts`](config-driven/utils/election-schema-config.mts).
 - After SQL changes, push the PR head, then follow [snapshot generation](../../../docs/development/postgresql/schema-snapshot/README.md) and fetch CI’s generated commit.
-- Query UUIDv7 `id`, never `created_at`; annotate queries with `/* functionName */`, use cursors instead of `OFFSET`, and use `pgvector.toSql()`. Query partition parents except for operator maintenance and bounded DEFAULT retention.
-- Restrict correlated views at every nesting level. Read `view_*` by key and follow [R6 query shape](../../../docs/development/postgres-schema-rules.md#r6--query-shape) and [view pull-up rules](../../../docs/development/postgresql/reference-migrations-views-and-config-driven.md#view-composition-and-the-eligibility-view-pull-up-rule).
-- Use the simplest correct query (plain `WHERE`/`EXISTS` first). Added complexity (e.g. CTE, `UNION` candidates, `LATERAL`, `MATERIALIZED`/planner fences, `GROUP BY`/`DISTINCT` dedupe, extra cursor state) needs `EXPLAIN ANALYZE` and a benchmark against that simpler query at representative cardinality, shown in the PR ([R6](../../../docs/development/postgres-schema-rules.md#r6--query-shape)). Toy-sized data does not count, and neither does a comparison with old main. List and feed reads use no candidate pools at all. Follow [counts and rankings](../../../docs/development/postgres-schema-rules.md#prefer-no-counter-columns-trending-and-rankings-are-materialized-views).
-- A measured index fix needs no separate approval; keep it in the query's PR with before/after plans.
 - Follow [relational storage](../../../docs/development/postgres-schema-rules.md#prelaunch-relational-storage) and [R3](../../../docs/development/postgres-schema-rules.md#r3--normalize-ids-are-fk-columns-json-is-for-schemaless-data).
-- Elections are parent-identified tallies (`election.id === parent.id`); reference the parent. Aggregate/STORED numeric filters match SQL types; reuse [`buildVoteScoreFilters`](../../services/entity-relations/vote-score-filters.mts).
 - Prefer lifecycle timestamps over booleans/status columns. Non-terminal moderation/toggle state uses append-only `lifted_at` history (canonical `community_bans`), never mutable parent state; `moderation-history-guard.mts` enforces it.
 - Keep final results on the owning row; follow [current state and history](../../../docs/development/postgres-schema-rules.md#r4--one-shape-per-concept).
-- Follow [lock scope](../../../docs/development/postgresql/reference-transactions.md#lock-scope): lock only written rows; caps and "last X" guards are best effort.
-- After relaxing a single-row assumption, audit stale `LIMIT 1` sites. Preserve borrowed-client [SAVEPOINT probes](../../../docs/development/postgresql/reference-transactions.md).
 - Follow UUIDv7 partitioning [strategy](../../../docs/overview/architecture/partitioning-strategy.md) and [pruning](../../../docs/overview/architecture/partition-pruning-hints.md). No HASH partitions.
