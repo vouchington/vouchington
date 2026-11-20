@@ -1,23 +1,19 @@
 # Backend
 
-- Use [backend docs and command catalog](../docs/overview/architecture/backend/README.md), [setup](../docs/development/README.md), and [auth/session architecture](../docs/overview/architecture/auth-overview.md).
-- Check API fields against caller privileges (anonymous, user, owner, moderator, staff, admin); keep internal/admin fields out of lower-privilege responses.
-- Database lists use `@modules/pagination` cursor pagination and [the cross-surface contract](../docs/overview/architecture/pagination.md). Anonymous endpoints use `clampAnonLimit` (`ANON_MAX_LIMIT = 25`).
-- Atomic writes use `await using transaction = await beginTransaction()` from `@data-stores/psql`; commit only after successful writes and pass `{ query: transaction }` to nested helpers. Selected pools/borrowed idle clients use `beginTransaction({ client })`; `withTransactionOptions` only joins an existing transaction.
-- Batch first. Each operation has one batch implementation. A single-item function is only a thin wrapper where single callers exist (`addUrl` calls `addUrls`). Do not add a per-item SQL path or loop a single-item helper inside a batch caller. Posts written one at a time stay per post; articles from RSS feeds and imports are batched.
+- Architecture: [overview index](../docs/overview/architecture/README.md).
+- Anonymous list endpoints clamp their limit with `clampAnonLimit`.
 - Store bearer, OAuth/social, TOTP, and OTP secrets through `@modules/token-secrets`, never raw.
-- Runtime code uses `addGracefulShutdownCallback()`, never `process.kill()` or direct `process.exit()`, except an unref'd timed forced-exit fallback. See [shutdown](../docs/overview/architecture/graceful-shutdown.md).
-- Queue independent external calls instead of looped calls or unbounded `Promise.all()`; load [queue authoring](../.agents/skills/voucha-queue-authoring/SKILL.md). Stream large content with streams/`for-await`/async generators rather than buffering it.
-- Report errors through `@modules/on-error`, `http-assert`/`http-errors`, and preserve `.cause` when recreating errors.
-- Sanitize and wrap external LLM content with `sanitizePromptInjection()` and `wrapExternalContent()` from `@jongleberry/vurst-prompt`; see [AI protection](../docs/overview/architecture/ai-agents.md#prompt-injection-protection).
-- Use `node:` imports and `index.mts` barrels; development and tests run sources directly, and only the image build compiles them ([compile script](scripts/build/compile-backend-binaries.mts)). A new run-time file read relative to a module must be staged there. Generic utilities belong in `backend/modules/` (`@modules/foo`), never `backend/lib/`. Prefer named functions/early returns without overloads; put main exports before utilities. Functions receiving a user take `currentUser`/`currentUserId` first; follow [naming prefixes](../docs/overview/architecture/typescript-standards.md#function-naming-prefixes).
-- Never import `vitest/config` or its dependency closure, even type-only: backend must not load `lib.dom`. `backend/types/lib-dom-absent.mts` enforces this; see [static-analysis reference](../docs/development/reference-tests-linters-and-static-analysis.md).
-- Backend fetch uses `undici` dispatchers and SSRF-safe helpers from `@modules/utils/http`. Follow [timeout/dispatcher classification](../docs/development/runtime-timeouts.md).
-- Each direct external API call has its own function tagged `/* no-mistakes: integration=<provider> */`; [mock typing exceptions](../docs/development/tests.md#vitest-mock-typing) remain scoped.
-- Import Valkey's [per-concern packages](data-stores/valkey/AGENTS.md); never route pub/sub, rate limiting, or GlideMQ through its general barrel.
-- Backend returns structured entity references, never frontend routes; the web resolves URLs with `web/lib/links/entity-href.ts`.
-- Enum removals/renames follow [the ripple checklist](../docs/development/finite-enum-ripple-checklist.md).
-- Direct topic reads preserve both active-topic filters. Reference readers keep the deletion filter; omit the merge filter only when merge repoints or removes that reference. History and authorization checks retain it. Update [topic lifecycle/merge rules](../docs/requirements/content/TOPICS.md) and type vs. facet together.
-- Apply owning [API](api/AGENTS.md), [service](services/AGENTS.md), [vote](services/elections-votes/AGENTS.md), [PostgreSQL](data-stores/psql/AGENTS.md), and [queue](queues/AGENTS.md) invariants when changing those domains.
-- When MCP tools or their REST twins change inputs/outputs, update affected checked-in contracts, tool schemas, fixtures, and the MCP catalog together. Test actual handler results and rejection cases against declared schemas; do not widen schemas or remove validation to hide drift. Follow [schema maintenance](../docs/overview/architecture/services/README.md).
-- Third-party browser or backend integrations: register browser SDK/API origins in `REGISTERED_WEB_CSP_ORIGINS` and `buildWebCsp()` (`cloudflare-worker/src/csp.mts`) with tests both ways; prefer runtime-public config over new `NEXT_PUBLIC_*` build args; state fail-open (paid/advisory signals) or fail-closed (security hard gates) in code comments; test blank config, provider errors/rate limits, and CSP coverage.
+- Report errors through `@modules/on-error`.
+- Use `index.mts` barrels. Development and tests run sources directly; only the image build compiles
+  them (`scripts/build/compile-backend-binaries.mts`), so a new run-time file read relative to a
+  module must be staged there. Generic utilities belong in `backend/modules/` (`@modules/foo`),
+  never `backend/lib/`. Functions receiving a user take `currentUser`/`currentUserId` first.
+- Each direct external API call has its own function tagged `/* no-mistakes: integration=<provider> */`.
+- Backend returns structured entity references, never frontend routes; the web resolves URLs with
+  `web/lib/links/entity-href.ts`.
+- When MCP tools or their REST twins change inputs/outputs, update checked-in contracts, tool
+  schemas, fixtures, and the MCP catalog together, and test handler results and rejections against
+  the declared schemas.
+- Third-party browser SDK/API origins are registered in `REGISTERED_WEB_CSP_ORIGINS` and
+  `buildWebCsp()` (`cloudflare-worker/src/csp.mts`). State in a code comment whether an
+  integration fails open (paid/advisory signals) or closed (security hard gates).

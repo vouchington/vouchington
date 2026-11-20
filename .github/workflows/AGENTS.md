@@ -1,15 +1,5 @@
 # CI/CD workflows
 
-- Choose each job's runner with the decision procedure in the checklist's [Runner demand](../../docs/checklists/github-actions.md#judgment) bullet. `.github/runner-policy.json` is the closed runner-label and job-placement policy; `static-code-analysis.yml` runs the released `vouchington runner-policy` check.
-- Preserve exactly these required `Main` gates: `static`, `backend`, `web`, `cloudflare-worker`, `lambdas`, `tooling`, `gitleaks`. Each area gate keeps its area name, runs with `!cancelled()` (or on a merge group also after a cancelled run, so the gate fails on the real failed job), and passes when its area is skipped. Other scans are report-only unless they feed a gate.
-- Every gate-feeding job has a checkout-free `cancel-<job>` job (`failure() && github.event_name == 'merge_group'`, job-level `actions: write`); never grant `actions: write` to a job that runs checked-out code, and informational and static jobs get no cancel job. See [merge queue fail fast](../../docs/development/ci/workflows/reference-merge-queue-fail-fast.md) and keep `merge-group-self-cancel.test.mts` passing.
-- Area DAGs are `changes` → optional `static-<area>` → parallel suites → `coverage` (pull requests only), `codecov`, and gate. Suites never depend on sibling suites; `changes` output selects areas instead of trigger `paths:`. `static.yml` has no `changes` job; `nightly.yml` calls every area. Preserve `area-workflows.test.mts` and `area-coverage.test.mts` contracts.
-- The `workflow-topology-policy` rule in [`.no-mistakes/rules/policies.yml`](../../.no-mistakes/rules/policies.yml) owns the job inventory, required jobs and edges,
-  reusable callers, unlocked-workflow reasons, concurrency intent, and group collisions; update its
-  data with the workflow. `if:` entailment, permission comparison, and secret-readiness checks run
-  through `vouchington-tooling/workflow-policy`. A stepless caller that only forwards an
-  unprovisioned secret to a local callee declaring it `required: false` is exempt: the callee
-  owns the empty-secret path, and that caller job cannot host a readiness step. This repository
-  still owns the secret inventory and workflow-file reads.
-- Validate and dispatch backend api+workers, image-resize Lambda, Cloudflare Worker, and web independently. Only api↔workers share a deploy unit; private infrastructure owns deployment ordering. Preserve independent artifact safety under [deploy decoupling](../../docs/overview/infrastructure/reference-deployment-first-time-provisioning-checklist.md#deploy-decoupling--independent-safety).
-- Follow the [validation checklist](../../docs/checklists/github-actions.md#checklist), run focused [GitHub Actions tests](../../docs/development/tests.md), and run `actionlint` for changed workflows.
+- Follow the [validation checklist](../../docs/checklists/github-actions.md#checklist).
+- Never grant `actions: write` to a job that runs checked-out code; merge-group `cancel-<job>` jobs
+  stay checkout-free.

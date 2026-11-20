@@ -126,6 +126,27 @@ describe('Claude settings deny list under Grok Bash matching', () => {
     expect(grokBashDenied(denyRules, command)).toBe(true)
   })
 
+  it.each([
+    'FORCE_MAIN_RESET=1 ./dev/reset',
+    'export FORCE_MAIN_RESET=1',
+    'next dev --port 3001',
+    'npx next dev',
+    'pnpm exec next dev',
+    './dev/teardown --remove',
+    './dev/teardown --yes --remove',
+  ])('denies the harness-guarded command %s', command => {
+    expect(grokBashDenied(denyRules, command)).toBe(true)
+  })
+
+  it.each([
+    'pnpm dev --help',
+    'pnpm dev:storybook',
+    'pnpm run dev:cloudflare-worker',
+    './dev/teardown --yes',
+  ])('does not deny the dev script %s', command => {
+    expect(grokBashDenied(denyRules, command)).toBe(false)
+  })
+
   it.each(['gh stack submit --auto', 'gh stack checkout 12'])(
     'allows the non-interactive gh stack form %s',
     command => {

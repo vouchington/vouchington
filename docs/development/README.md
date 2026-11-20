@@ -9,7 +9,12 @@ guide for full-site startup and browser validation. Cross-repository issue mutat
 
 Development owner indexes: [CI](ci/README.md), [harness setup](harnesses/README.md),
 [PostgreSQL](postgresql/README.md), [Valkey](valkey/README.md), and
-[static analysis](quality/static-code-analysis/README.md).
+[static analysis](quality/static-code-analysis/README.md), [Playwright](testing/playwright/README.md),
+[Storybook](testing/storybook/README.md), [integration tests](testing/integration-tests/README.md),
+and [agent issue labels](local-development/agent-issue-labels/README.md). Cross-cutting references:
+[agent sandbox](agent-sandbox.md), [agent blackboard](agent-blackboard.md),
+[runtime timeouts](runtime-timeouts.md), [linters and static analysis](reference-tests-linters-and-static-analysis.md),
+and [test parallel safety](reference-tests-parallel-safety-and-test-root-hygiene.md).
 
 ## Prerequisites
 

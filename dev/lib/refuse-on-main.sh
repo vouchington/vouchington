@@ -78,12 +78,17 @@ refuse_on_main() {
         return 0
     fi
 
+    if [[ "${FORCE_MAIN_RESET:-}" == "1" && "${CLAUDECODE:-}" == "1" ]]; then
+        echo -e "\033[0;31mError: $script_name ignores FORCE_MAIN_RESET=1 inside an agent shell (CLAUDECODE=1); the main-worktree override is human-only.\033[0m" >&2
+        exit 1
+    fi
+
     if [[ "${FORCE_MAIN_RESET:-}" == "1" ]]; then
         echo -e "\033[1;33mWARNING: $script_name running on main worktree (FORCE_MAIN_RESET=1)\033[0m" >&2
         return 0
     fi
 
     echo -e "\033[0;31mError: $script_name refuses to run on the main worktree (would run destructive actions on the main worktree DB).\033[0m" >&2
-    echo "Re-run with FORCE_MAIN_RESET=1 if this is intentional." >&2
+    echo "A human may re-run with FORCE_MAIN_RESET=1 if this is intentional." >&2
     exit 1
 }

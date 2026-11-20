@@ -1285,7 +1285,7 @@
         message: Next.js pages router files are not allowed
       - glob: 'web/app/**/[[]topicType[]]/**'
         message: >-
-          [topicType] dynamic segments are banned; use explicit routes per topic type. See web/AGENTS.md routing rules.
+          [topicType] dynamic segments are banned; use explicit routes per topic type.
       - glob: '**/*.[pP][aA][tT][cC][hH]'
         message: >-
           patch and diff files are not allowed; fix the underlying problem upstream or file and link a Vouchington issue labeled dependencies
@@ -4509,13 +4509,11 @@
       - prefix: '@'
         root: ''
 
-# Source: .agents/skills/AGENTS.md, "Local skills live in .agents/skills/<name>/SKILL.md".
+# Source: AGENTS.md, "Local skills live in .agents/skills/<name>/SKILL.md".
 # Nested supporting directories (references/) belong to their skill and carry no SKILL.md.
 - name: local skills carry a SKILL.md entrypoint
   rule: required-local-docs
   scope: repository
-  exclude:
-    - .agents/skills/AGENTS.md
   options:
     roots: [.agents/skills]
     requiredFile: SKILL.md

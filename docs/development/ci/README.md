@@ -5,6 +5,7 @@ The [CI reference](../ci.md) is canonical for the CI design rationale and gates.
 
 - [Inline-workflow shell footguns](tooling/reference-inline-workflow-shell-footguns-actionlint-shellcheck.md)
 - [Artifact rerun safety](workflows/reference-artifact-rerun-safety.md)
+- [Workflow inventory](../../../.github/workflows/README.md)
 - [Merge queue fail fast](workflows/reference-merge-queue-fail-fast.md)
 - [Merge queue run cancellation](workflows/reference-merge-queue-run-cancellation.md)
 - [CI dependency images](workflows/reference-dependency-image-mirror.md)

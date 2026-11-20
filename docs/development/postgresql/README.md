@@ -16,6 +16,8 @@ rules live in [AGENTS.md](../../../backend/data-stores/psql/AGENTS.md); the sche
 - [Migrations, Views, and Config-Driven](reference-migrations-views-and-config-driven.md)
 - [Views](reference-views.md)
 - [EXPLAIN ANALYZE Framework](explain-analyze/README.md)
+- [Schema snapshot](schema-snapshot/README.md)
+- [Generated schema index](../../generated/postgresql/schema-snapshot/README.md)
 
 ## Dynamic SQL
 

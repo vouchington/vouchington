@@ -52,18 +52,18 @@
         "message": "Consecutive independent Valkey reads on the same client cost one round trip each. Batch the complete key set with MGET, Batch, or Lua."
       }
     ],
-    // Source: backend/AGENTS.md line 10. Repeats the root runtime override (nested configs lose it).
+    // Repeats the root runtime override (nested configs lose it).
     "no-mistakes/forbidden-member-chains": [
       "error",
       {
         "chains": [
           {
             "path": "process.kill",
-            "message": "Runtime code never calls process.kill(); register addGracefulShutdownCallback() instead (backend/AGENTS.md)."
+            "message": "Runtime code never calls process.kill(); register addGracefulShutdownCallback() instead."
           },
           {
             "path": "process.exit",
-            "message": "Runtime code never calls process.exit() directly; register addGracefulShutdownCallback() instead. Only an unref'd timed forced-exit fallback may exit (backend/AGENTS.md)."
+            "message": "Runtime code never calls process.exit() directly; register addGracefulShutdownCallback() instead. Only an unref'd timed forced-exit fallback may exit."
           }
         ]
       }

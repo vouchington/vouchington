@@ -1,6 +1,6 @@
 # Batch GitHub issue preflight
 
-Source entrypoint: [dev/agent-issue-labels/README.md](../../../../dev/agent-issue-labels/README.md)
+Source entrypoint: [`dev/agent-issue-labels/`](../../../../dev/agent-issue-labels/batch-issues.mts)
 
 [Back to Dev Environment Reference](../README.md#github-issue-tooling)
 

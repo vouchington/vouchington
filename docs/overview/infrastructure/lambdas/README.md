@@ -10,11 +10,11 @@ store; infrastructure continues to own deployment and topology.
 
 ## Inventory
 
-| Path                                                   | Purpose                                                                                                                                |
-| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| [`image-resize/`](../../../../lambdas/image-resize/)   | On-demand image resize / format conversion in front of S3. See [`image-resize/AGENTS.md`](../../../../lambdas/image-resize/AGENTS.md). |
-| [`shared/`](../../../../lambdas/shared/)               | Cross-lambda helpers (Sentry init, etc.).                                                                                              |
-| [`dev-server.mts`](../../../../lambdas/dev-server.mts) | Local HTTP harness that hosts each lambda's handler for development.                                                                   |
+| Path                                                   | Purpose                                                                                                     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| [`image-resize/`](../../../../lambdas/image-resize/)   | On-demand image resize / format conversion in front of S3. See [image-resize docs](image-resize/README.md). |
+| [`shared/`](../../../../lambdas/shared/)               | Cross-lambda helpers (Sentry init, etc.).                                                                   |
+| [`dev-server.mts`](../../../../lambdas/dev-server.mts) | Local HTTP harness that hosts each lambda's handler for development.                                        |
 
 ## Related
 

@@ -1,6 +1,6 @@
 # Integration Tests
 
-Source entrypoint: [integration-tests/README.md](../../../../integration-tests/README.md). Agent conventions: [web/AGENTS.md](../../../../integration-tests/web/AGENTS.md).
+Source entrypoint: [integration-tests/README.md](../../../../integration-tests/README.md). Web suite: [web integration tests](web/README.md).
 
 Fetch-based full-stack (`integration-tests/web/`, project `web-integration`) and API-helper (`integration-tests/web-api/`, project `web-api`) tests. Browser, hydration, and interaction tests belong in [`playwright/`](../playwright/README.md).
 

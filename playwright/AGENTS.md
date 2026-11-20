@@ -1,8 +1,10 @@
 # Playwright
 
-- [Suite docs](../docs/development/testing/playwright/README.md), [test commands](../docs/development/tests.md) own references.
-- Local QA uses [managed site testing](../.agents/skills/local-site-testing/SKILL.md), never manual server startup.
-- Always test production builds: Next standalone `node server.js` and `wrangler dev dist/index.js --no-bundle`; never `next dev` or on-the-fly Worker builds.
+- Suite docs: [Playwright index](../docs/development/testing/playwright/README.md).
+- Always test production builds: Next standalone `node server.js` and
+  `wrangler dev dist/index.js --no-bundle`, never on-the-fly Worker builds.
 - Global setup calls `pinPlaywrightSeedCrawlAnchor()` before seeding so all workers share crawl IDs.
-- Own rendered UI/layout/responsive overflow, storage/cookies, focus/input, navigation, hydration, console/page errors, and browser network observations.
-- Status/redirect/header/cache/robots/metadata/canonical/JSON-LD/static-copy tests belong in [web integration tests](../integration-tests/web/).
+- Own rendered UI/layout/responsive overflow, storage/cookies, focus/input, navigation, hydration,
+  console/page errors, and browser network observations.
+- Status/redirect/header/cache/robots/metadata/canonical/JSON-LD/static-copy tests belong in web
+  integration tests (`integration-tests/web/`).

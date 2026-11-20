@@ -38,6 +38,8 @@ System design, pipelines, and application-layer patterns for Voucha.
 | [Partitioning Strategy](./partitioning-strategy.md)                                     | When and how to partition PostgreSQL tables                                                       |
 | [Partition Pruning Hints](./partition-pruning-hints.md)                                 | UUIDv7 temporal ordering constraints for PostgreSQL RANGE partitions                              |
 | [.NET Deep Linking][client-dotnet-deep-linking]                                         | MAUI protocol activation, shell routing, and native login-link handling                           |
+| [Anonymous HTML Edge Caching CSP](./anon-html-edge-caching-csp.md)                      | Why anonymous SSR HTML can be edge-cached despite per-request CSP nonces                          |
+| [Email Templates](./email-templates/README.md)                                          | React Email template rules: marketing footer, build-time rendering, shared layout                 |
 | [MCP Tools](./mcp/README.md)                                                            | LLM tool registry: internal and MCP surfaces, type definitions, and tool implementation reference |
 | [Native Clients](./native-clients.md)                                                   | Platform ownership table and framework rationale (Swift: macOS/iOS/Android; MAUI: Windows)        |
 

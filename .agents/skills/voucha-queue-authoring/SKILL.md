@@ -5,9 +5,7 @@ description: Author Voucha GlideMQ queues, payloads, enqueues, workers, retries,
 
 # Voucha Queue Authoring
 
-Follow [`docs/checklists/backend-queues.md`](../../../docs/checklists/backend-queues.md) and the
-scoped rules under [`backend/queues/`](../../../backend/queues/AGENTS.md),
-[`backend/workers/`](../../../backend/workers/AGENTS.md).
+Follow [`docs/checklists/backend-queues.md`](../../../docs/checklists/backend-queues.md).
 
 1. Before adding a queue, merging queues, or waiting on another job, apply
    [queue boundaries](../../../docs/checklists/backend-queues.md#queue-boundaries).
@@ -40,6 +38,15 @@ scoped rules under [`backend/queues/`](../../../backend/queues/AGENTS.md),
    [durable transition matrix](../../../docs/checklists/reference-backend-queues-durable-transition-matrix.md).
 
 ## Vouchington additions
+
+- Every queue has a non-DLQ terminal recovery path: a backfill, a self-healing/reconciliation
+  dispatcher, or a documented accepted loss. Follow
+  [job replayability](../../../docs/requirements/platform/JOB-REPLAYABILITY.md#rules-for-new-jobs).
+- Post-commit admission settles the API response, not worker completion. Canonical post
+  create/update and URL-created service call sites await the queue-owned `BestEffort` admission
+  facade after their mutation commits; topic creation's post-commit finalizer awaits its
+  topic-created admission. They keep the committed mutation and report an enqueue failure once,
+  never turning it into a failed response.
 
 - MUST NOT run several sweeps, stages, or phases in one job. Give each its own job name, cursor
   in job data, per-run cap, retry policy, and failure boundary. Enqueue a later sequential phase

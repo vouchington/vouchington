@@ -1,8 +1,7 @@
 # Feed cards
 
-- Follow news-card contracts.
 - Report appears only in the kebab; Discuss belongs in action-row `NewsDiscussMenu`, never the kebab.
 - Summary thumbnails require excerpts and `/sideload/` URLs; video items omit them. `VideoEmbed.thumbnailUrl` is `/sideload/` or undefined, never raw `item.data.thumbnail_url` fallback.
 - Header labels/action rows/CategoryChips scroll horizontally, never `flex-wrap`. RSS category management is dialog-only, never full-page tags routes.
-- [Podcast players](../../../docs/requirements/content/PODCASTS.md) receive `showHref: topicHref(item.rss_feed.topic, 'latest')`, episode-first `coverArtUrl`, and `episodeId: item.id`.
+- Podcast players receive `showHref: topicHref(item.rss_feed.topic, 'latest')`, episode-first `coverArtUrl`, and `episodeId: item.id`.
 - `/news`, `/videos`, and `/podcast-episodes` share `media-item-listing-page.tsx`. Keep topic search, the PeerTube action, add-source kind, and the news `data-pw` on the route page.
