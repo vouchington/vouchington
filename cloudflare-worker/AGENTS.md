@@ -7,8 +7,6 @@
   `src/basic-auth.mts`; strip both Basic headers before origin/cache RPCs.
 - `/infra/edge-cache-canary` and fault-control headers are undiscoverable, stripped before origins,
   and disabled under `PRODUCTION=true`.
-- Edge JWT verification controls cache bypass only; backend pairing/revocation remains
-  authoritative. Claims never grant access or higher rate-limit tiers.
 - CSP belongs in `src/csp.mts`; SDK origins need both `script-src` and `connect-src`.
   `CACHE_PLACEHOLDER_NONCE` is deployment-fixed, secret, never logged/regenerated per request, and
   rewritten per request.

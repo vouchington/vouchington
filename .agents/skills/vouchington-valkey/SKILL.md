@@ -5,8 +5,7 @@ description: Use Valkey from Vouchington backend code - deletes, batching, Lua s
 
 # Vouchington Valkey
 
-- Prefer `unlink` to `del`. Batch complete key sets with `MGET`, `Batch`, or Lua instead of per-key
-  sequential calls. Cursor `SCAN` and bounded deletion loops are exceptions; single commands do not
+- Batch key sets with `MGET`, `Batch`, or Lua. Cursor `SCAN` and bounded deletion loops are exceptions; single commands do not
   use `Batch`.
 - Application Lua lives in a standalone `scripts/*.lua` file in the owning package (for example
   `backend/services/jwt-session/scripts/`), never in inline multiline strings. Primitive
