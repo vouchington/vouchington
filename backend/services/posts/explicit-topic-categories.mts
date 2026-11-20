@@ -1,4 +1,5 @@
 import { withTransactionOptions, write } from '@data-stores/psql'
+import { MAX_MANUAL_TAGS } from '@services/tag-limits'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import type { CreatePostUpdates } from './types.mts'
 import sql from 'sql-template-strings'
@@ -13,7 +14,13 @@ export async function syncPostExplicitTopicCategoriesInTransaction(
   const run = async (query: TransactionQuery) => {
     await write(
       sql`/* syncPostExplicitTopicCategoriesInTransaction.clear */
-      DELETE FROM post_explicit_topic_categories WHERE post_id = ${postId}`,
+      DELETE FROM post_explicit_topic_categories
+      WHERE post_id = ${postId} AND topic_id IN (
+        SELECT topic_id FROM post_explicit_topic_categories
+        WHERE post_id = ${postId}
+        ORDER BY topic_id
+        LIMIT ${MAX_MANUAL_TAGS}
+      )`,
       { query },
     )
     if (topicIds.length === 0) return

@@ -1,7 +1,5 @@
-import {
-  autotaggerPaidLimitsConfig,
-  MAX_AUTOTAGGER_TOPICS,
-} from '@services/autotagger/limits-config'
+import { autotaggerPaidLimitsConfig } from '@services/autotagger/limits-config'
+import { CLASSIFIER_MAX_TOPIC_CANDIDATES } from '@services/classifiers/decision-result-limits'
 import { manualTagLimitConfig, MAX_MANUAL_TAGS } from '@services/tag-limits/config'
 import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 import { validateAutotaggerPaidLimitsConfig } from './autotagger-paid-limits-validation.mts'
@@ -44,27 +42,27 @@ export const tagLimitsDynamicConfigRegistryEntries = [
       enabled: { description: 'Master switch for the autotagger agent.' },
       post_free_max_topics: tagLimitField(
         'Max autotagger topics on post creation for free-tier authors. 0 skips the LLM call entirely.',
-        MAX_AUTOTAGGER_TOPICS,
+        CLASSIFIER_MAX_TOPIC_CANDIDATES,
       ),
       post_plus_max_topics: tagLimitField(
         'Max autotagger topics on post creation for Plus authors.',
-        MAX_AUTOTAGGER_TOPICS,
+        CLASSIFIER_MAX_TOPIC_CANDIDATES,
       ),
       post_pro_max_topics: tagLimitField(
         'Max autotagger topics on post creation for Pro authors (also applies to admin authors).',
-        MAX_AUTOTAGGER_TOPICS,
+        CLASSIFIER_MAX_TOPIC_CANDIDATES,
       ),
       rss_discoverable_llm_max_topics: tagLimitField(
         'Max additional LLM-derived topics for RSS feed items from discoverable sources.',
-        MAX_AUTOTAGGER_TOPICS,
+        CLASSIFIER_MAX_TOPIC_CANDIDATES,
       ),
       rss_collaborative_plus_max_topics: tagLimitField(
         'Max additional topics followed by Plus followers of the source feed (no LLM).',
-        MAX_AUTOTAGGER_TOPICS,
+        CLASSIFIER_MAX_TOPIC_CANDIDATES,
       ),
       rss_collaborative_pro_max_topics: tagLimitField(
         'Max additional topics followed by Pro followers of the source feed (no LLM).',
-        MAX_AUTOTAGGER_TOPICS,
+        CLASSIFIER_MAX_TOPIC_CANDIDATES,
       ),
       agent_max_turns: agentBoundField(
         'Most model turns one reasoning autotagger run may take. The run ends with no topics added when it spends them without answering.',

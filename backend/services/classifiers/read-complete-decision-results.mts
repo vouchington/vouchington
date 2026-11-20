@@ -1,6 +1,11 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import type { ClassifierCandidateKind } from '@voucha/types'
 import sql from 'sql-template-strings'
+import {
+  CLASSIFIER_MAX_PROMPT_CANDIDATES,
+  CLASSIFIER_MAX_STORY_CANDIDATES,
+  CLASSIFIER_MAX_TOPIC_CANDIDATES,
+} from './decision-result-limits.mts'
 import type {
   ClassifierDecisionInputResult,
   ClassifierDecisionScope,
@@ -53,6 +58,7 @@ async function readTopicResults(
     FROM topic_classifier_results
     WHERE batch_id = ${batchId}
     ORDER BY topic_id
+    LIMIT ${CLASSIFIER_MAX_TOPIC_CANDIDATES}
   `)
   return rows.map(row => toPersistedResult(row, 'topic'))
 }
@@ -73,6 +79,7 @@ async function readStoryResults(
     FROM story_classifier_results
     WHERE batch_id = ${batchId}
     ORDER BY story_id NULLS LAST, rss_feed_item_id
+    LIMIT ${CLASSIFIER_MAX_STORY_CANDIDATES}
   `)
   return rows.map(row => {
     if (row.story_id) return toPersistedResult({ ...row, entity_id: row.story_id }, 'story')
@@ -97,6 +104,7 @@ async function readCommunityPromptResults(
     FROM community_prompt_classifier_results
     WHERE batch_id = ${batchId}
     ORDER BY community_prompt_id
+    LIMIT ${CLASSIFIER_MAX_PROMPT_CANDIDATES}
   `)
   return rows.map(row => toPersistedResult(row, 'community_prompt'))
 }
