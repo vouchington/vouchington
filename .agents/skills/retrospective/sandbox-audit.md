@@ -71,7 +71,7 @@ stale (a script renamed or removed since the session ran).
 
 **Genuine bypass candidate needing network access you're not sure is safe to blanket-allow:** don't add it to the allowlist just because it appeared once. Escalation is the correct behavior for a command that will always need a human or auto-mode judgment call (e.g. an unfamiliar `curl` target). Flag it in the retro for a human to decide instead of allowlisting it silently.
 
-**Block candidate:** propose the addition (a `permissions.deny` entry, or a new check in `dev/codex-hooks/policy.mts` if it needs to gate Codex too) but **surface it for human review — never auto-write a deny rule from the retro.** A single rejection is one data point; confirm the pattern is real (recurring across sessions, not a one-off misunderstanding) before proposing a durable block.
+**Block candidate:** propose the addition (a `permissions.deny` entry, or a Codex `prefix_rule` with `decision="forbidden"` if it needs to gate Codex too) but **surface it for human review — never auto-write a deny rule from the retro.** A single rejection is one data point; confirm the pattern is real (recurring across sessions, not a one-off misunderstanding) before proposing a durable block.
 
 ### Privacy
 
@@ -82,5 +82,4 @@ This is a prefix boundary, not a full-command boundary: for a short two-token co
 ### Related
 
 - [`dev/agent-sandbox-config.test.mts`](../../../dev/agent-sandbox-config.test.mts) is the ownership guard: it keeps host runtime policy out of project config and the project's Codex allows narrow.
-- [`dev/codex-hooks/policy.mts`](../../../dev/codex-hooks/policy.mts) is where a runtime block (rather than a static `permissions.deny` entry) gets implemented when a command needs to be caught by pattern rather than by exact prefix.
-- [Agent Sandbox](../../../docs/development/agent-sandbox.md) is the policy-ownership counterpart to this doc: the split between this checkout and vouchington-machines, why `git`/`gh`/`docker`/`pnpm` need the sandbox bypass (including the E2BIG argument this doc makes about read-only git), and the hook threat model. Which commands a machine excludes is machine policy.
+- [Agent Sandbox](../../../docs/development/agent-sandbox.md) is the policy-ownership counterpart to this doc: the split between this checkout and vouchington-machines, why `git`/`gh`/`docker`/`pnpm` need the sandbox bypass (including the E2BIG argument this doc makes about read-only git), and why permission rules are guardrails rather than a security boundary. Which commands a machine excludes is machine policy.

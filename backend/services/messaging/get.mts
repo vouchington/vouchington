@@ -1,5 +1,6 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { CONVERSATION_PARTICIPANT_HARD_MAX } from './participant-limits.mts'
 import type { DirectConversation, ConversationParticipant, DirectMessage } from './types.mts'
 
 type SimpleCursor = { id: string }
@@ -19,6 +20,7 @@ export async function getMyDirectConversations(
         FROM conversation_participants cp2
         JOIN users u ON u.id = cp2.user_id
         WHERE cp2.conversation_id = c.id AND cp2.removed_at IS NULL AND cp2.user_id != ${currentUserId}
+        LIMIT ${CONVERSATION_PARTICIPANT_HARD_MAX}
       ) AS participant_usernames
     FROM conversations c
     WHERE c.channel_type = 'direct_message'

@@ -36,6 +36,7 @@ import { externalProxyDynamicConfigRegistryEntries } from './registry-external-p
 import { featureFlagDynamicConfigRegistryEntries } from './registry-feature-flag-entries.mts'
 import { operationalDynamicConfigRegistryEntries } from './registry-operational-entries.mts'
 import { policyDynamicConfigRegistryEntries } from './registry-policy-entries.mts'
+import { classifierDecisionLimitsRegistryEntry } from './registry-classifier-decision-limits-entry.mts'
 import { tagLimitsDynamicConfigRegistryEntries } from './registry-tag-limits-entries.mts'
 import type { DynamicConfigRegistryEntry } from '@vouchington/dynamic-config'
 import { orderDynamicConfigRegistryEntries } from './registry-order.mts'
@@ -77,6 +78,7 @@ const unorderedRegistryEntries = [
   ...operationalDynamicConfigRegistryEntries,
   ...externalProxyDynamicConfigRegistryEntries,
   ...tagLimitsDynamicConfigRegistryEntries,
+  classifierDecisionLimitsRegistryEntry,
   ...aiUsageDynamicConfigRegistryEntries,
 ] satisfies DynamicConfigRegistryEntry[]
 

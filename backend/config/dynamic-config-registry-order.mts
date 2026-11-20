@@ -18,6 +18,7 @@ export const REGISTRY_ORDER = [
   'conversation-participant-limits',
   'landing-page-limits-config',
   'community-agent-prompts-config',
+  'classifier-decision-limits',
   'post-related-url-display-config',
   'story-related-items-config',
   'web-search-config',

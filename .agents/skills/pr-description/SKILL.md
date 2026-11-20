@@ -13,8 +13,7 @@ Claude Code, Codex, and Grok load the plugin skill `skills:pr-description` for t
 
 Use the `pr_create`, `pr_update`, and `pr_validate` tools of the `vouchington-tooling` MCP server
 for PR creation and body updates. They validate the content and provenance and preserve the
-Shepherd Journal; shell hooks retain merge and stack protections but do not intercept raw
-`gh pr create` or `gh pr edit --body*` commands. The tools take
+Shepherd Journal; raw `gh pr create` and `gh pr edit --body*` commands skip that validation. The tools take
 the structured `title`, `summary`, `impact`, `relatedIssues`, `details`, and `workspaceSetup`
 input (the server derives the trusted `mode` and the `Agent:` line from its own environment; omit
 `agent` and `model`) and

@@ -13,19 +13,15 @@ Review the project agent integration for Claude, Codex, Grok, and Cursor for sta
   [ownership guard](../../../dev/agent-sandbox-config.test.mts) enforces this; do not re-propose its
   assertions. Read [agent-sandbox.md](../../development/agent-sandbox.md) and
   [agent-harness-parity.md](../../development/agent-harness-parity.md) before proposing a change.
-- Editable surfaces. `.codex/rules/`, `.codex/config.toml`, `.cursor/*.json`, and
-  `dev/codex-hooks/**` are hard-blocked from `Edit`/`Write`/`apply_patch` in the automation context
-  this prompt runs in (`PROTECTED_HOOK_DIR_PREFIXES` and `PROTECTED_HOOK_EXACT_FILES` in
-  `dev/codex-hooks/policy/protected-hook-paths.mts`, the #8009 hook self-mutation gap; interactive
-  sessions are unaffected). Pick the shippable change from `.claude/settings.json` or the docs. This
+- Editable surfaces. Pick the shippable change from `.claude/settings.json`, `.codex/rules/`,
+  `.codex/config.toml`, `.cursor/*.json`, or the docs. This
   prompt carries no `<!-- harness-scheduled-completion: issue -->` marker, so the triage loop
   runs it in `pr`-completion mode (`publish-contract: scheduled`). When the only genuine
   improvement requires a protected path, stop and report the finding, per
   [scheduled-prompt.md](../automation/scheduled-prompt.md)'s "If no independently mergeable change
   is confidently ready, stop and report why."; a human reads that report and files the follow-up.
-  Hooks catch cooperative-agent mistakes and are not a security boundary
-  ([hook instructions](../../../dev/codex-hooks/AGENTS.md)). Keep Claude compatibility as the sole
-  Cursor and Grok hook source.
+  Permission rules catch cooperative-agent mistakes and are not a security boundary. Keep Claude
+  compatibility as the sole Cursor and Grok hook source.
 - Stay static-config-driven. Reconciling policy against real observed escalations needs local
   session transcripts read by `pnpm exec vouchington sandbox-command-audit --rules dev/sandbox-command-audit/rules.mts`
   ([sandbox-audit.md](../../../.agents/skills/retrospective/sandbox-audit.md)), which this scheduled

@@ -4,7 +4,7 @@ import {
   type ClassifierRunAdapter,
 } from '@services/classifier-runs'
 import { TAGGING_CLASSIFIER_SLUG } from '@voucha/types/entities/tagging-classifier'
-import { MAX_AUTOTAGGER_TOPICS } from './limits-config.mts'
+import { CLASSIFIER_MAX_TOPIC_CANDIDATES } from '@services/classifiers/decision-result-limits'
 import { captureAutotaggerCandidateTopicIds } from './candidates.mts'
 import {
   resolveAutotaggerRunConfiguration,
@@ -28,7 +28,7 @@ export type AutotaggerRunAdapter = ClassifierRunAdapter<
 export function createAutotaggerRunAdapter(): AutotaggerRunAdapter {
   return {
     slug: TAGGING_CLASSIFIER_SLUG,
-    capturedTopicLimit: MAX_AUTOTAGGER_TOPICS,
+    capturedTopicLimit: CLASSIFIER_MAX_TOPIC_CANDIDATES,
     lockCurrent: (query, subject) =>
       subject.postId !== null
         ? lockApprovedPostClassifierInput(query, subject)

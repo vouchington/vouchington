@@ -84,12 +84,6 @@ async function makeCheckout() {
       recursive: true,
     },
   )
-  await mkdir(join(checkout, 'node_modules/.bin'), { recursive: true })
-  await writeFile(
-    join(checkout, 'node_modules/.bin/vouchington'),
-    `#!/usr/bin/env bash\nprintf 'tmux-name [%s]\\n' "$*" >> '${commandLog}'\n`,
-  )
-  await chmod(join(checkout, 'node_modules/.bin/vouchington'), 0o755)
   for (const path of generatedPaths) {
     await mkdir(dirname(join(checkout, path)), { recursive: true })
     await writeFile(join(checkout, path), 'generated')
@@ -135,7 +129,6 @@ describe('reset-worktree product hooks', () => {
     const log = await readLog(commandLog)
     expect(log.indexOf('teardown --yes')).toBeGreaterThanOrEqual(0)
     expect(log.indexOf('teardown --yes')).toBeLessThan(log.indexOf('initialize monorepo'))
-    expect(log).toContain('tmux-name [tmux name ]')
     for (const path of generatedPaths) expect(await exists(join(checkout, path))).toBe(false)
     expect(await exists(join(checkout, '.env'))).toBe(true)
     expect((await git(checkout, 'branch', '--show-current')).trim()).toMatch(/^reset-[0-9a-f]{8}$/)

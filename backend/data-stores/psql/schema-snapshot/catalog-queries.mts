@@ -10,9 +10,7 @@ import { beginTransaction } from '../transactions.mts'
 export async function readSchemaCatalog() {
   await using transaction = await beginTransaction()
   await transaction("/* readSchemaCatalog */ SET LOCAL TimeZone = 'UTC'")
-  const catalog = await readSchemaCatalogFromPostgres((sql, values) =>
-    transaction(sql, values === undefined ? undefined : [...values]),
-  )
+  const catalog = await readSchemaCatalogFromPostgres(transaction)
   await transaction.commit()
   return catalog
 }

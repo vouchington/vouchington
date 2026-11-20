@@ -69,11 +69,11 @@ export async function hasStaleStoryPostRelatedUrlProjectionState(
     `/* hasStaleStoryPostRelatedUrlProjectionState */
       SELECT 1
       FROM (
-        SELECT generation FROM story_post_related_url_projection_receipts
-        WHERE post_id = $1 AND generation < $2
+        (SELECT generation FROM story_post_related_url_projection_receipts
+          WHERE post_id = $1 AND generation < $2 LIMIT 1)
         UNION ALL
-        SELECT generation FROM story_post_related_url_projection_relation_mutations
-        WHERE post_id = $1 AND generation < $2
+        (SELECT generation FROM story_post_related_url_projection_relation_mutations
+          WHERE post_id = $1 AND generation < $2 LIMIT 1)
       ) stale
       LIMIT 1`,
     [work.post_id, work.generation],

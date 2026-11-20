@@ -2,7 +2,7 @@ import { processDiffCommand, runGh } from 'vouchington-tooling/gh-cli'
 import { fetchIssueProjectMemberships } from 'vouchington-tooling/github-projects'
 import { findHandRolledStackBaseBlock } from 'vouchington-tooling/command-policy'
 
-import { stackPolicy } from '../codex-hooks/policy/stack-policy.mts'
+import { stackPolicy } from './stack-policy.mts'
 import { checkLargeDiff, type LargeDiffOptions } from './large-diff.mts'
 import { noSourceIssueErrors, type NoSourceIssue } from './no-source.mts'
 import { parseGitHubIssueApiResponse } from '../pr-description/closing-refs.mts'

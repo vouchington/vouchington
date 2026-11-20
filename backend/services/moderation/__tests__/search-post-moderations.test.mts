@@ -115,4 +115,53 @@ describe('search-post-moderations', () => {
     const results = await searchPostModerationsByPostIds([post.id, post.id])
     expect(results.map(row => row.id)).toEqual(insertedIds.toSorted().toReversed().slice(0, 10))
   })
+
+  it('searchPostModerationsByPostIds - keeps the latest ten per post with slugs only for moderators', async () => {
+    const random = randomSuffix()
+    const [postA, postB] = await Promise.all(
+      [0, 1].map(index =>
+        createPost(user, WEB_PROVENANCE, {
+          title: `Slug Post ${index} ${random}`,
+          markdown: `Content ${index} ${random}`,
+          post_type: 'discussion',
+        }),
+      ),
+    )
+    const tagger = await createTestAgent({ agentType: 'autotagger' })
+    const taggerPromptId = await insertTestAgentPrompt({ agentId: tagger.id })
+    const expected: Array<{ id: string; post_id: string; agent_id: string; slug: string | null }> =
+      []
+    for (const post of [postA, postB]) {
+      const ids: string[] = []
+      for (let i = 0; i < 12; i++) {
+        const byModerator = i % 2 === 0
+        const id = await insertTestAgentModeration({
+          postId: post.id,
+          promptId: byModerator ? promptId : taggerPromptId,
+          agentId: byModerator ? agentId : tagger.id,
+        })
+        ids.push(id)
+      }
+      for (const id of ids.toSorted().toReversed().slice(0, 10)) {
+        const byModerator = ids.indexOf(id) % 2 === 0
+        expected.push({
+          id,
+          post_id: post.id,
+          agent_id: byModerator ? agentId : tagger.id,
+          slug: byModerator ? moderatorSlug : null,
+        })
+      }
+    }
+    expected.sort((a, b) => (a.post_id === b.post_id ? 0 : a.post_id < b.post_id ? -1 : 1))
+
+    const results = await searchPostModerationsByPostIds([postB.id, postA.id])
+    expect(
+      results.map(row => ({
+        id: row.id,
+        post_id: row.post_id,
+        agent_id: row.agent_id,
+        slug: row.moderator_slug,
+      })),
+    ).toEqual(expected)
+  })
 })

@@ -5,7 +5,11 @@ import { searchPostModerationsByPostIds } from '@services/moderation/search-post
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
-import { seedPostModerationHistoryPage } from '../seed-data/post-moderation-history-page.mts'
+import {
+  POST_MODERATION_HISTORY_CATALOG_SIZE,
+  removePostModerationHistoryCatalog,
+  seedPostModerationHistoryPage,
+} from '../seed-data/post-moderation-history-page.mts'
 
 /** Compare the per-post ordered index walk with the previous full-history ranking. */
 export async function runPostModerationHistoryPageScenarios(): Promise<void> {
@@ -13,10 +17,16 @@ export async function runPostModerationHistoryPageScenarios(): Promise<void> {
   await seedPostModerationHistoryPage(postIds[0]!)
   let walkedIds: string[] = []
   registerScenarioContract('post-moderation-history-page', {
-    // The moderator slug join reads the whole migration-seeded moderator catalog.
-    seededRows: { moderator_agents: MODERATOR_CONFIGS.length },
-    forbidSequentialScans: ['agent_moderations'],
-    expectations: [],
+    // The catalog is the migration-seeded moderators plus a production-sized seeded set; the
+    // slug lookup must probe it by primary key for at most one row per returned moderation.
+    seededRows: {
+      moderator_agents: MODERATOR_CONFIGS.length + POST_MODERATION_HISTORY_CATALOG_SIZE,
+    },
+    forbidSequentialScans: ['agent_moderations', 'moderator_agents'],
+    expectations: [
+      { kind: 'usesIndexes', indexes: ['moderator_agents_pkey'] },
+      { kind: 'maxProcessedRows', relation: 'moderator_agents', max: postIds.length * 10 },
+    ],
   })
   await runAndCapture(
     'post-moderation-history-page',
@@ -52,6 +62,9 @@ export async function runPostModerationHistoryPageScenarios(): Promise<void> {
     },
     undefined,
     'postModerationHistoryRankedComparison',
-    { exactCapturedNames: ['postModerationHistoryRankedComparison'] },
+    {
+      exactCapturedNames: ['postModerationHistoryRankedComparison'],
+      afterCapture: removePostModerationHistoryCatalog,
+    },
   )
 }
