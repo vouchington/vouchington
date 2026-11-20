@@ -26,8 +26,7 @@ export async function searchPostModerationsByPostIds(
     SELECT am.id, am.post_id, am.prompt_id, am.agent_id,
       encode(am.input_sha256, 'hex') AS input_sha256,
       am.is_flagged, am.results, am.created_at, am.updated_at,
-      (SELECT agm.slug FROM moderator_agents agm WHERE agm.agent_id = am.agent_id LIMIT 1)
-        AS moderator_slug
+      agm.slug AS moderator_slug
     FROM unnest(${[...new Set(postIds)]}::uuid[]) AS requested(post_id)
     CROSS JOIN LATERAL (
       SELECT id, post_id, prompt_id, agent_id, input_sha256,
@@ -37,6 +36,7 @@ export async function searchPostModerationsByPostIds(
       ORDER BY id DESC
       LIMIT ${MAX_MODERATIONS_PER_POST}
     ) am
+    LEFT JOIN moderator_agents agm ON agm.agent_id = am.agent_id
     ORDER BY am.post_id, am.id DESC
   `)
 
