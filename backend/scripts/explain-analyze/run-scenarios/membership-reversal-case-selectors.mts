@@ -26,31 +26,65 @@ export async function runMembershipReversalSelectorScenarios(
       [
         'membership-reversal-displaced-source',
         'getDisplacedStripeSourceForCollision',
-        buildGetDisplacedStripeSourceForCollisionQuery(userId),
+        async () => {
+          await using transaction = await beginTransaction()
+          const result = await transaction(buildGetDisplacedStripeSourceForCollisionQuery(userId))
+          await transaction.rollback()
+          return result
+        },
       ],
       [
         'membership-reversal-winner-effective',
         'getStripeCollisionWinnerEffectiveAt',
-        buildGetStripeCollisionWinnerEffectiveAtQuery(membershipId, userId),
+        async () => {
+          await using transaction = await beginTransaction()
+          const result = await transaction(
+            buildGetStripeCollisionWinnerEffectiveAtQuery(membershipId, userId),
+          )
+          await transaction.rollback()
+          return result
+        },
       ],
       [
         'membership-reversal-winning-membership',
         'getWinningMembershipForStripePurchase',
-        buildGetWinningMembershipForStripePurchaseQuery(familyUserId, new Date(1_800_000_000_000)),
+        async () => {
+          await using transaction = await beginTransaction()
+          const result = await transaction(
+            buildGetWinningMembershipForStripePurchaseQuery(
+              familyUserId,
+              new Date(1_800_000_000_000),
+            ),
+          )
+          await transaction.rollback()
+          return result
+        },
       ],
       [
         'membership-reversal-owner-lock',
         'detectIneligibleStripePurchaseFromInvoicePayment:lockUser',
-        buildLockStripePurchaseOwnerForCollisionQuery(userId),
+        async () => {
+          await using transaction = await beginTransaction()
+          const result = await transaction(buildLockStripePurchaseOwnerForCollisionQuery(userId))
+          await transaction.rollback()
+          return result
+        },
       ],
       [
         'membership-reversal-bound-owner',
         'getBoundStripeSubscriptionOwnerForCollision',
-        buildGetBoundStripeSubscriptionOwnerForCollisionQuery(sourceIdentity, customerId),
+        async () => {
+          await using transaction = await beginTransaction()
+          const result = await transaction(
+            buildGetBoundStripeSubscriptionOwnerForCollisionQuery(sourceIdentity, customerId),
+          )
+          await transaction.rollback()
+          return result
+        },
       ],
     ] as const,
     1,
-    async ([scenario, label, statement]) => {
+    async ([scenario, label, execute]) => {
       registerScenarioContract(scenario, {
         seededRows: {
           users: 2002,
@@ -73,10 +107,8 @@ export async function runMembershipReversalSelectorScenarios(
       await runAndCapture(
         scenario,
         async () => {
-          await using transaction = await beginTransaction()
-          const result = await transaction(statement)
+          const result = await execute()
           if (result.rows.length !== 1) throw new Error(`Expected one row for ${scenario}`)
-          await transaction.rollback()
         },
         undefined,
         label,
