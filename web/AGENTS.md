@@ -1,16 +1,20 @@
 # Web
 
-- Use [web docs](../docs/overview/architecture/web/README.md), [test commands](../docs/development/tests.md), and [local QA](../.agents/skills/local-site-testing/SKILL.md). Never commit screenshots.
-- Before push, follow the [canonical before-push recipe](../docs/checklists/commit.md#before-pushing). Production Next/Storybook builds use package scripts (`next build`/`storybook build`) without build locks.
-- Read [web conventions](../docs/development/web-agent-rules.md) for navigation/routes/headers/bookmarks/components/tests; product contracts belong in [requirements](../docs/requirements/README.md). Authenticated routes follow [(my) rules](<app/(my)/AGENTS.md>).
-- Database lists server-render page one and support [cursor continuation](../docs/overview/architecture/pagination.md).
-- Server components use `getCurrentUser()`; clients use `useAuth()` without `currentUser` crossing RSC/client boundaries. GET helpers are already React-cached; follow [server API rules](lib/api/server/AGENTS.md).
-- Mutations call client API helpers, never inline `'use server'` proxies. Entity URLs use [canonical link helpers](lib/links/AGENTS.md), never hand-built templates. Routes, visible text, and inputs never expose UUIDs as the identifier, not even truncated ones; slug routes accept a UUID only as a fallback that redirects to the canonical slug ([identifier rules](../docs/development/web-agent-rules.md#identifiers)).
-- External images use `/sideload/` through `ProxiedImage`, never bare `next/image` URLs.
-- Browser config uses runtime public bootstrap (`IMAGE_ORIGIN` pattern), never new Docker build args.
-- Production test IDs use `data-pw`, never `data-testid`. React Compiler is enabled; avoid identity-only memoization.
-- API changes update fixtures and Swift/.NET tests under the root client-parity contract.
-- Web tests follow the [suite rules](../docs/development/tests.md#test-suite-rules).
+- Product contracts: [requirements index](../docs/requirements/README.md). Never commit screenshots.
+- Database lists server-render page one and support cursor continuation.
+- Server components use `getCurrentUser()`; clients use `useAuth()` without `currentUser` crossing
+  RSC/client boundaries.
+- Mutations call client API helpers, never inline `'use server'` proxies. Routes, visible text, and
+  inputs never expose UUIDs as the identifier, not even truncated ones; slug routes accept a UUID
+  only as a fallback that redirects to the canonical slug.
+- Browser config uses runtime public bootstrap (`IMAGE_ORIGIN` pattern), never new Docker build
+  args or `NEXT_PUBLIC_*` values.
+- The Cloudflare Worker alone owns HTTP caching; Next.js never emits `Cache-Control`.
+- React Compiler is enabled; avoid identity-only memoization.
+- Never display raw `topic.name` for RSS-feed topics: stored names contain identity URLs. UI uses
+  `getTopicDisplayName(topic, { feedType? })`/`getTopicDisplayTitle(topic)`; SEO title/JSON-LD use
+  the URL-stripped, kind-free `getTopicDisplayTitle`. Identity/input surfaces (autocomplete keys,
+  settings defaults, merge confirmation) keep raw names.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

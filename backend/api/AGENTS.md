@@ -1,15 +1,27 @@
 # API routes
 
-- Load [event-ingress-routing](../../.agents/skills/event-ingress-routing/SKILL.md) before changing webhooks or inbound-event routes. Canonical route contracts live in `docs/requirements/api/**`; Keep endpoint behavior in those pages.
-- Keep routes thin: parse inputs, call `@services/*`, and shape responses. Reusable business logic belongs in services; never add `backend/api/**/shared/**`.
-- Use `requireAuth`, `getOptionalAuthAndRateLimit`, or `requireAuthAndRateLimit` from `response-helpers.mts`; use its UUID/JSON helpers too. Direct `ctx.getCurrentUser()`/`ctx.applyRouteRateLimit()` require a documented unusual preamble. Canonical 401 text is `Unauthorized`.
-- Authorize through service `currentUserCan*` helpers. POST/DELETE/PATCH routes also call `assertNotSuspended` and enforce domain caps, target-user existence, block/mute, and other applicable guards. Messaging follows [its authorization contract](../services/messaging/authorization.mts), with rejection-path integration coverage for every guard.
-- Preserve wrapped response contracts; election summaries are top-level sidecars, never nested entity data. Use `ctx.throw(status, message[, code])` with `@modules/on-error/error-codes` when clients branch on codes.
-- Public non-personalized GETs set logged-out `Cache-Control`. Entity reads use `@services/entity-cache`; logged-out lists/search use cached wrappers. Lists use batch APIs, never per-entity loop lookups, and expose [opaque cursors](../../docs/overview/architecture/pagination.md).
-- Follow [API performance requirements](../../docs/requirements/platform/api-performance.md) for round trips, caching, and batching.
-- APIs remain available regardless of frontend flags; never gate endpoints with `getFeatureFlagsFromCookie` 404s.
-- SSE uses `startSSE(ctx)`. Only `ECONNRESET` and `ERR_STREAM_PREMATURE_CLOSE` are benign pipeline disconnects; other errors reach `onError`. Close pub/sub subscriptions on disconnect/finally; recover reconnects from durable state.
-- SSE uses short `timeoutMs` and native `EventSource` reconnection. Do not make routine timeout cycles named-error terminal closes; follow [SSE bounds and exemptions](../../docs/development/runtime-timeouts.md#principle-sse--long-lived-connection-duration-under-fargate-spot).
-- Use resource-noun paths and sub-resource creation for actions. PATCH modifies only its URL resource, never `{ action: 'verb' }` RPC bodies.
-- Use [route helper contracts](../../docs/requirements/api/README.md#route-helpers), route inventory, and owning [services](../services/AGENTS.md); backend-wide rules are inherited.
-- `VITEST_DIAGNOSTICS=1` prints API test repeats and serial depth (non-overlapping queries) as `[pg-request-profile]`, and a repeated query annotation within one request that is not in the committed baseline fails the test ([details](../../docs/development/postgresql/README.md#per-request-query-profile-api-tests)).
+- Route contracts: [API requirements](../../docs/requirements/api/README.md).
+- Reusable business logic belongs in services; never add `backend/api/**/shared/**`.
+- Use `requireAuth`, `getOptionalAuthAndRateLimit`, or `requireAuthAndRateLimit` from
+  `response-helpers.mts`, and its UUID/JSON helpers. Direct `ctx.getCurrentUser()`/
+  `ctx.applyRouteRateLimit()` need a documented unusual preamble. Canonical 401 text is `Unauthorized`.
+- Order handlers: authenticate/authorize → resolve URL entities → parse/validate body → act.
+  Prefer `ctx.assert` for HTTP assertions.
+- Authorize through service `currentUserCan*` helpers. POST/DELETE/PATCH routes also call
+  `assertNotSuspended` and enforce domain caps, target-user existence, block/mute, and other
+  applicable guards. Messaging follows `services/messaging/authorization.mts`, with
+  rejection-path integration coverage for every guard.
+- Body-bearing mutations use `application/json`; urlencoded/multipart are forbidden except the
+  signed unsubscribe routes' declared form-urlencoded metadata.
+- Call `ctx.setStatus(N)` before non-200 JSON. Empty 204/205 responses set status without `ctx.json({})`.
+- Preserve wrapped response contracts; election summaries are top-level sidecars, never nested
+  entity data. Use `ctx.throw(status, message[, code])` with `@modules/on-error/error-codes` when
+  clients branch on codes.
+- New PUT vote routes use `createVoteHandler()` (`election-vote-handler.mts`).
+- Public non-personalized GETs set logged-out `Cache-Control`. Entity reads use
+  `@services/entity-cache`; logged-out lists/search use cached wrappers.
+- APIs remain available regardless of frontend feature flags; never gate an endpoint on one.
+- SSE uses `startSSE(ctx)`. Only `ECONNRESET` and `ERR_STREAM_PREMATURE_CLOSE` are benign pipeline
+  disconnects; other errors reach `onError`. Close pub/sub subscriptions on disconnect/finally and
+  recover reconnects from durable state. Use short `timeoutMs` with native `EventSource`
+  reconnection; routine timeout cycles are not named-error terminal closes.

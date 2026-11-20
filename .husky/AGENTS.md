@@ -1,5 +1,5 @@
 # Git hooks
 
-- `.husky/pre-push` rejects a plain force push (`--force`, `-f`, or a `+` refspec) and allows `--force-with-lease`. It exits 0 when `GITHUB_ACTIONS=true` or when it cannot read the `git` process. Do not add a pre-commit hook. `.husky/commit-msg` owns message validation. Never bypass hooks with `HUSKY=0`, `--no-verify`, or `core.hooksPath`.
-- Keep `post-rewrite`, `post-merge`, and `post-checkout` synchronized: run `pnpm install` after rebase, merge, or branch checkout changes `pnpm-lock.yaml`, any `package.json`, or `pnpm-workspace.yaml`. `post-checkout` installs only for `$3=1`, never file checkouts (`$3=0`) and never while a rebase is in progress (`rebase-merge` or `rebase-apply` under `git rev-parse --git-path`); `post-rewrite` is the single install point after a rebase, so intermediate commits never get installed.
-- Every tracked hook payload exits immediately when `GITHUB_ACTIONS=true`. Husky's generated trampoline may still initialize; non-Husky hooks remain outside this guard.
+- No pre-commit hook. Every tracked hook payload exits immediately when `GITHUB_ACTIONS=true`.
+- `post-rewrite` is the single install point after a rebase; `post-checkout` installs only for
+  branch checkouts (`$3=1`) outside a rebase.

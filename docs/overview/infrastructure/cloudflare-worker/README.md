@@ -6,6 +6,7 @@ A Cloudflare Worker that sits on top of [`backend/`](../../../../backend/) and [
 
 ## Contents
 
+- [Scripts and runbooks](scripts/README.md)
 - <a id="routing"></a>[Routing](reference-routing.md)
 - <a id="sitemaps"></a>[Sitemaps](reference-sitemaps.md)
 - <a id="caching"></a>[Caching](reference-caching.md)

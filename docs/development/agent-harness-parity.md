@@ -19,7 +19,7 @@ when creating a worktree in the desktop app; see [Codex local environments](http
   explicitly before editing.
 - Claude Code loads native `AGENTS.md` with ancestor and lazily read subtree instructions. A
   `CLAUDE.md` shadows `AGENTS.md` in the same directory, so keep it gitignored, and automatic
-  discovery skips `.agents`; explicitly read [skill instructions](../../.agents/skills/AGENTS.md).
+  discovery skips `.agents`, so local skills are linked into `.claude/skills`.
 - Installation prerequisite closure makes resources available; it does not require reading every
   installed skill. Load the current phase and relevant authoring procedure only.
 

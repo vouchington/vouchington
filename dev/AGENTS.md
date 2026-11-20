@@ -1,9 +1,8 @@
 # Development tools
 
-- Use [local site testing](../.agents/skills/local-site-testing/SKILL.md), and [command catalog](../docs/development/local-development/README.md).
-- Run commands from the current worktree root. Agents start the web stack with `./dev/initialize web` then `./dev/tmux`; individual services are human diagnostics, not startup fallbacks. Use [recovery](../docs/development/tests.md#local-web-validation-recovery) only after this fails.
-- Schema/destructive targets resolve through [`lib/db-target.sh`](lib/db-target.sh). `DATABASE_URL` is authoritative; non-local writes require operation-specific catalog opt-ins.
-- Parse worktrees through the `git-worktrees.sh` helper published in `node_modules/vouchington-tooling/scripts/worktree/` (recovery commands need `./dev/initialize monorepo` first). `./dev/reset-worktree` wraps the published reset with product hooks in [`lib/reset-worktree-hooks.sh`](lib/reset-worktree-hooks.sh). Main owns shared `voucha`/`voucha-valkey`; never bypass main-reset guards or globally export `FORCE_MAIN_RESET=1`. Full `.grok/worktrees`/temporary clones are not main; non-main stale databases follow root ephemeral-state policy.
-- Shell scripts support macOS Bash 3.2 and shellcheck. Conditional arrays under `set -u` use `"${arr[@]+"${arr[@]}"}"`. Never assign zsh's read-only `status`/`pipestatus`; use `cmd_status` or `curl_status` (see [`ci/curl-to.sh`](../ci/curl-to.sh)).
-- Host installation belongs in [vouchington-machines](https://github.com/vouchington/vouchington-machines), never this product repository; keep [system dependencies](../docs/development/system-dependencies.md) aligned.
-- Agent permissions and sandbox policy: [agent sandbox](../docs/development/agent-sandbox.md).
+- Development docs: [development index](../docs/development/README.md).
+- Schema/destructive targets resolve through [`lib/db-target.sh`](lib/db-target.sh). `DATABASE_URL`
+  is authoritative; non-local writes require operation-specific catalog opt-ins.
+- Shell scripts support macOS Bash 3.2. Conditional arrays under `set -u` use
+  `"${arr[@]+"${arr[@]}"}"`. Never assign zsh's read-only `status`/`pipestatus`; use `cmd_status`
+  or `curl_status`.

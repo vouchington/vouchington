@@ -4,8 +4,8 @@ Orientation for background work. The queue list, job names, schedules, concurren
 are code: read `backend/queues/<domain>/`, the processors in `backend/workers/<domain>/` and the
 worker policy in `backend/modules/worker-queue-inventory/`. This page records how the pieces fit
 and why they are shaped this way. Authoring rules live in the
-[queue checklist](../../../checklists/backend-queues.md) and
-[`backend/queues/AGENTS.md`](../../../../backend/queues/AGENTS.md).
+[queue checklist](../../../checklists/backend-queues.md) and the
+[queue authoring skill](../../../../.agents/skills/voucha-queue-authoring/SKILL.md).
 
 Publisher-type relation changes register feed-publication work on the owning transaction.
 After commit, a publisher-type capture dispatcher in the publication domain pages the immutable

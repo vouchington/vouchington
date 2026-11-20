@@ -13,13 +13,13 @@ into this page and `docs/catalog/README.md`.
 - [Runbooks](runbooks/README.md) — operational procedures.
 - [Checklists](checklists/README.md) — commit, package, CI, infrastructure, and backend queue checklists.
 - [Agent and automation prompts](prompts/README.md) — automation templates and scheduled prompts; the complete scheduled list is [SCHEDULED.md](prompts/SCHEDULED.md).
-- [Focused agent-facing references](catalog/README.md) — cross-cutting pages directly routed from workspace instructions.
+- [Focused agent-facing references](catalog/README.md) — cross-cutting pages.
 
 ## Documentation rules
 
-- Docs explain why, business impact, and architecture guidance, plus human runbooks and unenforced invariants; delete anything readable from code, config values, drifting numbers, history, and plans (see the [placement rubric](AGENTS.md#what-belongs-in-docs)).
+- Docs explain why, business impact, and architecture guidance, plus human runbooks and unenforced invariants; delete anything readable from code, config values, drifting numbers, history, and plans.
 - Cross-link related docs and code owners. Update links, fragments, code consumers, and generators
-  when moving a page. Follow the [placement rubric](AGENTS.md) for `AGENTS.md`, skills, and `docs/**`.
+  when moving a page. Link each new page from its area index (see [docs rules](AGENTS.md)).
 - Keep public documentation free of real operational thresholds, infrastructure identities, spend,
   unit costs, and business projections. Those belong in private `vouchington/vouchington-docs`;
   consult the [private-doc registry](development/docs-moved-to-vouchington-docs.md) before moving

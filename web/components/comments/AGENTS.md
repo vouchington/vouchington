@@ -1,6 +1,5 @@
 # Comments
 
-- Use comment requirements.
 - Signed-in collapse is the server `hide` bookmark (`useCommentCollapse`): optimistic toggle through `bookmarkEntity`/`unbookmarkEntity`, initial state from `data.bookmarks`. It never touches localStorage. Opening a hidden comment whose replies are not loaded fetches `fetchPostDescendants(id)` and merges them, with a Load more button while `has_next_page`.
 - Signed-out collapse uses `getPreference`/`setPreference` in `web/lib/preferences/storage.ts`, key `comments-collapsed:<rootPostId>` only; prune hydrated IDs against `mergedPostsMap`.
 - A comment with `placeholder_state` (`deleted` or `unmoderated`) has no text or author: render the label, no author link, no actions. The collapsed header reply count is `posts_metrics.count.children`, falling back to the loaded children.

@@ -1075,8 +1075,7 @@
         ]
       }
     ],
-    // Source: backend/data-stores/valkey/AGENTS.md line 3, "pub/sub, rate limiting, and GlideMQ never
-    // use the general `@data-stores/valkey` barrel". The general barrel re-exports only the rate
+    // Pub/sub, rate limiting, and GlideMQ never use the general `@data-stores/valkey` barrel. The general barrel re-exports only the rate
     // limiter client of those concerns (pub/sub and GlideMQ are not exported there), so that is the
     // one bannable name; import it from `@data-stores/valkey-rate-limiter`. Base rules are inherited
     // by nested configs; checkedPathPatterns scopes the rule to backend.
@@ -1372,8 +1371,7 @@
       }
     },
     {
-      // Source: backend/data-stores/valkey/AGENTS.md, "Batch complete key sets with MGET, Batch,
-      // or Lua instead of per-key sequential calls."
+      // Batch complete key sets with MGET, Batch, or Lua instead of per-key sequential calls.
       "files": ["**/backend/**/*.{mts,ts,cts}"],
       "excludeFiles": ["**/*.test.*", "**/*.spec.*", "**/test-helpers/**"],
       "rules": {
@@ -1413,8 +1411,8 @@
       }
     },
     {
-      // Source: backend/AGENTS.md line 10, "Runtime code uses `addGracefulShutdownCallback()`,
-      // never `process.kill()` or direct `process.exit()`". Scoped to long-running runtime packages;
+      // Runtime code uses `addGracefulShutdownCallback()`, never `process.kill()` or direct
+      // `process.exit()`, so shutdown callbacks run. Scoped to long-running runtime packages;
       // the graceful-shutdown owner (backend/data-stores), CLI scripts, entrypoints, and dev tooling
       // legitimately exit. backend/services/localization/compile-cli.mts is a one-shot build CLI.
       // backend/services/crawler-rss/.oxlintrc.json repeats this rule because a nested config
@@ -1440,11 +1438,11 @@
             "chains": [
               {
                 "path": "process.kill",
-                "message": "Runtime code never calls process.kill(); register addGracefulShutdownCallback() instead (backend/AGENTS.md)."
+                "message": "Runtime code never calls process.kill(); register addGracefulShutdownCallback() instead."
               },
               {
                 "path": "process.exit",
-                "message": "Runtime code never calls process.exit() directly; register addGracefulShutdownCallback() instead. Only an unref'd timed forced-exit fallback may exit (backend/AGENTS.md)."
+                "message": "Runtime code never calls process.exit() directly; register addGracefulShutdownCallback() instead. Only an unref'd timed forced-exit fallback may exit."
               }
             ]
           }
