@@ -3,6 +3,7 @@ import { encryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import { lockCopyrightActionGenerationForWrite } from './action-delivery-generation.mts'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import {
@@ -30,16 +31,15 @@ export async function rejectCopyrightEmailCorrespondence(input: {
   )
   assertRecommendationOrFallback(input.recommendationId, input.manualFallbackReason)
   await using transaction = await beginTransaction()
-  // Rejection also writes case-linked review/event rows; fence retention before
-  // locking the intake rather than obtaining the parent FK lock afterward.
-  const { rows: notices } = await transaction<{ id: string }>(sql`
-    /* rejectCopyrightEmailCorrespondence:lockNotice */
-    SELECT notice.id FROM copyright_notice_email_intake_notice_links link
-    JOIN copyright_notices notice ON notice.id = link.copyright_notice_id
-    WHERE link.copyright_notice_email_intake_id = ${input.intakeId} AND link.link_kind = 'thread'
-    FOR KEY SHARE OF notice
+  const { rows: owners } = await transaction<{ copyright_notice_id: string }>(sql`
+    /* rejectCopyrightEmailCorrespondence:identity */
+    SELECT copyright_notice_id FROM copyright_notice_email_intake_notice_links
+    WHERE copyright_notice_email_intake_id = ${input.intakeId} AND link_kind = 'thread'
   `)
-  assert(notices[0], 404, 'Matched copyright email correspondence not found')
+  assert(owners[0], 404, 'Matched copyright email correspondence not found')
+  // Rejection writes link, review and event rows whose triggers write the case generation; own
+  // that row first, in the same order as admission, then lock only the link it updates.
+  await lockCopyrightActionGenerationForWrite(owners[0].copyright_notice_id, transaction)
   const { rows } = await transaction<{
     notice_id: string
     amazon_ses_message_id: string
@@ -49,7 +49,7 @@ export async function rejectCopyrightEmailCorrespondence(input: {
     JOIN copyright_notice_email_intake_notice_links link
       ON link.copyright_notice_email_intake_id = intake.id AND link.link_kind = 'thread'
     WHERE intake.id = ${input.intakeId}
-    FOR UPDATE OF intake
+    FOR UPDATE OF link
   `)
   const pending = rows[0]
   assert(pending, 404, 'Matched copyright email correspondence not found')

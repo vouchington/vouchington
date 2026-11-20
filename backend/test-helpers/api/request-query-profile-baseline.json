@@ -391,6 +391,17 @@
     "routes": ["GET /api/v1/auth/bluesky/callback"]
   },
   {
+    "annotation": "lockCopyrightActionGenerationForWrite",
+    "maxCount": 2,
+    "reason": "Each request runs two transactions, and each transaction correctly takes the copyright generation lock once before any notice or submission lock; the profile counts repeats per request, not per transaction",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/action-delivery-generation.mts:18",
+    "routes": [
+      "POST /api/v1/copyright-email-intakes/:id/approvals",
+      "POST /api/v1/copyright-form-intakes/:id/reviews"
+    ]
+  },
+  {
     "annotation": "lockExistingTopicAliasPublicationScopes",
     "maxCount": null,
     "reason": "Alias claim reads existing alias ids before the alias row is updated, so a concurrent insert is visible to the conflict check.",

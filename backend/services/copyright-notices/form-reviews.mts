@@ -4,6 +4,10 @@ import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
+import {
+  lockCopyrightActionGenerationForWrite,
+  type LockedCopyrightGeneration,
+} from './action-delivery-generation.mts'
 import { appendCopyrightSubmissionAssessmentInTransaction } from './compliance.mts'
 import { getAutomaticEnforcementSince } from './automatic-withholding-since.mts'
 import { enforceCopyrightAssessment } from './enforce-assessment.mts'
@@ -46,6 +50,7 @@ export async function reviewCopyrightFormIntake(input: {
   `)
   const intake = rows[0]
   assert(intake, 404, 'Copyright form intake not found')
+  const locked = await lockCopyrightActionGenerationForWrite(intake.notice_id, transaction)
   // A review must enter the case before thread cleanup rechecks its blocker proof.
   await transaction(sql`/* reviewCopyrightFormIntake:lockNotice */
     SELECT id FROM copyright_notices WHERE id = ${intake.notice_id} FOR KEY SHARE`)
@@ -86,6 +91,7 @@ export async function reviewCopyrightFormIntake(input: {
     input.currentUser,
     input.is_accepted,
     transaction,
+    locked,
   )
   await transaction.commit()
   if (input.is_accepted) {
@@ -109,6 +115,7 @@ async function getOrCreateHumanAssessment(
   currentUser: PrivateUser,
   is_accepted: boolean,
   transaction: Awaited<ReturnType<typeof beginTransaction>>,
+  locked: LockedCopyrightGeneration,
 ): Promise<string> {
   const existing = await getCurrentAssessment(submissionId, transaction)
   if (
@@ -131,6 +138,7 @@ async function getOrCreateHumanAssessment(
         supersedesAssessmentId: existing?.id,
       },
       transaction,
+      locked,
     )
   ).id
 }
