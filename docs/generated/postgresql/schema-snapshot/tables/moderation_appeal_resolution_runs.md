@@ -36,6 +36,7 @@ Not partitioned — growth: bounded.
 
 **Indexes:**
 
+- `idx_moderation_appeal_resolution_runs__active_id`: `CREATE INDEX idx_moderation_appeal_resolution_runs__active_id ON public.moderation_appeal_resolution_runs USING btree (id) WHERE ((completed_at IS NULL) AND (failed_at IS NULL) AND (expired_at IS NULL))`
 - `idx_moderation_appeal_resolution_runs__lifecycle_change_id`: `CREATE INDEX idx_moderation_appeal_resolution_runs__lifecycle_change_id ON public.moderation_appeal_resolution_runs USING btree (latest_lifecycle_change_id) WHERE (latest_lifecycle_change_id IS NOT NULL)`
 - `moderation_appeal_resolution_runs_moderation_appeal_id_id_key`: `CREATE UNIQUE INDEX moderation_appeal_resolution_runs_moderation_appeal_id_id_key ON public.moderation_appeal_resolution_runs USING btree (moderation_appeal_id, id)`
 - `moderation_appeal_resolution_runs_pkey`: `CREATE UNIQUE INDEX moderation_appeal_resolution_runs_pkey ON public.moderation_appeal_resolution_runs USING btree (id)`
