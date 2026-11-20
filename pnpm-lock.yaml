@@ -6458,9 +6458,6 @@ importers:
       '@services/jwt-session':
         specifier: workspace:^
         version: link:../jwt-session
-      '@services/landing-page-analytics':
-        specifier: workspace:^
-        version: link:../landing-page-analytics
       '@services/language-detection':
         specifier: workspace:^
         version: link:../language-detection

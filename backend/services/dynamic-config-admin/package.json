@@ -74,7 +74,6 @@
     "@services/images": "workspace:^",
     "@services/individuals-households": "workspace:^",
     "@services/jwt-session": "workspace:^",
-    "@services/landing-page-analytics": "workspace:^",
     "@services/language-detection": "workspace:^",
     "@services/lists": "workspace:^",
     "@services/media-delivery-safety": "workspace:^",
