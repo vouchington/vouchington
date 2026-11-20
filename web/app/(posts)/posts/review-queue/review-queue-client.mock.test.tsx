@@ -73,13 +73,7 @@ const mockMarkPostForReview = vi.mocked(markPostForReview)
 describe('AdminReviewQueueClient', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    const exposure = {
-      count: 0,
-      count_capped: false,
-      threshold: 10,
-      in_cooldown: false,
-      cooldown_ends_at: null,
-    }
+    const exposure = { count: 0, threshold: 10, in_cooldown: false, cooldown_ends_at: null }
     mockGetExposureState.mockResolvedValue({ exposure })
     mockRecordMediaReveal.mockResolvedValue({ exposure })
   })
