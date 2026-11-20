@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { beginTransaction } from '@voucha/test-helpers'
-import { createEmbeddingCacheApplicationFixture } from '@voucha/test-helpers/embedding-cache-application'
+import { beginTransaction } from '@voucha/test-helpers/bedrock-legacy'
+import { createEmbeddingCacheApplicationFixture } from '@voucha/test-helpers/bedrock-legacy-embedding-cache-application'
 import { applySingleEmbedding } from './apply.mts'
 
 describe('captured single embedding application', () => {

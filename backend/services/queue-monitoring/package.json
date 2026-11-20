@@ -45,6 +45,7 @@
     "@queues/entity-listeners": "workspace:^",
     "@queues/find-your-friends": "workspace:^",
     "@queues/follower-distributions": "workspace:^",
+    "@queues/gemini-embeddings-batch": "workspace:^",
     "@queues/hacker-news": "workspace:^",
     "@queues/hacker-news-flags": "workspace:^",
     "@queues/heartbeat": "workspace:^",

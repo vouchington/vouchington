@@ -1,7 +1,7 @@
 import {
   createLockedEntityId,
   writeBatchFixtureFile as writeTempFile,
-} from '@voucha/test-helpers/bedrock-batch-creation-fixtures'
+} from '@voucha/test-helpers/bedrock-legacy-bedrock-batch-creation-fixtures'
 import type { ReadStream } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import { StopModelInvocationJobCommand } from '@aws-sdk/client-bedrock'
@@ -15,13 +15,13 @@ import {
   getTestBatchSourceColumns,
   getTestBatchSummary,
   insertTestEmbeddingsBatch,
-} from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
+} from '@voucha/test-helpers/bedrock-legacy-entities-bedrock-embeddings-batches'
 import {
   createTestUrlWithHostname,
   createTestBatch,
   createTestUserDirect,
   insertTestCrawl,
-} from '@voucha/test-helpers'
+} from '@voucha/test-helpers/bedrock-legacy'
 import { createBatch as submitBatch } from './create.mts'
 
 const createBatch = (

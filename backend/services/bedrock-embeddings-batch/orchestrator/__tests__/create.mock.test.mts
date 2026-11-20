@@ -11,9 +11,9 @@ import {
   hardDeleteTestTopic,
   hardDeleteTestUser,
   insertTestTopic,
-} from '@voucha/test-helpers'
-import { acquireEmbeddingQuotaFixture } from '@voucha/test-helpers/embedding-creation-quota'
-import { withEmbeddingQuotaSnapshot } from '@voucha/test-helpers/embedding-quota-snapshot'
+} from '@voucha/test-helpers/bedrock-legacy'
+import { acquireEmbeddingQuotaFixture } from '@voucha/test-helpers/bedrock-legacy-embedding-creation-quota'
+import { withEmbeddingQuotaSnapshot } from '@voucha/test-helpers/bedrock-legacy-embedding-quota-snapshot'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { getBatchRecordsCreatedInLastHour } from '@services/bedrock-embeddings/batch/orchestrator/poll-queries'
 import {
@@ -25,7 +25,7 @@ import { creationSubmissionAdmission } from '../../submission-admission.mts'
 import {
   getTestBatchEntities,
   getTestBatchSummary,
-} from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
+} from '@voucha/test-helpers/bedrock-legacy-entities-bedrock-embeddings-batches'
 import { createBatch } from '../create.mts'
 
 vi.mock<typeof import('@modules/aws/s3-bedrock-batch')>(

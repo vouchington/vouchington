@@ -3,12 +3,25 @@ export const EXTRA_BOUNDED_TABLES_CONTINUED = new Map<string, string>([
     'boilerplate_removal_hostname_cursors',
     'A checked singleton bounds the scheduled boilerplate removal hostname sweep to one row.',
   ],
+  // #5635 lower-only retained tables; the removal layer deletes these classifications.
+  [
+    'bedrock_nova_multimodal_v1_embeddings',
+    'Owner-required lower-only vector cache for atomic stack #5654; the lower layer must not deploy independently and upper PR #5653 removes this table.',
+  ],
   [
     'bedrock_embedding_batches',
-    'Terminal batches are deleted after 30 days by capped deletion batches; in-flight batches remain until terminal.',
+    'Owner-required lower-only batch state for atomic stack #5654; the lower layer must not deploy independently and upper PR #5653 removes this table.',
   ],
   [
     'bedrock_embedding_batch_entities',
+    'Owner-required lower-only batch membership for atomic stack #5654; the lower layer must not deploy independently and upper PR #5653 removes this table.',
+  ],
+  [
+    'gemini_embedding_batches',
+    'Terminal batches are deleted after 30 days by capped deletion batches; in-flight batches remain until terminal.',
+  ],
+  [
+    'gemini_embedding_batch_entities',
     'Batch member rows cascade when a terminal parent batch expires.',
   ],
   [

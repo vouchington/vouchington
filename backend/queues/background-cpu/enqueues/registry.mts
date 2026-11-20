@@ -1,3 +1,4 @@
+import { retainedBedrock, retainedBedrockJobs } from './registry-bedrock-retained.mts'
 import {
   BACKGROUND_CPU_DOMAINS,
   PRIORITY_DISPATCH,
@@ -14,7 +15,7 @@ import { contentAnalysisOrderingKey, crawlOrderingKey } from './job-lanes.mts'
 import { assertRegistryInvariants } from './registry-invariants.mts'
 
 const crawl = defineBackgroundCpuDomain({ domain: 'crawl', workerConcurrency: 23 })
-const bedrock = defineBackgroundCpuDomain({ domain: 'bedrock-embeddings', workerConcurrency: 11 })
+const bedrock = defineBackgroundCpuDomain({ domain: 'gemini-embeddings', workerConcurrency: 11 })
 const spendCap = defineBackgroundCpuDomain({ domain: 'ai-spend-cap', workerConcurrency: 1 })
 const contentAnalysis = defineBackgroundCpuDomain({
   domain: 'content-analysis',
@@ -24,6 +25,7 @@ const contentAnalysis = defineBackgroundCpuDomain({
 export const BACKGROUND_CPU_DOMAIN_DEFINITIONS: readonly BackgroundCpuDomainDefinition[] = [
   crawl,
   bedrock,
+  retainedBedrock,
   spendCap,
   contentAnalysis,
 ]
@@ -82,12 +84,13 @@ export const BACKGROUND_CPU_JOBS: readonly BackgroundCpuJobDefinition[] = [
   crawlJob(dispatch('crawl_cleanup')),
   crawlJob(dispatch('boilerplate_removal_dispatcher')),
   crawlJob(task('boilerplate_removal')),
+  ...retainedBedrockJobs,
   ...['topic', 'post', 'rss_feed_item'].map(name =>
     bedrockJob(
       task(name, {
         ...RETRY_1S,
         ordering: {
-          key: 'bedrock-embeddings:single',
+          key: 'gemini-embeddings:single',
           rateLimit: { max: 10, duration: 1_000 },
         },
       }),
@@ -97,7 +100,7 @@ export const BACKGROUND_CPU_JOBS: readonly BackgroundCpuJobDefinition[] = [
     bedrockJob(
       task(`create_${name}`, {
         lockDuration: 300_000,
-        ordering: { key: `bedrock-embeddings:creation:${name}` },
+        ordering: { key: `gemini-embeddings:creation:${name}` },
       }),
     ),
   ),
@@ -105,7 +108,7 @@ export const BACKGROUND_CPU_JOBS: readonly BackgroundCpuJobDefinition[] = [
     task('poll_batch', {
       lockDuration: 300_000,
       ordering: {
-        key: 'bedrock-embeddings:polling',
+        key: 'gemini-embeddings:polling',
         rateLimit: { max: 10, duration: 1_000 },
       },
     }),
@@ -119,7 +122,7 @@ export const BACKGROUND_CPU_JOBS: readonly BackgroundCpuJobDefinition[] = [
     bedrockJob(
       dispatch(name, {
         lockDuration: 300_000,
-        ordering: { key: 'bedrock-embeddings:dispatcher' },
+        ordering: { key: 'gemini-embeddings:dispatcher' },
       }),
     ),
   ),
@@ -127,7 +130,7 @@ export const BACKGROUND_CPU_JOBS: readonly BackgroundCpuJobDefinition[] = [
     bedrockJob(
       dispatch(name, {
         lockDuration: 300_000,
-        ordering: { key: 'bedrock-embeddings:reconciliation' },
+        ordering: { key: 'gemini-embeddings:reconciliation' },
       }),
     ),
   ),

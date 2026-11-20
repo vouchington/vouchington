@@ -6,7 +6,7 @@ import { backgroundCpu as bedrock_embeddings_batch } from '@queues/background-cp
 import {
   cleanupTestEmbeddingsBatches,
   insertTestEmbeddingsBatch,
-} from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
+} from '@voucha/test-helpers/bedrock-legacy-entities-bedrock-embeddings-batches'
 import { processBedrockBatchSqsMessage } from '../processors.mts'
 
 // This file intentionally exercises real glide-mq rather than mocking it; the passthrough only

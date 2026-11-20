@@ -6,12 +6,12 @@ import type {
   LanguageDetectionEntityType,
 } from '@queues/content-analysis/types'
 import type { Job } from 'glide-mq'
-import { withBedrockRateLimit } from './bedrock-rate.mts'
+import { withVertexRateLimit } from './vertex-rate.mts'
 import { processRetainedSweep } from '@data-stores/valkey-glide-mq'
 import { processUploadCleanupJob } from './upload-cleanup.mts'
 import type { CpuJob } from './job-types.mts'
 import {
-  getBedrockCreationType,
+  getGeminiCreationType,
   isLanguageBackfillJob,
   isLanguageDetectionJob,
   resolveCpuJobRoute,
@@ -21,6 +21,10 @@ async function runCpuJob(rawJob: Job<unknown>): Promise<unknown> {
   // The registry and route guard are the deserialization boundary for the shared queue.
   const job = rawJob as CpuJob
   const route = resolveCpuJobRoute(job.name)
+  if (route === 'retained-bedrock') {
+    const { processRetainedBedrockJob } = await import('./bedrock-retained-handlers.mts')
+    return processRetainedBedrockJob(job)
+  }
   if (route === 'crawler' && job.name === 'crawl.crawl_url') {
     const { processCrawlerJob } = await import('@workers/crawler/processors')
     return processCrawlerJob(job)
@@ -40,28 +44,28 @@ async function runCpuJob(rawJob: Job<unknown>): Promise<unknown> {
     return processUnfurlReferralLinksJob(job)
   }
   if (
-    route === 'bedrock-single' &&
-    (job.name === 'bedrock-embeddings.topic' ||
-      job.name === 'bedrock-embeddings.post' ||
-      job.name === 'bedrock-embeddings.rss_feed_item')
+    route === 'gemini-single' &&
+    (job.name === 'gemini-embeddings.topic' ||
+      job.name === 'gemini-embeddings.post' ||
+      job.name === 'gemini-embeddings.rss_feed_item')
   )
-    return withBedrockRateLimit(async () => {
-      const { processBedrockNovaMultimodalV1SingleJob } =
-        await import('@workers/bedrock-embeddings/processors/nova-multimodal-v1-single')
-      return processBedrockNovaMultimodalV1SingleJob(job)
+    return withVertexRateLimit(async () => {
+      const { processGeminiEmbedding2SingleJob } =
+        await import('@workers/gemini-embeddings/processors/gemini-embedding-2-single')
+      return processGeminiEmbedding2SingleJob(job)
     })
-  const creationType = getBedrockCreationType(job.name)
-  if (route === 'bedrock-creation' && creationType)
-    return withBedrockRateLimit(async () => {
+  const creationType = getGeminiCreationType(job.name)
+  if (route === 'gemini-creation' && creationType)
+    return withVertexRateLimit(async () => {
       const { processEmbeddingCreationJob } =
-        await import('@workers/bedrock-embeddings-batch/processors/creation')
+        await import('@workers/gemini-embeddings-batch/processors/creation')
       return processEmbeddingCreationJob(job, creationType)
     })
-  if (route === 'bedrock-batch')
-    return withBedrockRateLimit(async () => {
-      const { processBedrockEmbeddingsBatchJob } =
-        await import('@workers/bedrock-embeddings-batch/processors/worker-router')
-      return processBedrockEmbeddingsBatchJob(job)
+  if (route === 'gemini-batch')
+    return withVertexRateLimit(async () => {
+      const { processEmbeddingsBatchJob } =
+        await import('@workers/gemini-embeddings-batch/processors/worker-router')
+      return processEmbeddingsBatchJob(job)
     })
   if (route === 'spend-cap' && job.name === 'ai-spend-cap.recheck') {
     const { processSpendCapRecheckJob } =

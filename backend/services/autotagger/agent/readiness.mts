@@ -39,7 +39,7 @@ export function autotaggerAgentRequestEligibility(): SQLStatement {
     .append(sql` OR EXISTS (
       SELECT 1 FROM rss_feed_items item
       WHERE item.id = request.rss_feed_item_id AND item.deleted_at IS NULL
-        AND item.bedrock_nova_multimodal_v1_content_sha256 = request.input_sha256
+        AND item.gemini_embedding_2_content_sha256 = request.input_sha256
     )) AND `)
     .append(followsCompletedClassifierRun(TAGGING_CLASSIFIER_SLUG))
 }

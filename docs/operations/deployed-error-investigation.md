@@ -34,5 +34,4 @@ authorization. Do not alter application or retry policy from one timeout.
 ## Related references
 
 - [Error handling](../overview/architecture/error-handling.md)
-- [Bedrock batch DLQ handling](bedrock-batch-dlq-purge.md)
 - [Valkey memory recovery](valkey-memory-recovery.md)

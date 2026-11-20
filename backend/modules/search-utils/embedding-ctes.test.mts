@@ -15,7 +15,7 @@ describe('embedding-ctes', () => {
     expect(ctes).toHaveLength(1)
     expect(ctes[0].text).toContain('semantic_search_embedding')
     expect(ctes[0].text).toContain('AS NOT MATERIALIZED')
-    expect(ctes[0].text).toContain('::vector AS embedding')
+    expect(ctes[0].text).toContain('::halfvec(1536) AS embedding')
     expect(ctes[0].values).toEqual(['[0.1,0.2,0.3]'])
   })
 

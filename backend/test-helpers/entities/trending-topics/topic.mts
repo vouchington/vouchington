@@ -13,8 +13,8 @@ export async function insertTopicWithTimestamp(
   const slug = `trending-topic-${random}`
   await write(
     sql`/* insertTopicWithTimestamp */
-    INSERT INTO topics (id, name, slug, created_by_id, topic_type, bedrock_nova_multimodal_v1_content_sha256, created_via)
-    VALUES (${id}, ${name}, ${slug}, ${userId}, 'topic', ${sha256}, 'system')
+    INSERT INTO topics (id, name, slug, created_by_id, topic_type, gemini_embedding_2_content_sha256, created_via, bedrock_nova_multimodal_v1_content_sha256)
+    VALUES (${id}, ${name}, ${slug}, ${userId}, 'topic', ${sha256}, 'system', ${sha256})
   `,
   )
   await write(

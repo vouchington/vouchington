@@ -84,6 +84,9 @@ export const externalProxyDynamicConfigRegistryEntries = [
       bedrock_embeddings_enabled: {
         description: 'Routes API-originated Bedrock embeddings through the API egress proxy.',
       },
+      gemini_embeddings_enabled: {
+        description: 'Routes API-originated Vertex embeddings through the API egress proxy.',
+      },
     },
   }),
 ]

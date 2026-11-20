@@ -18,10 +18,10 @@ export async function runLandingPageReviewTypeScenario(): Promise<void> {
   await write(
     `/* seedExplainLandingOtherPosts */ INSERT INTO posts
        (id, created_via, post_type, title, markdown, created_by_id,
-        bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256)
+        gemini_embedding_2_content_sha256, llm_moderation_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
      SELECT input.id, 'system', 'discussion', 'Landing other post ' || input.ordinal,
        'Non-review posts must not enter the review candidate index', $2, $3, $3
-     FROM unnest($1::uuid[]) WITH ORDINALITY AS input(id, ordinal)
+     , $3 FROM unnest($1::uuid[]) WITH ORDINALITY AS input(id, ordinal)
      ON CONFLICT DO NOTHING`,
     [postIds, LANDING_PAGE_REVIEW_OWNER_ID, hash],
   )

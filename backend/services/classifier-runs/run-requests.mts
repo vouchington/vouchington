@@ -78,16 +78,16 @@ export async function requestRssFeedItemClassifierRuns(
     FROM classifiers classifier, rss_feed_items item
     WHERE classifier.id = request.classifier_id AND classifier.slug = ANY(${slugs}::text[])
       AND item.id = request.rss_feed_item_id AND item.id = ANY(${ids}::uuid[])
-      AND request.input_sha256 <> item.bedrock_nova_multimodal_v1_content_sha256
+      AND request.input_sha256 <> item.gemini_embedding_2_content_sha256
       AND request.run_settled_at IS NULL AND request.no_work_at IS NULL AND request.stale_at IS NULL
   `)
   await query(sql`/* insertRssFeedItemClassifierRunRequests */
     INSERT INTO classifier_run_requests (classifier_id, rss_feed_item_id, input_sha256)
-    SELECT classifier.id, item.id, item.bedrock_nova_multimodal_v1_content_sha256
+    SELECT classifier.id, item.id, item.gemini_embedding_2_content_sha256
     FROM rss_feed_items item
     CROSS JOIN classifiers classifier
     WHERE item.id = ANY(${ids}::uuid[]) AND classifier.slug = ANY(${slugs}::text[])
-    ORDER BY classifier.id, item.id, item.bedrock_nova_multimodal_v1_content_sha256
+    ORDER BY classifier.id, item.id, item.gemini_embedding_2_content_sha256
     ON CONFLICT (classifier_id, rss_feed_item_id, input_sha256)
       WHERE rss_feed_item_id IS NOT NULL
       DO UPDATE SET stale_at = NULL WHERE classifier_run_requests.stale_at IS NOT NULL

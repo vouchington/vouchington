@@ -11,7 +11,7 @@ import {
   streamGithubAccountsToSync,
   streamXAccountsToSync,
 } from '@services/friend-recommendations/accounts-to-sync'
-import { getStaleBatches } from '@services/bedrock-embeddings-batch/orchestrator/find-stale'
+import { getStaleBatches } from '@services/embeddings-batch/orchestrator/find-stale'
 
 export async function runIngestionRawPageScenarios(): Promise<void> {
   for (const [provider, stream] of [
@@ -50,18 +50,18 @@ export async function runIngestionRawPageScenarios(): Promise<void> {
     ['sparse', seedUuid(0, 'b4'), false],
     ['stale', seedUuid(800, 'b4'), true],
   ] as const) {
-    const scenarioId = `bedrock-${phase}-raw-page`
+    const scenarioId = `gemini-${phase}-raw-page`
     registerScenarioContract(scenarioId, {
       expectations: [
-        { kind: 'maxProcessedRows', relation: 'bedrock_embedding_batches', max: 121 },
+        { kind: 'maxProcessedRows', relation: 'gemini_embedding_batches', max: 121 },
         {
           kind: 'usesIndexes',
-          indexes: ['idx_bedrock_embedding_batches__active', 'bedrock_embedding_batches_pkey'],
+          indexes: ['idx_gemini_embedding_batches__active', 'gemini_embedding_batches_pkey'],
           anyOf: true,
         },
       ],
     })
-    // no-mistakes-disable-next-line query-reached-per-item: two fixed Bedrock lifecycle cases need separate serialized plan captures.
+    // no-mistakes-disable-next-line query-reached-per-item: two fixed Gemini lifecycle cases need separate serialized plan captures.
     await runAndCapture(scenarioId, async () => {
       const page = await getStaleBatches(24, {
         afterId,

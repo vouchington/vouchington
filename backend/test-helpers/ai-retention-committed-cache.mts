@@ -18,7 +18,7 @@ export async function createCommittedRetentionCacheFixture() {
       const { rows } = await read<{ content_sha256: string }>(
         `/* readCommittedRetentionCacheFixture */
         SELECT encode(content_sha256, 'hex') AS content_sha256
-        FROM bedrock_nova_multimodal_v1_embeddings
+        FROM gemini_embedding_2_embeddings
         WHERE content_sha256 = ANY($1::bytea[])`,
         [buffers],
       )
@@ -28,7 +28,7 @@ export async function createCommittedRetentionCacheFixture() {
     cleanup: async () => {
       await write(
         `/* deleteCommittedRetentionCacheFixture */
-        DELETE FROM bedrock_nova_multimodal_v1_embeddings
+        DELETE FROM gemini_embedding_2_embeddings
         WHERE content_sha256 = ANY($1::bytea[])`,
         [buffers],
       )

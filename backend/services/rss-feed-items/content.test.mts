@@ -49,6 +49,10 @@ describe('createRssFeedItemEmbeddingContent', () => {
     expect(result.content).toContain('My Title')
     expect(result.content).toContain('Tech')
     expect(result.content).toContain('News')
+    expect(result.title).toBe('My Title')
+    expect(result.body).toContain('Article body')
+    expect(result.body).toContain('Tech')
+    expect(result.body).not.toContain('My Title')
   })
 
   it('strips HTML content to lean text', async () => {

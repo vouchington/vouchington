@@ -45,7 +45,7 @@ async function readStoryRepresentatives(
         AND candidate.story_id = wanted.story_id
         AND candidate.deleted_at IS NULL
       ORDER BY
-        (candidate.bedrock_nova_multimodal_v1_embedding <=> subject.bedrock_nova_multimodal_v1_embedding)
+        (candidate.gemini_embedding_2_embedding <=> subject.gemini_embedding_2_embedding)
           ASC NULLS LAST,
         candidate.id ASC
       LIMIT 1

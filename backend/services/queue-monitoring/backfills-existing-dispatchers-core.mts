@@ -8,7 +8,7 @@ import {
 import {
   enqueueAllEmbeddingReconciliationRoots,
   enqueueEmbeddingsBatchPollDispatcher,
-} from '@queues/bedrock-embeddings-batch/enqueues'
+} from '@queues/gemini-embeddings-batch/enqueues'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import {
   SITEMAPS_MONTHLY_BACKFILL_JOB,
@@ -25,9 +25,9 @@ import {
 
 export const EXISTING_CORE_DISPATCHER_BACKFILLS: BackfillEntry[] = [
   {
-    id: 'bedrock-embedding-reconciliation',
+    id: 'gemini-embedding-reconciliation',
     queue_name: 'background-cpu',
-    job_name: 'bedrock-embeddings.reconcile_existing',
+    job_name: 'gemini-embeddings.reconcile_existing',
     description: 'Start all four embedding copy and downstream delivery reconciliation roots',
     source_table: 'topics, posts, rss_feed_items',
     trigger: enqueueAllEmbeddingReconciliationRoots,
@@ -104,13 +104,13 @@ export const EXISTING_CORE_DISPATCHER_BACKFILLS: BackfillEntry[] = [
     ),
   },
   {
-    id: 'bedrock-embeddings-poll-dispatch',
+    id: 'gemini-embeddings-poll-dispatch',
     queue_name: 'background-cpu',
-    job_name: 'bedrock-embeddings.poll_dispatcher',
-    description: 'Dispatch polling jobs for pending Bedrock batches',
-    source_table: 'bedrock_embedding_batches',
+    job_name: 'gemini-embeddings.poll_dispatcher',
+    description: 'Dispatch polling jobs for pending Gemini batches',
+    source_table: 'gemini_embedding_batches',
     trigger: createBackfillDispatcherTrigger(
-      'bedrock-embeddings-poll-dispatch',
+      'gemini-embeddings-poll-dispatch',
       enqueueEmbeddingsBatchPollDispatcher,
     ),
   },

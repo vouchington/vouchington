@@ -8,7 +8,7 @@ import { claimEmbeddingQuotaLease } from './embedding-creation-quota-lease.mts'
 import {
   cleanupTestEmbeddingsBatches,
   insertTestEmbeddingsBatch,
-} from './entities/bedrock-embeddings-batches.mts'
+} from './entities/gemini-embeddings-batches.mts'
 import { insertActiveSizeControl } from './embedding-creation-quota-active-control.mts'
 
 /** Coordinates these fixtures, not unrelated production writers or a separate provider account. */
@@ -88,7 +88,7 @@ export async function acquireEmbeddingQuotaFixture() {
         assertOpen()
         await insertTestEmbeddingsBatch({
           id,
-          bedrockStatus: 'Completed',
+          vertexState: 'JOB_STATE_SUCCEEDED',
           records,
           batchData: { metadata: { inputSizeMB: 0 } },
         })
@@ -177,7 +177,7 @@ async function assertOwnedAccountingRemoved(ids: string[]) {
   if (ids.length === 0) return
   const { rows } = await read<{ id: string }>(
     `/* embeddingQuotaFixture:ownedRemoval */
-    SELECT id FROM bedrock_embedding_batches WHERE id = ANY($1)`,
+    SELECT id FROM gemini_embedding_batches WHERE id = ANY($1)`,
     [ids],
   )
   expect(rows).toEqual([])
@@ -189,7 +189,7 @@ async function assertOwnedCompletedControl(id: string, records: number) {
     `/* embeddingQuotaFixture:completedControl */
     SELECT id, records,
       (data->'metadata'->>'inputSizeMB')::DOUBLE PRECISION AS input_size_mb
-    FROM bedrock_embedding_batches
+    FROM gemini_embedding_batches
     WHERE id = $1 AND submitted_at IS NOT NULL AND completed_at IS NOT NULL
       AND failed_at IS NULL AND cancelled_at IS NULL
       AND created_at > NOW() - INTERVAL '1 hour'`,

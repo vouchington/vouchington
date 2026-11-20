@@ -4,7 +4,7 @@ import {
   getImageEmbeddingState,
   insertTestImageWithSha256,
   makeRandomEmbedding,
-} from '@voucha/test-helpers'
+} from '@voucha/test-helpers/bedrock-legacy'
 import { applyImageBatchUpdates } from './save-images.mts'
 
 describe('applyImageBatchUpdates', () => {

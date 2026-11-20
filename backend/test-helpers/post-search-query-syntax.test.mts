@@ -14,7 +14,7 @@ describe('post search SQL composition', () => {
           limit: 26,
           ...(mode !== 'plain' && {
             semantic_search_query: 'fixture',
-            semanticSearchEmbedding: [1, ...Array<number>(1023).fill(0)],
+            semanticSearchEmbedding: [1, ...Array<number>(1535).fill(0)],
           }),
           ...(mode === 'hybrid' && { text_search_query: 'fixture' }),
         })

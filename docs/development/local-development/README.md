@@ -15,10 +15,14 @@ auth, CSP, caching, and `/api/*` routing, so it is never valid for browsing or b
 - <a id="starting-services"></a>[Starting Services](reference-starting-services.md)
 - <a id="agent-session-hooks"></a>[Agent Session Hooks](reference-agent-session-hooks.md)
 - <a id="github-issue-tooling"></a>[GitHub Issue Tooling](agent-issue-labels/README.md)
-- <a id="bedrock-embeddings-local"></a>[Bedrock Embeddings (local)](reference-bedrock-embeddings-local.md)
+- <a id="gemini-embeddings-local"></a>[Gemini Embeddings (local)](reference-gemini-embeddings-local.md)
 - <a id="miniflare-cache"></a>[Miniflare Cache](reference-miniflare-cache.md)
 - <a id="cleanup"></a>[Cleanup](reference-cleanup.md)
 
 ## Reference index
 
 - [Seed Data](../../../seed/README.md)
+
+## Bedrock embeddings local
+
+[Bedrock local provider setup](reference-bedrock-embeddings-local.md)

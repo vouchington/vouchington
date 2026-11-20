@@ -9,13 +9,13 @@ export async function insertTestPostBatch(createdById: string, count: number): P
     /* insertTestPostBatch */
     INSERT INTO posts (
       id, post_type, title, markdown, created_by_id,
-      bedrock_nova_multimodal_v1_content_sha256,
+      gemini_embedding_2_content_sha256,
       llm_moderation_content_sha256,
       created_via
-    )
+    , bedrock_nova_multimodal_v1_content_sha256)
     SELECT uuidv7(), 'discussion', 'Batch test post ' || series::text, '', ${createdById},
       ${sha256}, ${sha256}, 'system'
-    FROM generate_series(1, ${count}) AS generated(series)
+    , ${sha256} FROM generate_series(1, ${count}) AS generated(series)
     RETURNING id
   `)
   return rows.map(row => row.id)
@@ -66,8 +66,8 @@ export async function insertTestRssFeedItemSourceBatch(options: {
       SELECT input.item_id, url.hostname_id, input.guid FROM input
       CROSS JOIN urls url WHERE url.id = $3
     ), inserted_items AS (
-      INSERT INTO rss_feed_items (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256)
-      SELECT item_id, $3, '{}'::jsonb, $4 FROM input
+      INSERT INTO rss_feed_items (id, url_id, data, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
+      SELECT item_id, $3, '{}'::jsonb, $4 , $4 FROM input
       RETURNING id, published_at
     )
     INSERT INTO rss_feed_item_sources (rss_feed_id, rss_feed_item_id, published_at)
@@ -104,8 +104,8 @@ export async function insertTestStoryCategoryPublicationBatch(options: {
       SELECT input.item_id, url.hostname_id, input.guid FROM input
       CROSS JOIN urls url WHERE url.id = $5
     ), inserted_items AS (
-      INSERT INTO rss_feed_items (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256, story_id)
-      SELECT item_id, $5, '{}'::jsonb, $6, story_id FROM input
+      INSERT INTO rss_feed_items (id, url_id, data, gemini_embedding_2_content_sha256, story_id, bedrock_nova_multimodal_v1_content_sha256)
+      SELECT item_id, $5, '{}'::jsonb, $6, story_id , $6 FROM input
       RETURNING id, published_at
     ), inserted_sources AS (
       INSERT INTO rss_feed_item_sources (rss_feed_id, rss_feed_item_id, published_at)
@@ -116,12 +116,12 @@ export async function insertTestStoryCategoryPublicationBatch(options: {
     ), inserted_posts AS (
       INSERT INTO posts (
         id, post_type, title, markdown, created_by_id,
-        bedrock_nova_multimodal_v1_content_sha256,
+        gemini_embedding_2_content_sha256,
         llm_moderation_content_sha256,
         created_via
-      )
+      , bedrock_nova_multimodal_v1_content_sha256)
       SELECT post_id, 'story', 'Publication batch post ' || post_id::text, '', $10, $6, $6, 'system'
-      FROM input
+      , $6 FROM input
     )
     INSERT INTO story_posts (post_id, story_id, initiated_by_id)
     SELECT post_id, story_id, $10 FROM input`,

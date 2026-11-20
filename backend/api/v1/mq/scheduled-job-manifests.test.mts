@@ -28,14 +28,14 @@ function bloomFilterRebuildInputs(): BloomFilterRebuildInput[] {
 }
 
 const EXPECTED_SCHEDULED_JOBS = [
-  'background-cpu/bedrock-embeddings:backlog-dispatcher',
-  'background-cpu/bedrock-embeddings:creation-dispatcher',
-  'background-cpu/bedrock-embeddings:poll-dispatcher',
-  'background-cpu/bedrock-embeddings:post_trigger_recovery',
-  'background-cpu/bedrock-embeddings:reconcile_existing_posts',
-  'background-cpu/bedrock-embeddings:reconcile_existing_rss_feed_items',
-  'background-cpu/bedrock-embeddings:reconcile_existing_topics',
-  'background-cpu/bedrock-embeddings:stale-cleanup-dispatcher',
+  'background-cpu/gemini-embeddings:backlog-dispatcher',
+  'background-cpu/gemini-embeddings:creation-dispatcher',
+  'background-cpu/gemini-embeddings:poll-dispatcher',
+  'background-cpu/gemini-embeddings:post_trigger_recovery',
+  'background-cpu/gemini-embeddings:reconcile_existing_posts',
+  'background-cpu/gemini-embeddings:reconcile_existing_rss_feed_items',
+  'background-cpu/gemini-embeddings:reconcile_existing_topics',
+  'background-cpu/gemini-embeddings:stale-cleanup-dispatcher',
   'background-cpu/content-analysis:cleanup-abandoned-uploads-schedule',
   'background-cpu/crawl:boilerplate-removal-dispatcher',
   'background-cpu/crawl:crawl_cleanup',

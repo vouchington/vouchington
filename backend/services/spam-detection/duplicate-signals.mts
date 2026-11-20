@@ -53,21 +53,21 @@ export async function checkEmbeddingsSimilarity(
       -- nearest 10 other-user posts; the threshold decides within them
       SELECT 1
       FROM (
-        SELECT bedrock_nova_multimodal_v1_embedding AS embedding
+        SELECT gemini_embedding_2_embedding AS embedding
         FROM posts
         WHERE id = ${postId}
-          AND bedrock_nova_multimodal_v1_embedding IS NOT NULL
-          AND (bedrock_nova_multimodal_v1_embedding <=> bedrock_nova_multimodal_v1_embedding) = 0
+          AND gemini_embedding_2_embedding IS NOT NULL
+          AND (gemini_embedding_2_embedding <=> gemini_embedding_2_embedding) = 0
         LIMIT 1
       ) source,
       LATERAL (
-        SELECT p.bedrock_nova_multimodal_v1_embedding <=> source.embedding AS distance
+        SELECT p.gemini_embedding_2_embedding <=> source.embedding AS distance
         FROM posts p
-        WHERE p.bedrock_nova_multimodal_v1_embedding IS NOT NULL
+        WHERE p.gemini_embedding_2_embedding IS NOT NULL
           AND p.id >= fn_min_uuidv7(CURRENT_TIMESTAMP - make_interval(days => ${lookbackDays}::int))
           AND p.id != ${postId}
           AND p.created_by_id != ${userId}
-        ORDER BY p.bedrock_nova_multimodal_v1_embedding <=> source.embedding
+        ORDER BY p.gemini_embedding_2_embedding <=> source.embedding
         LIMIT 10 -- literal: a bound LIMIT hides the top-k from generic plans, which then sort a pkey range instead of walking HNSW
       ) nearest
       -- distance form: a zero-vector candidate has NaN distance, which never satisfies <=

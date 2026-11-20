@@ -10,6 +10,8 @@ describe('topic embedding content', () => {
     })
 
     expect(result.content).toBe('Topic Name\nalpha beta\nDetails')
+    expect(result.title).toBe('Topic Name')
+    expect(result.body).toBe('alpha beta\nDetails')
   })
 
   it('uses aliases with commas as literal characters', () => {
@@ -19,7 +21,7 @@ describe('topic embedding content', () => {
       markdown: 'Details',
     })
 
-    expect(result.content).toBe('Topic Name\nfoo,bar baz\nDetails')
+    expect(result.content).toBe('Topic Name\nbaz foo,bar\nDetails')
   })
 
   it('preserves quotes and backslashes in alias values', () => {
@@ -29,7 +31,7 @@ describe('topic embedding content', () => {
       markdown: 'Details',
     })
 
-    expect(result.content).toBe('Topic Name\nvalue with "quote" path\\name\nDetails')
+    expect(result.content).toBe('Topic Name\npath\\name value with "quote"\nDetails')
   })
 
   it('supports alias values that contain spaces', () => {
@@ -49,7 +51,20 @@ describe('topic embedding content', () => {
       markdown: 'Details',
     })
 
-    expect(result.content).toBe('Topic Name\nfoo NULL bar\nDetails')
+    expect(result.content).toBe('Topic Name\nNULL bar foo\nDetails')
+  })
+
+  it('canonicalizes an alias set without depending on database collation or mutating callers', () => {
+    const aliases = ['public-media', 'public service media', 'public broadcaster', 'public-media']
+    const original = [...aliases]
+    const first = createTopicEmbeddingContent({ name: 'Public Media', aliases })
+    const second = createTopicEmbeddingContent({
+      name: 'Public Media',
+      aliases: aliases.toReversed(),
+    })
+    expect(first.content_sha256).toEqual(second.content_sha256)
+    expect(first.body).toBe('public broadcaster public service media public-media\n')
+    expect(aliases).toEqual(original)
   })
 
   it('handles empty aliases arrays', () => {

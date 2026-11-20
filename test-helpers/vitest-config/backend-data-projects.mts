@@ -8,6 +8,7 @@ const backendDataStoreTestDefaults = {
   globalSetup: [
     './test-helpers/vitest.setup.data-stores.mts',
     './backend/test-helpers/vitest.setup.aws-emulator-server.mts',
+    './backend/test-helpers/vitest.setup.gcs-emulator-server.mts',
   ],
   setupFiles: [
     // Sentry must precede glide workers' on-error preload; setup resets every isolate:false file (a test import only registers in the first cached worker file).
@@ -153,8 +154,6 @@ export const backendDataProjects: TestProjectConfiguration[] = [
     test: {
       ...backendDataStoreTestDefaults,
       name: 'backend-platform-stats-cache',
-      testTimeout: 5_000,
-      hookTimeout: 5_000,
       env: { ...backendDataStoreTestDefaults.env, PG_TEST_STATEMENT_TIMEOUT_MS: '2000' },
       isolate: true,
       runner: './test-helpers/vitest.runner.platform-stats-cache.mts',

@@ -56,11 +56,11 @@ export type PostsTableRow = {
   lingua_rs_input_sha256: Buffer | null
   lingua_rs_results: unknown
   lingua_rs_detected_at: Date | null
-  bedrock_nova_multimodal_v1_content_sha256: Buffer
-  bedrock_nova_multimodal_v1_input_sha256: Buffer | null
-  bedrock_nova_multimodal_v1_embedding: number[] | null
-  bedrock_nova_multimodal_v1_embedding_created_at: Date | null
-  bedrock_nova_multimodal_v1_input_token_count: number | null
+  gemini_embedding_2_content_sha256: Buffer
+  gemini_embedding_2_input_sha256: Buffer | null
+  gemini_embedding_2_embedding: number[] | null
+  gemini_embedding_2_embedding_created_at: Date | null
+  gemini_embedding_2_input_token_count: number | null
   ban_evasion_post_embedding_input_sha256: Buffer | null
   llm_moderation_content_sha256: Buffer
   search_vector: string | null

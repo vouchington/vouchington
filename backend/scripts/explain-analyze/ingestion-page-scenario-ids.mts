@@ -8,6 +8,6 @@ export const INGESTION_PAGE_SCENARIO_IDS = [
   'friend-x-eligible-raw-page',
   'friend-github-sparse-raw-page',
   'friend-github-eligible-raw-page',
-  'bedrock-sparse-raw-page',
-  'bedrock-stale-raw-page',
+  'gemini-sparse-raw-page',
+  'gemini-stale-raw-page',
 ] as const

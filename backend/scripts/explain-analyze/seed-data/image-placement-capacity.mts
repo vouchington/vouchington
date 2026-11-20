@@ -40,9 +40,9 @@ export async function seedImagePlacementCapacityCohort(
   )
   await query(
     `/* seedCapacityPosts */ INSERT INTO posts
-    (id, created_by_id, post_type, title, markdown, created_via, bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256)
+    (id, created_by_id, post_type, title, markdown, created_via, gemini_embedding_2_content_sha256, llm_moderation_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
     SELECT id, $2::uuid, 'discussion', 'Capacity seed', 'Capacity seed', 'system', decode(repeat('00',32),'hex'), decode(repeat('00',32),'hex')
-    FROM unnest($1::uuid[]) id ON CONFLICT (id) DO NOTHING`,
+    , decode(repeat('00',32),'hex') FROM unnest($1::uuid[]) id ON CONFLICT (id) DO NOTHING`,
     [owners, actorId],
   )
   await query(
