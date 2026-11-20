@@ -18,7 +18,7 @@ export const toolingProjects = [
       name: 'dev-tools',
       testTimeout: 5_000,
       hookTimeout: 5_000,
-      include: ['dev/**/*.test.mts', '.pr-shepherd/**/*.test.mts'],
+      include: ['dev/**/*.test.mts'],
       exclude: defaultExcludes,
       setupFiles: [isolatedSetupFile],
     },
@@ -55,7 +55,6 @@ export const toolingProjects = [
       testTimeout: 5_000,
       hookTimeout: 5_000,
       include: [
-        'static-code-analysis/__tests__/backend-contract-program-construction-location-parity.test.mts',
         'static-code-analysis/__tests__/ast-grep-tsx-parity.test.mts',
         'static-code-analysis/__tests__/ast-grep-backend-manifests.test.mts',
         'static-code-analysis/__tests__/no-inline-noop-promise-catch-oxlint.test.mts',

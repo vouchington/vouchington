@@ -20,7 +20,5 @@ copied hooks, skills, or permission allowlists.
   the session id herdr reports. The agent reads that variable (the [`blackboard` skill](../../../.agents/skills/blackboard/SKILL.md)); with no id
   it stops journaling and reports it. Do not add a `.grok/hooks/` tree: a second hook
   source double-fires.
-- Project Grok workflows live in [`.grok/workflows/`](../../../.grok/workflows/). They orchestrate skills; they
-  do not copy hooks or skills. Staging QA: [`workflows/staging-qa.rhai`](../../../.grok/workflows/staging-qa.rhai).
 
 `.grok/worktrees/` is gitignored runtime state.

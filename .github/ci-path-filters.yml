@@ -267,7 +267,6 @@ tooling:
   - '**/package.json'
   - 'pnpm-workspace.yaml'
   - '.agents/skills/**'
-  - '.pr-shepherd/**'
   - 'docs/overview/architecture/backend/README.md'
   - 'docs/generated/postgresql/schema-snapshot/**'
   - 'backend/**'

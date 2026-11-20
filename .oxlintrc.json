@@ -1,11 +1,6 @@
 {
   "$schema": "https://oxc.rs/schema/oxlintrc.json",
-  "ignorePatterns": [
-    "**/.agents/skills/**",
-    "**/.claude/skills/**",
-    "**/.pr-shepherd/**",
-    "!**/.pr-shepherd/**/__tests__/**"
-  ],
+  "ignorePatterns": ["**/.agents/skills/**", "**/.claude/skills/**"],
   "plugins": [
     "react",
     "nextjs",
@@ -53,7 +48,7 @@
       {
         "patterns": [
           {
-            "pattern": "\\b(?:kept|keep|retained|retain|preserved|preserve)\\b[^.\\n]{0,40}\\bcompat",
+            "pattern": "\\b(?:retain(?:ed|s|ing)?|kept|keep(?:s|ing)?|preserv(?:e|ed|es|ing)|left)\\b[^.\\n]{0,60}\\bcompat",
             "flags": "i",
             "message": "Delete the compatibility tombstone and update its callers (AGENTS.md: one current contract)."
           },
@@ -1299,7 +1294,6 @@
         "**/ci/**/*.{mts,ts,tsx}",
         "**/dev/**/*.{mts,ts,tsx}",
         "**/static-code-analysis/**/*.{mts,ts,tsx}",
-        "**/.pr-shepherd/**/*.{mts,ts,tsx}",
         "**/.github/{actions,workflows}/**/*.{mts,ts,tsx}",
         "**/backend/dependency-cruiser-rules/**/*.{mts,ts,tsx}"
       ],
