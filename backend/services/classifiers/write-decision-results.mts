@@ -6,6 +6,7 @@ import {
   flattenClassifierDecisionResults,
   type NormalizedClassifierDecisionInput,
 } from './decision-input.mts'
+import { assertClassifierResultCount } from './decision-result-limits.mts'
 import { serializeClassifierRawResponse } from './raw-response.mts'
 import type { ClassifierDecisionSnapshot } from './classifier-decision-snapshot.mts'
 import { insertCommunityPromptResults } from './write-community-prompt-results.mts'
@@ -31,6 +32,7 @@ export async function insertClassifierDecisionResults(
       ),
     ),
   )
+  assertClassifierResultCount(candidateKind, rows.length)
   if (rows.some(row => !row.decisionCallId)) {
     throw new Error('Classifier decision call is missing its persisted shard')
   }
