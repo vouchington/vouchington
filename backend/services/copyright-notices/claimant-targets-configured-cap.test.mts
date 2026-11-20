@@ -4,6 +4,7 @@ import { createSignedInCopyrightForm } from '@voucha/test-helpers/services/copyr
 import { copyrightConfig } from './config.mts'
 import { getCopyrightFormIntakeForScreening } from './form-screening-intake.mts'
 import { parseCopyrightNoticeForm } from './http-input.mts'
+import { parseTerritorialDecisionBody } from './territorial-http-input.mts'
 
 function httpForm(targetCount: number): Record<string, unknown> {
   return {
@@ -34,7 +35,6 @@ describe('configured copyright claimant targets cap', () => {
 
   it('accepts more targets than the default once the cap is raised', async () => {
     onTestFinished(overrideDynamicConfigFieldsForTest(copyrightConfig, { claimantTargetsMax: 25 }))
-    onTestFinished(restoreRaised)
     const stored = await createSignedInCopyrightForm(21)
     expect(stored.intake.copyright_notice_submission_id).toBeDefined()
     expect(() => parseCopyrightNoticeForm(httpForm(21))).not.toThrow()
@@ -52,5 +52,16 @@ describe('configured copyright claimant targets cap', () => {
       stored.intake.copyright_notice_submission_id,
     )
     expect(intake?.hostedUseUrls).toHaveLength(21)
+  })
+
+  it('parses a territorial restrict decision naming more targets than the configured cap', () => {
+    onTestFinished(overrideDynamicConfigFieldsForTest(copyrightConfig, { claimantTargetsMax: 2 }))
+    const body = {
+      statement: 'Statement',
+      public_explanation: 'Explanation',
+      outcome: 'restrict',
+      targets: httpForm(21).targets,
+    }
+    expect(parseTerritorialDecisionBody(body, 'statement').targets).toHaveLength(21)
   })
 })

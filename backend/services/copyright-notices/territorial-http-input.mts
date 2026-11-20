@@ -6,7 +6,7 @@ import {
   type TerritorialNoticeRequest,
   type EuTerritorialNoticeRequest,
 } from './territorial-fields.mts'
-import { getCopyrightClaimantTargetsMax } from './config.mts'
+import { COPYRIGHT_CLAIMANT_TARGETS_MAX } from './config.mts'
 import { parseCopyrightTargets } from './http-input.mts'
 import type { CopyrightImageSelector } from './placement-resolution.mts'
 
@@ -33,7 +33,7 @@ export function parseTerritorialDecisionBody(
     assert(body.targets === undefined, 422, 'no_action must not name targets')
     return { text, publicExplanation, outcome: body.outcome, targets: [] }
   }
-  const targets = parseCopyrightTargets(body.targets, getCopyrightClaimantTargetsMax())
+  const targets = parseCopyrightTargets(body.targets, COPYRIGHT_CLAIMANT_TARGETS_MAX)
   assert(
     targets.every(target => target.surfaceKind === 'post-image'),
     422,
