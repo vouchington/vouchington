@@ -2,6 +2,7 @@ import type { AssessmentInput } from '../services/copyright-notices/types.mts'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
+import { lockCopyrightActionGenerationForWrite } from '../services/copyright-notices/action-delivery-generation.mts'
 import { appendCopyrightSubmissionAssessmentInTransaction } from '../services/copyright-notices/compliance-assessment.mts'
 import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
 
@@ -11,6 +12,11 @@ export async function appendTestCopyrightAssessmentWhileRecoveryWaits<Result>(
   recover: () => Promise<Result>,
 ): Promise<Result> {
   await using transaction = await beginTransaction()
+  const { rows: owners } = await transaction<{
+    copyright_notice_id: string
+  }>(sql`/* appendTestCopyrightAssessmentWhileRecoveryWaits:owner */
+    SELECT copyright_notice_id FROM copyright_notice_submissions WHERE id = ${input.submissionId}`)
+  await lockCopyrightActionGenerationForWrite(owners[0]!.copyright_notice_id, transaction)
   await transaction(sql`/* appendTestCopyrightAssessmentWhileRecoveryWaits:lock */
     SELECT submission.id FROM copyright_notice_submissions submission
     JOIN copyright_notices notice ON notice.id = submission.copyright_notice_id
@@ -21,7 +27,7 @@ export async function appendTestCopyrightAssessmentWhileRecoveryWaits<Result>(
       holderProcessId: processId,
       pool: 'write',
       lock: { kind: 'transaction' },
-      queryMarker: 'recoverMissingCopyrightDecisionAssessments',
+      queryMarker: 'lockCopyrightActionGenerationsForWrite',
       releaseHolder: () => transaction[Symbol.asyncDispose](),
     },
     async waitForLock => {

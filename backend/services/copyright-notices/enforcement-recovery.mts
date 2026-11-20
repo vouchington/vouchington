@@ -7,6 +7,7 @@ import {
 } from './sweep-id-pages.mts'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { lockCopyrightActionGenerationsForWrite } from './action-delivery-generation.mts'
 
 /**
  * Recreates the compliant assessment of a durable is_accepted form or email review that a post-commit
@@ -56,20 +57,29 @@ export async function recoverMissingDecisionAssessments(
       ORDER BY submission_id, priority DESC
       LIMIT ${limit + 1}
     )
-    SELECT submission.id, candidate.assessed_by_id, candidate.screening_id
+    SELECT candidate.submission_id AS id, candidate.copyright_notice_id, candidate.assessed_by_id,
+      candidate.screening_id
     FROM candidate_page candidate
-    JOIN copyright_notice_submissions submission ON submission.id = candidate.submission_id
-    JOIN copyright_notices notice ON notice.id = submission.copyright_notice_id
-    ORDER BY submission.id LIMIT ${limit + 1}
-    FOR UPDATE OF notice, submission
+    ORDER BY candidate.submission_id LIMIT ${limit + 1}
   `)
   const { rows } = await transaction<{
     id: string
+    copyright_notice_id: string
     assessed_by_id: string
     screening_id: string | null
   }>(candidateQuery)
   const page = rows.slice(0, limit)
-  // Parent locks match normal assessment writers; this separate statement observes their commits.
+  // Own the generations this page writes first, in case-id order like every other writer, then
+  // lock only the submissions it updates. The separate insert statement observes their commits.
+  await lockCopyrightActionGenerationsForWrite(
+    [...new Set(page.map(row => row.copyright_notice_id))].toSorted(),
+    transaction,
+  )
+  await transaction(sql`/* recoverMissingCopyrightDecisionAssessments:lock */
+    SELECT id FROM copyright_notice_submissions
+    WHERE id = ANY(${page.map(row => row.id)}::uuid[])
+    ORDER BY id FOR NO KEY UPDATE
+  `)
   await transaction(sql`/* recoverMissingCopyrightDecisionAssessments:insert */
     WITH candidates AS (
       SELECT * FROM unnest(${page.map(row => row.id)}::uuid[],

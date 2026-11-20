@@ -28,6 +28,9 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
     automated_statutory_fields_complete: boolean
     evidence_erased: boolean
   }>(sql`/* appendCopyrightSubmissionAssessment:lockSubmission */
+    WITH generation AS MATERIALIZED (
+      SELECT copyright_notice_id FROM copyright_notice_thread_blocker_generations WHERE copyright_notice_id =
+        (SELECT copyright_notice_id FROM copyright_notice_submissions WHERE id = ${input.submissionId}) FOR UPDATE)
     SELECT s.copyright_notice_id, s.kind, s.source_kind, s.current_assessment_identity_id,
       n.evidence_erased_at IS NOT NULL AS evidence_erased,
       intake.requester_user_id IS NOT NULL
@@ -57,6 +60,7 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
     JOIN copyright_notices n ON n.id = s.copyright_notice_id
     LEFT JOIN copyright_notice_form_intakes intake ON intake.copyright_notice_submission_id = s.id
     WHERE s.id = ${input.submissionId}
+      AND s.copyright_notice_id = COALESCE((SELECT copyright_notice_id FROM generation), s.copyright_notice_id)
     FOR UPDATE OF n, s
   `)
   assert(submissionRows[0], 404, 'Copyright submission not found')

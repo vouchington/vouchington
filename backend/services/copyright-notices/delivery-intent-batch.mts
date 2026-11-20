@@ -1,6 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
+import { lockCopyrightActionGenerationsForWrite } from './action-delivery-generation.mts'
 import sql from 'sql-template-strings'
 import type {
   CopyrightDeliveryIntentInput,
@@ -32,19 +33,11 @@ export async function createCopyrightDeliveryIntents(
     return true
   })
   const unique = inputs.filter((_, index) => firstOfKey[index])
-  // A batch may span cases. Take case and generation locks in case-id order before the
-  // per-row blocker triggers, avoiding cross-case generation lock inversion.
+  // A batch may span cases. Triggers write each case generation in insert order, so own every
+  // generation this batch writes up front in case-id order. The notice and submission rows are
+  // only referenced by foreign keys, which take compatible KEY SHARE locks.
   const caseIds = [...new Set(unique.map(input => input.noticeId))].toSorted()
-  if (caseIds.length > 1) {
-    await transaction(sql`/* lockCopyrightDeliveryBatchNotices */
-      SELECT id FROM copyright_notices WHERE id = ANY(${caseIds}::uuid[])
-      ORDER BY id FOR KEY SHARE`)
-    await transaction(sql`/* lockCopyrightDeliveryBatchBlockerGenerations */
-      /* no-mistakes: deadlock-safe -- copyright_notice_id is the primary key; case locks were already taken in the same order. */
-      SELECT copyright_notice_id FROM copyright_notice_thread_blocker_generations
-      WHERE copyright_notice_id = ANY(${caseIds}::uuid[])
-      ORDER BY copyright_notice_id FOR UPDATE`)
-  }
+  if (caseIds.length > 1) await lockCopyrightActionGenerationsForWrite(caseIds, transaction)
   const { rows: inserted } = await transaction<KeyedIntent>(
     sql`/* createCopyrightDeliveryIntents */
     INSERT INTO copyright_notice_delivery_work_items (
