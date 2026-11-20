@@ -14,6 +14,13 @@ import {
 const PAGE_SIZE = 100
 const MAX_PRIOR_PAGE_DELETIONS = PAGE_SIZE * 2
 const DAY_MS = 24 * 60 * 60 * 1_000
+// The planner may probe the prompt-selective index or a live partial index; the one-row
+// processed bound below proves that either choice stays a single-entry probe.
+const LIVE_PREDECESSOR_INDEXES = [
+  'agent_moderations__default_post_id_prompt_id_id_idx',
+  'agent_moderations__default_post_id_prompt_id_id_idx1',
+  'agent_moderations__default_post_id_id_idx2',
+]
 const CAPTURED_NAMES = [
   'listChangedAgentModerationRetentionPost',
   'listAgentModerationCleanupCandidates',
@@ -65,7 +72,8 @@ export async function runAgentModerationRetentionProgressScenarios(
     expectations: [
       {
         kind: 'usesIndexes',
-        indexes: ['agent_moderations__default_post_id_prompt_id_id_idx1'],
+        indexes: LIVE_PREDECESSOR_INDEXES,
+        anyOf: true,
         noSort: true,
       },
       { kind: 'maxProcessedRows', relation: 'agent_moderations', max: 1 },

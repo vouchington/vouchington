@@ -100,6 +100,7 @@ export async function runAgentModerationRetentionScenarios(): Promise<void> {
         indexes: [
           'agent_moderations__default_post_id_prompt_id_id_idx1',
           'agent_moderations__default_post_id_prompt_id_input_sha256_idx',
+          'agent_moderations__default_post_id_id_idx2',
         ],
         anyOf: true,
       },
