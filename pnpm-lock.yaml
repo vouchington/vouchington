@@ -6231,6 +6231,9 @@ importers:
       '@services/urls':
         specifier: workspace:^
         version: link:../urls
+      '@services/user-deletions':
+        specifier: workspace:^
+        version: link:../user-deletions
       '@services/user-import-export':
         specifier: workspace:^
         version: link:../user-import-export
@@ -6268,9 +6271,6 @@ importers:
       '@services/ses-bounce-events':
         specifier: workspace:^
         version: link:../ses-bounce-events
-      '@services/user-deletions':
-        specifier: workspace:^
-        version: link:../user-deletions
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
