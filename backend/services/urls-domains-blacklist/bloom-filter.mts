@@ -16,7 +16,6 @@ import { urlBlocklistBatchesFromDb } from './bloom-filter-batches.mts'
 import { checkBloomFiltersRead, repairBloomFilterUnavailableRead } from './read-repair.mts'
 import onError from '@modules/on-error'
 import { warmUpBlocklistBloomFilter } from './warmup-orchestration.mts'
-import { withBlocklistBloomFilterLock } from './bloom-filter-lock.mts'
 import { bloomFilterConfig } from '@services/bloom-filter-config'
 
 function getBloomFilter() {
@@ -95,12 +94,10 @@ export async function addDomainsToBloomFilter(
 }
 
 export async function rebuildBloomFilter(): Promise<void> {
-  await withBlocklistBloomFilterLock('url-blocklist', async () => {
-    await rebuildCurrentBlocklistBloomFilter({
-      filter: 'url-blocklist',
-      readyKey: BLOOM_READY_KEY,
-      stream: client => getBloomFilter().rebuildFromStream(urlBlocklistBatchesFromDb(client)),
-    })
+  await rebuildCurrentBlocklistBloomFilter({
+    filter: 'url-blocklist',
+    readyKey: BLOOM_READY_KEY,
+    stream: client => getBloomFilter().rebuildFromStream(urlBlocklistBatchesFromDb(client)),
   })
 }
 

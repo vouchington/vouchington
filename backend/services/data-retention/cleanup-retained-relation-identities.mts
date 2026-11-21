@@ -110,10 +110,6 @@ async function cleanupRelationFamily(
   return result
 
   async function cleanup(query: NonNullable<QueryOptions['query']>) {
-    await query(
-      `/* reserveRetainedRelationCleanupFamily */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
-      [`retained-relation-cleanup:${relationTable}`],
-    )
     if (!keys || ensureCursor)
       await query(
         `/* ensureRetainedRelationCleanupProgress */

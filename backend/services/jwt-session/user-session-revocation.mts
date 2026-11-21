@@ -90,8 +90,6 @@ async function updateSessionRevocationRegistry(
   options?: { query?: QueryExecutor },
 ): Promise<void> {
   const revokeInTransaction = async (query: QueryExecutor) => {
-    await query(sql`/* updateSessionRevocationRegistry:sessionFence */
-      SELECT pg_advisory_xact_lock(hashtextextended(${sessionId}, 1))`)
     await query(sql`/* updateSessionRevocationRegistry */
       UPDATE user_sessions SET revoked_at = CURRENT_TIMESTAMP, last_seen_at = CURRENT_TIMESTAMP
       WHERE id = ${sessionId} AND revoked_at IS NULL`)

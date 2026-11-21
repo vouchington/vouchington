@@ -45,6 +45,28 @@ describe('blocklist membership apply', () => {
       await deleteTestBlacklistSource(sourceId)
     }
   })
+
+  it('leaves exactly one feed as membership when two syncs of a source run concurrently', async () => {
+    const suffix = sourceNameSuffix()
+    const first = `first-${suffix}.example`
+    const second = `second-${suffix}.example`
+    const sourceId = await createTestBlacklistSource({
+      type: 'url',
+      name: `concurrent-${suffix}`,
+      url: 'https://example.com/concurrent.txt',
+    })
+    try {
+      await Promise.all([
+        syncDomainsWithDatabase(sourceId, new Response(`${first}\n`), 'url'),
+        syncDomainsWithDatabase(sourceId, new Response(`${second}\n`), 'url'),
+      ])
+      // The source row lock plus the xmin check force the later sync to replace, never union.
+      const domains = await listBlacklistDomainsBySource(sourceId)
+      expect([[first], [second]]).toContainEqual(domains)
+    } finally {
+      await deleteTestBlacklistSource(sourceId)
+    }
+  })
 })
 
 function sourceNameSuffix(): string {

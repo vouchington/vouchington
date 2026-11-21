@@ -95,9 +95,18 @@ export async function withTestRetainedRelationCleanupReservation<Result>(
       query = await beginTransaction()
       owner.assertOpen()
       for (const metadata of electedRelationMetadata) {
+        // The production cleanup serializes a family on its cursor row, so hold that row.
         await query(
-          '/* reserveTestRetainedRelationCleanupFamily */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
-          [`retained-relation-cleanup:${metadata.table_name}`],
+          `/* ensureTestRetainedRelationCleanupFamily */
+           INSERT INTO retained_relation_identity_cleanup_cursors (entity_relation)
+           VALUES ($1) ON CONFLICT (entity_relation) DO NOTHING`,
+          [metadata.table_name],
+        )
+        await query(
+          `/* reserveTestRetainedRelationCleanupFamily */
+           SELECT entity_relation FROM retained_relation_identity_cleanup_cursors
+           WHERE entity_relation = $1 FOR UPDATE`,
+          [metadata.table_name],
         )
         owner.assertOpen()
       }

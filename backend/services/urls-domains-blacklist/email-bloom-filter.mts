@@ -16,7 +16,6 @@ import {
 import { checkBloomFilterRead, repairBloomFilterUnavailableRead } from './read-repair.mts'
 import onError from '@modules/on-error'
 import { warmUpBlocklistBloomFilter } from './warmup-orchestration.mts'
-import { withBlocklistBloomFilterLock } from './bloom-filter-lock.mts'
 
 function getEmailBloomFilter() {
   return new ValkeyBloomFilter({
@@ -125,13 +124,10 @@ async function* emailBlocklistBatchesFromDb(client: PoolClient): AsyncGenerator<
 }
 
 export async function rebuildEmailBloomFilter(): Promise<void> {
-  await withBlocklistBloomFilterLock('email-blocklist', async () => {
-    await rebuildCurrentBlocklistBloomFilter({
-      filter: 'email-blocklist',
-      readyKey: BLOOM_READY_KEY,
-      stream: client =>
-        getEmailBloomFilter().rebuildFromStream(emailBlocklistBatchesFromDb(client)),
-    })
+  await rebuildCurrentBlocklistBloomFilter({
+    filter: 'email-blocklist',
+    readyKey: BLOOM_READY_KEY,
+    stream: client => getEmailBloomFilter().rebuildFromStream(emailBlocklistBatchesFromDb(client)),
   })
 }
 

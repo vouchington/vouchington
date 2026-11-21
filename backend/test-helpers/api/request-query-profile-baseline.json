@@ -684,14 +684,6 @@
     "routes": ["DELETE /api/v1/session"]
   },
   {
-    "annotation": "updateSessionRevocationRegistry:sessionFence",
-    "maxCount": 2,
-    "reason": "Each of the two independently presented signed SIDs needs its own advisory fence before durable revocation in a rejected DELETE request.",
-    "permanent": true,
-    "code": "backend/api/v1/sessions-authentication/session.mts:104-109",
-    "routes": ["DELETE /api/v1/session"]
-  },
-  {
     "annotation": "upsertUserAgentString",
     "maxCount": 3,
     "reason": "Email login persists a cold request user agent once: read, conflict-tolerant insert, and reread to observe a concurrent winner.",

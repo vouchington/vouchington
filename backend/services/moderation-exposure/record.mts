@@ -41,7 +41,7 @@ export async function recordMediaRevealAndGetExposureState(
   options: QueryOptions = {},
 ): Promise<ExposureState> {
   const run = async (query: TransactionQuery): Promise<ExposureState> => {
-    await lockAndRecordMediaReveal(query, moderatorId, input)
+    await recordMediaReveal(moderatorId, input, { query })
     return getExposureState(moderatorId, { query })
   }
   if (options.query || options.client) return withTransactionOptions(options, run)
@@ -49,19 +49,4 @@ export async function recordMediaRevealAndGetExposureState(
   const result = await run(query)
   await query.commit()
   return result
-}
-
-async function lockAndRecordMediaReveal(
-  query: TransactionQuery,
-  moderatorId: string,
-  input: RecordMediaRevealInput,
-): Promise<void> {
-  const options = { query }
-  await write(
-    sql`/* recordMediaRevealAndGetExposureState:lockModerator */
-      SELECT pg_advisory_xact_lock(hashtextextended(${moderatorId}, 0))
-    `,
-    options,
-  )
-  await recordMediaReveal(moderatorId, input, options)
 }
