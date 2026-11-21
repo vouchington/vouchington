@@ -22,11 +22,11 @@ export async function hardDeleteRssFeedSourcePage(
 ): Promise<HardDeleteRssFeedSourcePage> {
   const limit = getPostPublicationWorkLimit('rss_feed_hard_delete_capture_batch_size')
   await using query = await beginTransaction()
+  // The feed row is only read: item and source row locks below serialize concurrent pages.
   const feed = await query<{ topic_id: string }>(
     `/* hardDeleteRssFeedSourcePage:feed */
     SELECT topic_id FROM rss_feeds
-    WHERE id = $1::uuid AND hard_delete_requested_at IS NOT NULL
-    FOR UPDATE`,
+    WHERE id = $1::uuid AND hard_delete_requested_at IS NOT NULL`,
     [rssFeedId],
   )
   if (feed.rows.length === 0) {

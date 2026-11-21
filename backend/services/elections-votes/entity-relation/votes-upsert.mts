@@ -61,17 +61,6 @@ export async function upsertEntityRelationElectionVotes(
     await transaction(sql`/* lockActiveUserForEntityRelationElectionVoteMutation */
       SELECT fn_lock_active_user_for_mutation(${normalizedUserId}::uuid)
     `)
-    const locks = targetRelations
-      .flatMap(metadata =>
-        values.map(value => ({
-          key: `${getEntityRelationVoteTableName(metadata)}:${normalizedUserId}:${value.entityId}`,
-        })),
-      )
-      .toSorted((left, right) => left.key.localeCompare(right.key))
-    await transaction(sql`/* lockEntityRelationElectionVoteMutations */
-      SELECT pg_advisory_xact_lock(hashtextextended(ordered.lock_key, 0))
-      FROM (SELECT unnest(${locks.map(lock => lock.key)}::text[]) AS lock_key ORDER BY lock_key) ordered
-    `)
     // Keep the lookup row locked through the ballot insert on this transaction.
     const userAgentId = await upsertUserAgentString(context.userAgent?.trim() || null, {
       query: transaction,
@@ -174,6 +163,8 @@ export async function upsertEntityRelationElectionVotes(
     }
     return upsertedVotes.map(({ entity_relation: _relationTable, ...vote }) => vote)
   }
+  // A duplicate identical ballot is harmless: aggregation reads each voter's latest ballot and
+  // stats are recomputed from it, so concurrent duplicates need no lock or SERIALIZABLE retry.
   return queryOptions.query
     ? withTransactionOptions(queryOptions, run)
     : runWithTransaction(undefined, run)

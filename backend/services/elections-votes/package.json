@@ -80,7 +80,6 @@
     "@services/moderation-training": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/post-publication": "workspace:^",
-    "@services/session-advisory-lock": "workspace:^",
     "@services/urls-hostnames": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",

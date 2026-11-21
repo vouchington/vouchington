@@ -56,7 +56,6 @@ export { readPostgresParserProbeForTest } from './data-stores/psql/query-row-con
 export * from './query-capture.mts'
 export * from './query-plans.mts'
 export * from './dynamic-config.mts'
-export * from './entity-relation-vote-locks.mts'
 export {
   beginBoundedTransaction,
   beginTransaction,
