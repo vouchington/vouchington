@@ -25,7 +25,10 @@ vi.mock<typeof import('@modules/stripe')>(import('@modules/stripe'), async impor
 }))
 
 import { getStripeInvoice } from '@modules/stripe'
-import { handleChargeRefunded } from './event-charge-handlers.mts'
+import {
+  handleChargeRefunded,
+  leaseAndEnqueueRefundReconciliations,
+} from './event-charge-handlers.mts'
 
 const mockGetStripeInvoice = vi.mocked(getStripeInvoice)
 const applicationContext = { applicationId: `stripe-charge-refund-${randomUUID()}` }
@@ -247,6 +250,35 @@ describe('charge.refunded reconciliation receipt', () => {
     } finally {
       await cleanupOwnedOperation()
     }
+  })
+})
+
+describe('refund reconciliation wake', () => {
+  it('still enqueues granted leases when another lease rejects, then surfaces the rejection', async () => {
+    const [failedId, grantedId, skippedId] = [randomUUID(), randomUUID(), randomUUID()]
+    const leaseToken = randomUUID()
+    const failure = new Error('lease failed')
+    const leaseSpy = vi
+      .spyOn(membershipServices, 'leaseDueRefundReconciliation')
+      .mockImplementation(operationId => {
+        if (operationId === failedId) return Promise.reject(failure)
+        return Promise.resolve(
+          operationId === grantedId ? ({ id: grantedId, leaseToken } as never) : null,
+        )
+      })
+    const enqueueSpy = vi
+      .spyOn(refundEnqueues, 'enqueueBulkReconcileMembershipRefundOperationsBestEffort')
+      .mockResolvedValue(undefined)
+    onTestFinished(() => {
+      leaseSpy.mockRestore()
+      enqueueSpy.mockRestore()
+    })
+
+    await expect(
+      leaseAndEnqueueRefundReconciliations([failedId, grantedId, skippedId]),
+    ).rejects.toBe(failure)
+
+    expect(enqueueSpy).toHaveBeenCalledExactlyOnceWith([{ operationId: grantedId, leaseToken }])
   })
 })
 
