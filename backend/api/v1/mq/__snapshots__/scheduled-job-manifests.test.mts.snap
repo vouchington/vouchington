@@ -4546,9 +4546,9 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "triggerName": "enqueueExpireStuckDisputeResolutionRuns",
   },
   {
-    "description": "Re-enqueue unassessed copyright email and form agent work",
-    "id": "reconcileCopyrightAgentDispatches",
-    "job_name": "reconcile-copyright-agent-dispatches",
+    "description": "Re-enqueue unassessed copyright email agent work",
+    "id": "reconcileCopyrightEmailDispatches",
+    "job_name": "reconcile-copyright-email-dispatches",
     "queue_name": "ai_agents",
     "schedule": "*/5 * * * *",
     "triggerName": "trigger",
