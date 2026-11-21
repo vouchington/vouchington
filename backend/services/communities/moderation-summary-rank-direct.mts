@@ -1,17 +1,18 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { captureModerationSummarySourceUpper } from './moderation-summary-rank-upper.mts'
+import { readModerationSummarySourceUpper } from './moderation-summary-rank-upper.mts'
 import {
-  MODERATION_SUMMARY_ZERO_ID,
-  type ModerationSummaryScan,
-} from '@queues/background/enqueues/moderation-summary-state'
+  capModerationSummaryCount,
+  startModerationSummarySource,
+  type PageStep,
+} from './moderation-summary-pages.mts'
+import type { ModerationSummaryScan } from '@queues/background/enqueues/moderation-summary-state'
+
 export async function collectRankReviewPage(
   scan: ModerationSummaryScan,
   size: number,
-): Promise<void> {
-  const metrics = scan.metrics
-  const upperId = await captureModerationSummarySourceUpper(scan, 'reviews')
-
+): Promise<PageStep<ModerationSummaryScan>> {
+  const upperId = await readModerationSummarySourceUpper(scan, 'reviews')
   const { rows } = await read<{
     post_id: string
     is_live: boolean
@@ -24,26 +25,30 @@ export async function collectRankReviewPage(
         AND (review.community_id,review.post_id)>(${scan.communityId},${scan.afterId})
         AND (review.community_id,review.post_id)<=(${scan.communityId},${upperId})
       ORDER BY review.community_id,review.post_id LIMIT ${size}`)
+  let { pending_post_reviews: pending, escalated_items: escalated } = scan.metrics
+  let afterId = scan.afterId
   for (const row of rows) {
-    scan.afterId = row.post_id
-    if (row.is_live) {
-      metrics.pending_post_reviews = Math.min(100, metrics.pending_post_reviews + 1)
-      if (row.escalated_at) metrics.escalated_items = Math.min(100, metrics.escalated_items + 1)
-    }
+    afterId = row.post_id
+    if (!row.is_live) continue
+    pending = capModerationSummaryCount(pending)
+    if (row.escalated_at) escalated = capModerationSummaryCount(escalated)
   }
-  if (
-    rows.length < size ||
-    (metrics.pending_post_reviews === 100 && metrics.escalated_items === 100)
-  )
-    advance(scan, 'applications')
+  const state = {
+    ...scan,
+    afterId,
+    sourceUpperId: upperId,
+    metrics: { ...scan.metrics, pending_post_reviews: pending, escalated_items: escalated },
+  }
+  return rows.length < size || (pending === 100 && escalated === 100)
+    ? { state: startModerationSummarySource(state), next: 'applications' }
+    : { state, next: null }
 }
+
 export async function collectRankApplicationPage(
   scan: ModerationSummaryScan,
   size: number,
-): Promise<void> {
-  const metrics = scan.metrics
-  const upperId = await captureModerationSummarySourceUpper(scan, 'applications')
-
+): Promise<PageStep<ModerationSummaryScan>> {
+  const upperId = await readModerationSummarySourceUpper(scan, 'applications')
   const { rows } = await read<{
     id: string
     approved_at: Date | null
@@ -52,28 +57,27 @@ export async function collectRankApplicationPage(
       SELECT id,approved_at,rejected_at FROM community_applications
       WHERE community_id=${scan.communityId} AND id>${scan.afterId} AND id<=${upperId}
       ORDER BY id LIMIT ${size}`)
-  for (const row of rows) {
-    scan.afterId = row.id
-    if (!row.approved_at && !row.rejected_at)
-      metrics.pending_applications = Math.min(100, metrics.pending_applications + 1)
+  const pendingRows = rows.filter(row => !row.approved_at && !row.rejected_at).length
+  const pending = Math.min(100, scan.metrics.pending_applications + pendingRows)
+  const state = {
+    ...scan,
+    afterId: rows.at(-1)?.id ?? scan.afterId,
+    sourceUpperId: upperId,
+    metrics: { ...scan.metrics, pending_applications: pending },
   }
-  if (rows.length < size || metrics.pending_applications === 100) advance(scan, 'report-posts')
+  return rows.length < size || pending === 100
+    ? { state: startModerationSummarySource(state), next: 'reportPosts' }
+    : { state, next: null }
 }
-export async function collectRankEvaders(scan: ModerationSummaryScan): Promise<void> {
-  const metrics = scan.metrics
 
+export async function collectRankEvaders(
+  scan: ModerationSummaryScan,
+): Promise<ModerationSummaryScan> {
   // Every predicate is supplied by the existing suspected-evasion partial index.
   const { rows } = await read<{ count: number }>(sql`/* countModerationSummaryEvaders */
       SELECT count(*)::int AS count FROM (SELECT 1 FROM community_members
         WHERE community_id=${scan.communityId} AND removed_at IS NULL AND suspected_ban_evader_at IS NOT NULL
           AND suspected_ban_evader_dismissed_at IS NULL
         ORDER BY suspected_ban_evader_at DESC LIMIT 100) counted`)
-  metrics.suspected_ban_evaders = rows[0]?.count ?? 0
-  scan.stage = 'complete'
-}
-
-function advance(scan: ModerationSummaryScan, stage: ModerationSummaryScan['stage']): void {
-  scan.stage = stage
-  scan.afterId = MODERATION_SUMMARY_ZERO_ID
-  scan.sourceUpperId = null
+  return { ...scan, metrics: { ...scan.metrics, suspected_ban_evaders: rows[0]?.count ?? 0 } }
 }

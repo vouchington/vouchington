@@ -1,4 +1,5 @@
 import { parseModerationSummaryCollection } from './moderation-summary-collection.mts'
+import type { ModerationSummaryNext } from '@queues/background/enqueues/moderation-summary-state'
 import type {
   ProcessSendFollowNewsSourcesEmailVariables,
   ProcessSendFollowTopicsEmailVariables,
@@ -49,7 +50,7 @@ export const parseEngagementVariables = {
       sourcesVariableKeys,
       sourceItem,
     ),
-  processSendCommunityModerationSummaryEmail: moderationVariables,
+  processSendCommunityModerationSummaryEmail: (data: unknown) => moderationVariables(data, 'send'),
 }
 
 function listVariables<T>(
@@ -95,7 +96,11 @@ function sourceItem(item: unknown): void {
   optionalString(record, 'description')
 }
 
-function moderationVariables(data: unknown): Record<string, unknown> {
+/** A stage job carries the same variables as the send; only its collection state differs. */
+export function moderationVariables(
+  data: unknown,
+  stage: ModerationSummaryNext,
+): Record<string, unknown> {
   const record = asRecord(data, 'variables')
   assertExactKeys(record, Object.keys(moderationVariableKeys))
   requiredString(record, 'generatedForDate')
@@ -105,7 +110,7 @@ function moderationVariables(data: unknown): Record<string, unknown> {
   optionalString(record, 'unsubscribeUrl')
   optionalString(record, 'physicalAddress')
   optionalNullableString(record, 'uiLocale')
-  parseModerationSummaryCollection(record.collection)
+  parseModerationSummaryCollection(record.collection, stage)
   if (
     typeof record.remainingCommunityCount !== 'number' ||
     !Number.isSafeInteger(record.remainingCommunityCount) ||

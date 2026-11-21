@@ -28,7 +28,6 @@ export const moderationSummaryMetrics = {
 
 export const moderationSummaryCollectionFixture = {
   eventId: moderationSummaryIds.event,
-  phase: 'community',
   afterMembershipId: moderationSummaryIds.membership,
   upperMembershipId: moderationSummaryIds.membership,
   activityWindowEnd: '2026-11-15T20:00:00.000Z',
@@ -44,7 +43,6 @@ export const moderationSummaryCollectionFixture = {
   discussionCommunityIndex: 0,
   scan: {
     communityId: moderationSummaryIds.community,
-    stage: 'replies',
     afterId: moderationSummaryIds.parent,
     parentId: moderationSummaryIds.parent,
     afterChildId: moderationSummaryIds.child,
@@ -107,10 +105,17 @@ export function createModerationSummaryJobPayload({
   }
 }
 
-export function parseModerationSummaryJob(payload: unknown) {
-  return parseEmailDigestJob('processSendCommunityModerationSummaryEmail', payload)
+/** The fixture's scan is mid-replies, so it parses as the replies stage job by default. */
+export function parseModerationSummaryJob(
+  payload: unknown,
+  jobName = 'collectModerationSummaryReplies',
+) {
+  return parseEmailDigestJob(jobName, payload)
 }
 
-export function roundTripModerationSummaryJob(payload: unknown) {
-  return parseModerationSummaryJob(JSON.parse(JSON.stringify(payload)) as unknown)
+export function roundTripModerationSummaryJob(
+  payload: unknown,
+  jobName = 'collectModerationSummaryReplies',
+) {
+  return parseModerationSummaryJob(JSON.parse(JSON.stringify(payload)) as unknown, jobName)
 }

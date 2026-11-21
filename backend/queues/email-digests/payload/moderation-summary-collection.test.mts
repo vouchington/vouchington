@@ -14,8 +14,8 @@ describe('moderation summary collection email payload', () => {
     const parsed = roundTripModerationSummaryJob(createModerationSummaryJobPayload())
 
     expect(parsed).toMatchObject({
-      kind: 'template',
-      name: 'processSendCommunityModerationSummaryEmail',
+      kind: 'moderation-summary-stage',
+      stage: 'replies',
       input: {
         userId: moderationSummaryIds.user,
         trackingKey: 'moderation-summary-test-key',
@@ -29,17 +29,46 @@ describe('moderation summary collection email payload', () => {
     })
   })
 
-  it('accepts a ready state with no scan and the discussion cursor at the end of the ranking', () => {
+  it('accepts a send state with no scan and the discussion cursor at the end of the ranking', () => {
     const ready = {
       ...moderationSummaryCollectionFixture,
-      phase: 'ready',
       discussionCommunityIndex: 1,
       scan: null,
     }
 
     expect(
-      roundTripModerationSummaryJob(createModerationSummaryJobPayload({ collection: ready })),
+      roundTripModerationSummaryJob(
+        createModerationSummaryJobPayload({ collection: ready }),
+        'processSendCommunityModerationSummaryEmail',
+      ),
     ).toMatchObject({ kind: 'template', variables: { collection: ready } })
+  })
+
+  it('takes a memberships state with no scan and every stage job name', () => {
+    const memberships = { ...moderationSummaryCollectionFixture, scan: null }
+    expect(
+      parseModerationSummaryJob(
+        createModerationSummaryJobPayload({ collection: memberships }),
+        'collectModerationSummaryMemberships',
+      ),
+    ).toMatchObject({ kind: 'moderation-summary-stage', stage: 'memberships' })
+    for (const name of [
+      'Reviews',
+      'Applications',
+      'ReportPosts',
+      'Reports',
+      'Evaders',
+      'Members',
+      'ActivityPosts',
+      'Replies',
+      'Card',
+    ])
+      expect(
+        parseModerationSummaryJob(
+          createModerationSummaryJobPayload(),
+          `collectModerationSummary${name}`,
+        ),
+      ).toMatchObject({ kind: 'moderation-summary-stage' })
   })
 
   it('accepts nullable card metrics, an empty card list, and the maximum remaining count', () => {
@@ -58,12 +87,12 @@ describe('moderation summary collection email payload', () => {
         }),
       ),
     ).toMatchObject({
-      kind: 'template',
+      kind: 'moderation-summary-stage',
       variables: { communities: [nullableCommunity], remainingCommunityCount: 100 },
     })
     expect(
       parseModerationSummaryJob(createModerationSummaryJobPayload({ communities: [] })),
-    ).toMatchObject({ kind: 'template', variables: { communities: [] } })
+    ).toMatchObject({ kind: 'moderation-summary-stage', variables: { communities: [] } })
   })
 
   it.each([
@@ -71,7 +100,9 @@ describe('moderation summary collection email payload', () => {
       'a child stage without its parent',
       { scan: { ...moderationSummaryCollectionFixture.scan, parentId: null } },
     ],
-    ['a community phase without its active scan', { scan: null }],
+    ['a scan stage without its active scan', { scan: null }],
+    ['a stage that has no activity window end', { activityWindowEnd: null }],
+    ['a discussion stage past its last selected community', { discussionCommunityIndex: 1 }],
     ['a discussion cursor beyond the selected communities', { discussionCommunityIndex: 2 }],
     ['an eligibility count smaller than the selected ranking', { eligibleCount: 0 }],
     [
@@ -98,10 +129,10 @@ describe('moderation summary collection email payload', () => {
     ],
     ['a malformed event identifier', { eventId: 'event-id' }],
     ['an invalid activity window end', { activityWindowEnd: 'yesterday' }],
-    ['an unsupported collection phase', { phase: 'finished' }],
+    ['a retired collection phase', { phase: 'ready' }],
     [
-      'an unsupported scan stage',
-      { scan: { ...moderationSummaryCollectionFixture.scan, stage: 'votes' } },
+      'a retired scan stage',
+      { scan: { ...moderationSummaryCollectionFixture.scan, stage: 'replies' } },
     ],
     [
       'more than 20 selected communities',
@@ -120,6 +151,22 @@ describe('moderation summary collection email payload', () => {
           collection: { ...moderationSummaryCollectionFixture, ...collectionChanges },
         }),
       ),
+    ).toThrow(JobPayloadError)
+  })
+
+  it.each(['processSendCommunityModerationSummaryEmail', 'collectModerationSummaryMemberships'])(
+    'rejects a %s payload that still carries a community scan',
+    jobName => {
+      expect(() => parseModerationSummaryJob(createModerationSummaryJobPayload(), jobName)).toThrow(
+        JobPayloadError,
+      )
+    },
+  )
+
+  it('rejects a stage job without a user, tracking key or window', () => {
+    const payload = createModerationSummaryJobPayload()
+    expect(() =>
+      parseModerationSummaryJob({ ...payload, input: { userId: moderationSummaryIds.user } }),
     ).toThrow(JobPayloadError)
   })
 

@@ -11,6 +11,11 @@ import {
   type SendFollowTopicsEmailData,
   type SendPostReferralLinkEmailData,
 } from './email-digests-domain.mts'
+import {
+  MODERATION_SUMMARY_STAGES,
+  moderationSummaryStageJobName,
+  type ModerationSummaryStage,
+} from './moderation-summary-state.mts'
 
 const BACKOFF = { type: 'exponential', delay: 1000, jitter: 0.5 } as const
 const RETRY = { attempts: 3, backoff: BACKOFF, removeOnComplete: 100, removeOnFail: 100 } as const
@@ -55,6 +60,24 @@ export const EMAIL_DIGESTS_SEND_MODERATION_SUMMARY_JOB =
     ordering: { key: 'email-digests:moderation-summary', concurrency: 1 },
     sensitive: true,
   })
+/**
+ * One job per collection stage; each walks only its own cursor and enqueues the next stage. A stage
+ * only reads, and its cursor travels in job data, so a bounded retry re-runs it safely. Without it
+ * one transient error would end the chain and leave the pending send claim held.
+ */
+export const EMAIL_DIGESTS_MODERATION_SUMMARY_STAGE_JOBS = Object.fromEntries(
+  MODERATION_SUMMARY_STAGES.map(stage => [stage, defineModerationSummaryStageJob(stage)]),
+) as Record<ModerationSummaryStage, ReturnType<typeof defineModerationSummaryStageJob>>
+function defineModerationSummaryStageJob(stage: ModerationSummaryStage) {
+  return defineBackgroundJob<SendCommunityModerationSummaryEmailData>(DOMAIN, {
+    name: moderationSummaryStageJobName(stage),
+    ...TASK,
+    attempts: RETRY.attempts,
+    backoff: BACKOFF,
+    ordering: { key: 'email-digests:moderation-summary', concurrency: 1 },
+    sensitive: true,
+  })
+}
 export const EMAIL_DIGESTS_SEND_API_KEY_EXPIRY_JOB =
   defineBackgroundJob<SendApiKeyExpiryReminderData>(DOMAIN, {
     name: 'processSendApiKeyExpiryReminder',
@@ -69,6 +92,7 @@ export const EMAIL_DIGESTS_JOBS = [
   EMAIL_DIGESTS_SEND_FOLLOW_TOPICS_JOB,
   EMAIL_DIGESTS_SEND_POST_REFERRAL_LINK_JOB,
   EMAIL_DIGESTS_SEND_FOLLOW_NEWS_SOURCES_JOB,
+  ...MODERATION_SUMMARY_STAGES.map(stage => EMAIL_DIGESTS_MODERATION_SUMMARY_STAGE_JOBS[stage]),
   EMAIL_DIGESTS_SEND_MODERATION_SUMMARY_JOB,
   EMAIL_DIGESTS_SEND_API_KEY_EXPIRY_JOB,
 ] as const

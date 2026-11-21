@@ -1,8 +1,11 @@
-import { createModerationSummaryCollection } from '../queues/background/enqueues/moderation-summary-state.mts'
+import {
+  createModerationSummaryCollection,
+  type ModerationSummaryNext,
+} from '../queues/background/enqueues/moderation-summary-state.mts'
 import { processSendCommunityModerationSummaryEmail } from '../workers/email-digests/processors/community-moderation-summary.mts'
 import { getModerationActivityWindowStart } from '../services/communities/moderation-summary-schedule.mts'
 import { getModerationEmailCadence } from '../services/communities/moderation-summary-emails.mts'
-import { collectModerationSummaryPage } from '../services/communities/moderation-summary-collection.mts'
+import { runModerationSummaryStage } from '../services/communities/moderation-summary-stages.mts'
 import type { CommunityModerationSummaryEmailProps } from '../../email-templates/types.mts'
 
 /** Drives the real bounded collector for a fresh fixture user's finite digest. */
@@ -15,19 +18,19 @@ export async function collectTestModerationSummaryState(
 ) {
   let collection = createModerationSummaryCollection()
   let communities: CommunityModerationSummaryEmailProps['communities'] = []
-  for (let page = 0; page < 100; page++) {
-    const result = await collectModerationSummaryPage(
+  let stage: ModerationSummaryNext = 'memberships'
+  for (let step = 0; step < 1000; step++) {
+    if (stage === 'send') return { collection, communities }
+    const result = await runModerationSummaryStage(stage, {
       userId,
-      start,
-      end,
+      windowStart: start,
+      windowEnd: end,
       eligibilityAt,
       collection,
       communities,
       limits,
-    )
-    collection = result.collection
-    communities = result.communities
-    if (collection.phase === 'ready') return { collection, communities }
+    })
+    ;({ collection, communities, next: stage } = result)
   }
   throw new Error('Fixture digest exceeded its bounded test traversal')
 }

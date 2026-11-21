@@ -4,6 +4,11 @@ import {
   MODERATION_SUMMARY_ZERO_ID,
   type ModerationSummaryScan,
 } from '@queues/background/enqueues/moderation-summary-state'
+import {
+  capModerationSummaryCount,
+  startModerationSummarySource,
+  type PageStep,
+} from './moderation-summary-pages.mts'
 
 export async function collectModerationSummaryMemberPage(
   scan: ModerationSummaryScan,
@@ -12,14 +17,8 @@ export async function collectModerationSummaryMemberPage(
   start: Date,
   end: Date,
   size: number,
-): Promise<void> {
-  if (scan.sourceUpperId === null) {
-    const { rows } = await read<{ id: string }>(sql`/* moderationSummaryCommunityMemberUpper */
-      SELECT id FROM community_members WHERE community_id=${scan.communityId}
-      ORDER BY community_id DESC,id DESC LIMIT 1`)
-    scan.sourceUpperId = rows[0]?.id ?? MODERATION_SUMMARY_ZERO_ID
-  }
-  const upperId = scan.sourceUpperId
+): Promise<PageStep<ModerationSummaryScan>> {
+  const upperId = await readMemberUpper(scan)
   const { rows } = await read<{
     id: string
     removed_at: Date | null
@@ -34,33 +33,42 @@ export async function collectModerationSummaryMemberPage(
       AND (member.community_id,member.id)>(${scan.communityId},${scan.afterId})
       AND (member.community_id,member.id)<=(${scan.communityId},${upperId})
     ORDER BY member.community_id,member.id LIMIT ${size}`)
-  const metrics = scan.metrics
+  let { new_members, departed_members, total_active_members, active_member_count } = scan.metrics
   for (const row of rows) {
-    scan.afterId = row.id
     if (row.user_live && row.id >= startId && row.id < endId)
-      metrics.new_members = Math.min(100, metrics.new_members + 1)
+      new_members = capModerationSummaryCount(new_members)
     if (row.removed_at && new Date(row.removed_at) >= start && new Date(row.removed_at) < end)
-      metrics.departed_members = Math.min(100, metrics.departed_members + 1)
+      departed_members = capModerationSummaryCount(departed_members)
     if (row.removed_at === null) {
-      if (row.user_live)
-        metrics.total_active_members = Math.min(100, metrics.total_active_members + 1)
+      if (row.user_live) total_active_members = capModerationSummaryCount(total_active_members)
       // Intentional: the baseline engagement count does not filter deleted users.
-      if (row.engaged) metrics.active_member_count = Math.min(100, metrics.active_member_count + 1)
+      if (row.engaged) active_member_count = capModerationSummaryCount(active_member_count)
     }
   }
-  if (
-    rows.length < size ||
-    [
-      metrics.new_members,
-      metrics.departed_members,
-      metrics.total_active_members,
-      metrics.active_member_count,
-    ].every(n => n === 100)
-  ) {
-    scan.sourceUpperId = null
-    scan.stage = 'activity-posts'
-    scan.afterId = MODERATION_SUMMARY_ZERO_ID
+  const state = {
+    ...scan,
+    afterId: rows.at(-1)?.id ?? scan.afterId,
+    sourceUpperId: upperId,
+    metrics: {
+      ...scan.metrics,
+      new_members,
+      departed_members,
+      total_active_members,
+      active_member_count,
+    },
   }
+  return rows.length < size ||
+    [new_members, departed_members, total_active_members, active_member_count].every(n => n === 100)
+    ? { state: startModerationSummarySource(state), next: 'activityPosts' }
+    : { state, next: null }
+}
+
+async function readMemberUpper(scan: ModerationSummaryScan): Promise<string> {
+  if (scan.sourceUpperId !== null) return scan.sourceUpperId
+  const { rows } = await read<{ id: string }>(sql`/* moderationSummaryCommunityMemberUpper */
+      SELECT id FROM community_members WHERE community_id=${scan.communityId}
+      ORDER BY community_id DESC,id DESC LIMIT 1`)
+  return rows[0]?.id ?? MODERATION_SUMMARY_ZERO_ID
 }
 
 export async function collectModerationSummaryActivityPostPage(
@@ -68,7 +76,7 @@ export async function collectModerationSummaryActivityPostPage(
   startId: string,
   endId: string,
   size: number,
-): Promise<void> {
+): Promise<PageStep<ModerationSummaryScan>> {
   const lower =
     scan.afterId >= startId
       ? sql`(post.community_id,post.id)>(${scan.communityId},${scan.afterId})`
@@ -88,36 +96,56 @@ export async function collectModerationSummaryActivityPostPage(
       AND (post.community_id,post.id)<(${scan.communityId},${endId})
     ORDER BY post.community_id,post.id LIMIT ${size}`),
   )
+  let { new_discussion_posts, new_review_posts, new_data_point_posts } = scan.metrics
+  let bestDiscussion = scan.bestDiscussion
+  let afterId = scan.afterId
   for (const row of rows) {
-    scan.afterId = row.id
+    afterId = row.id
     if (row.deleted_at !== null) continue
     if (row.post_type === 'discussion')
-      scan.metrics.new_discussion_posts = Math.min(100, scan.metrics.new_discussion_posts + 1)
-    if (row.post_type === 'review')
-      scan.metrics.new_review_posts = Math.min(100, scan.metrics.new_review_posts + 1)
+      new_discussion_posts = capModerationSummaryCount(new_discussion_posts)
+    if (row.post_type === 'review') new_review_posts = capModerationSummaryCount(new_review_posts)
     if (row.post_type === 'data_point')
-      scan.metrics.new_data_point_posts = Math.min(100, scan.metrics.new_data_point_posts + 1)
+      new_data_point_posts = capModerationSummaryCount(new_data_point_posts)
     // First ascending discussion with a saturated reply count wins every later tie.
-    if (row.post_type === 'discussion' && scan.bestDiscussion?.replies !== 100) {
+    if (row.post_type === 'discussion' && bestDiscussion?.replies !== 100) {
       if (!row.has_children) {
-        if (!scan.bestDiscussion) scan.bestDiscussion = { id: row.id, replies: 0 }
+        bestDiscussion ??= { id: row.id, replies: 0 }
         continue
       }
-      scan.parentId = row.id
-      scan.afterChildId = MODERATION_SUMMARY_ZERO_ID
-      scan.childCount = 0
-      scan.stage = 'replies'
-      return
+      return {
+        state: {
+          ...scan,
+          afterId,
+          parentId: row.id,
+          afterChildId: MODERATION_SUMMARY_ZERO_ID,
+          childCount: 0,
+          metrics: {
+            ...scan.metrics,
+            new_discussion_posts,
+            new_review_posts,
+            new_data_point_posts,
+          },
+          bestDiscussion,
+        },
+        next: 'replies',
+      }
     }
   }
-  if (rows.length < size) scan.stage = 'complete'
+  const state = {
+    ...scan,
+    afterId,
+    metrics: { ...scan.metrics, new_discussion_posts, new_review_posts, new_data_point_posts },
+    bestDiscussion,
+  }
+  return { state, next: rows.length < size ? 'card' : null }
 }
 
 export async function collectModerationSummaryReplyPage(
   scan: ModerationSummaryScan,
   endId: string,
   size: number,
-): Promise<void> {
+): Promise<PageStep<ModerationSummaryScan>> {
   const { rows } = await read<{
     id: string
     post_type: string
@@ -126,20 +154,24 @@ export async function collectModerationSummaryReplyPage(
     SELECT id,post_type,deleted_at FROM posts WHERE parent_post_id=${scan.parentId}
       AND id>${scan.parentId} AND id>${scan.afterChildId} AND id<${endId}
     ORDER BY id LIMIT ${size}`)
-  for (const row of rows) {
-    scan.afterChildId = row.id
-    if (row.post_type === 'comment' && row.deleted_at === null)
-      scan.childCount = Math.min(100, scan.childCount + 1)
+  const liveReplies = rows.filter(row => row.post_type === 'comment' && row.deleted_at === null)
+  const childCount = Math.min(100, scan.childCount + liveReplies.length)
+  const state = { ...scan, afterChildId: rows.at(-1)?.id ?? scan.afterChildId, childCount }
+  if (rows.length < size || childCount === 100) {
+    const best = scan.bestDiscussion
+    const wins =
+      !best ||
+      childCount > best.replies ||
+      (childCount === best.replies && scan.parentId! < best.id)
+    return {
+      state: {
+        ...state,
+        bestDiscussion: wins ? { id: scan.parentId!, replies: childCount } : best,
+        parentId: null,
+        sourceUpperId: null,
+      },
+      next: 'activityPosts',
+    }
   }
-  if (rows.length < size || scan.childCount === 100) {
-    if (
-      !scan.bestDiscussion ||
-      scan.childCount > scan.bestDiscussion.replies ||
-      (scan.childCount === scan.bestDiscussion.replies && scan.parentId! < scan.bestDiscussion.id)
-    )
-      scan.bestDiscussion = { id: scan.parentId!, replies: scan.childCount }
-    scan.parentId = null
-    scan.sourceUpperId = null
-    scan.stage = 'activity-posts'
-  }
+  return { state, next: null }
 }
