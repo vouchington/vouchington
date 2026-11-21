@@ -1,5 +1,6 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { releaseTestWindow } from './release-test-window.mts'
+import { releaseModerationTransparencyRange } from './release-moderation-transparency-days.mts'
+import { releaseTestWindowRange } from '@voucha/test-helpers/moderation-transparency-release-ranges'
 import {
   acquireTestModerationTransparencyDateReservation,
   createTestUser,
@@ -25,7 +26,7 @@ describe('getModerationTransparency complete UTC-day release boundary', () => {
       ),
     )
 
-    await releaseTestWindow(now)
+    await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
     await expect(getModerationTransparency('all', now)).resolves.not.toMatchObject({
       buckets: expect.arrayContaining([
         expect.objectContaining({
@@ -36,7 +37,7 @@ describe('getModerationTransparency complete UTC-day release boundary', () => {
       ]),
     })
     const later = new Date(now.getTime() + 12 * 60 * 60 * 1000)
-    await releaseTestWindow(later)
+    await releaseModerationTransparencyRange(...releaseTestWindowRange(later))
     await expect(getModerationTransparency('all', later)).resolves.toMatchObject({
       buckets: expect.arrayContaining([
         {
@@ -64,7 +65,7 @@ describe('getModerationTransparency complete UTC-day release boundary', () => {
       ),
     )
 
-    await releaseTestWindow(now)
+    await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
     await expect(getModerationTransparency('all', now)).resolves.toMatchObject({
       buckets: expect.arrayContaining([
         {
@@ -77,7 +78,7 @@ describe('getModerationTransparency complete UTC-day release boundary', () => {
     })
     await deleteTestModeratorActions(actions.map(action => action.id))
 
-    await releaseTestWindow(now)
+    await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
     await expect(getModerationTransparency('all', now)).resolves.toMatchObject({
       buckets: expect.arrayContaining([
         {

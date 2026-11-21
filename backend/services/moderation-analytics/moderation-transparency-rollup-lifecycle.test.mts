@@ -1,4 +1,5 @@
 import type { FiniteValue } from '@data-stores/psql/finite-values/index'
+import { releaseModerationTransparencyRange } from './release-moderation-transparency-days.mts'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   acquireTestModerationTransparencyDateReservation,
@@ -14,7 +15,7 @@ import {
   updateTestModeratorActionType,
 } from '@voucha/test-helpers'
 import { getModerationTransparency } from './get-moderation-transparency.mts'
-import { releaseTestWindow } from './release-test-window.mts'
+import { releaseTestWindowRange } from '@voucha/test-helpers/moderation-transparency-release-ranges'
 
 describe('moderation transparency daily rollup lifecycle', () => {
   it('rejects a released appeal resolution rewrite', async () => {
@@ -113,7 +114,7 @@ async function expectReleasedBucket(
   metric: 'appeals' | 'automated_moderation' | 'moderation_actions',
   category: FiniteValue<'moderation_transparency_categories'>,
 ): Promise<void> {
-  await releaseTestWindow(now)
+  await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
   await expect(getModerationTransparency('7d', now)).resolves.toMatchObject({
     buckets: expect.arrayContaining([
       {

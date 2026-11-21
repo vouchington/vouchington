@@ -1,4 +1,5 @@
 import crypto from 'node:crypto'
+import { releaseModerationTransparencyRange } from './release-moderation-transparency-days.mts'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   acquireTestModerationTransparencyDateReservation,
@@ -21,7 +22,7 @@ import {
   getCommunityModerationTransparency,
   getModerationTransparency,
 } from './get-moderation-transparency.mts'
-import { releaseTestWindow } from './release-test-window.mts'
+import { releaseTestWindowRange } from '@voucha/test-helpers/moderation-transparency-release-ranges'
 
 describe('moderation transparency agent rollups', () => {
   it('protects the stamped source projection from direct rewrites', async () => {
@@ -117,7 +118,7 @@ describe('moderation transparency agent rollups', () => {
       ),
     )
 
-    await releaseTestWindow(now)
+    await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
     const firstPage = await getCommunityModerationTransparency(community.id, 'all', now)
     expect(firstPage).toMatchObject({
       buckets: [],
@@ -140,7 +141,7 @@ describe('moderation transparency agent rollups', () => {
 })
 
 async function expectCommunity(communityId: string, now: Date, buckets: unknown[]): Promise<void> {
-  await releaseTestWindow(now)
+  await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
   await expect(getCommunityModerationTransparency(communityId, 'all', now)).resolves.toEqual({
     range: 'all',
     buckets,

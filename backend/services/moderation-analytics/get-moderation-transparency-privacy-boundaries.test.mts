@@ -1,6 +1,7 @@
 import crypto from 'node:crypto'
+import { releaseModerationTransparencyRange } from './release-moderation-transparency-days.mts'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { releaseTestWindow } from './release-test-window.mts'
+import { releaseTestWindowRange } from '@voucha/test-helpers/moderation-transparency-release-ranges'
 import {
   acquireTestModerationTransparencyDateReservation,
   createTestUser,
@@ -85,7 +86,7 @@ describe('moderation transparency privacy boundaries', () => {
       ),
     )
 
-    await releaseTestWindow(now)
+    await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
     const [global, scoped] = await Promise.all([
       getModerationTransparency('all', now),
       getCommunityModerationTransparency(community.id, 'all', now),
@@ -135,7 +136,7 @@ describe('moderation transparency privacy boundaries', () => {
       ),
     )
 
-    await releaseTestWindow(now)
+    await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
     const [global, scoped] = await Promise.all([
       getModerationTransparency('all', now),
       getCommunityModerationTransparency(community.id, 'all', now),
@@ -232,7 +233,7 @@ describe('moderation transparency privacy boundaries', () => {
       ),
     ])
 
-    await releaseTestWindow(now)
+    await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
     const global = await getModerationTransparency('7d', now)
     expect(global.buckets).toContainEqual({
       date: occurredAt.toISOString().slice(0, 10),

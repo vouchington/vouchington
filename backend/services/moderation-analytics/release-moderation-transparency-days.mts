@@ -59,6 +59,8 @@ export async function releaseModerationTransparencyRange(start: Date, end: Date)
     ) events
     GROUP BY 1, 2, 3, 4
     HAVING count(*) >= ${MODERATION_TRANSPARENCY_MINIMUM_COHORT_SIZE}
+    ORDER BY (occurred_at AT TIME ZONE 'UTC')::date ASC NULLS LAST, community_id ASC NULLS LAST,
+      metric ASC NULLS LAST, category ASC NULLS LAST
     ON CONFLICT ON CONSTRAINT moderation_transparency_released_daily_rollups_key DO NOTHING
   `)
   return rowCount ?? 0

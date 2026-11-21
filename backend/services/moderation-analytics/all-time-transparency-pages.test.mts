@@ -1,5 +1,6 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { releaseTestWindow } from './release-test-window.mts'
+import { releaseModerationTransparencyRange } from './release-moderation-transparency-days.mts'
+import { releaseTestWindowRange } from '@voucha/test-helpers/moderation-transparency-release-ranges'
 import crypto from 'node:crypto'
 import { encodeCursor } from '@modules/pagination'
 import { getMinUuidv7ForDate } from '@modules/utils/ids'
@@ -65,11 +66,11 @@ describe('all-time moderation transparency pages', () => {
       }),
     )
 
-    await releaseTestWindow(now)
+    await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
     await expect(
       getCommunityModerationTransparency(community.id, 'all', now),
     ).resolves.toMatchObject({ next_cursor: expect.any(String) })
-    await releaseTestWindow(now)
+    await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
     await expect(getModerationTransparency('all', now)).resolves.toMatchObject({
       buckets: expect.not.arrayContaining([expect.objectContaining({ category: 'community_ai' })]),
     })
@@ -85,7 +86,7 @@ describe('all-time moderation transparency pages', () => {
         moderatorActionIds.push(action.id)
       }),
     )
-    await releaseTestWindow(now)
+    await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
     await expect(getModerationTransparency('all', now)).resolves.toMatchObject({
       next_cursor: expect.any(String),
     })
@@ -157,7 +158,7 @@ describe('all-time moderation transparency pages', () => {
         }),
       ),
     )
-    await releaseTestWindow(now)
+    await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
     const page = await getModerationTransparency('all', now)
     expect(page.buckets).not.toContainEqual(expect.objectContaining({ category: 'approve' }))
   })
@@ -186,7 +187,7 @@ describe('all-time moderation transparency pages', () => {
       ),
     ])
 
-    await releaseTestWindow(now)
+    await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
     const page = await getModerationTransparency('all', now)
 
     expect(page.buckets).not.toContainEqual(
@@ -221,7 +222,7 @@ describe('all-time moderation transparency pages', () => {
       ),
     ])
 
-    await releaseTestWindow(now)
+    await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
     await expect(getModerationTransparency('all', now)).resolves.toMatchObject({
       buckets: expect.arrayContaining([
         {
@@ -258,13 +259,13 @@ describe('all-time moderation transparency pages', () => {
       ),
     ])
 
-    await releaseTestWindow(now)
+    await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
     const first = await getModerationTransparency('all', now)
     expect(first.buckets).toContainEqual(bucket(recent, 'approve'))
     expect(first.buckets).not.toContainEqual(expect.objectContaining({ category: 'remove' }))
     expect(first.next_cursor).toEqual(expect.any(String))
 
-    await releaseTestWindow(now)
+    await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
     const second = await getModerationTransparency('all', now, first.next_cursor)
     expect(second.buckets).toContainEqual(bucket(older, 'remove'))
     expect(first.buckets.map(result => result.date)).toEqual(
