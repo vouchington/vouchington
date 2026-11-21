@@ -40,9 +40,14 @@ describe('configured copyright claimant targets cap', () => {
   })
 
   it('keeps an empty target list a plain 422 without the limit code', () => {
-    expect(() => parseCopyrightNoticeForm(httpForm(0))).toThrow(
-      expect.objectContaining({ status: 422, code: undefined }),
-    )
+    let thrown: unknown
+    try {
+      parseCopyrightNoticeForm(httpForm(0))
+    } catch (err) {
+      thrown = err
+    }
+    expect(thrown).toMatchObject({ status: 422 })
+    expect(thrown).not.toHaveProperty('code')
   })
 
   it('accepts more targets than the default once the cap is raised', async () => {
