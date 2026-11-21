@@ -4,6 +4,7 @@ import onError, { onSuccess } from '@/lib/on-error'
 import { enqueuePsqlJob, fetchMigrations } from '@/lib/api/client/psql'
 import type { MigrationStatusResponse } from '@/types/api-responses'
 import { isPostgreSQLStreamSnapshot } from '../stream-snapshots'
+import { useSnapshotStream } from '../use-snapshot-stream'
 export type PartitionAction = 'createPartitions' | 'cleanupPartitions'
 export type ClassifierPartitionRange = { fromDate: string; toDate: string; maxDefaultRows?: number }
 export type RequestPartitionRange = ClassifierPartitionRange
@@ -36,7 +37,6 @@ export function usePostgreSQLAdminState() {
   const [pendingClassifierRange, setPendingClassifierRange] =
     useState<ClassifierPartitionRange | null>(null)
   const [pendingRequestRange, setPendingRequestRange] = useState<RequestPartitionRange | null>(null)
-  const esRef = useRef<EventSource | null>(null)
   const streamSnapshotAppliedRef = useRef(false)
   const loadDataPendingRef = useRef(false)
 
@@ -60,31 +60,11 @@ export function usePostgreSQLAdminState() {
     }
   }
 
-  useEffect(() => {
-    const es = new EventSource('/api/v1/admin/postgresql/stream')
-    esRef.current = es
-    const fallback = { interval: null as ReturnType<typeof setInterval> | null, generation: 0 }
-
-    function runRestFallback() {
-      const generation = fallback.generation
-      void loadData(true, () => generation === fallback.generation)
-    }
-
-    function startRestFallback() {
-      if (fallback.interval !== null) return
-      runRestFallback()
-      fallback.interval = setInterval(runRestFallback, STREAM_FALLBACK_INTERVAL_MS)
-    }
-
-    function stopRestFallback() {
-      fallback.generation += 1
-      if (fallback.interval !== null) {
-        clearInterval(fallback.interval)
-        fallback.interval = null
-      }
-    }
-
-    function onSnapshot(event: MessageEvent) {
+  useSnapshotStream({
+    url: '/api/v1/admin/postgresql/stream',
+    fallbackIntervalMs: STREAM_FALLBACK_INTERVAL_MS,
+    loadFallback: shouldApply => loadData(true, shouldApply),
+    onSnapshot(event, stopFallback) {
       let parsed: unknown
       const raw: unknown = event.data
       if (typeof raw !== 'string') return
@@ -100,15 +80,14 @@ export function usePostgreSQLAdminState() {
         return
       }
       setStatus(parsed)
-      stopRestFallback()
+      stopFallback()
       setError(null)
       setLoading(false)
       streamSnapshotAppliedRef.current = true
-    }
+    },
+  })
 
-    es.addEventListener('snapshot', onSnapshot)
-    es.onerror = startRestFallback
-
+  useEffect(() => {
     // Initial REST load so the page is never blank if SSE fails or is slow.
     fetchMigrations()
       .then(data => setStatus(prev => prev ?? data))
@@ -117,13 +96,6 @@ export function usePostgreSQLAdminState() {
         setError(err instanceof Error ? err.message : 'Failed to load PostgreSQL status')
       })
       .finally(() => setLoading(false))
-
-    return () => {
-      es.removeEventListener('snapshot', onSnapshot)
-      es.close()
-      esRef.current = null
-      stopRestFallback()
-    }
   }, [])
 
   async function handleAction(

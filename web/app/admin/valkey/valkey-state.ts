@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { fetchCacheGroups } from '@/lib/api/client/valkey'
 import type { CacheGroup, FlushConcern } from '@/types/api-responses'
 import { isValkeySnapshot, type ValkeySnapshot } from '../stream-snapshots'
+import { useSnapshotStream } from '../use-snapshot-stream'
 import { useBloomFilterActions, useCacheActions, useFlushActions } from './valkey-action-hooks'
 
 export type PendingValkeyAction =
@@ -60,7 +61,6 @@ function useValkeyData() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [cacheGroups, setCacheGroups] = useState<CacheGroup[]>([])
-  const esRef = useRef<EventSource | null>(null)
   const streamGroupsAppliedRef = useRef(false)
   const loadDataPendingRef = useRef(false)
 
@@ -86,31 +86,11 @@ function useValkeyData() {
     }
   }
 
-  useEffect(() => {
-    const es = new EventSource('/api/v1/admin/valkey/stream')
-    esRef.current = es
-    const fallback = { interval: null as ReturnType<typeof setInterval> | null, generation: 0 }
-
-    function runRestFallback() {
-      const generation = fallback.generation
-      void loadData(true, () => generation === fallback.generation)
-    }
-
-    function startRestFallback() {
-      if (fallback.interval !== null) return
-      runRestFallback()
-      fallback.interval = setInterval(runRestFallback, STREAM_FALLBACK_INTERVAL_MS)
-    }
-
-    function stopRestFallback() {
-      fallback.generation += 1
-      if (fallback.interval !== null) {
-        clearInterval(fallback.interval)
-        fallback.interval = null
-      }
-    }
-
-    function onSnapshot(event: MessageEvent) {
+  useSnapshotStream({
+    url: '/api/v1/admin/valkey/stream',
+    fallbackIntervalMs: STREAM_FALLBACK_INTERVAL_MS,
+    loadFallback: shouldApply => loadData(true, shouldApply),
+    onSnapshot(event, stopFallback) {
       let parsed: unknown
       const raw: unknown = event.data
       if (typeof raw !== 'string') return
@@ -125,7 +105,7 @@ function useValkeyData() {
         streamGroupsAppliedRef.current = true
         setCacheGroups(data.groups ?? [])
         // Partial group errors keep REST polling active so it can fill the missing data.
-        if (!data.errors?.groups) stopRestFallback()
+        if (!data.errors?.groups) stopFallback()
       }
       if (data.errors?.groups) {
         setError(data.errors.groups)
@@ -134,11 +114,10 @@ function useValkeyData() {
       }
       if (data.groups !== null) setError(null)
       setLoading(false)
-    }
+    },
+  })
 
-    es.addEventListener('snapshot', onSnapshot)
-    es.onerror = startRestFallback
-
+  useEffect(() => {
     // Initial REST load so the page is never blank if SSE fails or is slow.
     fetchCacheGroups()
       .then(data => {
@@ -150,13 +129,6 @@ function useValkeyData() {
         }
       })
       .finally(() => setLoading(false))
-
-    return () => {
-      es.removeEventListener('snapshot', onSnapshot)
-      es.close()
-      esRef.current = null
-      stopRestFallback()
-    }
   }, [])
 
   return { loading, error, cacheGroups, loadData }
