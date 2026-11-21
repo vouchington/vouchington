@@ -130,7 +130,7 @@ function createStageProcessor(stage: CopyrightAgentDispatchStage) {
     if (!isStageOpen(stage)) return { hasMore: false }
     const { batchSize: defaultBatchSize, maxBatches } = getCopyrightAgentDispatchLimits(stage)
     const batchSize = options.batchSize ?? defaultBatchSize
-    let cursor = data.after
+    let cursor: string | null | undefined = data.after
     let errors: unknown[] = []
     for (let batch = 0; batch < maxBatches; batch++) {
       // oxlint-disable-next-line no-await-in-loop -- advance only after the page's dispatches settle.

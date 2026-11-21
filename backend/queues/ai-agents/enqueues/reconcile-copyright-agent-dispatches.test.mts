@@ -13,9 +13,9 @@ describe('enqueueReconcileCopyrightAgentDispatchStage', () => {
         job.name === COPYRIGHT_AGENT_DISPATCH_JOBS[stage].jobName &&
         (job.data as { after?: string }).after === undefined,
     )
-    onTestFinished(() =>
-      Promise.all(jobs.map(job => ai_agents.getJob(job.id).then(j => j?.remove()))),
-    )
+    onTestFinished(async () => {
+      await Promise.all(jobs.map(job => ai_agents.getJob(job.id).then(j => j?.remove())))
+    })
 
     expect(jobs.map(job => job.opts.deduplication?.id)).toContain(
       'copyright-agent-sweep:submission-guidance:root',
