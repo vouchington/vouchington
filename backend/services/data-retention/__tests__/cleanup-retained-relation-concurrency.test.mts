@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { v7 } from 'uuid'
-import { beginTransaction } from '@data-stores/psql'
+import { withTwoOpenTransactionsForTest } from '@voucha/test-helpers/two-open-transactions'
 import { electedRelationMetadata } from '@services/users/relation-impact-targets'
 import {
   hasTestRetainedRelationIdentity,
@@ -17,14 +17,16 @@ describe('concurrent retained relation cleanup', () => {
     await insertTestRetainedIdentityRoot('user', subjectId)
     await insertTestRetainedRelationIdentity(metadata.table_name, subjectId, relationId)
     const keys = { [metadata.table_name]: [{ subjectId, relationId }] }
-    await using first = await beginTransaction()
-    await using second = await beginTransaction()
-
     // The first run holds the row lock from its delete; the second must skip, not wait or repeat.
-    const firstPages = await cleanupRetainedRelationIdentities(10, keys, { query: first })
-    const secondPages = await cleanupRetainedRelationIdentities(10, keys, { query: second })
-    await first.commit()
-    await second.commit()
+    const [firstPages, secondPages] = await withTwoOpenTransactionsForTest(
+      async (first, second) => {
+        const firstRun = await cleanupRetainedRelationIdentities(10, keys, { query: first })
+        const secondRun = await cleanupRetainedRelationIdentities(10, keys, { query: second })
+        await first.commit()
+        await second.commit()
+        return [firstRun, secondRun] as const
+      },
+    )
 
     expect(firstPages.map(page => page.deleted)).toEqual([1])
     expect(secondPages.map(page => page.deleted)).toEqual([0])
