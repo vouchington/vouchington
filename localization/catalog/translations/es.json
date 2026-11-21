@@ -6272,6 +6272,7 @@
 {"id":"copy.oauth.consent.title","value":"{clientName} solicita acceso a Voucha"},
 {"id":"copy.oauth.consent.unverifiedApp","value":"Aplicación no verificada"},
 {"id":"copy.posts.imageLimit","value":"Esta publicación alcanzó su límite de imágenes. Elimina una antes de añadir otra."},
+{"id":"copy.posts.imageLimitMax","value":{"one":"Una publicación puede tener hasta {max} imagen. Elimina una antes de añadir otra.","other":"Una publicación puede tener hasta {max} imágenes. Elimina una antes de añadir otra."}},
 {"id":"copy.posts.timeRange.label","value":"Período"},
 {"id":"copy.posts.timeRange.lastYear","value":"Último año"},
 {"id":"copy.scopeDescription.communityModerationRead","value":"Leer datos de moderación de la comunidad, incluidos los correos electrónicos de las personas invitadas, los mensajes privados de moderación, los reportes, las solicitudes de membresía, las suspensiones, las restricciones y el historial de moderación."},

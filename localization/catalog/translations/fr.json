@@ -6272,6 +6272,7 @@
 {"id":"copy.oauth.consent.title","value":"{clientName} demande l’accès à Voucha"},
 {"id":"copy.oauth.consent.unverifiedApp","value":"Application non vérifiée"},
 {"id":"copy.posts.imageLimit","value":"Cette publication a atteint sa limite d’images. Supprimez-en une avant d’en ajouter une autre."},
+{"id":"copy.posts.imageLimitMax","value":{"one":"Une publication peut contenir jusqu’à {max} image. Supprimez-en une avant d’en ajouter une autre.","other":"Une publication peut contenir jusqu’à {max} images. Supprimez-en une avant d’en ajouter une autre."}},
 {"id":"copy.posts.timeRange.label","value":"Période"},
 {"id":"copy.posts.timeRange.lastYear","value":"Dernière année"},
 {"id":"copy.scopeDescription.communityModerationRead","value":"Lire les données de modération de la communauté, y compris les adresses e-mail des personnes invitées, les échanges privés avec la modération, les signalements, les demandes d’adhésion, les bannissements, les restrictions et l’historique de modération."},

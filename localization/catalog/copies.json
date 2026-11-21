@@ -6278,6 +6278,7 @@
 {"descriptor":null,"id":"copy.oauth.consent.title"},
 {"descriptor":null,"id":"copy.oauth.consent.unverifiedApp"},
 {"descriptor":null,"id":"copy.posts.imageLimit"},
+{"descriptor":{"kind":"plural","numberParameters":["max"],"valueParameter":"max"},"id":"copy.posts.imageLimitMax"},
 {"descriptor":null,"id":"copy.posts.timeRange.label"},
 {"descriptor":null,"id":"copy.posts.timeRange.lastYear"},
 {"descriptor":null,"id":"copy.scopeDescription.communityModerationRead"},
