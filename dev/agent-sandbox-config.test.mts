@@ -4,8 +4,7 @@ import { describe, expect, it } from 'vitest'
 // Host runtime policy (sandbox, approvals, models, status line, plugins, MCP servers) belongs to the
 // user's agent config, which vouchington-machines writes. This project owns hooks, narrow
 // permissions, deny rules, worktree setup, and the sandbox exclusions for its own dev/ scripts; the
-// project permissions and Codex rules below are what these guards cover. Rationale:
-// docs/development/agent-sandbox.md.
+// project permissions and Codex rules below are what these guards cover.
 
 const repoFile = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 const repoPathExists = (path: string) => existsSync(new URL(`../${path}`, import.meta.url))

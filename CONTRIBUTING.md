@@ -62,7 +62,6 @@ Commits and PRs must pass the lint and test gates described in:
 
 - [docs/development/tests.md](docs/development/tests.md)
 - [docs/development/ci.md](docs/development/ci.md)
-- [docs/checklists/commit.md](docs/checklists/commit.md)
 - [docs/checklists/package-json.md](docs/checklists/package-json.md) (if
   you're touching dependencies)
 

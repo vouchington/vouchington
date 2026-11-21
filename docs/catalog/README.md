@@ -2,8 +2,6 @@
 
 Cross-cutting pages; select the document that matches the work at hand.
 
-- [`development/agent-harness-parity.md`](../development/agent-harness-parity.md)
-- [`development/web-agent-rules.md`](../development/web-agent-rules.md)
 - [`overview/architecture/README.md`](../overview/architecture/README.md)
 - [`overview/architecture/reference-typescript-standards-resource-management.md`](../overview/architecture/reference-typescript-standards-resource-management.md)
 - [`overview/architecture/native-clients.md`](../overview/architecture/native-clients.md)

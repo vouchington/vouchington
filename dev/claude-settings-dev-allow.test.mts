@@ -12,8 +12,7 @@ import { plainForcePushReason } from './plain-force-push.mts'
 // `sandbox.excludedCommands` (the only project sandbox key; the rest of the sandbox is machine
 // policy) also keeps a narrow allow rule, because auto mode may drop the blanket ones and Claude
 // Code documents that it keeps narrow rules. The `/../` deny rules refuse the plain spelling of a
-// path that escapes dev/. Rationale:
-// docs/development/agent-sandbox.md#claude-review-skip-for-dev-commands.
+// path that escapes dev/.
 
 type ClaudeSettings = {
   permissions: { allow: string[]; deny: string[] }
@@ -86,8 +85,7 @@ describe('Claude review-skip for dev/ commands', () => {
 
 // The documented rebase lifecycle skips review only
 // as bare commands; starting a rebase stays on ./dev/rebase-onto-main. Raw force pushes are left
-// to .husky/pre-push. Rationale:
-// docs/development/agent-sandbox.md#claude-review-skip-for-the-rebase-lifecycle.
+// to .husky/pre-push.
 describe('Claude review-skip for the rebase lifecycle', () => {
   const sha = 'a'.repeat(40)
 
