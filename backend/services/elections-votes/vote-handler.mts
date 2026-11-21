@@ -7,7 +7,6 @@ import {
   getElectionVoteChoiceScore,
   chargeElectionVoteRateLimit,
   isElectionVoteChoice,
-  withElectionVoteRequestLock,
   type ElectionVoteScore,
   type ElectionVoteMutationResult,
 } from './shared/index.mts'
@@ -124,46 +123,40 @@ export async function applyVoteMutation<
     sessionId: sessionData?.sid ?? null,
     userAgent: request.userAgent,
   }
-  // Serialize read/quota/append; persistence uses a separate lock namespace to prevent deadlocks.
-  const upsertedVotes = await withElectionVoteRequestLock(
-    options.entityType,
-    currentUser.id,
-    entityId,
-    async () => {
-      if (options.getCurrentVote) {
-        const currentVote = await options.getCurrentVote(currentUser.id, entityId)
-        assertNeutralRequiresExistingBallot(choice, currentVote)
-        if ((isClear && currentVote === null) || (!isClear && currentVote?.choice === choice)) {
-          if (options.onNoop) await options.onNoop(currentUser, entityId, resolvedEntity)
-          return null
-        }
-      } else {
-        assertNeutralRequiresExistingBallot(choice, null)
+  // No request lock: votes are best effort and the latest ballot wins, so a concurrent identical
+  // request at worst appends a duplicate identical ballot.
+  if (options.getCurrentVote) {
+    const currentVote = await options.getCurrentVote(currentUser.id, entityId)
+    assertNeutralRequiresExistingBallot(choice, currentVote)
+    if ((isClear && currentVote === null) || (!isClear && currentVote?.choice === choice)) {
+      if (options.onNoop) await options.onNoop(currentUser, entityId, resolvedEntity)
+      return
+    }
+  } else {
+    assertNeutralRequiresExistingBallot(choice, null)
+  }
+
+  if (!isClear) {
+    const membershipPlan = currentUser.membership_plan ?? null
+    if (!bypassContributionGating) {
+      const contributionStatus = await getContributionStatus(currentUser, {
+        membershipPlan,
+        skipAccountAgeGate: true,
+      })
+      if (!contributionStatus.allowed) {
+        throw createCodedError(
+          403,
+          'A verified non-disposable email address is required to vote.',
+          EMAIL_VERIFICATION_REQUIRED,
+        )
       }
+    }
+    await assertWithinContributionQuota(currentUser.id, isAdmin, membershipPlan)
+  }
 
-      if (!isClear) {
-        const membershipPlan = currentUser.membership_plan ?? null
-        if (!bypassContributionGating) {
-          const contributionStatus = await getContributionStatus(currentUser, {
-            membershipPlan,
-            skipAccountAgeGate: true,
-          })
-          if (!contributionStatus.allowed) {
-            throw createCodedError(
-              403,
-              'A verified non-disposable email address is required to vote.',
-              EMAIL_VERIFICATION_REQUIRED,
-            )
-          }
-        }
-        await assertWithinContributionQuota(currentUser.id, isAdmin, membershipPlan)
-      }
+  const upsertedVotes = await options.upsertVotes(currentUser.id, [{ entityId, score }], context)
 
-      return options.upsertVotes(currentUser.id, [{ entityId, score }], context)
-    },
-  )
-
-  const upsertedVote = upsertedVotes?.[0]
+  const upsertedVote = upsertedVotes[0]
   if (!upsertedVote) return
 
   if (options.onVote) {

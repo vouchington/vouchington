@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
-import { MAX_SELECTED_FOLLOWER_DISTRIBUTION_RECIPIENTS } from './types.mts'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { userProductLimitsConfig } from '@services/user-product-limits'
 import { parseSendFollowersInput } from './send-followers-input.mts'
 
 describe('parseSendFollowersInput', () => {
@@ -10,8 +11,13 @@ describe('parseSendFollowersInput', () => {
   })
 
   it('accepts selected recipients at the configured maximum', () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(userProductLimitsConfig, {
+        follower_distribution_recipients_max: 3,
+      }),
+    )
     const recipientIds = Array.from(
-      { length: MAX_SELECTED_FOLLOWER_DISTRIBUTION_RECIPIENTS },
+      { length: 3 },
       (_, index) => `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
     )
 
@@ -27,8 +33,13 @@ describe('parseSendFollowersInput', () => {
   })
 
   it('rejects selected recipients over the configured maximum', () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(userProductLimitsConfig, {
+        follower_distribution_recipients_max: 3,
+      }),
+    )
     const recipientIds = Array.from(
-      { length: MAX_SELECTED_FOLLOWER_DISTRIBUTION_RECIPIENTS + 1 },
+      { length: 4 },
       (_, index) => `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
     )
 
@@ -37,7 +48,7 @@ describe('parseSendFollowersInput', () => {
         audience: 'selected_followers',
         recipient_user_ids: recipientIds,
       }),
-    ).toThrow(`at most ${MAX_SELECTED_FOLLOWER_DISTRIBUTION_RECIPIENTS}`)
+    ).toThrow('at most 3 followers')
   })
 
   it('rejects non-UUID selected recipients', () => {

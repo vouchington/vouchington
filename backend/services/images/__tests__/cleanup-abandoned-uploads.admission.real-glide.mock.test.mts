@@ -41,10 +41,10 @@ describe('abandoned upload recovery admission', () => {
     context.onTestFinished(
       overrideDynamicConfigFieldsForTest(imagesWorkConfig, { cleanup_batch_size: 1 }),
     )
-    const add = vi.spyOn(imageUploadsQueue, 'add').mockRejectedValueOnce(new Error('queue closed'))
-    await expect(cleanupAbandonedUploads(sweep, save)).rejects.toThrow(
-      'Upload cleanup page effects failed',
-    )
+    const add = vi
+      .spyOn(imageUploadsQueue, 'addBulk')
+      .mockRejectedValueOnce(new Error('queue closed'))
+    await expect(cleanupAbandonedUploads(sweep, save)).rejects.toThrow('queue closed')
     add.mockRestore()
     expect(saved).toEqual([])
     expect(sweep.windows.recovery.after?.id).not.toBe(ids[0])

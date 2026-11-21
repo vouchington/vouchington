@@ -5,6 +5,7 @@ import { turnstileConfig } from '@services/captcha/config'
 import { moderationConfig } from '@services/moderation/config'
 import { admissionLimitRegistryEntries } from './registry-community-membership-entry.mts'
 import { postContentLimitsRegistryEntry } from './registry-post-content-limits-entry.mts'
+import { userProductLimitsRegistryEntry } from './registry-user-product-limits-entry.mts'
 import { recaptchaConfig } from '@services/recaptcha/config'
 import { requestClientInfoConfig } from '@services/request-client-info/config'
 import { validateBedrockBatchConfig } from './registry-bedrock-validator.mts'
@@ -78,6 +79,7 @@ export const coreDynamicConfigRegistryEntries = [
     },
   }),
   postContentLimitsRegistryEntry,
+  userProductLimitsRegistryEntry,
   defineDynamicConfigNamespace({
     namespace: 'moderation-config',
     label: 'Moderation',

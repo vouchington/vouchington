@@ -29,6 +29,7 @@
     "@services/notifications": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
+    "@services/user-product-limits": "workspace:^",
     "@services/users": "workspace:^",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",

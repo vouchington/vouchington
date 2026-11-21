@@ -86,7 +86,9 @@ test.describe('Login Page', () => {
     await expect(page.getByTestId('login-verification-code-input')).toBeFocused()
 
     // OAuth buttons should be hidden during code entry step
-    await expect(page.getByTestId('oauth-provider-button-facebook')).toBeHidden()
+    await expect(
+      page.getByTestId('oauth-login-button').getByTestId('oauth-provider-button-facebook'),
+    ).toBeHidden()
   })
 
   test('should log in through the UI with a backend-generated email token', async ({ page }) => {
@@ -201,7 +203,9 @@ test.describe('Login Page', () => {
     await navigateTo(page, '/login?emailAddress=tests%2Buser%40voucha.ai&otp=abcdefg234')
 
     await expect(page.getByTestId('login-verification-code-input')).toBeVisible()
-    await expect(page.getByTestId('oauth-provider-button-facebook')).toBeHidden()
+    await expect(
+      page.getByTestId('oauth-login-button').getByTestId('oauth-provider-button-facebook'),
+    ).toBeHidden()
     await expect(page.getByTestId('login-verification-code-input')).toHaveValue('ABCDEFG234')
     await expect(page).toHaveURL('/login')
     expect(loginRequestCount).toBe(0)
@@ -238,9 +242,9 @@ test.describe('Login Page', () => {
       hasPublicFacebookConfiguration,
     ].every(Boolean)
 
-    await expect(page.getByTestId('oauth-provider-button-facebook')).toBeVisible({
-      visible: expectedVisible,
-    })
+    await expect(
+      page.getByTestId('oauth-login-button').getByTestId('oauth-provider-button-facebook'),
+    ).toBeVisible({ visible: expectedVisible })
   })
 
   test('should logout and clear cookies', async ({ page }) => {

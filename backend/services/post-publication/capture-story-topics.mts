@@ -1,7 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import { getPostPublicationWorkLimit } from './work-limits.mts'
 import { impactPublicationKeys } from './captured-keys.mts'
-import { enqueueCapturedPublicationChangeAfterCommit } from './direct-capture.mts'
+import { enqueueBulkCapturedPublicationChangesAfterCommit } from './direct-capture.mts'
 import { normalizePostPublicationIdentifiers } from './identifiers.mts'
 
 type StoryTopicPublicationChange = {
@@ -29,16 +29,19 @@ export async function recordStoryTopicPublicationChanges(
   const storyIds = normalizePostPublicationIdentifiers(byStory.keys())
   for (let offset = 0; offset < storyIds.length; offset += limit) {
     const page = storyIds.slice(offset, offset + limit)
-    for (const storyId of page) {
-      const impacts = byStory.get(storyId)!
-      enqueueCapturedPublicationChangeAfterCommit(query, {
-        scope: { type: 'story', storyId },
-        reason: 'post_topics_changed',
-        keys: impactPublicationKeys({
-          postIds: [...impacts.postIds],
-          topicIds: [...impacts.topicIds],
-        }),
-      })
-    }
+    enqueueBulkCapturedPublicationChangesAfterCommit(
+      query,
+      page.map(storyId => {
+        const impacts = byStory.get(storyId)!
+        return {
+          scope: { type: 'story' as const, storyId },
+          reason: 'post_topics_changed' as const,
+          keys: impactPublicationKeys({
+            postIds: [...impacts.postIds],
+            topicIds: [...impacts.topicIds],
+          }),
+        }
+      }),
+    )
   }
 }

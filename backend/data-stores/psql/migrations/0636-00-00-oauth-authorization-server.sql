@@ -361,8 +361,8 @@ BEGIN
     IF retention_cutoff IS NOT NULL
        AND retention_cutoff <= CURRENT_TIMESTAMP - INTERVAL '12 months'
        AND uuid_extract_timestamp(OLD.id) < retention_cutoff THEN
-      -- Hold placement takes this account lock first; deletion checks the hold after acquiring it.
-      PERFORM pg_advisory_xact_lock(hashtextextended(OLD.user_id::text, 0));
+      -- Hold placement locks the account row FOR NO KEY UPDATE; share it before checking for a hold.
+      PERFORM 1 FROM users WHERE id = OLD.user_id FOR SHARE;
       IF NOT EXISTS (
         SELECT 1 FROM user_legal_preservation_holds preservation_hold
         WHERE preservation_hold.account_user_id = OLD.user_id

@@ -24,6 +24,17 @@ describe('GET /api/v1/topics/aliases pagination', () => {
     })
   })
 
+  it('rejects a whitespace-only q instead of listing every alias', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const topic = await createTestTopic()
+    const random = Math.random().toString(36).slice(2, 15)
+    await createTopicAliases(topic.id, `blank-search-${random}`)
+
+    const req = createRequest()
+    await req.authenticateAs(admin)
+    await req.get('/api/v1/topics/aliases').query({ q: '   ' }).expect(400)
+  })
+
   it('returns a partial page with has_next_page false and a null end_cursor', async () => {
     const admin = await createTestUser({ administrator: true })
     const topic = await createTestTopic()

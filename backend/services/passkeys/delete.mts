@@ -20,7 +20,9 @@ export async function deletePasskey(
     // enqueue deferred to caller so it runs after the outer transaction commits
   } else {
     await using query = await beginTransaction()
-    await query(sql`/* deletePasskey */ SELECT fn_lock_active_user_for_mutation(${currentUserId})`)
+    await query(
+      sql`/* deletePasskey */ SELECT fn_lock_active_user_for_mutation(${currentUserId}, TRUE)`,
+    )
     const { rowCount } = await query(
       sql`/* deletePasskey */ DELETE FROM user_passkeys WHERE id = ${passkeyId} AND user_id = ${currentUserId}`,
     )

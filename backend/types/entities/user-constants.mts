@@ -1,5 +1,3 @@
-export const MAX_PROFILE_LINKS = 20
-
 /**
  * The ID of the tombstone "deleted" user.
  * Posts are reassigned to this user when the original creator deletes their account.

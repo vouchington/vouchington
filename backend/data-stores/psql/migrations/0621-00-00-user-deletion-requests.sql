@@ -1,22 +1,33 @@
 -- Durable, resumable account-deletion work references retained user identities, not live users.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE FUNCTION fn_lock_active_user_for_mutation(target_user_id UUID)
+CREATE OR REPLACE FUNCTION fn_lock_active_user_for_mutation(target_user_id UUID, for_update BOOLEAN DEFAULT FALSE)
 RETURNS VOID
 LANGUAGE plpgsql
 AS $$
+DECLARE
+  user_deleted_at TIMESTAMPTZ;
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM users WHERE id = target_user_id) THEN
+  -- Lock by id only and branch on the locked row version: a writer that waited on deletion must
+  -- see the committed deleted_at, which a filtered or EXISTS-wrapped lock would not re-evaluate.
+  -- Writers that also UPDATE the users row pass for_update so two same-user transactions cannot
+  -- deadlock upgrading a shared lock; both modes conflict with deletion's FOR NO KEY UPDATE.
+  IF for_update THEN
+    SELECT deleted_at INTO user_deleted_at FROM users WHERE id = target_user_id FOR NO KEY UPDATE;
+  ELSE
+    SELECT deleted_at INTO user_deleted_at FROM users WHERE id = target_user_id FOR SHARE;
+  END IF;
+  IF NOT FOUND THEN
     RAISE EXCEPTION 'user % does not exist', target_user_id
       USING ERRCODE = 'no_data_found';
-  ELSIF NOT EXISTS (SELECT 1 FROM users WHERE id = target_user_id AND deleted_at IS NULL) THEN
+  ELSIF user_deleted_at IS NOT NULL THEN
     RAISE EXCEPTION 'user % cannot own new data after deletion', target_user_id
       USING ERRCODE = 'check_violation';
   END IF;
 END;
 $$;
 
-COMMENT ON FUNCTION fn_lock_active_user_for_mutation(UUID) IS
-  'Rejects user-owned writes after the privacy fence.';
+COMMENT ON FUNCTION fn_lock_active_user_for_mutation(UUID, BOOLEAN) IS
+  'Rejects user-owned writes after the privacy fence; holds FOR SHARE (FOR NO KEY UPDATE when for_update) on the users row so deletion (FOR NO KEY UPDATE) waits for in-flight writers.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_deletion_requests (

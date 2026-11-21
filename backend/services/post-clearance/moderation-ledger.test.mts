@@ -12,11 +12,10 @@ import {
   setPostLLMModerationContentSha256,
 } from '@voucha/test-helpers'
 import { countTestPostModerationIncompleteWork } from '@voucha/test-helpers/post-moderation-attempt-state'
-import { isDeduplicatedEnqueue } from '@voucha/test-helpers/queue-jobs'
 import {
   beginPostModerationAttempt,
   completePostModerationAttempt,
-  enqueuePostModerationRecovery,
+  enqueueBulkPostModerationRecovery,
   ensureCurrentPostModerationVersion,
   reconcilePostModerationWork,
   recordPostModerationDisposition,
@@ -215,10 +214,14 @@ describe('post moderation ledger', () => {
         expect.objectContaining({ version_id: version.id, source: 'spam_detection' }),
       ]),
     )
-    const enqueued = await enqueuePostModerationRecovery(version.id, 'openai_omni')
-    expect(isDeduplicatedEnqueue(enqueued)).toBe(false)
-    const again = await enqueuePostModerationRecovery(version.id, 'openai_omni')
-    expect(isDeduplicatedEnqueue(again)).toBe(true)
+    const recovery = [
+      { versionId: version.id, source: 'openai_omni' as const },
+      { versionId: version.id, source: 'spam_detection' as const },
+    ]
+    await enqueueBulkPostModerationRecovery(recovery)
+    expect(await openAiModerationQueue.getJob(`${version.id}__openai_omni`)).toBeTruthy()
+    expect(await openAiModerationQueue.getJob(`${version.id}__spam_detection`)).toBeTruthy()
+    await enqueueBulkPostModerationRecovery(recovery)
     expect(await countTestPostModerationIncompleteWork(postId)).toBe(2)
   })
 

@@ -66,14 +66,10 @@ their exact text stable.
 
 ## Update Checklist
 
-- Add new prompts as standalone Markdown files in [scheduled/](scheduled/).
-- Link every prompt from the table above so the rotation set stays reviewable.
-- Keep the table in sync with `docs/prompts/scheduled/*.md`; `ci/check-scheduled-prompt-index-policy.mts`
-  checks that every prompt appears exactly once and every link resolves.
-- Match linked source-of-truth terminology: use the same words the linked requirement or
-  architecture doc uses for a concept, and the exact literal name for a field, route, env var, or
-  product constraint (e.g. `UI locale` the concept vs. `ui_locale` the API field).
-- Verify linked source-of-truth docs are current before anchoring a prompt to them; if the doc is
-  stale, fix the doc first, then add or update the prompt.
-- Keep operational rendering rules in [README.md](README.md) and scheduling in the
-  triage loop.
+- Add new prompts as standalone Markdown files in [scheduled/](scheduled/) and link each from the
+  table above; `ci/check-scheduled-prompt-index-policy.mts` checks that every prompt appears
+  exactly once and every link resolves.
+- Point at upstream skills by name instead of restating their rules; keep a prompt's scope,
+  repo-specific targets, and boundaries with sibling prompts. Process the wrapper already injects
+  stays out.
+- Fix a stale linked source-of-truth doc before anchoring a prompt to it.

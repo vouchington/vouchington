@@ -4,9 +4,10 @@
   historical stored data, payloads or schemas; rewrite producers, consumers and the
   canonical schema together and remove replaced paths. Keep external protocols, security key
   rotation, exact replay envelopes where those contracts actually require them, and fresh-bootstrap
-  safety. Released native clients are no exception: breaking API changes land back-to-back with
-  the client adoption PR, never before it; additive ones ship first with pending native claims
-  ([parity matrix](docs/requirements/CLIENT-PARITY-MATRIX.md)).
+  safety. Released native clients are the exception: producer changes ship first and stay
+  backward compatible with them, never in lockstep with a client adoption PR. Add fields, codes and
+  copy with pending native claims; anything a released client cannot read yet must fall back to
+  behavior it already handles ([parity matrix](docs/requirements/CLIENT-PARITY-MATRIX.md)).
 - Non-main databases and Valkey are disposable; main's shared database is guarded.
 - No local AST parsers; ask a human first. Voucha-specific parsing and Oxlint plugins go in
   `vouchington-tooling`, generic rules in `no-mistakes`; ast-grep and Oxlint rules may live here.

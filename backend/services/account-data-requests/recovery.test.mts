@@ -86,18 +86,9 @@ describe('account data request recovery', () => {
     await softDeleteUser(user.id)
     let heldBeforeFail = false
     onTestFinished(
-      runBeforePostgresStatementForTest(
-        'claimRecoverableDataRequests:deletedUsers',
-        async query => {
-          const { rows } = await query<{ held: boolean }>(
-            `/* recoveryLockOrder */ SELECT EXISTS (
-              SELECT 1 FROM pg_locks
-              WHERE locktype = 'advisory' AND granted AND pid = pg_backend_pid() AND objsubid = 1
-            ) AS held`,
-          )
-          if (rows[0]?.held) heldBeforeFail = true
-        },
-      ),
+      runBeforePostgresStatementForTest('lockUsersForShare', async () => {
+        heldBeforeFail = true
+      }),
     )
     try {
       expect((await claimRecoverableDataRequests([request.id])).requests).toEqual([])

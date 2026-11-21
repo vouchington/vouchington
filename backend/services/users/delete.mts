@@ -1,7 +1,6 @@
 import { settleUserDeletionOperations } from './settle-deletion-operations.mts'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import assert from 'http-assert'
-import sql from 'sql-template-strings'
 import onError from '@modules/on-error'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import { enqueueUserDeletion } from '@queues/account-lifecycle/enqueues/user-deletions'
@@ -27,39 +26,17 @@ import type { PrivateUser } from './types.mts'
 import { assertCopyrightEvidenceAllowsDeletion } from './delete-copyright-evidence.mts'
 import { lockUserDeletionRows, type UserDeletionTarget } from './delete-row-locks.mts'
 
-async function lockUserDeletionLifecycle(query: TransactionQuery, userId: string): Promise<void> {
-  const { rows } = await query<{ acquired: boolean }>(sql`/* deleteUser:tryLockUser */
-    SELECT pg_try_advisory_xact_lock(hashtextextended(${userId}, 0)) AS acquired
-  `)
-  const [lock] = rows
-  if (!lock) throw new Error('User lifecycle lock query returned no result')
-  if (!lock.acquired) {
-    await query(sql`/* deleteUser:lockUser */
-      SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))
-    `)
-  }
-}
-
 async function establishUserDeletionRequest(
   query: TransactionQuery,
   user: PrivateUser,
   requestedById: string,
 ) {
-  const target = await lockAndGetUserDeletionTarget(query, user.id, requestedById)
+  const target = await lockUserDeletionRows(query, user.id, requestedById)
   const request = await createUserDeletionRequest(target.id, requestedById, {
     priorUsername: target.username,
     query,
   })
   return { request, target }
-}
-
-async function lockAndGetUserDeletionTarget(
-  query: TransactionQuery,
-  userId: string,
-  requestedById: string,
-): Promise<UserDeletionTarget> {
-  await lockUserDeletionLifecycle(query, userId)
-  return lockUserDeletionRows(query, userId, requestedById)
 }
 
 async function scrubUserDeletionIdentities(

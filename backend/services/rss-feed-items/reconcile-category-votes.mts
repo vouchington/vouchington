@@ -1,4 +1,3 @@
-import { getEntityRelationVoteTableName } from '@voucha/types/entities/entity-relations-metadata'
 import type { QueryExecutor } from '@data-stores/psql'
 import { upsertEntityRelationElectionVotes } from '@services/elections-votes/entity-relation/votes-upsert'
 import {
@@ -80,14 +79,6 @@ async function retractUnsupportedCategorizerVotesForKind(
   query: QueryExecutor,
 ): Promise<void> {
   if (mappings.length === 0) return
-  const relationIds = await getCategoryRelationIds(mappings, metadata, query)
-  if (relationIds.length === 0) return
-  await query(
-    `/* reconcileRssFeedItemCategorySnapshots lock */
-    SELECT pg_advisory_xact_lock(hashtextextended('${getEntityRelationVoteTableName(metadata)}:' || $1::text || ':' || relation_id::text, 0))
-    FROM unnest($2::uuid[]) AS input(relation_id) ORDER BY relation_id`,
-    [categorizerId, relationIds.map(relation => relation.id).toSorted()],
-  )
   const categoryColumn = metadata.object_type === 'topic' ? 'topic_id' : 'topic_alias_id'
   const { rows } = await query<{ id: string }>(
     `/* reconcileRssFeedItemCategorySnapshots unsupportedRelations */
@@ -115,24 +106,4 @@ function dedupeMappings(mappings: CategoryRelationMapping[]): CategoryRelationMa
       mappings.map(mapping => [`${mapping.rss_feed_item_id}:${mapping.object_id}`, mapping]),
     ).values(),
   ]
-}
-
-async function getCategoryRelationIds(
-  mappings: CategoryRelationMapping[],
-  metadata: EntityRelationMetadata,
-  query: QueryExecutor,
-): Promise<Array<{ id: string }>> {
-  return (
-    await query<{ id: string }>(
-      `/* reconcileRssFeedItemCategorySnapshots relationIds */
-      SELECT relation.id FROM ${metadata.table_name} relation
-      JOIN unnest($1::uuid[], $2::uuid[]) AS mapping(rss_feed_item_id, object_id)
-        ON relation.subject_id = mapping.rss_feed_item_id AND relation.object_id = mapping.object_id
-      WHERE relation.deleted_at IS NULL ORDER BY relation.id`,
-      [
-        mappings.map(mapping => mapping.rss_feed_item_id),
-        mappings.map(mapping => mapping.object_id),
-      ],
-    )
-  ).rows
 }

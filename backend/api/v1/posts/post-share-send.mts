@@ -1,13 +1,13 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
-  MAX_SELECTED_FOLLOWER_DISTRIBUTION_RECIPIENTS,
   markFollowerDistributionFailed,
   parseSendFollowersInput,
   preflightPostDistributionTarget,
   sendPostToFollowers,
   sharePostWithFollowers,
 } from '@services/follower-distributions'
+import type { FOLLOWER_DISTRIBUTION_RECIPIENTS_MAX } from '@services/user-product-limits'
 import { assertNotSuspended } from '@services/users'
 import { enqueueProcessFollowerDistribution } from '@queues/follower-distributions/enqueues'
 import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
@@ -26,7 +26,7 @@ type SendFollowersRequestContract =
       recipient_user_ids: ApiArrayContract<
         ApiUuidContract,
         1,
-        typeof MAX_SELECTED_FOLLOWER_DISTRIBUTION_RECIPIENTS,
+        typeof FOLLOWER_DISTRIBUTION_RECIPIENTS_MAX,
         true
       >
     }

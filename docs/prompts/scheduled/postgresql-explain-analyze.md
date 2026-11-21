@@ -1,92 +1,46 @@
 Review PostgreSQL query plans. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
-Load `$postgres-node-performance-tuning`. Read [R3](../../development/postgres-schema-rules.md#r3--normalize-ids-are-fk-columns-json-is-for-schemaless-data)
-and [R6](../../development/postgres-schema-rules.md#r6--query-shape) of the schema rules. Three of them
-decide most plan fixes:
+Unit: one service or scenario group.
 
-- Join on ids, never on text. Hashtag and category text matching is the only exception. Looking up
-  one row by its unique text (a slug, a hostname, a login token) is fine.
-- Read a `view_*` view only by its key, after choosing the ids from base tables.
-- Never bound ids with `uuidv7(...)`; use `fn_min_uuidv7(...)`.
+Load `postgres-node-performance-tuning`, `postgresql-rules`, and `vouchington-postgres`. Read [R3](../../development/postgres-schema-rules.md#r3--normalize-ids-are-fk-columns-json-is-for-schemaless-data) and [R6](../../development/postgres-schema-rules.md#r6--query-shape) of the schema rules.
 
 ## Capture the plans
 
-Run the same steps as `.github/workflows/explain-analyze.yml`, which captures custom and generic
-prepared plans. If the database is not initialized, run `./dev/initialize backend`. Supply its
-isolated `DATABASE_URL` and `VALKEY_URL` inline to each command and give the development seed the
-same secret configuration used by the EXPLAIN steps; the workflow shows its synthetic CI values.
-The `explain:*` scripts use the caller's environment. Then, in order:
+Run the same steps as `.github/workflows/explain-analyze.yml` (custom and generic prepared plans). If the database is not initialized, run `./dev/initialize backend`, and pass the isolated `DATABASE_URL` and `VALKEY_URL` inline to each command (the workflow shows its synthetic CI values). Then, in order:
 
-- `export EXPLAIN_SEED_ANCHOR_DATE=$(date -u +%Y-%m-%d)`, so the seed and the run derive the same ids
-- `node backend/scripts/seeds/dev-seed.mts`, the development seed; some scenarios read its rows
+- `export EXPLAIN_SEED_ANCHOR_DATE=$(date -u +%Y-%m-%d)`
+- `node backend/scripts/seeds/dev-seed.mts`
 - `pnpm run explain:seed`
 - `EXPLAIN_PLAN_CACHE_MODE=compare pnpm run explain:run`
 - `pnpm run explain:analyze`
-- `node backend/scripts/explain-analyze/pruning/run.mts`, which proves pruning on explicit partitions
-  and writes `pruning-proof-*.json`
+- `node backend/scripts/explain-analyze/pruning/run.mts` (proves pruning on explicit partitions, writes `pruning-proof-*.json`)
 - `pnpm run explain:dump`
 
-If PostgreSQL cannot run in this session, download the `explain-analyze-results` artifact from the
-newest `main` run of the Nightly workflow (`nightly.yml`, which calls the backend workflow), whatever
-that run's conclusion, and review its `results-*.json`. The merged artifact is uploaded even when a
-plan gate fails, and it is kept for 1 day. If a run-level shard fails, only the per-shard
-`explain-analyze-results-<shard>` artifacts exist (one per matrix shard), each with
-its own `results-*.json`. The pruning proof runs in the partition shard after its scenarios pass,
-so `pruning-proof-*.json` is missing from a failed run; review it when it is present. If neither works, report `Outcome: incomplete`.
+If PostgreSQL cannot run here, download the `explain-analyze-results` artifact from the newest `main` run of the Nightly workflow (`nightly.yml`), whatever its conclusion, and review `results-*.json` (kept 1 day; a failed run leaves only per-shard `explain-analyze-results-<shard>` artifacts, and `pruning-proof-*.json` only when present). If neither works, report `Outcome: incomplete`.
 
-If a run fails a plan-shape gate, check the `results-*.json` artifact in
-`backend/scripts/explain-analyze/output/` before the thrown error message. `collectAndGate()` in
-`run-support.mts` pushes each scenario's captured result before gating it, so the failing plan is in
-the artifact even when the gate rejects it.
+If a plan-shape gate fails, read the `results-*.json` in `backend/scripts/explain-analyze/output/` before the thrown message: `collectAndGate()` in `run-support.mts` records each result before gating it.
 
 ## Choose the work
 
-Take the first of these that applies:
+Take the first that applies:
 
 1. A failing gate, a new resource-pressure fingerprint, or a scenario that throws.
-2. The worst plan by the red flags below. `explain:analyze` warns on most results, so rank plans by
-   the work they do per row returned, not by their warning count.
-3. One hot read with no scenario. Add the scenario, its seed rows, and a `registerScenarioContract`
-   budget.
+2. The worst plan by the red flags below, ranked by work per row returned, not warning count.
+3. One hot read with no scenario: add the scenario, its seed rows, and a `registerScenarioContract` budget.
 
 ## Plan red flags
 
-- A node reads far more rows than the query returns. For each scan, count (actual rows +
-  `Rows Removed by Filter` + `Rows Removed by Index Recheck`) × loops, as `processedRows()` in
-  `backend/scripts/explain-analyze/plan-nodes.mts` does. Add `Rows Removed by Join Filter` on joins,
-  and compare the total with the final row count. A view filtered, sorted or paged on its own columns
-  usually shows up this way.
+- A scan reading far more rows than returned: (actual rows + `Rows Removed by Filter` + `Rows Removed by Index Recheck`) × loops, as `processedRows()` in `backend/scripts/explain-analyze/plan-nodes.mts` computes, plus `Rows Removed by Join Filter` on joins.
 - A SubPlan or correlated subquery whose loops equal the outer row count.
-- A predicate under `Filter` where an `Index Cond` was expected, or a partitioned parent whose
-  children all execute. Count the children with `Actual Loops` above 0, as
-  `backend/scripts/explain-analyze/pruning/plan-gate.mts` does. `Subplans Removed` shows only
-  plan-time pruning, and a generic plan pruned at run time keeps its pruned children with
-  `Actual Loops: 0`. A volatile function in the predicate causes both problems.
-- A function call such as `fn_x(id)` in a `Filter` or an output list. The planner did not inline it,
-  so the plan does not show its per-row work. To count its calls, run the query in a transaction
-  after `SET LOCAL track_functions = 'all'`, then read `pg_stat_xact_user_functions` before
-  rolling back.
-- A join condition (`Hash Cond`, `Merge Cond`, or the `Index Cond` of a join's inner side) that
-  compares text columns of two tables. A lookup of one row by a unique string is fine.
-- A generic plan much worse than the custom plan for the same query.
-- A sequential scan on a large table, or an estimate off by 10x or more on a node that decides a
-  join.
+- A predicate under `Filter` where an `Index Cond` was expected, or a partitioned parent whose children all execute (count children with `Actual Loops` above 0, as `pruning/plan-gate.mts` does; `Subplans Removed` shows only plan-time pruning). A volatile function in the predicate causes both.
+- A function call `fn_x(id)` in a `Filter` or output list: the planner did not inline it. Count calls with `SET LOCAL track_functions = 'all'` in a transaction and `pg_stat_xact_user_functions`.
+- A join condition comparing text columns of two tables (a unique-string lookup of one row is fine).
+- A generic plan much worse than the custom plan, a sequential scan on a large table, or an estimate off by 10x or more on a join-deciding node.
 
 ## Fixes
 
-- Implement one safe query, index, extended-statistics (`CREATE STATISTICS`), seed, scenario, or
-  analyzer improvement. The fix must keep the query's results.
-- An index needs no approval. Show the plan before and after it.
-- For extended statistics, match the kind to the predicate shape and gate every stat-object change
-  on measured before/after evidence.
-- For composite keyset pagination, verify the WHERE tuple matches the ORDER BY tuple and direction.
-  For example, `(created_at, object_id) < (...)` must line up with
-  `ORDER BY created_at DESC, object_id DESC`.
-- For each composite keyset query, confirm the plan uses the expected composite index for the
-  filtered table rather than a sequential scan. Name the expected index in the PR notes when a query
-  depends on one.
-- When a table's indexes changed, confirm every consumer was re-traced rather than assuming the reshaped index is a drop-in replacement.
-- A budget change records the measured numbers before and after in the PR.
+- Implement one safe query, index, extended-statistics, seed, scenario, or analyzer improvement that keeps the query's results. An index needs no approval; show the plan before and after. Gate every statistics change and budget change on measured before/after numbers recorded in the PR.
+- For composite keyset pagination, the WHERE tuple must match the ORDER BY tuple and direction, and the plan must use the expected composite index (name it in the PR notes).
+- When a table's indexes changed, re-trace every consumer.
 
-Schema-growth and partition classification audits run from
-[postgresql-schema-growth.md](postgresql-schema-growth.md).
+Schema-growth and partition classification audits run from [postgresql-schema-growth.md](postgresql-schema-growth.md).

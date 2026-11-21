@@ -20,11 +20,8 @@ classify and fix failures by the same rules. Scheduled runs use the
 See the complete [Scheduled Prompt Catalog](SCHEDULED.md) for all scheduled prompt files and
 their scope boundaries; do not maintain a second partial prompt list here.
 
-PR-mode scheduled prompts may complete with one draft PR or, unless the selected prompt explicitly
-requires a real patch, a verified no-op after their full required audit and checks. Skipped setup,
-diagnostics, or required scope means the run is incomplete,
-not a no-op. The shared [scheduled prompt template](automation/scheduled-prompt.md) defines the
-outcome report and validates scheduled no-source references before publication.
+The shared [scheduled prompt template](automation/scheduled-prompt.md) defines the outcome report
+(draft PR, verified no-op, or incomplete).
 
 These templates are Vitest fixtures, not docs-only markdown, so changes under this tree run the tooling test suites ([area test suites](../development/ci.md#area-test-suites)).
 

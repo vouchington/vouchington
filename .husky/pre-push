@@ -7,4 +7,10 @@ cmd_status=$?
 if [ "$cmd_status" -eq 1 ]; then
   exit 1
 fi
+# Changed-file lint and format only; exit 2 means the runner could not run and must not block.
+node "$repo_root/dev/run-impacted-checks.mts"
+cmd_status=$?
+if [ "$cmd_status" -eq 1 ]; then
+  exit 1
+fi
 exit 0

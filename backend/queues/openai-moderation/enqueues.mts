@@ -18,16 +18,16 @@ import {
 
 const ONE_MINUTE_MS = 60_000
 
-const enqueueCreatePostModerationJob = createBackgroundEnqueue(OPENAI_MODERATION_POST_JOB)
 const enqueueCreateImageModerationJob = createBackgroundEnqueue(OPENAI_MODERATION_IMAGE_JOB)
 
 /** One durable job per moderation version. A repeated add with this id is a no-op. */
-export const enqueueCreatePostModeration = (versionId: string) => {
-  return enqueueCreatePostModerationJob(
-    { versionId },
-    { jobId: `${versionId}__openai_omni`, priority: PRIORITY_TASK },
-  )
-}
+export const enqueueBulkCreatePostModeration = createBackgroundBulkEnqueue(
+  OPENAI_MODERATION_POST_JOB,
+  (versionId: string) => ({
+    data: { versionId },
+    opts: { jobId: `${versionId}__openai_omni`, priority: PRIORITY_TASK },
+  }),
+)
 
 export const enqueueCreateImageModeration = (imageId: string, priority?: number) => {
   return enqueueCreateImageModerationJob({ id: imageId }, {

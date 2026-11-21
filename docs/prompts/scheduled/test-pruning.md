@@ -1,12 +1,10 @@
-Review tests for one bounded deletion or reduction that is safe to ship in one PR. When the chosen flaw is a repeated fingerprint across call sites or files, fix every occurrence of that fingerprint in the same PR. Apply the canonical [Test Value and Safe Reduction](../../development/reference-tests-value-and-reduction.md) gate.
+Delete or reduce low-value tests. Make one bounded deletion or reduction that is safe to ship in one PR; when the flaw is a repeated fingerprint across files, fix every occurrence in the same PR.
 
-- Delete tests of dependency semantics, including our own packages and SDKs, PostgreSQL, and Valkey. Delete hard-skipped, tautological, duplicate, dead, pure-indirection, mock call-through, and generated coverage-only tests when they protect no app behavior.
-- Delete tests that merely find expected strings in source, SQL, workflow, YAML, or other configuration text. If a real static invariant needs enforcement, put it in its owning no-mistakes or vouchington-tooling rule. Reduce oversized fixtures and case sets to the smallest setup that crosses each distinct app behavior boundary.
-- Do not target credentialed/provider-backed/integration tests just because they are skipped for missing secrets, external services, local network access, or CI-only constraints.
-- If at least two prior merged PRs from this prompt removed the same flaw, cite them and prefer one structural fix that retires the class over another isolated deletion. Do not create a shared helper merely to centralize a low-value assertion.
-- Preserve meaningful app behavior coverage, not dependency or text-restatement assertions for their own sake. If app production lines or branches would lose real app behavior coverage, rewrite a smaller behavior assertion. Record exact focused-test evidence. Where the change affects an owned coverage rule, collect the area's full LCOV and run `./ci/coverage-artifacts.sh area-check` with the relevant area and base/head refs.
-- For hard-skipped tests, document why they do not execute in normal CI before deleting them.
-- For active Vitest/API tests, collect before/after coverage evidence from the owning suite. Do not invent a local sparse-patch preview; area patch coverage uses the full-LCOV `area-check` contract above.
-- For Playwright-only cleanup, run the relevant Playwright spec and `pnpm run no-mistakes` when selector coverage may be affected.
-- In the PR body, include the coverage proof used to decide the deletion was safe, when the deletion could plausibly move covered lines, covered branches, or patch coverage. When the deletion touches no instrumented production lines (a test-only tautology or duplication with no production import), state that in one line instead of omitting the section.
-- For timing and runner work, see [vitest.md](vitest.md) and [playwright.md](playwright.md); fixture and case reduction belongs here.
+Unit: one Vitest project or test folder.
+
+Load `test-authoring` and `testing-rules`, and apply the [Test Value and Safe Reduction](../../development/reference-tests-value-and-reduction.md) gate. Focus: deletion and fixture reduction only. Flakiness and speed belong to [vitest.md](vitest.md) and [playwright.md](playwright.md); replacing mocks with real dependencies belongs to [backend-real-tests.md](backend-real-tests.md).
+
+- Repo-specific targets: tests of dependency semantics (including our own packages, PostgreSQL, Valkey), and tests that match expected strings in source, SQL, workflow, or YAML text (a real static invariant goes in its owning no-mistakes or vouchington-tooling rule).
+- Do not target credentialed or provider-backed tests merely because they skip without secrets.
+- If two or more prior merged PRs from this prompt removed the same flaw, cite them and prefer one structural fix over another deletion.
+- Coverage proof: when the deletion could move covered lines, branches, or patch coverage, collect the area's full LCOV and run `./ci/coverage-artifacts.sh area-check`; otherwise say in one line that it touches no instrumented production lines. Document why hard-skipped tests do not run before deleting them.

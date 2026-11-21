@@ -1,5 +1,5 @@
 // Every id-looking dynamic segment under web/app must be listed here with the reason its entity has
-// no unique natural key to route by (see docs/development/web-agent-rules.md#identifiers).
+// no unique natural key to route by (see web/AGENTS.md#identifiers).
 // Keys are route patterns up to and including the segment, with route groups removed.
 const SLUG_OR_ID =
   'slug-first param (the name is legacy); the id is only the fallback for a missing slug'

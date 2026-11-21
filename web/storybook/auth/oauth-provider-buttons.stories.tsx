@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { expect, within } from 'storybook/test'
+import { FacebookUnavailableButton } from '@/components/auth/facebook-unavailable-button'
 import {
   AppleLoginButton,
   FacebookLoginButton,
@@ -65,6 +66,20 @@ export const FacebookUnavailable: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const facebook = await canvas.findByRole('button', {
+      name: 'Continue with Facebook (unavailable)',
+    })
+    await expect(facebook).toHaveAttribute('aria-disabled', 'true')
+  },
+}
+
+export const FacebookUnavailableButtonOnly: Story = {
+  render: () => (
+    <StoryFrame width='max-w-sm'>
+      <FacebookUnavailableButton />
+    </StoryFrame>
+  ),
+  play: async ({ canvasElement }) => {
+    const facebook = await within(canvasElement).findByRole('button', {
       name: 'Continue with Facebook (unavailable)',
     })
     await expect(facebook).toHaveAttribute('aria-disabled', 'true')

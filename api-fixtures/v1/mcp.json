@@ -439,7 +439,7 @@
                                 "$ref": "#/$defs/S2"
                               },
                               "minItems": 1,
-                              "maxItems": 25
+                              "maxItems": 100
                             }
                           },
                           "required": ["user_ids"],
@@ -11544,7 +11544,7 @@
                                 "description": "User id or username"
                               },
                               "minItems": 1,
-                              "maxItems": 100,
+                              "maxItems": 500,
                               "uniqueItems": true
                             }
                           },
@@ -13282,7 +13282,7 @@
                                 "description": "User id or username"
                               },
                               "minItems": 1,
-                              "maxItems": 100,
+                              "maxItems": 500,
                               "uniqueItems": true
                             }
                           },

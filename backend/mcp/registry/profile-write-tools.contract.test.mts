@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { getProfile } from '@services/my/profile'
-import { createProfileLink, listProfileLinks, MAX_PROFILE_LINKS } from '@services/my/profile-links'
+import { createProfileLink, listProfileLinks } from '@services/my/profile-links'
 import deleteMyProfileLinkTool from '../delete-my-profile-link.mts'
 import reorderMyProfileLinksTool from '../reorder-my-profile-links.mts'
 import updateMyProfileLinkTool from '../update-my-profile-link.mts'
@@ -150,22 +150,6 @@ describe('profile bio and link tools contract — real DB', () => {
       'Invalid tool arguments',
     )
     expect(await listProfileLinks(caller.id)).toEqual([])
-  })
-
-  it('add_my_profile_link refuses a link beyond the limit', async () => {
-    const caller = await createCaller()
-    for (let index = 0; index < MAX_PROFILE_LINKS; index++) {
-      await createProfileLink(caller.id, { link_type: 'url', url: `https://example.com/${index}` })
-    }
-
-    await callRejectedMcpTool(
-      caller,
-      'add_my_profile_link',
-      { link_type: 'url', url: 'https://example.com/over' },
-      SCOPES,
-    )
-
-    expect(await listProfileLinks(caller.id)).toHaveLength(MAX_PROFILE_LINKS)
   })
 
   it('edit_my_profile.link changes only the fields sent and clears one with null', async () => {

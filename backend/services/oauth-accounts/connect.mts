@@ -99,10 +99,10 @@ export async function lockOAuthAccountConnectionUser(
   query: TransactionQuery,
   userId: string,
 ): Promise<LockedOAuthAccountConnectionUser> {
-  // Deletion takes this advisory lock before the user row; keep the same lock order.
+  // `FOR NO KEY UPDATE` on the users row: it is written in this transaction, and deletion waits for it.
   try {
     await query(
-      '/* lockOAuthAccountConnectionUser */ SELECT fn_lock_active_user_for_mutation($1)',
+      '/* lockOAuthAccountConnectionUser */ SELECT fn_lock_active_user_for_mutation($1, TRUE)',
       [userId],
     )
   } catch (err) {
@@ -110,9 +110,6 @@ export async function lockOAuthAccountConnectionUser(
       throw createHttpError(404, 'User not found', { cause: err })
     throw err
   }
-  await query('/* lockOAuthAccountConnectionUserRow */ SELECT id FROM users WHERE id = $1', [
-    userId,
-  ])
   return Object.freeze({ [lockedConnectionUser]: true as const, query, userId })
 }
 

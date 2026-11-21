@@ -7,9 +7,9 @@ The normalized catalog is hand-maintained through `pnpm run localization:catalog
 - **Route selector map.** The `--check` form of `route-selector-map.mts` fails when a route, its imports, shared chrome, or a web alias changes membership without regenerated artifacts; see the [static-analysis guide](quality/static-code-analysis/README.md#web-route-localization-map). Translation-text edits that leave aliases and membership unchanged need no local graph command. When adding web copy, run `node ci/check-live-web-route-localization.mts` before pushing: selector-map checks prove route membership, while this live check verifies the selected copy resolves in every supported locale.
 - **Native resources.** The manifest tracks adopted product copy and pending native adoption, with a matching claim for every reference; generated `.__plural.*`/`.__select.*` variants normalize to their descriptor leaf. `pnpm run native-localization:check` validates the producer catalog in CI. Generate or check native output only from the native-client checkout, passing both absolute roots to `node dev/native-localization.mts` (`--output-root`, `--consumer-root`, and `--check`).
 
-Pending claims let additive producer copy land before native screens adopt it, without hiding
-unreferenced copy from maintenance. Breaking contract changes still require coordinated producer
-and client adoption. The [scheduled adoption reconciliation](../prompts/scheduled/native-pending-adoption.md)
+Pending claims let producer copy land before native screens adopt it, without hiding
+unreferenced copy from maintenance. Producer changes never wait on client adoption; they stay
+backward compatible with released clients instead. The [scheduled adoption reconciliation](../prompts/scheduled/native-pending-adoption.md)
 retires pending metadata after verified client use and tracks older adoption gaps rather than
 deleting copy. This maintenance does not add a required stale-flag check or block already adopted
 copy while its pending metadata remains.

@@ -11,9 +11,9 @@ import {
   updateProfileLink,
   deleteProfileLink,
   reorderProfileLinks,
-  MAX_PROFILE_LINKS,
   type ProfileLinkType,
 } from '@services/my/profile-links'
+import type { USER_PROFILE_LINKS_MAX } from '@services/user-product-limits'
 
 type UpdateProfileRequest = { markdown: string }
 
@@ -28,7 +28,7 @@ type CreateProfileLinkRequest = {
 type UpdateProfileLinkRequest = Omit<CreateProfileLinkRequest, 'link_type'>
 
 type ReorderProfileLinksRequest = {
-  ids: ApiArrayContract<ApiUuidContract, 1, typeof MAX_PROFILE_LINKS, true>
+  ids: ApiArrayContract<ApiUuidContract, 1, typeof USER_PROFILE_LINKS_MAX, true>
 }
 
 // GET /api/v1/my/profile

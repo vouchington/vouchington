@@ -144,6 +144,7 @@ export function ProviderIcon({ provider, size = 18 }: { provider: OAuthProvider;
       className='inline-flex shrink-0 items-center justify-center'
       style={{ width: size, height: size }}
       aria-hidden='true'
+      data-pw='oauth-provider-icon'
     >
       <Icon />
     </span>

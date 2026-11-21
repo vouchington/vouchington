@@ -1,6 +1,6 @@
 # Tests and Checks
 
-Run the cheap before-push commands in [commit.md](../checklists/commit.md#before-pushing), then push. GitHub Actions is the full gate. See [ci.md](ci.md) for CI workflow, config, and coverage details.
+Run the cheap before-push commands that the `commit-msg` hook prints, then push. GitHub Actions is the full gate. See [ci.md](ci.md) for CI workflow, config, and coverage details.
 
 DB-backed commands need `source .env` after `./dev/initialize`, which writes `.env` but does not export it.
 

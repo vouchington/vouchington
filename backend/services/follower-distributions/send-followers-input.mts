@@ -1,6 +1,6 @@
 import { isUUID } from '@modules/utils'
 import createError from 'http-errors'
-import { MAX_SELECTED_FOLLOWER_DISTRIBUTION_RECIPIENTS } from './types.mts'
+import { getFollowerDistributionRecipientsMax } from '@services/user-product-limits'
 
 export type SendFollowersInput =
   | { audience: 'all_followers' }
@@ -28,11 +28,9 @@ export function parseSendFollowersInput(body: unknown): SendFollowersInput {
       throw createError(400, 'recipient_user_ids must include at least one follower')
     }
 
-    if (input.recipient_user_ids.length > MAX_SELECTED_FOLLOWER_DISTRIBUTION_RECIPIENTS) {
-      throw createError(
-        400,
-        `recipient_user_ids can include at most ${MAX_SELECTED_FOLLOWER_DISTRIBUTION_RECIPIENTS} followers`,
-      )
+    const maxRecipients = getFollowerDistributionRecipientsMax()
+    if (input.recipient_user_ids.length > maxRecipients) {
+      throw createError(400, `recipient_user_ids can include at most ${maxRecipients} followers`)
     }
 
     const recipientUserIds = input.recipient_user_ids.filter(

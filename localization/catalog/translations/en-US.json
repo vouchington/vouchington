@@ -3251,7 +3251,7 @@
 {"id":"copy.extracted.shared.useFollowerShareActions.failedToShareWithFollowers_272673f8","value":"Failed to share with followers"},
 {"id":"copy.extracted.shared.useFollowerShareActions.sendQueued_11badc4f","value":"Send queued"},
 {"id":"copy.extracted.shared.useFollowerShareActions.shareQueued_d32e8704","value":"Share queued"},
-{"id":"copy.extracted.shared.useFollowerShareActions.youCanSelectUpTo100_ca2448f2","value":"You can select up to 100 followers"},
+{"id":"copy.extracted.shared.useFollowerShareActions.youCanSelectUpTo100_ca2448f2","value":"You can select up to {max} followers"},
 {"id":"copy.extracted.shared.usernameRequiredDialog.aUsernameIsRequiredToPost_d06365c0","value":"A username is required to post. Choose a username to publish your post."},
 {"id":"copy.extracted.shared.usernameRequiredDialog.createAUsernameToContinuePosting_3b0d48d5","value":"Create a username to continue posting"},
 {"id":"copy.extracted.shared.usernameRequiredDialog.createUsernamePost_7d56bfee","value":"Create username & post"},

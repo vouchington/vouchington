@@ -1,4 +1,5 @@
 {
   "copyright_claimant_targets_max": 20,
+  "follower_distribution_recipients_max": 100,
   "post_images_max": 20
 }

@@ -16,7 +16,7 @@ import {
 import { processBackfillReportJudgements } from './processors/process-backfill-report-judgements.mts'
 import { processAutoDispatchJudgement } from './processors/process-auto-dispatch-judgement.mts'
 import { processReconcileAutoDispatchJudgements } from './processors/process-reconcile-auto-dispatch-judgements.mts'
-import { processReconcileCopyrightAgentDispatches } from './processors/process-reconcile-copyright-agent-dispatches.mts'
+import { copyrightAgentDispatchJobProcessors } from './processors/process-reconcile-copyright-agent-dispatches.mts'
 import { processReconcileClassifierRuns } from './processors/process-reconcile-classifier-runs.mts'
 import {
   processExpireStuckAppealResolutionRuns,
@@ -45,7 +45,7 @@ const processors = {
   'recover-background-response': () => {
     throw new Error('Response recovery must settle before processor dispatch')
   },
-  'reconcile-copyright-agent-dispatches': job => processReconcileCopyrightAgentDispatches(job.data),
+  ...copyrightAgentDispatchJobProcessors,
   'reconcile-ai-agent-failures': () => processReconcileAIAgentFailures(),
   'expire-stuck-appeal-resolution-runs': () => processExpireStuckAppealResolutionRuns(),
   'expire-stuck-dispute-resolution-runs': () => processExpireStuckDisputeResolutionRuns(),

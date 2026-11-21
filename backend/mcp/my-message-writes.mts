@@ -22,6 +22,7 @@ import {
   validated,
   readMessageBody,
 } from './my-message-tool.mts'
+import { MESSAGE_RECIPIENTS_MAX } from '@services/user-product-limits'
 import { userReferenceSchema } from './entity-reference-schema.mts'
 import {
   canonicalEntityIds,
@@ -68,7 +69,12 @@ export const manageMyMessagesGroup = {
             {
               type: 'object',
               properties: {
-                user_ids: { type: 'array', items: userReferenceSchema, minItems: 1, maxItems: 25 },
+                user_ids: {
+                  type: 'array',
+                  items: userReferenceSchema,
+                  minItems: 1,
+                  maxItems: MESSAGE_RECIPIENTS_MAX,
+                },
               },
               required: ['user_ids'],
               additionalProperties: false,

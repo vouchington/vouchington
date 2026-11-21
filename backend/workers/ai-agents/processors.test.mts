@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import type { NamedQueueJob } from '@data-stores/valkey-glide-mq'
 import type { AIAgentJobPayloads } from '@queues/ai-agents/types'
+import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { processAIAgent } from './processors.mts'
 
 function runProcessAIAgent(job: unknown) {
@@ -100,5 +101,15 @@ describe('processAIAgent routing', () => {
         data: { submission_id: missing },
       }),
     ).resolves.toEqual({ success: true })
+  })
+
+  describe('with new copyright intake switched off', () => {
+    useCopyrightIntakeEnvironment({ enabled: false })
+
+    it('routes a copyright dispatch stage job to its stage, which holds back new intake', async () => {
+      await expect(
+        runProcessAIAgent({ name: 'reconcile-copyright-email-dispatches', data: {} }),
+      ).resolves.toEqual({ hasMore: false })
+    })
   })
 })

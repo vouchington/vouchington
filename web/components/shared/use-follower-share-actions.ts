@@ -17,6 +17,7 @@ import {
 } from './follower-share-actions-utils'
 import type { FollowerDistributionSendBody } from '@/lib/api/client/follower-distributions'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { useContentLimits } from '@/hooks/use-content-limits'
 
 interface UseFollowerShareActionsOptions {
   entityType: 'post' | 'rss_feed_item'
@@ -30,6 +31,7 @@ export const useFollowerShareActions = ({
   currentUserId,
 }: UseFollowerShareActionsOptions) => {
   const t = useTranslations()
+  const maxSelectedFollowers = useContentLimits()?.follower_distribution_recipients_max
   const [isSharePending, setIsSharePending] = useState(false)
   const [isSendPending, setIsSendPending] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -133,9 +135,11 @@ export const useFollowerShareActions = ({
   }
 
   function toggleFollowerSelection(follower: PublicUser) {
-    const next = toggleSelection(selectedFollowers, follower)
+    const next = toggleSelection(selectedFollowers, follower, maxSelectedFollowers)
     if (next === selectedFollowers) {
-      const message = t('extracted.shared.useFollowerShareActions.youCanSelectUpTo100_ca2448f2')
+      const message = t('extracted.shared.useFollowerShareActions.youCanSelectUpTo100_ca2448f2', {
+        max: maxSelectedFollowers,
+      })
       onError(new Error(message), {
         fallback: message,
         skipSentry: true,

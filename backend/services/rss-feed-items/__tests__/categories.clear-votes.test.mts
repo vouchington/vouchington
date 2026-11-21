@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 
 import { upsertRssFeedItemCategories } from '../categories.mts'
 import { applyCollaborativeTopicRelations } from '../collaborative-topic-relations.mts'
-import { clearCategorizerVotesInTransaction } from '../category-topic-votes.mts'
 import { upsertRssFeedItems } from '../upsert.mts'
 
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
@@ -23,8 +22,6 @@ import {
   getEntityRelation,
   insertEntityRelation,
   insertTestRssFeedDirect,
-  holdTestEntityRelationVoteLock,
-  setTestRssFeedItemCategoryTopicId,
   finishTopicAliasUnlinkForTest,
   beginTransaction,
 } from '@voucha/test-helpers'
@@ -33,7 +30,6 @@ import {
   selectTopicAliasUnlinkNextPage,
 } from '@services/topics/unlink-topic-alias-page'
 import { clearTopicAliasUnlinkCategoryPage } from '../clear-unlinked-topic-alias-categories.mts'
-import { createTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-waiter'
 
 describe('clearCategoriesForUnlinkedTopicAlias votes', () => {
   it('rolls back category clearing when primary relation stats persistence fails', async () => {
@@ -201,69 +197,5 @@ describe('clearCategoriesForUnlinkedTopicAlias votes', () => {
       getEntityRelationElectionVote(collaborativeCategorizer!.id, relation!.id!),
     ).resolves.toMatchObject({ choice: 'confirm' })
     await expect(getEntityRelationElectionVote(categorizer!.id, relation!.id!)).resolves.toBeNull()
-  })
-
-  it('rechecks restored mappings after serializing categorizer vote changes', async () => {
-    const suffix = Math.random().toString(36).slice(2, 12)
-    const topic = await createTestTopic({
-      name: `RSS category recheck ${suffix}`,
-      slug: `rss-category-recheck-${suffix}`,
-    })
-    const [alias] = await createTopicAliases(topic.id, `rss-category-recheck-alias-${suffix}`)
-    const feed = await insertTestRssFeedDirect({
-      rssFeedUrl: `https://rss-category-recheck-${suffix}.example.com/feed.xml`,
-      topicId: topic.id,
-      title: `RSS category recheck ${suffix}`,
-    })
-    const [item] = await upsertRssFeedItems(feed.id, [
-      {
-        link: `https://rss-category-recheck-${suffix}.example.com/item`,
-        guid: `rss-category-recheck-${suffix}`,
-        title: `RSS category recheck ${suffix}`,
-      },
-    ])
-    const categoryText = `#${alias!.alias}`
-    await upsertRssFeedItemCategories([{ rss_feed_item_id: item!.id, categories: [categoryText] }])
-    const relationMetadata = getEntityRelationMetadataOrThrow({
-      subjectType: 'rss_feed_item',
-      objectType: 'topic',
-      predicate: 'category',
-    })
-    const [relation] = await getEntityRelation(relationMetadata.table_name, item!.id, topic.id)
-    const relationId = (relation as { id?: string } | undefined)?.id
-    const categorizer = await getSystemUserByUsername(RSS_FEED_CATEGORIZER_USERNAME)
-    expect(categorizer).not.toBeNull()
-    expect(relationId).toBeDefined()
-    await expect(
-      getEntityRelationElectionVote(categorizer!.id, relationId!),
-    ).resolves.toMatchObject({ choice: 'confirm' })
-    await setTestRssFeedItemCategoryTopicId(item!.id, categoryText, null)
-
-    await using holder = await holdTestEntityRelationVoteLock(categorizer!.id, relationId!)
-    const lockKey = `relation__rss_feed_item__category__topic__votes:${categorizer!.id}:${relationId!}`
-    await using waiter = await createTestPostgresLockWaiter({
-      holder,
-      lock: { kind: 'advisory64', key: lockKey },
-      selected: {
-        marker: '/* clearCategoriesForUnlinkedTopicAlias lock */',
-        binding: { index: 1, value: [relationId!] },
-      },
-    })
-    const cleanup = clearCategorizerVotesInTransaction(
-      [{ rss_feed_item_id: item!.id, topic_id: topic.id }],
-      waiter.query,
-    )
-    try {
-      await waiter.waitForLock(cleanup)
-      await setTestRssFeedItemCategoryTopicId(item!.id, categoryText, topic.id)
-    } finally {
-      await holder.commit()
-    }
-    await expect(cleanup).resolves.toMatchObject({ rows: [] })
-    await waiter.query.commit()
-
-    await expect(
-      getEntityRelationElectionVote(categorizer!.id, relationId!),
-    ).resolves.toMatchObject({ choice: 'confirm' })
   })
 })

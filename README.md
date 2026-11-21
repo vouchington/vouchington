@@ -28,7 +28,6 @@ Voucha is a monorepo of several workspaces.
 - [System Dependencies](docs/development/system-dependencies.md) — Voucha's host capability contract and canonical host-setup owner
 - [Getting Started](docs/development/README.md) — Local development environment setup
 - [Local Site Testing Skill](.agents/skills/local-site-testing/SKILL.md) — Agent guide for full-site startup and HTTPS browser validation
-- [Codex Configuration](.codex/README.md) — Codex plugin provisioning and repo-scoped configuration
 - [Monorepo Guide](docs/development/MONOREPO.md) — Monorepo structure and conventions
 
 ## Contributing

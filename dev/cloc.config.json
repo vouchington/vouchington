@@ -58,8 +58,6 @@
     ".husky/",
     ".agents/",
     ".codex/",
-    ".grok/",
-    ".opencode/",
     "ast-grep-rules/",
     "ci/",
     "dev/",

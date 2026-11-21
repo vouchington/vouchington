@@ -18289,7 +18289,7 @@
                 "format": "uuid",
                 "type": "string"
               },
-              "maxItems": 25,
+              "maxItems": 100,
               "minItems": 1,
               "type": "array",
               "uniqueItems": false
@@ -18553,7 +18553,7 @@
           "items": {
             "type": "string"
           },
-          "maxItems": 32,
+          "maxItems": 64,
           "minItems": 1,
           "type": "array",
           "uniqueItems": true
@@ -33198,7 +33198,7 @@
             "format": "uuid",
             "type": "string"
           },
-          "maxItems": 20,
+          "maxItems": 50,
           "minItems": 1,
           "type": "array",
           "uniqueItems": true
@@ -35041,7 +35041,7 @@
                 "format": "uuid",
                 "type": "string"
               },
-              "maxItems": 100,
+              "maxItems": 500,
               "minItems": 1,
               "type": "array",
               "uniqueItems": true

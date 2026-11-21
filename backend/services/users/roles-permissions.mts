@@ -18,7 +18,7 @@ export const addUserRole = async (userId: string, role: string) => {
 async function grantUserRole(userId: string, role: string) {
   // Only the administrator grant reads MFA state that factor removal can invalidate.
   await using query = await beginTransaction({ serializable: role === 'administrator' })
-  await query(sql`/* lockRoleGrantUser */ SELECT fn_lock_active_user_for_mutation(${userId})`)
+  await query(sql`/* lockRoleGrantUser */ SELECT fn_lock_active_user_for_mutation(${userId}, TRUE)`)
   const { rows } = await query<{
     platform_account_kind: 'official' | 'system' | null
   }>(sql`/* lockRoleGrantUser */

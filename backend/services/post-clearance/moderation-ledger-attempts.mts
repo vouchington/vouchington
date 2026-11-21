@@ -1,8 +1,8 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import onError from '@modules/on-error'
-import { enqueueCreatePostModeration } from '@queues/openai-moderation/enqueues'
-import { enqueueSpamDetection } from '@queues/moderation-signals/enqueues'
+import { enqueueBulkCreatePostModeration } from '@queues/openai-moderation/enqueues'
+import { enqueueBulkSpamDetection } from '@queues/moderation-signals/enqueues'
 import {
   type AutomatedPostModerationSource,
   AUTOMATED_POST_MODERATION_SOURCES,
@@ -31,27 +31,30 @@ export async function beginPostModerationAttempt(
 ): Promise<PostModerationAttempt | null> {
   const attempt = await loadCommittedPostModerationAttempt(postId, source)
   if (!attempt) return null
-  await enqueueCommittedPostModerationAttempt(attempt.version_id, source)
+  await enqueueCommittedPostModerationAttempts([{ versionId: attempt.version_id, source }])
   return attempt
 }
 
 /** Commits the current version and both automated attempts, then enqueues one job per source. */
 export async function admitAutomatedPostModeration(postId: string): Promise<void> {
   const version = await commitCurrentPostModerationVersion(postId)
-  await Promise.all(
-    AUTOMATED_POST_MODERATION_SOURCES.map(source =>
-      enqueueCommittedPostModerationAttempt(version.id, source),
-    ),
+  await enqueueCommittedPostModerationAttempts(
+    AUTOMATED_POST_MODERATION_SOURCES.map(source => ({ versionId: version.id, source })),
   )
 }
 
-/** Re-enqueues a committed version. The sweep uses this after a lost enqueue; failures retry the sweep. */
-export function enqueuePostModerationRecovery(
-  versionId: string,
-  source: AutomatedPostModerationSource,
-): Promise<unknown> {
-  if (source === 'openai_omni') return enqueueCreatePostModeration(versionId)
-  return enqueueSpamDetection(versionId)
+type PostModerationRecovery = { versionId: string; source: AutomatedPostModerationSource }
+
+/** Re-enqueues committed versions, one bulk add per source. The sweep uses this after a lost enqueue; failures retry the sweep. */
+export async function enqueueBulkPostModerationRecovery(
+  recoveries: readonly PostModerationRecovery[],
+): Promise<void> {
+  const versionIdsOf = (source: AutomatedPostModerationSource) =>
+    recoveries.flatMap(recovery => (recovery.source === source ? [recovery.versionId] : []))
+  await Promise.all([
+    enqueueBulkCreatePostModeration(versionIdsOf('openai_omni')),
+    enqueueBulkSpamDetection(versionIdsOf('spam_detection')),
+  ])
 }
 
 /**
@@ -156,12 +159,11 @@ async function completeAttemptRow(
   return rows.length > 0
 }
 
-async function enqueueCommittedPostModerationAttempt(
-  versionId: string,
-  source: AutomatedPostModerationSource,
+async function enqueueCommittedPostModerationAttempts(
+  recoveries: readonly PostModerationRecovery[],
 ): Promise<void> {
   try {
-    await enqueuePostModerationRecovery(versionId, source)
+    await enqueueBulkPostModerationRecovery(recoveries)
   } catch (err) {
     onError(
       err instanceof Error ? err : new Error('Post moderation enqueue failed', { cause: err }),

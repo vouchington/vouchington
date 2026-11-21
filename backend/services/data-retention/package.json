@@ -39,6 +39,7 @@
     "@services/post-clearance": "workspace:^",
     "@services/post-publication": "workspace:^",
     "@services/urls": "workspace:^",
+    "@services/user-deletions": "workspace:^",
     "@services/user-import-export": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",
@@ -53,7 +54,6 @@
     "@services/growth-metrics": "workspace:^",
     "@services/notifications": "workspace:^",
     "@services/ses-bounce-events": "workspace:^",
-    "@services/user-deletions": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }

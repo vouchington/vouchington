@@ -24,7 +24,18 @@ type Props = OAuthButtonProps & {
   }
 }
 
-export function OAuthLoginButton({
+export function OAuthLoginButton(props: Props) {
+  return (
+    <div
+      className='contents'
+      data-pw='oauth-login-button'
+    >
+      <OAuthLoginButtonContent {...props} />
+    </div>
+  )
+}
+
+function OAuthLoginButtonContent({
   provider,
   onToken,
   disabled,
