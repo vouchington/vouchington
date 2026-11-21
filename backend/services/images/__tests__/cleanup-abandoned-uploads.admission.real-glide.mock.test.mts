@@ -41,7 +41,9 @@ describe('abandoned upload recovery admission', () => {
     context.onTestFinished(
       overrideDynamicConfigFieldsForTest(imagesWorkConfig, { cleanup_batch_size: 1 }),
     )
-    const add = vi.spyOn(imageUploadsQueue, 'add').mockRejectedValueOnce(new Error('queue closed'))
+    const add = vi
+      .spyOn(imageUploadsQueue, 'addBulk')
+      .mockRejectedValueOnce(new Error('queue closed'))
     await expect(cleanupAbandonedUploads(sweep, save)).rejects.toThrow(
       'Upload cleanup page effects failed',
     )
