@@ -36,7 +36,7 @@ async function finalizeUserDeletionAttempt(
   request: UserDeletionRequest,
   query: TransactionQuery,
 ): Promise<UserDeletionBatchResult> {
-  await lockUserAndAuthor(request.userId, query)
+  await lockUserRow(request.userId, query)
   if (!(await canCompleteUserDeletion(request, query))) return retryFinalization(request, query)
   if (await purgeCompletedUserDeletionAuditPage(request, query)) {
     return retryFinalization(request, query)
@@ -45,12 +45,13 @@ async function finalizeUserDeletionAttempt(
   return retryFinalization(request, query)
 }
 
-async function lockUserAndAuthor(userId: string, query: TransactionQuery) {
+/**
+ * Locks the users row `FOR NO KEY UPDATE` before the "no remaining owned data" check. Writers
+ * fence with `FOR SHARE` on this row, so one that started earlier commits first and is counted.
+ */
+async function lockUserRow(userId: string, query: TransactionQuery) {
   await query(sql`/* advanceUserDeletionAttempt:lockUser */
-    SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))
-  `)
-  await query(sql`/* advanceUserDeletionAttempt:lockAuthor */
-    SELECT pg_advisory_xact_lock(hashtextextended(${`author:${userId}`}, 0))
+    SELECT id FROM users WHERE id = ${userId} FOR NO KEY UPDATE
   `)
 }
 

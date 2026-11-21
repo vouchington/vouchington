@@ -3,7 +3,10 @@ import { assertDelegatedPostActorActive } from './authorization.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import { lockDelegatedPostThread } from './delegated-write-locks.mts'
 import sql from 'sql-template-strings'
-import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
+import {
+  lockActiveUserSubjectsForMutation,
+  lockUsersForShare,
+} from '@services/user-deletions/active-user-mutation-lock'
 import type { UpdatePostChanges } from './types.mts'
 import type { PostHashtagIntent } from './update/hashtag-intent.mts'
 
@@ -20,7 +23,7 @@ function postUpdateMayAffectCategories(
   )
 }
 
-/** Locks the editor and owner fences in stable order; only the editor must still be active. */
+/** Locks the editor and owner users rows in id order; only the editor must still be active. */
 async function lockPostCategoryMutationUsers(
   query: TransactionQuery,
   postId: string,
@@ -35,18 +38,9 @@ async function lockPostCategoryMutationUsers(
   const userIds = [...new Set([editorId, ...(ownerId ? [ownerId] : [])])].toSorted((a, b) =>
     a.localeCompare(b),
   )
-  await query(sql`/* lockPostCategoryMutationUsers */
-    SELECT pg_advisory_xact_lock(hashtextextended(ordered.user_id::text, 0))
-    FROM (
-      SELECT unnest(${userIds}::uuid[]) AS user_id
-      ORDER BY user_id
-    ) ordered
-  `)
+  const activeUserIds = await lockUsersForShare(query, userIds)
   await lockActiveUserSubjectsForMutation(query, [editorId])
-  if (!ownerId) return null
-  const owner = await query<{ id: string }>(sql`/* postCategoryOwner.activeFence */
-    SELECT id FROM users WHERE id = ${ownerId} AND deleted_at IS NULL`)
-  return owner.rows[0]?.id ?? null
+  return ownerId && activeUserIds.has(ownerId) ? ownerId : null
 }
 
 export async function lockPostUpdateMutationScopes(

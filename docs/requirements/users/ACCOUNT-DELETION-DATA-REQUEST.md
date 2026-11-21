@@ -96,7 +96,7 @@ continue to block final account deletion and are never eligible for this cleanup
    archive after its request is expired.
 6. Stripe customers and ready export objects are sanitized/deleted from durable work records, and
    the Cloudflare user cache tag is purged.
-7. A final transaction acquires the user and author lifecycle locks, verifies every phase is empty,
+7. A final transaction locks the `users` row `FOR NO KEY UPDATE` (writers hold it `FOR SHARE`), verifies every phase is empty,
    performs an independent residual-data sweep across deletion-owned tables and OAuth credentials, and sets
    `user_deletion_requests.completed_at` only when both checks are empty. It also clears the copied
    prior username, clears completed provider work keys to `NULL` while retaining non-identifying
@@ -121,7 +121,7 @@ alike, in any of these cases:
   [copyright notices](../moderation/COPYRIGHT-NOTICES.md)); or
 - an administrator has an open **legal-process preservation hold** on the account (below).
 
-The check runs in the request transaction under the user and author lifecycle locks, before the
+The check runs in the request transaction under the `users` row lock, before the
 privacy fence, so a refused request changes nothing. The single message does not say which case
 applies, so it does not tell the account holder that legal process exists. `deleteUser` is the only
 path that sets `deleted_at`. The immediate erasure phases act only on accounts that are already

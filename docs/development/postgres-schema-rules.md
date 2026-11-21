@@ -278,7 +278,11 @@ correctness, and the prohibition on periodic recount remain unenforced.
 ## No unnecessary locks; caps and guards are best effort
 
 Lock only to stop a concurrent write corrupting data the transaction writes: row locks on written
-rows only, no advisory locks. Per-user and per-entity caps and "last X" guards check a capped count
+rows only, no advisory locks, except for privacy, legal and irreversible-side-effect invariants
+(user deletion, legal holds, external deletes): those may lock when the race is rare, preferably
+`FOR SHARE`/`FOR UPDATE` on the aggregate-root row (`users`) even when it is not written; advisory
+only when no row exists or the critical section spans transactions or external I/O. The simplest
+correct mechanism wins. Per-user and per-entity caps and "last X" guards check a capped count
 and then write, with no lock, counter row, slot table, or admission-only constraint; overshoot under
 a true race is accepted. Removing a lock deletes it rather than swapping in another serializer. A
 rare race that must not break an invariant (write skew, such as an administrator keeping MFA) runs

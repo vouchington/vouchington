@@ -25,11 +25,18 @@ export class TestUserDeletionWriterAborted extends Error {
 
 export async function startPausedTestUserDeletionWriter(
   writeWithinTransaction: (query: TransactionQuery) => Promise<void>,
-): Promise<{ abort(): void; release(): void; completed: Promise<void> }> {
+): Promise<{
+  abort(): void
+  release(): void
+  completed: Promise<void>
+  processId: number
+}> {
+  let processId: number | undefined
   const inserted = Promise.withResolvers<void>()
   const decision = Promise.withResolvers<'abort' | 'commit'>()
   const completed = (async () => {
     await using query = await beginTransaction()
+    processId = await getTestPostgresBackendProcessId(query)
     await writeWithinTransaction(query)
     inserted.resolve()
     if ((await decision.promise) === 'abort') throw new TestUserDeletionWriterAborted()
@@ -37,30 +44,25 @@ export async function startPausedTestUserDeletionWriter(
   })()
   void completed.catch(inserted.reject)
   await inserted.promise
+  if (processId === undefined) throw new Error('Test writer did not acquire a PostgreSQL backend')
   return {
+    processId,
     abort: () => decision.resolve('abort'),
     release: () => decision.resolve('commit'),
     completed,
   }
 }
 
-/** Holds the production user-lifecycle lock across an uncommitted soft deletion. */
+/** Holds the users row lock across an uncommitted soft deletion. */
 export async function startPausedTestUserSoftDeletion(
   userId: string,
 ): Promise<{ completed: Promise<void>; holderProcessId: number; release(): void }> {
-  let holderProcessId: number | undefined
   const paused = await startPausedTestUserDeletionWriter(async query => {
-    await query(sql`/* startPausedTestUserSoftDeletion:lock */
-      SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))
-    `)
-    holderProcessId = await getTestPostgresBackendProcessId(query)
     await query(sql`/* startPausedTestUserSoftDeletion:delete */
       UPDATE users SET deleted_at = CURRENT_TIMESTAMP WHERE id = ${userId}
     `)
   })
-  if (holderProcessId === undefined)
-    throw new Error('Test deletion did not acquire a PostgreSQL backend')
-  return { ...paused, holderProcessId }
+  return { ...paused, holderProcessId: paused.processId }
 }
 
 export async function countTestUserDeletionEntityRelationVotes(userId: string): Promise<number> {

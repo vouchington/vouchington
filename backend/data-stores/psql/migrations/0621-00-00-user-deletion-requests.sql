@@ -4,11 +4,16 @@ CREATE OR REPLACE FUNCTION fn_lock_active_user_for_mutation(target_user_id UUID)
 RETURNS VOID
 LANGUAGE plpgsql
 AS $$
+DECLARE
+  user_deleted_at TIMESTAMPTZ;
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM users WHERE id = target_user_id) THEN
+  -- Lock by id only and branch on the locked row version: a writer that waited on deletion must
+  -- see the committed deleted_at, which a filtered or EXISTS-wrapped lock would not re-evaluate.
+  SELECT deleted_at INTO user_deleted_at FROM users WHERE id = target_user_id FOR SHARE;
+  IF NOT FOUND THEN
     RAISE EXCEPTION 'user % does not exist', target_user_id
       USING ERRCODE = 'no_data_found';
-  ELSIF NOT EXISTS (SELECT 1 FROM users WHERE id = target_user_id AND deleted_at IS NULL) THEN
+  ELSIF user_deleted_at IS NOT NULL THEN
     RAISE EXCEPTION 'user % cannot own new data after deletion', target_user_id
       USING ERRCODE = 'check_violation';
   END IF;
@@ -16,7 +21,7 @@ END;
 $$;
 
 COMMENT ON FUNCTION fn_lock_active_user_for_mutation(UUID) IS
-  'Rejects user-owned writes after the privacy fence.';
+  'Rejects user-owned writes after the privacy fence; holds FOR SHARE on the users row so deletion (FOR NO KEY UPDATE) waits for in-flight writers.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_deletion_requests (
