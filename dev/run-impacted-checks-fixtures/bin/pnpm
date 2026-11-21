@@ -1,0 +1,5 @@
+#!/bin/sh
+# Records each `pnpm exec <tool> ...` call; exits 1 when the tool is named in FAIL_TOOL.
+printf '%s\n' "$*" >> "$PNPM_LOG"
+[ "$2" = "${FAIL_TOOL:-}" ] && exit 1
+exit 0

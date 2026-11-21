@@ -45,7 +45,8 @@ function developerEnv(extra: Record<string, string | undefined> = {}): NodeJS.Pr
 }
 
 function runHook(extra: Record<string, string | undefined> = {}) {
-  return spawnSync('sh', [hookPath], { encoding: 'utf8', env: developerEnv(extra) })
+  // Outside any repository, so the changed-file runner exits 2 and warns instead of linting this checkout.
+  return spawnSync('sh', [hookPath], { cwd: tmpdir(), encoding: 'utf8', env: developerEnv(extra) })
 }
 
 describe('plainForcePushReason', () => {
@@ -87,7 +88,7 @@ describe('pre-push hook', () => {
       GIT_PUSH_COMMAND: 'git push --force-with-lease=origin/feature:abc origin feature',
     })
     expect(lease.status).toBe(0)
-    expect(lease.stderr).toBe('')
+    expect(lease.stderr).not.toContain(PLAIN_FORCE_PUSH_REASON)
   })
 
   it('stays quiet in GitHub Actions', () => {
