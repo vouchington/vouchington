@@ -151,6 +151,8 @@ export async function runModerationTransparencyReleaseScenario(): Promise<void> 
   day.setUTCHours(0, 0, 0, 0)
   registerScenarioContract('moderation-transparency-release', {
     seededRows: await readAgentModerationRetentionSeedCounts(),
+    // An INSERT without RETURNING reports zero root rows; the read side is gated below.
+    allowEmptyResult: true,
     forbidSequentialScans: ['agent_moderations'],
     expectations: [
       { kind: 'usesIndexes', indexes: ['agent_moderations__default_pkey'] },
