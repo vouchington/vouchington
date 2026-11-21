@@ -10,31 +10,24 @@
   the URL-stripped, kind-free `getTopicDisplayTitle`. Identity/input surfaces (autocomplete keys,
   settings defaults, merge confirmation) keep raw names.
 
+Generic React rules: load `react-app-structure`; identifiers and URLs: `http-api-design`.
+
 ## Rendering and routing
 
 - Database lists server-render page one and support cursor continuation.
-- Client components receive display-specific view models, not API response envelopes. Server
-  Components project referenced records before Flight, keeping a `null` failure distinct from an
-  empty array (`CommentTree` is the reference; `PostList` owns browser pagination).
-- `[param]` segments are only for dynamic values; finite topic and post types get explicit route
-  directories.
+- `CommentTree` is the reference for projecting records before Flight; `PostList` owns browser
+  pagination.
 - Entity-scoped admin pages live under entity routes (`/topics/create`), not `/admin/**`, and gate
   with `requireAdmin()`.
-- Logged-out pages fully SSR. Logged-in pages may stream asides but await main content
-  ([Dynamic Rendering](../docs/requirements/navigation/DYNAMIC-RENDERING.md)).
-- Stack async RSC children with `SequentialSuspense`/`SequentialAsideSuspense`, not sibling
-  `<Suspense>` boundaries. `<ScrollToTop />` owns forward-navigation scroll.
+- Rendering modes: [Dynamic Rendering](../docs/requirements/navigation/DYNAMIC-RENDERING.md).
+  Stack async RSC children with `SequentialSuspense`/`SequentialAsideSuspense`.
+  `<ScrollToTop />` owns forward-navigation scroll.
 
 ## Identifiers
 
-- UUIDs never appear as identifiers in routes, visible text, or inputs, not even truncated. Slug
-  or natural-key routes accept a UUID only as a fallback that permanently redirects; in-app links
-  emit the canonical form through canonical URL helpers, never hand-built paths.
 - Add to `web-id-route-segment-allowlist.mts` only for an entity with no unique natural key, and
   label its pages from facts.
-- Missing labels become non-nullable API facts (username, title, slug, name) hydrated per list. A
-  user without a username falls back to display name, then a deleted-user label.
-- Retargeting a link must leave the old route an in-app link, or the old page becomes unreachable.
+- A user without a username falls back to display name, then a deleted-user label.
 
 ## Navigation
 
@@ -42,20 +35,13 @@
 - Cmd+K shortcuts derive from `NAV_INTENTS`; pages without a sidebar entry go in
   `SUPPLEMENTAL_PAGE_SHORTCUTS`.
 - `/my/<entity>/<listType>` bookmark pages render in place, not redirect.
-- Dropdown destinations are links; only actions are buttons.
 
 ## Forms, auth, and errors
 
 - Mutations call client API helpers, never inline `'use server'` proxies.
-- Submit buttons stay disabled after success until navigation or refresh completes. Wrap
-  `router.refresh()` in `startTransition` and include `isPending`. `router.refresh()` does not
-  recreate a promise held in client state and read with `use()`; recreate it on mutation.
-- Polling and scope-switching hooks ignore stale responses, never overlap refreshes, and skip
-  refresh during saves.
 - Failures go through `onError(err, { fallback })`, successes through `onSuccess(message)`; branch
   on precondition codes first.
 - Server components call `getCurrentUser()` (null only for 401); client components use `useAuth()`.
-  `currentUser` never crosses the RSC/client boundary.
 - Signed-out action CTAs link to `/login?next=...`. Contribution-gated create pages render
   `<ContributionGatedCta>` instead of the form.
 - Settings add forms render inline with no Cancel button; single-field autocomplete forms submit on
@@ -63,8 +49,6 @@
 
 ## Components and tests
 
-- React Compiler is enabled: no `useCallback`/`useMemo`/`React.memo` for referential stability
-  alone. Handler-only values belong in `useRef`.
 - Production source uses `data-pw`; `data-testid` is only for Storybook play markers and Vitest
   stubs.
 - Visible counts use the shared locale-aware formatters. List and search pages compose filters

@@ -1,6 +1,6 @@
 # Financial (Stripe) variant
 
-[Back to Durable transition matrix](reference-backend-queues-durable-transition-matrix.md#financial-stripe-variant)
+Extends the transition matrix in the `glide-mq` skill (references/transition-matrix.md).
 
 For Stripe (and any other financial/payment-provider) operation, also fill in:
 

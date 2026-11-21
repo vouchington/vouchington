@@ -22,7 +22,7 @@ truth. Two requirements enforce this.
 - A backfill only counts if its re-enqueue really succeeds. A stable custom `jobId` on a queue with
   numeric retention silently no-ops the re-enqueue once the prior job finished, because the id's
   uniqueness claim outlives the job. Let deduplication collapse in-flight duplicates instead. See
-  [define a replay-safe job](../../checklists/reference-backend-queues-define-a-replay-safe-job.md#define-a-replay-safe-job).
+  the `glide-mq` skill (references/job-design.md).
 - The registry test validates structure, not completeness against the queue list; keeping the
   registry complete is a review responsibility.
 
