@@ -138,12 +138,12 @@ describe('backfill-bloom-filter.generated', () => {
     const originalIsReady = entityCacheBloomFilters.posts.isReady
     entityCacheBloomFilters.posts.isReady = () => Promise.resolve(false)
     const enqueueSpy = vi
-      .spyOn(bloomFilterEnqueues, 'enqueueBackfillBloomFilter')
+      .spyOn(bloomFilterEnqueues, 'enqueueBulkBackfillBloomFilters')
       .mockRejectedValueOnce(suppressedError('test enqueue failure'))
 
     try {
       await expect(warmUpEntityCacheBloomFilters()).resolves.toBeUndefined()
-      expect(enqueueSpy).toHaveBeenCalledWith({ entityType: 'posts' })
+      expect(enqueueSpy).toHaveBeenCalledWith([{ entityType: 'posts' }])
     } finally {
       entityCacheBloomFilters.posts.isReady = originalIsReady
       enqueueSpy.mockRestore()

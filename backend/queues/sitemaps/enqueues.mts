@@ -30,9 +30,17 @@ const enqueueBulkUpdatePostDaySitemapJobs = createBackgroundBulkEnqueue(
   (entry: PostDayJobData) => ({ data: entry, opts: postDayJobOptions(entry) }),
 )
 
+const enqueueBulkUpdateFamilySitemapJobs = createBackgroundBulkEnqueue(
+  SITEMAPS_FAMILY_JOB,
+  (family: SitemapFamilyJobData['family']) => ({
+    data: { family },
+    opts: indexOptions(`family-index__${family}`),
+  }),
+)
+
+const enqueueUpdateFamilySitemapJob = createBackgroundEnqueue(SITEMAPS_FAMILY_JOB)
 const enqueueUpdatePostTypeIndexJob = createBackgroundEnqueue(SITEMAPS_POST_TYPE_INDEX_JOB)
 const enqueueUpdatePostsIndexJob = createBackgroundEnqueue(SITEMAPS_POSTS_INDEX_JOB)
-const enqueueUpdateFamilySitemapJob = createBackgroundEnqueue(SITEMAPS_FAMILY_JOB)
 const enqueueUpdatePostDaySitemapJob = createBackgroundEnqueue(SITEMAPS_POST_DAY_JOB)
 const enqueueUpdateRootIndexJob = createBackgroundEnqueue(SITEMAPS_ROOT_INDEX_JOB)
 
@@ -110,15 +118,11 @@ export const enqueueUpdatePostsIndex = (priority?: number): EnqueueReturnType =>
   return enqueueUpdatePostsIndexJob({}, indexOptions('sitemaps:posts-index', priority))
 }
 
-export const enqueueUpdateFamilySitemap = (
-  family: SitemapFamilyJobData['family'],
+export const enqueueBulkUpdateFamilySitemaps = (
+  families: readonly SitemapFamilyJobData['family'][],
   priority?: number,
-): EnqueueReturnType => {
-  return enqueueUpdateFamilySitemapJob(
-    { family },
-    indexOptions(`family-index__${family}`, priority),
-  )
-}
+): EnqueueReturnType =>
+  enqueueBulkUpdateFamilySitemapJobs([...families], priority === undefined ? {} : { priority })
 
 export const enqueuePostDaySitemapContinuation = (
   entry: PostDayJobData & { generationId: string },

@@ -15,6 +15,7 @@ import {
 import {
   enqueueReconcileClassifierRuns,
   enqueueReconcileClassifierRunsPage,
+  enqueueBulkReconcileClassifierRunsPages,
 } from './reconcile-classifier-runs.mts'
 
 function runJobData(classifier = 'post-classifier'): ClassifierRunJobData {
@@ -157,5 +158,20 @@ describe('classifier run enqueue', () => {
     expect(second ?? null).toBeNull()
     expect(first?.id).toBe(`reconcile_classifier_runs_requests_${page.classifier}_${page.after}`)
     expect((await readAllQueueJobs(ai_agents)).filter(job => job.id === first?.id)).toHaveLength(1)
+  })
+
+  it('adds the first page of every classifier in one call under the same stable ids', async () => {
+    const pages = [`c-${randomUUID()}`, `c-${randomUUID()}`].map(classifier => ({
+      phase: 'requests',
+      classifier,
+      after: null,
+    })) as Array<{ phase: 'requests'; classifier: string; after: null }>
+
+    await enqueueBulkReconcileClassifierRunsPages(pages)
+
+    const ids = new Set((await readAllQueueJobs(ai_agents)).map(job => job.id))
+    for (const { classifier } of pages) {
+      expect(ids).toContain(`reconcile_classifier_runs_requests_${classifier}_start`)
+    }
   })
 })

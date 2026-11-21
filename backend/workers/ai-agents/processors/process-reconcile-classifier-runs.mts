@@ -4,7 +4,10 @@ import {
   enqueueBulkClassifierRuns,
   classifierRunJobsExist,
 } from '@queues/ai-agents/enqueues/classifier-run'
-import { enqueueReconcileClassifierRunsPage } from '@queues/ai-agents/enqueues/reconcile-classifier-runs'
+import {
+  enqueueBulkReconcileClassifierRunsPages,
+  enqueueReconcileClassifierRunsPage,
+} from '@queues/ai-agents/enqueues/reconcile-classifier-runs'
 import type { ReconcileClassifierRunsJobData } from '@queues/ai-agents/types'
 import { evaluateSpendCapBreach } from '@services/ai-usage'
 import {
@@ -59,14 +62,8 @@ export async function processReconcileClassifierRuns(
     )
   }
   if (!data.phase) {
-    await Promise.all(
-      handlers.map(handler =>
-        enqueueReconcileClassifierRunsPage({
-          phase: 'requests',
-          classifier: handler.slug,
-          after: null,
-        }),
-      ),
+    await enqueueBulkReconcileClassifierRunsPages(
+      handlers.map(handler => ({ phase: 'requests', classifier: handler.slug, after: null })),
     )
   }
   return sweepIncomplete(data.after ?? null, scope.runIds, batchSize)

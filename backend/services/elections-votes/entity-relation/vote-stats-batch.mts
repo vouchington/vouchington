@@ -62,9 +62,13 @@ export async function publishEntityRelationElectionVoteStats(
         ...ids.map(entityRelationId => ({ entityRelationId, relationTable })),
       )
     }
-    if (options.enqueueTopHashtagRefresh !== false && topHashtagRelationTables.has(relationTable))
-      void enqueueRefreshTopHashtags()
   }
+  // The refresh job is one debounced view refresh, so every qualifying table shares one enqueue.
+  if (
+    options.enqueueTopHashtagRefresh !== false &&
+    [...byTable.keys()].some(relationTable => topHashtagRelationTables.has(relationTable))
+  )
+    void enqueueRefreshTopHashtags()
 }
 type UpdatedEntityRelationVoteStats = {
   id: string

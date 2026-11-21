@@ -14,13 +14,15 @@ import {
   enqueueBulkUpdatePostDaySitemaps,
   enqueueMonthlyBackfillArchiveContinuation,
   enqueueRetiredSitemapCleanupContinuation,
-  enqueueUpdateFamilySitemap,
+  enqueueBulkUpdateFamilySitemaps,
   enqueueUpdateLandingPagesSitemapForReconciliation,
   enqueueUpdatePostsIndex,
   enqueueUpdatePostTypeIndex,
   enqueueUpdateRootIndex,
 } from '@queues/sitemaps/enqueues'
 import { getSitemapsOrderingKeyForDay } from '@queues/sitemaps/config'
+import { forgetDedupEntries } from '@voucha/test-helpers/shared-queue-cleanup'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import { backgroundQueue as sitemapsQueue } from '@voucha/test-helpers/shared-background-queue'
 
 async function readLandingPageJobs() {
@@ -40,27 +42,33 @@ describe('enqueues.generated', () => {
     expect(getSitemapsOrderingKeyForDay('2026-01-01')).toBe('post_day_past')
   })
 
-  it('enqueueUpdateFamilySitemap enqueues topics into the indexes lane with family dedup', async () => {
+  it('enqueueBulkUpdateFamilySitemaps enqueues each family into the indexes lane with family dedup', async () => {
     const priority = 1_000 + Math.floor(Math.random() * 1_000)
-    const add = vi.spyOn(sitemapsQueue, 'add')
-    onTestFinished(() => add.mockRestore())
-    await enqueueUpdateFamilySitemap('topics', priority)
+    forgetDedupEntries(BACKGROUND_QUEUE_NAME, [
+      'family-index__topics',
+      'family-index__landing-pages',
+    ])
+    await enqueueBulkUpdateFamilySitemaps(['topics', 'landing-pages'], priority)
 
-    const jobs = add.mock.calls.filter(
-      ([name, , options]) => name === SITEMAPS_FAMILY_JOB.name && options?.priority === priority,
+    const jobs = (await readAllQueueJobs(sitemapsQueue)).filter(
+      job => job.name === SITEMAPS_FAMILY_JOB.name && job.opts.priority === priority,
     )
 
-    expect(jobs).toHaveLength(1)
-    expect(jobs[0]![1]).toEqual({ family: 'topics' })
-    expect(jobs[0]![2]).toMatchObject({
-      priority,
-      ordering: { key: 'sitemaps:indexes' },
-      deduplication: {
-        id: 'family-index__topics',
-        mode: 'throttle',
-        ttl: 60_000,
-      },
-    })
+    expect(jobs.map(job => (job.data as { family: string }).family).toSorted()).toEqual([
+      'landing-pages',
+      'topics',
+    ])
+    for (const job of jobs) {
+      expect(job.opts).toMatchObject({
+        priority,
+        ordering: { key: 'sitemaps:indexes' },
+        deduplication: {
+          id: `family-index__${(job.data as { family: string }).family}`,
+          mode: 'throttle',
+          ttl: 60_000,
+        },
+      })
+    }
     expect(SITEMAPS_FAMILY_JOB.options.ordering).toEqual({
       key: 'sitemaps:indexes',
       concurrency: 1,
@@ -126,7 +134,7 @@ describe('enqueues.generated', () => {
   })
 
   it('accepts each reconciliation landing-pages rebuild despite the family throttle', async () => {
-    await enqueueUpdateFamilySitemap('landing-pages')
+    await enqueueBulkUpdateFamilySitemaps(['landing-pages'])
     const before = (await readLandingPageJobs()).filter(job => job.opts.deduplication === undefined)
     await enqueueUpdateLandingPagesSitemapForReconciliation()
     await enqueueUpdateLandingPagesSitemapForReconciliation()
