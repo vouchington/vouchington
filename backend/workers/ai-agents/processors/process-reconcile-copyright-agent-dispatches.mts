@@ -1,5 +1,9 @@
 import { enqueueReconcileCopyrightAgentDispatchStage } from '@queues/ai-agents/enqueues/reconcile-copyright-agent-dispatches'
-import type { CopyrightAgentDispatchStage } from '@queues/ai-agents/enqueues/copyright-agent-dispatch-stages'
+import {
+  COPYRIGHT_AGENT_DISPATCH_JOBS,
+  COPYRIGHT_AGENT_DISPATCH_STAGES,
+  type CopyrightAgentDispatchStage,
+} from '@queues/ai-agents/enqueues/copyright-agent-dispatch-stages'
 import {
   applyNonSpamSignedInCopyrightFormScreening,
   getPendingCopyrightAgentDispatches,
@@ -154,3 +158,13 @@ export const copyrightAgentDispatchProcessors = {
   appeal: createStageProcessor('appeal'),
   'submission-guidance': createStageProcessor('submission-guidance'),
 } as const satisfies Record<CopyrightAgentDispatchStage, unknown>
+
+type StageJobName = (typeof COPYRIGHT_AGENT_DISPATCH_JOBS)[CopyrightAgentDispatchStage]['jobName']
+
+/** The queue processor of each stage's job, keyed by job name. */
+export const copyrightAgentDispatchJobProcessors = Object.fromEntries(
+  COPYRIGHT_AGENT_DISPATCH_STAGES.map(stage => [
+    COPYRIGHT_AGENT_DISPATCH_JOBS[stage].jobName,
+    (job: { data: { after?: string } }) => copyrightAgentDispatchProcessors[stage](job.data),
+  ]),
+) as Record<StageJobName, (job: { data: { after?: string } }) => Promise<{ hasMore: boolean }>>
