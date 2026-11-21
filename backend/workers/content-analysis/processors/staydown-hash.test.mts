@@ -63,6 +63,7 @@ async function createUpload(world: ReturnType<typeof createWorld>, bytes: Buffer
 describe('staydown hash job', () => {
   beforeEach(() => {
     vi.spyOn(imageEnqueues, 'enqueueStaydownHash').mockResolvedValue(undefined as never)
+    vi.spyOn(imageEnqueues, 'enqueueBulkStaydownHashes').mockResolvedValue([])
   })
 
   afterEach(() => {

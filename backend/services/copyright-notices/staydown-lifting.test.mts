@@ -18,6 +18,7 @@ describe('copyright staydown entries when a restriction is lifted', () => {
   beforeEach(() => {
     installTestMediaDeliveryEdge()
     vi.spyOn(imageEnqueues, 'enqueueStaydownHash').mockResolvedValue(undefined as never)
+    vi.spyOn(imageEnqueues, 'enqueueBulkStaydownHashes').mockResolvedValue([])
   })
 
   afterEach(() => {

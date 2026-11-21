@@ -91,6 +91,7 @@ describe('copyright staydown staff review', () => {
 
   beforeEach(() => {
     vi.spyOn(imageEnqueues, 'enqueueStaydownHash').mockResolvedValue(undefined as never)
+    vi.spyOn(imageEnqueues, 'enqueueBulkStaydownHashes').mockResolvedValue([])
   })
 
   afterEach(() => {

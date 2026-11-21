@@ -3,7 +3,7 @@ import { dispatchPostCommitEffectsBestEffort } from './assignment-effects.mts'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { runWithTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { enqueueStoryPostAgent } from '@queues/ai-agents/enqueues/story-post'
+import { enqueueBulkStoryPostAgents } from '@queues/ai-agents/enqueues/story-post'
 import { refreshStoryPostForStory, type StoryPostRefreshResult } from './refresh-story-post.mts'
 import { invalidateStories } from './cache-invalidation.mts'
 import { recordPostPublicationChange } from '@services/post-publication'
@@ -84,9 +84,10 @@ export async function adminAssignItemToStory(
       await dispatchPostCommitEffectsBestEffort(
         refreshResults.flatMap(({ result }) => (result ? [result] : [])),
       )
-      for (const { result } of refreshResults) {
-        if (result) void enqueueStoryPostAgent(result.postId, { force: true })
-      }
+      void enqueueBulkStoryPostAgents(
+        refreshResults.flatMap(({ result }) => (result ? [result.postId] : [])),
+        { force: true },
+      )
       await invalidateStories(storyId, row.prior_story_id)
     }
     return row.id
@@ -160,8 +161,10 @@ export async function adminRemoveItemFromStory(
     if (!row) return null
     afterCommit = async () => {
       await dispatchPostCommitEffectsBestEffort(refreshResults)
-      for (const refreshResult of refreshResults)
-        void enqueueStoryPostAgent(refreshResult.postId, { force: true })
+      void enqueueBulkStoryPostAgents(
+        refreshResults.map(({ postId }) => postId),
+        { force: true },
+      )
       await invalidateStories(row.prior_story_id)
     }
     return row.id

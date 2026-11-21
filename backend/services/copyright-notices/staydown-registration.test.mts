@@ -19,18 +19,19 @@ function registrationImageId(data: unknown): string | undefined {
 }
 
 /**
- * The registration enqueue is fire-and-forget. Await the promise `enqueueStaydownHash` already
- * returns, then read the queue once. `searchJobs` is state-independent and scoped to this image.
+ * The registration enqueue is fire-and-forget. Await the promise `enqueueBulkStaydownHashes`
+ * already returns, then read the queue once. `searchJobs` is state-independent and scoped to this
+ * image.
  */
 async function settledRegistration<T>(run: () => Promise<T>): Promise<T> {
   const pending: Promise<unknown>[] = []
-  const enqueue = imageEnqueues.enqueueStaydownHash
+  const enqueue = imageEnqueues.enqueueBulkStaydownHashes
   const spy = vi
-    .spyOn(imageEnqueues, 'enqueueStaydownHash')
-    .mockImplementation((imageId, source) => {
-      const job = enqueue(imageId, source)
-      pending.push(job)
-      return job
+    .spyOn(imageEnqueues, 'enqueueBulkStaydownHashes')
+    .mockImplementation((imageIds, source) => {
+      const jobs = enqueue(imageIds, source)
+      pending.push(jobs)
+      return jobs
     })
   try {
     const result = await run()

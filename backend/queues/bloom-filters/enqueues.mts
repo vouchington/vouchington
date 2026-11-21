@@ -1,4 +1,4 @@
-import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import { isActiveProcessorJob } from '@data-stores/valkey-glide-mq/guarded-worker-processors'
 import type { EnqueueReturnType } from '@voucha/types'
 import {
@@ -49,6 +49,24 @@ export function enqueueBackfillBloomFilter(
   priority?: number,
 ): EnqueueReturnType {
   return enqueueBackfillBloomFilterJob(data, backfillBloomFilterJobOptions(data, priority))
+}
+
+const enqueueBackfillBloomFilterBatch = createBulkEnqueueFunction({
+  queue: bloomFilters,
+  queueName: QUEUE_NAME,
+  jobName: 'processBackfillBloomFilter',
+  buildJob: (data: BackfillBloomFilterData) => ({
+    data,
+    opts: backfillBloomFilterJobOptions(data),
+  }),
+})
+
+/** Adds one backfill job per entity type in a single call; an empty list adds nothing. */
+export function enqueueBulkBackfillBloomFilters(
+  items: readonly BackfillBloomFilterData[],
+  priority?: number,
+): ReturnType<typeof enqueueBackfillBloomFilterBatch> {
+  return enqueueBackfillBloomFilterBatch([...items], priority === undefined ? {} : { priority })
 }
 
 export function enqueueBackfillUserBookmarkBloomFilter(

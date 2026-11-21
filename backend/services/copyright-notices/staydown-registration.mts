@@ -1,6 +1,6 @@
 import type { OwnedTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { enqueueStaydownHash } from '@queues/content-analysis/enqueues/image-jobs'
+import { enqueueBulkStaydownHashes } from '@queues/content-analysis/enqueues/image-jobs'
 import sql from 'sql-template-strings'
 import { isCopyrightStaydownMatchingEnabled } from './config.mts'
 import { syncCopyrightRepeatInfringerIncidents } from './repeat-infringer-incidents.mts'
@@ -66,7 +66,7 @@ export async function applyCopyrightConfirmationConsequencesInTransaction(
 
 /** Queues the perceptual-hash fill for newly registered images; the exact SHA-256 already matches. */
 export function enqueueCopyrightStaydownHashes(imageIds: string[]): void {
-  for (const imageId of new Set(imageIds)) void enqueueStaydownHash(imageId, 'registration')
+  void enqueueBulkStaydownHashes(imageIds, 'registration')
 }
 
 /** Lifting a restriction for any reason removes its entry and, by cascade, its pending matches. */

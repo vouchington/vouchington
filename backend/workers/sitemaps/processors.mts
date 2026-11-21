@@ -8,10 +8,10 @@ import {
 import { generateSitemapFamilyFiles } from '@services/sitemaps/family-generation'
 import { generatePostDaySitemapFiles } from '@services/sitemaps/generation'
 import {
+  enqueueBulkUpdateFamilySitemaps,
   enqueueBulkUpdatePostDaySitemaps,
   enqueueFamilySitemapContinuation,
   enqueuePostDaySitemapContinuation,
-  enqueueUpdateFamilySitemap,
   enqueueUpdatePostTypeIndex,
   enqueueUpdatePostsIndex,
   enqueueUpdateRootIndex,
@@ -64,7 +64,7 @@ export async function processNightlyBackfillWeekDispatcher(now = new Date()): Pr
   const entries = getNightlyBackfillEntries(now, SITEMAP_CONFIG.POST_TYPES)
   await Promise.all([
     enqueueBulkUpdatePostDaySitemaps(entries),
-    ...SITEMAP_CONFIG.FAMILY_TYPES.map(family => enqueueUpdateFamilySitemap(family)),
+    enqueueBulkUpdateFamilySitemaps(SITEMAP_CONFIG.FAMILY_TYPES),
   ])
   await processRetiredSitemapCleanup(now)
 }

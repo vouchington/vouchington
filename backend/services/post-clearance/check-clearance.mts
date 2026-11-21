@@ -1,6 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { enqueueClassifierRunDispatcher } from '@queues/ai-agents/enqueues/classifier-run'
+import { enqueueBulkClassifierRunDispatchers } from '@queues/ai-agents/enqueues/classifier-run'
 import { requestClassifierRuns } from '@services/classifier-runs'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { recordModeratorAction } from '@services/moderator-actions'
@@ -31,10 +31,8 @@ export async function checkPostClearance(postId: string): Promise<void> {
   if (row?.clearance_status === 'approved') {
     // The durable request, written in the approval transaction, is what the sweep recovers from; this
     // enqueue only makes the first attempt prompt.
-    await Promise.all(
-      APPROVAL_CLASSIFIER_SLUGS.map(classifier =>
-        enqueueClassifierRunDispatcher({ classifier, postId, rssFeedItemId: null }),
-      ),
+    await enqueueBulkClassifierRunDispatchers(
+      APPROVAL_CLASSIFIER_SLUGS.map(classifier => ({ classifier, postId, rssFeedItemId: null })),
     )
   }
 }

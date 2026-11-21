@@ -1,4 +1,4 @@
-import { enqueueBackfillBloomFilter } from '@queues/bloom-filters/enqueues'
+import { enqueueBulkBackfillBloomFilters } from '@queues/bloom-filters/enqueues'
 import { entityBloomReadyKey } from './bloom-filter-repair.mts'
 import onError from '@modules/on-error'
 import { entityCacheBloomFilters } from './bloom-filter-instances.mts'
@@ -39,15 +39,11 @@ export async function warmUpEntityCacheBloomFilters(): Promise<void> {
     result.status === 'fulfilled' && !result.value.exists ? [result.value.entityType] : [],
   )
 
-  await Promise.all(
-    missingEntityTypes.map(async entityType => {
-      try {
-        await enqueueBackfillBloomFilter({ entityType })
-      } catch (err) {
-        onError(err instanceof Error ? err : new Error(String(err)))
-      }
-    }),
-  )
+  try {
+    await enqueueBulkBackfillBloomFilters(missingEntityTypes.map(entityType => ({ entityType })))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
+  }
 }
 
 export async function backfillBloomFilter(
