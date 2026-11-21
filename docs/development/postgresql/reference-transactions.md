@@ -40,7 +40,7 @@ lock helpers alike.
 **No unnecessary locks.** The owner's words (2026-11-09): "do we have a rule? no unnecessary locks",
 "seems like we have way too many locks for no reason", and "keep things simple". Add a lock only
 when a concurrent write would otherwise corrupt data the transaction writes. Advisory locks are not
-used.
+used, except where the privacy and legal exception below applies.
 
 - **Caps and guards are best effort.** This covers per-user and per-entity caps and "don't remove
   the last X" guards. Check with a capped count, then write: no lock, no counter row, no slot
@@ -48,6 +48,13 @@ used.
   accepted.
 - **Removing a lock means deleting it**, not replacing it with another serialization mechanism such
   as a counter table, projection row, or claim table.
+- **Privacy, legal and irreversible-side-effect invariants may lock** (owner, 2026-11-21): user
+  deletion fences, legal holds and external deletes keep a lock when the race is rare and the
+  outcome cannot be undone. Take `FOR SHARE`/`FOR UPDATE` on the aggregate-root row (for example
+  `users`) even when the transaction does not write it. Use an advisory lock only when no row
+  exists or the critical section spans transactions or external I/O. A transaction that also
+  updates that row takes `FOR NO KEY UPDATE` first: two `FOR SHARE` holders that then update it
+  deadlock on the upgrade. The simplest correct mechanism wins.
 - **Write skew that must hold runs at SERIALIZABLE.** Where best effort is not acceptable, such as
   an administrator keeping an MFA method, the conflicting transactions run at SERIALIZABLE and a
   serialization failure (SQLSTATE `40001`) returns 409. There is no retry, and no lock, advisory

@@ -30,17 +30,7 @@ async function createFixture() {
   }
 }
 
-function expectConcreteWrite(
-  queries: ReturnType<typeof stopTestQueryCapture>,
-  table: string,
-  userId: string,
-  relationId: string,
-) {
-  const locks = queries.filter(query =>
-    query.text.includes('/* lockEntityRelationElectionVoteMutations */'),
-  )
-  expect(locks).toHaveLength(1)
-  expect(locks[0]!.values).toEqual([[`${table}:${userId}:${relationId}`]])
+function expectConcreteWrite(queries: ReturnType<typeof stopTestQueryCapture>, table: string) {
   const write = queries.find(query =>
     query.text.includes('/* upsertEntityRelationElectionVotes */'),
   )!
@@ -49,7 +39,7 @@ function expectConcreteWrite(
 }
 
 describe('relation vote normalized concrete identity', () => {
-  it('normalizes and deduplicates internal mixed-case ids before locking and appending', async () => {
+  it('normalizes and deduplicates internal mixed-case ids before appending', async () => {
     const { user, metadata, relationId, table } = await createFixture()
     enableQueryCapture()
     try {
@@ -63,7 +53,7 @@ describe('relation vote normalized concrete identity', () => {
         metadata,
         { enqueueVoteStats: false },
       )
-      expectConcreteWrite(stopTestQueryCapture(), table, user.id, relationId)
+      expectConcreteWrite(stopTestQueryCapture(), table)
       await upsertEntityRelationElectionVotes(
         user.id,
         [{ entityId: relationId, score: 1 }],
@@ -77,7 +67,7 @@ describe('relation vote normalized concrete identity', () => {
     }
   })
 
-  it('accepts upper-case route ids and locks/writes only the resolved relation', async () => {
+  it('accepts upper-case route ids and writes only the resolved relation', async () => {
     const { user, relationId, table } = await createFixture()
     const request = createRequest()
     await request.authenticateAs(user)
@@ -88,7 +78,7 @@ describe('relation vote normalized concrete identity', () => {
         .send({ choice: 'confirm' })
         .expect(204)
       const queries = stopTestQueryCapture()
-      expectConcreteWrite(queries, table, user.id, relationId)
+      expectConcreteWrite(queries, table)
       await request
         .put(`/api/v1/entity-relations/${relationId}/vote`)
         .send({ choice: 'confirm' })

@@ -1,6 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+import { lockUsersForShare } from '@services/user-deletions/active-user-mutation-lock'
 import { buildBlueskyAuthorizationExpiryPredicate } from './bluesky-authorization-expiry-predicate.mts'
 
 type ExpiredAuthorization = {
@@ -131,11 +132,7 @@ async function lockAuthorizationOwners(
   query: TransactionQuery,
 ): Promise<void> {
   const userIds = [...new Set(targets.map(target => target.user_id))].toSorted()
-  await query(sql`/* expireBlueskyAuthorizations:lockUsers */
-    WITH ordered_users AS MATERIALIZED (
-      SELECT user_id FROM unnest(${userIds}::uuid[]) AS user_id ORDER BY user_id
-    )
-    SELECT pg_advisory_xact_lock(hashtextextended(user_id::text, 0)) FROM ordered_users`)
+  await lockUsersForShare(query, userIds)
 }
 
 async function expireExactAuthorizations(

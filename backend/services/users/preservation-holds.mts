@@ -59,6 +59,10 @@ function assertAdmin(currentUser: PrivateUser | null): asserts currentUser is Pr
   if (!isAdminUser(currentUser)) throw createHttpError(403, 'Forbidden')
 }
 
+/**
+ * Locks the account row `FOR NO KEY UPDATE`: retention deletes (`FOR SHARE` on the same row) then
+ * either finish before the hold exists or see it, so a hold cannot be placed under an in-flight purge.
+ */
 async function readPreservationHoldUser(
   query: QueryExecutor,
   userId: string,
@@ -66,7 +70,7 @@ async function readPreservationHoldUser(
   const { rows } = await query<{
     deleted_at: Date | null
   }>(sql`/* lockPreservationHoldUser:userExists */
-    SELECT deleted_at FROM users WHERE id = ${userId}
+    SELECT deleted_at FROM users WHERE id = ${userId} FOR NO KEY UPDATE
   `)
   return rows[0]
 }

@@ -30,29 +30,6 @@ export async function clearCategorizerVotesInTransaction(
     objectType: 'topic',
     predicate: 'category',
   })
-  const { rows: candidateRows } = await query<{ id: string }>(
-    `/* clearCategoriesForUnlinkedTopicAlias candidateRelations */
-      SELECT relation.id
-      FROM relation__rss_feed_item__category__topic relation
-      JOIN unnest($1::uuid[], $2::uuid[]) AS cleared(rss_feed_item_id, topic_id)
-        ON relation.subject_id = cleared.rss_feed_item_id
-        AND relation.object_id = cleared.topic_id
-      WHERE relation.deleted_at IS NULL
-      ORDER BY relation.id
-    `,
-    [uniqueRelations.map(row => row.rss_feed_item_id), uniqueRelations.map(row => row.topic_id)],
-  )
-  if (candidateRows.length === 0) return { relation, rows: [] }
-  const relationIds = candidateRows.map(row => row.id).toSorted()
-  await query(
-    `/* clearCategoriesForUnlinkedTopicAlias lock */
-      SELECT pg_advisory_xact_lock(
-        hashtextextended('relation__rss_feed_item__category__topic__votes:' || $1::text || ':' || relation_id::text, 0)
-      )
-      FROM unnest($2::uuid[]) AS input(relation_id)
-      ORDER BY relation_id`,
-    [categorizer.id, relationIds],
-  )
   const result = await query<{ id: string }>(
     `/* clearCategoriesForUnlinkedTopicAlias unreferencedRelations */
       SELECT relation.id

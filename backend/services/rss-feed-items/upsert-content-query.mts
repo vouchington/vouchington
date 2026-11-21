@@ -63,6 +63,7 @@ export function buildUpsertRssFeedItemsQuery(
       RETURNING id,
                 url_id,
                 story_id,
+                CASE WHEN old.deleted_at IS NULL THEN old.url_id END AS previous_url_id,
                 (bedrock_nova_multimodal_v1_embedding IS NOT NULL) AS has_embedding,
                 published_at
     `,
