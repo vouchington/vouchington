@@ -155,7 +155,7 @@ export async function runModerationTransparencyReleaseScenario(): Promise<void> 
     allowEmptyResult: true,
     forbidSequentialScans: ['agent_moderations'],
     expectations: [
-      { kind: 'usesIndexes', indexes: ['agent_moderations__default_pkey'] },
+      { kind: 'usesIndexes', indexes: ['agent_moderations__default_id_idx1'] },
       { kind: 'maxProcessedRows', relation: 'agent_moderations', max: 20_000 },
     ],
   })
