@@ -1,7 +1,7 @@
 // Fixed direct-OAuth public config for the web server, so the login page renders a known set of
 // direct providers whatever the developer's shell exports. Each provider needs both its
 // NEXT_PUBLIC_ and bare variable pinned because the server reads either.
-export const PLAYWRIGHT_CONFIGURED_OAUTH_PROVIDERS = ['github', 'x'] as const
+const PLAYWRIGHT_CONFIGURED_OAUTH_PROVIDERS = ['github', 'x'] as const
 
 const OAUTH_PUBLIC_ENV_NAMES = {
   apple: ['APPLE_CLIENT_ID'],

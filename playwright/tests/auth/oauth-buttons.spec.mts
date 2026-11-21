@@ -1,8 +1,6 @@
 import { test, expect } from '../../helpers/test.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
-import { PLAYWRIGHT_CONFIGURED_OAUTH_PROVIDERS } from '../../config/web-public-env.mts'
 
-const directProviders = ['apple', 'facebook', 'github', 'google', 'linkedin', 'microsoft', 'x']
 const webBroker = { modes: { web: true, native: false } }
 
 test.describe('OAuth login buttons', () => {
@@ -48,12 +46,15 @@ test.describe('OAuth login buttons', () => {
 
     await navigateTo(page, '/login')
 
+    // The web server is configured with github and x only (playwright/config/web-public-env.mts).
     const loginButtons = page.getByTestId('oauth-login-button')
 
-    for (const provider of directProviders) {
-      await expect(loginButtons.getByTestId(`oauth-${provider}-login-button`)).toHaveCount(
-        PLAYWRIGHT_CONFIGURED_OAUTH_PROVIDERS.some(configured => configured === provider) ? 1 : 0,
-      )
-    }
+    await expect(loginButtons.getByTestId('oauth-github-login-button')).toHaveCount(1)
+    await expect(loginButtons.getByTestId('oauth-x-login-button')).toHaveCount(1)
+    await expect(loginButtons.getByTestId('oauth-apple-login-button')).toHaveCount(0)
+    await expect(loginButtons.getByTestId('oauth-facebook-login-button')).toHaveCount(0)
+    await expect(loginButtons.getByTestId('oauth-google-login-button')).toHaveCount(0)
+    await expect(loginButtons.getByTestId('oauth-linkedin-login-button')).toHaveCount(0)
+    await expect(loginButtons.getByTestId('oauth-microsoft-login-button')).toHaveCount(0)
   })
 })
