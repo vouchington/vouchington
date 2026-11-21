@@ -1,14 +1,11 @@
 Review backend queues and workers. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
-- Check idempotency, retry behavior, scheduling, worker shutdown, queue configuration, and required package shape.
-- Trace queue or worker sources to their runtime registration: verify named-export consumers, operator catalog parity, and membership in the applicable worker policy rather than relying on matching names alone.
-- Verify deduplication is used as an enqueue optimization only: `simple` dedup tests should assert options or app behavior, not GlideMQ internals across concurrent/repeated round trips.
-- Check intentional fire-and-forget enqueue, publish, or signal calls for `.catch(onError)` or a clearly justified benign catch.
-- Audit delayed jobs for processing-time recipient revalidation, explicit claimed-time window bounds, and soft-deleted/restricted/suspended recipient exclusion.
-- Verify database writes remain durably discoverable when a follow-up enqueue is deduplicated, suppressed, or fails; queue state must not be the only recovery signal.
-- Verify the selected queue self-heals from durable state through an automatic scheduler and admin backfill, or has a documented accepted-loss contract. Recovery cursors advance only after awaited bulk enqueue success.
-- Verify each logical job in the selected flow derives a stable `jobId` from database columns plus task intent, uses the same simple deduplication ID, and remains processor-idempotent when duplicate delivery still occurs.
-- For external delivery, identify whether the contract is retryable or at-most-once. Test provider failure and the contract-specific retry or reclaim outcome: at-most-once flows must persist an attempt marker immediately before the provider boundary and terminally skip, while retryable flows must remain eligible.
-- Prefer fixes that reduce duplicate work, improve recovery, or make failures more observable.
-- Keep queue, worker, service, and docs cross-links aligned.
-- Validate with targeted queue/worker tests and static package-shape checks.
+Load `voucha-queue-authoring`, `glide-mq`, and `queue-rules`; follow [backend-queues.md](../../checklists/backend-queues.md).
+
+- Trace queue and worker sources to runtime registration: named-export consumers, operator catalog parity, and membership in the applicable worker policy, not matching names alone.
+- Fire-and-forget enqueue, publish, or signal calls need `.catch(onError)` or a justified benign catch.
+- Delayed jobs revalidate the recipient at processing time, bound the claimed-time window, and exclude soft-deleted, restricted, and suspended recipients.
+- Database writes stay durably discoverable when a follow-up enqueue is deduplicated, suppressed, or fails. The queue self-heals from durable state through a scheduler and admin backfill (cursors advance only after awaited bulk enqueue success), or has a documented accepted-loss contract.
+- Each logical job derives a stable `jobId` from database columns plus task intent, uses it as the simple dedup ID, and stays processor-idempotent under duplicate delivery. `simple` dedup tests assert options or app behavior, not GlideMQ internals.
+- External delivery is retryable or at-most-once. At-most-once flows persist an attempt marker immediately before the provider boundary and terminally skip; retryable flows stay eligible. Test provider failure against that contract.
+- Keep queue, worker, service, and docs cross-links aligned; validate with targeted tests and package-shape checks.

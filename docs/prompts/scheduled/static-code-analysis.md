@@ -1,32 +1,9 @@
 Review static analysis coverage. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
-References:
+Load `static-analysis-checklist` and `static-code-analysis`. References: [Oxlint rules](https://oxc.rs/docs/guide/usage/linter/rules.html), [JS plugins](https://oxc.rs/docs/guide/usage/linter/js-plugins.html#known-supported-eslint-plugins).
 
-- https://oxc.rs/docs/guide/usage/linter/rules.html
-- https://oxc.rs/docs/guide/usage/linter/js-plugins.html#known-supported-eslint-plugins
-
-- Review other linting tools we use such as syncpack, lychee, knip, dependency-cruiser.
-- Look at our current exceptions. Remove/fix the exceptions or make a GitHub issue to flag them.
-- Skip any findings from open issues or open PRs.
-- After a shared-parser migration, search for obsolete local split, regex, or tokenizer helpers and
-  follow the [parser-library swap checklist](../../checklists/parser-library-swap.md) before removing
-  one bounded leftover.
-
-When the improvement touches ast-grep rules, include a hygiene pass:
-
-- Review `not: regex` and `not: kind` constraints against unbound metavariables and document non-obvious binding semantics in rule comments.
-- Check regex token boundaries so keys or identifiers such as `not_ssr` do not satisfy intended `ssr` matches.
-- Confirm `sgconfig.yml` maps `.ts`/`.mts`/`.cts`/`.tsx` to `Tsx`, that shared invariants use one YAML file with both globs, and that no `-tsx` companion files exist.
-- When a rule targets a callable or imported symbol, cover both bare and module-qualified forms and
-  add fixtures that prove each intended match and near-miss.
-- Add `examples:` fixtures for ignored paths when a rule relies on `ignores:` so drift is caught by the ast-grep example test.
-
-Make linting stricter by enabling or configuring one useful existing lint/static-analysis rule, removing one stale exemption, or tightening coverage in an established tool. Add custom repo-local checks only after the [rule placement decision guide](../../development/quality/static-code-analysis/README.md#where-to-put-a-new-rule-priority-order) shows off-the-shelf tools, ast-grep, and no-mistakes cannot express the invariant. Do not remove existing rules or weaken coverage. Fix violations introduced by the selected improvement.
-
-- For rules that match imports, calls, or fixtures, add match and near-miss fixtures for wrapped
-  forms: parenthesized expressions, `as`/`satisfies`/non-null assertions, `.then` or `await`
-  access on the wrapped value, and every real import path of the guarded module. Review of #2917
-  and #2956 found these gaps after merge.
-- When a change enables a new invariant or rule option, confirm the owning inventory and reference
-  docs state its exact scope, including exemptions such as jobs with fewer than two bounded steps,
-  as review of #2919 required.
+- Review the other tools (syncpack, lychee, knip, dependency-cruiser) and current exceptions; remove or fix an exception, or file an issue for it. Skip findings already in open issues or PRs.
+- Make linting stricter by enabling or configuring one existing rule, removing one stale exemption, or tightening an established tool; never remove rules or weaken coverage, and fix the violations you introduce. Add repo-local checks only after the [rule placement guide](../../development/quality/static-code-analysis/README.md#where-to-put-a-new-rule-priority-order) shows off-the-shelf tools, ast-grep, and no-mistakes cannot express it.
+- After a shared-parser migration, remove one bounded leftover split, regex, or tokenizer helper per the [parser-library swap checklist](../../checklists/parser-library-swap.md).
+- ast-grep hygiene: review `not: regex`/`not: kind` against unbound metavariables; check token boundaries (`not_ssr` must not match `ssr`); `sgconfig.yml` maps `.ts`/`.mts`/`.cts`/`.tsx` to `Tsx` with one YAML file per shared invariant and no `-tsx` companions; cover bare and module-qualified symbol forms; add `examples:` for `ignores:` paths.
+- Fixtures for rules matching imports, calls, or fixtures include match and near-miss cases for wrapped forms (parentheses, `as`/`satisfies`/non-null, `.then`/`await`) and every real import path. When a rule gains an invariant or option, update the owning docs with its exact scope and exemptions.
