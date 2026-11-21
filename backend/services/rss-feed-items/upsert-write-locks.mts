@@ -45,19 +45,17 @@ async function readCurrentRssFeedItemUrlIds(
   txQuery: TransactionQuery,
   rssFeedItemIds: string[],
 ): Promise<Map<string, string>> {
-  const RSS_FEED_ITEM_SQL_BATCH_SIZE = getRssFeedItemsWorkLimit('sql_batch_size')
   const urlIdsById = new Map<string, string>()
-  for (const ids of chunkArray(rssFeedItemIds, RSS_FEED_ITEM_SQL_BATCH_SIZE)) {
-    // oxlint-disable-next-line no-await-in-loop -- bounded batches of primary key lookups.
-    const result = await txQuery<{ id: string; url_id: string }>(
-      `/* upsertRssFeedItems:currentUrlIds */
-        SELECT id, url_id
-        FROM rss_feed_items
-        WHERE id = ANY($1::uuid[])
-          AND deleted_at IS NULL`,
-      [ids],
-    )
-    for (const row of result.rows) urlIdsById.set(row.id, row.url_id)
-  }
+  if (rssFeedItemIds.length === 0) return urlIdsById
+  // One statement: the ids are this call's already bounded item set.
+  const result = await txQuery<{ id: string; url_id: string }>(
+    `/* upsertRssFeedItems:currentUrlIds */
+      SELECT id, url_id
+      FROM rss_feed_items
+      WHERE id = ANY($1::uuid[])
+        AND deleted_at IS NULL`,
+    [rssFeedItemIds],
+  )
+  for (const row of result.rows) urlIdsById.set(row.id, row.url_id)
   return urlIdsById
 }

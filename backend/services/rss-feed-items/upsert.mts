@@ -9,7 +9,7 @@ import {
   upsertRssFeedItemContent,
   upsertRssFeedItemSources,
 } from './upsert-queries.mts'
-import { resolveRssFeedItemWrites } from './upsert-identity-resolution.mts'
+import { resolveRssFeedItemWrites } from './upsert-write-locks.mts'
 import { prepareRssFeedItemsForUpsert } from './upsert-prepare.mts'
 import { beginTransaction, read } from '@data-stores/psql'
 import { enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort } from '@queues/story-post-related-url-projections/enqueues'

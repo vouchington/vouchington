@@ -3,7 +3,6 @@ import { getAgentModerationElectionByIdCachedBatch } from '@services/entity-fetc
 import { getAgentModerationElectionVote } from '@services/elections-votes/agent-moderation'
 import { upsertAgentModerationVotesWithTrainingEvidence } from '@services/elections-votes/agent-moderation/votes-with-training'
 import { getElectionVoteChoiceScore } from '@services/elections-votes/shared'
-import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
 import { enqueueBulkUpdateAgentModerationElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
 import { createAdminTool, adminInput, UUID_INPUT } from './create-admin-tool.mts'
 
@@ -36,24 +35,22 @@ function agentVoteTool(name: string, clear: boolean) {
     run: async (user, args) => {
       const [moderation] = await getAgentModerationElectionByIdCachedBatch([args.id])
       assert(moderation, 404, 'Agent moderation not found')
-      await conflictOnSerializationFailure(async () => {
-        const current = await getAgentModerationElectionVote(user.id, args.id)
-        if ((clear && !current) || (!clear && current?.choice === args.choice)) {
-          await enqueueBulkUpdateAgentModerationElectionVoteStats([args.id])
-          return
-        }
-        await upsertAgentModerationVotesWithTrainingEvidence(
-          user.id,
-          [
-            {
-              entityId: args.id,
-              score: clear ? null : getElectionVoteChoiceScore('moderation', args.choice!),
-            },
-          ],
-          { ipAddress: null, deviceId: null, sessionId: null, userAgent: null },
-          'agent',
-        )
-      })
+      const current = await getAgentModerationElectionVote(user.id, args.id)
+      if ((clear && !current) || (!clear && current?.choice === args.choice)) {
+        await enqueueBulkUpdateAgentModerationElectionVoteStats([args.id])
+        return { success: true }
+      }
+      await upsertAgentModerationVotesWithTrainingEvidence(
+        user.id,
+        [
+          {
+            entityId: args.id,
+            score: clear ? null : getElectionVoteChoiceScore('moderation', args.choice!),
+          },
+        ],
+        { ipAddress: null, deviceId: null, sessionId: null, userAgent: null },
+        'agent',
+      )
       return { success: true }
     },
   })

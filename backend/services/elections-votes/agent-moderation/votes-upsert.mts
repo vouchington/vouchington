@@ -45,8 +45,8 @@ export async function upsertAgentModerationElectionVotes(
   values.sort((a, b) => a.agentModerationId.localeCompare(b.agentModerationId))
 
   // No request lock: aggregation reads each voter's latest ballot, so a concurrent identical
-  // ballot is harmless to counts. SERIALIZABLE was tried and rejected: its page-level predicate
-  // locks 409 unrelated voters on the same ballot pages.
+  // ballot is harmless to counts. Best effort: an overlapping double-submit can also record a
+  // duplicate moderator action and training row, which have no natural key to dedupe on.
   return runWithTransaction(undefined, async (query: TransactionQuery) => {
     await query(sql`/* lockActiveUserForAgentModerationElectionVoteMutation */
       SELECT fn_lock_active_user_for_mutation(${userId}::uuid)

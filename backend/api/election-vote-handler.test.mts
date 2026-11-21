@@ -19,6 +19,7 @@ import {
 } from '@modules/on-error/error-codes'
 import { createVoteHandler } from './election-vote-handler.mts'
 import { getContributionQuota } from '@services/contribution-gating/quota'
+import { getTopicElectionVote } from '@services/elections-votes/topic'
 
 describe('election-vote-handler', () => {
   let user: PrivateUser
@@ -190,27 +191,26 @@ describe('election-vote-handler', () => {
       expect(afterRetry.used).toBe(afterFirstVote.used)
     })
 
-    it('answers concurrent identical votes with a winner and at most one extra quota charge', async () => {
+    it('keeps the effective vote correct for concurrent identical votes', async () => {
       ownedWork.requireAdmission('elections')
       const concurrentUser = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
-      const firstRequest = createRequest()
-      const secondRequest = createRequest()
+      const [firstRequest, secondRequest] = [createRequest(), createRequest()]
       await settleVoteRouteOperations([
         firstRequest.authenticateAs(concurrentUser),
         secondRequest.authenticateAs(concurrentUser),
       ])
       await resetContributionQuota(concurrentUser.id)
-      const responses = await settleVoteRouteOperations([
-        firstRequest.put(`/api/v1/topics/${topicId}/vote`).send({ choice: 'disavow' }),
-        secondRequest.put(`/api/v1/topics/${topicId}/vote`).send({ choice: 'disavow' }),
+      await settleVoteRouteOperations([
+        firstRequest.put(`/api/v1/topics/${topicId}/vote`).send({ choice: 'disavow' }).expect(204),
+        secondRequest.put(`/api/v1/topics/${topicId}/vote`).send({ choice: 'disavow' }).expect(204),
       ])
-      // The loser gets a 409 or finds the committed ballot; its quota check is not refunded.
-      const statuses = responses.map(response => response.status)
-      expect(statuses.filter(status => ![204, 409].includes(status))).toEqual([])
-      expect(statuses).toContain(204)
+      await expect(getTopicElectionVote(concurrentUser.id, topicId)).resolves.toMatchObject({
+        choice: 'disavow',
+      })
       const { used } = await getContributionQuota(concurrentUser.id, false, null)
-      expect([1, 2]).toContain(used)
+      expect([1, 2]).toContain(used) // best effort: an overlapping duplicate may be charged too
     })
+
     it('returns 403 with OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN for official accounts', async () => {
       const request = createRequest()
       await request.authenticateAs(adminUser)

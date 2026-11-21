@@ -15,7 +15,6 @@ import type { VoteEventContext } from '@voucha/types/entities/election'
 import { getContributionStatus } from '@services/contribution-gating/assert'
 import { assertWithinContributionQuota } from '@services/contribution-gating/quota'
 import { createCodedError } from '@vouchington/sentry'
-import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
 import { EMAIL_VERIFICATION_REQUIRED } from '@modules/on-error/error-codes'
 import type { PrivateUser } from '@services/users/types'
 import type { CreateVoteHandlerOptions } from './vote-handler-options.mts'
@@ -124,41 +123,40 @@ export async function applyVoteMutation<
     sessionId: sessionData?.sid ?? null,
     userAgent: request.userAgent,
   }
-  // The ballot append runs SERIALIZABLE; a concurrent identical request loses with a 409.
-  const upsertedVotes = await conflictOnSerializationFailure(async () => {
-    if (options.getCurrentVote) {
-      const currentVote = await options.getCurrentVote(currentUser.id, entityId)
-      assertNeutralRequiresExistingBallot(choice, currentVote)
-      if ((isClear && currentVote === null) || (!isClear && currentVote?.choice === choice)) {
-        if (options.onNoop) await options.onNoop(currentUser, entityId, resolvedEntity)
-        return null
-      }
-    } else {
-      assertNeutralRequiresExistingBallot(choice, null)
+  // No request lock: votes are best effort and the latest ballot wins, so a concurrent identical
+  // request at worst appends a duplicate identical ballot.
+  if (options.getCurrentVote) {
+    const currentVote = await options.getCurrentVote(currentUser.id, entityId)
+    assertNeutralRequiresExistingBallot(choice, currentVote)
+    if ((isClear && currentVote === null) || (!isClear && currentVote?.choice === choice)) {
+      if (options.onNoop) await options.onNoop(currentUser, entityId, resolvedEntity)
+      return
     }
+  } else {
+    assertNeutralRequiresExistingBallot(choice, null)
+  }
 
-    if (!isClear) {
-      const membershipPlan = currentUser.membership_plan ?? null
-      if (!bypassContributionGating) {
-        const contributionStatus = await getContributionStatus(currentUser, {
-          membershipPlan,
-          skipAccountAgeGate: true,
-        })
-        if (!contributionStatus.allowed) {
-          throw createCodedError(
-            403,
-            'A verified non-disposable email address is required to vote.',
-            EMAIL_VERIFICATION_REQUIRED,
-          )
-        }
+  if (!isClear) {
+    const membershipPlan = currentUser.membership_plan ?? null
+    if (!bypassContributionGating) {
+      const contributionStatus = await getContributionStatus(currentUser, {
+        membershipPlan,
+        skipAccountAgeGate: true,
+      })
+      if (!contributionStatus.allowed) {
+        throw createCodedError(
+          403,
+          'A verified non-disposable email address is required to vote.',
+          EMAIL_VERIFICATION_REQUIRED,
+        )
       }
-      await assertWithinContributionQuota(currentUser.id, isAdmin, membershipPlan)
     }
+    await assertWithinContributionQuota(currentUser.id, isAdmin, membershipPlan)
+  }
 
-    return options.upsertVotes(currentUser.id, [{ entityId, score }], context)
-  }, 'Concurrent vote change; try again')
+  const upsertedVotes = await options.upsertVotes(currentUser.id, [{ entityId, score }], context)
 
-  const upsertedVote = upsertedVotes?.[0]
+  const upsertedVote = upsertedVotes[0]
   if (!upsertedVote) return
 
   if (options.onVote) {
