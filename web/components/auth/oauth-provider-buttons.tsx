@@ -1,8 +1,6 @@
 'use client'
 
 import { useEffect } from 'react'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Button } from '@/components/ui/button'
 import { useAppleAuth } from '@/hooks/use-apple-auth'
 import { useGoogleAuth } from '@/hooks/use-google-auth'
 import { useXAuth } from '@/hooks/use-x-auth'
@@ -10,62 +8,33 @@ import { useLinkedInAuth } from '@/hooks/use-linkedin-auth'
 import { useMicrosoftAuth } from '@/hooks/use-microsoft-auth'
 import { useFacebookSDK } from '@/hooks/use-facebook-sdk'
 import { useGithubAuth } from '@/hooks/use-github-auth'
-import { ProviderIcon } from './oauth-provider-icons'
+import { FacebookUnavailableButton } from './facebook-unavailable-button'
 import { providerButtonClassNames } from './oauth-provider-configs'
 import { ProviderButton, type OAuthButtonProps } from './oauth-provider-button'
-import { useTranslations } from '@/lib/i18n/use-translations'
 
 export function FacebookLoginButton({ onAvailabilityChange, ...props }: OAuthButtonProps) {
-  const t = useTranslations()
   const auth = useFacebookSDK()
   useEffect(() => {
     // oxlint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent -- SDK availability is only known inside this child
     onAvailabilityChange?.(auth.isAvailable)
   }, [auth.isAvailable, onAvailabilityChange])
-  if (!auth.isAvailable) {
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type='button'
-              variant='outline'
-              className={`w-full justify-start gap-3 ${providerButtonClassNames.facebook} cursor-not-allowed opacity-50 hover:bg-background`}
-              aria-disabled='true'
-              aria-label={t(
-                'extracted.auth.oauthProviderButtons.continueWithFacebookUnavailable_eb303cba',
-              )}
-              onClick={event => event.preventDefault()}
-              data-pw='oauth-provider-button-facebook'
-            >
-              <span className='shrink-0'>
-                <ProviderIcon provider='facebook' />
-              </span>
-              {t('extracted.auth.oauthProviderButtons.continueWithFacebook_f154b630')}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            {t(
-              'extracted.auth.oauthProviderButtons.facebookLoginIsTemporarilyUnavailable_06b18a1f',
-            )}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    )
-  }
   return (
     <div
       className='contents'
       data-pw='oauth-facebook-login-button'
     >
-      <ProviderButton
-        label='Facebook'
-        auth={auth}
-        provider='facebook'
-        buttonClassName={providerButtonClassNames.facebook}
-        getToken={async () => ({ provider: 'facebook', token: await auth.login() })}
-        {...props}
-      />
+      {auth.isAvailable ? (
+        <ProviderButton
+          label='Facebook'
+          auth={auth}
+          provider='facebook'
+          buttonClassName={providerButtonClassNames.facebook}
+          getToken={async () => ({ provider: 'facebook', token: await auth.login() })}
+          {...props}
+        />
+      ) : (
+        <FacebookUnavailableButton />
+      )}
     </div>
   )
 }

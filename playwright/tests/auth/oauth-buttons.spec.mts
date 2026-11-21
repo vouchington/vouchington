@@ -1,6 +1,8 @@
 import { test, expect } from '../../helpers/test.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
+import { PLAYWRIGHT_CONFIGURED_OAUTH_PROVIDERS } from '../../config/web-public-env.mts'
 
+const directProviders = ['apple', 'facebook', 'github', 'google', 'linkedin', 'microsoft', 'x']
 const webBroker = { modes: { web: true, native: false } }
 
 test.describe('OAuth login buttons', () => {
@@ -33,9 +35,7 @@ test.describe('OAuth login buttons', () => {
     await expect(loginButtons.getByTestId('oauth-provider-button-x')).toBeVisible()
   })
 
-  test('wraps a direct provider button only when its public client id is configured', async ({
-    page,
-  }) => {
+  test('wraps only the direct providers the Playwright web server configures', async ({ page }) => {
     await page.route('**/api/v1/auth/oauth/providers', route =>
       route.fulfill({
         status: 200,
@@ -48,36 +48,12 @@ test.describe('OAuth login buttons', () => {
 
     await navigateTo(page, '/login')
 
-    const configured = await page.evaluate(() => {
-      const browserWindow = window as Window & {
-        __VOUCHA_PUBLIC_CONFIG__?: Record<string, string | undefined>
-      }
-      const config = browserWindow['__VOUCHA_PUBLIC_CONFIG__'] ?? {}
-      return {
-        apple: Boolean(config['appleClientId']),
-        facebook: Boolean(config['facebookAppId']),
-        github: Boolean(config['githubClientId']),
-        google: Boolean(config['googleClientId']),
-        linkedin: Boolean(config['linkedinClientId']),
-        microsoft: Boolean(config['microsoftClientId']),
-        x: Boolean(config['xClientId']),
-      }
-    })
-    const count = (provider: keyof typeof configured) => Number(configured[provider])
     const loginButtons = page.getByTestId('oauth-login-button')
 
-    await expect(loginButtons.getByTestId('oauth-apple-login-button')).toHaveCount(count('apple'))
-    await expect(loginButtons.getByTestId('oauth-facebook-login-button')).toHaveCount(
-      count('facebook'),
-    )
-    await expect(loginButtons.getByTestId('oauth-github-login-button')).toHaveCount(count('github'))
-    await expect(loginButtons.getByTestId('oauth-google-login-button')).toHaveCount(count('google'))
-    await expect(loginButtons.getByTestId('oauth-linkedin-login-button')).toHaveCount(
-      count('linkedin'),
-    )
-    await expect(loginButtons.getByTestId('oauth-microsoft-login-button')).toHaveCount(
-      count('microsoft'),
-    )
-    await expect(loginButtons.getByTestId('oauth-x-login-button')).toHaveCount(count('x'))
+    for (const provider of directProviders) {
+      await expect(loginButtons.getByTestId(`oauth-${provider}-login-button`)).toHaveCount(
+        PLAYWRIGHT_CONFIGURED_OAUTH_PROVIDERS.some(configured => configured === provider) ? 1 : 0,
+      )
+    }
   })
 })

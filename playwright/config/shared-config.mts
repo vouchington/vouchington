@@ -19,6 +19,7 @@ import {
   withOtelNodeOptions,
 } from './web-server-command.mts'
 import { playwrightTestTimeout } from './test-timeout.mts'
+import { playwrightWebPublicEnv } from './web-public-env.mts'
 const __dirname = fileURLToPath(new URL('../..', import.meta.url))
 
 const WEB_PORT = process.env.NEXT_PORT || process.env.WEB_PORT || '3000'
@@ -41,8 +42,6 @@ export const PLAYWRIGHT_WEB_SERVER_LOG_DIR = join(TEMP_ROOT, 'playwright-web-ser
 const PLAYWRIGHT_HUMAN_USER_AGENT =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 ' +
   '(KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36'
-const TEST_WEB_PUSH_PUBLIC_KEY =
-  'BHl0gZb-cpN8lY6FjEpmYTFQc-5hFCnM3vYIVOXsHOXOtfsmYmSlEdAOO4eXw3pZTbNuubGHTODWpl_vP7C_OeY'
 export const CI = !!process.env.CI
 const assetResolverRule = assetHostResolverRule(process.env.NEXT_PUBLIC_ASSET_PREFIX, WEB_PORT)
 export const CHROMIUM_USE = withOptionalLaunchOptionArg(
@@ -160,10 +159,9 @@ export function createPlaywrightConfig({
           PORT: WEB_PORT,
           HOSTNAME: '0.0.0.0',
           API_BASE_URL: BACKEND_URL,
+          ...playwrightWebPublicEnv(),
           ALLOW_TURNSTILE_TEST_KEY: process.env.ALLOW_TURNSTILE_TEST_KEY ?? 'true',
           IMAGE_ORIGIN: process.env.IMAGE_ORIGIN ?? IMAGE_LAMBDA_URL,
-          NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY:
-            process.env.NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY ?? TEST_WEB_PUSH_PUBLIC_KEY,
           GTM_ID: process.env.GTM_ID || process.env.NEXT_PUBLIC_GTM_ID || 'GTM-PLAYWRIGHT',
           NODE_OPTIONS: withOtelNodeOptions(nodeOptions, otelEnabled),
           ...(otelEnabled ? { OTEL_LOGS_EXPORTER: 'otlp', OTEL_SERVICE_NAME: 'voucha-web' } : {}),
