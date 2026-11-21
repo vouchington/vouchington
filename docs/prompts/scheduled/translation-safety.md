@@ -1,5 +1,7 @@
 Review automatic translation safety. Find one concrete, bounded improvement that is safe to ship in one PR. If none qualifies, make no repository changes and report why. When the chosen surface has several render sites sharing the same gap (for example user-authored-text elements, only some with a rendering boundary), close all of them in this PR.
 
+Unit: one translated-content surface.
+
 - Check [Localization](../../requirements/users/LOCALIZATION.md) against one translated-content, rendering, moderation, privacy, or persistence surface. Dimensions: preserving original content and source hashes, source/target language identity, provider/model/version metadata, status/freshness, and rendering boundaries between original and translated text.
 - Private or restricted content must not go to external translation providers without an explicit product requirement. Do not add route or locale-URL behavior ([localization.md](localization.md)).
 - Rotate dimensions: find prior runs with `gh pr list --search 'in:title "Automation scheduled: translation-safety.md" label:automation author:@me' --state merged --json number,mergedAt,body --limit 10`, discard any whose `Scheduled prompt` section does not name this prompt path, sort by `mergedAt` descending, and do not repeat the latest two dimensions unless no other has an actionable gap.

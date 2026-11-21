@@ -1,5 +1,7 @@
 Review CI log quality. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
+Unit: one workflow's jobs.
+
 Use `review-ci-logs` to inspect the core-plus-failures window, download only representative archives, and separate real failures from misleading or excessive output.
 
 - Check the latest target-branch runs first; fix repository-owned root causes before symptoms. Measure the job or step in bytes and lines before changing it.

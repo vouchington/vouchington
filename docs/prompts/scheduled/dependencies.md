@@ -1,5 +1,7 @@
 Review Vouchington pnpm dependency maintenance. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
+Unit: one workspace package or one exemption group.
+
 Load `dependency-rules` and `package-json-checklist`. [`docs/development/dependency-updates.md`](../../development/dependency-updates.md) is the source of truth for ownership, frozen-install commands, lockfiles, and audit evidence. This rotation covers only the pnpm workspace; native dependencies belong to [`vouchington/vouchington-clients`](https://github.com/vouchington/vouchington-clients).
 
 1. Audit temporary pnpm release-age exemptions first. Run `pnpm run no-mistakes` and read the `temporaryGroups` under `pnpm-release-age-policy` in [`.no-mistakes/rules/policies.yml`](../../../.no-mistakes/rules/policies.yml). Get each exact selector's npm publication timestamp; each group's `eligibleForRemovalAt` must equal the whole-second ceiling of its latest selector publication plus `minimumReleaseAge` (minutes, `pnpm-workspace.yaml`). Metadata drift, an eligible group, or a selector absent from `pnpm-lock.yaml` is the run's one improvement: fix the drift and remove all eligible groups and orphaned selectors in one PR. Never broaden a selector or extend an exemption. If none is actionable, continue to step 2; do not open a findings-only PR.

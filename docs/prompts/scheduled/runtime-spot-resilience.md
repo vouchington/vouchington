@@ -1,5 +1,7 @@
 Review runtime Spot resilience. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
+Unit: one SSE or WebSocket route.
+
 Audit the served SSE and WebSocket routes and their web, Swift, and .NET consumers. Verify that:
 
 - every live connection has a server-owned cycle cap of at most 120 seconds;

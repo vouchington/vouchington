@@ -1,5 +1,7 @@
 Review Valkey scripts and usage. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
+Unit: one backend module that uses Valkey.
+
 Load `vouchington-valkey`.
 
 - Collapse sequential awaits and per-item calls into `MGET`, a [`Batch`](https://valkey.io/valkey-glide/node/Batch/classes/Batch/), or Lua (for 2+ commands that must be atomic or share a round trip; never `Batch` a single command). `SCAN` cursors and bounded deletion loops are intentional exceptions; avoid unbounded concurrent fan-out. Memoize repeated lookups within a request.

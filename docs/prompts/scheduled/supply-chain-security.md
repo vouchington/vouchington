@@ -1,5 +1,7 @@
 Review supply-chain and CI/CD security. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
+Unit: one workflow.
+
 Load `github-actions-rules` and `security-rules`.
 
 - Harden a workflow: least-privilege `permissions`/`GITHUB_TOKEN`, a narrower `workflow_run` trigger and fork-PR checkout/secret exposure, or untrusted `${{ github.event.* }}` moved out of `run:` into env. Action SHA-pinning is already enforced by no-mistakes `github-actions-pinned-hash`; instead vet any newly added third-party action.

@@ -1,5 +1,7 @@
 Reconcile pending native adoption against `vouchington/vouchington-clients` main. Run in PR mode, with at most one producer PR removing verified adopted flags and one deduplicated clients issue for aged unreferenced items. A completed audit with neither change is a verified no-op. Do not add a required check, delete unused copy or fixtures, or implement client features.
 
+Unit: one native-consumer manifest slice or fixture group.
+
 Producer changes land before client adoption and stay backward compatible with released clients.
 Pending metadata keeps adoption gaps visible without coupling merge order. See the owning
 [native localization](../../development/reference-tests-translation-catalog-and-locale-checks.md)

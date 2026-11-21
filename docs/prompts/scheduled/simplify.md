@@ -1,6 +1,5 @@
-Review the codebase for DRY and simplification opportunities. Find one concrete, bounded improvement that is safe to ship in one PR. If none qualifies, make no repository changes and report why.
+Simplify production code. Find one concrete, bounded improvement that is safe to ship in one PR. If none qualifies, make no repository changes and report why.
 
-Load `typescript-authoring`.
+Unit: one folder under `backend/services`, `web/components`, or `web/app`.
 
-- Look for duplicated utilities, repeated component patterns, unused indirection, flags whose callers all pass the same value (prefer a structural invariant that removes the unreachable branch), dead code, and code that belongs in an existing shared helper.
-- Skip findings covered by open issues or PRs; record the queries and claim no coverage beyond them. If a finding is too large for one PR, keep looking for a bounded quick win; a tracking-issue recommendation never substitutes for a patch.
+Load the `simplify` skill and `typescript-authoring`. Repo-specific targets: duplicated utilities and component patterns, flags whose callers all pass the same value (prefer a structural invariant that removes the unreachable branch), and code that belongs in an existing shared helper. Test cleanup belongs to [test-pruning.md](test-pruning.md); documentation cleanup to [docs.md](docs.md).

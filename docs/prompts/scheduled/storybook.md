@@ -1,5 +1,7 @@
 Review Storybook and pure components. Each run selects at most one bullet below; they are mutually exclusive. When the target is a repeated fingerprint (the identical pattern at other call sites, including other files), fix every occurrence of that one fingerprint in this PR; that does not license a second bullet.
 
+Unit: one folder under `web/components`.
+
 The goal is many pure, reusable, DRY, composable components with Storybook stories and Playwright tests on those stories. React Compiler is enabled: no `memo(...)`.
 
 - Make one component pure where it improves reuse or testing.

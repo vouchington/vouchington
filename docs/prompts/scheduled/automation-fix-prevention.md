@@ -1,5 +1,7 @@
 Review recent triage-loop flake-fix pull requests (label `automation`, title beginning `Automation fix:`; merged, open, and closed-unmerged) with authenticated `gh` reads. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
+Unit: one recurring failure class from the flake-fix corpus.
+
 - Bound the corpus to the 50 most recently updated matching PRs and record the query. Use each body's `Root cause` and `Options considered` to find which failure classes recurred and whether the fix closed the cause or one symptom. A closed-unmerged fix can show a rejected generation pattern.
 - This prompt is incident-driven: anchor every change to a specific flake-fix PR. [static-code-analysis.md](static-code-analysis.md) is tool-driven; do not duplicate it. Skip classes already guarded or tracked by an open issue or PR.
 - Cluster by failure class before picking: test isolation and shared-state leaks, test timing and lifecycle, CI planner and guard hazards, missing-config contract violations, diff scope exceeding the failing target's blast radius, and fixes aimed at a detector's misattributed symptom rather than the real defect.

@@ -1,5 +1,7 @@
 Review Playwright tests. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
+Unit: one Playwright spec file or folder.
+
 Load `playwright-authoring` and `playwright-rules`.
 
 - Run the relevant local test more than once when investigating reliability; fix failures and make tests faster or leaner.

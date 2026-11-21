@@ -1,5 +1,7 @@
 Do a web design audit. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
+Unit: one route or layout family.
+
 Start the managed stack with `./dev/initialize web` then `./dev/tmux`, and inspect the affected route in Chrome or Playwright after the change. If live browser QA stays unavailable after recovery, stop without publishing a UI PR. Screenshots are required for UI changes.
 
 - Design, UX, and code: review pages and flows for gaps, inconsistent or duplicated layouts, and code not following established patterns.

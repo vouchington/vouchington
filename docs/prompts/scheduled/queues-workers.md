@@ -1,5 +1,7 @@
 Review backend queues and workers. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
+Unit: one queue and its worker.
+
 Load `voucha-queue-authoring`, `glide-mq`, and `queue-rules`; follow [backend-queues.md](../../checklists/backend-queues.md).
 
 - Trace queue and worker sources to runtime registration: named-export consumers, operator catalog parity, and membership in the applicable worker policy, not matching names alone.

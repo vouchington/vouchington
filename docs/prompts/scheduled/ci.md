@@ -1,5 +1,7 @@
 Review the latest CI runs. Find one concrete, bounded improvement that is safe to ship in one PR. If none qualifies, make no repository changes and report why.
 
+Unit: one workflow.
+
 Load `github-actions-authoring` and `github-actions-rules`.
 
 - Check the latest target-branch runs first; if they already fail the same way, document that before changing anything.

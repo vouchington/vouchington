@@ -1,5 +1,7 @@
 Audit one table's growth class and partition classification. Make at most one evidence-backed change.
 
+Unit: one table.
+
 Load `postgres-partitioning-uuid-v7` and `postgres-schema-design`. Voucha has not launched, so a seeded database's row counts and `pg_stat_*` counters describe fixture loading, never growth. The evidence is the code that writes and deletes the table's rows and the plans the EXPLAIN harness captures at seed scale ([capture steps](postgresql-explain-analyze.md#capture-the-plans), or the newest `main` Nightly `explain-analyze-results` artifact, whatever its conclusion; otherwise `Outcome: incomplete`).
 
 - Read the growth and identity projection in [schema-growth-test-policies.mts](../../../backend/test-helpers/schema-growth-test-policies.mts), its [bounded and static identity policies](../../../backend/test-helpers/schema-growth-bounded-policies.mts), and the [partitioning strategy](../../overview/architecture/partitioning-strategy.md); runtime policies live in [schema-growth-registry.mts](../../../backend/data-stores/psql/schema-growth-registry.mts). Pick the registry entry whose `growth` class or partition eligibility is most likely stale.

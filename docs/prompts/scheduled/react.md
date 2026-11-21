@@ -1,5 +1,7 @@
 Review React components in `web/**`. Find one concrete, bounded improvement that is safe to ship in one PR. If none qualifies, make no repository changes and report why only after the required audit below.
 
+Unit: one route group under `web/app` or folder under `web/components`.
+
 Load `react-rules` and `react-app-structure`.
 
 - Initialize with `./dev/initialize monorepo`, then run `pnpm exec oxlint --type-aware --deny-warnings web` so the native React Compiler diagnostics run. A run that cannot do this is incomplete, not a no-op.

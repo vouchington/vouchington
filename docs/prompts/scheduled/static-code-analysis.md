@@ -1,5 +1,7 @@
 Review static analysis coverage. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
+Unit: one tool config or rule group.
+
 Load `static-analysis-checklist` and `static-code-analysis`. References: [Oxlint rules](https://oxc.rs/docs/guide/usage/linter/rules.html), [JS plugins](https://oxc.rs/docs/guide/usage/linter/js-plugins.html#known-supported-eslint-plugins).
 
 - Review the other tools (syncpack, lychee, knip, dependency-cruiser) and current exceptions; remove or fix an exception, or file an issue for it. Skip findings already in open issues or PRs.

@@ -9,6 +9,8 @@ Triage loop run: {{LOOP_RUN_ID}}
 
 You run as a local subagent of the triage loop's cron. Before picking work, search open pull requests whose title begins with `Automation scheduled: {{PROMPT_NAME}}`. If no match exists, proceed to the implementation steps below. Only treat a match as the owning PR if it is a same-repository PR (not a fork) with that title prefix, authored by the authenticated `gh` user, and carrying the `automation` label; a human-owned or title-only match is not a mutation target. If a verified owning PR exists, do not open a duplicate: re-fetch its exact head SHA immediately before pushing, stop without mutation if it changed since the search, then push additional commits instead. If a match exists but fails verification, stop without mutation and report the existing PR.
 
+A prompt's `Unit:` line names the kind of bounded unit to pick (a folder, domain, workflow, or test group). Before auditing, pick exactly one such unit, not the whole repository, preferring the one least recently touched by this prompt (earlier `Automation scheduled: {{PROMPT_NAME}}` PRs) or most changed recently, and state in one line how you chose. Review and fix only inside that unit; report anything outside it as a recommendation.
+
 Audit the selected scope and make at most one evidence-backed, independently mergeable improvement. Implement it and run the required validation only when one qualifies. If the audit finds no safe, independently mergeable change, make no repository changes and report why.
 
 At the end, report exactly one outcome: `Outcome: draft PR`, `Outcome: verified no-op`, or

@@ -1,5 +1,7 @@
 Follow up on review feedback that no one handled before a pull request merged. Pick at most one merged PR and fix its actionable feedback in one bounded follow-up PR, the way #1950 followed up #1935.
 
+Unit: one merged PR.
+
 pr-shepherd stops when a PR merges, so nothing else reads reviews that Codex, Copilot, and humans post around or after the merge. A comment can justify a change only when current repository evidence confirms it.
 
 ## Action steps

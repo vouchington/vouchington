@@ -1,5 +1,7 @@
 Review released upstream changes against local workarounds and local copies of package features. Pick at most one concrete, bounded removal or adoption that is safe to ship in one PR.
 
+Unit: one package.
+
 `pnpm-release-age-policy.permanentPackages` in [`.no-mistakes/rules/policies.yml`](../../../.no-mistakes/rules/policies.yml) lists the first-party packages; find each owner via `npm view <package> repository.url`. [Dependency Updates](../../development/dependency-updates.md) owns installs, lockfiles, and release delays. [first-party-dependencies.md](first-party-dependencies.md) tracks upstream defects not yet fixed; this prompt removes local code only after the fix or capability is released. Load `dependency-rules`.
 
 ## Candidates
