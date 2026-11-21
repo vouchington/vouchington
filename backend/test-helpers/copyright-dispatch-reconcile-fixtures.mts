@@ -4,6 +4,10 @@ import {
   readLatestTestEmailRunId,
 } from './copyright-ai-run-fixtures.mts'
 import { ai_agents } from '../queues/ai-agents/queues.mts'
+import {
+  COPYRIGHT_AGENT_DISPATCH_JOBS,
+  type CopyrightAgentDispatchStage,
+} from '../queues/ai-agents/enqueues/copyright-agent-dispatch-stages.mts'
 import { createCopyrightAppeal } from '../services/copyright-notices/index.mts'
 import { createTestUser } from './index.mts'
 import { createParsedCopyrightEmailIntake } from './copyright-email-intake-fixtures.mts'
@@ -86,10 +90,10 @@ export async function jobFor(id: string) {
   return { name: job.name, data: data as unknown }
 }
 
-export async function continuationsAfter(cursor: string) {
+export async function continuationsAfter(stage: CopyrightAgentDispatchStage, cursor: string) {
   return (await readAllQueueJobs(ai_agents)).filter(
     job =>
-      job.name === 'reconcile-copyright-agent-dispatches' &&
+      job.name === COPYRIGHT_AGENT_DISPATCH_JOBS[stage].jobName &&
       (job.data as { after?: string }).after === cursor,
   )
 }

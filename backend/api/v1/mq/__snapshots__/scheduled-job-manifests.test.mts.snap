@@ -72,8 +72,8 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Re-enqueue unassessed copyright email and form agent work",
-        "id": "reconcileCopyrightAgentDispatches",
+        "description": "Re-enqueue unassessed copyright email agent work",
+        "id": "reconcileCopyrightEmailDispatches",
         "kind": "scheduled-jobs",
         "schedule": "*/5 * * * *",
         "trigger": "[function]",
@@ -84,16 +84,168 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "repeat": {
       "pattern": "*/5 * * * *",
     },
-    "schedulerId": "reconcileCopyrightAgentDispatches",
+    "schedulerId": "reconcileCopyrightEmailDispatches",
     "template": {
       "data": {},
-      "name": "reconcile-copyright-agent-dispatches",
+      "name": "reconcile-copyright-email-dispatches",
       "opts": {
         "attempts": 3,
         "backoff": {
           "delay": 1000,
           "jitter": 0.5,
           "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "copyright_agent_dispatch_reconcile",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": false,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue unscreened copyright form agent work",
+        "id": "reconcileCopyrightFormScreeningDispatches",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "ai_agents",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "reconcileCopyrightFormScreeningDispatches",
+    "template": {
+      "data": {},
+      "name": "reconcile-copyright-form-screening-dispatches",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "copyright_agent_dispatch_reconcile",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": false,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Apply saved copyright form screening effects without an agent run",
+        "id": "reconcileCopyrightFormEffectDispatches",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "ai_agents",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "reconcileCopyrightFormEffectDispatches",
+    "template": {
+      "data": {},
+      "name": "reconcile-copyright-form-effect-dispatches",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "copyright_agent_dispatch_reconcile",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": false,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue unassessed copyright appeal recommendation work",
+        "id": "reconcileCopyrightAppealDispatches",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "ai_agents",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "reconcileCopyrightAppealDispatches",
+    "template": {
+      "data": {},
+      "name": "reconcile-copyright-appeal-dispatches",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "copyright_agent_dispatch_reconcile",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": false,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue unassessed copyright submission guidance work",
+        "id": "reconcileCopyrightSubmissionGuidanceDispatches",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "ai_agents",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "reconcileCopyrightSubmissionGuidanceDispatches",
+    "template": {
+      "data": {},
+      "name": "reconcile-copyright-submission-guidance-dispatches",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "copyright_agent_dispatch_reconcile",
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -4394,12 +4546,44 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "triggerName": "enqueueExpireStuckDisputeResolutionRuns",
   },
   {
-    "description": "Re-enqueue unassessed copyright email and form agent work",
-    "id": "reconcileCopyrightAgentDispatches",
-    "job_name": "reconcile-copyright-agent-dispatches",
+    "description": "Re-enqueue unassessed copyright email agent work",
+    "id": "reconcileCopyrightEmailDispatches",
+    "job_name": "reconcile-copyright-email-dispatches",
     "queue_name": "ai_agents",
     "schedule": "*/5 * * * *",
-    "triggerName": "enqueueReconcileCopyrightAgentDispatches",
+    "triggerName": "trigger",
+  },
+  {
+    "description": "Re-enqueue unscreened copyright form agent work",
+    "id": "reconcileCopyrightFormScreeningDispatches",
+    "job_name": "reconcile-copyright-form-screening-dispatches",
+    "queue_name": "ai_agents",
+    "schedule": "*/5 * * * *",
+    "triggerName": "trigger",
+  },
+  {
+    "description": "Apply saved copyright form screening effects without an agent run",
+    "id": "reconcileCopyrightFormEffectDispatches",
+    "job_name": "reconcile-copyright-form-effect-dispatches",
+    "queue_name": "ai_agents",
+    "schedule": "*/5 * * * *",
+    "triggerName": "trigger",
+  },
+  {
+    "description": "Re-enqueue unassessed copyright appeal recommendation work",
+    "id": "reconcileCopyrightAppealDispatches",
+    "job_name": "reconcile-copyright-appeal-dispatches",
+    "queue_name": "ai_agents",
+    "schedule": "*/5 * * * *",
+    "triggerName": "trigger",
+  },
+  {
+    "description": "Re-enqueue unassessed copyright submission guidance work",
+    "id": "reconcileCopyrightSubmissionGuidanceDispatches",
+    "job_name": "reconcile-copyright-submission-guidance-dispatches",
+    "queue_name": "ai_agents",
+    "schedule": "*/5 * * * *",
+    "triggerName": "trigger",
   },
   {
     "description": "Re-enqueue incomplete classifier runs and dispatch unreserved requests",

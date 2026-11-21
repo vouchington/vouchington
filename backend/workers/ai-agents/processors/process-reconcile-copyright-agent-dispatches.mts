@@ -1,12 +1,16 @@
-import { getCopyrightSweepLimits } from '@services/copyright-notices/work-limits'
-import { enqueueReconcileCopyrightAgentDispatches } from '@queues/ai-agents/enqueues/reconcile-copyright-agent-dispatches'
-import type { CopyrightAgentSweepData } from '@queues/ai-agents/types'
+import { enqueueReconcileCopyrightAgentDispatchStage } from '@queues/ai-agents/enqueues/reconcile-copyright-agent-dispatches'
+import {
+  COPYRIGHT_AGENT_DISPATCH_JOBS,
+  COPYRIGHT_AGENT_DISPATCH_STAGES,
+  type CopyrightAgentDispatchStage,
+} from '@queues/ai-agents/enqueues/copyright-agent-dispatch-stages'
 import {
   applyNonSpamSignedInCopyrightFormScreening,
   getPendingCopyrightAgentDispatches,
   isCopyrightIntakeEnabled,
   type CopyrightAgentDispatch,
 } from '@services/copyright-notices'
+import { getCopyrightAgentDispatchLimits } from '@services/copyright-notices/work-limits'
 import { admitCopyrightAppealRecommendationRuns } from '@services/copyright-notices/appeal-recommendation-runs'
 import { admitCopyrightEmailRecommendationRuns } from '@services/copyright-notices/email-recommendation-runs'
 import { admitCopyrightSubmissionGuidanceRuns } from '@services/copyright-notices/submission-guidance-runs'
@@ -15,130 +19,152 @@ import { enqueueOrRetryCopyrightFormScreening } from '@queues/ai-agents/enqueues
 import { enqueueOrRetryCopyrightAppealRecommendation } from '@queues/ai-agents/enqueues/copyright-appeal-recommendation'
 import { enqueueOrRetryCopyrightSubmissionGuidance } from '@queues/ai-agents/enqueues/copyright-submission-guidance'
 
-/**
- * Processes capped pages of pending copyright dispatches. One failed dispatch does not stop the others or
- * later pages; the job fails afterwards with every error so its retry covers what is still pending.
- *
- * `COPYRIGHT_INTAKE_ENABLED` closes new intake only. While it is off, the `email` and
- * `form-screening` dispatches wait so no new submission reaches a model. An `appeal` and a saved
- * `form-effect` belong to a case already open, so they run in either state.
- */
-export async function processReconcileCopyrightAgentDispatches(
-  data: CopyrightAgentSweepData = {},
-  options: { ids?: readonly string[]; batchSize?: number } = {},
-): Promise<{ hasMore: boolean }> {
-  const intakeEnabled = isCopyrightIntakeEnabled()
-  const errors: unknown[] = []
-  const { batchSize: defaultBatchSize, maxBatches } = getCopyrightSweepLimits()
-  const batchSize = options.batchSize ?? defaultBatchSize
-  let cursor = data.after
-  for (let batch = 0; batch < maxBatches; batch++) {
-    // oxlint-disable-next-line no-await-in-loop -- advance only after the page's dispatches settle.
-    const result = await reconcileDispatchPage(cursor, intakeEnabled, batchSize, options.ids) // no-mistakes-disable-line query-reached-per-item: capped at maxBatches pages and the cursor advances only after a page settles
-    cursor = result.nextCursor
-    errors.push(...result.errors)
-    if (!cursor) break
+/** Settles one page's subject ids and returns the error of every subject that failed. */
+type PageSettler = (ids: readonly string[]) => Promise<unknown[]>
+
+/** One admission statement covers the page; each admitted subject then enqueues its run. */
+function admitThenEnqueue(
+  admit: (ids: readonly string[]) => Promise<Map<string, string>>,
+  enqueue: (id: string, runId: string) => Promise<unknown>,
+): PageSettler {
+  return async ids => {
+    const admitted = await admitRuns(admit, ids)
+    const enqueues = await Promise.allSettled(
+      ids.flatMap(id => {
+        const runId = admitted.runs.get(id)
+        return runId ? [enqueue(id, runId)] : []
+      }),
+    )
+    return [...admitted.errors, ...rejections(enqueues)]
   }
-  if (cursor) await enqueueReconcileCopyrightAgentDispatches({ after: cursor })
-  if (errors.length > 0) {
-    throw new AggregateError(errors, 'Copyright agent dispatch reconciliation failed')
-  }
-  return { hasMore: cursor !== undefined }
 }
 
-async function reconcileDispatchPage(
-  cursor: string | undefined,
-  intakeEnabled: boolean,
+/** A failed admission keeps later pages moving; the next sweep retries. */
+async function admitRuns(
+  admit: (ids: readonly string[]) => Promise<Map<string, string>>,
+  ids: readonly string[],
+): Promise<{ runs: Map<string, string>; errors: unknown[] }> {
+  try {
+    return { runs: await admit(ids), errors: [] }
+  } catch (err) {
+    return { runs: new Map(), errors: [err] }
+  }
+}
+
+function rejections(results: readonly PromiseSettledResult<unknown>[]): unknown[] {
+  return results.flatMap((result): unknown[] =>
+    result.status === 'rejected' ? [result.reason as unknown] : [],
+  )
+}
+
+/**
+ * A pending subject has no result: an admitted (or already active) run is what gets enqueued, and a
+ * saved form effect starts no agent work, so each kind settles on its own.
+ */
+const pageSettlers: Record<CopyrightAgentDispatchStage, PageSettler> = {
+  email: admitThenEnqueue(
+    admitCopyrightEmailRecommendationRuns,
+    enqueueOrRetryCopyrightEmailIntake,
+  ),
+  'form-screening': async ids =>
+    rejections(await Promise.allSettled(ids.map(id => enqueueOrRetryCopyrightFormScreening(id)))),
+  'form-effect': async ids => {
+    let errors: unknown[] = []
+    for (const id of ids) {
+      try {
+        // oxlint-disable-next-line no-await-in-loop -- each durable legal effect may lock targets.
+        await applyNonSpamSignedInCopyrightFormScreening(id) // no-mistakes-disable-line query-reached-per-item: each durable legal effect locks its own submission targets and a page holds at most batchSize items
+      } catch (err) {
+        errors = errors.concat([err])
+      }
+    }
+    return errors
+  },
+  appeal: admitThenEnqueue(
+    admitCopyrightAppealRecommendationRuns,
+    enqueueOrRetryCopyrightAppealRecommendation,
+  ),
+  'submission-guidance': admitThenEnqueue(
+    admitCopyrightSubmissionGuidanceRuns,
+    enqueueOrRetryCopyrightSubmissionGuidance,
+  ),
+}
+
+function subjectId(item: CopyrightAgentDispatch): string {
+  return item.kind === 'email' ? item.intakeId : item.submissionId
+}
+
+/**
+ * `COPYRIGHT_INTAKE_ENABLED` closes new intake only. While it is off, the `email` and
+ * `form-screening` stages wait so no new submission reaches a model; the pending rows stay and the
+ * first sweep after enablement sends them. An `appeal`, `submission-guidance` and saved
+ * `form-effect` belong to a case already open, so they run in either state.
+ */
+function isStageOpen(stage: CopyrightAgentDispatchStage): boolean {
+  return (stage !== 'email' && stage !== 'form-screening') || isCopyrightIntakeEnabled()
+}
+
+async function reconcileStagePage(
+  stage: CopyrightAgentDispatchStage,
+  cursor: string | null | undefined,
   batchSize: number,
   ids?: readonly string[],
-): Promise<{ errors: unknown[]; nextCursor: string | undefined }> {
+): Promise<{ errors: unknown[]; nextCursor: string | null | undefined }> {
   const page = await getPendingCopyrightAgentDispatches({
     ...(cursor ? { after: cursor } : {}),
     limit: batchSize,
     ids,
+    kind: stage,
   })
-  const dispatches = intakeEnabled ? page.results : page.results.filter(isInCaseDispatch)
-  const errors = await dispatchCopyrightAgentPage(dispatches)
-  const nextCursor = page.page_info.has_next_page
-    ? (page.page_info.end_cursor ?? undefined)
-    : undefined
+  const errors = await pageSettlers[stage](page.results.map(subjectId))
+  const nextCursor = page.page_info.has_next_page ? page.page_info.end_cursor : undefined
   return { errors, nextCursor }
 }
 
-function isInCaseDispatch(item: CopyrightAgentDispatch): boolean {
-  return item.kind !== 'email' && item.kind !== 'form-screening'
-}
-
-type RunAdmissions = {
-  appeal: Map<string, string>
-  guidance: Map<string, string>
-  email: Map<string, string>
-}
-
 /**
- * One admission statement per kind covers the whole page; each subject then enqueues its run. The
- * kinds settle separately, so one kind's failure keeps the other kinds' runs.
+ * Processes capped pages of one kind of pending copyright dispatch. One failed dispatch does not stop
+ * the others or later pages; a job that finds more enqueues its own continuation, then fails with
+ * every error so its retry covers only this stage.
  */
-async function admitPageRuns(
-  pending: readonly CopyrightAgentDispatch[],
-  errors: unknown[],
-): Promise<RunAdmissions> {
-  const idsOf = (kind: 'appeal' | 'submission-guidance' | 'email') =>
-    pending.flatMap(item => {
-      if (item.kind !== kind) return []
-      return [item.kind === 'email' ? item.intakeId : item.submissionId]
-    })
-  const [appeal, guidance, email] = await Promise.allSettled([
-    admitCopyrightAppealRecommendationRuns(idsOf('appeal')),
-    admitCopyrightSubmissionGuidanceRuns(idsOf('submission-guidance')),
-    admitCopyrightEmailRecommendationRuns(idsOf('email')),
-  ])
-  const settled = (result: PromiseSettledResult<Map<string, string>>) => {
-    if (result.status === 'fulfilled') return result.value
-    errors.push(result.reason)
-    return new Map<string, string>()
-  }
-  return { appeal: settled(appeal), guidance: settled(guidance), email: settled(email) }
-}
-
-async function dispatchCopyrightAgentPage(
-  pending: readonly CopyrightAgentDispatch[],
-): Promise<unknown[]> {
-  const errors: unknown[] = []
-  // A failed admission keeps its page's other dispatches and later pages moving; the next sweep retries.
-  const runs = await admitPageRuns(pending, errors)
-  const enqueues = await Promise.allSettled(
-    pending.flatMap(item => (item.kind === 'form-effect' ? [] : [enqueueDispatch(item, runs)])),
-  )
-  for (const result of enqueues) if (result.status === 'rejected') errors.push(result.reason)
-  for (const item of pending) {
-    if (item.kind !== 'form-effect') continue
-    try {
-      // oxlint-disable-next-line no-await-in-loop -- each durable legal effect may lock targets.
-      await applyNonSpamSignedInCopyrightFormScreening(item.submissionId) // no-mistakes-disable-line query-reached-per-item: each durable legal effect locks its own submission targets and a page holds at most batchSize items
-    } catch (err) {
-      errors.push(err)
+function createStageProcessor(stage: CopyrightAgentDispatchStage) {
+  return async function processReconcileCopyrightAgentDispatchStage(
+    data: { after?: string } = {},
+    options: { ids?: readonly string[]; batchSize?: number } = {},
+  ): Promise<{ hasMore: boolean }> {
+    if (!isStageOpen(stage)) return { hasMore: false }
+    const { batchSize: defaultBatchSize, maxBatches } = getCopyrightAgentDispatchLimits(stage)
+    const batchSize = options.batchSize ?? defaultBatchSize
+    let cursor: string | null | undefined = data.after
+    let errors: unknown[] = []
+    for (let batch = 0; batch < maxBatches; batch++) {
+      // oxlint-disable-next-line no-await-in-loop -- advance only after the page's dispatches settle.
+      const result = await reconcileStagePage(stage, cursor, batchSize, options.ids)
+      errors = errors.concat(result.errors)
+      cursor = result.nextCursor
+      if (!cursor) break
     }
+    if (cursor) await enqueueReconcileCopyrightAgentDispatchStage(stage, { after: cursor })
+    if (errors.length > 0) {
+      throw new AggregateError(errors, `Copyright ${stage} agent dispatch reconciliation failed`)
+    }
+    return { hasMore: Boolean(cursor) }
   }
-  return errors
 }
 
-/** A pending subject has no result; its admitted (or already active) run is what gets enqueued. */
-async function enqueueDispatch(
-  item: Exclude<CopyrightAgentDispatch, { kind: 'form-effect' }>,
-  runs: RunAdmissions,
-): Promise<void> {
-  if (item.kind === 'form-screening') return enqueueOrRetryCopyrightFormScreening(item.submissionId)
-  if (item.kind === 'email') {
-    const runId = runs.email.get(item.intakeId)
-    if (runId) await enqueueOrRetryCopyrightEmailIntake(item.intakeId, runId)
-    return
-  }
-  if (item.kind === 'submission-guidance') {
-    const runId = runs.guidance.get(item.submissionId)
-    if (runId) await enqueueOrRetryCopyrightSubmissionGuidance(item.submissionId, runId)
-    return
-  }
-  const runId = runs.appeal.get(item.submissionId)
-  if (runId) await enqueueOrRetryCopyrightAppealRecommendation(item.submissionId, runId)
-}
+export const copyrightAgentDispatchProcessors = {
+  email: createStageProcessor('email'),
+  'form-screening': createStageProcessor('form-screening'),
+  'form-effect': createStageProcessor('form-effect'),
+  appeal: createStageProcessor('appeal'),
+  'submission-guidance': createStageProcessor('submission-guidance'),
+} as const satisfies Record<CopyrightAgentDispatchStage, unknown>
+
+type StageJobName = (typeof COPYRIGHT_AGENT_DISPATCH_JOBS)[CopyrightAgentDispatchStage]['jobName']
+
+/** The queue processor of each stage's job, keyed by job name. */
+export const copyrightAgentDispatchJobProcessors = Object.fromEntries(
+  COPYRIGHT_AGENT_DISPATCH_STAGES.map(stage => [
+    COPYRIGHT_AGENT_DISPATCH_JOBS[stage].jobName,
+    (job: { data: { after?: string } }) => copyrightAgentDispatchProcessors[stage](job.data),
+  ]),
+) as Record<StageJobName, (job: { data: { after?: string } }) => Promise<{ hasMore: boolean }>>

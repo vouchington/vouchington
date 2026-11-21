@@ -96,7 +96,11 @@ export type AIAgentJobName =
   | 'auto-dispatch-judgement'
   | 'reconcile-auto-dispatch-judgements'
   | 'recover-background-response'
-  | 'reconcile-copyright-agent-dispatches'
+  | 'reconcile-copyright-email-dispatches'
+  | 'reconcile-copyright-form-screening-dispatches'
+  | 'reconcile-copyright-form-effect-dispatches'
+  | 'reconcile-copyright-appeal-dispatches'
+  | 'reconcile-copyright-submission-guidance-dispatches'
   | 'reconcile-ai-agent-failures'
   | 'expire-stuck-appeal-resolution-runs'
   | 'expire-stuck-dispute-resolution-runs'
@@ -118,7 +122,11 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   'auto-dispatch-judgement': 10,
   'reconcile-auto-dispatch-judgements': 100,
   'recover-background-response': 100,
-  'reconcile-copyright-agent-dispatches': 100,
+  'reconcile-copyright-email-dispatches': 100,
+  'reconcile-copyright-form-screening-dispatches': 100,
+  'reconcile-copyright-form-effect-dispatches': 100,
+  'reconcile-copyright-appeal-dispatches': 100,
+  'reconcile-copyright-submission-guidance-dispatches': 100,
   'reconcile-ai-agent-failures': 100,
   'expire-stuck-appeal-resolution-runs': 100,
   'expire-stuck-dispute-resolution-runs': 100,
@@ -163,7 +171,11 @@ export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   'auto-dispatch-judgement': false,
   'reconcile-auto-dispatch-judgements': false,
   'recover-background-response': false,
-  'reconcile-copyright-agent-dispatches': false,
+  'reconcile-copyright-email-dispatches': false,
+  'reconcile-copyright-form-screening-dispatches': false,
+  'reconcile-copyright-form-effect-dispatches': false,
+  'reconcile-copyright-appeal-dispatches': false,
+  'reconcile-copyright-submission-guidance-dispatches': false,
   'reconcile-ai-agent-failures': false,
   'expire-stuck-appeal-resolution-runs': false,
   'expire-stuck-dispute-resolution-runs': false,

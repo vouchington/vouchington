@@ -21,9 +21,11 @@ import {
   pendingFormEffect,
   pendingFormScreening,
 } from '@voucha/test-helpers/copyright-dispatch-reconcile-fixtures'
-import { processReconcileCopyrightAgentDispatches } from './process-reconcile-copyright-agent-dispatches.mts'
+import { copyrightAgentDispatchProcessors as stages } from './process-reconcile-copyright-agent-dispatches.mts'
 
-describe('processReconcileCopyrightAgentDispatches', () => {
+const rejection = (run: Promise<unknown>) => run.then(() => null).catch((err: unknown) => err)
+
+describe('copyrightAgentDispatchProcessors', () => {
   const enqueued: string[] = []
   const track = (...ids: string[]) => enqueued.push(...ids)
 
@@ -36,7 +38,7 @@ describe('processReconcileCopyrightAgentDispatches', () => {
     useCopyrightIntakeEnvironment()
     useAutomaticProvisionalWithholding()
 
-    it('re-enqueues advisory gaps and applies saved form effects without an agent run', async () => {
+    it('re-enqueues each advisory gap in its own stage and applies saved form effects without an agent run', async () => {
       const excluded = await pendingFormEffect()
       onTestFinished(async () => {
         await expect(countCopyrightActiveRestrictionsForNotice(excluded.noticeId)).resolves.toBe(0)
@@ -49,25 +51,30 @@ describe('processReconcileCopyrightAgentDispatches', () => {
       ])
       track(jobIds.email(emailId), jobIds.form(formId), jobIds.appeal(appealId))
       const ids = [emailId, formId, effect.submissionId, appealId]
+      const options = { ids, batchSize: 1 }
 
-      await expect(
-        processReconcileCopyrightAgentDispatches({}, { ids, batchSize: 1 }),
-      ).resolves.toEqual({
-        hasMore: false,
-      })
-
+      await expect(stages.email({}, options)).resolves.toEqual({ hasMore: false })
       await expect(jobFor(jobIds.email(emailId))).resolves.toEqual({
         name: 'copyright-email-intake',
         data: { intake_id: emailId },
       })
+      await expect(jobFor(jobIds.form(formId))).resolves.toBeNull()
+
+      await expect(stages['form-screening']({}, options)).resolves.toEqual({ hasMore: false })
       await expect(jobFor(jobIds.form(formId))).resolves.toEqual({
         name: 'copyright-form-screening',
         data: { submission_id: formId },
       })
+      await expect(jobFor(jobIds.appeal(appealId))).resolves.toBeNull()
+
+      await expect(stages.appeal({}, options)).resolves.toEqual({ hasMore: false })
       await expect(jobFor(jobIds.appeal(appealId))).resolves.toEqual({
         name: 'copyright-appeal-recommendation',
         data: { submission_id: appealId },
       })
+      await expect(countCopyrightActiveRestrictionsForNotice(effect.noticeId)).resolves.toBe(0)
+
+      await expect(stages['form-effect']({}, options)).resolves.toEqual({ hasMore: false })
       await expect(jobFor(jobIds.form(effect.submissionId))).resolves.toBeNull()
       await expect(countCopyrightActiveRestrictionsForNotice(effect.noticeId)).resolves.toBe(1)
       await expect(readTestPendingCopyrightAgentDispatches(effect.submissionId)).resolves.toEqual(
@@ -75,50 +82,41 @@ describe('processReconcileCopyrightAgentDispatches', () => {
       )
     })
 
-    it('walks every page of the pending backlog', async () => {
-      onTestFinished(overrideDynamicConfigFieldsForTest(copyrightSweepConfig, { batch_size: 1 }))
-      const excluded = await pendingFormEffect()
-      onTestFinished(async () => {
-        await expect(countCopyrightActiveRestrictionsForNotice(excluded.noticeId)).resolves.toBe(0)
-      })
-      const emailId = await pendingEmail()
-      const effect = await pendingFormEffect()
-      track(jobIds.email(emailId))
-      const ids = [emailId, effect.submissionId]
-      const page = await getPendingCopyrightAgentDispatches({ ids, limit: 1 })
-      expect(page.results).toEqual([{ kind: 'email', intakeId: emailId }])
+    it('walks every page of a stage backlog', async () => {
+      onTestFinished(
+        overrideDynamicConfigFieldsForTest(copyrightSweepConfig, { agent_email_batch_size: 1 }),
+      )
+      const [headId, tailId] = await Promise.all([pendingEmail(), pendingEmail()])
+      track(jobIds.email(headId), jobIds.email(tailId))
+      const ids = [headId, tailId]
+      const page = await getPendingCopyrightAgentDispatches({ ids, limit: 1, kind: 'email' })
+      expect(page.results).toHaveLength(1)
       expect(page.page_info.has_next_page).toBe(true)
-      const tail = await getPendingCopyrightAgentDispatches({
-        ids,
-        limit: 1,
-        after: page.page_info.end_cursor!,
-      })
-      expect(tail.results).toEqual([{ kind: 'form-effect', submissionId: effect.submissionId }])
-      expect(tail.page_info.has_next_page).toBe(false)
 
-      await processReconcileCopyrightAgentDispatches({}, { ids })
+      await expect(stages.email({}, { ids })).resolves.toEqual({ hasMore: false })
 
-      await expect(jobFor(jobIds.email(emailId))).resolves.toEqual({
-        name: 'copyright-email-intake',
-        data: { intake_id: emailId },
-      })
-      await expect(countCopyrightActiveRestrictionsForNotice(effect.noticeId)).resolves.toBe(1)
+      for (const id of ids) {
+        await expect(jobFor(jobIds.email(id))).resolves.toEqual({
+          name: 'copyright-email-intake',
+          data: { intake_id: id },
+        })
+      }
     })
 
     it('continues beyond its cap despite a failed head and resumes at the saved cursor', async () => {
-      const excluded = await pendingFormEffect()
-      onTestFinished(async () => {
-        await expect(countCopyrightActiveRestrictionsForNotice(excluded.noticeId)).resolves.toBe(0)
-      })
       onTestFinished(
         overrideDynamicConfigFieldsForTest(copyrightSweepConfig, {
-          batch_size: 1,
-          max_batches_per_run: 1,
+          agent_email_batch_size: 1,
+          agent_email_max_batches_per_run: 1,
         }),
       )
       const headId = await pendingEmail()
       const tailId = await pendingEmail()
-      const first = await getPendingCopyrightAgentDispatches({ ids: [headId, tailId], limit: 1 })
+      const first = await getPendingCopyrightAgentDispatches({
+        ids: [headId, tailId],
+        limit: 1,
+        kind: 'email',
+      })
       expect(first.results).toEqual([{ kind: 'email', intakeId: headId }])
       expect(first.page_info.has_next_page).toBe(true)
       const cursor = first.page_info.end_cursor!
@@ -134,41 +132,27 @@ describe('processReconcileCopyrightAgentDispatches', () => {
       )
       const ids = [headId, tailId]
 
-      const failure = await processReconcileCopyrightAgentDispatches({}, { ids, batchSize: 1 })
-        .then(() => null)
-        .catch((err: unknown) => err)
+      const failure = await rejection(stages.email({}, { ids }))
 
       expect(failure).toBeInstanceOf(AggregateError)
       expect((failure as AggregateError).errors).toEqual([headFailure])
-      const continuations = await continuationsAfter(cursor)
+      const continuations = await continuationsAfter('email', cursor)
       expect(continuations.map(job => job.data)).toEqual([{ after: cursor }])
       track(...continuations.map(job => job.id))
       await expect(jobFor(jobIds.email(headId))).resolves.toBeNull()
 
-      await expect(
-        processReconcileCopyrightAgentDispatches({ after: cursor }, { ids, batchSize: 1 }),
-      ).resolves.toEqual({ hasMore: false })
+      await expect(stages.email({ after: cursor }, { ids })).resolves.toEqual({ hasMore: false })
       await expect(jobFor(jobIds.email(tailId))).resolves.toEqual({
         name: 'copyright-email-intake',
         data: { intake_id: tailId },
       })
     })
 
-    it('keeps dispatching past failed items, then fails with every error', async () => {
-      const excluded = await pendingFormEffect()
-      onTestFinished(async () => {
-        await expect(countCopyrightActiveRestrictionsForNotice(excluded.noticeId)).resolves.toBe(0)
-      })
+    it('keeps enqueueing past a failed email, then fails only its own stage', async () => {
       const failingEmailId = await pendingEmail()
-      const [failingEffect, appealId, sameEffect, nextEmailId] = await Promise.all([
-        pendingFormEffect(),
-        pendingAppeal(),
-        pendingFormEffect(),
-        pendingEmail(),
-      ])
-      track(jobIds.email(failingEmailId), jobIds.appeal(appealId), jobIds.email(nextEmailId))
+      const [nextEmailId, appealId] = await Promise.all([pendingEmail(), pendingAppeal()])
+      track(jobIds.email(failingEmailId), jobIds.email(nextEmailId), jobIds.appeal(appealId))
       const enqueueFailure = new Error('enqueue failed')
-      const effectFailure = new Error('form effect failed')
       onTestFinished(
         rejectQueueJobAddForTest(
           ai_agents,
@@ -179,56 +163,62 @@ describe('processReconcileCopyrightAgentDispatches', () => {
           enqueueFailure,
         ),
       )
+      const ids = [failingEmailId, appealId, nextEmailId]
+
+      const failure = await rejection(stages.email({}, { ids, batchSize: 1 }))
+
+      expect(failure).toBeInstanceOf(AggregateError)
+      expect((failure as AggregateError).errors).toEqual([enqueueFailure])
+      await expect(jobFor(jobIds.email(nextEmailId))).resolves.toEqual({
+        name: 'copyright-email-intake',
+        data: { intake_id: nextEmailId },
+      })
+      await expect(stages.appeal({}, { ids, batchSize: 1 })).resolves.toEqual({ hasMore: false })
+      await expect(jobFor(jobIds.appeal(appealId))).resolves.toEqual({
+        name: 'copyright-appeal-recommendation',
+        data: { submission_id: appealId },
+      })
+    })
+
+    it('keeps applying form effects past a failed one, then fails with its error', async () => {
+      const excluded = await pendingFormEffect()
+      onTestFinished(async () => {
+        await expect(countCopyrightActiveRestrictionsForNotice(excluded.noticeId)).resolves.toBe(0)
+      })
+      const [failingEffect, sameEffect] = await Promise.all([
+        pendingFormEffect(),
+        pendingFormEffect(),
+      ])
+      const effectFailure = new Error('form effect failed')
       onTestFinished(
         rejectPostgresWriteForTest('readAutomaticWithholdingClaimant', effectFailure, values =>
           values.includes(failingEffect.submissionId),
         ),
       )
-      const ids = [
-        failingEmailId,
-        failingEffect.submissionId,
-        appealId,
-        sameEffect.submissionId,
-        nextEmailId,
-      ]
+      const ids = [failingEffect.submissionId, sameEffect.submissionId]
 
-      const failure = await processReconcileCopyrightAgentDispatches({}, { ids, batchSize: 1 })
-        .then(() => null)
-        .catch((err: unknown) => err)
+      const failure = await rejection(stages['form-effect']({}, { ids, batchSize: 1 }))
 
       expect(failure).toBeInstanceOf(AggregateError)
-      expect((failure as AggregateError).errors).toEqual([enqueueFailure, effectFailure])
-      await expect(jobFor(jobIds.appeal(appealId))).resolves.toEqual({
-        name: 'copyright-appeal-recommendation',
-        data: { submission_id: appealId },
-      })
+      expect((failure as AggregateError).errors).toEqual([effectFailure])
       await expect(countCopyrightActiveRestrictionsForNotice(sameEffect.noticeId)).resolves.toBe(1)
       await expect(countCopyrightActiveRestrictionsForNotice(failingEffect.noticeId)).resolves.toBe(
         0,
       )
-      await expect(jobFor(jobIds.email(nextEmailId))).resolves.toEqual({
-        name: 'copyright-email-intake',
-        data: { intake_id: nextEmailId },
-      })
     })
   })
 
   describe('while new intake is switched on, with a failing admission', () => {
     useCopyrightIntakeEnvironment()
 
-    it('records an admission failure and still reconciles the page', async () => {
+    it('records an admission failure and enqueues nothing for the page', async () => {
       const appealId = await pendingAppeal()
       const admissionFailure = new Error('admission failed')
       onTestFinished(
         rejectPostgresWriteForTest('admitCopyrightAppealRecommendationRuns', admissionFailure),
       )
 
-      const failure = await processReconcileCopyrightAgentDispatches(
-        {},
-        { ids: [appealId], batchSize: 1 },
-      )
-        .then(() => null)
-        .catch((err: unknown) => err)
+      const failure = await rejection(stages.appeal({}, { ids: [appealId], batchSize: 1 }))
 
       expect(failure).toBeInstanceOf(AggregateError)
       expect((failure as AggregateError).errors).toEqual([admissionFailure])
@@ -251,9 +241,11 @@ describe('processReconcileCopyrightAgentDispatches', () => {
         pendingAppeal(),
       ])
       track(jobIds.email(emailId), jobIds.form(formId), jobIds.appeal(appealId))
-      const ids = [emailId, formId, appealId]
+      const options = { ids: [emailId, formId, appealId], batchSize: 1 }
 
-      await processReconcileCopyrightAgentDispatches({}, { ids, batchSize: 1 })
+      await expect(stages.email({}, options)).resolves.toEqual({ hasMore: false })
+      await expect(stages['form-screening']({}, options)).resolves.toEqual({ hasMore: false })
+      await stages.appeal({}, options)
 
       await expect(jobFor(jobIds.appeal(appealId))).resolves.toEqual({
         name: 'copyright-appeal-recommendation',
@@ -261,6 +253,9 @@ describe('processReconcileCopyrightAgentDispatches', () => {
       })
       await expect(jobFor(jobIds.email(emailId))).resolves.toBeNull()
       await expect(jobFor(jobIds.form(formId))).resolves.toBeNull()
+      await expect(readTestPendingCopyrightAgentDispatches(emailId)).resolves.toEqual([
+        { kind: 'email', intakeId: emailId },
+      ])
     })
 
     it('still applies a saved form effect, because it starts no agent work', async () => {
@@ -268,33 +263,11 @@ describe('processReconcileCopyrightAgentDispatches', () => {
       onTestFinished(async () => {
         await expect(countCopyrightActiveRestrictionsForNotice(excluded.noticeId)).resolves.toBe(0)
       })
-      const [formId, effect] = await Promise.all([pendingFormScreening(), pendingFormEffect()])
-      track(jobIds.form(formId))
-      const ids = [formId, effect.submissionId]
+      const effect = await pendingFormEffect()
 
-      await processReconcileCopyrightAgentDispatches({}, { ids, batchSize: 1 })
+      await stages['form-effect']({}, { ids: [effect.submissionId], batchSize: 1 })
 
       await expect(countCopyrightActiveRestrictionsForNotice(effect.noticeId)).resolves.toBe(1)
-      await expect(jobFor(jobIds.form(formId))).resolves.toBeNull()
-    })
-
-    it('walks past a page of paused dispatches to reach an appeal on a later page', async () => {
-      const excluded = await pendingFormEffect()
-      onTestFinished(async () => {
-        await expect(countCopyrightActiveRestrictionsForNotice(excluded.noticeId)).resolves.toBe(0)
-      })
-      const emailId = await pendingEmail()
-      const appealId = await pendingAppeal()
-      track(jobIds.email(emailId), jobIds.appeal(appealId))
-      const ids = [emailId, appealId]
-
-      await processReconcileCopyrightAgentDispatches({}, { ids, batchSize: 1 })
-
-      await expect(jobFor(jobIds.appeal(appealId))).resolves.toEqual({
-        name: 'copyright-appeal-recommendation',
-        data: { submission_id: appealId },
-      })
-      await expect(jobFor(jobIds.email(emailId))).resolves.toBeNull()
     })
   })
 })
