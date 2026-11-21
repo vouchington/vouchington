@@ -18,7 +18,12 @@ describe('releaseModerationTransparencyDays', () => {
     const closedDay = new Date(now.getTime() - 3 * DAY_MS)
     const openDay = new Date(now.getTime() - DAY_MS)
     const actor = await createTestUser()
-    const insert = (actionType: string, occurredAt: Date, count: number, start = 0) =>
+    const insert = (
+      actionType: 'approve' | 'warn' | 'lock' | 'pin',
+      occurredAt: Date,
+      count: number,
+      start = 0,
+    ) =>
       Promise.all(
         Array.from({ length: count }, (_, sequence) =>
           insertTestModeratorAction({
@@ -29,7 +34,7 @@ describe('releaseModerationTransparencyDays', () => {
           }),
         ),
       )
-    const read = (occurredAt: Date, category: string) =>
+    const read = (occurredAt: Date, category: 'approve' | 'warn' | 'lock' | 'pin') =>
       getTestReleasedModerationTransparencyRollupCount({
         occurredAt,
         metric: 'moderation_actions',
