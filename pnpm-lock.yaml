@@ -11212,15 +11212,6 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
 
-  backend/services/session-advisory-lock:
-    dependencies:
-      '@data-stores/psql':
-        specifier: workspace:^
-        version: link:../../data-stores/psql
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
-
   backend/services/sitemaps:
     dependencies:
       '@aws-sdk/client-s3':

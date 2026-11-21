@@ -250,10 +250,6 @@
       "entry": ["**/*.mts"],
       "ignoreExportsUsedInFile": false,
     },
-    "backend/services/session-advisory-lock": {
-      "entry": ["**/*.mts"],
-      "ignoreExportsUsedInFile": false,
-    },
     "backend/services/identity-verification": {
       "entry": ["**/*.mts"],
       "ignoreExportsUsedInFile": false,
