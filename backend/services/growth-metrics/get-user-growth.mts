@@ -17,7 +17,11 @@ export async function getUserGrowth(
     : await Promise.all([
         readGrowthDayCounts(periodStart, new Date(), true, 'users'),
         readGrowthDayCounts(new Date(0), new Date(), false, 'users'),
-        countGrowthDauMau(new Date(now - 86_400_000), new Date(now - 30 * 86_400_000)),
+        countGrowthDauMau(
+          new Date(now - 86_400_000),
+          new Date(now - 30 * 86_400_000),
+          new Date(now),
+        ),
       ])
   return {
     total_users: allDays.reduce((sum, day) => sum + day.user_count, 0),
