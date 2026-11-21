@@ -14,8 +14,8 @@ import {
   syncMembershipPauseCollection,
 } from '@services/memberships'
 import {
-  enqueueReconcileMembershipRefundOperation,
-  enqueueSyncMembershipPauseCollection,
+  enqueueBulkReconcileMembershipRefundOperations,
+  enqueueBulkSyncMembershipPauseCollection,
 } from '@queues/memberships/enqueues'
 import { recoverAppleNotifications } from './apple-notification-recovery.mts'
 import {
@@ -38,18 +38,13 @@ import { processStripePurchaseCollisionWork } from '@services/memberships/inelig
 
 async function dispatchMembershipPauseCollection(): Promise<void> {
   const leases = await dispatchDuePauseCollectionWork()
-  await Promise.all(leases.map(lease => enqueueSyncMembershipPauseCollection(lease)))
+  await enqueueBulkSyncMembershipPauseCollection(leases)
 }
 
 async function dispatchMembershipRefundReconciliation(): Promise<void> {
   const { dispatches: leases } = await dispatchDueRefundReconciliations()
-  await Promise.all(
-    leases.map(lease =>
-      enqueueReconcileMembershipRefundOperation({
-        operationId: lease.id,
-        leaseToken: lease.leaseToken,
-      }),
-    ),
+  await enqueueBulkReconcileMembershipRefundOperations(
+    leases.map(lease => ({ operationId: lease.id, leaseToken: lease.leaseToken })),
   )
 }
 

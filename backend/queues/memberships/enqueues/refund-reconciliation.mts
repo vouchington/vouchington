@@ -1,3 +1,4 @@
+import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import onError from '@modules/on-error'
@@ -5,7 +6,9 @@ import {
   MEMBERSHIP_REFUND_RECONCILIATION_INTERVAL_MS,
   PRIORITY_DEFAULT,
   PRIORITY_DISPATCHER,
+  QUEUE_NAME,
 } from '../config.mts'
+import { memberships } from '../queues.mts'
 import type { MembershipsJobs, ReconcileMembershipRefundOperationData } from '../types.mts'
 
 import { createMembershipEnqueueFunction } from './typed-job.mts'
@@ -15,11 +18,30 @@ const RECONCILIATION_JOB_NAME = 'reconcileMembershipRefundOperation' satisfies M
 const INTERVAL_MS = 300_000
 
 const enqueueDispatchJob = createMembershipEnqueueFunction(DISPATCH_JOB_NAME)
-const enqueueReconciliationJob = createMembershipEnqueueFunction(RECONCILIATION_JOB_NAME, {
-  attempts: 3,
-  backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-  removeOnComplete: 100,
-  removeOnFail: 100,
+
+function buildReconciliationJob(data: ReconcileMembershipRefundOperationData) {
+  const jobId = `membership-refund-reconciliation__${data.operationId}__${data.leaseToken}`
+  return {
+    data,
+    opts: {
+      jobId,
+      priority: PRIORITY_DEFAULT,
+      deduplication: { id: jobId, mode: 'simple' },
+    } satisfies Partial<JobOptions>,
+  }
+}
+
+const enqueueBulkReconciliationJobs = createBulkEnqueueFunction({
+  queue: memberships,
+  queueName: QUEUE_NAME,
+  jobName: RECONCILIATION_JOB_NAME,
+  defaults: {
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
+    removeOnComplete: 100,
+    removeOnFail: 100,
+  } satisfies Partial<JobOptions>,
+  buildJob: buildReconciliationJob,
 })
 
 export function enqueueDispatchMembershipRefundReconciliation(
@@ -71,23 +93,19 @@ export function enqueueDispatchMembershipRefundReconciliationBestEffort(): Promi
     .catch(onError)
 }
 
-export function enqueueReconcileMembershipRefundOperation(
-  data: ReconcileMembershipRefundOperationData,
-): EnqueueReturnType {
-  const jobId = `membership-refund-reconciliation__${data.operationId}__${data.leaseToken}`
-  return enqueueReconciliationJob(data, {
-    jobId,
-    priority: PRIORITY_DEFAULT,
-    deduplication: { id: jobId, mode: 'simple' },
-  } satisfies Partial<JobOptions>)
+/** One call adds every leased operation's reconciliation job. */
+export function enqueueBulkReconcileMembershipRefundOperations(
+  operations: readonly ReconcileMembershipRefundOperationData[],
+) {
+  return enqueueBulkReconciliationJobs([...operations])
 }
 
-/** An event may wake only a durable lease; scheduler recovery remains authoritative. */
-export function enqueueReconcileMembershipRefundOperationBestEffort(
-  data: ReconcileMembershipRefundOperationData,
+/** An event may wake only durable leases; scheduler recovery remains authoritative. */
+export function enqueueBulkReconcileMembershipRefundOperationsBestEffort(
+  operations: readonly ReconcileMembershipRefundOperationData[],
 ): Promise<void> {
   return Promise.resolve()
-    .then(() => enqueueReconcileMembershipRefundOperation(data))
+    .then(() => enqueueBulkReconcileMembershipRefundOperations(operations))
     .then(() => undefined)
     .catch(onError)
 }

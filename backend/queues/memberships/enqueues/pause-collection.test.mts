@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readEnqueuedJob } from '../../../test-helpers/queue-jobs.mts'
 import { memberships } from '../queues.mts'
 import {
+  enqueueBulkSyncMembershipPauseCollection,
   enqueueSyncMembershipPauseCollection,
   pauseCollectionSchedule,
 } from './pause-collection.mts'
@@ -36,6 +37,22 @@ describe('pause collection enqueues', () => {
           mode: 'simple',
         },
         ordering: { key: `pause-collection:${userId}`, concurrency: 1 },
+      },
+    })
+
+    const bulkUserId = randomUUID()
+    const bulkLeaseToken = randomUUID()
+    const [bulk] = await enqueueBulkSyncMembershipPauseCollection([
+      { userId: bulkUserId, requestedAt, leaseToken: bulkLeaseToken },
+    ])
+    expect(await readEnqueuedJob(memberships, bulk)).toMatchObject({
+      opts: {
+        attempts: 5,
+        deduplication: {
+          id: `membership-pause-collection__${bulkUserId}__${requestedAtMs}__${bulkLeaseToken}`,
+          mode: 'simple',
+        },
+        ordering: { key: `pause-collection:${bulkUserId}`, concurrency: 1 },
       },
     })
 
