@@ -213,7 +213,7 @@ recommendation and no staff decision to the recommendation job.
 
 The copyright agent dispatch sweeps keep running while off. Each pending-dispatch kind is its own job
 (`reconcile-copyright-{email,form-screening,form-effect,appeal,submission-guidance}-dispatches`) with
-its own cursor, page caps (`agent_<kind>_batch_size`, `agent_<kind>_max_batches_per_run`) and retry,
+its own cursor, page caps (`agent_email_*`, `agent_form_screening_*`, `agent_form_effect_*`, `agent_appeal_*`, `agent_submission_guidance_*`, each a `_batch_size` and `_max_batches_per_run` pair) and retry,
 and one ordering lane bounds their combined load. While off, the email and form-screening jobs hold
 back the dispatches that start work for new intake (their agent jobs also check the switch
 themselves); the appeal, submission-guidance and saved form-effect jobs keep serving cases already

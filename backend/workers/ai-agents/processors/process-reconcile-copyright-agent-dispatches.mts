@@ -102,10 +102,10 @@ function isStageOpen(stage: CopyrightAgentDispatchStage): boolean {
 
 async function reconcileStagePage(
   stage: CopyrightAgentDispatchStage,
-  cursor: string | undefined,
+  cursor: string | null | undefined,
   batchSize: number,
   ids?: readonly string[],
-): Promise<{ errors: unknown[]; nextCursor: string | undefined }> {
+): Promise<{ errors: unknown[]; nextCursor: string | null | undefined }> {
   const page = await getPendingCopyrightAgentDispatches({
     ...(cursor ? { after: cursor } : {}),
     limit: batchSize,
@@ -113,9 +113,7 @@ async function reconcileStagePage(
     kind: stage,
   })
   const errors = await pageSettlers[stage](page.results.map(subjectId))
-  const nextCursor = page.page_info.has_next_page
-    ? (page.page_info.end_cursor ?? undefined)
-    : undefined
+  const nextCursor = page.page_info.has_next_page ? page.page_info.end_cursor : undefined
   return { errors, nextCursor }
 }
 
@@ -145,7 +143,7 @@ function createStageProcessor(stage: CopyrightAgentDispatchStage) {
     if (errors.length > 0) {
       throw new AggregateError(errors, `Copyright ${stage} agent dispatch reconciliation failed`)
     }
-    return { hasMore: cursor !== undefined }
+    return { hasMore: Boolean(cursor) }
   }
 }
 
