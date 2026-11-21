@@ -2198,7 +2198,7 @@
     },
     "native.content-limits.default": {
       "fixtureIds": ["native.content-limits.default"],
-      "hash": "192a578c12172bf23d2a45b5454b617c3da259886efe681e2c8ab386294b415c"
+      "hash": "50a227f9cf9d2165eab4c122cc65155c1fa5fb5fdfcfc130e0d8d7832616bd9e"
     },
     "native.copyright.repeat-infringer-accounts": {
       "fixtureIds": ["native.copyright.repeat-infringer-accounts"],

@@ -4,11 +4,11 @@ import sql from 'sql-template-strings'
 import { invalidate } from '@services/entity-cache/invalidate'
 import {
   getUsernameForLandingPages,
-  MAX_LANDING_PAGES,
   validateLandingPageSlug,
   validateSubtitle,
   validateTitle,
 } from './shared.mts'
+import { getLandingPagesPerUserLimit } from './limits.mts'
 import type { LandingPage } from './types.mts'
 
 export async function createMyLandingPage(
@@ -18,6 +18,7 @@ export async function createMyLandingPage(
   const title = validateTitle(input.title)
   const subtitle = validateSubtitle(input.subtitle)
   const slug = validateLandingPageSlug(input.slug)
+  const maxLandingPages = getLandingPagesPerUserLimit()
 
   await using query = await beginTransaction()
   await getUsernameForLandingPages(userId, { query })
@@ -33,7 +34,7 @@ export async function createMyLandingPage(
         INSERT INTO user_landing_pages (user_id, title, subtitle, slug, is_default)
         SELECT ${userId}, ${title}, ${subtitle}, ${slug}, page_count.count = 0
         FROM page_count
-        WHERE page_count.count < ${MAX_LANDING_PAGES}
+        WHERE page_count.count < ${maxLandingPages}
         RETURNING id, user_id, title, subtitle, slug, is_default, created_at, updated_at
       )
       SELECT inserted.id, inserted.user_id, inserted.title, inserted.subtitle,
@@ -44,9 +45,9 @@ export async function createMyLandingPage(
     `)
     const row = rows[0] as (LandingPage & { page_count: number }) | undefined
     assert(
-      (row?.page_count ?? 0) < MAX_LANDING_PAGES,
+      (row?.page_count ?? 0) < maxLandingPages,
       400,
-      `Maximum of ${MAX_LANDING_PAGES} landing pages allowed`,
+      `Maximum of ${maxLandingPages} landing pages allowed`,
     )
     assert(row?.id, 500, 'Landing page could not be created')
     const { page_count: _pageCount, ...createdLandingPage } = row

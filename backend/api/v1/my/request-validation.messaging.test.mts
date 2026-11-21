@@ -33,7 +33,7 @@ const malformed: readonly Case[] = [
     'post',
     '/api/v1/my/messages',
     {
-      user_ids: uuids(26),
+      user_ids: uuids(101),
     },
   ],
   ['message thread with a null body', 'post', '/api/v1/my/messages', null],

@@ -30,6 +30,7 @@
     "@modules/utils": "workspace:^",
     "@services/jwt-session": "workspace:^",
     "@services/moderator-actions": "workspace:^",
+    "@services/user-product-limits": "workspace:^",
     "@vouchington/oauth-server": "^0.8.0",
     "@vouchington/sentry": "^0.6.0",
     "confusables": "^1.1.1",

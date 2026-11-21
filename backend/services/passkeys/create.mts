@@ -1,4 +1,4 @@
-import { MAX_USER_PASSKEYS } from './config.mts'
+import { getUserPasskeysMax } from '@services/user-product-limits'
 import {
   runWithTransaction,
   registerPostCommitAction,
@@ -20,6 +20,7 @@ export async function createPasskey(
   const { credential, credentialDeviceType, credentialBackedUp } = registrationInfo
 
   const publicKeyBuffer = Buffer.from(credential.publicKey)
+  const maxPasskeys = getUserPasskeysMax()
 
   return runWithTransaction(options.query, async query => {
     await query(sql`/* createPasskey */ SELECT fn_lock_active_user_for_mutation(${userId})`)
@@ -38,9 +39,9 @@ export async function createPasskey(
         ${name}
       WHERE (
         SELECT COUNT(*) FROM (
-          SELECT id FROM user_passkeys WHERE user_id = ${userId} LIMIT ${MAX_USER_PASSKEYS}
+          SELECT id FROM user_passkeys WHERE user_id = ${userId} LIMIT ${maxPasskeys}
         ) existing_passkeys
-      ) < ${MAX_USER_PASSKEYS}
+      ) < ${maxPasskeys}
       RETURNING id, name, device_type, is_backed_up, created_at, last_used_at
     `)
     const passkey = rows[0]

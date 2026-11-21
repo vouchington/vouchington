@@ -22,6 +22,7 @@ import {
   removeConversationParticipant,
   updateConversationParticipantAddPolicy,
 } from './participants.mts'
+import { getMessageRecipientsMax } from '@services/user-product-limits'
 import type { MessageRequestValidation } from './my-message-request.mts'
 
 type CreateConversationRequest = { user_id: string } | { user_ids: string[] }
@@ -40,6 +41,12 @@ export async function createMyMessageConversation(
   validate({ body })
 
   const rawUserIds = 'user_id' in body ? [body.user_id] : body.user_ids
+  const maxRecipients = getMessageRecipientsMax()
+  assert(
+    rawUserIds.length <= maxRecipients,
+    422,
+    `user_ids must contain at most ${maxRecipients} recipients`,
+  )
   // Normalize to lowercase so case variants of the same UUID compare equal, then deduplicate.
   const userIds = Array.from(new Set(rawUserIds.map(id => id.toLowerCase())))
   assert(!userIds.includes(currentUser.id), 400, 'Cannot message yourself')

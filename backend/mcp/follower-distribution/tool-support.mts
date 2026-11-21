@@ -1,8 +1,8 @@
 import {
-  MAX_SELECTED_FOLLOWER_DISTRIBUTION_RECIPIENTS,
   markFollowerDistributionFailed,
   type FollowerDistributionAccepted,
 } from '@services/follower-distributions'
+import { FOLLOWER_DISTRIBUTION_RECIPIENTS_MAX } from '@services/user-product-limits'
 import { enqueueProcessFollowerDistribution } from '@queues/follower-distributions/enqueues'
 import { objectSchema } from '@vouchington/mcp-server/schema'
 import { userReferenceSchema } from '../entity-reference-schema.mts'
@@ -44,7 +44,7 @@ export function distributionParameters(
             type: 'array',
             items: userReferenceSchema,
             minItems: 1,
-            maxItems: MAX_SELECTED_FOLLOWER_DISTRIBUTION_RECIPIENTS,
+            maxItems: FOLLOWER_DISTRIBUTION_RECIPIENTS_MAX,
             uniqueItems: true,
           },
         },

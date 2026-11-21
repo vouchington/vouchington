@@ -3245,7 +3245,7 @@
 {"id":"copy.extracted.shared.useFollowerShareActions.failedToShareWithFollowers_272673f8","value":"Não foi possível compartilhar com os seguidores"},
 {"id":"copy.extracted.shared.useFollowerShareActions.sendQueued_11badc4f","value":"Envio na fila"},
 {"id":"copy.extracted.shared.useFollowerShareActions.shareQueued_d32e8704","value":"Compartilhamento na fila"},
-{"id":"copy.extracted.shared.useFollowerShareActions.youCanSelectUpTo100_ca2448f2","value":"Você pode selecionar até 100 seguidores"},
+{"id":"copy.extracted.shared.useFollowerShareActions.youCanSelectUpTo100_ca2448f2","value":"Você pode selecionar até {max} seguidores"},
 {"id":"copy.extracted.shared.usernameRequiredDialog.aUsernameIsRequiredToPost_d06365c0","value":"É necessário um nome de usuário para publicar. Escolha um nome de usuário para publicar seu conteúdo."},
 {"id":"copy.extracted.shared.usernameRequiredDialog.createAUsernameToContinuePosting_3b0d48d5","value":"Crie um nome de usuário para continuar publicando"},
 {"id":"copy.extracted.shared.usernameRequiredDialog.createUsernamePost_7d56bfee","value":"Criar nome de usuário e publicar"},

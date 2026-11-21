@@ -44,7 +44,7 @@ export interface ProfileLinkResponseBody {
 
 /**
  * GET /api/v1/my/profile/links and PUT /api/v1/my/profile/links/order — bounded by a
- * mutation-enforced MAX_PROFILE_LINKS cap, so no page_info (unlike ListResponse<T>).
+ * mutation-enforced profile-link cap, so no page_info (unlike ListResponse<T>).
  */
 export interface MyProfileLinksResponseBody {
   results: ProfileLink[]

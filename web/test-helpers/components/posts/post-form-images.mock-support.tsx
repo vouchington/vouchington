@@ -44,9 +44,11 @@ vi.mock(import('@/lib/api/client/post-mutations'), () => ({
 }))
 
 vi.mock(import('@/lib/api/client/content-limits'), () => ({
-  fetchContentLimits: vi
-    .fn<VitestLooseMock>()
-    .mockResolvedValue({ post_images_max: 20, copyright_claimant_targets_max: 20 }),
+  fetchContentLimits: vi.fn<VitestLooseMock>().mockResolvedValue({
+    post_images_max: 20,
+    copyright_claimant_targets_max: 20,
+    follower_distribution_recipients_max: 100,
+  }),
 }))
 
 vi.mock(import('@/lib/api/client/images'), () => {

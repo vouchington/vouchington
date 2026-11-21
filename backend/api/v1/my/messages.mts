@@ -9,10 +9,10 @@ import type { ApiArrayContract } from '@vouchington/utils/api-response-contract'
 import { apiQuery } from '../../api-query-contract.mts'
 import { preciseTimestampPaginationParser } from '@modules/pagination'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
-const MAX_RECIPIENTS = 25
+import type { MESSAGE_RECIPIENTS_MAX } from '@services/user-product-limits'
 type CreateConversationRequest =
   | { user_id: ApiUuidContract }
-  | { user_ids: ApiArrayContract<ApiUuidContract, 1, typeof MAX_RECIPIENTS, false> }
+  | { user_ids: ApiArrayContract<ApiUuidContract, 1, typeof MESSAGE_RECIPIENTS_MAX, false> }
 
 app.route('/api/v1/my/messages').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/my/messages', preciseTimestampPaginationParser)

@@ -60,13 +60,6 @@ describe('posts follower distribution client', () => {
     await expect(
       sendPostToFollowers('post-1', {
         audience: 'selected_followers',
-        recipient_user_ids: Array.from({ length: 101 }, (_, index) => `user-${index}`),
-      }),
-    ).rejects.toThrow('Choose at most 100 followers')
-
-    await expect(
-      sendPostToFollowers('post-1', {
-        audience: 'selected_followers',
         recipient_user_ids: ['not-a-uuid'],
       }),
     ).rejects.toThrow('Follower IDs must be valid UUIDs')

@@ -15589,6 +15589,12 @@
                   "type": "number"
                 }
               },
+              "follower_distribution_recipients_max": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
               "post_images_max": {
                 "required": true,
                 "schema": {
@@ -106871,7 +106877,7 @@
       "path": "/api/v1/content-limits",
       "pending": true,
       "responseSchema": {
-        "hash": "192a578c12172bf23d2a45b5454b617c3da259886efe681e2c8ab386294b415c",
+        "hash": "50a227f9cf9d2165eab4c122cc65155c1fa5fb5fdfcfc130e0d8d7832616bd9e",
         "key": "native.content-limits.default"
       },
       "route": {

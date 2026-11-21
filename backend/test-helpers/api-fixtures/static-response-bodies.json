@@ -3257,7 +3257,8 @@
   },
   "native.content-limits.default": {
     "post_images_max": 20,
-    "copyright_claimant_targets_max": 20
+    "copyright_claimant_targets_max": 20,
+    "follower_distribution_recipients_max": 100
   },
   "native.hacker-news-config.default": {
     "references_visible": true,

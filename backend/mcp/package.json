@@ -88,6 +88,7 @@
     "@services/user-financial-profiles": "workspace:^",
     "@services/user-import-export": "workspace:^",
     "@services/user-mod-notes": "workspace:^",
+    "@services/user-product-limits": "workspace:^",
     "@services/user-referral-program-links": "workspace:^",
     "@services/user-warnings": "workspace:^",
     "@services/users": "workspace:^",

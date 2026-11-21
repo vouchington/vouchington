@@ -40,6 +40,7 @@
     "@services/oauth-accounts": "workspace:^",
     "@services/pagination": "workspace:^",
     "@services/urls": "workspace:^",
+    "@services/user-product-limits": "workspace:^",
     "@services/users": "workspace:^",
     "@vouchington/sentry": "^0.6.0",
     "http-assert": "^1.5.0",

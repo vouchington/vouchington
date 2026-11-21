@@ -31,6 +31,7 @@
     "@queues/vote-aggregation": "workspace:^",
     "@services/jwt-session": "workspace:^",
     "@services/oauth-accounts": "workspace:^",
+    "@services/user-product-limits": "workspace:^",
     "@simplewebauthn/server": "^14.1.0",
     "@valkey/valkey-glide": "^2.6.0",
     "@voucha/types": "workspace:^",

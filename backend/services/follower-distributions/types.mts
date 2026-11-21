@@ -1,5 +1,3 @@
-export const MAX_SELECTED_FOLLOWER_DISTRIBUTION_RECIPIENTS = 100
-
 export type FollowerDistributionAction =
   | 'post_share'
   | 'post_send'
