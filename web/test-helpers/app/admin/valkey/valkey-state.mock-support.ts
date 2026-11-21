@@ -52,7 +52,9 @@ const mockedToast = vi.mocked(toast)
 type ESListener = (event: MessageEvent) => void
 
 class MockEventSource {
+  static readonly CLOSED = 2
   static instances: MockEventSource[] = []
+  readyState = 0
   readonly listeners = new Map<string, Set<ESListener>>()
   onerror: (() => void) | null = null
   closed = false

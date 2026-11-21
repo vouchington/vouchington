@@ -29,6 +29,12 @@ another status probe and reattaches; a transient probe failure does the same. Te
 and failed statuses still end tracking. The sync lock duration stays a crash-recovery window and
 is not shortened to match the connection cycle.
 
+The admin PostgreSQL and Valkey snapshot streams share `useSnapshotStream`. A routine cycle is a
+native reconnect. When the browser permanently closes the stream (a non-200 during a Spot reclaim
+or deploy), REST polling covers the gap and the hook replaces the stream with capped exponential
+backoff (5 s doubling to 60 s) until a snapshot arrives. These dashboards hold no work: a missed
+snapshot is an accepted loss that the next snapshot or poll replaces.
+
 The GlideMQ dashboard event stream is an Express route in the API process, so the entrypoint ends
 that response on the same cycle and still writes no named error event. The dashboard page
 reconnects. Queue rows stay in the queue; event lines that existed only on the dropped connection
