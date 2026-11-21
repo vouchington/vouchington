@@ -14950,6 +14950,7 @@
 {"alias":"extracted.shared.turnstileField.verificationFailedToLoadPleaseRefresh_0639fdb3","consumer":"web","pattern":"/copyright/notices/[id]/counter-notice"},
 {"alias":"extracted.shared.turnstileField.verificationFailedToLoadPleaseRefresh_0639fdb3","consumer":"web","pattern":"/copyright/notices/[id]/guest"},
 {"alias":"extracted.shared.turnstileField.verificationFailedToLoadPleaseRefresh_0639fdb3","consumer":"web","pattern":"/copyright/notices/new"},
+{"alias":"shared.copyrightTargetLimit","consumer":"web","pattern":"/copyright/notices/new"},
 {"consumer":"web","pattern":"/copyright/repeat-infringer-policy"},
 {"alias":"copyright.claimantMisuse.newestNoticeReceived","consumer":"web","pattern":"/copyright/review-queue"},
 {"alias":"copyright.claimantMisuse.noticesInspected","consumer":"web","pattern":"/copyright/review-queue"},
