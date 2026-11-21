@@ -2,14 +2,6 @@
 
 [Schema index](README.md).
 
-## `fn_apply_moderation_transparency_daily_rollup(p_occurred_at timestamp with time zone, p_community_id uuid, p_metric moderation_transparency_metrics, p_category moderation_transparency_categories, p_delta integer)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_apply_moderation_transparency_daily_rollup(p_occurred_at timestamp with time zone, p_community_id uuid, p_metric moderation_transparency_metrics, p_category moderation_transparency_categories, p_delta integer)
- RETURNS void
- LANGUAGE plpgsql
-```
-
 ## `fn_classifier_audit_actor_was_deleted(actor_user_id uuid)`
 
 ```sql
@@ -308,38 +300,6 @@ CREATE OR REPLACE FUNCTION public.fn_lock_active_user_for_mutation(target_user_i
  LANGUAGE plpgsql
 ```
 
-## `fn_lock_agent_moderation_transparency_agent`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_lock_agent_moderation_transparency_agent()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_lock_agent_moderation_transparency_community_prompt`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_lock_agent_moderation_transparency_community_prompt()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_lock_agent_moderation_transparency_prompt`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_lock_agent_moderation_transparency_prompt()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_lock_moderation_transparency_projection(p_domain text, p_id uuid)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_lock_moderation_transparency_projection(p_domain text, p_id uuid)
- RETURNS void
- LANGUAGE sql
-```
-
 ## `fn_lock_oauth_friend_targets(target_provider text, target_external_ids text[], exclusive_lock boolean)`
 
 ```sql
@@ -532,70 +492,6 @@ CREATE OR REPLACE FUNCTION public.fn_project_media_delivery_projection()
  LANGUAGE plpgsql
 ```
 
-## `fn_project_moderation_transparency_agent_delete_rollup`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_agent_delete_rollup()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_project_moderation_transparency_agent_insert_rollup`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_agent_insert_rollup()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_project_moderation_transparency_agent_update_rollup`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_agent_update_rollup()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_project_moderation_transparency_appeals_delete_rollup`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_appeals_delete_rollup()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_project_moderation_transparency_appeals_insert_rollup`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_appeals_insert_rollup()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_project_moderation_transparency_appeals_update_rollup`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_appeals_update_rollup()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_project_moderation_transparency_clearance_delete_rollup`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_clearance_delete_rollup()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_project_moderation_transparency_clearance_insert_rollup`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_clearance_insert_rollup()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_project_post_history_author`
 
 ```sql
@@ -664,14 +560,6 @@ CREATE OR REPLACE FUNCTION public.fn_project_topic_aliases()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_project_topic_image_placements()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_project_transparency_rollup`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_transparency_rollup()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -1593,22 +1481,6 @@ CREATE OR REPLACE FUNCTION public.fn_reject_web_push_endpoint_owner_subscription
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_web_push_subscription_owner()
  RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_release_moderation_transparency_daily_rollup(p_day date, p_community_id uuid, p_metric moderation_transparency_metrics, p_category moderation_transparency_categories, p_cutoff timestamp with time zone)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_release_moderation_transparency_daily_rollup(p_day date, p_community_id uuid, p_metric moderation_transparency_metrics, p_category moderation_transparency_categories, p_cutoff timestamp with time zone)
- RETURNS void
- LANGUAGE plpgsql
-```
-
-## `fn_release_next_moderation_transparency_daily_rollup(p_community_id uuid, p_before date, p_cutoff timestamp with time zone)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_release_next_moderation_transparency_daily_rollup(p_community_id uuid, p_before date, p_cutoff timestamp with time zone)
- RETURNS void
  LANGUAGE plpgsql
 ```
 
