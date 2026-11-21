@@ -47,7 +47,8 @@ export function assertWithinStandingTagLimit(
   const tier = getContributionLimitTier(currentUser, membershipPlan)
 
   const limit = getManualTagLimit(tier)
-  if (finalCount > Math.min(MAX_MANUAL_TAGS, Math.max(existingCount, limit))) {
+  assertManualCategoryInputLimit(finalCount)
+  if (finalCount > Math.max(existingCount, limit)) {
     throw createCodedError(
       403,
       `You've reached your tag limit (${limit}) for this post. Upgrade your membership to add more tags.`,

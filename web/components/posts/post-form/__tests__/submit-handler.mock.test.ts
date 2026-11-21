@@ -161,23 +161,22 @@ describe('usePostFormSubmit', () => {
     )
   })
 
-  it.each(['POST_CATEGORY_LIMIT_REACHED', 'TAG_LIMIT_REACHED'])(
-    'shows translated category recovery guidance for %s without an upgrade suggestion',
-    async code => {
-      mockedSubmitPost.mockRejectedValueOnce(Object.assign(new Error('capacity'), { code }))
-      const router = { push: vi.fn<VitestLooseMock>() }
-      const { result } = renderHook(() =>
-        usePostFormSubmit({ isEdit: false, router, submitInput: buildInput }),
-      )
-      await act(async () => {
-        await result.current.handleSubmitPost()
-      })
-      expect(toastMock.error).toHaveBeenCalledWith(
-        'This post has too many categories. Remove some categories or hashtags and try again.',
-      )
-      expect(router.push).not.toHaveBeenCalled()
-    },
-  )
+  it('shows translated category recovery guidance without an upgrade suggestion', async () => {
+    mockedSubmitPost.mockRejectedValueOnce(
+      Object.assign(new Error('capacity'), { code: 'POST_CATEGORY_LIMIT_REACHED' }),
+    )
+    const router = { push: vi.fn<VitestLooseMock>() }
+    const { result } = renderHook(() =>
+      usePostFormSubmit({ isEdit: false, router, submitInput: buildInput }),
+    )
+    await act(async () => {
+      await result.current.handleSubmitPost()
+    })
+    expect(toastMock.error).toHaveBeenCalledWith(
+      'This post has too many categories. Remove some categories or hashtags and try again.',
+    )
+    expect(router.push).not.toHaveBeenCalled()
+  })
 
   it('routes to the saved post and shows toast on PostSavedWithRatingError', async () => {
     const router = { push: vi.fn<VitestLooseMock>() }
