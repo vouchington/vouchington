@@ -3,7 +3,6 @@ import type { RssFeedItemWithHash } from './upsert-prepare.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import { buildUpsertRssFeedItemsQuery } from './upsert-content-query.mts'
 import { buildRssFeedItemSourcesQuery, type RssFeedItemSourceInput } from './upsert-sources.mts'
-import type { LockedRssFeedItemRow } from './upsert-write-locks.mts'
 
 export type ExistingRssFeedItemRow = {
   id: string
@@ -35,7 +34,10 @@ export type UpsertedRssFeedItemRow = {
   published_at: Date
 }
 
-type UpsertedRssFeedItemContentRow = Omit<UpsertedRssFeedItemRow, 'guid'>
+/** `previous_url_id` is the URL of the active row this write replaced, null for inserts and revivals. */
+type UpsertedRssFeedItemContentRow = Omit<UpsertedRssFeedItemRow, 'guid'> & {
+  previous_url_id: string | null
+}
 type ExistingRssFeedItemMapValue = {
   id: string
   guid: string
@@ -162,15 +164,13 @@ export async function upsertRssFeedItemContent(
 }
 
 export function getRevisedStoryIds(
-  lockedRows: Iterable<LockedRssFeedItemRow>,
-  upsertedRows: Array<Pick<UpsertedRssFeedItemContentRow, 'id' | 'url_id' | 'story_id'>>,
+  upsertedRows: Array<
+    Pick<UpsertedRssFeedItemContentRow, 'url_id' | 'story_id' | 'previous_url_id'>
+  >,
 ): string[] {
-  const lockedRowsById = new Map<string, LockedRssFeedItemRow>()
-  for (const row of lockedRows) lockedRowsById.set(row.id, row)
   const storyIds: string[] = []
   for (const row of upsertedRows) {
-    const previous = lockedRowsById.get(row.id)
-    if (previous?.url_id !== row.url_id && row.story_id) storyIds.push(row.story_id)
+    if (row.previous_url_id !== row.url_id && row.story_id) storyIds.push(row.story_id)
   }
   return storyIds
 }

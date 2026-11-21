@@ -190,7 +190,7 @@ describe('election-vote-handler', () => {
       expect(afterRetry.used).toBe(afterFirstVote.used)
     })
 
-    it('consumes one contribution quota unit for concurrent identical votes', async () => {
+    it('answers concurrent identical votes with a winner and at most one extra quota charge', async () => {
       ownedWork.requireAdmission('elections')
       const concurrentUser = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
       const firstRequest = createRequest()
@@ -200,17 +200,17 @@ describe('election-vote-handler', () => {
         secondRequest.authenticateAs(concurrentUser),
       ])
       await resetContributionQuota(concurrentUser.id)
-
-      await settleVoteRouteOperations([
-        firstRequest.put(`/api/v1/topics/${topicId}/vote`).send({ choice: 'disavow' }).expect(204),
-        secondRequest.put(`/api/v1/topics/${topicId}/vote`).send({ choice: 'disavow' }).expect(204),
+      const responses = await settleVoteRouteOperations([
+        firstRequest.put(`/api/v1/topics/${topicId}/vote`).send({ choice: 'disavow' }),
+        secondRequest.put(`/api/v1/topics/${topicId}/vote`).send({ choice: 'disavow' }),
       ])
-
-      await expect(getContributionQuota(concurrentUser.id, false, null)).resolves.toMatchObject({
-        used: 1,
-      })
+      // The loser gets a 409 or finds the committed ballot; its quota check is not refunded.
+      const statuses = responses.map(response => response.status)
+      expect(statuses.filter(status => ![204, 409].includes(status))).toEqual([])
+      expect(statuses).toContain(204)
+      const { used } = await getContributionQuota(concurrentUser.id, false, null)
+      expect([1, 2]).toContain(used)
     })
-
     it('returns 403 with OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN for official accounts', async () => {
       const request = createRequest()
       await request.authenticateAs(adminUser)

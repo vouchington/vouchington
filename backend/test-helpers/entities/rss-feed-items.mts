@@ -185,3 +185,9 @@ export async function getRssFeedItemCategoryTopicRelationDeletedAt(
   )
   return rows[0]?.deleted_at
 }
+
+export async function countTestRssFeedItemSources(rssFeedId: string): Promise<number> {
+  const { rows } = await read<{ count: number }>(sql`/* countTestRssFeedItemSources */
+    SELECT count(*)::integer AS count FROM rss_feed_item_sources WHERE rss_feed_id = ${rssFeedId}::uuid`)
+  return rows[0]!.count
+}

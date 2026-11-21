@@ -26,7 +26,8 @@ export async function upsertUserVouchElectionVotes(
 ): Promise<ElectionVoteMutationResult[]> {
   if (votes.length === 0) return []
 
-  await using query = await beginTransaction()
+  // SERIALIZABLE: concurrent identical requests would otherwise both append a ballot.
+  await using query = await beginTransaction({ serializable: true })
 
   const insertedVotesInTransaction = await upsertElectionVotesShared(
     USER_VOUCH_ELECTION_CONFIG,

@@ -9,10 +9,7 @@ import {
   upsertRssFeedItemContent,
   upsertRssFeedItemSources,
 } from './upsert-queries.mts'
-import {
-  lockRssFeedItemWriteScopes,
-  resolveAndLockRssFeedItemWrites,
-} from './upsert-write-locks.mts'
+import { resolveRssFeedItemWrites } from './upsert-identity-resolution.mts'
 import { prepareRssFeedItemsForUpsert } from './upsert-prepare.mts'
 import { beginTransaction, read } from '@data-stores/psql'
 import { enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort } from '@queues/story-post-related-url-projections/enqueues'
@@ -75,23 +72,24 @@ export async function upsertRssFeedItems(
   const replicaGuidsToUpsert = new Set<string>()
   for (const item of replicaItemsToUpsert) replicaGuidsToUpsert.add(item.feedItem.guid)
   await using txQuery = await beginTransaction()
-  await lockRssFeedItemWriteScopes(txQuery, rssFeedId)
-  // The first feed lookup runs before this transaction. Recheck after taking the
-  // publication lock so a queued hard delete cannot acquire new source rows.
+  // The first feed lookup runs before this transaction. This unlocked recheck only narrows the
+  // window for a feed deleted since. A source row inserted after a hard-delete request is still
+  // drained by feed id (source pages, recovery sweep) or removed by the FK cascade.
   const activeFeed = await txQuery<{ id: string }>(sql`/* upsertRssFeedItems:activeFeed */
     SELECT id FROM rss_feeds
     WHERE id = ${rssFeedId} AND deleted_at IS NULL AND hard_delete_requested_at IS NULL
-    FOR UPDATE
   `)
   assert(activeFeed.rows.length > 0, 404, 'RSS feed not found')
-  const resolved = await resolveAndLockRssFeedItemWrites(txQuery, urlHostnameId, itemsWithHashes)
+  const resolved = await resolveRssFeedItemWrites(txQuery, urlHostnameId, itemsWithHashes)
   const writerRevisionItemsByGuid = new Map<string, (typeof itemsWithHashes)[number]>()
   for (const item of itemsWithHashes) {
     const { guid } = item.feedItem
     if (replicaGuidsToUpsert.has(guid)) continue
     const id = resolved.identityIdsByGuid.get(guid)
-    const locked = id ? resolved.lockedRowsById.get(id) : undefined
-    if (locked && locked.url_id !== item.url_id) writerRevisionItemsByGuid.set(guid, item)
+    const currentUrlId = id ? resolved.currentUrlIdsById.get(id) : undefined
+    if (currentUrlId !== undefined && currentUrlId !== item.url_id) {
+      writerRevisionItemsByGuid.set(guid, item)
+    }
   }
   const writerRevisionItems = [...writerRevisionItemsByGuid.values()]
   const itemsToUpsert = [...replicaItemsToUpsert, ...writerRevisionItems]
@@ -139,7 +137,7 @@ export async function upsertRssFeedItems(
   ])
   const markedStoryPostRelatedUrlProjections = await markStoryPostRelatedUrlProjectionsForStories(
     txQuery,
-    getRevisedStoryIds(resolved.lockedRowsById.values(), rows),
+    getRevisedStoryIds(rows),
   )
   await persistRssFeedItemCategorySnapshotReconciliations(
     txQuery,

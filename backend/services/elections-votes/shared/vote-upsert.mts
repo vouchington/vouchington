@@ -68,7 +68,9 @@ export async function upsertElectionVotesShared(
     return insertElectionVoteRows(config, userId, values, context, userAgentId, query)
   }
   if (options.query || options.client) return withTransactionOptions(options, run)
-  await using transaction = await beginTransaction()
+  // SERIALIZABLE: concurrent identical requests would otherwise both append a ballot and repeat
+  // its side effects. The caller maps the losing 40001 to a 409.
+  await using transaction = await beginTransaction({ serializable: true })
   const result = await run(transaction)
   await transaction.commit()
   return result

@@ -2,10 +2,8 @@ import assert from 'http-assert'
 import { getAgentModerationElectionByIdCachedBatch } from '@services/entity-fetch/get'
 import { getAgentModerationElectionVote } from '@services/elections-votes/agent-moderation'
 import { upsertAgentModerationVotesWithTrainingEvidence } from '@services/elections-votes/agent-moderation/votes-with-training'
-import {
-  getElectionVoteChoiceScore,
-  withElectionVoteRequestLock,
-} from '@services/elections-votes/shared'
+import { getElectionVoteChoiceScore } from '@services/elections-votes/shared'
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
 import { enqueueBulkUpdateAgentModerationElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
 import { createAdminTool, adminInput, UUID_INPUT } from './create-admin-tool.mts'
 
@@ -38,7 +36,7 @@ function agentVoteTool(name: string, clear: boolean) {
     run: async (user, args) => {
       const [moderation] = await getAgentModerationElectionByIdCachedBatch([args.id])
       assert(moderation, 404, 'Agent moderation not found')
-      await withElectionVoteRequestLock('agent_moderation', user.id, args.id, async () => {
+      await conflictOnSerializationFailure(async () => {
         const current = await getAgentModerationElectionVote(user.id, args.id)
         if ((clear && !current) || (!clear && current?.choice === args.choice)) {
           await enqueueBulkUpdateAgentModerationElectionVoteStats([args.id])

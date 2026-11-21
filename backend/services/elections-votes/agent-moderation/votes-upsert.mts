@@ -21,25 +21,6 @@ const NULL_VOTE_CONTEXT: VoteEventContext = {
   userAgent: null,
 }
 
-async function lockAgentModerationVoteMutation(
-  query: TransactionQuery,
-  userId: string,
-  agentModerationIds: string[],
-): Promise<void> {
-  await query(sql`/* lockActiveUserForAgentModerationElectionVoteMutation */
-    SELECT fn_lock_active_user_for_mutation(${userId}::uuid)
-  `)
-  await query(sql`/* lockAgentModerationElectionVoteMutations */
-    SELECT pg_advisory_xact_lock(
-      hashtextextended('agent_moderation_votes:' || ${userId} || ':' || ordered.entity_id::text, 0)
-    )
-    FROM (
-      SELECT unnest(${agentModerationIds}::uuid[]) AS entity_id
-      ORDER BY entity_id
-    ) ordered
-  `)
-}
-
 export async function upsertAgentModerationElectionVotes(
   userId: string,
   votes: Array<{ entityId: string; score: ElectionVoteScore }>,
@@ -63,12 +44,13 @@ export async function upsertAgentModerationElectionVotes(
   // Sort by agentModerationId for deterministic index-lock acquisition order (prevents ABBA deadlocks).
   values.sort((a, b) => a.agentModerationId.localeCompare(b.agentModerationId))
 
+  // No request lock: aggregation reads each voter's latest ballot, so a concurrent identical
+  // ballot is harmless to counts. SERIALIZABLE was tried and rejected: its page-level predicate
+  // locks 409 unrelated voters on the same ballot pages.
   return runWithTransaction(undefined, async (query: TransactionQuery) => {
-    await lockAgentModerationVoteMutation(
-      query,
-      userId,
-      values.map(vote => vote.agentModerationId),
-    )
+    await query(sql`/* lockActiveUserForAgentModerationElectionVoteMutation */
+      SELECT fn_lock_active_user_for_mutation(${userId}::uuid)
+    `)
     // Hold the lookup row's key-share lock until this ballot insert commits.
     const userAgentId = await upsertUserAgentString(context.userAgent?.trim() || null, { query })
     const { rows: previousVotes } = await query<{
