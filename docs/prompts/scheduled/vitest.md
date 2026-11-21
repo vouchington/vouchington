@@ -1,57 +1,10 @@
-Review Vitest tests. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
+Improve Vitest reliability and speed. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
-- Run the relevant local Vitest test more than once when investigating reliability. When it depends
-  on PostgreSQL or Valkey state, run it in freshly cleaned state and again without cleaning first.
-  After `pnpm run db:clean`, run `pnpm run db:migrate` before the clean-baseline test when PostgreSQL
-  is involved. The cohort steps below are PostgreSQL-specific; use workload-specific isolation for
-  Valkey.
-- For PostgreSQL aggregate, unscoped-list, or cleanup-count tests, create or retain a separately
-  randomized, unrelated fixture cohort, then rerun without cleaning. Assert test-owned IDs or
-  contribution deltas. When the query is intentionally global, assert the unrelated cohort's
-  expected inclusion separately rather than treating its rows as leakage. For cleanup tests, assert
-  the unrelated cohort still exists after cleanup.
-- Treat cohort interference as leakage only when it changes the test-owned contribution, removes
-  unrelated rows during ownership-scoped cleanup, or fails a cohort-independent assertion. Trace
-  each leaked row to the fixture or test that created it, fix the query scoping or cleanup boundary,
-  and record the required isolation invariant in its owning reference doc or nearest `AGENTS.md`
-  using the follow-up durability rule below. Do not mask the leak with broad cleanup, indiscriminate
-  reruns, or timeout increases.
-- Find any failures and make them more reliable.
-- Find opportunities to make tests faster or leaner.
-- Use coverage reports to locate untested behavior relevant to the selected improvement; add
-  behavior-specific assertions only when they verify its contract, without chasing coverage totals.
-- Review AGENTS.md and README.md files for any incongruence between tests and requirements.
-- Avoid increasing a per-test or per-file timeout to paper over a real failure; the global
-  `teardownTimeout: 20_000` in `vitest.config.mts` is a deliberate, already-justified exception that
-  bounds teardown across all pool types, not a precedent for further timeout increases.
-- Prefer creating new entities in the test instead of reusing entities.
-- Use randomized IDs to avoid conflicts.
-- If a prior PR's `## Follow-ups` section named a specific follow-up action, verify the owning
-  reference doc or a `AGENTS.md` actually records it (`git log` on the prior fix commits, then
-  grep those files) before landing another attempt at the same signature; report and durably
-  document any missing follow-up there. Do not block the test fix on filing a GitHub issue —
-  this prompt has no issue-publication path.
-- Avoid unnecessary mocking, especially internal service calls that can be exercised directly.
-- Before proposing a fix for a recurring failure signature, check whether it already recurred:
-  `git log` / `git blame` on the failing test file, `vitest.config.mts`, and
-  `test-helpers/vitest-config/**`. A signature with
-  multiple prior patches needs the fix that closes the pattern, not another partial instance of it.
-- Do not open a new instrumentation pass for worker exits. The worker-exit crash diagnostics were
-  removed; bring them back only after a hosted worker exit is actually reproduced, and otherwise
-  report the signature instead of adding another diagnostic pass.
-- For a post-assertion worker exit (the test passes, then its worker crashes during teardown),
-  the failure is Vitest's own `Worker exited unexpectedly` error. Check per-shard RSS/heap and the
-  `[vitest-teardown-overrun]` output before assuming a leak. CI reporter mode retains that
-  timeout snapshot independently of `VITEST_DIAGNOSTICS`; `[vitest-teardown]` phase markers
-  are available only with `VITEST_DIAGNOSTICS=1`, so their absence in routine runs is expected.
-  Per-project `pool` / `isolate` values are recorded in
-  [Pools, Isolation, and Vitest 5](../../development/reference-tests-vitest-projects.md#pools-isolation-and-vitest-5).
-  Forks-pool projects have no per-project `poolOptions` / `maxForks` / `singleFork`; concurrency is
-  bounded only by the repository-owned `VITEST_MAX_WORKERS` environment policy via
-  `parseVitestMaxWorkers()`, and
-  `dev/vitest-config.test.mts` bans a hardcoded `maxWorkers` literal.
-- Record any deferred follow-up in the owning reference doc or a `AGENTS.md`, not only in a PR body
-  or issue comment — a PR body is exactly what a later scheduled run cannot read.
-- Test-helper waits on a terminal event (`completed`, `failed`, drained) need their own bounded
-  deadline that fails with a named message; an unbounded wait turns a stalled worker into a hung
-  shard that only the step timeout reaps with no diagnosis (review of #2918, run 38617297518).
+Unit: one Vitest project or test folder.
+
+Load `test-authoring`, `testing-rules`, and `vouchington-backend-tests`. Focus: flakiness, isolation, and performance. Deletion belongs to [test-pruning.md](test-pruning.md); mock replacement to [backend-real-tests.md](backend-real-tests.md).
+
+- Run the relevant test more than once. For PostgreSQL or Valkey state, run it freshly cleaned (`pnpm run db:clean`, then `pnpm run db:migrate`) and again without cleaning, with a separately randomized unrelated fixture cohort. Assert test-owned IDs or contribution deltas; trace any leaked row to its creator and fix the scoping or cleanup boundary, not with broad cleanup, blind reruns, or timeout increases.
+- Do not raise per-test timeouts (the global `teardownTimeout: 20_000` in `vitest.config.mts` is a justified exception, not a precedent). Terminal-event waits in helpers need their own bounded deadline with a named failure.
+- Before fixing a recurring failure signature, check `git log` and blame on the test, `vitest.config.mts`, and `test-helpers/vitest-config/**`; several prior patches need a fix that closes the pattern. Record deferred follow-ups in the owning reference doc or `AGENTS.md`, not only a PR body.
+- Do not add worker-exit instrumentation; those diagnostics were removed until a hosted exit is reproduced. For a post-assertion `Worker exited unexpectedly`, check per-shard RSS/heap and `[vitest-teardown-overrun]` output first (`[vitest-teardown]` markers need `VITEST_DIAGNOSTICS=1`). Pool and isolation values: [Pools, Isolation, and Vitest 5](../../development/reference-tests-vitest-projects.md#pools-isolation-and-vitest-5); forks concurrency is bounded only by `VITEST_MAX_WORKERS` via `parseVitestMaxWorkers()`.

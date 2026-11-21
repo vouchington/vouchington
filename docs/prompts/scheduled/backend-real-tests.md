@@ -1,12 +1,8 @@
 Review backend tests for internal mocking that can be replaced with real dependencies. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
-- Start with [backend conventions](../../../backend/AGENTS.md), then read the chosen files' instruction ancestry. Follow their ownership boundary, especially the rule to test service behavior behind processors.
-- Inspect `*.mock.test.mts` files and uses of `vi.mock`, `vi.spyOn`, and injected `vi.fn` collaborators. Choose one coherent test cluster where replacing internal seams improves confidence.
-- Prioritize real service, PostgreSQL, and Valkey behavior; replace internal enqueue, publish, transaction, query, service, or processor-dependency spies with assertions on persisted state, queued jobs, emitted messages, or returned results. Deterministic local libraries and filesystem dependencies are also good candidates when safe.
-- Backend Vitest aliases GlideMQ to an in-memory shim that does not enforce wall-clock delay, deduplication, ordering, or real Valkey semantics. Use it for observable processor and data-flow behavior, assert production queue options directly, and do not present shim behavior as a real Valkey integration test.
-- Preserve tagged external-provider and network mocks. Also preserve focused fault injection and time, environment, or console seams when the real behavior would be unsafe, nondeterministic, credentialed, or impractical to reproduce.
-- Reuse existing test helpers, generate randomized fixture IDs, and keep tests idempotent on dirty databases. Avoid partial internal mocks and mock-only helper barrels.
-- Skip work already covered by an active PR. Preserve meaningful coverage and run the owning focused tests; repeat when checking state isolation or flakiness. Include relevant coverage evidence in the PR.
-- Follow the [Vitest mock policy](../../development/reference-tests-vitest-mock-typing.md) for filenames. Rename a file only when its remaining calls and project routing allow the ordinary test suffix; do not infer naming from the presence of a spy or environment stub.
+Unit: one folder under `backend/services` with mock tests.
 
-Prepare and validate one bounded workspace patch, then publish it as the draft PR.
+- Load `vouchington-backend-tests` and read [backend conventions](../../../backend/AGENTS.md). Inspect `*.mock.test.mts`, `vi.mock`, `vi.spyOn`, and injected `vi.fn` collaborators; choose one coherent cluster.
+- Replace internal enqueue, publish, transaction, query, service, and processor spies with assertions on persisted state, queued jobs, emitted messages, or results. Keep tagged external-provider mocks and focused fault, time, environment, or console seams where real behavior is unsafe or nondeterministic.
+- The in-memory GlideMQ shim does not enforce wall-clock delay, deduplication, ordering, or Valkey semantics; do not present it as a real Valkey integration test.
+- Follow the [Vitest mock policy](../../development/reference-tests-vitest-mock-typing.md) for filenames. Preserve coverage and include coverage evidence in the PR.

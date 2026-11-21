@@ -1,12 +1,9 @@
 Review rate limiting. Find one concrete, bounded improvement that is safe to ship in one PR. If none qualifies, make no repository changes and report why.
 
-- Check [Rate Limiting](../../overview/architecture/rate-limiting.md) against one of its four layers: Cloudflare Worker edge IP limits (Layer 1), per-endpoint backend limits (Layer 2), user-aware trust tiers (Layer 3), or per-route backend limiting (Layer 4) via `ctx.applyRouteRateLimit()` and `ROUTE_REGISTRY` (`backend/services/route-rate-limits/config.mts`).
-- Prioritize correct trust-tier derivation (OAuth/MFA/account-age/membership), new-account cooling, sensitive-category exceptions, route-registry drift or missing `applyRouteRateLimit()` coverage on mutating routes, and post-cache bot limits (`bot` key prefix; see [Caching Strategy](../../overview/architecture/caching-strategy.md) for bot-tier caching, where cached responses are free).
-- Keep thresholds configurable through the existing dynamic-config surface (DynamicConfig namespaces `rate-limit-thresholds` for Layer 3 and `route-rate-limit-config` for Layer 4) rather than hardcoding them; see [Dynamic Config](../../overview/architecture/dynamic-config.md).
-- This prompt owns limit enforcement, thresholds, layer coverage, and identity-derived trust-tier behavior. Token/session/MFA/OAuth correctness belongs to [auth.md](auth.md); other application threat surfaces belong to [security.md](security.md).
-- Do not weaken a limit or add a bypass without an explicit product or security requirement.
-- Skip findings already covered by open issues or open PRs.
-- Add or tighten tests for the selected limiter, tier computation, or threshold behavior.
-- MCP parity: every service-level rate-limit or duplicate-window failure reachable from an MCP tool
-  (`backend/mcp/`) must map to the same MCP rate-limit result the REST route returns, not an
-  unhandled error (review of #2966 on the election-vote and RSS-share tools).
+Unit: one layer or route group.
+
+- Check [Rate Limiting](../../overview/architecture/rate-limiting.md) against one of its four layers: Worker edge IP limits, per-endpoint backend limits, user-aware trust tiers, or per-route limiting via `ctx.applyRouteRateLimit()` and `ROUTE_REGISTRY` (`backend/services/route-rate-limits/config.mts`).
+- Prioritize trust-tier derivation (OAuth/MFA/account-age/membership), new-account cooling, sensitive-category exceptions, route-registry drift or missing `applyRouteRateLimit()` on mutating routes, and post-cache bot limits ([Caching Strategy](../../overview/architecture/caching-strategy.md)).
+- Keep thresholds in DynamicConfig (`rate-limit-thresholds`, `route-rate-limit-config`; see [Dynamic Config](../../overview/architecture/dynamic-config.md)). Never weaken a limit or add a bypass without an explicit requirement.
+- Boundaries: token/session/MFA/OAuth correctness is [auth.md](auth.md); other application threats are [security.md](security.md).
+- MCP parity: a rate-limit or duplicate-window failure reachable from an MCP tool (`backend/mcp/`) must map to the same result the REST route returns.

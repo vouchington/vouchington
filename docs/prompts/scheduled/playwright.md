@@ -1,22 +1,12 @@
 Review Playwright tests. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
-- Run the relevant local Playwright test more than once when investigating reliability.
-- Find any failures and make them more reliable.
-- Find opportunities to make tests faster or leaner.
-- Review AGENTS.md and README.md files for any incongruence between tests and requirements.
-- Avoid increasing timeouts and retries.
-- If retrying is justified, retry the smallest navigation-plus-assertion operation that can recover;
-  do not restart an unrelated setup or an entire test flow.
-- Prefer creating new entities in the test instead of reusing entities.
-- Use randomized IDs to avoid conflicts.
-- No polling or `setTimeout`; use a proper wait for selectors, test ids, navigation, or network state.
-- Add test cases via seed if needed.
-- Increase coverage, reliability, or performance for the selected issue.
-- Avoid long sequences of tests or steps.
-- Avoid mocking; use seed data if needed.
-- Do not add screenshots unless they are part of a frontend-change PR verification artifact.
-- No long requests.
-- Prebuild Cloudflare/Next.js and minimize runtime load.
-- Tighten restrictions so tests fail on browser-side errors.
-- Never match browser or framework error-message text; assert stable application behavior or
-  repository-owned diagnostics instead.
+Unit: one Playwright spec file or folder.
+
+Load `playwright-authoring` and `playwright-rules`.
+
+- Run the relevant local test more than once when investigating reliability; fix failures and make tests faster or leaner.
+- Review AGENTS.md and README.md files for incongruence between tests and requirements.
+- Do not raise timeouts or retries. If a retry is justified, retry only the smallest navigation-plus-assertion that can recover.
+- Create new entities with randomized IDs instead of reusing them; add seed cases if needed; avoid mocking and long request or step sequences.
+- Prebuild Cloudflare/Next.js to minimize runtime load. Add screenshots only as frontend-change verification artifacts.
+- Make tests fail on browser-side errors, but never match browser or framework error-message text; assert stable application behavior or repository-owned diagnostics.
