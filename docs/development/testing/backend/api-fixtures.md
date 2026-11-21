@@ -4,8 +4,8 @@
 
 Pending adoption metadata lets additive fixture coverage land before native clients register it,
 so producer and client PRs need not wait on each other's merge order. It records an adoption gap,
-not an exemption from response-contract validation. Breaking changes still need coordinated client
-adoption. The [scheduled reconciliation](../../../prompts/scheduled/native-pending-adoption.md)
+not an exemption from response-contract validation. Producer contract changes stay backward
+compatible with released clients rather than waiting on their adoption. The [scheduled reconciliation](../../../prompts/scheduled/native-pending-adoption.md)
 clears verified adoption metadata and tracks older gaps in the clients repository without deleting
 fixtures or introducing a required stale-flag check.
 

@@ -3,8 +3,8 @@ with at most one producer PR removing verified adopted flags and one deduplicate
 for aged unreferenced items. A completed audit with neither change is a verified no-op. Do not add
 a required check, delete unused copy or fixtures, or implement client features.
 
-Additive producer changes may land before client adoption. Pending metadata keeps adoption gaps
-visible without coupling merge order; only breaking contract changes need lockstep. See the owning
+Producer changes land before client adoption and stay backward compatible with released clients.
+Pending metadata keeps adoption gaps visible without coupling merge order. See the owning
 [native localization](../../development/reference-tests-translation-catalog-and-locale-checks.md)
 and [API fixture](../../development/testing/backend/api-fixtures.md) pages.
 
