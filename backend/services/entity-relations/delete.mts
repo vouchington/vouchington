@@ -76,7 +76,7 @@ export const softDeleteEntityRelation = async (
       }
       void enqueueUndoFollowSideEffects(relation, getDeletedFollowPairs(deletedRelations))
       await enqueueRssFeedDiscoverabilityForDeletedPublisherTypeRelations(relation, [subject])
-      enqueueNotificationReconcileAfterDelete(relation, subject)
+      enqueueNotificationReconcileAfterDelete(relation, [subject])
     }
     return
   }
@@ -113,7 +113,7 @@ export const softDeleteEntityRelation = async (
   /* c8 ignore next 3 -- no bidirectional relation is remote-actor-sourced today; see the matching
      note in upsert.mts's bidirectional branch. */
   if (options?.origin !== 'remote') {
-    enqueueNotificationReconcileAfterDelete(relation, subject)
+    enqueueNotificationReconcileAfterDelete(relation, [subject])
   }
 }
 
@@ -161,7 +161,7 @@ export const softDeleteEntityRelationsForSubjects = async (
       const deletedSubjects = subjects.filter(subject => deletedSubjectIds.has(subject.id))
       void enqueueUndoFollowSideEffects(relation, getDeletedFollowPairs(deletedRelations))
       await enqueueRssFeedDiscoverabilityForDeletedPublisherTypeRelations(relation, subjects)
-      deletedSubjects.forEach(subject => enqueueNotificationReconcileAfterDelete(relation, subject))
+      enqueueNotificationReconcileAfterDelete(relation, deletedSubjects)
     }
     return
   }

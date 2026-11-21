@@ -1,12 +1,10 @@
 import { randomBytes } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { S3Buckets } from '@modules/aws'
-import { onEnqueueAdmission, type EnqueueAdmission } from '@vouchington/worker-runtime/glide-mq'
 import { imageUploadsQueue } from '@queues/image-uploads/queues'
 import {
   backdateImageUploadStagedAt,
   createTestUser,
-  readEnqueuedJob,
   setImageHashAndProcessing,
   setTestImageHashWhileProcessing,
 } from '@voucha/test-helpers'
@@ -23,6 +21,17 @@ const ROLLOVERS = [
   '2024-03-01T00:00:00.001Z',
   '2026-01-01T00:00:00.001Z',
 ] as const
+
+function findExtractionJobs(id: string) {
+  return imageUploadsQueue.searchJobs({ name: 'extract-metadata', data: { id } })
+}
+
+async function extractionImageIds(ids: readonly string[]) {
+  const found = await Promise.all(
+    ids.map(async id => ((await findExtractionJobs(id)).length ? id : null)),
+  )
+  return found.filter(id => id !== null)
+}
 
 describe('abandoned upload cleanup', () => {
   afterEach(() => vi.restoreAllMocks())
@@ -129,6 +138,26 @@ describe('abandoned upload cleanup', () => {
     expect(await getImageByHash(digest, true)).toBeNull()
   })
 
+  it('admits every recovered image of a page', async () => {
+    const now = new Date()
+    const user = await createTestUser()
+    const ids = await Promise.all(
+      [0, 1].map(() => createOwnedStagedImage(new Date(now.getTime() - 25 * HOUR), true, user)),
+    )
+    for (const id of ids) await setImageHashAndProcessing(id, randomBytes(32))
+    await seedOwnedUploadCleanupStorage(ids)
+    const result = await cleanupOwnedTestUploads(cleanupAbandonedUploads, ids, now)
+    expect(result.recovered).toBe(2)
+    expect((await extractionImageIds(ids)).toSorted()).toEqual(ids.toSorted())
+    for (const id of ids) {
+      const [job] = await findExtractionJobs(id)
+      expect(job?.opts.deduplication).toEqual({
+        id: `extract-image-metadata-${id}`,
+        mode: 'simple',
+      })
+    }
+  })
+
   it.each(ROLLOVERS)('enqueues only before the one-hour UTC edge at %s', async instant => {
     const now = new Date(instant)
     const user = await createTestUser()
@@ -139,36 +168,13 @@ describe('abandoned upload cleanup', () => {
     )
     for (const id of ids) await setImageHashAndProcessing(id, randomBytes(32))
     const storage = await seedOwnedUploadCleanupStorage(ids)
-    const admissions: EnqueueAdmission[] = []
-    const off = onEnqueueAdmission(event => {
-      const [input] = event.inputs
-      if (
-        event.queue === imageUploadsQueue &&
-        event.jobName === 'extract-metadata' &&
-        typeof input === 'object' &&
-        input !== null &&
-        'id' in input &&
-        ids.includes(String(input.id))
-      )
-        admissions.push(event)
-    })
-    try {
-      const result = await cleanupOwnedTestUploads(cleanupAbandonedUploads, ids, now)
-      expect(result.recovered).toBe(1)
-      expect(admissions).toHaveLength(1)
-      const admission = admissions[0]
-      if (!admission) throw new Error('Missing owned recovery admission')
-      expect((await readEnqueuedJob(imageUploadsQueue, await admission.completion)).data).toEqual({
-        id: ids[0],
-      })
-      await expect(storage.deleted()).resolves.toEqual([
-        { Bucket: S3Buckets.imageUploads, Key: ids[0] },
-      ])
-      for (const id of ids) expect(await getImageById(id)).not.toBeNull()
-    } finally {
-      off()
-      await Promise.allSettled(admissions.map(admission => admission.completion))
-    }
+    const result = await cleanupOwnedTestUploads(cleanupAbandonedUploads, ids, now)
+    expect(result.recovered).toBe(1)
+    expect(await extractionImageIds(ids)).toEqual([ids[0]])
+    await expect(storage.deleted()).resolves.toEqual([
+      { Bucket: S3Buckets.imageUploads, Key: ids[0] },
+    ])
+    for (const id of ids) expect(await getImageById(id)).not.toBeNull()
   })
 
   it.each(ROLLOVERS)('abandons only before the 24-hour UTC edge at %s', async instant => {

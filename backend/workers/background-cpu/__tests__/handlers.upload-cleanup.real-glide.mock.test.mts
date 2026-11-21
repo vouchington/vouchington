@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { Queue, QueueEvents } from 'glide-mq'
 import { closeAndUnregisterGlideMQInstance } from '@data-stores/valkey-glide-mq'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
-import { onEnqueueAdmission, type EnqueueAdmission } from '@vouchington/worker-runtime/glide-mq'
 import {
   acquireContentAnalysisTestReservation,
   waitForQueueDomainTestResult,
@@ -17,7 +16,6 @@ import {
   createTestUser,
   backdateImageUploadStagedAt,
   setImageHashAndProcessing,
-  readEnqueuedJob,
 } from '@voucha/test-helpers'
 import {
   insertOwnedUploadCleanupCluster,
@@ -81,36 +79,19 @@ describe('background CPU abandoned upload cleanup', () => {
       promotionInterval: 100,
     })
     worker.on('error', () => undefined)
-    const admissions: EnqueueAdmission[] = []
-    const off = onEnqueueAdmission(event => {
-      const input = event.inputs[0]
-      if (
-        event.queue === imageUploadsQueue &&
-        event.jobName === 'extract-metadata' &&
-        typeof input === 'object' &&
-        input !== null &&
-        'id' in input &&
-        input.id === recoveryId
-      )
-        admissions.push(event)
-    })
+    const findRecoveryExtractions = () =>
+      imageUploadsQueue.searchJobs({ name: 'extract-metadata', data: { id: recoveryId } })
     let closing: Promise<void> | undefined
     closeQueueResources = () =>
       (closing ??= (async () => {
         await Promise.allSettled(mutations)
         await using resources = new AsyncDisposableStack()
-        resources.defer(() => off())
         resources.defer(() => queue.close())
         resources.defer(() => queue.obliterate({ force: true }))
         resources.defer(() => events.close())
         resources.defer(async () => {
-          for (const admission of admissions) {
-            const admitted = await readEnqueuedJob(imageUploadsQueue, await admission.completion)
-            const data = admitted.data
-            if (!data || typeof data !== 'object' || !('id' in data) || data.id !== recoveryId)
-              throw new Error('Refusing foreign extraction removal')
-            await admitted.remove()
-          }
+          const admitted = await findRecoveryExtractions()
+          await Promise.all(admitted.map(job => job.remove()))
         })
         resources.defer(() => closeAndUnregisterGlideMQInstance(worker))
       })())
@@ -146,12 +127,8 @@ describe('background CPU abandoned upload cleanup', () => {
       expect(await getImageById(completedId)).not.toBeNull()
       expect(await getImageById(recoveryId)).not.toBeNull()
       expect(await getImageById(outsideId, true)).toEqual(outsideBefore)
-      expect(admissions).toHaveLength(1)
-      const extractionAdmission = admissions[0]
-      if (!extractionAdmission) throw new Error('Missing owned recovery admission')
-      expect(
-        (await readEnqueuedJob(imageUploadsQueue, await extractionAdmission.completion)).data,
-      ).toEqual({ id: recoveryId })
+      const extractions = await findRecoveryExtractions()
+      expect(extractions.map(extraction => extraction.data)).toEqual([{ id: recoveryId }])
     } finally {
       await close()
     }

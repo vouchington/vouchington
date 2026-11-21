@@ -1,4 +1,7 @@
-import { enqueuePostPublicationEffects } from '@queues/post-publication/enqueues'
+import {
+  enqueueBulkPostPublicationEffects,
+  enqueuePostPublicationEffects,
+} from '@queues/post-publication/enqueues'
 import { hashCapturedPublicationKeys } from '@services/post-publication/captured-keys'
 import {
   LIVE_SCOPE_POST_KINDS,
@@ -7,7 +10,7 @@ import {
 } from '@services/post-publication/live-scope-post-pages'
 import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
 import { enqueueLivePublicationIdentityEffects } from './direct-live-identities.mts'
-import { continuationJob, enqueueSubjectChains, nextContinuation } from './direct-continuations.mts'
+import { continuationJob, nextContinuation, subjectChainJobs } from './direct-continuations.mts'
 
 type Continuation = NonNullable<PostPublicationEffectsJobData['continuation']>
 type ApplyKeys = (
@@ -43,7 +46,9 @@ export async function enqueueLiveScopePostEffects(
     keyHash: hashCapturedPublicationKeys([]),
     chunkIndex: 0,
   }
-  await Promise.all(kinds.map(kind => enqueueSubjectChains(scopeData, kind, [data.scope.id])))
+  await enqueueBulkPostPublicationEffects(
+    kinds.flatMap(kind => subjectChainJobs(scopeData, kind, [data.scope.id])),
+  )
 }
 
 /** One owner/parent page feeds the same post effects and starts only downward discovery. */

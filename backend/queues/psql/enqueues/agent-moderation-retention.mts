@@ -20,6 +20,7 @@ export function enqueueAgentModerationRetentionContinuation(
     enqueueBulk: async inputs => {
       const jobs = await Promise.all(
         inputs.map(input =>
+          // ast-grep-ignore: backend-no-single-enqueue-in-loop -- the reactivation adapter always receives the one continuation input
           enqueueAgentModerationRetentionJob(input, {
             jobId,
             priority: PRIORITY_DEFAULT,

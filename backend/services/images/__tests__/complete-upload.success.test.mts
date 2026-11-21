@@ -76,7 +76,7 @@ describe('completeImageUpload - success path', () => {
 
   it('returns the promoted image when metadata enqueueing fails', async () => {
     const { imageId, digest } = await stageUpload(user, 'metadata enqueue')
-    vi.spyOn(imageUploadsQueue, 'add').mockRejectedValueOnce(new Error('queue unavailable'))
+    vi.spyOn(imageUploadsQueue, 'addBulk').mockRejectedValueOnce(new Error('queue unavailable'))
 
     const result = await completeImageUpload(user, imageId)
 
