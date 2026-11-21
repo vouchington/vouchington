@@ -30,7 +30,7 @@
     "@agents/story-clustering": "workspace:^",
     "@agents/story-post": "workspace:^",
     "@data-stores/valkey-glide-mq": "workspace:^",
-    "@jongleberry/vurst-ai": "^0.4.3",
+    "@jongleberry/vurst-ai": "^0.4.4",
     "@modules/model-providers": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",

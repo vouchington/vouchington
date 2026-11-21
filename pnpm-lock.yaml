@@ -20,8 +20,8 @@ importers:
         specifier: ^21.2.4
         version: 21.2.4
       '@jongleberry/vurst-runtime':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@opentelemetry/api':
         specifier: ^1.9.1
         version: 1.9.1
@@ -92,8 +92,8 @@ importers:
         specifier: ^18.7.2
         version: 18.7.2
       eslint-plugin-no-mistakes:
-        specifier: ^0.109.102
-        version: 0.109.102(@typescript-eslint/parser@8.73.0(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@7.0.2))(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
+        specifier: ^0.109.105
+        version: 0.109.105(@typescript-eslint/parser@8.73.0(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@7.0.2))(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint-plugin-playwright:
         specifier: ^2.12.2
         version: 2.12.2(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
@@ -119,8 +119,8 @@ importers:
         specifier: ^6
         version: 6.45.1
       no-mistakes:
-        specifier: ^0.109.102
-        version: 0.109.102(vitest@5.1.0)
+        specifier: ^0.109.105
+        version: 0.109.105(vitest@5.1.0)
       oxfmt:
         specifier: ^0.78.0
         version: 0.78.0
@@ -153,7 +153,7 @@ importers:
         version: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
         specifier: ^3.5.0
-        version: 3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.102(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
+        version: 3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.105(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -193,8 +193,8 @@ importers:
   backend/agents/_shared:
     dependencies:
       '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/model-providers':
         specifier: workspace:^
         version: link:../../modules/model-providers
@@ -227,8 +227,8 @@ importers:
         specifier: workspace:^
         version: link:../_shared
       '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/model-providers':
         specifier: workspace:^
         version: link:../../modules/model-providers
@@ -270,8 +270,8 @@ importers:
         specifier: workspace:^
         version: link:../classifiers
       '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/model-providers':
         specifier: workspace:^
         version: link:../../modules/model-providers
@@ -344,8 +344,8 @@ importers:
   backend/agents/classifiers:
     dependencies:
       '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../../modules/structured-decisions
@@ -433,8 +433,8 @@ importers:
         specifier: workspace:^
         version: link:../_shared
       '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/model-providers':
         specifier: workspace:^
         version: link:../../modules/model-providers
@@ -452,8 +452,8 @@ importers:
         specifier: workspace:^
         version: link:../_shared
       '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/model-providers':
         specifier: workspace:^
         version: link:../../modules/model-providers
@@ -470,8 +470,8 @@ importers:
         specifier: workspace:^
         version: link:../_shared
       '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/model-providers':
         specifier: workspace:^
         version: link:../../modules/model-providers
@@ -492,8 +492,8 @@ importers:
         specifier: workspace:^
         version: link:../_shared
       '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/model-providers':
         specifier: workspace:^
         version: link:../../modules/model-providers
@@ -517,8 +517,8 @@ importers:
         specifier: workspace:^
         version: link:../_shared
       '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/model-providers':
         specifier: workspace:^
         version: link:../../modules/model-providers
@@ -603,8 +603,8 @@ importers:
         specifier: workspace:^
         version: link:../_shared
       '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/model-providers':
         specifier: workspace:^
         version: link:../../modules/model-providers
@@ -677,8 +677,8 @@ importers:
         specifier: workspace:^
         version: link:../_shared
       '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/model-providers':
         specifier: workspace:^
         version: link:../../modules/model-providers
@@ -1458,11 +1458,11 @@ importers:
         version: 2.2.2
       vouchington-tooling:
         specifier: ^3.5.0
-        version: 3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.102(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
+        version: 3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.105(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
     devDependencies:
       no-mistakes:
-        specifier: ^0.109.102
-        version: 0.109.102(vitest@5.1.0)
+        specifier: ^0.109.105
+        version: 0.109.105(vitest@5.1.0)
       oxfmt:
         specifier: ^0.78.0
         version: 0.78.0
@@ -1585,8 +1585,8 @@ importers:
         specifier: ^0.4.3
         version: 0.4.3(express@5.3.0(supports-color@10.2.2))(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       '@jongleberry/vurst-runtime':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/api-egress-proxy':
         specifier: workspace:^
         version: link:../../modules/api-egress-proxy
@@ -1697,8 +1697,8 @@ importers:
         specifier: workspace:^
         version: link:../worker-io
       '@jongleberry/vurst-runtime':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/child-process':
         specifier: workspace:^
         version: link:../../modules/child-process
@@ -1923,8 +1923,8 @@ importers:
   backend/mcp:
     dependencies:
       '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/on-error':
         specifier: workspace:^
         version: link:../modules/on-error
@@ -2433,8 +2433,8 @@ importers:
   backend/modules/markdown-extraction:
     dependencies:
       '@jongleberry/vurst-markdown':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
 
   backend/modules/membership-helpers:
     dependencies:
@@ -4007,7 +4007,7 @@ importers:
         version: 9.1.7
       vouchington-tooling:
         specifier: ^3.5.0
-        version: 3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.102(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
+        version: 3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.105(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
 
   backend/service-registrations:
     dependencies:
@@ -4945,8 +4945,8 @@ importers:
         specifier: workspace:^
         version: link:../../data-stores/psql
       '@jongleberry/vurst-html':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
@@ -5674,8 +5674,8 @@ importers:
         specifier: workspace:^
         version: link:../../data-stores/psql
       '@jongleberry/vurst-markdown':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
@@ -5894,8 +5894,8 @@ importers:
         specifier: workspace:^
         version: link:../../data-stores/valkey
       '@jongleberry/vurst-html':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
@@ -7939,8 +7939,8 @@ importers:
         specifier: workspace:^
         version: link:../../data-stores/psql
       '@jongleberry/vurst-markdown':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
@@ -10737,8 +10737,8 @@ importers:
         specifier: workspace:^
         version: link:../../data-stores/valkey
       '@jongleberry/vurst-html':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/feed-query-builders':
         specifier: workspace:^
         version: link:../../modules/feed-query-builders
@@ -11024,8 +11024,8 @@ importers:
         specifier: workspace:^
         version: link:../../data-stores/valkey-rate-limiter
       '@jongleberry/vurst-html':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -12828,8 +12828,8 @@ importers:
         specifier: workspace:^
         version: link:../data-stores/valkey-rate-limiter
       '@jongleberry/vurst-markdown':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/feed-query-builders':
         specifier: workspace:^
         version: link:../modules/feed-query-builders
@@ -12936,8 +12936,8 @@ importers:
         specifier: ^6.2.17
         version: 6.2.17
       no-mistakes:
-        specifier: ^0.109.102
-        version: 0.109.102(vitest@5.1.0)
+        specifier: ^0.109.105
+        version: 0.109.105(vitest@5.1.0)
       openai:
         specifier: ^7.57.0
         version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
@@ -12967,7 +12967,7 @@ importers:
         version: 0.15.0
       vouchington-tooling:
         specifier: ^3.5.0
-        version: 3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.102(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
+        version: 3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.105(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
     devDependencies:
       '@apple/app-store-server-library':
         specifier: ^3.1.0
@@ -13240,8 +13240,8 @@ importers:
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
       '@jongleberry/vurst-ai':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/model-providers':
         specifier: workspace:^
         version: link:../../modules/model-providers
@@ -13919,8 +13919,8 @@ importers:
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
       '@jongleberry/vurst-html':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -13971,8 +13971,8 @@ importers:
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
       '@jongleberry/vurst-html':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.4
+        version: 0.4.4
       '@queues/background-cpu':
         specifier: workspace:^
         version: link:../../queues/background-cpu
@@ -15188,8 +15188,8 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
       no-mistakes:
-        specifier: ^0.109.102
-        version: 0.109.102(vitest@5.1.0)
+        specifier: ^0.109.105
+        version: 0.109.105(vitest@5.1.0)
       picomatch:
         specifier: ^4.0.4
         version: 4.0.7
@@ -15210,7 +15210,7 @@ importers:
         version: 11.0.5
       vouchington-tooling:
         specifier: ^3.5.0
-        version: 3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.102(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
+        version: 3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.105(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
     devDependencies:
       '@types/picomatch':
         specifier: ^4.0.3
@@ -15450,7 +15450,7 @@ importers:
         version: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
         specifier: ^3.5.0
-        version: 3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.102(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
+        version: 3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.105(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
 
   static-code-analysis:
     dependencies:
@@ -15467,8 +15467,8 @@ importers:
         specifier: ^8.20.0
         version: 8.20.0
       no-mistakes:
-        specifier: ^0.109.102
-        version: 0.109.102(vitest@5.1.0)
+        specifier: ^0.109.105
+        version: 0.109.105(vitest@5.1.0)
       oxfmt:
         specifier: ^0.78.0
         version: 0.78.0
@@ -15477,7 +15477,7 @@ importers:
         version: 4.0.7
       vouchington-tooling:
         specifier: ^3.5.0
-        version: 3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.102(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
+        version: 3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.105(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -15861,7 +15861,7 @@ importers:
         version: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
       vouchington-tooling:
         specifier: ^3.5.0
-        version: 3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.102(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
+        version: 3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.105(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
 
 packages:
 
@@ -16997,102 +16997,102 @@ packages:
     resolution: {integrity: sha512-19sc3Fj1XUDR8WISg7Pn1EfDgIBCUWqJSRm+0eXc4m1EOuZYv70bI0Jbca9i+42LUZD5IBmfUfc2XNQPH+vTxQ==}
     engines: {node: '>=24.0.0'}
 
-  '@jongleberry/vurst-ai-darwin-arm64@0.4.3':
-    resolution: {integrity: sha512-qL6taFQAnEngQijOzTtF4m6Ddr8Z1Zs2a/Koto72HNDONx57NB6vuqNIQWvTca5vlLMWlguWHR/JeQYjsZ27Qw==}
+  '@jongleberry/vurst-ai-darwin-arm64@0.4.4':
+    resolution: {integrity: sha512-V0lZa+dmbT6Cxk91ItqsP0xJCKb02loNS3aXQfkgeOJL5cS99b5hIrsgP33C8HM3deOMwAyWUu/atpe3Pj7c6w==}
     engines: {node: '>= 18'}
     cpu: [arm64]
     os: [darwin]
 
-  '@jongleberry/vurst-ai-darwin-x64@0.4.3':
-    resolution: {integrity: sha512-+qgwLatkoAtjMI976H+KAbQEQyM4DNhvajk4MdwNyPp7nec6O9iYUQzXPUIGhD77Dn4hua4Ku4uQF6FeAU4zhg==}
+  '@jongleberry/vurst-ai-darwin-x64@0.4.4':
+    resolution: {integrity: sha512-+2jqUejYioXRH5GpDiBx2irCHZVKz5R3SFUVPez8sqfV+GUh+si5ysVEjdE78EhZPhWeHNtFBr/LVZimc10DSw==}
     engines: {node: '>= 18'}
     cpu: [x64]
     os: [darwin]
 
-  '@jongleberry/vurst-ai-linux-arm64-gnu@0.4.3':
-    resolution: {integrity: sha512-kOfKTgqoLDRlEj1rZtVkc/SroiM5BxdUNcxL0bp+emjmLfMR4T4PQE/8CuSsfUi2sEXsE70f5zLBE85k0MeKhg==}
-    engines: {node: '>= 18'}
-    cpu: [arm64]
-    os: [linux]
-    libc: [glibc]
-
-  '@jongleberry/vurst-ai-linux-x64-gnu@0.4.3':
-    resolution: {integrity: sha512-SykXCpOmB4YrPes/tRUcKgq5EhPbpbSxuzixF1p8BuMskx0maJP8CAC6kNyG5a9knm25SeGSIYuGPINeqyBCCg==}
-    engines: {node: '>= 18'}
-    cpu: [x64]
-    os: [linux]
-    libc: [glibc]
-
-  '@jongleberry/vurst-ai@0.4.3':
-    resolution: {integrity: sha512-xq5B7qLSsm2zPzUztJbYVHLw6jKEOjC0S78Awis1J/nGZyZO8IeTzxhJ9FzLvh3+NdNg/TEppgBld6EciQfzBQ==}
-    engines: {node: '>= 18'}
-
-  '@jongleberry/vurst-html-darwin-arm64@0.4.3':
-    resolution: {integrity: sha512-PbBW99JrpD4WJS3wu/tK+56B2Vj7rx2QC6bFwb+aGQeR/GTspX5iNnYrmcn/HtDcJ+tADULc/0t9o9n6d8cRIg==}
-    engines: {node: '>= 18'}
-    cpu: [arm64]
-    os: [darwin]
-
-  '@jongleberry/vurst-html-darwin-x64@0.4.3':
-    resolution: {integrity: sha512-mscDFMbzy23DiLFmlDbb6gEq1y4+5If7SdeGNb5a8Z0mlYbOxdPBmMD+A60C4LTdjTh6Nk//DMZxs804UiWsNQ==}
-    engines: {node: '>= 18'}
-    cpu: [x64]
-    os: [darwin]
-
-  '@jongleberry/vurst-html-linux-arm64-gnu@0.4.3':
-    resolution: {integrity: sha512-XyPbRZUuPUoW5rq18zPueuNMBq9chDjjJ1wd3RC+LKoxNWk2UMsZIitaT6Qx2JiTlSYb5j6QBFFRqBW5i7qCBw==}
+  '@jongleberry/vurst-ai-linux-arm64-gnu@0.4.4':
+    resolution: {integrity: sha512-pnPMTboXg/Q6QyfY1wf5G3ZTnubWzkA0rjOywlGUovu/GYoASoGB+t1z35+m2l9AeEZGiwboKD8vREMRzEuvzA==}
     engines: {node: '>= 18'}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@jongleberry/vurst-html-linux-x64-gnu@0.4.3':
-    resolution: {integrity: sha512-+f0oBSXSCK2K47DxmSXwCWEEj4pThMwI/rr/t8hNxpdQpRRS/A2cX0dgF17UW9hKdPPeUmScbKz5VIoZrgPH/A==}
+  '@jongleberry/vurst-ai-linux-x64-gnu@0.4.4':
+    resolution: {integrity: sha512-bmyW1xLqiNv/59njjeYfTT2EflDTRSfAN+AL+pAkCBepM8J0PVD4MiYu+sSGbCQVjvDFVBIw6B1wSdmHpFQDrg==}
     engines: {node: '>= 18'}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@jongleberry/vurst-html@0.4.3':
-    resolution: {integrity: sha512-Q2q177AD2xYVJjMwdblNcZI+CDbyma71x567+Y41+t55XFgtluc2VLFqZVnD8WkFRN2PmC0K/r4HeDN6tlkw+g==}
+  '@jongleberry/vurst-ai@0.4.4':
+    resolution: {integrity: sha512-0Djmj1f/gDf2dLxToufVxMmBT7Vb4vY4YL+XfFBWHE3ZH8OUwJdiqmssmlXQI9wv2VYvlIMzHwifSrBw6zD1wQ==}
     engines: {node: '>= 18'}
 
-  '@jongleberry/vurst-markdown-darwin-arm64@0.4.3':
-    resolution: {integrity: sha512-sZgYkVF7B7EPXBxtyjABnU/j+tM5VzrYeo/XsqlinzWVMJgEk2QvCwMeuVG0a7uirrv611q57R8BaY/stEYunA==}
+  '@jongleberry/vurst-html-darwin-arm64@0.4.4':
+    resolution: {integrity: sha512-TK0RYNzrrcwbxSwH5A0kmoa7Sfr9RTj7PpBD55HXUwhQbWU/zQXqlzuGXIKSROrKXpbkHtjmFz+YGg8LUg14Tw==}
     engines: {node: '>= 18'}
     cpu: [arm64]
     os: [darwin]
 
-  '@jongleberry/vurst-markdown-darwin-x64@0.4.3':
-    resolution: {integrity: sha512-Fx/phvO8GBDOFEEdST8aa2X2ALBuqNYUfeOKIMDHZr0pryRKi7QvcGsDF8ENzpeoE07Wp01SiGSkIizje1ICxQ==}
+  '@jongleberry/vurst-html-darwin-x64@0.4.4':
+    resolution: {integrity: sha512-sIm33pTOxla62qQycf1ZnUE0XhMTXL0rOx/kMJP8gGp1tQ4sED3G0EVZjmlCaAZB11lNvXqrhteIjqdWtdRZfQ==}
     engines: {node: '>= 18'}
     cpu: [x64]
     os: [darwin]
 
-  '@jongleberry/vurst-markdown-linux-arm64-gnu@0.4.3':
-    resolution: {integrity: sha512-zKHvQkAJs4oAx3Qo0CHbEXZlLnx2b8i+Z41mRf9UKv3J/SbqB9TKbRyMc4xidMPgtWWlRuPZHZ9zmWRRse50MQ==}
+  '@jongleberry/vurst-html-linux-arm64-gnu@0.4.4':
+    resolution: {integrity: sha512-GoF9L1hHDyXvIBPwkyGQtPRsUo5BScr5ciLbN/n9/68okLprI3hkGojkaH/vqtoSssQ6L7iM7BOdFDyep/jR4A==}
     engines: {node: '>= 18'}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@jongleberry/vurst-markdown-linux-x64-gnu@0.4.3':
-    resolution: {integrity: sha512-zJkesijPpF/H8tptB+phf2PYXjltfytr71Hub3FQGpu7zww7KRBSEx1RqVGl207RwQ6X4/m0Vmi+v3tSh62o9w==}
+  '@jongleberry/vurst-html-linux-x64-gnu@0.4.4':
+    resolution: {integrity: sha512-Kh5o1VmxVnwbwTG2GoXNQu5LcuqQRfEc/yyuGg3T9tDvP+hKVZYhzq5KI1WOfjWJSXUuLkddw5sPks4I23WhdA==}
     engines: {node: '>= 18'}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@jongleberry/vurst-markdown@0.4.3':
-    resolution: {integrity: sha512-4ar2DwKLaBhKAHSy/Bq9Ny/yCW0bJxJpEpIURRDEICpvld/P+tOaDmB3O/qS5L65X9sOUgMbuPGlil1sUN/KLA==}
+  '@jongleberry/vurst-html@0.4.4':
+    resolution: {integrity: sha512-KKR8HYWeny40uP+6gktjgDu9M2JDfyiXZjnIxs0ERJZ9ePIB576ZjxY/te6te4uh3XUKjt8ZGf+p9ZKWdWW2iQ==}
     engines: {node: '>= 18'}
 
-  '@jongleberry/vurst-prompt@0.4.3':
-    resolution: {integrity: sha512-/OzT6nMBHoMOmF0uyjkZC0qSuJ3yaWNWlLgaJJAyloeV+QhCVL8YwwsQR79TRpmdYkQBipi/ceMeycjQBOzMNQ==}
+  '@jongleberry/vurst-markdown-darwin-arm64@0.4.4':
+    resolution: {integrity: sha512-XjyU7Fg7TOzFXrHB2fX3+VOKW/QGM+2oF7zCo1Zdzoqx+mXeuh3vJR85F2jMzhEitJX7rNpKWfva0SNkm0kwWA==}
+    engines: {node: '>= 18'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@jongleberry/vurst-markdown-darwin-x64@0.4.4':
+    resolution: {integrity: sha512-bfr6i2RMrJIs87WVYHAqVRA3O+XddNp67ra4w0Orz9AyI7Iiq2lPaMetf+/uOBr4CP8F859kNnS4MHgu7ZKeLg==}
+    engines: {node: '>= 18'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@jongleberry/vurst-markdown-linux-arm64-gnu@0.4.4':
+    resolution: {integrity: sha512-OQgZp0KNYzGMkXwRTY1W+etl0W+KduNNN+R+k3NT80ykUSqCEW+/LQlH8mieta9zVHFwJzQ68/OtWftdQ0waTw==}
+    engines: {node: '>= 18'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  '@jongleberry/vurst-markdown-linux-x64-gnu@0.4.4':
+    resolution: {integrity: sha512-AIYfuHKjvnKYuCzsnaePs8Auzx6us1FDq1A62h8kcDvXNKF7UblomeFQOaI7Lagpqe56WWeuT7cNfH2jnyVJVw==}
+    engines: {node: '>= 18'}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@jongleberry/vurst-markdown@0.4.4':
+    resolution: {integrity: sha512-Z17DiNG+47AARKsAxP4nCZYQOeGS27Sx7Is+S5n8568ZdLR9lULTfgosaf86uysEZ3fiSFlyxRuKRexsbpU28g==}
     engines: {node: '>= 18'}
 
-  '@jongleberry/vurst-runtime@0.4.3':
-    resolution: {integrity: sha512-v4w45QatNijydOlknRtaJAHlIDnkNvnPlcQiGLvePauYuhLHA8bkWcSH5WxQuITSoHOrqiR3xPd7kksl4HiSBg==}
+  '@jongleberry/vurst-prompt@0.4.4':
+    resolution: {integrity: sha512-1HuLum8dXRyXswiDrp/l4AG8niTbyN+QIPD6iqg9TL6K2GjHhCcZCqv7HadBBYvl5ZgDg9xXLizszA0imdceCQ==}
+    engines: {node: '>= 18'}
+
+  '@jongleberry/vurst-runtime@0.4.4':
+    resolution: {integrity: sha512-6v04jPtCrSu5eOejaoxfIqWCuelZe9mHYge8kRe3Q5O4l4hQli5SCt1nWu0QSrVMMV68QPidiL0iD8uXZYr6+g==}
     engines: {node: '>= 18'}
 
   '@joshwooding/vite-plugin-react-docgen-typescript@0.7.0':
@@ -21881,8 +21881,8 @@ packages:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
 
-  eslint-plugin-no-mistakes@0.109.102:
-    resolution: {integrity: sha512-q6SK4MK4fJRUvkqySjS2aiLIEYk1LBiH6zAeOKIqLLEFuZ4aNLgkZIFCUWjDqjRTpKvLBGGxX48I4W9yFm2ktA==}
+  eslint-plugin-no-mistakes@0.109.105:
+    resolution: {integrity: sha512-fvL+Qu2NA4Ip1oTXPA/v2ng3dbLRorE0ospY52og83Z4h8MisG895US6hEQaGUlkQFzhzkMSVUDqfMhG01AvXg==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
     peerDependencies:
       '@typescript-eslint/parser': '>=8'
@@ -23204,30 +23204,30 @@ packages:
       sass:
         optional: true
 
-  no-mistakes-darwin-arm64@0.109.102:
-    resolution: {integrity: sha512-UwN+evGagS3yhFQ9yTzgOtI1wpk9ETDP8r43uK4UNtP6c47t8AbrsyPWW78QYvEL/ip2PpTj8+BW8UoFhb7e4w==}
+  no-mistakes-darwin-arm64@0.109.105:
+    resolution: {integrity: sha512-Lm9g81ldOoEbVnCqiCNhmpUgRJR0IMUSy0CJCF0h0bCglPEholaJwJmFtSgEdAEy7T8PACvAlb2I6uzpTs8KPw==}
     cpu: [arm64]
     os: [darwin]
 
-  no-mistakes-linux-arm64-gnu@0.109.102:
-    resolution: {integrity: sha512-dAMJ4FgDtgXRRMdzHopJFNdjz4C0WBDj2+nSdo2YMFrhfSK6ZZroD/qtOeGPfliePrYkBUEDaq4J8kJJOKRo2w==}
+  no-mistakes-linux-arm64-gnu@0.109.105:
+    resolution: {integrity: sha512-ZLKxJP3wXFv4ZMo+YUhIbw+4u3H2BgLdkWmZfjo4BpJsn2/lPvO5EJEopt6IQewuJu2Ueq87HCn3EPt8cPAhRQ==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-linux-x64-gnu@0.109.102:
-    resolution: {integrity: sha512-ttEsEDH8imeLDYU82QCGIORYuiW5OODNjWBxS25LihcyGnKI5m3a1t87YhyCY1rP2+NECtjS60tLjhd5PGuFFw==}
+  no-mistakes-linux-x64-gnu@0.109.105:
+    resolution: {integrity: sha512-/wb8TDFPYuYJAtOwi9OmiVeROLRlE0MBm4OX+hnIyWU8vYF9yGkghOu77cmB1rB+fQKiJ10ct+mSVZRV1RzDKA==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-win32-x64-msvc@0.109.102:
-    resolution: {integrity: sha512-GBhtXeLDd640JUs0+Nn48h4MN7b+68+e3PVh8ZI9GOQKhgaUlj+7rtaigH8oNKA0K2F0+P/H6vG7XAKWa4ejOg==}
+  no-mistakes-win32-x64-msvc@0.109.105:
+    resolution: {integrity: sha512-1CYk1twl78ctzn5/Lyup+PG+Atm0Bnj7mAvwZXlS+G8p5qHsAQ7f0JotVBubaUJTK6Cok23M65F7+nsGrzqOIg==}
     cpu: [x64]
     os: [win32]
 
-  no-mistakes@0.109.102:
-    resolution: {integrity: sha512-LH6Lxtx3jtJ6flsQqYlS+0ZOHhNCJKjuKb7ngH8hL1wV50RfXf7FpAcQxDURhJUJuUnnB9A9qtqiiF2rgXn/LQ==}
+  no-mistakes@0.109.105:
+    resolution: {integrity: sha512-XAmcESZU7MW3UioQoiA19+YmeIHVF8IGTWqZXvc5G3VizWEqBzfW5h/3kflRVGNos4+zQCub5b5F/Z9KKvYz6g==}
     hasBin: true
     peerDependencies:
       vitest: ^5.0.3
@@ -26300,68 +26300,68 @@ snapshots:
       negotiator: 1.1.0
       type-is: 3.0.0
 
-  '@jongleberry/vurst-ai-darwin-arm64@0.4.3':
+  '@jongleberry/vurst-ai-darwin-arm64@0.4.4':
     optional: true
 
-  '@jongleberry/vurst-ai-darwin-x64@0.4.3':
+  '@jongleberry/vurst-ai-darwin-x64@0.4.4':
     optional: true
 
-  '@jongleberry/vurst-ai-linux-arm64-gnu@0.4.3':
+  '@jongleberry/vurst-ai-linux-arm64-gnu@0.4.4':
     optional: true
 
-  '@jongleberry/vurst-ai-linux-x64-gnu@0.4.3':
+  '@jongleberry/vurst-ai-linux-x64-gnu@0.4.4':
     optional: true
 
-  '@jongleberry/vurst-ai@0.4.3':
+  '@jongleberry/vurst-ai@0.4.4':
     optionalDependencies:
-      '@jongleberry/vurst-ai-darwin-arm64': 0.4.3
-      '@jongleberry/vurst-ai-darwin-x64': 0.4.3
-      '@jongleberry/vurst-ai-linux-arm64-gnu': 0.4.3
-      '@jongleberry/vurst-ai-linux-x64-gnu': 0.4.3
+      '@jongleberry/vurst-ai-darwin-arm64': 0.4.4
+      '@jongleberry/vurst-ai-darwin-x64': 0.4.4
+      '@jongleberry/vurst-ai-linux-arm64-gnu': 0.4.4
+      '@jongleberry/vurst-ai-linux-x64-gnu': 0.4.4
 
-  '@jongleberry/vurst-html-darwin-arm64@0.4.3':
+  '@jongleberry/vurst-html-darwin-arm64@0.4.4':
     optional: true
 
-  '@jongleberry/vurst-html-darwin-x64@0.4.3':
+  '@jongleberry/vurst-html-darwin-x64@0.4.4':
     optional: true
 
-  '@jongleberry/vurst-html-linux-arm64-gnu@0.4.3':
+  '@jongleberry/vurst-html-linux-arm64-gnu@0.4.4':
     optional: true
 
-  '@jongleberry/vurst-html-linux-x64-gnu@0.4.3':
+  '@jongleberry/vurst-html-linux-x64-gnu@0.4.4':
     optional: true
 
-  '@jongleberry/vurst-html@0.4.3':
+  '@jongleberry/vurst-html@0.4.4':
     optionalDependencies:
-      '@jongleberry/vurst-html-darwin-arm64': 0.4.3
-      '@jongleberry/vurst-html-darwin-x64': 0.4.3
-      '@jongleberry/vurst-html-linux-arm64-gnu': 0.4.3
-      '@jongleberry/vurst-html-linux-x64-gnu': 0.4.3
+      '@jongleberry/vurst-html-darwin-arm64': 0.4.4
+      '@jongleberry/vurst-html-darwin-x64': 0.4.4
+      '@jongleberry/vurst-html-linux-arm64-gnu': 0.4.4
+      '@jongleberry/vurst-html-linux-x64-gnu': 0.4.4
 
-  '@jongleberry/vurst-markdown-darwin-arm64@0.4.3':
+  '@jongleberry/vurst-markdown-darwin-arm64@0.4.4':
     optional: true
 
-  '@jongleberry/vurst-markdown-darwin-x64@0.4.3':
+  '@jongleberry/vurst-markdown-darwin-x64@0.4.4':
     optional: true
 
-  '@jongleberry/vurst-markdown-linux-arm64-gnu@0.4.3':
+  '@jongleberry/vurst-markdown-linux-arm64-gnu@0.4.4':
     optional: true
 
-  '@jongleberry/vurst-markdown-linux-x64-gnu@0.4.3':
+  '@jongleberry/vurst-markdown-linux-x64-gnu@0.4.4':
     optional: true
 
-  '@jongleberry/vurst-markdown@0.4.3':
+  '@jongleberry/vurst-markdown@0.4.4':
     optionalDependencies:
-      '@jongleberry/vurst-markdown-darwin-arm64': 0.4.3
-      '@jongleberry/vurst-markdown-darwin-x64': 0.4.3
-      '@jongleberry/vurst-markdown-linux-arm64-gnu': 0.4.3
-      '@jongleberry/vurst-markdown-linux-x64-gnu': 0.4.3
+      '@jongleberry/vurst-markdown-darwin-arm64': 0.4.4
+      '@jongleberry/vurst-markdown-darwin-x64': 0.4.4
+      '@jongleberry/vurst-markdown-linux-arm64-gnu': 0.4.4
+      '@jongleberry/vurst-markdown-linux-x64-gnu': 0.4.4
 
-  '@jongleberry/vurst-prompt@0.4.3':
+  '@jongleberry/vurst-prompt@0.4.4':
     dependencies:
-      '@jongleberry/vurst-html': 0.4.3
+      '@jongleberry/vurst-html': 0.4.4
 
-  '@jongleberry/vurst-runtime@0.4.3': {}
+  '@jongleberry/vurst-runtime@0.4.4': {}
 
   '@joshwooding/vite-plugin-react-docgen-typescript@0.7.0(@typescript/typescript6@6.0.2)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))':
     dependencies:
@@ -29733,7 +29733,7 @@ snapshots:
 
   '@vouchington/crawler-html@0.0.1':
     dependencies:
-      '@jongleberry/vurst-html': 0.4.3
+      '@jongleberry/vurst-html': 0.4.4
 
   '@vouchington/csv@0.0.1':
     dependencies:
@@ -29801,7 +29801,7 @@ snapshots:
 
   '@vouchington/mcp-server@0.2.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))':
     dependencies:
-      '@jongleberry/vurst-prompt': 0.4.3
+      '@jongleberry/vurst-prompt': 0.4.4
       '@modelcontextprotocol/sdk': 1.32.2(supports-color@10.2.2)(zod@3.25.76)
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
@@ -30817,7 +30817,7 @@ snapshots:
 
   escape-string-regexp@5.0.0: {}
 
-  eslint-plugin-no-mistakes@0.109.102(@typescript-eslint/parser@8.73.0(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@7.0.2))(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
+  eslint-plugin-no-mistakes@0.109.105(@typescript-eslint/parser@8.73.0(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@7.0.2))(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
     dependencies:
       eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
     optionalDependencies:
@@ -32333,24 +32333,24 @@ snapshots:
       - '@types/node'
       - babel-plugin-macros
 
-  no-mistakes-darwin-arm64@0.109.102:
+  no-mistakes-darwin-arm64@0.109.105:
     optional: true
 
-  no-mistakes-linux-arm64-gnu@0.109.102:
+  no-mistakes-linux-arm64-gnu@0.109.105:
     optional: true
 
-  no-mistakes-linux-x64-gnu@0.109.102:
+  no-mistakes-linux-x64-gnu@0.109.105:
     optional: true
 
-  no-mistakes-win32-x64-msvc@0.109.102:
+  no-mistakes-win32-x64-msvc@0.109.105:
     optional: true
 
-  no-mistakes@0.109.102(vitest@5.1.0):
+  no-mistakes@0.109.105(vitest@5.1.0):
     optionalDependencies:
-      no-mistakes-darwin-arm64: 0.109.102
-      no-mistakes-linux-arm64-gnu: 0.109.102
-      no-mistakes-linux-x64-gnu: 0.109.102
-      no-mistakes-win32-x64-msvc: 0.109.102
+      no-mistakes-darwin-arm64: 0.109.105
+      no-mistakes-linux-arm64-gnu: 0.109.105
+      no-mistakes-linux-x64-gnu: 0.109.105
+      no-mistakes-win32-x64-msvc: 0.109.105
       vitest: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   node-app-attest@2.2.0:
@@ -34037,7 +34037,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vouchington-tooling@3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.102(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76):
+  vouchington-tooling@3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.105(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76):
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3
@@ -34060,7 +34060,7 @@ snapshots:
       '@vouchington/postgres': 0.6.1
       '@vouchington/worker-runtime': 0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       next: 16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      no-mistakes: 0.109.102(vitest@5.1.0)
+      no-mistakes: 0.109.105(vitest@5.1.0)
       pg: 8.23.1
       react: 19.3.1
       typescript: '@typescript/typescript6@6.0.2'

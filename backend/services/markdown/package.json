@@ -24,7 +24,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/psql": "workspace:^",
-    "@jongleberry/vurst-markdown": "^0.4.3",
+    "@jongleberry/vurst-markdown": "^0.4.4",
     "@modules/utils": "workspace:^",
     "@services/entity-links": "workspace:^",
     "@ts-shared/url-signing": "workspace:^",

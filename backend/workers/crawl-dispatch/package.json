@@ -18,7 +18,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
-    "@jongleberry/vurst-html": "^0.4.3",
+    "@jongleberry/vurst-html": "^0.4.4",
     "@queues/background-cpu": "workspace:^",
     "@queues/crawl-dispatch": "workspace:^",
     "@queues/crawler": "workspace:^",
