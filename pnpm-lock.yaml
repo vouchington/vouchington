@@ -4919,9 +4919,6 @@ importers:
       '@services/bluesky-accounts':
         specifier: workspace:^
         version: link:../bluesky-accounts
-      '@services/session-advisory-lock':
-        specifier: workspace:^
-        version: link:../session-advisory-lock
       '@services/users':
         specifier: workspace:^
         version: link:../users
