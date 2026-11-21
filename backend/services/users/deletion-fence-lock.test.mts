@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { v7 } from 'uuid'
 import { beginTransaction, createTestUser, insertTestPost, restoreUser } from '@voucha/test-helpers'
+import { insertUserDataRequestAttemptForTest } from '@voucha/test-helpers/entities/account-data-requests'
 import { getTestPostgresBackendProcessId } from '@voucha/test-helpers/postgres-lock-wait'
 import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
-import sql from 'sql-template-strings'
 import { createDataRequest, markDataRequestProcessing } from '../account-data-requests/index.mts'
 import { lockActiveDataRequestUser } from '../account-data-requests/active-user-lock.mts'
 import { lockPostUpdateMutationScopes } from '../posts/category-user-locks.mts'
@@ -56,10 +56,7 @@ describe('user deletion fence', () => {
     await using writer = await beginTransaction()
     const holderProcessId = await getTestPostgresBackendProcessId(writer)
     expect(await lockActiveDataRequestUser(writer, user.id)).toBe(true)
-    await writer(sql`/* deletionFenceTest:recordAttempt */
-      INSERT INTO user_data_request_attempts (request_id, processing_attempt_id)
-      VALUES (${request.id}, ${request.processing_attempt_id})
-    `)
+    await insertUserDataRequestAttemptForTest(writer, request.id, request.processing_attempt_id)
 
     try {
       await withTestOwnedPostgresWait(
