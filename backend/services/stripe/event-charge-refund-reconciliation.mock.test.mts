@@ -123,11 +123,11 @@ describe('charge.refunded reconciliation receipt', () => {
     await scheduleRefundReconciliationRetry(lease, new Date(0), 'await receipt')
     const refundId = `re_wch_matched_${randomUUID()}`
     const admission = Promise.withResolvers<unknown>()
-    const add = memberships.add
-    const ownedAdds: ReturnType<typeof add>[] = []
+    const addBulk = memberships.addBulk
+    const ownedAdds: ReturnType<typeof addBulk>[] = []
     const leaseRefund = membershipServices.leaseDueRefundReconciliation
     const ownedLeases: ReturnType<typeof leaseRefund>[] = []
-    const enqueueRefund = refundEnqueues.enqueueReconcileMembershipRefundOperationBestEffort
+    const enqueueRefund = refundEnqueues.enqueueBulkReconcileMembershipRefundOperationsBestEffort
     const ownedEnqueues: ReturnType<typeof enqueueRefund>[] = []
     let handlerPromise: Promise<void> | undefined
     const restoreObservers: (() => void)[] = []
@@ -162,30 +162,41 @@ describe('charge.refunded reconciliation receipt', () => {
         })
       restoreObservers.push(() => leaseSpy.mockRestore())
       const enqueueSpy = vi
-        .spyOn(refundEnqueues, 'enqueueReconcileMembershipRefundOperationBestEffort')
-        .mockImplementation(data => {
-          const enqueued = enqueueRefund(data)
-          if (data.operationId === operation.id) ownedEnqueues.push(enqueued)
+        .spyOn(refundEnqueues, 'enqueueBulkReconcileMembershipRefundOperationsBestEffort')
+        .mockImplementation(operations => {
+          const enqueued = enqueueRefund(operations)
+          if (operations.some(({ operationId }) => operationId === operation.id)) {
+            ownedEnqueues.push(enqueued)
+          }
           return enqueued
         })
       restoreObservers.push(() => enqueueSpy.mockRestore())
       const addSpy = vi
-        .spyOn(memberships, 'add')
-        .mockImplementation((...args: Parameters<typeof add>) => {
-          const [name, data] = args
-          const matches =
-            name === 'reconcileMembershipRefundOperation' &&
-            typeof data === 'object' &&
-            data !== null &&
-            (data as { operationId?: unknown }).operationId === operation.id
-          const job = matches
-            ? Promise.resolve().then(() => Reflect.apply(add, memberships, args))
-            : Reflect.apply(add, memberships, args)
+        .spyOn(memberships, 'addBulk')
+        .mockImplementation((...args: Parameters<typeof addBulk>) => {
+          const matches = args[0].some(
+            ({ name, data }) =>
+              name === 'reconcileMembershipRefundOperation' &&
+              typeof data === 'object' &&
+              data !== null &&
+              (data as { operationId?: unknown }).operationId === operation.id,
+          )
+          const jobs = matches
+            ? Promise.resolve().then(() => Reflect.apply(addBulk, memberships, args))
+            : Reflect.apply(addBulk, memberships, args)
           if (matches) {
-            ownedAdds.push(job)
-            void job.then(admission.resolve).catch(admission.reject)
+            ownedAdds.push(jobs)
+            void jobs
+              .then(added =>
+                admission.resolve(
+                  added.find(
+                    job => (job.data as { operationId?: unknown }).operationId === operation.id,
+                  ),
+                ),
+              )
+              .catch(admission.reject)
           }
-          return job
+          return jobs
         })
       restoreObservers.push(() => addSpy.mockRestore())
       handlerPromise = handle(`evt_matched_${randomUUID()}`, {

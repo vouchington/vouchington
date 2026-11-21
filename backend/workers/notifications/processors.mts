@@ -10,7 +10,6 @@ import { getPublicUserByAny } from '@services/users'
 import { areUsersBlockedOrMutedEitherWay } from '@services/entity-relations'
 import {
   enqueueBulkDeliverNotificationPushIntents,
-  enqueueDeliverNotificationPushIntent,
   enqueueContinueNotificationPushIntentReconciliation,
   enqueueContinueContentVisibility,
   type ReconcileNotificationPushIntentsData,
@@ -119,10 +118,8 @@ export async function processReconcileNotificationPushIntents(
     ...data,
     notificationIds,
   })
-  await Promise.all(
-    intents.map(intent =>
-      enqueueDeliverNotificationPushIntent(intent.user_id, intent.notification_id),
-    ),
+  await enqueueBulkDeliverNotificationPushIntents(
+    intents.map(intent => ({ userId: intent.user_id, notificationId: intent.notification_id })),
   )
   const lastIntent = intents.at(-1)
   if (intents.length === batchSize && lastIntent) {

@@ -9,7 +9,7 @@ import {
   leaseDueRefundReconciliation,
   recordMembershipRefundEvent,
 } from '@services/memberships'
-import { enqueueReconcileMembershipRefundOperationBestEffort } from '@queues/memberships/enqueues'
+import { enqueueBulkReconcileMembershipRefundOperationsBestEffort } from '@queues/memberships/enqueues'
 import onError from '@modules/on-error'
 
 export async function handleChargeRefunded(
@@ -117,14 +117,36 @@ function getStripeRefundMetadata(refund: unknown): Record<string, string> | null
 }
 
 function wakeRefundReconciliationsBestEffort(operationIds: readonly string[]): void {
-  void Promise.all(
-    operationIds.map(async operationId => {
-      const lease = await leaseDueRefundReconciliation(operationId)
-      if (lease)
-        void enqueueReconcileMembershipRefundOperationBestEffort({
-          operationId: lease.id,
-          leaseToken: lease.leaseToken,
-        })
-    }),
-  ).catch(onError)
+  void leaseAndEnqueueRefundReconciliations(operationIds).catch(onError)
+}
+
+/**
+ * A failed lease does not stop the other operations' granted leases from being woken; the
+ * failures are thrown afterwards so the caller reports them.
+ */
+export async function leaseAndEnqueueRefundReconciliations(
+  operationIds: readonly string[],
+): Promise<void> {
+  const results = await Promise.allSettled(
+    operationIds.map(operationId => leaseDueRefundReconciliation(operationId)),
+  )
+  const failures: Error[] = []
+  const granted = results.flatMap(result => {
+    if (result.status === 'rejected') {
+      const reason: unknown = result.reason
+      failures.push(
+        reason instanceof Error
+          ? reason
+          : new Error('Refund reconciliation lease failed', { cause: reason }),
+      )
+      return []
+    }
+    const lease = result.value
+    return lease ? [{ operationId: lease.id, leaseToken: lease.leaseToken }] : []
+  })
+  if (granted.length > 0) await enqueueBulkReconcileMembershipRefundOperationsBestEffort(granted)
+  if (failures.length === 1) throw failures[0]
+  if (failures.length > 1) {
+    throw new AggregateError(failures, 'Refund reconciliation leases failed')
+  }
 }
