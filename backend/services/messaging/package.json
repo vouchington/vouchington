@@ -31,6 +31,7 @@
     "@services/entity-relations": "workspace:^",
     "@services/pagination": "workspace:^",
     "@services/search-params": "workspace:^",
+    "@services/user-product-limits": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",
     "http-assert": "^1.5.0",

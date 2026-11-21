@@ -9,7 +9,6 @@ import type {
 } from './types.mts'
 const MAX_TITLE_LENGTH = 100
 const MAX_SUBTITLE_LENGTH = 280
-export const MAX_LANDING_PAGES = 20
 
 export function validateTitle(title: string): string {
   const trimmed = title.trim()

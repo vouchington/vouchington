@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { userProductLimitsConfig } from '@services/user-product-limits'
 import { addVerifiedEmailForUser } from '@voucha/test-helpers/entities/email-addresses'
 import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 import {
@@ -53,5 +55,22 @@ describe('verified email capacity', () => {
     const after = await listEmailAddressesPage(user.id, { limit: 20 })
     expect(after.results).toHaveLength(10)
     expect(after.results.filter(row => [first, second].includes(row.email_address))).toHaveLength(1)
+  })
+
+  it('rejects an address above the configured cap and keeps every stored address listed', async () => {
+    const user = await createTestUser()
+    for (let index = 0; index < 2; index++) {
+      await addVerifiedEmailForUser(user.id, `tests+low-${user.id}-${index}@voucha.ai`)
+    }
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(userProductLimitsConfig, { email_addresses_max: 3 }),
+    )
+    const requested = `tests+low-${user.id}-new@voucha.ai`
+    const { token } = await createEmailVerificationToken(user.id, requested)
+    await expect(verifyEmailVerificationToken(user.id, requested, token)).rejects.toMatchObject({
+      status: 400,
+      code: 'EMAIL_ADDRESS_LIMIT_REACHED',
+    })
+    expect((await listEmailAddressesPage(user.id, { limit: 20 })).results).toHaveLength(3)
   })
 })

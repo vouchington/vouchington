@@ -9,6 +9,7 @@ import {
 import { admitImagePlacements } from '@services/media-delivery-safety/placement-capacity'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 import { runSequentially } from '@modules/utils/run-sequentially'
+import { getUserProfileLinksMax } from '@services/user-product-limits'
 import {
   assertProfileLinkType,
   validateProfileLinkFields,
@@ -22,7 +23,6 @@ export type { ProfileLink } from './profile-links-types.mts'
 export { reorderProfileLinks } from './profile-links-reorder.mts'
 export { listProfileLinks } from './profile-links-list.mts'
 export type { ProfileLinkType } from './profile-links-input.mts'
-export const MAX_PROFILE_LINKS = 20
 async function resolveUrlId(
   userId: string,
   url: string | null | undefined,
@@ -37,9 +37,10 @@ export async function createProfileLink(
 ): Promise<ProfileLink> {
   assertProfileLinkType(input.link_type)
   validateProfileLinkFields(input.link_type, input.url, input.handle)
+  const maxProfileLinks = getUserProfileLinksMax()
   const urlId = await resolveUrlId(userId, input.url)
   // Atomic INSERT: compute next sort_order and enforce per-user limit in one query.
-  // HAVING COUNT(*) < MAX_PROFILE_LINKS prevents insert when at the limit.
+  // HAVING COUNT(*) < the configured profile-link cap prevents insert when at the limit.
   await using transaction = await beginTransaction()
   const imageIds = input.image_id ? [input.image_id] : []
   await runSequentially([
@@ -62,10 +63,10 @@ export async function createProfileLink(
       NULL
     FROM user_profile_links
     WHERE user_id = ${userId}
-    HAVING COUNT(*) < ${MAX_PROFILE_LINKS}
+    HAVING COUNT(*) < ${maxProfileLinks}
     RETURNING id, user_id, link_type, sort_order, url_id, handle, name, image_id, created_at, updated_at
   `)
-  assert(rows.length > 0, 400, `Maximum of ${MAX_PROFILE_LINKS} profile links allowed`)
+  assert(rows.length > 0, 400, `Maximum of ${maxProfileLinks} profile links allowed`)
   let row = rows[0] as Omit<ProfileLink, 'url' | 'image_placement'>
   await syncImageSurfacePlacement(
     { surfaceKind: 'user-profile-link-image', userProfileLinkId: row.id },

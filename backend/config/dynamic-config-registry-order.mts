@@ -13,6 +13,7 @@ export const REGISTRY_ORDER = [
   'turnstile-config',
   'bot-challenge-config',
   'post-content-limits-config',
+  'user-product-limits-config',
   'community-membership-limits-config',
   'community-application-limits-config',
   'conversation-participant-limits',

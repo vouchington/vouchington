@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   createTestReferralProgramLink,
   createTestUser,
@@ -14,7 +15,7 @@ import { getPublicLandingPage } from './public.mts'
 import { listLandingPagesForUser } from './list.mts'
 import { replaceMyLandingPageItems } from './replace-items.mts'
 import { setMyLandingPageDefault } from './set-default.mts'
-import { MAX_LANDING_PAGES } from './shared.mts'
+import { landingPageLimitsConfig } from './limits.mts'
 import { updateMyLandingPage } from './update.mts'
 import type { PrivateUser } from '@services/users/types'
 async function createTopicFixtures(user: PrivateUser) {
@@ -56,9 +57,12 @@ async function createTopicFixtures(user: PrivateUser) {
 }
 
 describe('landing page services', () => {
-  it('rejects a page beyond the per-user limit', async () => {
+  it('rejects a page beyond the configured per-user limit', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(landingPageLimitsConfig, { pages_per_user: 2 }),
+    )
     const user = await createTestUser()
-    for (let index = 0; index < MAX_LANDING_PAGES; index++) {
+    for (let index = 0; index < 2; index++) {
       await createMyLandingPage(user.id, {
         title: `Page ${index}`,
         slug: `page-${index}`,

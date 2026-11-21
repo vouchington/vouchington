@@ -1,4 +1,4 @@
-import { MAX_USER_EMAIL_ADDRESSES } from './email-addresses.mts'
+import { getUserEmailAddressesMax, USER_EMAIL_ADDRESSES_MAX } from '@services/user-product-limits'
 import {
   runWithTransaction,
   registerPostCommitAction,
@@ -126,10 +126,10 @@ async function verifyTokenAndAddEmailAddress(
 
   const { rows: existingEmails } = await query<{ email_address: string }>(sql`
     /* verifyEmailVerificationToken:capacity */
-    SELECT email_address FROM user_email_addresses WHERE user_id = ${userId} LIMIT ${MAX_USER_EMAIL_ADDRESSES}
+    SELECT email_address FROM user_email_addresses WHERE user_id = ${userId} LIMIT ${USER_EMAIL_ADDRESSES_MAX}
   `)
   if (
-    existingEmails.length >= MAX_USER_EMAIL_ADDRESSES &&
+    existingEmails.length >= getUserEmailAddressesMax() &&
     !existingEmails.some(row => row.email_address === normalizedEmailAddress)
   )
     throw createCodedError(400, 'Email address limit reached', EMAIL_ADDRESS_LIMIT_REACHED)

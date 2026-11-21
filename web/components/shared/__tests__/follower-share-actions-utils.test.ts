@@ -5,15 +5,19 @@ import type { PublicUser } from '@/types/user'
 
 describe('toggleFollowerSelection', () => {
   it('blocks the selection above the configured limit', () => {
-    const selected = makeFollowers(100)
+    const selected = makeFollowers(3)
 
-    expect(toggleFollowerSelection(selected, makeFollower('overflow'))).toBe(selected)
+    expect(toggleFollowerSelection(selected, makeFollower('overflow'), 3)).toBe(selected)
   })
 
   it('allows deselection at the configured limit', () => {
-    const selected = makeFollowers(100)
+    const selected = makeFollowers(3)
 
-    expect(toggleFollowerSelection(selected, selected[0]!)).toHaveLength(99)
+    expect(toggleFollowerSelection(selected, selected[0]!, 3)).toHaveLength(2)
+  })
+
+  it('applies no client-side cap until the server limit loads', () => {
+    expect(toggleFollowerSelection(makeFollowers(150), makeFollower('extra'))).toHaveLength(151)
   })
 })
 

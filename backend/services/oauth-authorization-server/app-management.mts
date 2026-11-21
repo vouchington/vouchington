@@ -6,6 +6,7 @@ import {
   invalidClientMetadata,
   validateRedirectUris,
 } from '@vouchington/oauth-server'
+import { getOAuthAppScopesMax, type OAUTH_APP_SCOPES_MAX } from '@services/user-product-limits'
 import { validateOAuthAppName } from './client-names.mts'
 import { insertOAuthClient } from './clients.mts'
 import { OAUTH_SECRET_PURPOSES } from './constants.mts'
@@ -16,9 +17,8 @@ import type {
   OAuthManagementPage,
 } from './management-types.mts'
 
-/** Upper bound on an app's scope list; comfortably above the number of canonical scopes. */
-const MAX_OAUTH_APP_SCOPES = 32
-export type OAuthAppScopeLimit = typeof MAX_OAUTH_APP_SCOPES
+/** Hard max of an app's scope list; the configured cap is enforced at registration. */
+export type OAuthAppScopeLimit = typeof OAUTH_APP_SCOPES_MAX
 export type OwnedOAuthAppInput = {
   client_name: unknown
   redirect_uris: unknown
@@ -56,7 +56,7 @@ export async function createOwnedOAuthApp(
   const { scopes } = input
   if (
     !Array.isArray(scopes) ||
-    scopes.length > MAX_OAUTH_APP_SCOPES ||
+    scopes.length > getOAuthAppScopesMax() ||
     !scopes.every(scope => typeof scope === 'string' && isApiScope(scope))
   ) {
     throw invalidClientMetadata('scopes must list canonical scopes')

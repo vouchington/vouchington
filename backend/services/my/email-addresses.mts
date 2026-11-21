@@ -10,8 +10,7 @@ import { invalidateVerifiedEmailCache } from '@services/contribution-gating/emai
 import onError from '@modules/on-error'
 import { enqueueOnUserUpdated } from '@queues/entity-listeners/enqueues'
 import { assertUserHasSignInMethod } from '@services/oauth-accounts/sign-in-methods'
-
-export const MAX_USER_EMAIL_ADDRESSES = 10
+import { USER_EMAIL_ADDRESSES_MAX } from '@services/user-product-limits'
 
 export type EmailAddress = {
   email_address: string
@@ -48,7 +47,7 @@ export async function listEmailAddressesPage(
     )`)
   }
   query.append(
-    sql` ORDER BY (is_primary::int) DESC, id ASC LIMIT ${Math.min(options.limit + 1, MAX_USER_EMAIL_ADDRESSES)}`,
+    sql` ORDER BY (is_primary::int) DESC, id ASC LIMIT ${Math.min(options.limit + 1, USER_EMAIL_ADDRESSES_MAX)}`,
   )
   const { rows } = await read<EmailAddress & { id: string }>(query)
   return {

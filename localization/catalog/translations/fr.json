@@ -3245,7 +3245,7 @@
 {"id":"copy.extracted.shared.useFollowerShareActions.failedToShareWithFollowers_272673f8","value":"Impossible de partager avec les abonnés"},
 {"id":"copy.extracted.shared.useFollowerShareActions.sendQueued_11badc4f","value":"Envoi mis en file d’attente"},
 {"id":"copy.extracted.shared.useFollowerShareActions.shareQueued_d32e8704","value":"Partage mis en file d’attente"},
-{"id":"copy.extracted.shared.useFollowerShareActions.youCanSelectUpTo100_ca2448f2","value":"Vous pouvez sélectionner jusqu’à 100 abonnés"},
+{"id":"copy.extracted.shared.useFollowerShareActions.youCanSelectUpTo100_ca2448f2","value":"Vous pouvez sélectionner jusqu’à {max} abonnés"},
 {"id":"copy.extracted.shared.usernameRequiredDialog.aUsernameIsRequiredToPost_d06365c0","value":"Un nom d'utilisateur est requis pour publier. Choisissez un nom d'utilisateur pour publier votre contenu."},
 {"id":"copy.extracted.shared.usernameRequiredDialog.createAUsernameToContinuePosting_3b0d48d5","value":"Créez un nom d'utilisateur pour continuer à publier"},
 {"id":"copy.extracted.shared.usernameRequiredDialog.createUsernamePost_7d56bfee","value":"Créer un nom d'utilisateur et publier"},
