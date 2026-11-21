@@ -9,7 +9,7 @@ import {
   leaseDueRefundReconciliation,
   recordMembershipRefundEvent,
 } from '@services/memberships'
-import { enqueueReconcileMembershipRefundOperationBestEffort } from '@queues/memberships/enqueues'
+import { enqueueBulkReconcileMembershipRefundOperationsBestEffort } from '@queues/memberships/enqueues'
 import onError from '@modules/on-error'
 
 export async function handleChargeRefunded(
@@ -117,14 +117,17 @@ function getStripeRefundMetadata(refund: unknown): Record<string, string> | null
 }
 
 function wakeRefundReconciliationsBestEffort(operationIds: readonly string[]): void {
-  void Promise.all(
-    operationIds.map(async operationId => {
-      const lease = await leaseDueRefundReconciliation(operationId)
-      if (lease)
-        void enqueueReconcileMembershipRefundOperationBestEffort({
-          operationId: lease.id,
-          leaseToken: lease.leaseToken,
-        })
-    }),
-  ).catch(onError)
+  void leaseAndEnqueueRefundReconciliations(operationIds).catch(onError)
+}
+
+async function leaseAndEnqueueRefundReconciliations(
+  operationIds: readonly string[],
+): Promise<void> {
+  const leases = await Promise.all(
+    operationIds.map(operationId => leaseDueRefundReconciliation(operationId)),
+  )
+  const granted = leases.flatMap(lease =>
+    lease ? [{ operationId: lease.id, leaseToken: lease.leaseToken }] : [],
+  )
+  if (granted.length > 0) await enqueueBulkReconcileMembershipRefundOperationsBestEffort(granted)
 }

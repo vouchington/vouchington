@@ -4,8 +4,8 @@ import { readEnqueuedJob } from '../../../test-helpers/queue-jobs.mts'
 import { memberships } from '../queues.mts'
 import {
   enqueueDispatchMembershipRefundReconciliation,
-  enqueueReconcileMembershipRefundOperation,
-  enqueueReconcileMembershipRefundOperationBestEffort,
+  enqueueBulkReconcileMembershipRefundOperations,
+  enqueueBulkReconcileMembershipRefundOperationsBestEffort,
 } from './refund-reconciliation.mts'
 
 describe('refund reconciliation enqueues', () => {
@@ -23,10 +23,9 @@ describe('refund reconciliation enqueues', () => {
     const leaseToken = randomUUID()
     const deduplicationId = `refund-dispatch-test-${randomUUID()}`
     const dispatch = await enqueueDispatchMembershipRefundReconciliation({ deduplicationId })
-    const reconciliation = await enqueueReconcileMembershipRefundOperation({
-      operationId,
-      leaseToken,
-    })
+    const [reconciliation] = await enqueueBulkReconcileMembershipRefundOperations([
+      { operationId, leaseToken },
+    ])
     const child = await readEnqueuedJob(memberships, reconciliation)
 
     expect(child).toMatchObject({
@@ -51,10 +50,9 @@ describe('refund reconciliation enqueues', () => {
   it('exposes completion of the best-effort reconciliation enqueue', async () => {
     const operationId = randomUUID()
     const leaseToken = randomUUID()
-    const completion = enqueueReconcileMembershipRefundOperationBestEffort({
-      operationId,
-      leaseToken,
-    })
+    const completion = enqueueBulkReconcileMembershipRefundOperationsBestEffort([
+      { operationId, leaseToken },
+    ])
 
     await completion
     expect(

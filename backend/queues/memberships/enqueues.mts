@@ -34,7 +34,10 @@ export {
   enqueueRenewalNotificationCheck,
 } from './enqueues/operations.mts'
 export * from './enqueues/refund-reconciliation.mts'
-export { enqueueSyncMembershipPauseCollection } from './enqueues/pause-collection.mts'
+export {
+  enqueueBulkSyncMembershipPauseCollection,
+  enqueueSyncMembershipPauseCollection,
+} from './enqueues/pause-collection.mts'
 export { enqueueExpireElapsedMemberships } from './enqueues/grant-expiry.mts'
 export { enqueueReconcileStripeMembershipCatalog } from './enqueues/stripe-catalog.mts'
 export {

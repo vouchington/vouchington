@@ -13,10 +13,6 @@ import type { JobOptions } from 'glide-mq'
 export type { ReconcileNotificationPushIntentsData }
 const FIVE_MINUTES_MS = 5 * 60 * 1000
 
-const enqueueDeliverNotificationPushIntentJob = createBackgroundEnqueue(
-  NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB,
-)
-
 const enqueueBulkDeliverNotificationPushIntentJobs = createBackgroundBulkEnqueue(
   NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB,
   (data: DeliverNotificationPushData) => ({
@@ -33,18 +29,6 @@ const enqueueBulkDeliverNotificationPushIntentJobs = createBackgroundBulkEnqueue
 const enqueueReconcileNotificationPushIntentsJob = createBackgroundEnqueue(
   NOTIFICATIONS_RECONCILE_PUSH_INTENTS_JOB,
 )
-
-export function enqueueDeliverNotificationPushIntent(
-  userId: string,
-  notificationId: string,
-): EnqueueReturnType {
-  return enqueueDeliverNotificationPushIntentJob({ userId, notificationId }, {
-    deduplication: {
-      id: `processDeliverNotificationPushIntent__${userId}__${notificationId}`,
-      mode: 'debounce',
-    },
-  } satisfies Partial<JobOptions>)
-}
 
 export function enqueueBulkDeliverNotificationPushIntents(
   notificationsToDeliver: DeliverNotificationPushData[],

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   enqueueContinueNotificationPushIntentReconciliation,
-  enqueueDeliverNotificationPushIntent,
+  enqueueBulkDeliverNotificationPushIntents,
   enqueueReconcileNotificationPushIntents,
 } from './push-intents.mts'
 import { background } from '@queues/background/queues'
@@ -9,12 +9,12 @@ import { PRIORITY_DISPATCH, PRIORITY_TASK } from '@queues/background/config'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 
 describe('notification push intent queue wiring', () => {
-  it('enqueues a debounced delivery job for one durable intent', async () => {
+  it('bulk-enqueues debounced delivery jobs for durable intents', async () => {
     const suffix = crypto.randomUUID()
     const userId = `user-${suffix}`
     const notificationId = `notification-${suffix}`
 
-    await enqueueDeliverNotificationPushIntent(userId, notificationId)
+    await enqueueBulkDeliverNotificationPushIntents([{ userId, notificationId }])
 
     const job = (await readAllQueueJobs(background)).find(
       candidate =>
