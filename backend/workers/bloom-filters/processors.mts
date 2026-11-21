@@ -1,6 +1,6 @@
 import { rebuildBloomFilter, rebuildEmailBloomFilter } from '@services/urls-domains-blacklist'
 import { rebuildApiKeyBloomFilter } from '@services/api-keys/bloom-filter'
-import { rebuildEmbeddingBloomFilter } from '@services/bedrock-embeddings/bloom-filter/population'
+import { rebuildEmbeddingBloomFilter } from '@services/embeddings/bloom-filter/population'
 import { backfillBloomFilter } from '@services/entity-cache/backfill-bloom-filter'
 import {
   backfillUserBookmarkBloomFilter,

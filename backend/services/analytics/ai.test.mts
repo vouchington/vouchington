@@ -22,8 +22,8 @@ describe('ai', () => {
   describe('trackAIEmbeddingCall', () => {
     it('records a successful embedding call', async () => {
       trackAIEmbeddingCall({
-        service: 'bedrock',
-        model: 'nova-2-multimodal-embeddings-v1',
+        service: 'gemini',
+        model: 'gemini-embedding-2',
         entityType: 'post',
         tokens: 512,
         durationMs: 80,
@@ -32,7 +32,7 @@ describe('ai', () => {
       await flush()
 
       const rows = await query(
-        `SELECT * FROM ai_calls WHERE kind = 'embedding' AND model = 'nova-2-multimodal-embeddings-v1'`,
+        `SELECT * FROM ai_calls WHERE kind = 'embedding' AND model = 'gemini-embedding-2'`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
       const row = rows[0]!
@@ -42,9 +42,9 @@ describe('ai', () => {
     })
 
     it('records the invocation field when provided', async () => {
-      const model = 'nova-2-multimodal-embeddings-invocation-test'
+      const model = 'gemini-embedding-2-invocation-test'
       trackAIEmbeddingCall({
-        service: 'bedrock',
+        service: 'gemini',
         model,
         entityType: 'topic',
         tokens: 100,

@@ -62,8 +62,8 @@ export async function insertTestBloomRepairSources(userId: string, postId: strin
   )
   const { rows: embeddings } = await transaction<{ hash: string }>(
     `/* insertTestBloomRepairSources */
-    INSERT INTO bedrock_nova_multimodal_v1_embeddings (content_sha256, embedding, updated_at)
-    VALUES (sha256($1::bytea), array_fill(0::real, ARRAY[1024])::vector, $2)
+    INSERT INTO gemini_embedding_2_embeddings (content_sha256, embedding, updated_at)
+    VALUES (sha256($1::bytea), array_fill(0::real, ARRAY[1536])::halfvec(1536), $2)
     RETURNING encode(content_sha256, 'hex') AS hash`,
     [suffix, inside],
   )

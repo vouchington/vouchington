@@ -7,7 +7,7 @@ export function buildTopicSemanticRankingScoreSql(signals: {
   hasSimilarTopicSearch: boolean
   hasSimilarRssFeedItemSearch: boolean
 }): SQLStatement {
-  return buildSemanticRankingScore('t.bedrock_nova_multimodal_v1_embedding', signals)
+  return buildSemanticRankingScore('t.gemini_embedding_2_embedding', signals)
 }
 
 // Escape LIKE metacharacters so they are treated as literals in prefix-match CASE expressions

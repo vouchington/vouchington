@@ -1,5 +1,4 @@
 import * as modelClients from '../modules/model-providers/clients.mts'
-import { createRequire } from 'node:module'
 import '../../test-helpers/vitest.setup.stored-secret-encryption-keys.mts'
 import { Responses } from 'openai/resources/responses/responses'
 import { ProxyAgent } from 'undici'
@@ -134,17 +133,9 @@ export async function withAIAgentProviderNetworkFence<T>(operation: () => Promis
   const failure = new Error('Unexpected paid provider or network request outside the fixture')
   const agent = new MockAgent()
   agent.disableNetConnect()
-  const { BedrockRuntimeClient } = createRequire(
-    new URL('../modules/aws/package.json', import.meta.url),
-  )('@aws-sdk/client-bedrock-runtime') as {
-    BedrockRuntimeClient: {
-      prototype: typeof import('../modules/aws/bedrock-runtime.mts').BedrockEmbeddingsClient
-    }
-  }
   const guards: Array<{ mockRestore(): void }> = []
   try {
     guards.push(vi.spyOn(modelClients, 'createAnthropicMessage').mockRejectedValue(failure))
-    guards.push(vi.spyOn(BedrockRuntimeClient.prototype, 'send').mockRejectedValue(failure))
     guards.push(vi.spyOn(Responses.prototype, 'retrieve').mockRejectedValue(failure))
     guards.push(vi.spyOn(Responses.prototype, 'cancel').mockRejectedValue(failure))
     guards.push(vi.spyOn(Responses.prototype, 'delete').mockRejectedValue(failure))

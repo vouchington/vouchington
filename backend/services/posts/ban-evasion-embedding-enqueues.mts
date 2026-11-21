@@ -50,19 +50,19 @@ export async function enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunity
   const candidateQuery = sql`/* enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts */
     WITH pending_page AS MATERIALIZED (
       SELECT p.id, p.created_by_id, p.community_id,
-        p.bedrock_nova_multimodal_v1_input_sha256 AS input_sha256
+        p.gemini_embedding_2_input_sha256 AS input_sha256
       -- no-mistakes-disable-next-line postgres-required-predicates: global recovery must find pending embedded posts in every ID partition, including before the first cursor
       FROM posts p
       WHERE p.community_id IS NOT NULL
         AND p.created_by_id IS NOT NULL
         AND p.created_by_id != '00000000-0000-7000-8000-000000000000'::uuid
         AND p.deleted_at IS NULL
-        AND p.bedrock_nova_multimodal_v1_embedding IS NOT NULL
-        AND p.bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL
-        AND p.bedrock_nova_multimodal_v1_input_sha256 = p.bedrock_nova_multimodal_v1_content_sha256
+        AND p.gemini_embedding_2_embedding IS NOT NULL
+        AND p.gemini_embedding_2_embedding_created_at IS NOT NULL
+        AND p.gemini_embedding_2_input_sha256 = p.gemini_embedding_2_content_sha256
         AND (
           p.ban_evasion_post_embedding_input_sha256 IS NULL
-          OR p.ban_evasion_post_embedding_input_sha256 != p.bedrock_nova_multimodal_v1_input_sha256
+          OR p.ban_evasion_post_embedding_input_sha256 != p.gemini_embedding_2_input_sha256
         )
   `
   if (afterId) candidateQuery.append(sql` AND p.id > ${afterId}::uuid`)
@@ -112,19 +112,19 @@ async function enqueueBanEvasionDetectionForEmbeddedFirstCommunityPostChunk(
     SELECT p.id AS post_id,
       p.community_id,
       p.created_by_id AS user_id,
-      p.bedrock_nova_multimodal_v1_input_sha256 AS input_sha256
+      p.gemini_embedding_2_input_sha256 AS input_sha256
     FROM posts p
     WHERE p.id = ANY(${postIds}::uuid[])
       AND p.community_id IS NOT NULL
       AND p.created_by_id IS NOT NULL
       AND p.created_by_id != '00000000-0000-7000-8000-000000000000'::uuid
       AND p.deleted_at IS NULL
-      AND p.bedrock_nova_multimodal_v1_embedding IS NOT NULL
-      AND p.bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL
-      AND p.bedrock_nova_multimodal_v1_input_sha256 = p.bedrock_nova_multimodal_v1_content_sha256
+      AND p.gemini_embedding_2_embedding IS NOT NULL
+      AND p.gemini_embedding_2_embedding_created_at IS NOT NULL
+      AND p.gemini_embedding_2_input_sha256 = p.gemini_embedding_2_content_sha256
       AND (
         p.ban_evasion_post_embedding_input_sha256 IS NULL
-        OR p.ban_evasion_post_embedding_input_sha256 != p.bedrock_nova_multimodal_v1_input_sha256
+        OR p.ban_evasion_post_embedding_input_sha256 != p.gemini_embedding_2_input_sha256
       )
       AND p.id = (
         SELECT first_post.id

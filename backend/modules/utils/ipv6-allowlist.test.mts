@@ -59,7 +59,6 @@ describe('isIpv6AllowlistedHost', () => {
     expect(isIpv6AllowlistedHost('s3.us-west-2.amazonaws.com')).toBe(false)
     expect(isIpv6AllowlistedHost('example-images.s3.us-west-2.amazonaws.com')).toBe(false)
     expect(isIpv6AllowlistedHost('attacker-amazonaws.com')).toBe(false)
-    expect(isIpv6AllowlistedHost('bedrock-runtime.us-east-1.api.aws')).toBe(false)
     expect(isIpv6AllowlistedHost('unaudited.us-west-2.api.aws')).toBe(false)
   })
 

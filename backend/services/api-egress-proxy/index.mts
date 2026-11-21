@@ -10,6 +10,7 @@ const fieldTypes = {
   x_oauth_enabled: 'boolean',
   bluesky_oauth_enabled: 'boolean',
   fediverse_search_enabled: 'boolean',
+  gemini_embeddings_enabled: 'boolean',
   bedrock_embeddings_enabled: 'boolean',
 } as const satisfies Record<ApiEgressProxyProvider, DynamicConfigFieldType>
 

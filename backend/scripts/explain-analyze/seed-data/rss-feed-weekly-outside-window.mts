@@ -14,13 +14,13 @@ export async function seedRssFeedWeeklyOutsideWindow(query: TransactionQuery): P
   await query(
     `/* seedRssFeedWeeklyWorkload.outsideWindow */
       INSERT INTO rss_feed_items
-        (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256)
+        (id, url_id, data, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
       SELECT ids.id, $1,
         jsonb_build_object('title', $2::text, 'link', 'https://example.com/rss-week-outside',
           'isoDate', to_char(($3::timestamptz - INTERVAL '8 days') AT TIME ZONE 'UTC',
             'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')),
         $4
-      FROM rss_feed_item_guids ids
+      , $4 FROM rss_feed_item_guids ids
       WHERE ids.url_hostname_id = $5 AND ids.guid = 'seed-week-outside-window'
       ON CONFLICT (id) DO NOTHING`,
     [

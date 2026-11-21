@@ -29,9 +29,9 @@ export async function lockRssFeedItemClassifierInput(
   if (subject.rssFeedItemId === null) throw new Error('feed item classifier subject is required')
   const { rows } = await query<{ input_sha256: Buffer }>(sql`
     /* lockRssFeedItemClassifierInput */
-    SELECT bedrock_nova_multimodal_v1_content_sha256 AS input_sha256 FROM rss_feed_items
+    SELECT gemini_embedding_2_content_sha256 AS input_sha256 FROM rss_feed_items
     WHERE id = ${subject.rssFeedItemId} AND deleted_at IS NULL
-      AND bedrock_nova_multimodal_v1_content_sha256 IS NOT NULL
+      AND gemini_embedding_2_content_sha256 IS NOT NULL
 
   `)
   const item = rows[0]

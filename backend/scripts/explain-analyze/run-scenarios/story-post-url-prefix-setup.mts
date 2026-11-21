@@ -57,11 +57,11 @@ async function insertExtraPrefixItems(): Promise<void> {
          RETURNING id
        )
        INSERT INTO rss_feed_items (
-         id, url_id, data, bedrock_nova_multimodal_v1_content_sha256, story_id
-       )
+         id, url_id, data, gemini_embedding_2_content_sha256, story_id
+       , bedrock_nova_multimodal_v1_content_sha256)
        SELECT inserted.id, $5, '{"title":"EXPLAIN prefix extra"}'::jsonb,
               decode(repeat('00', 32), 'hex'), $6
-       FROM inserted`,
+       , decode(repeat('00', 32), 'hex') FROM inserted`,
       [EXTRA_ITEM_ID_PREFIX, start, end, anchor.hostname_id, anchor.url_id, STORY_ID],
     )
   }

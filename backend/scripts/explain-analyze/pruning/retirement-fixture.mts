@@ -75,7 +75,9 @@ export async function createMonthlyPartitionRetirementFixture(controlDeadline: n
         rss_partition: boolean
         chunk_exists: boolean
         entity_exists: boolean
+        bedrock_entity_exists: boolean
         batch_crawl_id: string | null
+        bedrock_batch_crawl_id: string | null
         referral_crawl_id: string | null
         discovery_crawl_id: string | null
       }>(
@@ -84,8 +86,10 @@ export async function createMonthlyPartitionRetirementFixture(controlDeadline: n
         to_regclass('crawl_chunks__p_2019_01') IS NOT NULL AS chunk_partition,
         to_regclass('rss_feed_crawls__p_2019_01') IS NOT NULL AS rss_partition,
         EXISTS (SELECT 1 FROM crawl_chunks) AS chunk_exists,
-        EXISTS (SELECT 1 FROM bedrock_embedding_batch_entities) AS entity_exists,
-        (SELECT crawl_id FROM bedrock_embedding_batches WHERE id = $1) AS batch_crawl_id,
+        EXISTS (SELECT 1 FROM gemini_embedding_batch_entities) AS entity_exists,
+        EXISTS (SELECT 1 FROM bedrock_embedding_batch_entities) AS bedrock_entity_exists,
+        (SELECT crawl_id FROM gemini_embedding_batches WHERE id = $1) AS batch_crawl_id,
+        (SELECT crawl_id FROM bedrock_embedding_batches WHERE id = $1) AS bedrock_batch_crawl_id,
         (SELECT last_crawl_id FROM user_referral_program_links LIMIT 1) AS referral_crawl_id,
         (SELECT crawl_id FROM user_rss_feed_import_row_discoveries LIMIT 1) AS discovery_crawl_id`,
         [MONTHLY_RETIREMENT_BATCH_ID],

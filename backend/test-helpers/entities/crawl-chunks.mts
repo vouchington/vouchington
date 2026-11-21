@@ -88,7 +88,7 @@ export async function setCrawlChunkEmbeddingContentSha256(
   await write(
     sql`/* setCrawlChunkEmbeddingContentSha256 */
       UPDATE crawl_chunks
-      SET bedrock_nova_multimodal_v1_content_sha256 = ${contentSha256}
+      SET gemini_embedding_2_content_sha256 = ${contentSha256}
       WHERE crawl_id = ${crawlId} AND order_index = ${orderIndex}
     `,
   )
@@ -103,7 +103,7 @@ export async function getCrawlChunksWithEmbeddingStatus(
 ): Promise<unknown[]> {
   const { rows } = await read(
     sql`/* getCrawlChunksWithEmbeddingStatus */
-    SELECT crawl_chunks.bedrock_nova_multimodal_v1_embedding, crawl_chunks.bedrock_nova_multimodal_v1_embedding_created_at
+    SELECT crawl_chunks.gemini_embedding_2_embedding, crawl_chunks.gemini_embedding_2_embedding_created_at
     FROM crawl_chunks
     JOIN crawls ON crawls.id = crawl_chunks.crawl_id
     WHERE crawl_chunks.crawl_id = ${crawlId}

@@ -7,5 +7,5 @@ export function buildRssFeedItemRelevanceScoreExpression(options: {
   hasSimilarTopicSearch: boolean
   hasSimilarRssFeedItemSearch: boolean
 }): SQLStatement {
-  return buildSemanticRankingScore('rss_feed_items.bedrock_nova_multimodal_v1_embedding', options)
+  return buildSemanticRankingScore('rss_feed_items.gemini_embedding_2_embedding', options)
 }

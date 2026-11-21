@@ -26,6 +26,7 @@
     "@modules/utils": "workspace:^",
     "@services/api-keys": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",
+    "@services/embeddings": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "@services/urls-domains-blacklist": "workspace:^",
     "@ts-shared/utils": "workspace:^",

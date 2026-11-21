@@ -133,17 +133,17 @@ describe('dynamic-config-admin registry validators', () => {
     )
   })
 
-  it('rejects non-positive integers for Bedrock batch config fields', () => {
-    const entry = dynamicConfigRegistry.get('bedrock-embeddings-batch-config')
+  it('rejects non-positive integers for Vertex batch config fields', () => {
+    const entry = dynamicConfigRegistry.get('gemini-embeddings-batch-config')
 
     expect(() => validateRegistryChange(entry, { max_inflight_jobs: 0 })).toThrow(
       'Field max_inflight_jobs must be greater than or equal to 1',
     )
     expect(() => validateRegistryChange(entry, { stale_ttl_hours: -5 })).toThrow(
-      'Field stale_ttl_hours must be greater than or equal to 1',
+      'Field stale_ttl_hours must be greater than or equal to 96',
     )
-    expect(() => validateRegistryChange(entry, { stale_ttl_hours: 169 })).toThrow(
-      'Field stale_ttl_hours must be less than or equal to 168',
+    expect(() => validateRegistryChange(entry, { stale_ttl_hours: 145 })).toThrow(
+      'Field stale_ttl_hours must be less than or equal to 144',
     )
   })
 

@@ -14,7 +14,7 @@
     // @ts-shared/<pkg> precedent — see docs/development/reference-tests-linters-and-static-analysis.md.
     "paths": {
       "@voucha/scripts/seed": ["../backend/scripts/seed/index.mts"],
-      "@services/bedrock-embeddings": ["../backend/services/bedrock-embeddings/index.mts"],
+      "@services/embeddings": ["../backend/services/embeddings/index.mts"],
       "@services/urls-domains-blacklist": ["../backend/services/urls-domains-blacklist/index.mts"],
       "@services/dynamic-config-admin/registry": [
         "../backend/services/dynamic-config-admin/registry.mts"

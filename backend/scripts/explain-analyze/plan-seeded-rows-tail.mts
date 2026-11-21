@@ -13,7 +13,7 @@ export const TAIL_SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   households: 100,
   api_keys: 256,
   blocklisted_domains: 20_512,
-  bedrock_nova_multimodal_v1_embeddings: 256,
+  gemini_embedding_2_embeddings: 256,
   membership_products: 4,
   membership_provider_observations: 0,
   membership_source_states: 300,

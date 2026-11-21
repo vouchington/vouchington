@@ -35,7 +35,7 @@ async function deleteTextEmbeddingCachePage(
   }>(
     `/* selectTextEmbeddingRetentionPage */
     SELECT encode(content_sha256, 'hex') AS content_sha256
-    FROM bedrock_nova_multimodal_v1_embeddings cache
+    FROM gemini_embedding_2_embeddings cache
     WHERE updated_at < $1::timestamptz
       ${lowerBoundPredicate}
     ORDER BY cache.updated_at, encode(cache.content_sha256, 'hex')
@@ -46,7 +46,7 @@ async function deleteTextEmbeddingCachePage(
   const hashes = page.map(row => row.content_sha256)
   const { rowCount } = await query(
     `/* deleteTextEmbeddingRetentionPage */
-    DELETE FROM bedrock_nova_multimodal_v1_embeddings
+    DELETE FROM gemini_embedding_2_embeddings
     WHERE content_sha256 = ANY(SELECT decode(hash, 'hex') FROM unnest($1::text[]) hash)`,
     [hashes],
   )

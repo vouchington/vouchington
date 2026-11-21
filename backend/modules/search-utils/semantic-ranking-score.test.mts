@@ -2,7 +2,7 @@ import { expect, it, describe } from 'vitest'
 import { buildSemanticRankingScore } from './semantic-ranking-score.mts'
 
 describe('semantic-ranking-score', () => {
-  const COL = 't.bedrock_nova_multimodal_v1_embedding'
+  const COL = 't.gemini_embedding_2_embedding'
 
   const allFalse = {
     hasSemanticSearch: false,
@@ -71,7 +71,7 @@ describe('semantic-ranking-score', () => {
   })
 
   it('buildSemanticRankingScore uses provided embeddingColumn in SQL', () => {
-    const customCol = 'rss_feed_items.bedrock_nova_multimodal_v1_embedding'
+    const customCol = 'rss_feed_items.gemini_embedding_2_embedding'
     const result = buildSemanticRankingScore(customCol, { ...allFalse, hasSemanticSearch: true })
     expect(result.text).toContain(customCol)
   })

@@ -91,11 +91,11 @@ export async function seedHackerNewsFilterFixture(
     // no-mistakes-disable-next-line query-reached-per-item: each call writes one set-based fixture batch capped at 5000 rows; the loop has a finite corpus limit.
     await q(
       `INSERT INTO posts(id,created_via,post_type,title,created_by_id,approved_at,url_id,
-      votes_score_up,votes_count_up,bedrock_nova_multimodal_v1_content_sha256,llm_moderation_content_sha256)
+      votes_score_up,votes_count_up,gemini_embedding_2_content_sha256,llm_moderation_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
       SELECT ((CASE WHEN i<$4*.2 THEN $5 WHEN i<$4*.5 THEN $6 ELSE $7 END)
         ||$1||lpad(to_hex(i),6,'0'))::uuid,'system',CASE WHEN i%2=0 THEN 'link'::post_types ELSE 'discussion'::post_types END,'HN plan '||i,$2,CURRENT_TIMESTAMP,CASE WHEN i%2=0 THEN ($9::uuid[])[i%1000+1] END,
         (i*17)%101,(i*17)%101,decode(repeat('00',32),'hex'),decode(repeat('00',32),'hex')
-      FROM generate_series($3::int,$3::int+$8::int-1)i`,
+      , decode(repeat('00',32),'hex') FROM generate_series($3::int,$3::int+$8::int-1)i`,
       [token, fixture.actorId, start, postCount, ...fixture.postPrefixes, count, fixture.urlIds],
     )
     // no-mistakes-disable-next-line query-reached-per-item: each call writes one set-based fixture batch capped at 5000 rows; the loop has a finite corpus limit.
@@ -108,7 +108,7 @@ export async function seedHackerNewsFilterFixture(
     )
   }
   await q(
-    `INSERT INTO topics(id,created_via,name,slug,bedrock_nova_multimodal_v1_content_sha256)VALUES($1,'system',$2,$2,decode(repeat('00',32),'hex'))`,
+    `INSERT INTO topics(id,created_via,name,slug,gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)VALUES($1,'system',$2,$2,decode(repeat('00',32),'hex'), decode(repeat('00',32),'hex'))`,
     [fixture.topicId, `hn-plan-${token}`],
   )
   await q(
@@ -137,10 +137,10 @@ export async function seedHackerNewsFilterFixture(
     )
     // no-mistakes-disable-next-line query-reached-per-item: each call writes one set-based fixture batch capped at 5000 rows; the loop has a finite corpus limit.
     await q(
-      `INSERT INTO rss_feed_items(id,url_id,data,bedrock_nova_multimodal_v1_content_sha256)
+      `INSERT INTO rss_feed_items(id,url_id,data,gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
       SELECT ($1||$2||lpad(to_hex(i),6,'0'))::uuid,($3::uuid[])[i%1000+1],
         jsonb_build_object('title','HN plan item '||i,'isoDate',$6::text),decode(repeat('00',32),'hex')
-      FROM generate_series($4::int,$4::int+$5::int-1)i`,
+      , decode(repeat('00',32),'hex') FROM generate_series($4::int,$4::int+$5::int-1)i`,
       [fixture.rssPrefix, token, fixture.urlIds, start, count, recent.toISOString()],
     )
     // no-mistakes-disable-next-line query-reached-per-item: each call writes one set-based fixture batch capped at 5000 rows; the loop has a finite corpus limit.

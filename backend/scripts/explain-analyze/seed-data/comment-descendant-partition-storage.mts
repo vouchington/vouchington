@@ -24,13 +24,13 @@ export async function insertCommentRows(
     await query(
       `/* seedCommentDescendantPartition:posts */ INSERT INTO posts (
          id, created_via, post_type, markdown, parent_post_id, root_post_id,
-         created_by_id, approved_at, bedrock_nova_multimodal_v1_content_sha256,
+         created_by_id, approved_at, gemini_embedding_2_content_sha256,
          llm_moderation_content_sha256
-       )
+       , bedrock_nova_multimodal_v1_content_sha256)
        SELECT input.id, 'system', CASE WHEN input.parent_id IS NULL THEN 'discussion'::post_types ELSE 'comment'::post_types END,
          'seeded partitioned comment', input.parent_id, input.root_id, $5::uuid,
          CASE WHEN input.approved THEN now() ELSE NULL END, $6, $6
-       FROM UNNEST($1::uuid[], $2::uuid[], $3::uuid[], $4::boolean[]) AS input(id, parent_id, root_id, approved)
+       , $6 FROM UNNEST($1::uuid[], $2::uuid[], $3::uuid[], $4::boolean[]) AS input(id, parent_id, root_id, approved)
        ON CONFLICT DO NOTHING`,
       [ids, parentIds, rootIds, approved, seedUuid(0, '01'), hash],
     )

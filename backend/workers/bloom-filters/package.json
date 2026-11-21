@@ -24,6 +24,7 @@
     "@services/api-keys": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",
     "@services/bookmarks": "workspace:^",
+    "@services/embeddings": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "@services/urls-domains-blacklist": "workspace:^",
     "glide-mq": "^0.20.0"

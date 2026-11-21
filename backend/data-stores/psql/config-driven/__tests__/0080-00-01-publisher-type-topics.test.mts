@@ -11,11 +11,15 @@ describe('0080-00-01-publisher-type-topics', () => {
 
   it('records publisher type topics as platform-created content', () => {
     const sql = generatePublisherTypeTopicsSQL()
-    const inserts = sql.match(/INSERT INTO topics \([^)]*\)\s+SELECT [^\n]*/g) ?? []
+    const inserts =
+      sql.match(/INSERT INTO topics \([^)]*\)\s+SELECT [\s\S]*?\s+RETURNING id/g) ?? []
 
     expect(inserts).toHaveLength(PUBLISHER_TYPE_SLUGS.length + 1)
     for (const insert of inserts) {
-      expect(insert).toMatch(/, created_via\)\s+SELECT .*, 'system'$/)
+      expect(insert).toContain('gemini_embedding_2_content_sha256')
+      expect(insert).toContain('bedrock_nova_multimodal_v1_content_sha256')
+      expect(insert).toContain("'system'")
+      expect(insert.match(/decode\('[a-f0-9]+', 'hex'\)/g)).toHaveLength(2)
     }
   })
 
@@ -62,7 +66,7 @@ describe('0080-00-01-publisher-type-topics', () => {
 
   it('uses ON CONFLICT for idempotent topic upserts', () => {
     const sql = generatePublisherTypeTopicsSQL()
-    expect(sql).toContain('bedrock_nova_multimodal_v1_content_sha256')
+    expect(sql).toContain('gemini_embedding_2_content_sha256')
     expect(sql).toContain('decode(')
   })
 })

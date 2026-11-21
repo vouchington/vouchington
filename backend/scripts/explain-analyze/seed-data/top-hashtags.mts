@@ -52,8 +52,8 @@ export async function seedTopHashtags(): Promise<void> {
   )
   await transaction(
     `/* seedTopHashtagsItems */ INSERT INTO rss_feed_items
-      (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256)
-     SELECT id, url_id, data, $2 FROM jsonb_to_recordset($1::jsonb)
+      (id, url_id, data, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
+     SELECT id, url_id, data, $2 , $2 FROM jsonb_to_recordset($1::jsonb)
        AS seed(id uuid, url_id uuid, data jsonb) ON CONFLICT DO NOTHING`,
     [JSON.stringify(rssRows), contentHash('seed-top-hashtags')],
   )

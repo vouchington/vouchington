@@ -70,26 +70,26 @@ function semanticFilters(options: TopicSearchOptions, state: TopicSearchState): 
   if (!state.hasSemanticSignal) return []
 
   return [
-    sql`t.bedrock_nova_multimodal_v1_embedding IS NOT NULL`,
+    sql`t.gemini_embedding_2_embedding IS NOT NULL`,
     ...(state.hasSemanticSearch
       ? [
-          sql`(t.bedrock_nova_multimodal_v1_embedding <=> semantic_search_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
+          sql`(t.gemini_embedding_2_embedding <=> semantic_search_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
         ]
       : []),
     ...(state.hasSimilarPostSearch
       ? [
-          sql`(t.bedrock_nova_multimodal_v1_embedding <=> similar_post_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
+          sql`(t.gemini_embedding_2_embedding <=> similar_post_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
         ]
       : []),
     ...(state.hasSimilarTopicSearch
       ? [
-          sql`(t.bedrock_nova_multimodal_v1_embedding <=> similar_topic_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
+          sql`(t.gemini_embedding_2_embedding <=> similar_topic_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
           sql`t.id <> ${options.similar_topic_id!}`,
         ]
       : []),
     ...(state.hasSimilarRssFeedItemSearch
       ? [
-          sql`(t.bedrock_nova_multimodal_v1_embedding <=> similar_rss_feed_item_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
+          sql`(t.gemini_embedding_2_embedding <=> similar_rss_feed_item_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
         ]
       : []),
   ]

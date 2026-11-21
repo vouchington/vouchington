@@ -159,10 +159,10 @@ async function insertTopicRecommendationPost(
         broadcast,
         privacy,
         is_anonymous,
-        bedrock_nova_multimodal_v1_content_sha256,
+        gemini_embedding_2_content_sha256,
         llm_moderation_content_sha256,
         created_via, created_via_oauth_client_id
-      )
+      , bedrock_nova_multimodal_v1_content_sha256)
       VALUES (
         'topic_recommendation',
         ${materialized.title},
@@ -176,7 +176,7 @@ async function insertTopicRecommendationPost(
         ${materialized.embedding_content_sha},
         ${moderationContentSha},
         ${provenance.createdVia}, ${provenance.oauthClientId}
-      )
+      , ${materialized.embedding_content_sha})
       RETURNING id
     `,
     options,

@@ -24,8 +24,8 @@ export async function insertExplainBloomRepairSources(
   )
   await transaction(
     `/* insertExplainBloomRepairSources */
-    INSERT INTO bedrock_nova_multimodal_v1_embeddings (content_sha256, embedding, updated_at)
-    SELECT sha256(key::bytea), array_fill(0::real, ARRAY[1024])::vector, updated_at
+    INSERT INTO gemini_embedding_2_embeddings (content_sha256, embedding, updated_at)
+    SELECT sha256(key::bytea), array_fill(0::real, ARRAY[1536])::halfvec(1536), updated_at
     FROM jsonb_to_recordset($1::jsonb) fixture(key text, updated_at timestamptz)
     ON CONFLICT DO NOTHING`,
     [JSON.stringify(rows)],
@@ -77,9 +77,9 @@ export async function insertExplainBloomRepairSources(
   )
   await transaction(
     `/* insertExplainBloomRepairSources */
-    INSERT INTO rss_feed_items (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256, updated_at)
+    INSERT INTO rss_feed_items (id, url_id, data, gemini_embedding_2_content_sha256, updated_at, bedrock_nova_multimodal_v1_content_sha256)
     SELECT identity.id, $3::uuid, jsonb_build_object('title', fixture.key), sha256(fixture.key::bytea), fixture.updated_at
-    FROM jsonb_to_recordset($1::jsonb) fixture(key text, updated_at timestamptz)
+    , sha256(fixture.key::bytea) FROM jsonb_to_recordset($1::jsonb) fixture(key text, updated_at timestamptz)
     JOIN rss_feed_item_guids identity ON identity.url_hostname_id = $2::uuid AND identity.guid = fixture.key
     ON CONFLICT DO NOTHING`,
     [JSON.stringify(rows), owners.hostnameId, owners.urlId],

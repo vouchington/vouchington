@@ -38,21 +38,21 @@ describe('background CPU registry contracts', () => {
   })
 
   it('assigns domain ordering unless a job selects a lane', () => {
-    const domain = defineBackgroundCpuDomain({ domain: 'bedrock-embeddings', workerConcurrency: 1 })
+    const domain = defineBackgroundCpuDomain({ domain: 'gemini-embeddings', workerConcurrency: 1 })
     expect(
       defineBackgroundCpuJob(domain, {
         name: 'post',
         priority: 10,
-        ordering: { key: 'bedrock-embeddings:single' },
+        ordering: { key: 'gemini-embeddings:single' },
       }).options.ordering,
-    ).toEqual({ key: 'bedrock-embeddings:single', concurrency: 2 })
+    ).toEqual({ key: 'gemini-embeddings:single', concurrency: 2 })
     expect(
       defineBackgroundCpuJob(domain, {
         name: 'dispatch',
         priority: 100,
-        ordering: { key: 'bedrock-embeddings:dispatcher' },
+        ordering: { key: 'gemini-embeddings:dispatcher' },
       }).options.ordering,
-    ).toEqual({ key: 'bedrock-embeddings:dispatcher', concurrency: 1 })
+    ).toEqual({ key: 'gemini-embeddings:dispatcher', concurrency: 1 })
   })
 
   it('rejects duplicate and dangling registrations', () => {
@@ -72,11 +72,11 @@ describe('background CPU registry contracts', () => {
 
   it('routes registered jobs by domain and refuses unknown names', () => {
     expect(getBackgroundCpuJobNames('crawl')).toContain('crawl.crawl_url')
-    expect(getBackgroundCpuJobNames('crawl')).not.toContain('bedrock-embeddings.post')
+    expect(getBackgroundCpuJobNames('crawl')).not.toContain('gemini-embeddings.post')
     expect(getBackgroundCpuJob('crawl.crawl_url')).toBe(requireBackgroundCpuJob('crawl.crawl_url'))
     expect(() => requireBackgroundCpuJob('crawl.unknown')).toThrow(
       'Unregistered background-cpu job',
     )
-    expect(getBackgroundCpuWorkerBaseline()).toBe(45)
+    expect(getBackgroundCpuWorkerBaseline()).toBe(56)
   })
 })

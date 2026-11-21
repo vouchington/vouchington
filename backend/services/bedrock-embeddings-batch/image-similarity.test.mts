@@ -8,7 +8,7 @@ import {
   makeRandomEmbedding,
   markImageDeleted,
   markImageModerationFlagged,
-} from '@voucha/test-helpers'
+} from '@voucha/test-helpers/bedrock-legacy'
 import { resolveCopyrightImagePlacement } from '@services/copyright-notices/placement-resolution'
 import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { applyImageBatchUpdates } from './orchestrator/save-images.mts'

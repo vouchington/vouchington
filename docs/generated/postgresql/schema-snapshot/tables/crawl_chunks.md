@@ -17,6 +17,11 @@ RANGE partitioned on `crawl_id` (children: monthly, retention owner `cleanupPart
 | `bedrock_nova_multimodal_v1_embedding`            | `vector(1024)`             | yes      |                                                                                                  |          |           |           |                                                              |
 | `bedrock_nova_multimodal_v1_embedding_created_at` | `timestamp with time zone` | yes      |                                                                                                  |          |           |           |                                                              |
 | `bedrock_nova_multimodal_v1_input_token_count`    | `integer`                  | yes      |                                                                                                  |          |           |           |                                                              |
+| `gemini_embedding_2_content_sha256`               | `bytea`                    | no       |                                                                                                  |          |           |           |                                                              |
+| `gemini_embedding_2_input_sha256`                 | `bytea`                    | yes      |                                                                                                  |          |           |           |                                                              |
+| `gemini_embedding_2_embedding`                    | `halfvec(1536)`            | yes      |                                                                                                  |          |           |           |                                                              |
+| `gemini_embedding_2_embedding_created_at`         | `timestamp with time zone` | yes      |                                                                                                  |          |           |           |                                                              |
+| `gemini_embedding_2_input_token_count`            | `integer`                  | yes      |                                                                                                  |          |           |           |                                                              |
 | `created_at`                                      | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`                                                                              |          |           |           |                                                              |
 | `updated_at`                                      | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`                                                                              |          |           |           |                                                              |
 
@@ -30,6 +35,9 @@ _none_
 - `crawl_chunks_bedrock_nova_multimodal_v1_content_sha256_check`: `CHECK ((octet_length(bedrock_nova_multimodal_v1_content_sha256) = 32))`
 - `crawl_chunks_bedrock_nova_multimodal_v1_input_sha256_check`: `CHECK (((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (octet_length(bedrock_nova_multimodal_v1_input_sha256) = 32)))`
 - `crawl_chunks_bedrock_nova_multimodal_v1_input_token_count_check`: `CHECK (((bedrock_nova_multimodal_v1_input_token_count IS NULL) OR (bedrock_nova_multimodal_v1_input_token_count >= 0)))`
+- `crawl_chunks_gemini_embedding_2_content_sha256_check`: `CHECK ((octet_length(gemini_embedding_2_content_sha256) = 32))`
+- `crawl_chunks_gemini_embedding_2_input_sha256_check`: `CHECK (((gemini_embedding_2_input_sha256 IS NULL) OR (octet_length(gemini_embedding_2_input_sha256) = 32)))`
+- `crawl_chunks_gemini_embedding_2_input_token_count_check`: `CHECK (((gemini_embedding_2_input_token_count IS NULL) OR (gemini_embedding_2_input_token_count >= 0)))`
 
 **Foreign keys:**
 
@@ -40,7 +48,9 @@ _none_
 - `crawl_chunks_pkey`: `CREATE UNIQUE INDEX crawl_chunks_pkey ON ONLY public.crawl_chunks USING btree (crawl_id, order_index)`
 - `idx_crawl_chunks__bedrock_nova_multimodal_v1_embedding`: `CREATE INDEX idx_crawl_chunks__bedrock_nova_multimodal_v1_embedding ON ONLY public.crawl_chunks USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops) WHERE (bedrock_nova_multimodal_v1_embedding IS NOT NULL)`
 - `idx_crawl_chunks__bedrock_nova_multimodal_v1_input_sha256`: `CREATE INDEX idx_crawl_chunks__bedrock_nova_multimodal_v1_input_sha256 ON ONLY public.crawl_chunks USING btree (bedrock_nova_multimodal_v1_input_sha256) WHERE (bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL)`
-- `idx_crawl_chunks__embedding_pending`: `CREATE INDEX idx_crawl_chunks__embedding_pending ON ONLY public.crawl_chunks USING btree (crawl_id) WHERE (bedrock_nova_multimodal_v1_embedding_created_at IS NULL)`
+- `idx_crawl_chunks__embedding_pending`: `CREATE INDEX idx_crawl_chunks__embedding_pending ON ONLY public.crawl_chunks USING btree (crawl_id) WHERE (gemini_embedding_2_embedding_created_at IS NULL)`
+- `idx_crawl_chunks__gemini_embedding_2_embedding`: `CREATE INDEX idx_crawl_chunks__gemini_embedding_2_embedding ON ONLY public.crawl_chunks USING hnsw (gemini_embedding_2_embedding halfvec_cosine_ops) WHERE (gemini_embedding_2_embedding IS NOT NULL)`
+- `idx_crawl_chunks__gemini_embedding_2_input_sha256`: `CREATE INDEX idx_crawl_chunks__gemini_embedding_2_input_sha256 ON ONLY public.crawl_chunks USING btree (gemini_embedding_2_input_sha256) WHERE (gemini_embedding_2_input_sha256 IS NOT NULL)`
 - `idx_crawl_chunks__search_vector`: `CREATE INDEX idx_crawl_chunks__search_vector ON ONLY public.crawl_chunks USING gin (search_vector)`
 
 **Triggers:**

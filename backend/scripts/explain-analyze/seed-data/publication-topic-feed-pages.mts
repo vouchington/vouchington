@@ -26,10 +26,10 @@ async function seedPublicationTopicFeedBatch(from: number, to: number): Promise<
   await using query = await beginTransaction()
   await query(
     `/* seedPublicationTopicFeedPages:topics */
-    INSERT INTO topics (id, name, slug, created_via, bedrock_nova_multimodal_v1_content_sha256)
+    INSERT INTO topics (id, name, slug, created_via, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
     SELECT ('019e0000-f000-7000-8000-' || lpad(to_hex(n), 12, '0'))::uuid,
       'Publication topic feed ' || n, 'explain-topic-feed-' || n, 'system', decode(repeat('00', 32), 'hex')
-    FROM generate_series($1::int, $2::int - 1) n`,
+    , decode(repeat('00', 32), 'hex') FROM generate_series($1::int, $2::int - 1) n`,
     [from, to],
   )
   await query(

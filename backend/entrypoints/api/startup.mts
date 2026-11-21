@@ -1,5 +1,7 @@
 import type http from 'node:http'
 import { assertBackendSessionJwtConfiguration } from '@services/jwt-session/configuration'
+import { assertVertexEnvironment } from '@services/embeddings/vertex'
+import { isDeployedEnvironment } from '@ts-shared/deploy-environment'
 import { shouldRejectPlaywrightTest } from './boot-guards.mts'
 
 type ApiStartupDeps = {
@@ -37,6 +39,7 @@ export async function startApiServer(
 
   try {
     await assertBackendSessionJwtConfiguration()
+    if (isDeployedEnvironment()) assertVertexEnvironment()
     await waitForVisibilityConfig()
     if (shouldRejectPlaywrightTest())
       throw new Error('PLAYWRIGHT_TEST must not be enabled in a deployed environment')

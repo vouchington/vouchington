@@ -27,6 +27,13 @@ describe('setup', () => {
     )
   })
 
+  it('refuses to start in a deployed environment without Vertex configuration', async () => {
+    vi.stubEnv('ENVIRONMENT', 'staging')
+    vi.stubEnv('VERTEX_LOCATION', '')
+
+    await expect(setup()).rejects.toThrow('VERTEX_LOCATION is required')
+  })
+
   it('warms the bloom filters against the real stores and resolves', async () => {
     await expect(setup()).resolves.toBeUndefined()
   })

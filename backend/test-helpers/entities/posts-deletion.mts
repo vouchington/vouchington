@@ -59,13 +59,13 @@ export async function insertTestPostsForUser(userId: string, count: number): Pro
   const { rows } = await write<{ id: string }>(sql`/* insertTestPostsForUser */
     INSERT INTO posts (
       post_type, title, markdown, created_by_id,
-      bedrock_nova_multimodal_v1_content_sha256,
+      gemini_embedding_2_content_sha256,
       llm_moderation_content_sha256,
       created_via
-    )
+    , bedrock_nova_multimodal_v1_content_sha256)
     SELECT 'discussion', 'Deletion batch ' || value, '', ${userId},
       ${sha256}, ${sha256}, 'system'
-    FROM generate_series(1, ${count}) AS value
+    , ${sha256} FROM generate_series(1, ${count}) AS value
     RETURNING id
   `)
   return rows.map(row => row.id)

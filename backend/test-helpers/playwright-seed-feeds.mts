@@ -28,7 +28,7 @@ export async function seedPlaywrightFeedData(query: TransactionQuery): Promise<v
       '{"title": "Chase Sapphire Preferred Now Offering 75K Bonus Points", "link": "https://www.doctorofcredit.com/chase-sapphire-preferred-new-bonus", "guid": "doc-csp-bonus", "isoDate": "2025-01-15T00:00:00.000Z", "contentSnippet": "Chase has increased the signup bonus on the Sapphire Preferred card to 75,000 Ultimate Rewards points after spending $4,000 in the first 3 months."}'::JSONB,
       decode('${sha256('doc-csp-bonus').toString('hex')}', 'hex'),
       decode('${sha256('doc-csp-bonus').toString('hex')}', 'hex'),
-      '${cspEmbedding1}'::vector,
+      '${cspEmbedding1}'::halfvec(1536),
       CURRENT_TIMESTAMP
     ),
     (
@@ -38,7 +38,7 @@ export async function seedPlaywrightFeedData(query: TransactionQuery): Promise<v
       '{"title": "Breaking: Chase Sapphire Preferred Bonus Jumps to 75K Points", "link": "https://thepointsguy.com/news/chase-sapphire-preferred-bonus-update", "guid": "tpg-csp-bonus", "isoDate": "2025-01-15T00:00:00.000Z", "contentSnippet": "The Chase Sapphire Preferred card is now offering its highest-ever signup bonus of 75,000 Ultimate Rewards points for new cardholders."}'::JSONB,
       decode('${sha256('tpg-csp-bonus').toString('hex')}', 'hex'),
       decode('${sha256('tpg-csp-bonus').toString('hex')}', 'hex'),
-      '${cspEmbedding2}'::vector,
+      '${cspEmbedding2}'::halfvec(1536),
       CURRENT_TIMESTAMP
     ),
     (
@@ -48,7 +48,7 @@ export async function seedPlaywrightFeedData(query: TransactionQuery): Promise<v
       '{"title": "Amex Gold Card Adding New Grocery Store Credits", "link": "https://www.doctorofcredit.com/amex-gold-grocery-credits", "guid": "doc-amex-grocery", "isoDate": "2025-01-15T00:00:00.000Z", "contentSnippet": "American Express is adding a new monthly grocery store credit to the Gold Card, worth up to $10 per month at select supermarkets."}'::JSONB,
       decode('${sha256('doc-amex-grocery').toString('hex')}', 'hex'),
       decode('${sha256('doc-amex-grocery').toString('hex')}', 'hex'),
-      '${amexEmbedding1}'::vector,
+      '${amexEmbedding1}'::halfvec(1536),
       CURRENT_TIMESTAMP
     ),
     (
@@ -58,7 +58,7 @@ export async function seedPlaywrightFeedData(query: TransactionQuery): Promise<v
       '{"title": "Amex Gold Gets New Monthly Grocery Benefit", "link": "https://thepointsguy.com/news/amex-gold-grocery-update", "guid": "tpg-amex-grocery", "isoDate": "2025-01-15T00:00:00.000Z", "contentSnippet": "The Amex Gold Card is getting a new perk: monthly credits at grocery stores, making it even better for everyday spending."}'::JSONB,
       decode('${sha256('tpg-amex-grocery').toString('hex')}', 'hex'),
       decode('${sha256('tpg-amex-grocery').toString('hex')}', 'hex'),
-      '${amexEmbedding2}'::vector,
+      '${amexEmbedding2}'::halfvec(1536),
       CURRENT_TIMESTAMP
     ),
     (
@@ -68,7 +68,7 @@ export async function seedPlaywrightFeedData(query: TransactionQuery): Promise<v
       '{"title": "Hilton Honors Points Devaluation Coming March 2025", "link": "https://www.doctorofcredit.com/hilton-points-devaluation", "guid": "doc-hilton-devalue", "isoDate": "2025-01-15T00:00:00.000Z", "contentSnippet": "Hilton has announced changes to their award chart that will increase point costs at many popular properties starting March 2025."}'::JSONB,
       decode('${sha256('doc-hilton-devalue').toString('hex')}', 'hex'),
       decode('${sha256('doc-hilton-devalue').toString('hex')}', 'hex'),
-      '${hiltonEmbedding}'::vector,
+      '${hiltonEmbedding}'::halfvec(1536),
       CURRENT_TIMESTAMP
     ),
     (
@@ -78,21 +78,21 @@ export async function seedPlaywrightFeedData(query: TransactionQuery): Promise<v
       '{"title": "The Best Travel Credit Cards for 2025", "link": "https://thepointsguy.com/news/best-travel-cards-2025", "guid": "tpg-best-travel-cards", "isoDate": "2025-01-15T00:00:00.000Z", "contentSnippet": "Our updated rankings of the best travel credit cards, including new welcome bonuses and expanded benefits for 2025."}'::JSONB,
       decode('${sha256('tpg-best-travel-cards').toString('hex')}', 'hex'),
       decode('${sha256('tpg-best-travel-cards').toString('hex')}', 'hex'),
-      '${travelEmbedding}'::vector,
+      '${travelEmbedding}'::halfvec(1536),
       CURRENT_TIMESTAMP
     )
   )
-  INSERT INTO rss_feed_items (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256, bedrock_nova_multimodal_v1_input_sha256, bedrock_nova_multimodal_v1_embedding, bedrock_nova_multimodal_v1_embedding_created_at)
+  INSERT INTO rss_feed_items (id, url_id, data, gemini_embedding_2_content_sha256, gemini_embedding_2_input_sha256, gemini_embedding_2_embedding, gemini_embedding_2_embedding_created_at, bedrock_nova_multimodal_v1_content_sha256)
   SELECT identity.id, seeded.url_id, seeded.data, seeded.content_sha256, seeded.input_sha256, seeded.embedding, seeded.embedding_created_at
-  FROM seeded
+  , seeded.content_sha256 FROM seeded
   JOIN rss_feed_item_guids identity USING (url_hostname_id, guid)
   ON CONFLICT (id) DO UPDATE SET
     url_id = EXCLUDED.url_id,
     data = EXCLUDED.data,
-    bedrock_nova_multimodal_v1_content_sha256 = EXCLUDED.bedrock_nova_multimodal_v1_content_sha256,
-    bedrock_nova_multimodal_v1_input_sha256 = EXCLUDED.bedrock_nova_multimodal_v1_input_sha256,
-    bedrock_nova_multimodal_v1_embedding = EXCLUDED.bedrock_nova_multimodal_v1_embedding,
-    bedrock_nova_multimodal_v1_embedding_created_at = EXCLUDED.bedrock_nova_multimodal_v1_embedding_created_at,
+    gemini_embedding_2_content_sha256 = EXCLUDED.gemini_embedding_2_content_sha256,
+    gemini_embedding_2_input_sha256 = EXCLUDED.gemini_embedding_2_input_sha256,
+    gemini_embedding_2_embedding = EXCLUDED.gemini_embedding_2_embedding,
+    gemini_embedding_2_embedding_created_at = EXCLUDED.gemini_embedding_2_embedding_created_at,
     deleted_at = NULL
       `)
   await query(

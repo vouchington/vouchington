@@ -47,7 +47,10 @@ CREATE TABLE IF NOT EXISTS images (
   quarantine_s3_key TEXT,
 
   bedrock_nova_multimodal_v1_embedding VECTOR(1024),
-  bedrock_nova_multimodal_v1_embedding_created_at TIMESTAMPTZ
+  bedrock_nova_multimodal_v1_embedding_created_at TIMESTAMPTZ,
+
+  gemini_embedding_2_embedding halfvec(1536),
+  gemini_embedding_2_embedding_created_at TIMESTAMPTZ
 );
 
 CREATE INDEX IF NOT EXISTS idx_images__deleted_by_id
@@ -102,9 +105,9 @@ CREATE INDEX IF NOT EXISTS idx_images__quarantine_pending
 ON images (quarantine_pending_at, id)
 WHERE quarantine_pending_at IS NOT NULL AND deleted_at IS NULL;
 
-CREATE INDEX IF NOT EXISTS idx_images__bedrock_nova_multimodal_v1_embedding
-ON images USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops)
-WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_images__gemini_embedding_2_embedding
+ON images USING hnsw (gemini_embedding_2_embedding halfvec_cosine_ops)
+WHERE gemini_embedding_2_embedding IS NOT NULL;
 
 -- Add FK from users.profile_image_id to images (column defined in 0010)
 ALTER TABLE users
@@ -135,8 +138,8 @@ COMMENT ON COLUMN images.openai_omni_moderation_created_at IS 'When the moderati
 COMMENT ON COLUMN images.quarantine_pending_at IS 'When CSAM quarantine began. Pending images are unavailable until permanent copy and deletion complete.';
 COMMENT ON COLUMN images.quarantined_at IS 'When the image was copied to the CSAM quarantine bucket. NULL until the permanent copy succeeds.';
 COMMENT ON COLUMN images.quarantine_s3_key IS 'S3 key in the permanent quarantine bucket. NULL until the copy succeeds.';
-COMMENT ON COLUMN images.bedrock_nova_multimodal_v1_embedding IS '1024-dimensional vector from Amazon Nova 2 Multimodal Embeddings V1 for the image.';
-COMMENT ON COLUMN images.bedrock_nova_multimodal_v1_embedding_created_at IS 'When the image embedding was generated.';
+COMMENT ON COLUMN images.gemini_embedding_2_embedding IS '1536-dimensional vector from Gemini Embedding 2 for the image.';
+COMMENT ON COLUMN images.gemini_embedding_2_embedding_created_at IS 'When the image embedding was generated.';
 
 -- Current indexes for fresh schema bootstrap.
 CREATE INDEX IF NOT EXISTS idx_images__created_by_id
@@ -171,3 +174,11 @@ COMMENT ON COLUMN images.deletion_post_cursor IS 'Opaque post-id keyset position
 COMMENT ON COLUMN images.deletion_posts_completed_at IS 'All image deletion post pages and their post-updated admissions completed; storage may now be deleted.';
 CREATE INDEX IF NOT EXISTS idx_images__unfinished_deletion ON images (id)
 WHERE deleted_at IS NOT NULL AND deletion_posts_completed_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_images__bedrock_nova_multimodal_v1_embedding
+ON images USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops)
+WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL;
+
+COMMENT ON COLUMN images.bedrock_nova_multimodal_v1_embedding IS '1024-dimensional vector from Amazon Nova 2 Multimodal Embeddings V1 for the image.';
+
+COMMENT ON COLUMN images.bedrock_nova_multimodal_v1_embedding_created_at IS 'When the image embedding was generated.';

@@ -43,7 +43,7 @@ async function seedPlaywrightPostAccountLabels(query: TransactionQuery): Promise
     const postHash = sha256(`account-label-post-${author.username}`).toString('hex')
     const commentHash = sha256(`account-label-comment-${author.username}`).toString('hex')
     await query(
-      `/* seedPlaywrightPostAccountLabels */ INSERT INTO posts ( id, post_type, title, markdown, created_by_id, bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256, created_via ) VALUES ( $1, 'discussion', $2, $3, $4, decode($5, 'hex'), decode($5, 'hex'), 'system' ) ON CONFLICT (id) DO NOTHING`,
+      `/* seedPlaywrightPostAccountLabels */ INSERT INTO posts ( id, post_type, title, markdown, created_by_id, gemini_embedding_2_content_sha256, llm_moderation_content_sha256, created_via , bedrock_nova_multimodal_v1_content_sha256) VALUES ( $1, 'discussion', $2, $3, $4, decode($5, 'hex'), decode($5, 'hex'), 'system' , decode($5, 'hex')) ON CONFLICT (id) DO NOTHING`,
       [
         seedId(1, index),
         `Account label discussion by ${author.username}`,
@@ -53,7 +53,7 @@ async function seedPlaywrightPostAccountLabels(query: TransactionQuery): Promise
       ],
     )
     await query(
-      `/* seedPlaywrightPostAccountLabels */ INSERT INTO posts ( id, post_type, parent_post_id, root_post_id, created_by_id, markdown, bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256, created_via ) VALUES ( $1, 'comment', $2, $2, $3, $4, decode($5, 'hex'), decode($5, 'hex'), 'system' ) ON CONFLICT (id) DO NOTHING`,
+      `/* seedPlaywrightPostAccountLabels */ INSERT INTO posts ( id, post_type, parent_post_id, root_post_id, created_by_id, markdown, gemini_embedding_2_content_sha256, llm_moderation_content_sha256, created_via , bedrock_nova_multimodal_v1_content_sha256) VALUES ( $1, 'comment', $2, $2, $3, $4, decode($5, 'hex'), decode($5, 'hex'), 'system' , decode($5, 'hex')) ON CONFLICT (id) DO NOTHING`,
       [
         seedId(2, index),
         MEMBER_POST_ID,

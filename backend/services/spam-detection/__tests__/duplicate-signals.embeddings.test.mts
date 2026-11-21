@@ -18,12 +18,12 @@ const oldPostId = () =>
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 
 /**
- * Generates a random unit vector in 1024-dim space.
+ * Generates a random unit vector in 1536-dim space.
  * Two independently generated random unit vectors have essentially 0 cosine similarity,
  * making them safe to use across test runs (the DB is never cleaned between runs).
  */
 function makeRandomUnitVector(): number[] {
-  const v = Array.from({ length: 1024 }, () => Math.random() - 0.5)
+  const v = Array.from({ length: 1536 }, () => Math.random() - 0.5)
   const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0))
   return v.map(x => x / norm)
 }
@@ -182,7 +182,7 @@ describe('checkEmbeddingsSimilarity', () => {
       createdById: userId2,
       markdown: 'normal source',
     })
-    await addDummyEmbeddingToPost(zeroCandidateId, { embedding: Array(1024).fill(0) as number[] })
+    await addDummyEmbeddingToPost(zeroCandidateId, { embedding: Array(1536).fill(0) as number[] })
     await addDummyEmbeddingToPost(sourceId, { embedding: makeRandomUnitVector() })
 
     const result = await checkEmbeddingsSimilarity(sourceId, userId2)
@@ -195,7 +195,7 @@ describe('checkEmbeddingsSimilarity', () => {
     // The query guards against this with a self-distance = 0 check on the source post, and
     // the threshold compares distance (NaN never passes) for candidates.
     const suffix = randomSuffix()
-    const zeroEmbedding = Array(1024).fill(0) as number[]
+    const zeroEmbedding = Array(1536).fill(0) as number[]
 
     // candidate post (userId1): normal valid embedding
     const candidateId = await insertTestPost({

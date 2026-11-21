@@ -13,7 +13,7 @@ import { encodeCursor } from '@modules/pagination'
 import {
   getCachedSearchEmbedding,
   normalizeSearchEmbeddingQuery,
-} from '@services/bedrock-embeddings/search/get-cached'
+} from '@services/embeddings/search/get-cached'
 import pgvector from 'pgvector/pg'
 import sql from 'sql-template-strings'
 import type { PageInfo } from '@voucha/types/pagination'
@@ -94,8 +94,8 @@ export async function searchRssFeedItemsBySemantic(
 
   appendWhereClauses(query, [
     ...baseFilters,
-    sql`rss_feed_items.bedrock_nova_multimodal_v1_embedding IS NOT NULL`,
-    sql`(rss_feed_items.bedrock_nova_multimodal_v1_embedding <=> semantic_search_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
+    sql`rss_feed_items.gemini_embedding_2_embedding IS NOT NULL`,
+    sql`(rss_feed_items.gemini_embedding_2_embedding <=> semantic_search_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
   ])
 
   query.append(sql`

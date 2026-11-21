@@ -2,11 +2,6 @@ import type { SqsConsumerDefinition } from '@vouchington/worker-runtime/sqs'
 
 export const SQS_CONSUMER_DEFINITIONS = [
   {
-    queueName: 'bedrock-batch-sqs',
-    load: () =>
-      import('@workers/bedrock-batch-sqs/workers').then(module => module.loadBedrockBatchSqs()),
-  },
-  {
     queueName: 'ses-bounce-sqs',
     load: () => import('@workers/ses-bounce-sqs/workers').then(module => module.loadSesBounceSqs()),
   },

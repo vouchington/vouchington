@@ -1,5 +1,6 @@
+// Similarity thresholds await Gemini recalibration in #5635.
 import type { ToolsTopicSearchResult } from './types.mts'
-import { getCachedSearchEmbedding } from '@services/bedrock-embeddings/search'
+import { getCachedSearchEmbedding } from '@services/embeddings/search'
 import { read } from '@data-stores/psql'
 import pgvector from 'pgvector/pg'
 import sql from 'sql-template-strings'
@@ -21,12 +22,12 @@ export async function toolsSearchTopicsSemantic(
       t.name,
       t.slug,
       t.topic_type::text AS topic_type,
-      (1.0 / (1.0 + (t.bedrock_nova_multimodal_v1_embedding <=> ${embeddingVector}::vector))) AS similarity_score
+      (1.0 / (1.0 + (t.gemini_embedding_2_embedding <=> ${embeddingVector}::halfvec(1536)))) AS similarity_score
     FROM topics t
     WHERE t.deleted_at IS NULL
       AND t.merged_into_topic_id IS NULL
-      AND t.bedrock_nova_multimodal_v1_embedding IS NOT NULL
-      AND (t.bedrock_nova_multimodal_v1_embedding <=> ${embeddingVector}::vector) < 0.75
+      AND t.gemini_embedding_2_embedding IS NOT NULL
+      AND (t.gemini_embedding_2_embedding <=> ${embeddingVector}::halfvec(1536)) < 0.75
     ORDER BY similarity_score DESC
     LIMIT ${safeLimit}
   `

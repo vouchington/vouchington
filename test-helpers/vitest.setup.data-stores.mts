@@ -94,7 +94,7 @@ export async function setup() {
   ] = await timedSetupPhase('imports', () =>
     settleSetupOperations([
       import('@valkey/valkey-glide'),
-      import('@services/bedrock-embeddings'),
+      import('@services/embeddings'),
       import('@services/urls-domains-blacklist'),
       import('@services/dynamic-config-admin/registry'),
       import('../backend/test-helpers/dynamic-config.mts'),

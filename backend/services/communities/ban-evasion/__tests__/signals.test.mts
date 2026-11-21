@@ -17,8 +17,8 @@ import {
   checkEmbeddingSimilarityToBannedPosts,
 } from '../signals.mts'
 
-// A normalized sine-wave unit vector in 1024 dimensions
-const rawV = Array.from({ length: 1024 }, (_, i) => Math.sin(i * 0.1) * 0.5)
+// A normalized sine-wave unit vector in 1536 dimensions
+const rawV = Array.from({ length: 1536 }, (_, i) => Math.sin(i * 0.1) * 0.5)
 const rawMag = Math.sqrt(rawV.reduce((acc, x) => acc + x * x, 0))
 const unitVector = rawV.map(x => x / rawMag)
 
