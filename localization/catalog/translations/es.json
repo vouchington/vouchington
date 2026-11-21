@@ -18,6 +18,8 @@
 {"id":"copy.copyright.claimantMisuse.newestNoticeReceived","value":"Aviso recibido más reciente"},
 {"id":"copy.copyright.claimantMisuse.noticesInspected","value":{"one":"{count} aviso revisado","other":"{count} avisos revisados"}},
 {"id":"copy.copyright.claimantMisuse.oldestNoticeReceived","value":"Aviso recibido más antiguo"},
+{"id":"copy.copyright.targetLimit","value":"Este aviso menciona demasiados elementos. Elimina uno e inténtalo de nuevo."},
+{"id":"copy.copyright.targetLimitMax","value":{"one":"Un aviso puede mencionar hasta {max} elemento. Elimina uno antes de añadir otro.","other":"Un aviso puede mencionar hasta {max} elementos. Elimina uno antes de añadir otro."}},
 {"id":"copy.email.api-key-expiry.action","value":"Renuévala y actualiza tus aplicaciones para mantenerlas conectadas."},
 {"id":"copy.email.api-key-expiry.body","value":"Tu clave de API «{label}» caduca el {date}."},
 {"id":"copy.email.api-key-expiry.button","value":"Gestionar claves de API"},

@@ -1,5 +1,7 @@
 import assert from 'http-assert'
 import { isUUID } from '@modules/utils'
+import { COPYRIGHT_TARGET_LIMIT_REACHED } from '@modules/on-error/error-codes'
+import { createCodedError } from '@vouchington/sentry'
 import { isEmailAddress } from '@ts-shared/utils/validation-core'
 import { getCopyrightClaimantTargetsMax } from './config.mts'
 import type { CopyrightJurisdiction } from './types.mts'
@@ -55,11 +57,13 @@ export function parseCopyrightTargets(
   value: unknown,
   maxTargets: number,
 ): CopyrightImageSelector[] {
-  assert(
-    Array.isArray(value) && value.length > 0 && value.length <= maxTargets,
-    422,
-    `targets must contain 1 to ${maxTargets} hosted images`,
-  )
+  assert(Array.isArray(value) && value.length > 0, 422, 'targets must not be empty')
+  if (value.length > maxTargets)
+    throw createCodedError(
+      422,
+      'Copyright notice target limit reached',
+      COPYRIGHT_TARGET_LIMIT_REACHED,
+    )
   const targets: CopyrightImageSelector[] = value.map(target => {
     assert(
       target && typeof target === 'object' && !Array.isArray(target),
