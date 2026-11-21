@@ -970,6 +970,7 @@
     - .agents/skills/**
   options:
     rootFilenames: [AGENTS.md]
+    excludeRoots: ['docs/**']
     indexFilenames: [README.md, SCHEDULED.md]
     maxDepth: 3
 
