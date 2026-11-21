@@ -35,7 +35,7 @@ describe('run-impacted-checks', () => {
   beforeEach(() => {
     repo = mkdtempSync(join(tmpdir(), 'voucha-impacted-checks-'))
     git('init', '-q', '-b', 'work')
-    git('config', 'user.email', 'test@example.com')
+    git('config', 'user.email', 'tests+impacted-checks@voucha.ai')
     git('config', 'user.name', 'Test')
     copyFileSync(join(fixtures, 'removed.mts.fixture'), join(repo, 'removed.mts'))
     git('add', '.')
@@ -52,7 +52,7 @@ describe('run-impacted-checks', () => {
   })
 
   it('runs only the formatter for a docs-only change', () => {
-    copyFileSync(join(fixtures, 'notes.md'), join(repo, 'notes.md'))
+    copyFileSync(join(fixtures, 'notes.md.fixture'), join(repo, 'notes.md'))
     expect(run()).toEqual({
       status: 0,
       calls: ['exec oxfmt --check --no-error-on-unmatched-pattern notes.md'],
@@ -61,7 +61,7 @@ describe('run-impacted-checks', () => {
 
   it('lints and formats changed TypeScript, skipping deleted files', () => {
     copyFileSync(join(fixtures, 'changed.mts.fixture'), join(repo, 'changed.mts'))
-    copyFileSync(join(fixtures, 'notes.md'), join(repo, 'notes.md'))
+    copyFileSync(join(fixtures, 'notes.md.fixture'), join(repo, 'notes.md'))
     rmSync(join(repo, 'removed.mts'))
     expect(run()).toEqual({
       status: 0,
