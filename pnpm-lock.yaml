@@ -6709,9 +6709,6 @@ importers:
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication
-      '@services/session-advisory-lock':
-        specifier: workspace:^
-        version: link:../session-advisory-lock
       '@services/urls-hostnames':
         specifier: workspace:^
         version: link:../urls-hostnames
