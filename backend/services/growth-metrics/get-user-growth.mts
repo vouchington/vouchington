@@ -1,7 +1,7 @@
 import { growthSeries } from '@services/reporting-daily-rollups/series'
 import {
   type GrowthRequestFacts,
-  countGrowthActiveAuthors,
+  countGrowthDauMau,
   readGrowthDayCounts,
 } from '@services/reporting-daily-rollups/read-growth'
 import type { GrowthRange, UserGrowth } from './types.mts'
@@ -12,13 +12,12 @@ export async function getUserGrowth(
   facts?: GrowthRequestFacts,
 ): Promise<UserGrowth> {
   const now = Date.now()
-  const [days, allDays, dau, mau] = facts
-    ? [facts.days, facts.allDays, facts.dau, facts.mau]
+  const [days, allDays, { dau, mau }] = facts
+    ? [facts.days, facts.allDays, facts]
     : await Promise.all([
         readGrowthDayCounts(periodStart, new Date(), true, 'users'),
         readGrowthDayCounts(new Date(0), new Date(), false, 'users'),
-        countGrowthActiveAuthors(new Date(now - 86_400_000)),
-        countGrowthActiveAuthors(new Date(now - 30 * 86_400_000)),
+        countGrowthDauMau(new Date(now - 86_400_000), new Date(now - 30 * 86_400_000)),
       ])
   return {
     total_users: allDays.reduce((sum, day) => sum + day.user_count, 0),
