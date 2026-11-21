@@ -1,5 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import { getMinUuidv7ForDate } from '@modules/utils'
+import { lockUsersForShare } from '@services/user-deletions/active-user-mutation-lock'
 import { lockCopyrightRationaleRetentionPage } from '@services/copyright-notices/retention-erasure-preservation'
 import { sourcePlan, type Source } from './security-record-plans.mts'
 
@@ -113,7 +114,7 @@ export async function cleanupSecuritySourcePageInTransaction(
   return { deleted, hasMore }
 }
 
-/** Hold placement takes the same account advisory lock before inserting the hold. */
+/** Hold placement locks the account row `FOR NO KEY UPDATE`; retention takes `FOR SHARE` on it. */
 async function lockOAuthRetentionPageAccounts(
   query: TransactionQuery,
   table: 'oauth_authorization_server_events' | 'oauth_native_session_token_mints',
@@ -125,16 +126,10 @@ async function lockOAuthRetentionPageAccounts(
      WHERE id = ANY($1::uuid[]) AND user_id IS NOT NULL ORDER BY user_id`,
     [ids],
   )
-  /* oxlint-disable no-await-in-loop -- advisory locks must follow one stable account order. */
-  for (const account of accounts.rows) {
-    // no-mistakes-disable-next-line query-reached-per-item: one sorted lock per distinct account in this bounded page
-    await query(
-      `/* lockOAuthRetentionPageAccount */
-       SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))`,
-      [account.user_id],
-    )
-  }
-  /* oxlint-enable no-await-in-loop */
+  await lockUsersForShare(
+    query,
+    accounts.rows.map(account => account.user_id),
+  )
   const locked = await query<{ id: string }>(
     `/* lockOAuthRetentionPageRows */
      SELECT id FROM ${table}

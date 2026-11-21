@@ -119,14 +119,15 @@ describe('legal preservation holds and final user purge', () => {
     await softDeleteUserAt(user.id, window.firstEligibleDate)
     const before = await readTestPurgeAccountState(user.id)
     const auditBefore = await getModeratorActionRowsForTest({ targetUserId: user.id })
-    let purge: PromiseSettledResult<Awaited<ReturnType<typeof cleanupSoftDeletedUser>>> | undefined
+    let racingPurge:
+      | Promise<PromiseSettledResult<Awaited<ReturnType<typeof cleanupSoftDeletedUser>>>[]>
+      | undefined
+    // Hold placement now holds the account row, so the purge starts here and waits on it.
     const restore = afterPostgresTransactionQueryForTest(
       'lockPreservationHoldUser:userExists',
       values => values.includes(user.id),
       async () => {
-        ;[purge] = await Promise.allSettled([
-          cleanupSoftDeletedUser(user.id, window.upperBoundDate),
-        ])
+        racingPurge = Promise.allSettled([cleanupSoftDeletedUser(user.id, window.upperBoundDate)])
       },
     )
     const reference = 'synthetic concurrent preservation'
@@ -138,6 +139,7 @@ describe('legal preservation holds and final user purge', () => {
     } finally {
       restore()
     }
+    const [purge] = await racingPurge!
     expect(purge).toBeDefined()
     const errors = [purge!, admission!].flatMap(outcome =>
       outcome.status === 'rejected' ? [testPurgeSqlState(outcome.reason)] : [],

@@ -139,8 +139,8 @@ describe('markDataRequestProcessing', () => {
         {
           pool: 'write',
           holderProcessId: deletion.holderProcessId,
-          lock: { kind: 'advisory', key: user.id },
-          queryMarker: 'lockActiveDataRequestUser:lock',
+          lock: { kind: 'transaction' },
+          queryMarker: 'lockUsersForShare',
           releaseHolder: async () => {
             deletion.release()
             await deletion.completed

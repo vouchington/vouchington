@@ -14,7 +14,6 @@ import {
   getTopicAliasIdForTest,
   setTestEntityRelationIdAndScore,
   startPausedTestUserDeletionWriter,
-  startPausedTestUserSoftDeletion,
   withTestEntityRelationVoteCandidateCascade,
 } from '@voucha/test-helpers'
 import { upsertEntityRelationElectionVotes } from '../elections-votes/entity-relation/votes-upsert.mts'
@@ -22,6 +21,7 @@ import { createUserDeletionRequest } from '../user-deletions/create.mts'
 import { deleteUserEntityRelationVotesBatch } from './delete-entity-relation-votes-batches.mts'
 import { recomputeEntityRelationVoteStats } from './delete-entity-relation-votes.mts'
 import { deleteUser } from './delete.mts'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import {
   deleteUserAndDrainForTest,
@@ -241,30 +241,26 @@ describe('deleteUser entity-relation vote cleanup', () => {
       )
     })
 
-    const contention = Promise.withResolvers<void>()
-    let deletionAccepted = false
-    // The blocking `deleteUser:lockUser` statement is issued only after the try-lock lost.
-    const restoreStatements = runBeforePostgresStatementForTest('deleteUser:lockUser', async () => {
-      contention.resolve()
-    })
-    const deletion = deleteUser(deletingVoter, deletingVoter).then(attempt => {
-      deletionAccepted = true
-      contention.reject(new Error('Deletion completed without lock contention'))
-      return attempt
-    })
-    void deletion.catch(contention.reject)
-    try {
-      await contention.promise
-      expect(deletionAccepted).toBe(false)
-    } finally {
-      // Drain transactions must not run through the interceptor's wrapped executors.
-      restoreStatements()
-      writer.release()
-      await Promise.allSettled([writer.completed, deletion])
-    }
-
-    await writer.completed
-    const attempt = await deletion
+    const holderProcessId = writer.processId
+    const attempt = await withTestOwnedPostgresWait(
+      {
+        pool: 'write',
+        holderProcessId,
+        lock: { kind: 'transaction' },
+        queryMarker: 'deleteUser:lockUserRow',
+        releaseHolder: async () => {
+          writer.release()
+          await writer.completed
+        },
+      },
+      async waitForLock => {
+        const pending = deleteUser(deletingVoter, deletingVoter)
+        await waitForLock(pending)
+        writer.release()
+        await writer.completed
+        return pending
+      },
+    )
     await expect(
       upsertEntityRelationElectionVotes(
         deletingVoter.id,
@@ -279,21 +275,15 @@ describe('deleteUser entity-relation vote cleanup', () => {
     await expect(countTestUserDeletionEntityRelationVotes(deletingVoter.id)).resolves.toBe(0)
   })
 
-  it('rolls back when the blocking deletion-lock statement fails', async () => {
+  it('rolls back when the deletion row-lock statement fails', async () => {
     const user = await createTestUser()
-    const holder = await startPausedTestUserSoftDeletion(user.id)
     const lockError = new Error('lock statement failed')
     onTestFinished(
-      runBeforePostgresStatementForTest('deleteUser:lockUser', async () => {
+      runBeforePostgresStatementForTest('deleteUser:lockUserRow', async () => {
         throw lockError
       }),
     )
-    try {
-      await expect(deleteUser(user, user)).rejects.toBe(lockError)
-      await expect(countUserDeletionRequestsForTest(user.id)).resolves.toBe(0)
-    } finally {
-      holder.release()
-      await holder.completed
-    }
+    await expect(deleteUser(user, user)).rejects.toBe(lockError)
+    await expect(countUserDeletionRequestsForTest(user.id)).resolves.toBe(0)
   })
 })

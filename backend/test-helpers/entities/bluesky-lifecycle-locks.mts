@@ -18,7 +18,7 @@ export async function holdTestUserSuspensionTransaction(
   async function holdSuspensionTransaction(): Promise<void> {
     await using transaction = await beginTransaction()
     await transaction(sql`/* holdTestUserSuspensionTransaction:lock */
-        SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))`)
+        SELECT id FROM users WHERE id = ${userId} FOR NO KEY UPDATE`)
     await transaction(sql`/* holdTestUserSuspensionTransaction:insert */
         INSERT INTO user_suspensions (user_id, suspended_by_id, reason)
         VALUES (${userId}, ${suspendedById}, 'concurrent Bluesky completion test')`)

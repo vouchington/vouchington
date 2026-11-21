@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { read, write, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
   attachDerivedStatus,
@@ -77,4 +77,15 @@ export async function orphanTestDataRequest(requestId: string): Promise<void> {
   await write(
     sql`/* orphanTestDataRequest */ UPDATE user_data_requests SET user_id = NULL WHERE id = ${requestId}`,
   )
+}
+
+export async function insertUserDataRequestAttemptForTest(
+  query: TransactionQuery,
+  requestId: string,
+  processingAttemptId: string,
+): Promise<void> {
+  await query(sql`/* insertUserDataRequestAttemptForTest */
+    INSERT INTO user_data_request_attempts (request_id, processing_attempt_id)
+    VALUES (${requestId}, ${processingAttemptId})
+  `)
 }

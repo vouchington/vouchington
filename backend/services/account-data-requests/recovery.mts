@@ -1,7 +1,7 @@
 import { getAccountDataRequestsWorkLimit, getDataRequestLimits } from './work-limits.mts'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { lockActiveDataRequestUsers } from './active-user-lock.mts'
+import { lockUsersForShare } from '@services/user-deletions/active-user-mutation-lock'
 
 export type RecoverableDataRequest = {
   requestId: string
@@ -43,7 +43,7 @@ export async function claimRecoverableDataRequests(
   const requestPageIds = workRows.map(row => row.id)
   // Sorted lifecycle locks fence every candidate before a request-row lock.
   const candidateUserIds = [...new Set(workRows.flatMap(row => (row.user_id ? [row.user_id] : [])))]
-  const activeUsers = await lockActiveDataRequestUsers(transaction, candidateUserIds)
+  const activeUsers = await lockUsersForShare(transaction, candidateUserIds)
   const activeUserIds = candidateUserIds.filter(userId => activeUsers.has(userId))
   const deletedUserIds = candidateUserIds.filter(userId => !activeUsers.has(userId))
   const { rowCount: deletedCount } =
