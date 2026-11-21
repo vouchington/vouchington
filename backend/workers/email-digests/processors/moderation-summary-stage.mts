@@ -10,7 +10,8 @@ import {
 
 /**
  * Runs one collection stage for one recipient, then admits the job that follows it. Each stage is
- * its own job, so a failure retries only that stage from its own cursor in the job data.
+ * its own job with bounded retry attempts, so a failure retries only that stage from its own cursor
+ * in the job data.
  */
 export async function processModerationSummaryStage(
   stage: ModerationSummaryStage,

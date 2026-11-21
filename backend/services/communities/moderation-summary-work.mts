@@ -24,11 +24,9 @@ const maxBatchesField = (stage: ModerationSummaryPagedStage) =>
 const entries = <T,>(make: (stage: ModerationSummaryPagedStage) => [string, T][]) =>
   Object.fromEntries(moderationSummaryPagedStages.flatMap(make))
 
-export const MODERATION_SUMMARY_MAX_PAGE_SIZE = 100
-export const MODERATION_SUMMARY_MAX_BATCHES = 20
 export const moderationSummaryWorkMaxValues: Record<string, number> = entries(stage => [
-  [pageSizeField(stage), MODERATION_SUMMARY_MAX_PAGE_SIZE],
-  [maxBatchesField(stage), MODERATION_SUMMARY_MAX_BATCHES],
+  [pageSizeField(stage), 100],
+  [maxBatchesField(stage), 20],
 ])
 export const moderationSummaryWorkDescriptions: Record<string, string> = entries(stage => [
   [pageSizeField(stage), `Rows read by one ${stage} page of a moderator digest collection job.`],
@@ -67,7 +65,7 @@ export function resolveModerationSummaryStageLimits(
   if (
     !Number.isSafeInteger(pageSize) ||
     pageSize < 1 ||
-    pageSize > MODERATION_SUMMARY_MAX_PAGE_SIZE
+    pageSize > moderationSummaryWorkMaxValues[pageSizeField(stage)]!
   )
     throw new RangeError('Invalid moderator digest work page size')
   return { ...limits, pageSize }
@@ -81,12 +79,12 @@ export function getModerationSummaryStageLimits(stage: ModerationSummaryPagedSta
   return {
     pageSize: getBoundedPositiveIntegerField(moderationSummaryWorkConfig, pageSizeField(stage), {
       defaultValue: defaultPageSize(stage),
-      maxValue: MODERATION_SUMMARY_MAX_PAGE_SIZE,
+      maxValue: 100,
     }),
     maxBatches: getBoundedPositiveIntegerField(
       moderationSummaryWorkConfig,
       maxBatchesField(stage),
-      { defaultValue: 1, maxValue: MODERATION_SUMMARY_MAX_BATCHES },
+      { defaultValue: 1, maxValue: 20 },
     ),
   }
 }

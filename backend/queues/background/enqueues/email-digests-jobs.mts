@@ -60,7 +60,11 @@ export const EMAIL_DIGESTS_SEND_MODERATION_SUMMARY_JOB =
     ordering: { key: 'email-digests:moderation-summary', concurrency: 1 },
     sensitive: true,
   })
-/** One job per collection stage; each walks only its own cursor and enqueues the next stage. */
+/**
+ * One job per collection stage; each walks only its own cursor and enqueues the next stage. A stage
+ * only reads, and its cursor travels in job data, so a bounded retry re-runs it safely. Without it
+ * one transient error would end the chain and leave the pending send claim held.
+ */
 export const EMAIL_DIGESTS_MODERATION_SUMMARY_STAGE_JOBS = Object.fromEntries(
   MODERATION_SUMMARY_STAGES.map(stage => [stage, defineModerationSummaryStageJob(stage)]),
 ) as Record<ModerationSummaryStage, ReturnType<typeof defineModerationSummaryStageJob>>
@@ -68,6 +72,8 @@ function defineModerationSummaryStageJob(stage: ModerationSummaryStage) {
   return defineBackgroundJob<SendCommunityModerationSummaryEmailData>(DOMAIN, {
     name: moderationSummaryStageJobName(stage),
     ...TASK,
+    attempts: RETRY.attempts,
+    backoff: BACKOFF,
     ordering: { key: 'email-digests:moderation-summary', concurrency: 1 },
     sensitive: true,
   })
