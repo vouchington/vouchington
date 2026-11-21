@@ -39,6 +39,7 @@ export async function releaseModerationTransparencyRange(start: Date, end: Date)
       UNION ALL
       SELECT uuid_extract_timestamp(id), moderation_transparency_community_id, 'automated_moderation',
         moderation_transparency_category
+      -- no-mistakes-disable-next-line postgres-required-predicates: day cohort cannot name post_id; the UUIDv7 id range bounds the read to one closed UTC day
       FROM agent_moderations
       WHERE id >= ${lowerId}::uuid AND id < ${upperId}::uuid
         AND moderation_transparency_category IS NOT NULL
