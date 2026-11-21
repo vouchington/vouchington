@@ -79,8 +79,6 @@ elif [ "$removed" -gt 0 ] && [ "$in_use" -eq 0 ]; then
 elif [ "$removed" -gt 0 ]; then
     echo -e "${GREEN}Removed $removed stale lock(s).${NC}"
     echo -e "${YELLOW}$in_use lock(s) appear non-empty — investigate before removing manually.${NC}"
-    echo -e "${YELLOW}See docs/development/git-worktree-locks.md${NC}"
 else
     echo -e "${YELLOW}$in_use lock(s) appear non-empty — investigate before removing manually.${NC}"
-    echo -e "${YELLOW}See docs/development/git-worktree-locks.md${NC}"
 fi

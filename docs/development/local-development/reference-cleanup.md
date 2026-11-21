@@ -24,8 +24,7 @@ owner. It also takes the host-wide worktree-resource operation lock and rescans 
 removing anything; non-main web initialization holds the same lock until `.env` publishes the new
 names, so cleanup cannot delete resources another checkout is initializing. If a command reports an
 active operation, let it finish and rerun. If a killed process left the lock stale, run
-`./dev/unstick-locks` only after confirming nothing is still running
-([git-worktree-locks.md](../git-worktree-locks.md)).
+`./dev/unstick-locks` only after confirming nothing is still running.
 
 Initialization records every non-main worktree in the host-wide `~/.voucha/worktree-resource-owners`
 registry, and disposable full clones in `~/.voucha/disposable-checkouts`. A worktree owned by another

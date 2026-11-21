@@ -8,8 +8,7 @@ cargo, Docker, or runtime installers.
 Agent runtime policy (sandbox, approvals, models, plugins, MCP servers) is host-owned too. After
 provisioning, run `./configure-agents.sh` from vouchington-machines (`--dry-run` first;
 `./diagnose-agents.sh --repo <worktree>` to check drift). A profile that uses a dedicated
-`HOME`, such as an automation profile, needs `--home <profile home>`. See [Agent Sandbox](agent-sandbox.md) for the
-project/machine split.
+`HOME`, such as an automation profile, needs `--home <profile home>`.
 
 ## Product contract
 
@@ -28,7 +27,7 @@ tools such as shellcheck, actionlint, selene, zizmor, ripgrep, scc, lychee, and 
 responsibility.
 
 Claude Code cloud sessions have no host provisioning; [`./dev/claude-cloud`](../../dev/claude-cloud)
-prepares their containers ([Claude Code cloud sessions](harnesses/claude-cloud.md)).
+prepares their containers.
 
 When a host tool is added, removed, or its operating-system installation changes, update the host
 repository. Update this page only when Voucha's required capability or repository-owned version

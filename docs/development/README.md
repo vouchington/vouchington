@@ -7,12 +7,12 @@ Agent workflow policy lives in [AGENTS.md](../../AGENTS.md); the
 guide for full-site startup and browser validation. Cross-repository issue mutations follow the
 [public repository issue-routing decision](public-repository-issue-routing.md).
 
-Development owner indexes: [CI](ci/README.md), [harness setup](harnesses/README.md),
+Development owner indexes: [CI](ci/README.md),
 [PostgreSQL](postgresql/README.md), [Valkey](valkey/README.md), and
 [static analysis](quality/static-code-analysis/README.md), [Playwright](testing/playwright/README.md),
 [Storybook](testing/storybook/README.md), [integration tests](testing/integration-tests/README.md),
 and [agent issue labels](local-development/agent-issue-labels/README.md). Cross-cutting references:
-[agent sandbox](agent-sandbox.md), [runtime timeouts](runtime-timeouts.md), [linters and static analysis](reference-tests-linters-and-static-analysis.md),
+[runtime timeouts](runtime-timeouts.md), [linters and static analysis](reference-tests-linters-and-static-analysis.md),
 and [test parallel safety](reference-tests-parallel-safety-and-test-root-hygiene.md).
 
 ## Prerequisites
@@ -20,8 +20,7 @@ and [test parallel safety](reference-tests-parallel-safety-and-test-root-hygiene
 - macOS, or glibc-based Linux on x64 or ARM64 (musl such as Alpine is unsupported); Node.js matching `.nvmrc`.
 - For the full web stack and Playwright: Docker Desktop (Valkey with Bloom, JSON, Search modules),
   PostgreSQL with UUIDv7 support, and tmux.
-- Claude Code, Codex, Grok, Cursor, and OpenCode CLIs are optional; see
-  [agent-harness parity](agent-harness-parity.md) and the [harness setup index](harnesses/README.md).
+- Claude Code, Codex, Grok, Cursor, and OpenCode CLIs are optional.
 
 Provision host dependencies with
 [vouchington-machines](https://github.com/vouchington/vouchington-machines), run its
@@ -96,8 +95,8 @@ changes or add `--force`. The hook roster is in
 - **Missing dependencies after rebase:** `pnpm install`, then `pnpm run syncpack:lint && pnpm run no-mistakes`.
 - **Views can't be replaced with `CREATE OR REPLACE`:** `pnpm --dir backend db:migrate -- --forced`
   drops all managed views first and recreates them from `backend/data-stores/psql/views/`.
-- **`index.lock`, a stuck rebase, or `another worktree reset is running`:** see
-  [git-worktree-locks.md](git-worktree-locks.md).
+- **`index.lock`, a stuck rebase, or `another worktree reset is running`:** confirm nothing is
+  running, then `./dev/unstick-locks`.
 
 ## Dependency Updates
 
@@ -109,7 +108,6 @@ binary.
 ## Reference index
 
 - [Harness Engineering — Agent Observability](harness-engineering.md)
-- [Merge Authority](merge-authority.md)
 - [OpenTelemetry — Local Tracing](opentelemetry.md)
 - [Adding a Trusted/Credentialed CI Job](reference-ci-adding-a-trusted-credentialed-ci-job.md)
 - [CI Job Conditions](reference-ci-ci-job-conditions.md)

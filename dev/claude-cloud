@@ -4,7 +4,7 @@ set -euo pipefail
 # Prepare an Anthropic-hosted Claude Code cloud session container for Voucha work, then run
 # ./dev/initialize. Cloud containers are disposable Ubuntu VMs running as root without
 # vouchington-machines provisioning, so this script supplies the pieces that provisioning owns
-# on developer machines (docs/development/harnesses/claude-cloud.md):
+# on developer machines:
 #
 #   - Node.js from .nvmrc through the image's nvm (/opt/nvm), plus pnpm 12 and mise, linked into
 #     ~/.local/bin, which precedes the image's default /opt/node22/bin on PATH. Later shells and

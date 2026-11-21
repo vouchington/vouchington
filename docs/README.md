@@ -21,9 +21,7 @@ into this page and `docs/catalog/README.md`.
 - Cross-link related docs and code owners. Update links, fragments, code consumers, and generators
   when moving a page. Link each new page from its area index (see [docs rules](AGENTS.md)).
 - Keep public documentation free of real operational thresholds, infrastructure identities, spend,
-  unit costs, and business projections. Those belong in private `vouchington/vouchington-docs`;
-  consult the [private-doc registry](development/docs-moved-to-vouchington-docs.md) before moving
-  private material or replacing an apparently missing page.
+  unit costs, and business projections. Those belong in private `vouchington/vouchington-docs`.
 - Link canonical decisions and values instead of duplicating them. Add a compact Mermaid diagram to
   docs explaining a system with multiple components, asynchronous handoffs, or state transitions.
 - Follow the [docs pinning policy](development/dependency-updates.md#docs-pinning-policy) and avoid

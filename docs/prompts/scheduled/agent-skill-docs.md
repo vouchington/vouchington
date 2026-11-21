@@ -26,6 +26,5 @@ Review the agent instruction layer for contradictions, stale carve-outs, and unc
   [canonical translation validation guide](../../development/reference-tests-translation-catalog-and-locale-checks.md)
   and run the validation it assigns to the changed producer or consumer.
 
-- The default Codex model, sandbox, and approval policy are machine-owned user config
-  ([agent-sandbox.md](../../development/agent-sandbox.md)), not `.codex/config.toml`; do not recreate a separate model-routing table.
+- The default Codex model, sandbox, and approval policy are machine-owned user config, not `.codex/config.toml`; do not recreate a separate model-routing table.
 - Review the three lifecycle checklist skills (`git-commit-checklist`, `package-json-checklist`, `github-actions-checklist` in `.agents/skills/`) and their matching `docs/checklists/**` pages for consistency: principles match, cross-links are bidirectional, and nothing has drifted from the `AGENTS.md` pointers or authoritative source docs.

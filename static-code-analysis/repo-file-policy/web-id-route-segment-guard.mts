@@ -43,7 +43,7 @@ export function checkWebIdRouteSegments(
       `::error file=${webIdRouteSegmentAllowlistFile}::web/app route ${route} routes by an id; use a slug or ` +
         'unique natural key (username, hostname, URL, owner plus slug), or add the route to the ' +
         'allowlist with a one-line "no natural key" reason ' +
-        '(docs/development/web-agent-rules.md#identifiers)',
+        '(web/AGENTS.md#identifiers)',
     )
   }
   for (const route of [...allowlist.keys()].toSorted()) {

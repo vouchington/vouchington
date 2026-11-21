@@ -228,5 +228,5 @@ describe('categories', () => {
     expect(result.updated).toBe(0)
   })
   // The two cache-invalidation tests that used to live here moved to categories.part-4.test.mts
-  // to stay under this file's 300-line cap (docs/checklists/commit.md).
+  // to stay under this file's 300-line cap (.oxlintrc.json max-lines).
 })

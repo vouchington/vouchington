@@ -37,7 +37,7 @@ function formatLargeDiffRefusal(
     `delete at most ~${thresholds.deletedLines} lines before the split decision is ` +
     'required.\n' +
     'Decide the split before opening this PR: if the parts cannot compile, test, or land ' +
-    'independently, split it into a native GitHub stack (.agents/skills/stacked-prs/SKILL.md); ' +
+    'independently, split it into a native GitHub stack (`pr-shepherd stack`); ' +
     'if they can land in any order, open separate PRs targeting main instead.\n' +
     'If this PR is genuinely atomic (a lockfile bump, a generated-file refresh) and splitting ' +
     'would not help, add a `details` entry that starts with the line `### Large diff` and ' +

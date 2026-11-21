@@ -11,10 +11,9 @@ Review the project agent integration for Claude, Codex, Grok, and Cursor for sta
   `[sandbox*]` table or `model` / `approval_policy` keys, `enabledPlugins`, an MCP registration, a
   generic preapproval list, or a broad host path. The
   [ownership guard](../../../dev/agent-sandbox-config.test.mts) enforces this; do not re-propose its
-  assertions. Read [agent-sandbox.md](../../development/agent-sandbox.md) and
-  [agent-harness-parity.md](../../development/agent-harness-parity.md) before proposing a change.
+  assertions.
 - Editable surfaces. Pick the shippable change from `.claude/settings.json`, `.codex/rules/`,
-  `.codex/config.toml`, `.cursor/*.json`, or the docs. This
+  `.codex/config.toml`, or `.cursor/*.json`. This
   prompt carries no `<!-- harness-scheduled-completion: issue -->` marker, so the triage loop
   runs it in `pr`-completion mode (`publish-contract: scheduled`). When the only genuine
   improvement requires a protected path, stop and report the finding, per
@@ -27,38 +26,29 @@ Review the project agent integration for Claude, Codex, Grok, and Cursor for sta
   (the sandbox audit in the `vouchington-workflow:retrospective` skill), which this scheduled
   triage-loop subagent does not read. Scope this rotation to what a repo checkout alone can verify:
   staleness (an entry naming a script, path, or tool no longer in the repo), breadth drift against
-  the documented narrowness rule, doc-vs-config drift in `agent-sandbox.md`, and missing guard
-  coverage. Treat that sandbox audit as the complementary human-run half; it reads the machine
+  the narrowness rule below, and missing guard coverage. Treat that sandbox audit as the complementary human-run half; it reads the machine
   settings with `--settings-path ~/.claude/settings.json`. Frequency alone never authorizes a bypass.
   Never paste raw commands or credentials into public issues.
 - Declare boundaries before proposing a change: `supply-chain-security.md` owns CI/CD least
   privilege, not this prompt. `agent-skill-docs.md` owns comparing `.codex/agents/*.toml` model,
   reasoning-effort, and sandbox settings against the agent-workflow routing table; do not re-own
   per-agent `.toml` drift here. `security.md` is application-layer only. The credential deny list
-  and its inventory live in vouchington-machines
-  ([pointer](../../development/agent-sandbox.md#sandbox-credential-deny-list)); do not rebuild a
-  copy in this checkout.
+  and its inventory live in vouchington-machines; do not rebuild a copy in this checkout.
 - Documented decisions that are not targets. Claude `Bash(./dev/*)` / `Bash(node dev/*)` and their
   `/../` deny rules are a review-skip decision
-  ([Claude review-skip for dev/ commands](../../development/agent-sandbox.md#claude-review-skip-for-dev-commands),
-  guarded by `dev/claude-settings-dev-allow.test.mts`). The only per-script `dev/` allow entries are
+  guarded by `dev/claude-settings-dev-allow.test.mts`. The only per-script `dev/` allow entries are
   the narrow twins of `dev/` entries in `sandbox.excludedCommands`; do not re-propose per-script
   entries for other `dev/` scripts, and do not read the blanket rules' breadth as a reason to widen
   `sandbox.excludedCommands`.
   Claude's rebase lifecycle rules (`git rebase --continue` / `--skip` / `--abort` and the
   `git push --force-with-lease=*` lease push) are a separate documented decision that cannot start a
-  rebase
-  ([Claude review-skip for the rebase lifecycle](../../development/agent-sandbox.md#claude-review-skip-for-the-rebase-lifecycle)).
+  rebase.
   Do not add `git rebase` / `stash` / `cherry-pick` or `gh run` / `api` / `workflow` to a project
   allow list, and do not widen Claude `Bash(gh pr *)`. Codex still having two-token `["gh","pr"]` is
   an intentional leftover.
 - Concrete targets to check first. Every `sandbox.excludedCommands` entry, every
   `.codex/rules/default.rules` prefix, and every narrow Claude `permissions.allow` entry must name a script, path, or tool that still exists (package-script
   commands, `./ci/lint-links.sh`, `dev/` scripts); a Codex allow is also an OS-sandbox bypass for
-  that command, so flag one whose breadth no longer matches the rationale in
-  [agent-sandbox.md](../../development/agent-sandbox.md#claude-and-codex-sandbox-semantics-are-different-not-parallel).
-  Check `agent-sandbox.md` and `agent-harness-parity.md` for a claim that no longer matches
-  `.claude/settings.json`, `.codex/`, `.cursor/`, or the machine contract.
+  that command, so flag one whose breadth no longer matches its purpose.
 - Do not propose broadening a sandbox boundary to work around a specific command failure; narrow the
-  command or fix the underlying script instead, per the narrowness rule `agent-sandbox.md`
-  documents.
+  command or fix the underlying script instead (the narrowness rule).

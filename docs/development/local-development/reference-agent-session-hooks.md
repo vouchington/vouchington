@@ -3,9 +3,8 @@
 [Back to Dev Environment Reference](README.md#agent-session-hooks)
 
 Repository hooks are advisory: they add session context and format edited files, and none blocks a
-tool call. Agent behavior is enforced by the harness's permission settings and auto mode
-([agent sandbox](../agent-sandbox.md)). Cursor and Grok run the `.claude/settings.json` hooks
-through Claude-compat ([harness parity](../agent-harness-parity.md)); Codex has its own
+tool call. Agent behavior is enforced by the harness's permission settings and auto mode.
+Cursor and Grok run the `.claude/settings.json` hooks through Claude-compat; Codex has its own
 `.codex/config.toml` SessionStart hooks.
 
 - **SessionStart** (`dev/check-fresh-base`, `dev/check-web-init`; Claude also prints the branch, `git status`, recent

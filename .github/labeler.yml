@@ -26,9 +26,7 @@ agents:
           - '.agents/**'
           - '.claude/**'
           - '.codex/**'
-          - '.grok/**'
           - '.cursor/**'
-          - '.opencode/**'
           - '**/SKILL.md'
 
 github_actions:

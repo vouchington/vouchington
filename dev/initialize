@@ -32,7 +32,7 @@ register_live_worktree_resource_paths() {
 
 # Repairs the shared .git/config for corruption caused by `git worktree add`
 # (git >= 2.36) setting extensions.worktreeConfig=true without ever creating the
-# required per-worktree config.worktree files (see docs/development/git-worktree-locks.md):
+# required per-worktree config.worktree files:
 #   - core.bare flips to true during git push (the fetch/push.autoSetupRemote
 #     config write lands in the shared config instead of a missing config.worktree).
 #   - core.worktree gets set to a linked worktree's path in the shared config,
