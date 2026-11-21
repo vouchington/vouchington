@@ -3156,6 +3156,43 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     },
   },
   {
+    "environment": "deployed",
+    "operatorSurfaces": [
+      {
+        "description": "Release closed daily moderation transparency cohorts computed from source rows",
+        "id": "moderation-transparency-release-daily",
+        "kind": "scheduled-jobs",
+        "schedule": "10 0 * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "psql",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "10 0 * * *",
+    },
+    "schedulerId": "moderation-transparency-release-daily",
+    "template": {
+      "data": {},
+      "name": "releaseModerationTransparencyDays",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "psql:moderation-transparency-release",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
     "environment": "all",
     "operatorSurfaces": [
       {
@@ -4120,6 +4157,14 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "psql",
     "schedule": "0 4 * * *",
     "triggerName": "enqueueModerationRetentionCleanup",
+  },
+  {
+    "description": "Release closed daily moderation transparency cohorts computed from source rows",
+    "id": "moderation-transparency-release-daily",
+    "job_name": "releaseModerationTransparencyDays",
+    "queue_name": "psql",
+    "schedule": "10 0 * * *",
+    "triggerName": "enqueueModerationTransparencyRelease",
   },
   {
     "description": "Reconcile denormalized post vote counters against the post_votes source of truth",

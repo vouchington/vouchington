@@ -5,7 +5,6 @@ import {
   createTestUser,
   getLatestPostClearanceTransparencyCategories,
   getLatestPostClearanceTransparencyCommunityId,
-  getTestCommunityModerationTransparencyRollupCounts,
   insertTestAgentModeration,
   insertTestAgentPrompt,
   insertTestCommunity,
@@ -82,15 +81,6 @@ describe('automod feedback transparency attribution', () => {
     expect(metrics.automod_performance.sources).not.toEqual(
       expect.arrayContaining([{ source_type: 'post_clearance_reject', count: 1 }]),
     )
-    // Exact counts are safe only because `community` is freshly created — this test's own
-    // rejection is the only `automated_moderation` write this community will ever receive.
-    await expect(
-      getTestCommunityModerationTransparencyRollupCounts({
-        communityId: community.id,
-        metric: 'automated_moderation',
-        categories: ['openai_omni', 'spam_detection'],
-      }),
-    ).resolves.toEqual({ openai_omni: 1, spam_detection: 1 })
     await expect(getLatestPostClearanceTransparencyCommunityId(postId)).resolves.toBe(community.id)
   })
 })

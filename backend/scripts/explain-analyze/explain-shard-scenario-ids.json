@@ -11,6 +11,7 @@
     "agent-moderation-retention-page",
     "agent-moderation-retention-source-lock",
     "agent-moderation-retention-delete",
+    "moderation-transparency-release",
     "post-moderation-history-page",
     "post-moderation-history-ranked-comparison",
     "feed-posts-batch",

@@ -168,7 +168,6 @@ export const ALLOWED_AUDIT_SNAPSHOT_ID = new Map<string, string>([
     'moderation_reports.moderation_transparency_community_id',
     'moderator_actions.moderation_transparency_community_id',
     'post_clearance_changes.moderation_transparency_community_id',
-    'moderation_transparency_daily_rollups.community_id',
     'moderation_transparency_released_daily_rollups.community_id',
   ]),
   [

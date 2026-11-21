@@ -1,7 +1,7 @@
 import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import { write } from '@data-stores/psql'
 import {
-  MODERATION_TRANSPARENCY_DELAY_MS,
+  getCompleteDailyCohortCutoff,
   rollUpReleasedModerationTransparencyByMonth,
   sanitizeModerationTransparency,
   type ModerationTransparencyBucket,
@@ -13,7 +13,6 @@ import {
   getTransparencyWindow,
   hasOlderCommunityTransparencyEvents,
   hasOlderGlobalTransparencyEvents,
-  releaseModerationTransparencyCohorts,
 } from './all-time-transparency-pages.mts'
 import sql from 'sql-template-strings'
 
@@ -31,13 +30,6 @@ export async function getModerationTransparency(
 ): Promise<ModerationTransparency> {
   const cutoff = getCompleteDailyCohortCutoff(now)
   const { periodStart, periodEnd, cursorScope } = getTransparencyWindow(range, cutoff, after)
-  await releaseModerationTransparencyCohorts(
-    undefined,
-    periodStart,
-    periodEnd,
-    cutoff,
-    range === 'all',
-  )
   const { rows } = await write(sql`/* getModerationTransparency */
     SELECT day::text AS date, latest_occurred_at AS occurred_at, metric, category, count
     FROM moderation_transparency_released_daily_rollups
@@ -89,13 +81,6 @@ export async function getCommunityModerationTransparency(
     after,
     `moderation-transparency:community:${communityId}:month-desc`,
   )
-  await releaseModerationTransparencyCohorts(
-    communityId,
-    periodStart,
-    periodEnd,
-    cutoff,
-    range === 'all',
-  )
   const { rows } = await write(sql`/* getCommunityModerationTransparency */
     SELECT day::text AS date, latest_occurred_at AS occurred_at,
       metric, category, count
@@ -134,16 +119,4 @@ export async function getCommunityModerationTransparency(
     result.next_cursor = cursorScope!.nextCursor
   }
   return result
-}
-
-/**
- * Disclosure uses whole UTC daily cohorts. The 48-hour event delay establishes
- * the latest eligible instant; this moves the query boundary back to the end
- * of the preceding UTC day so a later event cannot complete a published day.
- */
-function getCompleteDailyCohortCutoff(now: Date): Date {
-  const delayCutoff = new Date(now.getTime() - MODERATION_TRANSPARENCY_DELAY_MS)
-  return new Date(
-    Date.UTC(delayCutoff.getUTCFullYear(), delayCutoff.getUTCMonth(), delayCutoff.getUTCDate()) - 1,
-  )
 }

@@ -1,4 +1,5 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
+import { releaseTestWindow } from './release-test-window.mts'
 import crypto from 'node:crypto'
 import {
   acquireTestModerationTransparencyDateReservation,
@@ -52,6 +53,7 @@ describe('getModerationTransparency', () => {
       ),
     ])
 
+    await releaseTestWindow(now)
     const transparency = await getModerationTransparency('all', now)
     const date = `${occurredAt.toISOString().slice(0, 7)}-01`
 
@@ -84,6 +86,7 @@ describe('getModerationTransparency', () => {
     })
     await updateTestModerationReportReason(reportIds[0]!, 'harassment')
 
+    await releaseTestWindow(now)
     await expect(getModerationTransparency('all', now)).resolves.toMatchObject({
       buckets: expect.arrayContaining([
         {
@@ -124,6 +127,7 @@ describe('getModerationTransparency', () => {
       ),
     )
 
+    await releaseTestWindow(now)
     await expect(getCommunityModerationTransparency(community.id, 'all', now)).resolves.toEqual({
       range: 'all',
       buckets: [],
@@ -151,6 +155,7 @@ describe('getModerationTransparency', () => {
       ),
     )
 
+    await releaseTestWindow(now)
     await expect(getModerationTransparency('all', now)).resolves.toMatchObject({
       buckets: expect.arrayContaining([
         {

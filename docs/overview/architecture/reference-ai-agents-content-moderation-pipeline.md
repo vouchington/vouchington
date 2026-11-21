@@ -52,9 +52,10 @@ Superseded input results have a different lifetime from current moderation decis
 evidence. A result becomes retention work when a newer decision displaces it; content edits and
 evidence removal wake results whose earlier check was blocked. The cleanup keeps the newest
 absolute and visible decisions, the current input, and linked evidence. It checks only due work,
-so unchanged keepers do not make each daily pass grow with the history table. A qualifying sealed
-transparency cohort is disclosed before its source rows leave; a cohort too small to disclose
-drains privately once its sources age out. Released aggregate disclosures remain immutable.
+so unchanged keepers do not make each daily pass grow with the history table. The daily
+transparency release job computes closed-day cohorts from the source rows, well inside the source
+retention window, and freezes those of disclosable size; a cohort too small to disclose drains
+privately once its sources age out. Released aggregate disclosures remain immutable.
 
 A vote, flag, or audit insert that races a committed source deletion may fail its foreign key.
 Callers should treat that as a stale result target and resolve the current moderation decision.

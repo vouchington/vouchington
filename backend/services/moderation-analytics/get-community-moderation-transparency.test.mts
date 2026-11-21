@@ -1,4 +1,5 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
+import { releaseTestWindow } from './release-test-window.mts'
 import crypto from 'node:crypto'
 import {
   acquireTestModerationTransparencyDateReservation,
@@ -36,6 +37,7 @@ describe('getCommunityModerationTransparency', () => {
       ),
     )
 
+    await releaseTestWindow(now)
     await expect(getCommunityModerationTransparency(community.id, 'all', now)).resolves.toEqual({
       range: 'all',
       buckets: [],
@@ -64,6 +66,7 @@ describe('getCommunityModerationTransparency', () => {
       ),
     )
 
+    await releaseTestWindow(now)
     await expect(
       getCommunityModerationTransparency(community.id, 'all', now),
     ).resolves.toMatchObject({
@@ -115,6 +118,7 @@ describe('getCommunityModerationTransparency', () => {
       ),
     ])
 
+    await releaseTestWindow(now)
     const [global, included, excluded] = await Promise.all([
       getModerationTransparency('all', now),
       getCommunityModerationTransparency(includedCommunity.id, 'all', now),
@@ -180,6 +184,7 @@ describe('getCommunityModerationTransparency', () => {
       ),
     ])
 
+    await releaseTestWindow(now)
     await expect(getCommunityModerationTransparency(community.id, 'all', now)).resolves.toEqual({
       range: 'all',
       buckets: [
@@ -224,6 +229,7 @@ describe('getCommunityModerationTransparency', () => {
       ),
     )
 
+    await releaseTestWindow(now)
     await expect(getCommunityModerationTransparency(community.id, 'today', now)).resolves.toEqual({
       range: 'today',
       buckets: [

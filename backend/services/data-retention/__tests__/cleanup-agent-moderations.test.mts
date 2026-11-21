@@ -17,13 +17,12 @@ import {
   deleteTestAgentModerationFlagReference,
   deleteTestAgentModerationTrainingReference,
   deleteTestAgentModerationVoteReference,
-  releaseTestAgentModerationTransparencyDay,
   setTestPostCurrentModerationInputHashFromResult,
   testAgentModerationExists,
 } from '@voucha/test-helpers/entities/agent-moderation-retention'
 import {
-  getTestModerationTransparencyRollupCount,
   getTestReleasedModerationTransparencyRollupCount,
+  insertTestReleasedModerationTransparencyRollupRow,
 } from '@voucha/test-helpers/entities/moderation-transparency-rollups'
 import { createIsolatedRetentionWindow } from '@voucha/test-helpers/retention-window'
 import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
@@ -252,14 +251,12 @@ describe('agent moderation retention', () => {
       communityId: null,
     })
     const options = { postIds: [fixture.postId], now, lowerBoundDate, batchSize: 25, maxBatches: 1 }
-    expect(
-      await getTestModerationTransparencyRollupCount({
-        occurredAt: oldDay,
-        metric: 'automated_moderation',
-        category: 'agent_moderation',
-      }),
-    ).toBe(20)
-    await releaseTestAgentModerationTransparencyDay(oldDay)
+    await insertTestReleasedModerationTransparencyRollupRow({
+      occurredAt: oldDay,
+      metric: 'automated_moderation',
+      category: 'agent_moderation',
+      count: 20,
+    })
     expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({ deleted: 20 })
     expect(
       await getTestReleasedModerationTransparencyRollupCount({

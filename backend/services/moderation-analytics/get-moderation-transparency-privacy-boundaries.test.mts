@@ -1,5 +1,6 @@
 import crypto from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
+import { releaseTestWindow } from './release-test-window.mts'
 import {
   acquireTestModerationTransparencyDateReservation,
   createTestUser,
@@ -84,6 +85,7 @@ describe('moderation transparency privacy boundaries', () => {
       ),
     )
 
+    await releaseTestWindow(now)
     const [global, scoped] = await Promise.all([
       getModerationTransparency('all', now),
       getCommunityModerationTransparency(community.id, 'all', now),
@@ -133,6 +135,7 @@ describe('moderation transparency privacy boundaries', () => {
       ),
     )
 
+    await releaseTestWindow(now)
     const [global, scoped] = await Promise.all([
       getModerationTransparency('all', now),
       getCommunityModerationTransparency(community.id, 'all', now),
@@ -229,6 +232,7 @@ describe('moderation transparency privacy boundaries', () => {
       ),
     ])
 
+    await releaseTestWindow(now)
     const global = await getModerationTransparency('7d', now)
     expect(global.buckets).toContainEqual({
       date: occurredAt.toISOString().slice(0, 10),

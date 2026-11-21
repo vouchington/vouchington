@@ -973,7 +973,7 @@ COMMENT ON COLUMN agent_moderations.results IS 'Raw JSONB moderation results fro
 COMMENT ON COLUMN agent_moderations.votes_snapshot_xmax IS 'Upper transaction-ID boundary of the PostgreSQL snapshot used for the persisted vote-stat aggregate.';
 COMMENT ON COLUMN agent_moderations.votes_snapshot_xip_count IS 'Number of transactions still in progress in that vote-stat snapshot; lower is newer when the snapshot xmax is equal.';
 COMMENT ON COLUMN agent_moderations.moderation_transparency_category IS 'Immutable event-time aggregate category; NULL when the event was not eligible for paid transparency.';
-COMMENT ON COLUMN agent_moderations.moderation_transparency_community_id IS 'Immutable event-time post or community-prompt scope snapshot; intentionally has no FK so delete cascades can decrement the prior aggregate.';
+COMMENT ON COLUMN agent_moderations.moderation_transparency_community_id IS 'Immutable event-time post or community-prompt scope snapshot; intentionally has no FK so aggregate scope survives community deletion.';
 
 -- Prime per-column planner statistics for the columns getPostMetricsByAnyBatch filters `posts` on
 -- (backend/services/posts/metrics-batch.mts). Those predicates are estimated from per-column stats --

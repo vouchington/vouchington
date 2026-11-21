@@ -2,6 +2,19 @@ import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 
 export const MODERATION_TRANSPARENCY_DELAY_MS = 48 * 60 * 60 * 1000
 export const MODERATION_TRANSPARENCY_MINIMUM_COHORT_SIZE = 20
+export const MODERATION_TRANSPARENCY_DAY_MS = 24 * 60 * 60 * 1000
+
+/**
+ * Disclosure uses whole UTC daily cohorts. The 48-hour event delay establishes
+ * the latest eligible instant; this moves the boundary back to the end of the
+ * preceding UTC day so a later event cannot complete a published day.
+ */
+export function getCompleteDailyCohortCutoff(now: Date): Date {
+  const delayCutoff = new Date(now.getTime() - MODERATION_TRANSPARENCY_DELAY_MS)
+  return new Date(
+    Date.UTC(delayCutoff.getUTCFullYear(), delayCutoff.getUTCMonth(), delayCutoff.getUTCDate()) - 1,
+  )
+}
 export const MODERATION_TRANSPARENCY_ROUNDING_INCREMENT = 5
 
 export type ModerationTransparencyMetric = FiniteValue<'moderation_transparency_metrics'>

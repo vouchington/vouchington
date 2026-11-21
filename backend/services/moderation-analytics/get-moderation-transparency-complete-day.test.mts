@@ -1,4 +1,5 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
+import { releaseTestWindow } from './release-test-window.mts'
 import {
   acquireTestModerationTransparencyDateReservation,
   createTestUser,
@@ -24,6 +25,7 @@ describe('getModerationTransparency complete UTC-day release boundary', () => {
       ),
     )
 
+    await releaseTestWindow(now)
     await expect(getModerationTransparency('all', now)).resolves.not.toMatchObject({
       buckets: expect.arrayContaining([
         expect.objectContaining({
@@ -33,9 +35,9 @@ describe('getModerationTransparency complete UTC-day release boundary', () => {
         }),
       ]),
     })
-    await expect(
-      getModerationTransparency('all', new Date(now.getTime() + 12 * 60 * 60 * 1000)),
-    ).resolves.toMatchObject({
+    const later = new Date(now.getTime() + 12 * 60 * 60 * 1000)
+    await releaseTestWindow(later)
+    await expect(getModerationTransparency('all', later)).resolves.toMatchObject({
       buckets: expect.arrayContaining([
         {
           date: `${partialDay.toISOString().slice(0, 7)}-01`,
@@ -62,6 +64,7 @@ describe('getModerationTransparency complete UTC-day release boundary', () => {
       ),
     )
 
+    await releaseTestWindow(now)
     await expect(getModerationTransparency('all', now)).resolves.toMatchObject({
       buckets: expect.arrayContaining([
         {
@@ -74,6 +77,7 @@ describe('getModerationTransparency complete UTC-day release boundary', () => {
     })
     await deleteTestModeratorActions(actions.map(action => action.id))
 
+    await releaseTestWindow(now)
     await expect(getModerationTransparency('all', now)).resolves.toMatchObject({
       buckets: expect.arrayContaining([
         {

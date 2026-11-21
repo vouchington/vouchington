@@ -35,7 +35,10 @@ import { seedAndAnalyzeAgentModerationRetention } from './seed-data/agent-modera
 import { runSharedLoaderScenarios } from './run-scenarios/shared-loaders.mts'
 import { runPostModerationRetentionScenarios } from './run-scenarios/post-moderation-retention.mts'
 import { runSpamSignalScenarios } from './run-scenarios/spam-signals.mts'
-import { runAgentModerationRetentionScenarios } from './run-scenarios/agent-moderation-retention.mts'
+import {
+  runAgentModerationRetentionScenarios,
+  runModerationTransparencyReleaseScenario,
+} from './run-scenarios/agent-moderation-retention.mts'
 
 export const EARLY_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runCopyrightAcceptedPageScenarios,
@@ -67,6 +70,7 @@ export const EARLY_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runPostModerationRetentionScenarios,
   seedAndAnalyzeAgentModerationRetention,
   runAgentModerationRetentionScenarios,
+  runModerationTransparencyReleaseScenario,
   runPostModerationHistoryPageScenarios,
   runHotPathLoaderScenarios,
   runPublicRssPostSnapshotScenarios,
