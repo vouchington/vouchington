@@ -51,7 +51,6 @@
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5",
-    "@voucha/test-helpers": "workspace:^",
-    "@vouchington/worker-runtime": "^0.3.1"
+    "@voucha/test-helpers": "workspace:^"
   }
 }
