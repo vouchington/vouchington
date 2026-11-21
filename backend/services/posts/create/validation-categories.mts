@@ -78,12 +78,9 @@ export async function validatePostCategories(
     )
     return
   }
-  await assertWithinTagAddLimit(
-    creator,
-    membershipPlan,
-    relation,
-    null,
+  const incomingCount =
     new Set([...topicIds, ...(options.dataPointTopicIds ?? [])]).size +
-      getPostHashtagKeys(updates).length,
-  )
+    getPostHashtagKeys(updates).length
+  assertManualCategoryInputLimit(incomingCount)
+  await assertWithinTagAddLimit(creator, membershipPlan, relation, null, incomingCount)
 }
