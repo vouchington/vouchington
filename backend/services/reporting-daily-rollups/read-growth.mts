@@ -109,20 +109,57 @@ export async function countGrowthActiveAuthors(
 }
 
 function buildGrowthActiveAuthors(periodStart: Date, now: Date) {
+  return sql`
+    SELECT count(DISTINCT author_user_id)::int AS count FROM (`
+    .append(buildActiveAuthorLegs(periodStart, now, false))
+    .append(') authors')
+}
+
+// Rollup rows for completed days plus raw posts for the partial/current days, tagged with
+// is_dau so one statement can count several windows from one shared source.
+function buildActiveAuthorLegs(periodStart: Date, now: Date, isDau: boolean) {
   const windows = getGrowthReadWindows(periodStart, now, true)
   const firstStart = getMinUuidv7ForDate(windows.firstPartial?.start ?? windows.today.start)
   const firstEnd = getMinUuidv7ForDate(windows.firstPartial?.end ?? windows.today.start)
   const todayStart = getMinUuidv7ForDate(windows.today.start)
   return sql`
-    SELECT count(DISTINCT author_user_id)::int AS count FROM (
-      SELECT authors.author_user_id FROM growth_metric_daily_post_authors authors
+      SELECT authors.author_user_id, ${isDau}::boolean AS is_dau FROM growth_metric_daily_post_authors authors
       JOIN growth_metric_daily_totals totals ON totals.id = authors.growth_metric_daily_total_id
       WHERE totals.day >= ${windows.completed.start.toISOString().slice(0, 10)}::date AND totals.day < ${windows.completed.end.toISOString().slice(0, 10)}::date
       UNION ALL
-      SELECT created_by_id FROM posts WHERE deleted_at IS NULL AND (
+      SELECT created_by_id, ${isDau}::boolean FROM posts WHERE deleted_at IS NULL AND (
         (id > ${firstStart} AND id < ${firstEnd}) OR (id > ${todayStart} OR (id = ${todayStart} AND ${periodStart < windows.today.start})))
-    ) authors
   `
+}
+
+// DAU and MAU come from one statement over one source. The DAU window is read from raw posts
+// and also feeds MAU, so every DAU author is a MAU author even when a rollup row is stale.
+function buildGrowthDauMau(dauStart: Date, mauStart: Date, now: Date) {
+  const dauWindows = getGrowthReadWindows(dauStart, now, true)
+  const dauFirstStart = getMinUuidv7ForDate(
+    dauWindows.firstPartial?.start ?? dauWindows.today.start,
+  )
+  const dauTodayStart = getMinUuidv7ForDate(dauWindows.today.start)
+  const dauFirstEnd = getMinUuidv7ForDate(dauWindows.firstPartial?.end ?? dauWindows.today.start)
+  return sql`/* countGrowthDauMau */
+    SELECT (count(DISTINCT author_user_id) FILTER (WHERE is_dau))::int AS dau,
+      count(DISTINCT author_user_id)::int AS mau FROM (`.append(
+    buildActiveAuthorLegs(mauStart, now, false),
+  ).append(sql` UNION ALL
+      SELECT created_by_id, true FROM posts WHERE deleted_at IS NULL AND (
+        (id > ${dauFirstStart} AND id < ${dauFirstEnd}) OR (id > ${dauTodayStart} OR (id = ${dauTodayStart} AND ${dauStart < dauWindows.today.start})))
+    ) authors`)
+}
+
+export async function countGrowthDauMau(
+  dauStart: Date,
+  mauStart: Date,
+  now = new Date(),
+): Promise<{ dau: number; mau: number }> {
+  const { rows } = await read<{ dau: number; mau: number }>(
+    buildGrowthDauMau(dauStart, mauStart, now),
+  )
+  return rows[0]!
 }
 
 function getGrowthReadWindows(periodStart: Date, now: Date, strictStart: boolean) {
@@ -142,32 +179,21 @@ export async function readGrowthRequestFacts(periodStart: Date, now: Date) {
       .append(sql`) facts UNION ALL SELECT 'all'::text AS request_window, facts.* FROM (`)
       .append(buildGrowthDayCounts(new Date(0), now, false, 'user-follow-totals'))
       .append(') facts ORDER BY request_window, day')
-  const starts = [
-    periodStart,
-    new Date(now.getTime() - 86_400_000),
-    new Date(now.getTime() - 30 * 86_400_000),
-  ]
-  const uniqueStarts = [...new Set(starts.map(start => start.getTime()))]
-  const authorQuery = sql`/* readGrowthRequestActiveAuthors */ `
-  for (const [index, start] of uniqueStarts.entries()) {
-    if (index > 0) authorQuery.append(' UNION ALL ')
-    authorQuery
-      .append(sql`SELECT ${index}::int AS request_window, facts.count FROM (`)
-      .append(buildGrowthActiveAuthors(new Date(start), now))
-      .append(') facts')
-  }
-  const [days, authors] = await Promise.all([
+  const [days, activeUsers, { dau, mau }] = await Promise.all([
     read<GrowthDayCounts & { request_window: string }>(dayQuery),
-    read<{ request_window: number; count: number }>(authorQuery),
+    countGrowthActiveAuthors(periodStart, now),
+    countGrowthDauMau(
+      new Date(now.getTime() - 86_400_000),
+      new Date(now.getTime() - 30 * 86_400_000),
+      now,
+    ),
   ])
-  const authorCount = (start: Date) =>
-    authors.rows.find(row => row.request_window === uniqueStarts.indexOf(start.getTime()))!.count
   return {
     days: days.rows.filter(row => row.request_window === 'period'),
     allDays: days.rows.filter(row => row.request_window === 'all'),
-    activeUsers: authorCount(starts[0]!),
-    dau: authorCount(starts[1]!),
-    mau: authorCount(starts[2]!),
+    activeUsers,
+    dau,
+    mau,
   }
 }
 export type GrowthRequestFacts = Awaited<ReturnType<typeof readGrowthRequestFacts>>
