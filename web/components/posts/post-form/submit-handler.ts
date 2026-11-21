@@ -102,6 +102,7 @@ export function usePostFormSubmit({
       displayMessageByCode: {
         [IMAGE_PLACEMENT_LIMIT_REACHED]: IMAGE_PLACEMENT_LIMIT_MESSAGE,
         POST_IMAGE_LIMIT_REACHED: t('shared.postImageLimit'),
+        POST_CATEGORY_LIMIT_REACHED: t('shared.postCategoryLimit'),
         TAG_LIMIT_REACHED: t('shared.postCategoryLimit'),
       },
       tags: { form: 'post-submit' },

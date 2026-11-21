@@ -1,5 +1,5 @@
 import { createCodedError } from '@vouchington/sentry'
-import { TAG_LIMIT_REACHED } from '@modules/on-error/error-codes'
+import { POST_CATEGORY_LIMIT_REACHED, TAG_LIMIT_REACHED } from '@modules/on-error/error-codes'
 import { getContributionLimitTier } from '@services/contribution-gating/limits'
 import type { ContributionLimitMembershipPlan } from '@services/contribution-gating/limit-types'
 import type { PrivateUser } from '@voucha/types/entities/user'
@@ -59,9 +59,9 @@ export function assertWithinStandingTagLimit(
 export function assertManualCategoryInputLimit(count: number): void {
   if (count > MAX_MANUAL_TAGS) {
     throw createCodedError(
-      403,
+      400,
       `A post can have at most ${MAX_MANUAL_TAGS} manual categories.`,
-      TAG_LIMIT_REACHED,
+      POST_CATEGORY_LIMIT_REACHED,
     )
   }
 }
