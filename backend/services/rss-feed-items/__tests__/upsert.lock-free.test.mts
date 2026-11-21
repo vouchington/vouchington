@@ -79,17 +79,20 @@ describe('RSS feed item upsert without advisory locks', () => {
   it('drains a source inserted after the hard-delete request by feed id', async () => {
     const suffix = crypto.randomUUID()
     const feed = await insertTestRssFeedDirect({})
-    const [item] = await upsertRssFeedItems(feed.id, [
+    const otherFeed = await insertTestRssFeedDirect({})
+    const [item] = await upsertRssFeedItems(otherFeed.id, [
       { guid: `lock-free-late-${suffix}`, link: `https://lock-free-late-${suffix}.example.com/a` },
     ])
     await markReferencedTestRssFeedForDeletion(feed.id)
     await using lateWriter = await beginTransaction()
     // An upsert that passed its active-feed check before the request still inserts its source.
-    await upsertRssFeedItemSources(lateWriter, feed.id, [{ id: item!.id }])
+    const lateRows = await upsertRssFeedItemSources(lateWriter, feed.id, [{ id: item!.id }])
+    expect(lateRows).toEqual([{ rss_feed_item_id: item!.id }])
     await lateWriter.commit()
 
     await expect(hardDeleteRssFeedSourcePage(feed.id)).resolves.toMatchObject({ removed: 1 })
     expect(await countTestRssFeedItemSources(feed.id)).toBe(0)
     await deleteTestRssFeedRow(feed.id)
+    await deleteTestRssFeedRow(otherFeed.id)
   })
 })

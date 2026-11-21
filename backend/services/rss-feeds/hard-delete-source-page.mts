@@ -22,11 +22,13 @@ export async function hardDeleteRssFeedSourcePage(
 ): Promise<HardDeleteRssFeedSourcePage> {
   const limit = getPostPublicationWorkLimit('rss_feed_hard_delete_capture_batch_size')
   await using query = await beginTransaction()
+  // NO KEY UPDATE does not conflict with the FOR KEY SHARE an ingestion source insert takes on this
+  // row, so a page cannot deadlock with ingestion that already holds item locks.
   const feed = await query<{ topic_id: string }>(
     `/* hardDeleteRssFeedSourcePage:feed */
     SELECT topic_id FROM rss_feeds
     WHERE id = $1::uuid AND hard_delete_requested_at IS NOT NULL
-    FOR UPDATE`,
+    FOR NO KEY UPDATE`,
     [rssFeedId],
   )
   if (feed.rows.length === 0) {
