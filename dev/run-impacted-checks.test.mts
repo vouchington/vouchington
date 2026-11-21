@@ -37,7 +37,7 @@ describe('run-impacted-checks', () => {
     git('init', '-q', '-b', 'work')
     git('config', 'user.email', 'test@example.com')
     git('config', 'user.name', 'Test')
-    copyFileSync(join(fixtures, 'removed.mts'), join(repo, 'removed.mts'))
+    copyFileSync(join(fixtures, 'removed.mts.fixture'), join(repo, 'removed.mts'))
     git('add', '.')
     git('commit', '-q', '-m', 'base')
     git('update-ref', 'refs/remotes/origin/main', 'HEAD')
@@ -60,7 +60,7 @@ describe('run-impacted-checks', () => {
   })
 
   it('lints and formats changed TypeScript, skipping deleted files', () => {
-    copyFileSync(join(fixtures, 'changed.mts'), join(repo, 'changed.mts'))
+    copyFileSync(join(fixtures, 'changed.mts.fixture'), join(repo, 'changed.mts'))
     copyFileSync(join(fixtures, 'notes.md'), join(repo, 'notes.md'))
     rmSync(join(repo, 'removed.mts'))
     expect(run()).toEqual({
@@ -73,7 +73,7 @@ describe('run-impacted-checks', () => {
   })
 
   it('runs every check, then exits 1 when one fails', () => {
-    copyFileSync(join(fixtures, 'changed.mts'), join(repo, 'changed.mts'))
+    copyFileSync(join(fixtures, 'changed.mts.fixture'), join(repo, 'changed.mts'))
     const result = run({ FAIL_TOOL: 'oxlint' })
     expect(result.status).toBe(1)
     expect(result.calls).toHaveLength(2)
