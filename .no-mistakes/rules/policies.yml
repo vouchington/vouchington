@@ -2543,7 +2543,7 @@
     columnBounds:
       user_landing_pages.user_id:
         {
-          reason: 'MAX_LANDING_PAGES = 20 (my/landing-pages/shared.mts:12) is enforced inside the create INSERT (create.mts:37) and pages are hard-deleted (delete.mts), so a user has at most 20 rows',
+          reason: 'pages_per_user (DynamicConfig, hard max LANDING_PAGE_LIMIT_MAX_VALUES.pages_per_user = 100 in my/landing-pages/limits.mts) is enforced inside the create INSERT (create.mts) and pages are hard-deleted (delete.mts), so a user has at most 100 rows',
         }
       post_images.post_id: { reason: 'a post carries at most 20 attached images' }
       post_images.image_id: { reason: 'an uploaded image attaches to one post' }
@@ -2553,7 +2553,10 @@
       image_surface_placement_activations.placement_id:
         { reason: 'a few activation revisions per surface placement' }
       user_aside_preferences.user_id: { reason: 'one row per finite aside key per user' }
-      user_profile_links.user_id: { reason: 'a profile shows at most MAX_PROFILE_LINKS links' }
+      user_profile_links.user_id:
+        {
+          reason: 'profile_links_max (DynamicConfig, hard max USER_PROFILE_LINKS_MAX = 50) caps links per user',
+        }
       user_landing_page_items.landing_page_id: { reason: 'a landing page has a few items' }
       user_landing_page_group_members.landing_page_item_id:
         { reason: 'a group item has a few members' }
