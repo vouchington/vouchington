@@ -46,7 +46,7 @@ app.route('/api/v1/topics/aliases').get(async (ctx: Context) => {
   if (ctx.query.limit !== undefined) query.limit = options.limit
   validateRequestContract(ctx, 'GET:/api/v1/topics/aliases', { query })
 
-  const q = ctx.query.q ? String(ctx.query.q) : undefined
+  const q = ctx.query.q ? String(ctx.query.q).trim() : undefined
   ctx.assert(q, 400, 'q is required')
 
   const scope = topicAliasSearchCursorScope({ prefixQuery: q })
