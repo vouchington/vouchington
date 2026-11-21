@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   enqueueBackfillImageModerationContinuation,
   enqueueCreateImageModeration,
-  enqueueCreatePostModeration,
+  enqueueBulkCreatePostModeration,
   enqueueReconcileImageQuarantines,
   enqueueReconcilePostModeration,
   enqueueReconcilePostModerationContinuation,
@@ -19,15 +19,21 @@ import { backgroundQueue as openAiModerationQueue } from '../../test-helpers/sha
 import { readAllQueueJobs } from '@voucha/test-helpers'
 import { readEnqueuedJob } from '../../test-helpers/queue-jobs.mts'
 
-describe('enqueueCreatePostModeration', () => {
+describe('enqueueBulkCreatePostModeration', () => {
   beforeEach(async () => {
     await openAiModerationQueue.obliterate({ force: true })
   })
 
-  it('enqueues one job whose id is the version and source', async () => {
+  it('enqueues one job per version whose id is the version and source', async () => {
     const versionId = randomUUID()
-    const enqueued = await enqueueCreatePostModeration(versionId)
-    const job = await readEnqueuedJob(openAiModerationQueue, enqueued)
+    const otherVersionId = randomUUID()
+    await enqueueBulkCreatePostModeration([versionId, otherVersionId])
+    const job = await openAiModerationQueue.getJob(`${versionId}__openai_omni`)
+    await expect(
+      openAiModerationQueue.getJob(`${otherVersionId}__openai_omni`),
+    ).resolves.toMatchObject({
+      data: { versionId: otherVersionId },
+    })
 
     expect(job).toMatchObject({
       id: `${versionId}__openai_omni`,
@@ -44,7 +50,13 @@ describe('enqueueCreatePostModeration', () => {
         },
       },
     })
-    await expect(enqueueCreatePostModeration(versionId)).resolves.toBeNull()
+    await enqueueBulkCreatePostModeration([versionId])
+    await expect(
+      openAiModerationQueue.searchJobs({
+        name: OPENAI_MODERATION_POST_JOB.name,
+        data: { versionId },
+      }),
+    ).resolves.toHaveLength(1)
   })
 })
 

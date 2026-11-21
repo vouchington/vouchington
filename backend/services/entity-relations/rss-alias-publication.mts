@@ -1,6 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import { impactPublicationKeys } from '@services/post-publication/captured-keys'
-import { enqueueCapturedPublicationChangeAfterCommit } from '@services/post-publication/direct-capture'
+import { enqueueBulkCapturedPublicationChangesAfterCommit } from '@services/post-publication/direct-capture'
 
 /** Retain the written item identities even if their alias relation is later cascade-deleted. */
 export function recordRssAliasRelationPublicationChanges(
@@ -13,10 +13,12 @@ export function recordRssAliasRelationPublicationChanges(
     itemIds.add(itemId)
     itemIdsByAlias.set(aliasId, itemIds)
   }
-  for (const [topicAliasId, itemIds] of itemIdsByAlias)
-    enqueueCapturedPublicationChangeAfterCommit(query, {
-      scope: { type: 'topic_alias', topicAliasId },
-      reason: 'post_topics_changed',
+  enqueueBulkCapturedPublicationChangesAfterCommit(
+    query,
+    [...itemIdsByAlias].map(([topicAliasId, itemIds]) => ({
+      scope: { type: 'topic_alias' as const, topicAliasId },
+      reason: 'post_topics_changed' as const,
       keys: impactPublicationKeys({ rssFeedItemIds: [...itemIds] }),
-    })
+    })),
+  )
 }

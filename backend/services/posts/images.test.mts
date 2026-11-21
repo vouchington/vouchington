@@ -186,20 +186,25 @@ function watchContentChangedEnqueues(postId: string): {
 } {
   const spam = Promise.withResolvers<{ versionId: string; contentSha256: Buffer }>()
   const moderation = Promise.withResolvers<{ versionId: string; contentSha256: Buffer }>()
-  const enqueueSpam = spamEnqueues.enqueueSpamDetection
-  const enqueueModeration = moderationEnqueues.enqueueCreatePostModeration
-  vi.spyOn(spamEnqueues, 'enqueueSpamDetection').mockImplementation(async versionId => {
-    const result = await enqueueSpam(versionId)
-    const owner = await getTestPostModerationVersionOwner(versionId)
-    if (owner?.post_id === postId) spam.resolve({ versionId, contentSha256: owner.content_sha256 })
-    return result
-  })
-  vi.spyOn(moderationEnqueues, 'enqueueCreatePostModeration').mockImplementation(
-    async versionId => {
-      const result = await enqueueModeration(versionId)
+  const enqueueSpam = spamEnqueues.enqueueBulkSpamDetection
+  const enqueueModeration = moderationEnqueues.enqueueBulkCreatePostModeration
+  vi.spyOn(spamEnqueues, 'enqueueBulkSpamDetection').mockImplementation(async versionIds => {
+    const result = await enqueueSpam(versionIds)
+    for (const versionId of versionIds) {
       const owner = await getTestPostModerationVersionOwner(versionId)
       if (owner?.post_id === postId)
-        moderation.resolve({ versionId, contentSha256: owner.content_sha256 })
+        spam.resolve({ versionId, contentSha256: owner.content_sha256 })
+    }
+    return result
+  })
+  vi.spyOn(moderationEnqueues, 'enqueueBulkCreatePostModeration').mockImplementation(
+    async versionIds => {
+      const result = await enqueueModeration(versionIds)
+      for (const versionId of versionIds) {
+        const owner = await getTestPostModerationVersionOwner(versionId)
+        if (owner?.post_id === postId)
+          moderation.resolve({ versionId, contentSha256: owner.content_sha256 })
+      }
       return result
     },
   )

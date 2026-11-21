@@ -1,25 +1,28 @@
-import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import { IMAGE_UPLOADS_QUEUE_NAME } from './config.mts'
 import { imageUploadsQueue } from './queues.mts'
-import type { ImageUploadJobPayloads } from './types.mts'
 
-/** Bind recovery admission to its real destination queue. */
-export function createExtractImageMetadataEnqueue(queue: typeof imageUploadsQueue) {
-  const enqueue = createEnqueueFunction<
-    ImageUploadJobPayloads['extract-metadata'],
-    'extract-metadata'
-  >({
-    queue,
-    queueName: IMAGE_UPLOADS_QUEUE_NAME,
-    jobName: 'extract-metadata',
-  })
-  return (imageId: string): EnqueueReturnType =>
-    enqueue({ id: imageId }, getExtractImageMetadataJobOptions(imageId))
+const enqueueBulkExtractMetadata = createBulkEnqueueFunction({
+  queue: imageUploadsQueue,
+  queueName: IMAGE_UPLOADS_QUEUE_NAME,
+  jobName: 'extract-metadata',
+  buildJob: (imageId: string) => ({
+    data: { id: imageId },
+    opts: getExtractImageMetadataJobOptions(imageId),
+  }),
+})
+
+/** Recovery admits a page of images with one queue call. */
+export function enqueueBulkExtractImageMetadata(imageIds: readonly string[]) {
+  return enqueueBulkExtractMetadata([...imageIds])
 }
 
-export const enqueueExtractImageMetadata = createExtractImageMetadataEnqueue(imageUploadsQueue)
+export async function enqueueExtractImageMetadata(imageId: string): EnqueueReturnType {
+  const [job] = await enqueueBulkExtractImageMetadata([imageId])
+  return job ?? null
+}
 
 /**
  * One in-flight extraction per image, with no custom `jobId`. A stable `jobId` is a hard uniqueness
