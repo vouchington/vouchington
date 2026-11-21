@@ -14,7 +14,7 @@
     "./*/__tests__/*": null
   },
   "dependencies": {
-    "@jongleberry/vurst-prompt": "^0.4.3",
+    "@jongleberry/vurst-prompt": "^0.4.4",
     "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/request-client-info": "workspace:^",

@@ -24,7 +24,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/psql": "workspace:^",
-    "@jongleberry/vurst-html": "^0.4.3",
+    "@jongleberry/vurst-html": "^0.4.4",
     "@modules/utils": "workspace:^",
     "@services/crawlers": "workspace:^",
     "@services/crawls": "workspace:^",

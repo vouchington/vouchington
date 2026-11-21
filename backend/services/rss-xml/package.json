@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@data-stores/valkey-rate-limiter": "workspace:^",
-    "@jongleberry/vurst-html": "^0.4.3",
+    "@jongleberry/vurst-html": "^0.4.4",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/entity-cache": "workspace:^",

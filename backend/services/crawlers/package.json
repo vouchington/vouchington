@@ -25,7 +25,7 @@
   "dependencies": {
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
-    "@jongleberry/vurst-html": "^0.4.3",
+    "@jongleberry/vurst-html": "^0.4.4",
     "@modules/pagination": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/moderator-actions": "workspace:^",

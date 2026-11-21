@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@agents/_shared": "workspace:^",
-    "@jongleberry/vurst-prompt": "^0.4.3",
+    "@jongleberry/vurst-prompt": "^0.4.4",
     "@modules/model-providers": "workspace:^",
     "@services/copyright-notices": "workspace:^",
     "@ts-shared/utils": "workspace:^",

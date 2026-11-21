@@ -23,6 +23,6 @@
   },
   "scripts": {},
   "dependencies": {
-    "@jongleberry/vurst-markdown": "^0.4.3"
+    "@jongleberry/vurst-markdown": "^0.4.4"
   }
 }

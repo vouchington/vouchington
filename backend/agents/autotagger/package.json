@@ -26,7 +26,7 @@
     "@agents/_shared": "workspace:^",
     "@agents/classifier-runs": "workspace:^",
     "@agents/classifiers": "workspace:^",
-    "@jongleberry/vurst-prompt": "^0.4.3",
+    "@jongleberry/vurst-prompt": "^0.4.4",
     "@modules/model-providers": "workspace:^",
     "@modules/structured-decisions": "workspace:^",
     "@services/ai-usage": "workspace:^",

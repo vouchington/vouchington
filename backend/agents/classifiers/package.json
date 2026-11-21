@@ -22,7 +22,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@jongleberry/vurst-prompt": "^0.4.3",
+    "@jongleberry/vurst-prompt": "^0.4.4",
     "@modules/structured-decisions": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/classifiers": "workspace:^",
