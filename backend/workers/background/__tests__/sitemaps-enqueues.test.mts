@@ -21,6 +21,8 @@ import {
   enqueueUpdateRootIndex,
 } from '@queues/sitemaps/enqueues'
 import { getSitemapsOrderingKeyForDay } from '@queues/sitemaps/config'
+import { forgetDedupEntries } from '@voucha/test-helpers/shared-queue-cleanup'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import { backgroundQueue as sitemapsQueue } from '@voucha/test-helpers/shared-background-queue'
 
 async function readLandingPageJobs() {
@@ -42,6 +44,10 @@ describe('enqueues.generated', () => {
 
   it('enqueueBulkUpdateFamilySitemaps enqueues each family into the indexes lane with family dedup', async () => {
     const priority = 1_000 + Math.floor(Math.random() * 1_000)
+    forgetDedupEntries(BACKGROUND_QUEUE_NAME, [
+      'family-index__topics',
+      'family-index__landing-pages',
+    ])
     await enqueueBulkUpdateFamilySitemaps(['topics', 'landing-pages'], priority)
 
     const jobs = (await readAllQueueJobs(sitemapsQueue)).filter(

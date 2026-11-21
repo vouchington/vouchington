@@ -175,7 +175,6 @@ describe('sitemap processors', () => {
     const day = uniqueDay()
     const now = new Date(`${day}T08:00:00.000Z`)
     await useSitemapObjectStore()
-    const add = vi.spyOn(sitemapsQueue, 'add')
     const addBulk = vi.spyOn(sitemapsQueue, 'addBulk')
 
     await processNightlyBackfillWeekDispatcher(now)
@@ -184,7 +183,12 @@ describe('sitemap processors', () => {
       .flatMap(([jobs]) => jobs)
       .filter(job => getSitemapPostDayData(job)?.day === day)
     expect(postDayAdmissions).toHaveLength(SITEMAP_CONFIG.POST_TYPES.length)
-    expect(add.mock.calls.map(([name]) => name)).toContain('sitemaps.processUpdateFamilySitemap')
+    const familyAdmissions = addBulk.mock.calls
+      .flatMap(([jobs]) => jobs)
+      .filter(job => job.name === 'sitemaps.processUpdateFamilySitemap')
+    expect(familyAdmissions.map(job => (job.data as { family: string }).family).toSorted()).toEqual(
+      [...SITEMAP_CONFIG.FAMILY_TYPES].toSorted(),
+    )
   })
 
   it('admits weekly post-day jobs using the same queue contract', async () => {
