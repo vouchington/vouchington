@@ -20,7 +20,7 @@ export async function disconnectOAuthAccount(
 
   await runWithTransaction(options.query, async query => {
     await query(
-      sql`/* disconnectOAuthAccount */ SELECT fn_lock_active_user_for_mutation(${userId})`,
+      sql`/* disconnectOAuthAccount */ SELECT fn_lock_active_user_for_mutation(${userId}, TRUE)`,
     )
 
     const { rows } = await query<{ id: string }>(

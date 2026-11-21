@@ -99,10 +99,10 @@ export async function lockOAuthAccountConnectionUser(
   query: TransactionQuery,
   userId: string,
 ): Promise<LockedOAuthAccountConnectionUser> {
-  // `FOR SHARE` on the users row: deletion's `FOR NO KEY UPDATE` waits for this transaction.
+  // `FOR NO KEY UPDATE` on the users row: it is written in this transaction, and deletion waits for it.
   try {
     await query(
-      '/* lockOAuthAccountConnectionUser */ SELECT fn_lock_active_user_for_mutation($1)',
+      '/* lockOAuthAccountConnectionUser */ SELECT fn_lock_active_user_for_mutation($1, TRUE)',
       [userId],
     )
   } catch (err) {

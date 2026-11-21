@@ -300,10 +300,10 @@ CREATE OR REPLACE FUNCTION public.fn_immutable_array_to_string(p_array text[], p
  IMMUTABLE
 ```
 
-## `fn_lock_active_user_for_mutation(target_user_id uuid)`
+## `fn_lock_active_user_for_mutation(target_user_id uuid, for_update boolean)`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_lock_active_user_for_mutation(target_user_id uuid)
+CREATE OR REPLACE FUNCTION public.fn_lock_active_user_for_mutation(target_user_id uuid, for_update boolean DEFAULT false)
  RETURNS void
  LANGUAGE plpgsql
 ```

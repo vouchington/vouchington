@@ -281,7 +281,9 @@ Lock only to stop a concurrent write corrupting data the transaction writes: row
 rows only, no advisory locks, except for privacy, legal and irreversible-side-effect invariants
 (user deletion, legal holds, external deletes): those may lock when the race is rare, preferably
 `FOR SHARE`/`FOR UPDATE` on the aggregate-root row (`users`) even when it is not written; advisory
-only when no row exists or the critical section spans transactions or external I/O. The simplest
+only when no row exists or the critical section spans transactions or external I/O. A transaction
+that also updates that row takes `FOR NO KEY UPDATE` first, never `FOR SHARE`, so concurrent
+writers cannot deadlock on the lock upgrade. The simplest
 correct mechanism wins. Per-user and per-entity caps and "last X" guards check a capped count
 and then write, with no lock, counter row, slot table, or admission-only constraint; overshoot under
 a true race is accepted. Removing a lock deletes it rather than swapping in another serializer. A
