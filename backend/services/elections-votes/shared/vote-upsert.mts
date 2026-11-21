@@ -64,6 +64,7 @@ export async function upsertElectionVotesShared(
     await assertPlatformAccountVotesAllowed(config, query, userId, values)
     // Keep every vote mutation query on this transaction's client. In particular, a user-agent
     // lookup cannot acquire a second write-pool client while an outer caller already holds one.
+    if (config.tracksOutboundActivityPubLike) await lockLikeGenerations(query, userId, values)
     const userAgentId = await upsertUserAgentString(context.userAgent?.trim() || null, { query })
     return insertElectionVoteRows(config, userId, values, context, userAgentId, query)
   }
@@ -72,4 +73,26 @@ export async function upsertElectionVotesShared(
   const result = await run(transaction)
   await transaction.commit()
   return result
+}
+
+/**
+ * Serialize concurrent ballots on one (user, post) so only one request crosses the non-Like to Like
+ * boundary. Ballots are append-only, so the previous-vote read cannot see an uncommitted sibling
+ * and no constraint can reject the second root; two racing requests would each mint and federate
+ * their own Like activity. The lock is transaction-scoped and ordered by entity id. Later requests
+ * re-read the committed Like and inherit its activity identity. Other vote tables stay lock-free.
+ */
+async function lockLikeGenerations(
+  query: TransactionQuery,
+  userId: string,
+  values: Array<{ entityId: string }>,
+): Promise<void> {
+  await query(sql`/* lockElectionLikeGenerations */
+    SELECT pg_advisory_xact_lock(
+      hashtextextended('election_like_generation:' || ${userId}::text || ':' || ordered.entity_id::text, 0)
+    )
+    FROM (
+      SELECT unnest(${values.map(v => v.entityId)}::uuid[]) AS entity_id ORDER BY entity_id
+    ) ordered
+  `)
 }
