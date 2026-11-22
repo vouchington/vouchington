@@ -6,7 +6,7 @@ import {
   listLockedReviewSuccessionCandidates,
   lockReviewSuccessionCandidates,
 } from './candidates.mts'
-import { listReviewSuccessionGroupPage, lockReviewSuccessionGroups } from './groups.mts'
+import { listReviewSuccessionGroupPage } from './groups.mts'
 import { applyReviewSuccessionMutations } from './mutations.mts'
 import { planReviewSuccessionMutations } from './plan.mts'
 import type { ReviewSuccessionReconciliationResult } from './types.mts'
@@ -14,9 +14,8 @@ import type { ReviewSuccessionReconciliationResult } from './types.mts'
 type ReviewSuccessionReconciliationOptions = QueryOptions
 
 /**
- * Converges one post's bounded exact-topic group page. The lock order is group keys,
- * publication post scopes, then candidate rows; all candidate reads and handoff mutations are
- * bounded set operations inside the same transaction.
+ * Converges one post's bounded exact-topic group page. Candidate rows are locked in ID order
+ * before the fresh read that drives handoff mutations in the same transaction.
  */
 export async function reconcileReviewSuccessionsForPostPage(
   postId: string,
@@ -37,8 +36,7 @@ export async function reconcileReviewSuccessionsForPostPage(
       limit,
     )
     if (groups.length === 0) return { changedPostIds: [], nextCursor }
-    // ast-grep-ignore: no-three-sequential-awaits -- Group locks must precede publication-scope and candidate-row locks; only the fresh locked candidate reread may drive succession mutations.
-    await lockReviewSuccessionGroups(transaction, groups)
+    // ast-grep-ignore: no-three-sequential-awaits -- Handoff mutations require a fresh candidate read after the row locks are acquired.
     await lockReviewSuccessionCandidates(transaction, groups, limit)
     const candidates = await listLockedReviewSuccessionCandidates(transaction, groups, limit)
     const changedPostIds = await applyReviewSuccessionMutations(

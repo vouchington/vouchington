@@ -1,7 +1,10 @@
 import { postsWorkConfig } from '@services/posts/work-limits'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
-import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
+import {
+  withCommittedPostgresTransactionForTest,
+  withPostgresTransactionForTest,
+} from '@voucha/test-helpers/postgres-transaction'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
   createRandomString,
@@ -231,6 +234,45 @@ describe('review successions', () => {
       changedPostIds: [],
     })
     await expect(listReviewSuccessionsForPostIds([predecessorId])).resolves.toHaveLength(1)
+  })
+
+  it('converges overlapping handoffs to one archive epoch for the older review', async () => {
+    const suffix = createRandomString(8)
+    const topic = await insertTestTopic({
+      name: `Concurrent review succession ${suffix}`,
+      slug: `concurrent-review-succession-${suffix}`,
+      createdById: administrator.id,
+    })
+    const predecessorId = await createReview([topic])
+    const successorId = await createReview([topic])
+    const competingGroupRead = Promise.withResolvers<void>()
+
+    const handoff = await withCommittedPostgresTransactionForTest(async query => {
+      const first = await reconcileReviewSuccessionsForPostPage(predecessorId, null, { query })
+      const competing = withPostgresTransactionForTest(
+        competingQuery =>
+          reconcileReviewSuccessionsForPostPage(successorId, null, { query: competingQuery }),
+        {
+          marker: '/* listReviewSuccessionHistoryPage */',
+          complete: competingGroupRead.resolve,
+        },
+      )
+      await Promise.race([competingGroupRead.promise, competing])
+      return { first, competing }
+    })
+    expect(handoff.first.changedPostIds).toEqual([predecessorId])
+    await expect(handoff.competing).resolves.toEqual({ changedPostIds: [], nextCursor: null })
+
+    expect((await getPostArchivedFields(predecessorId))?.archived_at).toBeInstanceOf(Date)
+    expect((await getPostArchivedFields(successorId))?.archived_at).toBeNull()
+    await expect(listReviewSuccessionsForPostIds([predecessorId])).resolves.toMatchObject([
+      {
+        predecessor_post_id: predecessorId,
+        successor_post_id: successorId,
+        automatically_restored_at: null,
+        manual_override_at: null,
+      },
+    ])
   })
 
   async function createReview(

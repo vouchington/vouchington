@@ -64,20 +64,3 @@ export async function listReviewSuccessionGroupPage(
     nextCursor: history.length === limit ? history.at(-1)!.id : null,
   }
 }
-
-/** Acquires exact-topic group locks lexically before the global post-scope lock phase. */
-export async function lockReviewSuccessionGroups(
-  query: TransactionQuery,
-  groups: readonly ReviewSuccessionGroup[],
-): Promise<void> {
-  const lockKeys = groups
-    .map(group => `review-succession:${group.authorUserId}:${group.topicIds.join(',')}`)
-    .toSorted()
-  await query(
-    `/* lockReviewSuccessionGroups */
-    SELECT pg_advisory_xact_lock(hashtextextended(lock_key, 0))
-    FROM unnest($1::text[]) AS input(lock_key)
-    ORDER BY lock_key`,
-    [lockKeys],
-  )
-}

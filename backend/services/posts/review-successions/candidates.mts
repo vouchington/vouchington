@@ -17,7 +17,7 @@ type CandidateRow = {
   succession_topic_ids: string[] | null
 }
 
-/** Locks every current candidate once, after all affected exact-topic groups are locked. */
+/** Locks the current candidates in ID order before reading their state. */
 export async function lockReviewSuccessionCandidates(
   query: TransactionQuery,
   groups: readonly ReviewSuccessionGroup[],
