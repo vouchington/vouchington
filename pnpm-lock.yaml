@@ -6545,6 +6545,9 @@ importers:
       '@services/prioritized-referral-links':
         specifier: workspace:^
         version: link:../prioritized-referral-links
+      '@services/queue-monitoring':
+        specifier: workspace:^
+        version: link:../queue-monitoring
       '@services/recaptcha':
         specifier: workspace:^
         version: link:../recaptcha
@@ -10121,6 +10124,9 @@ importers:
 
   backend/services/queue-monitoring:
     dependencies:
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
@@ -10265,6 +10271,9 @@ importers:
       p-map:
         specifier: ^7.1.1
         version: 7.1.1
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
     devDependencies:
       '@data-stores/valkey-core':
         specifier: workspace:^

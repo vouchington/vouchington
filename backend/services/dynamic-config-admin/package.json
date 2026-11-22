@@ -98,6 +98,7 @@
     "@services/post-publication": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/prioritized-referral-links": "workspace:^",
+    "@services/queue-monitoring": "workspace:^",
     "@services/recaptcha": "workspace:^",
     "@services/recommended-rss-feeds": "workspace:^",
     "@services/recommended-topics": "workspace:^",

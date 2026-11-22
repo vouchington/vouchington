@@ -18,6 +18,7 @@ const TERMINAL_CONCURRENCY_FIELD = 'terminal_activity_retention_concurrency'
 const OPERATIONAL_TOMBSTONE_CONCURRENCY_FIELD = 'operational_tombstone_retention_concurrency'
 const COPYRIGHT_CASE_PURGE_CONCURRENCY_FIELD = 'copyright_case_purge_concurrency'
 const COPYRIGHT_CASE_PURGE_PAGE_SIZE_FIELD = 'copyright_case_purge_page_size'
+const COPYRIGHT_CASE_PURGE_MAX_PENDING_FIELD = 'copyright_case_purge_max_pending'
 
 export const psqlQueueConfig = new DynamicConfig({
   key: 'psql-queue-config',
@@ -27,6 +28,7 @@ export const psqlQueueConfig = new DynamicConfig({
     [OPERATIONAL_TOMBSTONE_CONCURRENCY_FIELD]: 'number',
     [COPYRIGHT_CASE_PURGE_CONCURRENCY_FIELD]: 'number',
     [COPYRIGHT_CASE_PURGE_PAGE_SIZE_FIELD]: 'number',
+    [COPYRIGHT_CASE_PURGE_MAX_PENDING_FIELD]: 'number',
   },
   defaultFields: {
     ...orderingFields.defaultFields,
@@ -34,6 +36,7 @@ export const psqlQueueConfig = new DynamicConfig({
     [OPERATIONAL_TOMBSTONE_CONCURRENCY_FIELD]: 1,
     [COPYRIGHT_CASE_PURGE_CONCURRENCY_FIELD]: 1,
     [COPYRIGHT_CASE_PURGE_PAGE_SIZE_FIELD]: 100,
+    [COPYRIGHT_CASE_PURGE_MAX_PENDING_FIELD]: 1000,
   },
 })
 
@@ -43,6 +46,7 @@ export const psqlQueueMaxValues: Record<string, number> = {
   [OPERATIONAL_TOMBSTONE_CONCURRENCY_FIELD]: 1,
   [COPYRIGHT_CASE_PURGE_CONCURRENCY_FIELD]: 1,
   [COPYRIGHT_CASE_PURGE_PAGE_SIZE_FIELD]: 100,
+  [COPYRIGHT_CASE_PURGE_MAX_PENDING_FIELD]: 1000,
 }
 export const psqlQueueDescriptions = {
   ...orderingFields.descriptions,
@@ -53,6 +57,8 @@ export const psqlQueueDescriptions = {
   [COPYRIGHT_CASE_PURGE_CONCURRENCY_FIELD]: 'Global concurrent purge jobs for each copyright case.',
   [COPYRIGHT_CASE_PURGE_PAGE_SIZE_FIELD]:
     'Maximum indexed copyright case or account clock rows handled by one retained job run.',
+  [COPYRIGHT_CASE_PURGE_MAX_PENDING_FIELD]:
+    'PostgreSQL queue depth that pauses copyright purge admission, including waiting, active and delayed jobs.',
 }
 
 export function getTerminalActivityRetentionConcurrency(): number {
@@ -81,5 +87,12 @@ export function getCopyrightCasePurgePageSize(): number {
   return getBoundedPositiveIntegerField(psqlQueueConfig, COPYRIGHT_CASE_PURGE_PAGE_SIZE_FIELD, {
     defaultValue: 100,
     maxValue: 100,
+  })
+}
+
+export function getCopyrightCasePurgeMaxPending(): number {
+  return getBoundedPositiveIntegerField(psqlQueueConfig, COPYRIGHT_CASE_PURGE_MAX_PENDING_FIELD, {
+    defaultValue: 1000,
+    maxValue: psqlQueueMaxValues[COPYRIGHT_CASE_PURGE_MAX_PENDING_FIELD]!,
   })
 }

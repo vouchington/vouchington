@@ -1,17 +1,26 @@
 import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
-const defaultFields = { reconcile_max_pages_per_run: 10, retained_failed_job_scan_limit: 1000 }
+const defaultFields = {
+  reconcile_max_pages_per_run: 10,
+  retained_failed_job_scan_limit: 1000,
+  max_mime_nodes: 1000,
+}
 
 export const sesInboundWorkConfig = new DynamicConfig({
   key: 'ses-inbound-work-config',
-  fieldTypes: { reconcile_max_pages_per_run: 'number', retained_failed_job_scan_limit: 'number' },
+  fieldTypes: {
+    reconcile_max_pages_per_run: 'number',
+    retained_failed_job_scan_limit: 'number',
+    max_mime_nodes: 'number',
+  },
   defaultFields,
 })
 
 export const sesInboundWorkMaxValues = {
   reconcile_max_pages_per_run: 100,
   retained_failed_job_scan_limit: 10000,
+  max_mime_nodes: 1000,
 }
 
 export function getSesInboundReconcileMaxPagesPerRun(): number {
@@ -25,6 +34,13 @@ export function getSesInboundRetainedFailedJobScanLimit(): number {
   return getBoundedPositiveIntegerField(sesInboundWorkConfig, 'retained_failed_job_scan_limit', {
     defaultValue: defaultFields.retained_failed_job_scan_limit,
     maxValue: sesInboundWorkMaxValues.retained_failed_job_scan_limit,
+  })
+}
+
+export function getSesInboundMaxMimeNodes(): number {
+  return getBoundedPositiveIntegerField(sesInboundWorkConfig, 'max_mime_nodes', {
+    defaultValue: defaultFields.max_mime_nodes,
+    maxValue: sesInboundWorkMaxValues.max_mime_nodes,
   })
 }
 

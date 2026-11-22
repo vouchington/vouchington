@@ -2,6 +2,8 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import { v7 } from 'uuid'
 import type { Job } from 'glide-mq'
 import { createTestUser, createTestUserDirect } from '@voucha/test-helpers'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { psqlQueueConfig } from '@queues/psql/enqueues/ordering-config'
 import { startRealGlideBackgroundLifecycle } from '@voucha/test-helpers/real-glide-background-lifecycle'
 import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
 import {
@@ -43,6 +45,39 @@ import { admitCopyrightCasePurgePage } from './retention-case-purge-admission.mt
 
 describe('copyright purge admission and clock sync', () => {
   const setPageSize = useCopyrightCasePurgePageSize()
+
+  it('keeps the purge cursor when delayed PostgreSQL work reaches the configured queue cap', async () => {
+    await setPageSize(1)
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(psqlQueueConfig, { copyright_case_purge_max_pending: 1 }),
+    )
+    const orphanAfterId = v7()
+    const noticeId = v7()
+    const blockerId = v7()
+    await insertCopyrightPurgeOrphanForTest(noticeId)
+    onTestFinished(async () => {
+      await deleteCopyrightPurgeOrphanForTest(noticeId)
+      await (await psql.getJob(copyrightCasePurgeJobId(noticeId)))?.remove()
+    })
+    const blocker = await psql.add(
+      COPYRIGHT_CASE_PURGE_JOB_NAME,
+      { noticeId: blockerId, phase: 'parties' },
+      { ...getCopyrightCasePurgeJobOptions(blockerId), delay: 60_000 },
+    )
+    expect(blocker).not.toBeNull()
+    onTestFinished(async () => {
+      await blocker?.remove()
+    })
+    const cursor = { pendingAccountsComplete: true, caseCandidatesComplete: true, orphanAfterId }
+
+    await expect(admitCopyrightCasePurgePage(cursor)).resolves.toEqual({
+      hasMore: true,
+      next: cursor,
+      admitted: 0,
+      stalled: true,
+    })
+    expect(await psql.getJob(copyrightCasePurgeJobId(noticeId))).toBeNull()
+  })
 
   it('admits pending party accounts one page at a time with stable clock-sync jobs', async () => {
     await setPageSize(1)

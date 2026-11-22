@@ -20,6 +20,10 @@ import { oauthGithubWorkConfig, oauthGithubWorkMaxValues } from '@services/oauth
 import { oauthXWorkConfig, oauthXWorkMaxValues } from '@services/oauth-x/work-limits'
 import { sesInboundWorkConfig, sesInboundWorkMaxValues } from '@queues/ses-inbound/config'
 import {
+  queueMonitoringWorkConfig,
+  queueMonitoringWorkMaxValues,
+} from '@services/queue-monitoring/work-limits'
+import {
   psqlQueueConfig,
   psqlQueueDescriptions,
   psqlQueueMaxValues,
@@ -42,6 +46,15 @@ export const backgroundWorkEntries4 = [
     label: 'PostgreSQL queue',
     maxValues: psqlQueueMaxValues,
     descriptions: psqlQueueDescriptions,
+  }),
+  defineBoundedWorkNamespace({
+    namespace: 'queue-monitoring-work-config',
+    config: queueMonitoringWorkConfig,
+    label: 'Queue monitoring',
+    maxValues: queueMonitoringWorkMaxValues,
+    descriptions: {
+      retry_failed_limit: 'Failed jobs retried by one operator request across a queue domain.',
+    },
   }),
   defineBoundedWorkNamespace({
     namespace: 'oauth-account-friend-work-config',
@@ -94,11 +107,12 @@ export const backgroundWorkEntries4 = [
   defineBoundedWorkNamespace({
     namespace: 'ses-inbound-work-config',
     config: sesInboundWorkConfig,
-    label: 'SES inbound reconciliation',
+    label: 'SES inbound email processing',
     maxValues: sesInboundWorkMaxValues,
     descriptions: {
       reconcile_max_pages_per_run: 'Maximum S3 copyright inbox pages per reconciliation job.',
       retained_failed_job_scan_limit: 'Failed SES process jobs scanned per reconciliation run.',
+      max_mime_nodes: 'MIME nodes accepted in one inbound email message.',
     },
   }),
   defineBoundedWorkNamespace({
