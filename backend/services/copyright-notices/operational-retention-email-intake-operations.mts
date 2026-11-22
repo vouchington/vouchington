@@ -46,7 +46,7 @@ export async function deleteChildPage(
       .append(sql` = (SELECT intake_id FROM owner)`)
       .append(sql` ORDER BY `)
       .append(orderBy)
-      .append(sql` LIMIT ${remaining} FOR UPDATE)`),
+      .append(sql` LIMIT ${remaining})`),
   )
   return rowCount ?? 0
 }
