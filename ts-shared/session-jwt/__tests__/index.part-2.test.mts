@@ -26,7 +26,7 @@ describe('index', () => {
   afterEach(() => vi.useRealTimers())
   const makeIds = () => ({ did: uuidv7(), sid: uuidv7(), uid: uuidv7() })
 
-  async function generatePrivateJwk(kid: string): Promise<jose.JWK> {
+  async function generatePrivateJwk(kid: string): Promise<jose.JWK & { kid: string }> {
     const { privateKey } = await jose.generateKeyPair('RS512', { extractable: true })
     const jwk = await jose.exportJWK(privateKey)
     return {
