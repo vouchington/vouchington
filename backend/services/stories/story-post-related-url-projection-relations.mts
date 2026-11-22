@@ -86,12 +86,14 @@ async function admitPreparedRows(
   if (!(await stageStoryPostRelatedUrlProjectionReceipts(work, decisions, transaction)))
     return { ok: false }
   const eligibleUrlIds = admittedUrlIds(decisions)
-  let needsInvalidation = await pruneStoryPostRelatedUrlsOutsidePrefix(
+  const prune = await pruneStoryPostRelatedUrlsOutsidePrefix(
     transaction,
     work,
     storyTeller.id,
     eligibleUrlIds,
   )
+  if (!prune.ok) return prune
+  let needsInvalidation = prune.pruned
   const relation = getEntityRelationMetadataOrThrow({
     subjectType: 'post',
     objectType: 'url',
