@@ -3,18 +3,18 @@ import type { TransactionQuery } from '@data-stores/psql'
 import { createCodedError } from '@vouchington/sentry'
 import assert from 'http-assert'
 
-type MergeRow = Pick<Topic, 'id' | 'slug' | 'topic_type'> &
+type MergeRow = Pick<Topic, 'id' | 'topic_type'> &
   Record<'is_deleted' | 'is_merged' | 'has_pending_slug_alias', boolean>
 
-/** Lock both participants before reservation and retain precise inactive-topic errors. */
+/** Locks both participants before admitting the irreversible merge. */
 export async function lockAndAssertMergeParticipants(
   query: TransactionQuery,
   sourceTopicId: string,
   destinationTopicId: string,
-): Promise<MergeRow> {
+): Promise<void> {
   const { rows } = await query<MergeRow>(
     // no-mistakes-disable-next-line postgres-required-predicates: lifecycle output enables precise 404/409 assertions below
-    `/* mergeTopicAliases lockTopics */ SELECT id, slug, topic_type, deleted_at IS NOT NULL AS is_deleted, merged_into_topic_id IS NOT NULL AS is_merged, EXISTS (SELECT 1 FROM topic_aliases WHERE alias = topics.slug AND unlink_requested_at IS NOT NULL) AS has_pending_slug_alias FROM topics WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`,
+    `/* mergeTopicAliases lockTopics */ SELECT id, topic_type, deleted_at IS NOT NULL AS is_deleted, merged_into_topic_id IS NOT NULL AS is_merged, EXISTS (SELECT 1 FROM topic_aliases WHERE alias = topics.slug AND unlink_requested_at IS NOT NULL) AS has_pending_slug_alias FROM topics WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`,
     [[sourceTopicId, destinationTopicId]],
   )
   const sourceRow = rows.find(row => row.id === sourceTopicId)
@@ -25,8 +25,7 @@ export async function lockAndAssertMergeParticipants(
   assert(!destinationRow.is_merged, 409, 'Destination topic has already been merged')
   // A pending unlink owns its slug until bounded deletion finishes; a merge must not relink it.
   assert(!sourceRow.has_pending_slug_alias, 409, 'Topic alias unlink is in progress')
-  assertLockedTopicMergeTypes(sourceRow, destinationRow)
-  return sourceRow
+  assertTopicMergeTypes(sourceRow, destinationRow)
 }
 
 /** Reject an active merge without locking the topic read context. */
@@ -46,8 +45,7 @@ export async function assertNoActiveTopicMerges(
   assert(rows.length === 0, 409, 'Topic merge is still in progress; retry category page')
 }
 
-/** updateTopic does not check merge reservations; validate the current locked rows as well. */
-function assertLockedTopicMergeTypes(
+function assertTopicMergeTypes(
   source: Pick<Topic, 'id' | 'topic_type'>,
   destination: Pick<Topic, 'id' | 'topic_type'>,
 ): void {

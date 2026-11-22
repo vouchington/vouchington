@@ -34,7 +34,6 @@ export async function processTopicMergeVoteReferencePage(
         ON owner.operation_id = $1::uuid AND owner.user_id = vote.user_id
       WHERE vote.topic_id = $2::uuid AND vote.id = ANY($4::uuid[])
       ORDER BY vote.id
-      FOR UPDATE OF vote
     ), removed AS (
       DELETE FROM topic_votes vote USING page
       WHERE vote.topic_id = $2::uuid AND vote.id = page.id

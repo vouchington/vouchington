@@ -11,13 +11,16 @@ import {
   createTestUser,
   insertTestRssFeedDirect,
   beginTransaction,
+  softDeleteTopic,
   applyTopicAliasUnlinkPageForTest as applyTopicAliasUnlinkPage,
 } from '@voucha/test-helpers'
+import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
 import { describe, expect, it } from 'vitest'
 import {
   claimTopicAlias,
   createTopicAliases,
   createUnlinkedTopicAlias,
+  linkTopicAlias,
   unlinkTopicAlias,
 } from '../aliases.mts'
 import { recordTopicAliasPublicationChanges } from '../publication-change.mts'
@@ -45,6 +48,22 @@ describe('topic alias publication mutation', () => {
     await claimTopicAlias(topic.id, alias.alias)
 
     expect(await readTestRssCategoryAliasTopic(item.id, alias.id)).toBe(topic.id)
+  })
+
+  it('captures the previous and new topic owners when an alias is reassigned', async () => {
+    const user = await createTestUser({ administrator: true })
+    const [prior, next] = await Promise.all([createTestTopic({ user }), createTestTopic({ user })])
+    const [alias] = await createTopicAliases(prior.id, `reassign-${crypto.randomUUID()}`)
+    await softDeleteTopic(prior.id, user.id)
+
+    const jobs = await captureAddedPublicationEffectsForScope(alias!.id, () =>
+      linkTopicAlias(next.id, alias!.id),
+    )
+
+    expect(jobs).toHaveLength(1)
+    expect(jobs[0]!.keys?.filter(key => key.kind === 'impact_topic')).toEqual(
+      [prior.id, next.id].toSorted().map(uuidValue => ({ kind: 'impact_topic', uuidValue })),
+    )
   })
 
   it('keeps ordinary unlink atomic while cascading a source-less post relation', async () => {

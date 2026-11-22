@@ -1,6 +1,7 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { createTestTopic, createTestUser } from '@voucha/test-helpers'
 import { seedTopicMergeParentEdges } from '@voucha/test-helpers/topic-merge-relations'
+import { readActiveTopicMergeAdmissionIds } from '@voucha/test-helpers/topic-merge-admission'
 import { getTopicMergeParentEdge } from '@voucha/test-helpers/entities/topic-merge-parent'
 import { getEntityRelationMetadataOrThrow } from '../entity-relations/metadata.mts'
 import { upsertEntityRelation } from '../entity-relations/upsert.mts'
@@ -70,7 +71,36 @@ describe('topic merge lifecycle ordering', () => {
     })
   })
 
-  it('admits independent merge reservations concurrently', async () => {
+  it('admits one of two simultaneous merges sharing a participant', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const topics = await Promise.all(
+      Array.from({ length: 3 }, () => createTestTopic({ user: admin })),
+    )
+    const [source, shared, destination] = await Promise.all(
+      topics.map(row => getTopicByAny(row.id)),
+    )
+    const outcomes = await Promise.allSettled([
+      createTopicMergeOperation(admin, source!, shared!),
+      createTopicMergeOperation(admin, shared!, destination!),
+    ])
+    const admitted = outcomes.filter(result => result.status === 'fulfilled')
+    const rejected = outcomes.filter(result => result.status === 'rejected')
+    expect(admitted).toHaveLength(1)
+    expect(rejected).toHaveLength(1)
+    expect(rejected[0]?.reason).toMatchObject({
+      status: 409,
+      message: 'A topic merge is already in progress',
+    })
+    const operation = admitted[0]!.value
+    await expect(
+      getTopicMergeOperation(admin, operation.source_topic_id, operation.id),
+    ).resolves.toMatchObject({ status: 'queued' })
+    await expect(readActiveTopicMergeAdmissionIds([source!.id, shared!.id])).resolves.toEqual([
+      operation.id,
+    ])
+  })
+
+  it('admits a second independent merge while the first is queued', async () => {
     const admin = await createTestUser({ administrator: true })
     const topics = await Promise.all(
       Array.from({ length: 4 }, () => createTestTopic({ user: admin })),
