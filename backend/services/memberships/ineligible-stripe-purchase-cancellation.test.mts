@@ -5,37 +5,16 @@ import { beginTransaction, createTestSku, createTestUser } from '@voucha/test-he
 import { claimIneligiblePurchaseCancellationOperation } from './ineligible-stripe-purchase-cancellation.mts'
 import { getLockedIneligiblePurchaseReversalCase } from './ineligible-stripe-purchase-reversal/case-ledger.mts'
 import { createMembership } from './create.mts'
-import { markIneligiblePurchaseReversalCompleted } from './ineligible-stripe-purchase-reversal-execution.mts'
+import {
+  IneligiblePurchaseReversalInProgressError,
+  markIneligiblePurchaseReversalCompleted,
+} from './ineligible-stripe-purchase-reversal-execution.mts'
 
 describe('claimIneligiblePurchaseCancellationOperation', () => {
-  it.each(['before lookup', 'before claim'])(
+  it.each(['before lookup', 'before claim'] as const)(
     'returns the completed cancellation when another worker completes it %s',
     async completionPoint => {
-      const user = await createTestUser()
-      const currentSku = await createTestSku({ plan: 'plus' })
-      await createMembership({
-        userId: user.id,
-        plan: 'plus',
-        skuId: currentSku.id,
-        stripeSubscriptionId: `sub_current_cancellation_${randomUUID()}`,
-        providerEnvironment: 'production',
-      })
-      const incomingSku = await createTestSku({ plan: 'pro' })
-      const subscriptionId = `sub_cancellation_${randomUUID()}`
-      const options = {
-        effectiveAt: undefined,
-        expiresAt: undefined,
-        originatingInvoiceId: `in_cancellation_${randomUUID()}`,
-        providerEnvironment: 'production' as const,
-        providerApplicationId: 'voucha-web',
-        stripePriceId: incomingSku.stripe_price_id,
-        subscriptionId,
-        userId: user.id,
-      }
-      const snapshot = { currency: 'usd', qualifyingAmountMinorUnits: 0 }
-      const initial = await claimTestIneligiblePurchaseReversalOperations(options, [], snapshot)
-      const cancellation = initial.cancellation
-      if (!cancellation) throw new Error('Expected a cancellation operation')
+      const { options, cancellation } = await createCancellationFixture()
 
       await using transaction = await beginTransaction()
       const reversalCase = await getLockedIneligiblePurchaseReversalCase(options, transaction)
@@ -76,4 +55,47 @@ describe('claimIneligiblePurchaseCancellationOperation', () => {
       await transaction.commit()
     },
   )
+
+  it('lets the current lease holder finish after a second worker is rejected', async () => {
+    const { options, snapshot, cancellation } = await createCancellationFixture()
+    await expect(
+      claimTestIneligiblePurchaseReversalOperations(options, [], snapshot),
+    ).rejects.toBeInstanceOf(IneligiblePurchaseReversalInProgressError)
+
+    await markIneligiblePurchaseReversalCompleted(cancellation)
+    await expect(
+      claimTestIneligiblePurchaseReversalOperations(options, [], snapshot),
+    ).resolves.toMatchObject({
+      cancellation: { id: cancellation.id, completed: true, leaseToken: null },
+    })
+  })
 })
+
+async function createCancellationFixture() {
+  const user = await createTestUser()
+  const currentSku = await createTestSku({ plan: 'plus' })
+  await createMembership({
+    userId: user.id,
+    plan: 'plus',
+    skuId: currentSku.id,
+    stripeSubscriptionId: `sub_current_cancellation_${randomUUID()}`,
+    providerEnvironment: 'production',
+  })
+  const incomingSku = await createTestSku({ plan: 'pro' })
+  const subscriptionId = `sub_cancellation_${randomUUID()}`
+  const options = {
+    effectiveAt: undefined,
+    expiresAt: undefined,
+    originatingInvoiceId: `in_cancellation_${randomUUID()}`,
+    providerEnvironment: 'production' as const,
+    providerApplicationId: 'voucha-web',
+    stripePriceId: incomingSku.stripe_price_id,
+    subscriptionId,
+    userId: user.id,
+  }
+  const snapshot = { currency: 'usd', qualifyingAmountMinorUnits: 0 }
+  const initial = await claimTestIneligiblePurchaseReversalOperations(options, [], snapshot)
+  const cancellation = initial.cancellation
+  if (!cancellation) throw new Error('Expected a cancellation operation')
+  return { options, snapshot, cancellation }
+}
