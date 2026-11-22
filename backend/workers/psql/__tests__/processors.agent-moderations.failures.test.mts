@@ -106,7 +106,7 @@ describe('agent moderation retention boundaries', () => {
     expect(add).not.toHaveBeenCalled()
     expect(await getTestAgentModerationRetentionState(neighbor.postId, neighbor.oldId)).toEqual({
       dueAt: '2026-10-02T00:00:00.000Z',
-      blockedReason: null,
+      blockedReason: 'reconcile',
     })
   })
 
@@ -133,7 +133,7 @@ describe('agent moderation retention boundaries', () => {
     expect(add).not.toHaveBeenCalled()
     expect(await getTestAgentModerationRetentionState(neighbor.postId, neighbor.oldId)).toEqual({
       dueAt: '2026-10-02T00:00:00.000Z',
-      blockedReason: null,
+      blockedReason: 'reconcile',
     })
   })
 })

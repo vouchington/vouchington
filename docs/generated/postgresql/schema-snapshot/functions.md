@@ -1502,6 +1502,14 @@ CREATE OR REPLACE FUNCTION public.fn_text_to_timestamptz(text_value text)
  IMMUTABLE
 ```
 
+## `fn_update_agent_moderation_predecessors`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_agent_moderation_predecessors()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_update_agent_moderation_retention`
 
 ```sql
