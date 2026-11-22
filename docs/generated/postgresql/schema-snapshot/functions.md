@@ -1903,6 +1903,14 @@ CREATE OR REPLACE FUNCTION public.fn_user_deletion_has_remaining_owned_data(targ
  LANGUAGE plpgsql
 ```
 
+## `fn_wake_agent_moderation_predecessors`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_wake_agent_moderation_predecessors()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_wake_agent_moderation_retention(p_post_id uuid, p_moderation_id uuid)`
 
 ```sql

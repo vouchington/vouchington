@@ -23,7 +23,7 @@
       ]
     },
     "agent_moderation_retention_block_reasons": {
-      "values": ["hash", "reference", "newest", "reconcile"]
+      "values": ["hash", "reference", "newest", "reconcile", "check_newest"]
     },
     "agent_types": {
       "values": ["moderator", "autotagger", "storyteller", "classifier"]
@@ -2196,6 +2196,9 @@
     },
     "fn_user_deletion_has_remaining_owned_data(target_user_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_user_deletion_has_remaining_owned_data(target_user_id uuid)\n RETURNS boolean\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  ownership RECORD;\n  has_rows BOOLEAN;\nBEGIN\n  FOR ownership IN\n    SELECT * FROM (VALUES\n      ('posts', 'created_by_id'),\n      ('post_topic_alias_sources', 'contributor_user_id'),\n      ('user_email_addresses', 'user_id'),\n      ('user_phone_numbers', 'user_id'),\n      ('user_passkeys', 'user_id'),\n      ('user_totp_authenticators', 'user_id'),\n      ('api_keys', 'user_id'),\n      ('user_sessions', 'user_id'),\n      ('facebook_accounts', 'user_id'),\n      ('apple_accounts', 'user_id'),\n      ('google_accounts', 'user_id'),\n      ('x_accounts', 'user_id'),\n      ('linkedin_accounts', 'user_id'),\n      ('microsoft_accounts', 'user_id'),\n      ('github_accounts', 'user_id'),\n      ('bluesky_link_completions', 'user_id'),\n      ('bluesky_linked_accounts', 'user_id'),\n      ('session_referral_attributions', 'user_id')\n    ) AS configured(table_name, column_name)\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE %I = $1)',\n      ownership.table_name,\n      ownership.column_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  FOR ownership IN\n    SELECT DISTINCT table_name, 'user_id' AS column_name\n    FROM information_schema.columns\n    WHERE table_schema = 'public'\n      AND column_name = 'user_id'\n      AND table_name LIKE '%\\_votes' ESCAPE '\\'\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE user_id = $1)',\n      ownership.table_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  FOR ownership IN\n    SELECT DISTINCT table_name, 'subject_id' AS column_name\n    FROM information_schema.columns\n    WHERE table_schema = 'public'\n      AND column_name = 'subject_id'\n      AND table_name LIKE 'relation\\_\\_user\\_\\_%' ESCAPE '\\'\n      AND table_name NOT LIKE '%\\_votes' ESCAPE '\\'\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE subject_id = $1)',\n      ownership.table_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  IF EXISTS (\n    SELECT 1 FROM user_lists WHERE owner_user_id = target_user_id AND removed_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM bluesky_link_authorizations\n    WHERE user_id = target_user_id\n      AND status IN ('pending', 'callback_claimed', 'handoff_ready', 'attached')\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM bluesky_follow_records\n    WHERE follower_user_id = target_user_id OR followee_user_id = target_user_id\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM user_data_requests\n    WHERE user_id = target_user_id\n      AND (\n        (completed_at IS NULL AND failed_at IS NULL)\n        OR (completed_at IS NOT NULL AND failed_at IS NULL AND s3_key IS NOT NULL)\n      )\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_clients\n    WHERE owner_user_id = target_user_id AND revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_grants\n    WHERE user_id = target_user_id AND revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_refresh_token_families family\n    JOIN oauth_grants oauth_grant ON oauth_grant.id = family.grant_id\n    WHERE oauth_grant.user_id = target_user_id AND family.revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_access_tokens access\n    JOIN oauth_grants oauth_grant ON oauth_grant.id = access.grant_id\n    WHERE oauth_grant.user_id = target_user_id AND access.revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_refresh_tokens refresh\n    JOIN oauth_refresh_token_families family ON family.id = refresh.family_id\n    JOIN oauth_grants oauth_grant ON oauth_grant.id = family.grant_id\n    WHERE oauth_grant.user_id = target_user_id AND refresh.revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  RETURN FALSE;\nEND;\n$function$\n"
+    },
+    "fn_wake_agent_moderation_predecessors": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_wake_agent_moderation_predecessors()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE agent_moderations prior\n  SET retention_due_at = uuid_extract_timestamp(prior.id) + INTERVAL '90 days',\n      retention_blocked_reason = NULL\n  WHERE prior.post_id = NEW.post_id\n    AND prior.id IN (\n      SELECT id FROM agent_moderations\n      WHERE post_id = NEW.post_id AND prompt_id = NEW.prompt_id AND id < NEW.id\n      ORDER BY id DESC LIMIT 1\n    )\n    AND prior.retention_due_at IS NULL\n    AND (prior.retention_blocked_reason IS NULL OR prior.retention_blocked_reason = 'newest');\n  IF NEW.deleted_at IS NULL THEN\n    UPDATE agent_moderations prior\n    SET retention_due_at = uuid_extract_timestamp(prior.id) + INTERVAL '90 days',\n        retention_blocked_reason = NULL\n    WHERE prior.post_id = NEW.post_id\n      AND prior.id IN (\n        SELECT id FROM agent_moderations\n        WHERE post_id = NEW.post_id AND prompt_id = NEW.prompt_id\n          AND deleted_at IS NULL AND id < NEW.id\n        ORDER BY id DESC LIMIT 1\n      )\n      AND prior.retention_due_at IS NULL\n    AND (prior.retention_blocked_reason IS NULL OR prior.retention_blocked_reason = 'newest');\n  END IF;\n  RETURN NULL;\nEND $function$\n"
     },
     "fn_wake_agent_moderation_retention(p_post_id uuid, p_moderation_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_wake_agent_moderation_retention(p_post_id uuid, p_moderation_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF p_post_id IS NULL OR p_moderation_id IS NULL THEN RETURN; END IF;\n  UPDATE agent_moderations\n  SET retention_due_at = uuid_extract_timestamp(id) + INTERVAL '90 days',\n      retention_blocked_reason = NULL\n  WHERE post_id = p_post_id AND id = p_moderation_id\n    AND retention_blocked_reason = 'reference';\nEND $function$\n"
@@ -4456,7 +4459,7 @@
     "agent_moderations": {
       "checkConstraints": {
         "agent_moderations_input_sha256_check": "CHECK ((octet_length(input_sha256) = 32))",
-        "chk_agent_moderations__retention_state": "CHECK (((retention_blocked_reason IS NULL) OR ((retention_blocked_reason = 'reconcile'::agent_moderation_retention_block_reasons) = (retention_due_at IS NOT NULL))))",
+        "chk_agent_moderations__retention_state": "CHECK (((retention_blocked_reason IS NULL) OR ((retention_blocked_reason = ANY (ARRAY['reconcile'::agent_moderation_retention_block_reasons, 'check_newest'::agent_moderation_retention_block_reasons])) = (retention_due_at IS NOT NULL))))",
         "chk_agent_moderations__transparency_projection": "CHECK ((((moderation_transparency_category IS NULL) AND (moderation_transparency_community_id IS NULL)) OR (moderation_transparency_category = 'agent_moderation'::moderation_transparency_categories) OR ((moderation_transparency_category = 'community_ai'::moderation_transparency_categories) AND (moderation_transparency_community_id IS NOT NULL))))",
         "chk_agent_moderations_votes_count_down": "CHECK ((votes_count_down >= 0))",
         "chk_agent_moderations_votes_count_none": "CHECK ((votes_count_none >= 0))",
@@ -4601,7 +4604,7 @@
         },
         "retention_blocked_reason": {
           "collation": null,
-          "comment": "Reason a previously due result is blocked, or reconcile while a source event awaits its predecessor check.",
+          "comment": "Reason a result is blocked or the pending retention check it needs.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -5318,6 +5321,7 @@
       "triggers": {
         "trigger_agent_moderations_retention_insert": "CREATE TRIGGER trigger_agent_moderations_retention_insert BEFORE INSERT ON public.agent_moderations FOR EACH ROW EXECUTE FUNCTION fn_update_agent_moderation_retention()",
         "trigger_agent_moderations_retention_live": "CREATE TRIGGER trigger_agent_moderations_retention_live BEFORE UPDATE OF deleted_at ON public.agent_moderations FOR EACH ROW WHEN ((old.deleted_at IS DISTINCT FROM new.deleted_at)) EXECUTE FUNCTION fn_update_agent_moderation_retention()",
+        "trigger_agent_moderations_retention_wake_predecessors": "CREATE TRIGGER trigger_agent_moderations_retention_wake_predecessors AFTER INSERT ON public.agent_moderations FOR EACH ROW EXECUTE FUNCTION fn_wake_agent_moderation_predecessors()",
         "trigger_agent_moderations_updated_at": "CREATE TRIGGER trigger_agent_moderations_updated_at BEFORE UPDATE ON public.agent_moderations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
         "trigger_moderation_transparency_agent_projection_guard": "CREATE TRIGGER trigger_moderation_transparency_agent_projection_guard BEFORE UPDATE OF id, agent_id, prompt_id, moderation_transparency_category, moderation_transparency_community_id ON public.agent_moderations FOR EACH ROW EXECUTE FUNCTION fn_reject_agent_moderation_transparency_projection()",
         "trigger_moderation_transparency_agent_stamp": "CREATE TRIGGER trigger_moderation_transparency_agent_stamp BEFORE INSERT OR UPDATE OF deleted_at ON public.agent_moderations FOR EACH ROW EXECUTE FUNCTION fn_update_agent_moderation_transparency()"
@@ -91427,7 +91431,7 @@
         },
         "cursor_lower_bound_record_id": {
           "collation": null,
-          "comment": "Frozen lower bound of the ledger pass.",
+          "comment": "Frozen lower bound of the active pass; a broader requested scope restarts rather than skipping its earlier rows.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -91460,7 +91464,7 @@
         },
         "kind": {
           "collation": null,
-          "comment": "Moderation retention stream whose progress this row records.",
+          "comment": "Ledger stream whose progress this row records.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -91514,7 +91518,7 @@
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Durable UUIDv7 positions for bounded post moderation retention.",
+      "comment": "Durable UUIDv7 positions for bounded post moderation ledger retention.",
       "foreignKeys": {},
       "growth": "bounded",
       "indexes": {
