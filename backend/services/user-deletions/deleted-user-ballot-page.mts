@@ -36,7 +36,6 @@ export async function inspectDeletedUserBallotOwners(
   lowerId: string | null,
   upperId: string,
   limit: number,
-  userIds?: readonly string[],
 ) {
   const { rows } = await query<{ id: string; has_ballot: boolean }>(
     `/* inspectDeletedUserBallotOwners */
@@ -48,10 +47,9 @@ export async function inspectDeletedUserBallotOwners(
     FROM (
       SELECT id FROM users WHERE deleted_at IS NOT NULL AND id <= $2::uuid
         AND id > COALESCE($1::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
-        ${userIds ? 'AND id = ANY($4::uuid[])' : ''}
       ORDER BY id LIMIT $3
     ) owner ORDER BY owner.id`,
-    userIds ? [lowerId, upperId, limit, userIds] : [lowerId, upperId, limit],
+    [lowerId, upperId, limit],
   )
   return rows
 }
@@ -110,4 +108,28 @@ export async function deleteDeletedUserBallotKeys(
     [userId, keys.map(key => key.entity_id), keys.map(key => key.id)],
   )
   return rowCount ?? 0
+}
+
+/**
+ * Deletes one capped page of a soft-deleted user's ballots from the first family that still has
+ * any. Returns the number deleted, so finalization can retry once the page made progress.
+ */
+export async function purgeDeletedUserBallotPage(
+  query: QueryExecutor,
+  userId: string,
+  limit: number,
+): Promise<number> {
+  const { rows } = await query<{ family: string }>(
+    `/* findDeletedUserBallotFamily */ ${ballotFamilies
+      .map(
+        ({ table }) =>
+          `SELECT '${table}' AS family WHERE EXISTS (SELECT 1 FROM ${table} WHERE user_id = $1::uuid)`,
+      )
+      .join(' UNION ALL ')} LIMIT 1`,
+    [userId],
+  )
+  if (!rows[0]) return 0
+  const family = getDeletedUserBallotFamily(rows[0].family)
+  const keys = await selectDeletedUserBallotKeys(query, family, userId, limit, null)
+  return deleteDeletedUserBallotKeys(query, family, userId, keys)
 }

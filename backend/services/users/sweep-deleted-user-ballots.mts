@@ -10,7 +10,7 @@ import {
   getDeletedUserBallotFamily,
   inspectDeletedUserBallotOwners,
   selectDeletedUserBallotKeys,
-} from './deleted-user-ballot-page.mts'
+} from '@services/user-deletions/deleted-user-ballot-page'
 
 type Position = {
   family: string
@@ -19,7 +19,6 @@ type Position = {
   cursor_ballot_id: string | null
   sweep_upper_bound_id: string | null
 }
-type Scope = { userIds: readonly string[]; batchSize: number; position?: Position | null }
 
 const start: Position = {
   family: deletedUserBallotFamilies[0]!,
@@ -29,25 +28,22 @@ const start: Position = {
   sweep_upper_bound_id: null,
 }
 
-export async function sweepDeletedUserBallots(scope?: Scope) {
-  const batchSize = scope?.batchSize ?? getUserDeletionsWorkLimit('straggler_ballot_batch_size')
+export async function sweepDeletedUserBallots() {
+  const batchSize = getUserDeletionsWorkLimit('straggler_ballot_batch_size')
   if (
     !Number.isInteger(batchSize) ||
     batchSize < 1 ||
-    batchSize > userDeletionsWorkMaxValues.straggler_ballot_batch_size ||
-    (scope && scope.userIds.length > userDeletionsWorkMaxValues.straggler_ballot_batch_size)
+    batchSize > userDeletionsWorkMaxValues.straggler_ballot_batch_size
   ) {
     throw new RangeError('Deleted-user ballot sweep exceeds its work cap')
   }
   await using query = await beginTransaction()
-  const prior = scope ? (scope.position ?? null) : await readPosition(query)
+  const prior = await readPosition(query)
   const position = prior ?? start
-  if (scope && position.cursor_owner_id && !scope.userIds.includes(position.cursor_owner_id))
-    throw new RangeError('Deleted-user ballot position is outside the owned scope')
-  const upperId = position.sweep_upper_bound_id ?? (await findUpperUserId(query, scope?.userIds))
+  const upperId = position.sweep_upper_bound_id ?? (await findUpperUserId(query))
   if (!upperId) return { deleted: 0, position: prior }
-  const nextPage = await preparePage(query, position, upperId, batchSize, scope?.userIds)
-  if (!scope && !(await advancePosition(query, prior, nextPage.position)))
+  const nextPage = await preparePage(query, position, upperId, batchSize)
+  if (!(await advancePosition(query, prior, nextPage.position)))
     return { deleted: 0, position: prior }
   const deleted = nextPage.ownerId
     ? await deleteDeletedUserBallotKeys(
@@ -66,7 +62,6 @@ async function preparePage(
   position: Position,
   upperId: string,
   batchSize: number,
-  userIds?: readonly string[],
 ) {
   const family = getDeletedUserBallotFamily(position.family)
   const cursor =
@@ -81,7 +76,6 @@ async function preparePage(
       position.cursor_owner_id,
       upperId,
       batchSize,
-      userIds,
     )
     ownerId = users.find(user => user.has_ballot)?.id ?? null
     if (!ownerId) {
@@ -112,12 +106,9 @@ async function preparePage(
   }
 }
 
-async function findUpperUserId(query: QueryExecutor, userIds?: readonly string[]) {
-  const statement = sql`/* findDeletedUserBallotSweepUpperUser */ SELECT id FROM users
-    WHERE deleted_at IS NOT NULL`
-  if (userIds) statement.append(sql` AND id = ANY(${userIds}::uuid[])`)
-  statement.append(' ORDER BY id DESC LIMIT 1')
-  const { rows } = await query<{ id: string }>(statement)
+async function findUpperUserId(query: QueryExecutor) {
+  const { rows } = await query<{ id: string }>(sql`/* findDeletedUserBallotSweepUpperUser */
+    SELECT id FROM users WHERE deleted_at IS NOT NULL ORDER BY id DESC LIMIT 1`)
   return rows[0]?.id
 }
 

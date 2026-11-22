@@ -81,3 +81,35 @@ export async function advanceTestDeletionToFinalize(
   }
   throw new Error('User deletion did not reach finalization within the fixture cap')
 }
+
+export type TestBallotSweepCursor = {
+  family: string
+  cursor_owner_id: string | null
+  cursor_entity_id: string | null
+  cursor_ballot_id: string | null
+  sweep_upper_bound_id: string | null
+}
+
+/** Replaces the singleton sweep cursor; null removes it so the next sweep creates one. */
+export async function seedTestBallotSweepCursor(cursor: TestBallotSweepCursor | null) {
+  await write(sql`/* clearTestBallotSweepCursor */ DELETE FROM deleted_user_ballot_cleanup_cursors`)
+  if (!cursor) return
+  await write(sql`/* seedTestBallotSweepCursor */
+    INSERT INTO deleted_user_ballot_cleanup_cursors
+      (family, cursor_owner_id, cursor_entity_id, cursor_ballot_id, sweep_upper_bound_id)
+    VALUES (${cursor.family}, ${cursor.cursor_owner_id}, ${cursor.cursor_entity_id},
+      ${cursor.cursor_ballot_id}, ${cursor.sweep_upper_bound_id})`)
+}
+
+export async function readTestBallotSweepCursor() {
+  const { rows } = await write<TestBallotSweepCursor>(sql`/* readTestBallotSweepCursor */
+    SELECT family, cursor_owner_id, cursor_entity_id, cursor_ballot_id, sweep_upper_bound_id
+    FROM deleted_user_ballot_cleanup_cursors WHERE is_singleton`)
+  return rows[0] ?? null
+}
+
+/** The UUID immediately below `id`, so a sweep resumed after it starts at `id`. */
+export function previousTestUuid(id: string) {
+  const hex = (BigInt(`0x${id.replaceAll('-', '')}`) - 1n).toString(16).padStart(32, '0')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
