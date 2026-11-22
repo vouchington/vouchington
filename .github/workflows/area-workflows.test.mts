@@ -58,6 +58,10 @@ const areas = Object.entries(nightly.jobs ?? {})
   }))
 // Every area but static selects itself from the changed files.
 const selectedAreas = areas.filter(({ area }) => area !== 'static')
+// Backend static runs in parallel with its suites; the area gate still requires it.
+const parallelStaticAreas = new Set(['backend'])
+// Image jobs publish or validate artifacts, so they alone still wait for static in those areas.
+const staticGatedImageJobs = new Set(['validate-backend-images', 'publish-backend-images'])
 
 describe('area workflows', () => {
   it('runs every area workflow from nightly, one job per area', () => {
@@ -130,19 +134,28 @@ describe('area workflows', () => {
     const suites = Object.keys(jobs).filter(
       id => ![area, 'changes', ...staticJobs, ...preparationJobs].includes(id) && !fanIns.has(id),
     )
+    const parallel = parallelStaticAreas.has(area)
     const suiteShape = (id: string) => {
       const needs = needsOf(jobs[id]!)
+      const selects = jobs[id]!.if?.includes(selected) ?? false
       return {
         id,
         // A suite waits only for area selection, static checks, and declared setup jobs.
         waitsOnSelectionAndSetupOnly: needs.every(
-          need => need === 'changes' || staticJobs.includes(need) || preparationJobs.includes(need),
+          need =>
+            need === 'changes' ||
+            (staticJobs.includes(need) && (!parallel || staticGatedImageJobs.has(id))) ||
+            preparationJobs.includes(need),
         ),
-        // The area static checks gate it; without them, it selects the area itself.
-        gated:
-          staticJobs.length > 0
+        // The area static checks gate it, or in a parallel-static area it selects the area itself
+        // or waits for a setup job that does; without static checks, it selects the area itself.
+        gated: parallel
+          ? selects ||
+            preparationJobs.some(job => needs.includes(job)) ||
+            (staticGatedImageJobs.has(id) && staticJobs.every(job => needs.includes(job)))
+          : staticJobs.length > 0
             ? staticJobs.every(job => needs.includes(job))
-            : (jobs[id]!.if?.includes(selected) ?? false),
+            : selects,
       }
     }
 
