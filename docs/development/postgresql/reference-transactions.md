@@ -95,8 +95,9 @@ used, except where the privacy and legal exception below applies.
 
 **Adding a lock is an owner decision.** A change that adds any lock clause or lock helper call says
 so in the pull request body, with the interleaving that corrupts data and why none of the options
-above fit. An agent working unattended does not add one; it stops and asks. Tests assert the final
-state under the interleaving, never that a lock was taken or in what order.
+above fit. An agent working unattended does not add one: it ships the lock-free design, states the
+worst case, and puts the lock it would propose in the pull request body for the owner. Tests assert
+the final state under the interleaving, never that a lock was taken or in what order.
 
 Automated reviewers often report "race" findings that ask for a lock, a wider lock, or a
 generation, fence, claim or counter column. Decline them with a link to this section. Answer with
