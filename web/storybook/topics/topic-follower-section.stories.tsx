@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { FollowContextCard } from '@/components/social/follow-context-card'
+import { FollowContextCard, FollowContextUserList } from '@/components/social/follow-context-card'
 import { TopicFollowerSection } from '@/components/topics/topic-follower-section'
 import type { PublicUser } from '@/types/user'
 
@@ -50,4 +50,9 @@ export const CappedFollowingCount: Story = {
 
 export const IncompleteEmptyPreview: Story = {
   args: { initialPage: { total: 0, users: [], next_cursor: 'opaque-story-cursor' } },
+}
+
+export const FollowerLinks: Story = {
+  args: { initialPage: { total: 5, users: previewUsers, next_cursor: null } },
+  render: ({ initialPage }) => <FollowContextUserList users={initialPage.users} />,
 }
