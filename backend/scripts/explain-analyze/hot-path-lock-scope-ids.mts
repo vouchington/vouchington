@@ -25,6 +25,7 @@ export const HOT_PATH_LOCK_SCOPE_SCENARIOS = [
   'activitypub-receipt-floor-snapshot',
   'activitypub-follow-identity-constraints',
   'election-vote-lifecycle-snapshot',
+  'post-vote-activitypub-like-identity',
   'api-key-active-owner-role',
   'api-key-create-owner-snapshot',
   'api-key-rotate-owner-snapshot',

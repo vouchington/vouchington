@@ -8,8 +8,9 @@ import {
   markRemoteFollowUndone,
 } from '@services/ap-inbox-activities/follow-cycles'
 import { upsertElectionVotesShared } from '@services/elections-votes/shared/vote-upsert'
+import { POST_ELECTION_CONFIG } from '@services/elections-votes/post/config'
 import { TOPIC_ELECTION_CONFIG } from '@services/elections-votes/topic/config'
-import { runAndCapture, seedUser, seedTopicId } from '../run-support.mts'
+import { runAndCapture, seedUser, seedTopicId, seedPostId } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 
@@ -116,5 +117,28 @@ export async function runActivityPubVoteAuthorityScenarios(): Promise<void> {
     },
     undefined,
     ['assertActiveElectionVoter', 'upsertElectionVotesShared'],
+  )
+
+  registerScenarioContract('post-vote-activitypub-like-identity', {
+    expectations: [{ kind: 'maxProcessedRows', relation: 'post_votes', max: 12 }],
+  })
+  await runAndCapture(
+    'post-vote-activitypub-like-identity',
+    async () => {
+      await using query = await beginTransaction()
+      // Like, strength change, then Undo: the Undo statement reads the latest Like-root ballot.
+      for (const score of [1, 2, -1] as const) {
+        await upsertElectionVotesShared(
+          POST_ELECTION_CONFIG,
+          seedUser.id,
+          [{ entityId: seedPostId, score }],
+          undefined,
+          { query },
+        )
+      }
+      await query.rollback()
+    },
+    undefined,
+    ['upsertElectionVotesShared'],
   )
 }
