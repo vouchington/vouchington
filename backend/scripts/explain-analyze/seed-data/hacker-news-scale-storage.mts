@@ -1,6 +1,5 @@
 import { read, write } from '@data-stores/psql'
-import type { QueryExecutor } from '@data-stores/psql/types'
-import { contentHash, seedUuid, seedUuidAtTimestamp } from './common.mts'
+import { seedUuid, seedUuidAtTimestamp } from './common.mts'
 import { addUtcMonths, nextUtcMonthStart } from './comment-descendant-partition-storage.mts'
 
 export const HACKER_NEWS_SCALE_POST_COUNT = 1_000_000
@@ -9,7 +8,7 @@ export const HACKER_NEWS_SCALE_UNVOTED_URL_COUNT = 3_000
 export const HACKER_NEWS_SCALE_PARTITION_PREFIX = 'posts__explain_5053_hn_'
 const PARTITION_COUNT = 24
 const IDENTITY_SERIAL = 9_053_000
-const POST_SERIAL = 30_000_000
+export const POST_SERIAL = 30_000_000
 
 export interface HackerNewsScalePartition {
   name: string
@@ -87,38 +86,6 @@ export async function assertNoLeftoverHackerNewsScalePartitions(): Promise<void>
     throw new Error(
       `Leftover #5053 HN partitions (${rows.map(row => row.name).join(', ')}); recreate the disposable EXPLAIN database before running ordinary scenarios.`,
     )
-}
-
-export async function insertHackerNewsScalePartitions(
-  query: QueryExecutor,
-  fixture: HackerNewsScaleFixture,
-): Promise<void> {
-  const hash = contentHash('hacker-news-scale-5053')
-  for (const partition of fixture.partitions) {
-    const lower = seedUuidAtTimestamp(partition.month, 0)
-    const upper = seedUuidAtTimestamp(addUtcMonths(partition.month, 1), 0)
-    // Autovacuum is off so a worker does not pin these leaf buffers during capture. A buffer
-    // another backend still has pinned is counted in eviction.skipped and does not fail the shard.
-    // Statistics come from the explicit ANALYZE calls before each capture.
-    // no-mistakes-disable-next-line query-reached-per-item: exactly 24 owned monthly partitions are created once in the disposable EXPLAIN database.
-    await query(
-      `/* createHackerNewsScalePartition */ CREATE TABLE ${partition.name} PARTITION OF posts
-       FOR VALUES FROM ('${lower}'::uuid) TO ('${upper}'::uuid)
-       WITH (autovacuum_enabled = false)`,
-    )
-    // no-mistakes-disable-next-line query-reached-per-item: each fixed partition receives at most 41,667 rows through one bounded set-based insert; no individual post calls.
-    await query(
-      `/* insertHackerNewsScalePosts */ INSERT INTO posts (
-        id, created_via, post_type, markdown, created_by_id, approved_at,
-        votes_score_up, votes_count_up,
-        bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256
-      ) SELECT ($1 || lpad(to_hex($2::bigint + ordinal), 12, '0'))::uuid,
-        'system', 'discussion', 'HN scale fixture', $3, now(),
-        1 + (ordinal * 17) % 101, 1 + (ordinal * 17) % 101, $4, $4
-        FROM generate_series($5::int, $5::int + $6::int - 1) AS fixture(ordinal)`,
-      [partition.idPrefix, POST_SERIAL, fixture.actorId, hash, partition.start, partition.count],
-    )
-  }
 }
 
 const REFERENCE_AUTOVACUUM_ROOTS = [
