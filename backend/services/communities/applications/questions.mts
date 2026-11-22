@@ -1,5 +1,5 @@
 import { read, beginTransaction, write } from '@data-stores/psql'
-import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
+import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { getCommunityWithViewer } from '../load-with-viewer.mts'
@@ -24,14 +24,13 @@ export async function getApplicationQuestions(
   return rows as CommunityApplicationQuestion[]
 }
 
-export async function getApplicationQuestionsForShare(
-  query: TransactionQuery,
-  communityId: string,
-): Promise<CommunityApplicationQuestion[]> {
-  const statement = applicationQuestionsStatement(communityId)
-  statement.append(sql` FOR SHARE`)
-  const { rows } = await query(statement)
-  return rows as CommunityApplicationQuestion[]
+export function applicationQuestionIdsMatch(communityId: string, questionIds: string[]) {
+  return sql`ARRAY(
+    SELECT id FROM community_application_questions
+    WHERE community_id = ${communityId} AND deleted_at IS NULL
+    ORDER BY order_index ASC
+    LIMIT ${QUESTION_ROWS_MAX}
+  ) = ${questionIds}::uuid[]`
 }
 
 function applicationQuestionsStatement(communityId: string) {

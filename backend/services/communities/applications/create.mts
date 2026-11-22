@@ -15,7 +15,7 @@ import { insertApplicationAnswers } from './answer-rows.mts'
 import { assertApplicationAnswers } from './answers.mts'
 import { getApplication } from './get.mts'
 import { getPendingApplicationForUser } from './pending.mts'
-import { getApplicationQuestionsForShare } from './questions.mts'
+import { applicationQuestionIdsMatch, getApplicationQuestions } from './questions.mts'
 import type { CommunityApplication } from '../types.mts'
 
 /**
@@ -53,7 +53,7 @@ async function insertApplication(
   assert(!community.archived_at, 409, 'Archived communities cannot be updated')
   assert(community.visibility === 'private', 422, 'Applications are only for private communities')
 
-  const questions = await getApplicationQuestionsForShare(query, communityId)
+  const questions = await getApplicationQuestions(communityId, options)
   // Malformed answers stay 422 ahead of the ban, member, and pending gates.
   assertApplicationAnswers(questions, answers)
 
@@ -65,14 +65,21 @@ async function insertApplication(
   const pending = await getPendingApplicationForUser(communityId, currentUserId, options)
   assert(!pending, 409, 'You already have a pending application for this community')
 
-  const { rows } = await write(
+  const { rows } = await write<{ id: string }>(
     sql`/* createApplication */
       INSERT INTO community_applications (community_id, user_id, message, created_via, created_via_oauth_client_id)
-      VALUES (${communityId}, ${currentUserId}, ${message ?? null}, ${provenance.createdVia}, ${provenance.oauthClientId})
-      RETURNING id`,
+      SELECT ${communityId}, ${currentUserId}, ${message ?? null}, ${provenance.createdVia}, ${provenance.oauthClientId}
+      WHERE `.append(
+      applicationQuestionIdsMatch(
+        communityId,
+        questions.map(question => question.id),
+      ),
+    ).append(sql`
+      RETURNING id`),
     options,
   )
-  const applicationId = (rows[0] as { id: string }).id
+  const applicationId = rows[0]?.id
+  assert(applicationId, 422, 'Application questions changed. Reload the form and try again.')
   await insertApplicationAnswers(applicationId, communityId, answers, options)
   // Read back so the response carries the answers object rebuilt from the stored rows.
   return (await getApplication(applicationId, options))!
