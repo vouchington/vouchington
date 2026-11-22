@@ -5329,6 +5329,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      '@vouchington/pagination':
+        specifier: ^0.0.4
+        version: 0.0.4
       '@vouchington/sentry':
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.12.0)(@sentry/core@11.12.0)(@sentry/node@11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
@@ -10411,6 +10414,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      '@vouchington/pagination':
+        specifier: ^0.0.4
+        version: 0.0.4
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2

@@ -3,14 +3,6 @@
  * Factory pattern for creating pagination parsers with declarative configuration
  */
 
-// Re-export types
-export type {
-  ScoreCursor,
-  ScopedPreciseTimestampCursor,
-  ScopedTierPreciseUuidCursor,
-  NameCursor,
-} from './types.mts'
-
 // Re-export cursor utilities
 export * from './cursors.mts'
 export {
