@@ -1,12 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   createDbscTestSession,
   DBSC_TEST_REGISTRATION_URL,
 } from '@voucha/test-helpers/dbsc-session'
 import { expireTestPreviousDeviceTokenGrace } from '@voucha/test-helpers/entities/device-authority'
+import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { authorizeDbscProof } from './dbsc-proof.mts'
 import { createDbscRegistrationOffer, createDbscRefreshChallenge } from './dbsc-registration.mts'
-import { readSessionDeviceAuthority } from './device-authority.mts'
+import { hashDeviceToken, readSessionDeviceAuthority } from './device-authority.mts'
 import { refreshSessionState } from './flows.mts'
 
 describe('browser device-bound recovery', () => {
@@ -38,6 +39,37 @@ describe('browser device-bound recovery', () => {
         origin: 'https://other.example',
       }),
     ).toBeNull()
+  })
+
+  it('revokes the session when another rotation displaces a credential registering on replay', async () => {
+    const fixture = await createDbscTestSession()
+    const rotated = await refreshSessionState(fixture.base)
+    const proof = await fixture.authorizeRegistration()
+    const sid = rotated.sid
+    let latestDigest: string | undefined
+    onTestFinished(
+      beforePostgresTransactionQueryForTest(
+        '/* registerReplayedDeviceCredentialBinding */',
+        values => values.includes(sid),
+        async () => {
+          const latest = await refreshSessionState({ ...fixture.base, deviceToken: rotated.dt })
+          expect(latest.dt).not.toBe(rotated.dt)
+          latestDigest = hashDeviceToken(latest.dt)
+        },
+      ),
+    )
+
+    await expect(refreshSessionState({ ...fixture.base, dbscProof: proof })).rejects.toMatchObject({
+      status: 401,
+      code: 'SESSION_REFRESH_REUSED',
+    })
+    expect(latestDigest).toBeTypeOf('string')
+    expect(await readSessionDeviceAuthority(sid)).toMatchObject({
+      revoked_at: expect.any(Date),
+      device_token_digest: latestDigest,
+      previous_device_token_digest: hashDeviceToken(rotated.dt),
+      device_bound_session_binding: null,
+    })
   })
 
   it('revokes an old credential if its grace expires while a browser proof is being verified', async () => {

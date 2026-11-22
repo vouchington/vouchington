@@ -1,6 +1,7 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { createDbscTestSession } from '@voucha/test-helpers/dbsc-session'
 import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
+import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { v7 } from 'uuid'
 import { verifyDeviceJwt, signSessionJwt } from '@ts-shared/session-jwt'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
@@ -173,6 +174,33 @@ describe('durable device credential authority', () => {
         device_bound_session_binding: { publicKey: fixture.publicKey },
       },
     )
+  })
+
+  it('requires proof when replay registration binds the still-current credential during rotation', async () => {
+    const fixture = await createDbscTestSession()
+    const rotated = await refreshSessionState(fixture.base)
+    const proof = await fixture.authorizeRegistration()
+    const sid = rotated.sid
+    onTestFinished(
+      beforePostgresTransactionQueryForTest(
+        '/* rotateAuthenticatedDeviceToken */',
+        values => values.includes(sid),
+        async () => {
+          const registered = await refreshSessionState({ ...fixture.base, dbscProof: proof })
+          expect(registered.dt).toBe(rotated.dt)
+        },
+      ),
+    )
+
+    await expect(
+      refreshSessionState({ ...fixture.base, deviceToken: rotated.dt }),
+    ).rejects.toMatchObject({ status: 403, code: 'DBSC_PROOF_REQUIRED' })
+    expect(await readSessionDeviceAuthority(sid)).toMatchObject({
+      revoked_at: null,
+      device_token_digest: hashDeviceToken(rotated.dt),
+      previous_device_token_digest: hashDeviceToken(fixture.base.deviceToken),
+      device_bound_session_binding: { publicKey: fixture.publicKey },
+    })
   })
 
   it('renews a verified native device from durable authority without an ephemeral authority record', async () => {

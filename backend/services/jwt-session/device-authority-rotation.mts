@@ -74,7 +74,7 @@ async function rotateVerifiedDeviceCredential(
           AND previous_device_token_grace_expires_at > clock_timestamp()
           AND device_bound_session_binding IS NULL`),
       )
-      if (rowCount !== 1) throw sessionReloginRequired()
+      if (rowCount !== 1) return await resolveRotationRace(authority, true)
     }
     await query.commit()
     return currentToken
@@ -121,13 +121,13 @@ async function rotateVerifiedDeviceCredential(
   ): Promise<string> {
     const current = await readSessionDeviceAuthority(options.sid, query)
     assertDeviceCredentialAuthority(current, device, options)
-    if (!isExactReplay(current)) {
-      if (current.device_token_digest === presentedDigest) throw sessionReloginRequired()
+    const exactReplay = isExactReplay(current)
+    if (!exactReplay && current.device_token_digest !== presentedDigest)
       return revokeReusedCredential(current)
-    }
     // The proof was consumed for the observed binding. A different binding needs fresh proof.
-    if (registering || serializeBinding(current) !== serializeBinding(previous))
+    if ((exactReplay && registering) || serializeBinding(current) !== serializeBinding(previous))
       throw createCodedError(403, 'Device session proof required', DBSC_PROOF_REQUIRED)
+    if (!exactReplay) throw sessionReloginRequired()
     const token = await verifyStoredDeviceCredentialReplay(current, device, options)
     await query.commit()
     return token
