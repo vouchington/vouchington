@@ -5,6 +5,7 @@ import { runWithTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { enqueueBulkStoryPostAgents } from '@queues/ai-agents/enqueues/story-post'
 import { refreshStoryPostForStory, type StoryPostRefreshResult } from './refresh-story-post.mts'
+import { invalidate } from '@services/entity-cache/invalidate'
 import { invalidateStories } from './cache-invalidation.mts'
 import { recordPostPublicationChange } from '@services/post-publication'
 import { getPostStoryIdsByStoryIds } from './get-post-stories.mts'
@@ -69,11 +70,9 @@ export async function adminAssignItemToStory(
     if (!row) return null
     afterCommit = async () => {
       await dispatchPostCommitEffectsBestEffort(refreshResults)
-      void enqueueBulkStoryPostAgents(
-        refreshResults.map(({ postId }) => postId),
-        { force: true },
-      )
-      await invalidateStories(storyId, row.prior_story_id)
+      const postIds = refreshResults.map(({ postId }) => postId)
+      void enqueueBulkStoryPostAgents(postIds, { force: true })
+      if (postIds.length > 0) await invalidate.posts(...postIds)
     }
     return row.id
   })

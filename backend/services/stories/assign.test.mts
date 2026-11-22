@@ -26,6 +26,7 @@ import {
 } from '@voucha/test-helpers/injected-failures'
 import { trackAgentQueueAdds } from '../../test-helpers/services/stories/story-post-agent-adds.mts'
 import * as cacheInvalidation from './cache-invalidation.mts'
+import { invalidate } from '@services/entity-cache/invalidate'
 import { settleStoryPostTopicVoteCapture } from '../../test-helpers/services/stories/post-topic-vote-capture.mts'
 import { drainStoryPostRelatedUrlProjection } from '../../test-helpers/services/stories/story-post-related-url-projection.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -227,21 +228,23 @@ describe('assign', () => {
     const topic = await createTestTopic({ name: `Story move ordering ${randomUUID()}` })
     await addCategoryToRssFeedItem(movedItemId, topic.id)
     await refreshStoryPostForStory(prior.story.id)
-    const realInvalidateStories = cacheInvalidation.invalidateStories
+    const realInvalidatePosts = invalidate.posts
+    const movedStoryPostIds = [target.post.id, prior.post.id].toSorted()
     const topicsAtInvalidation: Array<{ prior: string[]; target: string[] }> = []
-    const invalidateSpy = vi
-      .spyOn(cacheInvalidation, 'invalidateStories')
-      .mockImplementation(async (...storyIds) => {
-        // Only the assignment invalidates a moved item's new and prior story together.
-        if (storyIds.length === 2)
-          topicsAtInvalidation.push({
-            prior: await getPostCategoryTopicIds(prior.post.id),
-            target: await getPostCategoryTopicIds(target.post.id),
-          })
-        await realInvalidateStories(...storyIds)
-      })
+    const invalidateSpy = vi.spyOn(invalidate, 'posts').mockImplementation(async (...postIds) => {
+      // Only the assignment invalidates a moved item's new and prior story posts together.
+      if (
+        postIds.length === movedStoryPostIds.length &&
+        movedStoryPostIds.every(id => postIds.includes(id))
+      )
+        topicsAtInvalidation.push({
+          prior: await getPostCategoryTopicIds(prior.post.id),
+          target: await getPostCategoryTopicIds(target.post.id),
+        })
+      await realInvalidatePosts(...postIds)
+    })
     await adminAssignItemToStory(storyPostUser.id, target.story.id, movedItemId)
-    expect(invalidateSpy).toHaveBeenCalledWith(target.story.id, prior.story.id)
+    expect(invalidateSpy).toHaveBeenCalledWith(...movedStoryPostIds)
     expect(topicsAtInvalidation).toHaveLength(1)
     expect(topicsAtInvalidation[0]!.prior).not.toContain(topic.id)
     expect(topicsAtInvalidation[0]!.target).toContain(topic.id)
