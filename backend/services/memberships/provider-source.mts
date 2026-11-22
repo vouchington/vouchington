@@ -140,7 +140,7 @@ async function getOrCreateProviderSource(
       SET user_id = ${options.userId}
       WHERE id = ${source.id} AND user_id IS NULL
       RETURNING id, user_id, source_kind`)
-    source = reboundRows[0] ?? (await query<SourceRow>(findSource)).rows[0]
+    source = reboundRows[0]
   }
   if (!source || source.user_id !== options.userId || source.source_kind !== options.sourceKind)
     throw new ProviderMembershipSourceConflictError('Provider source belongs to another account')
