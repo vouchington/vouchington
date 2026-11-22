@@ -53,7 +53,7 @@ export async function getVoteFollowContextBatch(
   }
 }
 
-/** Fetch both vote groups and topic followers with one shared public-user hydration query. */
+/** Hydrate topic followers and, on the first page, both vote groups in one batch. */
 export async function getTopicFollowContextBatch(
   currentUser: BasicUser,
   topicId: string,
@@ -63,17 +63,19 @@ export async function getTopicFollowContextBatch(
     after,
   }: FollowContextBatchOptions & { after?: string } = {},
 ): Promise<TopicFollowContextBatch> {
-  const [[positive, negative], topicFollowers] = await Promise.all([
-    getFollowContextVoteIds(currentUser, topicId, 'topic_votes', limit, queryOptions),
+  const [voteGroups, topicFollowers] = await Promise.all([
+    after === undefined
+      ? getFollowContextVoteIds(currentUser, topicId, 'topic_votes', limit, queryOptions)
+      : [],
     getFollowedUsersFollowingTopicIds(currentUser, topicId, limit, queryOptions, after),
   ])
-  const [positiveUsers, negativeUsers, topicFollowerUsers] = await hydrateFollowContextGroups(
-    [positive, negative, topicFollowers],
+  const [topicFollowerUsers, positiveUsers, negativeUsers] = await hydrateFollowContextGroups(
+    [topicFollowers, ...voteGroups],
     queryOptions,
   )
   return {
-    positiveByFollowing: positiveUsers!,
-    negativeByFollowing: negativeUsers!,
+    positiveByFollowing: positiveUsers ?? { total: 0, users: [] },
+    negativeByFollowing: negativeUsers ?? { total: 0, users: [] },
     followingTopicFollowers: {
       ...topicFollowerUsers!,
       total_is_exact: topicFollowers.totalIsExact,

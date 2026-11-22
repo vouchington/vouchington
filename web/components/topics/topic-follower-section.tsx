@@ -23,7 +23,10 @@ export function TopicFollowerSection({
 }) {
   const t = useTranslations()
   const locale = useUiLocale()
-  const [page, setPage] = useState(initialPage)
+  const [page, setPage] = useState(() => ({
+    ...initialPage,
+    next_cursor: initialPage.next_cursor ?? null,
+  }))
   const [loading, setLoading] = useState(false)
   const [failed, setFailed] = useState(false)
   const lowerBound = Math.max(page.total, page.users.length)
@@ -45,7 +48,7 @@ export function TopicFollowerSection({
           users: [...users.values()].slice(0, FOLLOWER_PREVIEW_SIZE),
           // A continuation describes a suffix. Only the initial page can report an exact total.
           total: Math.max(previous.total, next.total, users.size),
-          next_cursor: next.next_cursor,
+          next_cursor: next.next_cursor ?? null,
         }
       })
     } catch (err) {

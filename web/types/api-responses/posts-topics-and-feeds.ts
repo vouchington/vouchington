@@ -157,8 +157,8 @@ export interface EntityFollowContextResponseBody {
 }
 
 export interface TopicFollowerContext extends FollowContextUsers {
-  total_is_exact: boolean
-  next_cursor: string | null
+  total_is_exact?: boolean
+  next_cursor?: string | null
 }
 
 export type TopicFollowContextResponseBody = EntityFollowContextResponseBody & {

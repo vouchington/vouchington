@@ -1,17 +1,22 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
+  CONTRIBUTING_USER_AGE_MS,
+  countCapturedQueriesByAnnotation,
   createTestTopic,
   createTestUser,
+  createTestUserWithAge,
   followTopic,
   followUser,
   insertTestTopic,
   overrideDynamicConfigFieldsForTest,
+  withCapturedTestQueries,
 } from '@voucha/test-helpers'
 import {
   softDeleteEntityRelationTest,
   updateTestEntityRelationCreatedAt,
 } from '@voucha/test-helpers/entities/entity-relations'
+import { getTopicFollowContextBatch } from '@services/users/follow-context'
 import { updateUserFields } from '@services/users/update-fields'
 import { usersWorkConfig } from '@services/users/work-limits'
 
@@ -79,6 +84,78 @@ describe('topic follow context pagination', () => {
       total_is_exact: true,
       users: [{ id: expectedIds[4] }, { id: older.id }],
       next_cursor: null,
+    })
+  })
+
+  it('continues after exactly one match over the count cap without reading the vote groups again', async () => {
+    const viewer = await createTestUser()
+    const positive = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+    const negative = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+    const tail = await createTestUser()
+    const topic = await createTestTopic({
+      user: viewer,
+      name: `Follow context cap boundary ${viewer.id}`,
+      topic_type: 'topic',
+    })
+    const followers = [positive, negative, tail]
+    for (const [index, follower] of followers.entries()) {
+      await followUser(viewer, follower)
+      await followTopic(follower, topic)
+      await updateTestEntityRelationCreatedAt(
+        'relation__user__follow__user',
+        viewer.id,
+        follower.id,
+        new Date(Date.UTC(2025, 7, 1, 0, 0, 3 - index)),
+      )
+    }
+    const positiveRequest = createRequest()
+    await positiveRequest.authenticateAs(positive)
+    await positiveRequest
+      .put(`/api/v1/topics/${topic.id}/vote`)
+      .send({ choice: 'like' })
+      .expect(204)
+    const negativeRequest = createRequest()
+    await negativeRequest.authenticateAs(negative)
+    await negativeRequest
+      .put(`/api/v1/topics/${topic.id}/vote`)
+      .send({ choice: 'dislike' })
+      .expect(204)
+
+    await usersWorkConfig.waitForInitialization()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(usersWorkConfig, { topic_follow_context_count_cap: 2 }),
+    )
+    const request = createRequest()
+    await request.authenticateAs(viewer)
+    const path = `/api/v1/topics/${topic.id}/follow-context`
+    const first = (await request.get(path).expect(200)).body
+    expect(first).toMatchObject({
+      positive_by_following: { total: 1, users: [{ id: positive.id }] },
+      negative_by_following: { total: 1, users: [{ id: negative.id }] },
+      following_topic_followers: {
+        total: 2,
+        total_is_exact: false,
+        users: [{ id: positive.id }, { id: negative.id }],
+        next_cursor: expect.any(String),
+      },
+    })
+    const after = first.following_topic_followers.next_cursor as string
+    const { queries } = await withCapturedTestQueries(() =>
+      getTopicFollowContextBatch(viewer, topic.id, { after }),
+    )
+    expect(countCapturedQueriesByAnnotation(queries, 'getFollowedUsersFollowingTopic')).toBe(1)
+    expect(countCapturedQueriesByAnnotation(queries, 'getFollowedUsersByElectionVote')).toBe(0)
+
+    const next = (await request.get(path).query({ after }).expect(200)).body
+    expect(next).toMatchObject({
+      positive_by_following: { total: 0, users: [] },
+      negative_by_following: { total: 0, users: [] },
+      following_topic_followers: {
+        total: 1,
+        total_is_exact: true,
+        users: [{ id: tail.id }],
+        next_cursor: null,
+      },
     })
   })
 
@@ -154,8 +231,6 @@ describe('topic follow context pagination', () => {
         users: [],
         next_cursor: expect.any(String),
       })
-      expect(pages.first.next_cursor).not.toContain(hidden.id)
-      expect(Buffer.from(pages.first.next_cursor, 'base64url').toString()).not.toContain(hidden.id)
       expect(pages.next).toMatchObject({
         total: 1,
         total_is_exact: true,

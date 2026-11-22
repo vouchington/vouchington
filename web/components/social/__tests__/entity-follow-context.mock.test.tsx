@@ -95,7 +95,30 @@ describe('entity follow context', () => {
     expect(screen.getByText('Negative signals for this topic')).toBeDefined()
   })
 
-  it('keeps an incomplete empty topic preview visible and continues only on request', async () => {
+  it('hides an empty topic follow context from a legacy response', async () => {
+    getCurrentUser.mockResolvedValue(currentUser)
+    getTopicFollowContext.mockResolvedValue(topicPage(noSignals))
+
+    const { container } = await renderRsc(TopicFollowContext({ id: 'topic-legacy-empty' }))
+
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it('renders an exact topic follower count for a legacy response without pagination metadata', async () => {
+    getCurrentUser.mockResolvedValue(currentUser)
+    getTopicFollowContext.mockResolvedValue(topicPage({ total: 3, users: [follower('mira')] }))
+    fetchTopicFollowContext.mockReset()
+
+    await renderRsc(TopicFollowContext({ id: 'topic-legacy' }))
+
+    expect(screen.getByRole('link', { name: 'mira' })).toBeVisible()
+    expect(screen.getByText('3')).toBeVisible()
+    expect(screen.getByText('and 2 more')).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Keep looking' })).toBeNull()
+    expect(fetchTopicFollowContext).not.toHaveBeenCalled()
+  })
+
+  it('continues past an empty topic preview and stops when the next response omits a cursor', async () => {
     getCurrentUser.mockResolvedValue(currentUser)
     getTopicFollowContext.mockResolvedValue(
       topicPage({ total: 0, users: [], total_is_exact: false, next_cursor: 'opaque-partial' }),
@@ -106,7 +129,7 @@ describe('entity follow context', () => {
         topicPage({ total: 0, users: [], total_is_exact: false, next_cursor: 'opaque-empty' }),
       )
       .mockResolvedValueOnce(
-        topicPage({ total: 1, users: [follower('mira')], total_is_exact: true, next_cursor: null }),
+        topicPage({ total: 1, users: [follower('mira')], total_is_exact: false }),
       )
 
     await renderRsc(TopicFollowContext({ id: 'topic-1' }))

@@ -12,9 +12,10 @@ export default async function TopicFollowContext({ id }: { id: string }) {
   const context = await getTopicFollowContext(id)
   if (!context) return null
   const followers = context.following_topic_followers
+  const totalIsExact = followers.total_is_exact !== false
   const hasVotes =
     context.positive_by_following.total > 0 || context.negative_by_following.total > 0
-  if (!hasVotes && followers.total === 0 && followers.total_is_exact) return null
+  if (!hasVotes && followers.total === 0 && totalIsExact) return null
 
   const topicFollowersTitle = t('extracted.topics.topicFollowContext.followThisTopic_5b12931d')
 
@@ -36,7 +37,7 @@ export default async function TopicFollowContext({ id }: { id: string }) {
             'extracted.topics.topicFollowContext.noFollowedUsersLeftANegativeSignalForThis_d22b1c9b',
           ),
         },
-        ...(followers.total_is_exact
+        ...(totalIsExact
           ? [
               {
                 title: topicFollowersTitle,
@@ -49,7 +50,7 @@ export default async function TopicFollowContext({ id }: { id: string }) {
           : []),
       ]}
       extraSection={
-        !followers.total_is_exact && (
+        !totalIsExact && (
           <TopicFollowerSection
             key={id}
             topicId={id}
@@ -57,7 +58,7 @@ export default async function TopicFollowContext({ id }: { id: string }) {
             initialPage={{
               total: followers.total,
               users: followers.users,
-              next_cursor: followers.next_cursor,
+              next_cursor: followers.next_cursor ?? null,
             }}
           />
         )
