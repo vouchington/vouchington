@@ -87,8 +87,12 @@ export async function runAgentModerationRetentionScenarios(): Promise<void> {
     expectations: [
       {
         kind: 'usesIndexes',
+        indexes: ['posts__default_pkey', 'posts__default_llm_moderation_content_sha256_id_idx'],
+        anyOf: true,
+      },
+      {
+        kind: 'usesIndexes',
         indexes: [
-          'posts__default_pkey',
           'agent_moderations__default_post_id_prompt_id_id_idx',
           'idx_moderation_training_feedbacks__agent_moderation_id',
           'idx_vote_integrity_flags__agent_moderation_id',
