@@ -1565,8 +1565,7 @@
       ],
       "rules": {
         "no-void": "off",
-        "no-await-in-loop": "off",
-        "nextjs/no-html-link-for-pages": "off"
+        "no-await-in-loop": "off"
       }
     }
   ]
