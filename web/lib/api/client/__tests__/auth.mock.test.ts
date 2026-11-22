@@ -22,12 +22,29 @@ import {
   completeOAuthAuthorization,
   disconnectOAuthAccount,
   postLogout,
+  sendEmailLoginToken,
 } from '../auth'
 
 describe('OAuth broker auth client', () => {
   beforeEach(() => {
     mockPost.mockReset()
     mockDelete.mockReset()
+  })
+
+  it('posts the email login token request and returns the resend interval', async () => {
+    const response = { email_address: 'a@b.test', resend_after_seconds: 60 }
+    mockPost.mockResolvedValue(response)
+
+    await expect(sendEmailLoginToken('a@b.test', 'ts-token', undefined, 'en-US')).resolves.toEqual(
+      response,
+    )
+    expect(mockPost).toHaveBeenCalledWith('/api/v1/auth/email-address/tokens', {
+      email_address: 'a@b.test',
+      cf_turnstile_response: 'ts-token',
+      ui_locale: 'en-US',
+      hp_website: '',
+      hp_phone: '',
+    })
   })
 
   it('acknowledges a consumed web completion result', async () => {
