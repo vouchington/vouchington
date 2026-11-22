@@ -9,12 +9,10 @@
   them (`scripts/build/compile-backend-binaries.mts`), so a new run-time file read relative to a
   module must be staged there. Generic utilities belong in `backend/modules/` (`@modules/foo`),
   never `backend/lib/`. Functions receiving a user take `currentUser`/`currentUserId` first.
-- Each direct external API call has its own function tagged `/* no-mistakes: integration=<provider> */`.
-- Backend returns structured entity references, never frontend routes; the web resolves URLs with
-  `web/lib/links/entity-href.ts`.
+- Tag each direct external API call function `/* no-mistakes: integration=<provider> */`.
+- The web resolves entity references to URLs with `web/lib/links/entity-href.ts`.
 - When MCP tools or their REST twins change inputs/outputs, update checked-in contracts, tool
   schemas, fixtures, and the MCP catalog together, and test handler results and rejections against
   the declared schemas.
 - Third-party browser SDK/API origins are registered in `REGISTERED_WEB_CSP_ORIGINS` and
-  `buildWebCsp()` (`cloudflare-worker/src/csp.mts`). State in a code comment whether an
-  integration fails open (paid/advisory signals) or closed (security hard gates).
+  `buildWebCsp()` (`cloudflare-worker/src/csp.mts`).

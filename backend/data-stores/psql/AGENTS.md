@@ -8,8 +8,6 @@
 - Fixed migrations and ledger inserts are transactional; never add manual `BEGIN`/`COMMIT` or
   online index-upgrade migrations.
 - Vote schema uses [`election-schema-config.mts`](config-driven/utils/election-schema-config.mts).
-- Prefer lifecycle timestamps over booleans/status columns. Keep final results on the owning row.
-- No HASH partitions.
 
 ## Prelaunch storage
 
