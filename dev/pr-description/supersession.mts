@@ -30,7 +30,7 @@ export type SupersessionHit = {
 }
 
 /**
- * One term per query, modeled on `duplicateSearchArgs` (`dev/agent-issue-labels/batch/taxonomy.mts`).
+ * One term per query, modeled on the batch preflight duplicate search in `vouchington-tooling/agent-issue-labels`.
  * `--state open` is deliberate: an already-closed originating issue must never surface here.
  * No `in:title` — the removed surface usually appears in the issue body, not its title.
  */

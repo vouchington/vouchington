@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { createFixtureDeadline } from '../../test-helpers/fixture-deadline.mts'
+import { createFixtureDeadline } from 'vouchington-tooling/fixture-deadline'
 
 import {
   callsRequireAdmin,

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { createFixtureDeadline } from '../../test-helpers/fixture-deadline.mts'
+import { createFixtureDeadline } from 'vouchington-tooling/fixture-deadline'
 
 import { factoryReturnsPageThatCalls } from '../route-admin-surface-facts.mts'
 import { collectRouteAdminSurfaceFacts as collectFacts } from '../route-admin-surface-query.mts'
