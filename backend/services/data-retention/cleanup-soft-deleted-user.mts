@@ -68,7 +68,7 @@ export async function cleanupSoftDeletedUser(
 
 /**
  * READ COMMITTED: every statement reads its own snapshot, so the retention window, open deletion
- * request and open hold are repeated in the DELETE's WHERE and evaluated after the account lock is
+ * request, open hold and incomplete administrator refund are repeated in the DELETE's WHERE and evaluated after the account lock is
  * granted. A copyright party admitted concurrently is invisible to this snapshot, so the clock sync
  * flag is always set and the sync job settles it from the committed party rows.
  */
@@ -92,6 +92,13 @@ async function deletePurgedUser(
         AND NOT EXISTS (SELECT 1 FROM user_legal_preservation_holds preservation_hold
           WHERE preservation_hold.account_user_id = users.id
             AND preservation_hold.released_at IS NULL)
+        AND NOT EXISTS (SELECT 1
+          FROM membership_administrator_refund_operation_requests refund_request
+          INNER JOIN membership_operations operation
+            ON operation.id = refund_request.membership_operation_id
+          INNER JOIN membership_lineage_bindings binding
+            ON binding.id = operation.membership_lineage_binding_id
+          WHERE binding.user_id = users.id AND operation.completed_at IS NULL)
         AND NOT EXISTS (SELECT 1 FROM community_members WHERE user_id = ${targetId})
         AND NOT EXISTS (SELECT 1 FROM notifications WHERE user_id = ${targetId})
         AND NOT EXISTS (SELECT 1 FROM user_lists WHERE owner_user_id = ${targetId})

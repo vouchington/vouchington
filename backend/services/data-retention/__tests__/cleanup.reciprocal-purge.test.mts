@@ -48,10 +48,12 @@ describe('reciprocal final user purges', () => {
       )
       // The scheduled path reports the collision and stops that page; the direct path rejects.
       expect(aborted).toEqual(mode === 'direct' ? ['40P01'] : [])
-      expect(fulfilled).toHaveLength(mode === 'direct' ? 1 : 2)
-      expect(fulfilled.filter(result => result.deleted === 0)).toHaveLength(
-        mode === 'direct' ? 0 : 1,
-      )
+      const expectedResults = [
+        { deleted: 1, hasMore: false },
+        ...(mode === 'direct' ? [] : [{ deleted: 0, hasMore: false }]),
+      ]
+      expect(fulfilled).toHaveLength(expectedResults.length)
+      expect(fulfilled).toEqual(expect.arrayContaining(expectedResults))
       const afterRace = await Promise.all(scene.targets.map(readTestPurgeSceneState))
       expect(afterRace.filter(state => state.user !== null)).toHaveLength(1)
 

@@ -127,10 +127,16 @@ applies, so it does not tell the account holder that legal process exists. `dele
 path that sets `deleted_at`. The immediate erasure phases act only on accounts that are already
 soft-deleted and do not check preservation holds. Final purge runs at read committed and takes the account row's
 `FOR NO KEY UPDATE` lock, the lock hold admission takes, immediately before its `DELETE`. The `DELETE`
-repeats every condition it relies on (retention window, open requests, open hold) in its own `WHERE`, so
-a hold that committed first makes it delete nothing and a hold arriving later waits and reports 404; a
-conflicting hold and hard delete cannot both commit. A purge whose `DELETE` removes nothing rolls its page back and reports more work, so the batch continues with the other
-users and discovery reruns in the same run; a deadlock ends the page without retry, and the next scheduled run rediscovers the account. Incoming references remain unchanged
+repeats every condition it relies on (retention window, open requests, open refund, open hold) in its own
+`WHERE`. A hold that committed first makes it delete nothing, and the page rolls back. A hold arriving
+while the purge holds the row waits; it reports 404 only if the purge commits the account `DELETE`, and
+proceeds normally if the purge rolls back. A conflicting hold and hard delete cannot both commit. A
+zero-row `DELETE` rolls its page back, reports more work and leaves the account eligible for
+rediscovery; the batch does not promise to rediscover it in the same run, because a later deadlock in
+the batch stops the pass. A deadlock ends its page without retry. A continuation page already in flight
+(a page that returns more work before the final `DELETE`) can commit its stage deletions after a hold is
+placed; only the page that attempts the final `DELETE` re-checks the hold and rolls back. Placing the
+lock earlier is an owner decision and unchanged from before this design. Incoming references remain unchanged
 until the final user deletion applies their existing null-on-delete behavior.
 
 An operative repeat-infringer incident does not block deletion. The normal deletion phases erase

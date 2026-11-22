@@ -79,6 +79,7 @@ export async function purgeBothAfterTestUserLocks<Result>(
 ): Promise<PromiseSettledResult<Result>[]> {
   const arrived = ids.map(() => Promise.withResolvers<void>())
   const bothArrived = Promise.all(arrived.map(arrival => arrival.promise))
+  void bothArrived.catch(() => undefined)
   const restore = interceptPostgresTransactionsForTest(
     transaction =>
       new Proxy(transaction, {
@@ -97,7 +98,16 @@ export async function purgeBothAfterTestUserLocks<Result>(
       }),
   )
   try {
-    return await Promise.allSettled(ids.map(purge))
+    return await Promise.allSettled(
+      ids.map(async (id, index) => {
+        try {
+          return await purge(id)
+        } finally {
+          // A purge that settles before reaching the barrier would park the other forever.
+          arrived[index]!.reject(new Error('Purge settled before reaching the lock barrier'))
+        }
+      }),
+    )
   } finally {
     restore()
   }

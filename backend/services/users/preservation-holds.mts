@@ -76,8 +76,11 @@ async function readPreservationHoldUser(
 
 /**
  * Places the account's single open hold at READ COMMITTED. The `FOR NO KEY UPDATE` account lock
- * orders it against final purge (a purge already holding the row makes this report 404; a purge
- * reaching the row after this commits deletes nothing and refuses on its next run) and against other hold writers, and the one-open unique index backs
+ * orders it against final purge and against other hold writers: a purge already holding the row makes
+ * this report 404 only if that purge commits the account DELETE (a purge that rolls back leaves the
+ * account and this proceeds); a purge reaching the row after this commits deletes nothing and rolls
+ * back its final page. A continuation page already in flight can still commit its stage deletions
+ * after this commits; only the page that attempts the final DELETE re-checks. The one-open unique index backs
  * the single open hold. A soft-deleted account remains eligible for preservation.
  * The reference is encrypted and is not copied to the moderator audit row.
  */
