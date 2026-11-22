@@ -62,16 +62,16 @@ export async function readStoryPostRelatedUrlProjectionActiveRelations(
   createdById: string,
   urlIds: readonly string[],
 ): Promise<Array<{ id: string; object_id: string }>> {
-  // A generic = ANY plan index-scans (subject_id, id) and then filters deleted rows.
+  // Equal UUID bounds preserve equality while keeping the generic plan on the composite index;
+  // ordinary creator equality can underestimate this creator and scan its unrelated relations.
   const { rows } = await query<{ id: string; object_id: string }>(
     `/* storyPostRelatedUrlProjectionActiveRelationIds */
       SELECT relation.id, relation.object_id
-      FROM (SELECT DISTINCT input.id FROM unnest($3::uuid[]) AS input(id)) requested
-      JOIN relation__post__related__url relation
-        ON relation.subject_id = $1
-       AND relation.created_by_id = $2
-       AND relation.object_id = requested.id
-       AND relation.deleted_at IS NULL
+      FROM relation__post__related__url relation
+      WHERE relation.subject_id = $1
+        AND relation.created_by_id >= $2 AND relation.created_by_id <= $2
+        AND relation.object_id = ANY($3::uuid[])
+        AND relation.deleted_at IS NULL
       ORDER BY relation.object_id
       LIMIT $4`,
     [postId, createdById, urlIds, relationLimitsMaxValues.post_related_url],
