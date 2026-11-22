@@ -1372,6 +1372,8 @@
         reason: First-party injected authentication protocol engines published by the repo author.
       - name: '@vouchington/aws'
         reason: First-party AWS command builders and request-handler configuration published by the repo author.
+      - name: '@vouchington/browser-crawl'
+        reason: First-party policy-injected browser crawl and page measurement primitives published by the repo author.
       - name: '@vouchington/csv'
         reason: First-party CSV parsing and safe serialization primitives published by the repo author.
       - name: '@vouchington/crawler-html'
