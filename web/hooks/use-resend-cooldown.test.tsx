@@ -27,7 +27,11 @@ describe('useResendCooldown', () => {
     act(() => result.current.startFromResponse({ resend_after_seconds: 3 }))
     expect(result.current.secondsLeft).toBe(3)
     act(() => {
-      vi.advanceTimersByTime(2000)
+      vi.advanceTimersByTime(1000)
+    })
+    expect(result.current.secondsLeft).toBe(2)
+    act(() => {
+      vi.advanceTimersByTime(1000)
     })
     expect(result.current.secondsLeft).toBe(1)
     act(() => {
