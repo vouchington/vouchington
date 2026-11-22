@@ -93,6 +93,10 @@ export const backgroundWorkRegistryEntries9 = {
         'Newest legal preservation holds an administrator view lists per account.',
       content_removal_count_cap:
         'Moderator-removed posts counted for a user moderation context before the count saturates.',
+      topic_follow_context_count_cap:
+        'Maximum reported count of followed accounts visible in a topic follower context.',
+      topic_follow_context_inspect_limit:
+        'Maximum active follows of the viewer inspected per topic follower context page.',
     },
   }),
   'post-clearance-work-config': defineBoundedWorkNamespace({

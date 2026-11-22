@@ -3666,6 +3666,41 @@
           ]
         }
       }
+    },
+    {
+      "id": "topic-follow-context-continuation",
+      "title": "Topic follower context continuation",
+      "domain": "Topics",
+      "intents": ["topics"],
+      "requirements": ["docs/requirements/CLIENT-PARITY-MATRIX.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "topic follower context"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/components/topics/topic-follower-section.tsx"],
+          "apiEvidence": ["web/lib/api/client/topics.ts"],
+          "behaviorTests": ["web/components/social/__tests__/entity-follow-context.mock.test.tsx"]
+        },
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Swift and .NET have no topic follower context consumer yet. After the producer contract lands, native clients must preserve viewer-follow recency, visibility, opaque continuation, and non-exact lower-bound counts; native adoption remains pending.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/758"
+      }
     }
   ]
 }

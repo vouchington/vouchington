@@ -23,7 +23,10 @@ type VoteFollowContextBatch = {
 }
 
 type TopicFollowContextBatch = VoteFollowContextBatch & {
-  followingTopicFollowers: FollowContextUsers
+  followingTopicFollowers: FollowContextUsers & {
+    total_is_exact: boolean
+    next_cursor: string | null
+  }
 }
 
 /** Fetch positive and negative vote context with one public-user hydration query. */
@@ -54,11 +57,15 @@ export async function getVoteFollowContextBatch(
 export async function getTopicFollowContextBatch(
   currentUser: BasicUser,
   topicId: string,
-  { limit = DEFAULT_LIMIT, queryOptions = {} }: FollowContextBatchOptions = {},
+  {
+    limit = DEFAULT_LIMIT,
+    queryOptions = {},
+    after,
+  }: FollowContextBatchOptions & { after?: string } = {},
 ): Promise<TopicFollowContextBatch> {
   const [[positive, negative], topicFollowers] = await Promise.all([
     getFollowContextVoteIds(currentUser, topicId, 'topic_votes', limit, queryOptions),
-    getFollowedUsersFollowingTopicIds(currentUser, topicId, limit, queryOptions),
+    getFollowedUsersFollowingTopicIds(currentUser, topicId, limit, queryOptions, after),
   ])
   const [positiveUsers, negativeUsers, topicFollowerUsers] = await hydrateFollowContextGroups(
     [positive, negative, topicFollowers],
@@ -67,7 +74,11 @@ export async function getTopicFollowContextBatch(
   return {
     positiveByFollowing: positiveUsers!,
     negativeByFollowing: negativeUsers!,
-    followingTopicFollowers: topicFollowerUsers!,
+    followingTopicFollowers: {
+      ...topicFollowerUsers!,
+      total_is_exact: topicFollowers.totalIsExact,
+      next_cursor: topicFollowers.nextCursor,
+    },
   }
 }
 

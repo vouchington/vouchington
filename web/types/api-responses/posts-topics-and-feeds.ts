@@ -156,8 +156,13 @@ export interface EntityFollowContextResponseBody {
   negative_by_following: FollowContextUsers
 }
 
+export interface TopicFollowerContext extends FollowContextUsers {
+  total_is_exact: boolean
+  next_cursor: string | null
+}
+
 export type TopicFollowContextResponseBody = EntityFollowContextResponseBody & {
-  following_topic_followers: FollowContextUsers
+  following_topic_followers: TopicFollowerContext
 }
 
 export interface UserVouchContextResponseBody {

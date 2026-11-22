@@ -47959,6 +47959,15 @@
         },
         "required": ["idOrSlug"],
         "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "description": "Continuation cursor for the topic follower group",
+            "type": "string"
+          }
+        },
+        "type": "object"
       }
     },
     "GET:/api/v1/topics/:idOrSlug/referral-program/validation-info": {
