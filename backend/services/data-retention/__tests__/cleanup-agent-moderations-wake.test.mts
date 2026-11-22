@@ -1,5 +1,9 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { beginTransaction, insertTestAgentModeration } from '@voucha/test-helpers'
+import {
+  beginTransaction,
+  insertTestAgentModeration,
+  setTestAgentModerationDeletedAt,
+} from '@voucha/test-helpers'
 import {
   attachTestAgentModerationAuditReference,
   createTestAgentModerationRetentionFixture,
@@ -96,6 +100,30 @@ describe('agent moderation retention wake-ups', () => {
     expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({ scanned: 1, deleted: 1 })
     expect(await testAgentModerationExists(fixture.postId, old)).toBe(false)
     expect(await testAgentModerationExists(fixture.postId, fresh)).toBe(true)
+  })
+
+  it('wakes an aged live keeper when a fresh successor is restored', async () => {
+    const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
+    const fixture = await createTestAgentModerationRetentionFixture()
+    const old = await insertTestAgentModeration({ ...fixture, occurredAt: at(95) })
+    const restored = await insertTestAgentModeration({
+      ...fixture,
+      occurredAt: at(1),
+      deletedAt: at(1),
+    })
+    const options = { postIds: [fixture.postId], now, lowerBoundDate, batchSize: 1, maxBatches: 1 }
+    expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({ scanned: 1, deleted: 0 })
+    expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({
+      scanned: 1,
+      deleted: 0,
+      hasMore: false,
+    })
+
+    await setTestAgentModerationDeletedAt(restored, null)
+    const result = await cleanupObsoleteAgentModerations(options)
+    expect(await testAgentModerationExists(fixture.postId, old)).toBe(false)
+    expect(await testAgentModerationExists(fixture.postId, restored)).toBe(true)
+    expect(result).toMatchObject({ scanned: 1, deleted: 1 })
   })
 
   it('waits until the source reaches the retention age after supersession', async () => {

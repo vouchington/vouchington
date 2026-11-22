@@ -1039,10 +1039,11 @@ BEFORE UPDATE OF deleted_at ON agent_moderations
 FOR EACH ROW WHEN (OLD.deleted_at IS DISTINCT FROM NEW.deleted_at)
 EXECUTE FUNCTION fn_update_agent_moderation_retention();
 
--- Wake visible predecessors immediately after a result has actually been inserted.
+-- Wake visible predecessors immediately after a result is inserted or restored.
 CREATE OR REPLACE FUNCTION fn_update_agent_moderation_predecessors()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
+  -- An in-flight keeper check may have taken its snapshot before this successor.
   UPDATE agent_moderations prior
   SET retention_due_at = uuid_extract_timestamp(prior.id) + INTERVAL '90 days',
       retention_blocked_reason = NULL
@@ -1052,8 +1053,11 @@ BEGIN
       WHERE post_id = NEW.post_id AND prompt_id = NEW.prompt_id AND id < NEW.id
       ORDER BY id DESC LIMIT 1
     )
-    AND prior.retention_due_at IS NULL
-    AND (prior.retention_blocked_reason IS NULL OR prior.retention_blocked_reason = 'newest');
+    AND (
+      prior.retention_blocked_reason = 'check_newest'
+      OR (prior.retention_due_at IS NULL
+        AND (prior.retention_blocked_reason IS NULL OR prior.retention_blocked_reason = 'newest'))
+    );
   IF NEW.deleted_at IS NULL THEN
     UPDATE agent_moderations prior
     SET retention_due_at = uuid_extract_timestamp(prior.id) + INTERVAL '90 days',
@@ -1065,8 +1069,11 @@ BEGIN
           AND deleted_at IS NULL AND id < NEW.id
         ORDER BY id DESC LIMIT 1
       )
-      AND prior.retention_due_at IS NULL
-    AND (prior.retention_blocked_reason IS NULL OR prior.retention_blocked_reason = 'newest');
+      AND (
+        prior.retention_blocked_reason = 'check_newest'
+        OR (prior.retention_due_at IS NULL
+          AND (prior.retention_blocked_reason IS NULL OR prior.retention_blocked_reason = 'newest'))
+      );
   END IF;
   RETURN NULL;
 END $$;
@@ -1074,6 +1081,11 @@ END $$;
 CREATE TRIGGER trigger_agent_moderations_retention_wake_predecessors
 AFTER INSERT ON agent_moderations
 FOR EACH ROW EXECUTE FUNCTION fn_update_agent_moderation_predecessors();
+
+CREATE TRIGGER trigger_agent_moderations_retention_wake_restored_predecessors
+AFTER UPDATE OF deleted_at ON agent_moderations
+FOR EACH ROW WHEN (OLD.deleted_at IS NOT NULL AND NEW.deleted_at IS NULL)
+EXECUTE FUNCTION fn_update_agent_moderation_predecessors();
 
 CREATE OR REPLACE FUNCTION fn_register_agent_moderation_retention_post_hash()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$

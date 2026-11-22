@@ -1,5 +1,6 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { beginTransaction, insertTestAgentModeration } from '@voucha/test-helpers'
+import { lockTestAgentModerationRetentionSource } from '@voucha/test-helpers/agent-moderation-retention-concurrency'
 import { getTestAgentModerationRetentionState } from '@voucha/test-helpers/agent-moderation-retention-pages'
 import {
   createTestAgentModerationRetentionFixture,
@@ -7,6 +8,8 @@ import {
 } from '@voucha/test-helpers/entities/agent-moderation-retention'
 import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
+import { getTestPostgresBackendProcessId } from '@voucha/test-helpers/postgres-lock-wait'
 import { createIsolatedRetentionWindow } from '@voucha/test-helpers/retention-window'
 import { cleanupObsoleteAgentModerations } from '../cleanup-agent-moderations.mts'
 
@@ -130,6 +133,44 @@ describe('agent moderation retention reconciliation', () => {
     expect(first).toMatchObject({ scanned: 1, deleted: 0, hasMore: true })
     expect(predecessor).toMatchObject({ blockedReason: 'check_newest' })
     expect(resumed).toMatchObject({ scanned: 1, deleted: 1 })
+  })
+
+  it('honors a fresh successor wake even when the keeper check has an older snapshot', async () => {
+    const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
+    const fixture = await createTestAgentModerationRetentionFixture()
+    const olderId = await insertTestAgentModeration({ ...fixture, occurredAt: at(95) })
+    const options = { now, lowerBoundDate, postIds: [fixture.postId], batchSize: 1, maxBatches: 1 }
+    expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({
+      scanned: 1,
+      deleted: 0,
+      hasMore: true,
+    })
+    expect(await getTestAgentModerationRetentionState(fixture.postId, olderId)).toMatchObject({
+      blockedReason: 'check_newest',
+    })
+
+    await using holder = await beginTransaction()
+    await lockTestAgentModerationRetentionSource(holder, fixture.postId, olderId)
+    const { result, newerId } = await withTestOwnedPostgresWait(
+      {
+        holderProcessId: await getTestPostgresBackendProcessId(holder),
+        pool: 'write',
+        lock: { kind: 'transaction' },
+        queryMarker: 'reconcileAgentModerationRetentionPage',
+        releaseHolder: () => holder[Symbol.asyncDispose](),
+      },
+      async waitForLock => {
+        const cleanup = cleanupObsoleteAgentModerations(options)
+        await waitForLock(cleanup)
+        const freshId = await insertTestAgentModeration({ ...fixture, occurredAt: at(1) }, holder)
+        await holder.commit()
+        return { result: await cleanup, newerId: freshId }
+      },
+    )
+
+    expect(await testAgentModerationExists(fixture.postId, olderId)).toBe(false)
+    expect(await testAgentModerationExists(fixture.postId, newerId)).toBe(true)
+    expect(result).toMatchObject({ scanned: 1, deleted: 1 })
   })
 
   it('keeps an overlapping predecessor reconciliation pending until its own wake commits', async () => {
