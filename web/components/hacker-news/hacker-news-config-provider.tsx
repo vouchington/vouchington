@@ -75,7 +75,7 @@ export function HackerNewsConfigProvider({
   const initialPostTimeRangeCap = initialConfig.post_time_range_cap
   const router = useRouter()
   useEffect(() => {
-    const lifetime = new AbortController()
+    let cancelled = false
     const serverConfig: HackerNewsConfig = {
       references_visible: initialReferencesVisible,
       post_time_range_cap: initialPostTimeRangeCap,
@@ -84,7 +84,7 @@ export function HackerNewsConfigProvider({
     async function refresh() {
       try {
         const next = await getHackerNewsConfigClient()
-        if (lifetime.signal.aborted) return
+        if (cancelled) return
         const changed =
           next.references_visible !== seen.config.references_visible ||
           next.post_time_range_cap !== seen.config.post_time_range_cap
@@ -114,7 +114,7 @@ export function HackerNewsConfigProvider({
       void refresh()
     }, 30_000)
     return () => {
-      lifetime.abort()
+      cancelled = true
       clearInterval(timer)
     }
   }, [router, initialReferencesVisible, initialPostTimeRangeCap])

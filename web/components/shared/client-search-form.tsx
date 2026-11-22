@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useId, useState } from 'react'
+import { Suspense, useId, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -43,9 +43,11 @@ function ClientSearchFormContent({
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState(defaultValue ?? '')
 
-  useEffect(() => {
-    queueMicrotask(() => setSearchQuery(defaultValue ?? ''))
-  }, [defaultValue])
+  const [syncedDefaultValue, setSyncedDefaultValue] = useState(defaultValue)
+  if (syncedDefaultValue !== defaultValue) {
+    setSyncedDefaultValue(defaultValue)
+    setSearchQuery(defaultValue ?? '')
+  }
 
   return (
     <form

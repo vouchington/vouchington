@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useId, useState, type ReactNode } from 'react'
+import { Suspense, useId, useState, type ReactNode } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Search } from 'lucide-react'
 import { TooltipButton } from '@/components/ui/_button-tooltip'
@@ -69,9 +69,11 @@ function ListFiltersContent<T extends string = string, U extends string = T>({
   const requestedSort = searchParams.get('sort') || defaultSort
   const [searchQuery, setSearchQuery] = useState(currentQuery)
 
-  useEffect(() => {
-    queueMicrotask(() => setSearchQuery(currentQuery))
-  }, [currentQuery])
+  const [syncedQuery, setSyncedQuery] = useState(currentQuery)
+  if (syncedQuery !== currentQuery) {
+    setSyncedQuery(currentQuery)
+    setSearchQuery(currentQuery)
+  }
   const activeSearchOnlyOptions =
     searchOnlySortOptions?.filter(opt => opt.value === requestedSort) ?? []
   const allSortOptions = currentQuery
