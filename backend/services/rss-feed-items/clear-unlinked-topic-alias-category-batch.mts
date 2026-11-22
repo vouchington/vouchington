@@ -1,6 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import type { ClearedCategoryTopicMapping } from './category-topic-votes.mts'
 import createHttpError from 'http-errors'
+import { recordStoryPublicationChangesForCategoryTopics } from './story-publication-change.mts'
 import { assertNoActiveTopicMerges } from '@services/topics/merge-preflight'
 
 export type ReResolvedCategoryTopicMapping = ClearedCategoryTopicMapping & {
@@ -161,6 +162,14 @@ export async function clearUnlinkedTopicAliasCategoryBatch(
   )
   if (rows.length !== candidateItems.length)
     throw createHttpError(409, 'RSS item categories changed while clearing unlinked alias')
+  await recordStoryPublicationChangesForCategoryTopics(
+    query,
+    rows.map(row => ({
+      rss_feed_item_id: row.rss_feed_item_id,
+      previous_topic_id: row.topic_id,
+      topic_id: row.replacement_topic_id,
+    })),
+  )
   return {
     rows,
     hasMore: rawPage.hasMore,
