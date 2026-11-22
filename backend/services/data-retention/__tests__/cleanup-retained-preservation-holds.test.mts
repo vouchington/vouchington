@@ -4,6 +4,8 @@ import {
 } from '@voucha/test-helpers/reciprocal-user-purge'
 import { readTestPurgeAccountState } from '@voucha/test-helpers/reciprocal-user-purge-scene'
 import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
+import { getTestPostgresBackendProcessId } from '@voucha/test-helpers/postgres-lock-wait'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createTestRetentionWindow,
@@ -110,88 +112,90 @@ describe('legal preservation holds and final user purge', () => {
     ])
   })
 
-  it('keeps racing hold and purge attempts atomic before one strict next tick', async () => {
-    const window = createTestRetentionWindow()
-    const [admin, user] = await Promise.all([
-      createTestUser({ administrator: true }),
-      createTestUser(),
-    ])
-    await softDeleteUserAt(user.id, window.firstEligibleDate)
-    const before = await readTestPurgeAccountState(user.id)
-    const auditBefore = await getModeratorActionRowsForTest({ targetUserId: user.id })
-    let racingPurge:
-      | Promise<PromiseSettledResult<Awaited<ReturnType<typeof cleanupSoftDeletedUser>>>[]>
-      | undefined
-    // Hold placement now holds the account row, so the purge starts here and waits on it.
-    const restore = afterPostgresTransactionQueryForTest(
-      'lockPreservationHoldUser:userExists',
-      values => values.includes(user.id),
-      async () => {
-        racingPurge = Promise.allSettled([cleanupSoftDeletedUser(user.id, window.upperBoundDate)])
-      },
-    )
-    const reference = 'synthetic concurrent preservation'
-    let admission: PromiseSettledResult<Awaited<ReturnType<typeof placeUserPreservationHold>>>
-    try {
-      ;[admission] = await Promise.allSettled([
-        placeUserPreservationHold(admin, user.id, reference),
+  it.each([
+    { schedule: 'after the hold commits', wait: false },
+    { schedule: 'at the blocked DELETE', wait: true },
+  ])(
+    'preserves the held account when purge runs $schedule and on the next tick',
+    async ({ wait }) => {
+      const window = createTestRetentionWindow()
+      const [admin, user] = await Promise.all([
+        createTestUser({ administrator: true }),
+        createTestUser(),
       ])
-    } finally {
-      restore()
-    }
-    const [purge] = await racingPurge!
-    expect(purge).toBeDefined()
-    const errors = [purge!, admission!].flatMap(outcome =>
-      outcome.status === 'rejected' ? [testPurgeSqlState(outcome.reason)] : [],
-    )
-    expect(errors.filter(code => code !== '40001' && code !== '40P01')).toEqual([])
-    const held = admission!.status === 'fulfilled'
-    // A fulfilled purge that saw the committed hold is a no-op ({ deleted: 0 }); only
-    // { deleted: 1 } removed the account, and that must exclude the hold.
-    const deleted = purge!.status === 'fulfilled' && purge!.value.deleted === 1
-    expect(held && deleted).toBe(false)
-    expect(purge!.status === 'fulfilled' ? purge!.value : undefined).toEqual(
-      purge!.status === 'fulfilled' ? { deleted: deleted ? 1 : 0, hasMore: false } : undefined,
-    )
-    const timestamp = expect.any(Date)
-    const hold = expect.objectContaining({
-      account_user_id: user.id,
-      placed_by_id: admin.id,
-      reference,
-      released_at: null,
-      released_by_id: null,
-      placed_at: timestamp,
-    })
-    const afterRace = await readTestPurgeAccountState(user.id)
-    expect(afterRace).toEqual({
-      ...before,
-      user: deleted ? null : before.user,
-      references: deleted ? null : before.references,
-      clock: { ...before.clock, purged_at: deleted ? timestamp : null },
-      holds: held ? [hold] : before.holds,
-      notifications: deleted ? { notifications: 0, push_intents: 0 } : before.notifications,
-    })
-    expect(await getModeratorActionRowsForTest({ targetUserId: user.id })).toHaveLength(
-      auditBefore.length + Number(held),
-    )
-    // Both real actors settled. This single next-tick call may not abort or silently do nothing.
-    const remaining = !held && afterRace.user !== null ? 1 : 0
-    const next = await observeTestUserPurgeAttempt(() =>
-      cleanupSoftDeletedUserBatch(window.upperBoundDate, 500, window.lowerBoundDate, undefined, [
-        user.id,
-      ]),
-    )
-    expect(next.failures).toEqual([])
-    expect(next.result).toEqual({ deleted: remaining, hasMore: false })
-    const final = await readTestPurgeAccountState(user.id)
-    expect(final).toEqual({
-      ...before,
-      user: held ? before.user : null,
-      references: held ? before.references : null,
-      clock: { ...before.clock, purged_at: held ? null : timestamp },
-      holds: held ? [hold] : before.holds,
-      notifications: held ? before.notifications : { notifications: 0, push_intents: 0 },
-    })
-    expect(final.user === null || final.holds.some(value => value.released_at === null)).toBe(true)
-  })
+      await softDeleteUserAt(user.id, window.firstEligibleDate)
+      const before = await readTestPurgeAccountState(user.id)
+      const auditBefore = await getModeratorActionRowsForTest({ targetUserId: user.id })
+      const purge = () => cleanupSoftDeletedUser(user.id, window.upperBoundDate)
+      const releaseHold = Promise.withResolvers<void>()
+      let waitingPurge:
+        | Promise<PromiseSettledResult<Awaited<ReturnType<typeof purge>>>[]>
+        | undefined
+      const restore = afterPostgresTransactionQueryForTest(
+        'lockPreservationHoldUser:userExists',
+        values => values.includes(user.id),
+        async query => {
+          if (!wait) return
+          const holderProcessId = await getTestPostgresBackendProcessId(query)
+          waitingPurge = withTestOwnedPostgresWait(
+            {
+              holderProcessId,
+              pool: 'write',
+              lock: { kind: 'transaction' },
+              queryMarker: 'cleanupSoftDeletedUserBatch:delete',
+              releaseHolder: async () => releaseHold.resolve(),
+            },
+            async waitForLock => {
+              const operation = purge()
+              await waitForLock(operation)
+              releaseHold.resolve()
+              return Promise.allSettled([operation])
+            },
+          )
+          void waitingPurge.catch(() => releaseHold.resolve())
+          await releaseHold.promise
+        },
+      )
+      const reference = 'synthetic concurrent preservation'
+      let admission: Awaited<ReturnType<typeof placeUserPreservationHold>>
+      let attempt: PromiseSettledResult<Awaited<ReturnType<typeof purge>>> | undefined
+      try {
+        admission = await placeUserPreservationHold(admin, user.id, reference)
+        ;[attempt] = await (waitingPurge ?? Promise.allSettled([purge()]))
+      } finally {
+        restore()
+      }
+      // A purge that sees the committed hold succeeds without deleting the account.
+      const actualPurge =
+        attempt?.status === 'fulfilled'
+          ? attempt.value
+          : { sqlstate: testPurgeSqlState(attempt?.reason) }
+      const expectedPurge = wait ? { sqlstate: '40001' } : { deleted: 0, hasMore: false }
+      expect(actualPurge).toEqual(expectedPurge)
+      const hold = expect.objectContaining({
+        id: admission.id,
+        account_user_id: user.id,
+        placed_by_id: admin.id,
+        reference,
+        released_at: null,
+        released_by_id: null,
+        placed_at: expect.any(Date),
+      })
+      const expected = { ...before, holds: [hold] }
+      expect(await readTestPurgeAccountState(user.id)).toEqual(expected)
+      expect(await getModeratorActionRowsForTest({ targetUserId: user.id })).toHaveLength(
+        auditBefore.length + 1,
+      )
+
+      // The next scheduler tick must finish without a transaction failure.
+      const next = await observeTestUserPurgeAttempt(() =>
+        cleanupSoftDeletedUserBatch(window.upperBoundDate, 500, window.lowerBoundDate, undefined, [
+          user.id,
+        ]),
+      )
+      expect(next.failures).toEqual([])
+      expect(next.result).toEqual({ deleted: 0, hasMore: false })
+      expect(await readTestPurgeAccountState(user.id)).toEqual(expected)
+    },
+  )
 })
