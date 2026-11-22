@@ -255,21 +255,24 @@ test.describe('Topic Detail Pages', () => {
 
     await navigateTo(page, `/topic/${fixture.topicId}/reviews`)
     const reviewTitles = page.getByTestId('post-card-title-link')
-    const followedReview = reviewTitles.filter({ hasText: fixture.followedReviewTitle })
-    const unfollowedReview = reviewTitles.filter({ hasText: fixture.unfollowedReviewTitle })
+    // hasText is a case-insensitive substring match, so 'Followed Review X' also matches
+    // 'Unfollowed Review X'. Anchor each title so a locator matches exactly one card.
+    const exactTitle = (title: string) => new RegExp(`^\\s*${title}\\s*$`)
+    const followedReview = reviewTitles.filter({
+      hasText: exactTitle(fixture.followedReviewTitle),
+    })
+    const unfollowedReview = reviewTitles.filter({
+      hasText: exactTitle(fixture.unfollowedReviewTitle),
+    })
 
     await expect(followedReview).toHaveCount(1)
     await expect(unfollowedReview).toHaveCount(1)
 
     // Assert rank by DOM order. Viewport boxes measured one after the other drift while the
     // page scrolls and lays out late content, so they cannot order two cards reliably.
-    const renderedTitles = await reviewTitles.allTextContents()
-    const followedIndex = renderedTitles.findIndex(title =>
-      title.includes(fixture.followedReviewTitle),
-    )
-    const unfollowedIndex = renderedTitles.findIndex(title =>
-      title.includes(fixture.unfollowedReviewTitle),
-    )
+    const renderedTitles = (await reviewTitles.allTextContents()).map(title => title.trim())
+    const followedIndex = renderedTitles.indexOf(fixture.followedReviewTitle)
+    const unfollowedIndex = renderedTitles.indexOf(fixture.unfollowedReviewTitle)
     expect(followedIndex).toBeGreaterThanOrEqual(0)
     expect(followedIndex).toBeLessThan(unfollowedIndex)
   })
