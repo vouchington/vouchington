@@ -69,11 +69,18 @@ type DeliverAcceptActivityInput = Pick<
 // this value is part of the federation contract and must never change.
 const ACCEPT_ACTIVITY_ID_NAMESPACE = 'c3a4ee5c-0137-4c31-a396-53fe5b957c5b'
 const UNDO_FOLLOW_ACTIVITY_ID_NAMESPACE = 'ca584341-8398-4ba6-99dc-fd3dc3394c2b'
+const UNDO_LIKE_ACTIVITY_ID_NAMESPACE = '5f0b2d3e-7a41-4c8e-9d62-1b3e8f4a6c07'
 
 // One Undo identity per Follow generation. A deleted relation retains the original Follow id,
 // so both direct admission and recovery reconstruct the same protocol activity after a crash.
 export function getUndoFollowActivityId(originalFollowActivityId: string): string {
   return uuidv5(originalFollowActivityId, UNDO_FOLLOW_ACTIVITY_ID_NAMESPACE)
+}
+
+// One Undo identity per Like: concurrent Like-to-non-Like requests name the same Like, so they
+// federate the same Undo even though each writes its own ballot.
+export function getUndoLikeActivityId(originalLikeActivityId: string): string {
+  return uuidv5(originalLikeActivityId, UNDO_LIKE_ACTIVITY_ID_NAMESPACE)
 }
 
 /**

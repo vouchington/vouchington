@@ -4133,6 +4133,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/activitypub':
+        specifier: workspace:^
+        version: link:../../queues/activitypub
       '@services/ap-actor-keys':
         specifier: workspace:^
         version: link:../ap-actor-keys
@@ -4158,9 +4161,6 @@ importers:
         specifier: ^8.12.4
         version: 8.12.4
     devDependencies:
-      '@queues/activitypub':
-        specifier: workspace:^
-        version: link:../../queues/activitypub
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes

@@ -100353,7 +100353,7 @@
           "ordinalPosition": 5
         },
         "outbound_activitypub_like_activity_id": {
-          "comment": "Stable outbound ActivityPub Like protocol identity.",
+          "comment": "Outbound ActivityPub Like identity, set only on the ballot that moves a user from a non-Like to a Like; concurrent requests from the same prior ballot share it.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -100363,7 +100363,7 @@
           "ordinalPosition": 3
         },
         "outbound_activitypub_original_like_activity_id": {
-          "comment": "The positive Like identity undone by this negative ballot transition.",
+          "comment": "The Like identity undone by this ballot, set only on the ballot that moves a user from a Like to a non-Like.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -100477,7 +100477,7 @@
         "idx_post_votes__activitypub_pending": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_votes__activitypub_pending ON ONLY public.post_votes USING btree (post_id, id) WHERE ((outbound_activitypub_distributed_at IS NULL) AND ((outbound_activitypub_like_activity_id = id) OR (outbound_activitypub_original_like_activity_id IS NOT NULL)))",
+          "definition": "CREATE INDEX idx_post_votes__activitypub_pending ON ONLY public.post_votes USING btree (post_id, id) WHERE ((outbound_activitypub_distributed_at IS NULL) AND ((outbound_activitypub_like_activity_id IS NOT NULL) OR (outbound_activitypub_original_like_activity_id IS NOT NULL)))",
           "immediate": true,
           "keys": [
             {
@@ -100500,7 +100500,7 @@
             }
           ],
           "live": true,
-          "predicate": "((outbound_activitypub_distributed_at IS NULL) AND ((outbound_activitypub_like_activity_id = id) OR (outbound_activitypub_original_like_activity_id IS NOT NULL)))",
+          "predicate": "((outbound_activitypub_distributed_at IS NULL) AND ((outbound_activitypub_like_activity_id IS NOT NULL) OR (outbound_activitypub_original_like_activity_id IS NOT NULL)))",
           "primary": false,
           "ready": true,
           "unique": false,

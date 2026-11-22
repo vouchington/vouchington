@@ -50,10 +50,39 @@ describe('expired outbound activities and recovery sweeps', () => {
       ...{ sourceUserId, recovery },
     })
     await settleLikeTheDistributeProcessor({
-      ...{ activityType: 'Like' as const, activityId: likeId, targetPostId: postId },
+      ...{
+        activityType: 'Like' as const,
+        activityId: likeId,
+        eventId: likeId,
+        targetPostId: postId,
+      },
       ...{ sourceUserId, recovery },
     })
     expect(await pendingFollow()).toBeUndefined()
     expect(await pendingLike()).toBeUndefined()
+  })
+})
+
+describe('Like and UndoLike age', () => {
+  it('comes from the ballot event id, not the hashed activity id', async () => {
+    const hashedId = randomUUID()
+    const base = { sourceUserId: randomUUID(), targetPostId: randomUUID(), activityId: hashedId }
+    const expiredEventId = getMinUuidv7ForDate(
+      new Date(Date.now() - (getMaximumActivityAgeDays() + 1) * 86_400_000),
+    )
+    await expect(
+      distributeActivity({ ...base, activityType: 'Like', eventId: expiredEventId }),
+    ).resolves.toEqual({ enqueued: 0, completed: true, reason: 'expired-activity' })
+    await expect(
+      distributeActivity({
+        ...base,
+        activityType: 'UndoLike',
+        originalActivityId: hashedId,
+        eventId: expiredEventId,
+      }),
+    ).resolves.toEqual({ enqueued: 0, completed: true, reason: 'expired-activity' })
+    await expect(
+      distributeActivity({ ...base, activityType: 'Like', eventId: hashedId }),
+    ).resolves.toEqual({ enqueued: 0, completed: true, reason: 'unsupported-activity-id' })
   })
 })

@@ -45,6 +45,7 @@ describe('ActivityPub worker paged dispatch', () => {
     const data: DistributeActivityData = {
       activityId: postId,
       activityType: 'Like',
+      eventId: postId,
       sourceUserId: source.id,
       targetPostId: postId,
     }

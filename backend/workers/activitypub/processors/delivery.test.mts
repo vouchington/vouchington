@@ -60,6 +60,7 @@ const BLANK_UNDO_LIKE_DATA: DeliverActivityData = {
   activityId: 'blank-undo-like',
   activityType: 'UndoLike',
   originalActivityId: '   ',
+  eventId: 'blank-undo-like-event',
   sourceUserId: 'user-1',
   targetPostId: 'post-1',
   inboxUrl: INBOX_URL,
@@ -175,6 +176,7 @@ describe('deliverActivity', () => {
       deliverActivity({
         activityId: mintUuidv7(),
         activityType: 'Like',
+        eventId: mintUuidv7(),
         sourceUserId: source.id,
         targetPostId: postId,
         inboxUrl: INBOX_URL,

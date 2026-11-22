@@ -1,11 +1,28 @@
 import type { QueryExecutor } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import sql, { type SQLStatement } from 'sql-template-strings'
 import type {
   ElectionVoteMutationResult,
   ElectionVoteScore,
   EntityElectionConfig,
   VoteEventContext,
 } from './types.mts'
+
+// The Like an Undo cancels is the user's latest root ballot (non-null Like id), which is not
+// necessarily the latest ballot. One index probe per entity on (user_id, entity, id DESC).
+function appendPreviousLikeId(
+  query: SQLStatement,
+  config: EntityElectionConfig,
+  userId: string,
+  entityAlias: 'input_data' | 'inserted',
+): void {
+  query.append(sql`(SELECT outbound_activitypub_like_activity_id FROM `)
+  query.append(config.voteTable)
+  query.append(
+    sql` WHERE user_id = ${userId} AND outbound_activitypub_like_activity_id IS NOT NULL AND `,
+  )
+  query.append(config.entityIdColumn)
+  query.append(` = ${entityAlias}.entity_id ORDER BY id DESC LIMIT 1)`)
+}
 
 export async function insertElectionVoteRows(
   config: EntityElectionConfig,
@@ -44,7 +61,7 @@ export async function insertElectionVoteRows(
   query.append(config.entityIdColumn)
   query.append(sql`) `)
   query.append(config.entityIdColumn)
-  query.append(sql` AS entity_id, score AS previous_score
+  query.append(sql` AS entity_id, id AS previous_ballot_id, score AS previous_score
   `)
   if (config.tracksNeutralScore) {
     query.append(sql`, score_is_neutral AS previous_score_is_neutral`)
@@ -56,13 +73,6 @@ export async function insertElectionVoteRows(
   } else {
     query.append(sql`, FALSE AS previous_score_is_semantic`)
   }
-  if (config.tracksOutboundActivityPubLike) {
-    query.append(
-      sql`, outbound_activitypub_like_activity_id AS previous_outbound_ap_like_activity_id`,
-    )
-  } else {
-    query.append(sql`, NULL::uuid AS previous_outbound_ap_like_activity_id`)
-  }
   query.append(sql`
       FROM `)
   query.append(config.voteTable)
@@ -73,7 +83,8 @@ export async function insertElectionVoteRows(
       ORDER BY `)
   query.append(config.entityIdColumn)
   query.append(sql`, id DESC
-    ), inserted AS (
+    )`)
+  query.append(sql`, inserted AS (
       INSERT INTO `)
   query.append(config.voteTable)
   query.append(sql` (user_id, `)
@@ -93,23 +104,29 @@ export async function insertElectionVoteRows(
   if (config.tracksNeutralScore) query.append(sql`, input_data.score_is_neutral`)
   if (config.tracksSemanticScore) query.append(sql`, input_data.score_is_semantic`)
   if (config.tracksOutboundActivityPubLike) {
+    // Only a non-Like to Like transition mints a Like identity, derived from the ballot it follows:
+    // concurrent requests read the same previous ballot in their statement snapshots and so mint
+    // the same id. Strength changes inside a Like carry none, and an Undo names the Like it cancels.
     query.append(sql`,
              CASE
-               WHEN input_data.score <= 0 OR input_data.score IS NULL THEN NULL
-               WHEN previous_votes.previous_score > 0
-                 THEN previous_votes.previous_outbound_ap_like_activity_id
-               ELSE input_data.id
+               WHEN input_data.score > 0 AND COALESCE(previous_votes.previous_score, 0) <= 0
+                 THEN md5(input_data.user_id::text || input_data.entity_id::text
+                   || COALESCE(previous_votes.previous_ballot_id,
+                     '00000000-0000-0000-0000-000000000000'::uuid)::text)::uuid
+               ELSE NULL
              END,
              CASE
-               WHEN input_data.score <= 0 OR input_data.score IS NULL
-                 THEN CASE WHEN previous_votes.previous_score > 0
-                   THEN previous_votes.previous_outbound_ap_like_activity_id ELSE NULL END
+               WHEN COALESCE(input_data.score, 0) <= 0 AND previous_votes.previous_score > 0
+                 THEN `)
+    appendPreviousLikeId(query, config, userId, 'input_data')
+    query.append(sql`
                ELSE NULL
              END`)
   }
   query.append(sql`
       FROM input_data
-      LEFT JOIN previous_votes ON previous_votes.entity_id = input_data.entity_id
+      LEFT JOIN previous_votes ON previous_votes.entity_id = input_data.entity_id`)
+  query.append(sql`
       WHERE input_data.score IS DISTINCT FROM previous_votes.previous_score
          OR input_data.score_is_neutral IS DISTINCT FROM COALESCE(previous_votes.previous_score_is_neutral, FALSE)
          OR input_data.score_is_semantic IS DISTINCT FROM COALESCE(previous_votes.previous_score_is_semantic, FALSE)
@@ -125,7 +142,14 @@ export async function insertElectionVoteRows(
     )
     SELECT inserted.entity_id, inserted.id, inserted.user_id, inserted.score, inserted.created_at,
            inserted.outbound_activitypub_like_activity_id, previous_votes.previous_score,
-           previous_votes.previous_outbound_ap_like_activity_id
+  `)
+  if (config.tracksOutboundActivityPubLike) {
+    appendPreviousLikeId(query, config, userId, 'inserted')
+    query.append(sql` AS previous_outbound_ap_like_activity_id`)
+  } else {
+    query.append(sql`NULL::uuid AS previous_outbound_ap_like_activity_id`)
+  }
+  query.append(sql`
     FROM inserted
     LEFT JOIN previous_votes ON previous_votes.entity_id = inserted.entity_id
   `)

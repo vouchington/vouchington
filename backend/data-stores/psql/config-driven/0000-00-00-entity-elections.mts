@@ -45,7 +45,7 @@ ON post_votes (user_id, id DESC) INCLUDE (post_id, score);
 CREATE INDEX IF NOT EXISTS idx_post_votes__activitypub_pending
 ON post_votes (post_id, id)
 WHERE outbound_activitypub_distributed_at IS NULL
-  AND (outbound_activitypub_like_activity_id = id
+  AND (outbound_activitypub_like_activity_id IS NOT NULL
     OR outbound_activitypub_original_like_activity_id IS NOT NULL);
 
 -- Ordinary post ballot pages exclude deferred protocol sources at the index.

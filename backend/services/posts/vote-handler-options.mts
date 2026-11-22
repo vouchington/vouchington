@@ -2,7 +2,10 @@ import { getPostElectionVote, upsertPostElectionVotes } from '@services/election
 import { getPostByAnyCached } from './get-cached.mts'
 import { canViewPostsBatch } from '@services/posts/check-privacy-access'
 import type { Post } from './types.mts'
-import { enqueueDistributeActivity } from '@queues/activitypub/enqueues/delivery'
+import {
+  enqueueDistributeActivity,
+  getUndoLikeActivityId,
+} from '@queues/activitypub/enqueues/delivery'
 import onError from '@modules/on-error'
 import {
   createVoteStatsNoopReconciler,
@@ -93,29 +96,33 @@ export const postVoteOptions: CreateVoteHandlerOptions<
     try {
       if (!(await canDistributeActivityPubLike(entityId))) return
       if (!vote.id) throw new Error('Post vote event is missing its durable identity')
-      const activityId = isLike ? vote.outbound_activitypub_like_activity_id : vote.id
+      const likeActivityId = vote.outbound_activitypub_like_activity_id
       const originalActivityId = vote.previous_outbound_ap_like_activity_id
-      if (!activityId) throw new Error('Post Like is missing its durable activity identity')
-      // A pre-identity Like cannot be linked to the activity that was actually delivered.
-      // Quietly preserve that unknown state instead of emitting an invalid Undo or logging a
-      // post-commit error for an otherwise successful vote mutation.
+      if (isLike && !likeActivityId) {
+        throw new Error('Post Like is missing its durable activity identity')
+      }
+      // A Like whose root ballot was already retired cannot be linked to the activity that was
+      // actually delivered. Quietly preserve that unknown state instead of emitting an invalid Undo
+      // or logging a post-commit error for an otherwise successful vote mutation.
       if (!isLike && !originalActivityId) return
-      void enqueueDistributeActivity({
-        ...(isLike
+      void enqueueDistributeActivity(
+        isLike
           ? {
-              activityId,
+              activityId: likeActivityId!,
               activityType: 'Like' as const,
+              eventId: vote.id,
               sourceUserId: currentUser.id,
               targetPostId: entityId,
             }
           : {
-              activityId,
+              activityId: getUndoLikeActivityId(originalActivityId!),
               activityType: 'UndoLike' as const,
               originalActivityId: originalActivityId!,
+              eventId: vote.id,
               sourceUserId: currentUser.id,
               targetPostId: entityId,
-            }),
-      })
+            },
+      )
     } catch (err) {
       onError(err as Error)
     }

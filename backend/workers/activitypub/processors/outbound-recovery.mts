@@ -82,6 +82,7 @@ function toDistributionJob(row: OutboundRecoveryRow): DistributeActivityData {
         activityType: 'UndoLike',
         activityId: row.activityId,
         originalActivityId: row.originalLikeActivityId,
+        eventId: row.eventId,
         sourceUserId: row.sourceUserId,
         targetPostId: row.targetPostId,
         recovery: true,
@@ -90,6 +91,7 @@ function toDistributionJob(row: OutboundRecoveryRow): DistributeActivityData {
     return {
       activityType: 'Like',
       activityId: row.activityId,
+      eventId: row.eventId,
       sourceUserId: row.sourceUserId,
       targetPostId: row.targetPostId,
       recovery: true,

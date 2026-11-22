@@ -226,6 +226,7 @@ describe('ActivityPub outbound round trip (Phase C6)', () => {
       const distributeJob = await enqueueDistributeActivity({
         activityId: post.id,
         activityType: 'Like',
+        eventId: post.id,
         sourceUserId: sourceUser.id,
         targetPostId: post.id,
       })
