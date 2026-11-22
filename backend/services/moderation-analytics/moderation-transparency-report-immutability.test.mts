@@ -1,16 +1,18 @@
 import crypto from 'node:crypto'
+import { releaseModerationTransparencyRange } from './release-moderation-transparency-days.mts'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   acquireTestModerationTransparencyDateReservation,
   createTestUser,
-  getTestModerationTransparencyRollupCount,
+  getTestReleasedModerationTransparencyRollupCount,
   insertTestModerationReportsForTarget,
   insertTestPost,
   updateTestModerationReportOriginalReason,
 } from '@voucha/test-helpers'
+import { releaseTestDayRange } from '@voucha/test-helpers/moderation-transparency-release-ranges'
 
 describe('moderation transparency report immutability', () => {
-  it('rejects original-reason mutation without moving its daily rollup', async () => {
+  it('rejects original-reason mutation without moving its released rollup', async () => {
     const occurredAt = await uniqueTransparencyNow()
     const author = await createTestUser()
     const postId = await insertTestPost({
@@ -30,15 +32,16 @@ describe('moderation transparency report immutability', () => {
     await expect(updateTestModerationReportOriginalReason(ids[0]!, 'harassment')).rejects.toThrow(
       'moderation_reports rows are append-only',
     )
+    await releaseModerationTransparencyRange(...releaseTestDayRange(occurredAt))
     await expect(
-      getTestModerationTransparencyRollupCount({
+      getTestReleasedModerationTransparencyRollupCount({
         occurredAt,
         metric: 'reports',
         category: 'spam',
       }),
     ).resolves.toBe(20)
     await expect(
-      getTestModerationTransparencyRollupCount({
+      getTestReleasedModerationTransparencyRollupCount({
         occurredAt,
         metric: 'reports',
         category: 'harassment',

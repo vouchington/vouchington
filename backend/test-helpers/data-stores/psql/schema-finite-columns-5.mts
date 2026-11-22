@@ -2,13 +2,6 @@
 export const FINITE_COLUMN_CONTRACTS_5 = [
   ['moderation_training_feedbacks', 'source_type', 'moderation_training_source_types', false],
   [
-    'moderation_transparency_daily_rollups',
-    'category',
-    'moderation_transparency_categories',
-    false,
-  ],
-  ['moderation_transparency_daily_rollups', 'metric', 'moderation_transparency_metrics', false],
-  [
     'moderation_transparency_released_daily_rollups',
     'category',
     'moderation_transparency_categories',

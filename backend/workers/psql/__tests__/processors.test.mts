@@ -77,4 +77,10 @@ describe('processPsql', () => {
     expect(result).toMatchObject({ entityTable: 'posts' })
     expect((result as { sampled: number }).sampled).toBeGreaterThanOrEqual(1)
   })
+
+  it('releases closed transparency days through the scheduled job', async () => {
+    const result = await processPsql('releaseModerationTransparencyDays')
+
+    expect(result).toMatchObject({ days: expect.any(Number), released: expect.any(Number) })
+  })
 })

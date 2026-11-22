@@ -138,7 +138,6 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'membership_sources',
   'memberships',
   'microsoft_accounts',
-  'moderation_transparency_daily_rollups',
   'moderation_transparency_released_daily_rollups',
   'moderator_action_community_restrictions',
   ...EXTRA_UNBOUNDED_TABLES_CONTINUED,

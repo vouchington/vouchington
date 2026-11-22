@@ -1,7 +1,7 @@
 id: backend-no-single-enqueue-in-loop
 language: Tsx
 severity: warning
-message: Enqueue a loop's jobs with the owning queue package's bulk enqueue function (enqueueBulk...) instead of one single-job enqueue per iteration.
+message: Enqueue a loop's jobs with the owning queue package's bulk enqueue function (a name containing Bulk) instead of one single-job enqueue per iteration.
 note: >-
   Each single enqueue is its own Valkey round trip and its own analytics event. This covers a
   for, for-in, for-of, while, or do statement and a map, forEach, or flatMap callback. Add the
@@ -37,14 +37,44 @@ rule:
               - has:
                   field: function
                   kind: identifier
-                  regex: ^enqueueBulk
+                  regex: Bulk
               - has:
                   field: function
                   kind: member_expression
                   has:
                     field: property
                     kind: property_identifier
-                    regex: ^enqueueBulk
+                    regex: Bulk
+        # A closure stored as an object property value (a schedule trigger) is not called in the loop.
+        - not:
+            inside:
+              stopBy:
+                any:
+                  - kind: arrow_function
+                  - kind: function_expression
+                  - kind: for_statement
+                  - kind: for_in_statement
+                  - kind: while_statement
+                  - kind: do_statement
+              kind: arrow_function
+              any:
+                - inside:
+                    kind: pair
+                # trigger: createTrigger(name, async () => enqueueFoo()) hands the closure to a factory.
+                - inside:
+                    kind: arguments
+                    inside:
+                      kind: call_expression
+                      not:
+                        has:
+                          field: function
+                          kind: member_expression
+                          has:
+                            field: property
+                            kind: property_identifier
+                            regex: ^(map|forEach|flatMap)$
+                      inside:
+                        kind: pair
         - any:
             - inside:
                 stopBy: end
@@ -72,7 +102,7 @@ rule:
                 - kind: identifier
                 - regex: ^enqueue[A-Z]
                 - not:
-                    regex: ^enqueueBulk
+                    regex: Bulk
             - all:
                 - kind: member_expression
                 - has:
@@ -83,7 +113,7 @@ rule:
                     has:
                       field: property
                       kind: property_identifier
-                      regex: ^enqueueBulk
+                      regex: Bulk
         - inside:
             kind: arguments
             inside:
@@ -216,3 +246,52 @@ examples:
     code: |
       for (const intentId of intentIds) await enqueueApplyCopyrightAction(intentId)
     isValid: true
+  - file: backend/queues/example/enqueues/schedules.mts
+    code: |
+      export const schedules = FRIEND_PROVIDERS.map(provider => ({
+        id: provider,
+        trigger: () => enqueueDispatchFriendsProvider(provider),
+      }))
+    isValid: true
+  - file: backend/services/example/recurring.mts
+    code: |
+      export const dispatchers = PROVIDERS.map(provider => ({
+        id: provider,
+        trigger: createTrigger(provider, async () => {
+          const result = await enqueueDispatchFriendsProvider(provider)
+          return result
+        }),
+      }))
+    isValid: true
+  - file: backend/workers/example/processors/loop.mts
+    code: |
+      const triggers = rows.map(row => ({
+        run: () => {
+          for (const id of row.ids) void enqueueOnPostCreated(id)
+        },
+      }))
+    isValid: false
+  - file: backend/workers/example/processors/loop.mts
+    code: |
+      const values = { jobs: rows.map(row => enqueueOnPostCreated(row.id)) }
+    isValid: false
+  - file: backend/workers/example/processors/loop.mts
+    code: |
+      for (const chunk of chunks) {
+        await enqueueOrRetryBulkSesInboundProcess(chunk, [])
+        await enqueueRefreshBulk(chunk)
+      }
+    isValid: true
+  - file: backend/queues/example/enqueues.mts
+    code: |
+      export const enqueueContinuation = data =>
+        enqueueBulkReactivatingFinished({
+          inputs: [data],
+          enqueueBulk: async inputs => {
+            const jobs = await Promise.all(
+              inputs.map(input => enqueueExampleJob(input, { jobId })),
+            )
+            return jobs
+          },
+        })
+    isValid: false

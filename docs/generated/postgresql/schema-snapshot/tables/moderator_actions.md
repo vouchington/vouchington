@@ -104,8 +104,6 @@ _none_
 
 **Triggers:**
 
-- `trigger_moderation_transparency_actions_delete_rollup`: `CREATE TRIGGER trigger_moderation_transparency_actions_delete_rollup AFTER DELETE ON public.moderator_actions REFERENCING OLD TABLE AS deleted_actions FOR EACH STATEMENT EXECUTE FUNCTION fn_project_transparency_rollup('deleted_actions', 'action_type', 'moderation_actions')`
-- `trigger_moderation_transparency_actions_rollup`: `CREATE TRIGGER trigger_moderation_transparency_actions_rollup AFTER INSERT ON public.moderator_actions REFERENCING NEW TABLE AS new_actions FOR EACH STATEMENT EXECUTE FUNCTION fn_project_transparency_rollup('new_actions', 'action_type', 'moderation_actions')`
 - `trigger_moderation_transparency_actions_scope_guard`: `CREATE TRIGGER trigger_moderation_transparency_actions_scope_guard BEFORE UPDATE OF moderation_transparency_community_id ON public.moderator_actions FOR EACH ROW WHEN ((old.moderation_transparency_community_id IS DISTINCT FROM new.moderation_transparency_community_id)) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_moderation_transparency_actions_scope_stamp`: `CREATE TRIGGER trigger_moderation_transparency_actions_scope_stamp BEFORE INSERT ON public.moderator_actions FOR EACH ROW EXECUTE FUNCTION fn_update_transparency_scope('moderation_transparency_community_id', 'community_id')`
 - `trigger_moderation_transparency_actions_type_guard`: `CREATE TRIGGER trigger_moderation_transparency_actions_type_guard BEFORE UPDATE OF action_type ON public.moderator_actions FOR EACH ROW WHEN ((old.action_type IS DISTINCT FROM new.action_type)) EXECUTE FUNCTION fn_reject_mutation()`

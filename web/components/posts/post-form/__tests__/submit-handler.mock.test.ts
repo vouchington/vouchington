@@ -157,7 +157,7 @@ describe('usePostFormSubmit', () => {
       await result.current.handleSubmitPost()
     })
     expect(toastMock.error).toHaveBeenCalledWith(
-      'A post can have up to 20 images. Remove an image before adding another.',
+      'This post has reached its image limit. Remove an image before adding another.',
     )
   })
 

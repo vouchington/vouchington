@@ -1,6 +1,6 @@
 import { getPostPublicationWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { enqueueCapturedPublicationChangeAfterCommit } from './direct-capture.mts'
+import { enqueueBulkCapturedPublicationChangesAfterCommit } from './direct-capture.mts'
 import { normalizePostPublicationIdentifiers } from './identifiers.mts'
 
 const RSS_FEED_PUBLICATION_REASON = 'rss_feed_discoverability_changed' as const
@@ -14,11 +14,13 @@ export async function recordRssFeedDiscoverabilityChanges(
   const ids = normalizePostPublicationIdentifiers(rssFeedIds)
   for (let offset = 0; offset < ids.length; offset += POST_PUBLICATION_CAPTURE_BATCH_SIZE) {
     const batch = ids.slice(offset, offset + POST_PUBLICATION_CAPTURE_BATCH_SIZE)
-    for (const rssFeedId of batch)
-      enqueueCapturedPublicationChangeAfterCommit(query, {
-        scope: { type: 'rss_feed', rssFeedId },
+    enqueueBulkCapturedPublicationChangesAfterCommit(
+      query,
+      batch.map(rssFeedId => ({
+        scope: { type: 'rss_feed' as const, rssFeedId },
         reason: RSS_FEED_PUBLICATION_REASON,
-        keys: [{ kind: 'identity_rss_feed', uuidValue: rssFeedId }],
-      })
+        keys: [{ kind: 'identity_rss_feed' as const, uuidValue: rssFeedId }],
+      })),
+    )
   }
 }

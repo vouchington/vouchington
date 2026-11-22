@@ -1,3 +1,7 @@
+import {
+  moderationAnalyticsWorkConfig,
+  moderationAnalyticsWorkMaxValues,
+} from '@services/moderation-analytics/work-limits'
 import { defineBoundedWorkNamespace } from './registry-bounded-work-entry.mts'
 import {
   userDeletionsWorkConfig,
@@ -73,6 +77,21 @@ export const backgroundWorkRegistryEntries8 = {
       dispatch_timeout_minutes: 'Dispatch timeout minutes before background recovery.',
       processing_timeout_minutes: 'Processing timeout minutes before background recovery.',
       recovery_batch_size: 'Recovery batch size for stripe processing.',
+    },
+  }),
+  'moderation-analytics-work-config': defineBoundedWorkNamespace({
+    namespace: 'moderation-analytics-work-config',
+    config: moderationAnalyticsWorkConfig,
+    label: 'Moderation analytics',
+    maxValues: moderationAnalyticsWorkMaxValues,
+    descriptions: {
+      leaderboard_page_size: 'Moderators included in the activity leaderboard.',
+      transparency_release_batch_days:
+        'Closed UTC days grouped from source rows in one transparency release statement.',
+      transparency_release_lookback_days:
+        'Newest closed UTC days the daily transparency release recomputes from source rows.',
+      transparency_release_max_batches_per_run:
+        'Maximum release statements one transparency release job runs.',
     },
   }),
 }

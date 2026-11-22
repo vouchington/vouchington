@@ -106,6 +106,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'psql/create-partitions-monthly',
   'psql/data-retention-cleanup-daily',
   'psql/moderation-retention-cleanup-daily',
+  'psql/moderation-transparency-release-daily',
   'psql/reconcile-vote-drift',
   'psql/refresh-platform-stats',
   'psql/refresh-referral-program-link-counts',

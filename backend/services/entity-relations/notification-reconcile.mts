@@ -56,20 +56,17 @@ function getNotificationReconcilePlan(
 
 export function enqueueNotificationReconcileAfterDelete(
   relation: EntityRelationMetadata,
-  subject: UpsertEntityTypes | EntityIdentifier,
+  subjects: ReadonlyArray<UpsertEntityTypes | EntityIdentifier>,
 ) {
-  if (relation.predicate !== 'category') return
+  if (relation.predicate !== 'category' || relation.object_type !== 'topic') return
+  const subjectIds = subjects.flatMap(subject => ('id' in subject ? [subject.id] : []))
 
-  if (relation.subject_type === 'post' && relation.object_type === 'topic' && 'id' in subject) {
-    void enqueueBulkReconcilePostNotifications([subject.id], randomUUID())
+  if (relation.subject_type === 'post') {
+    void enqueueBulkReconcilePostNotifications(subjectIds, randomUUID())
   }
 
-  if (
-    relation.subject_type === 'rss_feed_item' &&
-    relation.object_type === 'topic' &&
-    'id' in subject
-  ) {
+  if (relation.subject_type === 'rss_feed_item') {
     /* c8 ignore next -- lint-only fire-and-forget enqueue disposition. */
-    void enqueueBulkReconcileRssFeedItemNotifications([subject.id], randomUUID())
+    void enqueueBulkReconcileRssFeedItemNotifications(subjectIds, randomUUID())
   }
 }

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { cleanupObsoleteAgentModerations } from '@services/data-retention/cleanup-agent-moderations'
+import { releaseModerationTransparencyRange } from '@services/moderation-analytics/release-moderation-transparency-days'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { postSeedTimestampMs } from '../seed-data/common.mts'
@@ -141,5 +142,29 @@ export async function runAgentModerationRetentionScenarios(): Promise<void> {
       exactCapturedNames: CAPTURED_NAMES,
       afterCapture: restoreAgentModerationRetentionPages,
     },
+  )
+}
+
+/** Explain the daily release GROUP BY over the seeded day's source rows. */
+export async function runModerationTransparencyReleaseScenario(): Promise<void> {
+  const day = new Date(postSeedTimestampMs(0) - 120 * DAY_MS)
+  day.setUTCHours(0, 0, 0, 0)
+  registerScenarioContract('moderation-transparency-release', {
+    seededRows: await readAgentModerationRetentionSeedCounts(),
+    // An INSERT without RETURNING reports zero root rows; the read side is gated below.
+    allowEmptyResult: true,
+    forbidSequentialScans: ['agent_moderations'],
+    expectations: [
+      { kind: 'usesIndexes', indexes: ['agent_moderations__default_id_idx1'] },
+      { kind: 'maxProcessedRows', relation: 'agent_moderations', max: 20_000 },
+    ],
+  })
+  await runAndCapture(
+    'moderation-transparency-release',
+    async () => {
+      await releaseModerationTransparencyRange(day, new Date(day.getTime() + DAY_MS))
+    },
+    undefined,
+    'releaseModerationTransparencyRange',
   )
 }

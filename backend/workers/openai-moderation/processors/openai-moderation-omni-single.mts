@@ -22,7 +22,7 @@ import { handleOpenAIRateLimit } from '@modules/openai-utils/rate-limit'
 import {
   checkPostClearance,
   commitCurrentPostModerationVersions,
-  enqueuePostModerationRecovery,
+  enqueueBulkPostModerationRecovery,
   readCurrentAutomatedPostModerationAttempt,
   reconcilePostModerationWork,
 } from '@services/post-clearance'
@@ -75,8 +75,8 @@ export async function handleOpenAIModerationOmniSingleJob(
           job.data.cursor,
         )
         await Promise.all([
-          ...reconciliation.due.map(row =>
-            enqueuePostModerationRecovery(row.version_id, row.source),
+          enqueueBulkPostModerationRecovery(
+            reconciliation.due.map(row => ({ versionId: row.version_id, source: row.source })),
           ),
           ...reconciliation.exhausted_post_ids.map(checkPostClearance),
         ])
@@ -118,8 +118,8 @@ async function moderatePostVersion(versionId: string | undefined): Promise<unkno
 
 async function enqueueUnmoderatedPostModeration(postIds: readonly string[]): Promise<void> {
   const versions = await commitCurrentPostModerationVersions(postIds)
-  await Promise.all(
-    versions.map(version => enqueuePostModerationRecovery(version.id, 'openai_omni')),
+  await enqueueBulkPostModerationRecovery(
+    versions.map(version => ({ versionId: version.id, source: 'openai_omni' as const })),
   )
 }
 

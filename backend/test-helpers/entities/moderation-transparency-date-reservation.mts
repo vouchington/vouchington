@@ -40,10 +40,6 @@ export async function acquireTestModerationTransparencyDateReservation(): Promis
           SELECT 1 FROM moderation_transparency_released_daily_rollups
           WHERE day >= make_date($1::integer + $2::integer * $3::integer - 3, 1, 1)
             AND day < make_date($1::integer + $2::integer * $3::integer + 1, 1, 1)
-        ) OR EXISTS (
-          SELECT 1 FROM moderation_transparency_daily_rollups
-          WHERE day >= make_date($1::integer + $2::integer * $3::integer - 3, 1, 1)
-            AND day < make_date($1::integer + $2::integer * $3::integer + 1, 1, 1)
         ) AS occupied`,
         [FIRST_YEAR, SLOT_YEARS, slot],
       )

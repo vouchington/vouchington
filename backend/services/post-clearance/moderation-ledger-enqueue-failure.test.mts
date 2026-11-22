@@ -21,7 +21,7 @@ describe('post moderation enqueue after the version commit', () => {
     })
     await setPostModerationContentSha256(postId, randomBytes(32))
     const enqueue = vi
-      .spyOn(moderationEnqueues, 'enqueueCreatePostModeration')
+      .spyOn(moderationEnqueues, 'enqueueBulkCreatePostModeration')
       .mockRejectedValueOnce(new Error('valkey down'))
 
     const attempt = await beginPostModerationAttempt(postId, 'openai_omni')

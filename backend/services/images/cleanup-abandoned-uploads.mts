@@ -5,8 +5,7 @@ import onError from '@modules/on-error'
 import { markImageUploadSourcesDeleted } from './complete-upload-state.mts'
 import { cleanupStagedUploadSource } from './cleanup-staged-upload-source.mts'
 import { deleteKnownImageStorageFromS3 } from './s3-upload-lifecycle.mts'
-import { createExtractImageMetadataEnqueue } from '@queues/image-uploads/enqueues'
-import { imageUploadsQueue } from '@queues/image-uploads/queues'
+import { enqueueBulkExtractImageMetadata } from '@queues/image-uploads/enqueues'
 import type { AbandonedUploadSweep, UploadCleanupPhase } from '@queues/content-analysis/types'
 import { readUploadCleanupPage, type UploadCleanupRow } from './cleanup-upload-queries.mts'
 import { UPLOAD_CLEANUP_PHASES, uploadCleanupCutoff } from './cleanup-upload-sweep.mts'
@@ -20,7 +19,6 @@ export async function cleanupAbandonedUploads(
   save: (sweep: AbandonedUploadSweep) => Promise<void>,
 ) {
   const batchSize = getImagesWorkLimit('cleanup_batch_size')
-  const enqueueRecovery = createExtractImageMetadataEnqueue(imageUploadsQueue)
   let state = sweep
   const counts = { cleaned: 0, recovered: 0, stagedSourcesDeleted: 0 }
   for (const phase of UPLOAD_CLEANUP_PHASES) {
@@ -44,9 +42,8 @@ export async function cleanupAbandonedUploads(
       }
     } else if (phase === 'recovery') {
       // A rejection prevents checkpointing. A deduplicated admission already has live extraction work.
-      // oxlint-disable-next-line no-await-in-loop -- checkpoint only after the bounded fan-out settles
-      const admissions = await Promise.allSettled(rows.map(image => enqueueRecovery(image.id)))
-      rejectFailedPageEffects(admissions)
+      // oxlint-disable-next-line no-await-in-loop -- checkpoint only after the page is admitted
+      await enqueueBulkExtractImageMetadata(rows.map(image => image.id))
       counts.recovered += rows.length
     } else {
       // oxlint-disable-next-line no-await-in-loop -- retain best-effort per-image storage deletion after the committed soft delete

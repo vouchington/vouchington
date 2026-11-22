@@ -3,7 +3,7 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import { POST_PUBLICATION_REASONS, type PostPublicationReason } from './types.mts'
 import { normalizePostPublicationIdentifiers } from './identifiers.mts'
 import { impactPublicationKeys } from './captured-keys.mts'
-import { enqueueCapturedPublicationChangeAfterCommit } from './direct-capture.mts'
+import { enqueueBulkCapturedPublicationChangesAfterCommit } from './direct-capture.mts'
 
 const reasons = new Set<string>(POST_PUBLICATION_REASONS)
 
@@ -39,15 +39,16 @@ export async function recordPostPublicationChanges(
     impacts: impactsByPost.get(scopeId)!,
   }))
   for (let offset = 0; offset < normalized.length; offset += POST_PUBLICATION_CAPTURE_BATCH_SIZE) {
-    for (const change of normalized.slice(offset, offset + POST_PUBLICATION_CAPTURE_BATCH_SIZE)) {
-      enqueueCapturedPublicationChangeAfterCommit(query, {
-        scope: { type: 'post', postId: change.scopeId },
+    enqueueBulkCapturedPublicationChangesAfterCommit(
+      query,
+      normalized.slice(offset, offset + POST_PUBLICATION_CAPTURE_BATCH_SIZE).map(change => ({
+        scope: { type: 'post' as const, postId: change.scopeId },
         reason,
         keys: impactPublicationKeys({
           postIds: [...change.impacts.postIds],
           topicIds: [...change.impacts.topicIds],
         }),
-      })
-    }
+      })),
+    )
   }
 }

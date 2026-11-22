@@ -6,38 +6,53 @@ import { hashCapturedPublicationKeys, splitCapturedPublicationKeys } from './cap
 import { postPublicationScopeIdentifier } from './lock.mts'
 import type { PostPublicationReason, PostPublicationScope } from './types.mts'
 
-/** Registers one immutable captured change on the caller's transaction scope. */
-export function enqueueCapturedPublicationChangeAfterCommit(
+type CapturedPublicationChange = {
+  scope: PostPublicationScope
+  reason: PostPublicationReason
+  keys: readonly PublicationCapturedKey[]
+  /** Reuse only when a bounded page belongs to this same logical mutation. */
+  changeId?: string
+  /** Extra preimage pages never restart the logical change's scope discovery. */
+  scopeStart?: boolean
+}
+
+/**
+ * Registers immutable captured changes on the caller's transaction scope as one post-commit bulk
+ * enqueue. Returns each change's id in input order.
+ */
+export function enqueueBulkCapturedPublicationChangesAfterCommit(
   query: TransactionQuery,
-  capture: {
-    scope: PostPublicationScope
-    reason: PostPublicationReason
-    keys: readonly PublicationCapturedKey[]
-    /** Reuse only when a bounded page belongs to this same logical mutation. */
-    changeId?: string
-    /** Extra preimage pages never restart the logical change's scope discovery. */
-    scopeStart?: boolean
-  },
-): string {
-  const changeId = capture.changeId ?? randomUUID()
-  const id = postPublicationScopeIdentifier(capture.scope)
-  const scope = { type: capture.scope.type, id }
-  const postId = capture.scope.type === 'post' ? capture.scope.postId : null
-  const payloads = splitCapturedPublicationKeys(capture.keys).map((keys, chunkIndex) => ({
-    changeId,
-    postId,
-    scope,
-    reason: capture.reason,
-    keys,
-    keyHash: hashCapturedPublicationKeys(keys),
-    chunkIndex,
-    scopeStart: capture.scopeStart !== false && chunkIndex === 0,
-    scopeTopicKeysCaptured: capture.keys.some(key => key.kind === 'impact_topic'),
-    keyOffset: 0,
-  }))
+  captures: readonly CapturedPublicationChange[],
+): string[] {
+  const changeIds = captures.map(capture => capture.changeId ?? randomUUID())
+  const payloads = captures.flatMap((capture, index) => {
+    const id = postPublicationScopeIdentifier(capture.scope)
+    const scope = { type: capture.scope.type, id }
+    const postId = capture.scope.type === 'post' ? capture.scope.postId : null
+    return splitCapturedPublicationKeys(capture.keys).map((keys, chunkIndex) => ({
+      changeId: changeIds[index]!,
+      postId,
+      scope,
+      reason: capture.reason,
+      keys,
+      keyHash: hashCapturedPublicationKeys(keys),
+      chunkIndex,
+      scopeStart: capture.scopeStart !== false && chunkIndex === 0,
+      scopeTopicKeysCaptured: capture.keys.some(key => key.kind === 'impact_topic'),
+      keyOffset: 0,
+    }))
+  })
   // Register on this query's action scope, so a rolled-back nested transaction drops its jobs.
   registerPostCommitAction(query, async () => {
     await enqueueBulkPostPublicationEffects(payloads)
   })
-  return changeId
+  return changeIds
+}
+
+/** Registers one immutable captured change on the caller's transaction scope. */
+export function enqueueCapturedPublicationChangeAfterCommit(
+  query: TransactionQuery,
+  capture: CapturedPublicationChange,
+): string {
+  return enqueueBulkCapturedPublicationChangesAfterCommit(query, [capture])[0]!
 }
