@@ -832,3 +832,28 @@ Web submits these sources through post creation and uses the ordinary post mutat
 Swift and .NET adoption is tracked in
 [vouchington-clients#544](https://github.com/vouchington/vouchington-clients/issues/544) and follows
 the producer without gating this repository.
+
+## Topic follower context continuation
+
+The topic follower preview lists people the viewer follows who also follow the topic, newest
+viewer follows first, with user id as the stable tie-breaker. The optional `after` cursor advances
+that preview through viewer-follow rows; it does not enumerate the topic's raw follower population.
+Existing visibility filtering is unchanged. The `total` and `users` field names and types remain,
+while `total` is a lower bound when `total_is_exact` is false. The response adds `total_is_exact`
+and `next_cursor`.
+
+`users-work-config.topic_follow_context_count_cap` bounds the reported count and
+`users-work-config.topic_follow_context_inspect_limit` bounds inspected viewer follows. The
+producer sets hard maxima for both fields. `total_is_exact` is false when eligible matches exceed
+the count cap or may remain uninspected. Exactly the cap is exact when the entire suffix was
+inspected and exactly that many matches were found. Render a localized `{{count}}+` for a
+non-exact count, including a lower bound below the cap when visible matches are sparse. A response
+with `total: 0`, `users: []`, and a non-null `next_cursor` is incomplete; clients must preserve the
+continuation. Each continuation count describes that suffix and must not be summed with counts
+from other pages.
+
+Web continues until it has filled its five-person preview or the cursor is exhausted, without
+skipping eligible users. Swift and .NET adoption is tracked in
+[vouchington-clients#758](https://github.com/vouchington/vouchington-clients/issues/758). The
+producer contract is settled, but native adoption remains pending the producer merge and native
+implementation; no native completion is claimed here.
