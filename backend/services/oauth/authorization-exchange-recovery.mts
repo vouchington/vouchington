@@ -1,9 +1,9 @@
 import {
-  getRetainedUnarmedOAuthExchangeIds,
+  getRetainedUnarmedOAuthExchangeClaims,
   type RetainedOAuthExchangeClaim,
 } from './authorization-exchange-recovery-ownership.mts'
 import { beginTransaction, write } from '@data-stores/psql'
-import { recoverableOAuthAuthorizationRowLocksSql } from './authorization-exchange-row-locks-sql.mts'
+import { recoverableOAuthAuthorizationPageSql } from './authorization-exchange-recovery-page-sql.mts'
 import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
 import { sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
 import {
@@ -36,18 +36,18 @@ export async function getRecoverableOAuthAuthorizationIds(
     X_MAX_QUEUE_DELAY_SECONDS,
     idScope,
   ]
-  const locked = await transaction<{ id: string }>(
-    recoverableOAuthAuthorizationRowLocksSql,
+  const page = await transaction<{ id: string; exchange_claim_id: string | null }>(
+    recoverableOAuthAuthorizationPageSql,
     parameters,
   )
-  const ownedIds = locked.rows.map(row => row.id)
-  if (ownedIds.length === 0) {
+  const candidateIds = page.rows.map(row => row.id)
+  if (candidateIds.length === 0) {
     await transaction.commit()
     return { ids: [], hasMore: false }
   }
-  const retainedIds = await getRetainedUnarmedOAuthExchangeIds(
+  const retainedClaims = await getRetainedUnarmedOAuthExchangeClaims(
     transaction,
-    ownedIds,
+    candidateIds,
     STALE_EXCHANGE_CLAIM_SECONDS,
     retainedClaim,
   )
@@ -70,10 +70,14 @@ export async function getRecoverableOAuthAuthorizationIds(
          END AS callback_error
        FROM oauth_authorizations flow
        JOIN view_oauth_authorization_current_records current_flow ON current_flow.id = flow.id
+       JOIN UNNEST($5::uuid[], $6::uuid[]) AS candidate(id, claim_id)
+         ON candidate.id = flow.id AND candidate.claim_id IS NOT DISTINCT FROM flow.exchange_claim_id
        WHERE flow.status IN ('callback_received', 'exchanging')
          AND flow.expires_at > CURRENT_TIMESTAMP
-         AND ($5::uuid[] IS NULL OR flow.id = ANY($5::uuid[]))
-         AND NOT (flow.id = ANY($6::uuid[]))
+         AND NOT EXISTS (
+           SELECT 1 FROM UNNEST($7::uuid[], $8::uuid[]) AS retained(id, claim_id)
+           WHERE retained.id = current_flow.id AND retained.claim_id = current_flow.exchange_claim_id
+         )
          AND (
            (current_flow.status = 'exchanging'
              AND current_flow.exchange_started_at < clock_timestamp() - make_interval(secs => $2))
@@ -120,11 +124,15 @@ export async function getRecoverableOAuthAuthorizationIds(
      SELECT current_flow.id
      FROM oauth_authorizations flow
      JOIN view_oauth_authorization_current_records current_flow ON current_flow.id = flow.id
+     JOIN UNNEST($5::uuid[], $6::uuid[]) AS candidate(id, claim_id)
+       ON candidate.id = flow.id AND candidate.claim_id IS NOT DISTINCT FROM flow.exchange_claim_id
      WHERE flow.status IN ('callback_received', 'exchanging')
        AND flow.expires_at > CURRENT_TIMESTAMP
-       AND ($5::uuid[] IS NULL OR flow.id = ANY($5::uuid[]))
        AND (
-         current_flow.id = ANY($6::uuid[])
+         EXISTS (
+           SELECT 1 FROM UNNEST($7::uuid[], $8::uuid[]) AS retained(id, claim_id)
+           WHERE retained.id = current_flow.id AND retained.claim_id = current_flow.exchange_claim_id
+         )
          OR (
            current_flow.status = 'callback_received' AND current_flow.exchange_attempts < $3
            AND (current_flow.provider <> 'x' OR current_flow.callback_received_at > CURRENT_TIMESTAMP - make_interval(secs => $4))
@@ -137,8 +145,10 @@ export async function getRecoverableOAuthAuthorizationIds(
       STALE_EXCHANGE_CLAIM_SECONDS,
       MAX_EXCHANGE_ATTEMPTS,
       X_MAX_QUEUE_DELAY_SECONDS,
-      ownedIds,
-      retainedIds,
+      candidateIds,
+      page.rows.map(row => row.exchange_claim_id),
+      retainedClaims.map(receipt => receipt.id),
+      retainedClaims.map(receipt => receipt.claimId),
     ],
   )
   await transaction.commit()
@@ -146,7 +156,7 @@ export async function getRecoverableOAuthAuthorizationIds(
     ids: rows.map(row => String(row.id)),
     // A full terminal bucket can produce no ids because it was terminalized. The next scheduled
     // dispatcher run resumes from the durable recovery predicate in either case.
-    hasMore: ownedIds.length >= batchSize,
+    hasMore: candidateIds.length >= batchSize,
   }
 }
 

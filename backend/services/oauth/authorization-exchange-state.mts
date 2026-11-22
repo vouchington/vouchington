@@ -2,7 +2,7 @@ import {
   prepareOAuthAuthorizationClaim,
   settleOAuthAuthorizationExpiry,
 } from './authorization-exchange-lifecycle.mts'
-import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
+import { beginTransaction, write, type OwnedTransaction } from '@data-stores/psql'
 import { v7 as uuidv7 } from 'uuid'
 import type { BrokerOAuthProvider, BrokerPurpose } from './broker-config.mts'
 
@@ -41,7 +41,6 @@ export async function claimOAuthAuthorizationExchange(
        WHERE id = $1 AND expires_at > clock_timestamp() AND exchange_attempts < $3
          AND (provider <> 'x' OR callback_received_at > clock_timestamp() - make_interval(secs => $4))
          AND status = 'callback_received'
-       FOR UPDATE
      )
      UPDATE oauth_authorizations flow
      SET exchange_claim_id = $2,
@@ -82,37 +81,37 @@ export async function validateOAuthAuthorizationExchangeClaim(
   flowId: string,
   claimId: string,
 ): Promise<void> {
-  const valid = await withLockedOAuthAuthorization(
-    flowId,
-    async (transaction: OwnedTransaction) => {
-      await settleOAuthAuthorizationExpiry(
-        transaction,
-        flowId,
-        X_MAX_QUEUE_DELAY_SECONDS,
-        STALE_EXCHANGE_CLAIM_SECONDS,
-      )
-      const { rows } = await transaction<{ id: string }>(
-        `/* validateOAuthAuthorizationExchangeClaim */ SELECT id
+  await using transaction = await beginTransaction()
+  const valid = await readCurrentAdmission()
+  await transaction.commit()
+  if (!valid) throw new Error('OAuth provider admission lost its current unexpired claim')
+
+  async function readCurrentAdmission(): Promise<boolean> {
+    await settleOAuthAuthorizationExpiry(
+      transaction,
+      flowId,
+      X_MAX_QUEUE_DELAY_SECONDS,
+      STALE_EXCHANGE_CLAIM_SECONDS,
+    )
+    const { rows } = await transaction<{ id: string }>(
+      `/* validateOAuthAuthorizationExchangeClaim */ SELECT id
        FROM view_oauth_authorization_current_records
        WHERE id = $1 AND status = 'exchanging' AND exchange_claim_id = $2
          AND expires_at > clock_timestamp()
          AND exchange_started_at >= clock_timestamp() - make_interval(secs => $3)
          AND (provider <> 'x' OR callback_received_at > clock_timestamp() - make_interval(secs => $4))`,
-        [flowId, claimId, STALE_EXCHANGE_CLAIM_SECONDS, X_MAX_QUEUE_DELAY_SECONDS],
-      )
-      return rows.length === 1
-    },
-  )
-  if (!valid) throw new Error('OAuth provider admission lost its current unexpired claim')
+      [flowId, claimId, STALE_EXCHANGE_CLAIM_SECONDS, X_MAX_QUEUE_DELAY_SECONDS],
+    )
+    return rows.length === 1
+  }
 }
 
 export async function rejectExhaustedOAuthAuthorizationExchange(
   flowId: string,
   claimId: string,
 ): Promise<boolean> {
-  return withLockedOAuthAuthorization(flowId, async (transaction: OwnedTransaction) => {
-    const { rowCount } = await transaction(
-      `/* rejectExhaustedOAuthAuthorizationExchange */ UPDATE oauth_authorizations
+  const { rowCount } = await write(
+    `/* rejectExhaustedOAuthAuthorizationExchange */ UPDATE oauth_authorizations
      SET rejected_at = COALESCE(rejected_at, clock_timestamp()),
          callback_error = 'provider_exchange_failed',
          callback_code_ciphertext = NULL,
@@ -122,26 +121,23 @@ export async function rejectExhaustedOAuthAuthorizationExchange(
        AND exchange_claim_id = $2
        AND (SELECT MAX(attempt_number) FROM oauth_authorization_exchange_attempts
          WHERE oauth_authorization_id = oauth_authorizations.id) >= $3`,
-      [flowId, claimId, MAX_EXCHANGE_ATTEMPTS],
-    )
-    return rowCount === 1
-  })
+    [flowId, claimId, MAX_EXCHANGE_ATTEMPTS],
+  )
+  return rowCount === 1
 }
 
 export async function releaseOAuthAuthorizationExchangeClaim(
   flowId: string,
   claimId: string,
 ): Promise<void> {
-  await withLockedOAuthAuthorization(flowId, async (transaction: OwnedTransaction) => {
-    await transaction(
-      `/* releaseOAuthAuthorizationExchangeClaim */ UPDATE oauth_authorizations
+  await write(
+    `/* releaseOAuthAuthorizationExchangeClaim */ UPDATE oauth_authorizations
      SET exchange_claim_id = NULL
      WHERE id = $1
        AND status = 'callback_received'
        AND exchange_claim_id = $2`,
-      [flowId, claimId],
-    )
-  })
+    [flowId, claimId],
+  )
 }
 
 /** Own row identity before reading projected attempt history; never borrow a caller executor. */

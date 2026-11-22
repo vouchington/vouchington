@@ -159,7 +159,7 @@ export async function runViewDrivenReadScenarios(): Promise<void> {
     'recoverable-oauth-authorizations',
     () => getRecoverableOAuthAuthorizationIds(25),
     undefined,
-    ['getRecoverableOAuthAuthorizationIds:lock', 'getRecoverableOAuthAuthorizationIds'],
+    ['getRecoverableOAuthAuthorizationIds:page', 'getRecoverableOAuthAuthorizationIds'],
   )
   // Same order as the previous top-level step: after view-driven reads, before topic import.
   await runIneligibleCollectionPageScenarios()

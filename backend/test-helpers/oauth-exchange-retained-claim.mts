@@ -11,7 +11,7 @@ import {
   workerQueueConnection,
   workerQueuePrefix,
 } from '../data-stores/valkey-core/glide-mq-client.mts'
-import { withTestOAuthAuthorizationRowLocked } from './entities/oauth-authorization-recovery.mts'
+import { runBeforePostgresStatementForTest } from './injected-failures.mts'
 import { getTestOAuthAuthorization } from './entities/oauth-authorizations.mts'
 import {
   ownOAuthActors,
@@ -37,8 +37,8 @@ export async function recoverTestRetainedOAuthClaim(
   const errors: unknown[] = []
   const owner = ownOAuthActors(errors, cleanupReceipt)
   const queue = owner.queue(() => new Queue<OAuthAuthorizationExchangeJobData>(name, options))
-  const nativeErrors: unknown[] = []
-  let firstNativeError: unknown
+  const mutationErrors: unknown[] = []
+  const injectedError = new Error('owned settlement read failed')
   let firstAttempts = 0
   let outcome:
     | {
@@ -60,18 +60,23 @@ export async function recoverTestRetainedOAuthClaim(
           name,
           async (job: Job<OAuthAuthorizationExchangeJobData>) => {
             firstAttempts += 1
+            const restore = runBeforePostgresStatementForTest(
+              'settleOAuthAuthorizationExchangeClaim:history',
+              async () => {
+                throw injectedError
+              },
+            )
             try {
               await owner.run(() =>
-                withTestOAuthAuthorizationRowLocked(authorizationId, () =>
-                  processOAuthAuthorizationExchangeJob(
-                    job as unknown as Parameters<typeof processOAuthAuthorizationExchangeJob>[0],
-                  ),
+                processOAuthAuthorizationExchangeJob(
+                  job as unknown as Parameters<typeof processOAuthAuthorizationExchangeJob>[0],
                 ),
               )
             } catch (err) {
-              nativeErrors.push(err)
-              if (firstAttempts === 1) firstNativeError = err
+              mutationErrors.push(err)
               throw err
+            } finally {
+              restore()
             }
           },
           { ...options, blockTimeout: 100, promotionInterval: retainedClaimPromotionIntervalMs },
@@ -97,7 +102,7 @@ export async function recoverTestRetainedOAuthClaim(
       throw new Error('Exact retained owned job was not admitted')
     const firstReceipt = await owner.run(() => firstTerminal.promise)
     if (firstReceipt.state !== 'failed')
-      throw new Error('Actual NOWAIT contention did not fail the retained job')
+      throw new Error('Settlement read failure did not fail the retained job')
     // Five actual public reactivations/attempts; each next admission follows its prior terminal receipt.
     // One configured attempt per reactivation keeps the later disposition attempt independently observable.
     for (let attempt = 1; attempt < 5; attempt += 1) {
@@ -105,7 +110,7 @@ export async function recoverTestRetainedOAuthClaim(
       await owner.run(() => added.retry())
       const receipt = await owner.run(() => nextTerminal.promise)
       if (receipt.state !== 'failed')
-        throw new Error('Owned row contention unexpectedly completed a queue attempt')
+        throw new Error('Failed settlement read unexpectedly completed a queue attempt')
     }
     await owner.run(() => firstWorker.close())
     const retained = await owner.run(() => queue.getJob(authorizationId))
@@ -167,5 +172,5 @@ export async function recoverTestRetainedOAuthClaim(
       cause: errors[0],
     })
   if (!outcome) throw new Error('No retained OAuth claim receipt')
-  return { ...outcome, firstNativeError, firstAttempts, nativeErrors }
+  return { ...outcome, injectedError, firstAttempts, mutationErrors }
 }

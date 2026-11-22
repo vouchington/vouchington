@@ -13,13 +13,6 @@ export async function settleOAuthAuthorizationExchangeClaim(
   providerRequestArmed = false,
 ): Promise<OAuthExchangeDisposition> {
   await using transaction = await beginTransaction()
-  await transaction(
-    '/* settleOAuthAuthorizationExchangeClaim:isolation */ SET TRANSACTION ISOLATION LEVEL READ COMMITTED',
-  )
-  await transaction(
-    '/* settleOAuthAuthorizationExchangeClaim:lock */ SELECT id FROM oauth_authorizations WHERE id = $1 FOR UPDATE NOWAIT',
-    [authorizationId],
-  )
   const { rows } = await transaction<{
     status: string
     exchange_claim_id: string | null
@@ -47,8 +40,9 @@ export async function settleOAuthAuthorizationExchangeClaim(
            callback_code_ciphertext = NULL, completion_token_ciphertext = NULL,
            exchange_claim_id = NULL
        WHERE id = $1 AND status IN ('pending', 'callback_received', 'exchanging', 'completion_ready')
-         AND expires_at <= CURRENT_TIMESTAMP`,
-      [authorizationId],
+         AND expires_at <= CURRENT_TIMESTAMP
+         AND exchange_claim_id IS NOT DISTINCT FROM $2`,
+      [authorizationId, current.exchange_claim_id],
     )
     if (rowCount !== 1)
       throw new Error('Expired unconsumed OAuth authorization was not settled exactly once')
