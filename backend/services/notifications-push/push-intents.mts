@@ -14,7 +14,8 @@ export async function claimNotificationPushIntent(
   const { rows } = await write<NotificationPushIntent & { claimed: boolean }>(sql`
     /* claimNotificationPushIntent */
     WITH notification_state AS MATERIALIZED (
-      SELECT notification.deleted_at, notification.pushed_at,
+      SELECT notification.deleted_at,
+        (notification.pushed_at IS NULL OR push_intent.lease_token IS NOT NULL) AS may_claim,
         push_intent.lease_token AS previous_lease_token
       FROM notifications notification
       JOIN notification_push_intents push_intent
@@ -24,7 +25,6 @@ export async function claimNotificationPushIntent(
         AND notification.id = ${intent.notification_id}
         AND push_intent.status = 'pending'
         AND (push_intent.lease_expires_at IS NULL OR push_intent.lease_expires_at <= CURRENT_TIMESTAMP)
-      FOR UPDATE OF notification
     ), claimed_notification AS (
       UPDATE notifications notification
       SET pushed_at = COALESCE(notification.pushed_at, CURRENT_TIMESTAMP)
@@ -32,10 +32,8 @@ export async function claimNotificationPushIntent(
       WHERE notification.user_id = ${intent.user_id}
         AND notification.id = ${intent.notification_id}
         AND notification_state.deleted_at IS NULL
-        AND (
-          notification_state.pushed_at IS NULL
-          OR notification_state.previous_lease_token IS NOT NULL
-        )
+        AND notification.deleted_at IS NULL
+        AND (notification.pushed_at IS NULL OR notification_state.previous_lease_token IS NOT NULL)
       RETURNING 1
     )
     UPDATE notification_push_intents push_intent
@@ -50,10 +48,13 @@ export async function claimNotificationPushIntent(
             THEN CURRENT_TIMESTAMP + (${leaseSeconds}::integer * INTERVAL '1 second')
         END,
         suppressed_at = CASE
-          WHEN notification_state.deleted_at IS NOT NULL THEN CURRENT_TIMESTAMP
+          WHEN notification_state.deleted_at IS NOT NULL OR (
+            notification_state.may_claim AND NOT EXISTS (SELECT 1 FROM claimed_notification)
+          ) THEN CURRENT_TIMESTAMP
         END,
         delivered_at = CASE
           WHEN notification_state.deleted_at IS NULL
+            AND NOT notification_state.may_claim
             AND NOT EXISTS (SELECT 1 FROM claimed_notification)
             THEN CURRENT_TIMESTAMP
         END
@@ -61,6 +62,7 @@ export async function claimNotificationPushIntent(
     WHERE push_intent.user_id = ${intent.user_id}
       AND push_intent.notification_id = ${intent.notification_id}
       AND push_intent.status = 'pending'
+      AND push_intent.lease_token IS NOT DISTINCT FROM notification_state.previous_lease_token
       AND (push_intent.lease_expires_at IS NULL OR push_intent.lease_expires_at <= CURRENT_TIMESTAMP)
     RETURNING push_intent.user_id, push_intent.notification_id, push_intent.lease_token,
       EXISTS (SELECT 1 FROM claimed_notification) AS claimed
