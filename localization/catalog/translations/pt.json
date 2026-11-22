@@ -5550,7 +5550,6 @@
 {"id":"copy.native.swift.postCompose.drafts","value":"Rascunhos"},
 {"id":"copy.native.swift.postCompose.imageLabel","value":"Imagem {index}"},
 {"id":"copy.native.swift.postCompose.imageLimitReached","value":"Limite de imagens atingido"},
-{"id":"copy.native.swift.postCompose.imageMaximumReached","value":"Pode anexar até 20 imagens."},
 {"id":"copy.native.swift.postCompose.imageWaitForDraft","value":"Aguarde a conclusão dos carregamentos de imagens antes de guardar um rascunho."},
 {"id":"copy.native.swift.postCompose.imageWaitForPublishing","value":"Aguarde a conclusão da publicação antes de adicionar imagens."},
 {"id":"copy.native.swift.postCompose.images","value":"Imagens"},

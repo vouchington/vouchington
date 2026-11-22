@@ -5550,7 +5550,6 @@
 {"id":"copy.native.swift.postCompose.drafts","value":"Brouillons"},
 {"id":"copy.native.swift.postCompose.imageLabel","value":"Image {index}"},
 {"id":"copy.native.swift.postCompose.imageLimitReached","value":"Limite d’images atteinte"},
-{"id":"copy.native.swift.postCompose.imageMaximumReached","value":"Vous pouvez joindre jusqu’à 20 images."},
 {"id":"copy.native.swift.postCompose.imageWaitForDraft","value":"Attendez la fin de l’importation des images avant d’enregistrer un brouillon."},
 {"id":"copy.native.swift.postCompose.imageWaitForPublishing","value":"Attendez la fin de la publication avant d’ajouter des images."},
 {"id":"copy.native.swift.postCompose.images","value":"Fichiers image"},

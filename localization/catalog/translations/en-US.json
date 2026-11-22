@@ -5556,7 +5556,6 @@
 {"id":"copy.native.swift.postCompose.drafts","value":"Drafts"},
 {"id":"copy.native.swift.postCompose.imageLabel","value":"Image {index}"},
 {"id":"copy.native.swift.postCompose.imageLimitReached","value":"Image limit reached"},
-{"id":"copy.native.swift.postCompose.imageMaximumReached","value":"You can attach up to 20 images."},
 {"id":"copy.native.swift.postCompose.imageWaitForDraft","value":"Wait for image uploads to finish before saving a draft."},
 {"id":"copy.native.swift.postCompose.imageWaitForPublishing","value":"Wait for publishing to finish before adding images."},
 {"id":"copy.native.swift.postCompose.images","value":"Images"},
