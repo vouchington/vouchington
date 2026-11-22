@@ -1384,6 +1384,8 @@
         reason: First-party DNS and well-known domain-verification primitives published by the repo author.
       - name: '@vouchington/edge'
         reason: First-party policy-injected edge runtime primitives published by the repo author.
+      - name: '@vouchington/explain-plan'
+        reason: First-party injected-client PostgreSQL EXPLAIN capture and plan analysis published by the repo author.
       - name: '@vouchington/frontmatter'
         reason: First-party deterministic YAML frontmatter serializer published by the repo author.
       - name: '@vouchington/html-sanitizer'
