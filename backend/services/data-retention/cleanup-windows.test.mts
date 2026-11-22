@@ -16,7 +16,11 @@ import {
 import { runDataRetentionCleanup } from './cleanup.mts'
 import { getRetentionCutoffDate } from './cleanup-options.mts'
 import { cleanupSoftDeletedUser } from './cleanup-soft-deleted-user.mts'
-import { runUserPurgePageForTest } from '../../test-helpers/user-purge-ticks.mts'
+import {
+  areTestUsersDeleted,
+  runUserPurgePageForTest,
+  runUserPurgeTicksForTest,
+} from '../../test-helpers/user-purge-ticks.mts'
 
 const THIRTY_DAY_UTC_EDGES = [
   ['2025-01-31T23:59:59.999Z', '2025-01-01T23:59:59.999Z'],
@@ -58,12 +62,18 @@ describe('cleanup retention windows', () => {
     await softDeleteUserAt(atUpperBoundUser.id, window.upperBoundDate)
     await softDeleteUserAt(afterUpperBoundUser.id, window.afterUpperBoundDate)
 
-    const softDeletedUsersCleanup = await runUserPurgePageForTest(() =>
-      runDataRetentionCleanup(
-        { batchSize: 500, maxBatches: 1 },
-        { families: ['softDeletedUsers'], softDeletedUsers: window },
-      ).then(result => result.softDeletedUsers),
+    const ticks = await runUserPurgeTicksForTest(
+      () =>
+        runDataRetentionCleanup(
+          { batchSize: 500, maxBatches: 1 },
+          { families: ['softDeletedUsers'], softDeletedUsers: window },
+        ).then(result => result.softDeletedUsers),
+      () => areTestUsersDeleted([firstEligibleUser.id, secondEligibleUser.id]),
     )
+    const softDeletedUsersCleanup = {
+      deleted: ticks.reduce((count, result) => count + result.deleted, 0),
+      hasMore: ticks.at(-1)?.hasMore,
+    }
 
     expect(softDeletedUsersCleanup).toEqual({ deleted: 2, hasMore: false })
     expect(await getTestUserRaw(beforeLowerBoundUser.id)).not.toBeNull()
