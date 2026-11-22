@@ -1,6 +1,4 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
-import type { HostnameBlockCleanupOperation } from './cleanup-operation.mts'
-import { cleanupOperationFields } from './cleanup-operation-fields.mts'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 
@@ -93,7 +91,7 @@ export async function attachHostnameBlockToAncestorCleanup(
     blockedSource: string
     rootBlockId: string
   },
-): Promise<HostnameBlockCleanupOperation> {
+): Promise<void> {
   if (input.existingBlockId) {
     await query(sql`/* attachHostnameBlockToAncestorCleanup:existing */
       UPDATE url_hostname_blocks SET relation_cleanup_root_block_id = ${input.rootBlockId}
@@ -109,15 +107,4 @@ export async function attachHostnameBlockToAncestorCleanup(
       )
     `)
   }
-  const { rows } = await query<HostnameBlockCleanupOperation>(
-    sql`/* attachHostnameBlockToAncestorCleanup:count */
-    UPDATE url_hostname_blocks AS block
-    SET relation_cleanup_blocked_hostname_count = block.relation_cleanup_blocked_hostname_count + 1
-    FROM url_hostnames hostname
-    WHERE block.id = ${input.rootBlockId} AND block.relation_cleanup_completed_at IS NULL
-      AND hostname.id = block.url_hostname_id
-    RETURNING `.append(cleanupOperationFields(sql`hostname.hostname`)),
-  )
-  if (!rows[0]) throw new Error('Ancestor hostname block cleanup root is missing')
-  return rows[0]
 }

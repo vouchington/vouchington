@@ -65,13 +65,24 @@ export async function ensureHostnameBlockCleanupOperation(
     ancestor.stage === 'subdomains' &&
     ancestor.penalizeCreators === penalizeCreators
   ) {
-    return attachHostnameBlockToAncestorCleanup(query, {
+    await attachHostnameBlockToAncestorCleanup(query, {
       existingBlockId: existing?.id ?? null,
       hostnameId,
       blockedById,
       blockedSource,
       rootBlockId: ancestor.id,
     })
+    const { rows } = await query<HostnameBlockCleanupOperation>(
+      sql`/* attachHostnameBlockToAncestorCleanup:count */
+      UPDATE url_hostname_blocks AS block
+      SET relation_cleanup_blocked_hostname_count = block.relation_cleanup_blocked_hostname_count + 1
+      FROM url_hostnames hostname
+      WHERE block.id = ${ancestor.id} AND block.relation_cleanup_completed_at IS NULL
+        AND hostname.id = block.url_hostname_id
+      RETURNING `.append(cleanupOperationFields(sql`hostname.hostname`)),
+    )
+    if (!rows[0]) throw new Error('Ancestor hostname block cleanup root is missing')
+    return rows[0]
   }
   if (existing) {
     const { rows } = await query<HostnameBlockCleanupOperation>(
