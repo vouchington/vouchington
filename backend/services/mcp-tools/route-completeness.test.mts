@@ -46,16 +46,6 @@ const baselineData = JSON.parse(
       inputFields: string
     })[]
   >
-  additions: Record<
-    string,
-    {
-      pullRequest: number
-      contracts: (Omit<BaselineRecord, 'method' | 'path' | 'facts' | 'inputFields'> & {
-        facts: string
-        inputFields: string
-      })[]
-    }
-  >
 }
 const baselineRecords = Object.entries(baselineData.routes).flatMap(([route, records]) =>
   records.map(record => ({
@@ -66,16 +56,6 @@ const baselineRecords = Object.entries(baselineData.routes).flatMap(([route, rec
     path: route.slice(route.indexOf(':') + 1),
   })),
 )
-const additions = Object.entries(baselineData.additions).flatMap(([route, addition]) =>
-  addition.contracts.map(record => ({
-    ...record,
-    facts: baselineData.facts[record.facts]!,
-    inputFields: baselineData.inputs[record.inputFields]!,
-    method: route.slice(0, route.indexOf(':')),
-    path: route.slice(route.indexOf(':') + 1),
-  })),
-)
-const expectedRecords = [...baselineRecords, ...additions]
 const contractsUrl = new URL('../../../api-contracts/v1/request-contracts.json', import.meta.url)
 type C = { operations: Record<string, { body?: unknown }>; components: Record<string, unknown> }
 const requestContracts = JSON.parse(readFileSync(contractsUrl, 'utf8')) as C
@@ -182,12 +162,6 @@ const sameContract = (left: BaselineRecord, right: ReturnType<typeof currentReco
   (left.method === 'GET' || isDeepStrictEqual(left.inputFields, right.inputFields))
 
 describe('MCP route completeness from baseline facts', () => {
-  it('requires PR provenance for each explicitly added route contract', () => {
-    for (const addition of Object.values(baselineData.additions)) {
-      expect(Number.isInteger(addition.pullRequest) && addition.pullRequest > 0).toBe(true)
-      expect(addition.contracts).not.toEqual([])
-    }
-  })
   it('subtracts only copyright decision options when the switch is off', () => {
     const user = {
       id: 'route-completeness',
@@ -200,7 +174,7 @@ describe('MCP route completeness from baseline facts', () => {
       const [off, on] = [listing(false), listing(true)]
       const switched = [
         ...new Set(
-          expectedRecords
+          baselineRecords
             .filter(record => record.audience === config.audience && record.decision)
             .map(record => record.operation.tool),
         ),
@@ -225,10 +199,10 @@ describe('MCP route completeness from baseline facts', () => {
   })
   it('maps every baseline route contract to exactly one current source option', () => {
     const current = currentRecords()
-    const matches = expectedRecords.map(expected =>
+    const matches = baselineRecords.map(expected =>
       current.filter(actual => sameContract(expected, actual)),
     )
-    const unmatched = expectedRecords.flatMap((expected, index) =>
+    const unmatched = baselineRecords.flatMap((expected, index) =>
       matches[index]!.length === 1
         ? []
         : [
@@ -258,7 +232,7 @@ describe('MCP route completeness from baseline facts', () => {
       }
     expect([...currentMatches.values()].filter(count => count !== 1)).toEqual([])
     expect(
-      current.filter(actual => !expectedRecords.some(expected => sameContract(expected, actual))),
+      current.filter(actual => !baselineRecords.some(expected => sameContract(expected, actual))),
     ).toEqual([])
   })
   it('keeps pinned REST-twin body fields accepted by the current REST contract', () => {
@@ -287,11 +261,11 @@ describe('MCP route completeness from baseline facts', () => {
     }
   })
 
-  it('has no duplicate contracts across the baseline, additions, or current source', () => {
+  it('has no duplicate contracts across the baseline or current source', () => {
     const identity = (
       entry: Pick<BaselineRecord, 'audience' | 'method' | 'path' | 'facts' | 'inputFields'>,
     ) => JSON.stringify([entry.audience, entry.method, entry.path, entry.facts, entry.inputFields])
-    const baselineKeys = expectedRecords.map(identity)
+    const baselineKeys = baselineRecords.map(identity)
     const currentKeys = currentRecords().map(identity)
     expect(new Set(baselineKeys).size).toBe(baselineKeys.length)
     expect(new Set(currentKeys).size).toBe(currentKeys.length)
