@@ -29,7 +29,8 @@ export async function pruneStoryPostRelatedUrlsOutsidePrefix(
       WHERE relation.subject_id = $1
         AND relation.deleted_at IS NULL
         AND relation.created_by_id = $2
-        AND NOT (relation.object_id = ANY($3::uuid[]))
+        AND $3::uuid[] IS NOT NULL
+        AND NOT (relation.object_id = ANY(SELECT unnest($3::uuid[])))
         AND NOT EXISTS (
           SELECT 1
           FROM story_post_related_url_projection_relation_mutations mutation
