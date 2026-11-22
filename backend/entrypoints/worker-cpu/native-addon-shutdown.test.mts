@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { registerNativeAddonShutdown } from './nativeAddonShutdown.mts'
+import { registerNativeAddonShutdown } from './native-addon-shutdown.mts'
 
 type DrainCallback = () => Promise<void>
 

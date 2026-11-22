@@ -120,7 +120,7 @@
     "unicorn/error-message": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/escape-case": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/explicit-length-check": "off", // Intentional #1692: staged pedantic/style exclusion.
-    "unicorn/filename-case": "off", // Intentional #1692: staged pedantic/style exclusion.
+    "unicorn/filename-case": ["error", { "case": "kebabCase" }],
     "unicorn/new-for-builtins": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/no-abusive-eslint-disable": "error",
     "unicorn/no-accessor-recursion": "error",
