@@ -105,7 +105,7 @@ async function deleteCompletedImportPage(
        FROM user_rss_feed_import_row_discoveries
        WHERE batch_id = $1
          AND (import_row_id, discovery_url_id) > ($2::uuid, $3::uuid)
-       ORDER BY import_row_id, discovery_url_id LIMIT $4 FOR UPDATE`,
+       ORDER BY import_row_id, discovery_url_id LIMIT $4`,
       [
         batchId,
         cursor.cursor_row_id ?? MIN_UUIDV7,
@@ -139,7 +139,7 @@ async function deleteCompletedImportPage(
       `/* selectImportRowRetentionPage */
        SELECT id FROM ${rowTable} WHERE batch_id = $1
          AND id > $2::uuid
-       ORDER BY id LIMIT $3 FOR UPDATE`,
+       ORDER BY id LIMIT $3`,
       [batchId, cursor.cursor_row_id ?? MIN_UUIDV7, batchSize + 1],
     )
     const page = rows.slice(0, batchSize)

@@ -1,5 +1,5 @@
 import { v7 } from 'uuid'
-import { beginTransaction, read, write } from '@data-stores/psql'
+import { beginTransaction, read, write, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function createTestCompletedDeletionProof(completedAt: Date): Promise<string> {
@@ -64,4 +64,28 @@ export async function attemptYoungReleasedHoldDeletion(id: string): Promise<void
     SET LOCAL app.legal_record_retention_delete = 'on'`)
   await probe(sql`/* rejectYoungReleasedHoldDeletion */
     DELETE FROM user_legal_preservation_holds WHERE id = ${id}`)
+}
+
+export async function createTestIdentityVerificationEntitlement(
+  userId: string,
+  createdAt: Date,
+): Promise<string> {
+  const id = v7({ msecs: createdAt.getTime() })
+  await write(sql`/* createTestIdentityVerificationEntitlement */
+    INSERT INTO identity_verification_attempts (id, user_id, source, granted_by_id, grant_note)
+    VALUES (${id}, ${userId}, 'support_grant', ${userId}, 'retention fixture')`)
+  return id
+}
+
+export async function createTestIdentityVerificationEntitlementChild(
+  query: TransactionQuery,
+  userId: string,
+  entitlementId: string,
+): Promise<string> {
+  const { rows } = await query<{
+    id: string
+  }>(sql`/* createTestIdentityVerificationEntitlementChild */
+    INSERT INTO identity_verification_attempts (user_id, source, grant_entitlement_attempt_id)
+    VALUES (${userId}, 'support_grant', ${entitlementId}) RETURNING id`)
+  return rows[0]!.id
 }

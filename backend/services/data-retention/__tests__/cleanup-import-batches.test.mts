@@ -1,12 +1,19 @@
 import { describe, expect, it } from 'vitest'
-import { createTestUser } from '@voucha/test-helpers'
+import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import {
   countImportRetentionRows,
   createCompletedImportRetentionFixture,
   createIncompleteImportRetentionBatch,
   insertLateImportRowForRetention,
   insertLateImportDiscoveryForRetention,
+  raceImportRetentionCursorWithDeletedCurrentBatch,
+  readImportRetentionCursor,
 } from '@voucha/test-helpers/import-retention'
+import {
+  lockTestCompletedAdminImportBatch,
+  raceImportRetentionPageWithParentPurge,
+} from '@voucha/test-helpers/import-retention-races'
+import { finishTestPostgresActionWithoutWaiting } from '@voucha/test-helpers/postgres-lock-skip'
 import { createIsolatedRetentionWindow } from '@voucha/test-helpers/retention-window'
 import { cleanupCompletedImportBatches } from '../cleanup-import-batches.mts'
 
@@ -84,5 +91,117 @@ describe('completed import retention', () => {
       code: '23514',
     })
     expect((await countImportRetentionRows('rss', batchId)).discoveries).toBe(1)
+  })
+
+  it('makes progress on the next completed batch while the oldest parent is locked', async () => {
+    const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
+    const user = await createTestUser()
+    const locked = await createCompletedImportRetentionFixture('admin', user.id, at(100))
+    const available = await createCompletedImportRetentionFixture('admin', user.id, at(99))
+    const options = { now, lowerBoundDate, batchSize: 2, maxBatches: 1 }
+    await using holder = await beginTransaction()
+    await lockTestCompletedAdminImportBatch(holder, locked)
+
+    const page = await finishTestPostgresActionWithoutWaiting(holder, 'import_retention', () =>
+      cleanupCompletedImportBatches('admin', options),
+    )
+
+    expect(page).toMatchObject({ deleted: 2, continuation: { batchId: available, phase: 'batch' } })
+    expect(await countImportRetentionRows('admin', locked)).toEqual({
+      batches: 1,
+      rows: 2,
+      discoveries: 0,
+    })
+    expect(await countImportRetentionRows('admin', available)).toEqual({
+      batches: 1,
+      rows: 0,
+      discoveries: 0,
+    })
+    await cleanupCompletedImportBatches('admin', { ...options, maxBatches: 3 })
+    expect(await countImportRetentionRows('admin', locked)).toEqual({
+      batches: 0,
+      rows: 0,
+      discoveries: 0,
+    })
+  })
+
+  it('drains a resumed child page before a concurrent parent purge finishes', async () => {
+    const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
+    const user = await createTestUser()
+    const current = await createCompletedImportRetentionFixture('admin', user.id, at(100))
+    const next = await createCompletedImportRetentionFixture('admin', user.id, at(99))
+    const options = { now, lowerBoundDate, batchSize: 1, maxBatches: 1 }
+    expect(await cleanupCompletedImportBatches('admin', options)).toMatchObject({
+      deleted: 1,
+      continuation: { batchId: current, phase: 'rows' },
+    })
+
+    expect(await raceImportRetentionPageWithParentPurge(current, options)).toMatchObject({
+      deleted: 1,
+      continuation: { batchId: current, phase: 'batch' },
+    })
+    expect(await countImportRetentionRows('admin', current)).toEqual({
+      batches: 0,
+      rows: 0,
+      discoveries: 0,
+    })
+    expect(await readImportRetentionCursor()).toMatchObject({ admin_batch_id: null })
+    expect(await countImportRetentionRows('admin', next)).toEqual({
+      batches: 1,
+      rows: 2,
+      discoveries: 0,
+    })
+    expect(await cleanupCompletedImportBatches('admin', options)).toMatchObject({
+      deleted: 1,
+      continuation: { batchId: next, phase: 'rows' },
+    })
+    await cleanupCompletedImportBatches('admin', { ...options, maxBatches: 2 })
+  })
+
+  it('re-reads the import cursor after its current batch is deleted concurrently', async () => {
+    const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
+    const user = await createTestUser()
+    const deletedBatch = await createCompletedImportRetentionFixture('admin', user.id, at(100))
+    const options = { now, lowerBoundDate, batchSize: 1, maxBatches: 1 }
+    await expect(
+      cleanupCompletedImportBatches('admin', { ...options, batchSize: 2 }),
+    ).resolves.toMatchObject({
+      deleted: 2,
+      continuation: { batchId: deletedBatch, phase: 'batch' },
+    })
+    const nextBatch = await createCompletedImportRetentionFixture('admin', user.id, at(99))
+
+    const page = await raceImportRetentionCursorWithDeletedCurrentBatch(deletedBatch, options)
+
+    expect(page).toMatchObject({
+      deleted: 1,
+      hasMore: true,
+      continuation: { batchId: nextBatch, phase: 'rows' },
+    })
+    expect(await countImportRetentionRows('admin', deletedBatch)).toEqual({
+      batches: 0,
+      rows: 0,
+      discoveries: 0,
+    })
+    expect(await countImportRetentionRows('admin', nextBatch)).toEqual({
+      batches: 1,
+      rows: 1,
+      discoveries: 0,
+    })
+    const cursor = await readImportRetentionCursor()
+    expect(cursor).toMatchObject({
+      admin_batch_id: nextBatch,
+      phase: 'rows',
+      cursor_row_id: page.continuation?.rowId,
+    })
+    expect(page.continuation?.rowId).not.toBeNull()
+    await cleanupCompletedImportBatches('admin', options)
+    await cleanupCompletedImportBatches('admin', options)
+    expect(await countImportRetentionRows('admin', nextBatch)).toEqual({
+      batches: 0,
+      rows: 0,
+      discoveries: 0,
+    })
+    expect(await readImportRetentionCursor()).toMatchObject({ admin_batch_id: null })
   })
 })

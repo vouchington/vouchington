@@ -13,7 +13,7 @@ export async function listRetentionCandidates(
     `/* listFollowerDistributionRetentionCandidates */
      SELECT id FROM follower_distributions
      WHERE id < $1::uuid AND (completed_at IS NOT NULL OR failed_at IS NOT NULL)
-     ORDER BY id LIMIT $2 FOR UPDATE SKIP LOCKED`,
+     ORDER BY id LIMIT $2`,
     [getMinUuidv7ForDate(cutoffAt), limit],
   )
   return rows.map(row => ({ id: row.id }))

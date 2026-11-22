@@ -1,8 +1,57 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createTestUrlWithHostname } from './entities/urls.mts'
+import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
+import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
+import { cleanupCompletedImportBatches } from '../services/data-retention/cleanup-import-batches.mts'
 
 type Family = 'admin' | 'rss'
+
+/** Race an import-retention cursor read with deletion of its current parent batch. */
+export async function raceImportRetentionCursorWithDeletedCurrentBatch(
+  batchId: string,
+  options: Parameters<typeof cleanupCompletedImportBatches>[1],
+) {
+  await write(sql`/* resetAdminImportRetentionCursorForRace */
+    UPDATE import_retention_cursors
+    SET admin_batch_id = ${batchId}, phase = 'rows', cursor_row_id = NULL,
+        cursor_discovery_url_id = NULL
+    WHERE family = 'admin'`)
+
+  await using holder = await beginTransaction()
+  await holder(sql`/* holdAdminImportRetentionCursorForRace */
+    SELECT family FROM import_retention_cursors
+    WHERE family = 'admin' AND admin_batch_id = ${batchId} FOR UPDATE`)
+  const holderProcessId = await getTestPostgresBackendProcessId(holder)
+  return await withTestOwnedPostgresWait(
+    {
+      holderProcessId,
+      pool: 'write',
+      lock: { kind: 'transaction' },
+      queryMarker: 'import_retention_cursors',
+      releaseHolder: () => holder[Symbol.asyncDispose](),
+    },
+    async waitForCursor => {
+      const page = cleanupCompletedImportBatches('admin', options)
+      await waitForCursor(page)
+      await holder(sql`/* deleteCurrentAdminImportBatchForRetentionRace */
+        DELETE FROM admin_import_batches WHERE id = ${batchId}`)
+      await holder.commit()
+      return page
+    },
+  )
+}
+
+export async function readImportRetentionCursor() {
+  const { rows } = await write<{
+    admin_batch_id: string | null
+    phase: string
+    cursor_row_id: string | null
+  }>(sql`/* readAdminImportRetentionCursor */
+    SELECT admin_batch_id, phase, cursor_row_id
+    FROM import_retention_cursors WHERE family = 'admin'`)
+  return rows[0]!
+}
 
 export async function createIncompleteImportRetentionBatch(
   family: Family,

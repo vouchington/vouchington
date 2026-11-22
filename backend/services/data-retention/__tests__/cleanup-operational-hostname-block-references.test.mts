@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   beginTransaction,
+  createTestUserDirect,
   getOperationalRetentionCursorForTest,
   insertOperationalHostnameBlockForTest,
   operationalRowExistsForTest,
@@ -10,6 +11,13 @@ import {
   cleanupOperationalTombstonePageForTest,
   cleanupOperationalTombstonesForTest,
 } from '@voucha/test-helpers/operational-retention-scopes'
+
+import {
+  getTestHostnamePenaltySources,
+  insertTestHostnamePenalty,
+  lockTestHostnamePenalty,
+} from '@voucha/test-helpers/operational-tombstone-retention'
+import { finishTestPostgresActionWithoutWaiting } from '@voucha/test-helpers/postgres-lock-skip'
 
 const DAY_MS = 24 * 60 * 60 * 1_000
 
@@ -151,6 +159,61 @@ describe('hostname-block operational retention references', () => {
     expect(
       (await getOperationalRetentionCursorForTest(query, 'other_hostname_blocks')).cursor_record_id,
     ).toBeNull()
+  })
+
+  it('detaches an available penalty while preserving a locked one and its hostname root', async () => {
+    const now = new Date()
+    const users = await Promise.all([createTestUserDirect(), createTestUserDirect()])
+    const [firstUser, secondUser] = users.map(user => user!.id).toSorted()
+    const { root, held, available } = await (async () => {
+      await using setup = await beginTransaction()
+      const block = await insertOperationalHostnameBlockForTest(setup, {
+        feed: false,
+        liftedAt: new Date(now.getTime() - 3 * 365 * DAY_MS),
+      })
+      const heldPenalty = await insertTestHostnamePenalty(setup, firstUser!, block.id)
+      const otherPenalty = await insertTestHostnamePenalty(setup, secondUser!, block.id)
+      await setup.commit()
+      return { root: block, held: heldPenalty, available: otherPenalty }
+    })()
+    const options = { ids: [root.id], batchSize: 1, now }
+
+    await using holder = await beginTransaction()
+    await lockTestHostnamePenalty(holder, held)
+    await finishTestPostgresActionWithoutWaiting(
+      holder,
+      'detachHostnameBlockPenaltyPage',
+      async () => {
+        await using cleanup = await beginTransaction()
+        expect(
+          await cleanupOperationalTombstonePageForTest('other_hostname_blocks', {
+            ...options,
+            borrowedQuery: cleanup,
+          }),
+        ).toMatchObject({ deleted: 0, hasMore: true, stalled: false })
+        expect(await getTestHostnamePenaltySources(cleanup, [held, available])).toEqual({
+          [held]: root.id,
+          [available]: null,
+        })
+        expect(await operationalRowExistsForTest(cleanup, 'url_hostname_blocks', root.id)).toBe(
+          true,
+        )
+        await cleanup.commit()
+      },
+    )
+
+    await using cleanup = await beginTransaction()
+    expect(
+      await cleanupOperationalTombstonePageForTest('other_hostname_blocks', {
+        ...options,
+        borrowedQuery: cleanup,
+      }),
+    ).toMatchObject({ deleted: 1, hasMore: false, stalled: false })
+    expect(await getTestHostnamePenaltySources(cleanup, [held, available])).toEqual({
+      [held]: null,
+      [available]: null,
+    })
+    await cleanup.commit()
   })
 
   it('stalls behind a locked descendant and drains after the lock is released', async () => {

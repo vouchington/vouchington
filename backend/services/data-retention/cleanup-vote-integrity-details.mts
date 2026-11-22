@@ -38,8 +38,8 @@ export async function cleanupVoteIntegrityDetails(
     ? null
     : (
         await query<{ cursor_flag_id: string | null; sweep_cutoff_id: string | null }>(
-          `/* lockVoteIntegrityDetailCleanupCursor */ SELECT cursor_flag_id, sweep_cutoff_id
-           FROM vote_integrity_flag_detail_cleanup_cursors WHERE is_singleton FOR UPDATE`,
+          `/* readVoteIntegrityDetailCleanupCursor */ SELECT cursor_flag_id, sweep_cutoff_id
+           FROM vote_integrity_flag_detail_cleanup_cursors WHERE is_singleton`,
         )
       ).rows[0]
   if (cursor && cursor.sweep_cutoff_id === null)
