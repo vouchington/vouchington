@@ -73,3 +73,19 @@ export async function markUserFollowDeletedBeforeNowForTest(params: {
       AND object_id = ${params.followingId}
   `)
 }
+
+/** Minimum persisted rows for incomplete-distribution pagination, without send admission. */
+export async function createTestIncompleteFollowerDistributions(
+  senderUserId: string,
+  postId: string,
+  count: number,
+): Promise<string[]> {
+  const { rows } = await write<{ id: string }>(
+    sql`/* createTestIncompleteFollowerDistributions */
+      INSERT INTO follower_distributions (sender_user_id, action, audience, post_id)
+      SELECT ${senderUserId}, 'post_share', 'all_followers', ${postId}
+      FROM generate_series(1, ${count}::integer)
+      RETURNING id`,
+  )
+  return rows.map(row => row.id)
+}
