@@ -12,7 +12,7 @@ import {
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { prepareStoryPost } from '../story-posts.mts'
 import * as notificationReconcile from '@services/entity-relations/notification-reconcile'
-import * as cacheInvalidation from '../cache-invalidation.mts'
+import { invalidate } from '@services/entity-cache/invalidate'
 import { trackAgentQueueAdds } from '../../../test-helpers/services/stories/story-post-agent-adds.mts'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { upsertSystemUser } from '@services/users/system-users'
@@ -66,7 +66,7 @@ describe('adminAssignItemToStory', () => {
     vi.spyOn(notificationReconcile, 'enqueueNotificationReconcileForRelations').mockRejectedValue(
       dispatchError,
     )
-    const invalidateSpy = vi.spyOn(cacheInvalidation, 'invalidateStories')
+    const invalidateSpy = vi.spyOn(invalidate, 'posts')
     const agent = trackAgentQueueAdds()
 
     await expect(
@@ -85,7 +85,7 @@ describe('adminAssignItemToStory', () => {
         return data?.post_id === post.id && data.force === true
       }),
     ).toEqual([{ name: 'story-post', data: { post_id: post.id, force: true } }])
-    expect(invalidateSpy).toHaveBeenCalledWith(story.id, null)
+    expect(invalidateSpy).toHaveBeenCalledWith(post.id)
   })
 
   it('wraps a non-Error post-commit relation delivery rejection before reporting it', async () => {

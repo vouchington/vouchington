@@ -6,7 +6,6 @@ import {
   type PublicationCapturedKey,
 } from '@services/post-publication/captured-keys'
 import { getPostPublicationWorkLimit } from '@services/post-publication/work-limits'
-import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-lock'
 import { enqueueCapturedPublicationChangeAfterCommit } from '@services/post-publication/direct-capture'
 
 export type HardDeleteRssFeedSourcePage = {
@@ -78,7 +77,6 @@ export async function hardDeleteRssFeedSourcePage(
       items.rows.flatMap(row => (sourceIds.has(row.id) && row.story_id ? [row.story_id] : [])),
     ),
   ]
-  await lockStoryLifecycles(query, storyIds)
   const linkedPosts =
     storyIds.length > 0
       ? await query<{ post_id: string }>(

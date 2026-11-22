@@ -1,9 +1,7 @@
 import { it, expect, beforeAll, afterEach, describe, vi } from 'vitest'
-import * as storyLifecycleLock from '@services/post-publication/story-lifecycle-lock'
 import { adminAssignItemToStory, adminRemoveItemFromStory } from './assign.mts'
 import { isStoryItem } from './get.mts'
 import {
-  beginTransaction,
   createTestUserDirect,
   insertTestStory,
   setTestItemStoryLocked,
@@ -14,17 +12,21 @@ import {
   getPostCategoryTopicIds,
   getPostRelatedUrlIds,
   addCategoryToRssFeedItem,
-  withTestStoryLifecycleLock,
 } from '@voucha/test-helpers'
+import { withStoryMemberCommittedDuringProjectionRestartForTest } from '@voucha/test-helpers/story-projection-refresh-race'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { createHash, randomUUID } from 'node:crypto'
 import { upsertSystemUser } from '@services/users/system-users'
 import { prepareStoryPost } from './story-posts.mts'
 import { refreshStoryPostForStory } from './refresh-story-post.mts'
 import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
-import { rejectPostgresWriteForTest } from '@voucha/test-helpers/injected-failures'
+import {
+  rejectPostgresWriteForTest,
+  runBeforePostgresStatementForTest,
+} from '@voucha/test-helpers/injected-failures'
 import { trackAgentQueueAdds } from '../../test-helpers/services/stories/story-post-agent-adds.mts'
 import * as cacheInvalidation from './cache-invalidation.mts'
+import { invalidate } from '@services/entity-cache/invalidate'
 import { settleStoryPostTopicVoteCapture } from '../../test-helpers/services/stories/post-topic-vote-capture.mts'
 import { drainStoryPostRelatedUrlProjection } from '../../test-helpers/services/stories/story-post-related-url-projection.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -147,47 +149,62 @@ describe('assign', () => {
     expect(result).toBe(itemId)
     await expect(isStoryItem(story2.id, itemId)).resolves.toBe(true)
   })
-  it('serializes overlapping admin assignment and removal before projecting final story relations', async () => {
-    const [retainedUrlId, assignedUrlId] = await Promise.all([
+  it('leaves a reassigned item in its new story when removal expected the former story', async () => {
+    const [retainedUrlId, movedUrlId] = await Promise.all([
+      createTestUrlWithHostname(),
+      createTestUrlWithHostname(),
+    ])
+    const prior = await createStoryWithPost([retainedUrlId, retainedUrlId])
+    const target = await createStoryWithPost([retainedUrlId, retainedUrlId])
+    const movedItemId = await makeTestItemForUrl(movedUrlId)
+    await adminAssignItemToStory(storyPostUser.id, prior.story.id, movedItemId)
+
+    const restore = runBeforePostgresStatementForTest(
+      '/* adminRemoveItemFromStory */',
+      async () => {
+        await expect(
+          adminAssignItemToStory(storyPostUser.id, target.story.id, movedItemId),
+        ).resolves.toBe(movedItemId)
+      },
+    )
+    try {
+      await expect(
+        adminRemoveItemFromStory(storyPostUser.id, movedItemId, {
+          expectedStoryId: prior.story.id,
+        }),
+      ).resolves.toBeNull()
+    } finally {
+      restore()
+    }
+
+    await expect(isStoryItem(prior.story.id, movedItemId)).resolves.toBe(false)
+    await expect(isStoryItem(target.story.id, movedItemId)).resolves.toBe(true)
+    await drainStoryPostRelatedUrlProjection(prior.post.id)
+    await drainStoryPostRelatedUrlProjection(target.post.id)
+    await expect(getPostRelatedUrlIds(prior.post.id)).resolves.toEqual([retainedUrlId])
+    await expect(getPostRelatedUrlIds(target.post.id)).resolves.toEqual(
+      expect.arrayContaining([retainedUrlId, movedUrlId]),
+    )
+  })
+
+  it('projects an item that joins while a story refresh is restarting URL work', async () => {
+    const [retainedUrlId, addedUrlId] = await Promise.all([
       createTestUrlWithHostname(),
       createTestUrlWithHostname(),
     ])
     const { story, post } = await createStoryWithPost([retainedUrlId, retainedUrlId])
-    const assignedItemId = await makeTestItemForUrl(assignedUrlId)
-    const assignedTopic = await createTestTopic({ name: `Story overlap topic ${randomUUID()}` })
-    await addCategoryToRssFeedItem(assignedItemId, assignedTopic.id)
-    const entered = Promise.withResolvers<void>()
-    const lockLifecycles = storyLifecycleLock.lockStoryLifecycles
-    const lifecycleSpy = vi
-      .spyOn(storyLifecycleLock, 'lockStoryLifecycles')
-      .mockImplementation((query, storyIds) => {
-        entered.resolve()
-        return lockLifecycles(query, storyIds)
-      })
-    let assign: Promise<string | null>
-    let remove: Promise<string | null>
-    try {
-      await withTestStoryLifecycleLock(story.id, async () => {
-        assign = adminAssignItemToStory(storyPostUser.id, story.id, assignedItemId)
-        await entered.promise
-        await using probe = await beginTransaction()
-        await probe(`/* testAssign */ SET LOCAL lock_timeout = '50ms'`)
-        await expect(
-          probe(`/* testAssign */ SELECT id FROM rss_feed_items WHERE id = $1::uuid FOR UPDATE`, [
-            assignedItemId,
-          ]),
-        ).rejects.toMatchObject({ code: '55P03' })
-        remove = adminRemoveItemFromStory(storyPostUser.id, assignedItemId)
-      })
-    } finally {
-      lifecycleSpy.mockRestore()
-    }
-    await expect(Promise.all([assign!, remove!])).resolves.toEqual([assignedItemId, assignedItemId])
-
-    await expect(isStoryItem(story.id, assignedItemId)).resolves.toBe(false)
+    const itemId = await makeTestItemForUrl(addedUrlId)
     await drainStoryPostRelatedUrlProjection(post.id)
-    await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual([retainedUrlId])
-    await expect(getPostCategoryTopicIds(post.id)).resolves.not.toContain(assignedTopic.id)
+
+    await expect(
+      withStoryMemberCommittedDuringProjectionRestartForTest(story.id, itemId, () =>
+        refreshStoryPostForStory(story.id),
+      ),
+    ).resolves.toMatchObject({ postId: post.id })
+
+    await drainStoryPostRelatedUrlProjection(post.id)
+    const urls = await getPostRelatedUrlIds(post.id)
+    expect(new Set(urls)).toEqual(new Set([retainedUrlId, addedUrlId]))
   })
 
   it('adminRemoveItemFromStory removes item and sets story_locked_at', async () => {
@@ -211,21 +228,23 @@ describe('assign', () => {
     const topic = await createTestTopic({ name: `Story move ordering ${randomUUID()}` })
     await addCategoryToRssFeedItem(movedItemId, topic.id)
     await refreshStoryPostForStory(prior.story.id)
-    const realInvalidateStories = cacheInvalidation.invalidateStories
+    const realInvalidatePosts = invalidate.posts
+    const movedStoryPostIds = [target.post.id, prior.post.id].toSorted()
     const topicsAtInvalidation: Array<{ prior: string[]; target: string[] }> = []
-    const invalidateSpy = vi
-      .spyOn(cacheInvalidation, 'invalidateStories')
-      .mockImplementation(async (...storyIds) => {
-        // Only the assignment invalidates a moved item's new and prior story together.
-        if (storyIds.length === 2)
-          topicsAtInvalidation.push({
-            prior: await getPostCategoryTopicIds(prior.post.id),
-            target: await getPostCategoryTopicIds(target.post.id),
-          })
-        await realInvalidateStories(...storyIds)
-      })
+    const invalidateSpy = vi.spyOn(invalidate, 'posts').mockImplementation(async (...postIds) => {
+      // Only the assignment invalidates a moved item's new and prior story posts together.
+      if (
+        postIds.length === movedStoryPostIds.length &&
+        movedStoryPostIds.every(id => postIds.includes(id))
+      )
+        topicsAtInvalidation.push({
+          prior: await getPostCategoryTopicIds(prior.post.id),
+          target: await getPostCategoryTopicIds(target.post.id),
+        })
+      await realInvalidatePosts(...postIds)
+    })
     await adminAssignItemToStory(storyPostUser.id, target.story.id, movedItemId)
-    expect(invalidateSpy).toHaveBeenCalledWith(target.story.id, prior.story.id)
+    expect(invalidateSpy).toHaveBeenCalledWith(...movedStoryPostIds)
     expect(topicsAtInvalidation).toHaveLength(1)
     expect(topicsAtInvalidation[0]!.prior).not.toContain(topic.id)
     expect(topicsAtInvalidation[0]!.target).toContain(topic.id)

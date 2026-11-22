@@ -1,5 +1,4 @@
 import type { OwnedTransaction } from '@data-stores/psql'
-import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-lock'
 import sql from 'sql-template-strings'
 import { createStory } from '../create.mts'
 import { recordStoryPostPublicationChanges } from '../publication-change.mts'
@@ -51,6 +50,7 @@ async function assignItemsToStory(
     SET story_id = ${storyId}
     WHERE id = ANY(${[...itemIds]}::uuid[])
       AND deleted_at IS NULL AND story_id IS NULL AND story_locked_at IS NULL
+      AND EXISTS (SELECT 1 FROM stories WHERE id = ${storyId} AND deleted_at IS NULL)
     RETURNING id`,
   )
   return rows.length
@@ -65,30 +65,16 @@ async function refreshClusteredStory(query: OwnedTransaction, storyId: string): 
   await recordStoryPostPublicationChanges(query, storyId, result?.impactedTopicIds)
 }
 
-/** Adds the locked, clusterable item to a story that is still live once its lifecycle is locked. */
+/** Adds the locked, clusterable item to a story that is live when the membership write starts. */
 export async function joinExistingStory(
   query: OwnedTransaction,
   itemId: string,
   storyId: string,
 ): Promise<StoryClusteringEffects> {
-  await lockStoryLifecycles(query, [storyId])
-  const { rows } = await query(
-    sql`/* joinStoryClusteringStory */ SELECT id FROM stories WHERE id = ${storyId} AND deleted_at IS NULL`,
-  )
-  if (rows.length === 0) return { kind: 'skipped', reason: 'story_unavailable' }
-  await assignItemsToStory(query, storyId, [itemId])
+  const assigned = await assignItemsToStory(query, storyId, [itemId])
+  if (assigned === 0) return { kind: 'skipped', reason: 'story_unavailable' }
   await refreshClusteredStory(query, storyId)
   return { kind: 'joined', storyId }
-}
-
-/** A new story with its lifecycle lock held, so no other transaction can touch it before the members land. */
-async function createLockedStory(
-  query: OwnedTransaction,
-  metadata: ReturnType<typeof deriveNewStoryMetadata>,
-) {
-  const story = await createStory(metadata, { query })
-  await lockStoryLifecycles(query, [story.id])
-  return story
 }
 
 /** Founds a story from two locked, clusterable items; both must land in it or neither does. */
@@ -101,7 +87,7 @@ export async function createStoryFromPair(
     incomingPublishedAt: incoming.published_at,
     selectedItem: selected,
   })
-  const story = await createLockedStory(query, metadata)
+  const story = await createStory(metadata, { query })
   const assigned = await assignItemsToStory(query, story.id, [incoming.id, selected.id])
   if (assigned !== 2) throw new Error('Story clustering could not assign both founding members')
   await refreshClusteredStory(query, story.id)

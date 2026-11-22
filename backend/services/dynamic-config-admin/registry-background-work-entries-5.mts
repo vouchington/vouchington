@@ -29,8 +29,6 @@ export const backgroundWorkRegistryEntries5 = {
     descriptions: {
       capture_batch_size: 'Capture batch size for post publication processing.',
       effect_payload_key_batch_size: 'Maximum captured keys in one direct publication job.',
-      story_lifecycle_lock_batch_size:
-        'Story lifecycle lock batch size for post publication processing.',
       rss_feed_hard_delete_capture_batch_size: 'RSS feed hard delete page size.',
       topic_alias_unlink_page_size: 'Topic alias unlink page size for post publication processing.',
       topic_alias_unlink_page_concurrency:
