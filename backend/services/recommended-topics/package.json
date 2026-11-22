@@ -30,7 +30,7 @@
     "@services/topics": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/pagination": "^0.0.4",
+    "@vouchington/pagination": "^0.0.5",
     "sql-template-strings": "^2.2.2",
     "valkyries": "^0.15.0"
   },

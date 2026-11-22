@@ -5,8 +5,8 @@ import {
   buildPageInfo,
   decodeUuidCursor,
   isSimpleCursor,
-  sliceRawKeysetPage,
 } from '@modules/pagination'
+import { sliceRawKeysetPage } from '@vouchington/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import sql from 'sql-template-strings'
 import { getListItemStorageConfig } from './catalog.mts'

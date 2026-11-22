@@ -4,8 +4,8 @@ import {
   decodeUuidCursor,
   buildPageInfo,
   isRankingCursor,
-  sliceRawKeysetPage,
 } from '@modules/pagination'
+import { sliceRawKeysetPage } from '@vouchington/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import assert from 'http-assert'
 import { communityListItemStorageCatalog, getCommunityListItemStorageConfig } from './catalog.mts'
