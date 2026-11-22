@@ -93,12 +93,19 @@ async function createOrLockProviderLineageBinding(
       ${lineageId}, ${options.userId}, ${options.sourceKind}
     )
     ON CONFLICT DO NOTHING`)
-  const { rows } = await query(sql`/* createMembership: lock provider binding */
-    SELECT id, user_id FROM membership_lineage_bindings
-    WHERE membership_provider_lineage_id = ${lineageId}
-      AND source_kind = ${options.sourceKind}
-      AND released_at IS NULL
-      AND (${options.sourceKind} = 'direct' OR user_id = ${options.userId})`)
+  const { rows } =
+    options.sourceKind === 'direct'
+      ? await query(sql`/* createMembership: lock provider binding */
+          SELECT id, user_id FROM membership_lineage_bindings
+          WHERE membership_provider_lineage_id = ${lineageId}
+            AND source_kind = 'direct'
+            AND released_at IS NULL`)
+      : await query(sql`/* createMembership: lock provider binding */
+          SELECT id, user_id FROM membership_lineage_bindings
+          WHERE membership_provider_lineage_id = ${lineageId}
+            AND source_kind = 'family'
+            AND released_at IS NULL
+            AND user_id = ${options.userId}`)
   const binding = rows[0] as { id: string; user_id: string } | undefined
   if (binding?.user_id !== options.userId)
     throw new ProviderMembershipSourceConflictError('Provider lineage is bound to another account')
