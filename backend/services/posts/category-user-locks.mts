@@ -3,10 +3,7 @@ import { assertDelegatedPostActorActive } from './authorization.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import { lockDelegatedPostThread } from './delegated-write-locks.mts'
 import sql from 'sql-template-strings'
-import {
-  lockActiveUserSubjectsForMutation,
-  lockUsersForShare,
-} from '@services/user-deletions/active-user-mutation-lock'
+import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
 import type { UpdatePostChanges } from './types.mts'
 import type { PostHashtagIntent } from './update/hashtag-intent.mts'
 
@@ -23,26 +20,6 @@ function postUpdateMayAffectCategories(
   )
 }
 
-/** Locks the editor and owner users rows in id order; only the editor must still be active. */
-async function lockPostCategoryMutationUsers(
-  query: TransactionQuery,
-  postId: string,
-  editorId: string,
-  lockOwner: boolean,
-): Promise<string | null> {
-  const { rows } = lockOwner
-    ? await query<{ created_by_id: string | null }>(sql`/* postCategoryOwner.beforeFences */
-        SELECT created_by_id FROM posts WHERE id = ${postId}`)
-    : { rows: [] as Array<{ created_by_id: string | null }> }
-  const ownerId = rows[0]?.created_by_id ?? null
-  const userIds = [...new Set([editorId, ...(ownerId ? [ownerId] : [])])].toSorted((a, b) =>
-    a.localeCompare(b),
-  )
-  const activeUserIds = await lockUsersForShare(query, userIds)
-  await lockActiveUserSubjectsForMutation(query, [editorId])
-  return ownerId && activeUserIds.has(ownerId) ? ownerId : null
-}
-
 export async function lockPostUpdateMutationScopes(
   query: TransactionQuery,
   postId: string,
@@ -51,18 +28,16 @@ export async function lockPostUpdateMutationScopes(
   hashtagIntent?: PostHashtagIntent,
   delegated = false,
 ): Promise<string | null> {
-  const ownerId = await lockPostCategoryMutationUsers(
-    query,
-    postId,
-    editorId,
-    postUpdateMayAffectCategories(changes, !!hashtagIntent),
-  )
+  await lockActiveUserSubjectsForMutation(query, [editorId])
+  const { rows } = postUpdateMayAffectCategories(changes, !!hashtagIntent)
+    ? await query<{ created_by_id: string | null }>(sql`/* postCategoryOwner */
+        SELECT created_by_id FROM posts WHERE id = ${postId}`)
+    : { rows: [] }
   if (delegated) {
     await runSequentially([
       () => assertDelegatedPostActorActive(editorId, { query }),
       () => lockDelegatedPostThread(query, postId),
     ])
-    return ownerId
   }
-  return ownerId
+  return rows[0]?.created_by_id ?? null
 }
