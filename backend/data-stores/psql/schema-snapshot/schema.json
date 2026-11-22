@@ -76762,6 +76762,26 @@
       },
       "growth": "bounded",
       "indexes": {
+        "idx_moderation_report_judgement_runs__active_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_report_judgement_runs__active_id ON public.moderation_report_judgement_runs USING btree (id) WHERE ((completed_at IS NULL) AND (failed_at IS NULL) AND (expired_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((completed_at IS NULL) AND (failed_at IS NULL) AND (expired_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "moderation_report_judgement_runs_moderation_report_id_id_key": {
           "accessMethod": "btree",
           "constraintBacked": true,

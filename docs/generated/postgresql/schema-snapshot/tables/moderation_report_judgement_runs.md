@@ -32,6 +32,7 @@ _none_
 
 **Indexes:**
 
+- `idx_moderation_report_judgement_runs__active_id`: `CREATE INDEX idx_moderation_report_judgement_runs__active_id ON public.moderation_report_judgement_runs USING btree (id) WHERE ((completed_at IS NULL) AND (failed_at IS NULL) AND (expired_at IS NULL))`
 - `moderation_report_judgement_runs_moderation_report_id_id_key`: `CREATE UNIQUE INDEX moderation_report_judgement_runs_moderation_report_id_id_key ON public.moderation_report_judgement_runs USING btree (moderation_report_id, id)`
 - `moderation_report_judgement_runs_pkey`: `CREATE UNIQUE INDEX moderation_report_judgement_runs_pkey ON public.moderation_report_judgement_runs USING btree (id)`
 
