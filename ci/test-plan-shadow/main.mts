@@ -36,7 +36,10 @@ function mergeFiles(files: readonly JunitFile[]): JunitFile[] {
 function readJunit(dir: string): Record<Framework, JunitFile[]> {
   const grouped: Record<Framework, JunitFile[]> = { vitest: [], playwright: [] }
   for (const path of xmlFiles(dir)) {
-    const framework = path.slice(dir.length + 1).startsWith('playwright') ? 'playwright' : 'vitest'
+    const artifact = path.slice(dir.length + 1)
+    // The plan does not cover credentialed Playwright runs or Storybook, so counting them would invent misses.
+    if (/credentialed|storybook/.test(artifact)) continue
+    const framework = artifact.startsWith('playwright') ? 'playwright' : 'vitest'
     grouped[framework].push(...parseJunit(readFileSync(path, 'utf8')))
   }
   return { vitest: mergeFiles(grouped.vitest), playwright: mergeFiles(grouped.playwright) }

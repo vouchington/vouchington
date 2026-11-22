@@ -152,6 +152,17 @@ describe('renderSummary and main', () => {
     expect(report.frameworks.vitest.error).toBeTruthy()
   })
 
+  it('ignores reports the plan does not cover', () => {
+    const root = tempRoot()
+    mkdirSync(join(root, 'junit/storybook-browser-junit'), { recursive: true })
+    mkdirSync(join(root, 'junit/playwright-credentialed-junit'), { recursive: true })
+    writeFileSync(join(root, 'junit/storybook-browser-junit/r.xml'), vitestXml)
+    writeFileSync(join(root, 'junit/playwright-credentialed-junit/r.xml'), playwrightXml)
+    main(settings({ JUNIT_DIR: join(root, 'junit'), OUT_DIR: join(root, 'out') }))
+    const report = JSON.parse(readFileSync(join(root, 'out/test-plan-shadow.json'), 'utf8'))
+    expect(report.frameworks).toEqual({})
+  })
+
   it('records an unreadable download directory as an error instead of throwing', () => {
     const root = tempRoot()
     main(settings({ JUNIT_DIR: join(root, 'absent'), OUT_DIR: join(root, 'out') }))

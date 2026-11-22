@@ -13,16 +13,18 @@ shadow_plan() {
   echo '{}' > "$runner/package.json"
   pnpm add --dir "$runner" --ignore-scripts "no-mistakes@$version"
 
-  # The pull request was checked out at depth 1. Fetch only its merge base, so the three-dot diff
-  # below changes exactly the files the pull request changed, however far the base has moved.
-  merge_base=$(gh api "repos/$GITHUB_REPOSITORY/compare/$BASE_REF...$HEAD_SHA" --jq .merge_base_commit.sha)
+  # The pull request was checked out at depth 1. Deepen it to its own commits plus the merge base,
+  # so the three-dot diff below changes exactly the files the pull request changed, however far
+  # the base has moved.
+  read -r merge_base ahead <<< "$(gh api "repos/$GITHUB_REPOSITORY/compare/$BASE_REF...$HEAD_SHA" \
+    --jq '[.merge_base_commit.sha, .ahead_by] | @tsv')"
   auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')
   echo "::add-mask::$auth"
   export GIT_CONFIG_COUNT=1
   export GIT_CONFIG_KEY_0="http.https://github.com/.extraheader"
   export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $auth"
   cd pr || return 1
-  git fetch --no-tags --depth=1 origin "$merge_base"
+  git fetch --no-tags --depth=$((ahead + 1)) origin "$HEAD_SHA"
   git update-ref "refs/remotes/origin/$BASE_REF" "$merge_base"
   unset GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
 
