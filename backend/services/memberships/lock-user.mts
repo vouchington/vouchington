@@ -5,14 +5,14 @@ import { InvalidMembershipGrantUserError } from './create-source.mts'
 export async function lockMembershipUser(
   userId: string,
   query: QueryExecutor,
-  mapMissingToInvalidGrant = false,
+  options: { mapMissingToInvalidGrant?: boolean; writesUser?: boolean } = {},
 ): Promise<void> {
   try {
     await query(
-      sql`/* lockMembershipUser:active */ SELECT fn_lock_active_user_for_mutation(${userId})`,
+      sql`/* lockMembershipUser:active */ SELECT fn_lock_active_user_for_mutation(${userId}, ${options.writesUser ?? false})`,
     )
   } catch (err) {
-    if (mapMissingToInvalidGrant && isInvalidGrantTargetPostgresError(err)) {
+    if (options.mapMissingToInvalidGrant && isInvalidGrantTargetPostgresError(err)) {
       throw new InvalidMembershipGrantUserError()
     }
     throw err
