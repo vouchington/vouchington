@@ -2,7 +2,7 @@ import { write, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
-import { openOrGetOpenCase } from '@services/moderation-cases'
+import { openOrGetOpenCase, reopenCase } from '@services/moderation-cases'
 import { type ModerationReport, reportEntityFkColumn } from './config.mts'
 import type { CreateModerationReportInput } from './parse.mts'
 export interface CreateModerationReportResult {
@@ -52,5 +52,6 @@ export async function insertModerationReport(
     entity_id: input.entityId,
   }
 
+  await reopenCase(report.case_id, { query: transaction })
   return { report, isDuplicate: !inserted }
 }

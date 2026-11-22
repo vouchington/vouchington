@@ -1,4 +1,4 @@
-import { runInOwnedTransaction } from './resolve-transactions.mts'
+import { runInOwnedTransaction, runReportResolutionTransaction } from './resolve-transactions.mts'
 import { withTransactionOptions, write, type QueryOptions } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import {
@@ -121,10 +121,7 @@ export async function resolveModerationReport(
     }
     return { report, notifications }
   }
-  const { report, notifications } =
-    queryOptions?.query || queryOptions?.client
-      ? await withTransactionOptions(queryOptions, run)
-      : await runInOwnedTransaction(run)
+  const { report, notifications } = await runReportResolutionTransaction(queryOptions, run)
   if (shouldEnqueueNotifications) enqueueReportResolutionNotificationsBestEffort(notifications)
   return report
 }

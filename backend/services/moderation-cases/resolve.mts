@@ -50,7 +50,7 @@ export async function reopenCase(caseId: string, queryOptions?: QueryOptions): P
     sql`/* reopenCase */
     UPDATE moderation_cases
     SET resolved_at = NULL, resolved_by_id = NULL
-    WHERE id = ${caseId}
+    WHERE id = ${caseId} AND resolved_at IS NOT NULL
   `,
     queryOptions,
   )
