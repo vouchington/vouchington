@@ -1,11 +1,10 @@
-import { randomUUID } from 'node:crypto'
 import { vi } from 'vitest'
+import { SQSClient } from '@aws-sdk/client-sqs'
 import {
-  CreateQueueCommand,
-  GetQueueAttributesCommand,
-  SendMessageCommand,
-  SQSClient,
-} from '@aws-sdk/client-sqs'
+  countTestSqsMessages as countMessages,
+  createTestSqsQueue as createQueue,
+  sendTestSqsMessage as sendMessage,
+} from '@vouchington/aws/testing'
 
 // Reads the endpoint and keys that `vitest.setup.aws-emulator.mts` exported, independently of the
 // application's SQS client, so a test can seed and inspect queues without the code under test.
@@ -20,32 +19,12 @@ export function emulatorSqs(): SQSClient {
   return client
 }
 
-/** A queue owned by one test file, for workers that read their queue URL from the environment. */
-export async function createTestSqsQueue(label: string): Promise<string> {
-  const { QueueUrl } = await emulatorSqs().send(
-    new CreateQueueCommand({ QueueName: `test-${label}-${randomUUID()}`.slice(0, 80) }),
-  )
-  if (!QueueUrl) throw new Error('The AWS Emulator returned no queue URL')
-  return QueueUrl
-}
+export const createTestSqsQueue = (label: string) => createQueue(emulatorSqs(), label)
 
-export async function sendTestSqsMessage(QueueUrl: string, MessageBody: string): Promise<void> {
-  await emulatorSqs().send(new SendMessageCommand({ QueueUrl, MessageBody }))
-}
+export const sendTestSqsMessage = (QueueUrl: string, MessageBody: string) =>
+  sendMessage(emulatorSqs(), QueueUrl, MessageBody)
 
-/** Messages neither visible nor in flight are gone; the sum is what a consumer has not deleted. */
-export async function countTestSqsMessages(QueueUrl: string): Promise<number> {
-  const { Attributes } = await emulatorSqs().send(
-    new GetQueueAttributesCommand({
-      QueueUrl,
-      AttributeNames: ['ApproximateNumberOfMessages', 'ApproximateNumberOfMessagesNotVisible'],
-    }),
-  )
-  return (
-    Number(Attributes?.ApproximateNumberOfMessages ?? 0) +
-    Number(Attributes?.ApproximateNumberOfMessagesNotVisible ?? 0)
-  )
-}
+export const countTestSqsMessages = (QueueUrl: string) => countMessages(emulatorSqs(), QueueUrl)
 
 /**
  * A queue owned by this test whose URL is exported through `envName`, which the worker reads when

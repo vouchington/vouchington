@@ -31,6 +31,7 @@
     "@services/email-classification": "workspace:^",
     "@services/engagement-emails": "workspace:^",
     "@services/users": "workspace:^",
+    "@vouchington/aws": "^0.1.2",
     "@workers/emails": "workspace:^"
   },
   "devDependencies": {

@@ -1,18 +1,19 @@
-import { randomUUID } from 'node:crypto'
+import { S3Client, type PutObjectCommandInput } from '@aws-sdk/client-s3'
 import {
-  CreateBucketCommand,
-  DeleteObjectCommand,
-  GetObjectCommand,
-  HeadObjectCommand,
-  ListObjectsV2Command,
-  ListObjectVersionsCommand,
-  PutBucketVersioningCommand,
-  PutObjectCommand,
-  S3Client,
-  type PutObjectCommandInput,
-} from '@aws-sdk/client-s3'
-import { fetch } from 'undici'
-import { createAwsEmulatorLoopbackDispatcher } from './aws-emulator-dispatchers.mts'
+  createTestS3Bucket as createBucket,
+  deleteS3Object as deleteObject,
+  listS3Keys as listKeys,
+  listS3Versions as listVersions,
+  putS3Object as putObject,
+  readS3ObjectBytes as readBytes,
+  readS3ObjectText as readText,
+  s3ObjectExists as objectExists,
+  sendToPresignedS3Url as sendToPresigned,
+  uniqueS3Prefix,
+} from '@vouchington/aws/testing'
+import { Agent, fetch } from 'undici'
+
+export { uniqueS3Prefix }
 
 // Reads the endpoint and keys that `vitest.setup.aws-emulator.mts` exported, independently of the
 // application's clients, so a test can seed and inspect emulator state without going through the
@@ -24,124 +25,48 @@ export function emulatorS3(): S3Client {
   return client
 }
 
-/** A key prefix no other test or concurrent fork can produce. */
-export function uniqueS3Prefix(label: string): string {
-  return `test/${label}/${randomUUID()}/`
-}
+export const createTestS3Bucket = (label: string, options?: { versioned?: boolean }) =>
+  createBucket(emulatorS3(), label, options)
 
-/** A bucket owned by one test file, for code that reads its bucket name from the environment. */
-export async function createTestS3Bucket(
-  label: string,
-  options: { versioned?: boolean } = {},
-): Promise<string> {
-  const Bucket = `test-${label}-${randomUUID()}`.toLowerCase().slice(0, 63)
-  await emulatorS3().send(new CreateBucketCommand({ Bucket }))
-  if (options.versioned) {
-    await emulatorS3().send(
-      new PutBucketVersioningCommand({ Bucket, VersioningConfiguration: { Status: 'Enabled' } }),
-    )
-  }
-  return Bucket
-}
-
-export async function putS3Object(
+export const putS3Object = (
   input: Omit<PutObjectCommandInput, 'Body'> & { Body: string | Uint8Array },
-): Promise<{ versionId?: string }> {
-  const result = await emulatorS3().send(new PutObjectCommand(input))
-  return { versionId: result.VersionId }
-}
+) => putObject(emulatorS3(), input)
 
-export async function readS3ObjectText(Bucket: string, Key: string): Promise<string | undefined> {
-  try {
-    const result = await emulatorS3().send(new GetObjectCommand({ Bucket, Key }))
-    return await result.Body?.transformToString()
-  } catch (err) {
-    if ((err as { name?: string }).name === 'NoSuchKey') return undefined
-    throw err
-  }
-}
+export const readS3ObjectText = (Bucket: string, Key: string) => readText(emulatorS3(), Bucket, Key)
 
-export async function readS3ObjectBytes(Bucket: string, Key: string): Promise<Buffer | undefined> {
-  try {
-    const result = await emulatorS3().send(new GetObjectCommand({ Bucket, Key }))
-    const bytes = await result.Body?.transformToByteArray()
-    return bytes ? Buffer.from(bytes) : undefined
-  } catch (err) {
-    if ((err as { name?: string }).name === 'NoSuchKey') return undefined
-    throw err
-  }
-}
+export const readS3ObjectBytes = (Bucket: string, Key: string) =>
+  readBytes(emulatorS3(), Bucket, Key)
 
-export async function s3ObjectExists(Bucket: string, Key: string): Promise<boolean> {
-  try {
-    await emulatorS3().send(new HeadObjectCommand({ Bucket, Key }))
-    return true
-  } catch (err) {
-    if ((err as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404) {
-      return false
-    }
-    throw err
-  }
-}
+export const s3ObjectExists = (Bucket: string, Key: string) =>
+  objectExists(emulatorS3(), Bucket, Key)
 
-/** Every current key under a prefix, sorted. */
-export async function listS3Keys(Bucket: string, Prefix: string): Promise<string[]> {
-  const keys: string[] = []
-  let ContinuationToken: string | undefined
-  do {
-    const page = await emulatorS3().send(
-      new ListObjectsV2Command({ Bucket, Prefix, ContinuationToken }),
-    )
-    keys.push(...(page.Contents ?? []).flatMap(object => (object.Key ? [object.Key] : [])))
-    ContinuationToken = page.NextContinuationToken
-  } while (ContinuationToken)
-  return keys.toSorted()
-}
+export const listS3Keys = (Bucket: string, Prefix: string) => listKeys(emulatorS3(), Bucket, Prefix)
 
-/** Every version and delete marker under a prefix, for versioned buckets. */
-export async function listS3Versions(
-  Bucket: string,
-  Prefix: string,
-): Promise<Array<{ key: string; versionId: string; deleteMarker: boolean }>> {
-  const versions: Array<{ key: string; versionId: string; deleteMarker: boolean }> = []
-  let KeyMarker: string | undefined
-  let VersionIdMarker: string | undefined
-  let truncated: boolean | undefined
-  do {
-    const page = await emulatorS3().send(
-      new ListObjectVersionsCommand({ Bucket, Prefix, KeyMarker, VersionIdMarker }),
-    )
-    for (const v of page.Versions ?? []) {
-      versions.push({ key: v.Key!, versionId: v.VersionId!, deleteMarker: false })
-    }
-    for (const v of page.DeleteMarkers ?? []) {
-      versions.push({ key: v.Key!, versionId: v.VersionId!, deleteMarker: true })
-    }
-    KeyMarker = page.NextKeyMarker
-    VersionIdMarker = page.NextVersionIdMarker
-    truncated = page.IsTruncated
-  } while (truncated)
-  return versions
-}
+export const listS3Versions = (Bucket: string, Prefix: string) =>
+  listVersions(emulatorS3(), Bucket, Prefix)
 
-export async function deleteS3Object(Bucket: string, Key: string): Promise<void> {
-  await emulatorS3().send(new DeleteObjectCommand({ Bucket, Key }))
-}
+export const deleteS3Object = (Bucket: string, Key: string) =>
+  deleteObject(emulatorS3(), Bucket, Key)
 
-/** Sends a request to a presigned URL the way a browser would, straight to the emulator. */
+/**
+ * Sends a request to a presigned URL the way a browser would. The application's external
+ * dispatcher refuses loopback addresses and the emulator listens on loopback, so this uses a
+ * plain agent.
+ */
 export async function sendToPresignedS3Url(
   url: string,
   init: { method: 'GET' | 'PUT'; contentType?: string; body?: Uint8Array },
 ): Promise<{ status: number; body: string }> {
-  const dispatcher = createAwsEmulatorLoopbackDispatcher()
+  const dispatcher = new Agent()
   try {
-    const response = await fetch(url, {
-      dispatcher,
-      method: init.method,
-      ...(init.contentType ? { headers: { 'content-type': init.contentType } } : {}),
-      ...(init.body ? { body: init.body } : {}),
-    })
-    return { status: response.status, body: await response.text() }
+    return await sendToPresigned(
+      url,
+      init,
+      (target, requestInit) =>
+        fetch(target, { ...requestInit, dispatcher } as Parameters<
+          typeof fetch
+        >[1]) as unknown as Promise<Response>,
+    )
   } finally {
     await dispatcher.close()
   }

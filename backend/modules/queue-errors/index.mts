@@ -3,6 +3,7 @@ import {
   throwRateLimited,
   wrapHttpForRetry as wrapUpstreamHttpForRetry,
 } from '@vouchington/queue-errors'
+import { isAwsThrottlingError } from '@vouchington/aws/errors'
 import { getRetryAfterMs } from './rate-limit.mts'
 
 export * from './rate-limit.mts'
@@ -23,23 +24,6 @@ export function wrapHttpForRetry(error: unknown): never {
       throwRateLimited(retryAfterMs, error, { RateLimitError: Worker.RateLimitError })
   }
   return wrapUpstreamHttpForRetry(error, { getStatus: getHttpStatus, UnrecoverableError })
-}
-
-// SES reports sending limits as HTTP 400 with `Throttling` or `MaxSendRateExceeded`, so the status
-// alone would classify the throttle as a permanent client error. The
-// request was rejected before anything was sent, so retrying cannot duplicate an email.
-const AWS_THROTTLING_ERROR_NAMES = new Set([
-  'Throttling',
-  'ThrottlingException',
-  'MaxSendRateExceeded',
-])
-const SES_SENDING_RATE_EXCEEDED = /maximum sending rate exceeded/i
-
-export function isAwsThrottlingError(error: unknown): error is Error {
-  return (
-    error instanceof Error &&
-    (AWS_THROTTLING_ERROR_NAMES.has(error.name) || SES_SENDING_RATE_EXCEEDED.test(error.message))
-  )
 }
 
 export function isBedrockRateLimitError(error: unknown): boolean {
