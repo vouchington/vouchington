@@ -37,7 +37,7 @@ async function openPaletteAndNavigate(
   const escapedLabel = RegExp.escape(label)
   const pageOptions = href
     ? pagesGroup.locator(`[role="option"][href="${href}"]`)
-    : pagesGroup.locator('[role="option"]')
+    : pagesGroup.getByRole('option')
   const matchingItem = pageOptions.filter({
     has: page.locator('span').filter({ hasText: new RegExp(`^${escapedLabel}$`) }),
   })

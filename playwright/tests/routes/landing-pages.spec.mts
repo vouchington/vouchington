@@ -32,7 +32,7 @@ test.describe('Landing pages', () => {
     // No sidebar, navbar, tabs, breadcrumbs, or asides
     await expect(page.getByTestId('app-sidebar')).toHaveCount(0)
     await expect(page.getByRole('navigation', { name: /profile/i })).toHaveCount(0)
-    await expect(page.locator('[aria-label="Breadcrumb"]')).toHaveCount(0)
+    await expect(page.getByLabel('Breadcrumb', { exact: true })).toHaveCount(0)
     // No profile tab bar (About/Activity/Posts)
     await expect(page.getByRole('tab', { name: /About|Activity|Posts/i })).toHaveCount(0)
     // The linktree header and Voucha footer CTA should be present

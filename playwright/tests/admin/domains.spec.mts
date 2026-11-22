@@ -37,8 +37,8 @@ test.describe('Admin Domains', () => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Domains')
 
     // Admin-only filter dropdowns should not be visible for non-admins
-    const blockedFilter = page.locator('[aria-label="Blocked filter"]')
-    const crawlableFilter = page.locator('[aria-label="Crawlable filter"]')
+    const blockedFilter = page.getByLabel('Blocked filter', { exact: true })
+    const crawlableFilter = page.getByLabel('Crawlable filter', { exact: true })
     await expect(blockedFilter).toBeHidden()
     await expect(crawlableFilter).toBeHidden()
   })
@@ -52,8 +52,8 @@ test.describe('Admin Domains', () => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Domains')
 
     // Admin-only filter dropdowns should be visible for admins
-    const blockedFilterAdmin = page.locator('[aria-label="Blocked filter"]')
-    const crawlableFilterAdmin = page.locator('[aria-label="Crawlable filter"]')
+    const blockedFilterAdmin = page.getByLabel('Blocked filter', { exact: true })
+    const crawlableFilterAdmin = page.getByLabel('Crawlable filter', { exact: true })
     await expect(blockedFilterAdmin).toBeVisible()
     await expect(crawlableFilterAdmin).toBeVisible()
 

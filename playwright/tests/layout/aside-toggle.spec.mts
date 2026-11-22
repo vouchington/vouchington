@@ -87,7 +87,7 @@ test.describe('Aside toggle button positioning', () => {
 
     // The toggle button wrapper should be sticky at top-14 (56px) matching aside column offset.
     // DOM: button → div.flex.justify-end → div.mx-auto.max-w-[1200px] → div.sticky.top-14
-    const toggleWrapper = page.locator('[aria-label="Toggle page sidebar"]').locator('..')
+    const toggleWrapper = page.getByLabel('Toggle page sidebar', { exact: true }).locator('..')
     const wrapperClass = await toggleWrapper.evaluate(
       el => el.parentElement?.parentElement?.className ?? '',
     )

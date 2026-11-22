@@ -54,6 +54,7 @@
     "playwright/prefer-hooks-in-order": "error",
     "playwright/prefer-hooks-on-top": "error",
     "playwright/prefer-locator": "error",
+    "playwright/prefer-native-locators": "error",
     "playwright/prefer-to-have-count": "error",
     "playwright/prefer-to-have-length": "error",
     "playwright/prefer-web-first-assertions": "error",

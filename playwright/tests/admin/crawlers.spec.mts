@@ -139,7 +139,7 @@ test.describe('Admin Crawlers', () => {
     await waitForCrawlerEditHydration(page)
 
     await page.getByTestId('crawler-type-select').click()
-    const option = page.locator('[role="option"]').filter({ hasText: /automation/i })
+    const option = page.getByRole('option').filter({ hasText: /automation/i })
     await option.click()
     await page.getByTestId('crawler-save-button').click()
     await page.waitForURL(`/crawler/${crawlerId}`)
