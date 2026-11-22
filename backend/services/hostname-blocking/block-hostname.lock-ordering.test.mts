@@ -60,7 +60,7 @@ describe('hostname block lock ordering', () => {
     await blockTransaction.commit()
   })
 
-  it('locks projected children before the cleanup root used by a concurrent child block', async () => {
+  it('preserves cleanup ownership when a direct child block overlaps projection', async () => {
     const administrator = await createTestUser({ administrator: true })
     const rootHostname = randomHostname('child-order')
     const [rootId, childId] = await Promise.all([
@@ -89,14 +89,14 @@ describe('hostname block lock ordering', () => {
     expect(candidates.map(candidate => candidate.id)).toContain(childId)
 
     await using childTransaction = await beginTransaction()
-    const childLockDispatched = Promise.withResolvers<void>()
+    const childUpdateDispatched = Promise.withResolvers<void>()
     const barrieredChildQuery = queryProxy(childTransaction, statement => {
-      if (statement.includes('/* blockHostname_lockAndGetHostname */')) {
-        childLockDispatched.resolve()
+      if (statement.includes('/* blockHostname_introduceTarget */')) {
+        childUpdateDispatched.resolve()
       }
     })
     const childBlock = blockHostname(administrator.id, childId, { query: barrieredChildQuery })
-    await childLockDispatched.promise
+    await childUpdateDispatched.promise
 
     await expect(
       lockHostnameBlockCleanupOperation(projectionTransaction, admission.operation_id),
