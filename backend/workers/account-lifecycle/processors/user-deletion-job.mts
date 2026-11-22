@@ -1,4 +1,5 @@
 import type { Job } from 'glide-mq'
+import { sweepDeletedUserBallots } from '@services/users/sweep-deleted-user-ballots'
 import {
   ACCOUNT_LIFECYCLE_RECOVER_DELETIONS_JOB,
   ACCOUNT_LIFECYCLE_USER_DELETION_JOB,
@@ -27,6 +28,7 @@ export async function processUserDeletionJob(job: UserDeletionJob): Promise<void
   }
   if (job.name === ACCOUNT_LIFECYCLE_RECOVER_DELETIONS_JOB.name) {
     await recoverUserDeletions()
+    await sweepDeletedUserBallots()
     return
   }
   throw new Error(`Unknown job name: ${jobName}`)

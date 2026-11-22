@@ -2,6 +2,7 @@ import { lockCommunityRestrictionWrites } from './lock.mts'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
+import createHttpError from 'http-errors'
 import type { PrivateUser } from '@services/users/types'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { currentUserCanModerateCommunity } from '../authorization.mts'
@@ -26,12 +27,19 @@ export async function liftCommunityRestriction(
       AND community_id = ${communityId}
       AND lifted_at IS NULL
       AND (expires_at IS NULL OR expires_at > statement_timestamp())
+      AND EXISTS (SELECT 1 FROM users WHERE id = ${currentUser.id} AND deleted_at IS NULL)
     RETURNING restriction_type
     `,
     { query },
   )
   const restrictionType = (rows[0] as { restriction_type: string } | undefined)?.restriction_type
-  assert(restrictionType, 404, 'No active restriction found')
+  if (!restrictionType) {
+    const { rows: activeActor } = await query(sql`/* liftCommunityRestriction:activeActor */
+      SELECT id FROM users WHERE id = ${currentUser.id} AND deleted_at IS NULL
+    `)
+    assert(activeActor.length > 0, 401, 'User not found')
+    throw createHttpError(404, 'No active restriction found')
+  }
 
   await query.commit()
 

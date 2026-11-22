@@ -2,6 +2,7 @@ import { lockCommunityRestrictionWrites } from './lock.mts'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
+import createHttpError from 'http-errors'
 import type { PrivateUser } from '@services/users/types'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { currentUserCanModerateCommunity } from '../authorization.mts'
@@ -88,7 +89,8 @@ async function activateCommunityRestrictionTypes(
     )
       SELECT ${communityId}, restriction_type, ${currentUserId}, statement_timestamp(), ${input.expiresAt}, ${input.reason ?? null}
       FROM restriction_input
-      WHERE ${input.expiresAt}::timestamptz IS NULL OR ${input.expiresAt}::timestamptz > statement_timestamp()
+      WHERE (${input.expiresAt}::timestamptz IS NULL OR ${input.expiresAt}::timestamptz > statement_timestamp())
+        AND EXISTS (SELECT 1 FROM users WHERE id = ${currentUserId} AND deleted_at IS NULL)
       ORDER BY ordinal
       RETURNING id, community_id, restriction_type, activated_by_id, activated_at, expires_at,
         created_at, updated_at, lifted_at, lifted_by_id, reason
@@ -100,7 +102,13 @@ async function activateCommunityRestrictionTypes(
     `,
     { query },
   )
-  assert(rows.length > 0, 422, 'expires_at must be in the future')
+  if (rows.length === 0) {
+    const { rows: activeActor } = await query(sql`/* activateCommunityRestrictions:activeActor */
+      SELECT id FROM users WHERE id = ${currentUserId} AND deleted_at IS NULL
+    `)
+    assert(activeActor.length > 0, 401, 'User not found')
+    throw createHttpError(422, 'expires_at must be in the future')
+  }
   return rows as CommunityRestriction[]
 }
 
