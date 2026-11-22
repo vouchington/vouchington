@@ -11,8 +11,8 @@ import {
 import { CopyrightEmailApprovalManualTargetFields } from './copyright-email-approval-manual-target-fields'
 import {
   MAX_EMAIL_APPROVAL_TARGETS,
-  CopyrightEmailApprovalDraft,
-  CopyrightEmailApprovalTarget,
+  type CopyrightEmailApprovalDraft,
+  type CopyrightEmailApprovalTarget,
   copyrightEmailApprovalTargetKey,
   approvalTargetFields,
 } from './copyright-email-approval-model'
