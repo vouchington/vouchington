@@ -33,7 +33,7 @@ async function createProviderSourceRecords(
   query: QueryExecutor,
 ) {
   const binding = await getOrCreateProviderLineageBinding(options, lineageId, query)
-  const source = await getOrCreateProviderSource(options, lineageId, query)
+  const source = await createOrLockProviderSource(options, lineageId, query)
   return { binding, source }
 }
 
@@ -112,7 +112,7 @@ async function getOrCreateProviderLineageBinding(
   return binding
 }
 
-async function getOrCreateProviderSource(
+async function createOrLockProviderSource(
   options: CreateProviderMembershipSourceOptions,
   lineageId: string,
   query: QueryExecutor,
@@ -125,13 +125,12 @@ async function getOrCreateProviderSource(
     user_id: string | null
     source_kind: MembershipProviderSourceKind
   }
-  const findSource = sql`/* createMembership: find provider source */
+  const { rows } = await query<SourceRow>(sql`/* createMembership: lock provider source */
     SELECT id, user_id, source_kind FROM membership_sources
     WHERE membership_provider_lineage_id = ${lineageId}
       AND source_kind = ${options.sourceKind}
       AND (${options.sourceKind} = 'direct' OR user_id = ${options.userId})
-    FOR UPDATE`
-  const { rows } = await query<SourceRow>(findSource)
+    FOR UPDATE`)
   let source = rows[0]
   if (options.sourceKind === 'direct' && source?.user_id === null) {
     const { rows: reboundRows } =

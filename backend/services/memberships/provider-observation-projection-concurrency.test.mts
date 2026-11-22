@@ -82,7 +82,7 @@ describe('provider observation projection concurrency', () => {
             holderProcessId,
             pool: 'write',
             lock: { kind: 'transaction' },
-            queryMarker: 'createMembership: find provider source',
+            queryMarker: 'createMembership: lock provider source',
             releaseHolder: commitRenewal,
           },
           async waitForLock => {

@@ -12,7 +12,6 @@ import {
   createTestUser,
   getTestMembershipProviderLineageAccountId,
 } from '@voucha/test-helpers'
-import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import {
   createTestAppleVerificationFixture,
   submitTestAppleVerification,
@@ -90,20 +89,26 @@ describe('Apple verification finalization', () => {
         `signed-${randomUUID()}`,
       )
 
-      const restore = beforePostgresTransactionQueryForTest(
-        '/* bindAppleVerificationLineageAccount */',
-        values => values[0] === fixture.purchaseIntentId,
-        () =>
-          processAppleMembershipVerification(winner.id, {
-            createVerifier: () => makeProductionVerifier(winnerFixture, providerLineageId),
-          }),
-      )
+      const contenderReady = Promise.withResolvers<void>()
+      const winnerFinished = Promise.withResolvers<void>()
+      const contenderVerifier = makeProductionVerifier(fixture, providerLineageId)
+      const contender = processAppleMembershipVerification(verification.id, {
+        createVerifier: () => ({
+          async verifyAndDecodeTransaction(signedTransactionInfo) {
+            contenderReady.resolve()
+            await winnerFinished.promise
+            return contenderVerifier.verifyAndDecodeTransaction(signedTransactionInfo)
+          },
+        }),
+      })
       try {
-        await processAppleMembershipVerification(verification.id, {
-          createVerifier: () => makeProductionVerifier(fixture, providerLineageId),
+        await Promise.race([contenderReady.promise, contender])
+        await processAppleMembershipVerification(winner.id, {
+          createVerifier: () => makeProductionVerifier(winnerFixture, providerLineageId),
         })
       } finally {
-        restore()
+        winnerFinished.resolve()
+        await contender
       }
 
       await expect(getTestMembershipProviderLineageAccountId(sourceIdentity)).resolves.toBe(
