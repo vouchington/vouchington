@@ -6,6 +6,11 @@ import {
   type StuckRunExpiryLimits,
 } from '@services/moderation-ai-config/stuck-run-expiry'
 import { expireStuckReportJudgementRunPage } from '@services/moderation-reports/expire-stuck-runs'
+import {
+  expireStuckCopyrightAppealRecommendationRunPage,
+  expireStuckCopyrightEmailRecommendationRunPage,
+  expireStuckCopyrightSubmissionGuidanceRunPage,
+} from '@services/copyright-notices/expire-stuck-runs'
 import { expireStuckReviewDisputeResolutionRunPage } from '@services/review-disputes/expire-stuck-runs'
 
 const HOUR_MS = 60 * 60 * 1000
@@ -19,7 +24,13 @@ type SweepOverrides = {
 
 /** The age bound is computed once per run and bound as a UUIDv7 parameter, never `now()` in SQL. */
 function runSweep(
-  stage: 'report' | 'appeal' | 'dispute',
+  stage:
+    | 'report'
+    | 'appeal'
+    | 'dispute'
+    | 'copyright_email'
+    | 'copyright_appeal'
+    | 'copyright_guidance',
   expirePage: (cutoffId: string, batchSize: number, runIds?: readonly string[]) => Promise<number>,
   overrides: SweepOverrides,
 ) {
@@ -40,4 +51,16 @@ export function processExpireStuckAppealResolutionRuns(overrides: SweepOverrides
 
 export function processExpireStuckDisputeResolutionRuns(overrides: SweepOverrides = {}) {
   return runSweep('dispute', expireStuckReviewDisputeResolutionRunPage, overrides)
+}
+
+export function processExpireStuckCopyrightEmailRuns(overrides: SweepOverrides = {}) {
+  return runSweep('copyright_email', expireStuckCopyrightEmailRecommendationRunPage, overrides)
+}
+
+export function processExpireStuckCopyrightAppealRuns(overrides: SweepOverrides = {}) {
+  return runSweep('copyright_appeal', expireStuckCopyrightAppealRecommendationRunPage, overrides)
+}
+
+export function processExpireStuckCopyrightGuidanceRuns(overrides: SweepOverrides = {}) {
+  return runSweep('copyright_guidance', expireStuckCopyrightSubmissionGuidanceRunPage, overrides)
 }

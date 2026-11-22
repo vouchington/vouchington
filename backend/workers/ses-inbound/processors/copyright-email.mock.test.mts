@@ -78,9 +78,12 @@ function messageIdentity() {
 }
 
 function watchIntakeEnqueues() {
-  const add = vi.spyOn(ai_agents, 'add')
-  onTestFinished(() => add.mockRestore())
-  return () => add.mock.calls.map(([, data]) => (data as { intake_id: string }).intake_id)
+  const addBulk = vi.spyOn(ai_agents, 'addBulk')
+  onTestFinished(() => addBulk.mockRestore())
+  return () =>
+    addBulk.mock.calls.flatMap(([jobs]) =>
+      jobs.map(job => (job.data as { intake_id: string }).intake_id),
+    )
 }
 
 const sha256Hex = (raw: string) => createHash('sha256').update(raw).digest('hex')

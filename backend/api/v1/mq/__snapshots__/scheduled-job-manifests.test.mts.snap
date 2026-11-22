@@ -289,6 +289,105 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Fail copyright email intake runs left active after a crash or terminal stall",
+        "id": "expireStuckCopyrightEmailRuns",
+        "kind": "scheduled-jobs",
+        "schedule": "7 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "ai_agents",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "7 * * * *",
+    },
+    "schedulerId": "expireStuckCopyrightEmailRuns",
+    "template": {
+      "data": {},
+      "name": "expire-stuck-copyright-email-runs",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": true,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Fail copyright appeal recommendation runs left active after a crash or terminal stall",
+        "id": "expireStuckCopyrightAppealRuns",
+        "kind": "scheduled-jobs",
+        "schedule": "27 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "ai_agents",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "27 * * * *",
+    },
+    "schedulerId": "expireStuckCopyrightAppealRuns",
+    "template": {
+      "data": {},
+      "name": "expire-stuck-copyright-appeal-runs",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": true,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Fail copyright submission guidance runs left active after a crash or terminal stall",
+        "id": "expireStuckCopyrightGuidanceRuns",
+        "kind": "scheduled-jobs",
+        "schedule": "57 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "ai_agents",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "57 * * * *",
+    },
+    "schedulerId": "expireStuckCopyrightGuidanceRuns",
+    "template": {
+      "data": {},
+      "name": "expire-stuck-copyright-guidance-runs",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": true,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Expire appeal AI resolution runs left active after a failed queue admission",
         "id": "expireStuckAppealResolutionRuns",
         "kind": "scheduled-jobs",
@@ -4573,6 +4672,30 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "ai_agents",
     "schedule": "37 * * * *",
     "triggerName": "enqueueExpireStuckReportJudgementRuns",
+  },
+  {
+    "description": "Fail copyright email intake runs left active after a crash or terminal stall",
+    "id": "expireStuckCopyrightEmailRuns",
+    "job_name": "expire-stuck-copyright-email-runs",
+    "queue_name": "ai_agents",
+    "schedule": "7 * * * *",
+    "triggerName": "enqueueExpireStuckCopyrightEmailRuns",
+  },
+  {
+    "description": "Fail copyright appeal recommendation runs left active after a crash or terminal stall",
+    "id": "expireStuckCopyrightAppealRuns",
+    "job_name": "expire-stuck-copyright-appeal-runs",
+    "queue_name": "ai_agents",
+    "schedule": "27 * * * *",
+    "triggerName": "enqueueExpireStuckCopyrightAppealRuns",
+  },
+  {
+    "description": "Fail copyright submission guidance runs left active after a crash or terminal stall",
+    "id": "expireStuckCopyrightGuidanceRuns",
+    "job_name": "expire-stuck-copyright-guidance-runs",
+    "queue_name": "ai_agents",
+    "schedule": "57 * * * *",
+    "triggerName": "enqueueExpireStuckCopyrightGuidanceRuns",
   },
   {
     "description": "Expire appeal AI resolution runs left active after a failed queue admission",

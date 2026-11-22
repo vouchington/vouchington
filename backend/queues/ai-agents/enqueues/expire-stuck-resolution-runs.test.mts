@@ -3,6 +3,9 @@ import { AGENT_PRIORITY } from '../config.mts'
 import { ai_agents } from '../queues.mts'
 import {
   enqueueExpireStuckReportJudgementRuns,
+  enqueueExpireStuckCopyrightEmailRuns,
+  enqueueExpireStuckCopyrightAppealRuns,
+  enqueueExpireStuckCopyrightGuidanceRuns,
   enqueueExpireStuckAppealResolutionRuns,
   enqueueExpireStuckDisputeResolutionRuns,
 } from './expire-stuck-resolution-runs.mts'
@@ -14,6 +17,9 @@ describe('expire stuck resolution run enqueues', () => {
 
   it.each([
     ['expire-stuck-report-judgement-runs', enqueueExpireStuckReportJudgementRuns],
+    ['expire-stuck-copyright-email-runs', enqueueExpireStuckCopyrightEmailRuns],
+    ['expire-stuck-copyright-appeal-runs', enqueueExpireStuckCopyrightAppealRuns],
+    ['expire-stuck-copyright-guidance-runs', enqueueExpireStuckCopyrightGuidanceRuns],
     ['expire-stuck-appeal-resolution-runs', enqueueExpireStuckAppealResolutionRuns],
     ['expire-stuck-dispute-resolution-runs', enqueueExpireStuckDisputeResolutionRuns],
   ] as const)('enqueues %s at its configured priority', async (name, enqueue) => {

@@ -6,7 +6,7 @@ import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   rejectPostgresWriteForTest,
-  rejectQueueJobAddForTest,
+  rejectQueueJobAddBulkForTest,
 } from '@voucha/test-helpers/injected-failures'
 import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
@@ -123,7 +123,7 @@ describe('copyrightAgentDispatchProcessors', () => {
       track(jobIds.email(headId), jobIds.email(tailId))
       const headFailure = new Error('head failed')
       onTestFinished(
-        rejectQueueJobAddForTest(
+        rejectQueueJobAddBulkForTest(
           ai_agents,
           (name, data) =>
             name === 'copyright-email-intake' && 'intake_id' in data && data.intake_id === headId,
@@ -154,7 +154,7 @@ describe('copyrightAgentDispatchProcessors', () => {
       track(jobIds.email(failingEmailId), jobIds.email(nextEmailId), jobIds.appeal(appealId))
       const enqueueFailure = new Error('enqueue failed')
       onTestFinished(
-        rejectQueueJobAddForTest(
+        rejectQueueJobAddBulkForTest(
           ai_agents,
           (name, data) =>
             name === 'copyright-email-intake' &&

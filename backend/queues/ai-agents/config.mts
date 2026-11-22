@@ -79,6 +79,9 @@ export type AIAgentJobName =
   | 'reconcile-copyright-appeal-dispatches'
   | 'reconcile-copyright-submission-guidance-dispatches'
   | 'expire-stuck-report-judgement-runs'
+  | 'expire-stuck-copyright-email-runs'
+  | 'expire-stuck-copyright-appeal-runs'
+  | 'expire-stuck-copyright-guidance-runs'
   | 'expire-stuck-appeal-resolution-runs'
   | 'expire-stuck-dispute-resolution-runs'
 
@@ -105,6 +108,9 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   'reconcile-copyright-appeal-dispatches': 100,
   'reconcile-copyright-submission-guidance-dispatches': 100,
   'expire-stuck-report-judgement-runs': 100,
+  'expire-stuck-copyright-email-runs': 100,
+  'expire-stuck-copyright-appeal-runs': 100,
+  'expire-stuck-copyright-guidance-runs': 100,
   'expire-stuck-appeal-resolution-runs': 100,
   'expire-stuck-dispute-resolution-runs': 100,
 }
@@ -154,6 +160,9 @@ export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   'reconcile-copyright-appeal-dispatches': false,
   'reconcile-copyright-submission-guidance-dispatches': false,
   'expire-stuck-report-judgement-runs': false,
+  'expire-stuck-copyright-email-runs': false,
+  'expire-stuck-copyright-appeal-runs': false,
+  'expire-stuck-copyright-guidance-runs': false,
   'expire-stuck-appeal-resolution-runs': false,
   'expire-stuck-dispute-resolution-runs': false,
 }

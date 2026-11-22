@@ -10,6 +10,7 @@ import {
   COPYRIGHT_AGENT_DISPATCH_STAGES,
 } from './copyright-agent-dispatch-stages.mts'
 import { ai_agents } from '../queues.mts'
+import { copyrightExpiryScheduledJobs } from './schedules-copyright-expiry.mts'
 import { enqueueReconcileAutoDispatchJudgements } from './reconcile-auto-dispatch.mts'
 import { enqueueReconcileCopyrightAgentDispatchStage } from './reconcile-copyright-agent-dispatches.mts'
 import { enqueueReconcileClassifierRuns } from './reconcile-classifier-runs.mts'
@@ -107,6 +108,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(AI_AGENTS_QUEUE_N
       },
     ],
   },
+  ...copyrightExpiryScheduledJobs,
   {
     schedulerId: 'expireStuckAppealResolutionRuns',
     repeat: { pattern: '17 * * * *' },

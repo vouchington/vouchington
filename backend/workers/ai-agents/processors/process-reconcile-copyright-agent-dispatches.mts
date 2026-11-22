@@ -14,28 +14,42 @@ import { getCopyrightAgentDispatchLimits } from '@services/copyright-notices/wor
 import { admitCopyrightAppealRecommendationRuns } from '@services/copyright-notices/appeal-recommendation-runs'
 import { admitCopyrightEmailRecommendationRuns } from '@services/copyright-notices/email-recommendation-runs'
 import { admitCopyrightSubmissionGuidanceRuns } from '@services/copyright-notices/submission-guidance-runs'
-import { enqueueOrRetryCopyrightEmailIntake } from '@queues/ai-agents/enqueues/copyright-email-intake'
-import { enqueueOrRetryCopyrightFormScreening } from '@queues/ai-agents/enqueues/copyright-form-screening'
-import { enqueueOrRetryCopyrightAppealRecommendation } from '@queues/ai-agents/enqueues/copyright-appeal-recommendation'
-import { enqueueOrRetryCopyrightSubmissionGuidance } from '@queues/ai-agents/enqueues/copyright-submission-guidance'
+import { enqueueCopyrightEmailIntakes } from '@queues/ai-agents/enqueues/copyright-email-intake'
+import { enqueueCopyrightFormScreenings } from '@queues/ai-agents/enqueues/copyright-form-screening'
+import { enqueueCopyrightAppealRecommendations } from '@queues/ai-agents/enqueues/copyright-appeal-recommendation'
+import { enqueueCopyrightSubmissionGuidances } from '@queues/ai-agents/enqueues/copyright-submission-guidance'
 
 /** Settles one page's subject ids and returns the error of every subject that failed. */
 type PageSettler = (ids: readonly string[]) => Promise<unknown[]>
 
-/** One admission statement covers the page; each admitted subject then enqueues its run. */
-function admitThenEnqueue(
+/**
+ * One admission statement covers the page, then one bulk add enqueues every admitted run. A run
+ * whose job is still in flight keeps its id and is skipped by the add. A failed run is already
+ * marked in SQL by the worker, so the admission opens a new run with a new job id.
+ */
+function admitThenEnqueue<TItem>(
   admit: (ids: readonly string[]) => Promise<Map<string, string>>,
-  enqueue: (id: string, runId: string) => Promise<unknown>,
+  enqueue: (items: readonly TItem[]) => Promise<unknown>,
+  toItem: (id: string, runId: string) => TItem,
 ): PageSettler {
   return async ids => {
     const admitted = await admitRuns(admit, ids)
-    const enqueues = await Promise.allSettled(
-      ids.flatMap(id => {
-        const runId = admitted.runs.get(id)
-        return runId ? [enqueue(id, runId)] : []
-      }),
-    )
-    return [...admitted.errors, ...rejections(enqueues)]
+    const items = ids.flatMap(id => {
+      const runId = admitted.runs.get(id)
+      return runId ? [toItem(id, runId)] : []
+    })
+    const errors = await settleEnqueue(() => enqueue(items))
+    return [...admitted.errors, ...errors]
+  }
+}
+
+/** A failed bulk add keeps later pages moving; the next sweep re-adds from SQL state. */
+async function settleEnqueue(enqueue: () => Promise<unknown>): Promise<unknown[]> {
+  try {
+    await enqueue()
+    return []
+  } catch (err) {
+    return [err]
   }
 }
 
@@ -51,12 +65,6 @@ async function admitRuns(
   }
 }
 
-function rejections(results: readonly PromiseSettledResult<unknown>[]): unknown[] {
-  return results.flatMap((result): unknown[] =>
-    result.status === 'rejected' ? [result.reason as unknown] : [],
-  )
-}
-
 /**
  * A pending subject has no result: an admitted (or already active) run is what gets enqueued, and a
  * saved form effect starts no agent work, so each kind settles on its own.
@@ -64,10 +72,10 @@ function rejections(results: readonly PromiseSettledResult<unknown>[]): unknown[
 const pageSettlers: Record<CopyrightAgentDispatchStage, PageSettler> = {
   email: admitThenEnqueue(
     admitCopyrightEmailRecommendationRuns,
-    enqueueOrRetryCopyrightEmailIntake,
+    enqueueCopyrightEmailIntakes,
+    (intakeId, runId) => ({ intakeId, runId }),
   ),
-  'form-screening': async ids =>
-    rejections(await Promise.allSettled(ids.map(id => enqueueOrRetryCopyrightFormScreening(id)))),
+  'form-screening': ids => settleEnqueue(() => enqueueCopyrightFormScreenings(ids)),
   'form-effect': async ids => {
     let errors: unknown[] = []
     for (const id of ids) {
@@ -82,11 +90,13 @@ const pageSettlers: Record<CopyrightAgentDispatchStage, PageSettler> = {
   },
   appeal: admitThenEnqueue(
     admitCopyrightAppealRecommendationRuns,
-    enqueueOrRetryCopyrightAppealRecommendation,
+    enqueueCopyrightAppealRecommendations,
+    (submissionId, runId) => ({ submissionId, runId }),
   ),
   'submission-guidance': admitThenEnqueue(
     admitCopyrightSubmissionGuidanceRuns,
-    enqueueOrRetryCopyrightSubmissionGuidance,
+    enqueueCopyrightSubmissionGuidances,
+    (submissionId, runId) => ({ submissionId, runId }),
   ),
 }
 

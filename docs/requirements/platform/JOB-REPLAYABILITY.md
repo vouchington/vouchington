@@ -77,3 +77,11 @@ expires only rows still active, so a run that finished meanwhile is untouched. T
 and page cap live in the `stuck-resolution-run-expiry-config` namespace. Expiring a run records its
 outcome and releases the next admission; it does not recover the draft. Staff rerun the resolution
 manually, which admits a new run and enqueues it again.
+
+Copyright AI runs (email intake, appeal recommendation, submission guidance) are re-driven from SQL by
+their dispatch sweeps, one bulk add per page. A job that crashes or stalls past its attempts leaves
+its run active, and the queue keeps no failed record. Three more scheduled jobs,
+`expire-stuck-copyright-email-runs`, `expire-stuck-copyright-appeal-runs` and
+`expire-stuck-copyright-guidance-runs`, mark each such run `failed` in one bounded statement per
+page once it is older than `stuck_age_hours`, so the next sweep admits a fresh run with a new id.
+Form screening has no run row; its pending state in SQL is the record.
