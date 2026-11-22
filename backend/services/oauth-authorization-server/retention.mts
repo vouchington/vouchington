@@ -149,20 +149,16 @@ async function deleteExpiredRows(
     )
   const result = await query(
     `/* deleteExpiredOAuthAuthorizationServerArtifacts:${validatedTable} */
-     /* deadlock-safe: page request/code IDs before SKIP LOCKED; family locks are skipped. */
-     WITH page AS MATERIALIZED (
-       SELECT artifact.id, artifact.expires_at FROM ${validatedTable} AS artifact
-       WHERE (artifact.expires_at <= $1
-         AND ($2::timestamptz IS NULL OR artifact.expires_at >= $2))
-       ORDER BY artifact.expires_at ASC, artifact.id ASC
+     DELETE FROM ${validatedTable} AS target
+     WHERE target.id IN (
+       SELECT artifact.id FROM ${validatedTable} AS artifact
+       WHERE artifact.expires_at <= $1
+         AND ($2::timestamptz IS NULL OR artifact.expires_at >= $2)
+       ORDER BY artifact.expires_at, artifact.id
        LIMIT $3
-     ), candidates AS MATERIALIZED (
-       SELECT artifact.id FROM page
-       JOIN ${validatedTable} AS artifact ON artifact.id = page.id
-       ORDER BY page.expires_at, page.id
-       FOR UPDATE OF artifact SKIP LOCKED
      )
-     DELETE FROM ${validatedTable} target USING candidates WHERE target.id = candidates.id`,
+       AND target.expires_at <= $1
+       AND ($2::timestamptz IS NULL OR target.expires_at >= $2)`,
     [window.now, window.lowerBoundDate ?? null, limit],
   )
   return result.rowCount ?? 0

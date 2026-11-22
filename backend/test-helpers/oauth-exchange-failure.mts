@@ -1,4 +1,4 @@
-import { beginTransaction } from '@data-stores/psql'
+import { rejectPostgresWriteForTest } from './injected-failures.mts'
 import { upsertFacebookAuthorizationCodeAccount } from '../services/oauth-facebook/index.mts'
 import { upsertGithubAccount } from '../services/oauth-github/index.mts'
 import { upsertLinkedInAccount } from '../services/oauth-linkedin/index.mts'
@@ -17,24 +17,27 @@ import {
   releaseOAuthAuthorizationExchangeClaim,
 } from '../services/oauth/authorization-exchange-state.mts'
 
-/** All delegates call real production functions; the fault is a real second-connection row lock. */
+/** All delegates call production functions. The selected PostgreSQL write receives a scoped failure. */
 export async function captureTestOAuthExchangeMutationFailure(
   authorizationId: string,
   boundary: 'rejection' | 'release',
 ) {
-  await using holder = await beginTransaction()
+  const injectedError = new Error(`owned ${boundary} write failed`)
+  const marker =
+    boundary === 'rejection'
+      ? 'rejectExhaustedOAuthAuthorizationExchange'
+      : 'releaseOAuthAuthorizationExchangeClaim'
+  const restore = rejectPostgresWriteForTest(
+    marker,
+    injectedError,
+    values => values[0] === authorizationId,
+  )
   let primary: unknown
   let secondary: unknown
   let error: unknown
   let hasFailed = false
   let releaseCalls = 0
   let claimId: string | undefined
-  const lock = async () => {
-    await holder(
-      '/* captureTestOAuthExchangeMutationFailure:lock */ SELECT id FROM oauth_authorizations WHERE id = $1 FOR UPDATE NOWAIT',
-      [authorizationId],
-    )
-  }
   try {
     await processOAuthAuthorizationExchange(authorizationId, {
       validateClaim: validateOAuthAuthorizationExchangeClaim,
@@ -42,7 +45,6 @@ export async function captureTestOAuthExchangeMutationFailure(
         const claimed = await claimOAuthAuthorizationExchange(id)
         if (claimed) {
           claimId = claimed.exchange_claim_id
-          if (boundary === 'rejection') await lock()
         }
         return claimed
       },
@@ -69,7 +71,6 @@ export async function captureTestOAuthExchangeMutationFailure(
           secondary = err
           throw err
         }
-        if (!rejected && boundary === 'release') await lock()
         return rejected
       },
       async releaseClaim(id, claimedId) {
@@ -85,7 +86,8 @@ export async function captureTestOAuthExchangeMutationFailure(
   } catch (err) {
     hasFailed = true
     error = err
+  } finally {
+    restore()
   }
-  // Await-using rollback completes before this result is returned to the test.
-  return { hasFailed, error, primary, secondary, releaseCalls, claimId }
+  return { hasFailed, error, primary, secondary, releaseCalls, claimId, injectedError }
 }

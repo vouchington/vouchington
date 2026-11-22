@@ -1,4 +1,4 @@
-import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql'
 import { v7 } from 'uuid'
 import type { FederationRetentionFixtureIds } from './federation-retention.mts'
 
@@ -83,21 +83,6 @@ export async function ensureFederationReplayFloorForTest(query: TransactionQuery
      INSERT INTO activitypub_replay_rejection_floors DEFAULT VALUES
      ON CONFLICT (is_singleton) DO NOTHING`,
   )
-}
-
-/** Probe an already-held rejection-floor lock from another transaction without waiting. */
-export async function isReplayFloorLockedForTest(): Promise<boolean> {
-  await using query = await beginTransaction()
-  try {
-    await query(
-      `/* isReplayFloorLockedForTest */
-       SELECT rejection_floor_at FROM activitypub_replay_rejection_floors FOR UPDATE NOWAIT`,
-    )
-    return false
-  } catch (err) {
-    if ((err as { code?: string }).code === '55P03') return true
-    throw err
-  }
 }
 
 export async function deleteFederationInboxFixturesForTest(

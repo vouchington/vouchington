@@ -3,6 +3,7 @@
 import type { PublicKeyCredentialRequestOptionsJSON } from '@simplewebauthn/browser'
 import type { OAuthProvider } from '@/types/user'
 import { clientApi } from './instance'
+import type { EmailCodeRequestResponse } from './auth'
 
 export type ReAuthMethods = {
   has_email: boolean
@@ -71,8 +72,8 @@ export function retrieveBrokerProviderReAuthProof(
 }
 
 // Re-auth
-export function requestReAuthEmail(): Promise<{ email_address: string }> {
-  return clientApi.post<{ email_address: string }>('/api/v1/auth/mfa/re-auth/email/tokens', {})
+export function requestReAuthEmail(): Promise<EmailCodeRequestResponse> {
+  return clientApi.post<EmailCodeRequestResponse>('/api/v1/auth/mfa/re-auth/email/tokens', {})
 }
 
 export function verifyReAuthEmail<T>(code: string): Promise<T> {

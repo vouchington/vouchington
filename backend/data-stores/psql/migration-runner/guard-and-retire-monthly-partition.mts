@@ -61,8 +61,9 @@ export async function guardAndRetireMonthlyPartition(
     `/* cleanupPartitions:lockCandidate */ LOCK TABLE ${partition} IN ACCESS EXCLUSIVE MODE${historyLockNowait}`,
   )
   if (policy?.legalHoldAccountColumn || policy?.copyrightHistory) {
+    // Refuse immediately if a hold writer is active while we own the history locks.
     await transaction(
-      `/* cleanupPartitions:lockHolds */ LOCK TABLE user_legal_preservation_holds IN SHARE MODE`,
+      '/* cleanupPartitions:lockHolds */ LOCK TABLE user_legal_preservation_holds IN SHARE MODE NOWAIT',
     )
   }
   const reason = await getPartitionDropRefusal(transaction, candidate, policy, referenceDate)

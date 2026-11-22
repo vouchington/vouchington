@@ -7,6 +7,7 @@
     "post-moderation-pass-evidence-retention-page",
     "post-moderation-successor-retention-probe",
     "agent-moderation-retention-idle",
+    "agent-moderation-retention-repair-page",
     "agent-moderation-retention-live-predecessor",
     "agent-moderation-retention-page",
     "agent-moderation-retention-source-lock",

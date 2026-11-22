@@ -13,6 +13,7 @@ const baseProps = {
   onBack: vi.fn<VitestLooseMock>(),
   onCodeChange: vi.fn<VitestLooseMock>(),
   onResendCode: vi.fn<VitestLooseMock>(),
+  resendSecondsLeft: 0,
   onSubmit: vi.fn<VitestLooseMock>(),
   turnstileReady: true,
 }
@@ -86,6 +87,23 @@ describe('LoginCodeStep', () => {
       />,
     )
     expect(screen.getByRole('button', { name: /resend code/i })).toBeDisabled()
+  })
+
+  it('disables Resend code with the server countdown until it reaches zero', () => {
+    const { rerender } = render(
+      <LoginCodeStep
+        {...baseProps}
+        resendSecondsLeft={42}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Resend in 42s' })).toBeDisabled()
+    rerender(
+      <LoginCodeStep
+        {...baseProps}
+        resendSecondsLeft={0}
+      />,
+    )
+    expect(screen.getByRole('button', { name: /resend code/i })).toBeEnabled()
   })
 
   it('submits on Enter from the OTP input (form-keyboard convention)', () => {

@@ -4,10 +4,8 @@ import {
   getCommentDescendantReadLimits,
   getCommentLookDownLimits,
 } from '@services/comments/placeholder-config'
-import {
-  BOUNDARY_PENDING_LEAF_COUNT,
-  type CommentDescendantPartitionFixture,
-} from '../seed-data/comment-descendant-partition-fixture.mts'
+import type { CommentDescendantPartitionFixture } from '../seed-data/comment-descendant-partition-fixture.mts'
+import { BOUNDARY_PENDING_LEAF_COUNT } from '../seed-data/comment-descendant-partition-tree.mts'
 
 /** Follow the same service from a returned boundary node through five empty head pages. */
 export async function verifyWideBoundaryExpansion(

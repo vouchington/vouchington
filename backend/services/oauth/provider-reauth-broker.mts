@@ -12,7 +12,7 @@ import {
 } from './provider-reauth-challenge.mts'
 import {
   getAuthorizationAccount,
-  getAuthorizationForCompletion,
+  readAuthorizationForCompletion,
 } from './authorization-completion-persistence.mts'
 import type { BrokerOAuthProvider } from './broker-config.mts'
 import type { CompletionRow } from './authorization-completion-types.mts'
@@ -28,7 +28,7 @@ export async function completeBrokerProviderReAuthProof(
     { sid: options.sessionId, did: options.deviceId },
     query,
   )
-  const authorization = await getAuthorizationForCompletion(options.flowId, query)
+  const authorization = await readAuthorizationForCompletion(options.flowId, query)
   if (
     authorization.purpose !== 're_auth' ||
     authorization.provider !== options.provider ||

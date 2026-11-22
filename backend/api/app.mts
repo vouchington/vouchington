@@ -89,7 +89,25 @@ app.errorHandler((ctx, error: unknown) => {
     exposeDetails: !isDeployedEnvironment(),
     requestId,
   })
+  if (
+    status === 429 &&
+    error instanceof Error &&
+    'retryAfterSeconds' in error &&
+    typeof error.retryAfterSeconds === 'number' &&
+    Number.isSafeInteger(error.retryAfterSeconds) &&
+    error.retryAfterSeconds > 0
+  ) {
+    ctx.set('Retry-After', String(error.retryAfterSeconds))
+  }
   ctx.setStatus(status)
+  if (
+    status === 429 &&
+    error instanceof Error &&
+    'retryAfterSeconds' in error &&
+    typeof error.retryAfterSeconds === 'number'
+  ) {
+    ctx.set('Retry-After', String(error.retryAfterSeconds))
+  }
   if (isBotChallengeRequiredError(error)) {
     ctx.json({ ...body, action: error.action })
   } else if (

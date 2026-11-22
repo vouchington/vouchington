@@ -21,7 +21,10 @@ const mockGet = vi.mocked(clientApi.get)
 class MockEventSource {
   static instances: MockEventSource[] = []
 
-  constructor(readonly url: string) {
+  readonly url: string
+
+  constructor(url: string) {
+    this.url = url
     MockEventSource.instances.push(this)
   }
 }

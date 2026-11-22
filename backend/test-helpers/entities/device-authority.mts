@@ -37,3 +37,13 @@ export async function shiftTestDeviceAuthorityIssuedAt(
     UPDATE user_sessions SET device_token_issued_at = device_token_issued_at - INTERVAL '1 second'
     WHERE id = ${sessionId} AND user_id = ${userId}`)
 }
+
+export async function replaceTestDeviceAuthorityCiphertext(
+  userId: string,
+  sessionId: string,
+  ciphertext: string,
+): Promise<void> {
+  await write(sql`/* replaceTestDeviceAuthorityCiphertext */
+    UPDATE user_sessions SET device_token_encrypted = ${ciphertext}
+    WHERE id = ${sessionId} AND user_id = ${userId}`)
+}

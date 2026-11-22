@@ -134,7 +134,6 @@ export {
   readFederationReplayFloorForTest,
   advanceFederationReplayFloorForTest,
   ensureFederationReplayFloorForTest,
-  isReplayFloorLockedForTest,
   deleteFederationInboxFixturesForTest,
   deleteFederationInboxActivityForTest,
   insertFederationReplayDecoyForTest,

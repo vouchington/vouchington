@@ -5,37 +5,38 @@ export type RetainedOAuthExchangeClaim = (
   claimId: string,
 ) => Promise<boolean>
 
-/** Resolve only the bounded locked page; fresh history joins queue ownership by exact claim. */
-export async function getRetainedUnarmedOAuthExchangeIds(
+/** Resolve only the bounded candidate page; fresh history joins queue ownership by exact claim. */
+export async function getRetainedUnarmedOAuthExchangeClaims(
   transaction: OwnedTransaction,
-  ownedIds: readonly string[],
+  candidateIds: readonly string[],
   staleSeconds: number,
   retainedClaim?: RetainedOAuthExchangeClaim,
-): Promise<string[]> {
+): Promise<{ id: string; claimId: string }[]> {
   if (!retainedClaim) return []
   const { rows } = await transaction<{ id: string; exchange_claim_id: string }>(
-    `/* getRetainedUnarmedOAuthExchangeIds */ SELECT id, exchange_claim_id
+    `/* getRetainedUnarmedOAuthExchangeClaims */ SELECT id, exchange_claim_id
      FROM view_oauth_authorization_current_records
      WHERE id = ANY($1::uuid[]) AND status = 'exchanging'
        AND exchange_started_at < clock_timestamp() - make_interval(secs => $2)
        AND expires_at > CURRENT_TIMESTAMP`,
-    [ownedIds, staleSeconds],
+    [candidateIds, staleSeconds],
   )
   const receipts = await Promise.allSettled(
     rows.map(async row => ({
       id: row.id,
+      claimId: row.exchange_claim_id,
       retained: await retainedClaim(row.id, row.exchange_claim_id),
     })),
   )
-  const retainedIds: string[] = []
+  const retained: { id: string; claimId: string }[] = []
   const errors: unknown[] = []
   for (const receipt of receipts) {
     if (receipt.status === 'rejected') errors.push(receipt.reason)
-    else if (receipt.value.retained) retainedIds.push(receipt.value.id)
+    else if (receipt.value.retained) retained.push(receipt.value)
   }
   if (errors.length)
     throw new AggregateError(errors, 'Retained OAuth ownership lookups failed', {
       cause: errors[0],
     })
-  return retainedIds
+  return retained
 }

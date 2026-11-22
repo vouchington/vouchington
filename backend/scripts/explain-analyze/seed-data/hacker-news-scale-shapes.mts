@@ -78,26 +78,14 @@ export async function verifyHackerNewsScaleShape(
   return { posts: fixture.postCount, qualifying, unvoted }
 }
 
-/** Leaf ANALYZE refreshes its indexes too; PostgreSQL does not ANALYZE indexes independently. */
+/**
+ * ANALYZE on the partitioned `posts` and `relation__post__related__url` roots also analyzes each
+ * of their leaves and its indexes, so one statement refreshes every participating relation.
+ * Separate per-leaf ANALYZE calls ahead of it only sampled each leaf twice.
+ */
 export async function analyzeHackerNewsScaleFixture(
   fixture: HackerNewsScaleFixture,
 ): Promise<{ postLeaves: number; posts: number }> {
-  for (const partition of fixture.partitions) {
-    if (!/^posts__explain_5053_hn_[0-9]{4}_[0-9]{2}$/.test(partition.name))
-      throw new Error('Unexpected HN scale partition name')
-    // no-mistakes-disable-next-line query-reached-per-item: refresh the fixed 24 owned leaf statistics and their indexes before each independent shape capture.
-    await write(`/* analyzeHackerNewsScaleLeaf */ ANALYZE ${partition.name}`)
-  }
-  const { rows: relationLeaves } = await read<{ name: string }>(
-    `/* hackerNewsScaleRelationLeaves */ SELECT relid::regclass::text AS name
-     FROM pg_partition_tree('relation__post__related__url'::regclass) WHERE isleaf LIMIT 101`,
-  )
-  if (relationLeaves.length > 100) throw new Error('HN scale relation leaf inventory exceeds 100')
-  for (const leaf of relationLeaves) {
-    // Catalog-derived regclass names are already quoted by PostgreSQL.
-    // no-mistakes-disable-next-line query-reached-per-item: refresh the capped relation leaf inventory after changing at most 4,000 owned URL relations.
-    await write(`/* analyzeHackerNewsScaleRelationLeaf */ ANALYZE ${leaf.name}`)
-  }
   await write(`/* analyzeHackerNewsScaleJoins */ ANALYZE
     posts, urls, url_hacker_news_totals, relation__post__related__url,
     user_suspensions, communities, community_post_reviews, community_members,

@@ -38,9 +38,8 @@ describe('OAuth retained failed-job recovery authority', () => {
       })
       const result = await recoverTestRetainedOAuthClaim(id, claimId, marker, cleanupReceipt)
       expect(result.firstAttempts).toBe(5)
-      expect(result.nativeErrors).toHaveLength(5)
-      for (const err of result.nativeErrors) expect(err).toMatchObject({ code: '55P03' })
-      expect(result.firstNativeError).toMatchObject({ code: '55P03' })
+      expect(result.mutationErrors).toHaveLength(5)
+      expect(result.mutationErrors).toEqual(Array(5).fill(result.injectedError))
       expect(result.firstState).toBe('failed')
       const unarmed = marker === 'unarmed'
       expect(result.recovered).toEqual({ ids: unarmed ? [id] : [], hasMore: true })

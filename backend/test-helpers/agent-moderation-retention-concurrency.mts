@@ -35,3 +35,15 @@ async function withRetentionPostLockTimeout(
   await update(writer)
   await writer.commit()
 }
+
+/** Holds a particular source so a competing cleanup's MERGE takes its snapshot before a commit. */
+export async function lockTestAgentModerationRetentionSource(
+  query: QueryExecutor,
+  postId: string,
+  moderationId: string,
+): Promise<void> {
+  await query(sql`/* lockTestAgentModerationRetentionSource */
+    SELECT id FROM agent_moderations WHERE post_id = ${postId}::uuid AND id = ${moderationId}::uuid
+    FOR UPDATE
+  `)
+}

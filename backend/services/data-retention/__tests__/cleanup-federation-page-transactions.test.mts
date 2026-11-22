@@ -8,7 +8,7 @@ import {
 import { cleanupCommittedReplayPagesForTest } from '@voucha/test-helpers/federation-retention-page-transactions'
 
 describe('replay cleanup page transactions', () => {
-  it('holds the floor during each page and releases it before opening the next transaction', async () => {
+  it('commits each ledger deletion before opening the next page', async () => {
     // Epoch identities keep any committed floor advance below live accepted activities.
     const ids = [v7({ msecs: 1 }), v7({ msecs: 2 })]
     await withCommittedPostgresTransactionForTest(async query => {
@@ -18,10 +18,8 @@ describe('replay cleanup page transactions', () => {
     })
     expect(await cleanupCommittedReplayPagesForTest(ids)).toEqual({
       result: { deleted: 2, hasMore: false, continuationPosition: null },
-      pageCount: 2,
-      previousPageTransactionActive: [false, false],
-      pageTransactionActive: [true, true],
-      lockDuringPage: [true, true],
+      remainingAtPageStart: [ids, [ids[1]]],
+      remainingAfterCleanup: [],
     })
   })
 })

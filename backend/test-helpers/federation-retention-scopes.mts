@@ -8,11 +8,11 @@ import {
 import type { FederationRetentionResult } from '../services/data-retention/cleanup-federation.mts'
 
 /** Only the fixture adapter adds owner predicates; real production SQL executes on PostgreSQL. */
-export function scopeFederationRetentionQueryForTest(
-  query: TransactionQuery,
+export function scopeFederationRetentionQueryForTest<Query extends TransactionQuery>(
+  query: Query,
   source: 'followers' | 'inbox',
   ids: readonly string[],
-): TransactionQuery {
+): Query {
   const selector =
     source === 'followers'
       ? '/* listFollowerDistributionRetentionCandidates */'

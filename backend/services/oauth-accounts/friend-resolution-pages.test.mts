@@ -14,6 +14,7 @@ import {
   closeScopedDynamicConfigContext,
   overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers/dynamic-config'
+import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { getTestFriendSyncStartTime } from '@voucha/test-helpers/entities/oauth-friend-edge-locks'
 import { cleanupOAuthFriendEdgeWork } from '../data-retention/cleanup-oauth-friend-edges.mts'
 import { connectOAuthAccountToUser } from './connect.mts'
@@ -130,7 +131,7 @@ describe('bounded incoming friend resolution', () => {
     })
   })
 
-  it('resolves one edge on connect and resumes the rest from the durable marker', async () => {
+  it('drains the durable marker while a concurrent import references the target account', async () => {
     overrideDynamicConfigFieldsForTest(oauthAccountFriendWorkConfig, {
       friend_reference_connect_batch_size: 1,
     })
@@ -161,13 +162,41 @@ describe('bounded incoming friend resolution', () => {
     expect(
       firstPass.filter(row => row.friend_github_account_id === targetAccount.account_id),
     ).toHaveLength(1)
-    expect(
-      await cleanupOAuthFriendEdgeWork({ batchSize: 1, maxBatches: 1 }, new Date('2100-01-01'), {
-        provider: 'github',
-        phase: 'resolve',
-        accountId: targetAccount.account_id,
-      }),
-    ).toMatchObject({ resolved: 1, hasMore: false })
+    const importer = await createTestUser()
+    const importerProviderId = `github-resolution-importer-${importer.id}`
+    const importerAccount = await insertTestOAuthAccount('github', importerProviderId)
+    if (!importerAccount.account_id) throw new Error('Importing GitHub account id missing')
+    await connectTestOAuthAccount('github', importer.id, importerProviderId)
+    const importerAccountId = importerAccount.account_id
+    const startedAt = await getTestFriendSyncStartTime()
+    let imported: boolean | undefined
+    const restore = afterPostgresTransactionQueryForTest(
+      'lockFriendReferenceResolution',
+      values => values.includes(targetAccount.account_id),
+      async () => {
+        imported = await persistGithubFriendPage(
+          importerAccountId,
+          importer.id,
+          [targetProviderId],
+          startedAt,
+        )
+      },
+    )
+    try {
+      expect(
+        await cleanupOAuthFriendEdgeWork({ batchSize: 1, maxBatches: 1 }, new Date('2100-01-01'), {
+          provider: 'github',
+          phase: 'resolve',
+          accountId: targetAccount.account_id,
+        }),
+      ).toEqual({ deleted: 0, resolved: 1, hasMore: false })
+    } finally {
+      restore()
+    }
+    expect(imported).toBe(true)
+    expect((await getTestFriend('github', importerProviderId, targetProviderId))[0]).toMatchObject({
+      friend_github_account_id: targetAccount.account_id,
+    })
     const completed = await Promise.all(
       sourceIds.map(
         async sourceId =>

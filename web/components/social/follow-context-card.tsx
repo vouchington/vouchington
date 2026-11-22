@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { UserAvatar } from '@/components/shared/user-avatar'
@@ -19,7 +20,7 @@ function hasSectionData(section: Section): section is Section & { data: FollowCo
   return Boolean(section.data)
 }
 
-function FollowContextUserList({ users }: { users: PublicUser[] }) {
+export function FollowContextUserList({ users }: { users: PublicUser[] }) {
   const t = useTranslations()
   const deletedUserLabel = t('shared.user.deletedUser')
   return (
@@ -56,11 +57,19 @@ function FollowContextUserList({ users }: { users: PublicUser[] }) {
   )
 }
 
-export function FollowContextCard({ title, sections }: { title: string; sections: Section[] }) {
+export function FollowContextCard({
+  title,
+  sections,
+  extraSection,
+}: {
+  title: string
+  sections: Section[]
+  extraSection?: ReactNode
+}) {
   const t = useTranslations()
   const visibleSections = sections.filter(hasSectionData)
   const hasContent = visibleSections.some(section => section.data.total > 0)
-  if (!hasContent) return null
+  if (!hasContent && !extraSection) return null
 
   return (
     <Card data-pw='follow-context-card'>
@@ -96,6 +105,7 @@ export function FollowContextCard({ title, sections }: { title: string; sections
             </section>
           )
         })}
+        {extraSection}
       </CardContent>
     </Card>
   )

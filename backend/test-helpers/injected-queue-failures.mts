@@ -2,22 +2,33 @@ import type { Queue } from 'glide-mq'
 import { vi } from 'vitest'
 import { backgroundQueue } from './shared-background-queue.mts'
 
-/** Reject one admission on the supplied real queue; unrelated jobs pass through. */
+/** Reject one admission, single or bulk, on the supplied real queue; unrelated jobs pass through. */
 export function rejectNextQueueJobAddForTest(
-  queue: Pick<typeof backgroundQueue, 'add'>,
+  queue: Pick<typeof backgroundQueue, 'add' | 'addBulk'>,
   jobName: string,
   error: Error,
 ): () => void {
   const realAdd = queue.add
+  const realAddBulk = queue.addBulk
   let rejected = false
-  const spy = vi.spyOn(queue, 'add').mockImplementation((name, data, opts) => {
+  const addSpy = vi.spyOn(queue, 'add').mockImplementation((name, data, opts) => {
     if (!rejected && name === jobName) {
       rejected = true
       return Promise.reject(error)
     }
     return Reflect.apply(realAdd, queue, [name, data, opts])
   })
-  return () => spy.mockRestore()
+  const addBulkSpy = vi.spyOn(queue, 'addBulk').mockImplementation(jobs => {
+    if (!rejected && jobs.some(job => job.name === jobName)) {
+      rejected = true
+      return Promise.reject(error)
+    }
+    return Reflect.apply(realAddBulk, queue, [jobs])
+  })
+  return () => {
+    addSpy.mockRestore()
+    addBulkSpy.mockRestore()
+  }
 }
 
 /** Reject matching admissions on a caller-owned queue while other jobs pass through. */

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
+import { runOverlappingCopyrightFormWriters } from '@voucha/test-helpers/copyright-form-writer-overlap'
 import {
   countCopyrightActiveRestrictionsForNotice,
   readCopyrightNoticeTargetIds,
@@ -7,7 +8,7 @@ import {
 import {
   readTestCopyrightStaffScreening,
   getTestExpiredCopyrightScreeningClaimTime,
-  startTestCopyrightScreeningBeforeAdmission,
+  readTestCopyrightScreeningExecution,
 } from '@voucha/test-helpers/data-stores/psql/copyright-screening-executions'
 import {
   createTestCopyrightFormIntakeReview,
@@ -64,6 +65,24 @@ describe('current copyright form screening execution', () => {
     })
   })
 
+  it('persists one live claim when two workers claim the same intake', async () => {
+    const { intake } = await createSignedInCopyrightForm()
+    const [winner, duplicate] = await runOverlappingCopyrightFormWriters({
+      intakeId: intake.id,
+      holderMarker: 'claimCopyrightFormScreening:current',
+      waiterMarker: 'lockCopyrightFormReview',
+      holder: () => claimCopyrightFormScreening(intake.id),
+      waiter: () => claimCopyrightFormScreening(intake.id),
+    })
+    expect(winner).toMatchObject({ intakeId: intake.id, attemptNumber: 1 })
+    expect(duplicate).toBeNull()
+    await expect(readTestCopyrightScreeningExecution(intake.id)).resolves.toMatchObject({
+      attempt_number: 1,
+      state: 'pending',
+      claimed_at: expect.any(Date),
+    })
+  })
+
   it('rotates an expired claim and fences its late output', async () => {
     const { intake } = await createSignedInCopyrightForm()
     const old = (await claimCopyrightFormScreening(intake.id))!
@@ -106,15 +125,21 @@ describe('current copyright form screening execution', () => {
     })
     expect(assessment.copyright_notice_form_screening_id).toBeNull()
     const [targetId] = await readCopyrightNoticeTargetIds(intake.copyright_notice_id)
-    const restriction = await startTestCopyrightScreeningBeforeAdmission(intake.id, () =>
-      acceptCopyrightNoticeAndImposeRestriction({
-        noticeId: intake.copyright_notice_id,
-        targetId: targetId!,
-        assessmentId: assessment.id,
-        imposedAt: new Date(),
-        imposedById: user.id,
-      }),
-    )
+    const [retry, restriction] = await runOverlappingCopyrightFormWriters({
+      intakeId: intake.id,
+      holderMarker: 'claimCopyrightFormScreening:current',
+      waiterMarker: 'lockAssessmentForm:fence',
+      holder: () => claimCopyrightFormScreening(intake.id),
+      waiter: () =>
+        acceptCopyrightNoticeAndImposeRestriction({
+          noticeId: intake.copyright_notice_id,
+          targetId: targetId!,
+          assessmentId: assessment.id,
+          imposedAt: new Date(),
+          imposedById: user.id,
+        }),
+    })
+    expect(retry).toMatchObject({ intakeId: intake.id, attemptNumber: initial.attemptNumber + 1 })
     expect(restriction).toMatchObject({
       authorizing_assessment_id: assessment.id,
       imposed_by_id: user.id,

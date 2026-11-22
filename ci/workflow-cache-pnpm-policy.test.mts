@@ -135,12 +135,6 @@ describe('workflow cache and pnpm policies', () => {
       `actions/setup-node@${'b'.repeat(40)} # v5`,
       '.github/workflows/test.yml: setup-node must be v6 or higher',
     ],
-    [
-      'setup-node package cache',
-      'package-manager-cache: false',
-      'package-manager-cache: true',
-      '.github/workflows/test.yml: setup-node must disable package manager cache',
-    ],
   ])('rejects broken %s policy', (_name, original, replacement, expected) => {
     const source = base.get(`${workflow}test.yml`)!.replace(original, replacement)
     expect(workflowCachePnpmViolations(changed(`${workflow}test.yml`, source))).toContain(expected)
@@ -187,24 +181,6 @@ describe('workflow cache and pnpm policies', () => {
       'path: ~/.cache/ms-playwright',
       'path: ~/.cache/ms-playwright\n          restore-keys: stale-',
       '.github/workflows/test.yml: Playwright cache "- uses: actions/cache@sha" must not declare restore-keys.',
-    ],
-    [
-      'Node version file',
-      "node-version-file: '.nvmrc'",
-      "node-version-file: 'other'",
-      '.github/workflows/test.yml: setup-node must read .nvmrc',
-    ],
-    [
-      'hardcoded Node version',
-      "node-version-file: '.nvmrc'",
-      "node-version-file: '.nvmrc'\n          node-version: synthetic-node-version",
-      '.github/workflows/test.yml: hardcoded Node version',
-    ],
-    [
-      'setup-node cache input',
-      'package-manager-cache: false',
-      'package-manager-cache: false\n          cache: npm',
-      '.github/workflows/test.yml: setup-node cache input is prohibited',
     ],
     [
       'unexpected setup input',
@@ -265,18 +241,6 @@ describe('workflow cache and pnpm policies', () => {
     const source = base.get(path)!.replace('if: always()', 'if: success()')
     expect(workflowCachePnpmViolations(changed(path, source))).toContain(
       'explain-analyze must upload results always',
-    )
-  })
-
-  it.each([
-    'node-version-file: /trusted/.nvmrc',
-    'node-version-file: ${{ github.action_path }}/../../../.nvmrc',
-    "node-version-file: '${{ github.action_path }}/../../../.nvmrc'",
-    'node-version-file: "${{ github.action_path }}/../../../.nvmrc"',
-  ])('rejects unsafe version-file input: %s', value => {
-    const source = base.get(`${workflow}test.yml`)!.replace("node-version-file: '.nvmrc'", value)
-    expect(workflowCachePnpmViolations(changed(`${workflow}test.yml`, source))).toContain(
-      '.github/workflows/test.yml: unsafe node-version-file',
     )
   })
 })

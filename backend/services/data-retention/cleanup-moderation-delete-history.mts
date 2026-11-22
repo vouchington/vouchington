@@ -4,7 +4,7 @@ import sql from 'sql-template-strings'
 import { MODERATION_APPEAL_HISTORY_RETENTION_MONTHS } from '@services/moderation-appeals/config'
 import type { ModerationHistoryCleanupKind } from './cleanup-moderation-kinds.mts'
 
-/** Delete only terminal records after their window; the candidate ids are one locked keyset page. */
+/** Delete only terminal records after their window; the candidate IDs come from one bounded keyset page. */
 export async function deleteExpiredModerationHistory(
   kind: ModerationHistoryCleanupKind,
   query: QueryExecutor,
@@ -41,6 +41,8 @@ export async function deleteExpiredModerationHistory(
         DELETE FROM moderation_appeals appeal
         WHERE appeal.id = ANY(${ids}::uuid[])
           AND appeal.resolved_at < ${now}::timestamptz - make_interval(months => ${MODERATION_APPEAL_HISTORY_RETENTION_MONTHS})
+          -- A long-resolved appeal may have only recently received its public response.
+          AND appeal.sent_at < ${now}::timestamptz - make_interval(months => ${MODERATION_APPEAL_HISTORY_RETENTION_MONTHS})
       `))
   } else if (kind === 'disputes') {
     ;({ rowCount } = await query(sql`/* deleteExpiredModerationHistory:disputes */

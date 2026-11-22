@@ -44,6 +44,7 @@ export const RETENTION_WORK_SCENARIOS = [
   'post-moderation-history-page',
   'post-moderation-history-ranked-comparison',
   'agent-moderation-retention-idle',
+  'agent-moderation-retention-repair-page',
   'agent-moderation-retention-live-predecessor',
   'agent-moderation-retention-page',
   'agent-moderation-retention-source-lock',

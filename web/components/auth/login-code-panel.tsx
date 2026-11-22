@@ -14,6 +14,7 @@ interface LoginCodePanelProps {
   loading: boolean
   loginAttemptId: string
   onResendCode: () => Promise<void>
+  resendSecondsLeft: number
   setCode: (code: string) => void
   setLoginAttemptId: (loginAttemptId: string) => void
   setStep: (step: 'email' | 'code' | 'mfa') => void
@@ -33,6 +34,7 @@ export function LoginCodePanel({
   loading,
   loginAttemptId,
   onResendCode,
+  resendSecondsLeft,
   setCode,
   setLoginAttemptId,
   setStep,
@@ -80,6 +82,7 @@ export function LoginCodePanel({
         onBack={handleBack}
         onCodeChange={handleCodeChange}
         onResendCode={onResendCode}
+        resendSecondsLeft={resendSecondsLeft}
         onSubmit={handleCodeSubmit}
         turnstileReady={turnstileToken !== null}
       />

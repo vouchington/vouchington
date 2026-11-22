@@ -7,6 +7,7 @@ import {
 } from '@services/users'
 import { setAuthenticationCookies } from '@modules/api-utils'
 import { isHoneypotTriggered } from '@services/honeypot'
+import { getEmailCodeRequestMinIntervalSeconds } from '@services/users/email-auth-limits-config'
 import { verifyCaptchaOrAttestation } from '@services/captcha'
 import { getDeviceContext } from './device-context.mts'
 import { parseJsonBody, validateRequestContract } from '../../response-helpers.mts'
@@ -62,7 +63,10 @@ async function requestEmailToken(ctx: Context, routeKey: string, native: boolean
   validateRequestContract(ctx, routeKey, { body })
 
   if (isHoneypotTriggered(body as Record<string, unknown>)) {
-    ctx.json({ email_address: body.emailAddress || body.email_address || '' })
+    ctx.json({
+      email_address: body.emailAddress || body.email_address || '',
+      resend_after_seconds: getEmailCodeRequestMinIntervalSeconds(),
+    })
     return
   }
 
@@ -84,7 +88,10 @@ async function requestEmailToken(ctx: Context, routeKey: string, native: boolean
     sessionId: sessionData.sid,
     uiLocale: rawUiLocale,
   })
-  ctx.json({ email_address: result.emailAddress })
+  ctx.json({
+    email_address: result.emailAddress,
+    resend_after_seconds: result.resendAfterSeconds,
+  })
 }
 
 app

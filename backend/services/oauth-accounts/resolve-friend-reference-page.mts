@@ -24,11 +24,11 @@ export async function resolveFriendReferencePage(
        CROSS JOIN LATERAL (
          SELECT edge.id FROM ${friendTable} edge WHERE ${eligible}
          ORDER BY edge.last_observed_at, edge.id
-         LIMIT $2::integer FOR UPDATE OF edge SKIP LOCKED
+         LIMIT $2::integer
        ) eligible
        WHERE account.id = $1::uuid
      ) UPDATE ${friendTable} target SET ${targetId} = $1::uuid
-       FROM candidates WHERE target.id = candidates.id`,
+       FROM candidates WHERE target.id = candidates.id AND target.${targetId} IS NULL`,
     [accountId, batchSize],
   )
   const { rows: remaining } = await query(

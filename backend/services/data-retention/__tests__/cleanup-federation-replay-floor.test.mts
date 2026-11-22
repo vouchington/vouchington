@@ -2,15 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { v7 } from 'uuid'
 import {
   advanceFederationReplayFloorForTest,
-  ensureFederationReplayFloorForTest,
   insertFederationInboxReplayForTest,
-  isReplayFloorLockedForTest,
   readFederationReplayFloorForTest,
 } from '@voucha/test-helpers'
-import {
-  withCommittedPostgresTransactionForTest,
-  withPostgresTransactionForTest,
-} from '@voucha/test-helpers/postgres-transaction'
+import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import { cleanupActivityPubReplayLedgerForTest } from '@voucha/test-helpers/federation-retention-scopes'
 import { advanceReplayRejectionFloor } from '../cleanup-activitypub-replay-floor.mts'
 
@@ -62,29 +57,6 @@ describe('replay floor', () => {
       expect(await readFederationReplayFloorForTest(query)).toEqual(
         new Date(oldAt.getTime() + 3_600_000),
       )
-    })
-  })
-
-  it('holds the replay-floor row lock through an uncommitted purge', async () => {
-    const now = new Date()
-    const oldAt = new Date(now.getTime() - 400 * 86_400_000)
-    const oldId = v7({ msecs: oldAt.getTime() })
-    await withCommittedPostgresTransactionForTest(async query => {
-      await ensureFederationReplayFloorForTest(query)
-      await insertFederationInboxReplayForTest(query, { id: oldId, receivedAt: oldAt })
-    })
-
-    await withPostgresTransactionForTest(async query => {
-      expect(
-        await cleanupActivityPubReplayLedgerForTest({
-          batchSize: 1,
-          maxBatches: 1,
-          now,
-          borrowedQuery: query,
-          scope: { activityIds: [oldId] },
-        }),
-      ).toMatchObject({ deleted: 1, hasMore: false })
-      expect(await isReplayFloorLockedForTest()).toBe(true)
     })
   })
 })

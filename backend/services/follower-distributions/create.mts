@@ -1,9 +1,10 @@
+import createError from 'http-errors'
+import { checkFollowerDistributionSenderRateLimit } from '@services/route-rate-limits/follower-distributions'
 import { beginTransaction } from '@data-stores/psql'
 import type { PrivateUser } from '@services/users/types'
 import sql from 'sql-template-strings'
 import {
   assertCanDistribute,
-  dedupLockKey,
   type CreateDistributionInput,
   validateTarget,
 } from './create-guards.mts'
@@ -60,15 +61,17 @@ async function createDistribution(
   currentUser: PrivateUser,
   input: CreateDistributionInput,
 ): Promise<FollowerDistributionAccepted> {
+  const senderLimit = await checkFollowerDistributionSenderRateLimit(currentUser.id)
+  if (senderLimit.limited) {
+    throw createError(429, 'Rate limit exceeded. Please try again later.', {
+      retryAfterSeconds: senderLimit.retryAfterSeconds,
+    })
+  }
   const eagerOptions =
     typeof input.options === 'function' ? null : parseSendFollowersInput(input.options)
   await using query = await beginTransaction()
   const target = await validateTarget(currentUser, input, query)
   const options = eagerOptions ?? parseSendFollowersInput((input.options as () => unknown)())
-  // ast-grep-ignore: no-three-sequential-awaits -- The target-keyed advisory lock must finish before assertCanDistribute rereads quota/audience; its recipient ids and the inserted distribution id feed recipient rows.
-  await query(sql`/* createDistribution:lock */
-    SELECT pg_advisory_xact_lock(hashtext(${dedupLockKey(currentUser.id, input.action, target.id)}))
-  `)
   const selectedRecipientIds = await assertCanDistribute(
     currentUser.id,
     input.action,

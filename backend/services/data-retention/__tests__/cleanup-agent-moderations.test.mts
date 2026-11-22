@@ -240,8 +240,6 @@ describe('agent moderation retention', () => {
     const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
     const fixture = await createTestAgentModerationRetentionFixture()
     const oldDay = at(91)
-    // Serial: the retention insert trigger only stamps a row's immediate predecessor, so
-    // concurrent inserts of adjacent ids can leave a middle row with no retention_due_at.
     const oldIds: string[] = []
     for (let sequence = 0; sequence < 20; sequence += 1) {
       oldIds.push(

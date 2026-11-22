@@ -5,7 +5,6 @@ import {
   getTestOAuthAuthorization,
   insertTestOAuthAuthorization,
 } from '@voucha/test-helpers/entities/oauth-authorizations'
-import { withTestOAuthAuthorizationRowLocked } from '@voucha/test-helpers/entities/oauth-authorization-recovery'
 import { getRecoverableOAuthAuthorizationIds } from '../authorization-exchange.mts'
 
 describe('OAuth authorization exchange bounded recovery', () => {
@@ -45,7 +44,7 @@ describe('OAuth authorization exchange bounded recovery', () => {
   })
 
   it.each([0, 5])(
-    'fills the recovery bucket past a locked first row at attempt count %s',
+    'processes the first bounded candidate at attempt count %s',
     async exchangeAttempts => {
       const ids: string[] = []
       onTestFinished(() => deleteTestOAuthAuthorizationFixtures({ authorizationIds: ids }))
@@ -63,16 +62,14 @@ describe('OAuth authorization exchange bounded recovery', () => {
       await insertOwned()
       const [firstId, secondId] = ids.toSorted()
       if (!firstId || !secondId) throw new Error('Expected two owned recovery candidates')
-      await withTestOAuthAuthorizationRowLocked(firstId, async () => {
-        const recovered = await getRecoverableOAuthAuthorizationIds(1, ids)
-        expect(recovered.ids).toEqual(exchangeAttempts === 0 ? [secondId] : [])
-        expect(recovered.hasMore).toBe(true)
-        expect(await getTestOAuthAuthorization(firstId)).toMatchObject({
-          status: 'callback_received',
-        })
-        expect(await getTestOAuthAuthorization(secondId)).toMatchObject({
-          status: exchangeAttempts === 0 ? 'callback_received' : 'rejected',
-        })
+      const recovered = await getRecoverableOAuthAuthorizationIds(1, ids)
+      expect(recovered.ids).toEqual(exchangeAttempts === 0 ? [firstId] : [])
+      expect(recovered.hasMore).toBe(true)
+      expect(await getTestOAuthAuthorization(firstId)).toMatchObject({
+        status: exchangeAttempts === 0 ? 'callback_received' : 'rejected',
+      })
+      expect(await getTestOAuthAuthorization(secondId)).toMatchObject({
+        status: 'callback_received',
       })
     },
   )

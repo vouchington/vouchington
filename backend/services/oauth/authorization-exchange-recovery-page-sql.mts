@@ -1,5 +1,5 @@
-/** Provisional two-bucket selection is not authority to mutate; history is re-read after locking. */
-export const recoverableOAuthAuthorizationRowLocksSql = `/* getRecoverableOAuthAuthorizationIds:lock */
+/** Select a bounded page of terminal and retryable authorization candidates. */
+export const recoverableOAuthAuthorizationPageSql = `/* getRecoverableOAuthAuthorizationIds:page */
      WITH terminal_candidates AS (
        SELECT current_flow.id
        FROM oauth_authorizations flow
@@ -35,7 +35,6 @@ export const recoverableOAuthAuthorizationRowLocksSql = `/* getRecoverableOAuthA
          )
        ORDER BY current_flow.id ASC
        LIMIT $1
-       FOR UPDATE OF flow SKIP LOCKED
      ), retry_candidates AS (
      SELECT current_flow.id
      FROM oauth_authorizations flow
@@ -52,11 +51,10 @@ export const recoverableOAuthAuthorizationRowLocksSql = `/* getRecoverableOAuthA
        AND current_flow.status = 'callback_received'
      ORDER BY current_flow.id ASC
      LIMIT $1
-     FOR UPDATE OF flow SKIP LOCKED
      ), candidate_ids AS (
        SELECT id FROM terminal_candidates UNION SELECT id FROM retry_candidates
      )
-     SELECT flow.id
+     SELECT flow.id, flow.exchange_claim_id
      FROM oauth_authorizations flow
      JOIN candidate_ids ON candidate_ids.id = flow.id
      ORDER BY flow.id ASC`

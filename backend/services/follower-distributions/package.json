@@ -28,6 +28,7 @@
     "@modules/utils": "workspace:^",
     "@services/notifications": "workspace:^",
     "@services/posts": "workspace:^",
+    "@services/route-rate-limits": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
     "@services/user-product-limits": "workspace:^",
     "@services/users": "workspace:^",

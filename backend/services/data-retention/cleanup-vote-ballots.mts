@@ -145,7 +145,7 @@ async function cleanupOrdinarySupersededVoteBallotTable(
      WHERE old.${entityColumn} = $1::uuid AND old.user_id = $2::uuid
        AND old.id < $3::uuid AND old.id < $4::uuid
        ${voteTable === 'post_votes' ? 'AND old.ballot_retention_deferred_at IS NULL' : ''}
-     ORDER BY old.id LIMIT $5 FOR UPDATE OF old`,
+     ORDER BY old.id LIMIT $5`,
     olderArguments,
   )
   const page = olderCandidates.slice(0, olderLimit)
@@ -162,7 +162,6 @@ async function cleanupOrdinarySupersededVoteBallotTable(
   const tallySql = voteTable === 'post_votes' ? POST_VOTE_RETENTION_TALLY_SQL : ''
   const { rows: deletedRows } = await query<{ deleted: number }>(
     `/* deleteSupersededVoteBallots */
-     /* no-mistakes: deadlock-safe -- one cursor serializes each table; older rows are locked in ID order, and daily aggregate keys are inserted in day order. */
      WITH deleted AS (
        DELETE FROM ${table} old
        WHERE old.${entityColumn} = $1::uuid AND old.user_id = $2::uuid

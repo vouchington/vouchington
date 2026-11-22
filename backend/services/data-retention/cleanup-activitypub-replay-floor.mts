@@ -1,6 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql'
 
-/** Advance the permanent floor while holding its row lock through the bounded ledger delete. */
+/** Advance the permanent floor in the bounded ledger deletion transaction. */
 export async function advanceReplayRejectionFloor(
   query: TransactionQuery,
   page: readonly { at: string }[],

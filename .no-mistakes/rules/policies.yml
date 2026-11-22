@@ -562,6 +562,10 @@
   rule: github-actions-pinned-hash
   scope: repository
 
+- name: ast-grep ignores entries match tracked paths
+  rule: ast-grep-ignore-freshness
+  scope: repository
+
 - name: test sources do not embed exact Git revisions
   rule: no-test-git-sha
   scope: repository
@@ -2000,6 +2004,8 @@
   scope: repository
   options:
     projectFilters:
+      # Target-less full-suite trigger of the shadow test plan (.no-mistakes/testPlan).
+      root-config: [tooling, backend]
       ts-shared: [ts-shared]
       static-analysis-tools: [tooling]
       static-analysis-ast-grep: [tooling]
@@ -3396,10 +3402,32 @@
     nestedTimeoutSeconds: 90
     forbidNestedInComposite: true
 
+- name: GitHub Actions action inputs stay within policy
+  rule: github-actions-action-input-policy
+  scope: repository
+  options:
+    actions:
+      # Artifacts expire after a day; cleanup-artifacts-patterns.mts classifies their names.
+      - uses: actions/upload-artifact
+        require:
+          retention-days: 1
+          overwrite: true
+      - uses: actions/upload-artifact/merge
+        require:
+          retention-days: 1
+      # Node comes from .nvmrc, and the package-manager cache stays off.
+      - uses: actions/setup-node
+        ban: [cache, node-version]
+        require:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+
 - name: GitHub Actions workflow topology stays within policy
   rule: workflow-topology-policy
   scope: repository
   options:
+    forbiddenEvents: [pull_request_target]
+    forbidSecretsInherit: true
     forbiddenActivityTypes:
       - types: [ready_for_review, converted_to_draft]
     jobInventory:
@@ -3507,6 +3535,7 @@
       .github/workflows/tests-web-api.yml: [prep, web-api-tests]
       .github/workflows/tests-web-integration.yml: [prep, web-integration-tests]
       .github/workflows/tests-web.yml: [prep, web-tests]
+      .github/workflows/test-plan-shadow.yml: [shadow]
       .github/workflows/tooling.yml:
         [
           cancel-initialize-smoke-test,
@@ -3772,6 +3801,8 @@
         { pending: coalesce-latest, cancellation: conditional, scope: [sha, input-resource] }
       .github/workflows/sync-articles.yml:
         { pending: coalesce-latest, cancellation: retain-running, scope: [run] }
+      .github/workflows/test-plan-shadow.yml:
+        { pending: coalesce-latest, cancellation: retain-running, scope: [event] }
       .github/workflows/tooling.yml:
         { pending: coalesce-latest, cancellation: conditional, scope: [pull-request, sha, event] }
       .github/workflows/web.yml:

@@ -33,6 +33,11 @@ export function acknowledgeOAuthAuthorization(flowId: string): Promise<void> {
   })
 }
 
+export interface EmailCodeRequestResponse {
+  email_address: string
+  resend_after_seconds: number
+}
+
 interface HoneypotFields {
   hp_website?: string
   hp_phone?: string
@@ -43,8 +48,8 @@ export function sendEmailLoginToken(
   cfTurnstileResponse?: string,
   honeypot?: HoneypotFields,
   uiLocale?: string,
-): Promise<void> {
-  return clientApi.post('/api/v1/auth/email-address/tokens', {
+): Promise<EmailCodeRequestResponse> {
+  return clientApi.post<EmailCodeRequestResponse>('/api/v1/auth/email-address/tokens', {
     email_address: emailAddress,
     cf_turnstile_response: cfTurnstileResponse,
     ui_locale: uiLocale,

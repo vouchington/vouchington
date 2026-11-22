@@ -230,3 +230,21 @@ function validateRegistryChange(
   if (!entry) throw new Error('Dynamic-config registry entry missing')
   validateDynamicConfigUpdate(entry, normalizeFields(entry, entry.config.defaultFields), changes)
 }
+
+describe('follower distribution sender policy validation', () => {
+  it.each([
+    ['follower_distribution_max_requests', 101],
+    ['follower_distribution_max_requests', 0],
+    ['follower_distribution_max_requests', 1.5],
+    ['follower_distribution_window_seconds', 3_601],
+    ['follower_distribution_window_seconds', 0],
+    ['follower_distribution_window_seconds', 1.5],
+  ])('rejects invalid follower distribution sender policy %s=%s', (field, value) => {
+    const entry = dynamicConfigRegistry.get('route-rate-limit-config')!
+    expect(() =>
+      validateDynamicConfigUpdate(entry, normalizeFields(entry, entry.config.defaultFields), {
+        [field]: value,
+      }),
+    ).toThrow(DynamicConfigValidationError)
+  })
+})

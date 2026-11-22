@@ -3,6 +3,7 @@ import { write } from '@data-stores/psql'
 import { cleanupObsoleteAgentModerations } from '@services/data-retention/cleanup-agent-moderations'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
+import { runAgentModerationRetentionIdleScenarios } from './agent-moderation-retention-idle.mts'
 import { postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from '../seed-data/common.mts'
 import {
   AGENT_MODERATION_RETENTION_RELEASED_NOISE,
@@ -33,38 +34,7 @@ export async function runAgentModerationRetentionProgressScenarios(
   anchor: Date,
   seededRows: Record<string, number>,
 ): Promise<void> {
-  // The seeded newest result on each bulk post is itself old enough to be in
-  // retention scope. A changed-free pass must not visit these 15,000 keepers.
-  registerScenarioContract('agent-moderation-retention-idle', {
-    seededRows,
-    forbidSequentialScans: ['agent_moderations'],
-    allowEmptyResult: true,
-    expectations: [
-      {
-        kind: 'usesIndexes',
-        indexes: ['agent_moderations__default_retention_due_at_id_post_id_idx'],
-        noSort: true,
-      },
-      { kind: 'maxProcessedRows', relation: 'agent_moderations', max: 1 },
-    ],
-  })
-  await runAndCapture(
-    'agent-moderation-retention-idle',
-    async () => {
-      const result = await cleanupObsoleteAgentModerations({
-        batchSize: PAGE_SIZE,
-        maxBatches: 1,
-        now: anchor,
-        lowerBoundDate: new Date(anchor.getTime() - 101 * DAY_MS),
-        upperBoundDate: new Date(anchor.getTime() - 99 * DAY_MS),
-      })
-      assert.equal(result.scanned, 0)
-      assert.equal(result.hasMore, false)
-    },
-    undefined,
-    'listAgentModerationCleanupCandidates',
-    { exactCapturedNames: CAPTURED_NAMES.slice(0, 2) },
-  )
+  await runAgentModerationRetentionIdleScenarios(anchor, seededRows)
 
   registerScenarioContract('agent-moderation-retention-live-predecessor', {
     seededRows,

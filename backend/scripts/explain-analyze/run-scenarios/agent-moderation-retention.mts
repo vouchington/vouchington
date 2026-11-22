@@ -3,7 +3,7 @@ import { cleanupObsoleteAgentModerations } from '@services/data-retention/cleanu
 import { releaseModerationTransparencyRange } from '@services/moderation-analytics/release-moderation-transparency-days'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
-import { postSeedTimestampMs } from '../seed-data/common.mts'
+import { postSeedTimestampMs, seedUuid } from '../seed-data/common.mts'
 import { restoreAgentModerationRetentionPages } from '../seed-data/agent-moderation-retention.mts'
 import {
   readAgentModerationRetentionSeedCounts,
@@ -30,6 +30,17 @@ export async function runAgentModerationRetentionScenarios(): Promise<void> {
     null
 
   await runAgentModerationRetentionProgressScenarios(anchor, seededRows)
+
+  // Settle the two earliest keeper fixtures before measuring distinct ordinary pages.
+  const keepers = await cleanupObsoleteAgentModerations({
+    now: anchor,
+    lowerBoundDate,
+    upperBoundDate: new Date(anchor.getTime() - 119 * DAY_MS),
+    postIds: [seedUuid(0, '05'), seedUuid(1, '05')],
+    batchSize: 10,
+    maxBatches: 2,
+  })
+  assert.equal(keepers.hasMore, false)
 
   registerScenarioContract('agent-moderation-retention-page', {
     seededRows,
@@ -87,8 +98,12 @@ export async function runAgentModerationRetentionScenarios(): Promise<void> {
     expectations: [
       {
         kind: 'usesIndexes',
+        indexes: ['posts__default_pkey', 'posts__default_llm_moderation_content_sha256_id_idx'],
+        anyOf: true,
+      },
+      {
+        kind: 'usesIndexes',
         indexes: [
-          'posts__default_pkey',
           'agent_moderations__default_post_id_prompt_id_id_idx',
           'idx_moderation_training_feedbacks__agent_moderation_id',
           'idx_vote_integrity_flags__agent_moderation_id',

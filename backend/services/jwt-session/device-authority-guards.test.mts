@@ -1,16 +1,18 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { v7 } from 'uuid'
 import { verifyDeviceJwt } from '@ts-shared/session-jwt'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import {
   clearTestDeviceAuthority,
+  replaceTestDeviceAuthorityCiphertext,
   setTestDeviceBinding,
   shiftTestDeviceAuthorityIssuedAt,
 } from '@voucha/test-helpers/entities/device-authority'
 import { mintAuthenticatedDeviceAuthority } from './device-authority-mint.mts'
 import { createDeviceAndSessionTokens } from './create.mts'
-import { readSessionDeviceAuthority } from './device-authority.mts'
+import { hashDeviceToken, readSessionDeviceAuthority } from './device-authority.mts'
 import { rotateAuthenticatedDeviceToken } from './device-authority-rotation.mts'
 import { getJwtRevokedKey, getJwtUserRevokedBeforeKey } from './constants.mts'
 
@@ -108,6 +110,69 @@ describe('durable device credential authority guards', () => {
     expect(await readSessionDeviceAuthority(sid)).toEqual(before)
   })
 
+  it('rejects rotation if the issue time changes without rotating the credential', async () => {
+    const { rotate, userId, sid, token } = await createRotationFixture()
+    const before = await readSessionDeviceAuthority(sid)
+    onTestFinished(
+      runBeforePostgresStatementForTest('/* rotateAuthenticatedDeviceToken */', () =>
+        shiftTestDeviceAuthorityIssuedAt(userId, sid),
+      ),
+    )
+
+    await expect(rotate()).rejects.toMatchObject({ code: 'SESSION_RELOGIN_REQUIRED' })
+    expect(await readSessionDeviceAuthority(sid)).toMatchObject({
+      device_token_digest: hashDeviceToken(token),
+      device_token_issued_at: new Date(before!.device_token_issued_at!.getTime() - 1_000),
+      previous_device_token_digest: null,
+      revoked_at: null,
+    })
+  })
+
+  it.each(['web', 'native'] as const)(
+    'settles a losing %s rotation against the committed winner',
+    async client => {
+      const { rotate, sid, token } = await createRotationFixture(
+        client === 'native' ? 'attested' : undefined,
+      )
+      let winner: string | undefined
+      onTestFinished(
+        runBeforePostgresStatementForTest('/* rotateAuthenticatedDeviceToken */', async () => {
+          winner = await rotate()
+        }),
+      )
+
+      const [loser] = await Promise.allSettled([rotate()])
+      const expectedOutcome =
+        client === 'web'
+          ? { status: 'fulfilled', value: winner }
+          : { status: 'rejected', reason: { code: 'SESSION_REFRESH_REUSED' } }
+      const revokedDate = expect.any(Date)
+      const expectedRevocation = client === 'native' ? revokedDate : null
+
+      expect(winner).toBeTypeOf('string')
+      expect(loser).toMatchObject(expectedOutcome)
+      expect(await readSessionDeviceAuthority(sid)).toMatchObject({
+        device_token_digest: hashDeviceToken(winner!),
+        previous_device_token_digest: hashDeviceToken(token),
+        revoked_at: expectedRevocation,
+      })
+    },
+  )
+
+  it('rejects replay when the persisted ciphertext holds a different valid credential', async () => {
+    const { rotate, userId, sid } = await createRotationFixture()
+    const initial = await readSessionDeviceAuthority(sid)
+    const rotated = await rotate()
+    await replaceTestDeviceAuthorityCiphertext(userId, sid, initial!.device_token_encrypted!)
+
+    await expect(rotate()).rejects.toMatchObject({ code: 'SESSION_RELOGIN_REQUIRED' })
+    expect(await readSessionDeviceAuthority(sid)).toMatchObject({
+      device_token_digest: hashDeviceToken(rotated),
+      device_token_encrypted: initial!.device_token_encrypted,
+      revoked_at: null,
+    })
+  })
+
   it('rejects credential replay after a user-wide cutoff without a SID marker', async () => {
     const user = await createTestUserDirect()
     const tokens = await createDeviceAndSessionTokens({
@@ -188,3 +253,22 @@ describe('durable device credential authority guards', () => {
     ).rejects.toMatchObject({ code: 'SESSION_RELOGIN_REQUIRED' })
   })
 })
+
+async function createRotationFixture(deviceClass?: 'attested') {
+  const user = await createTestUserDirect()
+  const did = v7()
+  const tokens = await createDeviceAndSessionTokens({
+    uid: user.id,
+    did,
+    deviceClass,
+    deviceContext: { user_agent: userAgent },
+  })
+  const sid = tokens.sessionToken.payload.sid
+  const token = tokens.deviceToken.token
+  return {
+    userId: user.id,
+    sid,
+    token,
+    rotate: () => rotateAuthenticatedDeviceToken({ deviceToken: token, uid: user.id, did, sid }),
+  }
+}

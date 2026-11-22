@@ -64,9 +64,9 @@ export async function sweepClassifierChildPageWithQuery(
     cursor_ordinal: number | null
     cursor_child_id: string | null
     sweep_end_key: string | null
-  }>(sql`/* lockClassifierChildCursor */
+  }>(sql`/* readClassifierChildCursor */
     SELECT cursor_id, cursor_ordinal, cursor_child_id, sweep_end_key
-    FROM classifier_retention_cursors WHERE sweep = ${sweep} FOR UPDATE`)
+    FROM classifier_retention_cursors WHERE sweep = ${sweep}`)
   const stored = progress[0]!
   const sweepEnd =
     stored.sweep_end_key !== null &&

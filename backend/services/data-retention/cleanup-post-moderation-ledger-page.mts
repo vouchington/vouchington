@@ -17,8 +17,7 @@ export async function cleanupPostModerationLedgerPage(
   lowerBoundDate: Date | null,
   postIds?: readonly string[],
 ): Promise<{ changed: number; hasMore: boolean }> {
-  // Each phase commits before the next phase acquires a different post's lock.
-  // This keeps every writer and worker on post→work→source or work→source order.
+  // Commit each phase before the next one handles different work or candidates.
   const dirty = await runPostModerationHashWorkPage(batchSize, postIds)
   const candidate = await runPostModerationDuePage(
     kind,
@@ -75,11 +74,11 @@ async function runPostModerationDuePage(
     cursor_lower_bound_record_id: string | null
     sweep_upper_bound_record_id: string | null
   }>(
-    `/* cleanupPostModerationLedgerPage.lockCursor */
+    `/* cleanupPostModerationLedgerPage.readCursor */
      SELECT cursor_record_id, cursor_due_at, cursor_lower_bound_record_id,
        sweep_upper_bound_record_id
      FROM post_moderation_retention_cursors
-     WHERE kind = $1::post_moderation_retention_kinds FOR UPDATE`,
+     WHERE kind = $1::post_moderation_retention_kinds`,
     [kind],
   )
   const cursor = cursors[0]

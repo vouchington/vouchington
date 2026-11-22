@@ -8,6 +8,7 @@ import { profileCountRegistryEntry } from './registry-profile-count-entry.mts'
 import { webSearchRegistryEntry } from './registry-web-search-entry.mts'
 import { topicDataPointInsightsRegistryEntry } from './registry-topic-data-point-insights-entry.mts'
 import { sessionLimitsRegistryEntry } from './registry-session-limits-entry.mts'
+import { emailAuthLimitsRegistryEntry } from './registry-email-auth-limits-entry.mts'
 import { landingPageLimitsRegistryEntry } from './registry-landing-page-limits.mts'
 import { membershipCollisionReviewRegistryEntry } from './registry-membership-collision-review-entry.mts'
 import { hackerNewsRegistryEntries } from './registry-hacker-news-entry.mts'
@@ -46,6 +47,7 @@ const unorderedRegistryEntries = [
   stuckResolutionRunExpiryRegistryEntry,
   reportingRollupWorkRegistryEntry,
   sessionLimitsRegistryEntry,
+  emailAuthLimitsRegistryEntry,
   relationLimitsRegistryEntry,
   householdLimitsRegistryEntry,
   communityApplicationLimitsRegistryEntry,
