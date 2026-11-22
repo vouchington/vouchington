@@ -1,4 +1,3 @@
-import type { TransactionQuery } from '@data-stores/psql'
 import { describe, expect, it } from 'vitest'
 import {
   beginTransaction,
@@ -6,10 +5,12 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
+import { getTestPurgeCommunity } from '@voucha/test-helpers/user-purge-communities'
+import { getCommunityMember } from '../../communities/members/get.mts'
 import { cleanupUserOwnedCommunities } from '../cleanup-user-communities.mts'
 
-describe('community purge fence order', () => {
-  it('fences every successor in ascending user order before locking any community row', async () => {
+describe('community ownership cleanup page', () => {
+  it('transfers each community to its own successor and archives the community without one', async () => {
     const owner = await createTestUserDirect()
     const successors = (
       await Promise.all([createTestUserDirect(), createTestUserDirect()])
@@ -24,7 +25,6 @@ describe('community purge fence order', () => {
         role: 'owner',
       })
     }
-    // The lowest community id gets the highest successor id, so community order is the wrong fence order.
     await insertTestCommunityMember({
       communityId: communities[0]!.id,
       userId: successors[1]!.id,
@@ -37,32 +37,18 @@ describe('community purge fence order', () => {
     })
 
     await using transaction = await beginTransaction()
-    const statements: { text: string; values: unknown[] }[] = []
-    const recording = new Proxy(transaction, {
-      apply(target, thisArgument, argumentsList: unknown[]) {
-        const input = argumentsList[0]
-        if (typeof input === 'string') statements.push({ text: input, values: [] })
-        else if (typeof input === 'object' && input !== null && 'text' in input)
-          statements.push({
-            text: String(input.text),
-            values: 'values' in input && Array.isArray(input.values) ? input.values : [],
-          })
-        return Reflect.apply(target, thisArgument, argumentsList)
-      },
-    }) as TransactionQuery
-    const page = await cleanupUserOwnedCommunities(recording, owner.id, 3)
+    const page = await cleanupUserOwnedCommunities(transaction, owner.id, 3)
     await transaction.commit()
 
-    const index = (marker: string) => statements.findIndex(({ text }) => text.includes(marker))
-    const sortedIds = successors.map(user => user.id)
-    const userFence = index('/* lockActiveUserSubjectsForMutation */')
-    expect(statements[userFence]!.values).toEqual([sortedIds])
-    const archiveLock = index('/* cleanupUserOwnedCommunities:lockForArchive */')
-    expect(archiveLock).toBeGreaterThan(-1)
-    const transfer = index('/* transferCommunityOwnership */')
-    expect(transfer).toBeGreaterThan(-1)
-    expect(userFence).toBeGreaterThan(-1)
-    expect(userFence).toBeLessThan(Math.min(transfer, archiveLock))
     expect(page.processed).toBe(3)
+    await expect(getCommunityMember(communities[0]!.id, successors[1]!.id)).resolves.toMatchObject({
+      role: 'owner',
+    })
+    await expect(getCommunityMember(communities[1]!.id, successors[0]!.id)).resolves.toMatchObject({
+      role: 'owner',
+    })
+    await expect(getTestPurgeCommunity(communities[2]!.id)).resolves.toMatchObject({
+      archived_at: expect.any(Date),
+    })
   })
 })

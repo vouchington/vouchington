@@ -70,7 +70,7 @@ export async function runImportRequestRetentionScenarios(): Promise<void> {
        SELECT request_id, processing_attempt_id FROM user_data_request_attempts
        WHERE request_id < $1::uuid AND request_id >= $2::uuid
          AND (request_id, processing_attempt_id) > ($3::uuid, $4::uuid)
-       ORDER BY request_id, processing_attempt_id LIMIT 101 FOR UPDATE`,
+       ORDER BY request_id, processing_attempt_id LIMIT 101`,
       [
         'ffffffff-ffff-7fff-bfff-ffffffffffff',
         '00000000-0000-7000-8000-000000000000',

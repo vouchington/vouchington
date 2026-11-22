@@ -77,10 +77,10 @@ async function deleteOldPendingNotificationPushIntentPage(
   const { rows: cursors } = await query<{
     cursor_notification_push_intent_id: string | null
     sweep_upper_bound_notification_push_intent_id: string | null
-  }>(sql`/* lockPendingPushRetentionCursor */
+  }>(sql`/* readPendingPushRetentionCursor */
     SELECT cursor_notification_push_intent_id,
       sweep_upper_bound_notification_push_intent_id
-    FROM notification_push_intent_retention_cursors WHERE is_singleton FOR UPDATE`)
+    FROM notification_push_intent_retention_cursors WHERE is_singleton`)
   const cursor = cursors[0]!
   const upperBound = cursor.sweep_upper_bound_notification_push_intent_id ?? cutoff
   const candidatesQuery = sql`
@@ -93,8 +93,7 @@ async function deleteOldPendingNotificationPushIntentPage(
   if (options.scopeUserId) candidatesQuery.append(sql` AND user_id = ${options.scopeUserId}::uuid`)
   candidatesQuery.append(sql`
     ORDER BY id
-    LIMIT ${batchSize + 1}
-    FOR UPDATE`)
+    LIMIT ${batchSize + 1}`)
   const { rows } = await query<{ id: string }>(candidatesQuery)
   const page = rows.slice(0, batchSize)
   let deleted = 0
@@ -150,7 +149,6 @@ async function deleteTerminalNotificationPushIntentBatch(
   query.append(sql`
       ORDER BY COALESCE(delivered_at, suppressed_at) ASC, user_id ASC, notification_id ASC
       LIMIT ${batchSize}
-      FOR UPDATE SKIP LOCKED
     )`)
   const { rowCount } = await write(query)
   return rowCount ?? 0

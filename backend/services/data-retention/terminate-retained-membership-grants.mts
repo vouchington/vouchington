@@ -24,7 +24,7 @@ export async function terminateRetainedMembershipGrants(
           OR EXISTS (SELECT 1 FROM membership_source_states state
             WHERE state.membership_source_id = grant_row.membership_source_id
               AND state.cancelled_at IS NULL AND state.expired_at IS NULL))
-      ORDER BY grant_row.id LIMIT ${batchSize} FOR UPDATE OF grant_row
+      ORDER BY grant_row.id LIMIT ${batchSize}
     ), revoked_grants AS (
       UPDATE membership_grants grant_row
       SET revoked_at = target.terminal_at,

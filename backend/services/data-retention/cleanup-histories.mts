@@ -129,9 +129,9 @@ async function cleanupHistoryPage(
       sweep_cutoff_id: string | null
       is_sweep_complete: boolean
     }>(
-      `/* lockHistoryRetentionCursor */
+      `/* readHistoryRetentionCursor */
        SELECT cursor_id, sweep_cutoff_id, is_sweep_complete FROM history_retention_cursors
-       WHERE cleanup_name = $1::history_retention_cleanup_names FOR UPDATE`,
+       WHERE cleanup_name = $1::history_retention_cleanup_names`,
       [kind],
     )
     if (!rows[0]) throw new Error(`${kind} history retention cursor is missing`)

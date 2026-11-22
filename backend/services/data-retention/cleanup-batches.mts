@@ -118,7 +118,8 @@ export async function deleteOrphanedOAuthAccountBatch(
     DELETE FROM `
     .append(validatedTable)
     .append(sql`
-    WHERE id IN (
+    WHERE user_id IS NULL AND unlinked_at < ${cutoffDate}
+      AND id IN (
       SELECT id FROM `)
     .append(validatedTable).append(sql`
       WHERE user_id IS NULL
@@ -172,7 +173,6 @@ export async function deleteOrphanedOAuthAccountBatch(
   query.append(sql`
       ORDER BY unlinked_at ASC, id ASC
       LIMIT ${batchSize}
-      FOR UPDATE SKIP LOCKED
     )`)
 
   const { rowCount } = await write(query)

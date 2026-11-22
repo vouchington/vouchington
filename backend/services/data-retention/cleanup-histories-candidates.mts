@@ -35,7 +35,7 @@ export async function listRawCandidates(
          WHERE id >= COALESCE($3::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
            AND id > COALESCE($1::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
            AND id < $2::uuid
-         ORDER BY id LIMIT $4 FOR UPDATE SKIP LOCKED`,
+         ORDER BY id LIMIT $4`,
         params,
       )
       return rows
@@ -47,7 +47,7 @@ export async function listRawCandidates(
          WHERE id >= COALESCE($3::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
            AND id > COALESCE($1::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
            AND id < $2::uuid
-         ORDER BY id LIMIT $4 FOR UPDATE SKIP LOCKED`,
+         ORDER BY id LIMIT $4`,
         params,
       )
       return rows
@@ -59,7 +59,7 @@ export async function listRawCandidates(
          WHERE id >= COALESCE($3::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
            AND id > COALESCE($1::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
            AND id < $2::uuid
-         ORDER BY id LIMIT $4 FOR UPDATE SKIP LOCKED`,
+         ORDER BY id LIMIT $4`,
         params,
       )
       return rows
@@ -71,7 +71,7 @@ export async function listRawCandidates(
          WHERE id >= COALESCE($3::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
            AND id > COALESCE($1::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
            AND id < $2::uuid
-         ORDER BY id LIMIT $4 FOR UPDATE SKIP LOCKED`,
+         ORDER BY id LIMIT $4`,
         params,
       )
       return rows
@@ -83,7 +83,7 @@ export async function listRawCandidates(
          WHERE id >= COALESCE($3::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
            AND id > COALESCE($1::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
            AND id < $2::uuid
-         ORDER BY id LIMIT $4 FOR UPDATE SKIP LOCKED`,
+         ORDER BY id LIMIT $4`,
         params,
       )
       return rows
@@ -95,7 +95,7 @@ export async function listRawCandidates(
          WHERE id >= COALESCE($3::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
            AND id > COALESCE($1::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
            AND id < $2::uuid AND followed_at IS NULL
-         ORDER BY id LIMIT $4 FOR UPDATE`,
+         ORDER BY id LIMIT $4`,
         params,
       )
       return rows
@@ -117,7 +117,7 @@ export async function listResidualCandidate(
       `/* listResidualPendingImportHistoryCandidate */
          SELECT id FROM user_import_requests WHERE id < $1::uuid AND id < $2::uuid
            AND id >= COALESCE($3::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
-           AND followed_at IS NULL ORDER BY id LIMIT 1 FOR UPDATE`,
+           AND followed_at IS NULL ORDER BY id LIMIT 1`,
       params,
     )
     return rows
