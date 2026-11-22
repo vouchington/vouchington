@@ -1,13 +1,12 @@
 import type { FiniteValue } from '@data-stores/psql/finite-values/index'
+import { releaseModerationTransparencyRange } from './release-moderation-transparency-days.mts'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   acquireTestModerationTransparencyDateReservation,
   clearTestModerationAppealResolution,
-  acquireTestModerationTransparencyCohortLock,
   createTestUser,
   deleteTestReleasedModerationTransparencyRollup,
   deleteTestModerationAppeal,
-  getTestReleasedModerationTransparencyRollupCount,
   insertTestModerationAppeal,
   insertTestModeratorAction,
   insertTestUserWarning,
@@ -16,7 +15,7 @@ import {
   updateTestModeratorActionType,
 } from '@voucha/test-helpers'
 import { getModerationTransparency } from './get-moderation-transparency.mts'
-import { observeTestModerationTransparencyRollupRelease } from '@voucha/test-helpers/moderation-transparency-rollup-observer'
+import { releaseTestWindowRange } from '@voucha/test-helpers/moderation-transparency-release-ranges'
 
 describe('moderation transparency daily rollup lifecycle', () => {
   it('rejects a released appeal resolution rewrite', async () => {
@@ -107,58 +106,6 @@ describe('moderation transparency daily rollup lifecycle', () => {
     )
     await expectReleasedBucket(now, occurredAt, 'moderation_actions', 'pin')
   })
-
-  it('releases independent cohorts while an earlier cohort lock remains held', async () => {
-    const now = await uniqueTransparencyNow()
-    const actor = await createTestUser()
-    const firstOccurredAt = new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000)
-    const secondOccurredAt = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)
-    await Promise.all(
-      [firstOccurredAt, secondOccurredAt].flatMap((occurredAt, dayIndex) =>
-        Array.from({ length: 20 }, (_, occurredAtSequence) =>
-          insertTestModeratorAction({
-            actorId: actor.id,
-            actionType: dayIndex === 0 ? 'pin' : 'warn',
-            occurredAt,
-            occurredAtSequence,
-          }),
-        ),
-      ),
-    )
-    const lock = await acquireTestModerationTransparencyCohortLock({
-      occurredAt: firstOccurredAt,
-      metric: 'moderation_actions',
-      category: 'pin',
-    })
-    const release = observeTestModerationTransparencyRollupRelease(
-      { occurredAt: secondOccurredAt, metric: 'moderation_actions', category: 'warn' },
-      () => getModerationTransparency('7d', now),
-    )
-    onTestFinished(async () => {
-      await lock.release()
-      await release.result
-    })
-    try {
-      await release.released
-      await expect(
-        getTestReleasedModerationTransparencyRollupCount({
-          occurredAt: secondOccurredAt,
-          metric: 'moderation_actions',
-          category: 'warn',
-        }),
-      ).resolves.toBe(20)
-      await expect(
-        getTestReleasedModerationTransparencyRollupCount({
-          occurredAt: firstOccurredAt,
-          metric: 'moderation_actions',
-          category: 'pin',
-        }),
-      ).resolves.toBeUndefined()
-    } finally {
-      await lock.release()
-      await release.result
-    }
-  })
 })
 
 async function expectReleasedBucket(
@@ -167,6 +114,7 @@ async function expectReleasedBucket(
   metric: 'appeals' | 'automated_moderation' | 'moderation_actions',
   category: FiniteValue<'moderation_transparency_categories'>,
 ): Promise<void> {
+  await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
   await expect(getModerationTransparency('7d', now)).resolves.toMatchObject({
     buckets: expect.arrayContaining([
       {

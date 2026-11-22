@@ -3,10 +3,6 @@ import {
   hackerNewsWorkMaxValues,
 } from '@services/urls/hacker-news-work-limits'
 import { canonicalWorkConfig, canonicalWorkMaxValues } from '@services/urls/canonical-work-limits'
-import {
-  moderationAnalyticsWorkConfig,
-  moderationAnalyticsWorkMaxValues,
-} from '@services/moderation-analytics/work-limits'
 import { moderationWorkConfig, moderationWorkMaxValues } from '@services/moderation/work-limits'
 import { usersWorkConfig, usersWorkMaxValues } from '@services/users/work-limits'
 import {
@@ -75,13 +71,6 @@ export const backgroundWorkRegistryEntries9 = {
     label: 'Articles',
     maxValues: articlesWorkMaxValues,
     descriptions: { sync_batch_size: 'Markdown files loaded and processed per sync batch.' },
-  }),
-  'moderation-analytics-work-config': defineBoundedWorkNamespace({
-    namespace: 'moderation-analytics-work-config',
-    config: moderationAnalyticsWorkConfig,
-    label: 'Moderation analytics',
-    maxValues: moderationAnalyticsWorkMaxValues,
-    descriptions: { leaderboard_page_size: 'Moderators included in the activity leaderboard.' },
   }),
   'moderation-work-config': defineBoundedWorkNamespace({
     namespace: 'moderation-work-config',

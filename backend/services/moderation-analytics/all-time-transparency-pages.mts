@@ -11,10 +11,6 @@ import {
 } from './sanitize-moderation-transparency.mts'
 import type { ModerationAnalyticsRange } from './types.mts'
 import sql from 'sql-template-strings'
-import {
-  releaseModerationTransparencyCandidates,
-  type ModerationTransparencyReleaseCandidate,
-} from './release-moderation-transparency-candidates.mts'
 
 const ALL_TIME_PAGE_MONTHS = 12
 const MAX_UUIDV7_TIMESTAMP_MS = 0xffffffffffff
@@ -40,38 +36,6 @@ export function getTransparencyWindow(
     periodStart,
     periodEnd,
     cursorScope: { nextCursor: encodeTransparencyCursor(periodStart, scope) },
-  }
-}
-
-/** Materialize every eligible aggregate before serving it, fixing its public value permanently. */
-export async function releaseModerationTransparencyCohorts(
-  communityId: string | undefined,
-  periodStart: Date,
-  periodEnd: Date,
-  cutoff: Date,
-  releaseContinuation: boolean,
-): Promise<void> {
-  const { rows } = await write(sql`/* listReleasableModerationTransparencyCohorts */
-    SELECT day, community_id, metric, category
-    FROM moderation_transparency_daily_rollups
-    WHERE community_id IS NOT DISTINCT FROM ${communityId ?? null}::uuid
-      AND day >= ${periodStart}::date AND day <= ${periodEnd}::date
-      AND count >= 20 AND latest_occurred_at <= ${cutoff}
-    ORDER BY day, metric, category
-  `)
-  // Each candidate is released in its own transaction. Transaction-scoped
-  // cohort locks must never be accumulated while a source-row cascade can
-  // take them in a different order.
-  await releaseModerationTransparencyCandidates(
-    rows as ModerationTransparencyReleaseCandidate[],
-    cutoff,
-  )
-  if (releaseContinuation) {
-    await write(sql`/* releaseNextModerationTransparencyCohort */
-      SELECT fn_release_next_moderation_transparency_daily_rollup(
-        ${communityId}::uuid, ${periodStart}::date, ${cutoff}
-      )
-    `)
   }
 }
 

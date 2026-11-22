@@ -7,10 +7,9 @@ import {
 import {
   acquireTestModerationTransparencyDateReservation,
   createTestUser,
-  getTestModerationTransparencyRollupCount,
   getTestReleasedModerationTransparencyRollupCount,
   insertTestPostClearanceChange,
-  releaseTestModerationTransparencyRollup,
+  insertTestReleasedModerationTransparencyRollupRow,
 } from '@voucha/test-helpers'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
 import { PARTITION_DROP_POLICIES } from '../config-driven/utils/partition-drop-policies.mts'
@@ -86,7 +85,7 @@ const CATEGORY = 'post_clearance_reject'
 const PUBLIC_RELEASE_COUNT = 20
 
 describe('guardAndRetireMonthlyPartition', () => {
-  it('leaves moderation transparency rollup counts unchanged when a clearance month is dropped', async () => {
+  it('keeps a released moderation transparency cohort when its clearance month is dropped', async () => {
     const reservation = await acquireTestModerationTransparencyDateReservation()
     onTestFinished(() => reservation.release())
     const occurredAt = reservation.now
@@ -121,8 +120,14 @@ describe('guardAndRetireMonthlyPartition', () => {
       ),
     )
 
-    await expect(rollupCount(occurredAt)).resolves.toBe(PUBLIC_RELEASE_COUNT)
     await expect(releasedCount(occurredAt)).resolves.toBeUndefined()
+    await insertTestReleasedModerationTransparencyRollupRow({
+      occurredAt,
+      metric: METRIC,
+      category: CATEGORY,
+      count: PUBLIC_RELEASE_COUNT,
+    })
+    await expect(releasedCount(occurredAt)).resolves.toBe(PUBLIC_RELEASE_COUNT)
 
     const upperBound = getMonthlyPartitionUpperBound(TABLE, partition)
     const minimumMonths = PARTITION_DROP_POLICIES[TABLE]?.minimumRetentionMonths
@@ -138,16 +143,7 @@ describe('guardAndRetireMonthlyPartition', () => {
     const outcome = await retireOwnedClearancePartition(partition, upperBound, referenceDate)
     expect(outcome).toEqual({ table: TABLE, partition, outcome: 'dropped' })
 
-    await expect(rollupCount(occurredAt)).resolves.toBe(PUBLIC_RELEASE_COUNT)
-    await expect(releasedCount(occurredAt)).resolves.toBeUndefined()
-
-    await releaseTestModerationTransparencyRollup({
-      occurredAt,
-      metric: METRIC,
-      category: CATEGORY,
-    })
     await expect(releasedCount(occurredAt)).resolves.toBe(PUBLIC_RELEASE_COUNT)
-    await expect(rollupCount(occurredAt)).resolves.toBeUndefined()
   })
 })
 
@@ -193,14 +189,6 @@ function retireOwnedClearancePartition(
       return transaction
     },
   )
-}
-
-function rollupCount(occurredAt: Date): Promise<number | undefined> {
-  return getTestModerationTransparencyRollupCount({
-    occurredAt,
-    metric: METRIC,
-    category: CATEGORY,
-  })
 }
 
 function releasedCount(occurredAt: Date): Promise<number | undefined> {

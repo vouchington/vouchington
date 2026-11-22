@@ -13,7 +13,7 @@ Not partitioned — growth: unbounded.
 | `metric`             | `moderation_transparency_metrics`    | no       |                           |          |           |           | Public transparency metric dimension fixed at release.                       |
 | `category`           | `moderation_transparency_categories` | no       |                           |          |           |           | Public transparency category dimension fixed at release.                     |
 | `count`              | `integer`                            | no       |                           |          |           |           | Exact released cohort count; API sanitization applies nearest-five rounding. |
-| `latest_occurred_at` | `timestamp with time zone`           | no       |                           |          |           |           | Latest source event timestamp observed when the cohort became immutable.     |
+| `latest_occurred_at` | `timestamp with time zone`           | no       |                           |          |           |           | Latest source event timestamp counted in the released cohort.                |
 | `released_at`        | `timestamp with time zone`           | no       | `transaction_timestamp()` |          |           |           | Transaction timestamp when the aggregate cohort became immutable.            |
 
 **Primary key:** _none_

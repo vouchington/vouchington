@@ -1474,10 +1474,6 @@
   },
   "formatVersion": 2,
   "functions": {
-    "fn_apply_moderation_transparency_daily_rollup(p_occurred_at timestamp with time zone, p_community_id uuid, p_metric moderation_transparency_metrics, p_category moderation_transparency_categories, p_delta integer)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_apply_moderation_transparency_daily_rollup(p_occurred_at timestamp with time zone, p_community_id uuid, p_metric moderation_transparency_metrics, p_category moderation_transparency_categories, p_delta integer)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE p_day date := (p_occurred_at AT TIME ZONE 'UTC')::date;\nBEGIN\n  IF p_delta = 0 THEN RETURN; END IF;\n  -- Source deletes can hold many FK/cascade row locks. Serialize them against\n  -- positive ingestion before either path acquires cohort locks: otherwise two\n  -- multi-cohort deletes can interleave their row and advisory lock order.\n  IF p_delta < 0 THEN\n    PERFORM pg_advisory_xact_lock(hashtextextended('moderation-transparency-rollup-write', 0));\n  ELSE\n    PERFORM pg_advisory_xact_lock_shared(hashtextextended('moderation-transparency-rollup-write', 0));\n  END IF;\n  PERFORM pg_advisory_xact_lock(hashtextextended(\n    'moderation-transparency-rollup:' || p_day::text || ':'\n      || COALESCE(p_community_id::text, 'global') || ':' || p_metric || ':' || p_category,\n    0\n  ));\n  IF EXISTS (\n    SELECT 1 FROM moderation_transparency_released_daily_rollups\n    WHERE day = p_day AND community_id IS NOT DISTINCT FROM p_community_id\n      AND metric = p_metric AND category = p_category\n  ) THEN RETURN; END IF;\n  IF p_delta < 0 THEN\n    PERFORM fn_release_moderation_transparency_daily_rollup(\n      p_day, p_community_id, p_metric, p_category,\n      date_trunc('day', clock_timestamp() - interval '48 hours') - interval '1 millisecond'\n    );\n  END IF;\n  IF p_delta > 0 THEN\n    INSERT INTO moderation_transparency_daily_rollups(day, community_id, metric, category, count, latest_occurred_at)\n    VALUES (p_day, p_community_id, p_metric, p_category, p_delta, p_occurred_at)\n    ON CONFLICT ON CONSTRAINT moderation_transparency_daily_rollups_key DO UPDATE\n      SET count = moderation_transparency_daily_rollups.count + EXCLUDED.count,\n          latest_occurred_at = GREATEST(moderation_transparency_daily_rollups.latest_occurred_at, EXCLUDED.latest_occurred_at);\n  ELSE\n    DELETE FROM moderation_transparency_daily_rollups\n      WHERE day = p_day AND community_id IS NOT DISTINCT FROM p_community_id\n        AND metric = p_metric AND category = p_category AND count <= -p_delta;\n    UPDATE moderation_transparency_daily_rollups\n      SET count = count + p_delta\n      WHERE day = p_day AND community_id IS NOT DISTINCT FROM p_community_id\n        AND metric = p_metric AND category = p_category;\n  END IF;\nEND $function$\n",
-      "returnsSet": false
-    },
     "fn_classifier_audit_actor_was_deleted(actor_user_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_classifier_audit_actor_was_deleted(actor_user_id uuid)\n RETURNS boolean\n LANGUAGE sql\nAS $function$\n  SELECT actor_user_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM users WHERE id = actor_user_id)\n$function$\n",
       "returnsSet": false
@@ -1622,22 +1618,6 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_lock_active_user_for_mutation(target_user_id uuid, for_update boolean DEFAULT false)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  user_deleted_at TIMESTAMPTZ;\nBEGIN\n  -- Lock by id only and branch on the locked row version: a writer that waited on deletion must\n  -- see the committed deleted_at, which a filtered or EXISTS-wrapped lock would not re-evaluate.\n  -- Writers that also UPDATE the users row pass for_update so two same-user transactions cannot\n  -- deadlock upgrading a shared lock; both modes conflict with deletion's FOR NO KEY UPDATE.\n  IF for_update THEN\n    SELECT deleted_at INTO user_deleted_at FROM users WHERE id = target_user_id FOR NO KEY UPDATE;\n  ELSE\n    SELECT deleted_at INTO user_deleted_at FROM users WHERE id = target_user_id FOR SHARE;\n  END IF;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'user % does not exist', target_user_id\n      USING ERRCODE = 'no_data_found';\n  ELSIF user_deleted_at IS NOT NULL THEN\n    RAISE EXCEPTION 'user % cannot own new data after deletion', target_user_id\n      USING ERRCODE = 'check_violation';\n  END IF;\nEND;\n$function$\n",
       "returnsSet": false
     },
-    "fn_lock_agent_moderation_transparency_agent()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_lock_agent_moderation_transparency_agent()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_lock_moderation_transparency_projection('agent', NEW.id);\n  RETURN NEW;\nEND $function$\n",
-      "returnsSet": false
-    },
-    "fn_lock_agent_moderation_transparency_community_prompt()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_lock_agent_moderation_transparency_community_prompt()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE v_prompt_id uuid := COALESCE(NEW.id, OLD.id); v_agent_id uuid;\nBEGIN\n  IF TG_OP <> 'INSERT' THEN\n    -- Existing source rows have already captured their transparency scope.\n    -- Do not take a projection advisory lock while a CAP UPDATE/DELETE owns\n    -- its child row: a parent hard-delete owns the parent row and cascades to\n    -- that child, so either lock order would form a parent/child/advisory\n    -- cycle. These lifecycle changes deliberately leave prior stamps alone.\n    IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n    RETURN NEW;\n  END IF;\n  -- The child FK lock is acquired after BEFORE INSERT triggers. Acquire the\n  -- parent first so parent deletion cannot deadlock on the advisory locks.\n  PERFORM 1 FROM agent_prompts WHERE id = v_prompt_id FOR KEY SHARE;\n  SELECT agent_id INTO v_agent_id FROM agent_prompts WHERE id = v_prompt_id;\n  PERFORM fn_lock_moderation_transparency_projection('agent', v_agent_id);\n  PERFORM fn_lock_moderation_transparency_projection('prompt', v_prompt_id);\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND $function$\n",
-      "returnsSet": false
-    },
-    "fn_lock_agent_moderation_transparency_prompt()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_lock_agent_moderation_transparency_prompt()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE v_agent_id uuid;\nBEGIN\n  SELECT agent_id INTO v_agent_id FROM agent_prompts WHERE id = OLD.id;\n  PERFORM fn_lock_moderation_transparency_projection('agent', v_agent_id);\n  PERFORM fn_lock_moderation_transparency_projection('prompt', OLD.id);\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND $function$\n",
-      "returnsSet": false
-    },
-    "fn_lock_moderation_transparency_projection(p_domain text, p_id uuid)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_lock_moderation_transparency_projection(p_domain text, p_id uuid)\n RETURNS void\n LANGUAGE sql\nAS $function$\n  SELECT pg_advisory_xact_lock(hashtextextended(p_domain || ':' || p_id::text, 0))\n$function$\n",
-      "returnsSet": false
-    },
     "fn_lock_oauth_friend_targets(target_provider text, target_external_ids text[], exclusive_lock boolean)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_lock_oauth_friend_targets(target_provider text, target_external_ids text[], exclusive_lock boolean)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  external_id TEXT;\n  lock_key BIGINT;\nBEGIN\n  IF target_provider IS NULL OR target_provider NOT IN ('facebook', 'github', 'x')\n    OR exclusive_lock IS NULL\n    OR target_external_ids IS NULL OR cardinality(target_external_ids) > 256 THEN\n    RAISE EXCEPTION 'Invalid OAuth friend target lock request' USING ERRCODE = 'invalid_parameter_value';\n  END IF;\n  IF array_position(target_external_ids, NULL) IS NOT NULL THEN\n    RAISE EXCEPTION 'Invalid OAuth friend target lock request' USING ERRCODE = 'invalid_parameter_value';\n  END IF;\n\n  FOR external_id IN\n    SELECT DISTINCT target_id FROM unnest(target_external_ids) AS targets(target_id)\n    ORDER BY target_id\n  LOOP\n    lock_key := hashtextextended('oauth-friend-target:' || target_provider || ':' || external_id, 0);\n    IF exclusive_lock THEN\n      PERFORM pg_advisory_xact_lock(lock_key);\n    ELSE\n      PERFORM pg_advisory_xact_lock_shared(lock_key);\n    END IF;\n  END LOOP;\nEND;\n$function$\n",
       "returnsSet": false
@@ -1730,38 +1710,6 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_media_delivery_projection()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  -- The BEFORE trigger retains the authority lock and rejects stale generations.\n  -- Accepted transitions advance current state in that lock order, never UUID order.\n  UPDATE media_delivery_registry_records SET latest_change_id = NEW.id\n    WHERE id = NEW.media_delivery_registry_record_id;\n  IF NEW.change_type = 'pending' THEN\n    INSERT INTO media_delivery_registry_projection_work_items(media_delivery_registry_record_id, generation, attempt_count, available_at)\n      VALUES (NEW.media_delivery_registry_record_id, NEW.generation, NEW.delivery_attempt_count, COALESCE(NEW.next_attempt_at, clock_timestamp()))\n    ON CONFLICT (media_delivery_registry_record_id) DO UPDATE SET generation = EXCLUDED.generation,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at, failed_change_id = NULL\n    WHERE media_delivery_registry_projection_work_items.generation <> EXCLUDED.generation\n      OR media_delivery_registry_projection_work_items.lease_token IS NULL;\n  ELSIF NEW.change_type = 'failed' THEN\n    INSERT INTO media_delivery_registry_projection_work_items\n      (media_delivery_registry_record_id, generation, failed_change_id, attempt_count, available_at)\n    VALUES (NEW.media_delivery_registry_record_id, NEW.generation, NEW.id,\n      NEW.delivery_attempt_count, clock_timestamp())\n    ON CONFLICT (media_delivery_registry_record_id) DO UPDATE SET\n      generation = EXCLUDED.generation, failed_change_id = EXCLUDED.failed_change_id,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at;\n  ELSIF NEW.change_type = 'claimed' THEN\n    UPDATE media_delivery_registry_projection_work_items SET failed_change_id = NULL\n      WHERE media_delivery_registry_record_id = NEW.media_delivery_registry_record_id\n        AND generation = NEW.generation AND failed_change_id IS NOT NULL;\n  ELSIF NEW.change_type = 'completed' THEN\n    DELETE FROM media_delivery_registry_projection_work_items\n      WHERE media_delivery_registry_record_id = NEW.media_delivery_registry_record_id AND generation = NEW.generation;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
     },
-    "fn_project_moderation_transparency_agent_delete_rollup()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_agent_delete_rollup()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE cohort record;\nBEGIN\n  FOR cohort IN\n    SELECT (uuid_extract_timestamp(id) AT TIME ZONE 'UTC')::date AS day,\n      moderation_transparency_community_id AS community_id,\n      'automated_moderation'::text AS metric,\n      moderation_transparency_category AS category, count(*)::integer AS count\n    FROM deleted_agent_moderations\n    WHERE moderation_transparency_category IS NOT NULL\n    GROUP BY 1, 2, 3, 4\n    ORDER BY 1, 2 NULLS FIRST, 3, 4\n  LOOP\n    PERFORM fn_apply_moderation_transparency_daily_rollup(\n      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,\n      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, -cohort.count\n    );\n  END LOOP;\n  RETURN NULL;\nEND $function$\n",
-      "returnsSet": false
-    },
-    "fn_project_moderation_transparency_agent_insert_rollup()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_agent_insert_rollup()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE cohort record;\nBEGIN\n  FOR cohort IN\n    SELECT (uuid_extract_timestamp(id) AT TIME ZONE 'UTC')::date AS day,\n      moderation_transparency_community_id AS community_id,\n      'automated_moderation'::text AS metric,\n      moderation_transparency_category AS category, count(*)::integer AS delta\n    FROM new_agent_moderations\n    WHERE moderation_transparency_category IS NOT NULL\n    GROUP BY 1, 2, 3, 4\n    ORDER BY 1, 2 NULLS FIRST, 3, 4\n  LOOP\n    PERFORM fn_apply_moderation_transparency_daily_rollup(\n      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,\n      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, cohort.delta\n    );\n  END LOOP;\n  RETURN NULL;\nEND $function$\n",
-      "returnsSet": false
-    },
-    "fn_project_moderation_transparency_agent_update_rollup()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_agent_update_rollup()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE cohort record;\nBEGIN\n  FOR cohort IN\n    SELECT day, community_id, metric, category, sum(delta)::integer AS delta\n    FROM (\n      SELECT (uuid_extract_timestamp(id) AT TIME ZONE 'UTC')::date AS day,\n        moderation_transparency_community_id AS community_id,\n        'automated_moderation'::text AS metric,\n        moderation_transparency_category AS category, -1 AS delta\n      FROM old_agent_moderations WHERE moderation_transparency_category IS NOT NULL\n      UNION ALL\n      SELECT (uuid_extract_timestamp(id) AT TIME ZONE 'UTC')::date,\n        moderation_transparency_community_id,\n        'automated_moderation'::text,\n        moderation_transparency_category, 1\n      FROM new_agent_moderations WHERE moderation_transparency_category IS NOT NULL\n    ) changes\n    GROUP BY 1, 2, 3, 4\n    HAVING sum(delta) <> 0\n    ORDER BY 1, 2 NULLS FIRST, 3, 4\n  LOOP\n    PERFORM fn_apply_moderation_transparency_daily_rollup(\n      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,\n      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, cohort.delta\n    );\n  END LOOP;\n  RETURN NULL;\nEND $function$\n",
-      "returnsSet": false
-    },
-    "fn_project_moderation_transparency_appeals_delete_rollup()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_appeals_delete_rollup()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE cohort record;\nBEGIN\n  FOR cohort IN\n    SELECT (resolved_at AT TIME ZONE 'UTC')::date AS day,\n      NULL::uuid AS community_id, 'appeals'::text AS metric,\n      resolution_action::text AS category, count(*)::integer AS count\n    FROM deleted_appeals\n    WHERE moderation_transparency_community_id IS NULL\n      AND resolved_at IS NOT NULL AND resolution_action IS NOT NULL\n    GROUP BY 1, 2, 3, 4\n    ORDER BY 1, 2 NULLS FIRST, 3, 4\n  LOOP\n    PERFORM fn_apply_moderation_transparency_daily_rollup(\n      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,\n      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, -cohort.count\n    );\n  END LOOP;\n  RETURN NULL;\nEND $function$\n",
-      "returnsSet": false
-    },
-    "fn_project_moderation_transparency_appeals_insert_rollup()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_appeals_insert_rollup()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE cohort record;\nBEGIN\n  FOR cohort IN\n    SELECT (resolved_at AT TIME ZONE 'UTC')::date AS day,\n      NULL::uuid AS community_id, 'appeals'::text AS metric,\n      resolution_action::text AS category, count(*)::integer AS delta\n    FROM new_appeals\n    WHERE moderation_transparency_community_id IS NULL\n      AND resolved_at IS NOT NULL AND resolution_action IS NOT NULL\n    GROUP BY 1, 2, 3, 4\n    ORDER BY 1, 2 NULLS FIRST, 3, 4\n  LOOP\n    PERFORM fn_apply_moderation_transparency_daily_rollup(\n      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,\n      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, cohort.delta\n    );\n  END LOOP;\n  RETURN NULL;\nEND $function$\n",
-      "returnsSet": false
-    },
-    "fn_project_moderation_transparency_appeals_update_rollup()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_appeals_update_rollup()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE cohort record;\nBEGIN\n  FOR cohort IN\n    SELECT day, community_id, metric, category, sum(delta)::integer AS delta\n    FROM (\n      SELECT (resolved_at AT TIME ZONE 'UTC')::date AS day,\n        NULL::uuid AS community_id, 'appeals'::text AS metric,\n        resolution_action::text AS category, -1 AS delta\n      FROM old_appeals\n      WHERE moderation_transparency_community_id IS NULL\n        AND resolved_at IS NOT NULL AND resolution_action IS NOT NULL\n      UNION ALL\n      SELECT (resolved_at AT TIME ZONE 'UTC')::date,\n        NULL::uuid, 'appeals'::text, resolution_action::text, 1\n      FROM new_appeals\n      WHERE moderation_transparency_community_id IS NULL\n        AND resolved_at IS NOT NULL AND resolution_action IS NOT NULL\n    ) changes\n    GROUP BY 1, 2, 3, 4\n    HAVING sum(delta) <> 0\n    ORDER BY 1, 2 NULLS FIRST, 3, 4\n  LOOP\n    PERFORM fn_apply_moderation_transparency_daily_rollup(\n      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,\n      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, cohort.delta\n    );\n  END LOOP;\n  RETURN NULL;\nEND $function$\n",
-      "returnsSet": false
-    },
-    "fn_project_moderation_transparency_clearance_delete_rollup()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_clearance_delete_rollup()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE cohort record;\nBEGIN\n  FOR cohort IN\n    SELECT (uuid_extract_timestamp(change.id) AT TIME ZONE 'UTC')::date AS day,\n      change.moderation_transparency_community_id AS community_id,\n      'automated_moderation'::text AS metric,\n      category, count(*)::integer AS count\n    FROM deleted_clearance_changes change\n    CROSS JOIN LATERAL unnest(change.moderation_transparency_categories) AS category\n    WHERE change.change_type = 'reject'\n    GROUP BY 1, 2, 3, 4\n    ORDER BY 1, 2 NULLS FIRST, 3, 4\n  LOOP\n    PERFORM fn_apply_moderation_transparency_daily_rollup(\n      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,\n      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, -cohort.count\n    );\n  END LOOP;\n  RETURN NULL;\nEND $function$\n",
-      "returnsSet": false
-    },
-    "fn_project_moderation_transparency_clearance_insert_rollup()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_clearance_insert_rollup()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE cohort record;\nBEGIN\n  FOR cohort IN\n    SELECT (uuid_extract_timestamp(change.id) AT TIME ZONE 'UTC')::date AS day,\n      change.moderation_transparency_community_id AS community_id,\n      'automated_moderation'::text AS metric,\n      category, count(*)::integer AS delta\n    FROM new_clearance_changes change\n    CROSS JOIN LATERAL unnest(change.moderation_transparency_categories) AS category\n    WHERE change.change_type = 'reject'\n    GROUP BY 1, 2, 3, 4\n    ORDER BY 1, 2 NULLS FIRST, 3, 4\n  LOOP\n    PERFORM fn_apply_moderation_transparency_daily_rollup(\n      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,\n      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, cohort.delta\n    );\n  END LOOP;\n  RETURN NULL;\nEND $function$\n",
-      "returnsSet": false
-    },
     "fn_project_post_history_author()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_post_history_author()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  SELECT post.created_by_id INTO NEW.post_author_user_id\n  FROM posts AS post WHERE post.id = NEW.post_id;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'history post does not exist' USING ERRCODE = 'foreign_key_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
@@ -1796,10 +1744,6 @@
     },
     "fn_project_topic_image_placements()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_topic_image_placements()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND (\n    (NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL)\n    OR (NEW.merged_into_topic_id IS NOT NULL AND OLD.merged_into_topic_id IS NULL)\n  ) THEN\n    PERFORM fn_sync_image_surface_placement('topic-logo-image', NULL, NULL, NEW.id, NULL, NULL);\n    PERFORM fn_sync_image_surface_placement('topic-hero-image', NULL, NULL, NEW.id, NULL, NULL);\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'INSERT' OR NEW.logo_image_id IS DISTINCT FROM OLD.logo_image_id THEN\n    PERFORM fn_sync_image_surface_placement('topic-logo-image', NEW.logo_image_id, NULL, NEW.id, NULL, NULL);\n  END IF;\n  IF TG_OP = 'INSERT' OR NEW.hero_image_id IS DISTINCT FROM OLD.hero_image_id THEN\n    PERFORM fn_sync_image_surface_placement('topic-hero-image', NEW.hero_image_id, NULL, NEW.id, NULL, NULL);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
-      "returnsSet": false
-    },
-    "fn_project_transparency_rollup()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_transparency_rollup()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  cohort RECORD;\n  delta_sign INTEGER := CASE WHEN TG_OP = 'DELETE' THEN -1 ELSE 1 END;\nBEGIN\n  FOR cohort IN EXECUTE format(\n    'SELECT (uuid_extract_timestamp(id) AT TIME ZONE ''UTC'')::date AS day,\n      NULL::uuid AS community_id, $1::moderation_transparency_metrics AS metric, %I::text::moderation_transparency_categories AS category,\n      count(*)::integer AS count FROM %I\n      WHERE moderation_transparency_community_id IS NULL\n      GROUP BY 1, 2, 3, 4 ORDER BY 1, 2 NULLS FIRST, 3, 4', TG_ARGV[1], TG_ARGV[0])\n    USING TG_ARGV[2]\n  LOOP\n    PERFORM fn_apply_moderation_transparency_daily_rollup(\n      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,\n      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, delta_sign * cohort.count);\n  END LOOP;\n  RETURN NULL;\nEND $function$\n",
       "returnsSet": false
     },
     "fn_project_user_landing_page_candidate_profile_link()": {
@@ -2262,14 +2206,6 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_web_push_subscription_owner()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  checked_user_id UUID := COALESCE(NEW.user_id, OLD.user_id);\n  checked_subscription_id UUID := COALESCE(NEW.id, OLD.id);\nBEGIN\n  IF EXISTS (\n    SELECT 1\n    FROM web_push_subscriptions subscription\n    WHERE subscription.user_id = checked_user_id\n      AND subscription.id = checked_subscription_id\n      AND subscription.deleted_at IS NULL\n      AND NOT EXISTS (\n        SELECT 1\n        FROM web_push_endpoint_owners owner\n        WHERE owner.endpoint_digest = digest(subscription.endpoint, 'sha256')\n          AND owner.endpoint = subscription.endpoint\n          AND owner.user_id = subscription.user_id\n          AND owner.subscription_id = subscription.id\n      )\n  ) THEN\n    RAISE EXCEPTION 'active web push subscription requires one exact endpoint owner';\n  END IF;\n\n  IF EXISTS (\n    SELECT 1\n    FROM web_push_endpoint_owners owner\n    WHERE owner.user_id = checked_user_id\n      AND owner.subscription_id = checked_subscription_id\n      AND NOT EXISTS (\n        SELECT 1\n        FROM web_push_subscriptions subscription\n        WHERE subscription.user_id = owner.user_id\n          AND subscription.id = owner.subscription_id\n          AND subscription.endpoint = owner.endpoint\n          AND subscription.deleted_at IS NULL\n      )\n  ) THEN\n    RAISE EXCEPTION 'web push endpoint owner requires one exact active subscription';\n  END IF;\n\n  RETURN NULL;\nEND;\n$function$\n",
       "returnsSet": false
     },
-    "fn_release_moderation_transparency_daily_rollup(p_day date, p_community_id uuid, p_metric moderation_transparency_metrics, p_category moderation_transparency_categories, p_cutoff timestamp with time zone)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_release_moderation_transparency_daily_rollup(p_day date, p_community_id uuid, p_metric moderation_transparency_metrics, p_category moderation_transparency_categories, p_cutoff timestamp with time zone)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  -- Share the same per-cohort lock as source-triggered increments and decrements.\n  -- A release must snapshot and remove a candidate atomically with respect to a\n  -- source lifecycle mutation, otherwise an old write could recreate it.\n  PERFORM pg_advisory_xact_lock(hashtextextended(\n    'moderation-transparency-rollup:' || p_day::text || ':'\n      || COALESCE(p_community_id::text, 'global') || ':' || p_metric || ':' || p_category,\n    0\n  ));\n  INSERT INTO moderation_transparency_released_daily_rollups(\n    day, community_id, metric, category, count, latest_occurred_at\n  )\n  SELECT day, community_id, metric, category, count, latest_occurred_at\n  FROM moderation_transparency_daily_rollups\n  WHERE day = p_day AND community_id IS NOT DISTINCT FROM p_community_id\n    AND metric = p_metric AND category = p_category\n    AND count >= 20 AND latest_occurred_at <= p_cutoff\n  ON CONFLICT ON CONSTRAINT moderation_transparency_released_daily_rollups_key DO NOTHING\n  ;\n  DELETE FROM moderation_transparency_daily_rollups\n  WHERE day = p_day AND community_id IS NOT DISTINCT FROM p_community_id\n    AND metric = p_metric AND category = p_category\n    AND EXISTS (\n      SELECT 1 FROM moderation_transparency_released_daily_rollups\n      WHERE day = p_day AND community_id IS NOT DISTINCT FROM p_community_id\n        AND metric = p_metric AND category = p_category\n    );\nEND $function$\n",
-      "returnsSet": false
-    },
-    "fn_release_next_moderation_transparency_daily_rollup(p_community_id uuid, p_before date, p_cutoff timestamp with time zone)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_release_next_moderation_transparency_daily_rollup(p_community_id uuid, p_before date, p_cutoff timestamp with time zone)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE candidate record;\nBEGIN\n  IF p_community_id IS NULL THEN\n    SELECT day, community_id, metric, category INTO candidate\n    FROM moderation_transparency_daily_rollups\n    WHERE community_id IS NULL AND day < p_before\n      AND count >= 20 AND latest_occurred_at <= p_cutoff\n    ORDER BY day DESC\n    LIMIT 1;\n  ELSE\n    SELECT day, community_id, metric, category INTO candidate\n    FROM moderation_transparency_daily_rollups\n    WHERE community_id = p_community_id AND day < p_before\n      AND count >= 20 AND latest_occurred_at <= p_cutoff\n    ORDER BY day DESC\n    LIMIT 1;\n  END IF;\n  IF FOUND THEN\n    PERFORM fn_release_moderation_transparency_daily_rollup(\n      candidate.day, candidate.community_id, candidate.metric, candidate.category, p_cutoff\n    );\n  END IF;\nEND $function$\n",
-      "returnsSet": false
-    },
     "fn_reverse_hostname_labels(p_hostname text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reverse_hostname_labels(p_hostname text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE STRICT\nAS $function$\n  SELECT array_to_string(array_reverse(string_to_array(p_hostname, '.')), '.')\n$function$\n",
       "returnsSet": false
@@ -2291,7 +2227,7 @@
       "returnsSet": false
     },
     "fn_update_agent_moderation_transparency()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_agent_moderation_transparency()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE v_community_id uuid; v_post_community_id uuid; v_current_community_id uuid; v_agent_deleted_at timestamptz; v_prompt_deleted_at timestamptz; v_cap_deleted_at timestamptz;\nBEGIN\n  -- Lock the FK parents before taking the projection locks. A concurrent hard\n  -- delete already owns the parent row before its row trigger can take an\n  -- advisory lock; reversing this order would form a parent-row/advisory-lock\n  -- cycle with this INSERT.\n  PERFORM 1 FROM agents WHERE id = NEW.agent_id FOR KEY SHARE;\n  PERFORM 1 FROM agent_prompts WHERE id = NEW.prompt_id FOR KEY SHARE;\n  -- Do not lock the post here: community deletion owns the community before\n  -- cascading to posts, so a post-to-community lock would invert that order.\n  -- Snapshot and revalidate instead; an unstable post scope is withheld.\n  SELECT community_id INTO v_post_community_id FROM posts WHERE id = NEW.post_id;\n  SELECT community_id, deleted_at INTO v_community_id, v_cap_deleted_at\n  FROM community_agent_prompts WHERE id = NEW.prompt_id;\n  IF v_community_id IS NOT NULL THEN\n    PERFORM 1 FROM communities WHERE id = v_community_id FOR KEY SHARE;\n    IF NOT FOUND THEN\n      v_community_id := NULL;\n      v_cap_deleted_at := NULL;\n    END IF;\n  END IF;\n  SELECT community_id, deleted_at INTO v_current_community_id, v_cap_deleted_at\n  FROM community_agent_prompts WHERE id = NEW.prompt_id FOR SHARE;\n  IF v_current_community_id IS NULL THEN\n    v_community_id := NULL;\n    v_cap_deleted_at := NULL;\n  ELSIF v_current_community_id IS DISTINCT FROM v_community_id THEN\n    RAISE EXCEPTION 'community prompt changed during moderation projection' USING ERRCODE = '40001';\n  END IF;\n  IF (SELECT community_id FROM posts WHERE id = NEW.post_id)\n      IS DISTINCT FROM v_post_community_id THEN\n    NEW.moderation_transparency_category := NULL;\n    NEW.moderation_transparency_community_id := NULL;\n    RETURN NEW;\n  END IF;\n  -- Every caller then takes agent before prompt, which prevents an event from\n  -- observing a cap assignment half-way through its lifecycle transaction.\n  PERFORM fn_lock_moderation_transparency_projection('agent', NEW.agent_id);\n  PERFORM fn_lock_moderation_transparency_projection('prompt', NEW.prompt_id);\n  SELECT agent.deleted_at, prompt.deleted_at\n    INTO v_agent_deleted_at, v_prompt_deleted_at\n  FROM agents agent JOIN agent_prompts prompt ON prompt.id = NEW.prompt_id\n  WHERE agent.id = NEW.agent_id;\n  v_agent_deleted_at := date_trunc('milliseconds', v_agent_deleted_at);\n  v_prompt_deleted_at := date_trunc('milliseconds', v_prompt_deleted_at);\n  v_cap_deleted_at := date_trunc('milliseconds', v_cap_deleted_at);\n  NEW.moderation_transparency_category := NULL;\n  NEW.moderation_transparency_community_id := NULL;\n  IF NEW.deleted_at IS NOT NULL\n    OR (v_agent_deleted_at IS NOT NULL AND uuid_extract_timestamp(NEW.id) >= v_agent_deleted_at)\n    OR (v_prompt_deleted_at IS NOT NULL AND uuid_extract_timestamp(NEW.id) >= v_prompt_deleted_at)\n    OR (v_cap_deleted_at IS NOT NULL AND uuid_extract_timestamp(NEW.id) >= v_cap_deleted_at) THEN\n    RETURN NEW;\n  END IF;\n  -- A community prompt remains a community-AI event. A platform agent keeps\n  -- its platform category, but its post scope must still exclude it from the\n  -- global projection because raw community analytics can identify the event.\n  NEW.moderation_transparency_category := CASE WHEN v_community_id IS NULL THEN 'agent_moderation' ELSE 'community_ai' END;\n  NEW.moderation_transparency_community_id := COALESCE(v_community_id, v_post_community_id);\n  RETURN NEW;\nEND $function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_agent_moderation_transparency()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_community_id uuid; v_post_community_id uuid;\n  v_agent_deleted_at timestamptz; v_prompt_deleted_at timestamptz; v_cap_deleted_at timestamptz;\nBEGIN\n  -- Stamp the event's category and scope once, from one statement snapshot. The stamp is\n  -- needed because the source scope can change or disappear later (a community prompt is\n  -- reassigned or deleted, an agent or prompt is soft-deleted) while a closed day still has to\n  -- count the event where it happened. A concurrent uncommitted soft-delete is ordered after\n  -- this insert; the stamp takes no lock because a hard delete removes the source row, and the\n  -- job only counts rows that still exist.\n  SELECT CASE WHEN community.id IS NULL THEN NULL ELSE cap.community_id END,\n    CASE WHEN community.id IS NULL THEN NULL ELSE cap.deleted_at END,\n    agent.deleted_at, prompt.deleted_at, post.community_id\n  INTO v_community_id, v_cap_deleted_at, v_agent_deleted_at, v_prompt_deleted_at, v_post_community_id\n  FROM agents agent\n  JOIN agent_prompts prompt ON prompt.id = NEW.prompt_id\n  LEFT JOIN community_agent_prompts cap ON cap.id = prompt.id\n  LEFT JOIN communities community ON community.id = cap.community_id\n  LEFT JOIN posts post ON post.id = NEW.post_id\n  WHERE agent.id = NEW.agent_id;\n  v_agent_deleted_at := date_trunc('milliseconds', v_agent_deleted_at);\n  v_prompt_deleted_at := date_trunc('milliseconds', v_prompt_deleted_at);\n  v_cap_deleted_at := date_trunc('milliseconds', v_cap_deleted_at);\n  NEW.moderation_transparency_category := NULL;\n  NEW.moderation_transparency_community_id := NULL;\n  IF NEW.deleted_at IS NOT NULL\n    OR (v_agent_deleted_at IS NOT NULL AND uuid_extract_timestamp(NEW.id) >= v_agent_deleted_at)\n    OR (v_prompt_deleted_at IS NOT NULL AND uuid_extract_timestamp(NEW.id) >= v_prompt_deleted_at)\n    OR (v_cap_deleted_at IS NOT NULL AND uuid_extract_timestamp(NEW.id) >= v_cap_deleted_at) THEN\n    RETURN NEW;\n  END IF;\n  -- A community prompt remains a community-AI event. A platform agent keeps\n  -- its platform category, but its post scope must still exclude it from the\n  -- global projection because raw community analytics can identify the event.\n  NEW.moderation_transparency_category := CASE WHEN v_community_id IS NULL THEN 'agent_moderation' ELSE 'community_ai' END;\n  NEW.moderation_transparency_community_id := COALESCE(v_community_id, v_post_community_id);\n  RETURN NEW;\nEND $function$\n",
       "returnsSet": false
     },
     "fn_update_classifier_run_scope()": {
@@ -4984,7 +4920,7 @@
           "ordinalPosition": 24
         },
         "moderation_transparency_community_id": {
-          "comment": "Immutable event-time post or community-prompt scope snapshot; intentionally has no FK so delete cascades can decrement the prior aggregate.",
+          "comment": "Immutable event-time post or community-prompt scope snapshot; intentionally has no FK so aggregate scope survives community deletion.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -5824,20 +5760,11 @@
         "trigger_agent_moderations_updated_at": {
           "definition": "CREATE TRIGGER trigger_agent_moderations_updated_at BEFORE UPDATE ON public.agent_moderations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
-        "trigger_moderation_transparency_agent_delete_rollup": {
-          "definition": "CREATE TRIGGER trigger_moderation_transparency_agent_delete_rollup AFTER DELETE ON public.agent_moderations REFERENCING OLD TABLE AS deleted_agent_moderations FOR EACH STATEMENT EXECUTE FUNCTION fn_project_moderation_transparency_agent_delete_rollup()"
-        },
         "trigger_moderation_transparency_agent_projection_guard": {
           "definition": "CREATE TRIGGER trigger_moderation_transparency_agent_projection_guard BEFORE UPDATE OF id, agent_id, prompt_id, moderation_transparency_category, moderation_transparency_community_id ON public.agent_moderations FOR EACH ROW EXECUTE FUNCTION fn_reject_agent_moderation_transparency_projection()"
         },
-        "trigger_moderation_transparency_agent_rollup": {
-          "definition": "CREATE TRIGGER trigger_moderation_transparency_agent_rollup AFTER INSERT ON public.agent_moderations REFERENCING NEW TABLE AS new_agent_moderations FOR EACH STATEMENT EXECUTE FUNCTION fn_project_moderation_transparency_agent_insert_rollup()"
-        },
         "trigger_moderation_transparency_agent_stamp": {
           "definition": "CREATE TRIGGER trigger_moderation_transparency_agent_stamp BEFORE INSERT OR UPDATE OF deleted_at ON public.agent_moderations FOR EACH ROW EXECUTE FUNCTION fn_update_agent_moderation_transparency()"
-        },
-        "trigger_moderation_transparency_agent_update_rollup": {
-          "definition": "CREATE TRIGGER trigger_moderation_transparency_agent_update_rollup AFTER UPDATE ON public.agent_moderations REFERENCING OLD TABLE AS old_agent_moderations NEW TABLE AS new_agent_moderations FOR EACH STATEMENT EXECUTE FUNCTION fn_project_moderation_transparency_agent_update_rollup()"
         }
       },
       "uniqueConstraints": {}
@@ -6177,9 +6104,6 @@
       "triggers": {
         "trigger_agent_prompts_updated_at": {
           "definition": "CREATE TRIGGER trigger_agent_prompts_updated_at BEFORE UPDATE ON public.agent_prompts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-        },
-        "trigger_moderation_transparency_agent_prompts_lock": {
-          "definition": "CREATE TRIGGER trigger_moderation_transparency_agent_prompts_lock BEFORE DELETE OR UPDATE ON public.agent_prompts FOR EACH ROW EXECUTE FUNCTION fn_lock_agent_moderation_transparency_prompt()"
         }
       },
       "uniqueConstraints": {}
@@ -6525,9 +6449,6 @@
         },
         "trigger_agents_updated_at": {
           "definition": "CREATE TRIGGER trigger_agents_updated_at BEFORE UPDATE ON public.agents FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-        },
-        "trigger_moderation_transparency_agents_lock": {
-          "definition": "CREATE TRIGGER trigger_moderation_transparency_agents_lock BEFORE UPDATE OF deleted_at ON public.agents FOR EACH ROW EXECUTE FUNCTION fn_lock_agent_moderation_transparency_agent()"
         }
       },
       "uniqueConstraints": {
@@ -19274,9 +19195,6 @@
         },
         "trigger_community_agent_prompts_slot_count_update": {
           "definition": "CREATE TRIGGER trigger_community_agent_prompts_slot_count_update AFTER UPDATE ON public.community_agent_prompts REFERENCING OLD TABLE AS old_prompts NEW TABLE AS new_prompts FOR EACH STATEMENT EXECUTE FUNCTION fn_project_community_agent_prompt_slot_counts()"
-        },
-        "trigger_moderation_transparency_community_prompts_lock": {
-          "definition": "CREATE TRIGGER trigger_moderation_transparency_community_prompts_lock BEFORE INSERT OR DELETE OR UPDATE ON public.community_agent_prompts FOR EACH ROW EXECUTE FUNCTION fn_lock_agent_moderation_transparency_community_prompt()"
         }
       },
       "uniqueConstraints": {
@@ -80330,23 +80248,14 @@
         "trigger_moderation_appeals_updated_at": {
           "definition": "CREATE TRIGGER trigger_moderation_appeals_updated_at BEFORE UPDATE ON public.moderation_appeals FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
-        "trigger_moderation_transparency_appeals_delete_rollup": {
-          "definition": "CREATE TRIGGER trigger_moderation_transparency_appeals_delete_rollup AFTER DELETE ON public.moderation_appeals REFERENCING OLD TABLE AS deleted_appeals FOR EACH STATEMENT EXECUTE FUNCTION fn_project_moderation_transparency_appeals_delete_rollup()"
-        },
         "trigger_moderation_transparency_appeals_resolution_guard": {
           "definition": "CREATE TRIGGER trigger_moderation_transparency_appeals_resolution_guard BEFORE UPDATE OF resolved_at, resolution_action ON public.moderation_appeals FOR EACH ROW EXECUTE FUNCTION fn_reject_moderation_appeal_resolution()"
-        },
-        "trigger_moderation_transparency_appeals_rollup": {
-          "definition": "CREATE TRIGGER trigger_moderation_transparency_appeals_rollup AFTER INSERT ON public.moderation_appeals REFERENCING NEW TABLE AS new_appeals FOR EACH STATEMENT EXECUTE FUNCTION fn_project_moderation_transparency_appeals_insert_rollup()"
         },
         "trigger_moderation_transparency_appeals_scope_guard": {
           "definition": "CREATE TRIGGER trigger_moderation_transparency_appeals_scope_guard BEFORE UPDATE OF moderation_transparency_community_id ON public.moderation_appeals FOR EACH ROW WHEN ((old.moderation_transparency_community_id IS DISTINCT FROM new.moderation_transparency_community_id)) EXECUTE FUNCTION fn_reject_mutation()"
         },
         "trigger_moderation_transparency_appeals_scope_stamp": {
           "definition": "CREATE TRIGGER trigger_moderation_transparency_appeals_scope_stamp BEFORE INSERT ON public.moderation_appeals FOR EACH ROW EXECUTE FUNCTION fn_update_transparency_scope('moderation_transparency_community_id', 'community_id')"
-        },
-        "trigger_moderation_transparency_appeals_update_rollup": {
-          "definition": "CREATE TRIGGER trigger_moderation_transparency_appeals_update_rollup AFTER UPDATE ON public.moderation_appeals REFERENCING OLD TABLE AS old_appeals NEW TABLE AS new_appeals FOR EACH STATEMENT EXECUTE FUNCTION fn_project_moderation_transparency_appeals_update_rollup()"
         }
       },
       "uniqueConstraints": {}
@@ -83780,14 +83689,8 @@
         "trigger_moderation_reports_content_provenance_immutable": {
           "definition": "CREATE TRIGGER trigger_moderation_reports_content_provenance_immutable AFTER UPDATE ON public.moderation_reports FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()"
         },
-        "trigger_moderation_transparency_reports_delete_rollup": {
-          "definition": "CREATE TRIGGER trigger_moderation_transparency_reports_delete_rollup AFTER DELETE ON public.moderation_reports REFERENCING OLD TABLE AS deleted_reports FOR EACH STATEMENT EXECUTE FUNCTION fn_project_transparency_rollup('deleted_reports', 'original_reason', 'reports')"
-        },
         "trigger_moderation_transparency_reports_original_reason_guard": {
           "definition": "CREATE TRIGGER trigger_moderation_transparency_reports_original_reason_guard BEFORE UPDATE OF original_reason ON public.moderation_reports FOR EACH ROW WHEN ((old.original_reason IS DISTINCT FROM new.original_reason)) EXECUTE FUNCTION fn_reject_mutation()"
-        },
-        "trigger_moderation_transparency_reports_rollup": {
-          "definition": "CREATE TRIGGER trigger_moderation_transparency_reports_rollup AFTER INSERT ON public.moderation_reports REFERENCING NEW TABLE AS new_reports FOR EACH STATEMENT EXECUTE FUNCTION fn_project_transparency_rollup('new_reports', 'original_reason', 'reports')"
         },
         "trigger_moderation_transparency_reports_scope_guard": {
           "definition": "CREATE TRIGGER trigger_moderation_transparency_reports_scope_guard BEFORE UPDATE OF moderation_transparency_community_id ON public.moderation_reports FOR EACH ROW WHEN ((old.moderation_transparency_community_id IS DISTINCT FROM new.moderation_transparency_community_id)) EXECUTE FUNCTION fn_reject_mutation()"
@@ -84416,239 +84319,6 @@
       },
       "uniqueConstraints": {}
     },
-    "moderation_transparency_daily_rollups": {
-      "checkConstraints": {
-        "moderation_transparency_daily_rollups_count_check": {
-          "definition": "CHECK ((count > 0))",
-          "validated": true
-        },
-        "moderation_transparency_daily_rollups_metric_check": {
-          "definition": "CHECK ((metric = ANY (ARRAY['reports'::moderation_transparency_metrics, 'moderation_actions'::moderation_transparency_metrics, 'automated_moderation'::moderation_transparency_metrics, 'appeals'::moderation_transparency_metrics])))",
-          "validated": true
-        }
-      },
-      "columns": {
-        "category": {
-          "comment": "Public transparency category dimension.",
-          "dataType": "moderation_transparency_categories",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4
-        },
-        "community_id": {
-          "comment": "Community scope, or NULL for the global transparency projection.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 2
-        },
-        "count": {
-          "comment": "Exact private cohort count; API sanitization enforces thresholding and rounding.",
-          "dataType": "integer",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5
-        },
-        "day": {
-          "comment": "UTC day shared by every source event in this cohort.",
-          "dataType": "date",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
-        },
-        "latest_occurred_at": {
-          "comment": "Latest known source event time, used to enforce the 48-hour release delay.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6
-        },
-        "metric": {
-          "comment": "Public transparency metric dimension.",
-          "dataType": "moderation_transparency_metrics",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3
-        }
-      },
-      "comment": "Aggregate-only daily moderation transparency cohorts; contains no source-row or actor identity.",
-      "foreignKeys": {},
-      "indexes": {
-        "idx_moderation_transparenc_daily_rollups__community_foreign_key": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_moderation_transparenc_daily_rollups__community_foreign_key ON public.moderation_transparency_daily_rollups USING btree (community_id) WHERE (community_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "community_id",
-              "descending": false,
-              "expression": "community_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(community_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_moderation_transparency_daily_rollups__community_page": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_moderation_transparency_daily_rollups__community_page ON public.moderation_transparency_daily_rollups USING btree (community_id, day DESC, latest_occurred_at) WHERE ((community_id IS NOT NULL) AND (count >= 20))",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "community_id",
-              "descending": false,
-              "expression": "community_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "day",
-              "descending": true,
-              "expression": "day",
-              "nullsFirst": true,
-              "opclass": "pg_catalog.date_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "latest_occurred_at",
-              "descending": false,
-              "expression": "latest_occurred_at",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.timestamptz_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "((community_id IS NOT NULL) AND (count >= 20))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_moderation_transparency_daily_rollups__global_page": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_moderation_transparency_daily_rollups__global_page ON public.moderation_transparency_daily_rollups USING btree (day DESC, latest_occurred_at) WHERE ((community_id IS NULL) AND (count >= 20))",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "day",
-              "descending": true,
-              "expression": "day",
-              "nullsFirst": true,
-              "opclass": "pg_catalog.date_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "latest_occurred_at",
-              "descending": false,
-              "expression": "latest_occurred_at",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.timestamptz_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "((community_id IS NULL) AND (count >= 20))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "moderation_transparency_daily_rollups_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX moderation_transparency_daily_rollups_key ON public.moderation_transparency_daily_rollups USING btree (day, community_id, metric, category) NULLS NOT DISTINCT",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "day",
-              "descending": false,
-              "expression": "day",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.date_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "community_id",
-              "descending": false,
-              "expression": "community_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "metric",
-              "descending": false,
-              "expression": "metric",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.enum_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "category",
-              "descending": false,
-              "expression": "category",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.enum_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "physicalPartition": null,
-      "primaryKey": null,
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {
-        "moderation_transparency_daily_rollups_key": {
-          "columns": ["day", "community_id", "metric", "category"]
-        }
-      }
-    },
     "moderation_transparency_released_daily_rollups": {
       "checkConstraints": {
         "moderation_transparency_released_daily_rollups_count_check": {
@@ -84702,7 +84372,7 @@
           "ordinalPosition": 1
         },
         "latest_occurred_at": {
-          "comment": "Latest source event timestamp observed when the cohort became immutable.",
+          "comment": "Latest source event timestamp counted in the released cohort.",
           "dataType": "timestamp with time zone",
           "defaultExpression": null,
           "generated": null,
@@ -86086,12 +85756,6 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_moderation_transparency_actions_delete_rollup": {
-          "definition": "CREATE TRIGGER trigger_moderation_transparency_actions_delete_rollup AFTER DELETE ON public.moderator_actions REFERENCING OLD TABLE AS deleted_actions FOR EACH STATEMENT EXECUTE FUNCTION fn_project_transparency_rollup('deleted_actions', 'action_type', 'moderation_actions')"
-        },
-        "trigger_moderation_transparency_actions_rollup": {
-          "definition": "CREATE TRIGGER trigger_moderation_transparency_actions_rollup AFTER INSERT ON public.moderator_actions REFERENCING NEW TABLE AS new_actions FOR EACH STATEMENT EXECUTE FUNCTION fn_project_transparency_rollup('new_actions', 'action_type', 'moderation_actions')"
-        },
         "trigger_moderation_transparency_actions_scope_guard": {
           "definition": "CREATE TRIGGER trigger_moderation_transparency_actions_scope_guard BEFORE UPDATE OF moderation_transparency_community_id ON public.moderator_actions FOR EACH ROW WHEN ((old.moderation_transparency_community_id IS DISTINCT FROM new.moderation_transparency_community_id)) EXECUTE FUNCTION fn_reject_mutation()"
         },
@@ -96014,12 +95678,6 @@
         },
         "trigger_moderation_transparency_clearance_categories_guard": {
           "definition": "CREATE TRIGGER trigger_moderation_transparency_clearance_categories_guard BEFORE UPDATE OF moderation_transparency_categories ON public.post_clearance_changes FOR EACH ROW WHEN ((old.moderation_transparency_categories IS DISTINCT FROM new.moderation_transparency_categories)) EXECUTE FUNCTION fn_reject_mutation()"
-        },
-        "trigger_moderation_transparency_clearance_delete_rollup": {
-          "definition": "CREATE TRIGGER trigger_moderation_transparency_clearance_delete_rollup AFTER DELETE ON public.post_clearance_changes REFERENCING OLD TABLE AS deleted_clearance_changes FOR EACH STATEMENT EXECUTE FUNCTION fn_project_moderation_transparency_clearance_delete_rollup()"
-        },
-        "trigger_moderation_transparency_clearance_rollup": {
-          "definition": "CREATE TRIGGER trigger_moderation_transparency_clearance_rollup AFTER INSERT ON public.post_clearance_changes REFERENCING NEW TABLE AS new_clearance_changes FOR EACH STATEMENT EXECUTE FUNCTION fn_project_moderation_transparency_clearance_insert_rollup()"
         },
         "trigger_moderation_transparency_clearance_scope_guard": {
           "definition": "CREATE TRIGGER trigger_moderation_transparency_clearance_scope_guard BEFORE UPDATE OF moderation_transparency_community_id ON public.post_clearance_changes FOR EACH ROW WHEN ((old.moderation_transparency_community_id IS DISTINCT FROM new.moderation_transparency_community_id)) EXECUTE FUNCTION fn_reject_mutation()"

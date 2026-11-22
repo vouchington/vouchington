@@ -1,6 +1,7 @@
 import { configure, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
+import { ApiError } from '@vouchington/api-client'
 import { createCopyrightNotice } from '@/lib/api/client/copyright-notices'
 import { resolveCopyrightNoticeTargets } from '@/lib/api/client/copyright-notice-targets'
 import { CopyrightNoticeForm } from './copyright-notice-form'
@@ -41,6 +42,12 @@ vi.mock(import('@/lib/api/client/copyright-notice-targets'), async importOrigina
   ...(await importOriginal()),
   resolveCopyrightNoticeTargets: vi.fn<typeof resolveCopyrightNoticeTargets>(),
 }))
+
+const toastMock = vi.hoisted(() => ({
+  error: vi.fn<(message: string) => void>(),
+  success: vi.fn<(message: string) => void>(),
+}))
+vi.mock(import('sonner'), () => ({ toast: toastMock }) as unknown as typeof import('sonner'))
 
 const mockCreateNotice = vi.mocked(createCopyrightNotice)
 const mockResolveTargets = vi.mocked(resolveCopyrightNoticeTargets)
@@ -160,7 +167,7 @@ describe('CopyrightNoticeForm', () => {
     expect(screen.queryByTestId('copyright-guest-receipt')).not.toBeInTheDocument()
   })
 
-  it('resets captcha after a failed notice submission', async () => {
+  async function submitFilledNotice() {
     mockResolveTargets.mockResolvedValue([
       {
         surface: 'post-image',
@@ -171,7 +178,6 @@ describe('CopyrightNoticeForm', () => {
         caption: 'Claimed image',
       },
     ])
-    mockCreateNotice.mockRejectedValue(new Error('network'))
     render(<CopyrightNoticeForm />)
     fireEvent.change(screen.getByLabelText('Hosted use URL'), {
       target: { value: 'https://voucha.ai/discussion/hosted-material' },
@@ -194,5 +200,25 @@ describe('CopyrightNoticeForm', () => {
     fireEvent.click(screen.getByLabelText(/under penalty of perjury/i))
     fireEvent.click(screen.getByRole('button', { name: 'Submit notice' }))
     await waitFor(() => expect(mockCreateNotice).toHaveBeenCalled())
+  }
+
+  it('resets captcha after a failed notice submission', async () => {
+    mockCreateNotice.mockRejectedValue(new Error('network'))
+    await submitFilledNotice()
+    expect(mockCreateNotice).toHaveBeenCalledOnce()
+  })
+
+  it('shows catalog copy when the notice names more items than the cap allows', async () => {
+    mockCreateNotice.mockRejectedValue(
+      new ApiError('Copyright notice target limit reached', 422, {
+        code: 'COPYRIGHT_TARGET_LIMIT_REACHED',
+      }),
+    )
+    await submitFilledNotice()
+    await waitFor(() => {
+      expect(toastMock.error).toHaveBeenCalledWith(
+        'This notice names too many items. Remove one and try again.',
+      )
+    })
   })
 })

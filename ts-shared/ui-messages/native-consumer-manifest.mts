@@ -57,6 +57,8 @@ import { NATIVE_CONSUMER_MANIFEST_CLAIMS_52_MCP_FACTS } from './native-consumer-
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_53_DISPUTE_RUN_OUTCOMES } from './native-consumer-manifest/claims-53-dispute-run-outcomes.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_54_AI_RUN_STATUS } from './native-consumer-manifest/claims-54-ai-run-status.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_55_NOTIFICATION_KINDS } from './native-consumer-manifest/claims-55-notification-kinds.mts'
+import { NATIVE_CONSUMER_MANIFEST_CLAIMS_56_CAPPED_REQUEST_COPY } from './native-consumer-manifest/claims-56-capped-request-copy.mts'
+import { NATIVE_CONSUMER_MANIFEST_CLAIMS_57_COPYRIGHT_TARGET_LIMIT } from './native-consumer-manifest/claims-57-copyright-target-limit.mts'
 import type { NativeConsumerManifestEntry } from './native-consumer-manifest/types.mts'
 
 export type {
@@ -125,6 +127,8 @@ const NATIVE_CONSUMER_MANIFEST_CLAIM_SLICES: readonly (readonly NativeConsumerMa
   NATIVE_CONSUMER_MANIFEST_CLAIMS_53_DISPUTE_RUN_OUTCOMES,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_54_AI_RUN_STATUS,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_55_NOTIFICATION_KINDS,
+  NATIVE_CONSUMER_MANIFEST_CLAIMS_56_CAPPED_REQUEST_COPY,
+  NATIVE_CONSUMER_MANIFEST_CLAIMS_57_COPYRIGHT_TARGET_LIMIT,
 ]
 
 export const NATIVE_CONSUMER_MANIFEST =

@@ -53,13 +53,6 @@ async function resolveCopyrightLegalHoldInTransaction(
     identities[0].copyright_notice_id,
   )
   assert(lockedNotice, 404, 'Copyright legal hold assessment not found')
-  const { rows: assessmentRows } = await transaction<{ id: string }>(sql`
-    /* resolveCopyrightLegalHold:lockAssessment */
-    SELECT id FROM copyright_notice_legal_hold_assessments
-    WHERE id = ${input.assessmentId}
-    FOR UPDATE
-  `)
-  assert(assessmentRows[0], 404, 'Copyright legal hold assessment not found')
   const assessment = { copyright_notice_id: lockedNotice.noticeId }
   const { rows } = await transaction(sql`/* resolveCopyrightLegalHold */
     INSERT INTO copyright_notice_legal_hold_resolutions (

@@ -54,10 +54,9 @@ export async function appendCopyrightLegalHoldAssessment(input: {
   const { rows: submissionRows } = await transaction<{
     kind: string
     copyright_notice_id: string
-  }>(sql`/* appendCopyrightLegalHoldAssessment:lockSubmission */
+  }>(sql`/* appendCopyrightLegalHoldAssessment:submission */
     SELECT kind, copyright_notice_id FROM copyright_notice_submissions
     WHERE id = ${input.submissionId}
-    FOR UPDATE
   `)
   assert(submissionRows[0], 404, 'Copyright legal-hold submission not found')
   assert(

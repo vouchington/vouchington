@@ -43,6 +43,7 @@ const SCHEDULED_JOB_API_ORDER = [
   'voteWeightDirtyMarkers',
   'data-retention-cleanup-daily',
   'moderation-retention-cleanup-daily',
+  'moderation-transparency-release-daily',
   'reconcile-vote-drift',
   'imports-recover-stalled',
   'topic-merge-recover-stalled',

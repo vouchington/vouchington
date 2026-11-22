@@ -48,6 +48,7 @@ export const RETENTION_WORK_SCENARIOS = [
   'agent-moderation-retention-page',
   'agent-moderation-retention-source-lock',
   'agent-moderation-retention-delete',
+  'moderation-transparency-release',
   'account-data-export-expiry',
   'account-data-export-recovery',
   'story-projection-global-claim',

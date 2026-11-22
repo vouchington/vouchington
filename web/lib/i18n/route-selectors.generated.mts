@@ -103,7 +103,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/copyright/notices/[id]/complaint", selectorId: "web.route.863bfcf21f1a6d0f.24adf85a69c9ad83", hasMembership: true },
   { pattern: "/copyright/notices/[id]/counter-notice", selectorId: "web.route.d3ec16e74db8658d.18a6f38661bfd2ec", hasMembership: true },
   { pattern: "/copyright/notices/[id]/guest", selectorId: "web.route.70f15876d7ee5fc2.18a6f38661bfd2ec", hasMembership: true },
-  { pattern: "/copyright/notices/new", selectorId: "web.route.33bc31725bbf9188.18a6f38661bfd2ec", hasMembership: true },
+  { pattern: "/copyright/notices/new", selectorId: "web.route.33bc31725bbf9188.ac5b1e6ea6102ab2", hasMembership: true },
   { pattern: "/copyright/repeat-infringer-policy", selectorId: "web.route.3e1923115d812a61.cbf29ce484222325", hasMembership: false },
   { pattern: "/copyright/review-queue", selectorId: "web.route.cfd5a705607388d2.d7f27674841e2176", hasMembership: true },
   { pattern: "/crawler/[id]", selectorId: "web.route.20e3048ba7a9ea74.ddf651167978e781", hasMembership: true },
