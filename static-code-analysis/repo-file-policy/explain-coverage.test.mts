@@ -30,14 +30,12 @@ describe('EXPLAIN coverage', () => {
         source: readFileSync(join(import.meta.dirname, '../..', fileName), 'utf8'),
       }))
       const report = await reportCoverage(sources, resultsPath, ['fixture'])
-      expect(report).toMatchObject({ annotatedStatements: 15, reads: 11, coveredReads: 0 })
+      expect(report).toMatchObject({ annotatedStatements: 13, reads: 9, coveredReads: 0 })
       expect(report.uncoveredReads.map(read => read.name)).toEqual([
         'getCommunityMemberBatch',
         'getActiveCommunityMembersForUsers',
         'getPendingApplicationForUser',
         'getPendingApplicationCommunityIds',
-        'readClassifierRunActor',
-        'lockClassifierRunActor',
         'lockClassifierRun',
         'escalateModerationQueueItem:checkEscalated',
         'escalateModerationQueueItem:checkEscalated',

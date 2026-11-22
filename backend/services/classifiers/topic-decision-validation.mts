@@ -86,18 +86,15 @@ export function validateTopicDecision(
   return topicResults
 }
 
-/** Serializes against the actor's lifecycle and requires it to be a system user. */
+/** Requires an active system actor to apply the classifier decision. */
 export async function assertSharedSystemActor(
   query: OwnedTransaction,
   sharedActorId: string,
 ): Promise<void> {
-  await query(sql`/* lockClassifierTopicRelationActor */
-    SELECT fn_lock_active_user_for_mutation(${sharedActorId}::uuid)
-  `)
   const { rows } = await query<{
     platform_account_kind: 'official' | 'system' | null
   }>(sql`/* readClassifierTopicRelationActor */
-    SELECT platform_account_kind FROM users WHERE id = ${sharedActorId}::uuid
+    SELECT platform_account_kind FROM users WHERE id = ${sharedActorId}::uuid AND deleted_at IS NULL
   `)
   if (rows[0]?.platform_account_kind !== 'system') {
     throw new Error('Classifier topic relation votes require a system actor')
