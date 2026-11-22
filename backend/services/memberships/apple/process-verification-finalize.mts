@@ -88,7 +88,7 @@ export async function createAppleVerificationLineage(
     SELECT id, provider_account_id FROM membership_provider_lineages
     WHERE membership_provider_context_id = ${contextId}
       AND provider_lineage_id = ${observation.providerLineageId}`
-  const {
+  let {
     rows: [existing],
   } = await query<{
     id: string
@@ -101,18 +101,16 @@ export async function createAppleVerificationLineage(
   if (!existing) throw new AppleVerificationConflictError('wrong_account')
   if (observation.sourceKind === 'family') return existing.id
   if (existing.provider_account_id === null) {
-    const { rowCount } = await query(sql`/* bindAppleVerificationLineageAccount */
+    await query(sql`/* bindAppleVerificationLineageAccount */
       UPDATE membership_provider_lineages
       SET provider_account_id = ${observation.appAccountToken}
       WHERE id = ${existing.id} AND provider_account_id IS NULL`)
-    if (rowCount === 1) return existing.id
-    const {
-      rows: [bound],
-    } = await query<{ id: string; provider_account_id: string | null }>(findLineage)
-    if (bound && bound.provider_account_id === observation.appAccountToken) return bound.id
-    throw new AppleVerificationConflictError('wrong_account')
+    const { rows: boundRows } = await query<{ id: string; provider_account_id: string | null }>(
+      findLineage,
+    )
+    existing = boundRows[0]
   }
-  if (existing.provider_account_id !== observation.appAccountToken)
+  if (!existing || existing.provider_account_id !== observation.appAccountToken)
     throw new AppleVerificationConflictError('wrong_account')
   return existing.id
 }
