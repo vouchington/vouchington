@@ -8,7 +8,6 @@ import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/met
 import { enqueueStoryPostAgent } from '@queues/ai-agents/enqueues/story-post'
 import { enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort } from '@queues/story-post-related-url-projections/enqueues'
 import { getPostStoryByStoryId } from './get-post-stories.mts'
-import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-lock'
 import { dispatchStoryPostRelationEffects } from './story-post-relation-effects.mts'
 import { lockStoryPostRelations } from './story-post-relation-locks.mts'
 import { markStoryPostRelatedUrlProjection } from './story-post-related-url-projection.mts'
@@ -16,6 +15,7 @@ import type { PrivateUser } from '@services/users/types'
 
 type RefreshStoryPostQueryOptions = Omit<QueryOptions, 'query'> & {
   query?: TransactionQuery
+  expectedPostId?: string
 }
 type RefreshStoryPostTransactionOptions = RefreshStoryPostQueryOptions & {
   query: TransactionQuery
@@ -33,8 +33,7 @@ export type StoryPostRefreshResult = {
  * re-enqueue the story-post summarisation agent with force=true so a stale
  * ai_summary_markdown is overwritten.
  *
- * Assignment, removal, and clustering callers include this refresh in their transaction and hold the
- * story lifecycle lock first; without `options.query` the refresh locks the story in its own transaction.
+ * Assignment, removal, and clustering callers include this refresh in their transaction.
  * If no story post exists yet (the story was never turned into a post), this is a no-op.
  */
 export async function refreshStoryPostForStory(
@@ -44,7 +43,6 @@ export async function refreshStoryPostForStory(
   const existingQuery = options.query
   if (!existingQuery) {
     await using query = await beginTransaction()
-    await lockStoryLifecycles(query, [storyId])
     const result = await refreshStoryPostForStoryInTransaction(storyId, { query })
     await query.commit()
     if (result) {
@@ -61,7 +59,8 @@ async function refreshStoryPostForStoryInTransaction(
   options: RefreshStoryPostTransactionOptions,
 ): Promise<StoryPostRefreshResult | null> {
   const postStory = await getPostStoryByStoryId(storyId, options)
-  if (!postStory) return null
+  if (!postStory || (options.expectedPostId && options.expectedPostId !== postStory.post_id))
+    return null
 
   const postId = postStory.post_id
   await lockStoryPostRelations(options.query, postId)

@@ -15,7 +15,6 @@ import {
   insertTestTopicBatch,
   setTestItemStoryId,
   updateTestTopicAliasCategoryMappingOwner,
-  beginTransaction,
   backfillTopicCategoryMappingsForTest as backfillCategoriesForTopicAliases,
   drainTopicAliasCategoryMappingForTest,
 } from '@voucha/test-helpers'
@@ -23,7 +22,6 @@ import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { upsertSystemUser } from '@services/users/system-users'
 import type { PrivateUser } from '@services/users/types'
 import { upsertRssFeedItemCategories } from '@services/rss-feed-items/categories'
-import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-lock'
 import { prepareStoryPost } from '../story-posts.mts'
 import { recordTestStoryTopicPublicationChange } from '@voucha/test-helpers/post-publication-fixtures'
 import {
@@ -192,7 +190,7 @@ describe('RSS category story-post publication', () => {
     })
   })
 
-  it('captures a committed story-post association while a reader holds the story lock', async () => {
+  it('captures a committed story-post association after category insertion', async () => {
     const story = await insertTestStory({ title: `Concurrent story ${Math.random()}` })
     const suffix = Math.random().toString(36).slice(2)
     const data = { title: `Concurrent item ${suffix}`, link: `https://example.com/${suffix}` }
@@ -215,8 +213,6 @@ describe('RSS category story-post publication', () => {
     const alias = `rss-category-concurrent-${suffix}`
     await createTestTopicAliasForCategoryMapping({ alias, topicId: topic.id })
     await insertTestPostStory(postId, story.id, user.id)
-    await using holder = await beginTransaction()
-    await lockStoryLifecycles(holder, [story.id])
     const jobs = await captureAddedPublicationEffectsForScope(story.id, () =>
       upsertRssFeedItemCategories([{ rss_feed_item_id: itemId, categories: [alias] }]),
     )
@@ -224,7 +220,6 @@ describe('RSS category story-post publication', () => {
       kind: 'impact_post',
       uuidValue: postId,
     })
-    await holder.commit()
   })
   it('captures the full 500-row category writer batch without per-story loops', async () => {
     const topic = await createTestTopic({ user })

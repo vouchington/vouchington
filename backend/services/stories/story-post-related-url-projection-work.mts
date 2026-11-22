@@ -1,3 +1,4 @@
+import { refreshStoryPostRelatedUrlProjectionSources } from '@services/rss-feed-items/story-post-related-url-projections'
 import { write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import type { ProjectionWork } from './story-post-related-url-projection-types.mts'
@@ -11,45 +12,18 @@ export async function markStoryPostRelatedUrlProjection(
   postId: string,
   storyId: string,
 ): Promise<void> {
-  const { rows: highWaterRows } = await query<{
-    sweep_upper_bound_source_id: string | null
-  }>(
-    `/* markStoryPostRelatedUrlProjection:highWater */
-      SELECT
-        -- no-mistakes-disable-next-line postgres-required-predicates: story membership can attach already-created items, so item IDs may predate story_id
-        (SELECT id FROM rss_feed_items
-         WHERE story_id = $1 AND deleted_at IS NULL
-         ORDER BY id DESC LIMIT 1) AS sweep_upper_bound_source_id`,
-    [storyId],
-  )
-  const highWater = highWaterRows[0]!
   await query(
     `/* markStoryPostRelatedUrlProjection */
-      INSERT INTO story_post_related_url_projection_jobs
-        (post_id, story_id, sweep_upper_bound_source_id)
-      VALUES ($1, $2, $3)
+      INSERT INTO story_post_related_url_projection_jobs (post_id, story_id)
+      VALUES ($1, $2)
       ON CONFLICT (post_id) DO UPDATE
       SET story_id = EXCLUDED.story_id,
           generation = story_post_related_url_projection_jobs.generation + 1,
-          sweep_upper_bound_source_id = EXCLUDED.sweep_upper_bound_source_id,
           source_completed_at = NULL,
           lease_token = NULL, leased_at = NULL, lease_expires_at = NULL`,
-    [postId, storyId, highWater.sweep_upper_bound_source_id],
+    [postId, storyId],
   )
-  await query(
-    `/* markStoryPostRelatedUrlProjection:transferMutations */
-      INSERT INTO story_post_related_url_projection_relation_mutations
-        (post_id, generation, relation_id)
-      SELECT work.post_id, work.generation, mutation.relation_id
-      FROM story_post_related_url_projection_jobs work
-      JOIN story_post_related_url_projection_relation_mutations mutation
-        ON mutation.post_id = work.post_id
-       AND mutation.generation = work.generation - 1
-      WHERE work.post_id = $1
-      ORDER BY work.post_id, work.generation, mutation.relation_id
-      ON CONFLICT (post_id, generation, relation_id) DO NOTHING`,
-    [postId],
-  )
+  await refreshStoryPostRelatedUrlProjectionSources(query, [postId])
 }
 
 export {

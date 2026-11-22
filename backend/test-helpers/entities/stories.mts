@@ -1,4 +1,4 @@
-import { beginTransaction, write, read } from '@data-stores/psql'
+import { write, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { Story } from '@voucha/types/entities/story'
 
@@ -120,35 +120,4 @@ export async function getPostCategoryTopicIds(postId: string): Promise<string[]>
     WHERE subject_id = ${postId} AND deleted_at IS NULL
   `)
   return rows.map(r => r.object_id as string)
-}
-
-export async function isTestStoryLifecycleLockWaiting(storyId: string): Promise<boolean> {
-  const lockKey = `story-lifecycle:${storyId}`
-  const { rows } = await read<{ waiting: boolean }>(sql`
-    /* isTestStoryLifecycleLockWaiting */
-    SELECT EXISTS (
-      SELECT 1 FROM pg_locks
-      WHERE locktype = 'advisory'
-        AND NOT granted
-        AND classid::bigint = ((hashtextextended(${lockKey}, 0) >> 32) & 4294967295)
-        AND objid::bigint = (hashtextextended(${lockKey}, 0) & 4294967295)
-    ) AS waiting
-  `)
-  return rows[0]?.waiting ?? false
-}
-
-export async function withTestStoryLifecycleLock<T>(
-  storyId: string,
-  callback: () => Promise<T>,
-): Promise<T> {
-  await using transaction = await beginTransaction()
-  const query = transaction
-  await query(
-    `/* withTestStoryLifecycleLock */
-          SELECT pg_advisory_xact_lock(hashtextextended('story-lifecycle:' || $1::text, 0))`,
-    [storyId],
-  )
-  const result = await callback()
-  await transaction.commit()
-  return result
 }
