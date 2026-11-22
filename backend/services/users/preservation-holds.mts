@@ -3,7 +3,6 @@ import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 import { createCodedError } from '@vouchington/sentry'
-import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
 import { CONFLICT } from '@modules/on-error/error-codes'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import { recordModeratorAction } from '@services/moderator-actions'
@@ -76,8 +75,11 @@ async function readPreservationHoldUser(
 }
 
 /**
- * Places the account's single open hold. Serializable ownership protects the live-account check
- * against final purge; a soft-deleted account remains eligible for preservation.
+ * Places the account's single open hold at READ COMMITTED. The `FOR NO KEY UPDATE` account lock
+ * orders it against final purge (a purge DELETE already holding the row makes this report 404; a
+ * purge reaching the row after this commits fails on the retained identity this statement updates
+ * and refuses on its next run) and against other hold writers, and the one-open unique index backs
+ * the single open hold. A soft-deleted account remains eligible for preservation.
  * The reference is encrypted and is not copied to the moderator audit row.
  */
 export async function placeUserPreservationHold(
@@ -90,37 +92,35 @@ export async function placeUserPreservationHold(
   const holdId = uuidv7()
   const ciphertext = encryptSecret(plaintext, referencePurpose(holdId))
 
-  return conflictOnSerializationFailure(async () => {
-    await using query = await beginTransaction({ serializable: true })
-    const account = await readPreservationHoldUser(query, userId)
-    if (!account) {
-      throw createHttpError(404, 'User not found')
-    }
-    const { rows } = await query<HoldRow>(sql`/* placeUserPreservationHold */
-      WITH placed AS (
-        INSERT INTO user_legal_preservation_holds (id, account_user_id, placed_by_id, reference_ciphertext)
-        VALUES (${holdId}, ${userId}, ${currentUser.id}, ${ciphertext})
-        ON CONFLICT (account_user_id) WHERE released_at IS NULL DO NOTHING
-        RETURNING id, account_user_id, placed_by_id, reference_ciphertext, released_at, released_by_id, created_at
-      ), marked AS (
-        UPDATE retained_user_identities identity
-        SET is_copyright_case_clock_sync_pending = identity.is_copyright_case_clock_sync_pending OR EXISTS (SELECT 1 FROM copyright_notice_party_identities party
-            WHERE party.account_user_id = identity.id LIMIT 1)
-        FROM placed WHERE identity.id = placed.account_user_id
-        RETURNING identity.id
-      )
-      SELECT placed.* FROM placed JOIN marked ON marked.id = placed.account_user_id
-    `)
-    const row = rows[0]
-    if (!row) throw createCodedError(409, 'User already has an open preservation hold', CONFLICT)
-    await recordModeratorAction(
-      currentUser.id,
-      { actionType: 'preservation_hold_place', targetUserId: userId },
-      { query },
+  await using query = await beginTransaction()
+  const account = await readPreservationHoldUser(query, userId)
+  if (!account) {
+    throw createHttpError(404, 'User not found')
+  }
+  const { rows } = await query<HoldRow>(sql`/* placeUserPreservationHold */
+    WITH placed AS (
+      INSERT INTO user_legal_preservation_holds (id, account_user_id, placed_by_id, reference_ciphertext)
+      VALUES (${holdId}, ${userId}, ${currentUser.id}, ${ciphertext})
+      ON CONFLICT (account_user_id) WHERE released_at IS NULL DO NOTHING
+      RETURNING id, account_user_id, placed_by_id, reference_ciphertext, released_at, released_by_id, created_at
+    ), marked AS (
+      UPDATE retained_user_identities identity
+      SET is_copyright_case_clock_sync_pending = identity.is_copyright_case_clock_sync_pending OR EXISTS (SELECT 1 FROM copyright_notice_party_identities party
+          WHERE party.account_user_id = identity.id LIMIT 1)
+      FROM placed WHERE identity.id = placed.account_user_id
+      RETURNING identity.id
     )
-    await query.commit()
-    return { ...toHold(row), accountDeletedAt: account.deleted_at }
-  })
+    SELECT placed.* FROM placed JOIN marked ON marked.id = placed.account_user_id
+  `)
+  const row = rows[0]
+  if (!row) throw createCodedError(409, 'User already has an open preservation hold', CONFLICT)
+  await recordModeratorAction(
+    currentUser.id,
+    { actionType: 'preservation_hold_place', targetUserId: userId },
+    { query },
+  )
+  await query.commit()
+  return { ...toHold(row), accountDeletedAt: account.deleted_at }
 }
 
 /** Releases the open hold by stamping the release columns; the row and its history are kept. */
