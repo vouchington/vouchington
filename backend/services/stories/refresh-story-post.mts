@@ -85,6 +85,11 @@ async function refreshStoryPostForStoryInTransaction(
       AND (deleted_at IS NULL OR object_id = ANY(${topicIds}::uuid[]))
     ORDER BY subject_id, object_id FOR UPDATE`)
 
+  // A concurrent manual confirmation must commit before the new generation copies its markers.
+  await options.query(sql`/* lockStoryPostRelations:urls */
+    SELECT id FROM relation__post__related__url WHERE subject_id = ${postId}
+    ORDER BY subject_id, object_id FOR UPDATE`)
+
   // Category projection remains transaction-local. URL projection is durable and bounded;
   // it resumes after this membership transaction commits.
   await markStoryPostRelatedUrlProjection(options.query, postId, storyId)
