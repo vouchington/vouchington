@@ -130,7 +130,6 @@ export async function captureHackerNewsScaleReference(
       context.observations.push({ scenario: prefix, reference: true, planCacheMode, eviction })
     })(input)
     for (const cache of ['cold', 'warm'] as const) {
-      // no-mistakes-disable-next-line query-reached-per-item: execute a fixed cold/warm pair in immediate succession; historical plans are evidence, not application or baseline exceptions.
       const result = await explainAnalyze(
         `${prefix}-${page.name}-join-${cache}`,
         reference.text,
