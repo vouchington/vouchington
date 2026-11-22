@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { load } from 'js-yaml'
+import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
 type Job = { needs?: string | string[]; if?: string }
