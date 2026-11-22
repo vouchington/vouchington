@@ -169,15 +169,6 @@ export async function deleteTestAgentModerationVoteReference(
   `)
 }
 
-export async function releaseTestAgentModerationTransparencyDay(occurredAt: Date): Promise<void> {
-  const day = occurredAt.toISOString().slice(0, 10)
-  await write(sql`/* releaseTestAgentModerationTransparencyDay */
-    SELECT fn_release_moderation_transparency_daily_rollup(
-      ${day}::date, NULL::uuid, 'automated_moderation', 'agent_moderation',
-      ${new Date(occurredAt.getTime() + 86_400_000)}::timestamptz)
-  `)
-}
-
 export async function createTestAgentModerationRetentionFixture() {
   const author = await createTestUserDirect()
   const agent = await createTestAgent({ activated: true })

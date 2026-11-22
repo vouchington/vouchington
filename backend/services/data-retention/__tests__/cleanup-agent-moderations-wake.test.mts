@@ -16,10 +16,7 @@ import {
   setTestRetentionPostHashWithLockTimeout,
   updateTestRetentionPostMarkdownWithLockTimeout,
 } from '@voucha/test-helpers/agent-moderation-retention-concurrency'
-import {
-  getTestModerationTransparencyRollupCount,
-  getTestReleasedModerationTransparencyRollupCount,
-} from '@voucha/test-helpers/entities/moderation-transparency-rollups'
+import { getTestReleasedModerationTransparencyRollupCount } from '@voucha/test-helpers/entities/moderation-transparency-rollups'
 import { createIsolatedRetentionWindow } from '@voucha/test-helpers/retention-window'
 import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
@@ -244,13 +241,6 @@ describe('agent moderation retention wake-ups', () => {
     await insertTestAgentModeration({ ...fixture, occurredAt: at(1) })
     const options = { postIds: [fixture.postId], now, lowerBoundDate, batchSize: 3, maxBatches: 1 }
     expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({ deleted: 2 })
-    expect(
-      await getTestModerationTransparencyRollupCount({
-        occurredAt: oldDay,
-        metric: 'automated_moderation',
-        category: 'agent_moderation',
-      }),
-    ).toBeUndefined()
     expect(
       await getTestReleasedModerationTransparencyRollupCount({
         occurredAt: oldDay,

@@ -63,8 +63,8 @@ export async function deleteAgentModerationRetentionPage(
     [page.map(row => row.id), page.map(row => row.post_id), upperBoundId, upperBoundDueAt],
   )
   // Every surviving page member has a durable blocker. A matching lifecycle event wakes it;
-  // an unchanged daily run never selects it again. Source deletes release eligible transparency
-  // cohorts before decrementing, and privately drain sealed cohorts below the disclosure floor.
+  // an unchanged daily run never selects it again. The daily transparency release has already frozen
+  // disclosable cohorts from these sources, so this delete only drains the rest privately.
   // A post edit committing before this transaction's blocker is visible cannot register hash
   // work, so each new hash blocker publishes its post's work item in this same transaction; the
   // next run rechecks it against the committed hash once, then stays quiet.

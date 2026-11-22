@@ -1,6 +1,7 @@
 import { getVoteDriftJobOptions } from './vote-drift-config.mts'
 import type { JobOptions } from 'glide-mq'
 import { moderationRetentionSchedule } from './moderation-retention.mts'
+import { moderationTransparencyReleaseSchedule } from './moderation-transparency-release.mts'
 import { getDeployEnvironment } from '@ts-shared/deploy-environment'
 import {
   defineScheduledJobManifest,
@@ -65,6 +66,7 @@ const MATERIALIZED_VIEW_SCHEDULE_OPTS = {
 
 export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
   moderationRetentionSchedule,
+  moderationTransparencyReleaseSchedule,
   ...MATERIALIZED_VIEW_REFRESH_SCHEDULES.map(([schedulerId, pattern, viewName]) => ({
     schedulerId,
     repeat: { pattern },

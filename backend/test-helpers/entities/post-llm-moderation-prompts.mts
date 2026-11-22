@@ -76,28 +76,6 @@ export async function hardDeleteTestModerationPrompt(promptId: string): Promise<
   `)
 }
 
-/** Returns the installed stamp trigger definition for structural lock-order tests. */
-export async function getTestModerationTransparencyStampFunctionDefinition(): Promise<string> {
-  const { rows } = await read<{ definition: string }>(
-    sql`/* getTestModerationTransparencyStampFunctionDefinition */
-    SELECT pg_get_functiondef('fn_update_agent_moderation_transparency()'::regprocedure) AS definition
-  `,
-  )
-  return rows[0]!.definition
-}
-
-/** Returns the CAP lifecycle lock trigger definition for lock-order regressions. */
-export async function getTestCommunityAgentPromptLockFunctionDefinition(): Promise<string> {
-  const { rows } = await read<{ definition: string }>(
-    sql`/* getTestCommunityAgentPromptLockFunctionDefinition */
-    SELECT pg_get_functiondef(
-      'fn_lock_agent_moderation_transparency_community_prompt()'::regprocedure
-    ) AS definition
-  `,
-  )
-  return rows[0]!.definition
-}
-
 /**
  * Get active LLM moderation prompts (excluding specific IDs)
  */

@@ -1,4 +1,6 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
+import { releaseModerationTransparencyRange } from './release-moderation-transparency-days.mts'
+import { releaseTestWindowRange } from '@voucha/test-helpers/moderation-transparency-release-ranges'
 import crypto from 'node:crypto'
 import {
   acquireTestModerationTransparencyDateReservation,
@@ -36,6 +38,7 @@ describe('getCommunityModerationTransparency', () => {
       ),
     )
 
+    await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
     await expect(getCommunityModerationTransparency(community.id, 'all', now)).resolves.toEqual({
       range: 'all',
       buckets: [],
@@ -64,6 +67,7 @@ describe('getCommunityModerationTransparency', () => {
       ),
     )
 
+    await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
     await expect(
       getCommunityModerationTransparency(community.id, 'all', now),
     ).resolves.toMatchObject({
@@ -115,6 +119,7 @@ describe('getCommunityModerationTransparency', () => {
       ),
     ])
 
+    await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
     const [global, included, excluded] = await Promise.all([
       getModerationTransparency('all', now),
       getCommunityModerationTransparency(includedCommunity.id, 'all', now),
@@ -180,6 +185,7 @@ describe('getCommunityModerationTransparency', () => {
       ),
     ])
 
+    await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
     await expect(getCommunityModerationTransparency(community.id, 'all', now)).resolves.toEqual({
       range: 'all',
       buckets: [
@@ -224,6 +230,7 @@ describe('getCommunityModerationTransparency', () => {
       ),
     )
 
+    await releaseModerationTransparencyRange(...releaseTestWindowRange(now))
     await expect(getCommunityModerationTransparency(community.id, 'today', now)).resolves.toEqual({
       range: 'today',
       buckets: [

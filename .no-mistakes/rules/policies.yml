@@ -3958,8 +3958,6 @@
         reason: 'Decision 14 transparency-report community scope.'
       - object: 'column:post_clearance_changes.moderation_transparency_community_id'
         reason: 'Decision 14 transparency-report community scope.'
-      - object: 'column:moderation_transparency_daily_rollups.community_id'
-        reason: 'Decision 14 transparency-report community scope.'
       - object: 'column:moderation_transparency_released_daily_rollups.community_id'
         reason: 'Decision 14 transparency-report community scope.'
       - object: 'column:oauth_authorization_server_events.access_token_id'

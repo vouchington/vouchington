@@ -43,8 +43,7 @@ export async function seedAgentModerationRetention(): Promise<void> {
   // final fixture ANALYZE. Prime those dependencies before loading the retention backlog.
   await write(`/* analyzeAgentModerationRetentionTriggerDependencies */
     ANALYZE posts, agents, agent_prompts, community_agent_prompts, communities,
-      agent_moderations, moderation_transparency_daily_rollups,
-      moderation_transparency_released_daily_rollups`)
+      agent_moderations, moderation_transparency_released_daily_rollups`)
   await insertModerationRows(oldMs, newMs, bulkStartMs, 15_000)
   await seedDeletedLiveLookupTail()
   await insertAgentModerationRetentionReferenceNoise(
@@ -65,9 +64,9 @@ export async function seedAgentModerationRetention(): Promise<void> {
   const releasedDay = new Date(oldMs).toISOString().slice(0, 10)
   await write(
     `/* seedAgentModerationRetentionReleasedCohort */
-     SELECT fn_release_moderation_transparency_daily_rollup(
-       $1::date, NULL::uuid, 'automated_moderation', 'agent_moderation', $2::timestamptz
-     )`,
+     INSERT INTO moderation_transparency_released_daily_rollups
+       (day, community_id, metric, category, count, latest_occurred_at)
+     VALUES ($1::date, NULL, 'automated_moderation', 'agent_moderation', 20, $2::timestamptz)`,
     [releasedDay, new Date(anchorMs - 2 * DAY_MS)],
   )
   await seedReleasedCommunityNoise(releasedDay, new Date(oldMs))

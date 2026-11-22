@@ -36,6 +36,7 @@ import {
   getDataRetentionLimits,
 } from '@services/data-retention/config'
 import { reconcilePostVoteDrift } from '@services/elections-votes/shared'
+import { releaseModerationTransparencyDays } from '@services/moderation-analytics/release-moderation-transparency-days'
 import { AI_RETENTION_FAMILIES, type PsqlJobs, type PsqlJobPayloads } from '@queues/psql/types'
 import {
   processCopyrightRetentionContinuation,
@@ -165,6 +166,8 @@ export default async function processPsql(
       if (result.afterId) await enqueueReconcileVoteDrift({ afterId: result.afterId })
       return result
     }
+    case 'releaseModerationTransparencyDays':
+      return releaseModerationTransparencyDays()
     case 'aiRetentionContinuation':
     case 'cleanupDeletedConversations':
     case 'cleanupOperationalTombstones':
