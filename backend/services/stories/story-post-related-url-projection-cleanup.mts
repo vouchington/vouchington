@@ -16,13 +16,13 @@ export async function cleanupStaleStoryPostRelatedUrlProjectionReceipts(
           )
         ORDER BY receipt.generation, receipt.url_id
         LIMIT $3
-        FOR UPDATE SKIP LOCKED
       )
       DELETE FROM story_post_related_url_projection_receipts receipt
       USING stale
       WHERE receipt.post_id = stale.post_id
         AND receipt.generation = stale.generation
         AND receipt.url_id = stale.url_id
+        AND NOT (receipt.should_crawl IS TRUE AND receipt.effects_dispatched_at IS NULL)
         AND EXISTS (
           SELECT 1 FROM story_post_related_url_projection_jobs work
           WHERE work.post_id = $1 AND work.generation = $2 AND work.lease_token = $4
@@ -45,7 +45,6 @@ export async function cleanupStaleStoryPostRelatedUrlProjectionRelationMutations
         WHERE mutation.post_id = $1 AND mutation.generation < $2
         ORDER BY mutation.generation, mutation.relation_id
         LIMIT $3
-        FOR UPDATE SKIP LOCKED
       )
       DELETE FROM story_post_related_url_projection_relation_mutations mutation
       USING stale
