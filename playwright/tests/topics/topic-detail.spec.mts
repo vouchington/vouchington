@@ -254,24 +254,23 @@ test.describe('Topic Detail Pages', () => {
     await expect(unfollowedUserLinks).toHaveCount(0)
 
     await navigateTo(page, `/topic/${fixture.topicId}/reviews`)
-    const followedReview = page
-      .getByTestId('post-card-title-link')
-      .filter({ hasText: fixture.followedReviewTitle })
-      .first()
-    const unfollowedReview = page
-      .getByTestId('post-card-title-link')
-      .filter({ hasText: fixture.unfollowedReviewTitle })
-      .first()
+    const reviewTitles = page.getByTestId('post-card-title-link')
+    const followedReview = reviewTitles.filter({ hasText: fixture.followedReviewTitle })
+    const unfollowedReview = reviewTitles.filter({ hasText: fixture.unfollowedReviewTitle })
 
-    await expect(followedReview).toBeVisible()
-    await page.keyboard.press('End')
-    await expect(unfollowedReview).toBeVisible()
+    await expect(followedReview).toHaveCount(1)
+    await expect(unfollowedReview).toHaveCount(1)
 
-    const followedBox = await followedReview.boundingBox()
-    const unfollowedBox = await unfollowedReview.boundingBox()
-
-    expect(followedBox).not.toBeNull()
-    expect(unfollowedBox).not.toBeNull()
-    expect(followedBox!.y).toBeLessThan(unfollowedBox!.y)
+    // Assert rank by DOM order. Viewport boxes measured one after the other drift while the
+    // page scrolls and lays out late content, so they cannot order two cards reliably.
+    const renderedTitles = await reviewTitles.allTextContents()
+    const followedIndex = renderedTitles.findIndex(title =>
+      title.includes(fixture.followedReviewTitle),
+    )
+    const unfollowedIndex = renderedTitles.findIndex(title =>
+      title.includes(fixture.unfollowedReviewTitle),
+    )
+    expect(followedIndex).toBeGreaterThanOrEqual(0)
+    expect(followedIndex).toBeLessThan(unfollowedIndex)
   })
 })
