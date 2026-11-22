@@ -17,15 +17,15 @@ type CandidateRow = {
   succession_topic_ids: string[] | null
 }
 
-/** Locks every current candidate once, after all affected exact-topic groups are locked. */
+/** Locks the current candidates in ID order before reading their state. */
 export async function lockReviewSuccessionCandidates(
   query: TransactionQuery,
   groups: readonly ReviewSuccessionGroup[],
   limit: number,
-): Promise<void> {
+): Promise<string[]> {
   const candidateIds = await listReviewSuccessionCandidateIds(query, groups, limit)
-  if (candidateIds.length === 0) return
-  await query(
+  if (candidateIds.length === 0) return []
+  const { rows } = await query<{ id: string }>(
     `/* lockReviewSuccessionCandidateRows */
     SELECT id FROM posts
     WHERE id = ANY($1::uuid[])
@@ -33,16 +33,18 @@ export async function lockReviewSuccessionCandidates(
     FOR UPDATE`,
     [candidateIds],
   )
+  return rows.map(row => row.id)
 }
 
-/** Reads all groups in one statement, including active archive epochs that may be restored. */
+/** Rereads locked candidates, including active archive epochs that may be restored. */
 export async function listLockedReviewSuccessionCandidates(
   query: TransactionQuery,
   groups: readonly ReviewSuccessionGroup[],
   limit: number,
+  lockedIds: readonly string[],
 ): Promise<ReviewSuccessionCandidate[]> {
   const statement = sql`/* listLockedReviewSuccessionCandidates */ WITH `
-  statement.append(reviewSuccessionCandidatePageCte(groups, limit)).append(sql`
+  statement.append(reviewSuccessionCandidatePageCte(groups, limit, lockedIds)).append(sql`
     SELECT grouped.author_user_id, grouped.topic_ids, candidate.id, candidate.archived_at,
       (`)
   statement
@@ -90,7 +92,11 @@ async function listReviewSuccessionCandidateIds(
   return rows.map(row => row.id)
 }
 
-function reviewSuccessionCandidatePageCte(groups: readonly ReviewSuccessionGroup[], limit: number) {
+function reviewSuccessionCandidatePageCte(
+  groups: readonly ReviewSuccessionGroup[],
+  limit: number,
+  lockedIds?: readonly string[],
+) {
   const records = groups.map(group => ({
     author_user_id: group.authorUserId,
     topic_ids: group.topicIds,
@@ -114,7 +120,9 @@ function reviewSuccessionCandidatePageCte(groups: readonly ReviewSuccessionGroup
       WHERE candidate.created_by_id = group_input.author_user_id
         AND candidate.post_type = 'review'
         AND candidate.root_post_id IS NULL
-        AND candidate.deleted_at IS NULL
+        AND candidate.deleted_at IS NULL`
+  if (lockedIds) statement.append(sql` AND candidate.id = ANY(${lockedIds}::uuid[])`)
+  statement.append(sql`
         AND EXISTS (
           SELECT 1
           FROM post_review_topic_ratings anchor_rating
@@ -126,7 +134,7 @@ function reviewSuccessionCandidatePageCte(groups: readonly ReviewSuccessionGroup
           FROM post_review_topic_ratings candidate_rating
           WHERE candidate_rating.post_id = candidate.id
         ) = group_input.topic_ids
-        AND ((`
+        AND ((`)
   statement
     .append(buildPublicPostEligibilityFilter('candidate', 'candidate_root'))
     .append(sql`) OR (active_succession.id IS NOT NULL AND (`)
