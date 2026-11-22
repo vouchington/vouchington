@@ -6,6 +6,10 @@ export const nativeReAuthEndpointRegistry = {
     method: 'POST',
     path: '/api/v1/auth/mfa/re-auth/email/tokens',
   },
+  'native.auth.re-auth.email.tokens.recently-sent': {
+    method: 'POST',
+    path: '/api/v1/auth/mfa/re-auth/email/tokens',
+  },
   'native.auth.re-auth.email.verification': {
     method: 'POST',
     path: '/api/v1/auth/mfa/re-auth/email/verification',
