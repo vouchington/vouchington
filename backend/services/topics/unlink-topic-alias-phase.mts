@@ -99,9 +99,7 @@ async function deletePostSources(
   const { rows: deleted } = await query<{ post_id: string }>(
     `/* deletePostSources remove */
     DELETE FROM post_topic_alias_sources AS source
-    USING unnest($2::uuid[]) AS locked(id)
     WHERE source.topic_alias_id = $1::uuid
-      AND source.id = locked.id
       AND source.id = ANY($2::uuid[])
       AND EXISTS (SELECT 1 FROM topic_aliases alias
         WHERE alias.id = $1::uuid AND alias.unlink_requested_at IS NOT NULL)
@@ -111,6 +109,7 @@ async function deletePostSources(
   return { postIds: deleted.map(row => row.post_id), rssFeedItemIds: [] }
 }
 
+// IS TRUE keeps staged pair membership eligible for a hashed subplan in the relation deletes.
 async function deletePostRelations(
   query: TransactionQuery,
   topicAliasId: string,
@@ -121,12 +120,13 @@ async function deletePostRelations(
   const { rows: deleted } = await query<{ subject_id: string }>(
     `/* deletePostRelations remove */
     DELETE FROM relation__post__category__topic_alias AS relation
-    USING unnest($2::uuid[], $3::uuid[]) AS locked(subject_id, id)
     WHERE relation.object_id = $1::uuid
-      AND relation.subject_id = locked.subject_id
-      AND relation.id = locked.id
       AND relation.subject_id = ANY($2::uuid[])
       AND relation.id = ANY($3::uuid[])
+      AND ((relation.subject_id, relation.id) IN (
+        SELECT staged.subject_id, staged.id
+        FROM unnest($2::uuid[], $3::uuid[]) AS staged(subject_id, id)
+      )) IS TRUE
       AND EXISTS (SELECT 1 FROM topic_aliases alias
         WHERE alias.id = $1::uuid AND alias.unlink_requested_at IS NOT NULL)
     RETURNING relation.subject_id`,
@@ -145,12 +145,13 @@ async function deleteRssItemRelations(
   const { rows: deleted } = await query<{ subject_id: string }>(
     `/* deleteRssItemRelations remove */
     DELETE FROM relation__rss_feed_item__category__topic_alias AS relation
-    USING unnest($2::uuid[], $3::uuid[]) AS locked(subject_id, id)
     WHERE relation.object_id = $1::uuid
-      AND relation.subject_id = locked.subject_id
-      AND relation.id = locked.id
       AND relation.subject_id = ANY($2::uuid[])
       AND relation.id = ANY($3::uuid[])
+      AND ((relation.subject_id, relation.id) IN (
+        SELECT staged.subject_id, staged.id
+        FROM unnest($2::uuid[], $3::uuid[]) AS staged(subject_id, id)
+      )) IS TRUE
       AND EXISTS (SELECT 1 FROM topic_aliases alias
         WHERE alias.id = $1::uuid AND alias.unlink_requested_at IS NOT NULL)
     RETURNING relation.subject_id`,
