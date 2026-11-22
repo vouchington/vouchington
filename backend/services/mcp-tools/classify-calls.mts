@@ -1,3 +1,4 @@
+import { getMcpAuditMessageLimit } from '@services/mcp-work-config'
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { getRegisteredToolByName } from '@voucha/mcp/registry/index'
 import type { ApiScope } from '@modules/scopes'
@@ -20,10 +21,6 @@ const AUDITED_METHODS: ReadonlySet<string> = new Set([
   'notifications/initialized',
   'notifications/cancelled',
 ])
-
-// A larger JSON-RPC batch is refused on an audited surface instead of writing an unbounded number
-// of audit rows for one request.
-const MAX_AUDITED_MCP_MESSAGES = 25
 
 type UserForClassification = {
   id: string
@@ -56,8 +53,10 @@ type ClassifiedMessage = {
   charge: Pick<McpToolCallCharge, 'requestId' | 'routeCharges'> | null
 }
 
+// A larger JSON-RPC batch is refused on an audited surface instead of writing an unbounded number
+// of audit rows for one request.
 export function exceedsMcpAuditBatchLimit(parsedBody: unknown): boolean {
-  return Array.isArray(parsedBody) && parsedBody.length > MAX_AUDITED_MCP_MESSAGES
+  return Array.isArray(parsedBody) && parsedBody.length > getMcpAuditMessageLimit()
 }
 
 // Predicts, without running anything, how each JSON-RPC message in a request will be authorized, so

@@ -134,6 +134,9 @@ export const REGISTRY_ORDER = [
   'oauth-authorization-exchange-work-config',
   'api-egress-proxy',
   'stuck-resolution-run-expiry-config',
+  'mcp-tools-work-config',
+  'search-params-config',
+  'dispute-annotations-config',
 ] as const
 
 export type RegisteredDynamicConfigKey = (typeof REGISTRY_ORDER)[number]

@@ -1,3 +1,9 @@
+import {
+  disputeAnnotationsConfig,
+  disputeAnnotationsMaxValues,
+} from '@services/review-disputes/annotation-limits'
+import { searchParamsConfig, searchParamsMaxValues } from '@services/search-params/config'
+import { mcpToolsWorkConfig, mcpToolsWorkMaxValues } from '@services/mcp-work-config'
 import { defineBoundedWorkNamespace } from './registry-bounded-work-entry.mts'
 import {
   postPublicationWorkConfig,
@@ -102,6 +108,33 @@ export const backgroundWorkRegistryEntries5 = {
     descriptions: {
       bloom_batch_size: 'Bloom batch size for bookmarks processing.',
       bloom_lookup_batch_size: 'Bloom lookup batch size for bookmarks processing.',
+    },
+  }),
+  'mcp-tools-work-config': defineBoundedWorkNamespace({
+    namespace: 'mcp-tools-work-config',
+    config: mcpToolsWorkConfig,
+    label: 'MCP audit messages',
+    maxValues: mcpToolsWorkMaxValues,
+    descriptions: {
+      max_audited_messages: 'Maximum JSON-RPC messages admitted on an audited MCP surface.',
+    },
+  }),
+  'search-params-config': defineBoundedWorkNamespace({
+    namespace: 'search-params-config',
+    config: searchParamsConfig,
+    label: 'Topic search inputs',
+    maxValues: searchParamsMaxValues,
+    descriptions: {
+      max_topic_search_terms: 'Maximum raw topic identifiers accepted by one search request.',
+    },
+  }),
+  'dispute-annotations-config': defineBoundedWorkNamespace({
+    namespace: 'dispute-annotations-config',
+    config: disputeAnnotationsConfig,
+    label: 'Dispute annotations',
+    maxValues: disputeAnnotationsMaxValues,
+    descriptions: {
+      max_batch_post_ids: 'Maximum post IDs accepted by one annotation lookup request.',
     },
   }),
 }
