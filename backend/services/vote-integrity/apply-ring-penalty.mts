@@ -38,7 +38,6 @@ export async function applyVoteRingPenalty(
   adminUserId: string,
 ): Promise<ApplyRingPenaltyResult> {
   return runWithTransaction(undefined, async (query: TransactionQuery) => {
-    // Load and lock the flag to determine the entity
     const flagQuery = sql`/* applyVoteRingPenalty_getFlag */
     SELECT `
     flagQuery.append(VOTE_INTEGRITY_FLAG_PROJECTION)
@@ -51,7 +50,6 @@ export async function applyVoteRingPenalty(
     flagQuery.append(sql`
     FROM vote_integrity_flags
     WHERE id = ${flagId}
-    FOR UPDATE
   `)
     const { rows: flagRows } = await query<
       VoteIntegrityFlag & { integrity_relation_table: string | null }
@@ -112,17 +110,6 @@ export async function applyVoteRingPenalty(
       r.score > 0 ? [r.user_id] : [],
     )
 
-    const userIds =
-      upvoterIds.length === 0
-        ? []
-        : await insertVoteWeightPenalty({
-            userIds: upvoterIds,
-            reason: 'voting_ring',
-            sourceFlagId: flagId,
-            createdById: adminUserId,
-            query,
-            enqueueRecalculation: false,
-          })
     const resolutionQuery = sql`/* applyVoteRingPenalty_resolveFlag */
     UPDATE vote_integrity_flags
     SET resolved_at = CURRENT_TIMESTAMP, resolved_by_id = ${adminUserId}, resolution = 'penalized'
@@ -134,6 +121,18 @@ export async function applyVoteRingPenalty(
     )
     const resolvedFlag = resolvedRows[0]
     if (!resolvedFlag) throw createHttpError(409, 'Vote integrity flag is already resolved')
+
+    const userIds =
+      upvoterIds.length === 0
+        ? []
+        : await insertVoteWeightPenalty({
+            userIds: upvoterIds,
+            reason: 'voting_ring',
+            sourceFlagId: flagId,
+            createdById: adminUserId,
+            query,
+            enqueueRecalculation: false,
+          })
     await recordModeratorAction(
       adminUserId,
       {

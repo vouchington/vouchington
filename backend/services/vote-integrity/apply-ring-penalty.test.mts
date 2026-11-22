@@ -244,5 +244,32 @@ describe('apply-ring-penalty', () => {
       })
       expect(await getTestPenaltiesByFlagId(flag!.id)).toHaveLength(1)
     })
+
+    it('applies a ring penalty once when two moderators resolve the same flag', async () => {
+      const postId = await makePost(randomSlug())
+      const upvoter = await createTestUser()
+      const secondAdmin = await createTestUser({ administrator: true })
+      await insertTestPostVote(postId, upvoter.id, '9.9.9.9', 1)
+      const flag = await createVoteIntegrityFlag('post', postId, 'ip_correlation', {})
+
+      const results = await Promise.allSettled([
+        applyVoteRingPenalty(flag!.id, adminUser.id),
+        applyVoteRingPenalty(flag!.id, secondAdmin.id),
+      ])
+
+      expect(results).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            status: 'fulfilled',
+            value: expect.objectContaining({ penalized_user_count: 1 }),
+          }),
+          expect.objectContaining({
+            status: 'rejected',
+            reason: expect.objectContaining({ status: 409 }),
+          }),
+        ]),
+      )
+      expect(await getTestPenaltiesByFlagId(flag!.id)).toHaveLength(1)
+    })
   })
 })
