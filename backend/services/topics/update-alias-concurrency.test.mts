@@ -1,9 +1,14 @@
 import { randomUUID } from 'node:crypto'
-import { beginTransaction, createTestUser, insertTestTopic } from '@voucha/test-helpers'
+import {
+  beginTransaction,
+  createTestUser,
+  insertTestTopic,
+  insertTestUrlHostname,
+} from '@voucha/test-helpers'
 import { getTestPostgresBackendProcessId } from '@voucha/test-helpers/postgres-lock-wait'
 import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { describe, expect, it } from 'vitest'
-import { createTopicAliases } from './aliases.mts'
+import { createTopicAliases, createUnlinkedTopicAlias, linkTopicAlias } from './aliases.mts'
 import { getTopicByAny } from './get.mts'
 import { updateTopic } from './update.mts'
 
@@ -52,4 +57,63 @@ describe('topic slug and alias concurrency', () => {
       aliases: expect.arrayContaining([previousSlug, nextSlug, extraAlias]),
     })
   })
+  it.each(['create', 'link'] as const)(
+    'commits a slug update while another transaction tries to %s the new slug alias',
+    async aliasAction => {
+      const admin = await createTestUser({ administrator: true })
+      const suffix = randomUUID().replaceAll('-', '')
+      const previousSlug = `original-${suffix}`
+      const nextSlug = `next${suffix}`
+      const extraAlias = `retained-${suffix}`
+      const topicId = await insertTestTopic({
+        name: `Topic for concurrent ${aliasAction} ${suffix}`,
+        slug: previousSlug,
+        createdById: admin.id,
+      })
+      const topic = await getTopicByAny(topicId, { readOnly: false })
+      if (!topic) throw new Error('Expected the fixture topic')
+      const alias = await createUnlinkedTopicAlias(nextSlug)
+      const hostnameId =
+        aliasAction === 'create'
+          ? await insertTestUrlHostname({ hostname: `alias-${suffix}.example.com` })
+          : null
+
+      await using updating = await beginTransaction()
+      const options = { query: updating, skipSideEffects: true } as const
+      await createTopicAliases(topicId, extraAlias, options)
+      const holderProcessId = await getTestPostgresBackendProcessId(updating)
+      let finished: Promise<void> | undefined
+      await withTestOwnedPostgresWait(
+        {
+          holderProcessId,
+          pool: 'write',
+          lock: { kind: 'transaction' },
+          queryMarker: 'topics',
+          releaseHolder: () => (finished ??= updating.rollback()),
+        },
+        async waitForLock => {
+          const aliasOptions = { skipSideEffects: true }
+          const pending =
+            aliasAction === 'create'
+              ? createTopicAliases(topicId, nextSlug, aliasOptions)
+              : linkTopicAlias(topicId, alias.id, aliasOptions)
+          await waitForLock(pending)
+          await updateTopic(
+            admin,
+            topic,
+            { slug: nextSlug, ...(hostnameId ? { hostname: hostnameId } : {}) },
+            options,
+          )
+          await (finished ??= updating.commit())
+          await pending
+        },
+      )
+
+      await expect(getTopicByAny(topicId, { readOnly: false })).resolves.toMatchObject({
+        slug: nextSlug,
+        hostname_id: hostnameId,
+        aliases: expect.arrayContaining([previousSlug, nextSlug, extraAlias]),
+      })
+    },
+  )
 })

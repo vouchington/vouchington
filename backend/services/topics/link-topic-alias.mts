@@ -19,11 +19,12 @@ export async function linkTopicAlias(
   let previousTopicId: string | null = null
   const run = async (query: TransactionQuery) => {
     const { rows: topicRows } = await query<{ id: string; merged_into_topic_id: string | null }>(
-      `/* linkTopicAlias getTopic */
+      `/* linkTopicAlias lockTopic */
       SELECT id, merged_into_topic_id
-      -- no-mistakes-disable-next-line postgres-required-predicates: merged rows are read to preserve 409 conflict semantics
+      -- no-mistakes-disable-next-line postgres-required-predicates: merged rows must be locked to preserve 409 conflict semantics
       FROM topics
-      WHERE id = $1 AND deleted_at IS NULL`,
+      WHERE id = $1 AND deleted_at IS NULL
+      FOR UPDATE`,
       [topicId],
     )
     const topic = topicRows[0]

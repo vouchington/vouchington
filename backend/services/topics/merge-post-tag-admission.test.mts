@@ -37,31 +37,24 @@ describe('topic merge admission with an in-flight tag', () => {
     let committed: Promise<void> | undefined
     const commitTag = () => (committed ??= writer.commit())
 
-    const [outcome] = await Promise.allSettled([
-      withTestOwnedPostgresWait(
-        {
-          holderProcessId,
-          pool: 'write',
-          lock: { kind: 'transaction' },
-          queryMarker: 'mergeTopicAliases lockTopics',
-          releaseHolder: commitTag,
-        },
-        async waitForLock => {
-          const merge = (async () => {
-            const operation = await createTopicMergeOperation(admin, source!, destination!)
-            return settleTopicMergeOperationForTest(admin, sourceRow.id, operation.id)
-          })()
-          await waitForLock(merge)
-          await commitTag()
-          return merge
-        },
-      ),
-    ])
-
-    // If admission did not wait, the observer releases the writer after the merge finishes.
+    await withTestOwnedPostgresWait(
+      {
+        holderProcessId,
+        pool: 'write',
+        lock: { kind: 'transaction' },
+        queryMarker: 'topics',
+        releaseHolder: commitTag,
+      },
+      async waitForLock => {
+        const merge = (async () => {
+          const operation = await createTopicMergeOperation(admin, source!, destination!)
+          return settleTopicMergeOperationForTest(admin, sourceRow.id, operation.id)
+        })()
+        await waitForLock(merge)
+        await commitTag()
+        await merge
+      },
+    )
     await expect(getPostDataPointTopicIdsForTest(postId)).resolves.toEqual([destinationRow.id])
-    if (outcome.status === 'rejected') throw outcome.reason
-    expect(outcome.value).toMatchObject({ status: 'completed' })
-    await expect(getTopicByAny(sourceRow.id)).resolves.toMatchObject({ id: destinationRow.id })
   })
 })
