@@ -1,9 +1,10 @@
-import { Environment, type ResponseBodyV2DecodedPayload } from '@apple/app-store-server-library'
+import type { ResponseBodyV2DecodedPayload } from '@apple/app-store-server-library'
 import type {
   AppleMembershipProviderEnvironment,
   AppleNotificationEvidence,
   AppleNotificationVerifier,
 } from './types.mts'
+import { toAppleEnvironment } from './environment.mts'
 
 export type VerifiedAppleNotification = {
   notificationId: string
@@ -61,8 +62,4 @@ function getSignedPayload(evidence: unknown): string | null {
 
 function getRequiredText(value: unknown): string | null {
   return typeof value === 'string' && value.trim().length > 0 ? value : null
-}
-
-function toAppleEnvironment(environment: AppleMembershipProviderEnvironment): Environment {
-  return environment === 'test' ? Environment.SANDBOX : Environment.PRODUCTION
 }
