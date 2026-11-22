@@ -11,12 +11,10 @@ import { STORY_CLUSTERING_CLASSIFIER_SLUG } from '@voucha/types/entities/story-c
  */
 export async function dispatchStoryClusteringForEmbeddedItems(
   rssFeedItemIds: readonly string[],
-  enqueue: typeof enqueueBulkClassifierRunDispatchers = enqueueBulkClassifierRunDispatchers,
-  report: (error: Error) => void = onError,
 ): Promise<void> {
   if (rssFeedItemIds.length === 0) return
   try {
-    await enqueue(
+    await enqueueBulkClassifierRunDispatchers(
       rssFeedItemIds.map(rssFeedItemId => ({
         classifier: STORY_CLUSTERING_CLASSIFIER_SLUG,
         postId: null,
@@ -24,6 +22,6 @@ export async function dispatchStoryClusteringForEmbeddedItems(
       })),
     )
   } catch (err) {
-    report(err instanceof Error ? err : new Error(String(err)))
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
 }

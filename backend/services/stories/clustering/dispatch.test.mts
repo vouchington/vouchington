@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { ai_agents } from '@queues/ai-agents/queues'
-import type { enqueueBulkClassifierRunDispatchers } from '@queues/ai-agents/enqueues/classifier-run'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 import { STORY_CLUSTERING_CLASSIFIER_SLUG as SLUG } from '@voucha/types/entities/story-clustering-classifier'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { dispatchStoryClusteringForEmbeddedItems } from './dispatch.mts'
 
 async function dispatchersFor(rssFeedItemId: string) {
@@ -42,38 +42,36 @@ describe('dispatchStoryClusteringForEmbeddedItems (real queue)', () => {
 })
 
 describe('dispatchStoryClusteringForEmbeddedItems failure handling', () => {
-  function failingQueue(rejection: unknown) {
-    return {
-      enqueue: vi.fn<typeof enqueueBulkClassifierRunDispatchers>().mockRejectedValue(rejection),
-      report: vi.fn<(error: Error) => void>(),
-    }
-  }
+  it('reports a queue rejection instead of failing the embedding job that already stored its vector', async () => {
+    const rssFeedItemId = randomUUID()
+    const addBulk = vi.spyOn(ai_agents, 'addBulk').mockRejectedValue(new Error('queue unavailable'))
+    onTestFinished(() => addBulk.mockRestore())
 
-  it('reports an enqueue failure instead of failing the embedding job that already stored its vector', async () => {
-    const { enqueue, report } = failingQueue(new Error('queue unavailable'))
+    await expect(dispatchStoryClusteringForEmbeddedItems([rssFeedItemId])).resolves.toBeUndefined()
 
-    await expect(
-      dispatchStoryClusteringForEmbeddedItems([randomUUID()], enqueue, report),
-    ).resolves.toBeUndefined()
-
-    expect(report).toHaveBeenCalledExactlyOnceWith(new Error('queue unavailable'))
+    expect(addBulk).toHaveBeenCalled()
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(
+      new Error('queue unavailable'),
+      expect.anything(),
+    )
+    expect(await dispatchersFor(rssFeedItemId)).toHaveLength(0)
   })
 
   it('wraps a non-error rejection so the report is always an Error', async () => {
-    const { enqueue, report } = failingQueue('boom')
+    const addBulk = vi.spyOn(ai_agents, 'addBulk').mockRejectedValue('boom')
+    onTestFinished(() => addBulk.mockRestore())
 
-    await dispatchStoryClusteringForEmbeddedItems([randomUUID()], enqueue, report)
+    await dispatchStoryClusteringForEmbeddedItems([randomUUID()])
 
-    expect(report).toHaveBeenCalledExactlyOnceWith(new Error('boom'))
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(new Error('boom'), expect.anything())
   })
 
   it('never touches the queue for an empty list', async () => {
-    const { enqueue, report } = failingQueue(new Error('unreachable'))
+    const addBulk = vi.spyOn(ai_agents, 'addBulk')
+    onTestFinished(() => addBulk.mockRestore())
 
-    await expect(
-      dispatchStoryClusteringForEmbeddedItems([], enqueue, report),
-    ).resolves.toBeUndefined()
+    await expect(dispatchStoryClusteringForEmbeddedItems([])).resolves.toBeUndefined()
 
-    expect(enqueue).not.toHaveBeenCalled()
+    expect(addBulk).not.toHaveBeenCalled()
   })
 })
