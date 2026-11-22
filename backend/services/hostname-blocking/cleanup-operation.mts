@@ -48,7 +48,7 @@ export async function ensureHostnameBlockCleanupOperation(
   `)
   const existing = existingRows[0]
   if (existing?.relation_cleanup_root_block_id) {
-    const operation = await lockHostnameBlockCleanupOperation(
+    const operation = await getHostnameBlockCleanupOperationInTransaction(
       query,
       existing.relation_cleanup_root_block_id,
     )
@@ -68,7 +68,7 @@ export async function ensureHostnameBlockCleanupOperation(
       blockedSource,
       rootBlockId: ancestor.id,
     })
-    const operation = await lockHostnameBlockCleanupOperation(query, ancestor.id)
+    const operation = await getHostnameBlockCleanupOperationInTransaction(query, ancestor.id)
     if (!operation) throw new Error('Ancestor hostname block cleanup root is missing')
     return operation
   }
@@ -84,7 +84,7 @@ export async function ensureHostnameBlockCleanupOperation(
       `,
     )
     if (!rows[0]) throw new Error('Hostname block cleanup operation was not attached')
-    const operation = await lockHostnameBlockCleanupOperation(query, existing.id)
+    const operation = await getHostnameBlockCleanupOperationInTransaction(query, existing.id)
     if (!operation) throw new Error('Hostname block cleanup operation is missing')
     return operation
   }
@@ -102,7 +102,7 @@ export async function ensureHostnameBlockCleanupOperation(
       )
     `,
   )
-  const operation = await lockHostnameBlockCleanupOperation(query, blockId)
+  const operation = await getHostnameBlockCleanupOperationInTransaction(query, blockId)
   if (!operation) throw new Error('Hostname block cleanup operation is missing')
   return operation
 }
