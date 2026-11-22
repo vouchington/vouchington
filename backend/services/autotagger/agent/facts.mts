@@ -33,7 +33,7 @@ export async function persistAutotaggerAgentFacts(
     JOIN topics topic ON topic.id = candidate.topic_id
       AND topic.deleted_at IS NULL AND topic.merged_into_topic_id IS NULL
     WHERE candidate.run_id = ${lease.runId} AND candidate.topic_id = ANY(${reported}::uuid[])
-    ORDER BY topic.id FOR SHARE OF topic
+    ORDER BY topic.id
   `)
 }
 

@@ -12,16 +12,13 @@ export async function deleteUserModNote(
   targetUserId: string,
 ): Promise<void> {
   await using query = await beginTransaction()
-  const { rows } = await query(sql`/* deleteUserModNote:lock */
-    SELECT id, target_user_id, author_user_id, community_id
+  const { rows } = await query(sql`/* deleteUserModNote:get */
+    SELECT target_user_id, community_id
     FROM user_moderator_notes
     WHERE id = ${noteId}
       AND deleted_at IS NULL
-    FOR UPDATE
   `)
-  const note = rows[0] as
-    | Pick<UserModNote, 'id' | 'target_user_id' | 'author_user_id' | 'community_id'>
-    | undefined
+  const note = rows[0] as Pick<UserModNote, 'target_user_id' | 'community_id'> | undefined
   assert(note, 404, 'Note not found')
   assert(note.target_user_id === targetUserId, 404, 'Note not found')
 
@@ -39,12 +36,13 @@ export async function deleteUserModNote(
     }
   }
 
-  await query(sql`/* deleteUserModNote:softDelete */
+  const { rowCount } = await query(sql`/* deleteUserModNote:softDelete */
     UPDATE user_moderator_notes
     SET deleted_at = now()
     WHERE id = ${noteId}
       AND deleted_at IS NULL
   `)
+  assert(rowCount, 404, 'Note not found')
   await recordModeratorAction(
     currentUser.id,
     {
