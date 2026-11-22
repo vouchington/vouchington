@@ -228,7 +228,11 @@ segments leave behind, and keep a runner with the predecessor whose writes its p
 that changes because a shard lost a predecessor's writes is fixed by regrouping, never by loosening
 its contract. The partitioned comment fixture plus the pruning proof (`partition`) and the
 million-post Hacker News fixture (`hn-scale`) are additive, so no other scenario reads them and each
-has its own shard. The late fixture writers that must follow every ordinary plan close the last
+has its own shard. Both load their posts on parallel connections, one monthly leaf per task, with a
+single instant captured once for every timestamp, so row ids and values match a serial load and each
+leaf's rows go in the serial order; `EXPLAIN_FIXTURE_LOAD_WORKERS` overrides the worker count (1 is serial). Triggers, indexes
+and foreign keys stay enabled. Each phase commits, so a failed load leaves its leaves behind and the
+disposable database must be recreated. The late fixture writers that must follow every ordinary plan close the last
 ordinary segment. Size the segments from per-runner timings in a recent run so every shard job stays
 within the CI runtime budget in [CI](../../ci.md). A scenario listed in no shard or in two fails the manifest checks. The
 `explain-analyze-gates` job merges the shard artifacts, requires every manifest scenario once, and
