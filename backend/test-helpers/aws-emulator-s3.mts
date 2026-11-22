@@ -11,7 +11,7 @@ import {
   sendToPresignedS3Url as sendToPresigned,
   uniqueS3Prefix,
 } from '@vouchington/aws/testing'
-import { Agent, fetch } from 'undici'
+import undici from 'undici'
 
 export { uniqueS3Prefix }
 
@@ -57,15 +57,16 @@ export async function sendToPresignedS3Url(
   url: string,
   init: { method: 'GET' | 'PUT'; contentType?: string; body?: Uint8Array },
 ): Promise<{ status: number; body: string }> {
-  const dispatcher = new Agent()
+  const dispatcher = new undici.Agent()
   try {
     return await sendToPresigned(
       url,
       init,
       (target, requestInit) =>
-        fetch(target, { ...requestInit, dispatcher } as Parameters<
-          typeof fetch
-        >[1]) as unknown as Promise<Response>,
+        undici.fetch(target, {
+          ...(requestInit as object),
+          dispatcher,
+        }) as unknown as Promise<Response>,
     )
   } finally {
     await dispatcher.close()

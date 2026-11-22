@@ -1,5 +1,5 @@
 import { resolve } from 'node:path'
-import { EnvHttpProxyAgent, fetch } from 'undici'
+import undici from 'undici'
 import { startAwsEmulator, type RunningAwsEmulator } from '@vouchington/aws/testing'
 
 /**
@@ -25,14 +25,14 @@ const cacheDir = resolve(import.meta.dirname, '..', '..', '.cache', 'aws-emulato
 
 /** Starts the pinned emulator; the package download honors HTTPS_PROXY where a sandbox needs one. */
 export async function startVouchaAwsEmulator(): Promise<RunningAwsEmulator> {
-  const dispatcher = new EnvHttpProxyAgent()
+  const dispatcher = new undici.EnvHttpProxyAgent()
   try {
     return await startAwsEmulator({
       package: {
         pin: AWS_EMULATOR_PACKAGE_PIN,
         cacheDir,
         fetch: (url, init) =>
-          fetch(url, { dispatcher, signal: init.signal }) as unknown as Promise<Response>,
+          undici.fetch(url, { dispatcher, signal: init.signal }) as unknown as Promise<Response>,
       },
       dockerImage: LINUX_RUNTIME_IMAGE,
       namePrefix: 'voucha-aws-emulator',
