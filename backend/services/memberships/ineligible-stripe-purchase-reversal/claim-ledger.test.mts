@@ -1,6 +1,7 @@
 import {
   assertReversalClaimLeavesProviderContextUnlockedForTest,
   claimTestIneligiblePurchaseReversalOperations,
+  reconcileTestRefundBalance,
 } from '@voucha/test-helpers/membership-reversal-case-fixtures'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
@@ -15,6 +16,7 @@ import {
   completeIneligiblePurchaseReversal,
   failIneligiblePurchaseReversals,
   markIneligiblePurchaseReversalCompleted,
+  recordIneligiblePurchaseReversalProviderRefund,
 } from '../ineligible-stripe-purchase-reversal-execution.mts'
 import { claimPersistedIneligiblePurchaseReversalCase } from './claim-ledger.mts'
 
@@ -114,34 +116,7 @@ describe('family collision reversal ledger', () => {
   })
 
   it('returns an existing completed receipt without reclaiming its execution lease', async () => {
-    const user = await createTestUser()
-    const currentSku = await createTestSku({ plan: 'plus' })
-    await createMembership({
-      userId: user.id,
-      plan: 'plus',
-      skuId: currentSku.id,
-      stripeSubscriptionId: `sub_completed_current_${randomUUID()}`,
-      providerEnvironment: 'production',
-    })
-    const sku = await createTestSku({ plan: 'pro' })
-    const options = {
-      effectiveAt: undefined,
-      expiresAt: undefined,
-      originatingInvoiceId: `in_completed_${randomUUID()}`,
-      providerEnvironment: 'production' as const,
-      stripePriceId: sku.stripe_price_id,
-      subscriptionId: `sub_completed_${randomUUID()}`,
-      userId: user.id,
-    }
-    const target = {
-      amountMinorUnits: 900,
-      chargeId: `ch_completed_${randomUUID()}`,
-      currency: 'usd',
-      invoiceId: options.originatingInvoiceId,
-      paymentIntentId: null,
-      qualifyingAmountMinorUnits: 900,
-    }
-    const snapshot = { currency: target.currency, qualifyingAmountMinorUnits: 900 }
+    const { options, snapshot, target } = await createCompletedReceiptTestCase()
     const initial = (await claimTestIneligiblePurchaseReversalOperations(
       options,
       [target],
@@ -169,4 +144,93 @@ describe('family collision reversal ledger', () => {
       }),
     )
   })
+  it('rolls back completion when the saved provider refund exceeds the reconciled balance', async () => {
+    const { options, target, snapshot } = await createCompletedReceiptTestCase()
+    const initial = await claimTestIneligiblePurchaseReversalOperations(options, [target], snapshot)
+    const first = initial.reversals[0]!
+    const { amountMinorUnits } = first.target
+    const providerRefundId = `re_conflicted_${randomUUID()}`
+    await markIneligiblePurchaseReversalCompleted(initial.cancellation!)
+    await recordIneligiblePurchaseReversalProviderRefund(first, providerRefundId)
+    await failIneligiblePurchaseReversals([first], new Error('provider timeout'))
+    await expect(reconcileTestRefundBalance({ id: first.id, amountMinorUnits })).resolves.toBe(
+      amountMinorUnits - 1,
+    )
+    const claim = await claimPersistedIneligiblePurchaseReversalCase(options, [target])
+    const reversal = claim!.reversals[0]!
+
+    await expect(
+      completeIneligiblePurchaseReversal(reversal, { amountMinorUnits, providerRefundId }),
+    ).rejects.toMatchObject({ status: 409 })
+    await expect(
+      getTestIneligiblePurchaseReversal(options.subscriptionId, options.providerEnvironment),
+    ).resolves.toMatchObject({
+      amount_minor_units: String(amountMinorUnits - 1),
+      receipt_amount_minor_units: null,
+      completed_at: null,
+      provider_refund_id: providerRefundId,
+    })
+  })
+
+  it('keeps a completed receipt when a pending reconciliation has an older balance', async () => {
+    const { options, reversal } = await reclaimFailedReceiptTestCase()
+    const { amountMinorUnits } = reversal.target
+    const providerRefundId = `re_completion_won_${randomUUID()}`
+
+    await expect(
+      reconcileTestRefundBalance({ id: reversal.id, amountMinorUnits }, () =>
+        completeIneligiblePurchaseReversal(reversal, { amountMinorUnits, providerRefundId }),
+      ),
+    ).resolves.toBe(amountMinorUnits)
+    await expect(
+      getTestIneligiblePurchaseReversal(options.subscriptionId, options.providerEnvironment),
+    ).resolves.toMatchObject({
+      amount_minor_units: String(amountMinorUnits),
+      receipt_amount_minor_units: String(amountMinorUnits),
+      completed_at: expect.any(Date),
+      provider_refund_id: providerRefundId,
+    })
+  })
 })
+
+async function createCompletedReceiptTestCase() {
+  const user = await createTestUser()
+  const currentSku = await createTestSku({ plan: 'plus' })
+  await createMembership({
+    userId: user.id,
+    plan: 'plus',
+    skuId: currentSku.id,
+    stripeSubscriptionId: `sub_completed_current_${randomUUID()}`,
+    providerEnvironment: 'production',
+  })
+  const sku = await createTestSku({ plan: 'pro' })
+  const options = {
+    effectiveAt: undefined,
+    expiresAt: undefined,
+    originatingInvoiceId: `in_completed_${randomUUID()}`,
+    providerEnvironment: 'production' as const,
+    stripePriceId: sku.stripe_price_id,
+    subscriptionId: `sub_completed_${randomUUID()}`,
+    userId: user.id,
+  }
+  const target = {
+    amountMinorUnits: 900,
+    chargeId: `ch_completed_${randomUUID()}`,
+    currency: 'usd',
+    invoiceId: options.originatingInvoiceId,
+    paymentIntentId: null,
+    qualifyingAmountMinorUnits: 900,
+  }
+  const snapshot = { currency: target.currency, qualifyingAmountMinorUnits: 900 }
+  return { options, snapshot, target }
+}
+
+async function reclaimFailedReceiptTestCase() {
+  const { options, target, snapshot } = await createCompletedReceiptTestCase()
+  const initial = await claimTestIneligiblePurchaseReversalOperations(options, [target], snapshot)
+  await markIneligiblePurchaseReversalCompleted(initial.cancellation!)
+  await failIneligiblePurchaseReversals([initial.reversals[0]!], new Error('provider timeout'))
+  const claim = await claimPersistedIneligiblePurchaseReversalCase(options, [target])
+  const reversal = claim!.reversals[0]!
+  return { options, reversal }
+}

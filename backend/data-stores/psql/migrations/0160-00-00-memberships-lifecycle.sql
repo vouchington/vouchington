@@ -805,7 +805,6 @@ BEGIN
       AND operation.operation_kind IN ('automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution')
       AND NEW.amount_minor_units <= operation.remaining_refundable_minor_units
       AND NEW.currency_code = operation.currency_code
-    FOR SHARE
   ) THEN
     RAISE EXCEPTION 'automatic refund receipt does not match its operation' USING ERRCODE = '23514';
   END IF;

@@ -2019,7 +2019,7 @@
       "returnsSet": false
     },
     "fn_reject_invalid_automatic_refund_receipt()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_invalid_automatic_refund_receipt()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1 FROM membership_operations operation\n    WHERE operation.id = NEW.membership_operation_id\n      AND operation.operation_kind IN ('automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution')\n      AND NEW.amount_minor_units <= operation.remaining_refundable_minor_units\n      AND NEW.currency_code = operation.currency_code\n    FOR SHARE\n  ) THEN\n    RAISE EXCEPTION 'automatic refund receipt does not match its operation' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_invalid_automatic_refund_receipt()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1 FROM membership_operations operation\n    WHERE operation.id = NEW.membership_operation_id\n      AND operation.operation_kind IN ('automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution')\n      AND NEW.amount_minor_units <= operation.remaining_refundable_minor_units\n      AND NEW.currency_code = operation.currency_code\n  ) THEN\n    RAISE EXCEPTION 'automatic refund receipt does not match its operation' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n",
       "returnsSet": false
     },
     "fn_reject_invalid_copyright_eu_dispute_settlement_outcome()": {

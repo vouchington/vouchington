@@ -1,5 +1,6 @@
 import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import createHttpError from 'http-errors'
 import { getIneligiblePurchaseReversalFailureMessage } from './ineligible-stripe-purchase-reversal-failure-message.mts'
 import type { ClaimedReversal } from './ineligible-stripe-purchase-reversal-types.mts'
 
@@ -16,6 +17,18 @@ export async function completeIneligiblePurchaseReversal(
   receipt: { amountMinorUnits: number; providerRefundId: string | null },
 ): Promise<void> {
   await using transaction = await beginTransaction()
+  // Completion and reconciliation write the same operation. Read the refundable balance
+  // only after the completion update has acquired that row.
+  const remainingRefundableMinorUnits = await markIneligiblePurchaseReversalCompleted(
+    reversal,
+    transaction,
+  )
+  if (
+    remainingRefundableMinorUnits !== null &&
+    receipt.amountMinorUnits > remainingRefundableMinorUnits
+  ) {
+    throw createHttpError(409, 'Refund amount exceeds the current refundable balance')
+  }
   await transaction(sql`/* completeIneligiblePurchaseReversal:receipt */
       INSERT INTO membership_automatic_refund_receipts (
         membership_operation_id, membership_provider_context_id, provider_refund_id, amount_minor_units, currency_code
@@ -25,7 +38,6 @@ export async function completeIneligiblePurchaseReversal(
       WHERE operation.id = ${reversal.id}
       ON CONFLICT (membership_operation_id) DO NOTHING
     `)
-  await markIneligiblePurchaseReversalCompleted(reversal, transaction)
   await transaction.commit()
 }
 
@@ -50,9 +62,11 @@ export async function recordIneligiblePurchaseReversalProviderRefund(
 export async function markIneligiblePurchaseReversalCompleted(
   reversal: Pick<ClaimedReversal, 'id' | 'leaseToken'>,
   query?: QueryExecutor,
-): Promise<void> {
+): Promise<number | null> {
   const run = query ?? write
-  const { rows } = await run(sql`/* completeIneligiblePurchaseReversal:operation */
+  const { rows } = await run<{
+    remaining_refundable_minor_units: string | null
+  }>(sql`/* completeIneligiblePurchaseReversal:operation */
     UPDATE membership_operations
     SET completed_at = CURRENT_TIMESTAMP, failed_at = NULL, failure_message = NULL
     WHERE id = ${reversal.id} AND completed_at IS NULL
@@ -61,9 +75,13 @@ export async function markIneligiblePurchaseReversalCompleted(
         WHERE work.membership_operation_id = membership_operations.id
           AND work.lease_token = ${reversal.leaseToken} AND work.lease_expires_at > clock_timestamp()
       )
-    RETURNING id
+    RETURNING remaining_refundable_minor_units::TEXT
   `)
-  if (rows.length === 0) throw new IneligiblePurchaseReversalInProgressError(reversal.id)
+  const operation = rows[0]
+  if (!operation) throw new IneligiblePurchaseReversalInProgressError(reversal.id)
+  return operation.remaining_refundable_minor_units === null
+    ? null
+    : Number(operation.remaining_refundable_minor_units)
 }
 
 export async function failIneligiblePurchaseReversals(
