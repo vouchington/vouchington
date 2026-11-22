@@ -1,9 +1,9 @@
 import { beginTransaction } from '@data-stores/psql'
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
 import type { PrivateUser } from '@services/users/types'
 import sql from 'sql-template-strings'
 import {
   assertCanDistribute,
-  dedupLockKey,
   type CreateDistributionInput,
   validateTarget,
 } from './create-guards.mts'
@@ -60,54 +60,52 @@ async function createDistribution(
   currentUser: PrivateUser,
   input: CreateDistributionInput,
 ): Promise<FollowerDistributionAccepted> {
-  const eagerOptions =
-    typeof input.options === 'function' ? null : parseSendFollowersInput(input.options)
-  await using query = await beginTransaction()
-  const target = await validateTarget(currentUser, input, query)
-  const options = eagerOptions ?? parseSendFollowersInput((input.options as () => unknown)())
-  // ast-grep-ignore: no-three-sequential-awaits -- The target-keyed advisory lock must finish before assertCanDistribute rereads quota/audience; its recipient ids and the inserted distribution id feed recipient rows.
-  await query(sql`/* createDistribution:lock */
-    SELECT pg_advisory_xact_lock(hashtext(${dedupLockKey(currentUser.id, input.action, target.id)}))
-  `)
-  const selectedRecipientIds = await assertCanDistribute(
-    currentUser.id,
-    input.action,
-    target.id,
-    options.audience === 'selected_followers' ? options.recipient_user_ids.toSorted() : null,
-    query,
-  )
+  return conflictOnSerializationFailure(async () => {
+    const eagerOptions =
+      typeof input.options === 'function' ? null : parseSendFollowersInput(input.options)
+    await using query = await beginTransaction({ serializable: true })
+    const target = await validateTarget(currentUser, input, query)
+    const options = eagerOptions ?? parseSendFollowersInput((input.options as () => unknown)())
+    const selectedRecipientIds = await assertCanDistribute(
+      currentUser.id,
+      input.action,
+      target.id,
+      options.audience === 'selected_followers' ? options.recipient_user_ids.toSorted() : null,
+      query,
+    )
 
-  const { rows } = await query(sql`/* createDistribution */
-    INSERT INTO follower_distributions (
-      sender_user_id,
-      action,
-      audience,
-      post_id,
-      rss_feed_item_id
-    )
-    VALUES (
-      ${currentUser.id},
-      ${input.action},
-      ${options.audience},
-      ${target.kind === 'post' ? target.id : null},
-      ${target.kind === 'rss_feed_item' ? target.id : null}
-    )
-    RETURNING id
-  `)
-  const distributionId = rows[0]!.id as string
-  if (selectedRecipientIds) {
-    await query(sql`/* createDistribution:selectedRecipients */
-      INSERT INTO follower_distribution_selected_recipients (
-        distribution_id,
-        recipient_user_id
+    const { rows } = await query(sql`/* createDistribution */
+      INSERT INTO follower_distributions (
+        sender_user_id,
+        action,
+        audience,
+        post_id,
+        rss_feed_item_id
       )
-      SELECT ${distributionId}, selected.recipient_user_id
-      FROM unnest(${selectedRecipientIds}::uuid[]) AS selected(recipient_user_id)
-      ORDER BY selected.recipient_user_id
+      VALUES (
+        ${currentUser.id},
+        ${input.action},
+        ${options.audience},
+        ${target.kind === 'post' ? target.id : null},
+        ${target.kind === 'rss_feed_item' ? target.id : null}
+      )
+      RETURNING id
     `)
-  }
+    const distributionId = rows[0]!.id as string
+    if (selectedRecipientIds) {
+      await query(sql`/* createDistribution:selectedRecipients */
+        INSERT INTO follower_distribution_selected_recipients (
+          distribution_id,
+          recipient_user_id
+        )
+        SELECT ${distributionId}, selected.recipient_user_id
+        FROM unnest(${selectedRecipientIds}::uuid[]) AS selected(recipient_user_id)
+        ORDER BY selected.recipient_user_id
+      `)
+    }
 
-  const result = { status: 'accepted', distribution_id: distributionId }
-  await query.commit()
-  return result as FollowerDistributionAccepted
+    const result = { status: 'accepted', distribution_id: distributionId }
+    await query.commit()
+    return result as FollowerDistributionAccepted
+  }, 'Conflicting follower distribution; try again')
 }

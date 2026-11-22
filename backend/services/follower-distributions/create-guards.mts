@@ -60,7 +60,6 @@ export async function preflightPostDistributionTarget(
   return post.id
 }
 
-// One statement after the advisory lock, so it reads what the previous lock holder committed.
 // Precedence is unchanged: a recent distribution (429) wins over a selected recipient who is no
 // longer a follower (400).
 export async function assertCanDistribute(
@@ -99,14 +98,6 @@ export async function assertCanDistribute(
     throw createError(400, 'Selected users must be current followers')
   }
   return followerIds.toSorted()
-}
-
-export function dedupLockKey(
-  senderUserId: string,
-  action: FollowerDistributionAction,
-  entityId: string,
-): string {
-  return `follower-distribution:${senderUserId}:${action}:${entityId}`
 }
 
 function recentDistributionQuery(
