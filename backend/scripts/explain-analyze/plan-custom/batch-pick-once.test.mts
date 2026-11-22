@@ -26,6 +26,12 @@ describe('assertBatchPickEvaluatedOnce', () => {
     ).toThrow('more than once')
   })
 
+  it('rejects a Limit that reports no Actual Loops', () => {
+    expect(() => assertBatchPickEvaluatedOnce(result([{ 'Node Type': 'Limit' }]))).toThrow(
+      'without Actual Loops',
+    )
+  })
+
   it('rejects a plan with no Limit pick', () => {
     expect(() => assertBatchPickEvaluatedOnce(result([{ 'Node Type': 'Seq Scan' }]))).toThrow(
       'must plan its batch pick',

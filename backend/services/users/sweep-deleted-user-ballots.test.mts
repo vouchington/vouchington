@@ -26,6 +26,7 @@ import { getUserDeletionRequestForTest } from '@voucha/test-helpers/services/use
 import { processUserDeletionPhaseBatch } from './delete-phases.mts'
 import { deleteUser } from './delete.mts'
 import { userDeletionsWorkConfig } from '@services/user-deletions/work-limits'
+import { deletedUserBallotFamilies } from '@services/user-deletions/deleted-user-ballot-page'
 import { sweepDeletedUserBallots } from './sweep-deleted-user-ballots.mts'
 
 function makePost(creatorId: string) {
@@ -174,5 +175,17 @@ describe('deleted-user ballot sweep', () => {
     await expect(
       readTestEntityRelationUserVotePage(unfinished.id, relationTable, { limit: 2 }),
     ).resolves.toEqual([{ id: unfinishedBallot, entity_relation_id: relationId, score: 1 }])
+  })
+
+  it('wraps from the last family back to the first', async () => {
+    const lastFamily = deletedUserBallotFamilies.at(-1)!
+    const deleted = await createTestUser()
+    await deleteUserAndDrainForTest(deleted, deleted)
+    await seedCursorBefore(lastFamily, [deleted.id])
+
+    // The only way out of the last family is the wrap, and another file's concurrent sweep can
+    // only move the cursor further the same way, so the exact position is not asserted.
+    await sweepTimes(2)
+    expect(await readTestBallotSweepCursor()).not.toMatchObject({ family: lastFamily })
   })
 })
