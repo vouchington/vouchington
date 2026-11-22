@@ -31,8 +31,10 @@ retry_wait_time = 2
 user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
 
 exclude = [
-  # DNS names allow one terminal dot before the optional port or path boundary.
-  "^https?://github\\.com\\.?/jonathanong/",
+  # Former personal-account URL of this repository; it now lives in the vouchington organization.
+  # Other jonathanong repositories linked from docs (harness-plugins, valkyries, vurst) are public
+  # and stay checked. DNS names allow one terminal dot before the optional port or path boundary.
+  "^https?://github\\.com\\.?/jonathanong/vouchington(?:[/?#]|$)",
   # Private host-provisioning repository; unauthenticated checks receive 404.
   "^https?://github\\.com\\.?/vouchington/vouchington-machines(?:[/?#]|$)",
   # Placeholder host in generated ActivityPub key URL documentation.
