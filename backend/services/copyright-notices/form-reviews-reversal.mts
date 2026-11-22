@@ -29,9 +29,15 @@ export async function reverseAutomatedCopyrightRestrictions(
  */
 export async function reverseAutomatedCopyrightRestrictionsInTransaction(
   transaction: TransactionQuery,
-  input: { noticeId: string; submissionId: string; moderatorId: string | null; reviewedAt: Date },
+  input: {
+    noticeId: string
+    submissionId: string
+    moderatorId: string | null
+    reviewedAt: Date
+    claimantSuspensionId?: string
+  },
 ): Promise<{ restrictionIds: string[]; intentIds: string[] }> {
-  const { noticeId, submissionId, moderatorId, reviewedAt } = input
+  const { noticeId, submissionId, moderatorId, reviewedAt, claimantSuspensionId } = input
   const { rows } = await transaction<{ id: string }>(sql`
     /* reviewCopyrightFormIntake:reverseAutomatedRestrictions */
     UPDATE copyright_restrictions restriction
@@ -48,6 +54,17 @@ export async function reverseAutomatedCopyrightRestrictionsInTransaction(
       AND restriction.is_authorizing_assessment_automated
       AND restriction.lifted_at IS NULL
       AND restriction.human_review_action IS NULL
+      AND (
+        ${claimantSuspensionId ?? null}::uuid IS NULL OR EXISTS (
+          SELECT 1
+          FROM user_suspensions suspension
+          JOIN copyright_notices notice ON notice.claimant_user_id = suspension.user_id
+          WHERE suspension.id = ${claimantSuspensionId ?? null}
+            AND suspension.suspended_by_id = ${moderatorId}
+            AND suspension.lifted_at IS NULL
+            AND notice.id = ${noticeId}
+        )
+      )
     RETURNING restriction.id
   `)
   const intentIds: string[] = []
