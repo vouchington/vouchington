@@ -27,6 +27,7 @@
 - `hash`
 - `reference`
 - `newest`
+- `reconcile`
 
 ## `agent_types`
 
@@ -1595,7 +1596,6 @@
 
 - `superseded_versions`
 - `pass_evidence`
-- `agent_moderation_repair`
 
 ## `post_moderation_sources`
 

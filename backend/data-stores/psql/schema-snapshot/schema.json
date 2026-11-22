@@ -23,7 +23,7 @@
       ]
     },
     "agent_moderation_retention_block_reasons": {
-      "values": ["hash", "reference", "newest"]
+      "values": ["hash", "reference", "newest", "reconcile"]
     },
     "agent_types": {
       "values": ["moderator", "autotagger", "storyteller", "classifier"]
@@ -1214,7 +1214,7 @@
       "values": ["pass", "review", "reject", "incomplete"]
     },
     "post_moderation_retention_kinds": {
-      "values": ["superseded_versions", "pass_evidence", "agent_moderation_repair"]
+      "values": ["superseded_versions", "pass_evidence"]
     },
     "post_moderation_sources": {
       "values": ["openai_omni", "spam_detection", "staff"]
@@ -2051,7 +2051,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_text_to_timestamptz(text_value text)\n RETURNS timestamp with time zone\n LANGUAGE plpgsql\n IMMUTABLE\nAS $function$\nDECLARE\n  normalized TEXT;\nBEGIN\n  normalized := TRIM(BOTH E'\\t\\n\\r\\f ' FROM text_value);\n  IF normalized IS NULL OR normalized = '' OR LOWER(normalized) = 'null' THEN\n    RETURN NULL;\n  END IF;\n\n  -- Strip a known RFC 822 weekday prefix (\"Mon, \" … \"Sun, \").\n  -- Anchored to standard abbreviations; non-standard tokens fall through to the exception handler.\n  normalized := regexp_replace(normalized, '^(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\\s*', '', 'i');\n  -- Collapse a named-zone prefix glued to a numeric offset: \"GMT-0700\" -> \"-0700\",\n  -- \"UTC+05:30\" -> \"+05:30\". PostgreSQL rejects the glued form but accepts the bare offset.\n  normalized := regexp_replace(normalized, '(?:GMT|UTC)\\s*([+-]\\d{1,2}:?\\d{2})', '\\1', 'i');\n\n  IF normalized ~ '[Zz]$' OR\n     normalized ~ '[\\+\\-]\\d{1,2}:?\\d{2}$' OR\n     normalized ~ ' [A-Z]{3,}$' THEN\n    RETURN normalized::timestamptz;\n  END IF;\n  RETURN timezone('UTC', normalized::timestamp);\nEXCEPTION\n  -- Best-effort parser over untrusted feed input: any value PostgreSQL still can't parse\n  -- degrades to NULL so the generated column falls back to uuid_extract_timestamp(id),\n  -- rather than aborting the INSERT and the whole fetchRssFeed job. Three distinct SQLSTATE\n  -- codes (22023, 22007, 22009) have already appeared from real feeds; a narrow catch would leak.\n  WHEN OTHERS THEN\n    RAISE WARNING 'fn_text_to_timestamptz: unparseable date \"%\" (SQLSTATE: %)', text_value, SQLSTATE;\n    RETURN NULL;\nEND;\n$function$\n"
     },
     "fn_update_agent_moderation_retention": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_agent_moderation_retention()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE agent_moderations prior\n  SET retention_due_at = uuid_extract_timestamp(prior.id) + INTERVAL '90 days',\n      retention_blocked_reason = NULL\n  WHERE prior.post_id = NEW.post_id\n    AND prior.id IN (\n      SELECT id FROM agent_moderations\n      WHERE post_id = NEW.post_id AND prompt_id = NEW.prompt_id AND id < NEW.id\n      ORDER BY id DESC LIMIT 1\n    )\n    AND prior.retention_due_at IS NULL\n    AND (prior.retention_blocked_reason IS NULL OR prior.retention_blocked_reason = 'newest');\n  IF NEW.deleted_at IS NULL THEN\n    UPDATE agent_moderations prior\n    SET retention_due_at = uuid_extract_timestamp(prior.id) + INTERVAL '90 days',\n        retention_blocked_reason = NULL\n    WHERE prior.post_id = NEW.post_id\n      AND prior.id IN (\n        SELECT id FROM agent_moderations\n        WHERE post_id = NEW.post_id AND prompt_id = NEW.prompt_id\n          AND deleted_at IS NULL AND id < NEW.id\n        ORDER BY id DESC LIMIT 1\n      )\n      AND prior.retention_due_at IS NULL\n    AND (prior.retention_blocked_reason IS NULL OR prior.retention_blocked_reason = 'newest');\n  END IF;\n  IF EXISTS (\n    SELECT 1 FROM agent_moderations newer\n    WHERE newer.post_id = NEW.post_id AND newer.prompt_id = NEW.prompt_id\n      AND newer.id > NEW.id\n  ) AND (\n    NEW.deleted_at IS NOT NULL OR EXISTS (\n      SELECT 1 FROM agent_moderations newer_live\n      WHERE newer_live.post_id = NEW.post_id AND newer_live.prompt_id = NEW.prompt_id\n        AND newer_live.id > NEW.id AND newer_live.deleted_at IS NULL\n    )\n  ) THEN\n    UPDATE agent_moderations\n    SET retention_due_at = uuid_extract_timestamp(id) + INTERVAL '90 days',\n        retention_blocked_reason = NULL\n    WHERE post_id = NEW.post_id AND id = NEW.id\n      AND retention_due_at IS NULL\n      AND (retention_blocked_reason IS NULL OR retention_blocked_reason = 'newest');\n  END IF;\n  RETURN NULL;\nEND $function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_agent_moderation_retention()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.retention_due_at := uuid_extract_timestamp(NEW.id) + INTERVAL '90 days';\n  NEW.retention_blocked_reason := 'reconcile';\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_update_agent_moderation_retention_reference": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_agent_moderation_retention_reference()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  old_post_id UUID := (to_jsonb(OLD) ->> TG_ARGV[0])::UUID;\n  old_moderation_id UUID := (to_jsonb(OLD) ->> TG_ARGV[1])::UUID;\n  new_post_id UUID;\n  new_moderation_id UUID;\nBEGIN\n  IF TG_OP = 'UPDATE' THEN\n    new_post_id := (to_jsonb(NEW) ->> TG_ARGV[0])::UUID;\n    new_moderation_id := (to_jsonb(NEW) ->> TG_ARGV[1])::UUID;\n    IF old_post_id IS NOT DISTINCT FROM new_post_id\n      AND old_moderation_id IS NOT DISTINCT FROM new_moderation_id THEN\n      RETURN NULL;\n    END IF;\n  END IF;\n  PERFORM fn_wake_agent_moderation_retention(old_post_id, old_moderation_id);\n  RETURN NULL;\nEND $function$\n"
@@ -4456,7 +4456,7 @@
     "agent_moderations": {
       "checkConstraints": {
         "agent_moderations_input_sha256_check": "CHECK ((octet_length(input_sha256) = 32))",
-        "chk_agent_moderations__retention_state": "CHECK (((retention_due_at IS NULL) OR (retention_blocked_reason IS NULL)))",
+        "chk_agent_moderations__retention_state": "CHECK (((retention_blocked_reason IS NULL) OR ((retention_blocked_reason = 'reconcile'::agent_moderation_retention_block_reasons) = (retention_due_at IS NOT NULL))))",
         "chk_agent_moderations__transparency_projection": "CHECK ((((moderation_transparency_category IS NULL) AND (moderation_transparency_community_id IS NULL)) OR (moderation_transparency_category = 'agent_moderation'::moderation_transparency_categories) OR ((moderation_transparency_category = 'community_ai'::moderation_transparency_categories) AND (moderation_transparency_community_id IS NOT NULL))))",
         "chk_agent_moderations_votes_count_down": "CHECK ((votes_count_down >= 0))",
         "chk_agent_moderations_votes_count_none": "CHECK ((votes_count_none >= 0))",
@@ -4601,7 +4601,7 @@
         },
         "retention_blocked_reason": {
           "collation": null,
-          "comment": "Lifecycle event required to recheck a previously due result.",
+          "comment": "Reason a previously due result is blocked, or reconcile while a source event awaits its predecessor check.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -4612,7 +4612,7 @@
         },
         "retention_due_at": {
           "collation": null,
-          "comment": "Source-age deadline for a result with a successor; NULL for untouched or checked-and-blocked results.",
+          "comment": "Source-age deadline for a result awaiting reconciliation or deletion; NULL for settled blockers.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -5183,33 +5183,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_agent_moderations__retention_repair": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_agent_moderations__retention_repair ON ONLY public.agent_moderations USING btree (id, post_id) WHERE ((retention_due_at IS NULL) AND (retention_blocked_reason IS NULL))",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "((retention_due_at IS NULL) AND (retention_blocked_reason IS NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_agent_moderations__transparency_community": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -5343,8 +5316,8 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
-        "trigger_agent_moderations_retention_insert": "CREATE TRIGGER trigger_agent_moderations_retention_insert AFTER INSERT ON public.agent_moderations FOR EACH ROW EXECUTE FUNCTION fn_update_agent_moderation_retention()",
-        "trigger_agent_moderations_retention_live": "CREATE TRIGGER trigger_agent_moderations_retention_live AFTER UPDATE OF deleted_at ON public.agent_moderations FOR EACH ROW WHEN ((old.deleted_at IS DISTINCT FROM new.deleted_at)) EXECUTE FUNCTION fn_update_agent_moderation_retention()",
+        "trigger_agent_moderations_retention_insert": "CREATE TRIGGER trigger_agent_moderations_retention_insert BEFORE INSERT ON public.agent_moderations FOR EACH ROW EXECUTE FUNCTION fn_update_agent_moderation_retention()",
+        "trigger_agent_moderations_retention_live": "CREATE TRIGGER trigger_agent_moderations_retention_live BEFORE UPDATE OF deleted_at ON public.agent_moderations FOR EACH ROW WHEN ((old.deleted_at IS DISTINCT FROM new.deleted_at)) EXECUTE FUNCTION fn_update_agent_moderation_retention()",
         "trigger_agent_moderations_updated_at": "CREATE TRIGGER trigger_agent_moderations_updated_at BEFORE UPDATE ON public.agent_moderations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
         "trigger_moderation_transparency_agent_projection_guard": "CREATE TRIGGER trigger_moderation_transparency_agent_projection_guard BEFORE UPDATE OF id, agent_id, prompt_id, moderation_transparency_category, moderation_transparency_community_id ON public.agent_moderations FOR EACH ROW EXECUTE FUNCTION fn_reject_agent_moderation_transparency_projection()",
         "trigger_moderation_transparency_agent_stamp": "CREATE TRIGGER trigger_moderation_transparency_agent_stamp BEFORE INSERT OR UPDATE OF deleted_at ON public.agent_moderations FOR EACH ROW EXECUTE FUNCTION fn_update_agent_moderation_transparency()"
@@ -91454,7 +91427,7 @@
         },
         "cursor_lower_bound_record_id": {
           "collation": null,
-          "comment": "Frozen lower bound of the ledger pass, or the post UUID tie-breaker of the last agent moderation examined during repair.",
+          "comment": "Frozen lower bound of the ledger pass.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -91541,7 +91514,7 @@
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Durable UUIDv7 positions for bounded post moderation and agent moderation repair.",
+      "comment": "Durable UUIDv7 positions for bounded post moderation retention.",
       "foreignKeys": {},
       "growth": "bounded",
       "indexes": {
