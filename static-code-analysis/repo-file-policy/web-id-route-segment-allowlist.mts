@@ -4,8 +4,6 @@
 const SLUG_OR_ID =
   'slug-first param (the name is legacy); the id is only the fallback for a missing slug'
 const COMMENT = 'comments have no slug or natural key; scoped under their post'
-const UUID_FALLBACK =
-  'legacy UUID fallback; permanently redirects to the owner + slug analytics route'
 const SLUG_OR_ID_BOTH =
   'both params are slug-first (the names are legacy); UUIDs permanently redirect to the slug route'
 const CRAWL = 'crawl records have no natural key'
@@ -42,7 +40,6 @@ const entries: Array<[route: string, reason: string]> = [
   ['/source/[id]/crawls/[crawlId]', CRAWL],
   ['/url/[urlValue]/crawls/[crawlId]', CRAWL],
   ['/referral-program/[id]/validations/[validationId]', SLUG_OR_ID_BOTH],
-  ['/admin/landing-pages/[pageId]', UUID_FALLBACK],
 ]
 for (const type of postTypes) {
   entries.push([`/${type}/[id]`, SLUG_OR_ID], [`/${type}/[id]/comment/[commentId]`, COMMENT])
