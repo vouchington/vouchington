@@ -138,8 +138,9 @@ describe('guardAndRetireMonthlyPartition', () => {
       Date.UTC(upperBound.getUTCFullYear(), upperBound.getUTCMonth() + minimumMonths, 15),
     )
     // The hook waits for the production locks, so the path's NOWAIT locks are already held.
-    // Posts comes before the other reference tables: waiting on the policy list order
-    // deadlocks with a writer that already holds posts and then touches feedbacks.
+    // Waiting for several shared tables while holding the first deadlocks with any writer that
+    // enters them in the other order, and no order suits every writer. The vitest project that
+    // owns this file runs it after the parallel projects finish, so no writer is active.
     const outcome = await retireOwnedClearancePartition(partition, upperBound, referenceDate)
     expect(outcome).toEqual({ table: TABLE, partition, outcome: 'dropped' })
 
@@ -153,8 +154,7 @@ function retireOwnedClearancePartition(
   referenceDate: Date,
 ): Promise<PartitionDropOutcome> {
   const referenceTables = PARTITION_DROP_POLICIES[TABLE]?.retirementReferenceTables ?? []
-  // A publication writer holds posts, then inserts feedback. Lock posts first so this
-  // wait does not hold feedbacks while that writer still needs them.
+  // Lock order is irrelevant while the file runs alone; posts first keeps the order stable.
   const orderedReferences = [
     ...referenceTables.filter(table => table === 'posts'),
     ...referenceTables.filter(table => table !== 'posts'),

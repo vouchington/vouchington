@@ -40,6 +40,10 @@ describe('dev-tools Vitest config', () => {
       ['static-analysis-ast-grep', 'static-code-analysis/__tests__/ast-grep-tsx-parity.test.mts'],
       ['backend-data-stores', 'backend/test-helpers/entities/bluesky-link-authorizations.test.mts'],
       ['backend-ai-usage-monthly-ddl', 'backend/services/data-retention/cleanup-ai-usage.test.mts'],
+      [
+        'backend-partition-retirement',
+        'backend/data-stores/psql/migration-runner/guard-and-retire-monthly-partition.test.mts',
+      ],
       ['backend-test-helpers', 'backend/test-helpers/sql-template-strings.test.mts'],
       [
         'backend-no-data-mocks',
