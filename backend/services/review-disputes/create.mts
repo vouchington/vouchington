@@ -38,8 +38,6 @@ async function insertReviewDispute(
   currentUser: PrivateUser,
   input: CreateReviewDisputeInput,
 ): Promise<{ dispute: ReviewDisputeResponse; isDuplicate: boolean }> {
-  // The post and selected rating are resolved from the primary. A row lock on the rating then
-  // keeps the captured value stable until the dispute insert commits.
   const getPostQuery = sql`/* createReviewDispute:getPost */
       SELECT p.id, p.post_type, p.deleted_at, selected_rating.topic_id
       FROM posts p
@@ -56,7 +54,6 @@ async function insertReviewDispute(
       ) selected_rating ON true
       WHERE p.id = ${input.postId}
       LIMIT 1
-      FOR SHARE OF p
     `)
   const { rows: postRows } = await query(getPostQuery)
   const postRow = postRows[0] as
@@ -77,16 +74,6 @@ async function insertReviewDispute(
   )
 
   const topicId = postRow.topic_id
-  const { rows: ratingRows } = await query(sql`/* createReviewDispute:lockRating */
-      SELECT rating
-      FROM post_review_topic_ratings
-      WHERE post_id = ${input.postId}
-        AND topic_id = ${topicId}
-      FOR SHARE
-    `)
-  const disputedRating = (ratingRows[0] as { rating: number } | undefined)?.rating
-  assert(disputedRating !== undefined, 422, 'Review has no topic rating')
-
   const canDispute = await currentUserCanDisputeReviewsOfTopic(currentUser, topicId)
   assert(canDispute, 403, 'You must have a verified claim on this topic to file a dispute')
 
@@ -99,10 +86,15 @@ async function insertReviewDispute(
         post_id, topic_id, disputed_rating, disputant_user_id, reason, claim_text,
         latest_lifecycle_change_id
       )
-      VALUES (
-        ${input.postId}, ${topicId}, ${disputedRating}, ${currentUser.id}, ${input.reason}, ${input.claimText},
+      SELECT
+        post.id, rating.topic_id, rating.rating, ${currentUser.id}, ${input.reason}, ${input.claimText},
         (SELECT id FROM lifecycle_change_id)
-      )
+      FROM posts post
+      JOIN post_review_topic_ratings rating ON rating.post_id = post.id
+      WHERE post.id = ${input.postId}
+        AND post.post_type = 'review'
+        AND post.deleted_at IS NULL
+        AND rating.topic_id = ${topicId}
       ON CONFLICT (disputant_user_id, post_id, topic_id)
       WHERE resolved_at IS NULL
       DO UPDATE SET
@@ -150,7 +142,17 @@ async function insertReviewDispute(
   `)
 
   const row = rows[0]
-  assert(row, 500, 'Failed to create dispute')
+  if (!row) {
+    const { rows: currentPosts } = await query<{ post_type: string; deleted_at: Date | null }>(
+      sql`/* createReviewDispute:unavailablePost */
+        SELECT post_type, deleted_at FROM posts WHERE id = ${input.postId}`,
+    )
+    const currentPost = currentPosts[0]
+    assert(currentPost, 404, 'Post not found')
+    assert(currentPost.post_type === 'review', 422, 'Only review posts can be disputed')
+    assert(!currentPost.deleted_at, 410, 'Post has been deleted')
+    assert(row, 422, 'Review has no topic rating')
+  }
   const result = { disputeId: row.id, isDuplicate: !row.inserted }
 
   if (!result.isDuplicate) {
