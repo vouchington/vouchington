@@ -7,6 +7,7 @@ import sql from 'sql-template-strings'
 import type { CopyrightRestrictionRecord } from './types.mts'
 import { createCopyrightRestrictionDecisionNoticesInTransaction } from './restriction-outcome-notices.mts'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
+import { lockAssessmentForm } from './compliance.mts'
 import {
   applyCopyrightConfirmationConsequencesInTransaction,
   enqueueCopyrightStaydownHashes,
@@ -30,6 +31,13 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   )
   const target = targetRows[0]
   assert(target, 404, 'Copyright notice target not found')
+  const { rows: formAuthorities } = await transaction<{
+    copyright_notice_submission_id: string
+  }>(sql`/* acceptCopyrightNoticeAndImposeRestriction:formAuthority */
+    SELECT copyright_notice_submission_id FROM copyright_notice_submission_assessment_identities WHERE id = ${input.assessmentId}
+  `)
+  if (formAuthorities[0])
+    await lockAssessmentForm(formAuthorities[0].copyright_notice_submission_id, transaction)
   await lockCopyrightActionGenerationForWrite(input.noticeId, transaction)
   const { rows: noticeRows } = await transaction<{ id: string }>(
     sql`/* acceptCopyrightNoticeAndImposeRestriction:lockNotice */

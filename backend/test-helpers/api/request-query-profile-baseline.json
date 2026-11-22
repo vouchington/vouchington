@@ -375,6 +375,14 @@
     "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
+    "annotation": "lockAssessmentForm",
+    "maxCount": null,
+    "reason": "The assessment is appended in its own transaction and each owed target is restricted in its own later transaction, and each takes the form review fence for its own transaction",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/compliance.mts:14",
+    "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
+  },
+  {
     "annotation": "lockBlueskyInitiatingSession",
     "maxCount": 2,
     "reason": "SDK session persistence and final account attachment commit separately, so each transaction rechecks the initiating authorization and current actor session.",

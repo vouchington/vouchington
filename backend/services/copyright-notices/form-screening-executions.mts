@@ -108,6 +108,7 @@ export async function completeCopyrightFormScreening(
   if (attempt.intakeId !== input.intakeId) throw new TypeError('Screening attempt intake mismatch')
   const guidance = parseCopyrightFormGuidance(input.guidance)
   await using transaction = await beginTransaction()
+  await lockCopyrightFormReview(attempt.intakeId, transaction)
   await transaction(sql`/* completeCopyrightFormScreening:lockNotice */
     SELECT notice.id FROM copyright_notice_form_intakes intake
     JOIN copyright_notices notice ON notice.id = intake.copyright_notice_id
