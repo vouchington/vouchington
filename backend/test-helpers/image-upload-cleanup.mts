@@ -1,4 +1,5 @@
 import { read } from '@data-stores/psql'
+import type { QueryExecutor } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { v7 } from 'uuid'
 import { insertTestStagedImage } from './entities/images-insert.mts'
@@ -79,6 +80,17 @@ export async function insertOwnedUploadCleanupCluster(
     ids.push(await insertTestStagedImage(userId, { id, stagedAt }))
   }
   return ids
+}
+
+export async function promoteTestUploadInTransaction(
+  query: QueryExecutor,
+  imageId: string,
+  sha256: Buffer,
+): Promise<void> {
+  await query(sql`/* promoteTestUploadInTransaction */
+    UPDATE images
+    SET upload_started_at = CURRENT_TIMESTAMP, sha_256 = ${sha256}, s3_key = ${sha256.toString('hex')}
+    WHERE id = ${imageId}`)
 }
 
 function uuidInteger(id: string) {

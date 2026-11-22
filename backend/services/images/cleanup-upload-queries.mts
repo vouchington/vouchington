@@ -6,13 +6,7 @@ import type {
   UploadCleanupWindow,
 } from '@queues/content-analysis/types'
 
-export type UploadCleanupRow = {
-  id: string
-  staged_at: string
-  s3_key: string
-  sha_256: Buffer | null
-  upload_staged_at: Date
-}
+type UploadCleanupPageRow = { id: string; staged_at: string }
 
 /** Keep these predicates aligned with the three partial indexes in the canonical image creator. */
 export function uploadCleanupPredicate(phase: UploadCleanupPhase) {
@@ -47,7 +41,7 @@ export async function captureUploadCleanupUpper(
     FROM images WHERE `.append(uploadCleanupPredicate(phase))
   query.append(sql` AND upload_staged_at < ${cutoff}::timestamptz
     ORDER BY upload_staged_at DESC, id DESC LIMIT 1`)
-  const { rows } = await transaction<{ id: string; staged_at: string }>(query)
+  const { rows } = await transaction<UploadCleanupPageRow>(query)
   return rows[0] ? { id: rows[0].id, stagedAt: rows[0].staged_at } : null
 }
 
@@ -58,10 +52,10 @@ export async function readUploadCleanupPage(
   cutoff: string,
   window: UploadCleanupWindow,
   batchSize: number,
-): Promise<UploadCleanupRow[]> {
+): Promise<UploadCleanupPageRow[]> {
   if (!window.upper || window.done) return []
   const query = sql`/* readUploadCleanupPage */
-    SELECT id, s3_key, sha_256, upload_staged_at,
+    SELECT id,
       to_char(upload_staged_at AT TIME ZONE 'UTC',
         'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS staged_at
     FROM images WHERE `.append(uploadCleanupPredicate(phase))
@@ -70,9 +64,7 @@ export async function readUploadCleanupPage(
   if (window.after)
     query.append(sql` AND (upload_staged_at, id) >
       (${window.after.stagedAt}::timestamptz, ${window.after.id}::uuid)`)
-  query.append(sql` ORDER BY upload_staged_at, id LIMIT ${batchSize + 1} FOR UPDATE`)
-  // Staged sources wait for earlier locks so their physical cursor never skips an unsettled row.
-  if (phase !== 'staged') query.append(' SKIP LOCKED')
-  const { rows } = await transaction<UploadCleanupRow>(query)
+  query.append(sql` ORDER BY upload_staged_at, id LIMIT ${batchSize + 1}`)
+  const { rows } = await transaction<UploadCleanupPageRow>(query)
   return rows
 }

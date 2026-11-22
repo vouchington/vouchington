@@ -7,6 +7,7 @@ import {
 import {
   insertOwnedUploadCleanupCluster,
   makeOwnedUploadCleanupSweep,
+  promoteTestUploadInTransaction,
 } from '@voucha/test-helpers/image-upload-cleanup'
 import { seedOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
 import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
@@ -101,7 +102,7 @@ describe('abandoned upload cursor windows', () => {
     const storage = await seedOwnedUploadCleanupStorage(ids.slice(0, 2))
     // Hold the pass at its acknowledgement, after the first page's storage deletion completed.
     const restoreHold = runBeforePostgresStatementForTest(
-      '/* markImageUploadSourcesDeleted:lock */',
+      '/* markImageUploadSourcesDeleted:update */',
       async () => {
         started.resolve()
         await release.promise
@@ -150,6 +151,40 @@ describe('abandoned upload cursor windows', () => {
       release.resolve()
       restoreHold()
       restoreConfig()
+    }
+  })
+
+  it('preserves an upload promoted after the abandonment page was read', async () => {
+    const user = await createTestUser()
+    const now = new Date()
+    const [imageId] = await insertOwnedUploadCleanupCluster(
+      user.id,
+      1,
+      new Date(now.getTime() - 25 * HOUR),
+    )
+    if (!imageId) throw new Error('Missing owned staged image')
+    const sweep = await makeOwnedUploadCleanupSweep([imageId], now)
+    sweep.windows.staged.done = true
+    sweep.windows.recovery.done = true
+    const storage = await seedOwnedUploadCleanupStorage([imageId])
+    const sha256 = randomBytes(32)
+    const restorePromotion = runBeforePostgresStatementForTest(
+      '/* cleanupAbandonedUploads:abandonment */',
+      query => promoteTestUploadInTransaction(query, imageId, sha256),
+    )
+    try {
+      await expect(cleanupAbandonedUploads(sweep, async () => {})).resolves.toMatchObject({
+        cleaned: 0,
+        hasMore: false,
+      })
+      await expect(getImageById(imageId, true)).resolves.toMatchObject({
+        deleted_at: null,
+        sha_256: sha256,
+        s3_key: sha256.toString('hex'),
+      })
+      await expect(storage.deleted()).resolves.toEqual([])
+    } finally {
+      restorePromotion()
     }
   })
 
