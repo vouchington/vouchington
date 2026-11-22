@@ -75,7 +75,7 @@ export const expectedDirectiveInventory = [
   'backend/services/notifications/reconcile-rss-feed-item-writes.mts:1',
   'backend/services/notifications/reconcile-rss-feed-item.mts:1',
   'backend/services/oauth-authorization-server/retention-tokens.mts:2',
-  'backend/services/stripe/membership-provider-facts/context.mts:1',
+  'backend/services/oauth-authorization-server/retention.mts:1',
   'backend/services/vote-integrity/create-flag.mts:3',
 ] as const
 
