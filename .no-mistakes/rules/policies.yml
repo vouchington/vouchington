@@ -562,6 +562,10 @@
   rule: github-actions-pinned-hash
   scope: repository
 
+- name: ast-grep ignores entries match tracked paths
+  rule: ast-grep-ignore-freshness
+  scope: repository
+
 - name: test sources do not embed exact Git revisions
   rule: no-test-git-sha
   scope: repository
