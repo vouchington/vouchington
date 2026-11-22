@@ -25,7 +25,12 @@ export function createTestPostClassifierAdapter() {
 
 /** Restores the seeded active prompt version after a test rotated it. */
 export function reseedPostClassifierForTest() {
-  return runConfigDrivenStatementsInTransaction(generateSeed(), { beginTransaction })
+  return runSeedSqlForTest(generateSeed())
+}
+
+/** Runs seed SQL through the config-driven runner in its own transaction. */
+export function runSeedSqlForTest(seedSql: string) {
+  return runConfigDrivenStatementsInTransaction(seedSql, { beginTransaction })
 }
 
 export async function initializePostClassifierExecutionTests() {

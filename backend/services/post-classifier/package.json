@@ -30,7 +30,6 @@
     "@services/entity-relations": "workspace:^",
     "@services/moderation": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/postgres": "^0.6.2",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {

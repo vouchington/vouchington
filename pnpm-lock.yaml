@@ -9723,9 +9723,6 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
-      '@vouchington/postgres':
-        specifier: ^0.6.2
-        version: 0.6.2
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2

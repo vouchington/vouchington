@@ -5,8 +5,6 @@ import {
   POST_CLASSIFIER_PROMPT,
   POST_CLASSIFIER_REMOTE_QUESTIONS,
 } from '@voucha/types/entities/post-classifier'
-import { runConfigDrivenStatementsInTransaction } from '@vouchington/postgres'
-import { beginTransaction } from '@data-stores/psql'
 import generateSeedPostClassifierSQL from '@data-stores/psql/config-driven/0635-00-03-seed-post-classifier'
 import {
   getPostClassifierSeedState,
@@ -16,6 +14,7 @@ import {
   setPostClassifierLocalTopicDeletedForTest,
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/seed'
 import { acquirePostClassifierSeedTestLock } from '@voucha/test-helpers/data-stores/psql/post-classifier/seed-lock'
+import { runSeedSqlForTest } from '@voucha/test-helpers/data-stores/psql/post-classifier/execution'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   getFreshAiGeneratedConfidenceThreshold,
@@ -30,9 +29,7 @@ describe('current post classifier configuration (real PG and Valkey)', () => {
   beforeAll(async () => {
     releaseSeedLock = (await acquirePostClassifierSeedTestLock()).release
     await moderationConfig.waitForInitialization()
-    await runConfigDrivenStatementsInTransaction(generateSeedPostClassifierSQL(), {
-      beginTransaction,
-    })
+    await runSeedSqlForTest(generateSeedPostClassifierSQL())
   })
   afterAll(async () => releaseSeedLock?.())
 
@@ -184,7 +181,7 @@ describe('current post classifier configuration (real PG and Valkey)', () => {
       ).resolves.not.toBeNull()
     } finally {
       await rotatePostClassifierPrompt('temporary cleanup prompt')
-      await runConfigDrivenStatementsInTransaction(seed, { beginTransaction })
+      await runSeedSqlForTest(seed)
     }
   })
 })
