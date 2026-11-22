@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { loadRecordedResponse } from '../../test-helpers/provider-replay.mts'
+import { loadRecordedResponse } from '../../test-helpers/recorded-response.mts'
 import {
   createOpenAIResponse,
   runWithBackgroundResponseHooks,
@@ -11,13 +11,13 @@ import { OpenAIResponseStreamIterationError } from '@vouchington/ai/openai'
 // actual status lines, headers and SSE bytes (delivered in 41-byte pieces that ignore event
 // boundaries).
 const replay = await vi.hoisted(async () => {
-  const { createProviderReplay } = await import('../../test-helpers/provider-replay.mts')
+  const { createProviderReplay } = await import('vouchington-tooling/provider-replay')
   return createProviderReplay({ chunkBytes: 41 })
 })
 
 vi.mock<typeof import('openai')>(import('openai'), async importOriginal => {
   const actual = await importOriginal()
-  const { replayClient } = await import('../../test-helpers/provider-replay.mts')
+  const { replayClient } = await import('vouchington-tooling/provider-replay')
   return { ...actual, default: replayClient(actual.default, replay) }
 })
 

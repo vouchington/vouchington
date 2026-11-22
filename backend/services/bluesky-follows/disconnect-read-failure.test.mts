@@ -9,7 +9,8 @@ import {
   insertTestBlueskyLinkedAccount,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { createProviderReplay, loadRecordedResponse } from '@voucha/test-helpers/provider-replay'
+import { createProviderReplay } from 'vouchington-tooling/provider-replay'
+import { loadRecordedResponse } from '@voucha/test-helpers/recorded-response'
 import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
 import { disconnectAcceptedBlueskyAccountAndCleanupFollows } from './disconnect.mts'
 import { requestBlueskyDisconnect } from './disconnect-request.mts'

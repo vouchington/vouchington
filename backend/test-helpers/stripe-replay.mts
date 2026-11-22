@@ -1,11 +1,11 @@
 import type Stripe from 'stripe'
 import { createStripeClient } from '@vouchington/stripe'
-import {
-  loadRecordedResponse,
-  type ProviderReplay,
-  type RecordedResponse,
-  type ReplayedRequest,
-} from './provider-replay.mts'
+import type {
+  ProviderReplay,
+  RecordedResponse,
+  ReplayedRequest,
+} from 'vouchington-tooling/provider-replay'
+import { loadRecordedResponse } from './recorded-response.mts'
 
 // Stripe adapter for the shared provider replay (see docs/development/testing/backend/helpers.md).
 // Stripe takes an `httpClient`, not a `fetch` option, so `replayClient()` does not apply. A test

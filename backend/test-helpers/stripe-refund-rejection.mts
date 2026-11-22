@@ -1,5 +1,5 @@
 import { createStripeRefund } from '../modules/stripe/refunds.mts'
-import { createProviderReplay } from './provider-replay.mts'
+import { createProviderReplay } from 'vouchington-tooling/provider-replay'
 import { createReplayStripeClient, loadStripeFixture } from './stripe-replay.mts'
 
 class StripeReplayConnectionClosedError extends Error {

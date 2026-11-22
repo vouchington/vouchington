@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { loadRecordedResponse } from '@voucha/test-helpers/provider-replay'
+import { loadRecordedResponse } from '@voucha/test-helpers/recorded-response'
 import { sendEmail } from './ses.mts'
 
 // The recorded SES responses are served through the real SES client's `requestHandler`, so the SDK
 // serializes, signs and parses actual wire bytes.
 const replay = await vi.hoisted(async () => {
-  const { createProviderReplay } = await import('@voucha/test-helpers/provider-replay')
+  const { createProviderReplay } = await import('vouchington-tooling/provider-replay')
   return createProviderReplay()
 })
 
@@ -13,7 +13,7 @@ vi.mock<typeof import('@aws-sdk/client-ses')>(
   import('@aws-sdk/client-ses'),
   async importOriginal => {
     const actual = await importOriginal()
-    const { replayAwsClient } = await import('@voucha/test-helpers/aws-replay-request-handler')
+    const { replayAwsClient } = await import('vouchington-tooling/provider-replay')
     return { ...actual, SESClient: replayAwsClient(actual.SESClient, replay) }
   },
 )
