@@ -42,7 +42,7 @@ export async function cleanupPaymentLedgers(
     const result: PaymentLedgerCleanupPage = { family, scanned: 0, deleted: 0, hasMore: false }
     for (let batch = 0; batch < (recordIds ? 1 : limits.maxBatches); batch++) {
       // oxlint-disable-next-line no-await-in-loop -- each bounded transaction commits before the next oldest-id page.
-      const page = await cleanupPaymentLedgerPage(family, limits.batchSize, fiscalCutoff, recordIds) // no-mistakes-disable-line query-reached-per-item: two fixed families each commit at most maxBatches transactions; a Stripe page locks at most batchSize + 1 event IDs, a membership page reads batchSize + 1 operation rows and locks one, and each deletes at most batchSize physical rows.
+      const page = await cleanupPaymentLedgerPage(family, limits.batchSize, fiscalCutoff, recordIds) // no-mistakes-disable-line query-reached-per-item: each ledger family commits at most maxBatches transactions, with at most batchSize + 1 candidate rows read and batchSize physical rows deleted per page.
       result.scanned += page.scanned
       result.deleted += page.deleted
       result.hasMore = page.hasMore

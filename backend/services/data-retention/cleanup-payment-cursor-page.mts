@@ -1,11 +1,11 @@
 import { beginTransaction } from '@data-stores/psql'
 import {
-  lockPaymentCleanupCursor,
+  readPaymentCleanupCursor,
   savePaymentCleanupCursor,
 } from './cleanup-payment-operations.mts'
 
 type CursorTransaction = Awaited<ReturnType<typeof beginTransaction>>
-type CursorPageKind = Parameters<typeof lockPaymentCleanupCursor>[1]
+type CursorPageKind = Parameters<typeof readPaymentCleanupCursor>[1]
 
 export type CursorPageRow = { id: string; due: boolean }
 
@@ -28,7 +28,7 @@ export async function runCursorCleanupPage(options: {
   const { kind, pageSize, recordIds } = options
   await using query = await beginTransaction()
   await options.permitDelete(query)
-  const cursorId = recordIds ? null : await lockPaymentCleanupCursor(query, kind)
+  const cursorId = recordIds ? null : await readPaymentCleanupCursor(query, kind)
   const rows = await options.selectPage(query, cursorId)
   const page = rows.slice(0, pageSize)
   const dueIndex = page.findIndex(row => row.due)
