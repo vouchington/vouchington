@@ -28,3 +28,11 @@ export async function withCommittedPostgresTransactionForTest<Result>(
   await query.commit()
   return result
 }
+
+/** Keep a stable snapshot while a separate transaction changes the test fixture. */
+export async function withRepeatableReadPostgresTransactionForTest<Result>(
+  operation: (query: TransactionQuery) => Promise<Result>,
+): Promise<Result> {
+  await using query = await beginTransaction({ isolationLevel: 'repeatable read' })
+  return await operation(query)
+}

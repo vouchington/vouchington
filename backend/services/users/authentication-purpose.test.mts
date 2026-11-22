@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import { v7 } from 'uuid'
 import { createTestUser, createRandomEmailAddress } from '@voucha/test-helpers'
+import { withRepeatableReadPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 import { createEmailAddressLoginToken, verifyEmailAddressLoginToken } from './authentication.mts'
 
@@ -43,15 +44,26 @@ describe('email authentication code purposes', () => {
     )
   })
 
-  it('serializes simultaneous issuance so exactly one new code remains usable', async () => {
+  it('rejects a competing login code and keeps the winning code usable once', async () => {
     const emailAddress = createRandomEmailAddress()
-    const issued = await Promise.all([
-      createEmailAddressLoginToken(emailAddress),
-      createEmailAddressLoginToken(emailAddress),
-    ])
-    const results = await Promise.all(
-      issued.map(({ token }) => verifyEmailAddressLoginToken(emailAddress, token)),
-    )
-    expect(results.filter(result => result.success)).toHaveLength(1)
+    const scope = { purpose: 'login' } as const
+    const winner = await withRepeatableReadPostgresTransactionForTest(async query => {
+      // Establish the competing transaction's snapshot before either caller can see a pending code.
+      const beforeIssuance = await verifyEmailAddressLoginToken(emailAddress, 'AAAAAAAA', scope, {
+        query,
+      })
+      expect(beforeIssuance.success).toBe(false)
+
+      const issued = await createEmailAddressLoginToken(emailAddress)
+      await expect(
+        createEmailAddressLoginToken(emailAddress, scope, { query }),
+      ).rejects.toMatchObject({ status: 409 })
+      return issued
+    })
+
+    const verified = await verifyEmailAddressLoginToken(emailAddress, winner.token)
+    expect(verified.success).toBe(true)
+    const replayed = await verifyEmailAddressLoginToken(emailAddress, winner.token)
+    expect(replayed.success).toBe(false)
   })
 })
