@@ -35,7 +35,6 @@ export const toolingProjects = [
         'static-code-analysis/helper-file-names.test.mts',
         'static-code-analysis/__tests__/run-node-checks.test.mts',
         'static-code-analysis/__tests__/run-node-checks.mock.test.mts',
-        'static-code-analysis/__tests__/scc-complexity.test.mts',
         'static-code-analysis/__tests__/tooling-dependency-cruiser.test.mts',
         'static-code-analysis/config-inventory/**/*.test.mts',
         'static-code-analysis/dependency-license-policy/**/*.test.mts',

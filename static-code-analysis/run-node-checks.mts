@@ -1,11 +1,11 @@
 #!/usr/bin/env node
+import { checkSccComplexity } from 'vouchington-tooling/scc-complexity'
 import { buildSharedContext, type SharedContext } from 'vouchington-tooling/shared-context'
 
 import { checkConfigInventoryPolicy } from './config-inventory/index.mts'
 import { checkDependencyLicensePolicy } from './dependency-license-policy/index.mts'
 import type { CheckName, CheckResult } from './node-check-types.mts'
 import { checkRepoFilePolicy } from './repo-file-policy/index.mts'
-import { checkSccComplexity } from './scc-complexity/index.mts'
 import { checkTargetedGuardrails } from './targeted-guardrails/index.mts'
 import {
   runRepoFilePolicyInWorker,
