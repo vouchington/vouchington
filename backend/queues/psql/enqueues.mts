@@ -75,34 +75,42 @@ const enqueueRetentionJob = createEnqueueFunction<
 export const enqueueDataRetentionCleanup = (): EnqueueReturnType =>
   enqueueRetentionJob({}, { priority: PRIORITY_DEFAULT, ordering: DATA_RETENTION_ORDERING })
 
+type DataRetentionContinuationInput = {
+  continuation: NonNullable<PsqlRetentionJobData['continuation']>
+}
+
+const dataRetentionContinuationJobId = ({ continuation }: DataRetentionContinuationInput) =>
+  continuation.copyrightFamilies
+    ? `data-retention-copyright__${continuation.runId}__${continuation.step}`
+    : `data-retention-cleanup__${continuation.runId}__${continuation.step}`
+
+const enqueueBulkDataRetentionCleanupContinuations = createBulkEnqueueFunction({
+  queue: psql,
+  queueName: QUEUE_NAME,
+  jobName: 'dataRetentionCleanup',
+  buildJob: (input: DataRetentionContinuationInput) => ({
+    data: input satisfies PsqlJobPayloads['dataRetentionCleanup'],
+    opts: {
+      jobId: dataRetentionContinuationJobId(input),
+      priority: PRIORITY_DEFAULT,
+      ordering: DATA_RETENTION_ORDERING,
+      ...(input.continuation.userPurge ? { sensitive: true } : {}),
+      attempts: 3,
+      backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },
+      removeOnComplete: true,
+      removeOnFail: true,
+    },
+  }),
+})
+
 export function enqueueDataRetentionCleanupContinuation(
   data: NonNullable<PsqlRetentionJobData['continuation']>,
 ) {
-  const jobId = data.copyrightFamilies
-    ? `data-retention-copyright__${data.runId}__${data.step}`
-    : `data-retention-cleanup__${data.runId}__${data.step}`
   return enqueueBulkReactivatingFinished({
     queue: psql,
     inputs: [{ continuation: data }],
-    jobIdOf: () => jobId,
-    enqueueBulk: async inputs => {
-      const jobs = await Promise.all(
-        inputs.map(input =>
-          // ast-grep-ignore: backend-no-single-enqueue-in-loop -- the reactivation adapter always receives the one continuation input
-          enqueueRetentionJob(input, {
-            jobId,
-            priority: PRIORITY_DEFAULT,
-            ordering: DATA_RETENTION_ORDERING,
-            ...(data.userPurge ? { sensitive: true } : {}),
-            attempts: 3,
-            backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-            removeOnComplete: true,
-            removeOnFail: true,
-          }),
-        ),
-      )
-      return jobs.filter(job => job !== null)
-    },
+    jobIdOf: dataRetentionContinuationJobId,
+    enqueueBulk: enqueueBulkDataRetentionCleanupContinuations,
   })
 }
 

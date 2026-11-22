@@ -1,6 +1,6 @@
 id: backend-no-single-enqueue-in-loop
 language: Tsx
-severity: warning
+severity: error
 message: Enqueue a loop's jobs with the owning queue package's bulk enqueue function (a name containing Bulk) instead of one single-job enqueue per iteration.
 note: >-
   Each single enqueue is its own Valkey round trip and its own analytics event. This covers a
