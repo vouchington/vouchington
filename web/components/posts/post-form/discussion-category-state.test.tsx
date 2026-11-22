@@ -12,4 +12,16 @@ describe('useDiscussionCategoryState', () => {
     act(() => result.current.handleDiscussionHashtagChange(0, '#travel-deals'))
     expect(result.current.discussionCategoriesChanged).toBe(true)
   })
+
+  it('appends an empty category and marks categories changed', () => {
+    const { result } = renderHook(() =>
+      useDiscussionCategoryState([{ id: 'topic-1', name: 'Travel' }]),
+    )
+
+    act(() => result.current.addDiscussionCategory())
+
+    expect(result.current.discussionCategories).toHaveLength(2)
+    expect(result.current.discussionCategories[1]).toMatchObject({ topicId: '', hashtag: '' })
+    expect(result.current.discussionCategoriesChanged).toBe(true)
+  })
 })
