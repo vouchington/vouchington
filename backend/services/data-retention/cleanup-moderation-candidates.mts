@@ -21,7 +21,7 @@ export async function getModerationCleanupCandidates(
     case 'cases':
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:cases */
         SELECT id FROM moderation_cases WHERE id > ${after} AND id < ${upperId}
-        ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
+        ORDER BY id LIMIT ${limit}`))
       break
     case 'appeals':
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:appeals */

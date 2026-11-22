@@ -102,7 +102,7 @@ async function cleanupAiUsagePage(
   if (recordIds !== undefined)
     candidates.append(sql`AND record.id = ANY(${recordIds}::uuid[])
           `)
-  candidates.append(sql`ORDER BY id LIMIT ${batchSize + 1} FOR UPDATE SKIP LOCKED`)
+  candidates.append(sql`ORDER BY id LIMIT ${batchSize + 1}`)
   const { rows: physicalRows } = await transaction<{ id: string }>(candidates)
   const rows = physicalRows.filter(row => row.id < upperBound)
   const scannedIds = rows.slice(0, batchSize).map(row => row.id)
