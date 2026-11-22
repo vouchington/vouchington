@@ -240,11 +240,18 @@ describe('agent moderation retention', () => {
     const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
     const fixture = await createTestAgentModerationRetentionFixture()
     const oldDay = at(91)
-    const oldIds = await Promise.all(
-      Array.from({ length: 20 }, (_, sequence) =>
-        insertTestAgentModeration({ ...fixture, occurredAt: oldDay, occurredAtSequence: sequence }),
-      ),
-    )
+    // Serial: the retention insert trigger only stamps a row's immediate predecessor, so
+    // concurrent inserts of adjacent ids can leave a middle row with no retention_due_at.
+    const oldIds: string[] = []
+    for (let sequence = 0; sequence < 20; sequence += 1) {
+      oldIds.push(
+        await insertTestAgentModeration({
+          ...fixture,
+          occurredAt: oldDay,
+          occurredAtSequence: sequence,
+        }),
+      )
+    }
     await insertTestAgentModeration({ ...fixture, occurredAt: at(1) })
     expect(await getTestAgentModerationTransparencyStamp(oldIds[0]!)).toEqual({
       category: 'agent_moderation',
