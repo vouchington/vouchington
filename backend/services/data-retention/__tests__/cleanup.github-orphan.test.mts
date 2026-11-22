@@ -1,6 +1,7 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { v7 } from 'uuid'
 import {
+  beginTransaction,
   createRandomString,
   createTestRetentionWindow,
   insertTestOAuthAccount,
@@ -12,6 +13,8 @@ import {
   getTestOAuthAuthorization,
   insertTestOAuthAuthorization,
 } from '@voucha/test-helpers/entities/oauth-authorizations'
+import { createTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-waiter'
+import { upsertOAuthAccount } from '../../oauth-accounts/upsert.mts'
 import { deleteOrphanedOAuthAccountBatch } from '../cleanup-batches.mts'
 
 describe('GitHub orphan account cleanup', () => {
@@ -64,4 +67,68 @@ describe('GitHub orphan account cleanup', () => {
       github_account_id: activeAccountId,
     })
   }, 30_000)
+
+  it('preserves an authorization completed during orphan cleanup', async () => {
+    const window = createTestRetentionWindow()
+    const providerUserId = `github-${createRandomString(12)}`
+    const authorizationId = v7()
+    const claimId = v7()
+    onTestFinished(() =>
+      deleteTestOAuthAuthorizationFixtures({
+        authorizationIds: [authorizationId],
+        githubUserIds: [providerUserId],
+      }),
+    )
+    await insertTestOAuthAccount('github', providerUserId)
+    const accountId = await setOAuthAccountRetentionTime(
+      'github',
+      providerUserId,
+      window.firstEligibleDate,
+    )
+    if (!accountId) throw new Error('Orphaned GitHub account fixture is missing')
+    await insertTestOAuthAuthorization({
+      id: authorizationId,
+      provider: 'github',
+      callbackCodeCiphertext: 'test-callback-ciphertext',
+      callbackReceivedAt: new Date(),
+      exchangeClaimId: claimId,
+    })
+
+    await using callback = await beginTransaction()
+    await upsertOAuthAccount('github', providerUserId, null, { login: providerUserId }, undefined, {
+      query: callback,
+      authorizationId,
+      authorizationClaimId: claimId,
+    })
+    await using waiter = await createTestPostgresLockWaiter({
+      holder: callback,
+      lock: { kind: 'transaction' },
+      selected: {
+        marker: '/* deleteOrphanedOAuthAccountBatch */',
+        binding: { index: 1, value: window.lowerBoundDate },
+      },
+    })
+    const cleanup = deleteOrphanedOAuthAccountBatch(
+      'github_accounts',
+      'github_user_id',
+      window.upperBoundDate,
+      1,
+      window.lowerBoundDate,
+      waiter.query,
+    )
+    let callbackCommit: ReturnType<typeof callback.commit> | undefined
+    const commitCallback = () => (callbackCommit ??= callback.commit())
+    // If cleanup waits on the account, publish the authorization while its DELETE still
+    // uses the earlier snapshot. Otherwise publish it after cleanup skips the account.
+    await Promise.race([cleanup, waiter.waitForLock(cleanup).then(commitCallback)])
+    await commitCallback()
+    await cleanup
+    await waiter.query.commit()
+
+    await expect(getTestOAuthAuthorization(authorizationId)).resolves.toMatchObject({
+      status: 'completion_ready',
+      github_account_id: accountId,
+    })
+    await expect(oauthAccountExistsByProviderUserId('github', providerUserId)).resolves.toBe(true)
+  })
 })
