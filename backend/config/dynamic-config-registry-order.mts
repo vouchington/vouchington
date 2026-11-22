@@ -107,6 +107,7 @@ export const REGISTRY_ORDER = [
   'background-queue-config',
   'ai-agents-queue-config',
   'psql-queue-config',
+  'queue-monitoring-work-config',
   'background-cpu-queue-config',
   'crawl-dispatch-work-config',
   'crawler-refresh-work-config',

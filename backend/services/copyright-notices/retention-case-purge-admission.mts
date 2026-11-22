@@ -5,10 +5,11 @@ import { enqueueCopyrightAccountClockSyncBatch } from '@queues/psql/enqueues/cop
 import sql from 'sql-template-strings'
 import { COPYRIGHT_CASE_RETENTION_MONTHS } from './retention-case-purge-eligibility.mts'
 import { isCopyrightEvidenceRetentionDeletionEnabled } from './config.mts'
-import { getCopyrightCasePurgePageSize } from '@queues/psql/enqueues/ordering-config'
+import {
+  getCopyrightCasePurgeMaxPending,
+  getCopyrightCasePurgePageSize,
+} from '@queues/psql/enqueues/ordering-config'
 import type { CopyrightCasePurgeAdmissionData } from '../../queues/background/enqueues/notifications-domain.mts'
-
-const MAX_PSQL_PENDING = 1_000
 
 type CopyrightCasePurgeAdmissionCursor = NonNullable<CopyrightCasePurgeAdmissionData['after']>
 
@@ -58,7 +59,8 @@ export async function admitCopyrightCasePurgePage(data: CopyrightCasePurgeAdmiss
   const counts = await psql.getJobCounts()
   const pageSize = getCopyrightCasePurgePageSize()
   const depth = (counts.waiting ?? 0) + (counts.active ?? 0) + (counts.delayed ?? 0)
-  if (depth >= MAX_PSQL_PENDING) return { hasMore: true, next: data, admitted: 0, stalled: true }
+  if (depth >= getCopyrightCasePurgeMaxPending())
+    return { hasMore: true, next: data, admitted: 0, stalled: true }
   if (!data.pendingAccountsComplete) {
     const accountCursor = data.pendingAccountAfterId
       ? sql`AND id > ${data.pendingAccountAfterId}::uuid`
