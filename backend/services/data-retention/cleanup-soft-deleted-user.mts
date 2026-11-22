@@ -91,7 +91,6 @@ async function deletePurgedUser(
           INNER JOIN membership_operations refund_operation
             ON refund_operation.id = refund_request.membership_operation_id
           WHERE refund_membership.user_id = users.id AND refund_operation.completed_at IS NULL)
-        AND NOT EXISTS (SELECT 1 FROM posts WHERE created_by_id = ${targetId})
         AND NOT EXISTS (SELECT 1 FROM user_legal_preservation_holds preservation_hold
           WHERE preservation_hold.account_user_id = users.id
             AND preservation_hold.released_at IS NULL)
