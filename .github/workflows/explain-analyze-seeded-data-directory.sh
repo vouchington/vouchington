@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Hands the seed job's PostgreSQL data directory to each shard unchanged.
 #   save: cleanly stop the seed's service container and archive its data directory.
-#   start: unpack the archive into a volume and start PostgreSQL on it; exports DATABASE_URL.
+#   start: unpack the archive into a volume and start PostgreSQL on it; writes DATABASE_URL to a file.
+#   export: append that DATABASE_URL to GITHUB_ENV. `start` may run in the background
+#     (explain-analyze-background.sh) while other steps run, and a background process cannot write
+#     GITHUB_ENV for a later step, so the step that waits for it calls `export`.
 # A pg_dump restore rebuilt every heap and index, so page counts, index creation order and the
 # visibility map differed from the seeded database, and near-tie plans flipped (run 42935086140).
 # A copy of the stopped server keeps all of those, the cumulative statistics written at shutdown,
@@ -10,8 +13,11 @@ set -euo pipefail
 archive_dir="$RUNNER_TEMP/explain-seeded"
 archive="$archive_dir/explain-seeded-pgdata.tar.zst"
 data_root=/var/lib/postgresql
+database_url_file="$archive_dir/database-url.env"
 case "${1:-}" in
   save)
+    # Phase timings (stop and checkpoint, then archive) show which half of this step to shorten.
+    stop_started=$SECONDS
     # The image stops on SIGINT, a fast shutdown that writes a final checkpoint.
     docker stop --time 120 "$POSTGRES_CONTAINER_ID" >/dev/null
     state="$(docker run --rm --user postgres --volumes-from "$POSTGRES_CONTAINER_ID" "$PG_IMAGE" \
@@ -20,9 +26,12 @@ case "${1:-}" in
       echo "::error::Seed PostgreSQL stopped in state '$state', not 'shut down'"
       exit 1
     fi
+    echo "Stopped PostgreSQL and checkpointed in $((SECONDS - stop_started))s"
     mkdir -p "$archive_dir"
+    archive_started=$SECONDS
     docker run --rm --volumes-from "$POSTGRES_CONTAINER_ID" "$PG_IMAGE" \
       tar -C "$data_root" -cf - . | zstd -T0 -3 -q -o "$archive"
+    echo "Archived the data directory in $((SECONDS - archive_started))s"
     ls -l "$archive"
     ;;
   start)
@@ -47,10 +56,13 @@ case "${1:-}" in
       echo "::error::Could not resolve the published PostgreSQL host port"
       exit 1
     fi
-    echo "DATABASE_URL=postgres://postgres@127.0.0.1:${port}/postgres" >> "$GITHUB_ENV"
+    echo "DATABASE_URL=postgres://postgres@127.0.0.1:${port}/postgres" > "$database_url_file"
+    ;;
+  export)
+    cat "$database_url_file" >> "$GITHUB_ENV"
     ;;
   *)
-    echo "usage: $0 save|start" >&2
+    echo "usage: $0 save|start|export" >&2
     exit 2
     ;;
 esac

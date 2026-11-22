@@ -233,6 +233,13 @@ enforces the plan gates, baselines and native coverage over the merged results. 
 `explain-analyze-results`; a failed shard leaves only its own `explain-analyze-results-<shard>`
 artifact.
 
+Setup that needs no Node runs beside the Node setup: the seed job restores the prepared dump and
+each shard unpacks the seeded data directory and starts PostgreSQL in a background command
+(`explain-analyze-background.sh`) that a later step waits on. The path through a run is the seed job,
+then the slowest shard, then the gates job; on 2026-11 runs the two fixture loads (`hn-scale`,
+`partition`) set the slowest shard, and each segment repeats about 60s of runner setup, so more
+segments shorten a run only if their fixture loads shrink first.
+
 The [EXPLAIN ANALYZE workflow](../../../../.github/workflows/explain-analyze.yml) owns the seed-step
 timeout. Shrink fixtures or batch seed work to fit it; never raise that timeout to accommodate a
 larger fixture.
