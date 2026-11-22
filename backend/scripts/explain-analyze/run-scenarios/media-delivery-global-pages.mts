@@ -148,10 +148,6 @@ export async function runMediaDeliveryScopedPageScenarios(): Promise<void> {
         ),
       ),
     undefined,
-    [
-      'listRetainedMediaBindingCleanupCandidates',
-      'lockRetainedMediaBindingImages',
-      'lockRetainedMediaBindings',
-    ],
+    ['listRetainedMediaBindingCleanupCandidates', 'deleteUnreferencedRetainedMediaBindings'],
   )
 }

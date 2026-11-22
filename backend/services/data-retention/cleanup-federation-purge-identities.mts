@@ -11,11 +11,12 @@ export async function terminalizePurgedUserRemoteFollows(
      WITH candidates AS MATERIALIZED (
        SELECT id FROM activitypub_remote_follow_activities
        WHERE target_user_id = $1::uuid AND undone_at IS NULL
-       ORDER BY id LIMIT $2 FOR UPDATE
+       ORDER BY id LIMIT $2
      )
      UPDATE activitypub_remote_follow_activities activity
      SET undone_at = clock_timestamp()
-     FROM candidates WHERE activity.id = candidates.id AND activity.undone_at IS NULL`,
+     FROM candidates WHERE activity.id = candidates.id
+       AND activity.target_user_id = $1::uuid AND activity.undone_at IS NULL`,
     [userId, batchSize],
   )
   return rowCount ?? 0

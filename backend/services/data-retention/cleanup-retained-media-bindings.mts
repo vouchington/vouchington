@@ -61,9 +61,9 @@ async function cleanupRetainedMediaBindingsPage(
   const progress = trackCursor
     ? (
         await query<{ cursor_placement_id: string | null }>(
-          `/* lockRetainedMediaBindingCleanupProgress */
+          `/* readRetainedMediaBindingCleanupProgress */
            SELECT cursor_placement_id FROM retained_image_placement_binding_cleanup_cursors
-           WHERE is_singleton FOR UPDATE`,
+           WHERE is_singleton`,
         )
       ).rows[0]
     : null
@@ -74,31 +74,15 @@ async function cleanupRetainedMediaBindingsPage(
       ? ''
       : `AND placement_id = ANY($${candidateValues.push(listedIds)}::uuid[])`
   const limitParam = `$${candidateValues.push(pageSize + 1)}`
-  const { rows: candidates } = await query<{ placement_id: string; image_id: string }>(
+  const { rows: candidates } = await query<{ placement_id: string }>(
     `/* listRetainedMediaBindingCleanupCandidates */
-     SELECT placement_id, image_id FROM retained_image_placement_bindings
+     SELECT placement_id FROM retained_image_placement_bindings
      WHERE placement_id > $1::uuid ${scopedIds}
      ORDER BY placement_id LIMIT ${limitParam}`,
     candidateValues,
   )
   const page = candidates.slice(0, pageSize)
   const pagePlacementIds = page.map(row => row.placement_id)
-  const { rows: images } = await query<{ id: string }>(
-    `/* lockRetainedMediaBindingImages */
-     SELECT root.id FROM retained_image_identities root
-     WHERE root.id = ANY($2::uuid[])
-       AND EXISTS (SELECT 1 FROM retained_image_placement_bindings binding
-         WHERE binding.image_id = root.id AND binding.placement_id = ANY($1::uuid[]))
-     ORDER BY root.id FOR UPDATE OF root SKIP LOCKED`,
-    [pagePlacementIds, page.map(row => row.image_id)],
-  )
-  const { rows: locked } = await query<{ placement_id: string }>(
-    `/* lockRetainedMediaBindings */
-     SELECT placement_id FROM retained_image_placement_bindings
-     WHERE placement_id = ANY($1::uuid[]) AND image_id = ANY($2::uuid[])
-     ORDER BY placement_id FOR UPDATE SKIP LOCKED`,
-    [pagePlacementIds, images.map(row => row.id)],
-  )
   const { rowCount } = await query(
     `/* deleteUnreferencedRetainedMediaBindings */
      DELETE FROM retained_image_placement_bindings binding
@@ -111,7 +95,7 @@ async function cleanupRetainedMediaBindingsPage(
        AND NOT EXISTS (SELECT 1 FROM copyright_notice_target_images target_image
          WHERE target_image.placement_id = binding.placement_id)
        `,
-    [locked.map(row => row.placement_id)],
+    [pagePlacementIds],
   )
   const hasMore = candidates.length > pageSize
   if (trackCursor)

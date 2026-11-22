@@ -67,18 +67,3 @@ export async function readTestRetainedMediaTraversalBound(pageSize: number): Pro
   )
   return Math.ceil(Number(rows[0]!.count) / pageSize) + 2
 }
-
-export async function pinTestRetainedMediaIdentity(
-  query: import('@data-stores/psql/types').TransactionQuery,
-  imageId: string,
-  placementId: string,
-): Promise<void> {
-  await query(
-    '/* pinTestRetainedMediaIdentity:image */ SELECT id FROM retained_image_identities WHERE id = $1 FOR KEY SHARE',
-    [imageId],
-  )
-  await query(
-    '/* pinTestRetainedMediaIdentity:binding */ SELECT placement_id FROM retained_image_placement_bindings WHERE placement_id = $1 FOR KEY SHARE',
-    [placementId],
-  )
-}

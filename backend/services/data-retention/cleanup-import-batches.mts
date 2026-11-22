@@ -59,9 +59,9 @@ async function deleteCompletedImportPage(
     [family, family === 'rss' ? 'discoveries' : 'rows'],
   )
   const { rows: cursorRows } = await query<Cursor>(
-    `/* lockImportRetentionCursor */
+    `/* readImportRetentionCursor */
      SELECT admin_batch_id, rss_batch_id, phase, cursor_row_id, cursor_discovery_url_id
-     FROM import_retention_cursors WHERE family = $1::import_retention_families FOR UPDATE`,
+     FROM import_retention_cursors WHERE family = $1::import_retention_families`,
     [family],
   )
   const cursor = cursorRows[0]!
@@ -70,9 +70,9 @@ async function deleteCompletedImportPage(
   let batchId = cursor[batchColumn]
   if (batchId) {
     const { rows } = await query<{ id: string }>(
-      `/* lockCurrentImportRetentionBatch */
+      `/* readCurrentImportRetentionBatch */
        SELECT id FROM ${batchTable} WHERE id = $1 AND completed_at < $2
-         AND completed_at >= $3 FOR UPDATE`,
+         AND completed_at >= $3`,
       [batchId, cutoff, lowerBound ?? new Date(0)],
     )
     if (rows.length === 0) batchId = null
@@ -83,7 +83,7 @@ async function deleteCompletedImportPage(
        SELECT id FROM ${batchTable}
        WHERE completed_at IS NOT NULL AND completed_at < $1
          AND completed_at >= $2
-       ORDER BY completed_at, id LIMIT 1 FOR UPDATE SKIP LOCKED`,
+       ORDER BY completed_at, id LIMIT 1`,
       [cutoff, lowerBound ?? new Date(0)],
     )
     batchId = rows[0]?.id ?? null
@@ -105,7 +105,7 @@ async function deleteCompletedImportPage(
        FROM user_rss_feed_import_row_discoveries
        WHERE batch_id = $1
          AND (import_row_id, discovery_url_id) > ($2::uuid, $3::uuid)
-       ORDER BY import_row_id, discovery_url_id LIMIT $4 FOR UPDATE`,
+       ORDER BY import_row_id, discovery_url_id LIMIT $4`,
       [
         batchId,
         cursor.cursor_row_id ?? MIN_UUIDV7,
@@ -139,7 +139,7 @@ async function deleteCompletedImportPage(
       `/* selectImportRowRetentionPage */
        SELECT id FROM ${rowTable} WHERE batch_id = $1
          AND id > $2::uuid
-       ORDER BY id LIMIT $3 FOR UPDATE`,
+       ORDER BY id LIMIT $3`,
       [batchId, cursor.cursor_row_id ?? MIN_UUIDV7, batchSize + 1],
     )
     const page = rows.slice(0, batchSize)

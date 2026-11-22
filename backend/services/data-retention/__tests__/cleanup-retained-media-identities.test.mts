@@ -3,10 +3,8 @@ import { getTestRetainedBindingCleanupCursor } from '@voucha/test-helpers/entiti
 import { withTestRetainedBindingCleanupCursor } from '@voucha/test-helpers/retained-binding-cleanup-fixtures'
 import { v7 } from 'uuid'
 import {
-  beginTransaction,
   hasTestRetainedImageIdentity,
   hasTestRetainedMediaBinding,
-  pinTestRetainedMediaIdentity,
   seedTestRetainedMediaOrphan,
 } from '@voucha/test-helpers'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
@@ -102,28 +100,22 @@ describe('retained media identity cleanup', () => {
     expect(await hasTestRetainedImageIdentity(tuple.imageId)).toBe(true)
   })
 
-  it('preserves a live placement and a locked identity while reclaiming unrelated orphans', async () => {
+  it('preserves a live placement while reclaiming only selected orphaned bindings and identities', async () => {
     const live = await createTestDeliverySurface()
-    const held = { placementId: v7(), imageId: v7(), bindingFamily: 'post' as const }
     const orphan = { placementId: v7(), imageId: v7(), bindingFamily: 'post' as const }
     const unselected = { placementId: v7(), imageId: v7(), bindingFamily: 'post' as const }
-    await seedTestRetainedMediaOrphan(held)
     await seedTestRetainedMediaOrphan(orphan)
     await seedTestRetainedMediaOrphan(unselected)
-    await using pin = await beginTransaction()
-    await pinTestRetainedMediaIdentity(pin, held.imageId, held.placementId)
-    await drainRetainedMediaCleanup([live.tuple, held, orphan])
-    expect(await hasTestRetainedMediaBinding(live.tuple.placementId)).toBe(true)
-    expect(await hasTestRetainedMediaBinding(held.placementId)).toBe(true)
-    expect(await hasTestRetainedImageIdentity(held.imageId)).toBe(true)
-    expect(await hasTestRetainedMediaBinding(orphan.placementId)).toBe(false)
-    expect(await hasTestRetainedMediaBinding(unselected.placementId)).toBe(true)
-    await pin.commit()
-    await drainRetainedMediaCleanup([live.tuple, held, orphan])
-    expect(await hasTestRetainedMediaBinding(held.placementId)).toBe(false)
-    expect(await hasTestRetainedImageIdentity(held.imageId)).toBe(false)
-    expect(await hasTestRetainedMediaBinding(live.tuple.placementId)).toBe(true)
-    await drainRetainedMediaCleanup([unselected])
-    expect(await hasTestRetainedMediaBinding(unselected.placementId)).toBe(false)
+    try {
+      await drainRetainedMediaCleanup([live.tuple, orphan])
+      expect(await hasTestRetainedMediaBinding(live.tuple.placementId)).toBe(true)
+      expect(await hasTestRetainedImageIdentity(live.tuple.imageId)).toBe(true)
+      expect(await hasTestRetainedMediaBinding(orphan.placementId)).toBe(false)
+      expect(await hasTestRetainedImageIdentity(orphan.imageId)).toBe(false)
+      expect(await hasTestRetainedMediaBinding(unselected.placementId)).toBe(true)
+      expect(await hasTestRetainedImageIdentity(unselected.imageId)).toBe(true)
+    } finally {
+      await drainRetainedMediaCleanup([orphan, unselected])
+    }
   })
 })

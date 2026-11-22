@@ -20,9 +20,9 @@ export async function lockVoteBallotCleanupCursor(
     [voteTable, cutoffId],
   )
   const { rows } = await query<StoredCursor>(
-    `/* lockVoteBallotCleanupCursor */
+    `/* readVoteBallotCleanupCursor */
      SELECT cursor_vote_id, sweep_cutoff_id
-     FROM vote_ballot_cleanup_cursors WHERE family = $1::vote_ballot_cleanup_families FOR UPDATE`,
+     FROM vote_ballot_cleanup_cursors WHERE family = $1::vote_ballot_cleanup_families`,
     [voteTable],
   )
   const cursor = rows[0]!

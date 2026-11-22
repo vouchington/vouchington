@@ -96,7 +96,7 @@ async function cleanupLegalRecordPage(
       : family === 'user_deletion_request'
         ? 'source.completed_at, source.id'
         : 'source.released_at, source.id'
-  const limit = `$${values.push(pageSize + 1)}`
+  const pageParameter = `$${values.length + 1}`
   await using query = await beginTransaction()
   if (family === 'user_legal_preservation_hold')
     await query(
@@ -106,16 +106,16 @@ async function cleanupLegalRecordPage(
     )
   const { rows } = await query<{ id: string }>(
     `/* listExpiredLegalRecordPage */ SELECT source.id FROM ${table} source
-     WHERE ${eligible}${scope} ORDER BY ${order} LIMIT ${limit} FOR UPDATE OF source SKIP LOCKED`,
-    values,
+     WHERE ${eligible}${scope} ORDER BY ${order} LIMIT ${pageParameter}`,
+    [...values, pageSize + 1],
   )
   const pageIds = rows.slice(0, pageSize).map(row => row.id)
   let deleted = 0
   if (pageIds.length) {
     const result = await query(
-      `/* deleteExpiredLegalRecordPage */ DELETE FROM ${table}
-      WHERE id = ANY($1::uuid[])`,
-      [pageIds],
+      `/* deleteExpiredLegalRecordPage */ DELETE FROM ${table} source
+      WHERE source.id = ANY(${pageParameter}::uuid[]) AND ${eligible}${scope}`,
+      [...values, pageIds],
     )
     deleted = result.rowCount ?? 0
   }

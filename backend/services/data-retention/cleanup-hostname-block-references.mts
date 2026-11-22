@@ -33,11 +33,12 @@ export async function detachHostnameBlockReferences(
      WITH page AS (
        SELECT id FROM url_hostname_blocks
        WHERE relation_cleanup_root_block_id = $1::uuid AND id <> $1::uuid
-       ORDER BY url_hostname_id LIMIT $2 FOR UPDATE SKIP LOCKED
+       ORDER BY url_hostname_id LIMIT $2
      )
      UPDATE url_hostname_blocks child
      SET relation_cleanup_root_block_id = NULL
-     WHERE child.id = ANY(ARRAY(SELECT id FROM page))`,
+     WHERE child.id = ANY(ARRAY(SELECT id FROM page))
+       AND child.relation_cleanup_root_block_id = $1::uuid`,
     [blockId, batchSize],
   )
   const remainingBudget = batchSize - (descendants.rowCount ?? 0)
@@ -48,11 +49,12 @@ export async function detachHostnameBlockReferences(
        WITH page AS (
          SELECT id FROM vote_weight_penalties
          WHERE source_hostname_block_id = $1::uuid
-         ORDER BY user_id LIMIT $2 FOR UPDATE SKIP LOCKED
+         ORDER BY user_id LIMIT $2
        )
        UPDATE vote_weight_penalties penalty
        SET source_hostname_block_id = NULL
-       WHERE penalty.id = ANY(ARRAY(SELECT id FROM page))`,
+       WHERE penalty.id = ANY(ARRAY(SELECT id FROM page))
+         AND penalty.source_hostname_block_id = $1::uuid`,
           [blockId, remainingBudget],
         )
       : { rowCount: 0 }

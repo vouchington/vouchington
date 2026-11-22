@@ -38,8 +38,8 @@ export async function cleanupVoteIntegrityDetails(
     ? null
     : (
         await query<{ cursor_flag_id: string | null; sweep_cutoff_id: string | null }>(
-          `/* lockVoteIntegrityDetailCleanupCursor */ SELECT cursor_flag_id, sweep_cutoff_id
-           FROM vote_integrity_flag_detail_cleanup_cursors WHERE is_singleton FOR UPDATE`,
+          `/* readVoteIntegrityDetailCleanupCursor */ SELECT cursor_flag_id, sweep_cutoff_id
+           FROM vote_integrity_flag_detail_cleanup_cursors WHERE is_singleton`,
         )
       ).rows[0]
   if (cursor && cursor.sweep_cutoff_id === null)
@@ -69,13 +69,9 @@ export async function cleanupVoteIntegrityDetails(
   const page = candidates.slice(0, batchSize)
   const { rowCount } = await query(
     `/* redactVoteIntegrityFlagDetails */
-     WITH locked AS MATERIALIZED (
-       SELECT id FROM vote_integrity_flags WHERE id = ANY($1::uuid[])
-       ORDER BY id FOR UPDATE SKIP LOCKED
-     )
      UPDATE vote_integrity_flags flag
      SET details = details - ${identifyingKeys}
-     FROM locked WHERE flag.id = locked.id AND flag.id < $2::uuid
+     WHERE flag.id = ANY($1::uuid[]) AND flag.id < $2::uuid
        AND flag.details ?| ${identifyingKeys}`,
     [page.map(row => row.id), sweepCutoffId],
   )
