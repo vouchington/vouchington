@@ -844,7 +844,7 @@ COMMENT ON COLUMN moderator_agents.is_baseline IS 'When true, this moderator run
 
 -- Agent moderation results using the generic agents system
 DO $$ BEGIN
-  CREATE TYPE agent_moderation_retention_block_reasons AS ENUM ('hash', 'reference', 'newest', 'reconcile');
+  CREATE TYPE agent_moderation_retention_block_reasons AS ENUM ('hash', 'reference', 'newest', 'reconcile', 'check_newest');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -866,7 +866,7 @@ CREATE TABLE IF NOT EXISTS agent_moderations (
   retention_blocked_reason agent_moderation_retention_block_reasons,
   CONSTRAINT chk_agent_moderations__retention_state CHECK (
     retention_blocked_reason IS NULL
-    OR (retention_blocked_reason = 'reconcile') = (retention_due_at IS NOT NULL)
+    OR (retention_blocked_reason IN ('reconcile', 'check_newest')) = (retention_due_at IS NOT NULL)
   ),
 
   -- results
@@ -989,7 +989,7 @@ COMMENT ON COLUMN agent_moderations.moderation_transparency_community_id IS 'Imm
 ANALYZE posts (root_post_id, parent_post_id, deleted_at);
 COMMENT ON COLUMN agent_moderations.is_flagged IS 'Whether the moderation flagged this content as problematic.';
 COMMENT ON COLUMN agent_moderations.retention_due_at IS 'Source-age deadline for a result awaiting reconciliation or deletion; NULL for settled blockers.';
-COMMENT ON COLUMN agent_moderations.retention_blocked_reason IS 'Reason a previously due result is blocked, or reconcile while a source event awaits its predecessor check.';
+COMMENT ON COLUMN agent_moderations.retention_blocked_reason IS 'Reason a result is blocked or the pending retention check it needs.';
 
 -- A post hash transition needs bounded reconsideration of already checked candidates.
 -- One row per post coalesces edits; its keyset state commits with source changes.
@@ -1038,6 +1038,42 @@ CREATE TRIGGER trigger_agent_moderations_retention_live
 BEFORE UPDATE OF deleted_at ON agent_moderations
 FOR EACH ROW WHEN (OLD.deleted_at IS DISTINCT FROM NEW.deleted_at)
 EXECUTE FUNCTION fn_update_agent_moderation_retention();
+
+-- Wake visible predecessors immediately after a result has actually been inserted.
+CREATE OR REPLACE FUNCTION fn_wake_agent_moderation_predecessors()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  UPDATE agent_moderations prior
+  SET retention_due_at = uuid_extract_timestamp(prior.id) + INTERVAL '90 days',
+      retention_blocked_reason = NULL
+  WHERE prior.post_id = NEW.post_id
+    AND prior.id IN (
+      SELECT id FROM agent_moderations
+      WHERE post_id = NEW.post_id AND prompt_id = NEW.prompt_id AND id < NEW.id
+      ORDER BY id DESC LIMIT 1
+    )
+    AND prior.retention_due_at IS NULL
+    AND (prior.retention_blocked_reason IS NULL OR prior.retention_blocked_reason = 'newest');
+  IF NEW.deleted_at IS NULL THEN
+    UPDATE agent_moderations prior
+    SET retention_due_at = uuid_extract_timestamp(prior.id) + INTERVAL '90 days',
+        retention_blocked_reason = NULL
+    WHERE prior.post_id = NEW.post_id
+      AND prior.id IN (
+        SELECT id FROM agent_moderations
+        WHERE post_id = NEW.post_id AND prompt_id = NEW.prompt_id
+          AND deleted_at IS NULL AND id < NEW.id
+        ORDER BY id DESC LIMIT 1
+      )
+      AND prior.retention_due_at IS NULL
+    AND (prior.retention_blocked_reason IS NULL OR prior.retention_blocked_reason = 'newest');
+  END IF;
+  RETURN NULL;
+END $$;
+
+CREATE TRIGGER trigger_agent_moderations_retention_wake_predecessors
+AFTER INSERT ON agent_moderations
+FOR EACH ROW EXECUTE FUNCTION fn_wake_agent_moderation_predecessors();
 
 CREATE OR REPLACE FUNCTION fn_register_agent_moderation_retention_post_hash()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$

@@ -24,7 +24,7 @@ export type AgentModerationCleanupResult = {
 type CandidateKey = { id: string; post_id: string }
 type Candidate = CandidateKey & {
   retention_due_at: Date
-  retention_blocked_reason: 'reconcile' | null
+  retention_blocked_reason: 'reconcile' | 'check_newest' | null
 }
 
 export async function cleanupAgentModerationPage(
@@ -50,12 +50,14 @@ export async function cleanupAgentModerationPage(
     postIds,
   )
   const page = candidates.slice(0, batchSize)
-  const pending = page.filter(row => row.retention_blocked_reason === 'reconcile')
+  const pending = page.filter(row => row.retention_blocked_reason !== null)
   const wokenIds = pending.length > 0 ? await reconcileAgentModerationRetentionPage(pending) : []
-  const deleted =
-    page.length > 0 ? await drainAgentModerationCleanupPage(page, upperBoundId, upperBoundDueAt) : 0
-  // A newly due predecessor can sort before this page's position.
-  const rewind = wokenIds.some(id => id >= lowerBoundId && id < upperBoundId)
+  const { deleted, checkNewest } =
+    page.length > 0
+      ? await drainAgentModerationCleanupPage(page, upperBoundId, upperBoundDueAt)
+      : { deleted: 0, checkNewest: false }
+  // A woken predecessor or a deferred keeper check can sort before this page's position.
+  const rewind = checkNewest || wokenIds.some(id => id >= lowerBoundId && id < upperBoundId)
   const hasMore = candidates.length > batchSize || moreHashWork || rewind
   const last = page.at(-1)
   return {
@@ -127,7 +129,7 @@ async function drainAgentModerationCleanupPage(
   page: readonly CandidateKey[],
   upperBoundId: string,
   upperBoundDueAt: string,
-): Promise<number> {
+) {
   await using transaction = await beginTransaction()
   const { rows: locked } = await transaction<CandidateKey>(
     `/* lockAgentModerationCleanupSources */
@@ -139,10 +141,10 @@ async function drainAgentModerationCleanupPage(
     [page.map(row => row.id), page.map(row => row.post_id)],
   )
   // A source skipped while pending can become plain due after this lock statement.
-  const deleted =
+  const result =
     locked.length > 0
       ? await deleteAgentModerationRetentionPage(transaction, locked, upperBoundId, upperBoundDueAt)
-      : 0
+      : { deleted: 0, checkNewest: false }
   await transaction.commit()
-  return deleted
+  return result
 }

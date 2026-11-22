@@ -39,24 +39,10 @@ describe('agent moderation retention wake-ups', () => {
     const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
     const fixture = await createTestAgentModerationRetentionFixture()
     const oldKeeper = await insertTestAgentModeration({ ...fixture, occurredAt: at(95) })
-    expect(
-      await cleanupObsoleteAgentModerations({
-        postIds: [fixture.postId],
-        now,
-        lowerBoundDate,
-        batchSize: 1,
-        maxBatches: 1,
-      }),
-    ).toMatchObject({ scanned: 1, deleted: 0 })
-    expect(
-      await cleanupObsoleteAgentModerations({
-        postIds: [fixture.postId],
-        now,
-        lowerBoundDate,
-        batchSize: 1,
-        maxBatches: 1,
-      }),
-    ).toMatchObject({ scanned: 0, deleted: 0 })
+    const options = { postIds: [fixture.postId], now, lowerBoundDate, batchSize: 1, maxBatches: 1 }
+    expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({ scanned: 1, deleted: 0 })
+    expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({ scanned: 1, deleted: 0 })
+    expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({ scanned: 0, deleted: 0 })
     expect(await testAgentModerationExists(fixture.postId, oldKeeper)).toBe(true)
     await insertTestAgentModerationRetentionPostWork([fixture.postId], now)
     onTestFinished(
@@ -93,6 +79,23 @@ describe('agent moderation retention wake-ups', () => {
     expect(await testAgentModerationRetentionPostHasWork(fixture.postId)).toBe(true)
     expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({ scanned: 1, deleted: 1 })
     expect(await testAgentModerationExists(fixture.postId, old)).toBe(false)
+  })
+
+  it('wakes an aged keeper when a fresh successor is inserted', async () => {
+    const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
+    const fixture = await createTestAgentModerationRetentionFixture()
+    const old = await insertTestAgentModeration({ ...fixture, occurredAt: at(95) })
+    const options = { postIds: [fixture.postId], now, lowerBoundDate, batchSize: 1, maxBatches: 1 }
+    expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({ scanned: 1, deleted: 0 })
+    expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({
+      scanned: 1,
+      deleted: 0,
+      hasMore: false,
+    })
+    const fresh = await insertTestAgentModeration({ ...fixture, occurredAt: at(1) })
+    expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({ scanned: 1, deleted: 1 })
+    expect(await testAgentModerationExists(fixture.postId, old)).toBe(false)
+    expect(await testAgentModerationExists(fixture.postId, fresh)).toBe(true)
   })
 
   it('waits until the source reaches the retention age after supersession', async () => {

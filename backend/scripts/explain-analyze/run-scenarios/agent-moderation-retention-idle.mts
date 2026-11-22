@@ -3,7 +3,6 @@ import { write } from '@data-stores/psql'
 import { cleanupObsoleteAgentModerations } from '@services/data-retention/cleanup-agent-moderations'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
-import { seedUuid, seedUuidAtTimestamp } from '../seed-data/common.mts'
 import { restoreAgentModerationRetentionPages } from '../seed-data/agent-moderation-retention.mts'
 
 const PAGE_SIZE = 100
@@ -13,9 +12,21 @@ export async function runAgentModerationRetentionIdleScenarios(
   anchor: Date,
   seededRows: Record<string, number>,
 ): Promise<void> {
-  await seedSettledAgentModerationKeepers(anchor.getTime() - 100 * DAY_MS)
-  // The seeded newest result on each bulk post is itself old enough to be in
-  // retention scope. Once settled, it is absent from the due index.
+  const idleOptions = {
+    now: anchor,
+    lowerBoundDate: new Date(anchor.getTime() - 101 * DAY_MS),
+    upperBoundDate: new Date(anchor.getTime() - 99 * DAY_MS),
+  }
+  // Drain both one-time phases of the bounded seeded keeper cohort before measuring idle.
+  const settled = await cleanupObsoleteAgentModerations({
+    ...idleOptions,
+    batchSize: 1_000,
+    maxBatches: 64,
+  })
+  assert.equal(settled.hasMore, false)
+  await write(
+    '/* vacuumSettledAgentModerationKeepers */ VACUUM (ANALYZE, INDEX_CLEANUP ON) agent_moderations',
+  )
   registerScenarioContract('agent-moderation-retention-idle', {
     seededRows,
     forbidSequentialScans: ['agent_moderations'],
@@ -33,9 +44,7 @@ export async function runAgentModerationRetentionIdleScenarios(
     const result = await cleanupObsoleteAgentModerations({
       batchSize: PAGE_SIZE,
       maxBatches: 1,
-      now: anchor,
-      lowerBoundDate: new Date(anchor.getTime() - 101 * DAY_MS),
-      upperBoundDate: new Date(anchor.getTime() - 99 * DAY_MS),
+      ...idleOptions,
     })
     assert.equal(result.scanned, 0)
     assert.equal(result.deleted, 0)
@@ -91,26 +100,5 @@ export async function runAgentModerationRetentionIdleScenarios(
         'blockAgentModerationRetentionCandidates',
       ],
     },
-  )
-}
-
-// The idle fixture represents the entire settled keeper cohort, after its one-time work.
-async function seedSettledAgentModerationKeepers(newMs: number): Promise<void> {
-  await write(
-    `/* seedSettledAgentModerationKeepers */
-     UPDATE agent_moderations
-     SET retention_due_at = NULL, retention_blocked_reason = 'newest'
-     WHERE post_id >= $1::uuid AND post_id <= $2::uuid
-       AND id >= $3::uuid AND id < $4::uuid
-       AND retention_blocked_reason = 'reconcile'`,
-    [
-      seedUuid(15_099, '05'),
-      seedUuid(0, '05'),
-      seedUuidAtTimestamp(newMs, 0),
-      seedUuidAtTimestamp(newMs + DAY_MS, 0),
-    ],
-  )
-  await write(
-    '/* vacuumSettledAgentModerationKeepers */ VACUUM (ANALYZE, INDEX_CLEANUP ON) agent_moderations',
   )
 }
