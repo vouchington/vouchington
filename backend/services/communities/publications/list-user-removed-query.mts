@@ -1,4 +1,7 @@
-import type { ScopedPreciseTimestampCursor, ScopedTierPreciseUuidCursor } from '@modules/pagination'
+import type {
+  ScopedPreciseTimestampCursor,
+  ScopedTierPreciseUuidCursor,
+} from '@vouchington/pagination'
 import sql, { type SQLStatement } from 'sql-template-strings'
 
 type BuildUserRemovedPostsQueryOptions = {
