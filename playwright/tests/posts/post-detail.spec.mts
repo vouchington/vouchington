@@ -146,9 +146,10 @@ test.describe('Post Detail Pages', () => {
     // Badge pills are TopicLabel anchors with data-pw='topic-label'
     await expect(page.getByTestId('topic-label').first()).toBeVisible()
 
-    // The old detailed star list used role='img' per topic row — must not exist.
-    // Using page.locator with a CSS selector (not a free-text matcher) is allowed by playwright-prefer-test-id.
-    await expect(page.getByRole('img', { name: /out of 5 stars/ })).toHaveCount(0)
+    // The old detailed star list used role='img' per topic row — must not exist, even hidden.
+    await expect(
+      page.getByRole('img', { name: /out of 5 stars/, includeHidden: true }),
+    ).toHaveCount(0)
   })
 
   for (const { type, segment, id } of POST_TYPE_CASES) {
