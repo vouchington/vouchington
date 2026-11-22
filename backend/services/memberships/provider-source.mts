@@ -129,7 +129,8 @@ async function getOrCreateProviderSource(
     SELECT id, user_id, source_kind FROM membership_sources
     WHERE membership_provider_lineage_id = ${lineageId}
       AND source_kind = ${options.sourceKind}
-      AND (${options.sourceKind} = 'direct' OR user_id = ${options.userId})`
+      AND (${options.sourceKind} = 'direct' OR user_id = ${options.userId})
+    FOR UPDATE`
   const { rows } = await query<SourceRow>(findSource)
   let source = rows[0]
   if (options.sourceKind === 'direct' && source?.user_id === null) {
