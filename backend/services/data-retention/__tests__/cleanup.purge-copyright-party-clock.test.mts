@@ -1,10 +1,9 @@
-import { beginTransaction } from '@data-stores/psql'
+import { duringOpenCopyrightPartyAdmission } from '@voucha/test-helpers/services/copyright-notices/open-party-admission'
 import { createTestRetentionWindow, createTestUser, softDeleteUserAt } from '@voucha/test-helpers'
 import { readTestRetainedUserLegalClocks } from '@voucha/test-helpers/entities/retained-user-legal-clocks'
 import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
 import { readCopyrightCasePurgeFixtureAccountClock } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-fixture'
 import { describe, expect, it } from 'vitest'
-import { retainCopyrightCaseAccountParty } from '../../copyright-notices/retention-parties-admission.mts'
 import { runCopyrightAccountClockSyncPage } from '../../copyright-notices/retention-account-clock-sync.mts'
 import { cleanupSoftDeletedUser } from '../cleanup-soft-deleted-user.mts'
 
@@ -15,13 +14,11 @@ describe('final purge and a concurrently admitted copyright party', () => {
     await softDeleteUserAt(user.id, window.firstEligibleDate)
 
     // The admission has inserted its party but not committed when the purge's DELETE takes its snapshot.
-    await using admission = await beginTransaction()
-    await retainCopyrightCaseAccountParty(admission, entry.noticeId, user.id)
-    await expect(cleanupSoftDeletedUser(user.id, window.upperBoundDate)).resolves.toEqual({
-      deleted: 1,
-      hasMore: false,
-    })
-    await admission.commit()
+    await expect(
+      duringOpenCopyrightPartyAdmission(entry.noticeId, user.id, () =>
+        cleanupSoftDeletedUser(user.id, window.upperBoundDate),
+      ),
+    ).resolves.toEqual({ deleted: 1, hasMore: false })
 
     const purgedAt = (await readTestRetainedUserLegalClocks(user.id))?.purged_at
     expect(purgedAt).toBeInstanceOf(Date)

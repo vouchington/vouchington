@@ -5,12 +5,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createTestRetentionWindow,
   createTestUser,
+  createTestUserDirect,
   getTestUserRaw,
   softDeleteUserAt,
 } from '@voucha/test-helpers'
+import { readTestPurgeAccountState } from '@voucha/test-helpers/reciprocal-user-purge-scene'
+import { createReferralSignupNotification } from '../../notifications/create-referral-signup-notification.mts'
 import { readPreservationHoldsForTest } from '@voucha/test-helpers/entities/user-legal-preservation-holds'
 import { placeUserPreservationHold } from '@services/users'
 import { cleanupSoftDeletedUserBatch } from '../cleanup-batches.mts'
+import { cleanupSoftDeletedUser } from '../cleanup-soft-deleted-user.mts'
 
 describe('placing a legal preservation hold against the final purge', () => {
   beforeEach(() => {
@@ -77,4 +81,39 @@ describe('placing a legal preservation hold against the final purge', () => {
       expect(await readPreservationHoldsForTest(user.id)).toEqual([])
     },
   )
+
+  it('keeps the preserved rows a stage would delete when a hold commits after the eligibility read', async () => {
+    const window = createTestRetentionWindow()
+    const [admin, user, witness] = await Promise.all([
+      createTestUser({ administrator: true }),
+      createTestUserDirect(),
+      createTestUserDirect(),
+    ])
+    await createReferralSignupNotification(user.id, witness.id, witness.username)
+    await softDeleteUserAt(user.id, window.firstEligibleDate)
+    const before = await readTestPurgeAccountState(user.id)
+    expect(before.notifications.notifications).toBe(1)
+
+    let placement: Awaited<ReturnType<typeof placeUserPreservationHold>> | undefined
+    const restore = afterPostgresTransactionQueryForTest(
+      'cleanupSoftDeletedUserBatch: check target',
+      values => values.includes(user.id),
+      async () => {
+        placement = await placeUserPreservationHold(admin, user.id, 'matter-after-eligibility')
+      },
+    )
+    let result: Awaited<ReturnType<typeof cleanupSoftDeletedUser>>
+    try {
+      result = await cleanupSoftDeletedUser(user.id, window.upperBoundDate)
+    } finally {
+      restore()
+    }
+
+    expect(result).toEqual({ deleted: 0, hasMore: true })
+    expect(await getTestUserRaw(user.id)).not.toBeNull()
+    expect(await readPreservationHoldsForTest(user.id)).toEqual([
+      expect.objectContaining({ id: placement?.id, released_at: null }),
+    ])
+    expect((await readTestPurgeAccountState(user.id)).notifications).toEqual(before.notifications)
+  })
 })
