@@ -3,6 +3,7 @@ export const MEMBERSHIP_WORK_SCENARIOS = [
   'membership-reversal-case-locked-read',
   'membership-reversal-bind-provider-lineage',
   'membership-reversal-lock-provider-binding',
+  'membership-reversal-find-family-provider-binding',
   'membership-reversal-displaced-source',
   'membership-reversal-winner-effective',
   'membership-reversal-winning-membership',
