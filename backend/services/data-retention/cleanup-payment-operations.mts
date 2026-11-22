@@ -40,18 +40,18 @@ function getPaymentCleanupPageBounds(options: PaymentOperationCleanupOptions) {
   return { batchSize, cutoff, idCutoff, idLowerBound }
 }
 
-export async function lockPaymentCleanupCursor(
+export async function readPaymentCleanupCursor(
   query: QueryExecutor,
   kind: PaymentCleanupKind,
 ): Promise<string | null> {
-  await query(sql`/* lockPaymentCleanupCursor.ensure */
+  await query(sql`/* readPaymentCleanupCursor.ensure */
     INSERT INTO payment_operational_cleanup_cursors (kind) VALUES (${kind})
     ON CONFLICT (kind) DO NOTHING
   `)
   const { rows } = await query<{ cursor_id: string | null }>(sql`
-    /* lockPaymentCleanupCursor */
+    /* readPaymentCleanupCursor */
     SELECT cursor_id FROM payment_operational_cleanup_cursors
-    WHERE kind = ${kind} FOR UPDATE
+    WHERE kind = ${kind}
   `)
   if (!rows[0]) throw new Error(`${kind} cleanup cursor is missing`)
   return rows[0].cursor_id
@@ -81,7 +81,7 @@ async function cleanupTerminalStripeEventWorkPage(
 ): Promise<PaymentOperationCleanupResult> {
   const { batchSize, cutoff, idCutoff, idLowerBound } = getPaymentCleanupPageBounds(options)
   await using transaction = await beginTransaction()
-  const cursorId = await lockPaymentCleanupCursor(transaction, 'stripe_event_work')
+  const cursorId = await readPaymentCleanupCursor(transaction, 'stripe_event_work')
   const { rows } = await transaction<{ stripe_event_id: string }>(sql`
     /* cleanupTerminalStripeEventWork.candidates */
     SELECT stripe_event_id FROM stripe_event_processing_work_items
@@ -90,7 +90,6 @@ async function cleanupTerminalStripeEventWorkPage(
       AND (${idLowerBound}::uuid IS NULL OR stripe_event_id >= ${idLowerBound}::uuid)
       AND (processed_at < ${cutoff} OR ignored_at < ${cutoff})
     ORDER BY stripe_event_id LIMIT ${batchSize + 1}
-    FOR UPDATE SKIP LOCKED
   `)
   const page = rows.slice(0, batchSize)
   const ids = page.map(row => row.stripe_event_id)
@@ -121,7 +120,7 @@ async function cleanupAbandonedMembershipPurchaseIntentsPage(
 ): Promise<PaymentOperationCleanupResult> {
   const { batchSize, cutoff, idCutoff, idLowerBound } = getPaymentCleanupPageBounds(options)
   await using transaction = await beginTransaction()
-  const cursorId = await lockPaymentCleanupCursor(transaction, 'purchase_intent')
+  const cursorId = await readPaymentCleanupCursor(transaction, 'purchase_intent')
   const { rows } = await transaction<{ id: string }>(sql`
     /* cleanupAbandonedMembershipPurchaseIntents.candidates */
     SELECT intent.id FROM membership_purchase_intents intent
@@ -132,7 +131,6 @@ async function cleanupAbandonedMembershipPurchaseIntentsPage(
       AND (intent.launched_at IS NULL OR intent.failed_at IS NOT NULL
         OR intent.user_id IS NULL OR intent.expired_at IS NOT NULL)
     ORDER BY intent.id LIMIT ${batchSize + 1}
-    FOR UPDATE OF intent SKIP LOCKED
   `)
   const page = rows.slice(0, batchSize)
   const ids = page.map(row => row.id)
