@@ -1,4 +1,8 @@
-import { runInOwnedTransaction, runReportResolutionTransaction } from './resolve-transactions.mts'
+import {
+  lockModerationCases,
+  runInOwnedTransaction,
+  runReportResolutionTransaction,
+} from './resolve-transactions.mts'
 import { withTransactionOptions, write, type QueryOptions } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import {
@@ -146,6 +150,7 @@ export async function dismissPendingReportsForDeletedEntity(
     const { rows: candidates } = await write<{ id: string }>(caseQuery, { query })
     const caseIds = candidates.map(row => row.id)
     if (caseIds.length === 0) return { count: 0, notifications: [] }
+    await lockModerationCases(caseIds, query)
     const updateQuery = sql`/* dismissPendingReportsForDeletedEntity */
       WITH updated AS (
         UPDATE moderation_reports
