@@ -1,15 +1,13 @@
 import assert from 'node:assert/strict'
 import { write } from '@data-stores/psql'
-import { cleanupObsoleteAgentModerations } from '@services/data-retention/cleanup-agent-moderations'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { runAgentModerationRetentionIdleScenarios } from './agent-moderation-retention-idle.mts'
-import { postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from '../seed-data/common.mts'
+import { seedUuid, seedUuidAtTimestamp } from '../seed-data/common.mts'
 import {
   AGENT_MODERATION_RETENTION_RELEASED_NOISE,
   AGENT_MODERATION_RETENTION_REFERENCE_NOISE,
   AGENT_MODERATION_RETENTION_ROWS,
-  restoreAgentModerationRetentionPages,
 } from '../seed-data/agent-moderation-retention.mts'
 
 const PAGE_SIZE = 100
@@ -22,13 +20,6 @@ const LIVE_PREDECESSOR_INDEXES = [
   'agent_moderations__default_post_id_prompt_id_id_idx1',
   'agent_moderations__default_post_id_id_idx2',
 ]
-const CAPTURED_NAMES = [
-  'listChangedAgentModerationRetentionPost',
-  'listAgentModerationCleanupCandidates',
-  'lockAgentModerationCleanupSources',
-  'deleteObsoleteAgentModerations',
-  'blockAgentModerationRetentionCandidates',
-] as const
 
 export async function runAgentModerationRetentionProgressScenarios(
   anchor: Date,
@@ -69,49 +60,6 @@ export async function runAgentModerationRetentionProgressScenarios(
     undefined,
     'listAgentModerationPreviousLiveResult',
     { exactCapturedNames: ['listAgentModerationPreviousLiveResult'] },
-  )
-}
-
-export async function runAgentModerationRetentionLockScenario(
-  scenarioId: string,
-  queryName: (typeof CAPTURED_NAMES)[2],
-  indexNames: readonly string[],
-  relation: 'agent_moderations',
-  continuation: Awaited<ReturnType<typeof cleanupObsoleteAgentModerations>>['continuation'],
-  seededRows: Record<string, number>,
-): Promise<void> {
-  if (continuation === null) {
-    throw new Error('The first raw page must return durable continuation')
-  }
-  const anchor = new Date(postSeedTimestampMs(0))
-  const lowerBoundDate = new Date(anchor.getTime() - 121 * DAY_MS)
-  registerScenarioContract(scenarioId, {
-    seededRows,
-    forbidSequentialScans: ['agent_moderations'],
-    expectations: [
-      { kind: 'usesIndexes', indexes: indexNames, anyOf: indexNames.length > 1 },
-      { kind: 'maxProcessedRows', relation, max: PAGE_SIZE + 1 },
-    ],
-  })
-  await runAndCapture(
-    scenarioId,
-    async () => {
-      const result = await cleanupObsoleteAgentModerations({
-        batchSize: PAGE_SIZE,
-        maxBatches: 1,
-        now: anchor,
-        lowerBoundDate,
-        continuation,
-      })
-      assert.equal(result.scanned, PAGE_SIZE)
-      assert.equal(result.hasMore, true)
-    },
-    undefined,
-    queryName,
-    {
-      exactCapturedNames: CAPTURED_NAMES,
-      afterCapture: restoreAgentModerationRetentionPages,
-    },
   )
 }
 

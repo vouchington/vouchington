@@ -8,7 +8,6 @@ import { restoreAgentModerationRetentionPages } from '../seed-data/agent-moderat
 import {
   readAgentModerationRetentionSeedCounts,
   runAgentModerationRetentionProgressScenarios,
-  runAgentModerationRetentionLockScenario,
 } from './agent-moderation-retention-support.mts'
 
 const PAGE_SIZE = 100
@@ -16,7 +15,6 @@ const DAY_MS = 24 * 60 * 60 * 1_000
 const CAPTURED_NAMES = [
   'listChangedAgentModerationRetentionPost',
   'listAgentModerationCleanupCandidates',
-  'lockAgentModerationCleanupSources',
   'deleteObsoleteAgentModerations',
   'blockAgentModerationRetentionCandidates',
 ] as const
@@ -78,18 +76,6 @@ export async function runAgentModerationRetentionScenarios(): Promise<void> {
       exactCapturedNames: CAPTURED_NAMES,
       afterCapture: restoreAgentModerationRetentionPages,
     },
-  )
-
-  await runAgentModerationRetentionLockScenario(
-    'agent-moderation-retention-source-lock',
-    'lockAgentModerationCleanupSources',
-    [
-      'agent_moderations__default_post_id_id_idx',
-      'agent_moderations__default_retention_due_at_id_post_id_idx',
-    ],
-    'agent_moderations',
-    continuation,
-    seededRows,
   )
 
   registerScenarioContract('agent-moderation-retention-delete', {

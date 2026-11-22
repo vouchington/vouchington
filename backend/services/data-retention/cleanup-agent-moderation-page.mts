@@ -131,20 +131,12 @@ async function drainAgentModerationCleanupPage(
   upperBoundDueAt: string,
 ) {
   await using transaction = await beginTransaction()
-  const { rows: locked } = await transaction<CandidateKey>(
-    `/* lockAgentModerationCleanupSources */
-     SELECT moderation.id, moderation.post_id FROM agent_moderations moderation
-     JOIN unnest($1::uuid[], $2::uuid[]) AS page(id, post_id)
-       ON moderation.id = page.id AND moderation.post_id = page.post_id
-     WHERE moderation.retention_due_at IS NOT NULL AND moderation.retention_blocked_reason IS NULL
-     ORDER BY moderation.id, moderation.post_id FOR UPDATE OF moderation`,
-    [page.map(row => row.id), page.map(row => row.post_id)],
+  const result = await deleteAgentModerationRetentionPage(
+    transaction,
+    page,
+    upperBoundId,
+    upperBoundDueAt,
   )
-  // A source skipped while pending can become plain due after this lock statement.
-  const result =
-    locked.length > 0
-      ? await deleteAgentModerationRetentionPage(transaction, locked, upperBoundId, upperBoundDueAt)
-      : { deleted: 0, checkNewest: false }
   await transaction.commit()
   return result
 }
