@@ -16,7 +16,7 @@ import { backendDataProjects } from './test-helpers/vitest-config/backend-data-p
 import { backendPartitionRetirementProjects } from './test-helpers/vitest-config/backend-partition-retirement-project.mts'
 import {
   coverageConfig,
-  parseVitestMaxWorkers,
+  resolveVitestMaxWorkers,
   storybookBrowserConnectionTimeoutMs,
   vitestFsModuleCachePath,
   vitestViteCacheDir,
@@ -46,7 +46,7 @@ export default defineConfig({
     // overwrites any per-project value during vitest's config resolution, so a literal is both
     // banned by .no-mistakes/rules/policies.yml and non-functional whenever the env var is set.
     fileParallelism: true,
-    maxWorkers: parseVitestMaxWorkers(process.env.VITEST_MAX_WORKERS),
+    maxWorkers: resolveVitestMaxWorkers(),
     // Persist transformed modules across local `vitest run` processes. Path stays under the
     // workspace `.cache/vite/` tree — not the default `node_modules/.vitest-cache`, which
     // `./dev/reset` deletes. Browser Mode ignores this option. CI does not restore it through

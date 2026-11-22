@@ -8,7 +8,7 @@ BEGIN
     NEW.community_identity_id := NULL;
   ELSE
     SELECT community_id INTO NEW.community_identity_id FROM posts
-    WHERE id = NEW.post_id FOR KEY SHARE;
+    WHERE id = NEW.post_id;
   END IF;
   RETURN NEW;
 END $$;

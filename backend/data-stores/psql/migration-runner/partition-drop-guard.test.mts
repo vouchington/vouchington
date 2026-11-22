@@ -242,7 +242,7 @@ describe('partition drop guard', () => {
     expect(statements).toEqual([
       '/* cleanupPartitions:lockParent */ LOCK TABLE rss_feed_crawls IN ACCESS EXCLUSIVE MODE',
       '/* cleanupPartitions:lockCandidate */ LOCK TABLE rss_feed_crawls__p_2025_01 IN ACCESS EXCLUSIVE MODE',
-      '/* cleanupPartitions:lockHolds */ LOCK TABLE user_legal_preservation_holds IN SHARE MODE',
+      '/* cleanupPartitions:lockHolds */ LOCK TABLE user_legal_preservation_holds IN SHARE MODE NOWAIT',
     ])
     statements.length = 0
     legalHold = true
