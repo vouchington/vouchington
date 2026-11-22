@@ -46,11 +46,11 @@ describe('blocklist file diff', () => {
         query.text.includes('copySourceMembership'),
       )
       expect(copyIndex).toBeGreaterThanOrEqual(0)
-      // Another task in the worker can lock first; this sync must still lock after its COPY.
+      // Another task in the worker can lock first; this sync must still lock the source row after its COPY.
       expect(
         observed.queries
           .slice(copyIndex + 1)
-          .some(query => query.text.includes('pg_advisory_xact_lock')),
+          .some(query => query.text.includes('syncDomainsWithDatabase:sourceType')),
       ).toBe(true)
       expect(observed.result).toEqual({ skipped: false, domainsAdded: 1, domainsRemoved: 0 })
       expect(

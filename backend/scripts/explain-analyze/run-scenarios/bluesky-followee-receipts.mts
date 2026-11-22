@@ -1,8 +1,6 @@
 import { beginTransaction, write } from '@data-stores/psql'
-import {
-  deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage,
-  START_OF_IDS,
-} from '@services/bluesky-follows/receipts'
+import { deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage } from '@services/bluesky-follows/followee-receipt-cleanup'
+import { START_OF_IDS } from '@services/bluesky-follows/receipts'
 import { getBlueskyFollowsWorkLimit } from '@services/bluesky-follows/work-limits'
 
 import { registerScenarioContract } from '../plan-expectations.mts'
@@ -16,6 +14,8 @@ const OTHER_FOLLOWEE_IDS = Array.from({ length: 20 }, (_, index) => seedUuid(20 
 const HOLDER_USER_ID = seedUuid(9, '01')
 const AUTHORIZATION_ID = seedUuid(0, 'b1')
 const HOLDER_DID = 'did:plc:explainblueskyreceipts'
+const FOLLOWEE_AUTHORIZATION_ID = seedUuid(1, 'b1')
+const FOLLOWEE_DID = 'did:plc:explainblueskyfollowee'
 const SCENARIO_QUERY = 'deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage'
 
 /** One followee with many followers: each drain page is an ordered index range, never a Sort. */
@@ -26,6 +26,20 @@ async function seedFolloweeReceipts(): Promise<void> {
      VALUES ($1, $2, 'explain.example', 'web', now(), $3, now(), now() + INTERVAL '1 day')
      ON CONFLICT DO NOTHING`,
     [AUTHORIZATION_ID, HOLDER_USER_ID, HOLDER_DID],
+  )
+  await write(
+    `/* seedExplainBlueskyReceipts:followeeAuthorization */ INSERT INTO bluesky_link_authorizations
+       (id, user_id, handle, callback_mode, callback_claimed_at, claimed_did, attached_at, expires_at)
+     VALUES ($1, $2, 'followee.example', 'web', now(), $3, now(), now() + INTERVAL '1 day')
+     ON CONFLICT DO NOTHING`,
+    [FOLLOWEE_AUTHORIZATION_ID, FOLLOWEE_ID, FOLLOWEE_DID],
+  )
+  await write(
+    `/* seedExplainBlueskyReceipts:followeeAccount */ INSERT INTO bluesky_linked_accounts
+       (link_authorization_id, bluesky_did, user_id, handle, session_ciphertext)
+     VALUES ($1, $2, $3, 'followee.example', 'explain')
+     ON CONFLICT DO NOTHING`,
+    [FOLLOWEE_AUTHORIZATION_ID, FOLLOWEE_DID, FOLLOWEE_ID],
   )
   await write(
     `/* seedExplainBlueskyReceipts:account */ INSERT INTO bluesky_linked_accounts
@@ -71,8 +85,12 @@ async function removeFolloweeReceipts(): Promise<void> {
     [AUTHORIZATION_ID],
   )
   await write(
-    '/* seedExplainBlueskyReceipts:removeAuthorization */ DELETE FROM bluesky_link_authorizations WHERE id = $1',
-    [AUTHORIZATION_ID],
+    '/* seedExplainBlueskyReceipts:removeFolloweeAccount */ DELETE FROM bluesky_linked_accounts WHERE link_authorization_id = $1',
+    [FOLLOWEE_AUTHORIZATION_ID],
+  )
+  await write(
+    '/* seedExplainBlueskyReceipts:removeAuthorization */ DELETE FROM bluesky_link_authorizations WHERE id = ANY($1::uuid[])',
+    [[AUTHORIZATION_ID, FOLLOWEE_AUTHORIZATION_ID]],
   )
   await write(
     '/* seedExplainBlueskyReceipts:restoreStats */ ANALYZE bluesky_follow_records, bluesky_linked_accounts',
@@ -83,6 +101,7 @@ async function deletePageInRolledBackTransaction(after: string): Promise<void> {
   await using transaction = await beginTransaction()
   const page = await deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage(
     FOLLOWEE_ID,
+    { blueskyDid: FOLLOWEE_DID, linkAuthorizationId: FOLLOWEE_AUTHORIZATION_ID },
     after,
     { query: transaction },
   )

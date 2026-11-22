@@ -56,10 +56,6 @@ export async function lockSourceForDiff(
   sourceId: DomainBlacklistSourceId,
   sourceType: 'url' | 'email',
 ): Promise<string> {
-  await query(
-    `/* syncDomainsWithDatabase */ SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))`,
-    [sourceId],
-  )
   // A source reclassified during download must not publicly introduce its email-only domains.
   const { rows } = await query<{ type: 'url' | 'email'; version: string }>(
     `/* syncDomainsWithDatabase:sourceType */ SELECT type, xmin::text AS version FROM domain_blocklist_sources WHERE id = $1 FOR UPDATE`,

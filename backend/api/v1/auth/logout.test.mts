@@ -229,7 +229,11 @@ describe('POST /api/v1/auth/logout', () => {
       ),
     ).rejects.toThrow('registry write unavailable')
     await expect(isSessionRevoked(sid)).resolves.toBe(true)
-    await expect(getTestUserSessionById(sid)).resolves.toMatchObject({ revoked_at: null })
+    // Without the removed session advisory lock, the failure fallback's own transaction is not blocked
+    // by the rejected caller transaction and repairs the durable row immediately.
+    await expect(getTestUserSessionById(sid)).resolves.toMatchObject({
+      revoked_at: expect.any(Date),
+    })
     await expect(validateOAuthAccessToken(minted.access_token, 'user')).resolves.toBeNull()
 
     await createRequest()

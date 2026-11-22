@@ -7,7 +7,6 @@ import { buildBlueskyAuthorizationExpiryPredicate } from './bluesky-authorizatio
 type ExpiredAuthorization = {
   id: string
   user_id: string
-  claimed_did: string | null
 }
 
 export async function deleteAbandonedBlueskyLinkSessionBatch(
@@ -114,7 +113,7 @@ async function findExpiredAuthorizations(
   query: TransactionQuery,
 ): Promise<ExpiredAuthorization[]> {
   const statement = sql`/* findExpiredBlueskyAuthorizations */
-    SELECT id, user_id, claimed_did
+    SELECT id, user_id
     FROM bluesky_link_authorizations link_auth
     WHERE link_auth.status = ANY(${statuses}::bluesky_link_authorization_statuses[])
       AND (`
@@ -134,16 +133,6 @@ async function lockAuthorizationOwners(
 ): Promise<void> {
   const userIds = [...new Set(targets.map(target => target.user_id))].toSorted()
   await lockUsersForShare(query, userIds)
-  const dids = targets
-    .flatMap(target => (target.claimed_did ? [target.claimed_did] : []))
-    .toSorted()
-  if (dids.length > 0) {
-    await query(sql`/* expireBlueskyAuthorizations:lockDids */
-      WITH ordered_dids AS MATERIALIZED (
-        SELECT did FROM unnest(${dids}::text[]) AS did ORDER BY did
-      )
-      SELECT pg_advisory_xact_lock(hashtextextended(did, 1)) FROM ordered_dids`)
-  }
 }
 
 async function expireExactAuthorizations(

@@ -181,7 +181,6 @@ export {
 } from './ai-usage-date-reservation.mts'
 export * from './lists.mts'
 export * from './read-states.mts'
-export * from './blocklist-bloom-lock.mts'
 export * from './bluesky-linked-accounts.mts'
 export * from './bluesky-link-cleanup.mts'
 export * from './bluesky-link-corruption.mts'

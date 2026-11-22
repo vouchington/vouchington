@@ -12,6 +12,8 @@ import { withRejectedPostgresQueryForTest } from '@voucha/test-helpers/injected-
 import { v7 } from 'uuid'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { createDeviceAndSessionTokens } from './create.mts'
+import { withTwoOpenTransactionsForTest } from '@voucha/test-helpers/two-open-transactions'
+import { readTestSessionRevokedAt } from '@voucha/test-helpers/session-revoked-at'
 
 describe('revocation', () => {
   it('isSessionRevoked returns false for a session that has not been revoked', async () => {
@@ -34,6 +36,28 @@ describe('revocation', () => {
     await revokeSession(sid)
     await revokeSession(sid)
     expect(await isSessionRevoked(sid)).toBe(true)
+  })
+
+  it('keeps the first revocation timestamp when two transactions revoke the same session', async () => {
+    const { id: userId } = await createTestUserDirect()
+    const tokens = await createDeviceAndSessionTokens({ uid: userId, did: v7() })
+    const sid = tokens.sessionToken.payload.sid
+    const { afterFirst, afterSecond } = await withTwoOpenTransactionsForTest(
+      async (first, second) => {
+        await revokeSession(sid, { query: first })
+        // Blocks on the first transaction's row lock, then re-checks revoked_at IS NULL.
+        const secondRevoke = revokeSession(sid, { query: second })
+        await first.commit()
+        const firstRevokedAt = await readTestSessionRevokedAt(sid)
+        await secondRevoke
+        await second.commit()
+        const secondRevokedAt = await readTestSessionRevokedAt(sid)
+        return { afterFirst: firstRevokedAt, afterSecond: secondRevokedAt }
+      },
+    )
+
+    expect(afterFirst).toBeInstanceOf(Date)
+    expect(afterSecond).toEqual(afterFirst)
   })
 
   it('reports a failed durable write while still setting the revocation marker', async () => {

@@ -12,7 +12,6 @@ import {
 import { bloomFilters as bloomQueue } from '@queues/bloom-filters/queues'
 import type { RebuildBloomFilterData } from '@queues/bloom-filters/types'
 import { checkBloomFilters } from '@services/urls-domains-blacklist/bloom-filter'
-import { withBlocklistBloomFilterLock } from '@services/urls-domains-blacklist/bloom-filter-lock'
 import { bumpBlocklistBloomGeneration } from '@services/urls-domains-blacklist/bloom-generation'
 import { rebuildCurrentBlocklistBloomFilter } from '@services/urls-domains-blacklist/bloom-rebuild'
 import { syncDomainsWithDatabase } from '@services/urls-domains-blacklist-sync/sync-db'
@@ -33,6 +32,9 @@ const URL_BLOCKLIST_REBUILD_JOB_ID = bloomFilterRebuildJobId('url-blocklist')
 const URL_BLOCKLIST_REBUILD_FOLLOW_UP_JOB_ID = blocklistBloomRebuildFollowUpJobId('url-blocklist')
 const GLIDE_EVENT_DEADLINE_MS = 4_000
 let worker: Worker | undefined
+// While set, the url-blocklist rebuild job stays active (as a long rebuild would) so the
+// follow-up queues behind it in the same ordering lane.
+let rebuildGate: Promise<void> | undefined
 
 describe('sync bloom lag on real GlideMQ', () => {
   let rebuildLock: TestPostgresAdvisoryLock | undefined
@@ -49,6 +51,7 @@ describe('sync bloom lag on real GlideMQ', () => {
           if (job.name !== 'processRebuildBloomFilter') {
             throw new Error(`Bloom filter job ${job.name} not found`)
           }
+          if (job.id === URL_BLOCKLIST_REBUILD_JOB_ID) await rebuildGate
           await processRebuildBloomFilter(job.data as RebuildBloomFilterData)
         }),
       {
@@ -79,9 +82,8 @@ describe('sync bloom lag on real GlideMQ', () => {
       url: 'https://example.com/sync-bloom-lag-cross.txt',
     })
     await removeUrlBlocklistJobs()
-    const held = holdUrlBlocklistLock()
+    const held = holdUrlBlocklistRebuild()
     try {
-      await held.ready
       await parkGroupWaitingFollowUp(requireWorker())
       const followUp = await bloomQueue.getJob(URL_BLOCKLIST_REBUILD_FOLLOW_UP_JOB_ID)
       if (!followUp) throw new Error('follow-up rebuild was not parked')
@@ -103,10 +105,9 @@ describe('sync bloom lag on real GlideMQ', () => {
 
   it('does not throw when a failed compare-and-set finds the follow-up group-waiting', async () => {
     await removeUrlBlocklistJobs()
-    const held = holdUrlBlocklistLock()
+    const held = holdUrlBlocklistRebuild()
     const readyKey = 'bloom-filter:url-blocklist:ready:cas-group-waiting'
     try {
-      await held.ready
       await bumpBlocklistBloomGeneration('url-blocklist')
       await parkGroupWaitingFollowUp(requireWorker())
       await expect(
@@ -146,21 +147,12 @@ function sourceNameSuffix(): string {
   ).join('')
 }
 
-function holdUrlBlocklistLock(): { ready: Promise<void>; release: () => Promise<void> } {
-  const started = Promise.withResolvers<void>()
+function holdUrlBlocklistRebuild(): { release: () => Promise<void> } {
   const released = Promise.withResolvers<void>()
-  let finished = false
-  const held = withBlocklistBloomFilterLock('url-blocklist', async () => {
-    started.resolve()
-    await released.promise
-  })
+  rebuildGate = released.promise
   return {
-    ready: started.promise,
     release: async () => {
-      if (finished) return
-      finished = true
       released.resolve()
-      await held
     },
   }
 }

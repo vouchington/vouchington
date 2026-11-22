@@ -15,14 +15,13 @@ import { restoreBlueskySession, type OAuthSession } from '@modules/bluesky-oauth
 import onError from '@modules/on-error'
 import {
   deleteBlueskyFollowReceipts,
-  deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage,
   listBlueskyFollowReceiptsForFollower,
   START_OF_IDS,
   type BlueskyFollowReceipt,
 } from './receipts.mts'
+import { deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage } from './followee-receipt-cleanup.mts'
 import { deleteFollowOnBluesky } from './agent.mts'
 import { requestBlueskyDisconnect } from './disconnect-request.mts'
-import { withBlueskyDisconnectLock } from './disconnect-lock.mts'
 import { getBlueskyFollowsWorkLimit } from './work-limits.mts'
 
 type ExactGeneration = {
@@ -67,21 +66,16 @@ async function deleteBlueskyFollowRecordsForFollower(
 // would see `desired && !receipt` and mint a *second* record for the same pair. Receipts owned by
 // other followers need no such step because this user cannot delete records from their repos. A
 // self-follow belongs to this user's follower role and must remain for the remote-delete step.
-export async function disconnectAcceptedBlueskyAccountAndCleanupFollows(
-  userId: string,
-  generation: ExactGeneration,
-): Promise<void> {
-  await withBlueskyDisconnectLock(userId, () =>
-    disconnectAcceptedBlueskyAccountWithoutLock(userId, generation),
-  )
-}
-
 // Each run removes at most one local followee-role page and attempts at most one remote
 // follower-role page. Explicit followerAfter continuations skip the already completed followee
 // phase; after remains exclusively its follower-id cursor. No lock spans multiple jobs. A lost
 // continuation is re-driven from the head by the pending-disconnect sweep. The one-account-per-
-// user unique index prevents relinking until the exact generation is revoked.
-async function disconnectAcceptedBlueskyAccountWithoutLock(
+// user unique index prevents relinking until the exact generation is revoked. Concurrent runs
+// (the job and its inline fallback) are safe: the followee-page delete checks the exact account
+// generation inside its own statement snapshot, so a paused run cannot delete receipts saved
+// after revoke + relink; the exact-generation revoke deletes the account row once, so a loser
+// fails closed as a no-op.
+export async function disconnectAcceptedBlueskyAccountAndCleanupFollows(
   userId: string,
   generation: ExactGeneration,
 ): Promise<void> {
@@ -90,6 +84,7 @@ async function disconnectAcceptedBlueskyAccountWithoutLock(
   if (generation.followerAfter === undefined) {
     const page = await deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage(
       userId,
+      { blueskyDid: linked.bluesky_did, linkAuthorizationId: linked.link_authorization_id },
       generation.after ?? START_OF_IDS,
     )
     if (page.hasMore) {
@@ -164,15 +159,18 @@ export async function disconnectBlueskyAccountAndCleanupFollows(
       [userId],
     )
     const request = await requestBlueskyDisconnect(userId, { query })
-    registerPostCommitAction(query, () =>
-      withBlueskyDisconnectLock(userId, async () => {
-        try {
-          await enqueueDisconnectRequested(request)
-        } catch (err) {
-          onError(err instanceof Error ? err : new Error(String(err)))
-          await disconnectAcceptedBlueskyAccountWithoutLock(userId, request)
-        }
-      }),
-    )
+    registerPostCommitAction(query, () => enqueueOrDisconnectInline(userId, request))
   })
+}
+
+async function enqueueOrDisconnectInline(
+  userId: string,
+  request: Awaited<ReturnType<typeof requestBlueskyDisconnect>>,
+): Promise<void> {
+  try {
+    await enqueueDisconnectRequested(request)
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
+    await disconnectAcceptedBlueskyAccountAndCleanupFollows(userId, request)
+  }
 }

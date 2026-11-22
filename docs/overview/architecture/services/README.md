@@ -44,7 +44,7 @@ flowchart LR
 - Money: `memberships`, `stripe`, `stripe-event-processing`, `user-financial-profiles`. See
   [monetary values](../monetary-values.md).
 - Platform: `dynamic-config-*`, `feature-flags`, `queue-domain-controls`, `route-rate-limits`,
-  `user-rate-limits`, `data-retention`, `psql-admin`, `valkey-admin`, `session-advisory-lock`.
+  `user-rate-limits`, `data-retention`, `psql-admin`, `valkey-admin`.
 
 ## Decisions worth knowing
 

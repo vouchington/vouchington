@@ -6,6 +6,7 @@ import {
   insertTestDomainBlacklist,
   listBlacklistDomainsBySource,
 } from '@voucha/test-helpers'
+import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { getSourceCacheHeaders } from '@services/urls-domains-blacklist/sources'
 import { syncDomainsWithDatabase } from './sync-db.mts'
 
@@ -42,6 +43,33 @@ describe('blocklist membership apply', () => {
         last_modified_at: lastModifiedAt,
       })
     } finally {
+      await deleteTestBlacklistSource(sourceId)
+    }
+  })
+
+  it('rebuilds the diff when another sync commits between preparation and the source lock', async () => {
+    const suffix = sourceNameSuffix()
+    const first = `first-${suffix}.example`
+    const second = `second-${suffix}.example`
+    const sourceId = await createTestBlacklistSource({
+      type: 'url',
+      name: `concurrent-${suffix}`,
+      url: 'https://example.com/concurrent.txt',
+    })
+    // The competing sync commits after this sync prepared its diff and before it takes the source
+    // lock, so the xmin check must reject the stale diff instead of unioning both feeds.
+    const restore = beforePostgresTransactionQueryForTest(
+      'syncDomainsWithDatabase:sourceType',
+      () => true,
+      async () => {
+        await syncDomainsWithDatabase(sourceId, new Response(`${second}\n`), 'url')
+      },
+    )
+    try {
+      await syncDomainsWithDatabase(sourceId, new Response(`${first}\n`), 'url')
+      await expect(listBlacklistDomainsBySource(sourceId)).resolves.toEqual([first])
+    } finally {
+      restore()
       await deleteTestBlacklistSource(sourceId)
     }
   })
