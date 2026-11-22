@@ -1,7 +1,7 @@
 import createHttpError from 'http-errors'
 import { decodeUuidCursor, hasExactKeys } from '@modules/pagination'
 import { getTimeRangeLowerBoundDate } from '@modules/feed-query-builders/time-range'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import type { TimeRange } from '@voucha/types/feed'
 import type { PostSearchOptions } from './types.mts'
 import { cursorGuard, cursorValues } from './get-ids-cursor-row.mts'
@@ -83,7 +83,7 @@ function assertUuidLowerBound(timeRange: TimeRange, asOfMs: number, message: str
   const lowerBound = getTimeRangeLowerBoundDate(timeRange, new Date(asOfMs))
   if (lowerBound === null) throw createHttpError(400, message)
   try {
-    timestampToUuidv7LowerBound(lowerBound.getTime())
+    getMinUuidv7ForDate(lowerBound)
   } catch (err) {
     throw createHttpError(400, message, { cause: err })
   }

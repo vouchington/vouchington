@@ -75,6 +75,7 @@
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/sentry": "^0.6.0",
+    "@vouchington/uuid-v7": "^0.0.0",
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
     "pgvector": "^0.3.0",

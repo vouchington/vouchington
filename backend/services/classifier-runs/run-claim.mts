@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import {
   classifierRetentionCutoff,
   isClassifierBatchWithinRetention,
@@ -50,7 +50,7 @@ export async function claimClassifierRun<C, L, E>(
   // A delayed queued claim must not revive a superseded run after its payload or result range retired.
   if (
     row.superseded_at &&
-    (row.id < timestampToUuidv7LowerBound(classifierRetentionCutoff().getTime()) ||
+    (row.id < getMinUuidv7ForDate(classifierRetentionCutoff()) ||
       (row.decision_batch_id && !isClassifierBatchWithinRetention(row.decision_batch_id)))
   ) {
     return { kind: 'stale' }

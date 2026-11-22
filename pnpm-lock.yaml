@@ -309,6 +309,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      '@vouchington/uuid-v7':
+        specifier: ^0.0.0
+        version: 0.0.0
       undici:
         specifier: ^8.12.4
         version: 8.12.4
@@ -2407,12 +2410,12 @@ importers:
 
   backend/modules/feed-query-builders:
     dependencies:
-      '@ts-shared/utils':
-        specifier: workspace:^
-        version: link:../../../ts-shared/utils
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      '@vouchington/uuid-v7':
+        specifier: ^0.0.0
+        version: 0.0.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -3992,6 +3995,9 @@ importers:
       '@vouchington/utils':
         specifier: ^0.12.0
         version: 0.12.0
+      '@vouchington/uuid-v7':
+        specifier: ^0.0.0
+        version: 0.0.0
       '@workers/openai-moderation':
         specifier: workspace:^
         version: link:../workers/openai-moderation
@@ -4310,6 +4316,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      '@vouchington/uuid-v7':
+        specifier: ^0.0.0
+        version: 0.0.0
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -5134,9 +5143,9 @@ importers:
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication
-      '@ts-shared/utils':
-        specifier: workspace:^
-        version: link:../../../ts-shared/utils
+      '@vouchington/uuid-v7':
+        specifier: ^0.0.0
+        version: 0.0.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -6283,12 +6292,12 @@ importers:
       '@services/ses-bounce-events':
         specifier: workspace:^
         version: link:../ses-bounce-events
-      '@ts-shared/utils':
-        specifier: workspace:^
-        version: link:../../../ts-shared/utils
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      '@vouchington/uuid-v7':
+        specifier: ^0.0.0
+        version: 0.0.0
 
   backend/services/domain-blacklist-check:
     dependencies:
@@ -8123,9 +8132,6 @@ importers:
       '@ts-shared/url-signing':
         specifier: workspace:^
         version: link:../../../ts-shared/url-signing
-      '@ts-shared/utils':
-        specifier: workspace:^
-        version: link:../../../ts-shared/utils
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -8135,6 +8141,9 @@ importers:
       '@vouchington/sentry':
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.12.0)(@sentry/core@11.12.0)(@sentry/node@11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+      '@vouchington/uuid-v7':
+        specifier: ^0.0.0
+        version: 0.0.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -8695,6 +8704,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      '@vouchington/uuid-v7':
+        specifier: ^0.0.0
+        version: 0.0.0
 
   backend/services/moderation-threads:
     dependencies:
@@ -10028,6 +10040,9 @@ importers:
       '@vouchington/sentry':
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.12.0)(@sentry/core@11.12.0)(@sentry/node@11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+      '@vouchington/uuid-v7':
+        specifier: ^0.0.0
+        version: 0.0.0
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -13004,6 +13019,9 @@ importers:
       '@vouchington/utils':
         specifier: ^0.12.0
         version: 0.12.0
+      '@vouchington/uuid-v7':
+        specifier: ^0.0.0
+        version: 0.0.0
       '@vouchington/worker-runtime':
         specifier: ^0.3.1
         version: 0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
@@ -13447,6 +13465,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      '@vouchington/uuid-v7':
+        specifier: ^0.0.0
+        version: 0.0.0
       undici:
         specifier: ^8.12.4
         version: 8.12.4
@@ -14911,6 +14932,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      '@vouchington/uuid-v7':
+        specifier: ^0.0.0
+        version: 0.0.0
 
   backend/workers/rss-feed-maintenance:
     dependencies:

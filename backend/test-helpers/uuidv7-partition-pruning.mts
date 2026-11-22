@@ -5,7 +5,7 @@ import {
   type PoolClient,
   type TransactionQuery,
 } from '@data-stores/psql'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import { parseMonthlyPartitionName } from '@vouchington/postgres/partitions'
 
 type Mode = 'force_custom_plan' | 'force_generic_plan'
@@ -141,7 +141,7 @@ async function createFixture(query: TransactionQuery): Promise<Fixture> {
       if (!month || month.table !== 'crawls') throw new Error('Noncanonical crawl partition')
       const start = Date.UTC(month.year, month.month - 1, 1)
       const end = Date.UTC(month.year, month.month, 1)
-      const expected = `FOR VALUES FROM ('${timestampToUuidv7LowerBound(start)}') TO ('${timestampToUuidv7LowerBound(end)}')`
+      const expected = `FOR VALUES FROM ('${getMinUuidv7ForDate(new Date(start))}') TO ('${getMinUuidv7ForDate(new Date(end))}')`
       if (row.bound !== expected) throw new Error('Canonical crawl partition bounds mismatch')
       return { ...row, start, end }
     })
@@ -174,7 +174,7 @@ async function createFixture(query: TransactionQuery): Promise<Fixture> {
     upperTime,
   ]
   const ids = times.map(time => {
-    const bound = timestampToUuidv7LowerBound(time)
+    const bound = getMinUuidv7ForDate(new Date(time))
     const random = randomUUID()
     return `${bound.slice(0, 14)}7${random.slice(15, 18)}-8${random.slice(20)}`
   })
@@ -194,7 +194,7 @@ async function createFixture(query: TransactionQuery): Promise<Fixture> {
   return {
     names: candidates.map(row => row.name),
     ids,
-    lower: timestampToUuidv7LowerBound(candidates[1]!.start),
-    upper: timestampToUuidv7LowerBound(upperTime),
+    lower: getMinUuidv7ForDate(new Date(candidates[1]!.start)),
+    upper: getMinUuidv7ForDate(new Date(upperTime)),
   }
 }

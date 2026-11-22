@@ -1,4 +1,4 @@
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 
 export const PRUNING_PARENTS = [
   'post_review_topic_ratings',
@@ -15,8 +15,8 @@ export function rangeLeaf(parent: string, year: number): string {
 export async function attachProofRanges(query: (text: string) => Promise<unknown>): Promise<void> {
   for (const parent of PRUNING_PARENTS) {
     for (const year of PROOF_YEARS) {
-      const lower = timestampToUuidv7LowerBound(Date.UTC(year, 0, 1))
-      const upper = timestampToUuidv7LowerBound(Date.UTC(year + 1, 0, 1))
+      const lower = getMinUuidv7ForDate(new Date(Date.UTC(year, 0, 1)))
+      const upper = getMinUuidv7ForDate(new Date(Date.UTC(year + 1, 0, 1)))
       // All identifiers come from the fixed parent/year inventory above, not user input.
       await query(`/* attachProofRanges */ CREATE TABLE ${rangeLeaf(parent, year)}
         PARTITION OF ${parent} FOR VALUES FROM ('${lower}') TO ('${upper}')`)

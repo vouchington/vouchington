@@ -10,7 +10,7 @@ import {
   readTestAiUsageRollups,
   reserveTestAiUsageRetentionSweep,
 } from '@voucha/test-helpers/entities/ai-usage-rollups'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import {
   isTestAiUsagePartitionAttached,
   reserveTestAiUsageMonths,
@@ -25,7 +25,7 @@ const DAY_MS = 24 * 60 * 60 * 1000
 
 function uuidAt(timestamp: number): string {
   // Keep the UUIDv7 timestamp while varying its random tail across repeated test runs.
-  return `${timestampToUuidv7LowerBound(timestamp).slice(0, 24)}${randomBytes(6).toString('hex')}`
+  return `${getMinUuidv7ForDate(new Date(timestamp)).slice(0, 24)}${randomBytes(6).toString('hex')}`
 }
 
 async function readCommunityCost(communityId: string): Promise<{

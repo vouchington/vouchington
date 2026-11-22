@@ -1,6 +1,6 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 
 export * from './ai-usage-classifier-runs.mts'
 
@@ -186,8 +186,8 @@ export async function countAiUsageRecordsForAgent(
   }
   if (day) {
     const dayStartMs = Date.parse(`${day}T00:00:00.000Z`)
-    query.append(sql` AND id >= ${timestampToUuidv7LowerBound(dayStartMs)}
-      AND id < ${timestampToUuidv7LowerBound(dayStartMs + 24 * 60 * 60 * 1000)}`)
+    query.append(sql` AND id >= ${getMinUuidv7ForDate(new Date(dayStartMs))}
+      AND id < ${getMinUuidv7ForDate(new Date(dayStartMs + 24 * 60 * 60 * 1000))}`)
   }
   const { rows } = await read<{ count: string }>(query)
   return Number(rows[0]?.count ?? 0)

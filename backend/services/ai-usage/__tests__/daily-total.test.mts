@@ -5,7 +5,7 @@ import {
   insertTestAiUsageRecord,
   insertTestCommunity,
 } from '@voucha/test-helpers'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import { MAX_MONEY_AMOUNT } from '@ts-shared/money'
 import type { PrivateUser } from '@services/users/types'
 import { recordAiUsage } from '../record.mts'
@@ -45,24 +45,24 @@ describe('getDailyAiCostTotalMicrounits', () => {
     await Promise.all([
       // At the day's exact lower bound -- inclusive, and community-scoped.
       insertTestAiUsageRecord({
-        id: timestampToUuidv7LowerBound(dayStartMs),
+        id: getMinUuidv7ForDate(new Date(dayStartMs)),
         communityId: community.id,
         costMicrounits: 100,
       }),
       // Mid-day, with no community -- covers the NULL-community_id gap in getCommunityAiCostTotals.
       insertTestAiUsageRecord({
-        id: timestampToUuidv7LowerBound(dayStartMs + 12 * 60 * 60 * 1000),
+        id: getMinUuidv7ForDate(new Date(dayStartMs + 12 * 60 * 60 * 1000)),
         communityId: null,
         costMicrounits: 250,
       }),
       // The prior day's final millisecond -- must be excluded.
       insertTestAiUsageRecord({
-        id: timestampToUuidv7LowerBound(dayStartMs - 1),
+        id: getMinUuidv7ForDate(new Date(dayStartMs - 1)),
         costMicrounits: 999_999,
       }),
       // The next day's exact lower bound -- exclusive, must be excluded.
       insertTestAiUsageRecord({
-        id: timestampToUuidv7LowerBound(dayStartMs + 24 * 60 * 60 * 1000),
+        id: getMinUuidv7ForDate(new Date(dayStartMs + 24 * 60 * 60 * 1000)),
         costMicrounits: 999_999,
       }),
     ])
@@ -129,13 +129,13 @@ describe('getDailyAiCostTotalMicrounits', () => {
 
     await Promise.all([
       insertTestAiUsageRecord({
-        id: timestampToUuidv7LowerBound(Date.now()),
+        id: getMinUuidv7ForDate(new Date()),
         costMicrounits: 100,
       }),
       // +1ms so this row's id-derived timestamp differs from the one above -- otherwise both
       // resolve to the same id lower bound and collide on the primary key.
       insertTestAiUsageRecord({
-        id: timestampToUuidv7LowerBound(Date.now() + 1),
+        id: getMinUuidv7ForDate(new Date(Date.now() + 1)),
         pricingStatus: 'unpriced',
       }),
     ])
@@ -168,7 +168,7 @@ describe('getDailyAiCostTotalMicrounits', () => {
       expect(second).toBe(first)
       await expect(first).resolves.toEqual({ totalMicrounits: 0, day })
       await insertTestAiUsageRecord({
-        id: timestampToUuidv7LowerBound(now),
+        id: getMinUuidv7ForDate(new Date(now)),
         costMicrounits: 321,
       })
       vi.setSystemTime(now + 59_999)
@@ -198,11 +198,11 @@ describe('getDailyAiCostTotalMicrounits', () => {
 
     await Promise.all([
       insertTestAiUsageRecord({
-        id: timestampToUuidv7LowerBound(dayStartMs),
+        id: getMinUuidv7ForDate(new Date(dayStartMs)),
         costMicrounits: MAX_MONEY_AMOUNT,
       }),
       insertTestAiUsageRecord({
-        id: timestampToUuidv7LowerBound(dayStartMs + 1),
+        id: getMinUuidv7ForDate(new Date(dayStartMs + 1)),
         costMicrounits: MAX_MONEY_AMOUNT,
       }),
     ])
@@ -236,7 +236,7 @@ describe('getDailyAiCostTotalMicrounits', () => {
     await expect(cached).resolves.toEqual({ totalMicrounits: 0, day })
 
     await insertTestAiUsageRecord({
-      id: timestampToUuidv7LowerBound(Date.now()),
+      id: getMinUuidv7ForDate(new Date()),
       costMicrounits: 1,
     })
 

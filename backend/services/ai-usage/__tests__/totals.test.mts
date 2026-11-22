@@ -6,7 +6,7 @@ import {
   insertTestCommunity,
 } from '@voucha/test-helpers'
 import { encodeCursor } from '@modules/pagination'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import { MAX_MONEY_AMOUNT } from '@ts-shared/money'
 import type { PrivateUser } from '@services/users/types'
 import { getCommunityAiCostTotals } from '../totals.mts'
@@ -32,17 +32,17 @@ describe('getCommunityAiCostTotals', () => {
     ])
     await Promise.all([
       insertTestAiUsageRecord({
-        id: timestampToUuidv7LowerBound(dayStartMs),
+        id: getMinUuidv7ForDate(new Date(dayStartMs)),
         communityId: communities[0]!.id,
         costMicrounits: tiedCost,
       }),
       insertTestAiUsageRecord({
-        id: timestampToUuidv7LowerBound(dayStartMs + 1),
+        id: getMinUuidv7ForDate(new Date(dayStartMs + 1)),
         communityId: communities[1]!.id,
         costMicrounits: tiedCost,
       }),
       insertTestAiUsageRecord({
-        id: timestampToUuidv7LowerBound(dayStartMs + 2),
+        id: getMinUuidv7ForDate(new Date(dayStartMs + 2)),
         communityId: communities[2]!.id,
         costMicrounits: nextCost,
       }),
@@ -76,17 +76,17 @@ describe('getCommunityAiCostTotals', () => {
     const lowerCostCommunity = await insertTestCommunity({ createdById: user.id })
     await Promise.all([
       insertTestAiUsageRecord({
-        id: timestampToUuidv7LowerBound(dayStartMs),
+        id: getMinUuidv7ForDate(new Date(dayStartMs)),
         communityId: community.id,
         costMicrounits: MAX_MONEY_AMOUNT,
       }),
       insertTestAiUsageRecord({
-        id: timestampToUuidv7LowerBound(dayStartMs + 1),
+        id: getMinUuidv7ForDate(new Date(dayStartMs + 1)),
         communityId: lowerCostCommunity.id,
         costMicrounits: 1,
       }),
       insertTestAiUsageRecord({
-        id: timestampToUuidv7LowerBound(dayStartMs + 2),
+        id: getMinUuidv7ForDate(new Date(dayStartMs + 2)),
         communityId: community.id,
         costMicrounits: MAX_MONEY_AMOUNT,
       }),

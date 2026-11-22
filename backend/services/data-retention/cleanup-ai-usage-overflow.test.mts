@@ -10,7 +10,7 @@ import {
   reserveTestAiUsageRetentionSweep,
   seedTestAiUsageCommunityRollup,
 } from '@voucha/test-helpers/entities/ai-usage-rollups'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import { cleanupAiUsageRecords } from './cleanup-ai-usage.mts'
 
 describe('AI usage monthly fold overflow', () => {
@@ -35,7 +35,7 @@ describe('AI usage monthly fold overflow', () => {
     const community = await insertTestCommunity({ createdById: user.id })
     ownedCommunityIds.push(community.id)
     const rawId = await insertTestAiUsageRecord({
-      id: `${timestampToUuidv7LowerBound(rawAt).slice(0, 24)}${randomBytes(6).toString('hex')}`,
+      id: `${getMinUuidv7ForDate(new Date(rawAt)).slice(0, 24)}${randomBytes(6).toString('hex')}`,
       communityId: community.id,
       costMicrounits: 10,
     })

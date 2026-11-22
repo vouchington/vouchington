@@ -4,7 +4,7 @@ import { workerQueueCommandClient } from '@data-stores/valkey-glide-mq'
 import { getDailyAiCostTotalMicrounits, spendCapDelayedRegistryKey } from '@services/ai-usage'
 import { backgroundCpu } from '@queues/background-cpu/queues'
 import { insertTestAiUsageRecord } from '@voucha/test-helpers/entities/ai-usage'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import { getDayBounds } from '@ts-shared/utils/dates'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import {
@@ -75,7 +75,7 @@ describe('AI spend-cap registration after a rejected first attempt', () => {
         day,
       })
       await insertTestAiUsageRecord({
-        id: timestampToUuidv7LowerBound(Date.now()),
+        id: getMinUuidv7ForDate(new Date()),
         costMicrounits: 101,
       })
       const job = aiAgentJob()

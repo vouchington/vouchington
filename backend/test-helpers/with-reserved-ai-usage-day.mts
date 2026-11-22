@@ -6,7 +6,7 @@ import { refreshDailyAiCostTotalMicrounits, spendCapConfig } from '../services/a
 import { overrideDynamicConfigFieldsForTest } from './dynamic-config.mts'
 import { acquireTestAiUsageDateReservation } from './entities/ai-usage-date-reservation.mts'
 import { insertTestAiUsageRecord } from './entities/ai-usage.mts'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 
 /**
  * Runs `fn` on a reserved, clean AI-usage day with the spend cap enabled at `dailyCapMicrounits`.
@@ -30,7 +30,7 @@ export async function withReservedAiUsageDay<T>(
   // Zero cap allows an empty day. These zero-cap fixtures assert a breach, so record known spend.
   if (dailyCapMicrounits === 0) {
     await insertTestAiUsageRecord({
-      id: timestampToUuidv7LowerBound(Date.now()),
+      id: getMinUuidv7ForDate(new Date()),
       costMicrounits: 1,
     })
   }
@@ -71,7 +71,7 @@ export async function withLiveAiUsageCapBreach<T>(fn: () => Promise<T>): Promise
   }
   onTestFinished(cleanup)
   for (const offset of [12, 36]) {
-    const lower = timestampToUuidv7LowerBound(dayStart + offset * 60 * 60 * 1000)
+    const lower = getMinUuidv7ForDate(new Date(dayStart + offset * 60 * 60 * 1000))
     const id = `${lower.slice(0, 24)}${randomBytes(6).toString('hex')}`
     ids.push(id)
     await insertTestAiUsageRecord({ id, costMicrounits: 1 })
