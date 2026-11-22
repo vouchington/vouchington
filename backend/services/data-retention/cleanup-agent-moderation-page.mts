@@ -98,7 +98,6 @@ export async function cleanupAgentModerationPage(
             repairBudget,
             lowerBoundId,
             upperBoundId,
-            upperBoundDueAt,
             postIds,
           )
         : await repairAgentModerationRetentionPage(
@@ -107,22 +106,26 @@ export async function cleanupAgentModerationPage(
             repair,
             lowerBoundId,
             upperBoundId,
-            upperBoundDueAt,
             postIds,
           )
       : null
   await transaction.commit()
   const last = page.at(-1)
+  // Newly stamped rows can sort before the due position already visited.
+  const stampedDue = (repaired?.scanned ?? 0) > 0
+  const hasMore = moreDue || stampedDue
   return {
     scanned: page.length + (repaired?.scanned ?? 0),
-    deleted: deleted + (repaired?.deleted ?? 0),
+    deleted,
     repair: repaired ? repaired.next : repair,
-    hasMore: moreDue,
-    continuation: moreDue
+    hasMore,
+    continuation: hasMore
       ? {
-          afterDueAt: last?.retention_due_at.toISOString() ?? pageAfterDueAt,
-          afterId: last?.id ?? pageAfterId,
-          afterPostId: last?.post_id ?? pageAfterPostId,
+          afterDueAt: stampedDue
+            ? lowerBoundDueAt.toISOString()
+            : (last?.retention_due_at.toISOString() ?? pageAfterDueAt),
+          afterId: stampedDue ? ZERO_UUID : (last?.id ?? pageAfterId),
+          afterPostId: stampedDue ? ZERO_UUID : (last?.post_id ?? pageAfterPostId),
           upperBoundDueAt,
           upperBoundId,
         }

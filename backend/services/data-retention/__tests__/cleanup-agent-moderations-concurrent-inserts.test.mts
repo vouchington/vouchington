@@ -58,17 +58,19 @@ describe('agent moderation retention repair', () => {
 
     // A new daily invocation resumes without a continuation, even with a later cutoff.
     const nextDay = { ...options, now: new Date(now.getTime() + 86_400_000) }
-    expect(await cleanupObsoleteAgentModerations(nextDay)).toEqual({
-      scanned: 1,
-      deleted: 1,
-      hasMore: false,
-      continuation: null,
-    })
+    const repaired = await cleanupObsoleteAgentModerations(nextDay)
+    expect(repaired).toMatchObject({ scanned: 1, deleted: 0, hasMore: true })
+    if (!repaired.continuation) throw new Error('Expected a due continuation for the repair')
+    expect(await testAgentModerationExists(fixture.postId, oldId)).toBe(true)
     expect(await getTestAgentModerationRepairCursor()).toEqual({
       id: oldId,
       post_id: fixture.postId,
       upper_id: upperId,
     })
+    expect(
+      await cleanupObsoleteAgentModerations({ ...nextDay, continuation: repaired.continuation }),
+    ).toEqual({ scanned: 1, deleted: 1, hasMore: false, continuation: null })
+    expect(await getTestAgentModerationRepairCursor()).toMatchObject({ id: oldId })
     await cleanupObsoleteAgentModerations(nextDay)
     await cleanupObsoleteAgentModerations(nextDay)
     expect(await getTestAgentModerationRepairCursor()).toBeNull()

@@ -9,7 +9,6 @@ export async function repairPersistedAgentModerationPage(
   batchSize: number,
   lowerBoundId: string,
   requestedUpperId: string,
-  upperBoundDueAt: string,
   postIds?: readonly string[],
 ) {
   const {
@@ -27,7 +26,7 @@ export async function repairPersistedAgentModerationPage(
   // A running pass retains its original age bound. A clock change may temporarily
   // move the current safe deletion bound behind that pass.
   if (upperId > requestedUpperId) {
-    return { scanned: 0, deleted: 0, next: null }
+    return { scanned: 0, next: null }
   }
   const result = await repairAgentModerationRetentionPage(
     query,
@@ -38,7 +37,6 @@ export async function repairPersistedAgentModerationPage(
     },
     lowerBoundId,
     upperId,
-    upperBoundDueAt,
     postIds,
   )
   if (result.next) {

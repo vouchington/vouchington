@@ -1,5 +1,4 @@
 import type { QueryExecutor } from '@data-stores/psql'
-import { deleteAgentModerationRetentionPage } from './delete-agent-moderation-retention-page.mts'
 
 export type AgentModerationRepairPosition = { id: string; post_id: string }
 
@@ -9,7 +8,6 @@ export async function repairAgentModerationRetentionPage(
   after: AgentModerationRepairPosition,
   lowerBoundId: string,
   upperBoundId: string,
-  upperBoundDueAt: string,
   postIds?: readonly string[],
 ) {
   // Post dates cannot bound moderation age. Find the latest post at or after the
@@ -27,11 +25,11 @@ export async function repairAgentModerationRetentionPage(
     [lowerBoundId, upperBoundId, after.id, after.post_id, batchSize, ...(postIds ? [postIds] : [])],
   )
   const next = rows.length === batchSize ? rows.at(-1)! : null
-  if (rows.length === 0) return { scanned: 0, deleted: 0, next }
+  if (rows.length === 0) return { scanned: 0, next }
 
   // Check only this inspected page. A new successor can make an unchanged keeper
   // eligible later, so rows without one stay in the ordinary NULL-due state.
-  const { rows: repaired } = await query<AgentModerationRepairPosition>(
+  const { rowCount } = await query(
     `/* repairAgentModerationRetentionDueDates */
      UPDATE agent_moderations moderation
      SET retention_due_at = uuid_extract_timestamp(moderation.id) + INTERVAL '90 days'
@@ -54,13 +52,10 @@ export async function repairAgentModerationRetentionPage(
              AND newer.id > moderation.id AND newer.deleted_at IS NULL
            LIMIT 1
          ) IS NOT NULL
-       )
-     RETURNING moderation.id, moderation.post_id`,
+       )`,
     [rows.map(row => row.id), rows.map(row => row.post_id)],
   )
-  const deleted =
-    repaired.length > 0
-      ? await deleteAgentModerationRetentionPage(query, repaired, upperBoundId, upperBoundDueAt)
-      : 0
-  return { scanned: repaired.length, deleted, next }
+  // Let the ordinary due pass delete under its source lock. This update changes
+  // a non-key column and does not conflict with an FK reference's key-share lock.
+  return { scanned: rowCount ?? 0, next }
 }
