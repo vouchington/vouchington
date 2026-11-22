@@ -8,7 +8,7 @@ export async function lockAndCreateProviderObservationSource(
   observation: VerifiedProviderObservation,
   query: QueryExecutor,
 ) {
-  await lockMembershipUser(userId, query, { writesUser: observation.sourceKind === 'family' })
+  await lockMembershipUser(userId, query)
   return createProviderMembershipSource(
     { userId, sourceKind: observation.sourceKind, sourceIdentity: observation.sourceIdentity },
     query,

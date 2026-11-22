@@ -22,7 +22,7 @@ describe('membership user locks', () => {
     await expect(
       (async () => {
         await using query = await beginTransaction()
-        await lockMembershipUser(randomUUID(), query, { mapMissingToInvalidGrant: true })
+        await lockMembershipUser(randomUUID(), query, true)
       })(),
     ).rejects.toBeInstanceOf(InvalidMembershipGrantUserError)
   })

@@ -33,9 +33,7 @@ export async function createMembershipWithQuery(
   query: QueryExecutor,
 ): Promise<CreatedMembership> {
   const { status, effectiveAt, directTermEffectiveAt } = timingContext
-  await lockMembershipUser(options.userId, query, {
-    mapMissingToInvalidGrant: !options.stripeSubscriptionId,
-  })
+  await lockMembershipUser(options.userId, query, !options.stripeSubscriptionId)
   const { productId, priorRows, retainedSourceRows, source } = await prepareMembershipCreation(
     options,
     query,
