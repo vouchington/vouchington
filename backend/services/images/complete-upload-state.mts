@@ -115,21 +115,7 @@ export async function markImageUploadSourcesDeleted(imageIds: readonly string[])
   if (ids.length > imagesWorkMaxValues.cleanup_batch_size)
     throw new Error('Image source deletion acknowledgement exceeds its bounded page')
   await using transaction = await beginTransaction()
-  await acknowledgeImageUploadSources(transaction, ids)
-  await transaction.commit()
-}
-
-async function acknowledgeImageUploadSources(query: QueryExecutor, ids: string[]): Promise<void> {
-  await query(
-    `/* markImageUploadSourcesDeleted:lock */
-    SELECT id
-    FROM images
-    WHERE id = ANY($1::uuid[]) AND upload_source_deleted_at IS NULL
-    ORDER BY id LIMIT $2 FOR UPDATE
-  `,
-    [ids, ids.length],
-  )
-  await query(
+  await transaction(
     `/* markImageUploadSourcesDeleted:update */
     UPDATE images
     SET upload_source_deleted_at = CURRENT_TIMESTAMP,
@@ -144,6 +130,7 @@ async function acknowledgeImageUploadSources(query: QueryExecutor, ids: string[]
   `,
     [ids],
   )
+  await transaction.commit()
 }
 
 async function assertActiveUploadUser(query: QueryExecutor, userId: string): Promise<void> {

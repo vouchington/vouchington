@@ -42,11 +42,17 @@ export async function syncPostImagePlacements(
   // Only same-transaction callers that checked these exact requested images may skip admission.
   if (!options.capacityChecked)
     await assertPostImagePlacementCapacity(postId, distinctImageIds, query)
-  await query(sql`/* syncPostImagePlacements:lockExisting */
+  await query(sql`/* syncPostImagePlacements:lockChangedPlacements */
     SELECT placement.id
     FROM image_placements image_placement
     JOIN media_placements placement ON placement.id = image_placement.placement_id
     WHERE image_placement.post_id = ${postId}
+      AND (
+        (image_placement.image_id = ANY(${distinctImageIds}::uuid[])
+          AND placement.retired_at IS NOT NULL)
+        OR (image_placement.image_id <> ALL(${distinctImageIds}::uuid[])
+          AND placement.retirement_reason IS DISTINCT FROM 'owner_removed')
+      )
     ORDER BY placement.id
     FOR UPDATE OF placement
   `)

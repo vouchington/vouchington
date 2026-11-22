@@ -102,7 +102,7 @@ describe('abandoned upload cursor windows', () => {
     const storage = await seedOwnedUploadCleanupStorage(ids.slice(0, 2))
     // Hold the pass at its acknowledgement, after the first page's storage deletion completed.
     const restoreHold = runBeforePostgresStatementForTest(
-      '/* markImageUploadSourcesDeleted:lock */',
+      '/* markImageUploadSourcesDeleted:update */',
       async () => {
         started.resolve()
         await release.promise
