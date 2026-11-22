@@ -34,6 +34,20 @@ export function rejectQueueJobAddForTest<Data>(
   return () => spy.mockRestore()
 }
 
+/** Reject a bulk admission that contains a matching job on a caller-owned queue. */
+export function rejectQueueJobAddBulkForTest<Data>(
+  queue: Queue<Data>,
+  matches: (name: string, data: Data) => boolean,
+  error: Error,
+): () => void {
+  const realAddBulk = queue.addBulk
+  const spy = vi.spyOn(queue, 'addBulk').mockImplementation(jobs => {
+    if (jobs.some(job => matches(job.name, job.data as Data))) return Promise.reject(error)
+    return realAddBulk.call(queue, jobs)
+  })
+  return () => spy.mockRestore()
+}
+
 /** Reject the next add of one named job on the real shared queue; unrelated jobs pass through. */
 export function rejectNextBackgroundJobAddForTest(jobName: string, error: Error): () => void {
   const realAdd = backgroundQueue.add

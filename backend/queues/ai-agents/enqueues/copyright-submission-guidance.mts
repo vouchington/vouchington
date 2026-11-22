@@ -1,60 +1,40 @@
+import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { JobOptions } from 'glide-mq'
-import { addAIAgentJob } from './create-enqueue.mts'
-import { trackJobEnqueue } from '@services/analytics'
-import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS, AI_AGENTS_QUEUE_NAME } from '../config.mts'
+import { AI_AGENTS_DEFAULTS, AI_AGENTS_QUEUE_NAME, AGENT_PRIORITY } from '../config.mts'
 import { ai_agents } from '../queues.mts'
 
-/** One job per admitted run, so a retained job of an earlier run never shadows a new one. */
+/** One job per admitted run: a failed run is marked in SQL and the next sweep admits a new id. */
 const jobIdFor = (runId: string) => `copyright_submission_guidance_${runId}`
+
+type CopyrightSubmissionGuidanceEnqueue = { submissionId: string; runId: string }
+
+const enqueueBatch = createBulkEnqueueFunction({
+  queue: ai_agents,
+  queueName: AI_AGENTS_QUEUE_NAME,
+  jobName: 'copyright-submission-guidance',
+  buildJob: ({ submissionId, runId }: CopyrightSubmissionGuidanceEnqueue) => ({
+    data: { submission_id: submissionId, run_id: runId },
+    opts: {
+      ...AI_AGENTS_DEFAULTS,
+      jobId: jobIdFor(runId),
+      priority: AGENT_PRIORITY['copyright-submission-guidance'],
+      deduplication: { id: jobIdFor(runId), mode: 'simple' },
+      ordering: { key: `copyright_submission_guidance_${submissionId}`, concurrency: 1 },
+    } satisfies JobOptions,
+  }),
+})
+
+/** One bulk add per page; a job whose run id is still in flight is skipped, not duplicated. */
+export async function enqueueCopyrightSubmissionGuidances(
+  items: readonly CopyrightSubmissionGuidanceEnqueue[],
+): Promise<void> {
+  if (items.length === 0) return
+  await enqueueBatch([...items])
+}
 
 export async function enqueueCopyrightSubmissionGuidance(
   submissionId: string,
   runId: string,
 ): Promise<void> {
-  const opts: JobOptions = {
-    ...AI_AGENTS_DEFAULTS,
-    jobId: jobIdFor(runId),
-    priority: AGENT_PRIORITY['copyright-submission-guidance'],
-    deduplication: { id: `copyright_submission_guidance_${runId}`, mode: 'simple' },
-    ordering: { key: `copyright_submission_guidance_${submissionId}`, concurrency: 1 },
-  }
-  await addAIAgentJob(
-    'copyright-submission-guidance',
-    { submission_id: submissionId, run_id: runId },
-    opts,
-  )
-  trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'copyright-submission-guidance')
-}
-
-export async function enqueueOrRetryCopyrightSubmissionGuidance(
-  submissionId: string,
-  runId: string,
-  dependencies: {
-    getJob(
-      id: string,
-      options: { excludeData: true },
-    ): Promise<{
-      name: string
-      getState(): Promise<string>
-      retry(): Promise<void>
-      remove(): Promise<void>
-    } | null>
-    enqueue: typeof enqueueCopyrightSubmissionGuidance
-  } = {
-    getJob: (...args) => ai_agents.getJob(...args),
-    enqueue: enqueueCopyrightSubmissionGuidance,
-  },
-): Promise<void> {
-  const retained = await dependencies.getJob(jobIdFor(runId), { excludeData: true })
-  if (retained) {
-    if (retained.name !== 'copyright-submission-guidance') return
-    const state = await retained.getState()
-    if (state === 'failed') {
-      await retained.retry()
-      return
-    }
-    if (state === 'completed') await retained.remove()
-    else return
-  }
-  await dependencies.enqueue(submissionId, runId)
+  await enqueueCopyrightSubmissionGuidances([{ submissionId, runId }])
 }

@@ -7,6 +7,7 @@ export { rejectNextClassifierRunDispatcherAddForTest } from './injected-classifi
 export {
   rejectNextQueueJobAddForTest,
   rejectQueueJobAddForTest,
+  rejectQueueJobAddBulkForTest,
   rejectNextBackgroundJobAddForTest,
   rejectNextBackgroundJobAddBulkForTest,
 } from './injected-queue-failures.mts'

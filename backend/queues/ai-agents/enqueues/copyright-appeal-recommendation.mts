@@ -1,60 +1,40 @@
+import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { JobOptions } from 'glide-mq'
-import { trackJobEnqueue } from '@services/analytics'
-import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS, AI_AGENTS_QUEUE_NAME } from '../config.mts'
+import { AI_AGENTS_DEFAULTS, AI_AGENTS_QUEUE_NAME, AGENT_PRIORITY } from '../config.mts'
 import { ai_agents } from '../queues.mts'
-import { addAIAgentJob } from './create-enqueue.mts'
 
-/** One job per admitted run, so a retained job of an earlier run never shadows a new one. */
+/** One job per admitted run: a failed run is marked in SQL and the next sweep admits a new id. */
 const jobIdFor = (runId: string) => `copyright_appeal_recommendation_${runId}`
+
+type CopyrightAppealRecommendationEnqueue = { submissionId: string; runId: string }
+
+const enqueueBatch = createBulkEnqueueFunction({
+  queue: ai_agents,
+  queueName: AI_AGENTS_QUEUE_NAME,
+  jobName: 'copyright-appeal-recommendation',
+  buildJob: ({ submissionId, runId }: CopyrightAppealRecommendationEnqueue) => ({
+    data: { submission_id: submissionId, run_id: runId },
+    opts: {
+      ...AI_AGENTS_DEFAULTS,
+      jobId: jobIdFor(runId),
+      priority: AGENT_PRIORITY['copyright-appeal-recommendation'],
+      deduplication: { id: jobIdFor(runId), mode: 'simple' },
+      ordering: { key: `copyright_appeal_recommendation_${submissionId}`, concurrency: 1 },
+    } satisfies JobOptions,
+  }),
+})
+
+/** One bulk add per page; a job whose run id is still in flight is skipped, not duplicated. */
+export async function enqueueCopyrightAppealRecommendations(
+  items: readonly CopyrightAppealRecommendationEnqueue[],
+): Promise<void> {
+  if (items.length === 0) return
+  await enqueueBatch([...items])
+}
 
 export async function enqueueCopyrightAppealRecommendation(
   submissionId: string,
   runId: string,
 ): Promise<void> {
-  const opts: JobOptions = {
-    ...AI_AGENTS_DEFAULTS,
-    jobId: jobIdFor(runId),
-    priority: AGENT_PRIORITY['copyright-appeal-recommendation'],
-    deduplication: { id: `copyright_appeal_recommendation_${runId}`, mode: 'simple' },
-    ordering: { key: `copyright_appeal_recommendation_${submissionId}`, concurrency: 1 },
-  }
-  await addAIAgentJob(
-    'copyright-appeal-recommendation',
-    { submission_id: submissionId, run_id: runId },
-    opts,
-  )
-  trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'copyright-appeal-recommendation')
-}
-
-export async function enqueueOrRetryCopyrightAppealRecommendation(
-  submissionId: string,
-  runId: string,
-  dependencies: {
-    getJob(
-      id: string,
-      options: { excludeData: true },
-    ): Promise<{
-      name: string
-      getState(): Promise<string>
-      retry(): Promise<void>
-      remove(): Promise<void>
-    } | null>
-    enqueue: typeof enqueueCopyrightAppealRecommendation
-  } = {
-    getJob: (...args) => ai_agents.getJob(...args),
-    enqueue: enqueueCopyrightAppealRecommendation,
-  },
-): Promise<void> {
-  const retained = await dependencies.getJob(jobIdFor(runId), { excludeData: true })
-  if (retained) {
-    if (retained.name !== 'copyright-appeal-recommendation') return
-    const state = await retained.getState()
-    if (state === 'failed') {
-      await retained.retry()
-      return
-    }
-    if (state === 'completed') await retained.remove()
-    else return
-  }
-  await dependencies.enqueue(submissionId, runId)
+  await enqueueCopyrightAppealRecommendations([{ submissionId, runId }])
 }

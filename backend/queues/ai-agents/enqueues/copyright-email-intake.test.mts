@@ -1,16 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   enqueueCopyrightEmailIntake,
-  enqueueOrRetryCopyrightEmailIntake,
+  enqueueCopyrightEmailIntakes,
 } from './copyright-email-intake.mts'
 import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS } from '../config.mts'
 import { ai_agents } from '../queues.mts'
-import {
-  completedCopyrightAgentEnqueueRecovery,
-  failedCopyrightAgentEnqueueRecovery,
-} from '../../../test-helpers/copyright-agent-enqueue-recovery-tests.mts'
 
-describe('copyright email intake enqueue recovery', () => {
+describe('copyright email intake enqueue', () => {
   it('persists an ordered, deduplicated extraction job', async () => {
     const intakeId = crypto.randomUUID()
     const runId = crypto.randomUUID()
@@ -28,7 +24,7 @@ describe('copyright email intake enqueue recovery', () => {
           backoff: AI_AGENTS_DEFAULTS.backoff,
           priority: AGENT_PRIORITY['copyright-email-intake'],
           removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
-          removeOnFail: AI_AGENTS_DEFAULTS.removeOnFail,
+          removeOnFail: true,
           deduplication: { id: jobId, mode: 'simple' },
           ordering: { key: `copyright_email_intake_${intakeId}`, concurrency: 1 },
         },
@@ -38,19 +34,17 @@ describe('copyright email intake enqueue recovery', () => {
     }
   })
 
-  it('retries a retained failed extraction job', async () => {
-    const { retry, enqueue, dependencies } =
-      failedCopyrightAgentEnqueueRecovery('copyright-email-intake')
-    await enqueueOrRetryCopyrightEmailIntake('intake-id', 'run-id', dependencies)
-    expect(retry).toHaveBeenCalledOnce()
-    expect(enqueue).not.toHaveBeenCalled()
-  })
-
-  it('removes a completed extraction job before enqueuing recovery', async () => {
-    const { remove, enqueue, dependencies } =
-      completedCopyrightAgentEnqueueRecovery('copyright-email-intake')
-    await enqueueOrRetryCopyrightEmailIntake('intake-id', 'run-id', dependencies)
-    expect(remove).toHaveBeenCalledOnce()
-    expect(enqueue).toHaveBeenCalledWith('intake-id', 'run-id')
+  it('adds a page of runs in one call, one job per run id', async () => {
+    const items = [0, 1].map(() => ({ intakeId: crypto.randomUUID(), runId: crypto.randomUUID() }))
+    const jobIds = items.map(item => `copyright_email_intake_${item.runId}`)
+    try {
+      await enqueueCopyrightEmailIntakes(items)
+      const jobs = await Promise.all(jobIds.map(id => ai_agents.getJob(id)))
+      expect(jobs.map(job => job?.data)).toEqual(
+        items.map(item => ({ intake_id: item.intakeId, run_id: item.runId })),
+      )
+    } finally {
+      await Promise.all(jobIds.map(async id => (await ai_agents.getJob(id))?.remove()))
+    }
   })
 })
