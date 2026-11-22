@@ -1,5 +1,6 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import * as setup from '../../data-stores/psql/setup.mts'
+import { assertSafeSqlIdentifier } from '@vouchington/postgres/partitions'
 import { guardAndRetireMonthlyPartition } from '../../data-stores/psql/migration-runner/guard-and-retire-monthly-partition.mts'
 import { PARTITION_DROP_POLICIES } from '../../data-stores/psql/config-driven/utils/partition-drop-policies.mts'
 import type { PartitionDropCandidate } from '../../data-stores/psql/migration-runner/partition-drop-guard.mts'
@@ -97,7 +98,13 @@ export async function withTestAiUsagePreparationFault(
     throw new Error('AI usage preparation fault did not reach its owned query boundary')
 }
 
-/** Retire an owned child through the production guard in the serialized AI usage DDL project. */
+/**
+ * Retire an owned child through the real guard, but wait for its table locks first. The guard
+ * fails fast (NOWAIT) on the shared referenced tables so production never queues behind a writer;
+ * any other connection reading them for a moment (another fork's hook, autovacuum) would make a
+ * teardown or setup that must succeed fail with lock-contention. The blocking LOCK is bounded by
+ * the test statement timeout, and the guard's own NOWAIT locks are then already held.
+ */
 export async function retireTestAiUsagePartition(candidate: PartitionDropCandidate): Promise<void> {
   await using transaction = await beginTransaction()
   await retireOwnedAiUsagePartitionInTransaction(candidate, transaction)
@@ -133,6 +140,16 @@ async function retireOwnedAiUsagePartitionInTransaction(
   candidate: PartitionDropCandidate,
   transaction: TransactionQuery,
 ): Promise<void> {
+  const tables = [
+    ...(policy?.retirementReferenceTables ?? []),
+    candidate.table,
+    candidate.partition,
+  ]
+    .map(table => assertSafeSqlIdentifier(table))
+    .join(', ')
+  await transaction(
+    `/* retireTestAiUsagePartition:lock */ LOCK TABLE ${tables} IN ACCESS EXCLUSIVE MODE`,
+  )
   const refusal = await guardAndRetireMonthlyPartition(
     transaction,
     candidate,
