@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { v7 } from 'uuid'
 import { verifyDeviceJwt } from '@ts-shared/session-jwt'
 import {
@@ -8,7 +8,9 @@ import {
   insertTestTotpAuthenticator,
 } from '@voucha/test-helpers'
 import { createDeviceAndSessionTokens } from './create.mts'
-import { readSessionDeviceAuthority } from './device-authority.mts'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
+import { mintAuthenticatedDeviceAuthority } from './device-authority-mint.mts'
+import { hashDeviceToken, readSessionDeviceAuthority } from './device-authority.mts'
 import { upgradeVerifiedNativeSession } from './native-upgrade.mts'
 import { refreshSessionState } from './flows.mts'
 import { revokeAuthenticatedSession } from './user-session-revocation.mts'
@@ -135,5 +137,50 @@ describe('original MFA across verified native authority changes', () => {
     expect(tokens.deviceToken.payload.mfa_at).toBeUndefined()
     expect(tokens.sessionToken.payload.mfa_at).toBeUndefined()
     expect(tokens.sessionToken.payload.uid).toBeNull()
+  })
+
+  it('revokes a reused native credential even if an attested renewal changes its lifetime', async () => {
+    const user = await createTestUserDirect()
+    const sid = v7()
+    const issuedAt = Math.floor(Date.now() / 1000)
+    const options = {
+      uid: user.id,
+      did: v7(),
+      sid,
+      binding: { client: 'native' },
+      deviceClass: 'attested',
+    } as const
+    const initial = await mintAuthenticatedDeviceAuthority({
+      ...options,
+      issuedAt: issuedAt - 24 * 60 * 60,
+    })
+    const rotate = () =>
+      rotateAuthenticatedDeviceToken({
+        uid: user.id,
+        sid,
+        did: options.did,
+        deviceToken: initial.token,
+      })
+    const rotated = await rotate()
+    let renewed: Awaited<ReturnType<typeof mintAuthenticatedDeviceAuthority>> | undefined
+    onTestFinished(
+      runBeforePostgresStatementForTest('/* revokeReusedDeviceCredential */', async () => {
+        renewed = await mintAuthenticatedDeviceAuthority({
+          ...options,
+          issuedAt,
+          deviceRenewal: 'verified-native-attestation',
+        })
+      }),
+    )
+
+    await expect(rotate()).rejects.toMatchObject({ status: 401, code: 'SESSION_REFRESH_REUSED' })
+    expect(renewed?.token).not.toBe(rotated)
+    expect(renewed?.payload.iat).toBe(issuedAt)
+    expect(await readSessionDeviceAuthority(sid)).toMatchObject({
+      device_token_digest: hashDeviceToken(renewed!.token),
+      device_token_issued_at: new Date(issuedAt * 1000),
+      previous_device_token_digest: null,
+      revoked_at: expect.any(Date),
+    })
   })
 })
