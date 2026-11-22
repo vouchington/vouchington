@@ -61,8 +61,11 @@ export const deletePost = async (
           [deleter.id, post.id, options?.delegated ?? false],
         )
         rowCount = result.rowCount
-        if (!rowCount && options?.delegated)
-          await assertDelegatedPostActorActive(deleter.id, { query })
+        assert(
+          !options?.delegated || rowCount === 1,
+          401,
+          'Delegated post deletion was not applied',
+        )
       },
     ])
     if ((rowCount ?? 0) > 0) {
