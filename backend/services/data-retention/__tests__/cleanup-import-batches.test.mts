@@ -6,6 +6,8 @@ import {
   createIncompleteImportRetentionBatch,
   insertLateImportRowForRetention,
   insertLateImportDiscoveryForRetention,
+  raceImportRetentionCursorWithDeletedCurrentBatch,
+  readImportRetentionCursor,
 } from '@voucha/test-helpers/import-retention'
 import { createIsolatedRetentionWindow } from '@voucha/test-helpers/retention-window'
 import { cleanupCompletedImportBatches } from '../cleanup-import-batches.mts'
@@ -84,5 +86,52 @@ describe('completed import retention', () => {
       code: '23514',
     })
     expect((await countImportRetentionRows('rss', batchId)).discoveries).toBe(1)
+  })
+
+  it('re-reads the import cursor after its current batch is deleted concurrently', async () => {
+    const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
+    const user = await createTestUser()
+    const deletedBatch = await createCompletedImportRetentionFixture('admin', user.id, at(100))
+    const options = { now, lowerBoundDate, batchSize: 1, maxBatches: 1 }
+    await expect(
+      cleanupCompletedImportBatches('admin', { ...options, batchSize: 2 }),
+    ).resolves.toMatchObject({
+      deleted: 2,
+      continuation: { batchId: deletedBatch, phase: 'batch' },
+    })
+    const nextBatch = await createCompletedImportRetentionFixture('admin', user.id, at(99))
+
+    const page = await raceImportRetentionCursorWithDeletedCurrentBatch(deletedBatch, options)
+
+    expect(page).toMatchObject({
+      deleted: 1,
+      hasMore: true,
+      continuation: { batchId: nextBatch, phase: 'rows' },
+    })
+    expect(await countImportRetentionRows('admin', deletedBatch)).toEqual({
+      batches: 0,
+      rows: 0,
+      discoveries: 0,
+    })
+    expect(await countImportRetentionRows('admin', nextBatch)).toEqual({
+      batches: 1,
+      rows: 1,
+      discoveries: 0,
+    })
+    const cursor = await readImportRetentionCursor()
+    expect(cursor).toMatchObject({
+      admin_batch_id: nextBatch,
+      phase: 'rows',
+      cursor_row_id: page.continuation?.rowId,
+    })
+    expect(page.continuation?.rowId).not.toBeNull()
+    await cleanupCompletedImportBatches('admin', options)
+    await cleanupCompletedImportBatches('admin', options)
+    expect(await countImportRetentionRows('admin', nextBatch)).toEqual({
+      batches: 0,
+      rows: 0,
+      discoveries: 0,
+    })
+    expect(await readImportRetentionCursor()).toMatchObject({ admin_batch_id: null })
   })
 })

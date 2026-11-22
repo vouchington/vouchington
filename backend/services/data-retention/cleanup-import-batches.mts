@@ -59,9 +59,9 @@ async function deleteCompletedImportPage(
     [family, family === 'rss' ? 'discoveries' : 'rows'],
   )
   const { rows: cursorRows } = await query<Cursor>(
-    `/* readImportRetentionCursor */
+    `/* lockImportRetentionCursor */
      SELECT admin_batch_id, rss_batch_id, phase, cursor_row_id, cursor_discovery_url_id
-     FROM import_retention_cursors WHERE family = $1::import_retention_families`,
+     FROM import_retention_cursors WHERE family = $1::import_retention_families FOR UPDATE`,
     [family],
   )
   const cursor = cursorRows[0]!

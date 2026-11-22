@@ -9,7 +9,7 @@ type StoredCursor = Omit<VoteBallotCleanupCursor, 'sweep_cutoff_id'> & {
   sweep_cutoff_id: string | null
 }
 
-export async function lockVoteBallotCleanupCursor(
+export async function readVoteBallotCleanupCursor(
   query: TransactionQuery,
   voteTable: string,
   cutoffId: string,

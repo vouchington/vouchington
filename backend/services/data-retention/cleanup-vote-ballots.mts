@@ -16,7 +16,7 @@ import {
 import { voteTables } from './vote-ballot-tables.mts'
 import {
   checkpointVoteBallotCleanupCursor,
-  lockVoteBallotCleanupCursor,
+  readVoteBallotCleanupCursor,
 } from './cleanup-vote-ballot-cursor.mts'
 import { cleanupDeferredPostVoteBallots } from './cleanup-deferred-post-votes.mts'
 const BALLOT_RETENTION_DAYS = 90
@@ -98,7 +98,7 @@ async function cleanupOrdinarySupersededVoteBallotTable(
   const replayCutoffId = getMinUuidv7ForDate(new Date(now.getTime() - REPLAY_RETENTION_MS))
   await using ownedQuery = borrowedQuery ? undefined : await beginTransaction()
   const query = borrowedQuery ?? ownedQuery!
-  const cursor = voteIds ? null : await lockVoteBallotCleanupCursor(query, table, cutoffId)
+  const cursor = voteIds ? null : await readVoteBallotCleanupCursor(query, table, cutoffId)
   const sweepCutoffId = cursor?.sweep_cutoff_id ?? cutoffId
   const candidateLimit = voteIds ? batchSize : Math.max(1, Math.floor(batchSize / 2))
   const olderLimit = voteIds ? batchSize : Math.max(1, batchSize - candidateLimit)
@@ -162,7 +162,6 @@ async function cleanupOrdinarySupersededVoteBallotTable(
   const tallySql = voteTable === 'post_votes' ? POST_VOTE_RETENTION_TALLY_SQL : ''
   const { rows: deletedRows } = await query<{ deleted: number }>(
     `/* deleteSupersededVoteBallots */
-     /* no-mistakes: deadlock-safe -- the retention ordering lane serializes ballot cleanup; daily aggregate keys are inserted in day order. */
      WITH deleted AS (
        DELETE FROM ${table} old
        WHERE old.${entityColumn} = $1::uuid AND old.user_id = $2::uuid

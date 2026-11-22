@@ -65,7 +65,6 @@ export const expectedDirectiveInventory = [
   'backend/services/data-retention/cleanup-deleted-conversation-cursor.mts:1',
   'backend/services/data-retention/cleanup-oauth-friend-edges.mts:2',
   'backend/services/data-retention/cleanup-operational-tombstone-candidates.mts:1',
-  'backend/services/data-retention/cleanup-vote-ballots.mts:1',
   'backend/services/entity-cache/hostname-invalidation-drain.mts:2',
   'backend/services/individuals-households/households/spending-categories.mts:1',
   'backend/services/lists/add-item.mts:1',
