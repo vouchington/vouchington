@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import {
   createTestUser,
   insertTestTopic,
@@ -8,6 +7,7 @@ import {
   updateTestPostReviewRating,
 } from '@voucha/test-helpers'
 import { markTestPostDeletedBy } from '@voucha/test-helpers/entities/posts-deletion'
+import { withReviewDisputeReadInterleavingForTest } from '@voucha/test-helpers/review-dispute-filing-transaction'
 import type { PrivateUser } from '@services/users/types'
 import { createTopicClaim } from '@services/topic-claims/create'
 import { adminVerifyTopicClaim } from '@services/topic-claims/admin-verify'
@@ -166,25 +166,17 @@ describe('createReviewDispute', () => {
       claim_text: 'The review changed during filing.',
     })
 
-    await using transaction = await beginTransaction()
-    const query: QueryExecutor = async <Row extends Record<string, unknown>>(
-      ...[statement, values]: Parameters<QueryExecutor>
-    ) => {
-      const result = await transaction<Row>(statement, values)
-      if (typeof statement !== 'string' && statement.text.includes('createReviewDispute:getPost')) {
+    await withReviewDisputeReadInterleavingForTest(
+      async query => {
+        await expect(createReviewDispute(claimant, input, { query })).rejects.toMatchObject({
+          status: 410,
+        })
+      },
+      async () => {
         await markTestPostDeletedBy(dedicatedPostId, reviewer.id)
         await dismissPendingDisputesForDeletedReview(dedicatedPostId)
-      }
-      return result
-    }
-    await expect(
-      createReviewDispute(claimant, input, {
-        query: Object.assign(query, { client: transaction.client }),
-      }),
-    ).rejects.toMatchObject({
-      status: 410,
-    })
-    await transaction.commit()
+      },
+    )
 
     const { disputes } = await listReviewDisputes({
       status: 'pending',
