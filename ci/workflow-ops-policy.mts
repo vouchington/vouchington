@@ -7,7 +7,7 @@ const backendUnitPostgresInitdbArgs =
   `${requiredPostgresInitdbArgs} -c autovacuum_naptime=1s` +
   ' -c autovacuum_analyze_threshold=0 -c autovacuum_analyze_scale_factor=0' +
   ' -c log_lock_waits=on -c log_min_error_statement=error' +
-  ' -c log_line_prefix=%m|pid=%p|app=%a|xid=%x|'
+  ' -c log_line_prefix=%m_pid%p_app%a_xid%x_'
 const requiredDockerInitdbArgs = `POSTGRES_INITDB_ARGS="${requiredPostgresInitdbArgs}"`
 
 export type OpsWorkflowStep = {
