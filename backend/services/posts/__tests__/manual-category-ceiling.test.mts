@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { createTestUser, createRandomString, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { manualTagLimitConfig } from '@services/tag-limits'
-import { TAG_LIMIT_REACHED } from '@modules/on-error/error-codes'
+import { POST_CATEGORY_LIMIT_REACHED } from '@modules/on-error/error-codes'
 import { createPost } from '../create.mts'
 import { updatePost } from '../update.mts'
 import { getPostByAny } from '../get.mts'
 
-const rejected = { status: 403, code: TAG_LIMIT_REACHED }
+const rejected = { status: 400, code: POST_CATEGORY_LIMIT_REACHED }
 
 describe('manual post category ceiling', () => {
   it('rejects an oversized administrator input before resolving its topic IDs', async () => {

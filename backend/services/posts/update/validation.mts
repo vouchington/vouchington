@@ -189,5 +189,6 @@ async function assertValidDataPointUpdate(
     objectType: 'topic',
     predicate: 'category',
   })
+  assertManualCategoryInputLimit(topicIds.length)
   await assertWithinTagAddLimit(creator, membershipPlan, postTopicRelation, null, topicIds.length)
 }

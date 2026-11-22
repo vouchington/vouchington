@@ -16,8 +16,8 @@ describe('post input cap protocol parity', () => {
       },
     },
     {
-      code: 'TAG_LIMIT_REACHED',
-      status: 403,
+      code: 'POST_CATEGORY_LIMIT_REACHED',
+      status: 400,
       input: {
         categories: Array.from({ length: 21 }, (_, index) => ({
           type: 'hashtag',

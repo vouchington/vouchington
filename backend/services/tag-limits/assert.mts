@@ -1,5 +1,5 @@
 import { createCodedError } from '@vouchington/sentry'
-import { TAG_LIMIT_REACHED } from '@modules/on-error/error-codes'
+import { POST_CATEGORY_LIMIT_REACHED, TAG_LIMIT_REACHED } from '@modules/on-error/error-codes'
 import { getContributionLimitTier } from '@services/contribution-gating/limits'
 import type { ContributionLimitMembershipPlan } from '@services/contribution-gating/limit-types'
 import type { PrivateUser } from '@voucha/types/entities/user'
@@ -47,7 +47,8 @@ export function assertWithinStandingTagLimit(
   const tier = getContributionLimitTier(currentUser, membershipPlan)
 
   const limit = getManualTagLimit(tier)
-  if (finalCount > Math.min(MAX_MANUAL_TAGS, Math.max(existingCount, limit))) {
+  assertManualCategoryInputLimit(finalCount)
+  if (finalCount > Math.max(existingCount, limit)) {
     throw createCodedError(
       403,
       `You've reached your tag limit (${limit}) for this post. Upgrade your membership to add more tags.`,
@@ -59,9 +60,9 @@ export function assertWithinStandingTagLimit(
 export function assertManualCategoryInputLimit(count: number): void {
   if (count > MAX_MANUAL_TAGS) {
     throw createCodedError(
-      403,
+      400,
       `A post can have at most ${MAX_MANUAL_TAGS} manual categories.`,
-      TAG_LIMIT_REACHED,
+      POST_CATEGORY_LIMIT_REACHED,
     )
   }
 }

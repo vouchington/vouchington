@@ -163,7 +163,7 @@ describe('usePostFormSubmit', () => {
 
   it('shows translated category recovery guidance without an upgrade suggestion', async () => {
     mockedSubmitPost.mockRejectedValueOnce(
-      Object.assign(new Error('capacity'), { code: 'TAG_LIMIT_REACHED' }),
+      Object.assign(new Error('capacity'), { code: 'POST_CATEGORY_LIMIT_REACHED' }),
     )
     const router = { push: vi.fn<VitestLooseMock>() }
     const { result } = renderHook(() =>
