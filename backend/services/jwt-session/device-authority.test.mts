@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import { createDbscTestSession } from '@voucha/test-helpers/dbsc-session'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import { v7 } from 'uuid'
 import { verifyDeviceJwt, signSessionJwt } from '@ts-shared/session-jwt'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
@@ -7,7 +9,7 @@ import { expireTestPreviousDeviceTokenGrace } from '@voucha/test-helpers/entitie
 import { mintAuthenticatedDeviceAuthority } from './device-authority-mint.mts'
 import { createDeviceAndSessionTokens, createSessionToken } from './create.mts'
 import { refreshSessionState } from './flows.mts'
-import { readSessionDeviceAuthority } from './device-authority.mts'
+import { hashDeviceToken, readSessionDeviceAuthority } from './device-authority.mts'
 import { getJwtRevokedKey } from './constants.mts'
 import { isSessionRevoked, revokeSession } from './revocation.mts'
 
@@ -118,6 +120,59 @@ describe('durable device credential authority', () => {
         deviceContext: { user_agent: userAgent },
       }),
     ).rejects.toMatchObject({ code: 'SESSION_RELOGIN_REQUIRED' })
+  })
+
+  it('leaves the stored credential unchanged when revocation wins before rotation', async () => {
+    const user = await createTestUserDirect()
+    const initial = await createDeviceAndSessionTokens({
+      uid: user.id,
+      did: v7(),
+      deviceContext: { user_agent: userAgent },
+    })
+    const sid = initial.sessionToken.payload.sid
+    onTestFinished(
+      runBeforePostgresStatementForTest('/* rotateAuthenticatedDeviceToken */', () =>
+        revokeSession(sid),
+      ),
+    )
+
+    await expect(
+      refreshSessionState({
+        deviceToken: initial.deviceToken.token,
+        userAgent,
+        fetchUser: getTestPrivateUserById,
+      }),
+    ).rejects.toMatchObject({ code: 'SESSION_RELOGIN_REQUIRED' })
+    expect(await readSessionDeviceAuthority(sid)).toMatchObject({
+      revoked_at: expect.any(Date),
+      device_token_digest: hashDeviceToken(initial.deviceToken.token),
+      previous_device_token_digest: null,
+    })
+  })
+
+  it('rejects an unproved rotation when another request registers its durable binding first', async () => {
+    const fixture = await createDbscTestSession()
+    let registeredToken: string | undefined
+    onTestFinished(
+      runBeforePostgresStatementForTest('/* rotateAuthenticatedDeviceToken */', async () => {
+        const registered = await fixture.register()
+        registeredToken = registered.dt
+      }),
+    )
+
+    await expect(refreshSessionState(fixture.base)).rejects.toMatchObject({
+      status: 403,
+      code: 'DBSC_PROOF_REQUIRED',
+    })
+    expect(registeredToken).toBeTypeOf('string')
+    expect(await readSessionDeviceAuthority(fixture.tokens.sessionToken.payload.sid)).toMatchObject(
+      {
+        revoked_at: null,
+        device_token_digest: hashDeviceToken(registeredToken!),
+        previous_device_token_digest: hashDeviceToken(fixture.tokens.deviceToken.token),
+        device_bound_session_binding: { publicKey: fixture.publicKey },
+      },
+    )
   })
 
   it('renews a verified native device from durable authority without an ephemeral authority record', async () => {

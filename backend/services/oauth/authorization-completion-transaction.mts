@@ -1,6 +1,9 @@
 import { revokeOtherAuthenticatedSessions } from '@services/jwt-session/user-session-revocation'
 import { assertBrokerProviderReAuthAccount } from './provider-reauth-broker.mts'
-import { lockLiveAccountSession } from '@services/mfa/active-account-session'
+import {
+  assertReadableAccountSession,
+  lockLiveAccountSession,
+} from '@services/mfa/active-account-session'
 import {
   beginTransaction,
   registerPostCommitAction,
@@ -12,15 +15,18 @@ import {
   assertLockedOAuthAccountConnectionUserActive,
   type LockedOAuthAccountConnectionUser,
 } from '@services/oauth-accounts'
+import { readStoredCompletionReplay } from './authorization-completion-replay.mts'
 import { preparePersistedOAuthAccountFlow, enqueueOAuthFriendSyncBestEffort } from './flows.mts'
 import {
   assertCompletionCaller,
+  expireUncompletedAuthorization,
   getAuthorizationAccount,
   getAuthorizationForCompletion,
-  getStoredCompletionResult,
+  readAuthorizationForCompletion,
   persistCompletionResult,
 } from './authorization-completion-persistence.mts'
 import type {
+  CompletionRow,
   DurableOAuthAuthorizationCompletion,
   OAuthAuthorizationCompletionOptions,
 } from './authorization-completion-types.mts'
@@ -33,79 +39,72 @@ export async function completeOAuthAuthorizationTransaction(
   options: OAuthAuthorizationCompletionOptions,
 ): Promise<DurableOAuthAuthorizationCompletion> {
   await using query = await beginTransaction()
-  let lockedActor: LockedOAuthAccountConnectionUser | undefined
-  if (options.currentUserId) {
-    lockedActor = await lockLiveAccountSession(
-      options.currentUserId,
-      { sid: options.sessionId, did: options.deviceId },
-      query,
-    )
-  }
-  const result: CompletionTransactionResult = await completeAuthorizationInTransaction()
+  const observed = await readAuthorizationForCompletion(options.flowId, query)
+  assertCompletionCaller(observed, options)
+  const result =
+    observed.status === 'completion_ready' && observed.expires_at > new Date()
+      ? await completeWithWriterAuthority()
+      : await completeWithReadAuthority(observed)
   await query.commit()
   if (result.kind === 'expired') throw createHttpError(410, 'OAuth authorization expired')
   return result
 
-  async function completeAuthorizationInTransaction(): Promise<CompletionTransactionResult> {
-    const authorization = await getAuthorizationForCompletion(options.flowId, query)
+  async function completeWithWriterAuthority(): Promise<CompletionTransactionResult> {
+    const lockedActor = options.currentUserId
+      ? await lockLiveAccountSession(
+          options.currentUserId,
+          { sid: options.sessionId, did: options.deviceId },
+          query,
+        )
+      : undefined
+    const authorization = await getAuthorizationForCompletion(options.flowId, query, new Date())
+    if (!authorization) {
+      const current = await readAuthorizationForCompletion(options.flowId, query)
+      assertCompletionCaller(current, options)
+      return completeWithReadAuthority(current)
+    }
     assertCompletionCaller(authorization, options)
+    return completeAuthorizationInTransaction(authorization, new Date(), { lockedActor })
+  }
+
+  async function completeWithReadAuthority(
+    authorization: CompletionRow,
+  ): Promise<CompletionTransactionResult> {
+    if (options.currentUserId)
+      await assertReadableAccountSession(
+        options.currentUserId,
+        { sid: options.sessionId, did: options.deviceId },
+        query,
+        authorization.purpose !== 'authenticate',
+      )
+    return completeAuthorizationInTransaction(authorization, new Date())
+  }
+
+  async function completeAuthorizationInTransaction(
+    authorization: CompletionRow,
+    decisionAt: Date,
+    writer?: { lockedActor?: LockedOAuthAccountConnectionUser },
+  ): Promise<CompletionTransactionResult> {
     const activeConnectionUser =
-      authorization.purpose !== 'authenticate'
-        ? await assertLockedOAuthAccountConnectionUserActive(lockedActor!)
+      writer?.lockedActor && authorization.purpose !== 'authenticate'
+        ? await assertLockedOAuthAccountConnectionUserActive(writer.lockedActor)
         : null
 
-    if (authorization.expires_at.getTime() <= Date.now()) {
-      if (authorization.status !== 'completed') {
-        await query(
-          `/* completeOAuthAuthorization */ UPDATE oauth_authorizations
-           SET expired_at = CASE WHEN rejected_at IS NULL THEN COALESCE(expired_at, clock_timestamp()) ELSE expired_at END,
-               callback_code_ciphertext = NULL,
-               completion_token_ciphertext = NULL,
-               exchange_claim_id = NULL
-           WHERE id = $1`,
-          [authorization.id],
-        )
-      }
+    if (authorization.expires_at <= decisionAt) {
+      if (authorization.status !== 'completed')
+        await expireUncompletedAuthorization(authorization.id, decisionAt, query)
       return { kind: 'expired' as const }
     }
-    if (authorization.status === 'rejected') {
+    if (authorization.status === 'rejected')
       throw createHttpError(401, authorization.callback_error || 'OAuth authorization rejected')
-    }
-    if (authorization.status === 'expired') {
+    if (authorization.status === 'expired')
       throw createHttpError(410, 'OAuth authorization expired')
-    }
-    if (['pending', 'callback_received', 'exchanging'].includes(authorization.status)) {
+    if (['pending', 'callback_received', 'exchanging'].includes(authorization.status))
       return { kind: 'pending' }
-    }
-    if (authorization.status === 'completed') {
-      const stored = getStoredCompletionResult(authorization)
-      if (stored.kind === 'authenticated') {
-        const account = await getAuthorizationAccount(authorization, query)
-        return {
-          ...stored,
-          newlyCompleted: false,
-          firstFactor: {
-            type: 'provider',
-            provider: authorization.provider,
-            providerUserId: account.provider_user_id,
-          },
-        }
-      }
-      if (stored.kind === 'mfa_required') return stored
-      if (authorization.purpose === 're_auth') {
-        return {
-          kind: 'reauthenticated',
-          account: await getAuthorizationAccount(authorization, query),
-        }
-      }
-      return {
-        ...stored,
-        account: await getAuthorizationAccount(authorization, query),
-        provider: authorization.provider,
-        newlyCompleted: false,
-      }
-    }
+    if (authorization.status === 'completed')
+      return readStoredCompletionReplay(authorization, query)
 
+    if (!writer) throw createHttpError(409, 'OAuth authorization could not be completed')
     const account = await getAuthorizationAccount(authorization, query)
     if (authorization.purpose === 're_auth') {
       await assertBrokerProviderReAuthAccount(authorization, account, query)

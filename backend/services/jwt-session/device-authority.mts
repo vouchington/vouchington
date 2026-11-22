@@ -1,11 +1,12 @@
-import { isOptionalMfaVerifiedAt } from '@ts-shared/session-jwt'
+import { isOptionalMfaVerifiedAt, verifyDeviceJwt } from '@ts-shared/session-jwt'
+import { decryptSecret } from '@modules/token-secrets'
 import { createHash } from 'node:crypto'
 import type { QueryExecutor } from '@data-stores/psql/types'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { SESSION_RELOGIN_REQUIRED } from '@modules/on-error/error-codes'
 import { createCodedError } from '@vouchington/sentry'
-import type { SessionClientBinding } from './types.mts'
+import type { DeviceTokenPayload, SessionClientBinding } from './types.mts'
 
 export interface SessionDeviceAuthorityRow {
   id: string
@@ -129,4 +130,49 @@ function parseSessionClientBinding(value: unknown, verifiedAt: Date | null): Ses
     ua_hash: binding.ua_hash,
     ...(binding.ja4_hash !== undefined && { ja4_hash: binding.ja4_hash }),
   }
+}
+
+export async function verifyStoredDeviceCredentialReplay(
+  row: SessionDeviceAuthorityRow,
+  presented: DeviceTokenPayload,
+  expected: { uid: string; did: string; sid: string },
+): Promise<string> {
+  const token = decryptSecret(row.device_token_encrypted!, deviceTokenSecretPurpose(expected.sid))
+  const credential = await verifyDeviceJwt(token)
+  if (
+    !credential ||
+    hashDeviceToken(token) !== row.device_token_digest ||
+    credential.refresh_uid !== expected.uid ||
+    credential.refresh_sid !== expected.sid ||
+    credential.did !== expected.did ||
+    credential.client !== presented.client ||
+    credential.dc !== presented.dc ||
+    credential.ua_hash !== presented.ua_hash ||
+    credential.ja4_hash !== presented.ja4_hash ||
+    credential.iat !== presented.iat ||
+    credential.exp !== presented.exp
+  )
+    throw sessionReloginRequired()
+  return token
+}
+
+export function assertDeviceCredentialAuthority(
+  row: SessionDeviceAuthorityRow | null,
+  device: DeviceTokenPayload,
+  expected: { uid: string; did: string },
+): asserts row is SessionDeviceAuthorityRow & { device_token_issued_at: Date } {
+  assertActiveDeviceAuthority(row, expected)
+  if (!row.device_token_digest || !row.device_token_binding || !row.device_token_issued_at)
+    throw sessionReloginRequired()
+  if (
+    device.did !== row.device_id ||
+    device.client !== row.device_token_binding.client ||
+    device.mfa_at !== row.device_token_binding.mfa_at ||
+    (device.client === 'web' &&
+      row.device_token_binding.client === 'web' &&
+      (device.ua_hash !== row.device_token_binding.ua_hash ||
+        device.ja4_hash !== row.device_token_binding.ja4_hash)) ||
+    (device.client === 'native' && device.dc !== 'attested')
+  )
+    throw sessionReloginRequired()
 }
