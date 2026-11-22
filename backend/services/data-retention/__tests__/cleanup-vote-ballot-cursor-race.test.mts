@@ -54,7 +54,7 @@ describe('vote ballot cursor retention', () => {
           holderProcessId,
           pool: 'write',
           lock: { kind: 'transaction' },
-          queryMarker: 'lockVoteBallotCleanupCursor',
+          queryMarker: 'vote_ballot_cleanup_cursors',
           releaseHolder: () => sweeper[Symbol.asyncDispose](),
         },
         async waitForCheckpoint => {

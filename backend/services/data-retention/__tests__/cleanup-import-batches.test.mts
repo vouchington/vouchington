@@ -11,7 +11,7 @@ import {
 } from '@voucha/test-helpers/import-retention'
 import {
   lockTestCompletedAdminImportBatch,
-  raceImportRetentionPageWithChildPurge,
+  raceImportRetentionPageWithParentPurge,
 } from '@voucha/test-helpers/import-retention-races'
 import { finishTestPostgresActionWithoutWaiting } from '@voucha/test-helpers/postgres-lock-skip'
 import { createIsolatedRetentionWindow } from '@voucha/test-helpers/retention-window'
@@ -125,7 +125,7 @@ describe('completed import retention', () => {
     })
   })
 
-  it('advances a resumed child page after a competing purge empties its parent', async () => {
+  it('drains a resumed child page before a concurrent parent purge finishes', async () => {
     const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
     const user = await createTestUser()
     const current = await createCompletedImportRetentionFixture('admin', user.id, at(100))
@@ -136,15 +136,16 @@ describe('completed import retention', () => {
       continuation: { batchId: current, phase: 'rows' },
     })
 
-    expect(await raceImportRetentionPageWithChildPurge(current, options)).toMatchObject({
-      deleted: 0,
+    expect(await raceImportRetentionPageWithParentPurge(current, options)).toMatchObject({
+      deleted: 1,
       continuation: { batchId: current, phase: 'batch' },
     })
     expect(await countImportRetentionRows('admin', current)).toEqual({
-      batches: 1,
+      batches: 0,
       rows: 0,
       discoveries: 0,
     })
+    expect(await readImportRetentionCursor()).toMatchObject({ admin_batch_id: null })
     expect(await countImportRetentionRows('admin', next)).toEqual({
       batches: 1,
       rows: 2,
@@ -152,15 +153,9 @@ describe('completed import retention', () => {
     })
     expect(await cleanupCompletedImportBatches('admin', options)).toMatchObject({
       deleted: 1,
-      hasMore: true,
-      continuation: null,
+      continuation: { batchId: next, phase: 'rows' },
     })
-    expect(await countImportRetentionRows('admin', current)).toEqual({
-      batches: 0,
-      rows: 0,
-      discoveries: 0,
-    })
-    await cleanupCompletedImportBatches('admin', { ...options, maxBatches: 3 })
+    await cleanupCompletedImportBatches('admin', { ...options, maxBatches: 2 })
   })
 
   it('re-reads the import cursor after its current batch is deleted concurrently', async () => {
