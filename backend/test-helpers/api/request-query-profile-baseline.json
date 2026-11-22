@@ -519,14 +519,6 @@
     "code": "backend/services/jwt-session/assurance.mts:42"
   },
   {
-    "annotation": "receiveOAuthAuthorizationCallback",
-    "maxCount": null,
-    "reason": "Lock the authorization row before branching on status and writing callback secrets or terminal expiry, preserving exact callback replay",
-    "permanent": true,
-    "code": "backend/services/oauth/authorization-callback.mts:60",
-    "routes": ["GET /api/v1/auth/oauth/:provider/broker-callback"]
-  },
-  {
     "annotation": "recordMcpCallAudit",
     "maxCount": null,
     "reason": "The write-ahead audit row commits before the MCP call runs and the tool_error or rate_limited follow-up row is written after the call (backend/api/mcp-audit-helpers.mts:40-62)",
