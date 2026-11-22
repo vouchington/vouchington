@@ -47,20 +47,16 @@ async function rotateVerifiedDeviceCredential(
   device: DeviceTokenPayload,
 ): Promise<string> {
   const presentedDigest = hashDeviceToken(options.deviceToken)
-  if (device.client === 'web' && options.dbscProof?.purpose !== 'registration') {
-    const current = await readSessionDeviceAuthority(options.sid)
-    if (current && isExactReplay(current)) {
-      assertDeviceCredentialAuthority(current, device, options)
-      const token = await verifyStoredDeviceCredentialReplay(current, device, options)
-      assertDeviceBoundRefreshAllowed(current, presentedDigest, options.dbscProof)
-      return token
-    }
+  const authority = await readSessionDeviceAuthority(options.sid)
+  assertDeviceCredentialAuthority(authority, device, options)
+  if (options.dbscProof?.purpose !== 'registration' && isExactReplay(authority)) {
+    const token = await verifyStoredDeviceCredentialReplay(authority, device, options)
+    assertDeviceBoundRefreshAllowed(authority, presentedDigest, options.dbscProof)
+    return token
   }
 
   await using query = await beginTransaction()
   await lockSessionDeviceAuthority(query, options.uid, options.sid)
-  const authority = await readSessionDeviceAuthority(options.sid, query)
-  assertDeviceCredentialAuthority(authority, device, options)
   if (isExactReplay(authority)) {
     const currentToken = await verifyStoredDeviceCredentialReplay(authority, device, options)
     const registrationBinding = assertDeviceBoundRefreshAllowed(
