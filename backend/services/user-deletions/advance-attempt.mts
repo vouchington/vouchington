@@ -1,7 +1,7 @@
 import { getUserDeletionsWorkLimit } from './work-limits.mts'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { getNextUserDeletionPhase, type UserDeletionPhase } from './phases.mts'
+import { getNextUserDeletionPhase } from './phases.mts'
 import { createUserDeletionSuccessor } from './successor.mts'
 import type { UserDeletionBatchResult, UserDeletionRequest } from './types.mts'
 
@@ -11,23 +11,26 @@ export async function advanceUserDeletionAttempt(
   delayMs = 0,
 ): Promise<UserDeletionBatchResult> {
   await using query = await beginTransaction()
-  const { rows } = await query(sql`/* advanceUserDeletionAttempt:lock */
-      SELECT current_phase
+  const nextPhase = hasMore ? request.currentPhase : getNextUserDeletionPhase(request.currentPhase)
+  if (nextPhase) {
+    const successor = await createUserDeletionSuccessor(request, nextPhase, delayMs, query)
+    await query.commit()
+    return successor
+  }
+
+  const { rowCount } = await query(sql`/* advanceUserDeletionAttempt:lock */
+      SELECT id
       FROM user_deletion_requests
       WHERE id = ${request.id}
         AND processing_attempt_id = ${request.processingAttemptId}
+        AND current_phase = ${request.currentPhase}
         AND processing_started_at IS NOT NULL
         AND completed_at IS NULL
       FOR UPDATE
     `)
-  if (rows.length === 0) return null
+  if (!rowCount) return null
 
-  const phase = rows[0] as { current_phase: UserDeletionPhase }
-  if (phase.current_phase !== request.currentPhase) return null
-  const nextPhase = hasMore ? phase.current_phase : getNextUserDeletionPhase(phase.current_phase)
-  const result = !nextPhase
-    ? await finalizeUserDeletionAttempt(request, query)
-    : await createUserDeletionSuccessor(request, nextPhase, delayMs, query)
+  const result = await finalizeUserDeletionAttempt(request, query)
   await query.commit()
   return result
 }
