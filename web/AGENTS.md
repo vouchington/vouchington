@@ -25,6 +25,8 @@ Generic React rules: load `react-app-structure`; identifiers and URLs: `http-api
 
 ## Identifiers
 
+- URLs use slugs or natural keys, never UUIDs. Slug routes still accept the entity's UUID and
+  permanently redirect it to the slug URL; keep that fallback, never remove it.
 - Add to `web-id-route-segment-allowlist.mts` only for an entity with no unique natural key, and
   label its pages from facts.
 - A user without a username falls back to display name, then a deleted-user label.
