@@ -9,9 +9,10 @@ import { followUser } from './entities/test-entities.mts'
 
 /**
  * Deleting a topic probes every foreign key that references it, so cleanup cost scales with the
- * topic count. A few urls let many links share a topic.
+ * topic count. Hidden rows share topics; the feed keeps one live link per (user, topic), so every
+ * row a test expects to see needs its own.
  */
-const URLS_PER_TOPIC = 10
+const HIDDEN_ROWS_PER_TOPIC = 10
 
 /** An owned historical range keeps unrelated current test rows above the initial cursor. */
 export async function createReferralFeedWindowFixture(
@@ -22,23 +23,34 @@ export async function createReferralFeedWindowFixture(
   const stranger = await createTestUser()
   await followUser(viewer, author)
   const urlIds = await Promise.all(
-    Array.from({ length: Math.min(kinds.length, URLS_PER_TOPIC) }, () =>
-      createTestUrlWithHostname(),
-    ),
+    Array.from({ length: HIDDEN_ROWS_PER_TOPIC }, () => createTestUrlWithHostname()),
   )
   const base = Date.UTC(1971, 0, 1) + randomInt(1, 1_000_000) * 10_000
-  const topicPool = Array.from({ length: Math.ceil(kinds.length / urlIds.length) }, () => v7())
-  const ordinals = new Map<string, number>()
+  const topicPool: string[] = []
+  const hidden = new Map<string, { topicId: string; count: number }>()
   const rows = kinds.map((kind, index) => {
     const userId = kind === 'unfollowed' ? stranger.id : author.id
-    // The live-link unique key is (user, topic, url), so each live row takes the next free pair
-    // and deleted rows, which that key ignores, reuse the first pair.
-    const ordinal = kind === 'deleted' ? 0 : (ordinals.get(userId) ?? 0)
-    if (kind !== 'deleted') ordinals.set(userId, ordinal + 1)
+    let topicId: string
+    let urlId = urlIds[0]!
+    if (kind === 'visible') {
+      topicId = v7()
+      topicPool.push(topicId)
+    } else {
+      // Hidden rows of one user share a topic across distinct urls (live-link unique key).
+      let state = hidden.get(userId)
+      if (!state || state.count % HIDDEN_ROWS_PER_TOPIC === 0) {
+        state = { topicId: v7(), count: state?.count ?? 0 }
+        topicPool.push(state.topicId)
+        hidden.set(userId, state)
+      }
+      topicId = state.topicId
+      urlId = urlIds[state.count % HIDDEN_ROWS_PER_TOPIC]!
+      state.count++
+    }
     return {
       id: v7({ msecs: base + kinds.length - index }),
-      topic_id: topicPool[Math.floor(ordinal / urlIds.length)]!,
-      url_id: urlIds[ordinal % urlIds.length]!,
+      topic_id: topicId,
+      url_id: urlId,
       user_id: userId,
       kind,
     }
