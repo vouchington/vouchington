@@ -50,7 +50,7 @@ async function deleteExpiredNonHandoffCompletions(
   await using query = await beginTransaction()
   const statement = sql`/* deleteExpiredNonHandoffCompletions */
     DELETE FROM bluesky_link_completions completion
-    USING (
+    WHERE completion.account_link_authorization_id = ANY(ARRAY(
       SELECT completion.account_link_authorization_id
       FROM bluesky_link_completions completion
       JOIN bluesky_link_authorizations link_auth
@@ -65,8 +65,7 @@ async function deleteExpiredNonHandoffCompletions(
       ORDER BY completion.expires_at, completion.account_link_authorization_id
       LIMIT ${batchSize}
       FOR UPDATE OF completion SKIP LOCKED
-    ) target
-    WHERE completion.account_link_authorization_id = target.account_link_authorization_id`)
+    ))`)
   const { rowCount } = await query(statement)
   const result = rowCount ?? 0
 
