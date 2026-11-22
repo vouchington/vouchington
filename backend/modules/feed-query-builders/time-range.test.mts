@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { TimeRange } from '@voucha/types/feed'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import { buildTimeRangeFilter, getTimeRangeLowerBoundDate } from './time-range.mts'
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
@@ -52,7 +52,7 @@ describe('buildTimeRangeFilter', () => {
     ['2025-01-01T00:00:00.000Z', '1m', '2024-12-02T00:00:00.000Z'],
   ] as const)('uses the supplied %s decision instant for %s', (instant, range, cutoff) => {
     const filter = buildTimeRangeFilter(range, 'posts.id', new Date(instant))
-    expect(filter?.values).toEqual([timestampToUuidv7LowerBound(Date.parse(cutoff))])
+    expect(filter?.values).toEqual([getMinUuidv7ForDate(new Date(Date.parse(cutoff)))])
     expect(getTimeRangeLowerBoundDate(range, new Date(instant))?.toISOString()).toBe(cutoff)
   })
 })

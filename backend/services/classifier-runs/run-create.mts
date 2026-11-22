@@ -1,5 +1,5 @@
 import type { OwnedTransaction } from '@data-stores/psql'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import { classifierRetentionCutoff } from '@services/classifiers/retention-window'
 import { reserveClassifierDecisionBatch } from '@services/classifiers/write-decision-lineage'
 import { retainPublicationIdentityBridges } from '@services/post-publication/identity-bridges'
@@ -26,7 +26,7 @@ export async function insertClassifierRun<C>(
   }
   const remote = resolved.remote
   const proposedBatchId = remote ? await generateBatchId(query) : null
-  const activeCutoffId = timestampToUuidv7LowerBound(classifierRetentionCutoff().getTime())
+  const activeCutoffId = getMinUuidv7ForDate(classifierRetentionCutoff())
   const { id: identityId, isNew } = await claimClassifierRunIdentity(
     query,
     slug,

@@ -1,5 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import { seedUuid } from './common.mts'
 import { resolveSeedAnchor, SEED_ANCHOR_DATE_ENV } from './seed-anchor.mts'
 
@@ -27,7 +27,7 @@ export async function seedAiUsageTotals(): Promise<void> {
     aiUsageTotalsCommunityId(index),
   )
   const ids = Array.from({ length: AI_USAGE_TOTAL_RAW_ROWS }, (_, index) =>
-    timestampToUuidv7LowerBound(anchor - 24 * 60 * 60_000 + index),
+    getMinUuidv7ForDate(new Date(anchor - 24 * 60 * 60_000 + index)),
   )
   const scopes = ids.map((_, index) =>
     aiUsageTotalsCommunityId(Math.floor(index / AI_USAGE_TOTAL_CALLS_PER_COMMUNITY)),

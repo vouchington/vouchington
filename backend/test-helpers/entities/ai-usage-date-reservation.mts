@@ -1,6 +1,6 @@
 import { randomInt } from 'node:crypto'
 import { advisoryLockPool, type PoolClient } from '@data-stores/psql'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import {
   AI_USAGE_DAY_MS as DAY_MS,
   AI_USAGE_SLOT_DAYS as SLOT_DAYS,
@@ -133,8 +133,8 @@ function getSlotDay(slot: number): string {
 function getSlotBounds(slot: number): { startBound: string; endBound: string } {
   const startMs = slot * SLOT_MS
   return {
-    startBound: timestampToUuidv7LowerBound(startMs),
-    endBound: timestampToUuidv7LowerBound(startMs + SLOT_DAYS * DAY_MS),
+    startBound: getMinUuidv7ForDate(new Date(startMs)),
+    endBound: getMinUuidv7ForDate(new Date(startMs + SLOT_DAYS * DAY_MS)),
   }
 }
 

@@ -1,6 +1,6 @@
 import type { TimeRange } from '@voucha/types/feed'
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 
 /**
  * Generates SQL filter for time range using a UUIDv7 lower bound.
@@ -25,7 +25,7 @@ export function buildTimeRangeFilter(
     return null
   }
 
-  const lowerBoundUuid = timestampToUuidv7LowerBound(lowerBoundTimestampMs)
+  const lowerBoundUuid = getMinUuidv7ForDate(new Date(lowerBoundTimestampMs))
   return sql`/* buildTimeRangeFilter:fragment */`
     .append(idColumn)
     .append(sql` >= ${lowerBoundUuid}`)

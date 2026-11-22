@@ -9,7 +9,7 @@ import {
   type PartitionDropCandidate,
 } from '../../data-stores/psql/migration-runner/partition-drop-guard.mts'
 import sql from 'sql-template-strings'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 
 /**
  * Task-owned real DDL fixture: the prelaunch monthly contract needs historical physical children
@@ -122,8 +122,10 @@ export async function isTestAiUsagePartitionAttached(partition: string): Promise
 }
 
 export async function readTestAiUsageIdsForMonth(date: Date, agentSlug: string): Promise<string[]> {
-  const from = timestampToUuidv7LowerBound(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1))
-  const to = timestampToUuidv7LowerBound(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1))
+  const from = getMinUuidv7ForDate(new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1)))
+  const to = getMinUuidv7ForDate(
+    new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1)),
+  )
   const { rows } = await write<{ id: string }>(sql`/* readTestAiUsageIdsForMonth */
     SELECT id FROM ai_usage_records
     WHERE id >= ${from}::uuid AND id < ${to}::uuid AND agent_slug = ${agentSlug}
