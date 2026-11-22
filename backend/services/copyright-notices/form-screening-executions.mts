@@ -33,7 +33,6 @@ async function startCopyrightFormScreeningInTransaction(
   intakeId: string,
   transaction: Transaction,
 ): Promise<CopyrightFormScreeningAttempt> {
-  await lockCopyrightFormReview(intakeId, transaction)
   await transaction(sql`/* startCopyrightFormScreening:finishPrior */
     UPDATE copyright_notice_form_screening_attempts SET failed_at = clock_timestamp()
     WHERE copyright_notice_form_intake_id = ${intakeId} AND state = 'pending'
@@ -109,7 +108,6 @@ export async function completeCopyrightFormScreening(
   if (attempt.intakeId !== input.intakeId) throw new TypeError('Screening attempt intake mismatch')
   const guidance = parseCopyrightFormGuidance(input.guidance)
   await using transaction = await beginTransaction()
-  await lockCopyrightFormReview(attempt.intakeId, transaction)
   await transaction(sql`/* completeCopyrightFormScreening:lockNotice */
     SELECT notice.id FROM copyright_notice_form_intakes intake
     JOIN copyright_notices notice ON notice.id = intake.copyright_notice_id

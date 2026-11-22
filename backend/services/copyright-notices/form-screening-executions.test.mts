@@ -7,7 +7,6 @@ import {
 import {
   readTestCopyrightStaffScreening,
   getTestExpiredCopyrightScreeningClaimTime,
-  startTestCopyrightScreeningBeforeAdmission,
 } from '@voucha/test-helpers/data-stores/psql/copyright-screening-executions'
 import {
   createTestCopyrightFormIntakeReview,
@@ -88,7 +87,7 @@ describe('current copyright form screening execution', () => {
     await expect(completeCopyrightFormScreening(retry!, input)).resolves.toBe(result)
   })
 
-  it('serializes a failed-screen retry before admitting a human-authorized restriction', async () => {
+  it('admits a human-authorized restriction during a claimed screening retry', async () => {
     const { intake } = await createSignedInCopyrightForm()
     const initial = (await claimCopyrightFormScreening(intake.id))!
     await failCopyrightFormScreening(initial)
@@ -106,15 +105,16 @@ describe('current copyright form screening execution', () => {
     })
     expect(assessment.copyright_notice_form_screening_id).toBeNull()
     const [targetId] = await readCopyrightNoticeTargetIds(intake.copyright_notice_id)
-    const restriction = await startTestCopyrightScreeningBeforeAdmission(intake.id, () =>
-      acceptCopyrightNoticeAndImposeRestriction({
-        noticeId: intake.copyright_notice_id,
-        targetId: targetId!,
-        assessmentId: assessment.id,
-        imposedAt: new Date(),
-        imposedById: user.id,
-      }),
-    )
+    expect(await claimCopyrightFormScreening(intake.id)).toMatchObject({
+      attemptNumber: initial.attemptNumber + 1,
+    })
+    const restriction = await acceptCopyrightNoticeAndImposeRestriction({
+      noticeId: intake.copyright_notice_id,
+      targetId: targetId!,
+      assessmentId: assessment.id,
+      imposedAt: new Date(),
+      imposedById: user.id,
+    })
     expect(restriction).toMatchObject({
       authorizing_assessment_id: assessment.id,
       imposed_by_id: user.id,

@@ -218,7 +218,7 @@ describe('copyright submission moderator reviews', () => {
     )
   })
 
-  it('starts the statutory clock only after a moderator accepts the counter-notice', async () => {
+  it('starts one statutory clock when concurrent moderator reviews accept a counter-notice', async () => {
     const fixture = await createRestrictedFixture(2)
     const counter = await createCopyrightCounterNotice(
       fixture.poster,
@@ -241,29 +241,31 @@ describe('copyright submission moderator reviews', () => {
       kind: 'counter_notice',
       input: { notice: { restrictedTargetCount: 2 } },
     })
-    const result = await reviewCopyrightCounterNotice({
+    const review = {
       submissionId: counter.submission.id,
       currentUser: fixture.moderator,
       is_accepted: true,
       rationale: 'The structured counter-notice is formally complete.',
-    })
+    }
+    const [result, replay] = await Promise.all([
+      reviewCopyrightCounterNotice(review),
+      reviewCopyrightCounterNotice(review),
+    ])
+    expect(replay).toEqual(result)
     expect(result.deadlineId).not.toBeNull()
     const aggregate = await getCopyrightNoticePrivateAggregate(fixture.noticeId)
-    expect(aggregate?.deadlines).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          qualifying_counter_notice_assessment_identity_id: result.assessmentId,
-        }),
-      ]),
-    )
-    expect(aggregate?.counterNoticeReviews).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          copyright_notice_submission_assessment_identity_id: result.assessmentId,
-          is_accepted: true,
-        }),
-      ]),
-    )
+    expect(aggregate?.deadlines).toEqual([
+      expect.objectContaining({
+        id: result.deadlineId,
+        qualifying_counter_notice_assessment_identity_id: result.assessmentId,
+      }),
+    ])
+    expect(aggregate?.counterNoticeReviews).toEqual([
+      expect.objectContaining({
+        copyright_notice_submission_assessment_identity_id: result.assessmentId,
+        is_accepted: true,
+      }),
+    ])
     const forwarding = aggregate?.deliveryIntents.find(
       intent =>
         intent.copyright_notice_submission_id === counter.submission.id &&
