@@ -5,6 +5,8 @@ description: Write or fix a Vouchington backend Vitest test or fixture - shared 
 
 # Vouchington backend tests
 
+Load `test-authoring`, `testing-rules` first.
+
 - Tests share one dirty, parallel database. Randomize ownership-scoped fixtures and never clean
   shared rows.
 - Inject database failures with a throwing [`QueryExecutor`](../../../backend/test-helpers/injected-failures.mts)

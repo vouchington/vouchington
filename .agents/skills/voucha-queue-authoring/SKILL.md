@@ -1,6 +1,6 @@
 ---
 name: voucha-queue-authoring
-description: Author Voucha GlideMQ queues, payloads, enqueues, workers, retries, and schedules.
+description: Voucha GlideMQ queue conventions - packages, payloads, enqueues, workers, retries, schedules. Use when adding or changing anything under backend/queues, backend/workers, or an enqueue call.
 ---
 
 # Voucha Queue Authoring

@@ -1,5 +1,6 @@
 # PostgreSQL
 
+- Load skills: `vouchington-postgres`, `postgres-schema-design`, `postgres-partitioning-uuid-v7`, `postgresql-rules`.
 - Schema docs: [PostgreSQL index](../../../docs/development/postgresql/README.md).
 - Keep creators idempotent where possible. Hardcoded UUIDs are UUIDv7 (version nibble `7`).
 - Never add `DROP TABLE` migrations. Fold new columns into their original creator; cross-file FKs

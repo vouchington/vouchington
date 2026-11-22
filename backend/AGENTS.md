@@ -1,5 +1,6 @@
 # Backend
 
+- Load skills: `typescript-authoring`, `typescript-rules`, `http-api-design`, `integrations-rules`, `structured-logging`.
 - Architecture: [overview index](../docs/overview/architecture/README.md).
 - Anonymous list endpoints clamp their limit with `clampAnonLimit`.
 - Store bearer, OAuth/social, TOTP, and OTP secrets through `@modules/token-secrets`, never raw.

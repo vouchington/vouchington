@@ -1,5 +1,6 @@
 # Web
 
+- Load skills: `voucha-brand`, `react-app-structure`, `react-rules`, `http-api-design`.
 - Product contracts: [requirements index](../docs/requirements/README.md). Never commit screenshots.
 - Browser config uses runtime public bootstrap (`IMAGE_ORIGIN` pattern), never new Docker build
   args or `NEXT_PUBLIC_*` values.

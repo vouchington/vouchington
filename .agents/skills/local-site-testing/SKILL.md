@@ -1,6 +1,6 @@
 ---
 name: local-site-testing
-description: Initialize, run, inspect, and recover the Voucha local web stack.
+description: Initialize, run, inspect, and recover the Voucha local stack (Docker, Next.js, Cloudflare Worker, workers, db). Use when starting the site locally, a local service is down or stale, or before local browser QA.
 user-invocable: true
 ---
 

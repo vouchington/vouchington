@@ -1,5 +1,6 @@
 # Cloudflare Worker
 
+- Load skills: `http-api-design`, `security-rules`.
 - Worker docs: [Cloudflare Worker index](../docs/overview/infrastructure/cloudflare-worker/README.md).
 - `NOINDEX=true` adds staging robots headers, disallows `/robots.txt` crawling, and removes sitemap
   discovery from every public surface.

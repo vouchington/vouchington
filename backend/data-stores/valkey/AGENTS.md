@@ -1,5 +1,6 @@
 # Valkey
 
+- Load skills: `vouchington-valkey`.
 - Valkey docs: [Valkey index](../../../docs/development/valkey/README.md).
 - Generic cache, Bloom, conditional operations, dynamic config, idempotency, rate limiting, events,
   scripts, and clients belong in `valkyries`; local packages remain Voucha facades/application glue.

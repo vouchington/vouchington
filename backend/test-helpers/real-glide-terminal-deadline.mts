@@ -7,7 +7,11 @@ import { once } from 'node:events'
  */
 export const REAL_GLIDE_EVENT_DEADLINE_MS = 4_000
 
-/** Owned admission waits on the default project budget. A stall rejects by name before that budget. */
+/**
+ * Owned admission waits on the default project budget: a stalled owned job rejects by name before
+ * that budget. User-vouch observation and entity-listener lifetimes outlast it and use longer
+ * per-test deadlines instead.
+ */
 export function admissionObservationDeadline(): AbortSignal {
   return AbortSignal.timeout(REAL_GLIDE_EVENT_DEADLINE_MS)
 }

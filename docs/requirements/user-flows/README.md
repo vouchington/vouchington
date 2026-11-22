@@ -42,7 +42,6 @@ Update Status when specs land or flows change.
 
 ## Local Setup Notes
 
-For local browser/QA setup, see the [Chrome QA skill](../../../.agents/skills/chrome-qa/SKILL.md).
-For `https://staging.voucha.ai`, see the [staging QA skill](../../../.agents/skills/staging-qa/SKILL.md).
+For local and staging browser QA, see the [QA skill](../../../.agents/skills/vouchington-qa/SKILL.md).
 The standard `--all` persona set includes `qa-developer@voucha.ai` with the `developer` role for
 Dynamic Config and feature-flag checks.

@@ -1,5 +1,6 @@
 # Services
 
+- Load skills: `vouchington-postgres`, `postgres-node-performance-tuning`, `bounded-iteration`.
 - Services docs: [services index](../../docs/overview/architecture/services/README.md).
 - Stay within domain tables.
 - Put `currentUserCan*` authorization in `authorization.mts`. Services may throw structured
