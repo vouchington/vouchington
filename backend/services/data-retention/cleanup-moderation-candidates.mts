@@ -16,12 +16,12 @@ export async function getModerationCleanupCandidates(
     case 'reports':
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:reports */
         SELECT id FROM moderation_reports WHERE id > ${after} AND id < ${upperId}
-        ORDER BY id LIMIT ${limit}`))
+        ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
       break
     case 'cases':
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:cases */
         SELECT id FROM moderation_cases WHERE id > ${after} AND id < ${upperId}
-        ORDER BY id LIMIT ${limit}`))
+        ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
       break
     case 'appeals':
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:appeals */
@@ -68,17 +68,17 @@ export async function getModerationCleanupCandidates(
     case 'warnings':
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:warnings */
         SELECT id FROM user_warnings WHERE id > ${after} AND id < ${upperId}
-        ORDER BY id LIMIT ${limit}`))
+        ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
       break
     case 'suspensions':
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:suspensions */
         SELECT id FROM user_suspensions WHERE id > ${after} AND id < ${upperId}
-        ORDER BY id LIMIT ${limit}`))
+        ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
       break
     case 'bans':
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:bans */
         SELECT id FROM community_bans WHERE id > ${after} AND id < ${upperId}
-        ORDER BY id LIMIT ${limit}`))
+        ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
       break
     case 'notes':
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:notes */

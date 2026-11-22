@@ -47,7 +47,7 @@ async function deleteTerminalEmbeddingBatchPage(
   if (options.batchIds) candidatesQuery.append(sql` AND id = ANY(${options.batchIds}::uuid[])`)
   candidatesQuery.append(sql`
     ORDER BY COALESCE(completed_at, failed_at, cancelled_at), id
-    LIMIT ${batchSize + 1}`)
+    LIMIT ${batchSize + 1} FOR UPDATE SKIP LOCKED`)
   const { rows: candidates } = await query<{ id: string; terminal_at: string }>(candidatesQuery)
   const page = candidates.slice(0, batchSize)
   const ids = page.map(row => row.id)

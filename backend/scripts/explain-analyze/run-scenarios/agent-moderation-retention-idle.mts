@@ -95,6 +95,7 @@ export async function runAgentModerationRetentionIdleScenarios(
       exactCapturedNames: [
         ...idlePageStatements,
         'reconcileAgentModerationRetentionPage',
+        'lockAgentModerationCleanupSources',
         'deleteObsoleteAgentModerations',
         'blockAgentModerationRetentionCandidates',
       ],
