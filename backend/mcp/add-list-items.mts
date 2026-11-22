@@ -11,8 +11,7 @@ import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import { canonicalEntityIds } from './resolve-entity-reference.mts'
 import { sanitizedTitle } from './mcp-read-output.mts'
-
-export const ADD_LIST_ITEM_LIMIT = 100
+import { getListAddItemsLimit } from '@services/lists/import-config'
 
 // The structured MCP result cap is 512 KiB. Echoed items stay under half of that.
 const MAX_ECHOED_ITEM_BYTES = 256 * 1024
@@ -50,7 +49,8 @@ export async function addVisibleListItems(
   listId: string,
   items: readonly ListItemRef[],
 ): Promise<AddedListItem[]> {
-  assert(items.length <= ADD_LIST_ITEM_LIMIT, 400, 'At most 100 items')
+  const limit = getListAddItemsLimit()
+  assert(items.length <= limit, 400, `At most ${limit} items`)
   assert(
     Buffer.byteLength(JSON.stringify(items), 'utf8') <= MAX_ECHOED_ITEM_BYTES,
     400,
