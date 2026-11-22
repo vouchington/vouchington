@@ -125,10 +125,12 @@ The check runs in the request transaction under the `users` row lock, before the
 privacy fence, so a refused request changes nothing. The single message does not say which case
 applies, so it does not tell the account holder that legal process exists. `deleteUser` is the only
 path that sets `deleted_at`. The immediate erasure phases act only on accounts that are already
-soft-deleted and do not check preservation holds. Final purge is serializable; preservation-hold admission runs at read committed under the account row's
-`FOR NO KEY UPDATE` lock, and a hold that commits first makes the purge's retained-identity update fail, so a conflicting hold
-and hard delete cannot both commit. A final-purge collision aborts that page without retry or
-continuation; the next scheduled run rediscovers the account. Incoming references remain unchanged
+soft-deleted and do not check preservation holds. Final purge runs at read committed and takes the account row's
+`FOR NO KEY UPDATE` lock, the lock hold admission takes, immediately before its `DELETE`. The `DELETE`
+repeats every condition it relies on (retention window, open requests, open hold) in its own `WHERE`, so
+a hold that committed first makes it delete nothing and a hold arriving later waits and reports 404; a
+conflicting hold and hard delete cannot both commit. A purge that deletes nothing or hits a deadlock
+ends its page without retry or continuation; the next scheduled run rediscovers the account. Incoming references remain unchanged
 until the final user deletion applies their existing null-on-delete behavior.
 
 An operative repeat-infringer incident does not block deletion. The normal deletion phases erase

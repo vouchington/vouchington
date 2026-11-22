@@ -28,7 +28,7 @@ describe('reciprocal final user purges', () => {
   })
 
   it.each(['direct', 'scheduled'] as const)(
-    'preserves native-aborted %s attempts and completes every unheld account on one next tick',
+    'purges reciprocal accounts racing each other through %s attempts and leaves the held account',
     async mode => {
       const scene = await createReciprocalTestPurgeScene()
       const ids = scene.targets.map(target => target.userId)
@@ -66,7 +66,8 @@ describe('reciprocal final user purges', () => {
             : race.failures.find(failure => failure.userId === ids[index])?.error
         return [testPurgeSqlState(error)]
       })
-      expect(abortCodes.filter(code => code !== '40001' && code !== '40P01')).toEqual([])
+      // Either order may also surface a deadlock; nothing else may abort a purge.
+      expect(abortCodes.filter(code => code !== '40P01')).toEqual([])
       const afterRace = await Promise.all(scene.targets.map(readTestPurgeSceneState))
       const timestamp = expect.any(Date)
       expect(afterRace).toEqual(
@@ -84,6 +85,7 @@ describe('reciprocal final user purges', () => {
             ? { referrer_user_id: null, deleted_by_id: null }
             : before.witnessReferences,
           clock: { ...before.clock, purged_at: committed[index] ? timestamp : null },
+          pending: committed[index] ? true : before.pending,
           notifications: committed[index]
             ? { notifications: 0, push_intents: 0 }
             : before.notifications,
@@ -94,7 +96,7 @@ describe('reciprocal final user purges', () => {
       )
       expect(await readTestPurgeSceneState(scene.held)).toEqual(scene.heldBefore)
 
-      // Exactly one normal scheduler call, after BOTH racers have settled; never a retry loop.
+      // Exactly one normal scheduler call, after BOTH racers have settled.
       const remaining = afterRace.filter(state => state.user !== null).length
       const next = await observeTestUserPurgeAttempt(() =>
         cleanupSoftDeletedUserBatch(scene.cutoff, 50, undefined, undefined, [
@@ -113,6 +115,7 @@ describe('reciprocal final user purges', () => {
           references: null,
           witnessReferences: { referrer_user_id: null, deleted_by_id: null },
           clock: { ...before.clock, purged_at: timestamp },
+          pending: true,
           notification: { notification: false, push_intents: 0 },
         })),
       )

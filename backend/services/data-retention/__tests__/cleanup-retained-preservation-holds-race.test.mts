@@ -24,54 +24,57 @@ describe('placing a legal preservation hold against the final purge', () => {
     vi.unstubAllEnvs()
   })
 
-  it('reports the account gone when the purge deleted it first', async () => {
-    const window = createTestRetentionWindow()
-    const [admin, user] = await Promise.all([
-      createTestUser({ administrator: true }),
-      createTestUser(),
-    ])
-    await softDeleteUserAt(user.id, window.firstEligibleDate)
-    const releasePurge = Promise.withResolvers<void>()
-    let placement: Promise<PromiseSettledResult<unknown>> | undefined
-    const restore = afterPostgresTransactionQueryForTest(
-      'cleanupSoftDeletedUserBatch:delete',
-      values => values.includes(user.id),
-      async query => {
-        const holderProcessId = await getTestPostgresBackendProcessId(query)
-        placement = withTestOwnedPostgresWait(
-          {
-            holderProcessId,
-            pool: 'write',
-            lock: { kind: 'transaction' },
-            queryMarker: 'lockPreservationHoldUser:userExists',
-            releaseHolder: async () => releasePurge.resolve(),
-          },
-          async waitForLock => {
-            const operation = placeUserPreservationHold(admin, user.id, 'matter-purge-first')
-            await waitForLock(operation)
-            releasePurge.resolve()
-            const [settled] = await Promise.allSettled([operation])
-            return settled
-          },
-        )
-        void placement.catch(() => releasePurge.resolve())
-        await releasePurge.promise
-      },
-    )
-    try {
-      await cleanupSoftDeletedUserBatch(
-        window.upperBoundDate,
-        500,
-        window.lowerBoundDate,
-        undefined,
-        [user.id],
+  it.each(['cleanupSoftDeletedUserBatch:lockUser', 'cleanupSoftDeletedUserBatch:delete'])(
+    'reports the account gone when the purge holds the account after %s',
+    async purgeStatement => {
+      const window = createTestRetentionWindow()
+      const [admin, user] = await Promise.all([
+        createTestUser({ administrator: true }),
+        createTestUser(),
+      ])
+      await softDeleteUserAt(user.id, window.firstEligibleDate)
+      const releasePurge = Promise.withResolvers<void>()
+      let placement: Promise<PromiseSettledResult<unknown>> | undefined
+      const restore = afterPostgresTransactionQueryForTest(
+        purgeStatement,
+        values => values.includes(user.id),
+        async query => {
+          const holderProcessId = await getTestPostgresBackendProcessId(query)
+          placement = withTestOwnedPostgresWait(
+            {
+              holderProcessId,
+              pool: 'write',
+              lock: { kind: 'transaction' },
+              queryMarker: 'lockPreservationHoldUser:userExists',
+              releaseHolder: async () => releasePurge.resolve(),
+            },
+            async waitForLock => {
+              const operation = placeUserPreservationHold(admin, user.id, 'matter-purge-first')
+              await waitForLock(operation)
+              releasePurge.resolve()
+              const [settled] = await Promise.allSettled([operation])
+              return settled
+            },
+          )
+          void placement.catch(() => releasePurge.resolve())
+          await releasePurge.promise
+        },
       )
-    } finally {
-      restore()
-    }
+      try {
+        await cleanupSoftDeletedUserBatch(
+          window.upperBoundDate,
+          500,
+          window.lowerBoundDate,
+          undefined,
+          [user.id],
+        )
+      } finally {
+        restore()
+      }
 
-    expect(await placement).toMatchObject({ status: 'rejected', reason: { status: 404 } })
-    expect(await getTestUserRaw(user.id)).toBeNull()
-    expect(await readPreservationHoldsForTest(user.id)).toEqual([])
-  })
+      expect(await placement).toMatchObject({ status: 'rejected', reason: { status: 404 } })
+      expect(await getTestUserRaw(user.id)).toBeNull()
+      expect(await readPreservationHoldsForTest(user.id)).toEqual([])
+    },
+  )
 })

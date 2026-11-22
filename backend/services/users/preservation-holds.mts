@@ -59,8 +59,8 @@ function assertAdmin(currentUser: PrivateUser | null): asserts currentUser is Pr
 }
 
 /**
- * Locks the account row `FOR NO KEY UPDATE`: retention deletes (`FOR SHARE` on the same row) then
- * either finish before the hold exists or see it, so a hold cannot be placed under an in-flight purge.
+ * Locks the account row `FOR NO KEY UPDATE`, the lock final purge takes before its DELETE: the purge
+ * either deletes first (this reports 404) or sees the committed hold and deletes nothing.
  */
 async function readPreservationHoldUser(
   query: QueryExecutor,
@@ -76,9 +76,8 @@ async function readPreservationHoldUser(
 
 /**
  * Places the account's single open hold at READ COMMITTED. The `FOR NO KEY UPDATE` account lock
- * orders it against final purge (a purge DELETE already holding the row makes this report 404; a
- * purge reaching the row after this commits fails on the retained identity this statement updates
- * and refuses on its next run) and against other hold writers, and the one-open unique index backs
+ * orders it against final purge (a purge already holding the row makes this report 404; a purge
+ * reaching the row after this commits deletes nothing and refuses on its next run) and against other hold writers, and the one-open unique index backs
  * the single open hold. A soft-deleted account remains eligible for preservation.
  * The reference is encrypted and is not copied to the moderator audit row.
  */

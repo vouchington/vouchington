@@ -1,7 +1,4 @@
-import {
-  observeTestUserPurgeAttempt,
-  testPurgeSqlState,
-} from '@voucha/test-helpers/reciprocal-user-purge'
+import { observeTestUserPurgeAttempt } from '@voucha/test-helpers/reciprocal-user-purge'
 import { readTestPurgeAccountState } from '@voucha/test-helpers/reciprocal-user-purge-scene'
 import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
@@ -114,7 +111,7 @@ describe('legal preservation holds and final user purge', () => {
 
   it.each([
     { schedule: 'after the hold commits', wait: false },
-    { schedule: 'at the blocked DELETE', wait: true },
+    { schedule: 'at the blocked account lock', wait: true },
   ])(
     'preserves the held account when purge runs $schedule and on the next tick',
     async ({ wait }) => {
@@ -142,7 +139,7 @@ describe('legal preservation holds and final user purge', () => {
               holderProcessId,
               pool: 'write',
               lock: { kind: 'transaction' },
-              queryMarker: 'cleanupSoftDeletedUserBatch:delete',
+              queryMarker: 'cleanupSoftDeletedUserBatch:lockUser',
               releaseHolder: async () => releaseHold.resolve(),
             },
             async waitForLock => {
@@ -165,13 +162,11 @@ describe('legal preservation holds and final user purge', () => {
       } finally {
         restore()
       }
-      // A purge that sees the committed hold succeeds without deleting the account.
-      const actualPurge =
-        attempt?.status === 'fulfilled'
-          ? attempt.value
-          : { sqlstate: testPurgeSqlState(attempt?.reason) }
-      const expectedPurge = wait ? { sqlstate: '40001' } : { deleted: 0, hasMore: false }
-      expect(actualPurge).toEqual(expectedPurge)
+      // A purge that sees the committed hold deletes nothing, either at its eligibility read or at its DELETE.
+      expect(attempt).toEqual({
+        status: 'fulfilled',
+        value: wait ? { deleted: 0, hasMore: true } : { deleted: 0, hasMore: false },
+      })
       const hold = expect.objectContaining({
         id: admission.id,
         account_user_id: user.id,
