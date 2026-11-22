@@ -71,9 +71,10 @@ async function deleteBlueskyFollowRecordsForFollower(
 // phase; after remains exclusively its follower-id cursor. No lock spans multiple jobs. A lost
 // continuation is re-driven from the head by the pending-disconnect sweep. The one-account-per-
 // user unique index prevents relinking until the exact generation is revoked. Concurrent runs
-// (the job and its inline fallback) are safe: the followee-page delete share-locks the exact
-// account generation, so a paused run cannot delete receipts saved after revoke + relink; the
-// exact-generation revoke deletes the account row once, so a loser fails closed as a no-op.
+// (the job and its inline fallback) are safe: the followee-page delete checks the exact account
+// generation inside its own statement snapshot, so a paused run cannot delete receipts saved
+// after revoke + relink; the exact-generation revoke deletes the account row once, so a loser
+// fails closed as a no-op.
 export async function disconnectAcceptedBlueskyAccountAndCleanupFollows(
   userId: string,
   generation: ExactGeneration,

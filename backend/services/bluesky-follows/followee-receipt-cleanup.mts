@@ -9,9 +9,9 @@ import { getBlueskyFollowsWorkLimit } from './work-limits.mts'
 // full page (`hasMore`) may leave more; the disconnect job resumes after `lastFollowerUserId`, never in a loop here.
 // The page rows are locked in the CTE, so their ctids stay valid for the delete in this statement;
 // deleting by ctid keeps the delete on the page instead of re-joining the whole table.
-// The share lock on the exact account generation replaces the removed per-user advisory lock: a
-// paused run cannot delete receipts saved after revoke + relink, because the revoke's row delete
-// waits for this statement and a revoked generation selects nothing.
+// The exact account generation guard sits in the deleting statement itself, so it shares the
+// statement's snapshot: a paused run whose generation was revoked selects nothing and cannot see
+// receipts saved after revoke + relink. No lock on the unwritten account row is needed.
 export async function deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage(
   followeeUserId: string,
   generation: { blueskyDid: string; linkAuthorizationId: string },
@@ -22,17 +22,16 @@ export async function deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPa
   // The closed range selects one followee while preserving the reverse index's ordering key.
   const { rows } = await write(
     sql`/* deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage */
-      WITH pinned_generation AS MATERIALIZED (
-        SELECT 1
-        FROM bluesky_linked_accounts
-        WHERE user_id = ${followeeUserId}
-          AND bluesky_did = ${generation.blueskyDid}
-          AND link_authorization_id = ${generation.linkAuthorizationId}
-        FOR SHARE
-      ), page AS MATERIALIZED (
+      WITH page AS MATERIALIZED (
         SELECT ctid AS row_id
         FROM bluesky_follow_records
-        WHERE EXISTS (SELECT 1 FROM pinned_generation)
+        WHERE EXISTS (
+            SELECT 1
+            FROM bluesky_linked_accounts
+            WHERE user_id = ${followeeUserId}
+              AND bluesky_did = ${generation.blueskyDid}
+              AND link_authorization_id = ${generation.linkAuthorizationId}
+          )
           AND followee_user_id >= ${followeeUserId}::uuid
           AND followee_user_id <= ${followeeUserId}::uuid
           AND follower_user_id <> ${followeeUserId}
