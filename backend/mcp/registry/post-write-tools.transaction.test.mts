@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   createTestUser,
   createTestMembership,
@@ -8,7 +8,9 @@ import {
   insertTestCommunityPostReview,
   softDeleteUser,
   getPostDeletedById,
+  getTestPostDeletedAt,
 } from '@voucha/test-helpers'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import {
   callStructuredMcpTool,
   callRejectedMcpTool,
@@ -132,6 +134,28 @@ describe('delegated post mutation contracts and transaction fences', () => {
     })
     expect(await getPostDeletedById(id)).toEqual({ deleted_by_id: null })
   })
+
+  it('leaves the post intact if the delegated actor is deleted before the write', async () => {
+    const user = await caller()
+    const id = await insertTestPost({
+      title: 'Delegated deletion race',
+      slug: crypto.randomUUID(),
+      markdown: 'Retained content',
+      createdById: user.id,
+    })
+    const post = await getPostByAny(id, { readOnly: false })
+    if (!post) throw new Error('Expected test post')
+    onTestFinished(
+      runBeforePostgresStatementForTest('/* deletePost */', () => softDeleteUser(user.id)),
+    )
+
+    await expect(deletePost(user, post, { delegated: true })).rejects.toMatchObject({
+      status: 401,
+    })
+    await expect(getTestPostDeletedAt(id)).resolves.toBeNull()
+    await expect(getPostDeletedById(id)).resolves.toEqual({ deleted_by_id: null })
+  })
+
   it.each([
     [{ post_type: 'comment', privacy: 'private' }, 'Comments inherit'],
     [{ post_type: 'comment', broadcast: 'users' }, 'Comments inherit'],
