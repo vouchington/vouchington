@@ -1,4 +1,5 @@
 import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
+import { runOverlappingCopyrightFormWriters } from '@voucha/test-helpers/copyright-form-writer-overlap'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import {
@@ -23,7 +24,6 @@ import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import {
   claimCopyrightFormScreening,
-  type CopyrightFormScreeningAttempt,
   completeCopyrightFormScreening,
   failCopyrightFormScreening,
 } from './form-screening-executions.mts'
@@ -65,22 +65,16 @@ describe('current copyright form screening execution', () => {
         if (!initial) throw new Error('Initial screening claim was not created')
         await failCopyrightFormScreening(initial)
       }
-      const winner = Promise.withResolvers<CopyrightFormScreeningAttempt>()
-      const restore = afterPostgresTransactionQueryForTest(
-        'claimCopyrightFormScreening:current',
-        values => values.includes(intake.id),
-        async () => {
-          const claim = await claimCopyrightFormScreening(intake.id)
-          if (!claim) throw new Error('Competing screening claim was not created')
-          winner.resolve(claim)
-        },
-      )
-      try {
-        await expect(claimCopyrightFormScreening(intake.id)).resolves.toBeNull()
-      } finally {
-        restore()
-      }
-      const { leaseToken } = await winner.promise
+      const [winner, duplicate] = await runOverlappingCopyrightFormWriters({
+        intakeId: intake.id,
+        holderMarker: 'claimCopyrightFormScreening:current',
+        waiterMarker: 'lockCopyrightFormReview',
+        holder: () => claimCopyrightFormScreening(intake.id),
+        waiter: () => claimCopyrightFormScreening(intake.id),
+      })
+      expect(duplicate).toBeNull()
+      expect(winner).not.toBeNull()
+      const { leaseToken } = winner!
       await expect(readTestCopyrightScreeningExecution(intake.id)).resolves.toMatchObject({
         attempt_number: attemptNumber,
         state: 'pending',

@@ -23,21 +23,19 @@ export async function reviewCopyrightFormIntake(input: {
   assert(input.rationale.trim() && input.rationale.length <= 10_000, 422, 'rationale is required')
   const automationSince = await getAutomaticEnforcementSince()
   await using transaction = await beginTransaction()
-  const { rows: owners } = await transaction<{ copyright_notice_id: string }>(
-    sql`/* reviewCopyrightFormIntake:notice */
-      SELECT copyright_notice_id FROM copyright_notice_form_intakes WHERE id = ${input.intakeId}`,
-  )
-  const noticeId = owners[0]?.copyright_notice_id
-  assert(noticeId, 404, 'Copyright form intake not found')
-  const locked = await lockCopyrightActionGenerationForWrite(noticeId, transaction)
+  await transaction(sql`/* reviewCopyrightFormIntake:lock */
+    SELECT pg_advisory_xact_lock(hashtextextended(${`copyright-form-review:${input.intakeId}`}, 0))
+  `)
   const { rows } = await transaction<{
+    notice_id: string
     submission_id: string
     source_kind: string
     current_screening_authority: boolean
     received_at: Date
     automatic_withholding_refused: boolean
   }>(sql`/* reviewCopyrightFormIntake:intake */
-    SELECT intake.copyright_notice_submission_id AS submission_id, submission.source_kind,
+    SELECT intake.copyright_notice_id AS notice_id,
+      intake.copyright_notice_submission_id AS submission_id, submission.source_kind,
       submission.received_at,
       EXISTS (SELECT 1 FROM copyright_notice_form_screening_attempts execution
         WHERE execution.copyright_notice_form_intake_id = intake.id
@@ -52,9 +50,10 @@ export async function reviewCopyrightFormIntake(input: {
   `)
   const intake = rows[0]
   assert(intake, 404, 'Copyright form intake not found')
+  const locked = await lockCopyrightActionGenerationForWrite(intake.notice_id, transaction)
   // A review must enter the case before thread cleanup rechecks its blocker proof.
   await transaction(sql`/* reviewCopyrightFormIntake:lockNotice */
-    SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR KEY SHARE`)
+    SELECT id FROM copyright_notices WHERE id = ${intake.notice_id} FOR KEY SHARE`)
   const { rows: reviewRows } = await transaction<{ is_accepted: boolean }>(
     sql`/* reviewCopyrightFormIntake:existing */
       SELECT is_accepted FROM copyright_notice_form_intake_reviews
@@ -99,13 +98,13 @@ export async function reviewCopyrightFormIntake(input: {
     await enforceCopyrightAssessment(assessmentId)
   } else {
     await reverseAutomatedCopyrightRestrictions(
-      noticeId,
+      intake.notice_id,
       intake.submission_id,
       input.currentUser.id,
     )
   }
   return {
-    noticeId,
+    noticeId: intake.notice_id,
     submissionId: intake.submission_id,
     is_accepted: input.is_accepted,
   }
