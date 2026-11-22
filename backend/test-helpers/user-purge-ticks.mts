@@ -15,7 +15,7 @@ function isScheduledCollision(error: unknown): boolean {
  * Concurrent test files purge their own accounts through the same tables, and tiny shared tables
  * take relation-level predicate locks, so an unrelated file can abort an owned purge. Use this
  * only where the purge is not the race subject; a race subject asserts its documented aborts.
- * Returns every tick's result in order.
+ * Returns every tick's result in order; throws if the accounts are still unsettled after the last tick.
  */
 export async function runUserPurgeTicksForTest<T>(
   tick: () => Promise<T>,
@@ -32,13 +32,15 @@ export async function runUserPurgeTicksForTest<T>(
       collided = true
     }
     if (!collided && (await isSettled(results))) return results
-    if (attempt === MAX_TICKS) return results
+    if (attempt === MAX_TICKS) throw new Error(`Owned purge did not settle in ${MAX_TICKS} ticks`)
   }
 }
 
 /**
  * One owned purge call that reruns only when a PostgreSQL serialization or deadlock abort
  * struck one of its transactions, whether it surfaced as a rejection or the scheduler absorbed it.
+ * Use it only where the call is one transaction per owned account: work an aborted attempt already
+ * committed is not part of the returned result, and a rerun restarts any row allowance.
  */
 export async function runUserPurgePageForTest<T>(page: () => Promise<T>): Promise<T> {
   for (let attempt = 1; ; attempt++) {

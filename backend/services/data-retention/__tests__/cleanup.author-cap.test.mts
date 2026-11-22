@@ -93,12 +93,11 @@ describe('author deletion budget', () => {
     expect(await countTestPostsCreatedBy(first.id)).toBe(0)
     expect(await countTestPostsCreatedBy(second.id)).toBe(2)
     expect(await getTestUserRaw(first.id)).not.toBeNull()
-    await runUserPurgePageForTest(() =>
-      runDataRetentionCleanup(
-        { batchSize: 500, maxBatches: 1 },
-        { families: ['softDeletedUsers'], softDeletedUsers: options },
-      ).then(result => result.softDeletedUsers),
-    )
+    // Not retried: after the first author's page commits, a rerun would grant a fresh allowance.
+    await runDataRetentionCleanup(
+      { batchSize: 500, maxBatches: 1 },
+      { families: ['softDeletedUsers'], softDeletedUsers: options },
+    ).then(result => result.softDeletedUsers)
     expect(await countTestPostsCreatedBy(second.id)).toBe(1)
     expect(await getTestUserRaw(first.id)).toBeNull()
   })
