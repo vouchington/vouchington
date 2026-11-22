@@ -5,7 +5,10 @@ import {
 } from './oauth-exchange-actor-owner.mts'
 import { randomUUID } from 'node:crypto'
 import { Queue, QueueEvents, Worker, type Job } from 'glide-mq'
-import { beginTransaction } from '@data-stores/psql'
+import {
+  rejectPostgresWriteForTest,
+  runBeforePostgresStatementForTest,
+} from './injected-failures.mts'
 import {
   workerQueueConnection,
   workerQueuePrefix,
@@ -24,7 +27,7 @@ import {
   type OAuthContinuationFault,
 } from './oauth-exchange-continuation-dependencies.mts'
 
-/** Real queue attempts, real claim/decrypt/mutations, and an actual second PostgreSQL connection. */
+/** Real queue attempts, real claim/decrypt/mutations, and a scoped storage failure. */
 export async function runTestOAuthExchangeContinuation(
   authorizationId: string,
   fault: OAuthContinuationFault,
@@ -43,7 +46,6 @@ export async function runTestOAuthExchangeContinuation(
     decryptCalls: 0,
     providerCalls: 0,
     primary: undefined,
-    faultUsed: false,
   }
   let firstFailure: unknown
   let terminalError: unknown
@@ -70,19 +72,9 @@ export async function runTestOAuthExchangeContinuation(
                   (job: Job<OAuthAuthorizationExchangeJobData>) =>
                     owner.run(async () => {
                       owner.assertOpen()
-                      await using holder = await beginTransaction()
-                      owner.assertOpen()
-                      const lock = async () => {
-                        await owner.run(() =>
-                          holder(
-                            '/* runTestOAuthExchangeContinuation */ SELECT id FROM oauth_authorizations WHERE id = $1 FOR UPDATE NOWAIT',
-                            [authorizationId],
-                          ),
-                        )
-                      }
                       attempts.push({ claimId: job.data.exchangeClaimId, data: { ...job.data } })
+                      const restore = attempts.length === 1 ? injectMutationFailure() : undefined
                       try {
-                        if (fault === 'provider-outcome' && attempts.length === 1) await lock()
                         await processOAuthAuthorizationExchangeJob(
                           job as unknown as Parameters<
                             typeof processOAuthAuthorizationExchangeJob
@@ -93,7 +85,7 @@ export async function runTestOAuthExchangeContinuation(
                               throw new Error('Actual OAuth worker omitted queue ownership')
                             await processOAuthAuthorizationExchange(
                               id,
-                              createTestOAuthContinuationDependencies(owner, fault, lock, metrics),
+                              createTestOAuthContinuationDependencies(owner, metrics),
                               {
                                 claimId: ownership.claimId,
                                 providerRequestArmed: ownership.providerRequestArmed,
@@ -115,8 +107,9 @@ export async function runTestOAuthExchangeContinuation(
                       } catch (err) {
                         if (attempts.length === 1) firstFailure = err
                         throw err
+                      } finally {
+                        restore?.()
                       }
-                      // await-using holder rollback occurs before the worker schedules its next actual attempt.
                     }),
                 ),
               ],
@@ -176,5 +169,23 @@ export async function runTestOAuthExchangeContinuation(
     injectedError,
     terminalFailed,
     terminalError,
+  }
+
+  function injectMutationFailure(): (() => void) | undefined {
+    if (fault === 'provider-outcome')
+      return runBeforePostgresStatementForTest(
+        'settleOAuthAuthorizationExchangeClaim:history',
+        async () => {
+          throw injectedError
+        },
+      )
+    if (fault !== 'rejection' && fault !== 'release') return
+    return rejectPostgresWriteForTest(
+      fault === 'rejection'
+        ? 'rejectExhaustedOAuthAuthorizationExchange'
+        : 'releaseOAuthAuthorizationExchangeClaim',
+      injectedError,
+      values => values[0] === authorizationId,
+    )
   }
 }

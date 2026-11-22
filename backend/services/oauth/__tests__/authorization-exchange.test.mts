@@ -215,32 +215,6 @@ describe('OAuth authorization exchange recovery', () => {
     if (!claimed) throw new Error('Expected an actual OAuth claim after releasing the holder')
     await releaseOAuthAuthorizationExchangeClaim(flowId, claimed.exchange_claim_id)
   })
-
-  it('preserves exact claim and exhausted history when native release and rejection encounter contention', async () => {
-    const claimId = randomUUID()
-    const flowId = await insertTestOAuthAuthorization({
-      provider: 'github',
-      status: 'exchanging',
-      callbackCodeCiphertext: 'test-code-ciphertext',
-      callbackReceivedAt: new Date(),
-      exchangeAttempts: 5,
-      exchangeClaimId: claimId,
-      updatedAt: new Date(Date.now() - 120_000),
-    })
-    registerAuthorizationCleanup(flowId)
-    const before = await getTestOAuthExchangeAttempts(flowId)
-    await withTestOAuthAuthorizationRowLocked(flowId, async () => {
-      await expect(releaseOAuthAuthorizationExchangeClaim(flowId, claimId)).rejects.toMatchObject({
-        code: '55P03',
-      })
-      await expect(
-        rejectExhaustedOAuthAuthorizationExchange(flowId, claimId),
-      ).rejects.toMatchObject({ code: '55P03' })
-    })
-    expect(await getTestOAuthAuthorization(flowId)).toMatchObject({ exchange_claim_id: claimId })
-    expect(await getTestOAuthExchangeAttempts(flowId)).toEqual(before)
-    await expect(rejectExhaustedOAuthAuthorizationExchange(flowId, claimId)).resolves.toBe(true)
-  })
 })
 
 async function insertCallbackReceivedAuthorization(

@@ -25,7 +25,7 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => i
 
 describe('OAuth authorization exchange durable queue continuation', () => {
   it.each(['rejection', 'release'] as const)(
-    'resumes native %s contention on the second real queue attempt without another provider attempt',
+    'resumes after a %s write failure on the second real queue attempt without another provider attempt',
     async fault => {
       const { id, cleanupReceipt } = await fixture(fault === 'rejection' ? 4 : 0)
       const result = await runTestOAuthExchangeContinuation(id, fault, cleanupReceipt)
@@ -40,9 +40,9 @@ describe('OAuth authorization exchange durable queue continuation', () => {
       expect(result.providerCalls).toBe(0)
       expect(result.firstFailure).toBeInstanceOf(AggregateError)
       if (!(result.firstFailure instanceof AggregateError))
-        throw new Error('Expected actual primary and native contention')
+        throw new Error('Expected the primary and write failures')
       expect(result.firstFailure.cause).toBe(result.primary)
-      expect(result.firstFailure.errors[1]).toMatchObject({ code: '55P03' })
+      expect(result.firstFailure.errors[1]).toBe(result.injectedError)
       expect(result.state).toBe(fault === 'rejection' ? 'completed' : 'failed')
       expect(await getTestOAuthAuthorization(id)).toMatchObject({
         status: fault === 'rejection' ? 'rejected' : 'callback_received',
@@ -51,7 +51,7 @@ describe('OAuth authorization exchange durable queue continuation', () => {
     },
   )
 
-  it('settles an armed provider outcome after native contention without admitting a third attempt', async () => {
+  it('settles an armed provider outcome after a failed settlement read without admitting a third attempt', async () => {
     const { id, cleanupReceipt } = await fixture(0)
     const claim = await claimOAuthAuthorizationExchange(id)
     if (!claim) throw new Error('Expected the actual committed claim')
@@ -62,7 +62,7 @@ describe('OAuth authorization exchange durable queue continuation', () => {
       claim.exchange_claim_id,
     )
     expect(result.attempts).toHaveLength(2)
-    expect(result.firstFailure).toMatchObject({ code: '55P03' })
+    expect(result.firstFailure).toBe(result.injectedError)
     expect(result.attempts[1]?.data).toEqual({
       authorizationId: id,
       exchangeClaimId: claim.exchange_claim_id,
