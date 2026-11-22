@@ -1,6 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
+import {
+  assignTestRepresentativeIndividual,
+  createTestIndividual,
+} from '@voucha/test-helpers/entities/individuals'
+import { interceptPostgresTransactionQueriesForTest } from '@voucha/test-helpers/injected-transaction-queries'
 import { getUserFinancialProfile } from './get.mts'
 import { upsertUserFinancialProfile } from './upsert.mts'
 
@@ -33,35 +38,47 @@ describe('upsertUserFinancialProfile concurrency', () => {
     }
     const usdCreditLimit = { amount: 900_000, currency: 'usd' as const }
 
-    const outcomes = await Promise.allSettled([
-      upsertUserFinancialProfile(user.id, { stated_income_range: jpyIncome }),
-      upsertUserFinancialProfile(user.id, { total_credit_limit: usdCreditLimit }),
-    ])
-
-    expect(outcomes.filter(outcome => outcome.status === 'fulfilled')).toHaveLength(1)
-    expect(outcomes.filter(outcome => outcome.status === 'rejected')).toHaveLength(1)
-    expect(outcomes.find(outcome => outcome.status === 'rejected')).toMatchObject({
-      reason: { status: 422 },
-    })
-
-    const profile = await getUserFinancialProfile(user.id)
-    const validFinalStates = [
-      {
-        currency: 'jpy',
-        stated_income_range: jpyIncome,
-        total_credit_limit: null,
+    const individual = await createTestIndividual()
+    await assignTestRepresentativeIndividual(user.id, individual.id)
+    const barrier = Promise.withResolvers<void>()
+    let writes = 0
+    const restore = interceptPostgresTransactionQueriesForTest(
+      (statement, values) =>
+        statement.includes('INSERT INTO individual_financial_profiles') &&
+        values[0] === individual.id,
+      () => {
+        writes++
+        if (writes === 2) barrier.resolve()
+        return barrier.promise
       },
-      {
-        currency: 'usd',
-        stated_income_range: null,
-        total_credit_limit: usdCreditLimit,
-      },
-    ]
-    expect(validFinalStates).toContainEqual({
-      currency: profile?.currency,
-      stated_income_range: profile?.stated_income_range,
-      total_credit_limit: profile?.total_credit_limit,
-    })
+    )
+    try {
+      const outcomes = await Promise.allSettled([
+        upsertUserFinancialProfile(user.id, { stated_income_range: jpyIncome }).finally(
+          barrier.resolve,
+        ),
+        upsertUserFinancialProfile(user.id, { total_credit_limit: usdCreditLimit }).finally(
+          barrier.resolve,
+        ),
+      ])
+
+      expect(writes).toBe(2)
+      const winners = outcomes.filter(outcome => outcome.status === 'fulfilled')
+      const conflicts = outcomes.filter(outcome => outcome.status === 'rejected')
+      expect(winners).toHaveLength(1)
+      expect(conflicts).toHaveLength(1)
+      expect(conflicts[0]?.reason).toMatchObject({ status: 409 })
+      const profile = await getUserFinancialProfile(user.id)
+      expect(profile).toEqual(winners[0]?.value)
+      expect(profile).toMatchObject(
+        outcomes[0]?.status === 'fulfilled'
+          ? { currency: 'jpy', stated_income_range: jpyIncome, total_credit_limit: null }
+          : { currency: 'usd', stated_income_range: null, total_credit_limit: usdCreditLimit },
+      )
+    } finally {
+      barrier.resolve()
+      restore()
+    }
   })
 
   it('returns 404 when the profile owner does not exist', async () => {
