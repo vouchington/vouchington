@@ -82,6 +82,39 @@ describe('copyright notice persistence', () => {
       deadline.escalation_at.getTime(),
     )
   })
+  it('leaves a pending restriction unreviewed when staff supplies a different accepted case', async () => {
+    const restricted = await createFixture()
+    const other = await createFixture()
+    const restriction = await acceptCopyrightNoticeAndImposeRestriction({
+      noticeId: restricted.notice.id,
+      targetId: restricted.aggregate.targets[0]!.id,
+      assessmentId: restricted.noticeAssessment.id,
+      imposedAt: new Date('2026-07-01T12:00:00.000Z'),
+      imposedById: null,
+    })
+    await enforceCopyrightAssessment(other.noticeAssessment.id)
+    await expect(getCopyrightNoticePrivateAggregate(other.notice.id)).resolves.toMatchObject({
+      notice: {
+        accepted_at: expect.any(Date),
+        provisional_withholding_at: expect.any(Date),
+      },
+    })
+
+    await expect(
+      completeCopyrightMandatoryHumanReview({
+        noticeId: other.notice.id,
+        restrictionId: restriction.id,
+        currentUser: restricted.moderator,
+        action: 'confirm',
+        rationale: 'The restriction remains appropriate after review.',
+        reviewedAt: new Date('2026-07-02T12:00:00.000Z'),
+      }),
+    ).rejects.toMatchObject({ status: 409 })
+    await expect(getCopyrightNoticePrivateAggregate(restricted.notice.id)).resolves.toMatchObject({
+      restrictions: [{ id: restriction.id, human_reviewed_at: null }],
+    })
+  })
+
   it('requires human review on the specific restriction before a restoration intent', async () => {
     const { aggregate, claimant, moderator, notice, noticeAssessment } = await createFixture()
     const target = aggregate.targets[0]

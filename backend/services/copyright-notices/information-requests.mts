@@ -35,7 +35,6 @@ export async function requestCopyrightGuestInformation(input: {
     sql`/* requestCopyrightGuestInformation:capability */
     SELECT id FROM copyright_notice_guest_capabilities
     WHERE id = ${input.capabilityId} AND copyright_notice_id = ${input.noticeId}
-    FOR UPDATE
   `,
   )
   assert(rows[0], 404, 'Copyright guest capability was not found')

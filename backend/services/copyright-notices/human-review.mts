@@ -32,30 +32,8 @@ export async function completeCopyrightMandatoryHumanReview(
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
   assert(input.rationale.trim() && input.rationale.length <= 10_000, 422, 'rationale is required')
   await using transaction = await beginTransaction(transactionOptions)
-  const { rows: placementRows } = await transaction<{ placement_id: string }>(
-    sql`/* completeCopyrightMandatoryHumanReview:findPlacement */
-    SELECT target.placement_id
-    FROM copyright_notice_targets target
-    JOIN copyright_restrictions restriction ON restriction.copyright_notice_target_id = target.id
-    WHERE restriction.id = ${input.restrictionId} AND restriction.copyright_notice_submission_id IS NULL
-      AND target.copyright_notice_id = ${input.noticeId}
-  `,
-  )
-  const placement = placementRows[0]
-  assert(placement, 409, 'Copyright restriction is not awaiting mandatory human review')
   const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, input.noticeId)
   assert(lockedNotice, 409, 'Copyright restriction is not awaiting mandatory human review')
-  const { rows: locks } = await transaction<{ id: string }>(
-    sql`/* completeCopyrightMandatoryHumanReview:lock */
-    SELECT restriction.id
-    FROM copyright_notice_targets target
-    JOIN copyright_restrictions restriction ON restriction.copyright_notice_target_id = target.id
-    WHERE target.copyright_notice_id = ${input.noticeId}
-      AND restriction.id = ${input.restrictionId}
-    FOR UPDATE OF target, restriction
-  `,
-  )
-  assert(locks[0], 409, 'Copyright restriction is not awaiting mandatory human review')
   const { rows } =
     await transaction<CopyrightRestrictionRecord>(sql`/* completeCopyrightMandatoryHumanReview */
     UPDATE copyright_restrictions
@@ -65,10 +43,13 @@ export async function completeCopyrightMandatoryHumanReview(
       AND lifted_at IS NULL AND copyright_notice_submission_id IS NULL
       AND human_reviewed_at IS NULL
       AND EXISTS (
-        SELECT 1 FROM copyright_notices
-        WHERE id = ${input.noticeId}
-          AND accepted_at IS NOT NULL
-          AND provisional_withholding_at IS NOT NULL
+        SELECT 1
+        FROM copyright_notice_targets target
+        JOIN copyright_notices notice ON notice.id = target.copyright_notice_id
+        WHERE target.id = copyright_restrictions.copyright_notice_target_id
+          AND notice.id = ${input.noticeId}
+          AND notice.accepted_at IS NOT NULL
+          AND notice.provisional_withholding_at IS NOT NULL
       )
     RETURNING id, copyright_notice_target_id, authorizing_assessment_id, copyright_notice_submission_id, imposed_at, lifted_at, imposed_by_id, lifted_by_id,
       human_reviewed_at, human_review_action, human_reviewed_by_id
