@@ -61,6 +61,17 @@
     "playwright/valid-expect": "error",
     "playwright/valid-expect-in-promise": "error",
     "playwright/valid-test-tags": "error",
+    "playwright/no-action-timeout": "error",
+    "playwright/no-identical-title": "error",
+    "playwright/no-slowed-test": "error",
+    "playwright/no-test-return-statement": "error",
+    "playwright/require-to-pass-timeout": "error",
+    "playwright/require-to-throw-message": "error",
+    "playwright/prefer-comparison-matcher": "error",
+    "playwright/prefer-to-contain": "error",
+    "playwright/prefer-to-be": "error",
+    "playwright/prefer-equality-matcher": "error",
+    "playwright/no-export": "error",
     "playwright/valid-title": "error"
   },
   "overrides": [
