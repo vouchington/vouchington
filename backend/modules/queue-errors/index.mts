@@ -17,12 +17,12 @@ export * from './rate-limit.mts'
 // A 5xx `Retry-After` is deliberately not honored: a requeue is unbounded, and an unreachable host
 // that keeps naming a wait would never fail.
 export function wrapHttpForRetry(error: unknown): never {
-  if (isAwsThrottlingError(error)) throw error
   if (getHttpStatus(error) === 429) {
     const retryAfterMs = getRetryAfterMs(error)
     if (retryAfterMs !== null)
       throwRateLimited(retryAfterMs, error, { RateLimitError: Worker.RateLimitError })
   }
+  if (isAwsThrottlingError(error)) throw error
   return wrapUpstreamHttpForRetry(error, { getStatus: getHttpStatus, UnrecoverableError })
 }
 
