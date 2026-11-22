@@ -76,6 +76,30 @@ used, except where the privacy and legal exception below applies.
   `UPDATE ... WHERE` predicates on the written row.
 - **Read-time rules:** readers resolve whatever window remains. For example, a reply written under
   a comment that is hidden at the same moment disappears with that comment's subtree when read.
+- **A guard inside the writing statement.** `UPDATE`/`DELETE ... WHERE EXISTS (<guard>)` reads the
+  guard and the target in one snapshot, so the guarded row needs no lock. Do not pin it first with
+  a locking CTE.
+- **Append-only writes never lock** (owner, 2026-11-21: "this shouldn't need a lock"). Ballots,
+  events and history rows are inserted and the latest row wins. When two inserts can trigger the
+  same external effect, derive the effect's id from what the request read (actor, entity, previous
+  row id) and dedupe at the delivery boundary with a unique key and `ON CONFLICT DO NOTHING`.
 
-Automated reviewers often report "race" findings that ask for locks on read context. Decline them
-with a link to this section instead of adding the lock.
+**Locks that look justified but are not:**
+
+- A `SELECT ... FOR UPDATE` before a write that is already conditional (`UPDATE ... WHERE state`,
+  `ON CONFLICT`). The write decides the race; delete the pre-lock.
+- `FOR SHARE` or `FOR KEY SHARE` on a parent to keep it alive. The foreign key already takes the
+  lock it needs.
+- `SKIP LOCKED` in a job the queue already runs single-flight. It is only for competing workers
+  that select rows they write in the same transaction.
+
+**Adding a lock is an owner decision.** A change that adds any lock clause or lock helper call says
+so in the pull request body, with the interleaving that corrupts data and why none of the options
+above fit. An agent working unattended does not add one: it ships the lock-free design, states the
+worst case, and puts the lock it would propose in the pull request body for the owner. Tests assert
+the final state under the interleaving, never that a lock was taken or in what order.
+
+Automated reviewers often report "race" findings that ask for a lock, a wider lock, or a
+generation, fence, claim or counter column. Decline them with a link to this section. Answer with
+the first that fits: a constraint, a conditional write, a guard inside the writing statement,
+SERIALIZABLE plus 409, or "accepted: best effort" with the worst case stated.
