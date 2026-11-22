@@ -62,27 +62,12 @@ async function refreshStoryPostForStoryInTransaction(
     return null
 
   const postId = postStory.post_id
-  const { rows } = await read(
-    sql`/* refreshStoryPostForStory */
-    SELECT
-      ARRAY_AGG(DISTINCT c.topic_id) FILTER (WHERE c.topic_id IS NOT NULL) AS topic_ids
-    -- no-mistakes-disable-next-line postgres-required-predicates: story membership can attach already-created items, so item IDs may predate story_id
-    FROM rss_feed_items rfi
-    LEFT JOIN rss_feed_item_categories c
-      ON c.rss_feed_item_id = rfi.id
-      AND c.topic_id IS NOT NULL
-    WHERE rfi.story_id = ${storyId}
-      AND rfi.deleted_at IS NULL
-  `,
-    options,
-  )
-
-  const topicIds = (rows[0]?.topic_ids as string[] | null) ?? []
+  const topicIdsToLock = await readStoryTopicIds(options.query, storyId)
 
   await options.query(sql`/* refreshStoryPostForStory:lockTopics */
     SELECT id FROM relation__post__category__topic
     WHERE subject_id = ${postId}
-      AND (deleted_at IS NULL OR object_id = ANY(${topicIds}::uuid[]))
+      AND (deleted_at IS NULL OR object_id = ANY(${topicIdsToLock}::uuid[]))
     ORDER BY subject_id, object_id FOR UPDATE`)
 
   // A concurrent manual confirmation must commit before the new generation copies its markers.
@@ -94,6 +79,8 @@ async function refreshStoryPostForStoryInTransaction(
   // it resumes after this membership transaction commits.
   await markStoryPostRelatedUrlProjection(options.query, postId, storyId)
 
+  // Topic sources may change while the relation locks wait. Use the new snapshot for writes.
+  const topicIds = await readStoryTopicIds(options.query, storyId)
   const storyTellerUser = await getStoryTellerUser()
 
   const { rows: priorTopicRows } = await read<{ object_id: string }>(
@@ -159,6 +146,24 @@ async function refreshStoryPostForStoryInTransaction(
     impactedTopicIds: [...new Set([...priorTopicIds, ...topicIds])],
     dispatchPostCommitEffects,
   }
+}
+
+async function readStoryTopicIds(query: TransactionQuery, storyId: string): Promise<string[]> {
+  const { rows } = await query<{ topic_ids: string[] | null }>(
+    sql`/* refreshStoryPostForStory */
+    SELECT
+      ARRAY_AGG(DISTINCT c.topic_id) FILTER (WHERE c.topic_id IS NOT NULL) AS topic_ids
+    -- no-mistakes-disable-next-line postgres-required-predicates: story membership can attach already-created items, so item IDs may predate story_id
+    FROM rss_feed_items rfi
+    LEFT JOIN rss_feed_item_categories c
+      ON c.rss_feed_item_id = rfi.id
+      AND c.topic_id IS NOT NULL
+    WHERE rfi.story_id = ${storyId}
+      AND rfi.deleted_at IS NULL
+  `,
+  )
+
+  return rows[0]?.topic_ids ?? []
 }
 
 async function getStoryTellerUser(): Promise<PrivateUser> {

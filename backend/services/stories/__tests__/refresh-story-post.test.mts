@@ -11,6 +11,7 @@ import {
   insertTestTopic,
   addCategoryToRssFeedItem,
   getPostRelatedUrlIds,
+  getPostCategoryTopicIds,
   getTestPenaltiesByUserId,
   insertTestUrl,
   insertTestUrlHostname,
@@ -18,6 +19,11 @@ import {
   getEntityRelation,
   readAllQueueJobs,
 } from '@voucha/test-helpers'
+import { setTestRssFeedItemCategoryTopicId } from '@voucha/test-helpers/entities/rss-feed-item-categories'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
+import { getTestPostgresBackendProcessId } from '@voucha/test-helpers/postgres-lock-wait'
+import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
+import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import type { PrivateUser } from '@services/users/types'
 import { upsertSystemUser } from '@services/users/system-users'
@@ -84,6 +90,56 @@ describe('refreshStoryPostForStory', () => {
 
     await expect(refreshStoryPostForStory(story.id)).resolves.toMatchObject({ postId: post.id })
     expect(post.post_type).toBe('story')
+  })
+
+  it('uses committed item topics after waiting to lock the previous post topic', async () => {
+    const suffix = crypto.randomUUID()
+    const story = await insertTestStory({ title: `Concurrent topic refresh ${suffix}` })
+    const previousTopic = await insertTestTopic({
+      name: `Previous topic ${suffix}`,
+      slug: `story-previous-${suffix}`,
+      createdById: testUser.id,
+    })
+    const currentTopic = await insertTestTopic({
+      name: `Current topic ${suffix}`,
+      slug: `story-current-${suffix}`,
+      createdById: testUser.id,
+    })
+    const itemId = await insertItem(story.id)
+    await insertItem(story.id)
+    const category = `refresh-topic-${suffix}`
+    await addCategoryToRssFeedItem(itemId, previousTopic, category)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const { post } = prepared.response
+    await expect(getPostCategoryTopicIds(post.id)).resolves.toEqual([previousTopic])
+
+    await using holder = await beginTransaction()
+    const relation = getEntityRelationMetadataOrThrow({
+      subjectType: 'post',
+      predicate: 'category',
+      objectType: 'topic',
+    })
+    await upsertEntityRelation(testUser, relation, { id: post.id }, [{ id: previousTopic }], {
+      query: holder,
+    })
+    await withTestOwnedPostgresWait(
+      {
+        holderProcessId: await getTestPostgresBackendProcessId(holder),
+        pool: 'write',
+        lock: { kind: 'transaction' },
+        queryMarker: 'refreshStoryPostForStory:lockTopics',
+        releaseHolder: () => holder[Symbol.asyncDispose](),
+      },
+      async waitForLock => {
+        const refresh = refreshStoryPostForStory(story.id)
+        await waitForLock(refresh)
+        await setTestRssFeedItemCategoryTopicId(itemId, category, currentTopic)
+        await holder.commit()
+        return refresh
+      },
+    )
+    await expect(getPostCategoryTopicIds(post.id)).resolves.toEqual([currentTopic])
   })
 
   it('is idempotent when called multiple times', async () => {
