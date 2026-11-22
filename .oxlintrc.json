@@ -1566,7 +1566,6 @@
       "rules": {
         "no-void": "off",
         "no-await-in-loop": "off",
-        "react/jsx-no-target-blank": "off",
         "nextjs/no-html-link-for-pages": "off"
       }
     }
