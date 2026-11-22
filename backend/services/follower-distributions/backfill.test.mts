@@ -23,6 +23,7 @@ describe('listIncompleteFollowerDistributionIdPage', () => {
       }),
     )
     const own = new Set(await Promise.all([1, 2, 3].map(() => createOwnDistribution())))
+    expect(own.size).toBe(3)
     const firstOwnId = [...own].toSorted()[0]!
 
     const seen: string[] = []
