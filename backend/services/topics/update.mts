@@ -52,13 +52,6 @@ export const updateTopic = async (
           query,
         )
       }
-      if (changes.slug !== undefined) {
-        claimedAliases = await createTopicAliases(topic.id, [topic.slug, changes.slug], {
-          ...options,
-          skipSideEffects: true,
-        })
-      }
-
       const references: (ImageSurfaceReference & { nextImageId?: string | null })[] = []
       if (changes.logo_image_id !== undefined)
         references.push({
@@ -101,6 +94,13 @@ export const updateTopic = async (
 
       updateQuery.append(sql` WHERE id = ${topic.id}`)
       await write(updateQuery, options)
+
+      if (changes.slug !== undefined) {
+        claimedAliases = await createTopicAliases(topic.id, [topic.slug, changes.slug], {
+          ...options,
+          skipSideEffects: true,
+        })
+      }
 
       const revisionChanges = buildTopicRevisionChanges(topic, changes, resolvedHostnameId)
       if (Object.keys(revisionChanges).length > 0) {
