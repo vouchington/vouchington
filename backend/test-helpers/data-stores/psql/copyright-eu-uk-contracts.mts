@@ -1,7 +1,6 @@
 import { beginTransaction, read } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import { lockCopyrightJurisdictionPolicy } from '../../copyright-jurisdiction-policy-lock.mts'
 
 export type CopyrightTerritorialContractShape = {
   accepted_at: Date | null
@@ -95,7 +94,6 @@ export async function concealJurisdictionPolicyApprovals(
   jurisdiction: 'eu_dsa' | 'uk',
   actorId: string,
 ): Promise<void> {
-  await lockCopyrightJurisdictionPolicy(jurisdiction, transaction)
   await transaction(sql`/* concealJurisdictionPolicyApprovals */
     INSERT INTO copyright_jurisdiction_policy_withdrawals (
       copyright_jurisdiction_policy_approval_id, withdrawn_by_id
@@ -117,11 +115,11 @@ export async function insertJurisdictionPolicyApproval(
   policyVersion: string,
   actorId: string,
 ): Promise<string> {
-  await lockCopyrightJurisdictionPolicy(jurisdiction, transaction)
   const { rows } = await transaction<{ id: string }>(sql`/* insertJurisdictionPolicyApproval */
     INSERT INTO copyright_jurisdiction_policy_approvals (
-      jurisdiction, policy_version, approved_by_id
-    ) VALUES (${jurisdiction}, ${policyVersion}, ${actorId})
+      jurisdiction, policy_version, approved_by_id, approved_at
+    ) VALUES (${jurisdiction}, ${policyVersion}, ${actorId}, clock_timestamp())
+    ON CONFLICT (jurisdiction, policy_version) DO NOTHING
     RETURNING id
   `)
   const approval = rows[0]
@@ -147,6 +145,10 @@ export async function withRolledBackTerritorialTransaction<Result>(
   run: (transaction: TransactionQuery) => Promise<Result>,
 ): Promise<Result> {
   await using transaction = await beginTransaction()
+  // A concurrent approval after concealment is outside this fixture's snapshot.
+  await transaction(sql`/* withRolledBackTerritorialTransaction:isolation */
+    SET TRANSACTION ISOLATION LEVEL REPEATABLE READ
+  `)
   const result = await run(transaction)
   await transaction.rollback()
   return result
