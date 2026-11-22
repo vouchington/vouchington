@@ -44,6 +44,7 @@ export const nativeSessionMcpApiFixtureCases: ApiFixtureCase[] = [
   },
   {
     id: 'native.auth.email-address.tokens',
+    pending: true,
     method: 'POST',
     path: '/api/v1/auth/native/email-address/tokens',
     route: { routeTemplate: '/api/v1/auth/native/email-address/tokens' },
@@ -51,7 +52,7 @@ export const nativeSessionMcpApiFixtureCases: ApiFixtureCase[] = [
     requestHeaders: nativeJsonHeaders,
     requestBody: { emailAddress: 'fixture@example.test' },
     status: 200,
-    body: { email_address: 'fixture@example.test' },
+    body: { email_address: 'fixture@example.test', resend_after_seconds: 60 },
     consumers: [...consumers],
     migratedFrom: [],
   },

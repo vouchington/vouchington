@@ -73,6 +73,7 @@ export const REGISTRY_ORDER = [
   'household-limits-config',
   'profile-count-config',
   'session-limits-config',
+  'email-auth-limits-config',
   'elections-votes-work-config',
   'classifiers-work-config',
   'classifier-runs-work-config',

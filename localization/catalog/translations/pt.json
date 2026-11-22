@@ -1382,6 +1382,7 @@
 {"id":"copy.extracted.edit.page.editTopicRecommendation_8b5d2924","value":"Editar Recomendação de Tópico"},
 {"id":"copy.extracted.edit.page.updateCrawlerConfiguration_0a253dd0","value":"Atualizar configuração do rastreador"},
 {"id":"copy.extracted.edit.page.updateTheProposalWhileItIs_c8d77b56","value":"Atualizar a proposta enquanto ainda está pendente de revisão."},
+{"id":"copy.extracted.emailCodeResend.resendIn","value":"Reenviar em {seconds} s"},
 {"id":"copy.extracted.emailManager.addEmailForm.newEmailAddress_bb0d06f5","value":"Novo endereço de e-mail"},
 {"id":"copy.extracted.emailManager.addEmailForm.sendVerificationCode_19e86d2b","value":"Enviar código de verificação"},
 {"id":"copy.extracted.emailManager.emailList.primary_efe10c80","value":"Principal"},

@@ -27,6 +27,7 @@ import {
 import {
   assertEmailTokenRequestAllowed,
   assertEmailTokenVerificationAllowed,
+  reserveEmailCodeRequestSlot,
 } from './email-auth-rate-limits.mts'
 
 export async function requestEmailAddressLoginToken(options: {
@@ -35,16 +36,17 @@ export async function requestEmailAddressLoginToken(options: {
   deviceId?: string
   sessionId?: string
   uiLocale?: string | null
-}): Promise<{ emailAddress: string }> {
+}): Promise<{ emailAddress: string; resendAfterSeconds: number }> {
   const sanitizedEmail = sanitizeEmailAddress(options.emailAddress)
   await assertEmailTokenRequestAllowed({ ...options, emailAddress: sanitizedEmail })
+  const { resendAfterSeconds } = await reserveEmailCodeRequestSlot('login', sanitizedEmail)
 
   try {
     const { token, emailAddress } = await createEmailAddressLoginToken(options.emailAddress)
     await awaitReportedEnqueueAdmission(() =>
       enqueueEmailAddressLoginToken(emailAddress, token, normalizeUiLocale(options.uiLocale)),
     )
-    return { emailAddress }
+    return { emailAddress, resendAfterSeconds }
   } catch (err) {
     throw mapEmailAuthenticationError(err)
   }

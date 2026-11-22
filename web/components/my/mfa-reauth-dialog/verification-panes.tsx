@@ -8,7 +8,8 @@ import {
 import { useId } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/components/ui/input-otp'
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
+import { SixDigitOtp } from './six-digit-otp'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface TotpVerificationPaneProps {
@@ -57,9 +58,9 @@ interface EmailVerificationPaneProps {
   emailCode: string
   emailSent: boolean
   loading: boolean
+  resendSecondsLeft: number
   sentToEmail: string
   handleEmailVerify: (code: string) => void
-  handleResendEmail: () => void
   handleSendEmail: () => void
   setEmailCode: (code: string) => void
 }
@@ -68,9 +69,9 @@ export function EmailVerificationPane({
   emailCode,
   emailSent,
   loading,
+  resendSecondsLeft,
   sentToEmail,
   handleEmailVerify,
-  handleResendEmail,
   handleSendEmail,
   setEmailCode,
 }: EmailVerificationPaneProps) {
@@ -87,11 +88,13 @@ export function EmailVerificationPane({
           data-pw='verification-panes-email-send-code'
           onClick={handleSendEmail}
           loading={loading}
-          disabled={loading}
+          disabled={loading || resendSecondsLeft > 0}
         >
           {loading
             ? t('extracted.mfaReauthDialog.verificationPanes.sending_286a3af7')
-            : t('extracted.mfaReauthDialog.verificationPanes.sendCode_66a5b409')}
+            : resendSecondsLeft > 0
+              ? t('extracted.emailCodeResend.resendIn', { seconds: resendSecondsLeft })
+              : t('extracted.mfaReauthDialog.verificationPanes.sendCode_66a5b409')}
         </Button>
       </div>
     )
@@ -141,53 +144,14 @@ export function EmailVerificationPane({
         <Button
           data-pw='verification-panes-email-resend'
           variant='outline'
-          onClick={handleResendEmail}
-          disabled={loading}
+          onClick={handleSendEmail}
+          disabled={loading || resendSecondsLeft > 0}
         >
-          {t('extracted.mfaReauthDialog.verificationPanes.resend_1f948437')}
+          {resendSecondsLeft > 0
+            ? t('extracted.emailCodeResend.resendIn', { seconds: resendSecondsLeft })
+            : t('extracted.mfaReauthDialog.verificationPanes.resend_1f948437')}
         </Button>
       </div>
     </div>
-  )
-}
-
-function SixDigitOtp({
-  code,
-  labelId,
-  loading,
-  onComplete,
-  setCode,
-}: {
-  code: string
-  labelId: string
-  loading: boolean
-  onComplete: (code: string) => void
-  setCode: (code: string) => void
-}) {
-  return (
-    <InputOTP
-      maxLength={6}
-      value={code}
-      aria-labelledby={labelId}
-      onChange={(value: string) => {
-        setCode(value)
-        if (value.length === 6) onComplete(value)
-      }}
-      disabled={loading}
-      pattern={/^\d*$/}
-      inputMode='numeric'
-    >
-      <InputOTPGroup>
-        <InputOTPSlot index={0} />
-        <InputOTPSlot index={1} />
-        <InputOTPSlot index={2} />
-      </InputOTPGroup>
-      <InputOTPSeparator />
-      <InputOTPGroup>
-        <InputOTPSlot index={3} />
-        <InputOTPSlot index={4} />
-        <InputOTPSlot index={5} />
-      </InputOTPGroup>
-    </InputOTP>
   )
 }

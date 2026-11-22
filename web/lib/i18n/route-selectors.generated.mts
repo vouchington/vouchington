@@ -1,7 +1,7 @@
 // GENERATED FILE - do not edit by hand.
 // Regenerate: node static-code-analysis/i18n-extract/route-selector-map.mts
 // Verify:     node static-code-analysis/i18n-extract/route-selector-map.mts --check
-export const WEB_CHROME_SELECTOR = 'web.chrome.c942d21edb53ea12'
+export const WEB_CHROME_SELECTOR = 'web.chrome.00d8b8ac540c84ed'
 // oxfmt-ignore
 export const ROUTE_SELECTORS = [
   { pattern: "/", selectorId: "web.route.af63a24c860189fe.d739323bf0c3dacb", hasMembership: true },
@@ -176,7 +176,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/links", selectorId: "web.route.6ae53c18c06e579f.cc54998485403ae6", hasMembership: true },
   { pattern: "/links/create", selectorId: "web.route.656c605003c503b4.06afbe3372d3180a", hasMembership: true },
   { pattern: "/list/[id]", selectorId: "web.route.00443fb21ab666b4.bf5c178e3f5a1c3d", hasMembership: true },
-  { pattern: "/login", selectorId: "web.route.60f46fe966c31a6b.2e98783ef724941f", hasMembership: true },
+  { pattern: "/login", selectorId: "web.route.60f46fe966c31a6b.0c820c9bf04e40a2", hasMembership: true },
   { pattern: "/memberships/grants", selectorId: "web.route.d6e41cc32db0397b.ebf5499ddd7bf474", hasMembership: true },
   { pattern: "/messages", selectorId: "web.route.6224befb41ec714a.0e7fcdbd29034ea6", hasMembership: true },
   { pattern: "/messages/[conversationId]", selectorId: "web.route.c1241f29dcbae441.514ef3de917b6f0a", hasMembership: true },

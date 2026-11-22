@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, type SyntheticEvent } from 'react'
+import { useResendCooldown } from '@/hooks/use-resend-cooldown'
 import { continueOAuthLogin, sendEmailLoginToken } from '@/lib/api/client'
 import onError, { onSuccess } from '@/lib/on-error'
 import { tokenToBody } from '@/lib/auth/oauth-token-body'
@@ -57,6 +58,8 @@ export function LoginForm({
   const [code, setCode] = useState(prefilledOtp)
   const [loginAttemptId, setLoginAttemptId] = useState(initialLoginAttemptId)
   const [loading, setLoading] = useState(false)
+  const sendInFlight = useRef(false)
+  const cooldown = useResendCooldown()
   const hpWebsiteRef = useRef<HTMLInputElement>(null)
   const hpPhoneRef = useRef<HTMLInputElement>(null)
   const [capturedHpWebsite, setCapturedHpWebsite] = useState('')
@@ -65,6 +68,7 @@ export function LoginForm({
   const { handleResendCode, submitCode, submitting } = useLoginCodeActions({
     capturedHpPhone,
     capturedHpWebsite,
+    cooldown,
     email,
     handleLoginSuccess,
     handleTurnstileReset: turnstile.reset,
@@ -109,13 +113,15 @@ export function LoginForm({
 
   async function handleEmailSubmit(e: SyntheticEvent) {
     e.preventDefault()
+    if (sendInFlight.current) return
+    sendInFlight.current = true
     const hpWebsite = hpWebsiteRef.current?.value ?? ''
     const hpPhone = hpPhoneRef.current?.value ?? ''
     setCapturedHpWebsite(hpWebsite)
     setCapturedHpPhone(hpPhone)
     setLoading(true)
     try {
-      await sendEmailLoginToken(
+      const result = await sendEmailLoginToken(
         email,
         turnstile.token ?? undefined,
         {
@@ -124,15 +130,18 @@ export function LoginForm({
         },
         uiLocale,
       )
+      cooldown.startFromResponse(result)
       onSuccess(t('extracted.auth.loginForm.signInCodeSent_9a34e846'))
       setStep('code')
       turnstile.reset()
     } catch (err) {
+      cooldown.startFromError(err)
       onError(err, {
         fallback: t('extracted.auth.loginForm.failedToSendVerificationCode_6401f8f4'),
         tags: { form: 'auth-login' },
       })
     } finally {
+      sendInFlight.current = false
       setLoading(false)
     }
   }
@@ -167,6 +176,7 @@ export function LoginForm({
         loading={loading}
         loginAttemptId={loginAttemptId}
         onResendCode={handleResendCode}
+        resendSecondsLeft={cooldown.secondsLeft}
         setCode={setCode}
         setLoginAttemptId={setLoginAttemptId}
         setStep={setStep}

@@ -48,9 +48,9 @@ describe('MFA re-authentication verification panes', () => {
         emailCode='ABCDEFG234'
         emailSent
         loading={false}
+        resendSecondsLeft={0}
         sentToEmail='tests+mfa-reauth@voucha.ai'
         handleEmailVerify={verify}
-        handleResendEmail={vi.fn<() => void>()}
         handleSendEmail={vi.fn<() => void>()}
         setEmailCode={vi.fn<(code: string) => void>()}
       />,
@@ -85,9 +85,9 @@ describe('MFA re-authentication verification panes', () => {
           emailCode=''
           emailSent
           loading={false}
+          resendSecondsLeft={0}
           sentToEmail='tests+mfa-reauth@voucha.ai'
           handleEmailVerify={vi.fn<(code: string) => void>()}
-          handleResendEmail={vi.fn<() => void>()}
           handleSendEmail={vi.fn<() => void>()}
           setEmailCode={vi.fn<(code: string) => void>()}
         />
@@ -95,9 +95,9 @@ describe('MFA re-authentication verification panes', () => {
           emailCode=''
           emailSent
           loading={false}
+          resendSecondsLeft={0}
           sentToEmail='tests+mfa-reauth@voucha.ai'
           handleEmailVerify={vi.fn<(code: string) => void>()}
-          handleResendEmail={vi.fn<() => void>()}
           handleSendEmail={vi.fn<() => void>()}
           setEmailCode={vi.fn<(code: string) => void>()}
         />

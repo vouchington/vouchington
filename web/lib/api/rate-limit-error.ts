@@ -13,3 +13,10 @@ export function getRateLimitMessage(error: ApiError): string {
   }
   return 'Too many requests. Please try again later.'
 }
+
+export function getRetryAfterSeconds(error: unknown): number {
+  if (!isRateLimitError(error)) return 0
+  const data = error.data as Record<string, unknown> | null | undefined
+  const retryAfter = data?.retry_after
+  return typeof retryAfter === 'number' && retryAfter > 0 ? Math.ceil(retryAfter) : 0
+}

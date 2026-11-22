@@ -56,9 +56,9 @@ function SentEmailCode() {
         emailCode={emailCode}
         emailSent
         handleEmailVerify={() => {}}
-        handleResendEmail={() => {}}
         handleSendEmail={() => {}}
         loading={false}
+        resendSecondsLeft={0}
         sentToEmail='cardholder@example.com'
         setEmailCode={setEmailCode}
       />
