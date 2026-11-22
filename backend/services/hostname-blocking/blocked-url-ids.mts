@@ -17,15 +17,11 @@ export async function blockedUrlIdsForHostnameBlocks(
   // No result LIMIT: hiding a blocked URL would admit it. The prefix length is already capped.
   const { rows } = await write<{ url_id: string }>(
     sql`/* blockedUrlIdsForHostnameBlocks */
-      SELECT requested.id AS url_id
-      FROM (SELECT DISTINCT id FROM unnest(${[...urlIds]}::uuid[]) AS input(id)) AS requested
-      CROSS JOIN LATERAL (
-        SELECT hostname_id FROM urls WHERE id = requested.id LIMIT 1
-      ) url
-      CROSS JOIN LATERAL (
-        SELECT hostname FROM url_hostnames WHERE id = url.hostname_id LIMIT 1
-      ) child
-      WHERE EXISTS (
+      SELECT url.id AS url_id
+      FROM urls url
+      JOIN url_hostnames child ON child.id = url.hostname_id
+      WHERE url.id = ANY(${[...urlIds]}::uuid[])
+        AND EXISTS (
         SELECT 1
         FROM generate_series(
           1,
