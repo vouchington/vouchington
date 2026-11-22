@@ -35041,7 +35041,7 @@
                 "format": "uuid",
                 "type": "string"
               },
-              "maxItems": 500,
+              "maxItems": 256,
               "minItems": 1,
               "type": "array",
               "uniqueItems": true
