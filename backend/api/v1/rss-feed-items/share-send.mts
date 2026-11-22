@@ -1,3 +1,4 @@
+import { enforceFollowerDistributionSenderRateLimit } from '../../follower-distribution-rate-limit.mts'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
@@ -40,6 +41,7 @@ app.route('/api/v1/rss-feed-items/:rssFeedItemId/shares').post(async (ctx: Conte
 
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/rss-feed-items/:rssFeedItemId/shares')
   assertNotSuspended(currentUser)
+  await enforceFollowerDistributionSenderRateLimit(ctx, currentUser.id)
   validateRequestContract(ctx, 'POST:/api/v1/rss-feed-items/:rssFeedItemId/shares', {
     path: ctx.params,
   })
@@ -54,6 +56,7 @@ app.route('/api/v1/rss-feed-items/:rssFeedItemId/shares').post(async (ctx: Conte
 app.route('/api/v1/rss-feed-items/:rssFeedItemId/sends').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/rss-feed-items/:rssFeedItemId/sends')
   assertNotSuspended(currentUser)
+  await enforceFollowerDistributionSenderRateLimit(ctx, currentUser.id)
 
   apiRequestContract<
     'POST:/api/v1/rss-feed-items/:rssFeedItemId/sends',

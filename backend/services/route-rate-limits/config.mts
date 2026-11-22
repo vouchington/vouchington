@@ -27,6 +27,10 @@ export const ACTIVITYPUB_INBOX_LIMITS = {
   maxRequests: { min: 1, max: 10_000 },
   windowSeconds: { min: 1, max: 3_600 },
 } as const
+export const FOLLOWER_DISTRIBUTION_LIMITS = {
+  maxRequests: { min: 1, max: 100 },
+  windowSeconds: { min: 1, max: 3_600 },
+} as const
 const ATTESTED_MULTIPLIER_LIMITS = { min: 1, max: 100 } as const
 
 export const routeRateLimitConfig = new DynamicConfig({
@@ -48,6 +52,8 @@ export const routeRateLimitConfig = new DynamicConfig({
     // ActivityPub inbox attempts per source IP, before signature verification
     activitypub_inbox_attempt_max_requests: 'number',
     activitypub_inbox_attempt_window_seconds: 'number',
+    follower_distribution_max_requests: 'number',
+    follower_distribution_window_seconds: 'number',
     // Signature-authenticated ActivityPub inbox deliveries per sender hostname
     activitypub_inbox_max_requests: 'number',
     activitypub_inbox_window_seconds: 'number',
@@ -65,6 +71,8 @@ export const routeRateLimitConfig = new DynamicConfig({
     attested_multiplier: ANON_ROUTE_RATE_LIMIT_DEFAULTS.attestedMultiplier,
     activitypub_inbox_attempt_max_requests: 300,
     activitypub_inbox_attempt_window_seconds: 60,
+    follower_distribution_max_requests: 10,
+    follower_distribution_window_seconds: 60,
     activitypub_inbox_max_requests: 60,
     activitypub_inbox_window_seconds: 60,
   },
@@ -161,4 +169,14 @@ function isFiniteNumberInRange(
 
 function isPositiveSafeInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value > 0
+}
+
+export function getFollowerDistributionMaxRequests(): number {
+  const value = routeRateLimitConfig.getFields().follower_distribution_max_requests
+  return isSafeIntegerInRange(value, FOLLOWER_DISTRIBUTION_LIMITS.maxRequests) ? value : 10
+}
+
+export function getFollowerDistributionWindowSeconds(): number {
+  const value = routeRateLimitConfig.getFields().follower_distribution_window_seconds
+  return isSafeIntegerInRange(value, FOLLOWER_DISTRIBUTION_LIMITS.windowSeconds) ? value : 60
 }

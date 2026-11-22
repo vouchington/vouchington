@@ -1,3 +1,4 @@
+import { enforceFollowerDistributionSenderRateLimit } from '../../follower-distribution-rate-limit.mts'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
@@ -36,6 +37,7 @@ app.route('/api/v1/posts/:idOrSlug/shares').post(async (ctx: Context) => {
 
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/posts/:idOrSlug/shares')
   assertNotSuspended(currentUser)
+  await enforceFollowerDistributionSenderRateLimit(ctx, currentUser.id)
   validateRequestContract(ctx, 'POST:/api/v1/posts/:idOrSlug/shares', { path: ctx.params })
 
   const result = await sharePostWithFollowers(currentUser, ctx.params.idOrSlug!)
@@ -47,6 +49,7 @@ app.route('/api/v1/posts/:idOrSlug/shares').post(async (ctx: Context) => {
 app.route('/api/v1/posts/:idOrSlug/sends').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/posts/:idOrSlug/sends')
   assertNotSuspended(currentUser)
+  await enforceFollowerDistributionSenderRateLimit(ctx, currentUser.id)
 
   apiRequestContract<'POST:/api/v1/posts/:idOrSlug/sends', SendFollowersRequestContract>(
     'POST:/api/v1/posts/:idOrSlug/sends',
