@@ -1,8 +1,7 @@
 import type { TestProjectConfiguration } from 'vitest/config'
 import { backendNoDataUnitTestFiles } from './backend-no-data-unit-tests.mts'
-import { retirementFile, retirementProject } from './backend-partition-retirement-project.mts'
 
-const backendDataStoreTestDefaults = {
+export const backendDataStoreTestDefaults = {
   pool: 'forks' as const,
   isolate: false,
   env: { PG_TEST_STATEMENT_TIMEOUT_MS: process.env.PG_TEST_STATEMENT_TIMEOUT_MS ?? '2000' }, // Leave SQL attribution and cleanup headroom inside the project deadline.
@@ -127,7 +126,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         'backend/api/v1/platform-stats/platform-stats.test.mts',
         'backend/services/ai-usage/__tests__/record-monthly-partition.test.mts',
         'backend/services/data-retention/cleanup-ai-usage*.test.mts',
-        retirementFile,
+        'backend/data-stores/psql/migration-runner/guard-and-retire-monthly-partition.test.mts',
       ],
     },
   },
@@ -146,7 +145,6 @@ export const backendDataProjects: TestProjectConfiguration[] = [
       exclude: ['**/node_modules/**', '**/.git/**'],
     },
   },
-  retirementProject(backendDataStoreTestDefaults),
   {
     extends: true,
     test: {
