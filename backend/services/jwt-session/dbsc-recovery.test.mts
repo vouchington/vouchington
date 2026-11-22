@@ -41,6 +41,33 @@ describe('browser device-bound recovery', () => {
     ).toBeNull()
   })
 
+  it('registers the winning credential when another request rotates without binding it', async () => {
+    const fixture = await createDbscTestSession()
+    const proof = await fixture.authorizeRegistration()
+    const sid = fixture.tokens.sessionToken.payload.sid
+    let winner: string | undefined
+    onTestFinished(
+      beforePostgresTransactionQueryForTest(
+        '/* rotateAuthenticatedDeviceToken */',
+        values => values.includes(sid),
+        async () => {
+          const rotated = await refreshSessionState(fixture.base)
+          winner = rotated.dt
+        },
+      ),
+    )
+
+    const result = await refreshSessionState({ ...fixture.base, dbscProof: proof })
+    expect(winner).toBeTypeOf('string')
+    expect(result.dt).toBe(winner)
+    expect(await readSessionDeviceAuthority(sid)).toMatchObject({
+      revoked_at: null,
+      device_token_digest: hashDeviceToken(result.dt),
+      previous_device_token_digest: hashDeviceToken(fixture.base.deviceToken),
+      device_bound_session_binding: { publicKey: fixture.publicKey },
+    })
+  })
+
   it('revokes the session when another rotation displaces a credential registering on replay', async () => {
     const fixture = await createDbscTestSession()
     const rotated = await refreshSessionState(fixture.base)

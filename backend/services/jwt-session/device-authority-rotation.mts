@@ -1,5 +1,6 @@
 import { assertDeviceBoundRefreshAllowed } from './dbsc-proof.mts'
 import type { DbscAuthorization, DeviceTokenPayload } from './types.mts'
+import type { DeviceBoundSessionBinding as RegistrationBinding } from './dbsc-state-schema.mts'
 import { randomUUID } from 'node:crypto'
 import { beginTransaction, registerPostCommitAction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -64,18 +65,8 @@ async function rotateVerifiedDeviceCredential(
       presentedDigest,
       options.dbscProof,
     )
-    if (registrationBinding) {
-      const { rowCount } = await query(
-        sql`/* registerReplayedDeviceCredentialBinding */
-        UPDATE user_sessions SET device_bound_session_binding = ${JSON.stringify(registrationBinding)}::jsonb
-        WHERE `.append(sessionAuthorityGuard(authority)).append(sql`
-          AND device_token_digest = ${authority.device_token_digest}
-          AND previous_device_token_digest = ${presentedDigest}
-          AND previous_device_token_grace_expires_at > clock_timestamp()
-          AND device_bound_session_binding IS NULL`),
-      )
-      if (rowCount !== 1) return await resolveRotationRace(authority, true)
-    }
+    if (registrationBinding && !(await bindReplay(authority, registrationBinding)))
+      return await resolveRotationRace(authority, 'attempted')
     await query.commit()
     return currentToken
   }
@@ -111,33 +102,49 @@ async function rotateVerifiedDeviceCredential(
       AND device_token_digest = ${presentedDigest}
       AND device_bound_session_binding IS NOT DISTINCT FROM ${serializeBinding(authority)}::jsonb`),
   )
-  if (rotatedRows !== 1) return await resolveRotationRace(authority, registrationBinding !== null)
+  if (rotatedRows !== 1) return await resolveRotationRace(authority, registrationBinding)
   await query.commit()
   return rotated
 
   async function resolveRotationRace(
     previous: SessionDeviceAuthorityRow,
-    registering: boolean,
+    registration: RegistrationBinding | 'attempted' | null,
   ): Promise<string> {
     const current = await readSessionDeviceAuthority(options.sid, query)
     assertDeviceCredentialAuthority(current, device, options)
     const exactReplay = isExactReplay(current)
     if (!exactReplay && current.device_token_digest !== presentedDigest)
       return revokeReusedCredential(current)
-    // The proof was consumed for the observed binding. A different binding needs fresh proof.
-    if ((exactReplay && registering) || serializeBinding(current) !== serializeBinding(previous))
+    if (serializeBinding(current) !== serializeBinding(previous))
       throw createCodedError(403, 'Device session proof required', DBSC_PROOF_REQUIRED)
     if (!exactReplay) throw sessionReloginRequired()
+    if (registration === 'attempted')
+      throw createCodedError(403, 'Device session proof required', DBSC_PROOF_REQUIRED)
     const token = await verifyStoredDeviceCredentialReplay(current, device, options)
+    if (registration && !(await bindReplay(current, registration)))
+      throw createCodedError(403, 'Device session proof required', DBSC_PROOF_REQUIRED)
     await query.commit()
     return token
+  }
+
+  async function bindReplay(row: SessionDeviceAuthorityRow, binding: RegistrationBinding) {
+    const { rowCount } = await query(
+      sql`/* registerReplayedDeviceCredentialBinding */
+      UPDATE user_sessions SET device_bound_session_binding = ${JSON.stringify(binding)}::jsonb
+      WHERE `.append(sessionAuthorityGuard(row)).append(sql`
+        AND device_token_digest = ${row.device_token_digest}
+        AND previous_device_token_digest = ${presentedDigest}
+        AND previous_device_token_grace_expires_at > clock_timestamp()
+        AND device_bound_session_binding IS NULL`),
+    )
+    return rowCount === 1
   }
 
   async function revokeReusedCredential(current: SessionDeviceAuthorityRow): Promise<never> {
     const { rowCount } = await query(
       sql`/* revokeReusedDeviceCredential */
       UPDATE user_sessions SET revoked_at = CURRENT_TIMESTAMP
-      WHERE `.append(sessionAuthorityGuard(current)).append(sql`
+      WHERE `.append(sessionAuthorityGuard()).append(sql`
         AND device_token_digest IS NOT NULL
         AND device_token_digest <> ${presentedDigest}
         AND NOT (${hasExactDeviceLifetime(current) && device.client === 'web'}
@@ -154,15 +161,17 @@ async function rotateVerifiedDeviceCredential(
     )
   }
 
-  function sessionAuthorityGuard(current: SessionDeviceAuthorityRow) {
-    return sql`id = ${options.sid} AND user_id = ${options.uid} AND device_id = ${options.did}
-      AND revoked_at IS NULL AND expires_at = ${current.expires_at}
-      AND expires_at > clock_timestamp()
-      AND device_token_issued_at = ${current.device_token_issued_at}
-      AND mfa_verified_at IS NOT DISTINCT FROM ${current.mfa_verified_at}
+  function sessionAuthorityGuard(current?: SessionDeviceAuthorityRow) {
+    const guard = sql`id = ${options.sid} AND user_id = ${options.uid} AND device_id = ${options.did}
+      AND revoked_at IS NULL AND expires_at > clock_timestamp()
       AND device_token_binding->>'client' = ${device.client}
       AND device_token_binding->>'ua_hash' IS NOT DISTINCT FROM ${device.client === 'web' ? device.ua_hash : null}
       AND device_token_binding->>'ja4_hash' IS NOT DISTINCT FROM ${device.client === 'web' ? (device.ja4_hash ?? null) : null}`
+    if (!current) return guard
+    return guard.append(sql`
+      AND expires_at = ${current.expires_at}
+      AND device_token_issued_at = ${current.device_token_issued_at}
+      AND mfa_verified_at IS NOT DISTINCT FROM ${current.mfa_verified_at}`)
   }
 
   function hasExactDeviceLifetime(row: SessionDeviceAuthorityRow): boolean {
