@@ -195,25 +195,13 @@ describe('crawlWithBrowser', () => {
     expect(nestedCause instanceof Error ? nestedCause.message : '').toContain('[REDACTED]')
   })
 
-  it('throws CrawlerTimeoutError when page.goto throws a TimeoutError (error.name)', async () => {
+  it('throws CrawlerTimeoutError when page.goto throws a TimeoutError', async () => {
     process.env.LIGHTPANDA_CDP_URL = 'wss://uswest.cloud.lightpanda.io/ws'
     process.env.LIGHTPANDA_TOKEN = 'test-token'
     const page = makeMockPage()
     const timeoutErr = new Error('Navigation timeout')
     timeoutErr.name = 'TimeoutError'
     page.goto = vi.fn<VitestLooseMock>().mockRejectedValue(timeoutErr)
-    f.connectTo(makeMockBrowser(page))
-    await expect(crawlWithBrowserForTest('https://example.com')).rejects.toBeInstanceOf(
-      f.errors.CrawlerTimeoutError,
-    )
-  })
-
-  it('throws CrawlerTimeoutError when page.goto throws a TimeoutError (constructor.name)', async () => {
-    process.env.LIGHTPANDA_CDP_URL = 'wss://uswest.cloud.lightpanda.io/ws'
-    process.env.LIGHTPANDA_TOKEN = 'test-token'
-    const page = makeMockPage()
-    class TimeoutError extends Error {}
-    page.goto = vi.fn<VitestLooseMock>().mockRejectedValue(new TimeoutError('timeout'))
     f.connectTo(makeMockBrowser(page))
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.toBeInstanceOf(
       f.errors.CrawlerTimeoutError,

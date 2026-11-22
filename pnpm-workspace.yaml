@@ -75,6 +75,7 @@ minimumReleaseAgeExclude:
   - '@vouchington/auth'
   - '@vouchington/aws'
   - '@vouchington/csv'
+  - '@vouchington/browser-crawl'
   - '@vouchington/crawler-html'
   - '@vouchington/embeds'
   - '@vouchington/email'

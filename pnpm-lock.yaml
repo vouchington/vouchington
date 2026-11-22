@@ -5048,6 +5048,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@vouchington/browser-crawl':
+        specifier: ^0.0.1
+        version: 0.0.1(playwright-core@1.65.1)
       playwright:
         specifier: ^1.65.1
         version: 1.65.1
@@ -14026,6 +14029,9 @@ importers:
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
+      '@vouchington/browser-crawl':
+        specifier: ^0.0.1
+        version: 0.0.1(playwright-core@1.65.1)
       '@vouchington/sentry':
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.12.0)(@sentry/core@11.12.0)(@sentry/node@11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
@@ -20869,6 +20875,12 @@ packages:
         optional: true
       '@smithy/node-http-handler':
         optional: true
+
+  '@vouchington/browser-crawl@0.0.1':
+    resolution: {integrity: sha512-rTERZpEOYYjdsdjq8+P0QnPncbAoTuvzKsAQcV7EqbUfteoFK+c+T6cQr7hZHyUB9uKskfLFRGQ3oogrSBeS7Q==}
+    engines: {node: '>=24.0.0'}
+    peerDependencies:
+      playwright-core: ^1.65.0
 
   '@vouchington/crawler-html@0.0.1':
     resolution: {integrity: sha512-2tSQTe3/o+zlhYxlzl4dJaLqu3BBkQ0VEAwKZzHyAIegESShE1ah+jwU7rKIjsJlIrPvxIoQhZMHidz2v2D8Tg==}
@@ -29803,6 +29815,10 @@ snapshots:
       '@aws-sdk/client-ses': 3.1169.0
       '@aws-sdk/client-sqs': 3.1169.0
       '@smithy/node-http-handler': 4.14.2
+
+  '@vouchington/browser-crawl@0.0.1(playwright-core@1.65.1)':
+    dependencies:
+      playwright-core: 1.65.1
 
   '@vouchington/crawler-html@0.0.1':
     dependencies:

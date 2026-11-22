@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as browserCrawl from '@services/browser-crawl'
-import type { BrowserCrawlResult } from '@services/browser-crawl'
+import type { BrowserCrawlResult } from '@vouchington/browser-crawl'
 import { createCrawler, type Crawler } from '@services/crawlers'
 import { addUrl } from '@services/urls'
 import { createUserReferralLink } from '@services/user-referral-program-links/create'
