@@ -1034,9 +1034,6 @@ importers:
       '@services/mcp-tools':
         specifier: workspace:^
         version: link:../services/mcp-tools
-      '@services/mcp-work-config':
-        specifier: workspace:^
-        version: link:../services/mcp-work-config
       '@services/media-delivery-safety':
         specifier: workspace:^
         version: link:../services/media-delivery-safety
@@ -1635,9 +1632,6 @@ importers:
       '@services/jwt-session':
         specifier: workspace:^
         version: link:../../services/jwt-session
-      '@services/mcp-work-config':
-        specifier: workspace:^
-        version: link:../../services/mcp-work-config
       '@services/post-classifier':
         specifier: workspace:^
         version: link:../../services/post-classifier

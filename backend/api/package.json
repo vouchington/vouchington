@@ -155,7 +155,6 @@
     "@services/localization": "workspace:^",
     "@services/markdown": "workspace:^",
     "@services/mcp-tools": "workspace:^",
-    "@services/mcp-work-config": "workspace:^",
     "@services/media-delivery-safety": "workspace:^",
     "@services/memberships": "workspace:^",
     "@services/messaging": "workspace:^",
