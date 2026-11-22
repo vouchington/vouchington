@@ -1,5 +1,6 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import type { CopyrightFormScreeningAttempt } from '../../../services/copyright-notices/form-screening-executions.mts'
 import { getPendingCopyrightStaffCases } from '../../../services/copyright-notices/read-models-staff-case.mts'
 import { claimCopyrightFormScreening } from '../../../services/copyright-notices/form-screening-executions.mts'
 import { getTestPostgresBackendProcessId } from '../../postgres-lock-wait.mts'
@@ -22,6 +23,24 @@ export async function selectTestCopyrightScreeningResult(
       copyright_notice_form_screening_id, started_at, completed_at)
     SELECT ${intakeId}, MAX(attempt_number) + 1, ${screeningId}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
     FROM copyright_notice_form_screening_attempts WHERE copyright_notice_form_intake_id = ${intakeId}
+  `)
+}
+
+/** Violate number uniqueness or ID uniqueness using only this test's owned attempt. */
+export async function insertConflictingTestCopyrightScreeningAttempt(
+  transaction: QueryExecutor,
+  attempt: CopyrightFormScreeningAttempt,
+  duplicateAttemptId: boolean,
+): Promise<void> {
+  await transaction(sql`/* insertConflictingTestCopyrightScreeningAttempt */
+    INSERT INTO copyright_notice_form_screening_attempts (
+      id, copyright_notice_form_intake_id, attempt_number
+    )
+    SELECT CASE WHEN ${duplicateAttemptId} THEN id ELSE uuidv7() END,
+      copyright_notice_form_intake_id, attempt_number + ${duplicateAttemptId ? 1 : 0}
+    FROM copyright_notice_form_screening_attempts
+    WHERE copyright_notice_form_intake_id = ${attempt.intakeId}
+      AND attempt_number = ${attempt.attemptNumber}
   `)
 }
 

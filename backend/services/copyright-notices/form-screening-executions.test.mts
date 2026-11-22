@@ -6,6 +6,7 @@ import {
   readCopyrightNoticeTargetIds,
 } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import {
+  insertConflictingTestCopyrightScreeningAttempt,
   readTestCopyrightScreeningExecution,
   readTestCopyrightStaffScreening,
   getTestExpiredCopyrightScreeningClaimTime,
@@ -87,6 +88,59 @@ describe('current copyright form screening execution', () => {
         lease_token: leaseToken,
       })
       await expect(claimCopyrightFormScreening(intake.id)).resolves.toBeNull()
+    },
+  )
+
+  it.each([
+    {
+      constraint: 'uq_copyri_notice_form_screen_attempt__intake_id__attempt_number',
+      duplicateAttemptId: false,
+      expectedClaim: { value: null },
+    },
+    {
+      constraint: 'copyright_notice_form_screening_attempts_pkey',
+      duplicateAttemptId: true,
+      expectedClaim: { reason: { code: '23505' } },
+    },
+  ])(
+    'rolls back the expired attempt on a $constraint violation',
+    async ({ constraint, duplicateAttemptId, expectedClaim }) => {
+      const { intake } = await createSignedInCopyrightForm()
+      const initial = await claimCopyrightFormScreening(intake.id)
+      if (!initial) throw new Error('Initial screening claim was not created')
+      const cutoff = await getTestExpiredCopyrightScreeningClaimTime(intake.id)
+      let constraintFailure: unknown
+      const restore = afterPostgresTransactionQueryForTest(
+        'startCopyrightFormScreening:finishPrior',
+        values => values.includes(intake.id),
+        async transaction => {
+          try {
+            await insertConflictingTestCopyrightScreeningAttempt(
+              transaction,
+              initial,
+              duplicateAttemptId,
+            )
+          } catch (err) {
+            constraintFailure = err
+            throw err
+          }
+        },
+      )
+      try {
+        const claim = await claimCopyrightFormScreening(intake.id, cutoff)
+          .then(value => ({ value }))
+          .catch((err: unknown) => ({ reason: err }))
+        expect(claim).toMatchObject(expectedClaim)
+      } finally {
+        restore()
+      }
+      expect(constraintFailure).toMatchObject({ code: '23505', constraint })
+      await expect(readTestCopyrightScreeningExecution(intake.id)).resolves.toMatchObject({
+        attempt_number: initial.attemptNumber,
+        state: 'pending',
+        execution_token: initial.leaseToken,
+        lease_token: initial.leaseToken,
+      })
     },
   )
 

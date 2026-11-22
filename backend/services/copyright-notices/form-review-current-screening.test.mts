@@ -1,4 +1,7 @@
-import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
+import {
+  appendTestCopyrightFormScreening,
+  prepareTestCopyrightScreeningAttempt,
+} from '@voucha/test-helpers/copyright-form-screenings'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { eraseTestCopyrightFormRequester } from '@voucha/test-helpers/data-stores/psql/copyright-screening-executions'
@@ -9,10 +12,7 @@ import {
 } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { reviewCopyrightFormIntake } from './form-reviews.mts'
 
-import {
-  claimCopyrightFormScreening,
-  failCopyrightFormScreening,
-} from './form-screening-executions.mts'
+import { failCopyrightFormScreening } from './form-screening-executions.mts'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
@@ -42,7 +42,7 @@ describe('human form review with changing screening authority', () => {
 
   it('replays durable human approval after failed screening becomes clear and rejects an opposite decision', async () => {
     const [{ intake }, user] = await Promise.all([createSignedInCopyrightForm(), createTestUser()])
-    await failCopyrightFormScreening((await claimCopyrightFormScreening(intake.id))!)
+    await failCopyrightFormScreening(await prepareTestCopyrightScreeningAttempt(intake.id))
     const input = {
       intakeId: intake.id,
       currentUser: { ...user, roles: ['moderator'] },

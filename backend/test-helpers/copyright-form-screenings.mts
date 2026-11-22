@@ -10,14 +10,14 @@ type CopyrightFormScreeningResultInput = Parameters<typeof completeCopyrightForm
 export async function appendTestCopyrightFormScreening(
   input: CopyrightFormScreeningResultInput,
 ): Promise<string> {
-  const attempt = await prepareTestCopyrightScreeningCompletion(input.intakeId)
+  const attempt = await prepareTestCopyrightScreeningAttempt(input.intakeId)
   const result = await completeCopyrightFormScreening(attempt, input)
   if (!result) throw new Error('Copyright screening attempt was superseded')
   return result
 }
 
-/** Result fixtures own the entire intake and do not exercise competing claim admission. */
-async function prepareTestCopyrightScreeningCompletion(
+/** Prepare an owned attempt so completion and failure fixtures do not compete for claim admission. */
+export async function prepareTestCopyrightScreeningAttempt(
   intakeId: string,
 ): Promise<CopyrightFormScreeningAttempt> {
   await using transaction = await beginTransaction()
@@ -26,7 +26,7 @@ async function prepareTestCopyrightScreeningCompletion(
     attempt_number: number
     state: string
     execution_started_at: Date | null
-  }>(sql`/* prepareTestCopyrightScreeningCompletion:current */
+  }>(sql`/* prepareTestCopyrightScreeningAttempt:current */
     SELECT id, attempt_number, state, execution_started_at
     FROM copyright_notice_form_screening_attempts
     WHERE copyright_notice_form_intake_id = ${intakeId}
@@ -43,14 +43,14 @@ async function prepareTestCopyrightScreeningCompletion(
   const result =
     current.state === 'failed'
       ? await transaction<{ attempt_number: number; execution_token: string }>(sql`
-        /* prepareTestCopyrightScreeningCompletion:replacement */
+        /* prepareTestCopyrightScreeningAttempt:replacement */
         INSERT INTO copyright_notice_form_screening_attempts (
           copyright_notice_form_intake_id, attempt_number, started_at, execution_started_at
         ) VALUES (${intakeId}, ${current.attempt_number + 1}, statement_timestamp(), statement_timestamp())
         RETURNING attempt_number, execution_token
       `)
       : await transaction<{ attempt_number: number; execution_token: string }>(sql`
-        /* prepareTestCopyrightScreeningCompletion:start */
+        /* prepareTestCopyrightScreeningAttempt:start */
         UPDATE copyright_notice_form_screening_attempts
         SET execution_started_at = clock_timestamp()
         WHERE id = ${current.id}
