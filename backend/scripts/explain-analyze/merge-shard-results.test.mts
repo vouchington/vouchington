@@ -1,8 +1,8 @@
+import type { ExplainResult } from '@vouchington/explain-plan'
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import type { ExplainResult } from '@data-stores/psql'
 import {
   EXPLAIN_SHARDS,
   PARTITION_SHARD_SCENARIO_IDS,

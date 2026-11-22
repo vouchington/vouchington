@@ -1,6 +1,6 @@
-import type { ExplainResult } from '@data-stores/psql'
+import { collectPlanNodes, type ExplainResult, type PlanNode } from '@vouchington/explain-plan'
 import { getTopicsWorkLimit } from '@services/topics/work-limits'
-import { baseRelationName, collectPlanNodes, type PlanNode } from '../plan-nodes.mts'
+import { baseRelationName } from '../plan-nodes.mts'
 import {
   validRecursiveWalk,
   topicViewerPlanChildren,

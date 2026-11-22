@@ -1,5 +1,5 @@
+import type { ExplainResult } from '@vouchington/explain-plan'
 import { describe, expect, it } from 'vitest'
-import type { ExplainResult } from '@data-stores/psql'
 import { assertStoryProjectionClaimCandidates } from './story-projection-claim.mts'
 
 function capturedSort(type: 'Sort' | 'Incremental Sort', rows: number, loops = 1): ExplainResult {

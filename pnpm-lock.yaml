@@ -1463,6 +1463,9 @@ importers:
         specifier: ^3.5.3
         version: 3.5.3(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.112(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
     devDependencies:
+      '@vouchington/explain-plan':
+        specifier: ^0.0.1
+        version: 0.0.1
       no-mistakes:
         specifier: ^0.109.112
         version: 0.109.112(vitest@5.1.0)
@@ -4014,6 +4017,9 @@ importers:
       '@services/openai-agents':
         specifier: workspace:^
         version: link:../services/openai-agents
+      '@vouchington/explain-plan':
+        specifier: ^0.0.1
+        version: 0.0.1
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -13059,6 +13065,9 @@ importers:
       '@types/supertest':
         specifier: ^7.2.1
         version: 7.2.1
+      '@vouchington/explain-plan':
+        specifier: ^0.0.1
+        version: 0.0.1
       stripe:
         specifier: ^23.1.0
         version: 23.1.0(@types/node@26.6.6)
@@ -20899,6 +20908,10 @@ packages:
 
   '@vouchington/embeds@0.1.0':
     resolution: {integrity: sha512-bntvy/s7Dvug+vFSUGtAUMeD6DOYgENnZe8V/V2I8bRmjyHU9eP4eRFOw2zpFtGCGfQlQPxDTtKp3HIwtGeIvA==}
+    engines: {node: '>=24.0.0'}
+
+  '@vouchington/explain-plan@0.0.1':
+    resolution: {integrity: sha512-xg2E6aeYhrAgErBQjCd4LApm23gwY2vshHr5mlN0+oFVows5nSdp7wK3Pd66Uk5j0zvNVckKOmHnKbsXMna09A==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/frontmatter@0.0.0':
@@ -29832,6 +29845,8 @@ snapshots:
       '@vouchington/crawler-html': 0.0.1
       '@vouchington/http-transport': 0.1.1
       parse5: 8.1.1
+
+  '@vouchington/explain-plan@0.0.1': {}
 
   '@vouchington/frontmatter@0.0.0':
     dependencies:

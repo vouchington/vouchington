@@ -1,5 +1,4 @@
-import type { ExplainResult } from '@data-stores/psql'
-import { hasLaunchedParallelWorkers } from './plan-node-stats.mts'
+import { type ExplainResult, hasLaunchedParallelWorkers } from '@vouchington/explain-plan'
 import { getScenarioContract, type PlanExpectation } from './plan-expectations.mts'
 
 type FunctionCallExpectation = Extract<PlanExpectation, { kind: 'maxFunctionCalls' }>

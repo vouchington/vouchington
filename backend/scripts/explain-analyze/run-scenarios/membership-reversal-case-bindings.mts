@@ -1,3 +1,4 @@
+import { collectPlanNodes } from '@vouchington/explain-plan'
 import { randomUUID } from 'node:crypto'
 import { beginTransaction, write } from '@data-stores/psql'
 import {
@@ -7,7 +8,6 @@ import {
 import type { CreateProviderMembershipSourceOptions } from '@services/memberships/create-types'
 import { createProviderMembershipSource } from '@services/memberships/provider-source'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import { collectPlanNodes } from '../plan-nodes.mts'
 import { getResults, runAndCapture, seedUser } from '../run-support.mts'
 
 export async function runMembershipReversalBindingScenarios(

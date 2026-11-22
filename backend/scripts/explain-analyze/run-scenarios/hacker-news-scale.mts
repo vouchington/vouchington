@@ -1,4 +1,5 @@
-import { read, type ExplainResult } from '@data-stores/psql'
+import type { ExplainResult } from '@vouchington/explain-plan'
+import { read } from '@data-stores/psql'
 import { postsWorkConfig } from '@services/posts/work-limits'
 import { prepareOutputDir } from '../run-support.mts'
 import {

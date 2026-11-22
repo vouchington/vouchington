@@ -51,6 +51,7 @@ engineStrict: true
 minimumReleaseAge: 2880
 minimumReleaseAgeExclude:
   - '@vouchington/api-client'
+  - '@vouchington/explain-plan'
   - '@vouchington/dynamic-config'
   - '@jongleberry/api-server'
   - '@jongleberry/vurst-ai'

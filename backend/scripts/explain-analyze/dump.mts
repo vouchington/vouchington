@@ -5,11 +5,10 @@
 //   pnpm run explain:dump                          # print to stdout
 //   pnpm run explain:dump | your-llm-cli -p "analyze..." # replace 'your-llm-cli' with your actual LLM CLI
 //
+import { type ExplainResult, hasLaunchedParallelWorkers } from '@vouchington/explain-plan'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { ExplainResult } from '@data-stores/psql'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
-import { hasLaunchedParallelWorkers } from './plan-node-stats.mts'
 
 const OUTPUT_DIR = join(import.meta.dirname, 'output')
 

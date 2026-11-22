@@ -1,4 +1,4 @@
-import type { ExplainResult } from '@data-stores/psql'
+import type { ExplainResult } from '@vouchington/explain-plan'
 import { describe, expect, it, vi } from 'vitest'
 import { analyzePairedResults } from './analyze-command.mts'
 import { assertNoGenericPlanRegressions } from './generic-plan-regressions.mts'
@@ -19,7 +19,7 @@ describe('explain analyze paired results', () => {
         }),
       )
       analyzePairedResults('fixture.json', results, results, {})
-      const lines = output.mock.calls.map(([line]) => line)
+      const lines = output.mock.calls.flatMap(([text]) => String(text).split('\n'))
       expect(lines).toContain('| get_heavy_posts | baseline | 1.0 | 1.0 | - |')
       expect(lines).toContain('| get_posts | heavy | 1.0 | 1.0 | - |')
       expect(lines).toContain('| get_posts:heavy-follow-users | heavy | 1.0 | 1.0 | - |')

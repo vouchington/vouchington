@@ -1,5 +1,4 @@
-import type { ExplainResult } from '@data-stores/psql'
-import { collectPlanNodes } from '../plan-nodes.mts'
+import { collectPlanNodes, type ExplainResult } from '@vouchington/explain-plan'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 export function assertRssRecencyLateCursorPlan(result: ExplainResult): void {

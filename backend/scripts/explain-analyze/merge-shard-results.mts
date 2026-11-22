@@ -1,6 +1,6 @@
+import type { ExplainResult } from '@vouchington/explain-plan'
 import { copyFileSync, existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { ExplainResult } from '@data-stores/psql'
 import { EXPLAIN_SHARDS, getShardScenarioIds, type ExplainShard } from './explain-shards.mts'
 import { loadLatestPairedResults } from './paired-results.mts'
 import { assertScenarioManifest } from './scenario-manifest-check.mts'

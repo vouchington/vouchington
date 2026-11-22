@@ -1,5 +1,4 @@
-import type { ExplainResult } from '@data-stores/psql'
-import { collectPlanNodes, processedRows } from '../plan-nodes.mts'
+import { collectPlanNodes, type ExplainResult, processedRows } from '@vouchington/explain-plan'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const REMOTE_FOLLOWER_INDEX = 'idx_relation__remote_actor__follow__user__active_reverse'

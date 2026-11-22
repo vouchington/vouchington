@@ -1,5 +1,6 @@
+import { collectPlanNodes, processedRows } from '@vouchington/explain-plan'
 import { getResults } from '../run-support.mts'
-import { baseRelationName, collectPlanNodes, processedRows } from '../plan-nodes.mts'
+import { baseRelationName } from '../plan-nodes.mts'
 import {
   getCommentDescendantMaxDepth,
   getCommentDescendantReadLimits,

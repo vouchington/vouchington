@@ -1,4 +1,5 @@
-import { baseRelationName, type PlanNode } from '../plan-nodes.mts'
+import type { PlanNode } from '@vouchington/explain-plan'
+import { baseRelationName } from '../plan-nodes.mts'
 import {
   topicViewerCte,
   topicViewerSourceCte,

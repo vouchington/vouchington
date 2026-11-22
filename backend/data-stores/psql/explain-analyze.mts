@@ -1,18 +1,14 @@
-import { randomUUID } from 'node:crypto'
-import sql from 'sql-template-strings'
+import {
+  explainAnalyze as captureExplain,
+  type ExplainPlanCacheMode,
+  type ExplainResult,
+} from '@vouchington/explain-plan'
 import onError from '@modules/on-error'
 import type { QueryInput } from './types.mts'
 import { connectWithRetry } from './connect-with-retry.mts'
 import { readPool } from './setup.mts'
 import { LEADING_QUERY_ANNOTATION_PATTERN } from './prepared-statement-name.mts'
-import { buildExplainPreparedStatementText, buildPreparedArgumentSql } from './explain-prepared.mts'
-import {
-  functionCallsSince,
-  readTransactionFunctionCalls,
-  type FunctionCall,
-} from './explain-function-calls.mts'
 
-export { type FunctionCall } from './explain-function-calls.mts'
 export {
   clearCapturedQueries,
   disableQueryCapture,
@@ -20,23 +16,6 @@ export {
   getCapturedQueries,
   runWithCapturedQueries,
 } from './query-capture.mts'
-
-export interface ExplainResult {
-  name: string
-  query_text: string
-  plan: unknown
-  execution_time_ms: number
-  planning_time_ms: number
-  timestamp: string
-  jit_mode?: 'on' | 'off'
-  plan_cache_mode?: ExplainPlanCacheMode
-  scenario_id?: string
-  capture_index?: number
-  function_calls?: FunctionCall[]
-  function_calls_serial?: boolean
-}
-
-export type ExplainPlanCacheMode = 'auto' | 'force_custom_plan' | 'force_generic_plan'
 
 // Production (Aurora Serverless v2) auto-tunes work_mem from live ACU capacity, so there is no
 // fixed production value to pin app-wide. EXPLAIN capture is the one place that needs a fixed,
@@ -82,74 +61,24 @@ export async function explainAnalyze(
     throw new Error('Unable to extract SQL text from input')
   }
 
-  // Strip existing annotation comment for EXPLAIN
-  const cleanText = text.replace(LEADING_QUERY_ANNOTATION_PATTERN, '').trimStart()
-  const preparedStatementName = `explain_${randomUUID().replaceAll('-', '')}`
-  const prepareText = `PREPARE ${preparedStatementName} AS ${cleanText}`
-
-  const jitMode = options.jit ?? getExplainJitMode()
-  const planCacheMode = options.planCacheMode ?? 'auto'
-  const client = await connectWithRetry(readPool)
-  let rows: Array<Record<string, unknown>>
-  let functionCalls: FunctionCall[] = []
-  let prepared = false
-  try {
-    await client.query(sql`/* explainAnalyze */ BEGIN`)
-    try {
-      await client.query("/* explainAnalyze */ SET LOCAL track_functions = 'all'")
-    } catch (err) {
-      throw new Error('EXPLAIN requires SET privilege on track_functions', { cause: err })
-    }
-    // Configure before PREPARE so generic planning and execution use identical settings.
-    await client.query(sql`/* explainAnalyze */
-      SELECT set_config(key, value, true)
-      FROM jsonb_each_text(${JSON.stringify({
-        ...options.localSettings,
-        jit: jitMode,
-        plan_cache_mode: planCacheMode,
-        work_mem: EXPLAIN_WORK_MEM,
-      })}::jsonb)`)
-    if (options.setupSql) await client.query(`/* explainAnalyze:setup */ ${options.setupSql}`)
-    await client.query(`/* explainAnalyze */ ${prepareText}`)
-    prepared = true
-    const argumentSql = await buildPreparedArgumentSql(client, preparedStatementName, values ?? [])
-    const explainText = buildExplainPreparedStatementText(
-      preparedStatementName,
-      argumentSql,
-      options.planOnly,
-    )
-    const beforeFunctions = await readTransactionFunctionCalls(client)
-    const queryResult = await client.query(explainText)
-    functionCalls = functionCallsSince(beforeFunctions, await readTransactionFunctionCalls(client))
-    await client.query(`/* explainAnalyze */ DEALLOCATE ${preparedStatementName}`)
-    prepared = false
-    await client.query(sql`/* explainAnalyze */ ROLLBACK`)
-    rows = queryResult.rows as Array<Record<string, unknown>>
-  } catch (err) {
-    await client.query(sql`/* explainAnalyze */ ROLLBACK`).catch(onError)
-    if (prepared) {
-      await client.query(`/* explainAnalyze */ DEALLOCATE ${preparedStatementName}`).catch(onError)
-    }
-    throw err
-  } finally {
-    client.release()
-  }
-  const plan = rows[0]?.['QUERY PLAN'] ?? rows[0]
-
-  // Extract timing from the plan
-  const planData = Array.isArray(plan) ? plan[0] : plan
-
-  return {
+  return captureExplain({
+    ...options,
+    withClient: async run => {
+      const client = await connectWithRetry(readPool)
+      try {
+        return await run(client)
+      } finally {
+        client.release()
+      }
+    },
     name,
-    query_text: text,
-    plan: planData,
-    execution_time_ms: planData?.['Execution Time'] ?? 0,
-    planning_time_ms: planData?.['Planning Time'] ?? 0,
-    timestamp: new Date().toISOString(),
-    jit_mode: jitMode,
-    plan_cache_mode: planCacheMode,
-    function_calls: functionCalls,
-  }
+    text,
+    values: values ?? [],
+    jit: options.jit ?? getExplainJitMode(),
+    workMem: EXPLAIN_WORK_MEM,
+    statementTag: 'explainAnalyze',
+    onCleanupError: error => onError(error instanceof Error ? error : new Error(String(error))),
+  })
 }
 
 function getExplainJitMode(): 'on' | 'off' {

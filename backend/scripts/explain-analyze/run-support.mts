@@ -1,3 +1,4 @@
+import type { ExplainPlanCacheMode, ExplainResult } from '@vouchington/explain-plan'
 import '@backend/service-registrations'
 import {
   enableQueryCapture,
@@ -5,8 +6,6 @@ import {
   getCapturedQueries,
   clearCapturedQueries,
   extractQueryName,
-  type ExplainPlanCacheMode,
-  type ExplainResult,
 } from '@data-stores/psql'
 import { captureNamedRawPoolQueries, selectCapturedSetupSql } from './raw-pool-query-capture.mts'
 import type { PrivateUser } from '@services/users/types'

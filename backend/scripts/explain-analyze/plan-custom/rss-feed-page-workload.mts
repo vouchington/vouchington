@@ -1,9 +1,14 @@
-import type { ExplainResult } from '@data-stores/psql'
+import {
+  collectPlanNodes,
+  type ExplainResult,
+  getLargeTableSeqScanRelations,
+  processedRows,
+} from '@vouchington/explain-plan'
 import { SEEDED_ROWS_BY_RELATION } from '../plan-seeded-rows.mts'
 import { SEMANTIC_RSS_STORY_MEMBER_COUNT } from '../seed-data/semantic-rss-feed-items.mts'
 import { STORY_POST_RELATED_URL_PROJECTION_SEED_COUNT } from '../seed-data/story-post-related-url-projection.mts'
-import { baseRelationName, collectPlanNodes, processedRows } from '../plan-nodes.mts'
-import { getLargeTableSeqScanRelations } from '../plan-warnings.mts'
+import { baseRelationName } from '../plan-nodes.mts'
+import { PLAN_ANALYSIS_OPTIONS } from '../plan-analysis-options.mts'
 import {
   RSS_FEED_WEEKLY_STORY_ITEM_COUNT,
   RSS_FEED_WEEKLY_WORKLOAD_SOURCE_COUNT,
@@ -25,7 +30,7 @@ const TOTAL_STORY_MEMBER_ROWS =
 export function assertRssFeedPageWorkloadIsBounded(result: ExplainResult): void {
   if (!result.scenario_id?.startsWith('rss-feed-item-feed')) return
   const nodes = collectPlanNodes(result.plan)
-  const sequentialRelations = getLargeTableSeqScanRelations(result)
+  const sequentialRelations = getLargeTableSeqScanRelations(result, PLAN_ANALYSIS_OPTIONS)
   if (sequentialRelations.length)
     throw new Error(
       `${result.name} must keep the week and membership filters indexed; sequential scans: ${sequentialRelations.join(', ')}`,

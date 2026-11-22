@@ -1,20 +1,17 @@
-import { createHash } from 'node:crypto'
-import { writeFileSync } from 'node:fs'
 import {
-  explainAnalyze,
-  write,
   type ExplainPlanCacheMode,
   type ExplainResult,
-} from '@data-stores/psql'
-import { assertRequiredPlanShape } from './plan-gates.mts'
-import { hasLaunchedParallelWorkers } from './plan-node-stats.mts'
-import { getScenarioContract } from './plan-expectations.mts'
-import { getLargeTableSeqScanRelations } from './plan-warnings.mts'
-import {
   getExplainResultIdentity,
-  getResampleRelations,
-  SEQ_SCAN_BASELINE,
-} from './seq-scan-baseline.mts'
+  getLargeTableSeqScanRelations,
+  hasLaunchedParallelWorkers,
+} from '@vouchington/explain-plan'
+import { createHash } from 'node:crypto'
+import { writeFileSync } from 'node:fs'
+import { explainAnalyze, write } from '@data-stores/psql'
+import { assertRequiredPlanShape } from './plan-gates.mts'
+import { getScenarioContract } from './plan-expectations.mts'
+import { PLAN_ANALYSIS_OPTIONS } from './plan-analysis-options.mts'
+import { getResampleRelations, SEQ_SCAN_BASELINE } from './seq-scan-baseline.mts'
 import { costWithoutSeqScan, forcedSeqScan, type ProbedExplainResult } from './seq-scan-ties.mts'
 
 export type BeforeExplain = (input: {
@@ -49,7 +46,7 @@ const resample = { statements: 0, milliseconds: 0 }
 // flip across databases. Price the same statement without sequential scans, plan only, so the
 // gate can tell a near-tie from a missing index (see seq-scan-ties.mts).
 async function probeSeqScanAlternative(input: Capture, result: ProbedExplainResult) {
-  const scannedRelations = getLargeTableSeqScanRelations(result)
+  const scannedRelations = getLargeTableSeqScanRelations(result, PLAN_ANALYSIS_OPTIONS)
   await probeBaselinedScans(input, result, scannedRelations)
   if (scannedRelations.length === 0) return
   const probe = await explainAnalyze(input.name, input.text, input.values, {

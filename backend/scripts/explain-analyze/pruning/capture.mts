@@ -1,3 +1,4 @@
+import type { ExplainResult } from '@vouchington/explain-plan'
 import {
   beginTransaction,
   clearCapturedQueries,
@@ -7,7 +8,6 @@ import {
   extractQueryName,
   getCapturedQueries,
   read,
-  type ExplainResult,
 } from '@data-stores/psql'
 import { getPostByAny } from '@services/posts/get'
 import { getConversationMessagesByConversationId } from '@services/conversations-messages/messages'

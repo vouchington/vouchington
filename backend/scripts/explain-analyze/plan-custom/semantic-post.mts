@@ -1,5 +1,5 @@
-import type { ExplainResult } from '@data-stores/psql'
-import { baseRelationName, collectPlanNodes, processedRows } from '../plan-nodes.mts'
+import { collectPlanNodes, type ExplainResult, processedRows } from '@vouchington/explain-plan'
+import { baseRelationName } from '../plan-nodes.mts'
 import { SEMANTIC_POST_CANDIDATE_LIMIT } from '@services/posts/search/query-builder/semantic-candidates'
 
 // Literal bound under custom plans, parameter under generic plans.

@@ -1,5 +1,5 @@
+import type { ExplainResult } from '@vouchington/explain-plan'
 import { describe, expect, it, vi } from 'vitest'
-import type { ExplainResult } from '@data-stores/psql'
 
 describe('indexed setup fixtures', () => {
   it.each([
