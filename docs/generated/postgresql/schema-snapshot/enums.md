@@ -1595,6 +1595,7 @@
 
 - `superseded_versions`
 - `pass_evidence`
+- `agent_moderation_repair`
 
 ## `post_moderation_sources`
 

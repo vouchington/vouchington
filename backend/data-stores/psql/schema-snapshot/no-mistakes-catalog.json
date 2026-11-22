@@ -1216,7 +1216,7 @@
       "values": ["pass", "review", "reject", "incomplete"]
     },
     "post_moderation_retention_kinds": {
-      "values": ["superseded_versions", "pass_evidence"]
+      "values": ["superseded_versions", "pass_evidence", "agent_moderation_repair"]
     },
     "post_moderation_sources": {
       "values": ["openai_omni", "spam_detection", "staff"]
@@ -97761,7 +97761,7 @@
           "ordinalPosition": 3
         },
         "cursor_lower_bound_record_id": {
-          "comment": "Frozen lower bound of the active pass; a broader requested scope restarts rather than skipping its earlier rows.",
+          "comment": "Frozen lower bound of the ledger pass, or the post UUID tie-breaker of the last agent moderation examined during repair.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -97791,7 +97791,7 @@
           "ordinalPosition": 2
         },
         "kind": {
-          "comment": "Ledger stream whose progress this row records.",
+          "comment": "Moderation retention stream whose progress this row records.",
           "dataType": "post_moderation_retention_kinds",
           "defaultExpression": null,
           "generated": null,
@@ -97841,7 +97841,7 @@
           "ordinalPosition": 9
         }
       },
-      "comment": "Durable UUIDv7 positions for bounded post moderation ledger retention.",
+      "comment": "Durable UUIDv7 positions for bounded post moderation and agent moderation repair.",
       "foreignKeys": {},
       "indexes": {
         "post_moderation_retention_cursors_pkey": {
