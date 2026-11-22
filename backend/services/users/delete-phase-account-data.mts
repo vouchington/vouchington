@@ -10,10 +10,11 @@ export async function processUserDeletionAccountDataBatch(
     const referrals = await query(sql`/* processUserDeletionAccountData:referrals */
       WITH candidates AS (
         SELECT id FROM session_referral_attributions
-        WHERE user_id = ${userId} ORDER BY id LIMIT ${batchSize} FOR UPDATE
+        WHERE user_id = ${userId} ORDER BY id LIMIT ${batchSize}
       )
       UPDATE session_referral_attributions SET user_id = NULL
       FROM candidates WHERE session_referral_attributions.id = candidates.id
+        AND session_referral_attributions.user_id = ${userId}
     `)
     if ((referrals.rowCount ?? 0) > 0) return { hasMore: true }
 
