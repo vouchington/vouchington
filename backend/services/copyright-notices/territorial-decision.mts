@@ -71,7 +71,7 @@ export async function recordTerritorialCopyrightDecision(
   const { rows: receipts } = await transaction<{ id: string; received_at: Date }>(sql`
     /* recordTerritorialCopyrightDecision:receipt */
     SELECT id, received_at FROM copyright_territorial_notice_receipts
-    WHERE copyright_notice_id = ${noticeId} AND jurisdiction = ${jurisdiction} FOR UPDATE
+    WHERE copyright_notice_id = ${noticeId} AND jurisdiction = ${jurisdiction}
   `)
   const receipt = receipts[0]
   assert(receipt, 404, labels.noticeNotFound)

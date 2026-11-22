@@ -115,7 +115,6 @@ export async function recordEuDisputeSettlementOutcome(
     /* recordEuDisputeSettlementOutcome:referral */
     SELECT referred_at FROM copyright_eu_dispute_settlement_referrals
     WHERE id = ${referralId} AND copyright_notice_id = ${noticeId} AND jurisdiction = 'eu_dsa'
-    FOR UPDATE
   `)
   const referral = referrals[0]
   assert(referral, 404, 'EU dispute settlement referral not found')
@@ -159,7 +158,6 @@ export async function recordEuDisputeSettlementImplementation(
       ON referral.id = outcome.copyright_eu_dispute_settlement_referral_id
     WHERE referral.id = ${referralId} AND referral.copyright_notice_id = ${noticeId}
       AND referral.jurisdiction = 'eu_dsa'
-    FOR UPDATE OF outcome
   `)
   const outcome = rows[0]
   assert(outcome, 404, 'EU dispute settlement outcome not found')
@@ -173,9 +171,10 @@ export async function recordEuDisputeSettlementImplementation(
   const { rows: updated } = await transaction<EuDisputeSettlementOutcome>(sql`
     /* recordEuDisputeSettlementImplementation */
     UPDATE copyright_eu_dispute_settlement_outcomes SET implemented_at = ${implementedAt}
-    WHERE id = ${outcome.id} RETURNING id, result, implemented_at
+    WHERE id = ${outcome.id} AND implemented_at IS NULL
+    RETURNING id, result, implemented_at
   `)
-  assert(updated[0], 500, 'EU dispute settlement implementation was not recorded')
+  assert(updated[0], 409, 'EU dispute settlement outcome already implemented')
   await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   await transaction.commit()
   return updated[0]

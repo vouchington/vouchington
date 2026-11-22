@@ -30,9 +30,9 @@ export async function readEuCopyrightReportCoveragePage(
 ): Promise<EuReportCoveragePage> {
   assert(Number.isInteger(limit) && limit >= 1 && limit <= 100, 500, 'Invalid coverage page size')
   const { rows: notices } = await query<{ last_legal_activity_at: Date }>(sql`
-    /* readEuCopyrightReportCoveragePage.lockNotice */
+    /* readEuCopyrightReportCoveragePage.notice */
     SELECT last_legal_activity_at FROM copyright_notices
-    WHERE id = ${noticeId}::uuid AND jurisdiction = 'eu_dsa' FOR UPDATE
+    WHERE id = ${noticeId}::uuid AND jurisdiction = 'eu_dsa'
   `)
   const notice = notices[0]
   if (!notice) return { covered: false, hasMore: false, nextId: null, lastLegalActivityAt: null }
