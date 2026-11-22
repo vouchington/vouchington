@@ -143,6 +143,7 @@
     "no-mistakes/react-no-use-promise-resolve": "error",
     "no-mistakes/react-no-iife-in-jsx": "error",
     "react-doctor/advanced-event-handler-refs": "error",
+    "react-doctor/no-unsafe-json-parse": "error",
     "react-doctor/effect-needs-cleanup": "error",
     "react-doctor/nextjs-no-client-fetch-for-server-data": "error",
     "react-doctor/nextjs-no-client-side-redirect": "error",
