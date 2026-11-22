@@ -9,7 +9,7 @@ export async function processTopicMergeOperationPage(
   expectedGeneration: number,
 ): Promise<number | null> {
   await using query = await beginTransaction()
-  // no-mistakes-disable-next-line postgres-required-predicates: committed redirect sources remain readable while this operation settles effects and cleanup.
+  // no-mistakes-disable-next-line postgres-required-predicates: preflight and failed cleanup also read retained source rows to settle an admission that raced deletion.
   const { rows } = await query<TopicMergeOperationRow>(
     `/* processTopicMergeOperationPage lock */
     SELECT operation.id, operation.source_topic_id, operation.destination_topic_id,
@@ -22,7 +22,8 @@ export async function processTopicMergeOperationPage(
       operation.metric_snapshot_xmax, operation.metric_snapshot_xip_count,
       operation.metric_rating_revision::text AS metric_rating_revision,
       source.slug AS source_slug FROM topic_merge_operations operation
-    JOIN topics source ON source.id=operation.source_topic_id AND source.deleted_at IS NULL
+    JOIN topics source ON source.id=operation.source_topic_id
+      AND (source.deleted_at IS NULL OR operation.stage IN ('preflight', 'cleanup_failed'))
     WHERE operation.id=$1::uuid FOR UPDATE OF operation`,
     [operationId],
   )

@@ -70,7 +70,31 @@ describe('topic merge lifecycle ordering', () => {
     })
   })
 
-  it('admits independent merge reservations concurrently', async () => {
+  it('admits one of two simultaneous merges sharing a participant', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const topics = await Promise.all(
+      Array.from({ length: 3 }, () => createTestTopic({ user: admin })),
+    )
+    const [source, shared, destination] = await Promise.all(
+      topics.map(row => getTopicByAny(row.id)),
+    )
+    const outcomes = await Promise.allSettled([
+      createTopicMergeOperation(admin, source!, shared!),
+      createTopicMergeOperation(admin, shared!, destination!),
+    ])
+
+    const admitted = outcomes.filter(result => result.status === 'fulfilled')
+    const rejected = outcomes.filter(result => result.status === 'rejected')
+    expect(admitted).toHaveLength(1)
+    expect(rejected).toHaveLength(1)
+    expect(rejected[0]?.reason).toMatchObject({ status: 409 })
+    const operation = admitted[0]!.value
+    await expect(
+      getTopicMergeOperation(admin, operation.source_topic_id, operation.id),
+    ).resolves.toMatchObject({ status: 'queued' })
+  })
+
+  it('admits a second independent merge while the first is queued', async () => {
     const admin = await createTestUser({ administrator: true })
     const topics = await Promise.all(
       Array.from({ length: 4 }, () => createTestTopic({ user: admin })),

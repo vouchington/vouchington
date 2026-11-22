@@ -64,7 +64,11 @@ export async function processTopicMergeCompatibilityPage(
           AND d.deleted_at IS NULL AND d.merged_into_topic_id IS NULL`,
       [sourceId, destinationId],
     )
-    return { hasMore: false, cursor: null, errorCode: rows[0]!.error_code }
+    return {
+      hasMore: false,
+      cursor: null,
+      errorCode: rows[0] ? rows[0].error_code : 'topic_merge_reservation_conflict',
+    }
   }
   const probe = probes[position - 1]
   if (!probe) return { hasMore: false, cursor, errorCode: null }
