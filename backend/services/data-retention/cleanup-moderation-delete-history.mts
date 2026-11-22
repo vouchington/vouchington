@@ -41,6 +41,8 @@ export async function deleteExpiredModerationHistory(
         DELETE FROM moderation_appeals appeal
         WHERE appeal.id = ANY(${ids}::uuid[])
           AND appeal.resolved_at < ${now}::timestamptz - make_interval(months => ${MODERATION_APPEAL_HISTORY_RETENTION_MONTHS})
+          -- A long-resolved appeal may have only recently received its public response.
+          AND appeal.sent_at < ${now}::timestamptz - make_interval(months => ${MODERATION_APPEAL_HISTORY_RETENTION_MONTHS})
       `))
   } else if (kind === 'disputes') {
     ;({ rowCount } = await query(sql`/* deleteExpiredModerationHistory:disputes */

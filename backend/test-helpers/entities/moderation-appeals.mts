@@ -109,10 +109,13 @@ export async function resolveTestModerationAppeal(options: {
   appealId: string
   resolvedAt: Date
   resolutionAction: 'accept' | 'reduce' | 'deny'
+  sentAt?: Date
 }): Promise<void> {
   await write(sql`/* resolveTestModerationAppeal */
     UPDATE moderation_appeals
-    SET resolved_at = ${options.resolvedAt}, resolution_action = ${options.resolutionAction}
+    SET resolved_at = ${options.resolvedAt},
+        resolution_action = ${options.resolutionAction},
+        sent_at = COALESCE(${options.sentAt ?? null}::timestamptz, sent_at)
     WHERE id = ${options.appealId}::uuid
   `)
 }
