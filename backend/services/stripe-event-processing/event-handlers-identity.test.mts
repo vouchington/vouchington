@@ -6,6 +6,7 @@ import {
 } from '@voucha/test-helpers'
 import {
   createIdentityPendingUser,
+  createIdentityPendingUserWithAttempt,
   makeVerifiedResult,
   observeUserCacheInvalidations,
   stubIdentityFingerprintSecret,
@@ -154,10 +155,10 @@ describe('handleStripeEvent identity events', () => {
   it.each(['identity.verification_session.canceled', 'identity.verification_session.redacted'])(
     'resets the user to unverified on %s',
     async type => {
-      const { user, sessionId } = await createIdentityPendingUser()
+      const { user, sessionId } = await createIdentityPendingUserWithAttempt()
 
       const result = await handleStripeEvent(
-        productionEvent(type, { id: sessionId, metadata: { user_id: user.id } }),
+        productionEvent(type, { id: sessionId }),
         applicationContext,
       )
 
