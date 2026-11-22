@@ -32,6 +32,7 @@ describe('backend-unit PostgreSQL lock diagnostics', () => {
     expect(workflowText).toContain('-c log_lock_waits=on')
     expect(workflowText).not.toContain('-c deadlock_timeout')
     expect(workflowText).not.toContain('-c log_statement')
+    expect(steps.some(step => step.name === 'Show PostgreSQL lock diagnostic settings')).toBe(true)
     expect(show?.if).toBe('failure()')
     expect(show?.env?.POSTGRES_CONTAINER).toBe('${{ job.services.postgres.id }}')
     expect(script).toContain('deadlock detected|still waiting for')

@@ -173,12 +173,11 @@ jobs:
           docker run --rm --network host \
             ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62 \
             psql --dbname="$DATABASE_URL" --no-psqlrc --set=ON_ERROR_STOP=1 --command=ANALYZE
-          # Proves on passing runs that the lock-diagnostic settings reached the server.
-          docker run --rm --network host \
-            ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62 \
-            psql --dbname="$DATABASE_URL" --no-psqlrc --set=ON_ERROR_STOP=1 \
-            --command='SHOW log_lock_waits' --command='SHOW deadlock_timeout' \
-            --command='SHOW log_line_prefix' --command='SHOW log_min_error_statement'
+      - name: Show PostgreSQL lock diagnostic settings
+        timeout-minutes: 1
+        env:
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: source "$GITHUB_WORKSPACE/.github/workflows/tests-backend-unit-postgres-show-settings.sh"
       - uses: ./.github/actions/setup-backend
         id: setup-backend
         timeout-minutes: 6
