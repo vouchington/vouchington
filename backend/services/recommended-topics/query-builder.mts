@@ -41,13 +41,10 @@ export async function buildRecommendationQuery(
         pr.object_id AS topic_id,
         2.0 AS score,
         'from_viewed_posts' AS reason
-      FROM (
-        SELECT DISTINCT unnest(${viewedPostIds}::uuid[]) AS post_id
-      ) rvp
-      INNER JOIN `
+      FROM `
     .append(POST_TOPIC_CATEGORY_RELATION_TABLE)
     .append(sql` pr
-        ON pr.subject_id = rvp.post_id
+      WHERE pr.subject_id = ANY(${viewedPostIds}::uuid[])
         AND pr.deleted_at IS NULL
     ),
 
@@ -100,15 +97,12 @@ export async function buildRecommendationQuery(
         rr.object_id AS topic_id,
         2.0 AS score,
         'from_clicked_rss_feed_items' AS reason
-      FROM (
-        SELECT DISTINCT unnest(${viewedRssFeedItemIds}::uuid[]) AS rss_feed_item_id
-      ) rvi
-      INNER JOIN rss_feed_items rfi
-        ON rfi.id = rvi.rss_feed_item_id
-        AND rfi.deleted_at IS NULL
+      FROM rss_feed_items rfi
       INNER JOIN relation__rss_feed_item__category__topic rr
         ON rr.subject_id = rfi.id
         AND rr.deleted_at IS NULL
+      WHERE rfi.id = ANY(${viewedRssFeedItemIds}::uuid[])
+        AND rfi.deleted_at IS NULL
     ),
 
     -- Related topics from topics you follow (weight: 1.5)
