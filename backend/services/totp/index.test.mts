@@ -139,7 +139,7 @@ describe('TOTP service', () => {
       ).rejects.toMatchObject({ status: 404 })
     })
 
-    it('returns 422 if already verified', async () => {
+    it('verifies the authenticator only once when two setup requests overlap', async () => {
       const freshUser = await createTestUserDirect()
       const setupData = await createTotpAuthenticator(freshUser.id, 'Already Verified')
 
@@ -149,13 +149,26 @@ describe('TOTP service', () => {
         digits: 6,
         period: 30,
       })
-      const code = totp.generate()
-      await verifyTotpSetup(freshUser.id, setupData.authenticator.id, code)
+      const now = Date.now()
+      const code = totp.generate({ timestamp: now })
+      const verify = () => verifyTotpSetup(freshUser.id, setupData.authenticator.id, code, { now })
+      const outcomes = await Promise.allSettled([verify(), verify()])
 
-      const code2 = totp.generate()
+      expect(outcomes).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            status: 'fulfilled',
+            value: expect.objectContaining({ id: setupData.authenticator.id }),
+          }),
+          expect.objectContaining({
+            status: 'rejected',
+            reason: expect.objectContaining({ status: 422 }),
+          }),
+        ]),
+      )
       await expect(
-        verifyTotpSetup(freshUser.id, setupData.authenticator.id, code2),
-      ).rejects.toMatchObject({ status: 422 })
+        getTotpAuthenticatorVerifiedAt(setupData.authenticator.id),
+      ).resolves.toBeInstanceOf(Date)
     })
   })
 
