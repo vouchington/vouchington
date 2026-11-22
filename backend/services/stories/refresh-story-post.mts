@@ -9,7 +9,6 @@ import { enqueueStoryPostAgent } from '@queues/ai-agents/enqueues/story-post'
 import { enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort } from '@queues/story-post-related-url-projections/enqueues'
 import { getPostStoryByStoryId } from './get-post-stories.mts'
 import { dispatchStoryPostRelationEffects } from './story-post-relation-effects.mts'
-import { lockStoryPostRelations } from './story-post-relation-locks.mts'
 import { markStoryPostRelatedUrlProjection } from './story-post-related-url-projection.mts'
 import type { PrivateUser } from '@services/users/types'
 
@@ -63,11 +62,6 @@ async function refreshStoryPostForStoryInTransaction(
     return null
 
   const postId = postStory.post_id
-  await lockStoryPostRelations(options.query, postId)
-
-  // Category projection remains transaction-local. URL projection is durable and bounded;
-  // it resumes after this membership transaction commits.
-  await markStoryPostRelatedUrlProjection(options.query, postId, storyId)
   const { rows } = await read(
     sql`/* refreshStoryPostForStory */
     SELECT
@@ -84,6 +78,16 @@ async function refreshStoryPostForStoryInTransaction(
   )
 
   const topicIds = (rows[0]?.topic_ids as string[] | null) ?? []
+
+  await options.query(sql`/* refreshStoryPostForStory:lockTopics */
+    SELECT id FROM relation__post__category__topic
+    WHERE subject_id = ${postId}
+      AND (deleted_at IS NULL OR object_id = ANY(${topicIds}::uuid[]))
+    ORDER BY subject_id, object_id FOR UPDATE`)
+
+  // Category projection remains transaction-local. URL projection is durable and bounded;
+  // it resumes after this membership transaction commits.
+  await markStoryPostRelatedUrlProjection(options.query, postId, storyId)
 
   const storyTellerUser = await getStoryTellerUser()
 

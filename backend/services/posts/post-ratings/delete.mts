@@ -11,36 +11,33 @@ export async function deletePostRatingRecord(
 ): Promise<void> {
   await using query = await beginTransaction()
   const { rows } = await query<{
-    total_count: number
+    has_other_rating: boolean
     has_rating: boolean
     did_delete: boolean
   }>(sql`/* deletePostRating */
-      WITH locked_rows AS (
-        SELECT post_id, topic_id
-        FROM post_review_topic_ratings
-        WHERE post_id = ${postId}
-        FOR UPDATE
-      ),
-      locked AS (
+      WITH rating_state AS (
         SELECT
-          COUNT(*)::int AS n
-        FROM locked_rows
-      ),
-      deleted AS (
+          EXISTS (
+            SELECT 1 FROM post_review_topic_ratings
+            WHERE post_id = ${postId} AND topic_id = ${topicId}
+          ) AS has_rating,
+          EXISTS (
+            SELECT 1 FROM post_review_topic_ratings
+            WHERE post_id = ${postId} AND topic_id <> ${topicId}
+          ) AS has_other_rating
+      ), deleted AS (
         DELETE FROM post_review_topic_ratings
         WHERE post_id = ${postId}
           AND topic_id = ${topicId}
-          AND (SELECT n FROM locked) > 1
+          AND (SELECT has_other_rating FROM rating_state)
         RETURNING 1
       )
-      SELECT
-        (SELECT n FROM locked) AS total_count,
-        EXISTS (SELECT 1 FROM locked_rows WHERE topic_id = ${topicId}) AS has_rating,
-        EXISTS (SELECT 1 FROM deleted) AS did_delete
+      SELECT has_rating, has_other_rating, EXISTS (SELECT 1 FROM deleted) AS did_delete
+      FROM rating_state
     `)
-  const { total_count, has_rating, did_delete } = rows[0]
+  const { has_rating, has_other_rating, did_delete } = rows[0]
   assert(has_rating, 404, 'Rating not found')
-  assert(total_count > 1, 422, 'Cannot delete the last rating on a review')
+  assert(has_other_rating, 422, 'Cannot delete the last rating on a review')
   assert(did_delete, 404, 'Rating not found')
   await createPostRevision(
     postId,

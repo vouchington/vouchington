@@ -128,7 +128,7 @@ describe('delegated post mutation contracts and transaction fences', () => {
     const post = await getPostByAny(id, { readOnly: false })
     await softDeleteUser(user.id)
     await expect(deletePost(user, post!, { delegated: true })).rejects.toMatchObject({
-      code: '23514',
+      status: 401,
     })
     expect(await getPostDeletedById(id)).toEqual({ deleted_by_id: null })
   })

@@ -17,7 +17,6 @@ import { recordModeratorAction } from '@services/moderator-actions'
 import { recordPostPublicationChange } from '@services/post-publication'
 import { retirePostImagePlacements } from './image-placements.mts'
 import { repairFailedImageDeliveryMutation } from '@services/media-delivery-safety'
-import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
 import { lockDelegatedPostThread } from './delegated-write-locks.mts'
 import onError from '@modules/on-error'
 import { runSequentially } from '@modules/utils/run-sequentially'
@@ -34,11 +33,7 @@ export const deletePost = async (
     let rowCount: number | null = null
     await runSequentially([
       async () => {
-        if (options?.delegated)
-          await runSequentially([
-            () => lockActiveUserSubjectsForMutation(query, [deleter.id]),
-            () => assertDelegatedPostActorActive(deleter.id, { query }),
-          ])
+        if (options?.delegated) await assertDelegatedPostActorActive(deleter.id, { query })
       },
       async () => {
         if (options?.delegated) {
@@ -52,10 +47,22 @@ export const deletePost = async (
       UPDATE posts
       SET deleted_at = CURRENT_TIMESTAMP, deleted_by_id = $1
       WHERE id = $2 AND deleted_at IS NULL
+        AND (
+          NOT $3::boolean OR EXISTS (
+            SELECT 1 FROM users actor
+            WHERE actor.id = $1 AND actor.deleted_at IS NULL
+              AND NOT EXISTS (
+                SELECT 1 FROM user_suspensions suspension
+                WHERE suspension.user_id = actor.id AND suspension.lifted_at IS NULL
+              )
+          )
+        )
     `,
-          [deleter.id, post.id],
+          [deleter.id, post.id, options?.delegated ?? false],
         )
         rowCount = result.rowCount
+        if (!rowCount && options?.delegated)
+          await assertDelegatedPostActorActive(deleter.id, { query })
       },
     ])
     if ((rowCount ?? 0) > 0) {
