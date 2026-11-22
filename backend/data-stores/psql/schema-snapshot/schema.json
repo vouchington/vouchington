@@ -50751,6 +50751,128 @@
       "triggers": {},
       "uniqueConstraints": {}
     },
+    "deleted_user_ballot_cleanup_cursors": {
+      "checkConstraints": {
+        "deleted_user_ballot_cleanup_cursors_check": "CHECK (((cursor_entity_id IS NULL) = (cursor_ballot_id IS NULL)))",
+        "deleted_user_ballot_cleanup_cursors_check1": "CHECK (((cursor_entity_id IS NULL) OR (cursor_owner_id IS NOT NULL)))",
+        "deleted_user_ballot_cleanup_cursors_is_singleton_check": "CHECK (is_singleton)"
+      },
+      "columns": {
+        "cursor_ballot_id": {
+          "collation": null,
+          "comment": "Ballot UUID of the last inspected ballot within the current owner and entity.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "cursor_entity_id": {
+          "collation": null,
+          "comment": "Entity key of the last inspected ballot within the current owner.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "cursor_owner_id": {
+          "collation": null,
+          "comment": "Last inspected user UUID or current owner when the ballot position is set.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "family": {
+          "collation": null,
+          "comment": "Concrete ballot family at the current position.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "vote_ballot_cleanup_families"
+        },
+        "is_singleton": {
+          "collation": null,
+          "comment": "The one post-deletion ballot cleanup sweep.",
+          "defaultExpression": "true",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "boolean"
+        },
+        "sweep_upper_bound_id": {
+          "collation": null,
+          "comment": "Frozen inclusive user UUID boundary for the active cycle.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Last committed position change.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Position of the cyclic ballot pass after the user deletion drain.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "deleted_user_ballot_cleanup_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX deleted_user_ballot_cleanup_cursors_pkey ON public.deleted_user_ballot_cleanup_cursors USING btree (is_singleton)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "is_singleton",
+              "descending": false,
+              "expression": "is_singleton",
+              "nullsFirst": false,
+              "opclass": "bool_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["is_singleton"],
+        "definition": "PRIMARY KEY (is_singleton)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_deleted_user_ballot_cleanup_cursors_updated_at": "CREATE TRIGGER trigger_deleted_user_ballot_cleanup_cursors_updated_at BEFORE UPDATE ON public.deleted_user_ballot_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
     "domain_blocklist_sources": {
       "checkConstraints": {
         "domain_blocklist_sources_name_check": "CHECK ((name ~ '^[a-z-]+$'::text))",
@@ -159321,6 +159443,26 @@
             }
           ],
           "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_users__deleted_user_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_users__deleted_user_id ON public.users USING btree (id) WHERE (deleted_at IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_at IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
