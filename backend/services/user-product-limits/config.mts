@@ -10,7 +10,9 @@ export const USER_PASSKEYS_MAX = 25
 export const USER_PROFILE_LINKS_MAX = 50
 export const OAUTH_APP_SCOPES_MAX = 64
 export const MESSAGE_RECIPIENTS_MAX = 100
-export const FOLLOWER_DISTRIBUTION_RECIPIENTS_MAX = 500
+// 256 is the largest `uniqueItems` bound released native MCP bridges accept; this is the MCP
+// `maxItems` of `recipient_user_ids`, so raising it breaks their whole tool catalog.
+export const FOLLOWER_DISTRIBUTION_RECIPIENTS_MAX = 256
 
 export const userProductLimitsConfig = new DynamicConfig({
   key: 'user-product-limits-config',
