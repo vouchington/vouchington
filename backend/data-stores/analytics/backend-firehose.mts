@@ -7,12 +7,7 @@ import type { AnalyticsTableName, AnalyticsTableRegistry } from './tables.mts'
 const batcher = createFirehoseBatcher({
   // Resolve the provider per call so tests can observe each batch.
   putRecordBatch: input => putFirehoseRecordBatch(input),
-  onError: error => {
-    if (process.env.NODE_ENV === 'test') {
-      Object.assign(error, { tags: { suppressLogging: true } })
-    }
-    onError(error)
-  },
+  onError,
 })
 
 export function writeRecord<T extends AnalyticsTableName>(
