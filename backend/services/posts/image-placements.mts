@@ -95,10 +95,8 @@ export async function syncPostImagePlacements(
         ORDER BY requested.image_id
       `)
       const placementIds = allocated.map(binding => binding.placement_id)
-      const { rowCount: imageCount } = await query(sql`/* syncPostImagePlacements:pinImages */
-        SELECT id FROM retained_image_identities
-        WHERE id = ANY(${missingImageIds}::uuid[])
-        ORDER BY id FOR KEY SHARE
+      const { rowCount: imageCount } = await query(sql`/* syncPostImagePlacements:verifyImages */
+        SELECT id FROM retained_image_identities WHERE id = ANY(${missingImageIds}::uuid[])
       `)
       if (imageCount !== missing.length) {
         throw new Error('Missing retained image identity for placement')
@@ -111,15 +109,15 @@ export async function syncPostImagePlacements(
         ORDER BY requested.placement_id
         ON CONFLICT (placement_id) DO NOTHING
       `)
-      const { rowCount: bindingCount } = await query(sql`/* syncPostImagePlacements:pinBindings */
+      const { rowCount: bindingCount } =
+        await query(sql`/* syncPostImagePlacements:verifyBindings */
         SELECT binding.placement_id
         FROM UNNEST(${placementIds}::uuid[], ${missingImageIds}::uuid[])
-          WITH ORDINALITY AS requested(placement_id, image_id, position)
+          AS requested(placement_id, image_id)
         JOIN retained_image_placement_bindings binding
           ON binding.placement_id = requested.placement_id
           AND binding.image_id = requested.image_id
           AND binding.binding_family = 'post'
-        ORDER BY requested.position FOR KEY SHARE OF binding
       `)
       /* v8 ignore next -- defensive: fresh database UUIDv7 placement IDs cannot be controlled by post input. */
       if (bindingCount !== missing.length) {

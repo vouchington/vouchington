@@ -7,7 +7,7 @@ import { cleanupStagedUploadSource } from './cleanup-staged-upload-source.mts'
 import { deleteKnownImageStorageFromS3 } from './s3-upload-lifecycle.mts'
 import { enqueueBulkExtractImageMetadata } from '@queues/image-uploads/enqueues'
 import type { AbandonedUploadSweep, UploadCleanupPhase } from '@queues/content-analysis/types'
-import { readUploadCleanupPage, type UploadCleanupRow } from './cleanup-upload-queries.mts'
+import { readUploadCleanupPage, uploadCleanupPredicate } from './cleanup-upload-queries.mts'
 import { UPLOAD_CLEANUP_PHASES, uploadCleanupCutoff } from './cleanup-upload-sweep.mts'
 
 const STAGED_SOURCE_CLEANUP_CONCURRENCY = 4
@@ -24,7 +24,7 @@ export async function cleanupAbandonedUploads(
   for (const phase of UPLOAD_CLEANUP_PHASES) {
     if (state.windows[phase].done) continue
     // oxlint-disable-next-line no-await-in-loop -- phase order preserves source cleanup before recovery and abandonment
-    const page = await readPhase(state, phase, batchSize) // no-mistakes-disable-line query-reached-per-item: three fixed phases use bounded transactions and ordered checkpoints
+    const { page, abandoned } = await readPhase(state, phase, batchSize) // no-mistakes-disable-line query-reached-per-item: three fixed phases use bounded transactions and ordered checkpoints
     const rows = page.slice(0, batchSize)
     if (phase === 'staged') {
       for (let offset = 0; offset < rows.length; offset += STAGED_SOURCE_CLEANUP_CONCURRENCY) {
@@ -47,14 +47,14 @@ export async function cleanupAbandonedUploads(
       counts.recovered += rows.length
     } else {
       // oxlint-disable-next-line no-await-in-loop -- retain best-effort per-image storage deletion after the committed soft delete
-      const deletions = await Promise.allSettled(rows.map(deleteAbandonedStorage))
+      const deletions = await Promise.allSettled(abandoned.map(deleteAbandonedStorage))
       rejectFailedPageEffects(deletions)
       const deletedIds = deletions.flatMap(result =>
         result.status === 'fulfilled' && result.value ? [result.value] : [],
       )
       // oxlint-disable-next-line no-await-in-loop -- acknowledge one successful bounded phase before checkpointing
       await markImageUploadSourcesDeleted(deletedIds) // no-mistakes-disable-line query-reached-per-item: one bounded acknowledgement batch per fixed phase preserves checkpoint ordering
-      counts.cleaned += rows.length
+      counts.cleaned += abandoned.length
     }
     const last = rows.at(-1)
     state = {
@@ -84,31 +84,39 @@ async function readPhase(
   batchSize: number,
 ) {
   await using transaction = await beginTransaction()
+  const cutoff = uploadCleanupCutoff(sweep, phase)
   const page = await readUploadCleanupPage(
     transaction,
     phase,
-    uploadCleanupCutoff(sweep, phase),
+    cutoff,
     sweep.windows[phase],
     batchSize,
   )
+  let abandoned: AbandonedUpload[] = []
   if (phase === 'abandonment' && page.length) {
-    // The locked lookahead row is not changed. Only the bounded applied page is committed.
     const ids = page.slice(0, batchSize).map(image => image.id)
-    await transaction(sql`/* cleanupAbandonedUploads:abandonment */
-      WITH candidates AS (
-        SELECT id FROM images WHERE id = ANY(${ids}::uuid[])
-        ORDER BY id LIMIT ${batchSize} FOR UPDATE
-      )
+    const statement = sql`/* cleanupAbandonedUploads:abandonment */
       UPDATE images SET deleted_at = CURRENT_TIMESTAMP,
         deletion_posts_completed_at = CURRENT_TIMESTAMP,
         upload_error = ${ABANDONED_UPLOAD_ERROR}
-      FROM candidates WHERE images.id = candidates.id`)
+      WHERE id = ANY(${ids}::uuid[]) AND upload_staged_at < ${cutoff}::timestamptz
+        AND `.append(uploadCleanupPredicate('abandonment'))
+    statement.append(sql` RETURNING id, s3_key, sha_256, upload_staged_at`)
+    const { rows } = await transaction<AbandonedUpload>(statement)
+    abandoned = rows
   }
   await transaction.commit()
-  return page
+  return { page, abandoned }
 }
 
-async function deleteAbandonedStorage(image: UploadCleanupRow): Promise<string | undefined> {
+type AbandonedUpload = {
+  id: string
+  s3_key: string
+  sha_256: Buffer | null
+  upload_staged_at: Date
+}
+
+async function deleteAbandonedStorage(image: AbandonedUpload): Promise<string | undefined> {
   try {
     await deleteKnownImageStorageFromS3(image)
     return image.id
