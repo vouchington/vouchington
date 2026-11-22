@@ -1,6 +1,6 @@
 import { test, expect } from '../helpers/test.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
-import { originOrFallback } from '../config/config-helpers.mts'
+import { originOrFallback } from 'vouchington-tooling/playwright-config'
 
 const expectedAssetOrigin = (() => {
   const origin = originOrFallback(process.env.NEXT_PUBLIC_ASSET_PREFIX ?? '', '')

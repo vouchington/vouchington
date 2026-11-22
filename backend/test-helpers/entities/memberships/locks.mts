@@ -1,6 +1,7 @@
 import { beginTransaction, writePool, type PoolClient, type QueryExecutor } from '@data-stores/psql'
 import { onTestFinished } from 'vitest'
-import { observeTestTransactionLockNotice } from '../../postgres-advisory-lock-notice.mts'
+import { observeTestTransactionLockNotice } from 'vouchington-tooling/postgres-test-faults'
+import { testLockNoticeOptions } from '../../postgres-lock-notice-options.mts'
 import sql from 'sql-template-strings'
 
 export { runConcurrentTestMembershipProductValidation } from '../../membership-product-validation.mts'
@@ -65,7 +66,11 @@ export async function runConcurrentTestRetainedMembershipProductReconciliation<T
       await using transaction = await beginTransaction({ client })
       const result = await options.validate(transaction)
       secondValidated.resolve()
-      observation = observeTestTransactionLockNotice(client, await firstUserLocked.promise)
+      observation = observeTestTransactionLockNotice(
+        client,
+        await firstUserLocked.promise,
+        testLockNoticeOptions,
+      )
       await observation.ready
       lockObservation.resolve(observation)
       const userLock = transaction(

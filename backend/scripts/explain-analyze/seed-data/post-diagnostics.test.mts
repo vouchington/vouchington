@@ -12,7 +12,8 @@ import {
   tryPostSeedDiagnosticsLock,
   waitForPostSeedDiagnosticsLock,
 } from '@voucha/test-helpers/post-seed-diagnostics'
-import { observeTestAdvisoryLockNotice } from '@voucha/test-helpers/postgres-advisory-lock-notice'
+import { observeTestAdvisoryLockNotice } from 'vouchington-tooling/postgres-test-faults'
+import { testLockNoticeOptions } from '@voucha/test-helpers/postgres-lock-notice-options'
 import { describe, expect, it, vi } from 'vitest'
 import { PostSeedDiagnostics } from './post-diagnostics.mts'
 
@@ -49,7 +50,11 @@ describe('post seed diagnostics', () => {
         const backendContext = await diagnostics.operation('backend_context', null, () =>
           getPostSeedDiagnosticsBackend(transaction),
         )
-        const lockNotice = observeTestAdvisoryLockNotice(transaction.client, lockTag)
+        const lockNotice = observeTestAdvisoryLockNotice(
+          transaction.client,
+          lockTag,
+          testLockNoticeOptions,
+        )
         await lockNotice.ready
         expect(await tryPostSeedDiagnosticsLock(transaction, lockKey)).toBe(false)
         const blocked = Promise.allSettled([waitForPostSeedDiagnosticsLock(transaction, lockKey)])

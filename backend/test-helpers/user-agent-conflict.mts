@@ -9,7 +9,8 @@ import sql from 'sql-template-strings'
 import {
   observeTestAdvisoryLockNotice,
   observeTestTransactionLockNotice,
-} from './postgres-advisory-lock-notice.mts'
+} from 'vouchington-tooling/postgres-test-faults'
+import { testLockNoticeOptions } from './postgres-lock-notice-options.mts'
 
 export async function runTestActionsAcrossUserAgentConflict<TFirst, TSecond>(
   firstAction: (queryOptions: QueryOptions) => Promise<TFirst>,
@@ -38,8 +39,8 @@ export async function runTestActionsAcrossUserAgentConflict<TFirst, TSecond>(
   const client = await writePool.connect()
   const advisoryLock = advisoryLocks[0]
   const observer = advisoryLock
-    ? observeTestAdvisoryLockNotice(client, advisoryLock.lock_tag)
-    : observeTestTransactionLockNotice(client, identity.transaction_id)
+    ? observeTestAdvisoryLockNotice(client, advisoryLock.lock_tag, testLockNoticeOptions)
+    : observeTestTransactionLockNotice(client, identity.transaction_id, testLockNoticeOptions)
   let contender: OwnedTransaction | undefined
   let actionOutcome: Promise<[PromiseSettledResult<TSecond>]> | undefined
   let holderReleased: Promise<void> | undefined
