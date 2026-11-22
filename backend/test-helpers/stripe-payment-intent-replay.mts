@@ -1,6 +1,6 @@
 import { onTestFinished, vi } from 'vitest'
 import * as stripeClient from '../modules/stripe/client.mts'
-import { createProviderReplay } from './provider-replay.mts'
+import { createProviderReplay } from 'vouchington-tooling/provider-replay'
 import { createReplayStripeClient, loadStripeFixture, routeStripeReplay } from './stripe-replay.mts'
 
 /** Resolve fixture PaymentIntents through the real SDK without reading credentials or using the network. */

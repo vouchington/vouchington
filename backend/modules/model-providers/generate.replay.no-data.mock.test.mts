@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { loadRecordedResponse } from '../../test-helpers/provider-replay.mts'
+import { loadRecordedResponse } from '../../test-helpers/recorded-response.mts'
 import { generateJson } from './generate.mts'
 import { calcCostMicrounits } from '@voucha/test-helpers/agents/calc-cost-microunits'
 
@@ -8,13 +8,13 @@ import { calcCostMicrounits } from '@voucha/test-helpers/agents/calc-cost-microu
 // are hand-written from Anthropic's documented wire format. The live counterpart is the non-gating
 // smoke check in generate.anthropic.test.mts.
 const replay = await vi.hoisted(async () => {
-  const { createProviderReplay } = await import('../../test-helpers/provider-replay.mts')
+  const { createProviderReplay } = await import('vouchington-tooling/provider-replay')
   return createProviderReplay()
 })
 
 vi.mock<typeof import('@anthropic-ai/sdk')>(import('@anthropic-ai/sdk'), async importOriginal => {
   const actual = await importOriginal()
-  const { replayClient } = await import('../../test-helpers/provider-replay.mts')
+  const { replayClient } = await import('vouchington-tooling/provider-replay')
   return { ...actual, default: replayClient(actual.default, replay) }
 })
 

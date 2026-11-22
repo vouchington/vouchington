@@ -7,7 +7,8 @@ import {
   insertTestBlueskyLinkedAccount,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { createProviderReplay, loadRecordedResponse } from '@voucha/test-helpers/provider-replay'
+import { createProviderReplay } from 'vouchington-tooling/provider-replay'
+import { loadRecordedResponse } from '@voucha/test-helpers/recorded-response'
 import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { hasTestPendingBlueskyDisconnect } from '@voucha/test-helpers/bluesky-disconnect-readers'
 import { backgroundQueue } from '@voucha/test-helpers/shared-background-queue'

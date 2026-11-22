@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ANTHROPIC_HAIKU_CALL } from '@voucha/test-helpers/agents/model-call-result'
 import { findAiUsageRecordForAgent } from '@voucha/test-helpers/entities/ai-usage'
-import { loadRecordedResponse } from '../../test-helpers/provider-replay.mts'
+import { loadRecordedResponse } from '../../test-helpers/recorded-response.mts'
 import { generateChatTitleFromInput } from './generate-title.mts'
 
 // The recorded Messages API body is served to the real `generateJson` through its `createMessage`

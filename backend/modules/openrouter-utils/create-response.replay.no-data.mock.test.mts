@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { runWithOpenAIResponseAttemptHooks } from '@modules/openai-utils/create-response'
 import { OpenAIResponseStreamIterationError, toOpenRouterModel } from '@vouchington/ai/openai'
-import { loadRecordedResponse } from '../../test-helpers/provider-replay.mts'
+import { loadRecordedResponse } from '../../test-helpers/recorded-response.mts'
 import { createOpenRouterResponse } from './create-response.mts'
 
 // The recorded responses are served through the real OpenAI SDK's `fetch` option (OpenRouter's
@@ -11,13 +11,13 @@ import { createOpenRouterResponse } from './create-response.mts'
 // documented wire format, not recorded. The live counterpart is the non-gating smoke check in
 // create-response.openrouter.test.mts.
 const replay = await vi.hoisted(async () => {
-  const { createProviderReplay } = await import('../../test-helpers/provider-replay.mts')
+  const { createProviderReplay } = await import('vouchington-tooling/provider-replay')
   return createProviderReplay({ chunkBytes: 41 })
 })
 
 vi.mock<typeof import('openai')>(import('openai'), async importOriginal => {
   const actual = await importOriginal()
-  const { replayClient } = await import('../../test-helpers/provider-replay.mts')
+  const { replayClient } = await import('vouchington-tooling/provider-replay')
   return { ...actual, default: replayClient(actual.default, replay) }
 })
 
