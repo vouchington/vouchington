@@ -62,12 +62,14 @@ export async function readStoryPostRelatedUrlProjectionActiveRelations(
   createdById: string,
   urlIds: readonly string[],
 ): Promise<Array<{ id: string; object_id: string }>> {
+  // Equal UUID bounds preserve equality while keeping the generic plan on the composite index;
+  // ordinary creator equality can underestimate this creator and scan its unrelated relations.
   const { rows } = await query<{ id: string; object_id: string }>(
     `/* storyPostRelatedUrlProjectionActiveRelationIds */
       SELECT relation.id, relation.object_id
       FROM relation__post__related__url relation
       WHERE relation.subject_id = $1
-        AND relation.created_by_id = $2
+        AND relation.created_by_id >= $2 AND relation.created_by_id <= $2
         AND relation.object_id = ANY($3::uuid[])
         AND relation.deleted_at IS NULL
       ORDER BY relation.object_id
