@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto'
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type {
   MembershipProvider,
@@ -7,23 +7,26 @@ import type {
 } from '../../../services/memberships/create-types.mts'
 import type { MembershipStatus } from '@voucha/types/entities/membership'
 
-export async function createTestUnprojectedProviderObservation(options: {
-  applicationId: string
-  effectiveAt?: Date
-  environment?: 'test' | 'production'
-  expiresAt?: Date | null
-  membershipProductId: string
-  membershipProviderProductId: string
-  provider: MembershipProvider
-  providerAccountId?: string | null
-  providerLineageId?: string
-  providerOrder?: number
-  providerRevision?: string
-  sourceKind: MembershipProviderSourceKind
-  status?: MembershipStatus
-  terminalAt?: Date
-  userId: string
-}): Promise<{
+export async function createTestUnprojectedProviderObservation(
+  options: {
+    applicationId: string
+    effectiveAt?: Date
+    environment?: 'test' | 'production'
+    expiresAt?: Date | null
+    membershipProductId: string
+    membershipProviderProductId: string
+    provider: MembershipProvider
+    providerAccountId?: string | null
+    providerLineageId?: string
+    providerOrder?: number
+    providerRevision?: string
+    sourceKind: MembershipProviderSourceKind
+    status?: MembershipStatus
+    terminalAt?: Date
+    userId: string
+  },
+  transaction?: TransactionQuery,
+): Promise<{
   membershipProviderObservationId: string
   sourceIdentity: {
     applicationId: string
@@ -47,7 +50,8 @@ export async function createTestUnprojectedProviderObservation(options: {
         ? terminalAt
         : new Date(effectiveAt.getTime() + 30 * 86_400_000)
   const lifecycle = getLifecycle(status, terminalAt)
-  await using query = await beginTransaction()
+  await using ownedTransaction = transaction ? undefined : await beginTransaction()
+  const query = transaction ?? ownedTransaction!
   const { rows: contextRows } = await query<{
     id: string
   }>(sql`/* createTestUnprojectedProviderObservation: context */
@@ -103,7 +107,7 @@ export async function createTestUnprojectedProviderObservation(options: {
     RETURNING id`)
   const observation = observationRows[0] as { id: string } | undefined
   if (!observation) throw new Error('Test provider product context was not found')
-  await query.commit()
+  await ownedTransaction?.commit()
   return {
     membershipProviderObservationId: observation.id,
     sourceIdentity: {

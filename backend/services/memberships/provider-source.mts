@@ -21,7 +21,7 @@ export async function createProviderMembershipSource<
   bindingId: string
   lineageId: string
 }> {
-  const lineage = await createOrLockProviderLineage(options, query)
+  const lineage = await getOrCreateProviderLineage(options, query)
   assertProviderAccountMatches(lineage.provider_account_id, options)
   const { binding, source } = await createProviderSourceRecords(options, lineage.id, query)
   return { id: source.id, kind: options.sourceKind, bindingId: binding.id, lineageId: lineage.id }
@@ -32,12 +32,12 @@ async function createProviderSourceRecords(
   lineageId: string,
   query: QueryExecutor,
 ) {
-  const binding = await createOrLockProviderLineageBinding(options, lineageId, query)
+  const binding = await getOrCreateProviderLineageBinding(options, lineageId, query)
   const source = await createOrLockProviderSource(options, lineageId, query)
   return { binding, source }
 }
 
-async function createOrLockProviderLineage(
+async function getOrCreateProviderLineage(
   options: CreateProviderMembershipSourceOptions,
   query: QueryExecutor,
 ): Promise<{ id: string; provider_account_id: string | null }> {
@@ -60,7 +60,7 @@ async function createOrLockProviderLineage(
     RETURNING id, provider_account_id`)
   const inserted = insertedRows[0] as { id: string; provider_account_id: string | null } | undefined
   if (inserted) return inserted
-  const { rows } = await query(sql`/* createMembership: lock provider lineage */
+  const { rows } = await query(sql`/* createMembership: find provider lineage */
     SELECT id, provider_account_id FROM membership_provider_lineages
     WHERE membership_provider_context_id = ${contextId}
       AND provider_lineage_id = ${sourceIdentity.providerLineageId}
@@ -81,7 +81,7 @@ function assertProviderAccountMatches(
     )
 }
 
-async function createOrLockProviderLineageBinding(
+async function getOrCreateProviderLineageBinding(
   options: CreateProviderMembershipSourceOptions,
   lineageId: string,
   query: QueryExecutor,
@@ -120,33 +120,26 @@ async function createOrLockProviderSource(
   await query(sql`/* createMembership: provider source */
     INSERT INTO membership_sources (user_id, source_kind, membership_provider_lineage_id)
     VALUES (${options.userId}, ${options.sourceKind}, ${lineageId}) ON CONFLICT DO NOTHING`)
-  const { rows } = await query(sql`/* createMembership: lock provider source */
+  type SourceRow = {
+    id: string
+    user_id: string | null
+    source_kind: MembershipProviderSourceKind
+  }
+  const { rows } = await query<SourceRow>(sql`/* createMembership: lock provider source */
     SELECT id, user_id, source_kind FROM membership_sources
     WHERE membership_provider_lineage_id = ${lineageId}
       AND source_kind = ${options.sourceKind}
       AND (${options.sourceKind} = 'direct' OR user_id = ${options.userId})
     FOR UPDATE`)
-  let source = rows[0] as
-    | {
-        id: string
-        user_id: string | null
-        source_kind: MembershipProviderSourceKind
-      }
-    | undefined
+  let source = rows[0]
   if (options.sourceKind === 'direct' && source?.user_id === null) {
     const { rows: reboundRows } =
-      await query(sql`/* createMembership: rebind released provider source */
+      await query<SourceRow>(sql`/* createMembership: rebind released provider source */
       UPDATE membership_sources
       SET user_id = ${options.userId}
       WHERE id = ${source.id} AND user_id IS NULL
       RETURNING id, user_id, source_kind`)
-    source = reboundRows[0] as
-      | {
-          id: string
-          user_id: string | null
-          source_kind: MembershipProviderSourceKind
-        }
-      | undefined
+    source = reboundRows[0]
   }
   if (!source || source.user_id !== options.userId || source.source_kind !== options.sourceKind)
     throw new ProviderMembershipSourceConflictError('Provider source belongs to another account')
