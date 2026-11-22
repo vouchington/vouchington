@@ -9,8 +9,9 @@ export const REAL_GLIDE_EVENT_DEADLINE_MS = 4_000
 
 /**
  * Owned admission waits on the default project budget: a stalled owned job rejects by name before
- * that budget. User-vouch observation and entity-listener lifetimes outlast it and use longer
- * per-test deadlines instead.
+ * that budget. User-vouch observation outlasts it and uses a longer per-test deadline. The
+ * entity-listener lifetime is bounded by teardown abort instead: teardown names cleanup after the
+ * test finishes, and a stall during the test body surfaces as the runner timeout.
  */
 export function admissionObservationDeadline(): AbortSignal {
   return AbortSignal.timeout(REAL_GLIDE_EVENT_DEADLINE_MS)
