@@ -111,7 +111,8 @@ only the tests and Docker validation builds they gate. Main push workflows stay 
 [`test-plan-shadow.yml`](../../.github/workflows/test-plan-shadow.yml) starts when a Backend, Web,
 Cloudflare Worker, Lambdas or Tooling run for a same-repository pull request finishes. It is a
 non-required job on `ubuntu-slim` that cannot fail the pull request. It stops early when the run
-uploaded no JUnit reports, as when path filters skipped the area.
+uploaded no JUnit reports, as when path filters skipped the area. As a `workflow_run` workflow it
+runs from the default branch, so a change to it takes effect only after it merges.
 
 - **Plan.** It runs `no-mistakes tests plan` for Vitest and Playwright with the `pullRequest`
   environment of [`.no-mistakes/testPlan`](../../.no-mistakes/testPlan/default.yml), over the pull

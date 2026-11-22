@@ -70,6 +70,19 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           package-manager-cache: false
+      - name: Resolve pnpm version
+        id: pnpm-version
+        if: steps.reports.outputs.count != '0'
+        timeout-minutes: 1
+        uses: vouchington/vouchington-tooling/.github/actions/resolve-pnpm-version@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+      - uses: pnpm/setup@731dfb6463bbd11c11fd0ee11fe00ed0e36d48a1 # v3.2.0
+        if: steps.reports.outputs.count != '0'
+        timeout-minutes: 1
+        with:
+          node-version-file: 'false'
+          install: false
+          cache: false
+          version: ${{ steps.pnpm-version.outputs.version }}
       - name: Download JUnit reports
         if: steps.reports.outputs.count != '0'
         timeout-minutes: 3

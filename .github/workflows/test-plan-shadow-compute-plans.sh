@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Sourced by test-plan-shadow.yml. Writes Vitest and Playwright plan JSON for the pull request
 # checked out in ./pr. A failed plan is a warning, never a failed job: the comparison step
 # reports a missing plan as a plan error.
@@ -8,7 +9,9 @@ shadow_plan() {
   local version merge_base auth framework runner
   version=$(node -p "require('./package.json').devDependencies['no-mistakes'].replace(/^[^0-9]*/, '')")
   runner="$RUNNER_TEMP/no-mistakes-$version"
-  npm install --prefix "$runner" --ignore-scripts --no-audit --no-fund --no-save "no-mistakes@$version"
+  mkdir -p "$runner"
+  echo '{}' > "$runner/package.json"
+  pnpm add --dir "$runner" --ignore-scripts "no-mistakes@$version"
 
   # The pull request was checked out at depth 1. Fetch only its merge base, so the three-dot diff
   # below changes exactly the files the pull request changed, however far the base has moved.
@@ -18,7 +21,7 @@ shadow_plan() {
   export GIT_CONFIG_COUNT=1
   export GIT_CONFIG_KEY_0="http.https://github.com/.extraheader"
   export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $auth"
-  cd pr
+  cd pr || return 1
   git fetch --no-tags --depth=1 origin "$merge_base"
   git update-ref "refs/remotes/origin/$BASE_REF" "$merge_base"
   unset GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
