@@ -4,7 +4,7 @@ import sql from 'sql-template-strings'
 import { MODERATION_APPEAL_HISTORY_RETENTION_MONTHS } from '@services/moderation-appeals/config'
 import type { ModerationHistoryCleanupKind } from './cleanup-moderation-kinds.mts'
 
-/** Delete only terminal records after their window; the candidate ids are one locked keyset page. */
+/** Delete only terminal records after their window; the candidate IDs come from one bounded keyset page. */
 export async function deleteExpiredModerationHistory(
   kind: ModerationHistoryCleanupKind,
   query: QueryExecutor,

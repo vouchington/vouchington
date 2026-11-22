@@ -94,9 +94,9 @@ async function deleteModerationOperationBatch(
     cursor_id: string | null
     sweep_cutoff_at: Date | null
   }>(
-    `/* lockModerationOperationCleanupCursor */
+    `/* readModerationOperationCleanupCursor */
      SELECT ${config.cursorColumn} AS cursor_id, sweep_cutoff_at FROM ${config.cursor}
-     WHERE is_singleton FOR UPDATE`,
+     WHERE is_singleton`,
   )
   const cursorId = cursorRows[0]?.cursor_id ?? null
   const cutoffDate = cursorRows[0]?.sweep_cutoff_at ?? requestedCutoffDate
@@ -112,7 +112,7 @@ async function deleteModerationOperationBatch(
   const page = candidates.slice(0, batchSize)
   const pageIds = page.map(row => row.id)
   // A claim can be renewed on its original id; a reveal may carry a later revealed_at.
-  // Check the mutable activity time while holding the candidate locks.
+  // Recheck the mutable activity time in the DELETE.
   const { rowCount } = await query(
     `/* deleteOldModerationOperationPage */
      DELETE FROM ${config.source}
@@ -155,7 +155,7 @@ async function listCandidates(
     `/* listModerationOperationCleanupCandidates */
      SELECT id FROM ${source}
      WHERE ${predicates.join(' AND ')}
-     ORDER BY id LIMIT $${parameters.length} FOR UPDATE`,
+     ORDER BY id LIMIT $${parameters.length}`,
     parameters,
   )
   return rows

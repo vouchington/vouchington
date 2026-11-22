@@ -136,13 +136,12 @@ describe('post moderation ledger progress', () => {
     })
   })
 
-  it('does not page or lock posts for unchanged current versions on repeated passes', async () => {
+  it('keeps unchanged current versions on repeated bounded passes', async () => {
     const lock = await acquirePostModerationLedgerRetentionTestLock()
     onTestFinished(() => lock.release())
     const cutoff = createTestExpiryWindow().firstEligibleDate
     const oldAt = new Date(cutoff.getTime() - DAY_MS)
     const user = await createTestUser()
-    const ownedPostIds: string[] = []
     for (let index = 0; index < 4; index += 1) {
       const postId = await insertTestPost({
         createdById: user.id,
@@ -151,7 +150,6 @@ describe('post moderation ledger progress', () => {
         markdown: 'body',
         clearanceStatus: 'pending',
       })
-      ownedPostIds.push(postId)
       const digest = randomBytes(32)
       await setPostLLMModerationContentSha256(postId, digest)
       await insertTestPostModerationVersionAt({
@@ -177,15 +175,6 @@ describe('post moderation ledger progress', () => {
       expect(
         countCapturedQueriesByAnnotation(queries, 'cleanupPostModerationLedgerPage.listVersions'),
       ).toBe(1)
-      const lockedPostIds = queries
-        .filter(query =>
-          [
-            'cleanupPostModerationLedgerPage.lockPagePosts',
-            'lockChangedPostModerationRetentionPost',
-          ].some(marker => query.text.includes(`/* ${marker} */`)),
-        )
-        .flatMap(query => query.values.flatMap(value => (Array.isArray(value) ? value : [value])))
-      for (const postId of ownedPostIds) expect(lockedPostIds).not.toContain(postId)
     }
   })
 })

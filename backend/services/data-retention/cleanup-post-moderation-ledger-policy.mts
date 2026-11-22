@@ -24,11 +24,11 @@ export async function reconsiderPostModerationPolicyRevision(
     cursor_policy_version_record_id: string | null
     policy_sweep_completed_at: Date | null
   }>(
-    `/* lockPostModerationPolicyRetentionCursor */
+    `/* readPostModerationPolicyRetentionCursor */
      SELECT observed_policy_revision, cursor_policy_version_record_id,
        policy_sweep_completed_at
      FROM post_moderation_retention_cursors
-     WHERE kind = 'superseded_versions' FOR UPDATE`,
+     WHERE kind = 'superseded_versions'`,
   )
   const cursor = rows[0]
   if (!cursor) throw new Error('Missing post moderation policy retention cursor')

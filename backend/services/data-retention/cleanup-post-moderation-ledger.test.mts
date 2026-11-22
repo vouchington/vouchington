@@ -14,14 +14,14 @@ import {
 } from '@voucha/test-helpers'
 import { cleanupPostModerationLedger } from './cleanup-post-moderation-ledger.mts'
 import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/moderation-ledger-types'
-import { revertPostDuringTestModerationRetention } from '@voucha/test-helpers/post-moderation-retention-lock'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import { getTestPostModerationVersionMarkers } from '@voucha/test-helpers/post-moderation-retention-progress'
 
 const DAY_MS = 86_400_000
 
 // The randomized future UUIDv7 interval keeps the shared dirty database outside this test's scan.
 describe('post moderation ledger retention', () => {
-  it('waits for a content reversion and rechecks the now-current version', async () => {
+  it('preserves a version that becomes current after candidate selection', async () => {
     const lock = await acquirePostModerationLedgerRetentionTestLock()
     onTestFinished(() => lock.release())
     const cutoff = createTestExpiryWindow().firstEligibleDate
@@ -51,18 +51,18 @@ describe('post moderation ledger retention', () => {
       contentSha256: successorHash,
       policyRevision: POST_MODERATION_POLICY_REVISION,
     })
-    const result = await revertPostDuringTestModerationRetention({
-      postId,
-      contentSha256: oldHash,
-      start: () =>
-        cleanupPostModerationLedger({
-          kinds: ['superseded_versions'],
-          batchSize: 2,
-          maxBatches: 1,
-          retentionDays: 90,
-          now: new Date(cutoff.getTime() + 90 * DAY_MS),
-          lowerBoundDate: new Date(oldAt.getTime() - 1),
-        }),
+    onTestFinished(
+      runBeforePostgresStatementForTest('cleanupPostModerationLedgerPage.deleteVersions', () =>
+        setPostLLMModerationContentSha256(postId, oldHash),
+      ),
+    )
+    const result = await cleanupPostModerationLedger({
+      kinds: ['superseded_versions'],
+      batchSize: 2,
+      maxBatches: 1,
+      retentionDays: 90,
+      now: new Date(cutoff.getTime() + 90 * DAY_MS),
+      lowerBoundDate: new Date(oldAt.getTime() - 1),
     })
     expect(result).toMatchObject({ deletedVersions: 0, hasMore: true })
     expect(await getTestPostModerationVersionMarkers(oldId)).toMatchObject({

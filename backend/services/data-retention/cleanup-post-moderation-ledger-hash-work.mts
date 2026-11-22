@@ -33,11 +33,6 @@ async function reconsiderChangedPostModerationPostById(
   revision = POST_MODERATION_POLICY_REVISION,
   postIds?: readonly string[],
 ): Promise<{ processed: boolean; hasMore: boolean }> {
-  await query(
-    `/* lockChangedPostModerationRetentionPost */
-     SELECT id FROM posts WHERE id = $1::uuid FOR SHARE`,
-    [postId],
-  )
   const { rows: work } = await query<{
     cursor_version_record_id: string
     cursor_processing_version_record_id: string | null

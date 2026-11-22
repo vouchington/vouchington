@@ -77,10 +77,10 @@ export async function sweepClassifierVersionedIdentityPageWithQuery(
     cursor_prompt_version_id: string | null
     sweep_start_key: string | null
     sweep_end_key: string | null
-  }>(sql`/* lockClassifierVersionIdentityCursor */
+  }>(sql`/* readClassifierVersionIdentityCursor */
     SELECT cursor_id, cursor_classifier_id, cursor_prompt_version_id,
       sweep_start_key, sweep_end_key
-    FROM classifier_retention_cursors WHERE sweep = 'versioned_identities' FOR UPDATE`)
+    FROM classifier_retention_cursors WHERE sweep = 'versioned_identities'`)
   const previous = progress[0]!
   const sweepEnd =
     previous.sweep_start_key === lowerBoundId &&
