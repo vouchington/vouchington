@@ -6,6 +6,7 @@ import {
   insertTestDomainBlacklist,
   listBlacklistDomainsBySource,
 } from '@voucha/test-helpers'
+import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { getSourceCacheHeaders } from '@services/urls-domains-blacklist/sources'
 import { syncDomainsWithDatabase } from './sync-db.mts'
 
@@ -46,7 +47,7 @@ describe('blocklist membership apply', () => {
     }
   })
 
-  it('leaves exactly one feed as membership when two syncs of a source run concurrently', async () => {
+  it('rebuilds the diff when another sync commits between preparation and the source lock', async () => {
     const suffix = sourceNameSuffix()
     const first = `first-${suffix}.example`
     const second = `second-${suffix}.example`
@@ -55,15 +56,20 @@ describe('blocklist membership apply', () => {
       name: `concurrent-${suffix}`,
       url: 'https://example.com/concurrent.txt',
     })
+    // The competing sync commits after this sync prepared its diff and before it takes the source
+    // lock, so the xmin check must reject the stale diff instead of unioning both feeds.
+    const restore = beforePostgresTransactionQueryForTest(
+      'syncDomainsWithDatabase:sourceType',
+      () => true,
+      async () => {
+        await syncDomainsWithDatabase(sourceId, new Response(`${second}\n`), 'url')
+      },
+    )
     try {
-      await Promise.all([
-        syncDomainsWithDatabase(sourceId, new Response(`${first}\n`), 'url'),
-        syncDomainsWithDatabase(sourceId, new Response(`${second}\n`), 'url'),
-      ])
-      // The source row lock plus the xmin check force the later sync to replace, never union.
-      const domains = await listBlacklistDomainsBySource(sourceId)
-      expect([[first], [second]]).toContainEqual(domains)
+      await syncDomainsWithDatabase(sourceId, new Response(`${first}\n`), 'url')
+      await expect(listBlacklistDomainsBySource(sourceId)).resolves.toEqual([first])
     } finally {
+      restore()
       await deleteTestBlacklistSource(sourceId)
     }
   })

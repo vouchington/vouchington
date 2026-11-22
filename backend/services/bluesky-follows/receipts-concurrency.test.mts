@@ -12,9 +12,9 @@ import {
 } from '@voucha/test-helpers/bluesky-receipt-cleanup-race'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
+import { deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage } from './followee-receipt-cleanup.mts'
 import {
   deleteBlueskyFollowReceipt,
-  deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage,
   getBlueskyFollowReceipt,
   saveBlueskyFollowReceipt,
   START_OF_IDS,
@@ -27,6 +27,7 @@ describe('Bluesky followee receipt cleanup concurrency', () => {
       overrideDynamicConfigFieldsForTest(blueskyFollowsWorkConfig, { backfill_batch_size: 1 }),
     )
     const followee = await createTestUserDirect()
+    const followeeAccount = await insertTestBlueskyLinkedAccount({ userId: followee.id })
     const followers = await Promise.all([createTestUserDirect(), createTestUserDirect()])
     const records = await Promise.all(
       followers.map(async follower => {
@@ -60,6 +61,10 @@ describe('Bluesky followee receipt cleanup concurrency', () => {
           cleanupProcessId = await getTestPostgresBackendProcessId(query)
           await deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage(
             followee.id,
+            {
+              blueskyDid: followeeAccount.bluesky_did,
+              linkAuthorizationId: followeeAccount.link_authorization_id,
+            },
             START_OF_IDS,
             {
               query,
