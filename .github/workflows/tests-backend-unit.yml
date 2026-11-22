@@ -290,7 +290,7 @@ jobs:
           overwrite: true
           name: backend-postgres-log-shard-${{ matrix.shard }}
           path: backend-postgres.log
-          retention-days: 3
+          retention-days: 1
           if-no-files-found: ignore
 
   check-query-profile-baseline:

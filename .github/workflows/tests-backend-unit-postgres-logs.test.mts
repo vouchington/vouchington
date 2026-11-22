@@ -37,6 +37,6 @@ describe('backend-unit PostgreSQL lock diagnostics', () => {
     expect(show?.env?.POSTGRES_CONTAINER).toBe('${{ job.services.postgres.id }}')
     expect(script).toContain('deadlock detected|still waiting for')
     expect(upload?.if).toBe('failure()')
-    expect(upload?.with?.['retention-days']).toBe(3)
+    expect(upload?.with?.['retention-days']).toBe(1)
   })
 })
