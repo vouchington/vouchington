@@ -4,6 +4,7 @@ import {
   beginTransaction,
   createRandomString,
   createTestRetentionWindow,
+  getTestPostgresBackendProcessId,
   insertTestOAuthAccount,
   oauthAccountExistsByProviderUserId,
   setOAuthAccountRetentionTime,
@@ -13,7 +14,7 @@ import {
   getTestOAuthAuthorization,
   insertTestOAuthAuthorization,
 } from '@voucha/test-helpers/entities/oauth-authorizations'
-import { createTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-waiter'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { upsertOAuthAccount } from '../../oauth-accounts/upsert.mts'
 import { deleteOrphanedOAuthAccountBatch } from '../cleanup-batches.mts'
 
@@ -100,30 +101,30 @@ describe('GitHub orphan account cleanup', () => {
       authorizationId,
       authorizationClaimId: claimId,
     })
-    await using waiter = await createTestPostgresLockWaiter({
-      holder: callback,
-      lock: { kind: 'transaction' },
-      selected: {
-        marker: '/* deleteOrphanedOAuthAccountBatch */',
-        binding: { index: 1, value: window.lowerBoundDate },
+    const holderProcessId = await getTestPostgresBackendProcessId(callback)
+    await withTestOwnedPostgresWait(
+      {
+        holderProcessId,
+        pool: 'write',
+        lock: { kind: 'transaction' },
+        queryMarker: 'deleteOrphanedOAuthAccountBatch',
+        releaseHolder: () => callback[Symbol.asyncDispose](),
+        allowUnblockedCompletion: true,
       },
-    })
-    const cleanup = deleteOrphanedOAuthAccountBatch(
-      'github_accounts',
-      'github_user_id',
-      window.upperBoundDate,
-      1,
-      window.lowerBoundDate,
-      waiter.query,
+      async waitForLock => {
+        const cleanup = deleteOrphanedOAuthAccountBatch(
+          'github_accounts',
+          'github_user_id',
+          window.upperBoundDate,
+          1,
+          window.lowerBoundDate,
+        )
+        // If cleanup waits, its DELETE still uses the earlier snapshot when the callback commits.
+        await waitForLock(cleanup)
+        await callback.commit()
+        await cleanup
+      },
     )
-    let callbackCommit: ReturnType<typeof callback.commit> | undefined
-    const commitCallback = () => (callbackCommit ??= callback.commit())
-    // If cleanup waits on the account, publish the authorization while its DELETE still
-    // uses the earlier snapshot. Otherwise publish it after cleanup skips the account.
-    await Promise.race([cleanup, waiter.waitForLock(cleanup).then(commitCallback)])
-    await commitCallback()
-    await cleanup
-    await waiter.query.commit()
 
     await expect(getTestOAuthAuthorization(authorizationId)).resolves.toMatchObject({
       status: 'completion_ready',

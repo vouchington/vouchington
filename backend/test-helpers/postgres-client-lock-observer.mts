@@ -11,6 +11,7 @@ import {
   createTestPostgresClientLoan,
   reserveTestPostgresObserver,
 } from './postgres-client-loan.mts'
+import { TestPostgresLockNotReachedError } from './postgres-advisory-lock-notice.mts'
 import { installTestOwnedPostgresPoolProxy } from './postgres-client-lock-pool-proxy.mts'
 import {
   assertTestOwnedPostgresWait,
@@ -23,7 +24,7 @@ const actionScope = new AsyncLocalStorage<object>()
 
 /** Observe every Promise checkout in this action or actual HTTP request until the target wait. */
 export async function withTestOwnedPostgresWait<Result>(
-  options: TestOwnedPostgresWaitOptions,
+  options: TestOwnedPostgresWaitOptions & { allowUnblockedCompletion?: boolean },
   action: (waitForLock: (operation: Promise<unknown>) => Promise<void>) => Promise<Result>,
 ): Promise<Result> {
   const pool =
@@ -56,7 +57,7 @@ export async function withTestOwnedPostgresWait<Result>(
   let holderRelease: Promise<void> | undefined
   let cleaning: Promise<void> | undefined
   let primary: { reason: unknown } | undefined
-  let witnessed = false
+  let observedCompletion = false
   function requireOpen() {
     if (closed) throw closedReason
   }
@@ -118,9 +119,20 @@ export async function withTestOwnedPostgresWait<Result>(
     operationRegistered.resolve({ outcome: operationOutcome })
     const settledEarly = operationOutcome.then(([result]) => {
       if (result?.status === 'rejected') throw result.reason
-      throw new Error('Owned action settled without its native lock wait')
+      if (!options.allowUnblockedCompletion)
+        throw new Error('Owned action settled without its native lock wait')
+      return undefined
     })
-    const observed = await Promise.race([captured.promise, settledEarly, cancelled.promise])
+    const lockWait = captured.promise.catch((err: unknown) => {
+      if (options.allowUnblockedCompletion && err instanceof TestPostgresLockNotReachedError)
+        return settledEarly
+      throw err
+    })
+    const observed = await Promise.race([lockWait, settledEarly, cancelled.promise])
+    if (!observed) {
+      observedCompletion = true
+      return
+    }
     const observer = observerLoan?.client
     if (closed || !observer) throw closedReason
     const { processId } = await observed.ready
@@ -131,7 +143,7 @@ export async function withTestOwnedPostgresWait<Result>(
       options.queryMarker,
     )
     await snapshot
-    witnessed = true
+    observedCompletion = true
   }
   try {
     return await runPoolObservationExclusively(async () => {
@@ -163,7 +175,8 @@ export async function withTestOwnedPostgresWait<Result>(
         ])
         const [result] = await callbackOutcome
         if (result?.status === 'rejected') throw result.reason
-        if (!result || !witnessed) throw new Error('Owned action omitted its native lock witness')
+        if (!result || !observedCompletion)
+          throw new Error('Owned action omitted its native lock observation')
         return result.value
       } catch (err) {
         primary = { reason: err }

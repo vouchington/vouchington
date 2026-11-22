@@ -1,5 +1,5 @@
 import type { UserPurgeCursor, UserPurgeResult } from './user-purge-types.mts'
-import { assertWhitelistedSqlIdentifier, write, type QueryExecutor } from '@data-stores/psql'
+import { assertWhitelistedSqlIdentifier, write } from '@data-stores/psql'
 import { DELETED_USER_ID } from '@services/users/constants'
 import sql from 'sql-template-strings'
 import { cleanupSoftDeletedUser } from './cleanup-soft-deleted-user.mts'
@@ -98,7 +98,6 @@ export async function deleteOrphanedOAuthAccountBatch(
   cutoffDate: Date,
   batchSize: number,
   lowerBoundDate?: Date,
-  writeQuery: QueryExecutor = write,
 ): Promise<number> {
   const validatedTable = assertWhitelistedSqlIdentifier(
     table,
@@ -176,6 +175,6 @@ export async function deleteOrphanedOAuthAccountBatch(
       FOR UPDATE SKIP LOCKED
     )`)
 
-  const { rowCount } = await writeQuery(query)
+  const { rowCount } = await write(query)
   return rowCount ?? 0
 }

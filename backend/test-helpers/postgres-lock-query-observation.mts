@@ -2,7 +2,7 @@ import type { PoolClient } from '@data-stores/psql'
 
 export type TestPostgresLockQuery = {
   marker: string
-  binding: { index: number; value: string | Date | readonly string[] }
+  binding: { index: number; value: string | readonly string[] }
 }
 
 /** Observe native query configs without changing transaction identity or returned promises. */
@@ -63,13 +63,8 @@ export function observeTestPostgresLockQuery(client: PoolClient, selected: TestP
   }
 }
 
-function sameBinding(
-  actual: unknown,
-  expected: TestPostgresLockQuery['binding']['value'],
-): boolean {
+function sameBinding(actual: unknown, expected: string | readonly string[]): boolean {
   if (typeof expected === 'string') return actual === expected
-  if (expected instanceof Date)
-    return actual instanceof Date && actual.getTime() === expected.getTime()
   return (
     Array.isArray(actual) &&
     actual.length === expected.length &&

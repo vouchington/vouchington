@@ -11,6 +11,12 @@ type Settings = {
   application_name: string
 }
 
+export class TestPostgresLockNotReachedError extends Error {
+  constructor() {
+    super('Owned action settled without reaching its author lock')
+  }
+}
+
 /** Observe one real reserved connection; PostgreSQL emits this LOG while its lock is still blocked. */
 export function observeTestAdvisoryLockNotice(
   client: LockNoticeClient,
@@ -130,7 +136,7 @@ export function observeTestPostgresLockNotice(
             failure.reject(result.reason)
             return failure.promise
           }
-          throw new Error('Owned action settled without reaching its author lock')
+          throw new TestPostgresLockNotReachedError()
         }),
       ])
     },
