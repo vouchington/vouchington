@@ -14,7 +14,9 @@ function run(content: string): Promise<{ errors: string[] }> {
 
 describe('Voucha public source literal policy', () => {
   it('flags deep links into the private infrastructure repository only', async () => {
-    const flagged = await run('https://github.com/vouchington/vouchington-infra/blob/main/x')
+    const flagged = await run(
+      ['https://github.com/vouchington/vouchington-infra', 'blob/main/x'].join('/'),
+    )
     expect(flagged.errors.join('\n')).toContain('private infrastructure repository link')
     const bare = await run('https://github.com/vouchington/vouchington-infra/issues/47')
     expect(bare.errors).toEqual([])
