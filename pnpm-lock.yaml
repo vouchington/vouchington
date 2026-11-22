@@ -12959,9 +12959,6 @@ importers:
       '@services/reporting-daily-rollups':
         specifier: workspace:^
         version: link:../services/reporting-daily-rollups
-      '@smithy/core':
-        specifier: ^3.40.0
-        version: 3.40.0
       '@ts-shared/money':
         specifier: workspace:^
         version: link:../../ts-shared/money
@@ -14214,9 +14211,6 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
-      '@modules/queue-errors':
-        specifier: workspace:^
-        version: link:../../modules/queue-errors
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
