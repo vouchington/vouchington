@@ -1,3 +1,4 @@
+import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import {
@@ -5,6 +6,7 @@ import {
   readCopyrightNoticeTargetIds,
 } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import {
+  readTestCopyrightScreeningExecution,
   readTestCopyrightStaffScreening,
   getTestExpiredCopyrightScreeningClaimTime,
   startTestCopyrightScreeningBeforeAdmission,
@@ -20,6 +22,7 @@ import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import {
   claimCopyrightFormScreening,
+  type CopyrightFormScreeningAttempt,
   completeCopyrightFormScreening,
   failCopyrightFormScreening,
 } from './form-screening-executions.mts'
@@ -52,17 +55,40 @@ describe('current copyright form screening execution', () => {
     )
   })
 
-  it('claims one live attempt and rotates failed retry tokens', async () => {
-    const { intake } = await createSignedInCopyrightForm()
-    const started = (await claimCopyrightFormScreening(intake.id))!
-    await expect(claimCopyrightFormScreening(intake.id)).resolves.toBeNull()
-    await failCopyrightFormScreening(started)
-    await expect(claimCopyrightFormScreening(intake.id)).resolves.toEqual({
-      intakeId: started.intakeId,
-      attemptNumber: started.attemptNumber + 1,
-      leaseToken: expect.any(String),
-    })
-  })
+  it.each([1, 2])(
+    'persists a single winner for concurrent claims of attempt %i',
+    async attemptNumber => {
+      const { intake } = await createSignedInCopyrightForm()
+      if (attemptNumber === 2) {
+        const initial = await claimCopyrightFormScreening(intake.id)
+        if (!initial) throw new Error('Initial screening claim was not created')
+        await failCopyrightFormScreening(initial)
+      }
+      const winner = Promise.withResolvers<CopyrightFormScreeningAttempt>()
+      const restore = afterPostgresTransactionQueryForTest(
+        'claimCopyrightFormScreening:current',
+        values => values.includes(intake.id),
+        async () => {
+          const claim = await claimCopyrightFormScreening(intake.id)
+          if (!claim) throw new Error('Competing screening claim was not created')
+          winner.resolve(claim)
+        },
+      )
+      try {
+        await expect(claimCopyrightFormScreening(intake.id)).resolves.toBeNull()
+      } finally {
+        restore()
+      }
+      const { leaseToken } = await winner.promise
+      await expect(readTestCopyrightScreeningExecution(intake.id)).resolves.toMatchObject({
+        attempt_number: attemptNumber,
+        state: 'pending',
+        execution_token: leaseToken,
+        lease_token: leaseToken,
+      })
+      await expect(claimCopyrightFormScreening(intake.id)).resolves.toBeNull()
+    },
+  )
 
   it('rotates an expired claim and fences its late output', async () => {
     const { intake } = await createSignedInCopyrightForm()

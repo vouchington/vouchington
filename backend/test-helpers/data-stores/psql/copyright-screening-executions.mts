@@ -31,14 +31,19 @@ export async function readTestCopyrightScreeningExecution(intakeId: string) {
     state: 'pending' | 'failed' | 'completed'
     copyright_notice_form_screening_id: string | null
     started_at: Date
+    execution_token: string
+    lease_token: string | null
     claimed_at: Date | null
     completed_at: Date | null
     failed_at: Date | null
   }>(sql`/* readTestCopyrightScreeningExecution */
-    SELECT attempt_number, state, copyright_notice_form_screening_id,
-      started_at, execution_started_at AS claimed_at, completed_at, failed_at
-    FROM copyright_notice_form_screening_attempts
-    WHERE copyright_notice_form_intake_id = ${intakeId} ORDER BY attempt_number DESC LIMIT 1
+    SELECT attempt.attempt_number, attempt.state, attempt.copyright_notice_form_screening_id,
+      attempt.started_at, attempt.execution_token, work.lease_token,
+      attempt.execution_started_at AS claimed_at, attempt.completed_at, attempt.failed_at
+    FROM copyright_notice_form_screening_attempts attempt
+    LEFT JOIN copyright_notice_form_screening_work_items work ON work.attempt_id = attempt.id
+    WHERE attempt.copyright_notice_form_intake_id = ${intakeId}
+    ORDER BY attempt.attempt_number DESC LIMIT 1
   `)
   if (!rows[0]) throw new Error('Expected owned screening execution')
   return rows[0]

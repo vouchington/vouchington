@@ -20,28 +20,23 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
   if (!window.enabled) return
   const eligibility = await checkAutomaticWithholdingEligibility(submissionId, window)
   await using transaction = await beginTransaction()
-  const { rows: intakeIdRows } = await transaction<{ id: string }>(
-    sql`/* applyNonSpamSignedInCopyrightFormScreening:intakeId */
-      SELECT id FROM copyright_notice_form_intakes
+  const { rows: owners } = await transaction<{ copyright_notice_id: string }>(
+    sql`/* applyNonSpamSignedInCopyrightFormScreening:notice */
+      SELECT copyright_notice_id FROM copyright_notice_form_intakes
       WHERE copyright_notice_submission_id = ${submissionId}`,
   )
-  const intakeId = intakeIdRows[0]?.id
-  if (!intakeId) {
+  const noticeId = owners[0]?.copyright_notice_id
+  if (!noticeId) {
     await transaction.commit()
     return
   }
-  await transaction(sql`/* applyNonSpamSignedInCopyrightFormScreening:lock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${`copyright-form-review:${intakeId}`}, 0))
-  `)
+  const locked = await lockCopyrightActionGenerationForWrite(noticeId, transaction)
   const { rows } = await transaction<{
-    intake_id: string
-    notice_id: string
     screening_id: string
     form_review_accepted: boolean | null
     refused: boolean
   }>(sql`/* applyNonSpamSignedInCopyrightFormScreening */
-    SELECT intake.id AS intake_id, intake.copyright_notice_id AS notice_id,
-      screening.id AS screening_id,
+    SELECT screening.id AS screening_id,
       review.is_accepted AS form_review_accepted,
       EXISTS (SELECT 1 FROM copyright_automatic_withholding_refusals refusal
         WHERE refusal.copyright_notice_submission_id = submission.id) AS refused
@@ -59,7 +54,6 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
     await transaction.commit()
     return
   }
-  const locked = await lockCopyrightActionGenerationForWrite(intake.notice_id, transaction)
   const { rows: existingAssessments } = await transaction<{
     id: string
   }>(sql`/* applyNonSpamSignedInCopyrightFormScreening:existingAssessment */
@@ -94,7 +88,7 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
   }
   const refused = await refuseAutomaticWithholding(transaction, {
     submissionId,
-    noticeId: intake.notice_id,
+    noticeId,
     eligibility,
     hasAutomatedAssessment: existingAssessments.length > 0,
   })
