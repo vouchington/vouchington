@@ -154,6 +154,7 @@ export type AgentModerationRetentionContinuationData = {
     afterPostId: string
     upperBoundDueAt: string
     upperBoundId: string
+    repair?: { afterId: string; afterPostId: string }
   }
 }
 

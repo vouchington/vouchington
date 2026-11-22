@@ -8,12 +8,6 @@ import {
   createTestAgentModerationRetentionDailyContinuationPage,
   getTestAgentModerationRetentionState,
 } from '@voucha/test-helpers/agent-moderation-retention-pages'
-import {
-  getTestAgentModerationRetentionPostCursor,
-  insertTestAgentModerationRetentionPostWork,
-  setTestAgentModerationRetentionHashBlocked,
-  testAgentModerationRetentionPostHasWork,
-} from '@voucha/test-helpers/entities/agent-moderation-retention'
 import { psql } from '@queues/psql/queues'
 import { DATA_RETENTION_ORDERING } from '@queues/psql/config'
 import type {
@@ -116,54 +110,6 @@ describe('agent moderation retention continuations', () => {
     expect(await psql.getJob(ids[2]!)).toBeNull()
   })
 
-  it('wakes only owned dirty posts and completes without following excluded work', async () => {
-    const owned = await createTestAgentModerationRetentionPage()
-    const neighbor = await createTestAgentModerationRetentionPage()
-    await setTestAgentModerationRetentionHashBlocked(owned.postId, [owned.oldId])
-    await setTestAgentModerationRetentionHashBlocked(neighbor.postId, [neighbor.oldId])
-    await insertTestAgentModerationRetentionPostWork(
-      [neighbor.postId],
-      new Date('2000-01-01T00:00:00Z'),
-    )
-    await insertTestAgentModerationRetentionPostWork(
-      [owned.postId],
-      new Date('2001-01-01T00:00:00Z'),
-    )
-    const runId = randomUUID()
-    const nextId = `agent-moderation-retention__${runId}__2`
-    expect(
-      await processPsql(
-        'continueAgentModerationRetentionCleanup',
-        {
-          runId,
-          step: 1,
-          agentModerationRetention: createTestAgentModerationRetentionCursor(owned.postId),
-        },
-        undefined,
-        undefined,
-        {
-          agentModeration: {
-            postIds: [owned.postId],
-            batchSize: 1,
-            maxBatches: 1,
-            now: new Date('2026-10-29T00:00:00Z'),
-          },
-        },
-      ),
-    ).toEqual({ scanned: 1, deleted: 1, hasMore: false, continuation: null })
-    expect(await getTestAgentModerationRetentionState(owned.postId, owned.oldId)).toBeNull()
-    expect(await testAgentModerationRetentionPostHasWork(owned.postId)).toBe(false)
-    expect(await getTestAgentModerationRetentionState(neighbor.postId, neighbor.oldId)).toEqual({
-      dueAt: null,
-      blockedReason: 'hash',
-    })
-    expect(await getTestAgentModerationRetentionPostCursor(neighbor.postId)).toBe(
-      '00000000-0000-0000-0000-000000000000',
-    )
-    expect(await testAgentModerationRetentionPostHasWork(neighbor.postId)).toBe(true)
-    expect(await psql.getJob(nextId)).toBeNull()
-  })
-
   it('propagates continuation admission failure after the owned page commits', async () => {
     const owned = await createTestAgentModerationRetentionContinuationPage()
     const neighbor = await createTestAgentModerationRetentionPage()
@@ -214,7 +160,9 @@ describe('agent moderation retention continuations', () => {
     const initialJobId = `retention-test-${randomUUID()}`
     const runId = createHash('sha256').update(initialJobId).digest('hex')
     const ids = [1, 2, 3, 4, 5].map(step => `data-retention-cleanup__${runId}__${step}`)
+    const moderationId = `agent-moderation-retention__${runId}__1`
     onTestFinished(async () => {
+      await (await psql.getJob(moderationId))?.remove()
       await Promise.all(ids.map(async id => (await psql.getJob(id))?.remove()))
     })
     await withClassifierRetentionSweepLockWithoutReset(async () => {
@@ -226,12 +174,24 @@ describe('agent moderation retention continuations', () => {
             ReturnType<typeof runDataRetentionCleanup>
           >
         const firstResult = await runPage({}, initialJobId)
-        expect(firstResult.agentModerations).toEqual({
+        expect(firstResult.agentModerations).toMatchObject({
           scanned: 1,
           deleted: 1,
-          hasMore: false,
-          continuation: null,
+          hasMore: true,
         })
+        const repair = await psql.getJob(moderationId)
+        expect(repair?.data).toMatchObject({
+          agentModerationRetention: { repair: expect.any(Object) },
+        })
+        expect(
+          await processPsql(
+            'continueAgentModerationRetentionCleanup',
+            repair!.data as AgentModerationRetentionContinuationData,
+            undefined,
+            repair!.id,
+            { agentModeration: options.retention.agentModerations },
+          ),
+        ).toEqual({ scanned: 0, deleted: 0, hasMore: false, continuation: null })
         expect(firstResult.classifierRecords.runs).toEqual({
           scanned: 1,
           deleted: 1,

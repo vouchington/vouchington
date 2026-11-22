@@ -921,6 +921,9 @@ WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_agent_moderations__retention_due
   ON agent_moderations (retention_due_at, id, post_id)
   WHERE retention_due_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_agent_moderations__retention_repair
+  ON agent_moderations (id, post_id)
+  WHERE retention_due_at IS NULL AND retention_blocked_reason IS NULL;
 CREATE INDEX IF NOT EXISTS idx_agent_moderations__retention_post_work
   ON agent_moderations (post_id, id)
   WHERE retention_blocked_reason = 'hash';

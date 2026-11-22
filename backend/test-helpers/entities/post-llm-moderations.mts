@@ -14,24 +14,27 @@ export const mockAiGeneratedModerationResults = {
 
 import crypto from 'node:crypto'
 import { v7 as uuidv7 } from 'uuid'
-import { read, write } from '@data-stores/psql'
+import { read, write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 /**
  * Insert a test agent moderation record for a post
  */
-export async function insertTestAgentModeration(options: {
-  postId: string
-  promptId: string
-  agentId: string
-  results?: Record<string, unknown> & { flagged: boolean }
-  flagged?: boolean
-  inputSha256?: Buffer
-  occurredAt?: Date
-  occurredAtSequence?: number
-  moderationId?: string
-  deletedAt?: Date | null
-}): Promise<string> {
+export async function insertTestAgentModeration(
+  options: {
+    postId: string
+    promptId: string
+    agentId: string
+    results?: Record<string, unknown> & { flagged: boolean }
+    flagged?: boolean
+    inputSha256?: Buffer
+    occurredAt?: Date
+    occurredAtSequence?: number
+    moderationId?: string
+    deletedAt?: Date | null
+  },
+  query: QueryExecutor = write,
+): Promise<string> {
   const results = options.results ?? { flagged: false }
   const flagged = options.flagged ?? false
   const deletedAt = options.deletedAt === undefined ? null : options.deletedAt
@@ -44,7 +47,7 @@ export async function insertTestAgentModeration(options: {
     (options.occurredAt
       ? uuidv7({ msecs: options.occurredAt.getTime(), seq: options.occurredAtSequence ?? 0 })
       : null)
-  const { rows } = await write<{ id: string }>(
+  const { rows } = await query<{ id: string }>(
     sql`/* insertTestAgentModeration */
     INSERT INTO agent_moderations (id, post_id, input_sha256, prompt_id, agent_id, results, is_flagged, deleted_at)
     VALUES (
