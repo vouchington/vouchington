@@ -28,7 +28,6 @@ export async function pruneExpiredContributionAdmissionConsumptions(
         AND (${lowerBoundDate ?? null}::timestamptz IS NULL OR committed_at >= ${lowerBoundDate ?? null})
       ORDER BY committed_at, reservation_id
       LIMIT ${batchSize}
-      FOR UPDATE SKIP LOCKED
     )
     DELETE FROM post_admission_quota_consumptions
     WHERE reservation_id IN (SELECT reservation_id FROM expired)`)
