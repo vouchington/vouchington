@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
+import Link from 'next/link'
 import { AvailabilityIndicator } from './availability-indicator'
 
 describe('AvailabilityIndicator', () => {
@@ -30,7 +31,7 @@ describe('AvailabilityIndicator', () => {
       <AvailabilityIndicator
         status='taken'
         label='community slug'
-        conflict={<a href='/c/foo'>Foo</a>}
+        conflict={<Link href='/c/foo'>Foo</Link>}
       />,
     )
     expect(screen.getByText('community slug used:')).toBeInTheDocument()

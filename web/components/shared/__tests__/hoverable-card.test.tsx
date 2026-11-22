@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { createRef } from 'react'
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
@@ -56,7 +57,7 @@ describe('HoverableCard', () => {
         asChild
         className='block'
       >
-        <a href='/topics'>Topics</a>
+        <Link href='/topics'>Topics</Link>
       </HoverableCard>,
     )
 

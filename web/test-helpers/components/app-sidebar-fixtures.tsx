@@ -1,5 +1,6 @@
 import { configure, render } from '@testing-library/react'
 import type { ReactNode } from 'react'
+import Link from 'next/link'
 import { vi } from 'vitest'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { AuthProvider } from '@/lib/auth/auth-provider'
@@ -52,7 +53,7 @@ vi.mock(import('../../components/communities/communities-sidebar-group'), () => 
   CommunitiesSidebarGroup: () => (
     <div data-sidebar='group'>
       <div data-sidebar='group-label'>Communities</div>
-      <a href='/communities'>Explore Communities</a>
+      <Link href='/communities'>Explore Communities</Link>
     </div>
   ),
 }))
