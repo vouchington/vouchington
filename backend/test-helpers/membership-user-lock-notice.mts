@@ -1,8 +1,11 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { onTestFinished } from 'vitest'
 import { writePool, type PoolClient } from '@data-stores/psql'
-import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
-import { observeTestTransactionLockNotice } from './postgres-advisory-lock-notice.mts'
+import {
+  observeTestTransactionLockNotice,
+  runPoolObservationExclusively,
+} from 'vouchington-tooling/postgres-test-faults'
+import { testLockNoticeOptions } from './postgres-lock-notice-options.mts'
 import { observeTestPostgresLockQuery } from './postgres-lock-query-observation.mts'
 
 const leaseScope = new AsyncLocalStorage<object>()
@@ -83,11 +86,10 @@ async function runWithReservedMembershipClient<Result>(
   let actionOutcome: Promise<[PromiseSettledResult<Result>]> | undefined
   let cleanupPromise: Promise<void> | undefined
   let primaryFailure: { reason: unknown } | undefined
-  const observer = observeTestTransactionLockNotice(
-    client,
-    options.transactionId,
-    () => observation?.selectedPending === true,
-  )
+  const observer = observeTestTransactionLockNotice(client, options.transactionId, {
+    ...testLockNoticeOptions,
+    eligible: () => observation?.selectedPending === true,
+  })
   const cleanup = () =>
     (cleanupPromise ??= (async () => {
       admission.closed = true

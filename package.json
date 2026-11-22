@@ -169,7 +169,7 @@
     "tsrs": "^0.25.0-ts7.1.0-beta",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^5.1.0",
-    "vouchington-tooling": "^3.5.3",
+    "vouchington-tooling": "^3.6.0",
     "yaml": "^2.9.1"
   },
   "engines": {

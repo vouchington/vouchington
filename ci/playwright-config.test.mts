@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createReporter } from '../playwright/config/web-server-command.mts'
+import { createVouchaReporter } from '../playwright/config/web-server-command.mts'
 
 const ORIGINAL_PORT = process.env.PORT
 const ORIGINAL_WORKER_PORT = process.env.WORKER_PORT
@@ -290,7 +290,7 @@ describe('Playwright shared config', () => {
   )
 
   it('preserves the existing local HTML reporter selection', () => {
-    expect(createReporter('local-results.xml', false)).toEqual([
+    expect(createVouchaReporter('local-results.xml', false)).toEqual([
       ['html', { open: 'never' }],
       [expect.stringMatching(/api-test-server-guard-reporter\.mts$/u)],
     ])

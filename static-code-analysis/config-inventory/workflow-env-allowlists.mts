@@ -46,6 +46,9 @@ const EXTERNAL_WORKFLOW_ENV_ALLOWLIST = new Set([
   // coverage in the native EXPLAIN preflight; it is not a repository TypeScript environment read.
   'NODE_DISABLE_COMPILE_CACHE',
   'NODE_V8_COVERAGE',
+  // Read by createReporter in vouchington-tooling/playwright-config, whose source is outside the
+  // repository inventory; the Playwright workflows pass it directly.
+  'PLAYWRIGHT_JUNIT_OUTPUT_FILE',
   // Standard env var (https://no-color.org) read by wrangler itself, not repo TypeScript code; keeps
   // the deploy step's Current Version ID scrape free of ANSI escape codes.
   'NO_COLOR',

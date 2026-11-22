@@ -3,11 +3,6 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import { createPlaywrightConfig } from '../playwright/config/shared-config.mts'
-import {
-  assertResolvedPlaywrightTimeouts,
-  playwrightTimeoutFixture,
-  validatePlaywrightConfigTimeouts,
-} from '../playwright/config/test-timeout.mts'
 import { browserErrorsFixture } from '../playwright/helpers/test.mts'
 
 const baseOptions = {
@@ -70,15 +65,6 @@ describe('Playwright test deadline cap', () => {
     expect(config.projects?.[0]?.timeout).toBe(30_000)
   })
 
-  it('rejects an over-limit project in a raw Playwright config', () => {
-    expect(() =>
-      validatePlaywrightConfigTimeouts({
-        timeout: 30_000,
-        projects: [{ name: 'localization', timeout: 30_001 }],
-      }),
-    ).toThrow(RangeError)
-  })
-
   it.each([0, 30_001, Number.POSITIVE_INFINITY, Number.NaN])(
     'rejects effective timeout %s before monitoring and the test body',
     async timeout => {
@@ -95,52 +81,4 @@ describe('Playwright test deadline cap', () => {
       expect(ran).toBe(false)
     },
   )
-
-  it.each([0, 30_001, Number.POSITIVE_INFINITY, Number.NaN])(
-    'rejects resolved project timeout %s before global setup work',
-    timeout => {
-      const config = {
-        projects: [{ name: 'chromium', timeout }],
-      } as unknown as Parameters<typeof assertResolvedPlaywrightTimeouts>[0]
-      expect(() => assertResolvedPlaywrightTimeouts(config)).toThrow(RangeError)
-    },
-  )
-
-  it('accepts a resolved project at the ceiling', () => {
-    const config = {
-      projects: [{ name: 'chromium', timeout: 30_000 }],
-    } as unknown as Parameters<typeof assertResolvedPlaywrightTimeouts>[0]
-    expect(() => assertResolvedPlaywrightTimeouts(config)).not.toThrow()
-  })
-})
-
-describe('browser-free timeout guard', () => {
-  it.each([0, 30_001, Number.POSITIVE_INFINITY, Number.NaN])(
-    'rejects effective timeout %s in the browser-free guard before hooks',
-    async timeout => {
-      const use = vi.fn<() => Promise<void>>()
-      await expect(
-        playwrightTimeoutFixture({}, use, { timeout } as Parameters<
-          typeof playwrightTimeoutFixture
-        >[2]),
-      ).rejects.toThrow(RangeError)
-      expect(use).not.toHaveBeenCalled()
-    },
-  )
-})
-
-describe('reused public TestInfo guard', () => {
-  it('can protect the same info for a hook and its following test fixture', async () => {
-    const info = {
-      timeout: 30000,
-      setTimeout: vi.fn<(timeout: number) => void>(),
-    } as unknown as Parameters<typeof playwrightTimeoutFixture>[2]
-    const use = vi.fn<() => Promise<void>>()
-    await playwrightTimeoutFixture({}, use, info)
-    const setter = info.setTimeout
-    await playwrightTimeoutFixture({}, use, info)
-    expect(info.setTimeout).toBe(setter)
-    expect(use).toHaveBeenCalledTimes(2)
-    expect(() => info.setTimeout(30001)).toThrow(RangeError)
-  })
 })
