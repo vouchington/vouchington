@@ -39,7 +39,14 @@ export async function receiveOAuthAuthorizationCallback(options: {
     throw createHttpError(400, 'OAuth callback is invalid')
 
   await using query = await beginTransaction()
-  const result = await receiveCallbackInTransaction()
+  const { rows: matches } = await query<{ id: string }>(
+    `/* receiveOAuthAuthorizationCallback:find */ SELECT id
+     FROM oauth_authorizations WHERE state_hash = $1 AND provider = $2`,
+    [hashOAuthAuthorizationState(options.state), options.provider],
+  )
+  const match = matches[0]
+  if (!match) throw createHttpError(400, 'OAuth callback is invalid')
+  const result = await receiveCallbackInTransaction(match.id)
   if ('expired' in result && result.expiredAfterWrite) {
     // The guarded write waited past the deadline. Undo the receipt before recording expiry.
     await query.rollback()
@@ -50,8 +57,10 @@ export async function receiveOAuthAuthorizationCallback(options: {
   if ('expired' in result) throw createHttpError(410, 'OAuth authorization expired')
   return result
 
-  async function receiveCallbackInTransaction(): Promise<ReceiveOAuthAuthorizationCallbackTransactionResult> {
-    const authorization = await readAuthorization()
+  async function receiveCallbackInTransaction(
+    authorizationId: string,
+  ): Promise<ReceiveOAuthAuthorizationCallbackTransactionResult> {
+    const authorization = await readAuthorization(authorizationId)
     const decisionAt = new Date()
     if (authorization.status !== 'pending' || authorization.expires_at <= decisionAt)
       return resolveExisting(authorization)
@@ -104,7 +113,7 @@ export async function receiveOAuthAuthorizationCallback(options: {
     completionToken: string,
     exchangeRequired: boolean,
   ): Promise<ReceiveOAuthAuthorizationCallbackTransactionResult> {
-    if (!written) return resolveExisting(await readAuthorization())
+    if (!written) return resolveExisting(await readAuthorization(authorization.id))
     if (written.expires_at <= new Date())
       return { expired: true, expiredAfterWrite: authorization.id }
     return handoff(
@@ -123,11 +132,11 @@ export async function receiveOAuthAuthorizationCallback(options: {
     return { expired: true }
   }
 
-  async function readAuthorization(): Promise<OAuthAuthorizationRow> {
+  async function readAuthorization(authorizationId: string): Promise<OAuthAuthorizationRow> {
     const { rows } = await query(
       `/* receiveOAuthAuthorizationCallback:read */ SELECT *
-       FROM view_oauth_authorization_current_records WHERE state_hash = $1 AND provider = $2`,
-      [hashOAuthAuthorizationState(options.state), options.provider],
+       FROM view_oauth_authorization_current_records WHERE id = $1`,
+      [authorizationId],
     )
     const authorization = rows[0] as OAuthAuthorizationRow | undefined
     if (!authorization) throw createHttpError(400, 'OAuth callback is invalid')
