@@ -31,32 +31,7 @@ the database unit suite keeps DML and non-DDL validation checks. This preserves 
 without introducing schema mutation into shared unit fixtures. A failed snapshot contract is a
 projection or eligibility failure to diagnose, not a reason to reset unit resources.
 
-See [prelaunch relational storage](../postgres-schema-rules.md#prelaunch-relational-storage).
-
-## View composition and the eligibility-view pull-up rule
-
-PostgreSQL pulls a view up into the enclosing query, turning a per-row correlated re-scan into an
-indexed lookup, only when the view's own query is a flat `SELECT` with no top-level `WITH` and no
-plain `UNION` (`UNION ALL` is fine). A view that fails this is materialized as its own unindexed
-subplan wherever it is joined, and any query reading it once per output row pays that cost per row.
-Even one read with no key restriction derives every row, so cost grows with the table. Callers
-therefore read a `view_*` only by its key, after picking ids from indexed base tables, as
-[R6](../postgres-schema-rules.md#r6--query-shape) requires.
-
-- Internal existence probes may use nested `MATERIALIZED` CTEs as optimizer fences; keep the parent
-  correlation inside each CTE and the outer view flat.
-- The rule applies at every nesting level. A view, or a scalar subquery in a view's target list,
-  that reads another non-materialized view through a correlated `EXISTS (... UNION ALL ...)` still
-  re-derives the whole eligible set per outer row. Candidate-bind instead: derive candidate ids from
-  an indexed relation in a subselect, `UNION ALL` the sources, then join the candidates to the base
-  table and the eligibility view in one join scope. Use the shared builders in
-  [`@modules/feed-query-builders`](../../overview/architecture/backend/README.md)
-  rather than hand-writing the shape.
-- An `EXISTS` over an eligibility view inside an `OR` can be planned as an uncorrelated hashed
-  SubPlan that derives the view for every row. A scalar subquery with `LIMIT 1` is never hashed, so
-  the outer id drives the lookup.
-- Do not `LEFT JOIN view_users_public` inside another view; use scalar subqueries to
-  `view_embedded_users`, which avoids seven OAuth joins and keeps single-row planning cheap.
+Prelaunch storage rules: [psql AGENTS.md](../../../backend/data-stores/psql/AGENTS.md#prelaunch-storage).
 
 ## Staging Schema Drift (Pre-launch Only)
 

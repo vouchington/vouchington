@@ -47,7 +47,7 @@ stages, backfills, or old/new readers for prior application versions. The deploy
 still orders independently built artifacts when a current interface spans them. Preserve external
 protocol compatibility and security key rotation where those have independent consumers. Follow
 [One current contract](../../../AGENTS.md) and the
-[prelaunch schema policy](../../development/postgres-schema-rules.md#prelaunch-relational-storage).
+[prelaunch schema policy](../../../backend/data-stores/psql/AGENTS.md#prelaunch-storage).
 
 The repo's concrete precedent is HMAC key rotation for signed sideload image URLs
 (`ts-shared/url-signing/`, `VOUCHA_SIDELOAD_SIGNING_KEYS`): keys are a comma-separated list, newest

@@ -21,3 +21,15 @@ Load `test-authoring`, `testing-rules` first.
   event. Create the wait before the action that emits the event.
 - Tests that import live `Worker` singletons close them before completion: `backend-data-stores`
   runs with `isolate: false`.
+
+## Helper for each boundary
+
+Helper APIs are readable in `backend/test-helpers/` (and `@voucha/test-helpers`); this is the map.
+
+- Queue assertions read the enqueued job by returned id (`readEnqueuedJob`, `readAllQueueJobs`), not the `waiting` state.
+- AWS calls reach a local [AWS Emulator](../../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#aws-calls-reach-the-aws-emulator), not a mock. Other provider wire behavior is replayed with `createProviderReplay()`.
+- Write failures are injected with `rejectQuery`.
+- Rows another fork can touch are owned through `acquireTestAiUsageDateReservation`, `createTestRetentionWindow`, `withDominantPostFixtures`, `safeUsername`, and `createUniqueTestEmail`.
+- Route tests use `createRequest()`, which assigns a unique forwarded IP per agent so rate-limit buckets stay isolated; a test that asserts shared rate limiting overrides `x-forwarded-for` itself.
+
+Details and reasons: [parallel safety](../../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md).

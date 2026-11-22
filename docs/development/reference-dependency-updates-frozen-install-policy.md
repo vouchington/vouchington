@@ -31,18 +31,6 @@ upstream metadata. Fix bad metadata through an upstream release or upgrade the p
 `packageExtensions` remains allowed for correcting dependency metadata without forcing versions.
 `pnpm run no-mistakes` enforces the override ban (`pnpm-overrides-ban`).
 
-The pnpm store cache on ephemeral GitHub-hosted runners is download reuse, not authoritative
-resolution state. Its key includes the runner OS and architecture plus a content hash of
-`pnpm-lock.yaml`; the frozen lockfile remains the resolution contract.
-
-### Dependabot and the workspace lockfile
-
-Dependabot's `npm` ecosystem updates `pnpm-lock.yaml` reliably only when its `directory:` is the
-directory that owns the lockfile (the repo root); per-workspace entries edit `package.json` without
-regenerating the lock and fail CI with `ERR_PNPM_OUTDATED_LOCKFILE`. Dependabot also does not parse
-the `overrides` map in `pnpm-workspace.yaml`, which is why dependency-version overrides are banned
-above: a parent-scoped override can keep an old version after the direct requirement is bumped.
-
 ### <a id="optional-peer-instance-keys"></a>Optional peer instance keys
 
 pnpm records each resolved optional peer in the dependent package's lockfile instance key.

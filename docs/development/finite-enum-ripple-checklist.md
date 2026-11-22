@@ -1,53 +1,16 @@
 # Finite Enum Ripple Checklist
 
-Use this checklist before removing or renaming a finite enum value such as a `topic_type`,
-`post_type`, route slug, discriminator, or similar closed string set.
+Voucha-specific surfaces to update when removing or renaming a finite enum value such as a
+`topic_type`, `post_type`, route slug, or discriminator. The generic ripple scan (types, SQL, fixtures,
+seeds, docs, purge scan) is in the `typescript-authoring` and `test-authoring` skills.
 
-The goal is to remove stale literals before the first push, not to discover them through serial fix
-commits.
-
-## Checklist
-
-- Update the canonical runtime/type definitions and database source of truth together, including
-  TypeScript unions, runtime config maps, SQL enums, CHECK constraints, comments, and migrations.
-- Update web route surfaces for public finite sets. Topic and post type routes use explicit
-  directories and route factories, not catch-all `[topicType]` or `[postType]` segments.
-- Update helper maps and formatters that translate enum values to slugs, labels, tabs, sitemap keys,
-  API params, RSS URLs, canonical links, and admin/review-queue links.
-- Update generated or generated-style tests, test helpers, mock factories, route smoke tests,
-  sitemap tests, and static-analysis fixtures that enumerate the values.
-- Update seed data and CSV-backed import data, including dev seeds, Playwright seeds, explain-analyze
-  seeds, and validation scripts.
-- Update docs that name the values, especially requirement matrices, route docs, SEO/sitemap docs,
-  and workspace `AGENTS.md` files.
-- If a value is renamed, check both the old and new value. If a value is removed, check the removed
-  value and any old route slug.
-
-## Purge Scan
-
-Run literal scans before the first push and inspect every remaining match:
-
-```bash
-rg -n "old_value|old-slug|Old Label" backend web ts-shared docs static-code-analysis integration-tests playwright
-```
-
-For route-slug changes, also scan path names:
-
-```bash
-rg --files backend web docs static-code-analysis integration-tests playwright | rg "old-slug|old_value"
-```
-
-For package-boundary, CI, env var, or infrastructure names, use the rename audit too:
-
-```bash
-./dev/audit-rename OLD_NAME NEW_NAME
-```
-
-The audit groups matches by path category. Treat each remaining old-name hit as intended,
-unrelated, or fix-required before first push.
-
-## Static Coverage
-
-`pnpm run repo-file-policy` guards the high-risk finite enum surfaces (topic and post type maps,
-SQL enums, route directories). It is intentionally narrow; the purge scan above is still required
-for behavior, fixtures, docs, and one-off helper literals outside those surfaces.
+- Topic and post type routes use explicit directories and route factories, not catch-all
+  `[topicType]` or `[postType]` segments; update the web route surfaces, sitemap keys, RSS URLs,
+  canonical links, and admin/review-queue link maps.
+- Update seed and CSV import data: dev seeds, Playwright seeds, and explain-analyze seeds.
+- Check both the old and new value for a rename; for a removal, also check the old route slug.
+- `pnpm run repo-file-policy` guards the topic and post type maps, SQL enums, and route directories
+  ([`finite-enum-ripple-config.mts`](../../static-code-analysis/repo-file-policy/finite-enum-ripple-config.mts)).
+  It is narrow: still scan with `rg` for the old value, slug, and label across `backend web ts-shared
+  docs static-code-analysis integration-tests playwright`, and use `./dev/audit-rename OLD NEW` for
+  package-boundary, CI, env var, or infrastructure names.

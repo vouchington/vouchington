@@ -2,7 +2,7 @@ Review PostgreSQL query plans. Pick at most one concrete, bounded improvement th
 
 Unit: one service or scenario group.
 
-Load `postgres-node-performance-tuning`, `postgresql-rules`, and `vouchington-postgres`. Read [R3](../../development/postgres-schema-rules.md#r3--normalize-ids-are-fk-columns-json-is-for-schemaless-data) and [R6](../../development/postgres-schema-rules.md#r6--query-shape) of the schema rules.
+Load `postgres-node-performance-tuning`, `postgresql-rules`, and `vouchington-postgres`. Load `postgres-schema-design` for schema shape and read the query-shape section of `vouchington-postgres`.
 
 ## Capture the plans
 

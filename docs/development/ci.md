@@ -46,8 +46,7 @@ that the process completed without unhandled connection errors.
 
 ## Principles
 
-Keep workflow triggers narrow, reproduce failures locally before rerunning, and keep tests
-fail-fast-ish (`--bail=3` for Vitest; `maxFailures: CI ? 3 : undefined` for Playwright). Path
+Tests are fail-fast-ish (`--bail=3` for Vitest; `maxFailures: CI ? 3 : undefined` for Playwright). Path
 filters for Playwright, web integration, and Docker image builds should skip Markdown-only,
 Vitest-only, test-helper-only, and Storybook-only changes unless the workflow directly owns the
 changed files.
