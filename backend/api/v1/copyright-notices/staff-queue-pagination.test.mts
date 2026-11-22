@@ -121,7 +121,9 @@ describe('copyright staff queue pagination', () => {
     const fixture = await createCopyrightFormFixture()
     const target = fixture.form.targets[0]!
     vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date())
+    // A unique frozen instant keeps concurrent tests in the shared database out of this tie.
+    const frozenMs = Date.UTC(2090, 0, 1) + crypto.getRandomValues(new Uint32Array(1))[0]!
+    vi.setSystemTime(new Date(frozenMs))
     try {
       const create = () =>
         createCopyrightFormIntake({
