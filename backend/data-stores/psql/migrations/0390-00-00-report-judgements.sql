@@ -31,6 +31,11 @@ CREATE TABLE IF NOT EXISTS moderation_report_judgement_runs (
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (moderation_report_id, id)
 );
+-- Serves the bounded stuck-run expiry sweep: active runs in id (creation) order.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderation_report_judgement_runs__active_id
+  ON moderation_report_judgement_runs (id)
+  WHERE completed_at IS NULL AND failed_at IS NULL AND expired_at IS NULL;
 CREATE OR REPLACE TRIGGER trigger_moderation_report_judgement_runs_updated_at
   BEFORE UPDATE ON moderation_report_judgement_runs
   FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();

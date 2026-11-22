@@ -75,7 +75,7 @@ const SCHEDULED_JOB_API_ORDER = [
   'recoverRssFeedHardDeletes',
   'reconcileStoryPostRelatedUrlProjections',
   'reconcileAutoDispatchJudgements',
-  'reconcileAIAgentFailures',
+  'expireStuckReportJudgementRuns',
   'expireStuckAppealResolutionRuns',
   'expireStuckDisputeResolutionRuns',
   'reconcileCopyrightEmailDispatches',

@@ -5,6 +5,7 @@ import {
   getStuckRunExpiryLimits,
   type StuckRunExpiryLimits,
 } from '@services/moderation-ai-config/stuck-run-expiry'
+import { expireStuckReportJudgementRunPage } from '@services/moderation-reports/expire-stuck-runs'
 import { expireStuckReviewDisputeResolutionRunPage } from '@services/review-disputes/expire-stuck-runs'
 
 const HOUR_MS = 60 * 60 * 1000
@@ -18,7 +19,7 @@ type SweepOverrides = {
 
 /** The age bound is computed once per run and bound as a UUIDv7 parameter, never `now()` in SQL. */
 function runSweep(
-  stage: 'appeal' | 'dispute',
+  stage: 'report' | 'appeal' | 'dispute',
   expirePage: (cutoffId: string, batchSize: number, runIds?: readonly string[]) => Promise<number>,
   overrides: SweepOverrides,
 ) {
@@ -27,6 +28,10 @@ function runSweep(
     new Date((overrides.now ?? new Date()).getTime() - limits.ageHours * HOUR_MS),
   )
   return runBoundedBatches(limits, batchSize => expirePage(cutoffId, batchSize, overrides.runIds))
+}
+
+export function processExpireStuckReportJudgementRuns(overrides: SweepOverrides = {}) {
+  return runSweep('report', expireStuckReportJudgementRunPage, overrides)
 }
 
 export function processExpireStuckAppealResolutionRuns(overrides: SweepOverrides = {}) {

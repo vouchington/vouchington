@@ -49,6 +49,24 @@ export async function markReportJudgementRunsFailed(
   return rowCount ?? 0
 }
 
+/** Expires still-active runs only; a run that finished meanwhile is left untouched. */
+export async function markReportJudgementRunsExpired(
+  runs: readonly { reportId: string; runId: string }[],
+): Promise<number> {
+  if (runs.length === 0) return 0
+  const reportIds = runs.map(run => run.reportId)
+  const runIds = runs.map(run => run.runId)
+  const { rowCount } = await write(sql`/* markReportJudgementRunsExpired */
+    UPDATE moderation_report_judgement_runs run SET expired_at = now()
+    FROM unnest(${reportIds}::uuid[], ${runIds}::uuid[]) AS requested(report_id, run_id)
+    WHERE run.id = requested.run_id AND run.moderation_report_id = requested.report_id
+      AND run.id = ANY(${runIds}::uuid[])
+      AND run.completed_at IS NULL AND run.failed_at IS NULL AND run.expired_at IS NULL
+    RETURNING run.id
+  `)
+  return rowCount ?? 0
+}
+
 export async function markReportJudgementRunExpired(
   reportId: string,
   runId: string,
