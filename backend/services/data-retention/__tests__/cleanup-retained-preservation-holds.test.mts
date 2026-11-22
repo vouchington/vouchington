@@ -150,9 +150,9 @@ describe('legal preservation holds and final user purge', () => {
     // { deleted: 1 } removed the account, and that must exclude the hold.
     const deleted = purge!.status === 'fulfilled' && purge!.value.deleted === 1
     expect(held && deleted).toBe(false)
-    if (purge!.status === 'fulfilled') {
-      expect(purge!.value).toEqual({ deleted: deleted ? 1 : 0, hasMore: false })
-    }
+    expect(purge!.status === 'fulfilled' ? purge!.value : undefined).toEqual(
+      purge!.status === 'fulfilled' ? { deleted: deleted ? 1 : 0, hasMore: false } : undefined,
+    )
     const timestamp = expect.any(Date)
     const hold = expect.objectContaining({
       account_user_id: user.id,
