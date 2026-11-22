@@ -61,9 +61,9 @@ function seedCursorBefore(family: string, ownerIds: string[]) {
   })
 }
 
-afterEach(() => restoreBatchSize?.())
-
 describe('deleted-user ballot sweep', () => {
+  afterEach(() => restoreBatchSize?.())
+
   it('drains late ballots in capped pages from its persisted cursor and revisits behind it', async () => {
     setBatchSize(2)
     const [deleted, active] = await Promise.all([createTestUser(), createTestUser()])
