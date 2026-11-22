@@ -4,7 +4,7 @@ import type {
   HostnameBlockCleanupData,
 } from '@queues/background/enqueues/hostname-blocking-jobs'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import sql from 'sql-template-strings'
+import sql, { type SQLStatement } from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 import {
   attachHostnameBlockToAncestorCleanup,
@@ -37,24 +37,27 @@ export async function ensureHostnameBlockCleanupOperation(
   blockedSource: string,
   penalizeCreators: boolean,
 ): Promise<HostnameBlockCleanupOperation> {
-  const { rows: existingRows } = await query<{
-    id: string
-    relation_cleanup_root_block_id: string | null
-  }>(sql`/* ensureHostnameBlockCleanupOperation:findExisting */
-    SELECT id, relation_cleanup_root_block_id FROM url_hostname_blocks
+  // The target hostname UPDATE already serializes admissions for this hostname.
+  // Read the linked root in the same snapshot in case retention retires a lifted root.
+  const attachedRoot = sql`(
+    SELECT relation_cleanup_root_block_id FROM url_hostname_blocks
     WHERE url_hostname_id = ${hostnameId} AND lifted_at IS NULL
-      AND domain_blocklist_source_id IS NULL
-    ORDER BY (relation_cleanup_root_block_id IS NULL), id LIMIT 1 FOR UPDATE
-  `)
+      AND domain_blocklist_source_id IS NULL AND relation_cleanup_root_block_id IS NOT NULL
+    ORDER BY id LIMIT 1
+  )`
+  const { rows: attachedRows } = await query<HostnameBlockCleanupOperation>(
+    cleanupOperationSql(attachedRoot),
+  )
+  if (attachedRows[0]) return attachedRows[0]
+
+  const { rows: existingRows } = await query<{ id: string }>(
+    sql`/* ensureHostnameBlockCleanupOperation:findExisting */
+      SELECT id FROM url_hostname_blocks
+      WHERE url_hostname_id = ${hostnameId} AND lifted_at IS NULL
+        AND domain_blocklist_source_id IS NULL AND relation_cleanup_root_block_id IS NULL
+      ORDER BY id LIMIT 1 FOR UPDATE`,
+  )
   const existing = existingRows[0]
-  if (existing?.relation_cleanup_root_block_id) {
-    const operation = await getHostnameBlockCleanupOperationInTransaction(
-      query,
-      existing.relation_cleanup_root_block_id,
-    )
-    if (!operation) throw new Error('Hostname block cleanup root is missing')
-    return operation
-  }
   const ancestor = await lockPendingAncestorHostnameBlockCleanup(query, hostname)
   if (
     ancestor &&
@@ -132,7 +135,7 @@ export async function lockHostnameBlockCleanupOperation(
   return rows[0] ?? null
 }
 
-function cleanupOperationSql(blockId: string) {
+function cleanupOperationSql(blockId: string | SQLStatement) {
   return sql`/* hostnameBlockCleanupOperation */
     SELECT block.id AS "blockId", block.url_hostname_id AS "hostnameId",
       hostname.hostname, block.blocked_by_id AS "blockedById",
@@ -147,5 +150,6 @@ function cleanupOperationSql(blockId: string) {
       block.relation_cleanup_completed_at AS "completedAt"
     FROM url_hostname_blocks block
     JOIN url_hostnames hostname ON hostname.id = block.url_hostname_id
-    WHERE block.id = ${blockId} AND block.relation_cleanup_root_block_id = block.id`
+    WHERE block.id = `.append(typeof blockId === 'string' ? sql`${blockId}` : blockId).append(sql`
+      AND block.relation_cleanup_root_block_id = block.id`)
 }

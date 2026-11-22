@@ -12,7 +12,8 @@ export async function unblockHostname(
   options: QueryOptions = {},
 ): Promise<void> {
   const run = async (query: TransactionQuery) => {
-    await lockHostnameForUnblock(query, hostnameId)
+    if (!(await lockHostnameForUnblock(query, hostnameId))) return false
+    await assertHostnameCleanupCompletedForUnblock(query, hostnameId)
     const { rows: introducedRows } = await query(sql`/* unblockHostname:introduce */
       UPDATE url_hostnames
       SET publicly_introduced_at = CURRENT_TIMESTAMP
@@ -52,12 +53,23 @@ async function assertHostnameCleanupCompletedForUnblock(
     )
 }
 
-async function lockHostnameForUnblock(query: TransactionQuery, hostnameId: string): Promise<void> {
-  // Match the block flow's hostname-before-block-row order.
-  await query(sql`/* unblockHostname:lockHostname */
-    SELECT id FROM url_hostnames WHERE id = ${hostnameId} FOR UPDATE
+async function lockHostnameForUnblock(
+  query: TransactionQuery,
+  hostnameId: string,
+): Promise<boolean> {
+  // Writes must follow admission's hostname-before-block order because lifting a staff
+  // block can update the hostname's projected state.
+  const { rows } = await query(sql`/* unblockHostname:lockHostname */
+    SELECT hostname.id FROM url_hostnames hostname
+    WHERE hostname.id = ${hostnameId}
+      AND (hostname.publicly_introduced_at IS NULL OR EXISTS (
+        SELECT 1 FROM url_hostname_blocks block
+        WHERE block.url_hostname_id = hostname.id
+          AND block.lifted_at IS NULL AND block.domain_blocklist_source_id IS NULL
+      ))
+    FOR UPDATE OF hostname
   `)
-  return assertHostnameCleanupCompletedForUnblock(query, hostnameId)
+  return rows.length !== 0
 }
 
 async function liftStaffBlocksAndEnqueue(
