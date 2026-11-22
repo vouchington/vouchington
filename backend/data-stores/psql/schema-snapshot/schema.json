@@ -5183,6 +5183,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_agent_moderations__retention_repair": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_agent_moderations__retention_repair ON ONLY public.agent_moderations USING btree (id, post_id) WHERE ((retention_due_at IS NULL) AND (retention_blocked_reason IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((retention_due_at IS NULL) AND (retention_blocked_reason IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_agent_moderations__transparency_community": {
           "accessMethod": "btree",
           "constraintBacked": false,

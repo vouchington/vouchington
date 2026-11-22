@@ -75,6 +75,7 @@ _none_
 - `idx_agent_moderations__prompt_id`: `CREATE INDEX idx_agent_moderations__prompt_id ON ONLY public.agent_moderations USING btree (prompt_id)`
 - `idx_agent_moderations__retention_due`: `CREATE INDEX idx_agent_moderations__retention_due ON ONLY public.agent_moderations USING btree (retention_due_at, id, post_id) WHERE (retention_due_at IS NOT NULL)`
 - `idx_agent_moderations__retention_post_work`: `CREATE INDEX idx_agent_moderations__retention_post_work ON ONLY public.agent_moderations USING btree (post_id, id) WHERE (retention_blocked_reason = 'hash'::agent_moderation_retention_block_reasons)`
+- `idx_agent_moderations__retention_repair`: `CREATE INDEX idx_agent_moderations__retention_repair ON ONLY public.agent_moderations USING btree (id, post_id) WHERE ((retention_due_at IS NULL) AND (retention_blocked_reason IS NULL))`
 - `idx_agent_moderations__transparency_community`: `CREATE INDEX idx_agent_moderations__transparency_community ON ONLY public.agent_moderations USING btree (moderation_transparency_community_id, id) WHERE (moderation_transparency_category = 'community_ai'::moderation_transparency_categories)`
 - `idx_agent_moderations__transparency_global`: `CREATE INDEX idx_agent_moderations__transparency_global ON ONLY public.agent_moderations USING btree (id) WHERE (moderation_transparency_category IS NOT NULL)`
 - `idx_agent_moderations__votes_score_sort__id`: `CREATE INDEX idx_agent_moderations__votes_score_sort__id ON ONLY public.agent_moderations USING btree (votes_score_sort DESC, post_id, id) WHERE (deleted_at IS NULL)`
