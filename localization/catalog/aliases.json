@@ -1447,6 +1447,7 @@
 {"alias":"native.swift.aiRunStatus.appealDraftFailed","consumer":"dotnet","copyId":"copy.native.swift.aiRunStatus.appealDraftFailed"},
 {"alias":"native.swift.aiRunStatus.appealDraftSucceeded","consumer":"dotnet","copyId":"copy.native.swift.moderationAppeals.aiDrafted"},
 {"alias":"native.swift.chat.conversationTitle","consumer":"dotnet","copyId":"copy.native.swift.chat.conversationTitle"},
+{"alias":"native.swift.chat.generateTitle","consumer":"dotnet","copyId":"copy.native.swift.chat.generateTitle"},
 {"alias":"native.swift.chat.rename","consumer":"dotnet","copyId":"copy.extracted.passkeyManager.passkeyList.rename_3064d79a"},
 {"alias":"native.swift.chat.stop","consumer":"dotnet","copyId":"copy.native.swift.chat.stop"},
 {"alias":"native.swift.commentThread.ancestorChain","consumer":"dotnet","copyId":"copy.native.swift.commentThread.ancestorChain"},
