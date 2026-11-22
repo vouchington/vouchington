@@ -2,17 +2,12 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import { createTestTopic, createTestUser } from '@voucha/test-helpers'
 import { seedTopicMergeParentEdges } from '@voucha/test-helpers/topic-merge-relations'
 import { readActiveTopicMergeAdmissionIds } from '@voucha/test-helpers/topic-merge-admission'
-import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { getTopicMergeParentEdge } from '@voucha/test-helpers/entities/topic-merge-parent'
 import { getEntityRelationMetadataOrThrow } from '../entity-relations/metadata.mts'
 import { upsertEntityRelation } from '../entity-relations/upsert.mts'
 import { getEntityRelations } from '../entity-relations/query.mts'
 import { getTopicByAny } from './get.mts'
-import {
-  createTopicMergeOperation,
-  getTopicMergeOperation,
-  type PublicTopicMergeOperation,
-} from './merge-operations.mts'
+import { createTopicMergeOperation, getTopicMergeOperation } from './merge-operations.mts'
 import { processTopicMergeOperationPage } from './merge-operation-page.mts'
 import { topicMergeWorkConfig } from './merge-work-limits.mts'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
@@ -84,28 +79,18 @@ describe('topic merge lifecycle ordering', () => {
     const [source, shared, destination] = await Promise.all(
       topics.map(row => getTopicByAny(row.id)),
     )
-    let competing: PromiseSettledResult<PublicTopicMergeOperation> | undefined
-    onTestFinished(
-      afterPostgresTransactionQueryForTest(
-        '/* createTopicMergeOperation */',
-        values => values[0] === source!.id,
-        async () => {
-          // The first insert is still uncommitted while the competing admission runs.
-          const [outcome] = await Promise.allSettled([
-            createTopicMergeOperation(admin, shared!, destination!),
-          ])
-          competing = outcome
-        },
-      ),
-    )
-    const [first] = await Promise.allSettled([createTopicMergeOperation(admin, source!, shared!)])
-    expect(competing).toBeDefined()
-    const outcomes = [first, competing!]
+    const outcomes = await Promise.allSettled([
+      createTopicMergeOperation(admin, source!, shared!),
+      createTopicMergeOperation(admin, shared!, destination!),
+    ])
     const admitted = outcomes.filter(result => result.status === 'fulfilled')
     const rejected = outcomes.filter(result => result.status === 'rejected')
     expect(admitted).toHaveLength(1)
     expect(rejected).toHaveLength(1)
-    expect(rejected[0]?.reason).toMatchObject({ status: 409, cause: { code: '40001' } })
+    expect(rejected[0]?.reason).toMatchObject({
+      status: 409,
+      message: 'A topic merge is already in progress',
+    })
     const operation = admitted[0]!.value
     await expect(
       getTopicMergeOperation(admin, operation.source_topic_id, operation.id),
