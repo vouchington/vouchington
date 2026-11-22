@@ -1510,6 +1510,14 @@ CREATE OR REPLACE FUNCTION public.fn_text_to_timestamptz(text_value text)
  IMMUTABLE
 ```
 
+## `fn_update_agent_moderation_predecessors`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_agent_moderation_predecessors()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_update_agent_moderation_retention`
 
 ```sql
@@ -1900,14 +1908,6 @@ CREATE OR REPLACE FUNCTION public.fn_url_latest_rss_feed_item_published_at(p_url
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_user_deletion_has_remaining_owned_data(target_user_id uuid)
  RETURNS boolean
- LANGUAGE plpgsql
-```
-
-## `fn_wake_agent_moderation_predecessors`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_wake_agent_moderation_predecessors()
- RETURNS trigger
  LANGUAGE plpgsql
 ```
 
