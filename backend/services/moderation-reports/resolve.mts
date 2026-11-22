@@ -44,6 +44,7 @@ export async function resolveModerationReport(
     assert(context, 404, 'Report not found')
     if (options.communityId) assert(context.is_in_community_scope, 403, 'Forbidden')
     assert(context.status === 'pending', 409, 'Report is already resolved')
+    await lockModerationCases([context.case_id], query)
     const { rows } = await write<ModerationReport>(
       sql`/* resolveModerationReport */
           WITH updated AS (

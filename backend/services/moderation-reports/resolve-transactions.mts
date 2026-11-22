@@ -28,6 +28,7 @@ export async function runReportResolutionTransaction<T>(
   }
 }
 
+// Keep case writers ahead of report/cluster writes, matching report FK checks.
 export async function lockModerationCases(
   caseIds: string[],
   query: TransactionQuery,

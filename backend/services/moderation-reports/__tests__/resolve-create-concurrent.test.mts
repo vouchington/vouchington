@@ -9,6 +9,7 @@ import {
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { interceptPostgresTransactionsForTest } from '@voucha/test-helpers/injected-postgres-transactions'
+import { getTestModerationReportCaseId } from '@voucha/test-helpers/entities/moderation-reports'
 import { getTestModerationCaseById } from '@voucha/test-helpers/entities/moderation-case-reads'
 import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { interceptPostgresTransactionQueriesForTest } from '@voucha/test-helpers/injected-transaction-queries'
@@ -48,7 +49,7 @@ describe('report creation during case resolution', () => {
       })
       const barrier = Promise.withResolvers<void>()
       const arrived = new Set<string>()
-      const markers = ['/* createModerationReport */', '/* resolveModerationReport */']
+      const markers = ['/* createModerationReport */', '/* lockModerationCases */']
       const restore = interceptPostgresTransactionsForTest(
         transaction =>
           new Proxy(transaction, {
@@ -112,9 +113,10 @@ describe('report creation during case resolution', () => {
     },
   )
   it.each(['report', 'resolution'] as const)(
-    'keeps the case open when %s commits first',
+    'commits the filing when %s commits first',
     async first => {
-      const [author, reporter, newReporter] = await Promise.all([
+      const [author, reporter, newReporter, successorReporter] = await Promise.all([
+        createTestUser(),
         createTestUser(),
         createTestUser(),
         createTestUser(),
@@ -136,9 +138,9 @@ describe('report creation during case resolution', () => {
         entityId: postId,
         reason: 'harassment',
       })
-      const fileReport = () =>
+      const fileReport = (reporterId: string) =>
         withCommittedPostgresTransactionForTest(query =>
-          insertModerationReport(newReporter.id, WEB_PROVENANCE, input, query),
+          insertModerationReport(reporterId, WEB_PROVENANCE, input, query),
         )
       const resolveReport = () =>
         resolveModerationReport(reportId, {
@@ -147,6 +149,7 @@ describe('report creation during case resolution', () => {
           status: 'reviewed',
         })
 
+      let successor: Awaited<ReturnType<typeof fileReport>> | undefined
       const created = first === 'report' ? await fileBeforeClose() : await closeBeforeInsert()
 
       async function fileBeforeClose() {
@@ -158,7 +161,7 @@ describe('report creation during case resolution', () => {
             holderProcessId,
             pool: 'write',
             lock: { kind: 'transaction' },
-            queryMarker: 'resolveModerationReport',
+            queryMarker: 'lockModerationCases',
             releaseHolder: () => holder[Symbol.asyncDispose](),
           },
           async waitForLock => {
@@ -178,22 +181,41 @@ describe('report creation during case resolution', () => {
             statement.includes('/* createModerationReport */') && values.includes(newReporter.id),
           async () => {
             await resolveReport()
+            successor = await fileReport(successorReporter.id)
           },
         )
         try {
-          return await fileReport()
+          return await fileReport(newReporter.id)
         } finally {
           restore()
         }
       }
 
       expect(created.report.case_id).toBe(original.id)
-      expect((await getModerationReportById(created.report.id))?.status).toBe('pending')
       expect((await getModerationReportById(reportId))?.status).toBe('reviewed')
+      const openCase = await findOpenCaseForEntity({ entityType: 'post', entityId: postId })
+      const expectedCaseId = first === 'report' ? original.id : successor?.report.case_id
+      const resolvedAt = expect.any(Date)
+      const expectedResolvedAt = first === 'report' ? null : resolvedAt
+      expect(openCase?.id).toBe(expectedCaseId)
       expect(await getTestModerationCaseById(original.id)).toMatchObject({
-        resolved_at: null,
+        resolved_at: expectedResolvedAt,
         resolved_by_id: null,
       })
+      const pendingIds = [created.report.id, ...(successor ? [successor.report.id] : [])]
+      expect(pendingIds).toHaveLength(first === 'report' ? 1 : 2)
+      const pending = await Promise.all(
+        pendingIds.map(async id => {
+          const [report, caseId] = await Promise.all([
+            getModerationReportById(id),
+            getTestModerationReportCaseId(id),
+          ])
+          return { status: report?.status, caseId }
+        }),
+      )
+      const expectedPending = [{ status: 'pending', caseId: original.id }]
+      if (successor) expectedPending.push({ status: 'pending', caseId: successor.report.case_id })
+      expect(pending).toEqual(expectedPending)
     },
   )
 
