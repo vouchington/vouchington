@@ -136,6 +136,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
       ...backendDataStoreTestDefaults,
       name: 'backend-ai-usage-monthly-ddl',
       sequence: { groupOrder: 1 },
+      fileParallelism: false,
       isolate: true,
       runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
       include: [

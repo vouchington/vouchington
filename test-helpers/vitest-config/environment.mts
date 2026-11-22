@@ -82,6 +82,7 @@ const parseWorkerCount = (
   return fallback
 }
 const parseCiVitestMaxWorkers = (value: string | undefined): number => {
+  if (value === undefined) return defaultCiVitestWorkers
   const workerCount = parseWorkerCount('VITEST_MAX_WORKERS', value, defaultCiVitestWorkers)
   if (typeof workerCount === 'number') {
     const cappedWorkerCount = Math.min(workerCount, maxCiVitestWorkers)

@@ -88,6 +88,12 @@ describe('backend uncredentialed Docker test workflow', () => {
     const backendCommand =
       'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-ai-usage-monthly-ddl --project backend-partition-retirement --project backend-platform-stats-cache --project backend-mocks --project backend-migration-initializers --project backend-real-glide-mq --shard "$CI_SHARD"'
     expect(runBackendTestsScript).toContain(backendCommand)
+    expect(runBackendTestsScript).toContain(
+      'console.log(parseVitestMaxWorkers(process.env.VITEST_MAX_WORKERS))',
+    )
+    expect(runBackendTestsScript).toContain(
+      `(\n  unset VITEST_MAX_WORKERS\n  ${backendCommand} --maxWorkers "$vitest_workers"\n)`,
+    )
     expect(
       runBackendTestsScript?.match(/--project backend-migration-initializers\b/g),
     ).toHaveLength(1)
@@ -97,7 +103,10 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(workflow).not.toContain('--coverage')
     expect(vitestConfig).not.toContain("name: 'backend-seed-csvs'")
     expect(vitestConfig).toContain("name: 'backend-real-glide-mq'")
-    expect(vitestConfig).not.toContain('fileParallelism: false')
+    expect(vitestConfig.match(/fileParallelism: false/g)).toHaveLength(1)
+    expect(vitestConfig).toContain(
+      "name: 'backend-ai-usage-monthly-ddl',\n      sequence: { groupOrder: 1 },\n      fileParallelism: false",
+    )
     expect(vitestConfig).not.toContain("name: 'backend-activitypub-capacity'")
     for (const project of backendCredentialedProjectNames) {
       expect(workflow).not.toContain(`--project ${project}`)
