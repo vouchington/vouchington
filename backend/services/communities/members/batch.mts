@@ -48,18 +48,10 @@ export async function getActiveCommunityMembersForUsers(
     SELECT `
   statement.append(memberColumns)
   statement.append(sql`
-    FROM (SELECT DISTINCT unnest(${userIds}::uuid[]) AS user_id) requested
-    CROSS JOIN LATERAL (
-      SELECT `)
-  statement.append(memberColumns)
-  statement.append(sql`
-      FROM community_members member
-      WHERE member.community_id = ${communityId}
-        AND member.user_id >= requested.user_id
-        AND member.user_id <= requested.user_id
-        AND member.removed_at IS NULL
-      LIMIT 1
-    ) member
+    FROM community_members member
+    WHERE member.community_id = ${communityId}
+      AND member.user_id = ANY(${userIds}::uuid[])
+      AND member.removed_at IS NULL
   `)
   const execute = (query: QueryExecutor) => query<CommunityMember>(statement)
   const { rows } = await execute(options?.query ?? read)
