@@ -5,6 +5,8 @@ import {
   insertTestCommunityMember,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
+import { interceptPostgresTransactionQueriesForTest } from '@voucha/test-helpers/injected-transaction-queries'
+import { getPendingApplicationForUser } from './pending.mts'
 import { createApplication } from './create.mts'
 import { getCommunityApplication, searchApplications } from './get.mts'
 import { getApplicationQuestions, setApplicationQuestions } from './questions.mts'
@@ -49,6 +51,43 @@ describe('index', () => {
         role: 'owner',
       }),
     ])
+  })
+
+  it('rejects answers to a form replaced before filing', async () => {
+    const formOwner = await createTestUser()
+    const applicant = await createTestUser()
+    const community = await insertTestCommunity({
+      createdById: formOwner.id,
+      visibility: 'private',
+    })
+    await insertTestCommunityMember({
+      communityId: community.id,
+      userId: formOwner.id,
+      role: 'owner',
+    })
+    const [original] = await setApplicationQuestions(formOwner.id, community.id, [
+      { question: 'Original', field_type: 'short_text' },
+    ])
+    const restore = interceptPostgresTransactionQueriesForTest(
+      (statement, values) =>
+        statement.startsWith('/* createApplication */') && values[0] === community.id,
+      async () => {
+        await setApplicationQuestions(formOwner.id, community.id, [
+          { question: 'Replacement', field_type: 'short_text' },
+        ])
+      },
+    )
+
+    try {
+      await expect(
+        createApplication(applicant.id, WEB_PROVENANCE, community.id, {
+          [original!.id]: 'Answer to the original form',
+        }),
+      ).rejects.toMatchObject({ status: 422 })
+      expect(await getPendingApplicationForUser(community.id, applicant.id)).toBeNull()
+    } finally {
+      restore()
+    }
   })
 
   describe('setApplicationQuestions / getApplicationQuestions', () => {
