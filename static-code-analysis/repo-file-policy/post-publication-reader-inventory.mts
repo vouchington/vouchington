@@ -55,8 +55,7 @@ export function checkPostPublicationReaderInventory(ctx: SharedContext, errors: 
   ])
   if (
     classifiedPaths.size !==
-    inventory.implemented.length +
-      inventory.classified_exceptions.length
+    inventory.implemented.length + inventory.classified_exceptions.length
   ) {
     errors.push(`${INVENTORY_PATH}: a reader path may have only one classification`)
   }

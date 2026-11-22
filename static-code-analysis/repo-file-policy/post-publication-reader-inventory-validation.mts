@@ -55,10 +55,7 @@ export function validateRows(
 export function isInventory(value: unknown): value is ReaderInventory {
   if (!value || typeof value !== 'object') return false
   const inventory = value as Record<string, unknown>
-  return (
-    Array.isArray(inventory.implemented) &&
-    Array.isArray(inventory.classified_exceptions)
-  )
+  return Array.isArray(inventory.implemented) && Array.isArray(inventory.classified_exceptions)
 }
 
 function isInventoryRow(value: unknown): value is {
