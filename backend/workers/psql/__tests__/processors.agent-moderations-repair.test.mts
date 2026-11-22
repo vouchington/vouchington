@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, onTestFinished } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   createTestAgentModerationRetentionPage,
   createTestAgentModerationRetentionCursor,
@@ -12,7 +12,6 @@ import {
   testAgentModerationRetentionPostHasWork,
 } from '@voucha/test-helpers/entities/agent-moderation-retention'
 import { psql } from '@queues/psql/queues'
-import type { AgentModerationRetentionContinuationData } from '@queues/psql/types'
 import processPsql from '../processors.mts'
 
 describe('agent moderation retention repair continuation', () => {
@@ -31,10 +30,6 @@ describe('agent moderation retention repair continuation', () => {
     )
     const runId = randomUUID()
     const nextId = `agent-moderation-retention__${runId}__2`
-    const followingId = `agent-moderation-retention__${runId}__3`
-    onTestFinished(async () => {
-      await (await psql.getJob(nextId))?.remove()
-    })
     const options = {
       agentModeration: {
         postIds: [owned.postId],
@@ -54,18 +49,8 @@ describe('agent moderation retention repair continuation', () => {
       undefined,
       options,
     )
-    expect(result).toMatchObject({ scanned: 1, deleted: 1, hasMore: true })
-    const repair = await psql.getJob(nextId)
-    expect(repair?.data).toMatchObject({ agentModerationRetention: { repair: expect.any(Object) } })
-    expect(
-      await processPsql(
-        'continueAgentModerationRetentionCleanup',
-        repair!.data as AgentModerationRetentionContinuationData,
-        undefined,
-        repair!.id,
-        options,
-      ),
-    ).toEqual({ scanned: 0, deleted: 0, hasMore: false, continuation: null })
+    expect(result).toEqual({ scanned: 1, deleted: 1, hasMore: false, continuation: null })
+    expect(await psql.getJob(nextId)).toBeNull()
     expect(await getTestAgentModerationRetentionState(owned.postId, owned.oldId)).toBeNull()
     expect(await testAgentModerationRetentionPostHasWork(owned.postId)).toBe(false)
     expect(await getTestAgentModerationRetentionState(neighbor.postId, neighbor.oldId)).toEqual({
@@ -76,6 +61,5 @@ describe('agent moderation retention repair continuation', () => {
       '00000000-0000-0000-0000-000000000000',
     )
     expect(await testAgentModerationRetentionPostHasWork(neighbor.postId)).toBe(true)
-    expect(await psql.getJob(followingId)).toBeNull()
   })
 })

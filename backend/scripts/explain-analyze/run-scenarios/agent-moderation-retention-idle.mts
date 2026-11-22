@@ -34,8 +34,8 @@ export async function runAgentModerationRetentionIdleScenarios(
       upperBoundDate: new Date(anchor.getTime() - 99 * DAY_MS),
     })
     assert.equal(result.deleted, 0)
-    assert.equal(result.hasMore, true)
-    assert.ok(result.continuation?.repair)
+    assert.equal(result.hasMore, false)
+    assert.equal(result.continuation, null)
   }
   const idlePageStatements = [
     'listChangedAgentModerationRetentionPost',

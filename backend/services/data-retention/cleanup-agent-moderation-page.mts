@@ -1,7 +1,11 @@
 import { beginTransaction } from '@data-stores/psql'
 import { reconsiderChangedPost } from './cleanup-agent-moderation-hash-work.mts'
 import { deleteAgentModerationRetentionPage } from './delete-agent-moderation-retention-page.mts'
-import { repairAgentModerationRetentionPage } from './repair-agent-moderation-retention-page.mts'
+import {
+  repairAgentModerationRetentionPage,
+  type AgentModerationRepairPosition,
+} from './repair-agent-moderation-retention-page.mts'
+import { repairPersistedAgentModerationPage } from './agent-moderation-repair-cursor.mts'
 
 const ZERO_UUID = '00000000-0000-0000-0000-000000000000'
 
@@ -11,7 +15,6 @@ export type AgentModerationCleanupContinuation = {
   afterPostId: string
   upperBoundDueAt: string
   upperBoundId: string
-  repair?: { afterId: string; afterPostId: string }
 }
 
 export type AgentModerationCleanupResult = {
@@ -31,11 +34,15 @@ export async function cleanupAgentModerationPage(
   afterDueAt: string,
   afterId: string,
   afterPostId: string,
-  repair: AgentModerationCleanupContinuation['repair'],
+  repair: AgentModerationRepairPosition | null,
+  persistRepair: boolean,
+  reserveRepairSlot: boolean,
   postIds?: readonly string[],
-): Promise<AgentModerationCleanupResult> {
+): Promise<AgentModerationCleanupResult & { repair: AgentModerationRepairPosition | null }> {
   await using transaction = await beginTransaction()
   const dirty = await reconsiderChangedPost(transaction, batchSize, postIds)
+  // The final daily page reserves a slot so a due backlog can't starve repair.
+  const dueBudget = batchSize - Number(reserveRepairSlot)
   // Woken work may sort before this continuation's last candidate. A dirty-post page
   // restarts the due keyset; previously visited candidates were deleted or blocked.
   const pageAfterDueAt = dirty.processed ? lowerBoundDueAt.toISOString() : afterDueAt
@@ -62,11 +69,11 @@ export async function cleanupAgentModerationPage(
       pageAfterDueAt,
       pageAfterId,
       pageAfterPostId,
-      batchSize + 1,
+      dueBudget + 1,
       ...(postIds ? [postIds] : []),
     ],
   )
-  const page = candidates.slice(0, batchSize)
+  const page = candidates.slice(0, dueBudget)
   if (page.length > 0) {
     await transaction(
       `/* lockAgentModerationCleanupSources */
@@ -81,38 +88,43 @@ export async function cleanupAgentModerationPage(
     page.length > 0
       ? await deleteAgentModerationRetentionPage(transaction, page, upperBoundId, upperBoundDueAt)
       : 0
-  const moreDue = candidates.length > batchSize || dirty.hasMore
-  const repaired = moreDue
-    ? null
-    : await repairAgentModerationRetentionPage(
-        transaction,
-        batchSize - page.length,
-        { id: repair?.afterId ?? ZERO_UUID, post_id: repair?.afterPostId ?? ZERO_UUID },
-        lowerBoundId,
-        upperBoundId,
-        upperBoundDueAt,
-        postIds,
-      )
+  const moreDue = candidates.length > dueBudget || dirty.hasMore
+  const repairBudget = batchSize - page.length
+  const repaired =
+    repair && (reserveRepairSlot || !moreDue) && repairBudget > 0
+      ? persistRepair
+        ? await repairPersistedAgentModerationPage(
+            transaction,
+            repairBudget,
+            lowerBoundId,
+            upperBoundId,
+            upperBoundDueAt,
+            postIds,
+          )
+        : await repairAgentModerationRetentionPage(
+            transaction,
+            repairBudget,
+            repair,
+            lowerBoundId,
+            upperBoundId,
+            upperBoundDueAt,
+            postIds,
+          )
+      : null
   await transaction.commit()
   const last = page.at(-1)
-  const nextRepair = repaired?.next
-    ? { afterId: repaired.next.id, afterPostId: repaired.next.post_id }
-    : moreDue
-      ? repair
-      : undefined
-  const hasMore = moreDue || nextRepair !== undefined
   return {
     scanned: page.length + (repaired?.scanned ?? 0),
     deleted: deleted + (repaired?.deleted ?? 0),
-    hasMore,
-    continuation: hasMore
+    repair: repaired ? repaired.next : repair,
+    hasMore: moreDue,
+    continuation: moreDue
       ? {
           afterDueAt: last?.retention_due_at.toISOString() ?? pageAfterDueAt,
           afterId: last?.id ?? pageAfterId,
           afterPostId: last?.post_id ?? pageAfterPostId,
           upperBoundDueAt,
           upperBoundId,
-          ...(nextRepair ? { repair: nextRepair } : {}),
         }
       : null,
   }

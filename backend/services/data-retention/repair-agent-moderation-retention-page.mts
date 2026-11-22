@@ -1,22 +1,21 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import { deleteAgentModerationRetentionPage } from './delete-agent-moderation-retention-page.mts'
 
-type ModerationKey = { id: string; post_id: string }
+export type AgentModerationRepairPosition = { id: string; post_id: string }
 
 export async function repairAgentModerationRetentionPage(
   query: QueryExecutor,
   batchSize: number,
-  after: ModerationKey,
+  after: AgentModerationRepairPosition,
   lowerBoundId: string,
   upperBoundId: string,
   upperBoundDueAt: string,
   postIds?: readonly string[],
 ) {
-  if (batchSize === 0) return { scanned: 0, deleted: 0, next: after }
   // Post dates cannot bound moderation age. Find the latest post at or after the
   // cursor's post ID to prune future partitions. If it vanished and no later post
   // exists, the cursor's post ID is already an upper bound for every remaining row.
-  const { rows } = await query<ModerationKey>(
+  const { rows } = await query<AgentModerationRepairPosition>(
     `/* listAgentModerationRetentionRepairPage */
      SELECT id, post_id FROM agent_moderations
      WHERE id >= $1::uuid AND id < $2::uuid AND (id, post_id) > ($3::uuid, $4::uuid)
@@ -32,11 +31,14 @@ export async function repairAgentModerationRetentionPage(
 
   // Check only this inspected page. A new successor can make an unchanged keeper
   // eligible later, so rows without one stay in the ordinary NULL-due state.
-  const { rows: repaired } = await query<ModerationKey>(
+  const { rows: repaired } = await query<AgentModerationRepairPosition>(
     `/* repairAgentModerationRetentionDueDates */
      UPDATE agent_moderations moderation
      SET retention_due_at = uuid_extract_timestamp(moderation.id) + INTERVAL '90 days'
-     FROM unnest($1::uuid[], $2::uuid[]) AS page(id, post_id)
+     FROM (
+       SELECT id, post_id FROM unnest($1::uuid[], $2::uuid[]) AS input(id, post_id)
+       ORDER BY id, post_id
+     ) AS page
      WHERE moderation.post_id = page.post_id AND moderation.id = page.id
        AND moderation.retention_due_at IS NULL AND moderation.retention_blocked_reason IS NULL
        AND (

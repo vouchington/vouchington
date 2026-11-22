@@ -177,21 +177,9 @@ describe('agent moderation retention continuations', () => {
         expect(firstResult.agentModerations).toMatchObject({
           scanned: 1,
           deleted: 1,
-          hasMore: true,
+          hasMore: false,
         })
-        const repair = await psql.getJob(moderationId)
-        expect(repair?.data).toMatchObject({
-          agentModerationRetention: { repair: expect.any(Object) },
-        })
-        expect(
-          await processPsql(
-            'continueAgentModerationRetentionCleanup',
-            repair!.data as AgentModerationRetentionContinuationData,
-            undefined,
-            repair!.id,
-            { agentModeration: options.retention.agentModerations },
-          ),
-        ).toEqual({ scanned: 0, deleted: 0, hasMore: false, continuation: null })
+        expect(await psql.getJob(moderationId)).toBeNull()
         expect(firstResult.classifierRecords.runs).toEqual({
           scanned: 1,
           deleted: 1,
