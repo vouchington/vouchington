@@ -23,6 +23,7 @@ function CodeStep({ initialCode, loading }: { initialCode: string; loading: bool
         onBack={() => {}}
         onCodeChange={setCode}
         onResendCode={async () => {}}
+        resendSecondsLeft={0}
         onSubmit={async event => {
           event.preventDefault()
         }}

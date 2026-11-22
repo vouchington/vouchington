@@ -27,12 +27,12 @@ function hashEmailLoginToken(token: string, scope: EmailAuthenticationScope): st
   )
 }
 
-export const createEmailAddressLoginToken = async (
-  emailAddress: string,
+/** Issues a code for an address that `validateEmailAddress` already accepted. */
+export const issueEmailAddressLoginToken = async (
+  validatedEmailAddress: string,
   scope: EmailAuthenticationScope = { purpose: 'login' },
   options: QueryOptions = {},
 ) => {
-  const validatedEmailAddress = await validateEmailAddress(emailAddress)
   const token = createLoginToken()
   return withTransactionOptions(options, async query => {
     await lockEmailAuthenticationScope(validatedEmailAddress, scope, query)
@@ -64,6 +64,12 @@ export const createEmailAddressLoginToken = async (
     return { token, emailAddress: validatedEmailAddress }
   })
 }
+
+export const createEmailAddressLoginToken = async (
+  emailAddress: string,
+  scope: EmailAuthenticationScope = { purpose: 'login' },
+  options: QueryOptions = {},
+) => issueEmailAddressLoginToken(await validateEmailAddress(emailAddress), scope, options)
 
 export const verifyEmailAddressLoginToken = async (
   emailAddress: string,
@@ -110,11 +116,11 @@ export const enqueueEmailAddressLoginToken = (
 }
 
 export async function createAndEnqueueEmailAddressReAuthToken(
-  emailAddress: string,
+  validatedEmailAddress: string,
   uiLocale: string | null,
   scope: Extract<EmailAuthenticationScope, { purpose: 're_auth' }>,
 ): Promise<string> {
-  const result = await createEmailAddressLoginToken(emailAddress, scope)
+  const result = await issueEmailAddressLoginToken(validatedEmailAddress, scope)
   await awaitReportedEnqueueAdmission(async () => {
     await enqueueSendReauthenticationToken(
       { emailAddress: result.emailAddress, uiLocale },

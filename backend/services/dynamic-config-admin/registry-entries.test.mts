@@ -9,6 +9,12 @@ describe('dynamic config registry entry ordering', () => {
       dynamicConfigRegistry.get('session-limits-config')?.fields.active_sessions_per_user,
     ).toMatchObject({ integer: true, minValue: 1, maxValue: 1_000 })
   })
+  it('registers the bounded email code request interval', () => {
+    expect(
+      dynamicConfigRegistry.get('email-auth-limits-config')?.fields
+        .code_request_min_interval_seconds,
+    ).toMatchObject({ integer: true, minValue: 0, maxValue: 3_600 })
+  })
   it('registers the bounded bot challenge clearance window', () => {
     expect(
       dynamicConfigRegistry.get('bot-challenge-config')?.fields.clearance_seconds,

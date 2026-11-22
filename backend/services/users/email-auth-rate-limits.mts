@@ -1,5 +1,7 @@
 import createHttpError from 'http-errors'
 import { RateLimiter } from '@data-stores/valkey-rate-limiter'
+import { sanitizeEmailAddress, validateEmailAddress } from '@services/email-address-validator'
+import { getEmailCodeRequestMinIntervalSeconds } from './email-auth-limits-config.mts'
 
 const emailTokenRateLimiter = new RateLimiter({
   prefix: 'email-address-login-token',
@@ -11,6 +13,15 @@ const EMAIL_LOGIN_VERIFY_RATE_LIMIT_TTL_SECONDS = 60
 const emailLoginVerifyRateLimiter = new RateLimiter({
   prefix: EMAIL_LOGIN_VERIFY_RATE_LIMIT_PREFIX,
   ttlSeconds: EMAIL_LOGIN_VERIFY_RATE_LIMIT_TTL_SECONDS,
+})
+
+const loginCodeIntervalLimiter = new RateLimiter({
+  prefix: 'email-address-login-code-interval',
+  ttlSeconds: 60,
+})
+const reAuthCodeIntervalLimiter = new RateLimiter({
+  prefix: 'email-address-re-auth-code-interval',
+  ttlSeconds: 60,
 })
 
 type EmailAuthenticationRateLimitIdentity = {
@@ -41,4 +52,55 @@ function getRateLimitIds(identity: EmailAuthenticationRateLimitIdentity): string
   return [identity.emailAddress, identity.ip, identity.deviceId, identity.sessionId].filter(
     (id): id is string => typeof id === 'string',
   )
+}
+
+/**
+ * Takes the one slot per interval for this email (login) or session (re-auth). `consume` charges
+ * nothing when it refuses, so a refused request never extends the interval; it runs from the last
+ * admitted send. Returns the interval so the response can tell clients when they may resend.
+ */
+export async function reserveEmailCodeRequestSlot(
+  scope: 'login' | 'reauth',
+  id: string,
+): Promise<{ resendAfterSeconds: number }> {
+  const resendAfterSeconds = getEmailCodeRequestMinIntervalSeconds()
+  if (resendAfterSeconds === 0) return { resendAfterSeconds }
+  const limiter = scope === 'login' ? loginCodeIntervalLimiter : reAuthCodeIntervalLimiter
+  // Threshold 2 with cost 1 admits the first request and refuses a second inside the interval.
+  const { limited, retryAfterMs } = await limiter.consume([id], {
+    threshold: 2,
+    cost: 1,
+    ttlSeconds: resendAfterSeconds,
+  })
+  if (limited) {
+    throw createHttpError(429, 'Please wait before requesting another code.', {
+      code: 'email_code_recently_sent',
+      retryAfterSeconds: Math.max(1, Math.ceil(retryAfterMs / 1000)),
+    })
+  }
+  return { resendAfterSeconds }
+}
+
+async function validateThenReserveReAuthSlot(
+  rawEmailAddress: string,
+  sessionId: string,
+): Promise<{ emailAddress: string; resendAfterSeconds: number }> {
+  const emailAddress = await validateEmailAddress(rawEmailAddress)
+  const { resendAfterSeconds } = await reserveEmailCodeRequestSlot('reauth', sessionId)
+  return { emailAddress, resendAfterSeconds }
+}
+
+/**
+ * Re-auth send: the 5-per-minute limits first, then address validation, then the one-slot-per-
+ * interval session gate, so a rejected address never burns the interval. Returns the validated
+ * address to send to.
+ */
+export async function reserveReAuthEmailCodeRequest(
+  identity: EmailAuthenticationRateLimitIdentity & { sessionId: string },
+): Promise<{ emailAddress: string; resendAfterSeconds: number }> {
+  await assertEmailTokenRequestAllowed({
+    ...identity,
+    emailAddress: sanitizeEmailAddress(identity.emailAddress),
+  })
+  return validateThenReserveReAuthSlot(identity.emailAddress, identity.sessionId)
 }

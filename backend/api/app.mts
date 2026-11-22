@@ -100,6 +100,14 @@ app.errorHandler((ctx, error: unknown) => {
     ctx.set('Retry-After', String(error.retryAfterSeconds))
   }
   ctx.setStatus(status)
+  if (
+    status === 429 &&
+    error instanceof Error &&
+    'retryAfterSeconds' in error &&
+    typeof error.retryAfterSeconds === 'number'
+  ) {
+    ctx.set('Retry-After', String(error.retryAfterSeconds))
+  }
   if (isBotChallengeRequiredError(error)) {
     ctx.json({ ...body, action: error.action })
   } else if (

@@ -1388,6 +1388,8 @@
 {"descriptor":null,"id":"copy.extracted.edit.page.editTopicRecommendation_8b5d2924"},
 {"descriptor":null,"id":"copy.extracted.edit.page.updateCrawlerConfiguration_0a253dd0"},
 {"descriptor":null,"id":"copy.extracted.edit.page.updateTheProposalWhileItIs_c8d77b56"},
+{"descriptor":null,"id":"copy.extracted.emailCodeResend.recentlySent"},
+{"descriptor":null,"id":"copy.extracted.emailCodeResend.resendIn"},
 {"descriptor":null,"id":"copy.extracted.emailManager.addEmailForm.newEmailAddress_bb0d06f5"},
 {"descriptor":null,"id":"copy.extracted.emailManager.addEmailForm.sendVerificationCode_19e86d2b"},
 {"descriptor":null,"id":"copy.extracted.emailManager.emailList.primary_efe10c80"},

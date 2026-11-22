@@ -34,6 +34,7 @@ function Panel({ initialStep }: { initialStep: 'code' | 'mfa' }) {
         loginAttemptId={loginAttemptId}
         onLoginSuccess={() => {}}
         onResendCode={async () => {}}
+        resendSecondsLeft={0}
         setCode={setCode}
         setLoginAttemptId={setLoginAttemptId}
         setStep={setStep}

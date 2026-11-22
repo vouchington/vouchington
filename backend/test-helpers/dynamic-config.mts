@@ -3,6 +3,7 @@ import '@data-stores/valkey/dynamic-config'
 import { closeDynamicConfigValkeySubscriptionClient } from 'valkyries'
 // oxlint-disable-next-line no-restricted-imports -- Isolated test keys intentionally bypass the production registry union.
 import { DynamicConfig as RawDynamicConfig, dynamicConfigs } from 'valkyries/dynamic-config'
+import { applyOperationalTestBaseline } from './dynamic-config-operational-baseline.mts'
 
 const TEST_DYNAMIC_CONFIG_PREFIX = 'dynamic-config:test-'
 const TEST_DYNAMIC_CONFIG_KEY_PREFIX = 'test-'
@@ -58,12 +59,7 @@ export function createDynamicConfigTestBaseline(
     return baseline
   }
 
-  if (config.key === 'dynamic-config:bloom-filter-config') {
-    baseline['bookmarkBloomFilterEnabled'] = false
-    baseline['apiKeyBloomFilterEnabled'] = false
-  }
-
-  if (config.key === 'dynamic-config:web-risk-config') baseline['enabled'] = false
+  applyOperationalTestBaseline(config.key, baseline)
   return baseline
 }
 
