@@ -4,7 +4,10 @@ import {
   DBSC_TEST_REGISTRATION_URL,
 } from '@voucha/test-helpers/dbsc-session'
 import { expireTestPreviousDeviceTokenGrace } from '@voucha/test-helpers/entities/device-authority'
-import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
+import {
+  beforePostgresTransactionQueryForTest,
+  interceptPostgresTransactionsForTest,
+} from '@voucha/test-helpers/injected-postgres-transactions'
 import { authorizeDbscProof } from './dbsc-proof.mts'
 import { createDbscRegistrationOffer, createDbscRefreshChallenge } from './dbsc-registration.mts'
 import { hashDeviceToken, readSessionDeviceAuthority } from './device-authority.mts'
@@ -65,6 +68,53 @@ describe('browser device-bound recovery', () => {
       device_token_digest: hashDeviceToken(result.dt),
       previous_device_token_digest: hashDeviceToken(fixture.base.deviceToken),
       device_bound_session_binding: { publicKey: fixture.publicKey },
+    })
+  })
+
+  it('revokes the latest credential when a second rotation overtakes registration fallback', async () => {
+    const fixture = await createDbscTestSession()
+    const proof = await fixture.authorizeRegistration()
+    const sid = fixture.tokens.sessionToken.payload.sid
+    const steps = [
+      '/* rotateAuthenticatedDeviceToken */',
+      '/* registerReplayedDeviceCredentialBinding */',
+    ]
+    const rotated: string[] = []
+    onTestFinished(
+      interceptPostgresTransactionsForTest(
+        transaction =>
+          new Proxy(transaction, {
+            async apply(target, receiver, args: Parameters<typeof transaction>) {
+              const [statement] = args
+              if (
+                typeof statement !== 'string' &&
+                steps[0] &&
+                statement.text.includes(steps[0]) &&
+                statement.values.includes(sid)
+              ) {
+                steps.shift()
+                const result = await refreshSessionState({
+                  ...fixture.base,
+                  deviceToken: rotated.at(-1) ?? fixture.base.deviceToken,
+                })
+                rotated.push(result.dt)
+              }
+              return Reflect.apply(target, receiver, args)
+            },
+          }),
+      ),
+    )
+
+    await expect(refreshSessionState({ ...fixture.base, dbscProof: proof })).rejects.toMatchObject({
+      status: 401,
+      code: 'SESSION_REFRESH_REUSED',
+    })
+    expect(rotated).toHaveLength(2)
+    expect(await readSessionDeviceAuthority(sid)).toMatchObject({
+      revoked_at: expect.any(Date),
+      device_token_digest: hashDeviceToken(rotated[1]!),
+      previous_device_token_digest: hashDeviceToken(rotated[0]!),
+      device_bound_session_binding: null,
     })
   })
 

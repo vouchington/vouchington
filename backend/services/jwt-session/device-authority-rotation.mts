@@ -70,8 +70,7 @@ async function rotateVerifiedDeviceCredential(
     await query.commit()
     return currentToken
   }
-  if (authority.device_token_digest !== presentedDigest)
-    return await revokeReusedCredential(authority)
+  if (authority.device_token_digest !== presentedDigest) return await revokeReusedCredential()
   if (!hasExactDeviceLifetime(authority)) throw sessionReloginRequired()
   const registrationBinding = assertDeviceBoundRefreshAllowed(
     authority,
@@ -114,7 +113,7 @@ async function rotateVerifiedDeviceCredential(
     assertDeviceCredentialAuthority(current, device, options)
     const exactReplay = isExactReplay(current)
     if (!exactReplay && current.device_token_digest !== presentedDigest)
-      return revokeReusedCredential(current)
+      return revokeReusedCredential()
     if (serializeBinding(current) !== serializeBinding(previous))
       throw createCodedError(403, 'Device session proof required', DBSC_PROOF_REQUIRED)
     if (!exactReplay) throw sessionReloginRequired()
@@ -122,7 +121,7 @@ async function rotateVerifiedDeviceCredential(
       throw createCodedError(403, 'Device session proof required', DBSC_PROOF_REQUIRED)
     const token = await verifyStoredDeviceCredentialReplay(current, device, options)
     if (registration && !(await bindReplay(current, registration)))
-      throw createCodedError(403, 'Device session proof required', DBSC_PROOF_REQUIRED)
+      return resolveRotationRace(current, 'attempted')
     await query.commit()
     return token
   }
@@ -134,24 +133,15 @@ async function rotateVerifiedDeviceCredential(
       WHERE `.append(sessionAuthorityGuard(row)).append(sql`
         AND device_token_digest = ${row.device_token_digest}
         AND previous_device_token_digest = ${presentedDigest}
-        AND previous_device_token_grace_expires_at > clock_timestamp()
         AND device_bound_session_binding IS NULL`),
     )
     return rowCount === 1
   }
 
-  async function revokeReusedCredential(current: SessionDeviceAuthorityRow): Promise<never> {
-    const { rowCount } = await query(
-      sql`/* revokeReusedDeviceCredential */
+  async function revokeReusedCredential(): Promise<never> {
+    await query(sql`/* revokeReusedDeviceCredential */
       UPDATE user_sessions SET revoked_at = CURRENT_TIMESTAMP
-      WHERE `.append(sessionAuthorityGuard()).append(sql`
-        AND device_token_digest IS NOT NULL
-        AND device_token_digest <> ${presentedDigest}
-        AND NOT (${hasExactDeviceLifetime(current) && device.client === 'web'}
-          AND previous_device_token_digest IS NOT DISTINCT FROM ${presentedDigest}
-          AND COALESCE(previous_device_token_grace_expires_at > clock_timestamp(), false))`),
-    )
-    if (rowCount !== 1) throw sessionReloginRequired()
+      WHERE id = ${options.sid} AND user_id = ${options.uid} AND revoked_at IS NULL`)
     registerPostCommitAction(query, () => revokeSessionKey(options.sid))
     await query.commit()
     throw createCodedError(
@@ -161,17 +151,15 @@ async function rotateVerifiedDeviceCredential(
     )
   }
 
-  function sessionAuthorityGuard(current?: SessionDeviceAuthorityRow) {
-    const guard = sql`id = ${options.sid} AND user_id = ${options.uid} AND device_id = ${options.did}
+  function sessionAuthorityGuard(current: SessionDeviceAuthorityRow) {
+    return sql`id = ${options.sid} AND user_id = ${options.uid} AND device_id = ${options.did}
       AND revoked_at IS NULL AND expires_at > clock_timestamp()
       AND device_token_binding->>'client' = ${device.client}
       AND device_token_binding->>'ua_hash' IS NOT DISTINCT FROM ${device.client === 'web' ? device.ua_hash : null}
-      AND device_token_binding->>'ja4_hash' IS NOT DISTINCT FROM ${device.client === 'web' ? (device.ja4_hash ?? null) : null}`
-    if (!current) return guard
-    return guard.append(sql`
+      AND device_token_binding->>'ja4_hash' IS NOT DISTINCT FROM ${device.client === 'web' ? (device.ja4_hash ?? null) : null}
       AND expires_at = ${current.expires_at}
       AND device_token_issued_at = ${current.device_token_issued_at}
-      AND mfa_verified_at IS NOT DISTINCT FROM ${current.mfa_verified_at}`)
+      AND mfa_verified_at IS NOT DISTINCT FROM ${current.mfa_verified_at}`
   }
 
   function hasExactDeviceLifetime(row: SessionDeviceAuthorityRow): boolean {
