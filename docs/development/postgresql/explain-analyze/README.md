@@ -31,6 +31,9 @@ the timeout as a query-plan failure or rerunning the job.
   comparison). `work_mem` is pinned so a local run reaches the same disk-spill verdict as CI.
 - **Custom and generic plans.** CI runs with `EXPLAIN_PLAN_CACHE_MODE=compare`, forcing both
   prepared-plan modes for every query, because production hits whichever the plan cache picks.
+  The [slowdown gate](../../../../backend/scripts/explain-analyze/generic-plan-regressions.mts)
+  requires a material increase in execution time on both capture passes so a single noisy timing
+  sample or a large ratio on a tiny query does not block CI.
 - **Function calls.** `track_functions` is read before and after the replay to count non-inlined
   user-function calls. Parallel workers keep separate counters, so scenarios with a
   `maxFunctionCalls` cap get a second serial replay for deterministic counts. Set a cap loose enough for small plan changes and tight enough to expose

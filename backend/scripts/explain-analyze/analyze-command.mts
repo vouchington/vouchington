@@ -1,4 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
+import { assertNoGenericPlanRegressions } from './generic-plan-regressions.mts'
 import {
   analyzeResult,
   functionCallReports,
@@ -26,12 +27,6 @@ function getUserLabel(name: string): 'baseline' | 'heavy' {
 
 function getDisplayName(name: string): string {
   return name.replace(/:heavy(?=:|$)/, '')
-}
-
-function assertResultsPresent(results: readonly ExplainResult[]): void {
-  if (results.length === 0) {
-    throw new Error('Latest EXPLAIN output contains no query results')
-  }
 }
 
 // WAL bytes include checkpoint full-page images, so one capture can cross the threshold while the
@@ -76,8 +71,8 @@ export function analyzePairedResults(
   baseline: ResourcePressureBaseline = RESOURCE_PRESSURE_BASELINE,
 ): void {
   console.error(`Reading: ${filePath}`)
-  assertResultsPresent(results)
-  assertResultsPresent(repeatedResults)
+  if (results.length === 0 || repeatedResults.length === 0)
+    throw new Error('Latest EXPLAIN output contains no query results')
   const unstable = assertNoNewSeqScans(results, repeatedResults)
   if (unstable.onlyFirst.length > 0 || unstable.onlyRepeated.length > 0)
     console.error(`Unstable sequential scans (advisory): ${JSON.stringify(unstable)}`)
@@ -87,6 +82,7 @@ export function analyzePairedResults(
       `Sequential scans within a near-tie of an index plan (advisory): ${nearTies.join(',')}`,
     )
   assertNoDisallowedRegressions(results, repeatedResults, baseline)
+  assertNoGenericPlanRegressions(results, repeatedResults)
   console.error(`Loaded ${results.length} query results`)
 
   const sorted = results.toSorted((a, b) => b.execution_time_ms - a.execution_time_ms)
