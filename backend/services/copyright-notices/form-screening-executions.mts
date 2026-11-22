@@ -32,20 +32,21 @@ async function lockCopyrightFormReview(intakeId: string, query: Transaction): Pr
 async function startCopyrightFormScreeningInTransaction(
   intakeId: string,
   transaction: Transaction,
-): Promise<number> {
+): Promise<CopyrightFormScreeningAttempt> {
   await transaction(sql`/* startCopyrightFormScreening:finishPrior */
     UPDATE copyright_notice_form_screening_attempts SET failed_at = clock_timestamp()
     WHERE copyright_notice_form_intake_id = ${intakeId} AND state = 'pending'
   `)
   const { rows } = await transaction<{
     attempt_number: number
+    execution_token: string
   }>(sql`/* startCopyrightFormScreening */
     INSERT INTO copyright_notice_form_screening_attempts (copyright_notice_form_intake_id, attempt_number)
     SELECT ${intakeId}, COALESCE(MAX(attempt_number), 0) + 1
     FROM copyright_notice_form_screening_attempts WHERE copyright_notice_form_intake_id = ${intakeId}
-    RETURNING attempt_number
+    RETURNING attempt_number, execution_token
   `)
-  return rows[0]!.attempt_number
+  return { intakeId, attemptNumber: rows[0]!.attempt_number, leaseToken: rows[0]!.execution_token }
 }
 
 /** A live duplicate does not run the provider; retrying a failed/expired claim rotates its token. */
@@ -53,66 +54,51 @@ export async function claimCopyrightFormScreening(
   intakeId: string,
   claimBefore = new Date(),
 ): Promise<CopyrightFormScreeningAttempt | null> {
-  try {
-    await using transaction = await beginTransaction({ serializable: true })
-    await lockCopyrightFormReview(intakeId, transaction)
-    const { rows: currentRows } = await transaction<{
-      attempt_number: number
-      state: string
-      execution_started_at: Date | null
-      expired: boolean
-    }>(sql`/* claimCopyrightFormScreening:current */
-      SELECT attempt_number, state, execution_started_at, EXISTS (
-        SELECT 1 FROM copyright_notice_form_screening_work_items work
-        WHERE work.copyright_notice_form_intake_id = ${intakeId}
-          AND work.attempt_id = copyright_notice_form_screening_attempts.id
-          AND work.lease_expires_at <= ${claimBefore}
-      ) AS expired
-      FROM copyright_notice_form_screening_attempts WHERE copyright_notice_form_intake_id = ${intakeId}
-      ORDER BY attempt_number DESC LIMIT 1
-    `)
-    const current = currentRows[0]
-    if (
-      !current ||
-      current.state === 'completed' ||
-      (current.state === 'pending' && current.execution_started_at && !current.expired)
-    ) {
-      await transaction.commit()
-      return null
-    }
-    const attemptNumber =
-      current.state === 'failed' || current.expired
-        ? await startCopyrightFormScreeningInTransaction(intakeId, transaction)
-        : current.attempt_number
-    const { rows: claims } = await transaction<{
-      id: string
-      execution_token: string
-    }>(sql`/* claimCopyrightFormScreening */
-      UPDATE copyright_notice_form_screening_attempts SET execution_started_at = clock_timestamp(), execution_token = uuidv7()
-      WHERE copyright_notice_form_intake_id = ${intakeId} AND attempt_number = ${attemptNumber}
-      RETURNING id, execution_token
-    `)
-    await transaction(sql`/* claimCopyrightFormScreening:work */
-      UPDATE copyright_notice_form_screening_work_items work
-      SET lease_token = ${claims[0]!.execution_token}::uuid, leased_at = clock_timestamp(),
-        lease_expires_at = clock_timestamp() + ${getCopyrightNoticesWorkLimit('screening_lease_minutes')} * interval '1 minute', attempt_count = 1
-      WHERE work.copyright_notice_form_intake_id = ${intakeId} AND work.attempt_id = ${claims[0]!.id}
-    `)
+  await using transaction = await beginTransaction()
+  await lockCopyrightFormReview(intakeId, transaction)
+  const { rows: currentRows } = await transaction<{
+    attempt_number: number
+    execution_token: string
+    state: string
+    execution_started_at: Date | null
+    expired: boolean
+  }>(sql`/* claimCopyrightFormScreening:current */
+    SELECT attempt_number, execution_token, state, execution_started_at,
+      EXISTS (SELECT 1 FROM copyright_notice_form_screening_work_items work WHERE work.attempt_id = copyright_notice_form_screening_attempts.id AND work.lease_expires_at <= ${claimBefore}) AS expired
+    FROM copyright_notice_form_screening_attempts WHERE copyright_notice_form_intake_id = ${intakeId}
+    ORDER BY attempt_number DESC LIMIT 1
+  `)
+  const current = currentRows[0]
+  if (
+    !current ||
+    current.state === 'completed' ||
+    (current.state === 'pending' && current.execution_started_at && !current.expired)
+  ) {
     await transaction.commit()
-    return { intakeId, attemptNumber, leaseToken: claims[0]!.execution_token }
-  } catch (err) {
-    const failure = err as { code?: string; constraint?: string } | null
-    if (failure?.code === '40001') {
-      console.debug('copyright_screening_claim_serialization_conflict', { code: '40001' })
-      return null
-    }
-    if (
-      failure?.code === '23505' &&
-      failure.constraint === 'uq_copyri_notice_form_screen_attempt__intake_id__attempt_number'
-    )
-      return null
-    throw err
+    return null
   }
+  const attempt =
+    current.state === 'failed' || current.expired
+      ? await startCopyrightFormScreeningInTransaction(intakeId, transaction)
+      : { intakeId, attemptNumber: current.attempt_number, leaseToken: current.execution_token }
+  const { rows: claims } = await transaction<{
+    execution_token: string
+  }>(sql`/* claimCopyrightFormScreening */
+    UPDATE copyright_notice_form_screening_attempts SET execution_started_at = clock_timestamp(), execution_token = uuidv7()
+    WHERE copyright_notice_form_intake_id = ${intakeId} AND attempt_number = ${attempt.attemptNumber}
+    RETURNING execution_token
+  `)
+  const leaseMinutes = getCopyrightNoticesWorkLimit('screening_lease_minutes')
+  await transaction(sql`/* claimCopyrightFormScreening:work */
+    UPDATE copyright_notice_form_screening_work_items work
+    SET lease_token = ${claims[0]!.execution_token}::uuid, leased_at = clock_timestamp(),
+      lease_expires_at = clock_timestamp() + ${leaseMinutes} * interval '1 minute', attempt_count = 1
+    FROM copyright_notice_form_screening_attempts execution
+    WHERE work.attempt_id = execution.id AND execution.copyright_notice_form_intake_id = ${intakeId}
+      AND execution.attempt_number = ${attempt.attemptNumber}
+  `)
+  await transaction.commit()
+  return { ...attempt, leaseToken: claims[0]!.execution_token }
 }
 
 export async function completeCopyrightFormScreening(

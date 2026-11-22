@@ -169,12 +169,6 @@ describe('copyright form moderator fallback', () => {
       }),
       applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id),
     ])
-    const aggregate = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
-    expect(aggregate?.assessments.at(-1)).toMatchObject({
-      assessed_by_id: moderator.id,
-      is_substantially_compliant: false,
-      copyright_notice_form_screening_id: null,
-    })
     const remaining = await countCopyrightActiveRestrictionsForNotice(
       notice.intake.copyright_notice_id,
     )

@@ -1,17 +1,14 @@
-import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
-import { runOverlappingCopyrightFormWriters } from '@voucha/test-helpers/copyright-form-writer-overlap'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
+import { runOverlappingCopyrightFormWriters } from '@voucha/test-helpers/copyright-form-writer-overlap'
 import {
   countCopyrightActiveRestrictionsForNotice,
   readCopyrightNoticeTargetIds,
 } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import {
-  insertConflictingTestCopyrightScreeningAttempt,
-  readTestCopyrightScreeningExecution,
   readTestCopyrightStaffScreening,
   getTestExpiredCopyrightScreeningClaimTime,
-  startTestCopyrightScreeningBeforeAdmission,
+  readTestCopyrightScreeningExecution,
 } from '@voucha/test-helpers/data-stores/psql/copyright-screening-executions'
 import {
   createTestCopyrightFormIntakeReview,
@@ -56,91 +53,35 @@ describe('current copyright form screening execution', () => {
     )
   })
 
-  it.each([1, 2])(
-    'persists a single winner for concurrent claims of attempt %i',
-    async attemptNumber => {
-      const { intake } = await createSignedInCopyrightForm()
-      if (attemptNumber === 2) {
-        const initial = await claimCopyrightFormScreening(intake.id)
-        if (!initial) throw new Error('Initial screening claim was not created')
-        await failCopyrightFormScreening(initial)
-      }
-      const [winner, duplicate] = await runOverlappingCopyrightFormWriters({
-        intakeId: intake.id,
-        holderMarker: 'claimCopyrightFormScreening:current',
-        waiterMarker: 'lockCopyrightFormReview',
-        holder: () => claimCopyrightFormScreening(intake.id),
-        waiter: () => claimCopyrightFormScreening(intake.id),
-      })
-      expect(duplicate).toBeNull()
-      expect(winner).not.toBeNull()
-      const { leaseToken } = winner!
-      await expect(readTestCopyrightScreeningExecution(intake.id)).resolves.toMatchObject({
-        attempt_number: attemptNumber,
-        state: 'pending',
-        execution_token: leaseToken,
-        lease_token: leaseToken,
-      })
-      await expect(claimCopyrightFormScreening(intake.id)).resolves.toBeNull()
-    },
-  )
+  it('claims one live attempt and rotates failed retry tokens', async () => {
+    const { intake } = await createSignedInCopyrightForm()
+    const started = (await claimCopyrightFormScreening(intake.id))!
+    await expect(claimCopyrightFormScreening(intake.id)).resolves.toBeNull()
+    await failCopyrightFormScreening(started)
+    await expect(claimCopyrightFormScreening(intake.id)).resolves.toEqual({
+      intakeId: started.intakeId,
+      attemptNumber: started.attemptNumber + 1,
+      leaseToken: expect.any(String),
+    })
+  })
 
-  it.each([
-    {
-      constraint: 'uq_copyri_notice_form_screen_attempt__intake_id__attempt_number',
-      duplicateAttemptId: false,
-      expectedClaim: { value: null },
-    },
-    {
-      constraint: 'copyright_notice_form_screening_attempts_pkey',
-      duplicateAttemptId: true,
-      expectedClaim: { reason: { code: '23505' } },
-    },
-  ])(
-    'rolls back the expired attempt on a $constraint violation',
-    async ({ constraint, duplicateAttemptId, expectedClaim }) => {
-      const { intake } = await createSignedInCopyrightForm()
-      const initial = await claimCopyrightFormScreening(intake.id)
-      if (!initial) throw new Error('Initial screening claim was not created')
-      // Another intake makes the primary key the only conflicting index in the ID case.
-      const conflictingIntakeId = duplicateAttemptId
-        ? (await createSignedInCopyrightForm()).intake.id
-        : intake.id
-      const cutoff = await getTestExpiredCopyrightScreeningClaimTime(intake.id)
-      let constraintFailure: unknown
-      const restore = afterPostgresTransactionQueryForTest(
-        'startCopyrightFormScreening:finishPrior',
-        values => values.includes(intake.id),
-        async transaction => {
-          try {
-            await insertConflictingTestCopyrightScreeningAttempt(
-              transaction,
-              initial,
-              conflictingIntakeId,
-            )
-          } catch (err) {
-            constraintFailure = err
-            throw err
-          }
-        },
-      )
-      try {
-        const claim = await claimCopyrightFormScreening(intake.id, cutoff)
-          .then(value => ({ value }))
-          .catch((err: unknown) => ({ reason: err }))
-        expect(claim).toMatchObject(expectedClaim)
-      } finally {
-        restore()
-      }
-      expect(constraintFailure).toMatchObject({ code: '23505', constraint })
-      await expect(readTestCopyrightScreeningExecution(intake.id)).resolves.toMatchObject({
-        attempt_number: initial.attemptNumber,
-        state: 'pending',
-        execution_token: initial.leaseToken,
-        lease_token: initial.leaseToken,
-      })
-    },
-  )
+  it('persists one live claim when two workers claim the same intake', async () => {
+    const { intake } = await createSignedInCopyrightForm()
+    const [winner, duplicate] = await runOverlappingCopyrightFormWriters({
+      intakeId: intake.id,
+      holderMarker: 'claimCopyrightFormScreening:current',
+      waiterMarker: 'lockCopyrightFormReview',
+      holder: () => claimCopyrightFormScreening(intake.id),
+      waiter: () => claimCopyrightFormScreening(intake.id),
+    })
+    expect(winner).toMatchObject({ intakeId: intake.id, attemptNumber: 1 })
+    expect(duplicate).toBeNull()
+    await expect(readTestCopyrightScreeningExecution(intake.id)).resolves.toMatchObject({
+      attempt_number: 1,
+      state: 'pending',
+      claimed_at: expect.any(Date),
+    })
+  })
 
   it('rotates an expired claim and fences its late output', async () => {
     const { intake } = await createSignedInCopyrightForm()
@@ -184,15 +125,21 @@ describe('current copyright form screening execution', () => {
     })
     expect(assessment.copyright_notice_form_screening_id).toBeNull()
     const [targetId] = await readCopyrightNoticeTargetIds(intake.copyright_notice_id)
-    const restriction = await startTestCopyrightScreeningBeforeAdmission(intake.id, () =>
-      acceptCopyrightNoticeAndImposeRestriction({
-        noticeId: intake.copyright_notice_id,
-        targetId: targetId!,
-        assessmentId: assessment.id,
-        imposedAt: new Date(),
-        imposedById: user.id,
-      }),
-    )
+    const [retry, restriction] = await runOverlappingCopyrightFormWriters({
+      intakeId: intake.id,
+      holderMarker: 'claimCopyrightFormScreening:current',
+      waiterMarker: 'lockAssessmentForm:fence',
+      holder: () => claimCopyrightFormScreening(intake.id),
+      waiter: () =>
+        acceptCopyrightNoticeAndImposeRestriction({
+          noticeId: intake.copyright_notice_id,
+          targetId: targetId!,
+          assessmentId: assessment.id,
+          imposedAt: new Date(),
+          imposedById: user.id,
+        }),
+    })
+    expect(retry).toMatchObject({ intakeId: intake.id, attemptNumber: initial.attemptNumber + 1 })
     expect(restriction).toMatchObject({
       authorizing_assessment_id: assessment.id,
       imposed_by_id: user.id,

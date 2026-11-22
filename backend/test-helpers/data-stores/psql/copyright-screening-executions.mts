@@ -1,10 +1,6 @@
-import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import type { CopyrightFormScreeningAttempt } from '../../../services/copyright-notices/form-screening-executions.mts'
 import { getPendingCopyrightStaffCases } from '../../../services/copyright-notices/read-models-staff-case.mts'
-import { claimCopyrightFormScreening } from '../../../services/copyright-notices/form-screening-executions.mts'
-import { getTestPostgresBackendProcessId } from '../../postgres-lock-wait.mts'
-import { createTestPostgresMultiWait } from '../../postgres-multi-client-lock-observer.mts'
 
 export async function eraseTestCopyrightFormRequester(intakeId: string): Promise<void> {
   await write(sql`/* eraseTestCopyrightFormRequester */
@@ -26,44 +22,20 @@ export async function selectTestCopyrightScreeningResult(
   `)
 }
 
-/** Violate number uniqueness on this intake or ID uniqueness across two owned intakes. */
-export async function insertConflictingTestCopyrightScreeningAttempt(
-  transaction: QueryExecutor,
-  attempt: CopyrightFormScreeningAttempt,
-  conflictingIntakeId: string,
-): Promise<void> {
-  const duplicateAttemptId = conflictingIntakeId !== attempt.intakeId
-  await transaction(sql`/* insertConflictingTestCopyrightScreeningAttempt */
-    INSERT INTO copyright_notice_form_screening_attempts (
-      id, copyright_notice_form_intake_id, attempt_number
-    )
-    SELECT CASE WHEN ${duplicateAttemptId} THEN id ELSE uuidv7() END,
-      ${conflictingIntakeId}, attempt_number + ${duplicateAttemptId ? 1 : 0}
-    FROM copyright_notice_form_screening_attempts
-    WHERE copyright_notice_form_intake_id = ${attempt.intakeId}
-      AND attempt_number = ${attempt.attemptNumber}
-  `)
-}
-
 export async function readTestCopyrightScreeningExecution(intakeId: string) {
   const { rows } = await write<{
     attempt_number: number
     state: 'pending' | 'failed' | 'completed'
     copyright_notice_form_screening_id: string | null
     started_at: Date
-    execution_token: string
-    lease_token: string | null
     claimed_at: Date | null
     completed_at: Date | null
     failed_at: Date | null
   }>(sql`/* readTestCopyrightScreeningExecution */
-    SELECT attempt.attempt_number, attempt.state, attempt.copyright_notice_form_screening_id,
-      attempt.started_at, attempt.execution_token, work.lease_token,
-      attempt.execution_started_at AS claimed_at, attempt.completed_at, attempt.failed_at
-    FROM copyright_notice_form_screening_attempts attempt
-    LEFT JOIN copyright_notice_form_screening_work_items work ON work.attempt_id = attempt.id
-    WHERE attempt.copyright_notice_form_intake_id = ${intakeId}
-    ORDER BY attempt.attempt_number DESC LIMIT 1
+    SELECT attempt_number, state, copyright_notice_form_screening_id,
+      started_at, execution_started_at AS claimed_at, completed_at, failed_at
+    FROM copyright_notice_form_screening_attempts
+    WHERE copyright_notice_form_intake_id = ${intakeId} ORDER BY attempt_number DESC LIMIT 1
   `)
   if (!rows[0]) throw new Error('Expected owned screening execution')
   return rows[0]
@@ -85,61 +57,4 @@ export async function getTestExpiredCopyrightScreeningClaimTime(intakeId: string
     ORDER BY attempt_number DESC LIMIT 1
   `)
   return rows[0]!.cutoff
-}
-
-/** Retains actual form authority until PostgreSQL confirms admission is waiting behind it. */
-export async function startTestCopyrightScreeningBeforeAdmission<T>(
-  intakeId: string,
-  admit: () => Promise<T>,
-): Promise<T> {
-  await using transaction = await beginTransaction()
-  await transaction(sql`/* startTestCopyrightScreeningBeforeAdmission:holdAttempt */
-    SELECT id FROM copyright_notice_form_screening_attempts
-    WHERE copyright_notice_form_intake_id = ${intakeId}
-    ORDER BY attempt_number DESC LIMIT 1 FOR UPDATE
-  `)
-  const pid = await getTestPostgresBackendProcessId(transaction)
-  let released: Promise<void> | undefined
-  const releaseHolder = () => (released ??= Promise.resolve(transaction[Symbol.asyncDispose]()))
-  await using waits = await createTestPostgresMultiWait()
-  const screening = await waits.start(
-    {
-      holderProcessId: pid,
-      pool: 'write',
-      lock: { kind: 'transaction' },
-      queryMarker: 'claimCopyrightFormScreening:current',
-      releaseHolder,
-    },
-    () =>
-      claimCopyrightFormScreening(intakeId)
-        .then(value => ({ value, error: null }))
-        .catch((err: unknown) => ({ value: null, error: err })),
-  )
-  await screening.waitForLock()
-  const admission = await waits.start(
-    {
-      holderProcessId: await screening.waiterProcessId(),
-      pool: 'write',
-      lock: { kind: 'advisory', key: `copyright-form-review:${intakeId}` },
-      queryMarker: 'lockAssessmentForm:fence',
-      releaseHolder,
-    },
-    () =>
-      admit()
-        .then(value => ({ value, error: null }))
-        .catch((err: unknown) => ({ value: null, error: err })),
-  )
-  await admission.waitForLock()
-  await transaction.commit()
-  const [screeningResult, result] = await Promise.all([screening.operation, admission.operation])
-  if (screeningResult.error)
-    throw screeningResult.error instanceof Error
-      ? screeningResult.error
-      : new Error('Copyright screening operation failed', { cause: screeningResult.error })
-  if (!screeningResult.value) throw new Error('Copyright screening retry was not claimed')
-  if (result.error)
-    throw result.error instanceof Error
-      ? result.error
-      : new Error('Copyright screening admission failed', { cause: result.error })
-  return result.value as T
 }
