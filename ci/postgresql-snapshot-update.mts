@@ -108,10 +108,13 @@ async function publish(): Promise<void> {
   for (const path of tracked.stdout.split('\0').filter(Boolean)) {
     const relative = snapshotArtifactPath(path)
     if (relative === null) continue
+    // oxlint-disable-next-line no-await-in-loop -- checkout mutations run in order; each step depends on the safety checks before it
     await assertSafeSnapshotDestination(checkout, path)
+    // oxlint-disable-next-line no-await-in-loop -- checkout mutations run in order; each step depends on the safety checks before it
     if (!files.includes(relative)) await rm(join(checkout, path))
   }
   for (const relative of files) {
+    // oxlint-disable-next-line no-await-in-loop -- checkout mutations run in order; each step depends on the safety checks before it
     await copySnapshotFile(checkout, artifactRoot, relative)
   }
   await execFile(

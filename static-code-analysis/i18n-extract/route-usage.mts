@@ -50,6 +50,7 @@ export async function scanDependencyResult(
       textPromise = readFile(`${repoRoot}/${relativePath}`, 'utf8')
       textCache.set(relativePath, textPromise)
     }
+    // oxlint-disable-next-line no-await-in-loop -- scans share one text cache and accumulate aliases in file order
     const text = await textPromise
     for (const alias of quotedAliasesFromText(text)) aliases.add(alias)
     for (const issue of closureIssuesForFile(relativePath, text)) {

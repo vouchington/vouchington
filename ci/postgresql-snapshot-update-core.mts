@@ -104,6 +104,7 @@ export async function describeGeneratedSnapshotFiles(
   for (const path of paths) {
     if (!isGeneratedSnapshotPath(path))
       throw new Error(`Unexpected snapshot artifact path: ${path}`)
+    // oxlint-disable-next-line no-await-in-loop -- files can be 20 MB each; hashing one at a time bounds memory
     const content = await readFile(join(root, path))
     if (content.length > 20_000_000) throw new Error(`Snapshot artifact file is too large: ${path}`)
     files[path] = {

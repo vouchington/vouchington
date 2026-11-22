@@ -97,6 +97,7 @@ export async function storybookBrowserOptimizeDepsErrors({
   for (const parent of [...parents].toSorted()) {
     const files = productionSourceFiles(root, packageDirectory(parent))
     if (files.length === 0) continue
+    // oxlint-disable-next-line no-await-in-loop -- each importUsages call scans a whole package under the analyzer lock; kept serial to avoid lock contention and keep error order
     for (const specifier of runtimeImportSpecifiers(await readImports(root, files))) {
       const dependency = packageRoot(specifier)
       const firstParty = dependency.startsWith('@vouchington/') || firstPartyNames.has(dependency)

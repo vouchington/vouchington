@@ -95,22 +95,27 @@ export async function runPlanCompletionSnapshot({
     if (existing?.body === body) continue
 
     // Re-read immediately before a write so concurrent delivery cannot overwrite another marker.
+    // oxlint-disable-next-line no-await-in-loop -- each plan re-reads the live comment before its write and writes serially to avoid overwriting markers and to respect GitHub rate limits
     const current = markerComment(await runGh(listArgs(commentsPath)))
     if (current?.body === body) continue
     if (current === undefined && advisory.kind === 'none') continue
+    // oxlint-disable-next-line no-await-in-loop -- each plan re-reads the live comment before its write and writes serially to avoid overwriting markers and to respect GitHub rate limits
     if (!isCurrentOpenPlan(await runGh(readArgs(`repos/${repository}/issues/${number}`)), number)) {
       continue
     }
     if (current === undefined) {
+      // oxlint-disable-next-line no-await-in-loop -- each plan re-reads the live comment before its write and writes serially to avoid overwriting markers and to respect GitHub rate limits
       const created = await runGh(['api', '-X', 'POST', commentsPath, '-f', `body=${body}`])
       const parsed = JSON.parse(created) as { id?: unknown }
       if (typeof parsed.id !== 'number') throw new Error('Created comment response is missing id')
       assertCommentReadback(
+        // oxlint-disable-next-line no-await-in-loop -- each plan re-reads the live comment before its write and writes serially to avoid overwriting markers and to respect GitHub rate limits
         await runGh(readArgs(`repos/${repository}/issues/comments/${parsed.id}`)),
         parsed.id,
         body,
       )
     } else {
+      // oxlint-disable-next-line no-await-in-loop -- each plan re-reads the live comment before its write and writes serially to avoid overwriting markers and to respect GitHub rate limits
       await runGh([
         'api',
         '-X',
@@ -120,6 +125,7 @@ export async function runPlanCompletionSnapshot({
         `body=${body}`,
       ])
       assertCommentReadback(
+        // oxlint-disable-next-line no-await-in-loop -- each plan re-reads the live comment before its write and writes serially to avoid overwriting markers and to respect GitHub rate limits
         await runGh(readArgs(`repos/${repository}/issues/comments/${current.id}`)),
         current.id,
         body,

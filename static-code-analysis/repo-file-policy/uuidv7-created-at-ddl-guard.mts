@@ -25,6 +25,7 @@ export async function checkUuidv7CreatedAtDdl(
 
     const content = readFileSync(join(repoRoot, file), 'utf8')
 
+    // oxlint-disable-next-line no-await-in-loop -- migration file count is unbounded; serial parsing keeps memory flat and error order deterministic
     const facts = await parsePostgresSql({ sql: content })
     if (facts.diagnostics.length > 0) continue
 

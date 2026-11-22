@@ -46,8 +46,8 @@ try {
     projects.push(project.name)
   }
   // A multi-project CI run can pass while silently collecting an important test in no project.
-  for (const project of context.projects) {
-    const { testFiles } = await project.globTestFiles()
+  const globbed = await Promise.all(context.projects.map(project => project.globTestFiles()))
+  for (const { testFiles } of globbed) {
     for (const file of testFiles) {
       const repositoryPath = relative(root, file).split(sep).join('/')
       if (requiredTests.has(repositoryPath)) collectedTests.add(repositoryPath)
@@ -79,6 +79,7 @@ for (const project of projects) {
   let rejection: unknown
   const closeErrors: unknown[] = []
   try {
+    // oxlint-disable-next-line no-await-in-loop -- each probe starts and closes a Vitest instance; process-heavy, so run one at a time
     selected = await createVitest({
       root,
       project: [project],
@@ -92,6 +93,7 @@ for (const project of projects) {
     rejection = err
   } finally {
     try {
+      // oxlint-disable-next-line no-await-in-loop -- each probe starts and closes a Vitest instance; process-heavy, so run one at a time
       await selected?.close()
     } catch (err) {
       closeErrors.push(err)
