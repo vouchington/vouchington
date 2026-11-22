@@ -5,6 +5,7 @@ import type {
 } from '@queues/background/enqueues/hostname-blocking-jobs'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql, { type SQLStatement } from 'sql-template-strings'
+import { cleanupOperationFields } from './cleanup-operation-fields.mts'
 import { v7 as uuidv7 } from 'uuid'
 import {
   attachHostnameBlockToAncestorCleanup,
@@ -64,38 +65,32 @@ export async function ensureHostnameBlockCleanupOperation(
     ancestor.stage === 'subdomains' &&
     ancestor.penalizeCreators === penalizeCreators
   ) {
-    await attachHostnameBlockToAncestorCleanup(query, {
+    return attachHostnameBlockToAncestorCleanup(query, {
       existingBlockId: existing?.id ?? null,
       hostnameId,
       blockedById,
       blockedSource,
       rootBlockId: ancestor.id,
     })
-    const operation = await getHostnameBlockCleanupOperationInTransaction(query, ancestor.id)
-    if (!operation) throw new Error('Ancestor hostname block cleanup root is missing')
-    return operation
   }
   if (existing) {
-    const { rows } = await query<{ id: string }>(
+    const { rows } = await query<HostnameBlockCleanupOperation>(
       sql`/* ensureHostnameBlockCleanupOperation:attachExisting */
-        UPDATE url_hostname_blocks
+        UPDATE url_hostname_blocks AS block
         SET relation_cleanup_root_block_id = id,
           should_penalize_relation_creators = ${penalizeCreators},
           relation_cleanup_blocked_hostname_count = 1
         WHERE id = ${existing.id} AND relation_cleanup_root_block_id IS NULL
-        RETURNING id
-      `,
+        RETURNING `.append(cleanupOperationFields(sql`${hostname}::text`)),
     )
     if (!rows[0]) throw new Error('Hostname block cleanup operation was not attached')
-    const operation = await getHostnameBlockCleanupOperationInTransaction(query, existing.id)
-    if (!operation) throw new Error('Hostname block cleanup operation is missing')
-    return operation
+    return rows[0]
   }
 
   const blockId = uuidv7()
-  await query(
+  const { rows } = await query<HostnameBlockCleanupOperation>(
     sql`/* ensureHostnameBlockCleanupOperation:insert */
-      INSERT INTO url_hostname_blocks (
+      INSERT INTO url_hostname_blocks AS block (
         id, url_hostname_id, blocked_by_id, blocked_source,
         relation_cleanup_root_block_id, should_penalize_relation_creators,
         relation_cleanup_blocked_hostname_count
@@ -103,11 +98,10 @@ export async function ensureHostnameBlockCleanupOperation(
         ${blockId}, ${hostnameId}, ${blockedById}, ${blockedSource},
         ${blockId}, ${penalizeCreators}, 1
       )
-    `,
+      RETURNING `.append(cleanupOperationFields(sql`${hostname}::text`)),
   )
-  const operation = await getHostnameBlockCleanupOperationInTransaction(query, blockId)
-  if (!operation) throw new Error('Hostname block cleanup operation is missing')
-  return operation
+  if (!rows[0]) throw new Error('Hostname block cleanup operation is missing')
+  return rows[0]
 }
 
 export async function getHostnameBlockCleanupOperation(
@@ -137,19 +131,12 @@ export async function lockHostnameBlockCleanupOperation(
 
 function cleanupOperationSql(blockId: string | SQLStatement) {
   return sql`/* hostnameBlockCleanupOperation */
-    SELECT block.id AS "blockId", block.url_hostname_id AS "hostnameId",
-      hostname.hostname, block.blocked_by_id AS "blockedById",
-      block.blocked_source AS "blockedSource",
-      block.should_penalize_relation_creators AS "penalizeCreators",
-      block.relation_cleanup_progress AS progress,
-      block.relation_cleanup_stage AS stage,
-      block.relation_cleanup_resume_after AS "resumeAfter",
-      block.relation_cleanup_blocked_hostname_count AS "blockedHostnameCount",
-      block.relation_cleanup_soft_deleted_relation_count AS "softDeletedRelationCount",
-      block.relation_cleanup_penalized_user_count AS "penalizedUserCount",
-      block.relation_cleanup_completed_at AS "completedAt"
+    SELECT `
+    .append(cleanupOperationFields(sql`hostname.hostname`))
+    .append(sql`
     FROM url_hostname_blocks block
     JOIN url_hostnames hostname ON hostname.id = block.url_hostname_id
-    WHERE block.id = `.append(typeof blockId === 'string' ? sql`${blockId}` : blockId).append(sql`
+    WHERE block.id = `)
+    .append(typeof blockId === 'string' ? sql`${blockId}` : blockId).append(sql`
       AND block.relation_cleanup_root_block_id = block.id`)
 }
