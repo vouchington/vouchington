@@ -9,7 +9,7 @@ const DAY_MS = 86_400_000
 const ORPHAN_KEY_PREFIX = 'explain-orphan-batch-'
 // Hash and merge joins, materialization and hash aggregation hide a rescanned pick; with them
 // off the planner shows whether the limited subquery sits under a join that re-reads it.
-const FORCE_RESCAN_SETTINGS = {
+export const FORCE_RESCAN_SETTINGS = {
   enable_hashjoin: 'off',
   enable_mergejoin: 'off',
   enable_material: 'off',
