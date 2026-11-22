@@ -80,7 +80,6 @@ export async function markAllNotificationsRead(
         AND n.id <= COALESCE(${throughId}::uuid, (SELECT id FROM boundary))
       ORDER BY n.id
       LIMIT ${pageSize + 1}
-      FOR UPDATE
     ), page AS MATERIALIZED (
       SELECT user_id, id FROM candidates ORDER BY id LIMIT ${pageSize}
     ), marked AS (
@@ -95,12 +94,12 @@ export async function markAllNotificationsRead(
       (SELECT count(*)::integer FROM marked) AS marked_read,
       (SELECT count(*) FROM candidates) > ${pageSize} AS has_more,
       COALESCE(${throughId}::uuid, (SELECT id FROM boundary)) AS through_id,
-      (SELECT id FROM marked ORDER BY id DESC LIMIT 1) AS last_page_id
+      (SELECT id FROM page ORDER BY id DESC LIMIT 1) AS last_page_id
   `)
 
   const result = rows[0] as MarkAllNotificationsReadPage
   if (result.has_more) {
-    // The extra locked candidate implies a nonempty marked page and an upper ID.
+    // Concurrent updates can leave nothing to mark. The inspected page still identifies the continuation.
     await enqueueMarkAllNotificationsReadContinuation({
       userId,
       throughId: result.through_id,
