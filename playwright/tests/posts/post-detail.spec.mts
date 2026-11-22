@@ -148,7 +148,7 @@ test.describe('Post Detail Pages', () => {
 
     // The old detailed star list used role='img' per topic row — must not exist.
     // Using page.locator with a CSS selector (not a free-text matcher) is allowed by playwright-prefer-test-id.
-    await expect(page.locator('[role="img"][aria-label*="out of 5 stars"]')).toHaveCount(0)
+    await expect(page.getByRole('img', { name: /out of 5 stars/ })).toHaveCount(0)
   })
 
   for (const { type, segment, id } of POST_TYPE_CASES) {
