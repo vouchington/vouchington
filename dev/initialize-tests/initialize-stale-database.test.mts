@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { readMigrationFile } from '../../backend/data-stores/psql/migration-runner/files.mts'
+import { readMigrationFile } from '@vouchington/postgres'
 import { findMigrationLedgerDrift, parseMigrationLedger } from '../lib/migration-ledger-drift.mts'
 import {
   answerPsql,

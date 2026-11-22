@@ -5,10 +5,9 @@ import type pg from 'pg'
 import { describe, expect, it } from 'vitest'
 
 import type { QueryExecutor, QueryInput } from '../types.mts'
-import { getFilesFromFolder, readMigrationFile } from './files.mts'
 import { readCanonicalConfigDrivenGenerator } from './config-driven-generators.mts'
 import { runConfigDriven } from './migrations.mts'
-import { splitSqlStatements } from './sql-statements.mts'
+import { getFilesFromFolder, readMigrationFile, splitSqlStatements } from '@vouchington/postgres'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 describe('runConfigDriven', () => {

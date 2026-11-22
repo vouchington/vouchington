@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-import { getFilesFromFolder } from '../../backend/data-stores/psql/migration-runner/files.mts'
+import { getFilesFromFolder } from '@vouchington/postgres'
 
 export async function loadGeneratedConfigDrivenSql(
   configDrivenDir: string,

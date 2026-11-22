@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import { loadSqlParserModule } from '../../migration-runner/sql-statements.mts'
+import { loadSqlParserModule } from '@vouchington/postgres'
 import { loadExecutableSqlStrings } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-execute-helpers.mts'
 import { findFirstGeneratedDdlViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-guard-helpers.mts'
 

@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { initSqlAst } from 'vouchington-tooling/sql-ast'
 
-import { loadSqlParserModule } from '../../migration-runner/sql-statements.mts'
+import { loadSqlParserModule } from '@vouchington/postgres'
 import { findFirstGeneratedDdlViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-guard-helpers.mts'
 
 describe('config-driven generated DDL guard regressions', () => {

@@ -1,4 +1,4 @@
-import { splitSqlStatements } from '../../../../data-stores/psql/migration-runner/sql-statements.mts'
+import { splitSqlStatements } from '@vouchington/postgres'
 import { readAdjacentSqlLiteralsAt, readDollarQuoteDelimiter } from './sql-literal-readers.mts'
 
 export function stripDoBlocks(sql: string): string {
