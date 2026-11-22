@@ -140,10 +140,11 @@ export const upsertEntityRelation = async (
     relationOptions,
   )
   const run = async (transactionQuery: TransactionQuery) => {
-    await relationOptions?.postMutationGuard?.assertAllowed(transactionQuery)
-    return insertBidirectionalRelationRows<InternalEntityRelationMutationResult>(() =>
-      transactionQuery(insertQuery),
+    const inserted = await insertBidirectionalRelationRows<InternalEntityRelationMutationResult>(
+      () => transactionQuery(insertQuery),
     )
+    await relationOptions?.postMutationGuard?.assertAllowed(transactionQuery)
+    return inserted
   }
   const { relations: internalRelations, reverseRelations: internalReverseRelations } =
     await conflictOnRelationDeadlock(() => runRelationTransaction(relationOptions, run))

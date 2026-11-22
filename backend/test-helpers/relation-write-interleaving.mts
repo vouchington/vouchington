@@ -6,6 +6,7 @@ export async function commitRelationWriteDuringCompetingMutationForTest<T>(
   write: (query: TransactionQuery) => Promise<unknown>,
   queryMarker: string,
   compete: () => Promise<T>,
+  beforeCommit?: () => Promise<void>,
 ): Promise<T> {
   await using holder = await beginTransaction()
   await write(holder)
@@ -21,6 +22,7 @@ export async function commitRelationWriteDuringCompetingMutationForTest<T>(
     async waitForLock => {
       const competing = compete()
       await waitForLock(competing)
+      await beforeCommit?.()
       await holder.commit()
       return competing
     },
