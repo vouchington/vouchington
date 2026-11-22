@@ -23,7 +23,7 @@ describe('copyright email intake enqueue', () => {
           attempts: AI_AGENTS_DEFAULTS.attempts,
           backoff: AI_AGENTS_DEFAULTS.backoff,
           priority: AGENT_PRIORITY['copyright-email-intake'],
-          removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
+          removeOnComplete: true,
           removeOnFail: true,
           deduplication: { id: jobId, mode: 'simple' },
           ordering: { key: `copyright_email_intake_${intakeId}`, concurrency: 1 },

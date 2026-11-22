@@ -17,6 +17,8 @@ const enqueueBatch = createBulkEnqueueFunction({
     opts: {
       ...AI_AGENTS_DEFAULTS,
       jobId: jobIdFor(runId),
+      // A completed job releases its id so the sweep can re-drive a run still active in SQL.
+      removeOnComplete: true,
       priority: AGENT_PRIORITY['copyright-email-intake'],
       deduplication: { id: jobIdFor(runId), mode: 'simple' },
       ordering: { key: `copyright_email_intake_${intakeId}`, concurrency: 1 },
