@@ -12,6 +12,7 @@ import {
 } from '@voucha/test-helpers'
 import { grantMembership } from '../../memberships/index.mts'
 import { runDataRetentionCleanup } from '../cleanup.mts'
+import { runUserPurgePageForTest } from '../../../test-helpers/user-purge-ticks.mts'
 
 describe('retained grant purge budget', () => {
   it('terminalizes capped grant pages before deleting the live user parent', async () => {
@@ -25,33 +26,43 @@ describe('retained grant purge budget', () => {
     await softDeleteUserAt(user.id, window.firstEligibleDate)
     const options = { ...window, batchSize: 1, maxBatches: 1 }
     await expect(
-      runDataRetentionCleanup(
-        { batchSize: 500, maxBatches: 1 },
-        { families: ['softDeletedUsers'], softDeletedUsers: options },
-      ).then(result => result.softDeletedUsers),
+      runUserPurgePageForTest(() =>
+        runDataRetentionCleanup(
+          { batchSize: 500, maxBatches: 1 },
+          { families: ['softDeletedUsers'], softDeletedUsers: options },
+        ).then(result => result.softDeletedUsers),
+      ),
     ).resolves.toEqual({ deleted: 0, hasMore: true })
     expect(await getTestUserRaw(user.id)).not.toBeNull()
     const grants = await Promise.all(
       [first, second, third].map(grant => getTestMembershipGrant(grant.grantId)),
     )
     expect(grants.filter(grant => grant?.revoked_at)).toHaveLength(1)
-    await runDataRetentionCleanup(
-      { batchSize: 500, maxBatches: 1 },
-      { families: ['softDeletedUsers'], softDeletedUsers: options },
-    ).then(result => result.softDeletedUsers)
-    await runDataRetentionCleanup(
-      { batchSize: 500, maxBatches: 1 },
-      { families: ['softDeletedUsers'], softDeletedUsers: options },
-    ).then(result => result.softDeletedUsers)
-    await runDataRetentionCleanup(
-      { batchSize: 500, maxBatches: 1 },
-      { families: ['softDeletedUsers'], softDeletedUsers: options },
-    ).then(result => result.softDeletedUsers)
-    await expect(
+    await runUserPurgePageForTest(() =>
       runDataRetentionCleanup(
         { batchSize: 500, maxBatches: 1 },
         { families: ['softDeletedUsers'], softDeletedUsers: options },
       ).then(result => result.softDeletedUsers),
+    )
+    await runUserPurgePageForTest(() =>
+      runDataRetentionCleanup(
+        { batchSize: 500, maxBatches: 1 },
+        { families: ['softDeletedUsers'], softDeletedUsers: options },
+      ).then(result => result.softDeletedUsers),
+    )
+    await runUserPurgePageForTest(() =>
+      runDataRetentionCleanup(
+        { batchSize: 500, maxBatches: 1 },
+        { families: ['softDeletedUsers'], softDeletedUsers: options },
+      ).then(result => result.softDeletedUsers),
+    )
+    await expect(
+      runUserPurgePageForTest(() =>
+        runDataRetentionCleanup(
+          { batchSize: 500, maxBatches: 1 },
+          { families: ['softDeletedUsers'], softDeletedUsers: options },
+        ).then(result => result.softDeletedUsers),
+      ),
     ).resolves.toEqual({ deleted: 1, hasMore: true })
     expect(await getTestUserRaw(user.id)).toBeNull()
     const settled = await Promise.all(
@@ -70,29 +81,37 @@ describe('retained grant purge budget', () => {
     await softDeleteUserAt(user.id, window.firstEligibleDate)
     const options = { ...window, batchSize: 1, maxBatches: 1 }
     await expect(
-      runDataRetentionCleanup(
-        { batchSize: 500, maxBatches: 1 },
-        { families: ['softDeletedUsers'], softDeletedUsers: options },
-      ).then(result => result.softDeletedUsers),
+      runUserPurgePageForTest(() =>
+        runDataRetentionCleanup(
+          { batchSize: 500, maxBatches: 1 },
+          { families: ['softDeletedUsers'], softDeletedUsers: options },
+        ).then(result => result.softDeletedUsers),
+      ),
     ).resolves.toEqual({ deleted: 0, hasMore: true })
     expect(await getTestTopicCreatedById(topic)).not.toBe(user.id)
     expect((await getTestMembershipGrant(grant.grantId))?.revoked_at).toBeNull()
     await expect(
+      runUserPurgePageForTest(() =>
+        runDataRetentionCleanup(
+          { batchSize: 500, maxBatches: 1 },
+          { families: ['softDeletedUsers'], softDeletedUsers: options },
+        ).then(result => result.softDeletedUsers),
+      ),
+    ).resolves.toEqual({ deleted: 0, hasMore: true })
+    expect((await getTestMembershipGrant(grant.grantId))?.revoked_at).not.toBeNull()
+    expect(await getTestUserRaw(user.id)).not.toBeNull()
+    await runUserPurgePageForTest(() =>
       runDataRetentionCleanup(
         { batchSize: 500, maxBatches: 1 },
         { families: ['softDeletedUsers'], softDeletedUsers: options },
       ).then(result => result.softDeletedUsers),
-    ).resolves.toEqual({ deleted: 0, hasMore: true })
-    expect((await getTestMembershipGrant(grant.grantId))?.revoked_at).not.toBeNull()
-    expect(await getTestUserRaw(user.id)).not.toBeNull()
-    await runDataRetentionCleanup(
-      { batchSize: 500, maxBatches: 1 },
-      { families: ['softDeletedUsers'], softDeletedUsers: options },
-    ).then(result => result.softDeletedUsers)
-    await runDataRetentionCleanup(
-      { batchSize: 500, maxBatches: 1 },
-      { families: ['softDeletedUsers'], softDeletedUsers: options },
-    ).then(result => result.softDeletedUsers)
+    )
+    await runUserPurgePageForTest(() =>
+      runDataRetentionCleanup(
+        { batchSize: 500, maxBatches: 1 },
+        { families: ['softDeletedUsers'], softDeletedUsers: options },
+      ).then(result => result.softDeletedUsers),
+    )
     expect(await getTestUserRaw(user.id)).toBeNull()
   })
 })

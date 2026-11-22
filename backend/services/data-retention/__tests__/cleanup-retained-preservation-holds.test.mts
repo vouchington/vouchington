@@ -17,6 +17,10 @@ import { readPreservationHoldsForTest } from '@voucha/test-helpers/entities/user
 import { readTestRetainedUserLegalClocks } from '@voucha/test-helpers/entities/retained-user-legal-clocks'
 import { placeUserPreservationHold, releaseUserPreservationHold } from '@services/users'
 import { cleanupSoftDeletedUserBatch } from '../cleanup-batches.mts'
+import {
+  areTestUsersDeleted,
+  runUserPurgeTicksForTest,
+} from '../../../test-helpers/user-purge-ticks.mts'
 import { cleanupSoftDeletedUser } from '../cleanup-soft-deleted-user.mts'
 import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
 
@@ -45,12 +49,12 @@ describe('legal preservation holds and final user purge', () => {
     expect(await getTestUserRaw(user.id)).not.toBeNull()
 
     await releaseUserPreservationHold(admin, user.id)
-    await cleanupSoftDeletedUserBatch(
-      window.upperBoundDate,
-      500,
-      window.lowerBoundDate,
-      undefined,
-      [user.id],
+    await runUserPurgeTicksForTest(
+      () =>
+        cleanupSoftDeletedUserBatch(window.upperBoundDate, 500, window.lowerBoundDate, undefined, [
+          user.id,
+        ]),
+      () => areTestUsersDeleted([user.id]),
     )
 
     expect(await getTestUserRaw(user.id)).toBeNull()
@@ -66,12 +70,13 @@ describe('legal preservation holds and final user purge', () => {
     ])
     await placeUserPreservationHold(admin, held.id, 'matter-purge-batch')
 
-    await cleanupSoftDeletedUserBatch(
-      window.upperBoundDate,
-      500,
-      window.lowerBoundDate,
-      undefined,
-      [held.id, sibling.id],
+    await runUserPurgeTicksForTest(
+      () =>
+        cleanupSoftDeletedUserBatch(window.upperBoundDate, 500, window.lowerBoundDate, undefined, [
+          held.id,
+          sibling.id,
+        ]),
+      () => areTestUsersDeleted([sibling.id]),
     )
 
     expect(await getTestUserRaw(sibling.id)).toBeNull()
@@ -86,12 +91,12 @@ describe('legal preservation holds and final user purge', () => {
     await releaseUserPreservationHold(admin, user.id)
 
     await softDeleteUserAt(user.id, window.firstEligibleDate)
-    await cleanupSoftDeletedUserBatch(
-      window.upperBoundDate,
-      500,
-      window.lowerBoundDate,
-      undefined,
-      [user.id],
+    await runUserPurgeTicksForTest(
+      () =>
+        cleanupSoftDeletedUserBatch(window.upperBoundDate, 500, window.lowerBoundDate, undefined, [
+          user.id,
+        ]),
+      () => areTestUsersDeleted([user.id]),
     )
     await cleanupRetainedIdentityRoots(1_000, { user: [user.id] })
 
@@ -174,11 +179,21 @@ describe('legal preservation holds and final user purge', () => {
     )
     // Both real actors settled. This single next-tick call may not abort or silently do nothing.
     const remaining = !held && afterRace.user !== null ? 1 : 0
-    const next = await observeTestUserPurgeAttempt(() =>
-      cleanupSoftDeletedUserBatch(window.upperBoundDate, 500, window.lowerBoundDate, undefined, [
-        user.id,
-      ]),
-    )
+    const next = (
+      await runUserPurgeTicksForTest(
+        () =>
+          observeTestUserPurgeAttempt(() =>
+            cleanupSoftDeletedUserBatch(
+              window.upperBoundDate,
+              500,
+              window.lowerBoundDate,
+              undefined,
+              [user.id],
+            ),
+          ),
+        ticks => ticks.at(-1)!.failures.length === 0,
+      )
+    ).at(-1)!
     expect(next.failures).toEqual([])
     expect(next.result).toEqual({ deleted: remaining, hasMore: false })
     const final = await readTestPurgeAccountState(user.id)

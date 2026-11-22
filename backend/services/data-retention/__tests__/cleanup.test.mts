@@ -38,6 +38,10 @@ import { runDataRetentionCleanup } from '../cleanup.mts'
 
 import { deleteOrphanedOAuthAccountBatch } from '../cleanup-batches.mts'
 import { grantMembership } from '../../memberships/create.mts'
+import {
+  areTestUsersDeleted,
+  runUserPurgeTicksForTest,
+} from '../../../test-helpers/user-purge-ticks.mts'
 import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
 import { cleanupRetainedRelationIdentities } from '../cleanup-retained-relation-identities.mts'
 
@@ -193,12 +197,16 @@ describe('cleanupSoftDeletedUsers', () => {
       softDeleteUserAt(legacyUser.id, window.secondEligibleDate),
     ])
 
-    await expect(
-      runDataRetentionCleanup(
-        { batchSize: 500, maxBatches: 1 },
-        { families: ['softDeletedUsers'], softDeletedUsers: window },
-      ).then(result => result.softDeletedUsers),
-    ).resolves.toEqual({ deleted: 2, hasMore: false })
+    const ticks = await runUserPurgeTicksForTest(
+      () =>
+        runDataRetentionCleanup(
+          { batchSize: 500, maxBatches: 1 },
+          { families: ['softDeletedUsers'], softDeletedUsers: window },
+        ).then(result => result.softDeletedUsers),
+      () => areTestUsersDeleted([completedRequestUser.id, legacyUser.id]),
+    )
+    expect(ticks.reduce((count, result) => count + result.deleted, 0)).toBe(2)
+    expect(ticks.at(-1)?.hasMore).toBe(false)
     await expect(getTestUserRaw(completedRequestUser.id)).resolves.toBeNull()
     await expect(getTestUserRaw(legacyUser.id)).resolves.toBeNull()
   }, 30_000)

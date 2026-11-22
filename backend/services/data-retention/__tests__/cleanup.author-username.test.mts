@@ -11,6 +11,7 @@ import {
 import { drainUserDeletionForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { describe, expect, it } from 'vitest'
 import { cleanupSoftDeletedUser } from '../cleanup-soft-deleted-user.mts'
+import { runUserPurgePageForTest } from '../../../test-helpers/user-purge-ticks.mts'
 
 describe('deleted author publication cleanup', () => {
   it('drains an authored post before purging a user whose username was scrubbed', async () => {
@@ -23,7 +24,9 @@ describe('deleted author publication cleanup', () => {
 
     const window = createTestRetentionWindow()
     await softDeleteUserAt(user.id, window.firstEligibleDate)
-    await expect(cleanupSoftDeletedUser(user.id, window.upperBoundDate)).resolves.toEqual({
+    await expect(
+      runUserPurgePageForTest(() => cleanupSoftDeletedUser(user.id, window.upperBoundDate)),
+    ).resolves.toEqual({
       deleted: 1,
       hasMore: false,
     })

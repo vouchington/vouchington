@@ -17,6 +17,10 @@ import { v7 } from 'uuid'
 
 import * as cleanupUser from '../cleanup-soft-deleted-user.mts'
 import { runDataRetentionCleanup } from '../cleanup.mts'
+import {
+  areTestUsersDeleted,
+  runUserPurgeTicksForTest,
+} from '../../../test-helpers/user-purge-ticks.mts'
 
 describe('cleanupSoftDeletedUsers transaction boundaries', () => {
   it('commits each selected user before a later user waits on post capture', async () => {
@@ -66,13 +70,19 @@ describe('cleanupSoftDeletedUsers transaction boundaries', () => {
         if (args[0] === firstUser.id) firstCommitted.resolve()
         return result
       })
-    const cleanup = runDataRetentionCleanup(
-      { batchSize: 500, maxBatches: 1 },
-      {
-        families: ['softDeletedUsers'],
-        softDeletedUsers: { ...window, batchSize: 4, maxBatches: 1 },
-      },
-    ).then(result => result.softDeletedUsers)
+    // An unrelated purge can abort the first user's transaction; the next tick then reaches the
+    // same held post lock, which is the state under test.
+    const cleanup = runUserPurgeTicksForTest(
+      () =>
+        runDataRetentionCleanup(
+          { batchSize: 500, maxBatches: 1 },
+          {
+            families: ['softDeletedUsers'],
+            softDeletedUsers: { ...window, batchSize: 4, maxBatches: 1 },
+          },
+        ).then(result => result.softDeletedUsers),
+      () => areTestUsersDeleted([firstUser.id, secondUser.id]),
+    )
     try {
       await firstCommitted.promise
       expect(await getTestUserRaw(firstUser.id)).toBeNull()
@@ -83,7 +93,9 @@ describe('cleanupSoftDeletedUsers transaction boundaries', () => {
       cleanupSpy.mockRestore()
     }
     await holder
-    await expect(cleanup).resolves.toEqual({ deleted: 2, hasMore: false })
+    const ticks = await cleanup
+    expect(ticks.reduce((count, result) => count + result.deleted, 0)).toBe(2)
+    expect(ticks.at(-1)?.hasMore).toBe(false)
     expect(await getTestUserRaw(secondUser.id)).toBeNull()
   })
 })

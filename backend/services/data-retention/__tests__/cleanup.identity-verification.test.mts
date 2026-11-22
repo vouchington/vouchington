@@ -16,6 +16,10 @@ import { DELETED_USER_ID } from '@services/users/constants'
 
 import { runDataRetentionCleanup } from '../cleanup.mts'
 import {
+  areTestUsersDeleted,
+  runUserPurgeTicksForTest,
+} from '../../../test-helpers/user-purge-ticks.mts'
+import {
   attachCheckoutToIdentityVerificationAttempt,
   reserveIdentityVerificationAttempt,
 } from '../../identity-verification/attempts.mts'
@@ -59,10 +63,14 @@ describe('cleanupSoftDeletedUsers identity verification', () => {
     // Bypass deleteUser so the link remains active at purge time and exercises defensive revoke.
     await softDeleteUserAt(user.id, window.firstEligibleDate)
 
-    await runDataRetentionCleanup(
-      { batchSize: 500, maxBatches: 1 },
-      { families: ['softDeletedUsers'], softDeletedUsers: window },
-    ).then(result => result.softDeletedUsers)
+    await runUserPurgeTicksForTest(
+      () =>
+        runDataRetentionCleanup(
+          { batchSize: 500, maxBatches: 1 },
+          { families: ['softDeletedUsers'], softDeletedUsers: window },
+        ).then(result => result.softDeletedUsers),
+      () => areTestUsersDeleted([user.id]),
+    )
 
     expect(await getTestUserRaw(user.id)).toBeNull()
     const identity = await getVerifiedIdentityByFingerprint(fingerprint)
@@ -77,10 +85,14 @@ describe('cleanupSoftDeletedUsers identity verification', () => {
     const checkoutSessionId = await createTerminalFreeIdentityAttempt(user.id)
 
     await softDeleteUserAt(user.id, window.firstEligibleDate)
-    await runDataRetentionCleanup(
-      { batchSize: 500, maxBatches: 1 },
-      { families: ['softDeletedUsers'], softDeletedUsers: window },
-    ).then(result => result.softDeletedUsers)
+    await runUserPurgeTicksForTest(
+      () =>
+        runDataRetentionCleanup(
+          { batchSize: 500, maxBatches: 1 },
+          { families: ['softDeletedUsers'], softDeletedUsers: window },
+        ).then(result => result.softDeletedUsers),
+      () => areTestUsersDeleted([user.id]),
+    )
 
     expect(await getTestUserRaw(user.id)).toBeNull()
     expect(await getIdentityVerificationAttemptStates(DELETED_USER_ID)).toContainEqual(
@@ -102,10 +114,14 @@ describe('cleanupSoftDeletedUsers identity verification', () => {
     )
 
     await softDeleteUserAt(administrator.id, window.firstEligibleDate)
-    await runDataRetentionCleanup(
-      { batchSize: 500, maxBatches: 1 },
-      { families: ['softDeletedUsers'], softDeletedUsers: window },
-    ).then(result => result.softDeletedUsers)
+    await runUserPurgeTicksForTest(
+      () =>
+        runDataRetentionCleanup(
+          { batchSize: 500, maxBatches: 1 },
+          { families: ['softDeletedUsers'], softDeletedUsers: window },
+        ).then(result => result.softDeletedUsers),
+      () => areTestUsersDeleted([administrator.id]),
+    )
 
     expect(await getTestUserRaw(administrator.id)).toBeNull()
     expect(await getIdentityVerificationAttemptStates(target.id)).toContainEqual(
@@ -126,10 +142,14 @@ describe('cleanupSoftDeletedUsers identity verification', () => {
 
     await softDeleteUserAt(firstUser.id, window.firstEligibleDate)
     await softDeleteUserAt(secondUser.id, window.secondEligibleDate)
-    await runDataRetentionCleanup(
-      { batchSize: 500, maxBatches: 1 },
-      { families: ['softDeletedUsers'], softDeletedUsers: window },
-    ).then(result => result.softDeletedUsers)
+    await runUserPurgeTicksForTest(
+      () =>
+        runDataRetentionCleanup(
+          { batchSize: 500, maxBatches: 1 },
+          { families: ['softDeletedUsers'], softDeletedUsers: window },
+        ).then(result => result.softDeletedUsers),
+      () => areTestUsersDeleted([firstUser.id, secondUser.id]),
+    )
 
     expect(await getTestUserRaw(firstUser.id)).toBeNull()
     expect(await getTestUserRaw(secondUser.id)).toBeNull()

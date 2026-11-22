@@ -15,6 +15,7 @@ import {
 import { DELETED_USER_ID } from '@services/users/constants'
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { runDataRetentionCleanup } from '../cleanup.mts'
+import { runUserPurgePageForTest } from '../../../test-helpers/user-purge-ticks.mts'
 
 describe('cleanupSoftDeletedUsers hashtag source retention', () => {
   it("retains another author's post and topic before reassigning its contributor", async () => {
@@ -39,10 +40,12 @@ describe('cleanupSoftDeletedUsers hashtag source retention', () => {
 
     await deleteUserAndDrainForTest(contributor, contributor)
     await softDeleteUserAt(contributor.id, window.firstEligibleDate)
-    await runDataRetentionCleanup(
-      { batchSize: 500, maxBatches: 1 },
-      { families: ['softDeletedUsers'], softDeletedUsers: window },
-    ).then(result => result.softDeletedUsers)
+    await runUserPurgePageForTest(() =>
+      runDataRetentionCleanup(
+        { batchSize: 500, maxBatches: 1 },
+        { families: ['softDeletedUsers'], softDeletedUsers: window },
+      ).then(result => result.softDeletedUsers),
+    )
 
     await expect(getPostHashtagSourceContributorIdsForTest(postId)).resolves.toEqual([
       DELETED_USER_ID,
@@ -72,10 +75,12 @@ describe('cleanupSoftDeletedUsers hashtag source retention', () => {
 
     await deleteUserAndDrainForTest(user, user)
     await softDeleteUserAt(user.id, window.firstEligibleDate)
-    await runDataRetentionCleanup(
-      { batchSize: 500, maxBatches: 1 },
-      { families: ['softDeletedUsers'], softDeletedUsers: window },
-    ).then(result => result.softDeletedUsers)
+    await runUserPurgePageForTest(() =>
+      runDataRetentionCleanup(
+        { batchSize: 500, maxBatches: 1 },
+        { families: ['softDeletedUsers'], softDeletedUsers: window },
+      ).then(result => result.softDeletedUsers),
+    )
 
     expect(await getTestUserRaw(user.id)).toBeNull()
     await expect(getPostHashtagSourceContributorIdsForTest(postId)).resolves.toEqual([

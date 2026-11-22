@@ -11,6 +11,10 @@ import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/inje
 import { grantMembership } from '../../memberships/create.mts'
 import { revokeMembershipGrant } from '../../memberships/grants/revoke.mts'
 import { runDataRetentionCleanup } from '../cleanup.mts'
+import {
+  areTestUsersDeleted,
+  runUserPurgeTicksForTest,
+} from '../../../test-helpers/user-purge-ticks.mts'
 
 describe('membership grant cleanup concurrency', () => {
   it('preserves revocation committed before the overlapping cleanup reads eligibility', async () => {
@@ -53,7 +57,7 @@ describe('membership grant cleanup concurrency', () => {
     revocation = revokeMembershipGrant(administrator.id, grant.grantId, 'concurrent cleanup')
     const revocationOutcome = Promise.allSettled([revocation])
     let cleanupOutcome:
-      | Promise<PromiseSettledResult<{ deleted: number; hasMore: boolean }>[]>
+      | Promise<PromiseSettledResult<{ deleted: number; hasMore: boolean }[]>[]>
       | undefined
     try {
       await Promise.race([
@@ -62,15 +66,23 @@ describe('membership grant cleanup concurrency', () => {
           throw new Error('Grant revocation completed before reaching the concurrency barrier')
         }),
       ])
-      const cleanup = runDataRetentionCleanup(
-        { batchSize: 500, maxBatches: 1 },
-        {
-          families: ['softDeletedUsers'],
-          softDeletedUsers: { ...window, userIds: [member.id] },
-        },
-      ).then(result => result.softDeletedUsers)
+      // Another file's purge can abort the first tick with an unrelated 40001; the next tick
+      // then runs after the revocation has committed, which is the state under test.
+      const cleanup = runUserPurgeTicksForTest(
+        () =>
+          runDataRetentionCleanup(
+            { batchSize: 500, maxBatches: 1 },
+            {
+              families: ['softDeletedUsers'],
+              softDeletedUsers: { ...window, userIds: [member.id] },
+            },
+          ).then(result => result.softDeletedUsers),
+        () => areTestUsersDeleted([member.id]),
+      )
       cleanupOutcome = Promise.allSettled([cleanup])
-      await expect(cleanup).resolves.toEqual({ deleted: 1, hasMore: false })
+      const ticks = await cleanup
+      expect(ticks.reduce((count, result) => count + result.deleted, 0)).toBe(1)
+      expect(ticks.at(-1)?.hasMore).toBe(false)
       await expect(revocation).resolves.toMatchObject({ alreadyRevoked: false })
     } finally {
       releaseRevocation.resolve()

@@ -18,6 +18,7 @@ import { cleanupSoftDeletedUser } from '../cleanup-soft-deleted-user.mts'
 import { runDataRetentionCleanup } from '../cleanup.mts'
 import type { UserPurgeCursor } from '../user-purge-types.mts'
 import { dataRetentionConfig } from '../config.mts'
+import { runUserPurgePageForTest } from '../../../test-helpers/user-purge-ticks.mts'
 
 describe('bounded moderator scan continuation', () => {
   it('resumes past suspended and pending-deletion moderators before notifying the oldest eligible successor', async () => {
@@ -45,13 +46,15 @@ describe('bounded moderator scan continuation', () => {
       community_moderator_scan_page_size: 1,
     })
     const run = (cursor?: UserPurgeCursor) =>
-      cleanupSoftDeletedUser(
-        owner.id,
-        window.upperBoundDate,
-        undefined,
-        1,
-        { remainingRows: 1 },
-        cursor,
+      runUserPurgePageForTest(() =>
+        cleanupSoftDeletedUser(
+          owner.id,
+          window.upperBoundDate,
+          undefined,
+          1,
+          { remainingRows: 1 },
+          cursor,
+        ),
       )
     try {
       const first = await run()
@@ -113,18 +116,22 @@ describe('bounded moderator scan continuation', () => {
       community_moderator_scan_page_size: 1,
     })
     try {
-      const first = await cleanupSoftDeletedUser(owner.id, window.upperBoundDate)
+      const first = await runUserPurgePageForTest(() =>
+        cleanupSoftDeletedUser(owner.id, window.upperBoundDate),
+      )
       expect(first.userPurge).toBeDefined()
       await expect(getTestPurgeCommunity(community.id)).resolves.toMatchObject({
         archived_at: null,
       })
-      await cleanupSoftDeletedUser(
-        owner.id,
-        window.upperBoundDate,
-        undefined,
-        1,
-        { remainingRows: 1 },
-        first.userPurge,
+      await runUserPurgePageForTest(() =>
+        cleanupSoftDeletedUser(
+          owner.id,
+          window.upperBoundDate,
+          undefined,
+          1,
+          { remainingRows: 1 },
+          first.userPurge,
+        ),
       )
       await expect(getTestPurgeCommunity(community.id)).resolves.toMatchObject({
         archived_at: expect.any(Date),
@@ -150,18 +157,20 @@ describe('bounded moderator scan continuation', () => {
     const window = createTestRetentionWindow()
     await softDeleteUserAt(owner.id, window.firstEligibleDate)
     await removeTestCommunityMember(first.id, owner.id)
-    const result = await cleanupSoftDeletedUser(
-      owner.id,
-      window.upperBoundDate,
-      undefined,
-      1,
-      { remainingRows: 1 },
-      { userId: owner.id, communityId: first.id, afterModeratorId: member.id },
+    const result = await runUserPurgePageForTest(() =>
+      cleanupSoftDeletedUser(
+        owner.id,
+        window.upperBoundDate,
+        undefined,
+        1,
+        { remainingRows: 1 },
+        { userId: owner.id, communityId: first.id, afterModeratorId: member.id },
+      ),
     )
     expect(result).toEqual({ deleted: 0, hasMore: true })
     await expect(getCommunityMember(second.id, owner.id)).resolves.toMatchObject({ role: 'owner' })
     await expect(getTestPurgeCommunity(second.id)).resolves.toMatchObject({ archived_at: null })
-    await cleanupSoftDeletedUser(owner.id, window.upperBoundDate)
+    await runUserPurgePageForTest(() => cleanupSoftDeletedUser(owner.id, window.upperBoundDate))
     await expect(getTestPurgeCommunity(second.id)).resolves.toMatchObject({
       archived_at: expect.any(Date),
     })

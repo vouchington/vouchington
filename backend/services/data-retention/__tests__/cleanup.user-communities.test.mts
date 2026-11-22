@@ -18,6 +18,11 @@ import { getCommunity } from '../../communities/get.mts'
 import { getCommunityMember } from '../../communities/members/get.mts'
 import { listNotifications } from '../../notifications/list.mts'
 import { cleanupSoftDeletedUser } from '../cleanup-soft-deleted-user.mts'
+import {
+  areTestUsersDeleted,
+  runUserPurgePageForTest,
+  runUserPurgeTicksForTest,
+} from '../../../test-helpers/user-purge-ticks.mts'
 import { dataRetentionConfig } from '../config.mts'
 import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
 import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
@@ -49,9 +54,11 @@ describe('community preservation during final user purge', () => {
       community_purge_batch_size: 2,
     })
     try {
-      await cleanupSoftDeletedUser(owner.id, window.upperBoundDate, undefined, 2, {
-        remainingRows: 2,
-      })
+      await runUserPurgePageForTest(() =>
+        cleanupSoftDeletedUser(owner.id, window.upperBoundDate, undefined, 2, {
+          remainingRows: 2,
+        }),
+      )
       const transfers = Object.values((await listNotifications(successor.id)).notifications).filter(
         notification => notification.entity_type === 'community_ownership_transfer',
       )
@@ -115,14 +122,18 @@ describe('community preservation during final user purge', () => {
       community_purge_batch_size: 1,
     })
     try {
-      await expect(cleanupSoftDeletedUser(owner.id, window.upperBoundDate)).resolves.toMatchObject({
+      await expect(
+        runUserPurgePageForTest(() => cleanupSoftDeletedUser(owner.id, window.upperBoundDate)),
+      ).resolves.toMatchObject({
         deleted: 0,
         hasMore: true,
       })
       await expect(getCommunityMember(community.id, selected.user_id)).resolves.toMatchObject({
         role: 'owner',
       })
-      await expect(cleanupSoftDeletedUser(owner.id, window.upperBoundDate)).resolves.toMatchObject({
+      await expect(
+        runUserPurgePageForTest(() => cleanupSoftDeletedUser(owner.id, window.upperBoundDate)),
+      ).resolves.toMatchObject({
         deleted: 1,
         hasMore: false,
       })
@@ -172,7 +183,9 @@ describe('community preservation during final user purge', () => {
       sentryCaptureExceptionMock.mock.calls.filter(([reported]) => reported === failure.error),
     ).toHaveLength(1)
 
-    await expect(cleanupSoftDeletedUser(owner.id, window.upperBoundDate)).resolves.toMatchObject({
+    await expect(
+      runUserPurgePageForTest(() => cleanupSoftDeletedUser(owner.id, window.upperBoundDate)),
+    ).resolves.toMatchObject({
       deleted: 1,
       hasMore: false,
     })
@@ -199,8 +212,11 @@ describe('community preservation during final user purge', () => {
       const before = await getTestPurgeCommunity(community.id)
       const window = createTestRetentionWindow()
       await softDeleteUserAt(owner.id, window.firstEligibleDate)
-      await cleanupSoftDeletedUser(owner.id, window.upperBoundDate)
-      await cleanupSoftDeletedUser(owner.id, window.upperBoundDate)
+      await runUserPurgeTicksForTest(
+        () => cleanupSoftDeletedUser(owner.id, window.upperBoundDate),
+        () => areTestUsersDeleted([owner.id]),
+      )
+      await runUserPurgePageForTest(() => cleanupSoftDeletedUser(owner.id, window.upperBoundDate))
       await expect(getTestPurgeCommunity(community.id)).resolves.toEqual(before)
       await expect(getCommunityMember(community.id, moderator.id)).resolves.toMatchObject({
         role: 'owner',
@@ -215,7 +231,9 @@ describe('community preservation during final user purge', () => {
     await insertTestCommunityMember({ communityId: community.id, userId: owner.id, role: 'owner' })
     const window = createTestRetentionWindow()
     await softDeleteUserAt(creator.id, window.firstEligibleDate)
-    await expect(cleanupSoftDeletedUser(creator.id, window.upperBoundDate)).resolves.toMatchObject({
+    await expect(
+      runUserPurgePageForTest(() => cleanupSoftDeletedUser(creator.id, window.upperBoundDate)),
+    ).resolves.toMatchObject({
       deleted: 1,
     })
     await expect(getCommunityMember(community.id, owner.id)).resolves.toMatchObject({

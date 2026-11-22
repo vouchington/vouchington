@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { runExplicitCommitActionProbe } from '../../../test-helpers/data-stores/psql/post-commit-actions.mts'
 import { createTestUser, getTestUserRaw } from '../../../test-helpers/entities/index.mts'
 import { cleanupSoftDeletedUserBatch } from '../cleanup-batches.mts'
+import { runUserPurgeTicksForTest } from '../../../test-helpers/user-purge-ticks.mts'
 import { cleanupSoftDeletedUser } from '../cleanup-soft-deleted-user.mts'
 import {
   purgeAfterTestVictimSnapshot,
@@ -94,14 +95,24 @@ describe('reciprocal final user purges', () => {
       )
       expect(await readTestPurgeSceneState(scene.held)).toEqual(scene.heldBefore)
 
-      // Exactly one normal scheduler call, after BOTH racers have settled; never a retry loop.
-      const remaining = afterRace.filter(state => state.user !== null).length
-      const next = await observeTestUserPurgeAttempt(() =>
-        cleanupSoftDeletedUserBatch(scene.cutoff, 50, undefined, undefined, [
-          ...ids,
-          scene.held.userId,
-        ]),
-      )
+      // The next scheduler tick, after BOTH racers have settled. Another file's purge may abort it
+      // with an unrelated 40001, which the scheduler absorbs with a further tick.
+      const { remaining, next } = (
+        await runUserPurgeTicksForTest(
+          async () => ({
+            remaining: (await Promise.all(scene.targets.map(readTestPurgeSceneState))).filter(
+              state => state.user !== null,
+            ).length,
+            next: await observeTestUserPurgeAttempt(() =>
+              cleanupSoftDeletedUserBatch(scene.cutoff, 50, undefined, undefined, [
+                ...ids,
+                scene.held.userId,
+              ]),
+            ),
+          }),
+          ticks => ticks.at(-1)!.next.failures.length === 0,
+        )
+      ).at(-1)!
       expect(next.failures).toEqual([])
       expect(next.result).toEqual({ deleted: remaining, hasMore: false })
       const final = await Promise.all(scene.targets.map(readTestPurgeSceneState))

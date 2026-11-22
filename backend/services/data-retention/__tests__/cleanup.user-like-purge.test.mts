@@ -15,6 +15,7 @@ import { DELETED_USER_ID } from '@services/users/constants'
 import { recordLike } from '../../ap-post-likes/record-like.mts'
 import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
 import { cleanupSoftDeletedUser } from '../cleanup-soft-deleted-user.mts'
+import { runUserPurgePageForTest } from '../../../test-helpers/user-purge-ticks.mts'
 
 describe('final user purge of posts with remote Likes', () => {
   it('reassigns every authored post before user deletion and preserves its active Like', async () => {
@@ -31,7 +32,9 @@ describe('final user purge of posts with remote Likes', () => {
 
     let deleted = 0
     for (let page = 0; page < 16; page++) {
-      const result = await cleanupSoftDeletedUser(userId, window.upperBoundDate, undefined, 1)
+      const result = await runUserPurgePageForTest(() =>
+        cleanupSoftDeletedUser(userId, window.upperBoundDate, undefined, 1),
+      )
       deleted = result.deleted
       if (!result.hasMore) break
     }

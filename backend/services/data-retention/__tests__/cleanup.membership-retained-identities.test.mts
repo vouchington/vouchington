@@ -18,6 +18,7 @@ import {
 
 import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
 import { cleanupSoftDeletedUser } from '../cleanup-soft-deleted-user.mts'
+import { runUserPurgePageForTest } from '../../../test-helpers/user-purge-ticks.mts'
 
 const membershipLedgers = [
   ['membership_changes', 'user_id'],
@@ -70,7 +71,9 @@ describe('retained user identity cleanup for membership lineage', () => {
     await softDeleteUserAt(user.id, window.firstEligibleDate)
     let result: { hasMore: boolean }
     do {
-      result = await cleanupSoftDeletedUser(user.id, window.upperBoundDate, window.lowerBoundDate)
+      result = await runUserPurgePageForTest(() =>
+        cleanupSoftDeletedUser(user.id, window.upperBoundDate, window.lowerBoundDate),
+      )
     } while (result.hasMore)
     expect(await getTestMembershipRaw(membership.id)).toBeUndefined()
     expect(await readTestRetainedMembershipChangeIds(membership.id)).toEqual(history)

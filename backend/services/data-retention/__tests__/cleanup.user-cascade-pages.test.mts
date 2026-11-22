@@ -19,6 +19,7 @@ import {
   getTestPurgeCommunity,
 } from '@voucha/test-helpers/user-purge-communities'
 import { cleanupSoftDeletedUser } from '../cleanup-soft-deleted-user.mts'
+import { runUserPurgePageForTest } from '../../../test-helpers/user-purge-ticks.mts'
 import { dataRetentionConfig } from '../config.mts'
 
 describe('mutation-backed final purge pages', () => {
@@ -52,13 +53,17 @@ describe('mutation-backed final purge pages', () => {
       for (let page = 0; page < 15; page++) {
         const before = await getTestUserPurgeRemainingRows(user.id, listId)
         await expect(
-          cleanupSoftDeletedUser(user.id, window.upperBoundDate, undefined, 1),
+          runUserPurgePageForTest(() =>
+            cleanupSoftDeletedUser(user.id, window.upperBoundDate, undefined, 1),
+          ),
         ).resolves.toEqual({ deleted: 0, hasMore: true })
         await expect(getTestUserPurgeRemainingRows(user.id, listId)).resolves.toBe(before - 1)
         await expect(getTestUserRaw(user.id)).resolves.not.toBeNull()
       }
       await expect(
-        cleanupSoftDeletedUser(user.id, window.upperBoundDate, undefined, 1),
+        runUserPurgePageForTest(() =>
+          cleanupSoftDeletedUser(user.id, window.upperBoundDate, undefined, 1),
+        ),
       ).resolves.toEqual({ deleted: 1, hasMore: false })
       await expect(getTestUserRaw(user.id)).resolves.toBeNull()
       for (const community of communities) {

@@ -16,6 +16,7 @@ import {
 import { runDataRetentionCleanup } from './cleanup.mts'
 import { getRetentionCutoffDate } from './cleanup-options.mts'
 import { cleanupSoftDeletedUser } from './cleanup-soft-deleted-user.mts'
+import { runUserPurgePageForTest } from '../../test-helpers/user-purge-ticks.mts'
 
 const THIRTY_DAY_UTC_EDGES = [
   ['2025-01-31T23:59:59.999Z', '2025-01-01T23:59:59.999Z'],
@@ -57,10 +58,12 @@ describe('cleanup retention windows', () => {
     await softDeleteUserAt(atUpperBoundUser.id, window.upperBoundDate)
     await softDeleteUserAt(afterUpperBoundUser.id, window.afterUpperBoundDate)
 
-    const softDeletedUsersCleanup = await runDataRetentionCleanup(
-      { batchSize: 500, maxBatches: 1 },
-      { families: ['softDeletedUsers'], softDeletedUsers: window },
-    ).then(result => result.softDeletedUsers)
+    const softDeletedUsersCleanup = await runUserPurgePageForTest(() =>
+      runDataRetentionCleanup(
+        { batchSize: 500, maxBatches: 1 },
+        { families: ['softDeletedUsers'], softDeletedUsers: window },
+      ).then(result => result.softDeletedUsers),
+    )
 
     expect(softDeletedUsersCleanup).toEqual({ deleted: 2, hasMore: false })
     expect(await getTestUserRaw(beforeLowerBoundUser.id)).not.toBeNull()
@@ -141,7 +144,9 @@ describe('retention publication capture', () => {
     const cutoffDate = getRetentionCutoffDate(window.retentionDays, window.now)
     // Target the owned user: the global one-row selector may choose a concurrent test's user.
     const nextPage = () =>
-      cleanupSoftDeletedUser(user.id, cutoffDate, window.lowerBoundDate, 1, { remainingRows: 1 })
+      runUserPurgePageForTest(() =>
+        cleanupSoftDeletedUser(user.id, cutoffDate, window.lowerBoundDate, 1, { remainingRows: 1 }),
+      )
 
     await expect(nextPage()).resolves.toEqual({ deleted: 0, hasMore: true })
     expect(await getTestUserRaw(user.id)).not.toBeNull()
