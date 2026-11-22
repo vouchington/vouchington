@@ -3411,6 +3411,7 @@
           cancel-backend-smoke,
           cancel-prepare-postgres,
           cancel-publish-backend-images,
+          cancel-static-backend,
           cancel-test-backend-modules,
           cancel-test-backend-unit,
           cancel-test-explain-analyze,
@@ -3571,7 +3572,7 @@
         - '.github/workflows/checks-backend-smoke.yml#smoke'
       - - '.github/workflows/tests-postgres-schema.yml#prepare-postgres'
         - '.github/workflows/tests-postgres-schema.yml#postgres-schema-tests'
-      - - '.github/workflows/backend.yml#static-backend'
+      - - '.github/workflows/backend.yml#changes'
         - '.github/workflows/backend.yml#prepare-postgres'
       - - '.github/workflows/backend.yml#prepare-postgres'
         - '.github/workflows/backend.yml#test-backend-unit'

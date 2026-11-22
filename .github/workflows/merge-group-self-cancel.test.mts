@@ -36,11 +36,12 @@ const informational = new Set([
   'test-backend-credentialed',
   'test-playwright-credentialed',
 ])
-// A failed static check skips every suite behind it, so the run already ends at once; the image
-// validators run on pull requests only.
+// A failed static check skips every suite behind it, so the run already ends at once, except where
+// static runs in parallel with the suites (backend); the image validators run on pull requests only.
+const parallelStatic = new Set(['backend#static-backend'])
 const exempt = (id: string, gate: string) =>
   informational.has(id) ||
-  (gate !== 'static' && id.startsWith('static-')) ||
+  (gate !== 'static' && id.startsWith('static-') && !parallelStatic.has(`${gate}#${id}`)) ||
   id.startsWith('validate-')
 
 const areas = areaGates.map(gate => {

@@ -103,7 +103,9 @@ requests skip selected areas, and a merge group selects the areas its combined q
 A pull request selects from its own layer's files; the two scopes differ on purpose
 ([diff scope](reference-ci-ci-job-conditions.md#change-detection-diff-scope)). Only the nightly
 schedule and manual dispatch select every area without a diff. Static-analysis failures suppress
-only the tests and Docker validation builds they gate. Main push workflows stay independent with
+only the tests and Docker validation builds they gate. Backend static runs in parallel with the
+backend tests and typecheck, which start from `changes`; only the image jobs wait for it, and the
+`backend` gate still requires it. Main push workflows stay independent with
 `cancel-in-progress: false`.
 
 <a id="area-workflows"></a>The per-area workflows run on pull-request
