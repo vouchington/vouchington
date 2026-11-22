@@ -2410,9 +2410,6 @@ importers:
 
   backend/modules/feed-query-builders:
     dependencies:
-      '@ts-shared/utils':
-        specifier: workspace:^
-        version: link:../../../ts-shared/utils
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -5146,9 +5143,6 @@ importers:
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication
-      '@ts-shared/utils':
-        specifier: workspace:^
-        version: link:../../../ts-shared/utils
       '@vouchington/uuid-v7':
         specifier: ^0.0.0
         version: 0.0.0
@@ -6298,9 +6292,6 @@ importers:
       '@services/ses-bounce-events':
         specifier: workspace:^
         version: link:../ses-bounce-events
-      '@ts-shared/utils':
-        specifier: workspace:^
-        version: link:../../../ts-shared/utils
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -8141,9 +8132,6 @@ importers:
       '@ts-shared/url-signing':
         specifier: workspace:^
         version: link:../../../ts-shared/url-signing
-      '@ts-shared/utils':
-        specifier: workspace:^
-        version: link:../../../ts-shared/utils
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
