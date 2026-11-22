@@ -24,7 +24,7 @@ export async function runOverlappingCopyrightFormWriters<Holder, Waiter>(input: 
           pool: 'write',
           lock: { kind: 'advisory', key: `copyright-form-review:${input.intakeId}` },
           queryMarker: input.waiterMarker,
-          releaseHolder: () => {},
+          releaseHolder: async () => {},
         },
         input.waiter,
       )
