@@ -33,8 +33,7 @@ export async function createGuestTerritorialComplaintFromEmail(
     JOIN copyright_territorial_notice_receipts receipt
       ON receipt.copyright_notice_id = notice.id AND receipt.jurisdiction = notice.jurisdiction
     WHERE notice.id = ${input.noticeId} AND notice.jurisdiction = 'eu_dsa'
-      AND notice.current_territorial_decision_identity_id IS NOT NULL
-    FOR UPDATE OF notice`)
+      AND notice.current_territorial_decision_identity_id IS NOT NULL`)
   const parent = rows[0]
   assert(parent, 422, 'An EU decision is required before a complaint can be filed')
   assert(parent.requester_user_id === null, 409, 'Signed-in notifiers complain on the case page')
