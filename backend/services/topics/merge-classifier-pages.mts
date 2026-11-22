@@ -15,7 +15,7 @@ export async function processTopicMergeClassifierPage(
 ): Promise<{ phase: number; hasMore: boolean }> {
   const { rows } = await query<{ id: string }>(
     `/* processTopicMergeClassifierPage candidate */
-    SELECT id FROM classifier_candidates WHERE topic_id = $1::uuid ORDER BY id LIMIT 1 FOR UPDATE`,
+    SELECT id FROM classifier_candidates WHERE topic_id = $1::uuid ORDER BY id LIMIT 1`,
     [sourceId],
   )
   if (!rows.length) return { phase: 0, hasMore: false }
@@ -31,8 +31,8 @@ export async function processTopicMergeClassifierPage(
     return { phase: rowCount ? phase : phase + 1, hasMore: true }
   }
   await query(
-    `/* processTopicMergeClassifierPage delete */ DELETE FROM classifier_candidates WHERE id = $1::uuid`,
-    [candidateId],
+    `/* processTopicMergeClassifierPage delete */ DELETE FROM classifier_candidates WHERE id = $1::uuid AND topic_id = $2::uuid`,
+    [candidateId, sourceId],
   )
   return { phase: 0, hasMore: true }
 }

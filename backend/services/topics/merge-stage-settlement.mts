@@ -30,7 +30,7 @@ export async function processTopicMergeSettlementStagePage(
       const { rowCount } = await query(
         `/* resetTopicMergeMetricUsersPage */ WITH page AS MATERIALIZED (
           SELECT user_id FROM topic_merge_metric_users
-          WHERE operation_id = $1::uuid ORDER BY user_id LIMIT $2::integer FOR UPDATE
+          WHERE operation_id = $1::uuid ORDER BY user_id LIMIT $2::integer
         ) DELETE FROM topic_merge_metric_users scratch USING page
           WHERE scratch.operation_id = $1::uuid AND scratch.user_id = page.user_id`,
         [operation.id, limit],

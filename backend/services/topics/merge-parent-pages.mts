@@ -30,7 +30,7 @@ export async function processTopicMergeParentPreflightPage(
       SELECT topic_id, depth, cursor_object_id
       FROM topic_merge_parent_ancestors
       WHERE operation_id = $1 AND completed_at IS NULL
-      ORDER BY topic_id LIMIT 1 FOR UPDATE`,
+      ORDER BY topic_id LIMIT 1`,
     [operationId],
   )
   const workItem = workItems[0]

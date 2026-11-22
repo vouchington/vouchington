@@ -11,7 +11,7 @@ export async function processTopicMergeVoteReferencePage(
   const { rows } = await query<{ id: string }>(
     `/* processTopicMergeVoteReferencePage choose */ WITH page AS MATERIALIZED (
       SELECT id, user_id FROM topic_votes
-      WHERE topic_id = $2::uuid ORDER BY id LIMIT $4::integer FOR UPDATE
+      WHERE topic_id = $2::uuid ORDER BY id LIMIT $4::integer
     ), authors AS (SELECT DISTINCT user_id FROM page), chosen AS (
       INSERT INTO topic_merge_metric_users (operation_id, user_id, original_vote_topic_id)
       SELECT $1::uuid, author.user_id,
@@ -34,7 +34,6 @@ export async function processTopicMergeVoteReferencePage(
         ON owner.operation_id = $1::uuid AND owner.user_id = vote.user_id
       WHERE vote.topic_id = $2::uuid AND vote.id = ANY($4::uuid[])
       ORDER BY vote.id
-      FOR UPDATE OF vote
     ), removed AS (
       DELETE FROM topic_votes vote USING page
       WHERE vote.topic_id = $2::uuid AND vote.id = page.id
