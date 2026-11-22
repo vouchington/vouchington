@@ -2205,6 +2205,9 @@ importers:
       '@queues/background':
         specifier: workspace:^
         version: link:../queues/background
+      '@services/route-rate-limits':
+        specifier: workspace:^
+        version: link:../services/route-rate-limits
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
@@ -7390,6 +7393,9 @@ importers:
       '@services/posts':
         specifier: workspace:^
         version: link:../posts
+      '@services/route-rate-limits':
+        specifier: workspace:^
+        version: link:../route-rate-limits
       '@services/rss-feed-items':
         specifier: workspace:^
         version: link:../rss-feed-items

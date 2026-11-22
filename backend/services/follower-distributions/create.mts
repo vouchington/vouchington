@@ -1,3 +1,5 @@
+import createError from 'http-errors'
+import { checkFollowerDistributionSenderRateLimit } from '@services/route-rate-limits/follower-distributions'
 import { beginTransaction } from '@data-stores/psql'
 import type { PrivateUser } from '@services/users/types'
 import sql from 'sql-template-strings'
@@ -59,6 +61,12 @@ async function createDistribution(
   currentUser: PrivateUser,
   input: CreateDistributionInput,
 ): Promise<FollowerDistributionAccepted> {
+  const senderLimit = await checkFollowerDistributionSenderRateLimit(currentUser.id)
+  if (senderLimit.limited) {
+    throw createError(429, 'Rate limit exceeded. Please try again later.', {
+      retryAfterSeconds: senderLimit.retryAfterSeconds,
+    })
+  }
   const eagerOptions =
     typeof input.options === 'function' ? null : parseSendFollowersInput(input.options)
   await using query = await beginTransaction()

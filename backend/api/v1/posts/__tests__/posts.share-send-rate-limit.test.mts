@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { createRequest } from '@voucha/test-helpers/api/server'
+import { createRequest, nextTestRequestIp } from '@voucha/test-helpers/api/server'
 import {
   countFollowerDistributionsForSenderForTest,
   createTestPost,
@@ -53,7 +53,7 @@ describe('follower distribution sender route rate limit', () => {
     const secondRequest = createRequest()
     await firstRequest.authenticateAs(firstSender)
     await secondRequest.authenticateAs(secondSender)
-    const sharedIp = '2001:db8::6087'
+    const sharedIp = nextTestRequestIp()
     firstRequest.set('x-forwarded-for', sharedIp)
     secondRequest.set('x-forwarded-for', sharedIp)
     const paths = [
