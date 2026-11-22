@@ -70,9 +70,9 @@ async function deleteCompletedImportPage(
   let batchId = cursor[batchColumn]
   if (batchId) {
     const { rows } = await query<{ id: string }>(
-      `/* readCurrentImportRetentionBatch */
+      `/* lockCurrentImportRetentionBatch */
        SELECT id FROM ${batchTable} WHERE id = $1 AND completed_at < $2
-         AND completed_at >= $3`,
+         AND completed_at >= $3 FOR UPDATE`,
       [batchId, cutoff, lowerBound ?? new Date(0)],
     )
     if (rows.length === 0) batchId = null
@@ -83,7 +83,7 @@ async function deleteCompletedImportPage(
        SELECT id FROM ${batchTable}
        WHERE completed_at IS NOT NULL AND completed_at < $1
          AND completed_at >= $2
-       ORDER BY completed_at, id LIMIT 1`,
+       ORDER BY completed_at, id LIMIT 1 FOR UPDATE SKIP LOCKED`,
       [cutoff, lowerBound ?? new Date(0)],
     )
     batchId = rows[0]?.id ?? null

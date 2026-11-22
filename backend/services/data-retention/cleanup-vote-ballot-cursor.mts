@@ -9,7 +9,7 @@ type StoredCursor = Omit<VoteBallotCleanupCursor, 'sweep_cutoff_id'> & {
   sweep_cutoff_id: string | null
 }
 
-export async function readVoteBallotCleanupCursor(
+export async function lockVoteBallotCleanupCursor(
   query: TransactionQuery,
   voteTable: string,
   cutoffId: string,
@@ -20,9 +20,9 @@ export async function readVoteBallotCleanupCursor(
     [voteTable, cutoffId],
   )
   const { rows } = await query<StoredCursor>(
-    `/* readVoteBallotCleanupCursor */
+    `/* lockVoteBallotCleanupCursor */
      SELECT cursor_vote_id, sweep_cutoff_id
-     FROM vote_ballot_cleanup_cursors WHERE family = $1::vote_ballot_cleanup_families`,
+     FROM vote_ballot_cleanup_cursors WHERE family = $1::vote_ballot_cleanup_families FOR UPDATE`,
     [voteTable],
   )
   const cursor = rows[0]!

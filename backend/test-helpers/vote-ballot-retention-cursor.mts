@@ -30,3 +30,39 @@ export async function getTestVoteBallotCleanupCursor(
   )
   return rows[0]!
 }
+
+export async function setTestVoteBallotSweepCutoff(
+  query: TransactionQuery,
+  voteTable: string,
+  cutoffId: string,
+): Promise<void> {
+  await query(
+    `/* setTestVoteBallotSweepCutoff */
+     UPDATE vote_ballot_cleanup_cursors SET sweep_cutoff_id = $2::uuid
+     WHERE family = $1::vote_ballot_cleanup_families`,
+    [voteTable, cutoffId],
+  )
+}
+
+export async function lockTestVoteBallotCleanupCursor(
+  query: TransactionQuery,
+  voteTable: string,
+): Promise<void> {
+  await query(
+    `/* lockTestVoteBallotCleanupCursor */
+     SELECT family FROM vote_ballot_cleanup_cursors
+     WHERE family = $1::vote_ballot_cleanup_families FOR UPDATE`,
+    [voteTable],
+  )
+}
+
+export async function deleteTestVoteBallotCleanupCursor(
+  query: TransactionQuery,
+  voteTable: string,
+): Promise<void> {
+  await query(
+    `/* deleteTestVoteBallotCleanupCursor */
+     DELETE FROM vote_ballot_cleanup_cursors WHERE family = $1::vote_ballot_cleanup_families`,
+    [voteTable],
+  )
+}

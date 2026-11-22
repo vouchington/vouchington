@@ -16,7 +16,7 @@ import {
 import { voteTables } from './vote-ballot-tables.mts'
 import {
   checkpointVoteBallotCleanupCursor,
-  readVoteBallotCleanupCursor,
+  lockVoteBallotCleanupCursor,
 } from './cleanup-vote-ballot-cursor.mts'
 import { cleanupDeferredPostVoteBallots } from './cleanup-deferred-post-votes.mts'
 const BALLOT_RETENTION_DAYS = 90
@@ -98,7 +98,7 @@ async function cleanupOrdinarySupersededVoteBallotTable(
   const replayCutoffId = getMinUuidv7ForDate(new Date(now.getTime() - REPLAY_RETENTION_MS))
   await using ownedQuery = borrowedQuery ? undefined : await beginTransaction()
   const query = borrowedQuery ?? ownedQuery!
-  const cursor = voteIds ? null : await readVoteBallotCleanupCursor(query, table, cutoffId)
+  const cursor = voteIds ? null : await lockVoteBallotCleanupCursor(query, table, cutoffId)
   const sweepCutoffId = cursor?.sweep_cutoff_id ?? cutoffId
   const candidateLimit = voteIds ? batchSize : Math.max(1, Math.floor(batchSize / 2))
   const olderLimit = voteIds ? batchSize : Math.max(1, batchSize - candidateLimit)

@@ -48,7 +48,7 @@ export async function detachHostnameBlockReferences(
        WITH page AS (
          SELECT id FROM vote_weight_penalties
          WHERE source_hostname_block_id = $1::uuid
-         ORDER BY user_id LIMIT $2
+         ORDER BY user_id LIMIT $2 FOR UPDATE SKIP LOCKED
        )
        UPDATE vote_weight_penalties penalty
        SET source_hostname_block_id = NULL

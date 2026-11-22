@@ -76,12 +76,17 @@ async function cleanupRetainedIdentityFamily(
         )
   const page = candidates.slice(0, pageSize)
   const unreferenced = references
-    .map(([owner, column]) => `NOT EXISTS (SELECT 1 FROM ${owner} WHERE ${column} = target.id)`)
+    .map(([owner, column]) => `NOT EXISTS (SELECT 1 FROM ${owner} WHERE ${column} = locked.id)`)
     .join(' AND ')
   const { rowCount } = await query(
     `/* deleteUnreferencedRetainedIdentityPage */
-    DELETE FROM ${table} target
-    WHERE target.id = ANY($1::uuid[]) AND ${unreferenced}`,
+    WITH locked AS MATERIALIZED (
+      SELECT root.id FROM ${table} root
+      JOIN unnest($1::uuid[]) candidate(id) ON candidate.id = root.id
+      ORDER BY root.id FOR UPDATE OF root SKIP LOCKED
+    )
+    DELETE FROM ${table} target USING locked
+    WHERE target.id = locked.id AND ${unreferenced}`,
     [page.map(row => row.id)],
   )
   const hasMore = candidates.length > pageSize
