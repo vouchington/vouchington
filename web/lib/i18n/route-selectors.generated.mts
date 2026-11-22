@@ -9,7 +9,6 @@ export const ROUTE_SELECTORS = [
   { pattern: "/admin/ai-costs", selectorId: "web.route.12d7c8b69ee59f83.2d4904245b471e62", hasMembership: true },
   { pattern: "/admin/dashboard", selectorId: "web.route.5be0b67514a182e6.fd15d2405c912b1a", hasMembership: true },
   { pattern: "/admin/dynamic-config", selectorId: "web.route.2c99976fbb1942a4.71b897e454aaa901", hasMembership: true },
-  { pattern: "/admin/landing-pages/[pageId]/analytics", selectorId: "web.route.d6a50ad76e49fc40.fd15d2405c912b1a", hasMembership: true },
   { pattern: "/admin/moderation-analytics", selectorId: "web.route.7bc2cc991df428b7.9104cfb643c85d02", hasMembership: true },
   { pattern: "/admin/modlog", selectorId: "web.route.5d65abfcb49b98a0.219842dfaa8f1f10", hasMembership: true },
   { pattern: "/admin/oauth-clients", selectorId: "web.route.b500dae3153f6d8c.dd16820ec95cef12", hasMembership: true },
