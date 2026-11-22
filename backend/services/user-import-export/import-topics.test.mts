@@ -11,8 +11,30 @@ import {
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { importTopics } from './import-topics.mts'
+import { userImportExportConfig } from './config.mts'
 
 describe('topic import follow audits', () => {
+  it('enforces the configured topic batch limit before importing', async () => {
+    await userImportExportConfig.waitForInitialization()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(userImportExportConfig, { topic_import_max_items: 1 }),
+    )
+    const caller = await createTestUser()
+    const topic = await createTestTopic({ user: caller })
+    const options = {
+      assertCanCreateTopicRecommendations: async () => {},
+      importAttemptId: randomUUID(),
+    }
+
+    await expect(
+      importTopics(caller, WEB_PROVENANCE, [topic.name, topic.name], options),
+    ).rejects.toMatchObject({ status: 400 })
+    await expect(
+      importTopics(caller, WEB_PROVENANCE, [topic.name], options),
+    ).resolves.toMatchObject([{ status: 'followed', entity_id: topic.id }])
+    await expect(getTopicFollowExistsForTest(caller.id, topic.id)).resolves.toBe(true)
+  })
+
   it('audits only the input that caused the follow when a topic repeats', async () => {
     const caller = await createTestUser()
     const topic = await createTestTopic({ user: caller })

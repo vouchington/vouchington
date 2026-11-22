@@ -17,8 +17,7 @@ import {
 import { sanitizeRssFeedItemDateString, itemIsoDate } from '@services/rss-feed-items/dates'
 import {
   analyzeRssFeedItemCategories,
-  RSS_FEED_FETCH_MAX_ITEMS,
-  RSS_FEED_ITEM_MAX_CATEGORIES,
+  getRssFeedItemIngestionLimit,
 } from '@services/rss-feed-items/processing-limits'
 import {
   itemCategories,
@@ -62,7 +61,8 @@ export function buildBoundedRssFeedItemsFromFeed(
 ): BoundedRssFeedItems {
   const items = (feed.items ?? feed.entries ?? []) as unknown[]
   const resolvedFeedUrl = feedUrl?.trim() ?? ''
-  const maxItems = options.maxItems ?? RSS_FEED_FETCH_MAX_ITEMS
+  const maxItems = options.maxItems ?? getRssFeedItemIngestionLimit('fetch_max_items')
+  const categoryCap = getRssFeedItemIngestionLimit('item_max_categories')
   const itemCap = Number.isFinite(maxItems) ? maxItems : items.length
   const result: RssFeedItemToUpsert[] = []
   let validItemsBeforeCap = 0
@@ -85,7 +85,7 @@ export function buildBoundedRssFeedItemsFromFeed(
     validItemsBeforeCap += 1
     if (result.length >= itemCap) continue
 
-    const categoryAnalysis = analyzeRssFeedItemCategories(itemCategories(item))
+    const categoryAnalysis = analyzeRssFeedItemCategories(itemCategories(item), categoryCap)
     const builtItem = buildFeedItem(item, link, guid, categoryAnalysis.categories, resolvedFeedUrl)
     if (categoryAnalysis.truncatedCount > 0) {
       categoryTruncatedItemCount += 1
@@ -102,7 +102,7 @@ export function buildBoundedRssFeedItemsFromFeed(
       returnedItems: result.length,
       itemCap,
       itemTruncatedCount: Math.max(0, validItemsBeforeCap - result.length),
-      categoryCap: RSS_FEED_ITEM_MAX_CATEGORIES,
+      categoryCap,
       categoryTruncatedItemCount,
       categoryTruncatedCount,
     },

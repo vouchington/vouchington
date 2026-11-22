@@ -3,8 +3,13 @@ import { createCodedError } from '@vouchington/sentry'
 import { IDEMPOTENCY_KEY_REUSED } from '@modules/on-error/error-codes'
 import { hashAdmissionIntent } from '@services/contribution-gating/admission'
 import sql from 'sql-template-strings'
+import assert from 'http-assert'
 import type { ImportTopicResult } from './import-topics-types.mts'
-import { getUserImportExportConfig } from './config.mts'
+import {
+  getTopicImportLimit,
+  getUserImportExportConfig,
+  USER_IMPORT_EXPORT_MAX_VALUES,
+} from './config.mts'
 
 const TOPIC_IMPORT_REPLAY_RETENTION_HOURS = 48
 
@@ -25,7 +30,13 @@ export async function claimTopicImportAttempt(
   userId: string,
   idempotencyKey: string,
   names: readonly string[],
+  newAdmissionRejection?: string,
 ): Promise<TopicImportAttempt> {
+  const hardMax = USER_IMPORT_EXPORT_MAX_VALUES.topic_import_max_items
+  assert(names.length <= hardMax, 400, `At most ${hardMax} topics`)
+  const limit = getTopicImportLimit()
+  const admissionRejection =
+    newAdmissionRejection ?? (names.length > limit ? `At most ${limit} topics` : undefined)
   const intentSha256 = topicImportIntentSha256(names)
   await using query = await beginTransaction()
   const result = await claimTopicImportAttemptInTransaction(
@@ -33,6 +44,7 @@ export async function claimTopicImportAttempt(
     userId,
     idempotencyKey,
     intentSha256,
+    admissionRejection,
   )
   await query.commit()
   return result
@@ -43,22 +55,28 @@ async function claimTopicImportAttemptInTransaction(
   userId: string,
   idempotencyKey: string,
   intentSha256: string,
+  admissionRejection: string | undefined,
 ): Promise<TopicImportAttempt> {
-  await query(sql`/* claimTopicImportAttempt.insert */
-      INSERT INTO user_topic_import_attempts (
-        user_id, idempotency_key, intent_sha256, retention_expires_at
-      ) VALUES (
-        ${userId}, ${idempotencyKey}, ${intentSha256},
-        NOW() + ${TOPIC_IMPORT_REPLAY_RETENTION_HOURS} * INTERVAL '1 hour'
-      )
-      ON CONFLICT (user_id, idempotency_key) DO NOTHING`)
+  const canAdmit = admissionRejection === undefined
+  if (canAdmit) {
+    await query(sql`/* claimTopicImportAttempt.insert */
+        INSERT INTO user_topic_import_attempts (
+          user_id, idempotency_key, intent_sha256, retention_expires_at
+        ) VALUES (
+          ${userId}, ${idempotencyKey}, ${intentSha256},
+          NOW() + ${TOPIC_IMPORT_REPLAY_RETENTION_HOURS} * INTERVAL '1 hour'
+        )
+        ON CONFLICT (user_id, idempotency_key) DO NOTHING`)
+  }
   const result = await query<TopicImportAttemptRow>(sql`/* claimTopicImportAttempt.get */
       SELECT id, intent_sha256, response,
         retention_expires_at <= clock_timestamp() AS expired
       FROM user_topic_import_attempts
       WHERE user_id = ${userId} AND idempotency_key = ${idempotencyKey}
+        AND (${canAdmit}::boolean OR retention_expires_at > clock_timestamp())
       FOR UPDATE`)
   const row = result.rows[0]
+  if (!canAdmit) assert(row && !row.expired, 400, admissionRejection)
   if (!row) throw new Error('Topic import attempt was not returned')
   if (row.expired) {
     await query(sql`/* claimTopicImportAttempt.deleteExpired */

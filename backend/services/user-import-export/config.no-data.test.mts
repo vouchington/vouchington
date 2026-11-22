@@ -18,6 +18,8 @@ const clearFields = () =>
   )
 
 const DEFAULTS = {
+  topic_import_max_items: 500,
+  rss_feed_import_max_urls: 500,
   sync_export_max_items: 1_000,
   import_max_body_bytes: 2 * 1024 * 1024,
   import_dispatch_page_size: 100,

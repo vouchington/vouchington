@@ -17,12 +17,17 @@ import {
 } from '@services/user-import-export/import-topics'
 import { assertNotSuspended } from '@services/users/suspension'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
+import { USER_IMPORT_EXPORT_MAX_VALUES } from '@services/user-import-export/config'
 
-const MAX_TOPICS_PER_IMPORT = 500
 const MAX_TOPIC_IMPORT_BYTES = '2mb'
 
 type ImportTopicsRequest = {
-  names: ApiArrayContract<string, 1, typeof MAX_TOPICS_PER_IMPORT, false>
+  names: ApiArrayContract<
+    string,
+    1,
+    typeof USER_IMPORT_EXPORT_MAX_VALUES.topic_import_max_items,
+    false
+  >
 }
 
 app.route('/api/v1/my/import/topics').post(async (ctx: Context) => {

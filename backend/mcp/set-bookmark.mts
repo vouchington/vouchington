@@ -6,7 +6,8 @@ import { BOOKMARK_TOOL_ENTITY_TYPES, BOOKMARK_TOOL_PREDICATES } from './bookmark
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { successSchema } from '@vouchington/mcp-server/schema'
 import { requireActiveToolUser } from './private-user.mts'
-import { setBookmarkTargets, SET_BOOKMARK_LIMIT } from './set-bookmark-batch.mts'
+import { setBookmarkTargets } from './set-bookmark-batch.mts'
+import { bookmarksWorkMaxValues } from '@services/bookmarks/work-limits'
 
 function isTopicTarget(target: unknown): boolean {
   return (
@@ -41,7 +42,7 @@ const TARGET = {
 const tool: MergedToolSource<SetBookmarkArgs, { success: true; results: BookmarkTargetResult[] }> =
   {
     schema: {
-      description: 'Follow, save, mute, or block up to 500 targets.',
+      description: `Follow, save, mute, or block up to ${bookmarksWorkMaxValues.set_bookmark_max_targets} targets.`,
       parameters: {
         type: 'object',
         properties: {
@@ -49,7 +50,7 @@ const tool: MergedToolSource<SetBookmarkArgs, { success: true; results: Bookmark
           targets: {
             type: 'array',
             minItems: 1,
-            maxItems: SET_BOOKMARK_LIMIT,
+            maxItems: bookmarksWorkMaxValues.set_bookmark_max_targets,
             items: TARGET,
           },
           recommend_unknown_topics: { type: 'boolean' },

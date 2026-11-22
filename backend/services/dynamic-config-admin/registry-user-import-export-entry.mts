@@ -12,6 +12,18 @@ export const userImportExportRegistryEntry = defineDynamicConfigNamespace({
   config: userImportExportConfig,
   access: { update_roles: ['developer'] },
   fields: {
+    topic_import_max_items: {
+      description: 'Maximum topic names accepted by one topic import.',
+      minValue: USER_IMPORT_EXPORT_MIN_VALUES.topic_import_max_items,
+      maxValue: USER_IMPORT_EXPORT_MAX_VALUES.topic_import_max_items,
+      integer: true,
+    },
+    rss_feed_import_max_urls: {
+      description: 'Maximum URLs accepted by one RSS feed import.',
+      minValue: USER_IMPORT_EXPORT_MIN_VALUES.rss_feed_import_max_urls,
+      maxValue: USER_IMPORT_EXPORT_MAX_VALUES.rss_feed_import_max_urls,
+      integer: true,
+    },
     sync_export_max_items: {
       description: 'Maximum items allowed in synchronous RSS feed and topic exports.',
       minValue: USER_IMPORT_EXPORT_MIN_VALUES.sync_export_max_items,

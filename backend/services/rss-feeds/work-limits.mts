@@ -3,6 +3,7 @@ import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 const defaultFields = {
   category_sql_batch_size: 500,
+  podcast_max_categories: 20,
   category_backfill_batch_size: 500,
   topic_alias_category_mapping_reconciliation_batch_size: 25,
 }
@@ -10,6 +11,7 @@ const defaultFields = {
 /** Hard ceilings for the current runtime configuration contract. */
 export const rssFeedsWorkMaxValues = {
   category_sql_batch_size: 5000,
+  podcast_max_categories: 20,
   category_backfill_batch_size: 5000,
   topic_alias_category_mapping_reconciliation_batch_size: 1000,
 }
@@ -18,6 +20,7 @@ export const rssFeedsWorkConfig = new DynamicConfig({
   key: 'rss-feeds-work-config',
   fieldTypes: {
     category_sql_batch_size: 'number',
+    podcast_max_categories: 'number',
     category_backfill_batch_size: 'number',
     topic_alias_category_mapping_reconciliation_batch_size: 'number',
   },
