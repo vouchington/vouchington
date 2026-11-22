@@ -1,5 +1,6 @@
 import { read, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { COMMUNITY_AGENT_PROMPT_MAX_VALUES } from './config.mts'
 import type { CommunityAgentPrompt } from './types.mts'
 
 export type ActiveCommunityAgentPromptCursor = { activatedAt: string; id: string }
@@ -21,8 +22,9 @@ export async function getActiveCommunityAgentPromptPage(
   query: QueryExecutor = read,
   through: ActiveCommunityAgentPromptCursor | null = null,
 ): Promise<ActiveCommunityAgentPromptPage> {
-  if (!Number.isInteger(limit) || limit < 1 || limit > 30) {
-    throw new Error('active community prompt page limit must be between 1 and 30')
+  const maxPageSize = COMMUNITY_AGENT_PROMPT_MAX_VALUES.moderation_page_size
+  if (!Number.isInteger(limit) || limit < 1 || limit > maxPageSize) {
+    throw new Error(`active community prompt page limit must be between 1 and ${maxPageSize}`)
   }
   const statement = sql`
     /* getActiveCommunityAgentPromptPage */
@@ -42,7 +44,7 @@ export async function getActiveCommunityAgentPromptPage(
         AND (activated_at, id) <= (${through.activatedAt}::timestamptz, ${through.id}::uuid)`)
   statement.append(sql`
       ORDER BY activated_at, id
-      LIMIT ${limit + 1}
+      LIMIT ${maxPageSize + 1}
     )
     SELECT cap.id, ${communityId}::uuid AS community_id, cap.created_by_id,
       true AS is_slot_allocated, cap.activated_at, NULL::timestamptz AS deactivated_at,
