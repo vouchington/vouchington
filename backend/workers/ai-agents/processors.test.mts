@@ -51,6 +51,9 @@ describe('processAIAgent routing', () => {
 
   it.each([
     'expire-stuck-report-judgement-runs',
+    'expire-stuck-copyright-email-runs',
+    'expire-stuck-copyright-appeal-runs',
+    'expire-stuck-copyright-guidance-runs',
     'expire-stuck-appeal-resolution-runs',
     'expire-stuck-dispute-resolution-runs',
   ])('routes %s to its bounded expiry sweep', async name => {

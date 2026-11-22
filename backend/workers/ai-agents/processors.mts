@@ -22,6 +22,9 @@ import {
   processExpireStuckAppealResolutionRuns,
   processExpireStuckDisputeResolutionRuns,
   processExpireStuckReportJudgementRuns,
+  processExpireStuckCopyrightEmailRuns,
+  processExpireStuckCopyrightAppealRuns,
+  processExpireStuckCopyrightGuidanceRuns,
 } from './processors/process-expire-stuck-resolution-runs.mts'
 
 type AIAgentJob = NamedQueueJob<AIAgentJobPayloads>
@@ -47,6 +50,9 @@ const processors = {
   },
   ...copyrightAgentDispatchJobProcessors,
   'expire-stuck-report-judgement-runs': () => processExpireStuckReportJudgementRuns(),
+  'expire-stuck-copyright-email-runs': () => processExpireStuckCopyrightEmailRuns(),
+  'expire-stuck-copyright-appeal-runs': () => processExpireStuckCopyrightAppealRuns(),
+  'expire-stuck-copyright-guidance-runs': () => processExpireStuckCopyrightGuidanceRuns(),
   'expire-stuck-appeal-resolution-runs': () => processExpireStuckAppealResolutionRuns(),
   'expire-stuck-dispute-resolution-runs': () => processExpireStuckDisputeResolutionRuns(),
 } satisfies {

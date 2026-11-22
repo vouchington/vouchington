@@ -49,6 +49,10 @@ async function removeGuidanceJob(submissionId: string | undefined) {
   if (job) await job.remove()
 }
 
+/** Any bulk add that carries a guidance job. */
+const guidanceJobs = () =>
+  expect.arrayContaining([expect.objectContaining({ name: 'copyright-submission-guidance' })])
+
 describe('copyright submission guidance dispatch from filing routes', () => {
   useCopyrightIntakeEnvironment()
   afterEach(() => vi.restoreAllMocks())
@@ -67,7 +71,7 @@ describe('copyright submission guidance dispatch from filing routes', () => {
         .expect(201)
       submissionId = first.body.copyright_submission.id
       await expectGuidanceJob(submissionId!)
-      const add = vi.spyOn(ai_agents, 'add')
+      const add = vi.spyOn(ai_agents, 'addBulk')
       const replay = await request
         .post(path)
         .set('Idempotency-Key', key)
@@ -75,11 +79,7 @@ describe('copyright submission guidance dispatch from filing routes', () => {
         .expect(200)
       expect(replay.body.copyright_submission.id).toBe(submissionId)
       expect(replay.body.is_duplicate).toBe(true)
-      expect(add).not.toHaveBeenCalledWith(
-        'copyright-submission-guidance',
-        expect.anything(),
-        expect.anything(),
-      )
+      expect(add).not.toHaveBeenCalledWith(guidanceJobs())
     } finally {
       await removeGuidanceJob(submissionId)
     }
@@ -97,17 +97,13 @@ describe('copyright submission guidance dispatch from filing routes', () => {
     const token = issued.body.copyright_guest_capability.token as string
     let submissionId: string | undefined
     try {
-      const add = vi.spyOn(ai_agents, 'add')
+      const add = vi.spyOn(ai_agents, 'addBulk')
       const supplement = await guest
         .post(path)
         .set('Copyright-Guest-Capability', token)
         .send({ kind: 'supplement', statement: 'Additional information.' })
         .expect(201)
-      expect(add).not.toHaveBeenCalledWith(
-        'copyright-submission-guidance',
-        expect.anything(),
-        expect.anything(),
-      )
+      expect(add).not.toHaveBeenCalledWith(guidanceJobs())
       const hold = await guest
         .post(path)
         .set('Copyright-Guest-Capability', token)
@@ -116,21 +112,23 @@ describe('copyright submission guidance dispatch from filing routes', () => {
       submissionId = hold.body.copyright_submission.id
       expect(submissionId).not.toBe(supplement.body.copyright_submission.id)
       const runId = await expectGuidanceJob(submissionId!)
-      expect(add).toHaveBeenCalledExactlyOnceWith(
-        'copyright-submission-guidance',
-        { submission_id: submissionId, run_id: runId },
-        expect.anything(),
-      )
+      expect(add).toHaveBeenCalledExactlyOnceWith([
+        expect.objectContaining({
+          name: 'copyright-submission-guidance',
+          data: { submission_id: submissionId, run_id: runId },
+        }),
+      ])
       await guest
         .post(path)
         .set('Copyright-Guest-Capability', token)
         .send({ kind: 'court_or_ccb_hold', statement: 'A repeated hold.' })
         .expect(409)
-      expect(add).toHaveBeenCalledExactlyOnceWith(
-        'copyright-submission-guidance',
-        { submission_id: submissionId, run_id: runId },
-        expect.anything(),
-      )
+      expect(add).toHaveBeenCalledExactlyOnceWith([
+        expect.objectContaining({
+          name: 'copyright-submission-guidance',
+          data: { submission_id: submissionId, run_id: runId },
+        }),
+      ])
     } finally {
       await removeGuidanceJob(submissionId)
     }
@@ -153,17 +151,13 @@ describe('copyright submission guidance dispatch from filing routes', () => {
         const first = await staff.post(path).send(body).expect(201)
         submissionId = first.body.copyright_submission.id
         await expectGuidanceJob(submissionId!)
-        const add = vi.spyOn(ai_agents, 'add')
+        const add = vi.spyOn(ai_agents, 'addBulk')
         const replay = await staff.post(path).send(body).expect(200)
         expect(replay.body).toMatchObject({
           copyright_submission: { id: submissionId },
           is_duplicate: true,
         })
-        expect(add).not.toHaveBeenCalledWith(
-          'copyright-submission-guidance',
-          expect.anything(),
-          expect.anything(),
-        )
+        expect(add).not.toHaveBeenCalledWith(guidanceJobs())
       } finally {
         await removeGuidanceJob(submissionId)
       }
@@ -177,7 +171,7 @@ describe('copyright submission guidance dispatch from filing routes', () => {
       .post(`/api/v1/copyright-notices/${noticeId}/guest-capabilities`)
       .send({ expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() })
       .expect(201)
-    vi.spyOn(ai_agents, 'add').mockRejectedValueOnce(new Error('queue unavailable'))
+    vi.spyOn(ai_agents, 'addBulk').mockRejectedValueOnce(new Error('queue unavailable'))
     const filed = await createRequest()
       .post(`/api/v1/copyright-notices/${noticeId}/guest-filings`)
       .set('Copyright-Guest-Capability', issued.body.copyright_guest_capability.token)
@@ -200,7 +194,7 @@ describe('copyright submission guidance dispatch from filing routes', () => {
         kind === 'counter_notice'
           ? { kind, ...staffDecision, ...counterNoticeBody(targetId) }
           : { kind, ...staffDecision, submission_summary: 'A CCB claim was commenced.' }
-      vi.spyOn(ai_agents, 'add').mockRejectedValueOnce(new Error('queue unavailable'))
+      vi.spyOn(ai_agents, 'addBulk').mockRejectedValueOnce(new Error('queue unavailable'))
       const admitted = await staff
         .post(`/api/v1/copyright-email-intakes/${reply.id}/correspondence`)
         .send(body)
@@ -214,7 +208,7 @@ describe('copyright submission guidance dispatch from filing routes', () => {
   it('preserves a committed counter-notice response when the queue provider rejects the enqueue', async () => {
     const { noticeId, targetId, poster } = await openCase()
     const request = await signedIn(poster)
-    const add = vi.spyOn(ai_agents, 'add')
+    const add = vi.spyOn(ai_agents, 'addBulk')
     add.mockRejectedValueOnce(new Error('queue unavailable'))
     const filed = await request
       .post(`/api/v1/copyright-notices/${noticeId}/counter-notices`)

@@ -9,6 +9,12 @@ const defaultFields = {
   appeal_max_batches: 4,
   dispute_batch_size: 50,
   dispute_max_batches: 4,
+  copyright_email_batch_size: 50,
+  copyright_email_max_batches: 4,
+  copyright_appeal_batch_size: 50,
+  copyright_appeal_max_batches: 4,
+  copyright_guidance_batch_size: 50,
+  copyright_guidance_max_batches: 4,
 }
 
 export const stuckResolutionRunExpiryMaxValues = {
@@ -19,6 +25,12 @@ export const stuckResolutionRunExpiryMaxValues = {
   appeal_max_batches: 20,
   dispute_batch_size: 500,
   dispute_max_batches: 20,
+  copyright_email_batch_size: 500,
+  copyright_email_max_batches: 20,
+  copyright_appeal_batch_size: 500,
+  copyright_appeal_max_batches: 20,
+  copyright_guidance_batch_size: 500,
+  copyright_guidance_max_batches: 20,
 }
 
 export const stuckResolutionRunExpiryConfig = new DynamicConfig({
@@ -31,6 +43,12 @@ export const stuckResolutionRunExpiryConfig = new DynamicConfig({
     appeal_max_batches: 'number',
     dispute_batch_size: 'number',
     dispute_max_batches: 'number',
+    copyright_email_batch_size: 'number',
+    copyright_email_max_batches: 'number',
+    copyright_appeal_batch_size: 'number',
+    copyright_appeal_max_batches: 'number',
+    copyright_guidance_batch_size: 'number',
+    copyright_guidance_max_batches: 'number',
   },
   defaultFields,
 })
@@ -46,7 +64,13 @@ export type StuckRunExpiryLimits = { ageHours: number; batchSize: number; maxBat
 
 /** Each stage has its own page size and run cap, so one backlog never spends the other's budget. */
 export function getStuckRunExpiryLimits(
-  stage: 'report' | 'appeal' | 'dispute',
+  stage:
+    | 'report'
+    | 'appeal'
+    | 'dispute'
+    | 'copyright_email'
+    | 'copyright_appeal'
+    | 'copyright_guidance',
 ): StuckRunExpiryLimits {
   return {
     ageHours: readField('stuck_age_hours'),
