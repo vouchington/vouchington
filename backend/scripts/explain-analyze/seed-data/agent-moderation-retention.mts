@@ -104,9 +104,10 @@ export async function restoreAgentModerationRetentionPages(): Promise<void> {
   await insertModerationRows(oldMs, newMs, bulkStartMs, RESTORE_PAGE_POSTS)
   // A captured page can leave an existing source blocked. Re-arm only this finite
   // fixture window so every replay measures an actual due-page deletion.
-  const postIds = Array.from({ length: RESTORE_PAGE_POSTS }, (_, index) =>
-    seedUuid(100 + index, '05'),
-  )
+  const postIds = [
+    ...Array.from({ length: 41 }, (_, index) => seedUuid(index, '05')),
+    ...Array.from({ length: RESTORE_PAGE_POSTS }, (_, index) => seedUuid(100 + index, '05')),
+  ]
   await write(
     `/* restoreAgentModerationRetentionDuePages */
      UPDATE agent_moderations

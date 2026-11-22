@@ -105,7 +105,7 @@ describe('agent moderation retention continuations', () => {
     ).toBeNull()
     expect(await getTestAgentModerationRetentionState(neighbor.postId, neighbor.oldId)).toEqual({
       dueAt: '2026-10-02T00:00:00.000Z',
-      blockedReason: null,
+      blockedReason: 'reconcile',
     })
     expect(await psql.getJob(ids[2]!)).toBeNull()
   })
@@ -151,7 +151,7 @@ describe('agent moderation retention continuations', () => {
     })
     expect(await getTestAgentModerationRetentionState(neighbor.postId, neighbor.oldId)).toEqual({
       dueAt: '2026-10-02T00:00:00.000Z',
-      blockedReason: null,
+      blockedReason: 'reconcile',
     })
     expect(await psql.getJob(nextId)).toBeNull()
   })
@@ -193,7 +193,7 @@ describe('agent moderation retention continuations', () => {
         })
         expect(await getTestAgentModerationRetentionState(agent.postId, rearmedId)).toEqual({
           dueAt: '2026-10-05T00:00:00.000Z',
-          blockedReason: null,
+          blockedReason: 'reconcile',
         })
 
         const first = await psql.getJob(ids[0]!)
@@ -213,11 +213,11 @@ describe('agent moderation retention continuations', () => {
         expect(await countClassifierRows('classifier_runs', ownedRuns.terminalIds)).toBe(1)
         expect(await getTestAgentModerationRetentionState(agent.postId, rearmedId)).toEqual({
           dueAt: '2026-10-05T00:00:00.000Z',
-          blockedReason: null,
+          blockedReason: 'reconcile',
         })
         expect(
           await getTestAgentModerationRetentionState(excludedAgent.postId, excludedAgent.oldId),
-        ).toEqual({ dueAt: '2026-10-02T00:00:00.000Z', blockedReason: null })
+        ).toEqual({ dueAt: '2026-10-02T00:00:00.000Z', blockedReason: 'reconcile' })
         expect(await countClassifierRows('classifier_runs', excludedRuns.terminalIds)).toBe(1)
         expect(await psql.getJob(ids[1]!)).not.toBeNull()
 

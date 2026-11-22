@@ -107,7 +107,7 @@ WHERE disposition = 'pass' AND source <> 'staff' AND evidence <> '{}'::jsonb
 
 DO $$ BEGIN
   CREATE TYPE post_moderation_retention_kinds AS ENUM (
-    'superseded_versions', 'pass_evidence', 'agent_moderation_repair'
+    'superseded_versions', 'pass_evidence'
   );
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
@@ -241,11 +241,11 @@ CREATE TRIGGER trigger_post_moderation_retention_cursors_updated_at
   BEFORE UPDATE ON post_moderation_retention_cursors
   FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
-COMMENT ON TABLE post_moderation_retention_cursors IS 'Durable UUIDv7 positions for bounded post moderation and agent moderation repair.';
+COMMENT ON TABLE post_moderation_retention_cursors IS 'Durable UUIDv7 positions for bounded post moderation retention.';
 COMMENT ON COLUMN post_moderation_retention_cursors.kind IS 'Moderation retention stream whose progress this row records.';
 COMMENT ON COLUMN post_moderation_retention_cursors.cursor_record_id IS 'Last examined UUIDv7 id; NULL starts a new pass and can revisit rows skipped during an earlier pass.';
 COMMENT ON COLUMN post_moderation_retention_cursors.cursor_due_at IS 'Due-time component of the active indexed candidate keyset.';
-COMMENT ON COLUMN post_moderation_retention_cursors.cursor_lower_bound_record_id IS 'Frozen lower bound of the ledger pass, or the post UUID tie-breaker of the last agent moderation examined during repair.';
+COMMENT ON COLUMN post_moderation_retention_cursors.cursor_lower_bound_record_id IS 'Frozen lower bound of the ledger pass.';
 COMMENT ON COLUMN post_moderation_retention_cursors.sweep_upper_bound_record_id IS 'Frozen exclusive UUIDv7 upper bound for a pass; NULL between passes.';
 COMMENT ON COLUMN post_moderation_retention_cursors.observed_policy_revision IS 'Code policy revision whose one-time dormant-version recheck is complete or in progress.';
 COMMENT ON COLUMN post_moderation_retention_cursors.cursor_policy_version_record_id IS 'Last dormant version examined for the active policy-revision recheck.';

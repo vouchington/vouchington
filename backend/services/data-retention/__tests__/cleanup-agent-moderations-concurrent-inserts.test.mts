@@ -1,84 +1,141 @@
-import { describe, expect, it, onTestFinished } from 'vitest'
-import { getMinUuidv7ForDate } from '@modules/utils'
+import { describe, expect, it } from 'vitest'
 import { beginTransaction, insertTestAgentModeration } from '@voucha/test-helpers'
+import { getTestAgentModerationRetentionState } from '@voucha/test-helpers/agent-moderation-retention-pages'
 import {
   createTestAgentModerationRetentionFixture,
   testAgentModerationExists,
 } from '@voucha/test-helpers/entities/agent-moderation-retention'
-import {
-  clearTestAgentModerationRepairCursor,
-  getTestAgentModerationRepairCursor,
-} from '@voucha/test-helpers/entities/agent-moderation-repair-cursor'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import { createIsolatedRetentionWindow } from '@voucha/test-helpers/retention-window'
 import { cleanupObsoleteAgentModerations } from '../cleanup-agent-moderations.mts'
 
-describe('agent moderation retention repair', () => {
-  it('resumes bounded repair across daily runs when concurrent inserts missed the due date', async () => {
+describe('agent moderation retention reconciliation', () => {
+  it('deletes the superseded result when adjacent inserts commit out of order', async () => {
     const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
-    const [keeperFixture, fixture, dueFixture] = await Promise.all([
-      createTestAgentModerationRetentionFixture(),
-      createTestAgentModerationRetentionFixture(),
-      createTestAgentModerationRetentionFixture(),
-    ])
-    const keeperId = await insertTestAgentModeration({ ...keeperFixture, occurredAt: at(96) })
-    const dueId = await insertTestAgentModeration({ ...dueFixture, occurredAt: at(97) })
-    await insertTestAgentModeration({ ...dueFixture, occurredAt: at(1) })
+    const fixture = await createTestAgentModerationRetentionFixture()
     await using older = await beginTransaction()
     await using newer = await beginTransaction()
-    const oldId = await insertTestAgentModeration({ ...fixture, occurredAt: at(95) }, older)
-    const newestId = await insertTestAgentModeration({ ...fixture, occurredAt: at(94) }, newer)
-    await older.commit()
+    const olderId = await insertTestAgentModeration({ ...fixture, occurredAt: at(95) }, older)
+    const newerId = await insertTestAgentModeration({ ...fixture, occurredAt: at(94) }, newer)
     await newer.commit()
+    await older.commit()
 
-    const upperId = getMinUuidv7ForDate(at(90))
-    onTestFinished(() => clearTestAgentModerationRepairCursor(upperId))
     const options = {
       now,
       lowerBoundDate,
-      postIds: [keeperFixture.postId, fixture.postId, dueFixture.postId],
+      postIds: [fixture.postId],
       batchSize: 1,
       maxBatches: 1,
-      persistentRepairCursorForTest: true,
     }
     const first = await cleanupObsoleteAgentModerations(options)
-    expect(first).toMatchObject({ scanned: 0, deleted: 0, hasMore: true })
-    if (!first.continuation) throw new Error('Expected the separate due backlog continuation')
-    expect(await getTestAgentModerationRepairCursor()).toEqual({
-      id: keeperId,
-      post_id: keeperFixture.postId,
-      upper_id: upperId,
-    })
-    expect(await testAgentModerationExists(fixture.postId, oldId)).toBe(true)
-    expect(await testAgentModerationExists(dueFixture.postId, dueId)).toBe(true)
+    expect(first).toMatchObject({ scanned: 1, deleted: 1, hasMore: true })
+    expect(await testAgentModerationExists(fixture.postId, olderId)).toBe(false)
+    expect(await testAgentModerationExists(fixture.postId, newerId)).toBe(true)
 
-    expect(
-      await cleanupObsoleteAgentModerations({ ...options, continuation: first.continuation }),
-    ).toEqual({ scanned: 1, deleted: 1, hasMore: false, continuation: null })
-    expect(await getTestAgentModerationRepairCursor()).toMatchObject({ id: keeperId })
-
-    // A new daily invocation resumes without a continuation, even with a later cutoff.
-    const nextDay = { ...options, now: new Date(now.getTime() + 86_400_000) }
-    const repaired = await cleanupObsoleteAgentModerations(nextDay)
-    expect(repaired).toMatchObject({ scanned: 1, deleted: 0, hasMore: true })
-    if (!repaired.continuation) throw new Error('Expected a due continuation for the repair')
-    expect(await testAgentModerationExists(fixture.postId, oldId)).toBe(true)
-    expect(await getTestAgentModerationRepairCursor()).toEqual({
-      id: oldId,
-      post_id: fixture.postId,
-      upper_id: upperId,
+    expect(await cleanupObsoleteAgentModerations(options)).toEqual({
+      scanned: 1,
+      deleted: 0,
+      hasMore: false,
+      continuation: null,
     })
-    expect(
-      await cleanupObsoleteAgentModerations({ ...nextDay, continuation: repaired.continuation }),
-    ).toEqual({ scanned: 1, deleted: 1, hasMore: false, continuation: null })
-    expect(await getTestAgentModerationRepairCursor()).toMatchObject({ id: oldId })
-    await cleanupObsoleteAgentModerations(nextDay)
-    await cleanupObsoleteAgentModerations(nextDay)
-    expect(await getTestAgentModerationRepairCursor()).toBeNull()
-    const [keeperExists, oldExists, newestExists] = await Promise.all([
-      testAgentModerationExists(keeperFixture.postId, keeperId),
-      testAgentModerationExists(fixture.postId, oldId),
-      testAgentModerationExists(fixture.postId, newestId),
+    expect(await cleanupObsoleteAgentModerations(options)).toEqual({
+      scanned: 0,
+      deleted: 0,
+      hasMore: false,
+      continuation: null,
+    })
+    expect(await testAgentModerationExists(fixture.postId, newerId)).toBe(true)
+  })
+
+  it('wakes a settled keeper when its unseen successor commits', async () => {
+    const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
+    const fixture = await createTestAgentModerationRetentionFixture()
+    await using older = await beginTransaction()
+    await using newer = await beginTransaction()
+    const olderId = await insertTestAgentModeration({ ...fixture, occurredAt: at(95) }, older)
+    const newerId = await insertTestAgentModeration({ ...fixture, occurredAt: at(94) }, newer)
+    await older.commit()
+
+    const options = {
+      now,
+      lowerBoundDate,
+      postIds: [fixture.postId],
+      batchSize: 1,
+      maxBatches: 1,
+    }
+    expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({ scanned: 1, deleted: 0 })
+    expect(await getTestAgentModerationRetentionState(fixture.postId, olderId)).toEqual({
+      dueAt: null,
+      blockedReason: 'newest',
+    })
+    await newer.commit()
+
+    expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({
+      scanned: 1,
+      deleted: 0,
+      hasMore: true,
+    })
+    expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({ scanned: 1, deleted: 1 })
+    expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({ scanned: 0, deleted: 0 })
+    expect(await testAgentModerationExists(fixture.postId, olderId)).toBe(false)
+    expect(await testAgentModerationExists(fixture.postId, newerId)).toBe(true)
+  })
+
+  it('keeps an overlapping predecessor reconciliation pending until its own wake commits', async () => {
+    const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
+    const fixture = await createTestAgentModerationRetentionFixture()
+    const originalId = await insertTestAgentModeration({ ...fixture, occurredAt: at(96) })
+    const options = {
+      now,
+      lowerBoundDate,
+      postIds: [fixture.postId],
+      batchSize: 1,
+      maxBatches: 1,
+    }
+    expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({ scanned: 1, deleted: 0 })
+    const predecessorId = await insertTestAgentModeration({ ...fixture, occurredAt: at(95) })
+    const successorId = await insertTestAgentModeration({ ...fixture, occurredAt: at(94) })
+
+    const paused = Promise.withResolvers<void>()
+    const release = Promise.withResolvers<void>()
+    const restore = runBeforePostgresStatementForTest(
+      'listAgentModerationCleanupCandidates',
+      async () => {
+        paused.resolve()
+        await release.promise
+      },
+    )
+    const predecessor = cleanupObsoleteAgentModerations({
+      ...options,
+      lowerBoundDate: at(95.5),
+      upperBoundDate: at(94.5),
+    })
+    const [predecessorResult, successorResult] = await Promise.all([
+      predecessor,
+      (async () => {
+        try {
+          await Promise.race([
+            paused.promise,
+            predecessor.then(() => {
+              throw new Error('Expected the predecessor sweep to pause')
+            }),
+          ])
+          return await cleanupObsoleteAgentModerations({
+            ...options,
+            lowerBoundDate: at(94.5),
+          })
+        } finally {
+          release.resolve()
+          restore()
+        }
+      })(),
     ])
-    expect([keeperExists, oldExists, newestExists]).toEqual([true, false, true])
+
+    expect(successorResult).toMatchObject({ scanned: 1, deleted: 0 })
+    expect(predecessorResult).toMatchObject({ scanned: 1, deleted: 1 })
+    expect(await cleanupObsoleteAgentModerations(options)).toMatchObject({ scanned: 1, deleted: 1 })
+    expect(await testAgentModerationExists(fixture.postId, originalId)).toBe(false)
+    expect(await testAgentModerationExists(fixture.postId, predecessorId)).toBe(false)
+    expect(await testAgentModerationExists(fixture.postId, successorId)).toBe(true)
   })
 })

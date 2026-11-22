@@ -28,7 +28,6 @@ type CleanupOptions = AgentModerationRetentionOptions & {
   lowerBoundDate?: Date
   upperBoundDate?: Date
   continuation?: AgentModerationCleanupContinuation
-  persistentRepairCursorForTest?: boolean
 }
 
 export async function cleanupObsoleteAgentModerations(
@@ -67,15 +66,10 @@ export async function cleanupObsoleteAgentModerations(
   let afterDueAt = options.continuation?.afterDueAt ?? lowerBoundDueAt.toISOString()
   let afterId = options.continuation?.afterId ?? ZERO_UUID
   let afterPostId = options.continuation?.afterPostId ?? ZERO_UUID
-  const persistRepair =
-    options.persistentRepairCursorForTest === true ||
-    (!options.postIds && !options.lowerBoundDate && !options.upperBoundDate)
-  let repair = options.continuation ? null : { id: ZERO_UUID, post_id: ZERO_UUID }
   let scanned = 0
   let deleted = 0
   let hasMore = false
   for (let batch = 0; batch < maxBatches; batch += 1) {
-    const reserveRepairSlot = persistRepair && repair !== null && batch === maxBatches - 1
     // no-mistakes-disable-next-line query-reached-per-item: each bounded page depends on the previous committed due-keyset position; maxBatches and batchSize cap all reads and writes
     const page = await cleanupAgentModerationPage(
       batchSize,
@@ -86,20 +80,16 @@ export async function cleanupObsoleteAgentModerations(
       afterDueAt,
       afterId,
       afterPostId,
-      repair,
-      persistRepair,
-      reserveRepairSlot,
       options.postIds,
     )
     scanned += page.scanned
     deleted += page.deleted
     hasMore = page.hasMore
-    repair = page.repair
     if (page.continuation) {
       afterDueAt = page.continuation.afterDueAt
       afterId = page.continuation.afterId
       afterPostId = page.continuation.afterPostId
-    } else if (!repair) break
+    } else break
   }
   return {
     scanned,

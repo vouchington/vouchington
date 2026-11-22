@@ -17,6 +17,7 @@ export async function deleteAgentModerationRetentionPage(
      WHERE moderation.id = page.id AND moderation.post_id = page.post_id
        AND moderation.id < $3::uuid
        AND moderation.retention_due_at <= $4::timestamptz
+       AND moderation.retention_blocked_reason IS NULL
        -- Scalar probes stay correlated single-row index lookups; EXISTS would drop the LIMIT
        -- and flatten into a join once the read-context lock is gone.
        AND (
@@ -97,6 +98,7 @@ export async function deleteAgentModerationRetentionPage(
      FROM unnest($1::uuid[], $2::uuid[]) AS page(id, post_id)
      WHERE moderation.id = page.id AND moderation.post_id = page.post_id
        AND moderation.retention_due_at IS NOT NULL
+       AND moderation.retention_blocked_reason IS NULL
        -- Without the post lock, a hash change can commit between the delete and this publish.
        -- A row that no longer has any blocker stays due so the next run deletes it, rather
        -- than being frozen as 'newest' with an unwakeable blocker.

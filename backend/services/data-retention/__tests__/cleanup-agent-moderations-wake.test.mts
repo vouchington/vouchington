@@ -47,7 +47,7 @@ describe('agent moderation retention wake-ups', () => {
         batchSize: 1,
         maxBatches: 1,
       }),
-    ).toMatchObject({ scanned: 0, deleted: 0 })
+    ).toMatchObject({ scanned: 1, deleted: 0 })
     expect(
       await cleanupObsoleteAgentModerations({
         postIds: [fixture.postId],
