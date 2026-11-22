@@ -66,7 +66,7 @@ export async function claimCopyrightFormScreening(
     SELECT attempt_number, execution_token, state, execution_started_at,
       EXISTS (SELECT 1 FROM copyright_notice_form_screening_work_items work WHERE work.attempt_id = copyright_notice_form_screening_attempts.id AND work.lease_expires_at <= ${claimBefore}) AS expired
     FROM copyright_notice_form_screening_attempts WHERE copyright_notice_form_intake_id = ${intakeId}
-    ORDER BY attempt_number DESC LIMIT 1 FOR UPDATE
+    ORDER BY attempt_number DESC LIMIT 1
   `)
   const current = currentRows[0]
   if (
