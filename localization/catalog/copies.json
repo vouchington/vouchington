@@ -5556,7 +5556,6 @@
 {"descriptor":null,"id":"copy.native.swift.postCompose.drafts"},
 {"descriptor":null,"id":"copy.native.swift.postCompose.imageLabel"},
 {"descriptor":null,"id":"copy.native.swift.postCompose.imageLimitReached"},
-{"descriptor":null,"id":"copy.native.swift.postCompose.imageMaximumReached"},
 {"descriptor":null,"id":"copy.native.swift.postCompose.imageWaitForDraft"},
 {"descriptor":null,"id":"copy.native.swift.postCompose.imageWaitForPublishing"},
 {"descriptor":null,"id":"copy.native.swift.postCompose.images"},

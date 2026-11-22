@@ -156,7 +156,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_17 = [
   { key: 'native.swift.postCompose.drafts', consumers: ['swift'] },
   { key: 'native.swift.postCompose.imageLabel', consumers: ['swift'] },
   { key: 'native.swift.postCompose.imageLimitReached', consumers: ['swift'] },
-  { key: 'native.swift.postCompose.imageMaximumReached', consumers: ['swift'] },
   { key: 'native.swift.postCompose.imageWaitForDraft', consumers: ['swift'] },
   { key: 'native.swift.postCompose.imageWaitForPublishing', consumers: ['swift'] },
   { key: 'native.swift.postCompose.images', consumers: ['dotnet', 'swift'] },

@@ -3849,7 +3849,6 @@
 {"alias":"native.swift.postCompose.drafts","consumer":"swift","copyId":"copy.native.swift.postCompose.drafts"},
 {"alias":"native.swift.postCompose.imageLabel","consumer":"swift","copyId":"copy.native.swift.postCompose.imageLabel"},
 {"alias":"native.swift.postCompose.imageLimitReached","consumer":"swift","copyId":"copy.native.swift.postCompose.imageLimitReached"},
-{"alias":"native.swift.postCompose.imageMaximumReached","consumer":"swift","copyId":"copy.native.swift.postCompose.imageMaximumReached"},
 {"alias":"native.swift.postCompose.imageWaitForDraft","consumer":"swift","copyId":"copy.native.swift.postCompose.imageWaitForDraft"},
 {"alias":"native.swift.postCompose.imageWaitForPublishing","consumer":"swift","copyId":"copy.native.swift.postCompose.imageWaitForPublishing"},
 {"alias":"native.swift.postCompose.images","consumer":"swift","copyId":"copy.native.swift.postCompose.images"},
