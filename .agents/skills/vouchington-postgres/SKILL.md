@@ -5,6 +5,8 @@ description: Write or review Vouchington SQL - queries in services, transactions
 
 # Vouchington PostgreSQL queries
 
+Load `postgres-node-performance-tuning`, `postgres-schema-design`, `postgresql-rules` first.
+
 Schema and migration rules live in [`backend/data-stores/psql/AGENTS.md`](../../../backend/data-stores/psql/AGENTS.md).
 
 ## Connections and transactions

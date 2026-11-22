@@ -1,5 +1,6 @@
 # API routes
 
+- Load skills: `http-api-design`, `security-rules`.
 - Route contracts: [API requirements](../../docs/requirements/api/README.md).
 - Reusable business logic belongs in services; never add `backend/api/**/shared/**`.
 - Use `requireAuth`, `getOptionalAuthAndRateLimit`, or `requireAuthAndRateLimit` from

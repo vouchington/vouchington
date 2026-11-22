@@ -5,6 +5,8 @@ description: Use Valkey from Vouchington backend code - deletes, batching, Lua s
 
 # Vouchington Valkey
 
+Load `typescript-authoring` first.
+
 - Batch key sets with `MGET`, `Batch`, or Lua. Cursor `SCAN` and bounded deletion loops are exceptions; single commands do not
   use `Batch`.
 - Application Lua lives in a standalone `scripts/*.lua` file in the owning package (for example

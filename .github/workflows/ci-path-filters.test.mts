@@ -41,7 +41,7 @@ function filterMatches(globs: string[] | undefined, path: string, every = false)
 }
 
 const pr9389Files = [
-  '.agents/skills/staging-qa/SKILL.md',
+  '.agents/skills/vouchington-qa/SKILL.md',
   'ci/agent-workflow-docs.test.mts',
 ] as const
 

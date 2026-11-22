@@ -1,6 +1,6 @@
 ---
 name: voucha-brand
-description: Write Voucha user-facing UI and marketing copy in the product voice.
+description: Voucha voice rules for user-facing copy - no em-dashes, short plain sentences. Use when writing or editing UI strings, translation catalog text, emails, landing pages, or marketing copy.
 ---
 
 # Voucha Brand Voice
