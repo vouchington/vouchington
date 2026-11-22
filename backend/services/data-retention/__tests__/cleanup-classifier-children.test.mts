@@ -21,7 +21,7 @@ function capturePage(progress: Progress, pageRows: Record<string, unknown>[], de
   const statements: SQLStatement[] = []
   const query = (async (statement: SQLStatement) => {
     statements.push(statement)
-    if (statement.text.includes('lockClassifierChildCursor')) return { rows: [progress] }
+    if (statement.text.includes('readClassifierChildCursor')) return { rows: [progress] }
     if (statement.text.includes('listClassifier')) return { rows: pageRows }
     if (statement.text.includes('deleteTerminal')) return { rowCount: deleted, rows: [] }
     return { rows: [], rowCount: 0 }

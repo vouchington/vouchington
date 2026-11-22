@@ -16,7 +16,10 @@ class MockEventSource {
   onerror: (() => void) | null = null
   readonly listeners = new Set<Listener>()
 
-  constructor(readonly url: string) {
+  readonly url: string
+
+  constructor(url: string) {
+    this.url = url
     MockEventSource.instances.push(this)
   }
 

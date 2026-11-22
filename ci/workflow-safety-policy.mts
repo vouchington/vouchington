@@ -1,8 +1,4 @@
-import {
-  gitSubcommandPattern,
-  shellLogicalLines,
-  workflowHasTrigger,
-} from './workflow-shell-policy.mts'
+import { gitSubcommandPattern, shellLogicalLines } from './workflow-shell-policy.mts'
 
 type Step = {
   name?: string
@@ -32,8 +28,8 @@ export function workflowCallSecretViolations(workflows: Record<string, SecretWor
   return Object.entries(workflows).flatMap(([path, workflow]) =>
     Object.entries(workflow.jobs ?? {}).flatMap(([jobId, job]) => {
       const label = `${path}#${jobId}`
-      if (job.secrets === 'inherit')
-        return [`${label}: pass the callee declared secrets explicitly`]
+      // no-mistakes workflow-topology-policy (forbidSecretsInherit) reports `secrets: inherit`.
+      if (job.secrets === 'inherit') return []
       if (!job.uses?.startsWith('./.github/workflows/')) return []
       const calleePath = job.uses.slice('./'.length)
       const declared = workflows[calleePath]?.on?.workflow_call?.secrets ?? {}
@@ -112,15 +108,4 @@ export function workflowSafetyViolations(
     }
   }
   return violations
-}
-
-/** Pull requests are same-repo, so no workflow may use the privileged PR-target event. */
-export function privilegedWorkflowViolations(workflows: Record<string, SafetyWorkflow>): string[] {
-  const violations: string[] = []
-  for (const [path, workflow] of Object.entries(workflows)) {
-    if (!workflowHasTrigger(workflow.on, 'pull_request_target')) continue
-    const name = path.replace(/^\.github\/workflows\//, '')
-    violations.push(`${name}: pull_request_target is forbidden; use pull_request`)
-  }
-  return violations.toSorted()
 }

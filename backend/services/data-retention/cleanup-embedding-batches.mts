@@ -47,7 +47,7 @@ async function deleteTerminalEmbeddingBatchPage(
   if (options.batchIds) candidatesQuery.append(sql` AND id = ANY(${options.batchIds}::uuid[])`)
   candidatesQuery.append(sql`
     ORDER BY COALESCE(completed_at, failed_at, cancelled_at), id
-    LIMIT ${batchSize + 1} FOR UPDATE SKIP LOCKED`)
+    LIMIT ${batchSize + 1}`)
   const { rows: candidates } = await query<{ id: string; terminal_at: string }>(candidatesQuery)
   const page = candidates.slice(0, batchSize)
   const ids = page.map(row => row.id)
@@ -67,9 +67,10 @@ async function deleteTerminalEmbeddingBatchPage(
     `/* deleteTerminalEmbeddingBatchPage */
     DELETE FROM bedrock_embedding_batches batch
     WHERE batch.id = ANY($1::uuid[])
+      AND COALESCE(batch.completed_at, batch.failed_at, batch.cancelled_at) < $2::timestamptz
       AND NOT EXISTS (SELECT 1 FROM bedrock_embedding_batch_entities entity
         WHERE entity.batch_id = batch.id)`,
-    [ids],
+    [ids, cutoff],
   )
   const deleted = rowCount ?? 0
   const hasMore = candidates.length > batchSize || deleted < page.length

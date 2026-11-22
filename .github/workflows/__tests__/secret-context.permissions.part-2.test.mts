@@ -194,7 +194,6 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     }
 
     expect(workflowCallSecretViolations(workflows)).toEqual([
-      'caller.yml#inherit: pass the callee declared secrets explicitly',
       'caller.yml#extra: OTHER is not declared by .github/workflows/publish.yml',
       'caller.yml#missing: pass required secret TOKEN from .github/workflows/publish.yml',
     ])

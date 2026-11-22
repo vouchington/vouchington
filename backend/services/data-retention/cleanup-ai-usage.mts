@@ -32,7 +32,7 @@ export async function cleanupAiUsageRecords(
   const lowerBound = options.lowerBoundDate ? getMinUuidv7ForDate(options.lowerBoundDate) : null
   let result: AiUsageCleanupResult = { deleted: 0, hasMore: false, cursorId: null }
   for (let batch = 0; batch < maxBatches; batch++) {
-    // no-mistakes-disable-next-line query-reached-per-item: at most maxBatches transactions each lock a UUIDv7 keyset page, fold and delete its rows atomically, then checkpoint; the next page depends on that commit.
+    // no-mistakes-disable-next-line query-reached-per-item: at most maxBatches transactions each read a UUIDv7 keyset page, fold and delete its rows atomically, then checkpoint; the next page depends on that commit.
     const page = await cleanupAiUsagePage(cutoff, responseKeyCutoff, lowerBound, batchSize, ids) // oxlint-disable-line no-await-in-loop -- the committed cursor selects the next bounded page
     result = {
       deleted: result.deleted + page.deleted,
@@ -75,9 +75,9 @@ async function cleanupAiUsagePage(
     cursor_id: string | null
     sweep_upper_bound_id: string | null
   }>(sql`
-    /* cleanupAiUsagePage.lockCursor */
+    /* cleanupAiUsagePage.readCursor */
     SELECT cursor_id, sweep_upper_bound_id FROM ai_usage_retention_cursors
-    WHERE is_singleton = true FOR UPDATE
+    WHERE is_singleton = true
   `)
   const progress = cursors[0]!
   const cursorId =
@@ -102,26 +102,22 @@ async function cleanupAiUsagePage(
   if (recordIds !== undefined)
     candidates.append(sql`AND record.id = ANY(${recordIds}::uuid[])
           `)
-  candidates.append(sql`ORDER BY id LIMIT ${batchSize + 1} FOR UPDATE SKIP LOCKED`)
+  candidates.append(sql`ORDER BY id LIMIT ${batchSize + 1}`)
   const { rows: physicalRows } = await transaction<{ id: string }>(candidates)
   const rows = physicalRows.filter(row => row.id < upperBound)
   const scannedIds = rows.slice(0, batchSize).map(row => row.id)
-  const { rows: protectedRows } = await transaction<{ ai_usage_record_id: string }>(sql`
-    /* cleanupAiUsagePage.protectedKeys */
-    SELECT ai_usage_record_id FROM ai_usage_provider_response_keys
-    WHERE ai_usage_record_id = ANY(${scannedIds}::uuid[])
-      AND id >= ${responseKeyCutoff}::uuid
-  `)
-  const protectedIds = new Set(protectedRows.map(row => row.ai_usage_record_id))
-  const ids = scannedIds.filter(id => !protectedIds.has(id))
 
   let deleted = 0
-  if (ids.length > 0) {
+  if (scannedIds.length > 0) {
     const { rows: folded } = await transaction<{ deleted_count: string }>(sql`
       /* cleanupAiUsagePage.foldAndDelete */
       WITH deleted AS (
         DELETE FROM ai_usage_records record
-        WHERE record.id = ANY(${ids}::uuid[])
+        WHERE record.id = ANY(${scannedIds}::uuid[])
+          AND NOT EXISTS (
+            SELECT 1 FROM ai_usage_provider_response_keys key
+            WHERE key.ai_usage_record_id = record.id AND key.id >= ${responseKeyCutoff}::uuid
+          )
         RETURNING id, community_id, input_tokens, output_tokens, pricing_status,
           cost_microunits
       ), facts AS MATERIALIZED (
