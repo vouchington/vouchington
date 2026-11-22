@@ -106,6 +106,6 @@ console_filter() {
     sed -u -e '/^\[pg-request-profile\] /d' -e '/^{"kind":"pg-worker-profile"/d'
   fi
 }
-pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-ai-usage-monthly-ddl --project backend-platform-stats-cache --project backend-mocks --project backend-migration-initializers --project backend-real-glide-mq --shard "$CI_SHARD" 2>&1 | tee backend-unit-output.log | console_filter
+pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-ai-usage-monthly-ddl --project backend-partition-retirement --project backend-platform-stats-cache --project backend-mocks --project backend-migration-initializers --project backend-real-glide-mq --shard "$CI_SHARD" 2>&1 | tee backend-unit-output.log | console_filter
 node backend/test-helpers/api/request-query-profile-stale.mts --collect \
   "$CI_SHARD" backend-unit-output.log "$REQUEST_QUERY_PROFILE_HITS_FILE"

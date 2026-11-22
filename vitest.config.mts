@@ -13,6 +13,7 @@ import { backendCoreProjects } from './test-helpers/vitest-config/backend-core-p
 import { backendCredentialedTestProjects } from './test-helpers/vitest-config/backend-credentialed-projects.mts'
 import { backendEvalTestProjects } from './test-helpers/vitest-config/backend-evals-projects.mts'
 import { backendDataProjects } from './test-helpers/vitest-config/backend-data-projects.mts'
+import { backendPartitionRetirementProjects } from './test-helpers/vitest-config/backend-partition-retirement-project.mts'
 import {
   coverageConfig,
   parseVitestMaxWorkers,
@@ -92,6 +93,7 @@ export default defineConfig({
     projects: [
       ...backendCoreProjects,
       ...backendDataProjects,
+      ...backendPartitionRetirementProjects,
       ...backendCredentialedTestProjects,
       ...backendEvalTestProjects,
       {
