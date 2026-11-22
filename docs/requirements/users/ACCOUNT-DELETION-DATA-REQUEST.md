@@ -129,8 +129,8 @@ soft-deleted and do not check preservation holds. Final purge runs at read commi
 `FOR NO KEY UPDATE` lock, the lock hold admission takes, immediately before its `DELETE`. The `DELETE`
 repeats every condition it relies on (retention window, open requests, open hold) in its own `WHERE`, so
 a hold that committed first makes it delete nothing and a hold arriving later waits and reports 404; a
-conflicting hold and hard delete cannot both commit. A purge that deletes nothing or hits a deadlock
-ends its page without retry or continuation; the next scheduled run rediscovers the account. Incoming references remain unchanged
+conflicting hold and hard delete cannot both commit. A purge whose `DELETE` removes nothing rolls its page back and reports more work, so the batch continues with the other
+users and discovery reruns in the same run; a deadlock ends the page without retry, and the next scheduled run rediscovers the account. Incoming references remain unchanged
 until the final user deletion applies their existing null-on-delete behavior.
 
 An operative repeat-infringer incident does not block deletion. The normal deletion phases erase
