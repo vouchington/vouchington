@@ -1,6 +1,6 @@
 import { assertWorkerSessionJwtConfiguration } from './auth/configuration.mts'
 import { withSentry } from '@sentry/cloudflare'
-import { getBotTier, isVerifiedBotRequest } from './bot-tier.mts'
+import { getBotTier } from './bot-tier.mts'
 import { logCacheDiagnostic } from './cache-diagnostics.mts'
 import { isAuthCallbackRoute } from './cache-route-policy.mts'
 import { buildDashboardCsp, buildWebCsp } from './csp.mts'
@@ -15,6 +15,7 @@ import {
 import {
   addSecurityHeaders as applySecurityHeaders,
   edgeErrorResponse,
+  isVerifiedBotRequest,
   withHeaders,
 } from '@vouchington/edge'
 import { isProductionMode } from './production-mode.mts'
