@@ -187,11 +187,11 @@ export async function markTestOAuthAuthorizationExchanging(
   )
 }
 
-/** Expire only the named owned flow after an observed queue ownership storage failure. */
-export async function expireTestOAuthAuthorization(id: string): Promise<void> {
+/** Expire only the named owned test authorization. */
+export async function expireTestOAuthAuthorization(id: string, expiresAt?: Date): Promise<void> {
   const { rowCount } = await write(
-    "/* expireTestOAuthAuthorization */ UPDATE oauth_authorizations SET expires_at = CURRENT_TIMESTAMP - INTERVAL '1 second' WHERE id = $1",
-    [id],
+    "/* expireTestOAuthAuthorization */ UPDATE oauth_authorizations SET expires_at = COALESCE($2::timestamptz, CURRENT_TIMESTAMP - INTERVAL '1 second') WHERE id = $1",
+    [id, expiresAt ?? null],
   )
   if (rowCount !== 1) throw new Error('Expected the exact owned authorization to expire')
 }

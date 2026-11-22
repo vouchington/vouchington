@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
   deleteTestOAuthAuthorizationFixtures,
+  expireTestOAuthAuthorization,
   getTestOAuthAuthorization,
   insertTestOAuthAuthorization,
 } from '@voucha/test-helpers/entities/oauth-authorizations'
@@ -92,6 +94,58 @@ describe('OAuth authorization callback expiry', () => {
       })
     },
   )
+
+  it('settles expiry when a concurrent update invalidates the pending receipt', async () => {
+    const state = randomUUID()
+    const authorizationId = await insertTestOAuthAuthorization({ state })
+    onTestFinished(async () => {
+      await deleteTestOAuthAuthorizationFixtures({ authorizationIds: [authorizationId] })
+    })
+    onTestFinished(
+      runBeforePostgresStatementForTest('receiveOAuthAuthorizationCallback:accept', () =>
+        expireTestOAuthAuthorization(authorizationId),
+      ),
+    )
+
+    await expect(
+      receiveOAuthAuthorizationCallback({ provider: 'github', state, code: 'provider-code' }),
+    ).rejects.toMatchObject({ status: 410 })
+    expect(await getTestOAuthAuthorization(authorizationId)).toMatchObject({
+      status: 'expired',
+      callback_code_ciphertext: null,
+      completion_token_ciphertext: null,
+      completion_token_hash: null,
+    })
+  })
+
+  it('rolls back an accepted write when its decision deadline elapsed', async () => {
+    const state = randomUUID()
+    const decisionAt = new Date()
+    const expiresAt = new Date(decisionAt.getTime() + 1_000)
+    const authorizationId = await insertTestOAuthAuthorization({ state, expiresAt })
+    onTestFinished(async () => {
+      await deleteTestOAuthAuthorizationFixtures({ authorizationIds: [authorizationId] })
+    })
+    onTestFinished(
+      runBeforePostgresStatementForTest('receiveOAuthAuthorizationCallback:accept', async () => {
+        vi.setSystemTime(expiresAt)
+      }),
+    )
+    vi.setSystemTime(decisionAt)
+    try {
+      await expect(
+        receiveOAuthAuthorizationCallback({ provider: 'github', state, code: 'provider-code' }),
+      ).rejects.toMatchObject({ status: 410 })
+    } finally {
+      vi.useRealTimers()
+    }
+    expect(await getTestOAuthAuthorization(authorizationId)).toMatchObject({
+      status: 'expired',
+      callback_code_ciphertext: null,
+      completion_token_ciphertext: null,
+      completion_token_hash: null,
+    })
+  })
 
   it('returns expiry without changing an already completed authorization', async () => {
     const state = randomUUID()
