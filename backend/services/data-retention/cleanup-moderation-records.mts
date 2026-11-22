@@ -63,9 +63,9 @@ async function cleanupModerationRecordPage(
   const { rows: progress } = await transaction<{
     cursor_record_id: string | null
     sweep_upper_bound_record_id: string | null
-  }>(sql`/* cleanupModerationRecordPage.lockCursor */
+  }>(sql`/* cleanupModerationRecordPage.readCursor */
     SELECT cursor_record_id, sweep_upper_bound_record_id FROM moderation_record_cleanup_cursors
-    WHERE kind = ${kind}::moderation_record_cleanup_kinds FOR UPDATE
+    WHERE kind = ${kind}::moderation_record_cleanup_kinds
   `)
   const cursor = progress[0]
   if (!cursor) throw new Error(`Missing moderation retention cursor: ${kind}`)

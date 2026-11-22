@@ -61,6 +61,7 @@ describe('moderation record retention', () => {
     await resolveTestModerationAppeal({
       appealId: appeal.id,
       resolvedAt: expiredAt,
+      sentAt: expiredAt,
       resolutionAction: 'deny',
     })
 
@@ -184,6 +185,7 @@ describe('moderation record retention', () => {
     await resolveTestModerationAppeal({
       appealId: appeal.id,
       resolvedAt: expiredAt,
+      sentAt: expiredAt,
       resolutionAction: 'deny',
     })
     expect(

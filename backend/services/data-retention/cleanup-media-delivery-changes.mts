@@ -62,7 +62,7 @@ async function deleteMediaDeliveryChangeSweepPage(
           AND id > COALESCE($2::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
           AND NOT (change_type = 'completed' AND desired_state = 'withheld')
           ${lower}${options.changeIds ? `${options.lowerBoundDate ? '\n          ' : ''}AND id = ANY($${options.lowerBoundDate ? 4 : 3}::uuid[])` : ''}
-        ORDER BY id LIMIT $${options.lowerBoundDate ? (options.changeIds ? 5 : 4) : options.changeIds ? 4 : 3} FOR UPDATE`,
+        ORDER BY id LIMIT $${options.lowerBoundDate ? (options.changeIds ? 5 : 4) : options.changeIds ? 4 : 3}`,
         [
           upperBound,
           progress.cursor_change_id,

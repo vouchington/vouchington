@@ -71,9 +71,9 @@ async function sweepClassifierPage(
     cursor_id: string | null
     sweep_end_key: string | null
   }>(sql`
-    /* lockClassifierRetentionCursor */
+    /* readClassifierRetentionCursor */
     SELECT cursor_id, sweep_end_key FROM classifier_retention_cursors
-    WHERE sweep = ${sweep} FOR UPDATE
+    WHERE sweep = ${sweep}
   `)
   const storedCursor = progress[0]!.cursor_id
   const storedEnd = progress[0]!.sweep_end_key
