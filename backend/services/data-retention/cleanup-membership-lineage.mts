@@ -15,7 +15,7 @@ export async function releaseMembershipLineageBindings(
     UPDATE membership_lineage_bindings
     SET released_at = CURRENT_TIMESTAMP,
         release_reason = 'account_hard_deleted'
-    WHERE id IN (SELECT id FROM candidates)`)
+    WHERE id IN (SELECT id FROM candidates) AND released_at IS NULL`)
   return rowCount ?? 0
 }
 

@@ -24,7 +24,7 @@ export const CHILD_STAGES: readonly ChildStage[] = [
         FROM conversation_messages message
         WHERE message.conversation_id = $1::uuid
         ORDER BY message.conversation_id, message.id
-        LIMIT $2
+        LIMIT $2 FOR UPDATE OF message SKIP LOCKED
       )
       DELETE FROM conversation_messages message
       USING page WHERE (message.conversation_id, message.id) = (page.conversation_id, page.id)`,
@@ -48,7 +48,7 @@ export const CHILD_STAGES: readonly ChildStage[] = [
         FROM conversation_participants participant
         WHERE participant.conversation_id = $1::uuid
         ORDER BY participant.conversation_id, participant.id
-        LIMIT $2
+        LIMIT $2 FOR UPDATE OF participant SKIP LOCKED
       )
       DELETE FROM conversation_participants participant
       USING page WHERE (participant.conversation_id, participant.id)

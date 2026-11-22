@@ -141,11 +141,11 @@ export async function cleanupDeletedConversationPage(
       await checkpoint(query, cursor, cutoff)
       return { deleted: 0, hasMore: true, continuation: null, stalled: false }
     }
-    // Keep the parent while descendants remain to preserve the deletion budget.
+    // A locked child keeps the parent until next run, preventing unbounded CASCADE work.
     // no-mistakes-disable-next-line query-reached-per-item: one LIMIT 1 existence probe per FK stage; a later stage may only run once this table is empty
     const remains = await stage.remaining(query, candidate.id)
     if (remains.rows[0]?.remaining) {
-      // no-mistakes-disable-next-line query-reached-per-item: preserve the parent and its checkpoint while descendants remain
+      // no-mistakes-disable-next-line query-reached-per-item: a skipped locked child keeps the parent and checkpoint together
       await checkpoint(query, cursor, cutoff)
       return { deleted: 0, hasMore: true, continuation: null, stalled: true }
     }

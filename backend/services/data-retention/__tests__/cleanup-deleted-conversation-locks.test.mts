@@ -6,14 +6,17 @@ import {
   operationalRowExistsForTest,
 } from '@voucha/test-helpers'
 import { deleteDeletedConversationFixtureForTest } from '@voucha/test-helpers/deleted-conversation-retention-lock'
-import { insertDeletedConversationProtectionForTest } from '@voucha/test-helpers/deleted-conversation-retention-protection'
+import {
+  insertDeletedConversationProtectionForTest,
+  lockDeletedConversationProtectionForTest,
+} from '@voucha/test-helpers/deleted-conversation-retention-protection'
 import { createScopedDeletedConversationRetentionForTest } from '@voucha/test-helpers/deleted-conversation-retention-scope'
 import { captureScopedTestQueries } from '@voucha/test-helpers/query-capture'
 import { cleanupOperationalTombstones } from '../cleanup-operational-tombstones.mts'
 
-describe('deleted conversation descendant pages', () => {
+describe('deleted conversation protected descendant pages', () => {
   it.each(['receipt', 'message'] as const)(
-    'drains the %s before deleting its parent',
+    'preserves a locked %s and drains after its release',
     async kind => {
       const window = createTestExpiryWindow()
       const conversation = await (async () => {
@@ -31,20 +34,27 @@ describe('deleted conversation descendant pages', () => {
         new Date(window.upperBoundDate.getTime() + 30 * 86_400_000),
       )
       try {
-        expect(await cleanupOwned({ batchSize: 1, maxBatches: 1 })).toMatchObject({
-          deleted: 0,
-          hasMore: true,
-        })
         {
-          await using assertion = await beginTransaction()
-          expect(
-            await operationalRowExistsForTest(assertion, 'conversations', conversation.id),
-          ).toBe(true)
-          const descendants = await getDeletedConversationDescendantCountsForTest(
-            assertion,
+          await using blocker = await beginTransaction()
+          await lockDeletedConversationProtectionForTest(blocker, kind, conversation)
+          const before = await getDeletedConversationDescendantCountsForTest(
+            blocker,
             conversation.id,
           )
-          expect(kind === 'receipt' ? descendants.receipts : descendants.messages).toBe(0)
+          expect(kind === 'receipt' ? before.receipts : before.messages).toBe(1)
+          expect(await cleanupOwned({ batchSize: 1, maxBatches: 1 })).toEqual({
+            deleted: 0,
+            hasMore: true,
+            continuation: null,
+            stalled: true,
+          })
+          expect(await operationalRowExistsForTest(blocker, 'conversations', conversation.id)).toBe(
+            true,
+          )
+          expect(
+            await getDeletedConversationDescendantCountsForTest(blocker, conversation.id),
+          ).toEqual(before)
+          await blocker.commit()
         }
         expect(await cleanupOwned({ batchSize: 1, maxBatches: 16 })).toMatchObject({
           deleted: 1,
@@ -58,6 +68,7 @@ describe('deleted conversation descendant pages', () => {
           await getDeletedConversationDescendantCountsForTest(assertion, conversation.id),
         ).toEqual({ receipts: 0, intents: 0, notifications: 0, messages: 0, participants: 0 })
       } finally {
+        // Blocker scope has disposed before exact owned cleanup, including assertion failures.
         await using cleanup = await beginTransaction()
         await deleteDeletedConversationFixtureForTest(cleanup, conversation)
         await cleanup.commit()
