@@ -10,7 +10,7 @@ const electedVoteTables = entityRelationMetadatum.flatMap(metadata =>
 
 // Reviewed non-relationship ids. Each key is an exact table.column from the committed PostgreSQL
 // schema snapshot with a one-line reason. The two categories are defined in
-// docs/development/postgres-schema-rules.md#prelaunch-relational-storage. A key that gains a
+// backend/data-stores/psql/AGENTS.md (Relational storage). A key that gains a
 // foreign key, or leaves the schema, is stale and must be removed.
 
 type ReviewedIds = [string, string][]

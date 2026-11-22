@@ -50,13 +50,6 @@ patterns synchronized. Eligible temporary removal timestamps are audit signals, 
 `structured-config-policy` rule separately requires a positive `minimumReleaseAge` and strict
 boolean `allowBuilds` values.
 
-### Release-age violations fail the install
-
-A lockfile entry newer than `minimumReleaseAge` fails `pnpm install --frozen-lockfile` with
-`ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION`. The failure is permanent until the release ages past the
-cutoff, so re-running does not help; wait (or `@dependabot rebase` afterwards), and use the temporary
-exemption procedure above only if the delay is itself the problem.
-
 ### Registry-only dependency rule
 
 Every workspace dependency must resolve from the npm registry; git, URL, file, link, and portal

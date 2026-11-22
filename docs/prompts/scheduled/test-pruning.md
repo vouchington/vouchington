@@ -2,7 +2,7 @@ Delete or reduce low-value tests. Make one bounded deletion or reduction that is
 
 Unit: one Vitest project or test folder.
 
-Load `test-authoring` and `testing-rules`, and apply the [Test Value and Safe Reduction](../../development/reference-tests-value-and-reduction.md) gate. Focus: deletion and fixture reduction only. Flakiness and speed belong to [vitest.md](vitest.md) and [playwright.md](playwright.md); replacing mocks with real dependencies belongs to [backend-real-tests.md](backend-real-tests.md).
+Load `test-authoring` and `testing-rules`, and apply [test suite rules R10 and R12](../../development/tests.md#test-suite-rules). Focus: deletion and fixture reduction only. Flakiness and speed belong to [vitest.md](vitest.md) and [playwright.md](playwright.md); replacing mocks with real dependencies belongs to [backend-real-tests.md](backend-real-tests.md).
 
 - Repo-specific targets: tests of dependency semantics (including our own packages, PostgreSQL, Valkey), and tests that match expected strings in source, SQL, workflow, or YAML text (a real static invariant goes in its owning no-mistakes or vouchington-tooling rule).
 - Do not target credentialed or provider-backed tests merely because they skip without secrets.

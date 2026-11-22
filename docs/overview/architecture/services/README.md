@@ -228,7 +228,7 @@ moderation findings while their identifying details are time-limited by the priv
   invariant of the moderation workflow, not a convenience, and the services enforce it in SQL.
 - **Retained identities.** Audit and money rows (memberships, refunds, moderation history) point at
   `retained_user_identities`, so they survive account deletion without authorizing the deleted
-  user. See the [PostgreSQL schema rules](../../../development/postgres-schema-rules.md).
+  user. See the [relational storage rules](../../../../backend/data-stores/psql/AGENTS.md#relational-storage).
 - **Classifier runs share one receipt table.** Every fixed classifier uses one lifecycle (receipt,
   lease, attempt cap, completion, sweep) so a new classifier is an adapter plus a row, not a table.
   See the [AI platform](../ai-platform.md).

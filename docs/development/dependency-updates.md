@@ -14,7 +14,7 @@ run with the existing CI credential policy. Review the PR before placing it in t
 
 Dependabot waits seven days after a release (`cooldown`), except for first-party packages. pnpm's own
 `minimumReleaseAge` stays at two days for now because the lockfile pins releases younger than seven
-days; it can rise to match once those age out. Dependabot's cooldown must never be shorter than pnpm's age.
+days; it can rise to match once those age out.
 
 `engines.node` is a floor, not the runtime pin. Dependabot's hosted updater runs the active Node LTS
 and cannot be configured, and `engineStrict` makes every pnpm call there fail when the floor is above
@@ -56,9 +56,6 @@ Native dependency policy and automation are owned by the
 - <a id="manually-maintained-pins"></a>[Manually maintained pins](reference-dependency-updates-manually-maintained-pins.md)
 - <a id="adding-a-new-pinned-binary"></a>[Adding a new pinned binary](reference-dependency-updates-adding-a-new-pinned-binary.md)
 - <a id="supply-chain-policy"></a>[Supply-chain policy](reference-dependency-updates-supply-chain-policy.md)
-
-Remote GitHub Actions must be pinned to a 40-hex commit SHA with a version comment, so a re-pointed
-tag cannot silently change what runs; no-mistakes `github-actions-pinned-hash` enforces it.
 
 ### <a id="docs-pinning-policy"></a>Docs pinning policy
 
