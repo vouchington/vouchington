@@ -1,4 +1,4 @@
-import { beginTransaction, read, withTransactionOptions } from '@data-stores/psql'
+import { beginTransaction, read, withTransactionOptions, write } from '@data-stores/psql'
 import type { QueryExecutor, QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -33,25 +33,6 @@ function currentCopyrightJurisdictionPolicySql(jurisdiction: TerritorialCopyrigh
     ORDER BY approval.approved_at DESC, approval.id DESC
     LIMIT 1
   `
-}
-
-/** Read committed lets a policy insert land between two statements of a transaction that has
- * already concealed every approval it could see. Hold this lock from that concealment until the
- * transaction ends, and take it before every insert that commits. */
-function copyrightJurisdictionPolicyLockKey(
-  jurisdiction: TerritorialCopyrightJurisdiction,
-): string {
-  return `copyright-jurisdiction-policy:${jurisdiction}`
-}
-
-async function lockCopyrightJurisdictionPolicy(
-  jurisdiction: TerritorialCopyrightJurisdiction,
-  query: TransactionQuery,
-): Promise<void> {
-  const lockKey = copyrightJurisdictionPolicyLockKey(jurisdiction)
-  await query(sql`/* lockCopyrightJurisdictionPolicy */
-    SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))
-  `)
 }
 
 export async function findCurrentCopyrightJurisdictionPolicy(
@@ -103,28 +84,19 @@ export async function recordCopyrightJurisdictionPolicyApproval(
 ): Promise<CopyrightJurisdictionPolicyApproval> {
   assert(currentUserCanApproveCopyrightJurisdictionPolicy(currentUser), 403, 'Forbidden')
   const policyVersion = assertPolicyVersion(input.policyVersion)
-  await using transaction = await beginTransaction()
-  await lockCopyrightJurisdictionPolicy(input.jurisdiction, transaction)
-  const { rows: existing } = await transaction<{ id: string }>(
-    sql`/* recordCopyrightJurisdictionPolicyApproval:existing */
-    SELECT id FROM copyright_jurisdiction_policy_approvals
-    WHERE jurisdiction = ${input.jurisdiction} AND policy_version = ${policyVersion}
-  `,
-  )
-  assert(!existing[0], 409, 'That policy version is already recorded')
-  const { rows } = await transaction<CopyrightJurisdictionPolicyApproval>(
+  const { rows } = await write<CopyrightJurisdictionPolicyApproval>(
     sql`/* recordCopyrightJurisdictionPolicyApproval */
     INSERT INTO copyright_jurisdiction_policy_approvals (
       jurisdiction, policy_version, approved_by_id
     ) VALUES (
       ${input.jurisdiction}, ${policyVersion}, ${currentUser.id}
     )
+    ON CONFLICT (jurisdiction, policy_version) DO NOTHING
     RETURNING id, jurisdiction, policy_version
   `,
   )
   const approval = rows[0]
-  assert(approval, 500, 'Failed to record copyright policy approval')
-  await transaction.commit()
+  assert(approval, 409, 'That policy version is already recorded')
   return approval
 }
 

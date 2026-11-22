@@ -1,3 +1,4 @@
+import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
 import { describe, expect, it } from 'vitest'
 import {
@@ -20,7 +21,7 @@ import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyrig
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright form intakes', () => {
-  it('atomically replays an unchanged idempotency key without another legal case', async () => {
+  it('conflicts with a concurrent intake and replays the committed legal case', async () => {
     const user = await createTestUser()
     const postId = await insertTestPost({
       title: `copyright ${crypto.randomUUID()}`,
@@ -53,13 +54,23 @@ describe('copyright form intakes', () => {
         ],
       },
     }
-    const first = await createCopyrightFormIntake(input)
+    const restore = afterPostgresTransactionQueryForTest(
+      'createCopyrightFormIntake:findDuplicate',
+      values => values.includes(input.idempotencyKey),
+      async () => {
+        expect(await createCopyrightFormIntake(input)).toMatchObject({ isDuplicate: false })
+      },
+    )
+    try {
+      await expect(createCopyrightFormIntake(input)).rejects.toMatchObject({
+        status: 409,
+        cause: { code: '23505' },
+      })
+    } finally {
+      restore()
+    }
     const replay = await createCopyrightFormIntake(input)
-    expect(first.isDuplicate).toBe(false)
-    expect(replay).toMatchObject({
-      isDuplicate: true,
-      intake: { id: first.intake.id, copyright_notice_id: first.intake.copyright_notice_id },
-    })
+    expect(replay.isDuplicate).toBe(true)
     await expect(
       createCopyrightFormIntake({
         ...input,
@@ -69,7 +80,7 @@ describe('copyright form intakes', () => {
     ).rejects.toMatchObject({ status: 422 })
 
     const screening = {
-      intakeId: first.intake.id,
+      intakeId: replay.intake.id,
       inputSha256: Buffer.alloc(32, 12),
       recommendation: 'not_obviously_invalid' as const,
       rationale: 'The structured form has no obvious spam markers.',
@@ -78,7 +89,7 @@ describe('copyright form intakes', () => {
       model: 'test-model',
     }
     await appendTestCopyrightFormScreening(screening)
-    await expect(claimCopyrightFormScreening(first.intake.id)).resolves.toBeNull()
+    await expect(claimCopyrightFormScreening(replay.intake.id)).resolves.toBeNull()
   })
 
   it('treats an unknown screening submission as an inert queue replay', async () => {
@@ -134,20 +145,26 @@ describe('copyright form intakes', () => {
       targetIds: [targetId],
     }
     const key = crypto.randomUUID()
-    const first = await createCopyrightCounterNotice(
-      poster,
-      notice.intake.copyright_notice_id,
-      key,
-      input,
+    const submit = () =>
+      createCopyrightCounterNotice(poster, notice.intake.copyright_notice_id, key, input)
+    const restore = afterPostgresTransactionQueryForTest(
+      'createCopyrightSubmission:existing',
+      values => values.includes(poster.id),
+      async () => {
+        expect(await submit()).toMatchObject({ isDuplicate: false })
+      },
     )
-    const replay = await createCopyrightCounterNotice(
-      poster,
-      notice.intake.copyright_notice_id,
-      key,
-      input,
-    )
-    expect(first.isDuplicate).toBe(false)
-    expect(replay).toMatchObject({ isDuplicate: true, submission: { id: first.submission.id } })
+    try {
+      await expect(submit()).rejects.toMatchObject({ status: 409, cause: { code: '23505' } })
+    } finally {
+      restore()
+    }
+    const replay = await submit()
+    expect(replay.isDuplicate).toBe(true)
+    const afterRetry = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
+    expect(
+      afterRetry?.submissions.filter(submission => submission.kind === 'counter_notice'),
+    ).toEqual([expect.objectContaining({ id: replay.submission.id })])
 
     const appeal = await createCopyrightAppeal(
       poster,

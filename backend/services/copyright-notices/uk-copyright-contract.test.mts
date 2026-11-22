@@ -1,3 +1,4 @@
+import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import {
@@ -7,7 +8,6 @@ import {
   readCopyrightTerritorialContractShape,
   withRolledBackTerritorialTransaction,
 } from '@voucha/test-helpers/data-stores/psql/copyright-eu-uk-contracts'
-import { tryCommitCopyrightJurisdictionPolicyApproval } from '@voucha/test-helpers/data-stores/psql/copyright-jurisdiction-policy-writes'
 import {
   acknowledgeUkCopyrightNotice,
   recordUkCopyrightAcknowledgmentFailure,
@@ -30,24 +30,26 @@ function noticeRequest(): TerritorialNoticeRequest {
 }
 
 describe('UK copyright notice contracts', () => {
-  it('blocks a concurrent jurisdiction approval while concealed approvals are uncommitted', async () => {
-    const claimant = await createTestUser()
+  it('records one approval when administrators submit the same policy version concurrently', async () => {
+    const administrator = await createTestUser({ administrator: true })
     const policyVersion = `uk-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`
-    await withRolledBackTerritorialTransaction(async transaction => {
-      await concealJurisdictionPolicyApprovals(transaction, 'uk', claimant.id)
-      await expect(
-        tryCommitCopyrightJurisdictionPolicyApproval('uk', policyVersion, claimant.id),
-      ).resolves.toBe(false)
-      await expect(
-        receiveTerritorialCopyrightNoticeInTransaction(
-          { user: claimant, identity: `user:${claimant.id}` },
-          'uk',
-          crypto.randomUUID(),
-          noticeRequest(),
-          transaction,
-        ),
-      ).rejects.toMatchObject({ status: 403, message: 'UK copyright notices are not available' })
-    })
+    const input = { jurisdiction: 'uk' as const, policyVersion }
+    const results = await Promise.allSettled([
+      recordCopyrightJurisdictionPolicyApproval(administrator, input),
+      recordCopyrightJurisdictionPolicyApproval(administrator, input),
+    ])
+    expect(results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          status: 'fulfilled',
+          value: expect.objectContaining({ jurisdiction: 'uk', policy_version: policyVersion }),
+        }),
+        expect.objectContaining({
+          status: 'rejected',
+          reason: expect.objectContaining({ status: 409 }),
+        }),
+      ]),
+    )
   })
 
   it('fails closed without an approved policy and after that approval is withdrawn', async () => {
@@ -101,11 +103,24 @@ describe('UK copyright notice contracts', () => {
       jurisdiction: 'uk',
       policyVersion: `uk-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
     })
-    const receipt = await receiveUkCopyrightNotice(
-      { user: claimant, identity: `user:${claimant.id}` },
-      crypto.randomUUID(),
-      noticeRequest(),
+    const key = crypto.randomUUID()
+    const request = noticeRequest()
+    const submit = () =>
+      receiveUkCopyrightNotice({ user: claimant, identity: `user:${claimant.id}` }, key, request)
+    const restore = afterPostgresTransactionQueryForTest(
+      'receiveTerritorialCopyrightNotice:existing',
+      values => values.includes(key),
+      async () => {
+        expect(await submit()).toMatchObject({ is_duplicate: false })
+      },
     )
+    try {
+      await expect(submit()).rejects.toMatchObject({ status: 409, cause: { code: '23505' } })
+    } finally {
+      restore()
+    }
+    const receipt = await submit()
+    expect(receipt.is_duplicate).toBe(true)
     const acknowledgment = await acknowledgeUkCopyrightNotice(claimant, receipt.notice_id)
     expect(receipt.route_destination).toBe('staff_queue')
     expect(acknowledgment.acknowledged_at).toBeInstanceOf(Date)

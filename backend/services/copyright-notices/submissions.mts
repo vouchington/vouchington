@@ -1,9 +1,10 @@
+import createHttpError from 'http-errors'
 import {
   advanceCopyrightLastLegalActivityAt,
   lockCopyrightNoticeForLegalWrite,
 } from './last-legal-activity.mts'
 import { createHash } from 'node:crypto'
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, isUniqueViolation } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -88,11 +89,6 @@ async function createAuthenticatedCopyrightSubmission(
   const canonicalIdempotencyKey = idempotencyKey.toLowerCase()
   const idempotencyKeySha256 = createHash('sha256').update(canonicalIdempotencyKey).digest()
   await using transaction = await beginTransaction()
-  await transaction(sql`/* createCopyrightSubmission:idempotencyLock */
-    SELECT pg_advisory_xact_lock(
-      hashtextextended(${`copyright-submission:${currentUser.id}:${canonicalIdempotencyKey}`}, 0)
-    )
-  `)
   const { rows: existingRows } = await transaction<
     CopyrightNoticeSubmissionRecord & {
       request_sha256: Buffer
@@ -105,7 +101,6 @@ async function createAuthenticatedCopyrightSubmission(
     JOIN copyright_notice_submissions submission ON submission.id = request.copyright_notice_submission_id
     WHERE request.requester_user_id = ${currentUser.id}
       AND request.idempotency_key_sha256 = ${idempotencyKeySha256}
-    FOR UPDATE OF request
   `)
   const existing = existingRows[0]
   if (existing) {
@@ -168,7 +163,18 @@ async function createAuthenticatedCopyrightSubmission(
     INSERT INTO copyright_notice_lifecycle_changes (
       copyright_notice_id, change_type, changed_by_id, copyright_notice_submission_id
     ) VALUES (${noticeId}, ${`${kind}_received`}, ${currentUser.id}, ${submission.id})
-  `)
+  `).catch((err: unknown) => {
+    if (
+      isUniqueViolation(err) &&
+      'constraint' in err &&
+      err.constraint === 'uq_copyright_submission_requests__requester__key_digest'
+    ) {
+      throw createHttpError(409, 'Idempotency-Key was submitted concurrently; try again', {
+        cause: err,
+      })
+    }
+    throw err
+  })
   await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   await createCopyrightDeliveryIntent(
     {

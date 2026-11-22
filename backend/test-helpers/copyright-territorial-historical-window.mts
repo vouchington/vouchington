@@ -4,7 +4,6 @@ import { encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 import { insertTestBareCopyrightTarget } from './copyright-bare-target.mts'
-import { lockCopyrightJurisdictionPolicy } from './copyright-jurisdiction-policy-lock.mts'
 import { territorialLabels } from '../services/copyright-notices/territorial-labels.mts'
 import { getTerritorialInformedWindow } from '../services/copyright-notices/territorial-informed-at.mts'
 import { createDeterministicCopyrightCorrespondenceInTransaction } from '../services/copyright-notices/correspondence.mts'
@@ -41,7 +40,6 @@ export async function createTestHistoricalEuDecisionWindow(
   const notifierEmail = `historical-${key}@example.test`
   const labels = territorialLabels('eu_dsa')
   await using transaction = await beginTransaction()
-  await lockCopyrightJurisdictionPolicy('eu_dsa', transaction)
   const { rows: actors } = await transaction<{ id: string }>(sql`
     /* createTestHistoricalEuDecisionWindow:actor */
     INSERT INTO users DEFAULT VALUES RETURNING id`)

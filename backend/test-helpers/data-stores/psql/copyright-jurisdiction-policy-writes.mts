@@ -1,10 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import {
-  copyrightJurisdictionPolicyLockKey,
-  lockCopyrightJurisdictionPolicy,
-} from '../../copyright-jurisdiction-policy-lock.mts'
 
 export async function rejectUsJurisdictionPolicyApproval(): Promise<void> {
   await write(sql`/* rejectUsJurisdictionPolicyApproval */
@@ -16,7 +12,6 @@ export async function rejectUsJurisdictionPolicyApproval(): Promise<void> {
 export async function rejectEuReceiptForUsNotice(): Promise<void> {
   const version = `eu-${randomUUID().replaceAll('-', '').slice(0, 12)}`
   await using transaction = await beginTransaction()
-  await lockCopyrightJurisdictionPolicy('eu_dsa', transaction)
   const { rows } = await transaction<{
     approval_id: string
     notice_id: string
@@ -56,30 +51,4 @@ export async function rejectEuReceiptForUsNotice(): Promise<void> {
       'notifier@example.test', TRUE
     )
   `)
-}
-
-/** Commits a jurisdiction approval only when no other transaction holds that jurisdiction's
- * policy lock. Returns false without writing when the lock is already held. */
-export async function tryCommitCopyrightJurisdictionPolicyApproval(
-  jurisdiction: 'eu_dsa' | 'uk',
-  policyVersion: string,
-  actorId: string,
-): Promise<boolean> {
-  await using transaction = await beginTransaction()
-  const lockKey = copyrightJurisdictionPolicyLockKey(jurisdiction)
-  const { rows } = await transaction<{ acquired: boolean }>(sql`
-    /* tryCommitCopyrightJurisdictionPolicyApproval:lock */
-    SELECT pg_try_advisory_xact_lock(hashtextextended(${lockKey}, 0)) AS acquired
-  `)
-  if (!rows[0]?.acquired) {
-    await transaction.rollback()
-    return false
-  }
-  await transaction(sql`/* tryCommitCopyrightJurisdictionPolicyApproval */
-    INSERT INTO copyright_jurisdiction_policy_approvals (
-      jurisdiction, policy_version, approved_by_id
-    ) VALUES (${jurisdiction}, ${policyVersion}, ${actorId})
-  `)
-  await transaction.commit()
-  return true
 }

@@ -1,5 +1,6 @@
+import createHttpError from 'http-errors'
 import { createHash } from 'node:crypto'
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, isUniqueViolation } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
@@ -69,9 +70,6 @@ export async function receiveTerritorialCopyrightNoticeInTransaction(
   const fields = noticeFields(request, jurisdiction)
   const requestSha256 = territorialRequestSha256(fields)
   const identitySha256 = createHash('sha256').update(requester.identity).digest()
-  await transaction(sql`/* receiveTerritorialCopyrightNotice:lock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${`${identitySha256.toString('hex')}:${idempotencyKey}`}, 0))
-  `)
   const { rows: existingRows } = await transaction<TerritorialReceiptRow>(
     existingReceiptQuery(jurisdiction, identitySha256, idempotencyKey),
   )
@@ -127,7 +125,18 @@ export async function receiveTerritorialCopyrightNoticeInTransaction(
         : null,
       'goodFaithStatement' in fields ? fields.goodFaithStatement : null,
     ),
-  )
+  ).catch((err: unknown) => {
+    if (
+      isUniqueViolation(err) &&
+      'constraint' in err &&
+      err.constraint === 'uq_copyright_territorial_notice_receipts__idempotency'
+    ) {
+      throw createHttpError(409, 'Idempotency-Key was submitted concurrently; try again', {
+        cause: err,
+      })
+    }
+    throw err
+  })
   const receipt = receipts[0]
   assert(receipt, 500, failure)
   await transaction(insertRoutingQuery(receipt.id))
