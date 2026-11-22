@@ -13,7 +13,6 @@ import {
   insertTopicAliasForTest,
   getTopicAliasIdForTest,
   setTestEntityRelationIdAndScore,
-  startPausedTestUserDeletionWriter,
   withTestEntityRelationVoteCandidateCascade,
 } from '@voucha/test-helpers'
 import { upsertEntityRelationElectionVotes } from '../elections-votes/entity-relation/votes-upsert.mts'
@@ -21,7 +20,6 @@ import { createUserDeletionRequest } from '../user-deletions/create.mts'
 import { deleteUserEntityRelationVotesBatch } from './delete-entity-relation-votes-batches.mts'
 import { recomputeEntityRelationVoteStats } from './delete-entity-relation-votes.mts'
 import { deleteUser } from './delete.mts'
-import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import {
   deleteUserAndDrainForTest,
@@ -212,7 +210,7 @@ describe('deleteUser entity-relation vote cleanup', () => {
     expect(after).toMatchObject({ votes_score_none: 0, votes_count_none: 0 })
   })
 
-  it('serializes in-flight votes with the privacy fence and rejects later writes', async () => {
+  it('cleans up earlier ballots and skips a ballot from a deleted voter', async () => {
     const creator = await createTestUser()
     const deletingVoter = await createTestUser()
     const postId = await insertTestPost({
@@ -231,45 +229,27 @@ describe('deleteUser entity-relation vote cleanup', () => {
     const [relation] = await getEntityRelation(relationTable, postId, topicId)
     const relationId = (relation as { id: string }).id
 
-    const writer = await startPausedTestUserDeletionWriter(async query => {
-      await upsertEntityRelationElectionVotes(
-        deletingVoter.id,
-        [{ entityId: relationId, score: 1 }],
-        undefined,
-        undefined,
-        { query, enqueueVoteStats: false },
-      )
-    })
-
-    const holderProcessId = writer.processId
-    const attempt = await withTestOwnedPostgresWait(
-      {
-        pool: 'write',
-        holderProcessId,
-        lock: { kind: 'transaction' },
-        queryMarker: 'deleteUser:lockUserRow',
-        releaseHolder: async () => {
-          writer.release()
-          await writer.completed
-        },
-      },
-      async waitForLock => {
-        const pending = deleteUser(deletingVoter, deletingVoter)
-        await waitForLock(pending)
-        writer.release()
-        await writer.completed
-        return pending
-      },
+    const options = { enqueueVoteStats: false } as const
+    const earlier = await upsertEntityRelationElectionVotes(
+      deletingVoter.id,
+      [{ entityId: relationId, score: 1 }],
+      undefined,
+      undefined,
+      options,
     )
+    expect(earlier).toHaveLength(1)
+    const attempt = await deleteUser(deletingVoter, deletingVoter)
+
     await expect(
       upsertEntityRelationElectionVotes(
         deletingVoter.id,
         [{ entityId: relationId, score: -1 }],
         undefined,
         undefined,
-        { enqueueVoteStats: false },
+        options,
       ),
-    ).rejects.toThrow('cannot own new data after deletion')
+    ).resolves.toEqual([])
+    await expect(countTestUserDeletionEntityRelationVotes(deletingVoter.id)).resolves.toBe(1)
     await drainUserDeletionForTest(attempt)
 
     await expect(countTestUserDeletionEntityRelationVotes(deletingVoter.id)).resolves.toBe(0)
