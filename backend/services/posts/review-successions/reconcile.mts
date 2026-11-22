@@ -36,9 +36,14 @@ export async function reconcileReviewSuccessionsForPostPage(
       limit,
     )
     if (groups.length === 0) return { changedPostIds: [], nextCursor }
-    // ast-grep-ignore: no-three-sequential-awaits -- Handoff mutations require a fresh candidate read after the row locks are acquired.
-    await lockReviewSuccessionCandidates(transaction, groups, limit)
-    const candidates = await listLockedReviewSuccessionCandidates(transaction, groups, limit)
+    const lockedIds = await lockReviewSuccessionCandidates(transaction, groups, limit)
+    if (lockedIds.length === 0) return { changedPostIds: [], nextCursor }
+    const candidates = await listLockedReviewSuccessionCandidates(
+      transaction,
+      groups,
+      limit,
+      lockedIds,
+    )
     const changedPostIds = await applyReviewSuccessionMutations(
       transaction,
       planReviewSuccessionMutations(candidates),
