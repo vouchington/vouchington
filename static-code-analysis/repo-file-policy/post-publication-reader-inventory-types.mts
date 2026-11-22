@@ -15,7 +15,6 @@ export type ReaderInventory = {
       | 'public-view'
       | 'viewer-discovery-sql'
   }>
-  pr2_baseline: Array<{ path: string; classification: 'public-reader' }>
   classified_exceptions: Array<{
     path: string
     classification:

@@ -16,7 +16,6 @@ describe('retired post-publication boundary classifications', () => {
           version: 1,
           canonical_builder: canonicalBuilder,
           implemented: [{ path: 'backend/direct.mts', classification }],
-          pr2_baseline: [],
           classified_exceptions: [],
         }),
         errors,
@@ -35,7 +34,6 @@ describe('retired post-publication boundary classifications', () => {
           version: 1,
           canonical_builder: canonicalBuilder,
           implemented: [{ path: 'backend/direct.mts', classification: 'direct-sql' }],
-          pr2_baseline: [],
           classified_exceptions: [],
         },
         {

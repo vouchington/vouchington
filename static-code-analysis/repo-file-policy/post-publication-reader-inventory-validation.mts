@@ -40,9 +40,7 @@ export function validateRows(
             'public-view',
             'viewer-discovery-sql',
           ]
-        : label === 'pr2_baseline'
-          ? ['public-reader']
-          : ['mutation', 'private-reader', 'projection-owner', 'raw-hydrator', 'staff-reader']
+        : ['mutation', 'private-reader', 'projection-owner', 'raw-hydrator', 'staff-reader']
     if (!expectedClassification.includes(row.classification)) {
       errors.push(`${INVENTORY_PATH}: ${label} has invalid classification ${row.classification}`)
       isValid = false
@@ -59,7 +57,6 @@ export function isInventory(value: unknown): value is ReaderInventory {
   const inventory = value as Record<string, unknown>
   return (
     Array.isArray(inventory.implemented) &&
-    Array.isArray(inventory.pr2_baseline) &&
     Array.isArray(inventory.classified_exceptions)
   )
 }
