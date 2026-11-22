@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { recordPostRelatedUrlPublicationChanges } from '@services/entity-relations/post-topic-publication'
 import { relationLimitsMaxValues } from '@services/entity-relations/relation-limits-config'
-import { markStoryPostRelatedUrlProjectionInvalidationRequired } from './story-post-related-url-projection-invalidation.mts'
 import type { ProjectionWork } from './story-post-related-url-projection-types.mts'
 
 /**
@@ -16,7 +15,7 @@ export async function pruneStoryPostRelatedUrlsOutsidePrefix(
   work: ProjectionWork,
   storyTellerId: string,
   admittedUrlIds: readonly string[],
-): Promise<void> {
+): Promise<boolean> {
   assert.ok(
     admittedUrlIds.length <= relationLimitsMaxValues.post_related_url,
     `post_related_url admitted prefix has ${admittedUrlIds.length} URL ids; relationLimitsMaxValues.post_related_url is ${relationLimitsMaxValues.post_related_url}`,
@@ -49,7 +48,7 @@ export async function pruneStoryPostRelatedUrlsOutsidePrefix(
       RETURNING relation.subject_id`,
     [work.post_id, storyTellerId, admittedUrlIds, work.generation, work.lease_token],
   )
-  if (rows.length === 0) return
+  if (rows.length === 0) return false
   await recordPostRelatedUrlPublicationChanges(query, [work.post_id])
-  await markStoryPostRelatedUrlProjectionInvalidationRequired(query, work)
+  return true
 }
