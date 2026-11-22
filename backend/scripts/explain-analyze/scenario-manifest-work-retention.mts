@@ -18,6 +18,7 @@ export const RETENTION_WORK_SCENARIOS = [
   'crawler-refresh-existing-stale',
   'community-muted-topic-exists',
   'topic-slug-batch-unique',
+  'orphaned-oauth-account-batch-pick-once',
   'primary-rss-feeds-by-topic-unique',
   'pending-application-community-unique',
   ...CATEGORY_PROJECTION_SCENARIO_IDS,

@@ -11,11 +11,19 @@ import { runDataRetentionCleanup } from '../cleanup.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-function nextRunStartingAtFirstProvider(now: Date): Date {
-  const utcDay = Math.floor(now.getTime() / DAY_MS)
-  const daysUntilFirstProvider =
-    (oauthProviders.length - (utcDay % oauthProviders.length)) % oauthProviders.length
-  return new Date(now.getTime() + daysUntilFirstProvider * DAY_MS)
+// Rotation starts at provider (utcDay mod count). Move `now` to a day that starts at the first
+// provider and lengthen retentionDays by the same days so the cutoff stays at the window's own.
+function runStartingAtFirstProvider(
+  window: { now: Date; retentionDays: number },
+  extraDays = 0,
+): { now: Date; retentionDays: number } {
+  const utcDay = Math.floor(window.now.getTime() / DAY_MS)
+  const shiftDays =
+    ((oauthProviders.length - (utcDay % oauthProviders.length)) % oauthProviders.length) + extraDays
+  return {
+    now: new Date(window.now.getTime() + shiftDays * DAY_MS),
+    retentionDays: window.retentionDays + shiftDays,
+  }
 }
 
 describe('orphaned OAuth account cleanup', () => {
@@ -55,26 +63,22 @@ describe('orphaned OAuth account cleanup', () => {
         families: ['orphanedOAuthAccounts'],
         orphanedOAuthAccounts: {
           ...window,
-          now: nextRunStartingAtFirstProvider(window.now),
+          ...runStartingAtFirstProvider(window),
           batchSize: 1,
           maxBatches: 1,
         },
       },
     ).then(result => result.orphanedOAuthAccounts)
     expect(orphanedOAuthAccountsCleanup).toEqual({ deleted: 1, hasMore: true })
-    expect(
-      [
-        await oauthAccountExistsByProviderUserId('facebook', firstId),
-        await oauthAccountExistsByProviderUserId('facebook', secondId),
-      ].filter(Boolean),
-    ).toHaveLength(1)
+    expect(await oauthAccountExistsByProviderUserId('facebook', firstId)).toBe(false)
+    expect(await oauthAccountExistsByProviderUserId('facebook', secondId)).toBe(true)
   }, 30_000)
 
   // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('reaches later providers on the next daily capped run despite an early backlog', async () => {
     const window = createTestRetentionWindow()
-    const firstNow = nextRunStartingAtFirstProvider(window.now)
-    const secondNow = new Date(firstNow.getTime() + DAY_MS)
+    const firstRun = runStartingAtFirstProvider(window)
+    const secondRun = runStartingAtFirstProvider(window, 1)
     const firstProvider = oauthProviders[0]!
     const laterProvider = oauthProviders[1]!
     const firstIds = [createRandomString(12), createRandomString(12)]
@@ -88,7 +92,6 @@ describe('orphaned OAuth account cleanup', () => {
 
     const options = {
       lowerBoundDate: window.lowerBoundDate,
-      retentionDays: window.retentionDays,
       batchSize: 1,
       maxBatches: 1,
     }
@@ -97,7 +100,7 @@ describe('orphaned OAuth account cleanup', () => {
         { batchSize: 500, maxBatches: 1 },
         {
           families: ['orphanedOAuthAccounts'],
-          orphanedOAuthAccounts: { ...options, now: firstNow },
+          orphanedOAuthAccounts: { ...options, ...firstRun },
         },
       ).then(result => result.orphanedOAuthAccounts),
     ).toEqual({
@@ -111,7 +114,7 @@ describe('orphaned OAuth account cleanup', () => {
         { batchSize: 500, maxBatches: 1 },
         {
           families: ['orphanedOAuthAccounts'],
-          orphanedOAuthAccounts: { ...options, now: secondNow },
+          orphanedOAuthAccounts: { ...options, ...secondRun },
         },
       ).then(result => result.orphanedOAuthAccounts),
     ).toEqual({
