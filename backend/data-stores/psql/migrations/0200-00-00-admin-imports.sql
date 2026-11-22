@@ -100,7 +100,7 @@ BEGIN
   IF TG_ARGV[0] NOT IN ('admin_import_batches', 'user_rss_feed_import_batches') THEN
     RAISE EXCEPTION 'Unsupported import batch parent' USING ERRCODE = 'check_violation';
   END IF;
-  EXECUTE format('SELECT completed_at FROM %I WHERE id = $1 FOR SHARE', TG_ARGV[0])
+  EXECUTE format('SELECT completed_at FROM %I WHERE id = $1', TG_ARGV[0])
     INTO batch_completed_at USING NEW.batch_id;
   IF batch_completed_at IS NOT NULL THEN
     RAISE EXCEPTION 'Completed import batches cannot acquire new children'

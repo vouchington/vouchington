@@ -246,7 +246,7 @@ DECLARE
   effective_upper NUMERIC(5,4);
 BEGIN
   SELECT * INTO defaults FROM classifier_prompt_versions
-  WHERE id = NEW.prompt_version_id FOR SHARE;
+  WHERE id = NEW.prompt_version_id;
   effective_lower := COALESCE(NEW.lower_threshold_override, defaults.default_lower_threshold);
   effective_upper := COALESCE(NEW.upper_threshold_override, defaults.default_upper_threshold);
   IF effective_lower < 0 OR effective_upper > 1 OR effective_lower >= effective_upper THEN
@@ -531,9 +531,9 @@ DECLARE
   effective_upper NUMERIC(5,4);
 BEGIN
   SELECT * INTO batch FROM classifier_decision_batches
-  WHERE id = NEW.batch_id FOR SHARE;
+  WHERE id = NEW.batch_id;
   SELECT * INTO candidate FROM classifier_candidates
-  WHERE id = NEW.candidate_id FOR SHARE;
+  WHERE id = NEW.candidate_id;
   IF candidate.community_id IS NOT NULL
     AND (
       batch.scope_category <> 'community_ai'
@@ -542,9 +542,9 @@ BEGIN
     RAISE EXCEPTION 'community classifier candidate scope must match its batch' USING ERRCODE = '23514';
   END IF;
   SELECT * INTO prompt FROM classifier_prompt_versions
-  WHERE id = NEW.prompt_version_id FOR SHARE;
+  WHERE id = NEW.prompt_version_id;
   SELECT * INTO threshold FROM classifier_candidate_thresholds
-  WHERE id = NEW.threshold_id FOR SHARE;
+  WHERE id = NEW.threshold_id;
   IF threshold.id IS NULL
     OR threshold.classifier_id IS DISTINCT FROM NEW.classifier_id
     OR threshold.candidate_id IS DISTINCT FROM NEW.candidate_id
@@ -857,14 +857,13 @@ DECLARE
   effective_lower NUMERIC(5,4);
   effective_upper NUMERIC(5,4);
 BEGIN
-  SELECT * INTO batch FROM classifier_decision_batches WHERE id = NEW.batch_id FOR SHARE;
-  SELECT * INTO candidate FROM classifier_candidates WHERE id = NEW.candidate_id FOR SHARE;
+  SELECT * INTO batch FROM classifier_decision_batches WHERE id = NEW.batch_id;
+  SELECT * INTO candidate FROM classifier_candidates WHERE id = NEW.candidate_id;
   SELECT * INTO prompt FROM classifier_prompt_versions
-  WHERE id = NEW.prompt_version_id FOR SHARE;
+  WHERE id = NEW.prompt_version_id;
   IF NEW.candidate_id IS NOT NULL THEN
     SELECT * INTO batch_candidate FROM classifier_decision_batch_candidates
-    WHERE batch_id = NEW.batch_id AND candidate_id = NEW.candidate_id
-    FOR SHARE;
+    WHERE batch_id = NEW.batch_id AND candidate_id = NEW.candidate_id;
   END IF;
   IF NEW.scope_category IS DISTINCT FROM batch.scope_category
     OR NEW.scope_community_id IS DISTINCT FROM batch.scope_community_id THEN
@@ -912,9 +911,9 @@ DECLARE
   batch classifier_decision_batches%ROWTYPE;
   prompt classifier_prompt_versions%ROWTYPE;
 BEGIN
-  SELECT * INTO batch FROM classifier_decision_batches WHERE id = NEW.batch_id FOR SHARE;
+  SELECT * INTO batch FROM classifier_decision_batches WHERE id = NEW.batch_id;
   SELECT * INTO prompt FROM classifier_prompt_versions
-  WHERE id = NEW.prompt_version_id FOR SHARE;
+  WHERE id = NEW.prompt_version_id;
   IF batch.post_id IS NULL THEN
     RAISE EXCEPTION 'community prompt classifier results require a post batch' USING ERRCODE = '23514';
   END IF;
