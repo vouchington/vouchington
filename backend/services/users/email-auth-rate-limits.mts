@@ -78,3 +78,11 @@ export async function reserveEmailCodeRequestSlot(
   }
   return { resendAfterSeconds }
 }
+
+/** Re-auth send: the 5-per-minute limits first, then the one-slot-per-interval session gate. */
+export async function reserveReAuthEmailCodeRequest(
+  identity: EmailAuthenticationRateLimitIdentity & { sessionId: string },
+): Promise<{ resendAfterSeconds: number }> {
+  await assertEmailTokenRequestAllowed(identity)
+  return reserveEmailCodeRequestSlot('reauth', identity.sessionId)
+}
