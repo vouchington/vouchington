@@ -90,15 +90,17 @@ export type TestBallotSweepCursor = {
   sweep_upper_bound_id: string | null
 }
 
-/** Replaces the singleton sweep cursor; null removes it so the next sweep creates one. */
-export async function seedTestBallotSweepCursor(cursor: TestBallotSweepCursor | null) {
-  await write(sql`/* clearTestBallotSweepCursor */ DELETE FROM deleted_user_ballot_cleanup_cursors`)
-  if (!cursor) return
+/** Atomically replaces the singleton sweep cursor, so a concurrent sweep cannot collide. */
+export async function seedTestBallotSweepCursor(cursor: TestBallotSweepCursor) {
   await write(sql`/* seedTestBallotSweepCursor */
     INSERT INTO deleted_user_ballot_cleanup_cursors
       (family, cursor_owner_id, cursor_entity_id, cursor_ballot_id, sweep_upper_bound_id)
     VALUES (${cursor.family}, ${cursor.cursor_owner_id}, ${cursor.cursor_entity_id},
-      ${cursor.cursor_ballot_id}, ${cursor.sweep_upper_bound_id})`)
+      ${cursor.cursor_ballot_id}, ${cursor.sweep_upper_bound_id})
+    ON CONFLICT (is_singleton) DO UPDATE SET family = EXCLUDED.family,
+      cursor_owner_id = EXCLUDED.cursor_owner_id, cursor_entity_id = EXCLUDED.cursor_entity_id,
+      cursor_ballot_id = EXCLUDED.cursor_ballot_id,
+      sweep_upper_bound_id = EXCLUDED.sweep_upper_bound_id`)
 }
 
 export async function readTestBallotSweepCursor() {

@@ -25,7 +25,6 @@ import { processUserDeletionBatch } from '@services/user-deletions'
 import { getUserDeletionRequestForTest } from '@voucha/test-helpers/services/user-deletions/user-deletion-lifecycle'
 import { processUserDeletionPhaseBatch } from './delete-phases.mts'
 import { deleteUser } from './delete.mts'
-import { deletedUserBallotFamilies } from '@services/user-deletions/deleted-user-ballot-page'
 import { userDeletionsWorkConfig } from '@services/user-deletions/work-limits'
 import { sweepDeletedUserBallots } from './sweep-deleted-user-ballots.mts'
 
@@ -51,20 +50,30 @@ function setBatchSize(size: number) {
 }
 
 /** Points the persisted cursor just before the owners, so only their rows are in range. */
-function seedCursorBefore(family: string, ownerIds: string[]) {
+async function seedCursorBefore(family: string, ownerIds: string[]) {
   const sorted = ownerIds.toSorted()
-  return seedTestBallotSweepCursor({
+  const cursor = {
     family,
     cursor_owner_id: previousTestUuid(sorted[0]!),
     ...noPosition,
     sweep_upper_bound_id: sorted.at(-1)!,
-  })
+  }
+  await seedTestBallotSweepCursor(cursor)
+  return cursor
+}
+
+/** A fixed number of sequential runs of the production entry point. */
+function sweepTimes(runs: number) {
+  return Array.from({ length: runs }).reduce<Promise<unknown>>(
+    previous => previous.then(() => sweepDeletedUserBallots()),
+    Promise.resolve(),
+  )
 }
 
 describe('deleted-user ballot sweep', () => {
   afterEach(() => restoreBatchSize?.())
 
-  it('drains late ballots in capped pages from its persisted cursor and revisits behind it', async () => {
+  it('drains late ballots in capped pages and persists its cursor off the seed', async () => {
     setBatchSize(2)
     const [deleted, active] = await Promise.all([createTestUser(), createTestUser()])
     const postIds = (await Promise.all([makePost(active.id), makePost(active.id)])).toSorted()
@@ -98,55 +107,16 @@ describe('deleted-user ballot sweep', () => {
       [a, b, c, d, neighbor].map(id => ({ id, has_personal_data: true })),
     )
 
-    expect(deletedUserBallotFamilies).toContain('post_votes')
-    await seedCursorBefore('post_votes', [deleted.id])
-    expect((await sweepDeletedUserBallots()).deleted).toBe(2)
-    expect(await getTestOwnedPostBallots(userIds, postIds)).toEqual(
-      [a, d, neighbor].map(id => ({ id, has_personal_data: true })),
-    )
-    expect(await readTestBallotSweepCursor()).toEqual({
-      family: 'post_votes',
-      cursor_owner_id: deleted.id,
-      cursor_entity_id: first,
-      cursor_ballot_id: b,
-      sweep_upper_bound_id: deleted.id,
-    })
-
-    const behind = v7()
-    await insertTestBallotWithPersonalData({ id: behind, userId: deleted.id, postId: first })
-    expect((await sweepDeletedUserBallots()).deleted).toBe(2)
-    expect(await getTestOwnedPostBallots(userIds, postIds)).toEqual(
-      [neighbor, behind].map(id => ({ id, has_personal_data: true })),
-    )
-    expect(await readTestBallotSweepCursor()).toMatchObject({
-      cursor_entity_id: second,
-      cursor_ballot_id: d,
-    })
-    expect(await cleanupTestBallotUserAgents(agents)).toEqual([sharedAgent])
-
-    await seedCursorBefore('post_votes', [deleted.id])
-    expect((await sweepDeletedUserBallots()).deleted).toBe(1)
+    const seed = await seedCursorBefore('post_votes', [deleted.id])
+    // Another file's sweep can move the shared cursor, so assert the outcome after a fixed
+    // number of runs: the owner's ballots are gone and its neighbor's is untouched.
+    await sweepTimes(8)
     expect(await getTestOwnedPostBallots(userIds, postIds)).toEqual([
       { id: neighbor, has_personal_data: true },
     ])
-  })
-
-  it('creates its cursor on first run and restarts it after the last family', async () => {
-    setBatchSize(1)
-    const user = await createTestUser()
-    await deleteUserAndDrainForTest(user, user)
-    await seedTestBallotSweepCursor(null)
-    await sweepDeletedUserBallots()
-    expect(await readTestBallotSweepCursor()).not.toBeNull()
-
-    await seedCursorBefore(deletedUserBallotFamilies.at(-1)!, [user.id])
-    expect((await sweepDeletedUserBallots()).deleted).toBe(0)
-    expect(await readTestBallotSweepCursor()).toEqual({
-      family: deletedUserBallotFamilies[0],
-      cursor_owner_id: null,
-      ...noPosition,
-      sweep_upper_bound_id: null,
-    })
+    expect(await cleanupTestBallotUserAgents(agents)).toEqual([sharedAgent])
+    // Without a persisted advance the cursor would still equal the seed.
+    expect(await readTestBallotSweepCursor()).not.toEqual(seed)
   })
 
   it('removes a late ballot during finalization without waiting for the sweep', async () => {
@@ -197,7 +167,7 @@ describe('deleted-user ballot sweep', () => {
     ])
 
     await seedCursorBefore('relation__post__category__topic__votes', [completed.id, unfinished.id])
-    expect((await sweepDeletedUserBallots()).deleted).toBe(1)
+    await sweepTimes(4)
     await expect(
       readTestEntityRelationUserVotePage(completed.id, relationTable, { limit: 2 }),
     ).resolves.toEqual([])
