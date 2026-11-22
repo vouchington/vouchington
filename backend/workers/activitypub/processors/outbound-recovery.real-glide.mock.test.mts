@@ -47,6 +47,7 @@ describe('outbound ActivityPub recovery with PostgreSQL and GlideMQ', () => {
     const child: DistributeActivityData = {
       activityType: 'Like',
       activityId,
+      eventId: activityId,
       sourceUserId,
       targetPostId,
       cursor: randomUUID(),

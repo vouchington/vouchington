@@ -50,7 +50,12 @@ describe('expired outbound activities and recovery sweeps', () => {
       ...{ sourceUserId, recovery },
     })
     await settleLikeTheDistributeProcessor({
-      ...{ activityType: 'Like' as const, activityId: likeId, targetPostId: postId },
+      ...{
+        activityType: 'Like' as const,
+        activityId: likeId,
+        eventId: likeId,
+        targetPostId: postId,
+      },
       ...{ sourceUserId, recovery },
     })
     expect(await pendingFollow()).toBeUndefined()

@@ -137,7 +137,7 @@ async function cleanupOrdinarySupersededVoteBallotTable(
        voteTable === 'post_votes'
          ? `COALESCE((
        old.id >= $6::uuid AND old.outbound_activitypub_distributed_at IS NULL
-       AND (old.outbound_activitypub_like_activity_id = old.id
+       AND (old.outbound_activitypub_like_activity_id IS NOT NULL
          OR old.outbound_activitypub_original_like_activity_id IS NOT NULL)
      ), FALSE)`
          : 'FALSE'

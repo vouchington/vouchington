@@ -30,9 +30,10 @@ export const VOTE_SCHEMA_CONFIGS: VoteSchemaConfig[] = [
       'ballot_retention_deferred_at TIMESTAMPTZ',
     ],
     voteAdditionalColumnComments: {
-      outbound_activitypub_like_activity_id: 'Stable outbound ActivityPub Like protocol identity.',
+      outbound_activitypub_like_activity_id:
+        'Outbound ActivityPub Like identity, set only on the ballot that moves a user from a non-Like to a Like; concurrent requests from the same prior ballot share it.',
       outbound_activitypub_original_like_activity_id:
-        'The positive Like identity undone by this negative ballot transition.',
+        'The Like identity undone by this ballot, set only on the ballot that moves a user from a Like to a non-Like.',
       outbound_activitypub_distributed_at:
         'Set when all follower-page delivery jobs for this ballot event have been admitted.',
       ballot_retention_deferred_at:

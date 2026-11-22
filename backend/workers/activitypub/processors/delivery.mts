@@ -23,14 +23,17 @@ function isUndoMissingOriginalActivityId(
   return typeof originalActivityId !== 'string' || originalActivityId.trim().length === 0
 }
 
-// Undo ids are UUIDv5 derived from the original activity, so age comes from the original UUIDv7.
+// Undo ids are UUIDv5 derived from the original activity and Like ids are hashes, so age comes
+// from the original Follow UUIDv7 or the ballot's UUIDv7 event id.
 function activityAgeRejectionReason(
   data: Exclude<DeliverActivityData, { activityType: 'Accept' }> | DistributeActivityData,
 ): 'unsupported-activity-id' | 'expired-activity' | null {
   const activityCreatedAt = getDateFromUuidv7(
-    data.activityType === 'UndoFollow' || data.activityType === 'UndoLike'
-      ? data.originalActivityId
-      : data.activityId,
+    data.activityType === 'Like' || data.activityType === 'UndoLike'
+      ? data.eventId
+      : data.activityType === 'UndoFollow'
+        ? data.originalActivityId
+        : data.activityId,
   )
   if (!activityCreatedAt) return 'unsupported-activity-id'
   return Date.now() - activityCreatedAt.getTime() > getMaximumActivityAgeDays() * 86_400_000

@@ -39,9 +39,11 @@ export type DistributedActivity =
       sourceUserId: string
       targetUserId: string
     }
+  | { activityId: string; activityType: 'Like'; sourceUserId: string; targetPostId: string }
   | {
       activityId: string
-      activityType: 'Like' | 'UndoLike'
+      activityType: 'UndoLike'
+      originalActivityId: string
       sourceUserId: string
       targetPostId: string
     }
@@ -69,10 +71,21 @@ export async function markActivityDistributionComplete(data: DistributedActivity
     `)
     return
   }
-  await write(sql`/* markActivityDistributionComplete:like */
+  // Concurrent requests can write several ballots that share one Like identity; one delivery
+  // covers them all, so every sibling completes together.
+  await write(
+    data.activityType === 'Like'
+      ? sql`/* markActivityDistributionComplete:like */
     UPDATE post_votes
     SET outbound_activitypub_distributed_at = clock_timestamp()
-    WHERE post_id = ${data.targetPostId} AND id = ${data.activityId}
-      AND user_id = ${data.sourceUserId}
-  `)
+    WHERE post_id = ${data.targetPostId} AND user_id = ${data.sourceUserId}
+      AND outbound_activitypub_like_activity_id = ${data.activityId}
+  `
+      : sql`/* markActivityDistributionComplete:undoLike */
+    UPDATE post_votes
+    SET outbound_activitypub_distributed_at = clock_timestamp()
+    WHERE post_id = ${data.targetPostId} AND user_id = ${data.sourceUserId}
+      AND outbound_activitypub_original_like_activity_id = ${data.originalActivityId}
+  `,
+  )
 }

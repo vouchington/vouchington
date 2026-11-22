@@ -80,11 +80,17 @@ function nextDistributionPage(
         originalActivityId: data.originalActivityId,
       }
     case 'Like':
-      return { ...base, activityType: 'Like', targetPostId: data.targetPostId }
+      return {
+        ...base,
+        activityType: 'Like',
+        eventId: data.eventId,
+        targetPostId: data.targetPostId,
+      }
     case 'UndoLike':
       return {
         ...base,
         activityType: 'UndoLike',
+        eventId: data.eventId,
         targetPostId: data.targetPostId,
         originalActivityId: data.originalActivityId,
       }

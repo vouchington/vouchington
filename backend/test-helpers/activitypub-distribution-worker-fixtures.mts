@@ -21,6 +21,7 @@ export const UNDO_FOLLOW_DATA: DistributeActivityData = {
 export const LIKE_DATA: DistributeActivityData = {
   activityId: uuidv7(),
   activityType: 'Like',
+  eventId: uuidv7(),
   sourceUserId: 'user-1',
   targetPostId: 'post-1',
 }
@@ -43,6 +44,7 @@ export const BLANK_UNDO_LIKE_DATA: DistributeActivityData = {
   activityId: 'blank-undo-like',
   activityType: 'UndoLike',
   originalActivityId: '   ',
+  eventId: uuidv7(),
   sourceUserId: 'user-1',
   targetPostId: 'post-1',
 }

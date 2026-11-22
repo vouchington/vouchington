@@ -85,8 +85,8 @@ describe('distributeActivity', () => {
       'expired-activity',
     ],
     [
-      'a Like with a non-UUIDv7 id',
-      { ...LIKE_DATA, activityId: 'not-uuid-v7' },
+      'a Like with a non-UUIDv7 event id',
+      { ...LIKE_DATA, eventId: 'not-uuid-v7' },
       'unsupported-activity-id',
     ],
   ] as const)(
@@ -143,6 +143,7 @@ describe('distributeActivity', () => {
       distributeActivity({
         activityId,
         activityType: 'Like',
+        eventId: activityId,
         sourceUserId: source.id,
         targetPostId: postId,
       }),

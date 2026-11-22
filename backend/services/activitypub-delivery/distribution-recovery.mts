@@ -1,4 +1,5 @@
 import { write } from '@data-stores/psql'
+import { getUndoLikeActivityId } from '@queues/activitypub/enqueues/delivery'
 import { getMaxUuidv7ForDate } from '@modules/utils/ids'
 import sql from 'sql-template-strings'
 
@@ -17,6 +18,7 @@ export type OutboundRecoveryRow =
       sourceUserId: string
       targetPostId: string
       activityId: string
+      eventId: string
       originalLikeActivityId: string | null
       cursor: string
     }
@@ -70,7 +72,7 @@ export async function listPendingOutboundDistributionPage(
       FROM post_votes
       WHERE post_id <= ${fixedUpperPostId}
         AND outbound_activitypub_distributed_at IS NULL
-        AND (outbound_activitypub_like_activity_id = id
+        AND (outbound_activitypub_like_activity_id IS NOT NULL
           OR outbound_activitypub_original_like_activity_id IS NOT NULL)`
   if (afterPostId && afterVoteId) {
     statement.append(sql` AND post_id >= ${afterPostId}`)
@@ -80,25 +82,35 @@ export async function listPendingOutboundDistributionPage(
     ), classified_page AS MATERIALIZED (
       SELECT pending.post_id, pending.id, pending.user_id,
         pending.like_id, pending.original_id,
-        latest.like_id AS latest_like_id
+        CASE WHEN latest_ballot.score > 0 THEN latest_root.like_id END AS latest_like_id
       FROM pending_page pending
       LEFT JOIN LATERAL (
-        SELECT current_vote.outbound_activitypub_like_activity_id AS like_id
+        SELECT current_vote.score
         FROM post_votes current_vote
         WHERE current_vote.post_id = pending.post_id
           AND current_vote.user_id = pending.user_id
         ORDER BY current_vote.id DESC
         LIMIT 1
-      ) latest ON TRUE
+      ) latest_ballot ON TRUE
+      LEFT JOIN LATERAL (
+        SELECT current_vote.outbound_activitypub_like_activity_id AS like_id
+        FROM post_votes current_vote
+        WHERE current_vote.post_id = pending.post_id
+          AND current_vote.user_id = pending.user_id
+          AND current_vote.outbound_activitypub_like_activity_id IS NOT NULL
+        ORDER BY current_vote.id DESC
+        LIMIT 1
+      ) latest_root ON TRUE
     ), retired AS (
       -- Superseded positive roots have no ActivityPub effect. Retire only bounded page rows
       -- after comparing with the current Like identity so they stop occupying the pending index.
+      -- A sibling root sharing the current Like identity is not stale: one delivery covers both.
       UPDATE post_votes target
       SET outbound_activitypub_distributed_at = clock_timestamp()
       FROM classified_page stale
-      WHERE stale.like_id = stale.id
+      WHERE stale.like_id IS NOT NULL
         AND stale.original_id IS NULL
-        AND stale.latest_like_id IS DISTINCT FROM stale.id
+        AND stale.latest_like_id IS DISTINCT FROM stale.like_id
         AND target.post_id = stale.post_id
         AND target.id = stale.id
         AND target.outbound_activitypub_distributed_at IS NULL
@@ -118,14 +130,15 @@ export async function listPendingOutboundDistributionPage(
   }>(statement)
   const rawPage = rows.slice(0, limit)
   const page = rawPage.flatMap(row =>
-    row.original_id === null && row.like_id === row.id && row.latest_like_id !== row.id
+    row.original_id === null && row.like_id !== null && row.latest_like_id !== row.like_id
       ? []
       : [
           {
             source: 'votes' as const,
             sourceUserId: row.user_id,
             targetPostId: row.post_id,
-            activityId: row.id,
+            activityId: row.original_id ? getUndoLikeActivityId(row.original_id) : row.like_id!,
+            eventId: row.id,
             originalLikeActivityId: row.original_id,
             cursor: `${row.post_id}__${row.id}`,
           },

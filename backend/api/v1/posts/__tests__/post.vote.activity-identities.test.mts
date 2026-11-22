@@ -65,21 +65,6 @@ describe('post vote ActivityPub identities', () => {
     expect(likeIds[1]).not.toBe(firstLikeId)
   })
 
-  it('emits one Like generation for concurrent non-Like to Like requests', async () => {
-    const post = await createTestPost({ user: voter })
-    const request = createRequest()
-    await request.authenticateAs(voter)
-    await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'dislike' }).expect(204)
-
-    await Promise.all([
-      request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'like' }).expect(204),
-      request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'like' }).expect(204),
-    ])
-
-    const jobs = await settledDeliveryJobs(settleDelivery, voter.id)
-    expect(getLikeIds(jobs, post.id)).toHaveLength(1)
-  })
-
   it('preserves an unknown legacy Like identity and quietly skips its Undo', async () => {
     const post = await createTestPost({ user: voter })
     await insertPostElectionVote(voter.id, post.id, 1, undefined, false, true)

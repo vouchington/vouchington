@@ -111,6 +111,7 @@ describe('outbound ActivityPub recovery source', () => {
     await markActivityDistributionComplete({
       activityType: 'UndoLike',
       activityId: undo.activityId,
+      originalActivityId: like.activityId,
       sourceUserId: voter.id,
       targetPostId: postId,
     })
@@ -187,6 +188,7 @@ describe('outbound ActivityPub recovery source', () => {
     await markActivityDistributionComplete({
       activityType: 'UndoLike',
       activityId: undo.activityId,
+      originalActivityId: firstLike.activityId,
       sourceUserId: voter.id,
       targetPostId: postId,
     })

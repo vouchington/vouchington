@@ -25,6 +25,8 @@ type DistributeUndoFollowActivityData = {
 type DistributeLikeActivityData = {
   activityId: string
   activityType: 'Like'
+  /** The ballot's UUIDv7 id: the Like id is a hash, so it carries no creation time. */
+  eventId: string
   sourceUserId: string
   targetPostId: string
 }
@@ -33,6 +35,8 @@ type DistributeUndoLikeActivityData = {
   activityId: string
   activityType: 'UndoLike'
   originalActivityId: string
+  /** The ballot's UUIDv7 id: the Undo id is a UUIDv5, so it carries no creation time. */
+  eventId: string
   sourceUserId: string
   targetPostId: string
 }
