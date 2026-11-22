@@ -59,7 +59,8 @@ export async function listNotificationEmailCandidates(
      FROM ${source} ${alias}
      WHERE ${predicate}
      ORDER BY ${notification ? `${alias}.deleted_at, ${alias}.id, ${alias}.user_id` : `${alias}.id`}
-     LIMIT $${parameters.length}`,
+     LIMIT $${parameters.length}
+     FOR UPDATE OF ${alias} SKIP LOCKED`,
     parameters,
   )
   return rows

@@ -9,7 +9,7 @@ export async function cleanupUserListRows(
   limit: number,
 ): Promise<number> {
   const { rows } = await query<{ id: string }>(sql`/* cleanupUserListRows:list */
-    SELECT id FROM user_lists WHERE owner_user_id = ${userId} ORDER BY id LIMIT 1`)
+    SELECT id FROM user_lists WHERE owner_user_id = ${userId} ORDER BY id LIMIT 1 FOR UPDATE`)
   const list = rows[0]
   if (!list) return 0
   const posts = await query(sql`/* cleanupUserListRows:posts */
