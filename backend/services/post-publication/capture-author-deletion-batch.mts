@@ -77,7 +77,6 @@ async function lockInitiatedStoryPosts(
   authorUserId: string,
   postIds: string[],
 ): Promise<void> {
-  await lockAuthoredPostScopes(query, postIds)
   await query(
     `/* processAuthorDeletionPublicationBatch:lockInitiatedStoryPosts */
     SELECT post_id FROM story_posts
@@ -127,21 +126,9 @@ async function processContributedSources(
   sources: SourceCandidate[],
 ): Promise<void> {
   const postIds = [...new Set(sources.map(source => source.post_id))]
-  await lockContributedSourcePosts(query, postIds)
   await lockContributedSourceRows(query, sources)
   return recordContributedSourceWork(query, userId, priorUsername, postIds, sources).then(() =>
     reassignContributedSources(query, sources),
-  )
-}
-
-async function lockContributedSourcePosts(
-  query: TransactionQuery,
-  postIds: string[],
-): Promise<void> {
-  await query(
-    `/* processAuthorDeletionPublicationBatch:lockSourcePosts */
-      SELECT id FROM posts WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`,
-    [postIds],
   )
 }
 
