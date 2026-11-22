@@ -3,29 +3,38 @@ import {
   countFollowerDistributionsForSenderForTest,
   createTestPost,
   createTestUser,
-  followUser,
 } from '@voucha/test-helpers'
-import { runConcurrentFollowerDistributionsForTest } from '@voucha/test-helpers/follower-distribution-concurrency'
-import { sendPostToFollowers } from './create.mts'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
+import { holdTestUserRowLock } from '@voucha/test-helpers/user-row-lock'
+import { sharePostWithFollowers } from './create.mts'
 
 describe('concurrent follower distributions', () => {
-  it('commits one distribution and returns 409 when two sends read the same empty daily window', async () => {
-    const sender = await createTestUser()
-    const follower = await createTestUser()
-    const post = await createTestPost({ user: follower, privacy: 'public' })
-    await followUser(follower, sender)
+  it('commits shares from two different senders for the same post', async () => {
+    const firstSender = await createTestUser()
+    const secondSender = await createTestUser()
+    const creator = await createTestUser()
+    const post = await createTestPost({ user: creator, privacy: 'public' })
+    await using holder = await holdTestUserRowLock(firstSender.id)
 
-    const outcomes = await runConcurrentFollowerDistributionsForTest(() =>
-      sendPostToFollowers(sender, post.id, {
-        audience: 'selected_followers',
-        recipient_user_ids: [follower.id],
-      }),
+    await withTestOwnedPostgresWait(
+      {
+        holderProcessId: holder.processId,
+        pool: 'write',
+        lock: { kind: 'transaction' },
+        queryMarker: 'createDistribution',
+        releaseHolder: holder.release,
+      },
+      async waitForLock => {
+        const first = sharePostWithFollowers(firstSender, post.id)
+        await waitForLock(first)
+        const second = await sharePostWithFollowers(secondSender, post.id)
+        await holder.release()
+        expect(await first).toMatchObject({ status: 'accepted' })
+        expect(second).toMatchObject({ status: 'accepted' })
+      },
     )
 
-    expect(outcomes.filter(outcome => outcome.status === 'fulfilled')).toHaveLength(1)
-    const failures = outcomes.filter(outcome => outcome.status === 'rejected')
-    expect(failures).toHaveLength(1)
-    expect(failures[0]!.reason).toMatchObject({ statusCode: 409, cause: { code: '40001' } })
-    await expect(countFollowerDistributionsForSenderForTest(sender.id)).resolves.toBe(1)
+    expect(await countFollowerDistributionsForSenderForTest(firstSender.id)).toBe(1)
+    expect(await countFollowerDistributionsForSenderForTest(secondSender.id)).toBe(1)
   })
 })

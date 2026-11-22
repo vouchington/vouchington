@@ -1,15 +1,18 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { createTestPost, createTestUser } from '@voucha/test-helpers'
+import { createTestPost, createTestUser, followUser } from '@voucha/test-helpers'
 import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { listIncompleteFollowerDistributionIdPage } from './backfill.mts'
-import { createTestIncompleteFollowerDistributions } from '@voucha/test-helpers/sql-follower-distribution'
+import { sharePostWithFollowers } from './create.mts'
 import { followerDistributionsWorkConfig } from './work-limits.mts'
 
-async function createOwnDistributions(count: number): Promise<string[]> {
+async function createOwnDistribution(): Promise<string> {
   const sender = await createTestUser()
-  const post = await createTestPost({ user: sender, privacy: 'public' })
-  return createTestIncompleteFollowerDistributions(sender.id, post.id, count)
+  const creator = await createTestUser()
+  const follower = await createTestUser()
+  await followUser(follower, sender)
+  const post = await createTestPost({ user: creator, privacy: 'public' })
+  return (await sharePostWithFollowers(sender, post.id)).distribution_id
 }
 
 describe('listIncompleteFollowerDistributionIdPage', () => {
@@ -19,7 +22,8 @@ describe('listIncompleteFollowerDistributionIdPage', () => {
         backfill_batch_size: 2,
       }),
     )
-    const own = new Set(await createOwnDistributions(3))
+    const own = new Set(await Promise.all([1, 2, 3].map(() => createOwnDistribution())))
+    expect(own.size).toBe(3)
     const firstOwnId = [...own].toSorted()[0]!
 
     const seen: string[] = []
@@ -46,7 +50,7 @@ describe('listIncompleteFollowerDistributionIdPage', () => {
         backfill_batch_size: 1,
       }),
     )
-    await createOwnDistributions(1)
+    await createOwnDistribution()
 
     const page = await listIncompleteFollowerDistributionIdPage()
 
@@ -55,7 +59,7 @@ describe('listIncompleteFollowerDistributionIdPage', () => {
   })
 
   it('stops after the last incomplete distribution', async () => {
-    const [id] = await createOwnDistributions(1)
+    const id = await createOwnDistribution()
     const page = await listIncompleteFollowerDistributionIdPage(id)
     expect(page.ids).not.toContain(id)
     expect(page.ids.every(other => other > id)).toBe(true)
