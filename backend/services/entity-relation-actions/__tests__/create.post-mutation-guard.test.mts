@@ -9,10 +9,8 @@ import {
   insertTestTopic,
   CONTRIBUTING_USER_AGE_MS,
 } from '@voucha/test-helpers'
-import {
-  makeRelationParticipantPrivateForTest,
-  withRelationPairPrivacyChangeForTest,
-} from '@voucha/test-helpers/relation-read-context'
+import { makeRelationParticipantPrivateForTest } from '@voucha/test-helpers/relation-read-context'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations'
 import type { PrivateUser } from '@services/users/types'
 
@@ -66,29 +64,34 @@ describe('createEntityRelationAction post mutation guard', () => {
     },
   )
 
-  it('rechecks privacy after waiting on the symmetric relation pair being written', async () => {
+  it('rejects a symmetric relation when a participant becomes private after admission', async () => {
     const owner = (await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)) as PrivateUser
     const subject = await createTestPost({ user: owner })
     const object = await createTestPost({ user: owner })
-    const creating = withRelationPairPrivacyChangeForTest(subject.id, object.id, () =>
-      createEntityRelationAction(
-        owner,
-        {
-          kind: 'delegated',
-          credentialOwnerId: owner.id,
-          grantedScopes: ['entity-relations:read', 'entity-relations:write'],
-        },
-        {
-          entityType: 'post',
-          entityId: subject.id,
-          predicate: 'related',
-          objectType: 'post',
-          objectId: object.id,
-        },
-      ).catch((err: unknown) => err),
+    const restore = runBeforePostgresStatementForTest('/* assertPostMutationAccess */', () =>
+      makeRelationParticipantPrivateForTest(subject.id),
     )
-
-    await expect(creating).resolves.toMatchObject({ statusCode: 403 })
+    try {
+      await expect(
+        createEntityRelationAction(
+          owner,
+          {
+            kind: 'delegated',
+            credentialOwnerId: owner.id,
+            grantedScopes: ['entity-relations:read', 'entity-relations:write'],
+          },
+          {
+            entityType: 'post',
+            entityId: subject.id,
+            predicate: 'related',
+            objectType: 'post',
+            objectId: object.id,
+          },
+        ),
+      ).rejects.toMatchObject({ statusCode: 403 })
+    } finally {
+      restore()
+    }
     await expect(
       getEntityRelation('relation__post__related__post', subject.id, object.id),
     ).resolves.toEqual([])

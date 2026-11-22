@@ -1,5 +1,5 @@
 import type { PrivateUser } from '@voucha/types/entities/user'
-import { getEntityRelationMetadataOrThrow, type EntityRelationMetadata } from './metadata.mts'
+import type { EntityRelationMetadata } from './metadata.mts'
 import { enqueueNotificationReconcileAfterDelete } from './notification-reconcile.mts'
 import { appendManyEntitiesWhereClause, appendSingleEntityWhereClause } from './sql-clauses.mts'
 import type { UpsertEntityTypes, EntityIdentifier } from './upsert-helpers.mts'
@@ -8,16 +8,14 @@ import type { QueryOptions } from '@data-stores/psql'
 import { enqueueUndoFollowSideEffects } from './enqueue-undo-follow-side-effects.mts'
 import { enqueueBulkEvaluateRssFeedDiscoverability } from '@queues/rss-feed-maintenance/enqueues/discoverability'
 import { runRelationPublicationMutation } from './publication-mutation.mts'
-import { deleteBidirectionalRelationRows } from './delete-bidirectional-rows.mts'
+import { softDeleteBidirectionalRelationRows } from './delete-bidirectional-rows.mts'
 import { enqueueRssFeedDiscoverabilityForDeletedPublisherTypeRelations } from './enqueue-rss-discoverability-for-deleted-publisher-types.mts'
-import { runRelationTransaction } from './run-relation-transaction.mts'
 import sql from 'sql-template-strings'
 import {
   appendDeletedRelationReturning,
   getDeletedFollowPairs,
   type DeletedEntityRelation,
 } from './deleted-relation-results.mts'
-import { lockBidirectionalRelationPairs } from './bidirectional-pair-lock.mts'
 
 export type SoftDeleteEntityRelationOptions = QueryOptions & {
   // Remote-origin deletes must not re-trigger outbound-destined side effects.
@@ -34,31 +32,31 @@ export const softDeleteEntityRelation = async (
   options?: SoftDeleteEntityRelationOptions,
 ): Promise<void> => {
   if (objects.length === 0) return
-  const query = sql`/* softDeleteEntityRelation */
-    UPDATE `
-  query.append(relation.table_name)
-  query.append(sql`
-    SET deleted_at = NOW(), deleted_by_id = ${deleter?.id ?? null}`)
-  if (relation.table_name === 'relation__user__follow__user') {
-    query.append(sql`, outbound_activitypub_distributed_activity_id = NULL`)
-  }
-  query.append(sql` WHERE `)
-
-  appendSingleEntityWhereClause(query, subject, 'subject')
-  query.append(sql` AND `)
-  appendManyEntitiesWhereClause(query, objects, 'object')
-  query.append(sql` AND deleted_at IS NULL`)
-  if (options?.expectedInboundFollowActivityRowId) {
-    if (relation.table_name !== 'relation__remote_actor__follow__user') {
-      throw new Error('Inbound Follow cycle fencing is only supported for remote actor follows')
-    }
-    query.append(
-      sql` AND inbound_follow_activity_row_id = ${options.expectedInboundFollowActivityRowId}`,
-    )
-  }
-  appendDeletedRelationReturning(query, relation)
-
   if (!relation.bidirectional || relation.subject_type !== relation.object_type) {
+    const query = sql`/* softDeleteEntityRelation */
+      UPDATE `
+    query.append(relation.table_name)
+    query.append(sql`
+      SET deleted_at = NOW(), deleted_by_id = ${deleter?.id ?? null}`)
+    if (relation.table_name === 'relation__user__follow__user') {
+      query.append(sql`, outbound_activitypub_distributed_activity_id = NULL`)
+    }
+    query.append(sql` WHERE `)
+
+    appendSingleEntityWhereClause(query, subject, 'subject')
+    query.append(sql` AND `)
+    appendManyEntitiesWhereClause(query, objects, 'object')
+    query.append(sql` AND deleted_at IS NULL`)
+    if (options?.expectedInboundFollowActivityRowId) {
+      if (relation.table_name !== 'relation__remote_actor__follow__user') {
+        throw new Error('Inbound Follow cycle fencing is only supported for remote actor follows')
+      }
+      query.append(
+        sql` AND inbound_follow_activity_row_id = ${options.expectedInboundFollowActivityRowId}`,
+      )
+    }
+    appendDeletedRelationReturning(query, relation)
+
     const deletedRelations = await runRelationPublicationMutation(
       options,
       relation.table_name,
@@ -81,35 +79,16 @@ export const softDeleteEntityRelation = async (
     return
   }
 
-  const reverseRelation = getEntityRelationMetadataOrThrow({
-    subjectType: relation.object_type,
-    objectType: relation.subject_type,
-    predicate: relation.predicate,
-  })
-  const reverseQuery = sql`/* softDeleteEntityRelation */
-    UPDATE `
-  reverseQuery.append(reverseRelation.table_name)
-  reverseQuery.append(sql`
-    SET deleted_at = NOW(), deleted_by_id = ${deleter?.id ?? null}
-    WHERE `)
-  appendManyEntitiesWhereClause(reverseQuery, objects, 'subject')
-  reverseQuery.append(sql` AND `)
-  appendSingleEntityWhereClause(reverseQuery, subject, 'object')
-  reverseQuery.append(sql`
-      AND deleted_at IS NULL
-  `)
-  await runRelationTransaction(options, async transactionQuery => {
-    await lockBidirectionalRelationPairs(
-      transactionQuery,
-      relation.table_name,
-      subject.id,
-      objects.map(object => object.id),
-    )
-    await deleteBidirectionalRelationRows(
-      () => transactionQuery(query),
-      () => transactionQuery(reverseQuery),
-    )
-  })
+  if (options?.expectedInboundFollowActivityRowId) {
+    throw new Error('Inbound Follow cycle fencing is only supported for remote actor follows')
+  }
+  await softDeleteBidirectionalRelationRows(
+    deleter?.id ?? null,
+    relation,
+    subject.id,
+    objects.map(object => object.id),
+    options,
+  )
   /* c8 ignore next 3 -- no bidirectional relation is remote-actor-sourced today; see the matching
      note in upsert.mts's bidirectional branch. */
   if (options?.origin !== 'remote') {
@@ -125,22 +104,22 @@ export const softDeleteEntityRelationsForSubjects = async (
   options?: SoftDeleteEntityRelationOptions,
 ): Promise<void> => {
   if (subjects.length === 0) return
-  const query = sql`/* softDeleteEntityRelationsForSubjects */
-    UPDATE `
-  query.append(relation.table_name)
-  query.append(sql`
-    SET deleted_at = NOW(), deleted_by_id = ${deleter?.id ?? null}`)
-  if (relation.table_name === 'relation__user__follow__user') {
-    query.append(sql`, outbound_activitypub_distributed_activity_id = NULL`)
-  }
-  query.append(sql` WHERE `)
-
-  appendManyEntitiesWhereClause(query, subjects, 'subject')
-  query.append(sql` AND `)
-  appendSingleEntityWhereClause(query, object, 'object')
-  query.append(sql` AND deleted_at IS NULL`)
-  appendDeletedRelationReturning(query, relation)
   if (!relation.bidirectional || relation.subject_type !== relation.object_type) {
+    const query = sql`/* softDeleteEntityRelationsForSubjects */
+      UPDATE `
+    query.append(relation.table_name)
+    query.append(sql`
+      SET deleted_at = NOW(), deleted_by_id = ${deleter?.id ?? null}`)
+    if (relation.table_name === 'relation__user__follow__user') {
+      query.append(sql`, outbound_activitypub_distributed_activity_id = NULL`)
+    }
+    query.append(sql` WHERE `)
+
+    appendManyEntitiesWhereClause(query, subjects, 'subject')
+    query.append(sql` AND `)
+    appendSingleEntityWhereClause(query, object, 'object')
+    query.append(sql` AND deleted_at IS NULL`)
+    appendDeletedRelationReturning(query, relation)
     const deletedRelations = await runRelationPublicationMutation(
       options,
       relation.table_name,
@@ -166,35 +145,11 @@ export const softDeleteEntityRelationsForSubjects = async (
     return
   }
 
-  const reverseRelation = getEntityRelationMetadataOrThrow({
-    subjectType: relation.object_type,
-    objectType: relation.subject_type,
-    predicate: relation.predicate,
-  })
-
-  const reverseQuery = sql`/* softDeleteEntityRelationsForSubjects */
-    UPDATE `
-  reverseQuery.append(reverseRelation.table_name)
-  reverseQuery.append(sql`
-    SET deleted_at = NOW(), deleted_by_id = ${deleter?.id ?? null}
-    WHERE `)
-
-  appendSingleEntityWhereClause(reverseQuery, object, 'subject')
-  reverseQuery.append(sql` AND `)
-  appendManyEntitiesWhereClause(reverseQuery, subjects, 'object')
-  reverseQuery.append(sql`
-      AND deleted_at IS NULL
-  `)
-  await runRelationTransaction(options, async transactionQuery => {
-    await lockBidirectionalRelationPairs(
-      transactionQuery,
-      relation.table_name,
-      object.id,
-      subjects.map(subject => subject.id),
-    )
-    await deleteBidirectionalRelationRows(
-      () => transactionQuery(query),
-      () => transactionQuery(reverseQuery),
-    )
-  })
+  await softDeleteBidirectionalRelationRows(
+    deleter?.id ?? null,
+    relation,
+    object.id,
+    subjects.map(subject => subject.id),
+    options,
+  )
 }
