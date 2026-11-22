@@ -9,10 +9,10 @@ import {
   insertTestTopic,
   CONTRIBUTING_USER_AGE_MS,
 } from '@voucha/test-helpers'
-import {
-  makeRelationParticipantPrivateForTest,
-  withRelationPairPrivacyChangeForTest,
-} from '@voucha/test-helpers/relation-read-context'
+import { makeRelationParticipantPrivateForTest } from '@voucha/test-helpers/relation-read-context'
+import { commitRelationWriteDuringCompetingMutationForTest } from '@voucha/test-helpers/relation-write-interleaving'
+import { softDeleteEntityRelation } from '@services/entity-relations/delete'
+import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations'
 import type { PrivateUser } from '@services/users/types'
 
@@ -66,34 +66,47 @@ describe('createEntityRelationAction post mutation guard', () => {
     },
   )
 
-  it('rechecks privacy after waiting on the symmetric relation pair being written', async () => {
+  it('rolls back both directions when a participant becomes private during the upsert wait', async () => {
     const owner = (await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)) as PrivateUser
     const subject = await createTestPost({ user: owner })
     const object = await createTestPost({ user: owner })
-    const creating = withRelationPairPrivacyChangeForTest(subject.id, object.id, () =>
-      createEntityRelationAction(
-        owner,
-        {
-          kind: 'delegated',
-          credentialOwnerId: owner.id,
-          grantedScopes: ['entity-relations:read', 'entity-relations:write'],
-        },
-        {
-          entityType: 'post',
-          entityId: subject.id,
-          predicate: 'related',
-          objectType: 'post',
-          objectId: object.id,
-        },
-      ).catch((err: unknown) => err),
-    )
+    const relation = getEntityRelationMetadataOrThrow({
+      subjectType: 'post',
+      predicate: 'related',
+      objectType: 'post',
+    })
+    await expect(
+      upsertEntityRelation(owner, relation, subject, [object], { vote: false }),
+    ).resolves.toHaveLength(1)
 
-    await expect(creating).resolves.toMatchObject({ statusCode: 403 })
     await expect(
-      getEntityRelation('relation__post__related__post', subject.id, object.id),
-    ).resolves.toEqual([])
-    await expect(
-      getEntityRelation('relation__post__related__post', object.id, subject.id),
-    ).resolves.toEqual([])
+      commitRelationWriteDuringCompetingMutationForTest(
+        query => softDeleteEntityRelation(owner, relation, subject, [object], { query }),
+        '/* buildBidirectionalInsertQuery */',
+        () =>
+          createEntityRelationAction(
+            owner,
+            {
+              kind: 'delegated',
+              credentialOwnerId: owner.id,
+              grantedScopes: ['entity-relations:read', 'entity-relations:write'],
+            },
+            {
+              entityType: 'post',
+              entityId: subject.id,
+              predicate: 'related',
+              objectType: 'post',
+              objectId: object.id,
+            },
+          ),
+        () => makeRelationParticipantPrivateForTest(subject.id),
+      ),
+    ).rejects.toMatchObject({ statusCode: 403 })
+    await expect(getEntityRelation(relation.table_name, subject.id, object.id)).resolves.toEqual([
+      expect.objectContaining({ deleted_at: expect.any(Date), deleted_by_id: owner.id }),
+    ])
+    await expect(getEntityRelation(relation.table_name, object.id, subject.id)).resolves.toEqual([
+      expect.objectContaining({ deleted_at: expect.any(Date), deleted_by_id: owner.id }),
+    ])
   })
 })
