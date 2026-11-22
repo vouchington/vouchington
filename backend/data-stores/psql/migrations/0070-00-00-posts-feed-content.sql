@@ -1040,7 +1040,7 @@ FOR EACH ROW WHEN (OLD.deleted_at IS DISTINCT FROM NEW.deleted_at)
 EXECUTE FUNCTION fn_update_agent_moderation_retention();
 
 -- Wake visible predecessors immediately after a result has actually been inserted.
-CREATE OR REPLACE FUNCTION fn_wake_agent_moderation_predecessors()
+CREATE OR REPLACE FUNCTION fn_update_agent_moderation_predecessors()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   UPDATE agent_moderations prior
@@ -1073,7 +1073,7 @@ END $$;
 
 CREATE TRIGGER trigger_agent_moderations_retention_wake_predecessors
 AFTER INSERT ON agent_moderations
-FOR EACH ROW EXECUTE FUNCTION fn_wake_agent_moderation_predecessors();
+FOR EACH ROW EXECUTE FUNCTION fn_update_agent_moderation_predecessors();
 
 CREATE OR REPLACE FUNCTION fn_register_agent_moderation_retention_post_hash()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
