@@ -2,11 +2,10 @@ import { parse, stringify } from 'yaml'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { isExplicitlyClassified } from './cleanup-artifacts-patterns.mts'
 
+// no-mistakes github-actions-action-input-policy owns retention-days and overwrite; this policy
+// keeps the Voucha-specific cleanup classification of each uploaded artifact name.
 export type UploadArtifactBlock = {
-  retentionValue: unknown
   artifactName: unknown
-  overwriteValue: unknown
-  requiresOverwrite: boolean
   stepSource: string
 }
 
@@ -24,13 +23,6 @@ function actionPath(uses: unknown): string | undefined {
 function isUploadArtifactRef(uses: unknown): boolean {
   const path = actionPath(uses)
   return path === UPLOAD_ARTIFACT_ACTION || path === UPLOAD_ARTIFACT_MERGE_ACTION
-}
-
-// The official merge sub-action produces/exposes an artifact with its own retention-days and name
-// inputs but, unlike the base action, has no `overwrite` input at all — it must never be held to
-// the repo-wide overwrite:true requirement.
-function isBaseUploadArtifactRef(uses: unknown): boolean {
-  return actionPath(uses) === UPLOAD_ARTIFACT_ACTION
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -55,10 +47,7 @@ function collectUploadArtifactBlock(blocks: UploadArtifactBlock[], step: unknown
   if (!isUploadArtifactRef(uses)) return
   const withInputs = input(step, 'with')
   blocks.push({
-    retentionValue: scalar(input(withInputs, 'retention-days')),
     artifactName: scalar(input(withInputs, 'name')),
-    overwriteValue: scalar(input(withInputs, 'overwrite')),
-    requiresOverwrite: isBaseUploadArtifactRef(uses),
     // Diagnostics show the effective step, including resolved anchors, without AST source ranges.
     stepSource: stringify(step),
   })
@@ -90,10 +79,6 @@ export function uploadArtifactBlocks(source: string): UploadArtifactBlock[] {
   return blocks
 }
 
-export function invalidRetentionBlocks(source: string): UploadArtifactBlock[] {
-  return uploadArtifactBlocks(source).filter(block => String(block.retentionValue) !== '1')
-}
-
 export function artifactNameFromBlock(block: UploadArtifactBlock): string {
   if (block.artifactName == null) {
     throw new Error(`No artifact name found in upload-artifact block:\n${block.stepSource}`)
@@ -108,19 +93,11 @@ export function artifactPolicyViolations(files: readonly WorkflowSource[]): stri
   const blocks = files.flatMap(({ path, source }) =>
     uploadArtifactBlocks(source).map(block => ({ path, block })),
   )
-  const violations = blocks.flatMap(({ path, block }) => [
-    ...(String(block.retentionValue) === '1'
+  const violations = blocks.flatMap(({ path, block }) =>
+    isExplicitlyClassified(artifactNameFromBlock(block))
       ? []
-      : [
-          `${path}: invalid retention-days value ${JSON.stringify(block.retentionValue)}\n${block.stepSource}`,
-        ]),
-    ...(block.requiresOverwrite && String(block.overwriteValue) !== 'true'
-      ? [`${path}: actions/upload-artifact step without overwrite: true\n${block.stepSource}`]
-      : []),
-    ...(!isExplicitlyClassified(artifactNameFromBlock(block))
-      ? [`${path}: unclassified artifact name ${artifactNameFromBlock(block)}`]
-      : []),
-  ])
+      : [`${path}: unclassified artifact name ${artifactNameFromBlock(block)}`],
+  )
   if (blocks.length === 0) violations.push('No upload-artifact steps found')
   return violations
 }

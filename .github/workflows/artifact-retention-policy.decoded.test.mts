@@ -45,7 +45,7 @@ jobs:
       - uses: actions/upload-artifact@fixture
         with: *inputs
 `)
-    expect(block?.retentionValue).toBe(3)
+    expect(block?.artifactName).toBe('evidence')
     expect(parse(block!.stepSource)).toMatchObject({
       uses: 'actions/upload-artifact@fixture',
       with: { name: 'evidence', 'retention-days': 3 },
