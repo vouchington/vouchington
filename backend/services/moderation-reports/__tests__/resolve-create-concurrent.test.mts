@@ -42,7 +42,7 @@ describe('report creation during case resolution', () => {
       })
       const barrier = Promise.withResolvers<void>()
       const arrived = new Set<string>()
-      const markers = ['/* createModerationReport */', '/* lockModerationCases */']
+      const markers = ['/* createModerationReport */', '/* resolveModerationReport */']
       const restore = interceptPostgresTransactionsForTest(
         transaction =>
           new Proxy(transaction, {
