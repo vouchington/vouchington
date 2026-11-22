@@ -8,9 +8,8 @@ type OwedTarget = { target_id: string; notice_id: string; imposed_by_id: string 
 
 /**
  * Restricts every target one current compliant notice assessment still owes. Each restriction
- * revalidates the assessment under the placement, form, notice and assessment locks, so a stale
- * authority never restricts. A failure leaves the remaining targets owed: the next call or sweep
- * pass recomputes them from the durable restrictions, so there is no claim to expire.
+ * revalidates the current assessment and screening authority before writing. A failure leaves
+ * targets owed. The next call or sweep recomputes them from the durable restrictions.
  */
 export async function enforceCopyrightAssessment(assessmentId: string): Promise<void> {
   await imposeOwedTargets(assessmentId, await getAutomaticEnforcementSince())
