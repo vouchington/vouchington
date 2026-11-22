@@ -106,14 +106,16 @@ console_filter() {
     sed -u -e '/^\[pg-request-profile\] /d' -e '/^{"kind":"pg-worker-profile"/d'
   fi
 }
-# Pass the validated budget once so Vitest can still honor project-level fileParallelism.
+# Keep the native override out of this run so the AI usage DDL project can set its own budget.
 vitest_workers=$(node --input-type=module --eval '
   import { parseVitestMaxWorkers } from "./test-helpers/vitest-config/environment.mts"
   console.log(parseVitestMaxWorkers(process.env.VITEST_MAX_WORKERS))
 ')
 (
   unset VITEST_MAX_WORKERS
-  pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-ai-usage-monthly-ddl --project backend-partition-retirement --project backend-platform-stats-cache --project backend-mocks --project backend-migration-initializers --project backend-real-glide-mq --shard "$CI_SHARD" --maxWorkers "$vitest_workers"
+  export VITEST_BACKEND_MAX_WORKERS="$vitest_workers"
+  export VITEST_AI_USAGE_DDL_MAX_WORKERS=1
+  pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-ai-usage-monthly-ddl --project backend-partition-retirement --project backend-platform-stats-cache --project backend-mocks --project backend-migration-initializers --project backend-real-glide-mq --shard "$CI_SHARD"
 ) 2>&1 | tee backend-unit-output.log | console_filter
 node backend/test-helpers/api/request-query-profile-stale.mts --collect \
   "$CI_SHARD" backend-unit-output.log "$REQUEST_QUERY_PROFILE_HITS_FILE"

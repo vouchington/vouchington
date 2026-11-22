@@ -1,3 +1,4 @@
+import { resolveAiUsageDdlMaxWorkers } from './environment.mts'
 import type { TestProjectConfiguration } from 'vitest/config'
 import { backendNoDataUnitTestFiles } from './backend-no-data-unit-tests.mts'
 
@@ -136,7 +137,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
       ...backendDataStoreTestDefaults,
       name: 'backend-ai-usage-monthly-ddl',
       sequence: { groupOrder: 1 },
-      fileParallelism: false,
+      maxWorkers: resolveAiUsageDdlMaxWorkers(),
       isolate: true,
       runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
       include: [

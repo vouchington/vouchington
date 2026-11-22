@@ -84,16 +84,11 @@ const parseWorkerCount = (
 const parseCiVitestMaxWorkers = (value: string | undefined): number => {
   if (value === undefined) return defaultCiVitestWorkers
   const workerCount = parseWorkerCount('VITEST_MAX_WORKERS', value, defaultCiVitestWorkers)
-  if (typeof workerCount === 'number') {
-    const cappedWorkerCount = Math.min(workerCount, maxCiVitestWorkers)
-    process.env.VITEST_MAX_WORKERS = String(cappedWorkerCount)
-    return cappedWorkerCount
-  }
+  if (typeof workerCount === 'number') return Math.min(workerCount, maxCiVitestWorkers)
 
   process.stderr.write(
     `Invalid CI VITEST_MAX_WORKERS value "${value}". Falling back to default: ${defaultCiVitestWorkers}.\n`,
   )
-  process.env.VITEST_MAX_WORKERS = String(defaultCiVitestWorkers)
   return defaultCiVitestWorkers
 }
 
@@ -101,6 +96,21 @@ export const parseVitestMaxWorkers = (value: string | undefined): number | strin
   process.env.CI
     ? parseCiVitestMaxWorkers(value)
     : parseWorkerCount('VITEST_MAX_WORKERS', value, defaultVitestWorkers)
+
+export function resolveVitestMaxWorkers(): number | string {
+  const nativeBudget = process.env.VITEST_MAX_WORKERS
+  const budget = parseVitestMaxWorkers(process.env.VITEST_BACKEND_MAX_WORKERS ?? nativeBudget)
+  // Keep other CI launchers' native override bounded when they supply it.
+  if (process.env.CI && nativeBudget !== undefined) process.env.VITEST_MAX_WORKERS = String(budget)
+  return budget
+}
+
+export function resolveAiUsageDdlMaxWorkers(): number {
+  const budget = parseVitestMaxWorkers(process.env.VITEST_AI_USAGE_DDL_MAX_WORKERS ?? '1')
+  if (budget !== 1)
+    throw new Error('VITEST_AI_USAGE_DDL_MAX_WORKERS must be 1 for shared-table DDL')
+  return budget
+}
 
 export const parseStorybookBrowserMaxWorkers = (): number | string => {
   if (process.env.VITEST_STORYBOOK_BROWSER_MAX_WORKERS != null) {

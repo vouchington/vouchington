@@ -92,7 +92,7 @@ describe('backend uncredentialed Docker test workflow', () => {
       'console.log(parseVitestMaxWorkers(process.env.VITEST_MAX_WORKERS))',
     )
     expect(runBackendTestsScript).toContain(
-      `(\n  unset VITEST_MAX_WORKERS\n  ${backendCommand} --maxWorkers "$vitest_workers"\n)`,
+      `(\n  unset VITEST_MAX_WORKERS\n  export VITEST_BACKEND_MAX_WORKERS="$vitest_workers"\n  export VITEST_AI_USAGE_DDL_MAX_WORKERS=1\n  ${backendCommand}\n)`,
     )
     expect(
       runBackendTestsScript?.match(/--project backend-migration-initializers\b/g),
@@ -103,9 +103,9 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(workflow).not.toContain('--coverage')
     expect(vitestConfig).not.toContain("name: 'backend-seed-csvs'")
     expect(vitestConfig).toContain("name: 'backend-real-glide-mq'")
-    expect(vitestConfig.match(/fileParallelism: false/g)).toHaveLength(1)
+    expect(vitestConfig).not.toContain('fileParallelism: false')
     expect(vitestConfig).toContain(
-      "name: 'backend-ai-usage-monthly-ddl',\n      sequence: { groupOrder: 1 },\n      fileParallelism: false",
+      "name: 'backend-ai-usage-monthly-ddl',\n      sequence: { groupOrder: 1 },\n      maxWorkers: resolveAiUsageDdlMaxWorkers()",
     )
     expect(vitestConfig).not.toContain("name: 'backend-activitypub-capacity'")
     for (const project of backendCredentialedProjectNames) {
