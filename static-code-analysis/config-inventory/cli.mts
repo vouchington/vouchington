@@ -1,6 +1,7 @@
 #!/usr/bin/env node
+import { formatConfigInventoryMarkdown } from 'vouchington-tooling/config-inventory'
 import { buildSharedContext } from 'vouchington-tooling/shared-context'
-import { collectConfigInventory, formatConfigInventoryMarkdown } from './index.mts'
+import { collectConfigInventory } from './index.mts'
 
 interface CliOptions {
   format: 'json' | 'markdown'
