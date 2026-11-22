@@ -50,6 +50,7 @@
     "codex-debug",
     "codex-retrospective",
     "codex-transcript",
-    "release-*"
+    "release-*",
+    "test-plan-shadow-*"
   ]
 }
