@@ -11,6 +11,8 @@ import { CLASSIFIER_RUN_ATTEMPTS } from '@queues/ai-agents/config'
 import { spendCapConfig } from '@services/ai-usage'
 import { claimClassifierRun } from '@services/classifier-runs'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
+import { insertTestStory, setTestItemStoryId } from '@voucha/test-helpers'
+import { moveStoryClusteringCandidateBeforeJoin } from '@voucha/test-helpers/story-clustering-membership'
 import { createStoryClusteringRunAdapter } from '@services/stories'
 import { classifierRunJobFor } from '@voucha/test-helpers/classifier-run-worker'
 import {
@@ -125,6 +127,28 @@ describe('C9 story clustering through the shared lifecycle (real PG, mocked prov
       provider_attempts_started: 1,
       completed_at: expect.any(Date),
     })
+  })
+
+  it('leaves the incoming item standalone when the candidate moves before the join writes', async () => {
+    const { neighbor, incoming } = await incomingWithNeighbor()
+    const [initialStory, destinationStory] = await Promise.all([
+      insertTestStory(),
+      insertTestStory(),
+    ])
+    pick(pickNeighbor(neighbor))
+    const data = toClassifierRunJobData(SLUG, await reserveStoryClusteringRun(incoming))
+    await setTestItemStoryId(neighbor.itemId, initialStory.id)
+    const restoreMove = moveStoryClusteringCandidateBeforeJoin(neighbor.itemId, destinationStory.id)
+
+    try {
+      await expect(processClassifierRun(classifierRunJobFor(data))).resolves.toEqual({
+        kind: 'completed',
+      })
+      await expect(readItemStoryId(neighbor.itemId)).resolves.toBe(destinationStory.id)
+      await expect(readItemStoryId(incoming.itemId)).resolves.toBeNull()
+    } finally {
+      restoreMove()
+    }
   })
 
   it('leaves the item standalone when the model picks none of the candidates', async () => {
