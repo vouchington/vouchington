@@ -54,19 +54,19 @@ export type Settings = {
   run: ShadowReport['run']
 }
 
-export function settings(env: NodeJS.ProcessEnv): Settings {
-  const value = (name: string) => env[name] ?? ''
+export function settings(): Settings {
+  const value = (raw: string | undefined) => raw ?? ''
   return {
-    junitDir: value('JUNIT_DIR'),
-    vitestPlan: value('VITEST_PLAN'),
-    playwrightPlan: value('PLAYWRIGHT_PLAN'),
-    outDir: value('OUT_DIR'),
-    summaryFile: value('GITHUB_STEP_SUMMARY'),
+    junitDir: value(process.env.JUNIT_DIR),
+    vitestPlan: value(process.env.VITEST_PLAN),
+    playwrightPlan: value(process.env.PLAYWRIGHT_PLAN),
+    outDir: value(process.env.OUT_DIR),
+    summaryFile: value(process.env.GITHUB_STEP_SUMMARY),
     run: {
-      id: value('SOURCE_RUN_ID'),
-      workflow: value('SOURCE_WORKFLOW'),
-      headSha: value('HEAD_SHA'),
-      base: value('BASE_REF'),
+      id: value(process.env.SOURCE_RUN_ID),
+      workflow: value(process.env.SOURCE_WORKFLOW),
+      headSha: value(process.env.HEAD_SHA),
+      base: value(process.env.BASE_REF),
     },
   }
 }
@@ -106,4 +106,4 @@ export function main(config: Settings): void {
   else process.stdout.write(summary)
 }
 
-if (import.meta.main) main(settings(process.env))
+if (import.meta.main) main(settings())

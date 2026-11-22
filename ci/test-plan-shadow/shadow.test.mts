@@ -22,12 +22,29 @@ const playwrightXml = `<testsuites><testsuite name="x.spec.mts">
 <testcase file="./playwright/tests/y.spec.mts" name="t" time="1"/>
 </testsuite></testsuites>`
 
+const envNames = [
+  'JUNIT_DIR',
+  'VITEST_PLAN',
+  'PLAYWRIGHT_PLAN',
+  'OUT_DIR',
+  'GITHUB_STEP_SUMMARY',
+  'SOURCE_RUN_ID',
+  'SOURCE_WORKFLOW',
+  'HEAD_SHA',
+  'BASE_REF',
+]
+
+function stubEnv(values: Record<string, string>): void {
+  for (const name of envNames) vi.stubEnv(name, values[name])
+}
+
 function tempRoot(): string {
   const root = mkdtempSync(join(tmpdir(), 'test-plan-shadow-'))
   onTestFinished(() => rmSync(root, { recursive: true, force: true }))
   vi.spyOn(process.stdout, 'write').mockReturnValue(true)
   onTestFinished(() => {
     vi.restoreAllMocks()
+    vi.unstubAllEnvs()
   })
   return root
 }
@@ -123,19 +140,18 @@ describe('renderSummary and main', () => {
       join(root, 'vitest.json'),
       JSON.stringify({ selected_tests: ['backend/a.test.mts'] }),
     )
-    main(
-      settings({
-        JUNIT_DIR: join(root, 'junit'),
-        VITEST_PLAN: join(root, 'vitest.json'),
-        PLAYWRIGHT_PLAN: join(root, 'missing.json'),
-        OUT_DIR: join(root, 'out'),
-        GITHUB_STEP_SUMMARY: join(root, 'summary.md'),
-        SOURCE_RUN_ID: '7',
-        SOURCE_WORKFLOW: 'Backend',
-        HEAD_SHA: 'abc',
-        BASE_REF: 'main',
-      }),
-    )
+    stubEnv({
+      JUNIT_DIR: join(root, 'junit'),
+      VITEST_PLAN: join(root, 'vitest.json'),
+      PLAYWRIGHT_PLAN: join(root, 'missing.json'),
+      OUT_DIR: join(root, 'out'),
+      GITHUB_STEP_SUMMARY: join(root, 'summary.md'),
+      SOURCE_RUN_ID: '7',
+      SOURCE_WORKFLOW: 'Backend',
+      HEAD_SHA: 'abc',
+      BASE_REF: 'main',
+    })
+    main(settings())
     const report = JSON.parse(readFileSync(join(root, 'out/test-plan-shadow.json'), 'utf8'))
     expect(report.frameworks.vitest.misses).toEqual([])
     expect(report.frameworks.playwright.error).toBeTruthy()
@@ -146,7 +162,8 @@ describe('renderSummary and main', () => {
     const root = tempRoot()
     mkdirSync(join(root, 'junit/tooling-junit'), { recursive: true })
     writeFileSync(join(root, 'junit/tooling-junit/report.xml'), vitestXml)
-    main(settings({ JUNIT_DIR: join(root, 'junit'), OUT_DIR: join(root, 'out') }))
+    stubEnv({ JUNIT_DIR: join(root, 'junit'), OUT_DIR: join(root, 'out') })
+    main(settings())
     const report = JSON.parse(readFileSync(join(root, 'out/test-plan-shadow.json'), 'utf8'))
     expect(Object.keys(report.frameworks)).toEqual(['vitest'])
     expect(report.frameworks.vitest.error).toBeTruthy()
@@ -158,14 +175,16 @@ describe('renderSummary and main', () => {
     mkdirSync(join(root, 'junit/playwright-credentialed-junit'), { recursive: true })
     writeFileSync(join(root, 'junit/storybook-browser-junit/r.xml'), vitestXml)
     writeFileSync(join(root, 'junit/playwright-credentialed-junit/r.xml'), playwrightXml)
-    main(settings({ JUNIT_DIR: join(root, 'junit'), OUT_DIR: join(root, 'out') }))
+    stubEnv({ JUNIT_DIR: join(root, 'junit'), OUT_DIR: join(root, 'out') })
+    main(settings())
     const report = JSON.parse(readFileSync(join(root, 'out/test-plan-shadow.json'), 'utf8'))
     expect(report.frameworks).toEqual({})
   })
 
   it('records an unreadable download directory as an error instead of throwing', () => {
     const root = tempRoot()
-    main(settings({ JUNIT_DIR: join(root, 'absent'), OUT_DIR: join(root, 'out') }))
+    stubEnv({ JUNIT_DIR: join(root, 'absent'), OUT_DIR: join(root, 'out') })
+    main(settings())
     const report = JSON.parse(readFileSync(join(root, 'out/test-plan-shadow.json'), 'utf8'))
     expect(report.frameworks.report.error).toBeTruthy()
     expect(report.run).toEqual({ id: '', workflow: '', headSha: '', base: '' })
