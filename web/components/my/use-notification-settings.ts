@@ -43,11 +43,9 @@ export function useNotificationSettings(initialSettings: NotificationSettingsSta
   function setCurrentSettings(
     updater: (current: NotificationSettingsState) => NotificationSettingsState,
   ) {
-    setSettings(current => {
-      const next = updater(current)
-      settingsRef.current = next
-      return next
-    })
+    const next = updater(settingsRef.current)
+    settingsRef.current = next
+    setSettings(next)
   }
   function markNotificationSettingDirty(field: NotificationSettingsField) {
     dirtyDraftFields.current.add(field)
