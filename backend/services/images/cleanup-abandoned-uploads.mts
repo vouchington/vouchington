@@ -96,12 +96,18 @@ async function readPhase(
   if (phase === 'abandonment' && page.length) {
     const ids = page.slice(0, batchSize).map(image => image.id)
     const statement = sql`/* cleanupAbandonedUploads:abandonment */
+      WITH candidates AS (
+        SELECT id FROM images
+        WHERE id = ANY(${ids}::uuid[]) AND upload_staged_at < ${cutoff}::timestamptz
+          AND `.append(uploadCleanupPredicate('abandonment'))
+    statement.append(sql`
+        ORDER BY id LIMIT ${batchSize} FOR UPDATE
+      )
       UPDATE images SET deleted_at = CURRENT_TIMESTAMP,
         deletion_posts_completed_at = CURRENT_TIMESTAMP,
         upload_error = ${ABANDONED_UPLOAD_ERROR}
-      WHERE id = ANY(${ids}::uuid[]) AND upload_staged_at < ${cutoff}::timestamptz
-        AND `.append(uploadCleanupPredicate('abandonment'))
-    statement.append(sql` RETURNING id, s3_key, sha_256, upload_staged_at`)
+      FROM candidates WHERE images.id = candidates.id
+      RETURNING images.id, images.s3_key, images.sha_256, images.upload_staged_at`)
     const { rows } = await transaction<AbandonedUpload>(statement)
     abandoned = rows
   }

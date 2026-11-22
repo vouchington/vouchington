@@ -5,7 +5,10 @@ import { initializeAbandonedUploadSweep } from '@services/images/cleanup-upload-
 import { recoverImageDeletions } from '@services/images/recover-deletions'
 import type { Job } from 'glide-mq'
 
-/** The scheduler lease covers one active pass; row locks, idempotent deletes and extraction deduplication make overlapping sweeps replayable. */
+/**
+ * Overlapping passes use conditional batch writes with ID-ordered row locks, idempotent storage
+ * deletes, and extraction deduplication.
+ */
 export async function processUploadCleanupJob(job: Job<unknown>) {
   const data = parseCleanupAbandonedUploadsData(job.data)
   if (!data.sweep) await recoverImageDeletions()
