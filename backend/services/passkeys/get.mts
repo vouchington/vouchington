@@ -50,9 +50,9 @@ export async function getPasskeyCredentialIdsByUserId(
 
 export async function getPasskeyByCredentialId(
   credentialId: string,
-  options?: { query?: TransactionQuery },
+  options?: { query?: TransactionQuery; owner?: PasskeyOwner },
 ): Promise<PasskeyCredential | null> {
-  const statement = passkeyCredentialStatement(credentialId)
+  const statement = passkeyCredentialStatement(credentialId, options?.owner)
   const { rows } = await read(statement, { query: options?.query })
   return passkeyCredentialFromRow(rows[0] as PasskeyCredentialRow | undefined)
 }

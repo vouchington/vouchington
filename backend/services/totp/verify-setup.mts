@@ -24,7 +24,7 @@ export async function verifyTotpSetup(
     SELECT id, name, secret_ciphertext, verified_at, created_at
     FROM user_totp_authenticators
     WHERE id = ${authenticatorId} AND user_id = ${userId}
-    LIMIT 1 FOR UPDATE
+    LIMIT 1
   `)
     assert(rows.length > 0, 404, 'Authenticator not found')
 
