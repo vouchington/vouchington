@@ -26,18 +26,19 @@ export async function selectTestCopyrightScreeningResult(
   `)
 }
 
-/** Violate number uniqueness or ID uniqueness using only this test's owned attempt. */
+/** Violate number uniqueness on this intake or ID uniqueness across two owned intakes. */
 export async function insertConflictingTestCopyrightScreeningAttempt(
   transaction: QueryExecutor,
   attempt: CopyrightFormScreeningAttempt,
-  duplicateAttemptId: boolean,
+  conflictingIntakeId: string,
 ): Promise<void> {
+  const duplicateAttemptId = conflictingIntakeId !== attempt.intakeId
   await transaction(sql`/* insertConflictingTestCopyrightScreeningAttempt */
     INSERT INTO copyright_notice_form_screening_attempts (
       id, copyright_notice_form_intake_id, attempt_number
     )
     SELECT CASE WHEN ${duplicateAttemptId} THEN id ELSE uuidv7() END,
-      copyright_notice_form_intake_id, attempt_number + ${duplicateAttemptId ? 1 : 0}
+      ${conflictingIntakeId}, attempt_number + ${duplicateAttemptId ? 1 : 0}
     FROM copyright_notice_form_screening_attempts
     WHERE copyright_notice_form_intake_id = ${attempt.intakeId}
       AND attempt_number = ${attempt.attemptNumber}

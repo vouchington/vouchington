@@ -108,6 +108,10 @@ describe('current copyright form screening execution', () => {
       const { intake } = await createSignedInCopyrightForm()
       const initial = await claimCopyrightFormScreening(intake.id)
       if (!initial) throw new Error('Initial screening claim was not created')
+      // Another intake makes the primary key the only conflicting index in the ID case.
+      const conflictingIntakeId = duplicateAttemptId
+        ? (await createSignedInCopyrightForm()).intake.id
+        : intake.id
       const cutoff = await getTestExpiredCopyrightScreeningClaimTime(intake.id)
       let constraintFailure: unknown
       const restore = afterPostgresTransactionQueryForTest(
@@ -118,7 +122,7 @@ describe('current copyright form screening execution', () => {
             await insertConflictingTestCopyrightScreeningAttempt(
               transaction,
               initial,
-              duplicateAttemptId,
+              conflictingIntakeId,
             )
           } catch (err) {
             constraintFailure = err
