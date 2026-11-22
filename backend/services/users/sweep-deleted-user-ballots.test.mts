@@ -183,9 +183,10 @@ describe('deleted-user ballot sweep', () => {
     await deleteUserAndDrainForTest(deleted, deleted)
     await seedCursorBefore(lastFamily, [deleted.id])
 
-    // The only way out of the last family is the wrap, and another file's concurrent sweep can
-    // only move the cursor further the same way, so the exact position is not asserted.
-    await sweepTimes(2)
+    // One sweep performs the wrap; the only way out of the last family is the wrap, and another
+    // file's concurrent sweep can only move the cursor further the same way, so the exact
+    // position is not asserted.
+    await sweepTimes(1)
     expect(await readTestBallotSweepCursor()).not.toMatchObject({ family: lastFamily })
   })
 })
