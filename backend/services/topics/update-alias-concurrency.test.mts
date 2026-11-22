@@ -57,8 +57,8 @@ describe('topic slug and alias concurrency', () => {
       aliases: expect.arrayContaining([previousSlug, nextSlug, extraAlias]),
     })
   })
-  it.each(['create', 'link'] as const)(
-    'commits a slug update while another transaction tries to %s the new slug alias',
+  it.each(['create', 'link', 'create-old'] as const)(
+    'commits a hostname and slug update while another transaction tries to %s an alias',
     async aliasAction => {
       const admin = await createTestUser({ administrator: true })
       const suffix = randomUUID().replaceAll('-', '')
@@ -73,10 +73,7 @@ describe('topic slug and alias concurrency', () => {
       const topic = await getTopicByAny(topicId, { readOnly: false })
       if (!topic) throw new Error('Expected the fixture topic')
       const alias = await createUnlinkedTopicAlias(nextSlug)
-      const hostnameId =
-        aliasAction === 'create'
-          ? await insertTestUrlHostname({ hostname: `alias-${suffix}.example.com` })
-          : null
+      const hostnameId = await insertTestUrlHostname({ hostname: `alias-${suffix}.example.com` })
 
       await using updating = await beginTransaction()
       const options = { query: updating, skipSideEffects: true } as const
@@ -96,14 +93,11 @@ describe('topic slug and alias concurrency', () => {
           const pending =
             aliasAction === 'create'
               ? createTopicAliases(topicId, nextSlug, aliasOptions)
-              : linkTopicAlias(topicId, alias.id, aliasOptions)
+              : aliasAction === 'create-old'
+                ? createTopicAliases(topicId, previousSlug, aliasOptions)
+                : linkTopicAlias(topicId, alias.id, aliasOptions)
           await waitForLock(pending)
-          await updateTopic(
-            admin,
-            topic,
-            { slug: nextSlug, ...(hostnameId ? { hostname: hostnameId } : {}) },
-            options,
-          )
+          await updateTopic(admin, topic, { slug: nextSlug, hostname: hostnameId }, options)
           await (finished ??= updating.commit())
           await pending
         },
