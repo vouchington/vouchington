@@ -22,7 +22,6 @@ export async function disconnectOAuthAccount(
     )
 
     await detachProviderAccount(userId, provider, query)
-    await assertUserHasSignInMethod(userId, query)
     registerPostCommitAction(query, async () => {
       void enqueueOnUserUpdated(userId)
       try {
@@ -57,4 +56,5 @@ async function detachProviderAccount(
   await query(
     sql`/* disconnectOAuthAccount */ UPDATE users SET use_display_name_from = 'username' WHERE id = ${userId} AND use_display_name_from = ${provider}`,
   )
+  await assertUserHasSignInMethod(userId, query)
 }
