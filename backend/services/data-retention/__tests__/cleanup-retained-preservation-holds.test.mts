@@ -146,10 +146,12 @@ describe('legal preservation holds and final user purge', () => {
     )
     expect(errors.filter(code => code !== '40001' && code !== '40P01')).toEqual([])
     const held = admission!.status === 'fulfilled'
-    const deleted = purge!.status === 'fulfilled'
+    // A fulfilled purge that saw the committed hold is a no-op ({ deleted: 0 }); only
+    // { deleted: 1 } removed the account, and that must exclude the hold.
+    const deleted = purge!.status === 'fulfilled' && purge!.value.deleted === 1
     expect(held && deleted).toBe(false)
     expect(purge!.status === 'fulfilled' ? purge!.value : undefined).toEqual(
-      deleted ? { deleted: 1, hasMore: false } : undefined,
+      purge!.status === 'fulfilled' ? { deleted: deleted ? 1 : 0, hasMore: false } : undefined,
     )
     const timestamp = expect.any(Date)
     const hold = expect.objectContaining({
