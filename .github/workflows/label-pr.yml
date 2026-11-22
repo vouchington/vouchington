@@ -13,6 +13,6 @@ jobs:
       contents: read
       issues: write
       pull-requests: write
-    uses: vouchington/vouchington-tooling/.github/workflows/label-pr.yml@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+    uses: vouchington/vouchington-tooling/.github/workflows/label-pr.yml@715ee5feea88a3a616d33ce9365987ba58a8849e # v3.5.3
     with:
       configuration-path: .github/labeler.yml

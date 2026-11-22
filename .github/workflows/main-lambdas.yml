@@ -48,7 +48,7 @@ jobs:
           fetch-depth: 1
         if: steps.checkout.outcome != 'success'
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@715ee5feea88a3a616d33ce9365987ba58a8849e # v3.5.3
         timeout-minutes: 3
         with:
           deadline-seconds: '150'
