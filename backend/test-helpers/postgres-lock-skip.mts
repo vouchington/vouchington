@@ -27,3 +27,26 @@ export async function finishTestPostgresActionWithoutWaiting<Result>(
     }),
   ])
 }
+
+/** Commit the holder once the real action either completes or reaches the holder's native wait. */
+export async function commitTestPostgresHolderAfterActionOrWait<Result>(
+  holder: Awaited<ReturnType<typeof beginTransaction>>,
+  queryMarker: string,
+  action: () => Promise<Result>,
+): Promise<Result> {
+  const holderProcessId = await getTestPostgresBackendProcessId(holder)
+  await using waits = await createTestPostgresMultiWait()
+  const observed = await waits.start(
+    {
+      holderProcessId,
+      pool: 'write',
+      lock: { kind: 'transaction' },
+      queryMarker,
+      releaseHolder: () => holder[Symbol.asyncDispose](),
+    },
+    action,
+  )
+  await Promise.race([observed.operation, observed.waitForLock()])
+  await holder.commit()
+  return await observed.operation
+}

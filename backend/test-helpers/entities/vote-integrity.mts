@@ -154,3 +154,24 @@ export async function insertTestVoteIntegrityFlag(params: {
   `)
   return (rows[0] as { id: string }).id
 }
+
+export async function resolveTestVoteIntegrityFlag(flagId: string, resolverId: string) {
+  await write(sql`/* resolveTestVoteIntegrityFlag */
+    UPDATE vote_integrity_flags SET resolved_at = now(), resolved_by_id = ${resolverId}
+    WHERE id = ${flagId}`)
+}
+
+export async function deleteTestVoteIntegrityFlagResolver(
+  query: TransactionQuery,
+  resolverId: string,
+) {
+  await query(sql`/* deleteTestVoteIntegrityFlagResolver */
+    DELETE FROM users WHERE id = ${resolverId}`)
+}
+
+export async function getTestVoteIntegrityFlagResolver(flagId: string): Promise<string | null> {
+  const { rows } = await read<{ resolved_by_id: string | null }>(sql`
+    /* getTestVoteIntegrityFlagResolver */
+    SELECT resolved_by_id FROM vote_integrity_flags WHERE id = ${flagId}`)
+  return rows[0]!.resolved_by_id
+}

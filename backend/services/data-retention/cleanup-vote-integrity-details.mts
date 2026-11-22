@@ -69,9 +69,13 @@ export async function cleanupVoteIntegrityDetails(
   const page = candidates.slice(0, batchSize)
   const { rowCount } = await query(
     `/* redactVoteIntegrityFlagDetails */
+     WITH locked AS MATERIALIZED (
+       SELECT id FROM vote_integrity_flags WHERE id = ANY($1::uuid[])
+       ORDER BY id FOR UPDATE SKIP LOCKED
+     )
      UPDATE vote_integrity_flags flag
      SET details = details - ${identifyingKeys}
-     WHERE flag.id = ANY($1::uuid[]) AND flag.id < $2::uuid
+     FROM locked WHERE flag.id = locked.id AND flag.id < $2::uuid
        AND flag.details ?| ${identifyingKeys}`,
     [page.map(row => row.id), sweepCutoffId],
   )

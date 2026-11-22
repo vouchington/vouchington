@@ -106,7 +106,7 @@ async function cleanupLegalRecordPage(
     )
   const { rows } = await query<{ id: string }>(
     `/* listExpiredLegalRecordPage */ SELECT source.id FROM ${table} source
-     WHERE ${eligible}${scope} ORDER BY ${order} LIMIT ${pageParameter}`,
+     WHERE ${eligible}${scope} ORDER BY ${order} LIMIT ${pageParameter} FOR UPDATE OF source SKIP LOCKED`,
     [...values, pageSize + 1],
   )
   const pageIds = rows.slice(0, pageSize).map(row => row.id)
