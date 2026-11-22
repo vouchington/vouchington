@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { Response } from 'undici'
 import { beginTransaction, write } from '@data-stores/psql'
-import { joinExistingStory } from '@services/stories/clustering/membership'
 import sql from 'sql-template-strings'
+import { joinExistingStory } from '../services/stories/clustering/membership.mts'
 import {
   createStoryClusteringItem,
   makeStoryClusteringVectors,
