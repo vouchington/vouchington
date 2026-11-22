@@ -5,6 +5,11 @@ import { setUserVerificationFields } from '../../entities/identity-verification.
 import { invalidate } from '../../../services/entity-cache/invalidate.mts'
 import { VOTE_AGGREGATION_USER_ELECTION_FAN_OUT_JOB } from '../../../queues/background/enqueues/vote-aggregation-jobs.mts'
 import { backgroundQueue } from '../../shared-background-queue.mts'
+import {
+  beginIdentityVerificationProviderSession,
+  consumeIdentityVerificationAttempt,
+} from '../../../services/identity-verification/attempts.mts'
+import { createPaymentPendingUser } from './payment-pending-fixtures.mts'
 
 export const USER_ELECTION_FAN_OUT_JOB_NAME = VOTE_AGGREGATION_USER_ELECTION_FAN_OUT_JOB.name
 
@@ -45,6 +50,20 @@ export async function createIdentityPendingUser() {
   const user = await createTestUser()
   const sessionId = `vs_${v7()}`
   const checkoutSessionId = `cs_${v7()}`
+  await setUserVerificationFields(user.id, {
+    verificationStatus: 'identity_pending',
+    pendingVerificationSessionId: sessionId,
+    pendingCheckoutSessionId: checkoutSessionId,
+  })
+  return { user, sessionId, checkoutSessionId }
+}
+
+/** A pending Stripe Identity session with the consumed attempt that owns it. */
+export async function createIdentityPendingUserWithAttempt() {
+  const { user, checkoutSessionId } = await createPaymentPendingUser()
+  const sessionId = `vs_${v7()}`
+  await beginIdentityVerificationProviderSession(checkoutSessionId)
+  await consumeIdentityVerificationAttempt(checkoutSessionId, sessionId)
   await setUserVerificationFields(user.id, {
     verificationStatus: 'identity_pending',
     pendingVerificationSessionId: sessionId,
