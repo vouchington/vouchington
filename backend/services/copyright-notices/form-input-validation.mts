@@ -1,5 +1,7 @@
 import { isEmailAddress } from '@ts-shared/utils/validation-core'
 import assert from 'http-assert'
+import { COPYRIGHT_TARGET_LIMIT_REACHED } from '@modules/on-error/error-codes'
+import { createCodedError } from '@vouchington/sentry'
 import { getCopyrightClaimantTargetsMax } from './config.mts'
 import type { CopyrightJurisdiction } from './types.mts'
 
@@ -48,12 +50,13 @@ export function assertStructuredNoticeStatutoryFields(
     422,
     'electronic signature is required',
   )
-  assert(
-    request.claimantTargets.length > 0 &&
-      request.claimantTargets.length <= getCopyrightClaimantTargetsMax(),
-    422,
-    'at least one hosted target is required',
-  )
+  assert(request.claimantTargets.length > 0, 422, 'at least one hosted target is required')
+  if (request.claimantTargets.length > getCopyrightClaimantTargetsMax())
+    throw createCodedError(
+      422,
+      'Copyright notice target limit reached',
+      COPYRIGHT_TARGET_LIMIT_REACHED,
+    )
   assert(
     request.claimantTargets.every(target => isBoundedNonEmptyString(target.hostedUseUrl, 2048)),
     422,

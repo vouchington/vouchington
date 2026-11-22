@@ -18,6 +18,8 @@
 {"id":"copy.copyright.claimantMisuse.newestNoticeReceived","value":"Aviso recebido mais recente"},
 {"id":"copy.copyright.claimantMisuse.noticesInspected","value":{"one":"{count} aviso analisado","other":"{count} avisos analisados"}},
 {"id":"copy.copyright.claimantMisuse.oldestNoticeReceived","value":"Aviso recebido mais antigo"},
+{"id":"copy.copyright.targetLimit","value":"Este aviso menciona itens demais. Remova um e tente novamente."},
+{"id":"copy.copyright.targetLimitMax","value":{"one":"Um aviso pode mencionar até {max} item. Remova um antes de adicionar outro.","other":"Um aviso pode mencionar até {max} itens. Remova um antes de adicionar outro."}},
 {"id":"copy.email.api-key-expiry.action","value":"Renove-a e atualize seus aplicativos para mantê-los conectados."},
 {"id":"copy.email.api-key-expiry.body","value":"Sua chave de API “{label}” expira em {date}."},
 {"id":"copy.email.api-key-expiry.button","value":"Gerenciar chaves de API"},

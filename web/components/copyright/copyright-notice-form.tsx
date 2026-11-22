@@ -16,11 +16,13 @@ import { DeclarationCheckbox, LabeledInput, LabeledTextarea } from './copyright-
 import { CopyrightMisrepresentationWarning } from './copyright-misrepresentation-warning'
 import { CopyrightNoticeTargetPicker } from './copyright-notice-target-picker'
 import { useAuth } from '@/lib/auth/context'
+import { useTranslations } from '@/lib/i18n/use-translations'
 import { CopyrightFilerDisclosure } from './copyright-filer-disclosure'
 import { CopyrightGuestReceipt } from './copyright-guest-receipt'
 
 export function CopyrightNoticeForm() {
   const router = useRouter()
+  const t = useTranslations()
   const { currentUser } = useAuth()
   const turnstile = useTurnstileToken('copyright-notices.create')
   const maxTargets = useContentLimits()?.copyright_claimant_targets_max
@@ -73,6 +75,9 @@ export function CopyrightNoticeForm() {
       } catch (err) {
         onError(err, {
           fallback: 'We could not submit this notice. Please try again.',
+          displayMessageByCode: {
+            COPYRIGHT_TARGET_LIMIT_REACHED: t('shared.copyrightTargetLimit'),
+          },
           tags: { form: 'copyright-notice' },
         })
         turnstile.reset()
