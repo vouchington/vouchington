@@ -76,14 +76,8 @@ esac
     testDirs.push(dir)
     const callsPath = join(dir, 'calls.txt')
     const pnpmCallsPath = join(dir, 'pnpm-calls.txt')
-    const packageDir = join(dir, 'pkg', 'package', 'scripts', 'gha')
-    const tarball = join(dir, 'tooling.tgz')
-    await mkdir(packageDir, { recursive: true })
-    await writeFile(
-      join(packageDir, 'prepare-trivy-db.sh'),
-      '#!/usr/bin/env bash\nprintf \'%s\\n\' "$*" >> "$TRIVY_CALLS_PATH"\n',
-    )
-    await execFileAsync('tar', ['-czf', tarball, 'package'], { cwd: join(dir, 'pkg') })
+    // Prebuilt tarball of package/scripts/gha/prepare-trivy-db.sh, so the test spawns no tar to build it.
+    const tarball = join(import.meta.dirname, 'fixtures', 'prepare-trivy-db', 'tooling.tgz')
     const integrity = createHash('sha512')
       .update(await readFile(tarball))
       .digest('base64')
