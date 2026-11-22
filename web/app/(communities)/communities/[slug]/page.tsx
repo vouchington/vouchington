@@ -9,7 +9,7 @@ import { ListSearchError } from '@/components/shared/list-search-error'
 import { getListSearchErrorMessage, isListSearchErrorResult } from '@/lib/api/list-search-error'
 import { getTranslations } from '@/lib/i18n/get-translations'
 import { createExcerpt } from '@vouchington/utils/seo-metadata'
-import { createPageMetadata } from '@/lib/seo/metadata'
+import { createNoIndexMetadata, createPageMetadata } from '@/lib/seo/metadata'
 import { AnonymousStructuredDataScript } from '@/components/seo/anonymous-structured-data-script'
 import { createBreadcrumbSchema } from '@/lib/seo/structured-data-breadcrumbs'
 import { createCommunityPageSchema } from '@/lib/seo/structured-data'
@@ -29,6 +29,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params
   const data = await getCommunity(slug)
   if (!data) return {}
+  // Sitemap eligibility is public communities only; keep web indexability aligned.
+  if (data.community.visibility !== 'public') return createNoIndexMetadata(data.community.name)
   return createPageMetadata({
     title: data.community.name,
     description: data.community.markdown ? createExcerpt(data.community.markdown) : undefined,

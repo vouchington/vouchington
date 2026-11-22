@@ -1,7 +1,7 @@
 import '@/test-helpers/i18n/mock-json-messages'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import CommunityPage from './page'
+import CommunityPage, { generateMetadata } from './page'
 import { ApiError } from '@vouchington/api-client'
 
 const { mockGetCommunity, mockGetCommunityPosts, mockCommunityFeed } = vi.hoisted(() => ({
@@ -50,6 +50,7 @@ const communityData = {
     id: 'community-1',
     name: 'Rewards',
     slug: 'rewards',
+    visibility: 'public',
     markdown: null,
     archived_at: null,
     should_allow_review_posts: true,
@@ -65,6 +66,16 @@ describe('CommunityPage', () => {
     mockGetCommunityPosts.mockReset()
     mockGetCommunity.mockResolvedValue(communityData)
     mockGetCommunityPosts.mockResolvedValue(postsData)
+  })
+
+  it('keeps public communities indexable and private communities noindex', async () => {
+    const params = Promise.resolve({ slug: 'rewards' })
+    expect((await generateMetadata({ params })).robots).not.toMatchObject({ index: false })
+    mockGetCommunity.mockResolvedValue({
+      ...communityData,
+      community: { ...communityData.community, visibility: 'private' },
+    })
+    expect((await generateMetadata({ params })).robots).toMatchObject({ index: false })
   })
 
   it('renders the community posts feed by default', async () => {
