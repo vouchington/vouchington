@@ -42,26 +42,20 @@ export function checkPostPublicationReaderInventory(ctx: SharedContext, errors: 
   }
   const rowsAreValid = [
     validateRows(ctx, inventory.implemented, 'implemented', errors),
-    validateRows(ctx, inventory.pr2_baseline, 'pr2_baseline', errors),
     validateRows(ctx, inventory.classified_exceptions, 'classified_exceptions', errors),
   ].every(Boolean)
   if (!rowsAreValid) return
   validateExceptionOwners(inventory, errors)
   if (inventory.implemented.length === 0)
     errors.push(`${INVENTORY_PATH}: implemented must name at least one direct reader`)
-  if (inventory.pr2_baseline.length > 0)
-    errors.push(`${INVENTORY_PATH}: pr2_baseline must be empty after PR 2`)
 
   const classifiedPaths = new Set([
     ...inventory.implemented.map(row => row.path),
-    ...inventory.pr2_baseline.map(row => row.path),
     ...inventory.classified_exceptions.map(row => row.path),
   ])
   if (
     classifiedPaths.size !==
-    inventory.implemented.length +
-      inventory.pr2_baseline.length +
-      inventory.classified_exceptions.length
+    inventory.implemented.length + inventory.classified_exceptions.length
   ) {
     errors.push(`${INVENTORY_PATH}: a reader path may have only one classification`)
   }

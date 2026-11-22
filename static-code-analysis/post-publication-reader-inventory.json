@@ -103,7 +103,6 @@
       "classification": "direct-sql"
     }
   ],
-  "pr2_baseline": [],
   "classified_exceptions": [
     {
       "path": "backend/services/comments/query-builder.mts",

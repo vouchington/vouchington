@@ -33,7 +33,6 @@ read(query)`
           version: 1,
           canonical_builder: canonicalBuilder,
           implemented: [{ path: 'backend/direct.mts', classification: 'public-view' }],
-          pr2_baseline: [],
           classified_exceptions: [],
         },
         { direct },
@@ -52,7 +51,6 @@ read(query)`
           version: 1,
           canonical_builder: canonicalBuilder,
           implemented: [{ path: 'backend/direct.mts', classification: 'direct-sql' }],
-          pr2_baseline: [],
           classified_exceptions: [],
         },
         { extra: [unclassified, 'const query = sql`SELECT posts.id FROM posts`'] },
@@ -71,7 +69,6 @@ read(query)`
           version: 1,
           canonical_builder: canonicalBuilder,
           implemented: [{ path: 'backend/direct.mts', classification: 'direct-sql' }],
-          pr2_baseline: [],
           classified_exceptions: [],
         },
         { extra: [unclassified, 'const query = sql`SELECT posts.id FROM posts`'] },
@@ -87,7 +84,6 @@ read(query)`
         version: 1,
         canonical_builder: canonicalBuilder,
         implemented: [{ path: 'backend/direct.mts', classification: 'direct-sql' }],
-        pr2_baseline: [],
         classified_exceptions: [],
       },
       {
@@ -112,19 +108,18 @@ read(query)`
       makeContext({
         version: 1,
         canonical_builder: canonicalBuilder,
-        implemented: [{ path: 'backend/direct.mts', classification: 'direct-sql' }],
-        pr2_baseline: [
-          { path: 'backend/missing.mts', classification: 'public-reader' },
-          { path: 'backend/missing.mts', classification: 'public-reader' },
+        implemented: [
+          { path: 'backend/missing.mts', classification: 'direct-sql' },
+          { path: 'backend/missing.mts', classification: 'direct-sql' },
         ],
         classified_exceptions: [],
       }),
       errors,
     )
     expect(errors).toContain(
-      `${inventoryPath}: pr2_baseline references untracked path backend/missing.mts`,
+      `${inventoryPath}: implemented references untracked path backend/missing.mts`,
     )
-    expect(errors).toContain(`${inventoryPath}: pr2_baseline duplicates backend/missing.mts`)
+    expect(errors).toContain(`${inventoryPath}: implemented duplicates backend/missing.mts`)
   })
 
   it('rejects a classified exception without a rationale', () => {
@@ -134,7 +129,6 @@ read(query)`
         version: 1,
         canonical_builder: canonicalBuilder,
         implemented: [{ path: 'backend/direct.mts', classification: 'direct-sql' }],
-        pr2_baseline: [],
         classified_exceptions: [
           {
             path: 'backend/reader.mts',
@@ -157,7 +151,6 @@ read(query)`
         version: 1,
         canonical_builder: canonicalBuilder,
         implemented: [{ path: 'backend/direct.mts', classification: 'direct-sql' }],
-        pr2_baseline: [],
         classified_exceptions: [
           {
             path: 'backend/reader.mts',
@@ -178,7 +171,6 @@ read(query)`
         version: 1,
         canonical_builder: canonicalBuilder,
         implemented: [{ path: 'backend/direct.mts', classification: 'direct-sql' }],
-        pr2_baseline: [],
         classified_exceptions: [
           {
             path: 'backend/reader.mts',
@@ -201,7 +193,6 @@ read(query)`
         version: 1,
         canonical_builder: canonicalBuilder,
         implemented: [{ path: 'backend/direct.mts', classification: 'direct-sql' }],
-        pr2_baseline: [],
         classified_exceptions: [
           {
             path: 'backend/reader.mts',
@@ -219,21 +210,6 @@ read(query)`
     )
   })
 
-  it('rejects a nonempty PR 2 baseline', () => {
-    const errors: string[] = []
-    checkPostPublicationReaderInventory(
-      makeContext({
-        version: 1,
-        canonical_builder: canonicalBuilder,
-        implemented: [{ path: 'backend/direct.mts', classification: 'direct-sql' }],
-        pr2_baseline: [{ path: 'backend/reader.mts', classification: 'public-reader' }],
-        classified_exceptions: [],
-      }),
-      errors,
-    )
-    expect(errors).toContain(`${inventoryPath}: pr2_baseline must be empty after PR 2`)
-  })
-
   it('fails safely when the inventory shape is malformed', () => {
     const errors: string[] = []
     checkPostPublicationReaderInventory(makeContext({}), errors)
@@ -249,7 +225,6 @@ read(query)`
         version: 1,
         canonical_builder: canonicalBuilder,
         implemented: [null],
-        pr2_baseline: [],
         classified_exceptions: [],
       }),
       errors,

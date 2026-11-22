@@ -17,7 +17,6 @@ function getPublicViewErrors(direct: string): string[] {
         version: 1,
         canonical_builder: canonicalBuilder,
         implemented: [{ path: 'backend/direct.mts', classification: 'public-view' }],
-        pr2_baseline: [],
         classified_exceptions: [],
       },
       { direct },
@@ -38,7 +37,6 @@ describe('post-publication public-view validation', () => {
           version: 1,
           canonical_builder: canonicalBuilder,
           implemented: [{ path: 'backend/direct.mts', classification: 'public-view' }],
-          pr2_baseline: [],
           classified_exceptions: [],
         },
         {

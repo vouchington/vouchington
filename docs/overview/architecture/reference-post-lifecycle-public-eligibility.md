@@ -92,5 +92,5 @@ both direct and public predicates for its two modes. Anonymous response boundari
 perform a second publication check after reading cached candidates. Explicit exceptions record a
 rationale; raw hydrators and projection owners require an inventory-validated owner. This metadata
 is review evidence, not static proof of a transitive consumer edge.
-The repository guard rejects a nonempty `pr2_baseline`, unclassified readers inside registered
+The repository guard rejects unclassified readers inside registered
 scopes, duplicate classifications, untracked paths, and bypassed canonical imports.

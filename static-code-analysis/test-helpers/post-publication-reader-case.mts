@@ -20,7 +20,6 @@ export function runInventoryReaderCase(testCase: InventoryReaderCase) {
         version: 1,
         canonical_builder: canonicalBuilder,
         implemented: [{ path: 'backend/direct.mts', classification: testCase.classification }],
-        pr2_baseline: [],
         classified_exceptions: [],
       },
       testCase.direct === undefined ? {} : { direct: testCase.direct },
