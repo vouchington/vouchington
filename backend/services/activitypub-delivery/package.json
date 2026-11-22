@@ -28,6 +28,7 @@
     "@modules/http-signatures": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@queues/activitypub": "workspace:^",
     "@services/ap-actor-keys": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/remote-actors": "workspace:^",
@@ -38,7 +39,6 @@
     "undici": "^8.12.4"
   },
   "devDependencies": {
-    "@queues/activitypub": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@types/http-errors": "^2.0.5",
