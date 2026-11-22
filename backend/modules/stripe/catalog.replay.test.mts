@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as stripeClientModule from '@modules/stripe/client'
-import { createProviderReplay } from '../../test-helpers/provider-replay.mts'
+import { createProviderReplay } from 'vouchington-tooling/provider-replay'
 import {
   createReplayStripeClient,
   loadStripeFixture,

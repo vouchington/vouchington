@@ -1,11 +1,11 @@
 import type Stripe from 'stripe'
 import { createStripeClient } from '@vouchington/stripe'
-import {
-  loadRecordedResponse,
-  type ProviderReplay,
-  type RecordedResponse,
-  type ReplayedRequest,
-} from './provider-replay.mts'
+import type {
+  ProviderReplay,
+  RecordedResponse,
+  ReplayedRequest,
+} from 'vouchington-tooling/provider-replay'
+import { loadRecordedResponse } from './recorded-response.mts'
 
 // Stripe adapter for the shared provider replay (see docs/development/testing/backend/helpers.md).
 // Stripe takes an `httpClient`, not a `fetch` option, so `replayClient()` does not apply. A test
@@ -22,13 +22,16 @@ import {
  */
 export const STRIPE_REPLAY_SECRET_KEY = ['sk', 'test', 'replay_fixture'].join('_')
 
+/** The call shape of `fetch` without Bun's `preconnect` member. */
+export type ReplayFetch = (...args: Parameters<ProviderReplay['fetch']>) => Promise<Response>
+
 /**
  * A real `Stripe` client sending through `fetch`, for a DB-backed test whose setup files already
  * loaded `@voucha/config`: pair it with `vi.spyOn(stripeClientModule, 'getStripeClient')`. The key
  * wiring of `getStripeClient()` itself is covered by `client.replay.test.mts`. The SDK
  * does not retry, so a request nothing answers fails at once instead of sleeping through a backoff.
  */
-export function createReplayStripeClient(fetch: ProviderReplay['fetch']): Stripe {
+export function createReplayStripeClient(fetch: ReplayFetch): Stripe {
   return createStripeClient({
     apiKey: STRIPE_REPLAY_SECRET_KEY,
     fetch,
@@ -40,7 +43,7 @@ export function createReplayStripeClient(fetch: ProviderReplay['fetch']): Stripe
 
 export type StripeRoutes = {
   /** Pass this to `createReplayStripeClient`. */
-  fetch: ProviderReplay['fetch']
+  fetch: ReplayFetch
   /** Answers `<METHOD> <path>` with `responses` in order; the last one answers every later request. */
   on: (method: string, path: string, ...responses: RecordedResponse[]) => void
   /** Fails unless every route answered at least once and used each of its queued responses. */
@@ -55,7 +58,7 @@ export type StripeRoutes = {
  */
 export function routeStripeReplay(replay: ProviderReplay): StripeRoutes {
   const routes = new Map<string, { responses: RecordedResponse[]; served: number }>()
-  const fetch: ProviderReplay['fetch'] = (input, init) => {
+  const fetch: ReplayFetch = (input, init) => {
     const request =
       typeof input !== 'string' && 'url' in input
         ? new Request(input, init)
