@@ -5,7 +5,8 @@ import { loginWithEmailAddress, sendEmailLoginToken } from '@/lib/api/client'
 import { ApiError } from '@vouchington/api-client'
 import { toast } from 'sonner'
 import type { useResendCooldown } from '@/hooks/use-resend-cooldown'
-import onError from '@/lib/on-error'
+import { isEmailCodeRecentlySentError } from '@/lib/api/rate-limit-error'
+import onError, { onSuccess } from '@/lib/on-error'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface UseLoginCodeActionsParams {
@@ -92,10 +93,16 @@ export function useLoginCodeActions({
       handleTurnstileReset()
     } catch (err) {
       cooldown.startFromError(err)
-      onError(err, {
-        fallback: t('extracted.auth.loginForm.failedToSendVerificationCode_6401f8f4'),
-        tags: { form: 'auth-login' },
-      })
+      if (isEmailCodeRecentlySentError(err)) {
+        onSuccess(t('extracted.emailCodeResend.recentlySent'))
+      } else {
+        onError(err, {
+          fallback: t('extracted.auth.loginForm.failedToSendVerificationCode_6401f8f4'),
+          tags: { form: 'auth-login' },
+        })
+      }
+      // The CAPTCHA token is single use and was verified before the limiter, so spend it here too.
+      handleTurnstileReset()
     } finally {
       resendInFlight.current = false
       setLoading(false)

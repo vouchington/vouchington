@@ -42,6 +42,7 @@ export function MfaReauthDialog({ open, mfaStatus, onVerified, onClose }: Props)
   const [loading, setLoading] = useState(false)
   const { resendSecondsLeft, sendEmail: handleSendEmail } = useReAuthEmailSend({
     setLoading,
+    onRecentlySent: () => setEmailSent(true),
     onSent: emailAddress => {
       setEmailCode('')
       setSentToEmail(emailAddress)
@@ -151,7 +152,7 @@ export function MfaReauthDialog({ open, mfaStatus, onVerified, onClose }: Props)
           {activeMethod === 'email' && (
             <EmailVerificationPane
               emailCode={emailCode}
-              emailSent={emailSent}
+              emailSent={emailSent || resendSecondsLeft > 0}
               loading={loading}
               resendSecondsLeft={resendSecondsLeft}
               sentToEmail={sentToEmail}

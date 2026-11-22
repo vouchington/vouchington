@@ -11,9 +11,10 @@ vi.mock(import('@/lib/api/client'), () => ({
 
 function renderSend() {
   const onSent = vi.fn<(emailAddress: string) => void>()
+  const onRecentlySent = vi.fn<() => void>()
   const setLoading = vi.fn<(loading: boolean) => void>()
-  const hook = renderHook(() => useReAuthEmailSend({ onSent, setLoading }))
-  return { ...hook, onSent, setLoading }
+  const hook = renderHook(() => useReAuthEmailSend({ onRecentlySent, onSent, setLoading }))
+  return { ...hook, onRecentlySent, onSent, setLoading }
 }
 
 describe('useReAuthEmailSend', () => {
@@ -53,6 +54,17 @@ describe('useReAuthEmailSend', () => {
     const { result, onSent } = renderSend()
     await act(() => result.current.sendEmail())
     expect(result.current.resendSecondsLeft).toBe(23)
+    expect(onSent).not.toHaveBeenCalled()
+  })
+
+  it('shows the code pane when a code was already sent inside the interval', async () => {
+    mockRequestReAuthEmail.mockRejectedValue(
+      new ApiError('Please wait', 429, { retry_after: 31, code: 'email_code_recently_sent' }),
+    )
+    const { result, onRecentlySent, onSent } = renderSend()
+    await act(() => result.current.sendEmail())
+    expect(result.current.resendSecondsLeft).toBe(31)
+    expect(onRecentlySent).toHaveBeenCalledTimes(1)
     expect(onSent).not.toHaveBeenCalled()
   })
 })

@@ -67,4 +67,25 @@ describe('LoginForm email code spacing', () => {
     fireEvent.click(screen.getByRole('button', { name: /resend code/i }))
     expect(await screen.findByRole('button', { name: 'Resend in 17s' })).toBeDisabled()
   })
+
+  it('moves to the code step with the countdown when a code was already sent', async () => {
+    mockSendEmailLoginToken.mockRejectedValueOnce(
+      new ApiError('Please wait', 429, { retry_after: 42, code: 'email_code_recently_sent' }),
+    )
+    render(<LoginForm />)
+    fireEvent.submit(submitEmail())
+    await screen.findByLabelText(/verification code/i)
+    expect(await screen.findByRole('button', { name: 'Resend in 42s' })).toBeDisabled()
+    expect(turnstileCallbacks.reset).toHaveBeenCalled()
+  })
+
+  it('stays on the email step for other rate limits and still spends the CAPTCHA token', async () => {
+    mockSendEmailLoginToken.mockRejectedValueOnce(
+      new ApiError('Too Many Requests', 429, { retry_after: 5 }),
+    )
+    render(<LoginForm />)
+    fireEvent.submit(submitEmail())
+    await vi.waitFor(() => expect(turnstileCallbacks.reset).toHaveBeenCalled())
+    expect(screen.queryByLabelText(/verification code/i)).toBeNull()
+  })
 })

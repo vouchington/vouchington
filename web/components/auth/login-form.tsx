@@ -1,8 +1,8 @@
 'use client'
 
-import { useRef, useState, type SyntheticEvent } from 'react'
+import { useRef, useState } from 'react'
 import { useResendCooldown } from '@/hooks/use-resend-cooldown'
-import { continueOAuthLogin, sendEmailLoginToken } from '@/lib/api/client'
+import { continueOAuthLogin } from '@/lib/api/client'
 import onError, { onSuccess } from '@/lib/on-error'
 import { tokenToBody } from '@/lib/auth/oauth-token-body'
 import { usePasskeySignIn } from './use-passkey-sign-in'
@@ -11,6 +11,7 @@ import { LoginCodePanel } from './login-code-panel'
 import { LoginEmailStep } from './login-email-step'
 import type { OAuthLoginToken } from '@/lib/auth/oauth-login-token'
 import { useLoginCodeActions } from './use-login-code-actions'
+import { useLoginEmailSubmit } from './use-login-email-submit'
 import { LOGIN_CODE_LENGTH, LOGIN_CODE_PATTERN } from '@ts-shared/utils/login-code'
 import { sanitizeLoginNext } from '@/lib/auth/login-url'
 import { useRouter } from 'next/navigation'
@@ -58,7 +59,6 @@ export function LoginForm({
   const [code, setCode] = useState(prefilledOtp)
   const [loginAttemptId, setLoginAttemptId] = useState(initialLoginAttemptId)
   const [loading, setLoading] = useState(false)
-  const sendInFlight = useRef(false)
   const cooldown = useResendCooldown()
   const hpWebsiteRef = useRef<HTMLInputElement>(null)
   const hpPhoneRef = useRef<HTMLInputElement>(null)
@@ -111,40 +111,18 @@ export function LoginForm({
 
   const { handlePasskeySignIn } = usePasskeySignIn({ handleLoginSuccess, setLoading })
 
-  async function handleEmailSubmit(e: SyntheticEvent) {
-    e.preventDefault()
-    if (sendInFlight.current) return
-    sendInFlight.current = true
-    const hpWebsite = hpWebsiteRef.current?.value ?? ''
-    const hpPhone = hpPhoneRef.current?.value ?? ''
-    setCapturedHpWebsite(hpWebsite)
-    setCapturedHpPhone(hpPhone)
-    setLoading(true)
-    try {
-      const result = await sendEmailLoginToken(
-        email,
-        turnstile.token ?? undefined,
-        {
-          hp_website: hpWebsite,
-          hp_phone: hpPhone,
-        },
-        uiLocale,
-      )
-      cooldown.startFromResponse(result)
-      onSuccess(t('extracted.auth.loginForm.signInCodeSent_9a34e846'))
-      setStep('code')
-      turnstile.reset()
-    } catch (err) {
-      cooldown.startFromError(err)
-      onError(err, {
-        fallback: t('extracted.auth.loginForm.failedToSendVerificationCode_6401f8f4'),
-        tags: { form: 'auth-login' },
-      })
-    } finally {
-      sendInFlight.current = false
-      setLoading(false)
-    }
-  }
+  const handleEmailSubmit = useLoginEmailSubmit({
+    cooldown,
+    email,
+    hpPhoneRef,
+    hpWebsiteRef,
+    setCapturedHpPhone,
+    setCapturedHpWebsite,
+    setLoading,
+    setStep,
+    turnstile,
+    uiLocale,
+  })
 
   return (
     <div

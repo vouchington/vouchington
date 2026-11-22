@@ -2,14 +2,16 @@ import { randomInt } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createTestUser,
+  createTestBlacklistSource,
   createUniqueTestEmail,
+  insertTestDomainBlacklist,
   overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-token'
 import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 import { emails } from '@queues/emails/queues'
-import { RateLimiter } from '@data-stores/valkey-rate-limiter'
+import { addDomainsToEmailBloomFilter } from '@services/urls-domains-blacklist'
 import { emailAuthLimitsConfig } from '@services/users/email-auth-limits-config'
 
 const loginTokens = '/api/v1/auth/email-address/tokens'
@@ -58,20 +60,36 @@ describe('email code request spacing', () => {
     expect(enqueue).toHaveBeenCalledTimes(1)
   })
 
-  it('does not charge a refused request, so the interval is not extended', async () => {
+  it('answers a refused request with a stable code and sends nothing', async () => {
     enableInterval()
-    const emailAddress = createUniqueTestEmail('no-extend')
+    const emailAddress = createUniqueTestEmail('code')
     const ip = randomTestIp()
+    const enqueue = vi.spyOn(emails, 'add')
     const req = createRequest()
     await postLogin(req, ip, emailAddress).expect(200)
-    await postLogin(req, ip, emailAddress).expect(429)
-    await postLogin(req, ip, emailAddress).expect(429)
+    const sent = enqueue.mock.calls.length
 
-    const intervalLimiter = new RateLimiter({
-      prefix: 'email-address-login-code-interval',
-      ttlSeconds: 60,
+    const refused = await postLogin(req, ip, emailAddress).expect(429)
+    expect(refused.body.code).toBe('email_code_recently_sent')
+    expect(enqueue).toHaveBeenCalledTimes(sent)
+  })
+
+  it('does not spend the interval on an address that fails validation', async () => {
+    enableInterval()
+    await createTestBlacklistSource({
+      type: 'email',
+      name: 'test-email-blacklist',
+      url: 'https://example.com/email-blacklist.txt',
     })
-    await expect(intervalLimiter.get([emailAddress])).resolves.toEqual([1])
+    const blockDomain = `blocked-interval-${randomInt(1e9)}.com`
+    await insertTestDomainBlacklist(blockDomain, 'test-email-blacklist')
+    await addDomainsToEmailBloomFilter([blockDomain])
+    const emailAddress = `user@${blockDomain}`
+    const ip = randomTestIp()
+    const req = createRequest()
+
+    await postLogin(req, ip, emailAddress).expect(422)
+    await postLogin(req, ip, emailAddress).expect(422)
   })
 
   it('does not slow a different email', async () => {
@@ -106,6 +124,7 @@ describe('email code request spacing', () => {
 
     const second = await req.post(reAuthTokens).set('x-forwarded-for', ip).expect(429)
     expect(Number(second.headers['retry-after'])).toBeGreaterThan(0)
+    expect(second.body.code).toBe('email_code_recently_sent')
     expect(enqueue).toHaveBeenCalledTimes(sentAfterFirst)
 
     const otherReq = createRequest()

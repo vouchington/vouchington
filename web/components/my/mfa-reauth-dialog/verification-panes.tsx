@@ -88,13 +88,11 @@ export function EmailVerificationPane({
           data-pw='verification-panes-email-send-code'
           onClick={handleSendEmail}
           loading={loading}
-          disabled={loading || resendSecondsLeft > 0}
+          disabled={loading}
         >
           {loading
             ? t('extracted.mfaReauthDialog.verificationPanes.sending_286a3af7')
-            : resendSecondsLeft > 0
-              ? t('extracted.emailCodeResend.resendIn', { seconds: resendSecondsLeft })
-              : t('extracted.mfaReauthDialog.verificationPanes.sendCode_66a5b409')}
+            : t('extracted.mfaReauthDialog.verificationPanes.sendCode_66a5b409')}
         </Button>
       </div>
     )
@@ -103,8 +101,14 @@ export function EmailVerificationPane({
   return (
     <div className='space-y-3'>
       <p className='text-sm text-muted-foreground'>
-        {t('extracted.mfaReauthDialog.verificationPanes.aVerificationCodeWasSentTo_7ff88c72')}{' '}
-        <strong>{sentToEmail}</strong>.
+        {sentToEmail ? (
+          <>
+            {t('extracted.mfaReauthDialog.verificationPanes.aVerificationCodeWasSentTo_7ff88c72')}{' '}
+            <strong>{sentToEmail}</strong>.
+          </>
+        ) : (
+          t('extracted.emailCodeResend.recentlySent')
+        )}
       </p>
       <Label id={labelId}>
         {t('extracted.emailManager.verifyEmailForm.verificationCode_3ee75029')}

@@ -1,5 +1,6 @@
 import createHttpError from 'http-errors'
 import { RateLimiter } from '@data-stores/valkey-rate-limiter'
+import { sanitizeEmailAddress, validateEmailAddress } from '@services/email-address-validator'
 import { getEmailCodeRequestMinIntervalSeconds } from './email-auth-limits-config.mts'
 
 const emailTokenRateLimiter = new RateLimiter({
@@ -73,16 +74,26 @@ export async function reserveEmailCodeRequestSlot(
   })
   if (limited) {
     throw createHttpError(429, 'Please wait before requesting another code.', {
+      code: 'email_code_recently_sent',
       retryAfterSeconds: Math.max(1, Math.ceil(retryAfterMs / 1000)),
     })
   }
   return { resendAfterSeconds }
 }
 
-/** Re-auth send: the 5-per-minute limits first, then the one-slot-per-interval session gate. */
+/**
+ * Re-auth send: the 5-per-minute limits first, then address validation, then the one-slot-per-
+ * interval session gate, so a rejected address never burns the interval. Returns the validated
+ * address to send to.
+ */
 export async function reserveReAuthEmailCodeRequest(
   identity: EmailAuthenticationRateLimitIdentity & { sessionId: string },
-): Promise<{ resendAfterSeconds: number }> {
-  await assertEmailTokenRequestAllowed(identity)
-  return reserveEmailCodeRequestSlot('reauth', identity.sessionId)
+): Promise<{ emailAddress: string; resendAfterSeconds: number }> {
+  await assertEmailTokenRequestAllowed({
+    ...identity,
+    emailAddress: sanitizeEmailAddress(identity.emailAddress),
+  })
+  const emailAddress = await validateEmailAddress(identity.emailAddress)
+  const { resendAfterSeconds } = await reserveEmailCodeRequestSlot('reauth', identity.sessionId)
+  return { emailAddress, resendAfterSeconds }
 }

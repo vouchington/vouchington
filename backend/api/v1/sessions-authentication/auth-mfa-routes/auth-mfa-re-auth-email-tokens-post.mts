@@ -1,5 +1,4 @@
 import type { Context } from '@jongleberry/api-server'
-import { sanitizeEmailAddress } from '@services/email-address-validator'
 import { getPrimaryEmailAddress } from '@services/my/email-addresses'
 import { createAndEnqueueEmailAddressReAuthToken } from '@services/users/authentication'
 import { assertNotSuspended } from '@services/users/suspension'
@@ -18,9 +17,8 @@ app.route('/api/v1/auth/mfa/re-auth/email/tokens').post(async (ctx: Context) => 
   ])
   ctx.assert(rawEmail, 422, 'No email address associated with this account')
 
-  const emailAddress = sanitizeEmailAddress(rawEmail)
-  const { resendAfterSeconds } = await reserveReAuthEmailCodeRequest({
-    emailAddress,
+  const { emailAddress, resendAfterSeconds } = await reserveReAuthEmailCodeRequest({
+    emailAddress: rawEmail,
     ip: ctx.ip,
     deviceId: session.did,
     sessionId: session.sid,

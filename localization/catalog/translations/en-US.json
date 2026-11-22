@@ -1388,6 +1388,7 @@
 {"id":"copy.extracted.edit.page.editTopicRecommendation_8b5d2924","value":"Edit Topic Recommendation"},
 {"id":"copy.extracted.edit.page.updateCrawlerConfiguration_0a253dd0","value":"Update crawler configuration"},
 {"id":"copy.extracted.edit.page.updateTheProposalWhileItIs_c8d77b56","value":"Update the proposal while it is still pending review."},
+{"id":"copy.extracted.emailCodeResend.recentlySent","value":"A code was already sent to your email. Enter it below."},
 {"id":"copy.extracted.emailCodeResend.resendIn","value":"Resend in {seconds}s"},
 {"id":"copy.extracted.emailManager.addEmailForm.newEmailAddress_bb0d06f5","value":"New email address"},
 {"id":"copy.extracted.emailManager.addEmailForm.sendVerificationCode_19e86d2b","value":"Send verification code"},

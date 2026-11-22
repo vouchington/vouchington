@@ -116,4 +116,23 @@ describe('MFA re-authentication verification panes', () => {
     expect(labelIds.every(Boolean)).toBe(true)
     expect(new Set(labelIds).size).toBe(labelIds.length)
   })
+
+  it('shows the code input with a recently-sent note when the address is not known', () => {
+    render(
+      <EmailVerificationPane
+        emailCode=''
+        emailSent
+        loading={false}
+        resendSecondsLeft={30}
+        sentToEmail=''
+        handleEmailVerify={vi.fn<(code: string) => void>()}
+        handleSendEmail={vi.fn<() => void>()}
+        setEmailCode={vi.fn<(code: string) => void>()}
+      />,
+    )
+
+    expect(screen.getByText('A code was already sent to your email. Enter it below.')).toBeDefined()
+    expect(screen.getByRole('textbox', { name: 'Verification code' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Resend in 30s' })).toBeDisabled()
+  })
 })

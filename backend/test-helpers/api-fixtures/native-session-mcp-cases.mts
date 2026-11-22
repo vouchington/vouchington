@@ -57,6 +57,42 @@ export const nativeSessionMcpApiFixtureCases: ApiFixtureCase[] = [
     migratedFrom: [],
   },
   {
+    id: 'native.auth.email-address.tokens.recently-sent',
+    backendResponseContractKey:
+      'POST:/api/v1/auth/native/email-address/tokens#email-code-recently-sent',
+    pending: true,
+    method: 'POST',
+    path: '/api/v1/auth/native/email-address/tokens',
+    route: { routeTemplate: '/api/v1/auth/native/email-address/tokens' },
+    auth: 'none',
+    requestHeaders: nativeJsonHeaders,
+    requestBody: { emailAddress: 'fixture@example.test' },
+    status: 429,
+    body: {
+      message: 'Please wait before requesting another code.',
+      code: 'email_code_recently_sent',
+    },
+    consumers: [...consumers],
+    migratedFrom: [],
+  },
+  {
+    id: 'native.auth.re-auth.email.tokens.recently-sent',
+    backendResponseContractKey:
+      'POST:/api/v1/auth/mfa/re-auth/email/tokens#email-code-recently-sent',
+    pending: true,
+    method: 'POST',
+    path: '/api/v1/auth/mfa/re-auth/email/tokens',
+    route: { routeTemplate: '/api/v1/auth/mfa/re-auth/email/tokens' },
+    auth: 'fixture-user',
+    status: 429,
+    body: {
+      message: 'Please wait before requesting another code.',
+      code: 'email_code_recently_sent',
+    },
+    consumers: [...consumers],
+    migratedFrom: [],
+  },
+  {
     id: 'native.auth.email-address.login.authenticated',
     method: 'POST',
     path: '/api/v1/auth/native/email-address/login',

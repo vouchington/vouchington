@@ -188,7 +188,7 @@ describe('LoginForm OAuth', () => {
       })
     })
 
-    it('should not reset Turnstile on email submit error', async () => {
+    it('should reset Turnstile on email submit error', async () => {
       mockSendEmailLoginToken.mockRejectedValue(new Error('Too many requests'))
       render(<LoginForm />)
 
@@ -202,8 +202,8 @@ describe('LoginForm OAuth', () => {
 
       await waitFor(() => expect(mockSendEmailLoginToken).toHaveBeenCalled())
 
-      // Turnstile token should NOT be reset on submit error — it stays valid for retry
-      expect(turnstileCallbacks.reset).not.toHaveBeenCalled()
+      // The token is single use and verified before the server's limiter, so a failed submit spends it
+      await waitFor(() => expect(turnstileCallbacks.reset).toHaveBeenCalledTimes(1))
     })
 
     it('should reset Turnstile widget on successful email submit', async () => {

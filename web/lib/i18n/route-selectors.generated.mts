@@ -1,7 +1,7 @@
 // GENERATED FILE - do not edit by hand.
 // Regenerate: node static-code-analysis/i18n-extract/route-selector-map.mts
 // Verify:     node static-code-analysis/i18n-extract/route-selector-map.mts --check
-export const WEB_CHROME_SELECTOR = 'web.chrome.00d8b8ac540c84ed'
+export const WEB_CHROME_SELECTOR = 'web.chrome.fd0f58d677e9141e'
 // oxfmt-ignore
 export const ROUTE_SELECTORS = [
   { pattern: "/", selectorId: "web.route.af63a24c860189fe.d739323bf0c3dacb", hasMembership: true },
@@ -203,7 +203,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/my/friend-recommendations", selectorId: "web.route.152c17db7413ea00.90074fe6269b3624", hasMembership: true },
   { pattern: "/my/friend-recommendations/dismissed", selectorId: "web.route.60f207314e53a26a.645add62b4b4d676", hasMembership: true },
   { pattern: "/my/household", selectorId: "web.route.e2f822599ce44122.59cc2d30e46fc835", hasMembership: true },
-  { pattern: "/my/identity", selectorId: "web.route.040cfd375f74a043.214bad838fd032f4", hasMembership: true },
+  { pattern: "/my/identity", selectorId: "web.route.040cfd375f74a043.28e832b8da344b71", hasMembership: true },
   { pattern: "/my/identity-verification", selectorId: "web.route.3fb2cb5869f8593d.70be8089e933beb4", hasMembership: true },
   { pattern: "/my/landing-page/[slug]", selectorId: "web.route.10215e7b127df690.18392704b83fc2c2", hasMembership: true },
   { pattern: "/my/landing-page/[slug]/analytics", selectorId: "web.route.a65ef95358e6ac23.7f7f577e1884df86", hasMembership: true },

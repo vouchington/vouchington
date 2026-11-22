@@ -7,6 +7,7 @@ import {
   EmailDomainInvalidError,
   EmailFormatInvalidError,
   sanitizeEmailAddress,
+  validateEmailAddress,
 } from '@services/email-address-validator'
 import {
   createDeviceAndSessionTokens,
@@ -19,8 +20,8 @@ import { createLoginAttempt, userHasMfa } from '@services/mfa'
 import { normalizeUiLocale } from '@ts-shared/languages/ui-locales'
 import { upsertUser } from './create.mts'
 import {
-  createEmailAddressLoginToken,
   enqueueEmailAddressLoginToken,
+  issueEmailAddressLoginToken,
   verifyEmailAddressLoginToken,
 } from './authentication.mts'
 
@@ -39,10 +40,17 @@ export async function requestEmailAddressLoginToken(options: {
 }): Promise<{ emailAddress: string; resendAfterSeconds: number }> {
   const sanitizedEmail = sanitizeEmailAddress(options.emailAddress)
   await assertEmailTokenRequestAllowed({ ...options, emailAddress: sanitizedEmail })
+
+  // Validate before taking the slot so a rejected address never burns the interval.
+  const validatedEmailAddress = await validateEmailAddress(options.emailAddress).catch(
+    (err: unknown) => {
+      throw mapEmailAuthenticationError(err)
+    },
+  )
   const { resendAfterSeconds } = await reserveEmailCodeRequestSlot('login', sanitizedEmail)
 
   try {
-    const { token, emailAddress } = await createEmailAddressLoginToken(options.emailAddress)
+    const { token, emailAddress } = await issueEmailAddressLoginToken(validatedEmailAddress)
     await awaitReportedEnqueueAdmission(() =>
       enqueueEmailAddressLoginToken(emailAddress, token, normalizeUiLocale(options.uiLocale)),
     )
