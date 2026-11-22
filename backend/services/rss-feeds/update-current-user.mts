@@ -34,7 +34,9 @@ export async function updateRssFeedWithStateAsCurrentUser(
       if (!updatedFieldId) return null
     } else {
       const existing = await query(
-        sql`/* updateRssFeedWithStateAsCurrentUser:lock */ SELECT id FROM rss_feeds WHERE id = ${id} FOR UPDATE`,
+        stateChanges.is_enabled === undefined && stateChanges.discoverable === undefined
+          ? sql`/* updateRssFeedWithStateAsCurrentUser:exists */ SELECT id FROM rss_feeds WHERE id = ${id}`
+          : sql`/* updateRssFeedWithStateAsCurrentUser:lock */ SELECT id FROM rss_feeds WHERE id = ${id} FOR UPDATE`,
       )
       if (existing.rows.length === 0) return null
     }

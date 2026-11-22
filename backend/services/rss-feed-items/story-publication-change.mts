@@ -12,25 +12,6 @@ type CategoryTopicChange = {
   topic_id: string | null
 }
 
-/** Locks the rss_feed_items rows this category writer updates. */
-export async function lockRssFeedItemsForStoryPublicationChanges(
-  query: TransactionQuery,
-  itemIds: readonly string[],
-): Promise<void> {
-  const STORY_CATEGORY_ITEM_BATCH_SIZE = getRssFeedItemsWorkLimit('story_category_item_batch_size')
-  const ids = [...new Set(itemIds)].toSorted()
-  // Input chunks keep every item lock statement bounded.
-  for (let offset = 0; offset < ids.length; offset += STORY_CATEGORY_ITEM_BATCH_SIZE) {
-    const batch = ids.slice(offset, offset + STORY_CATEGORY_ITEM_BATCH_SIZE)
-    // no-mistakes-disable-next-line query-reached-per-item: each input chunk is capped by runtime configuration; combining chunks would exceed that bound.
-    await query(
-      `/* lockRssFeedItemsForStoryPublicationChanges */
-      SELECT id FROM rss_feed_items WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`,
-      [batch],
-    )
-  }
-}
-
 /**
  * Coalesces category topic remaps by story without refreshing an unbounded story projection in
  * the category writer's transaction. The publication reconciler owns that later projection refresh.

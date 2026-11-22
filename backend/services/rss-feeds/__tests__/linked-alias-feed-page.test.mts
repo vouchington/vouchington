@@ -15,7 +15,7 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import { backfillLinkedAliasFeedPage } from '../linked-alias-feed-page.mts'
 
 describe('linked alias feed page', () => {
-  it('retries when a locked category changes to NULL before the page update', async () => {
+  it('preserves a concurrent category change and remaps it on the next page run', async () => {
     const owner = await createTestTopic()
     const previous = await createTestTopic()
     const aliasText = `feed-relink-${randomUUID()}`
@@ -34,7 +34,7 @@ describe('linked alias feed page', () => {
         holderProcessId,
         pool: 'write',
         lock: { kind: 'transaction' },
-        queryMarker: 'backfillLinkedAliasFeedPage lockCategories',
+        queryMarker: 'backfillLinkedAliasFeedPage update',
         releaseHolder: () => holder[Symbol.asyncDispose](),
       },
       async waitForLock => {

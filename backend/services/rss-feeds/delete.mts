@@ -30,10 +30,6 @@ export async function softDeleteRssFeedById(id: string): Promise<boolean> {
   return affected
 
   async function softDeleteInTransaction() {
-    const locked = await query(sql`/* softDeleteRssFeedById:lock */
-      SELECT id FROM rss_feeds WHERE id = ${id} AND deleted_at IS NULL FOR UPDATE
-    `)
-    if ((locked.rowCount ?? 0) === 0) return locked
     const result = await query(sql`/* softDeleteRssFeedById */
       UPDATE rss_feeds SET deleted_at = CURRENT_TIMESTAMP WHERE id = ${id} AND deleted_at IS NULL
     `)
@@ -54,9 +50,9 @@ export async function softDeleteRssFeedById(id: string): Promise<boolean> {
  */
 export async function hardDeleteRssFeedById(id: string): Promise<boolean> {
   await using query = await beginTransaction()
-  const { rows: feedRows } = await query<{ id: string; topic_id: string }>(
+  const { rows: feedRows } = await query<{ id: string }>(
     `/* hardDeleteRssFeedById:lockFeed */
-    SELECT id, topic_id FROM rss_feeds WHERE id = $1::uuid FOR UPDATE`,
+    SELECT id FROM rss_feeds WHERE id = $1::uuid FOR UPDATE`,
     [id],
   )
   if (feedRows.length === 0) {

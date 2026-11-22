@@ -1,5 +1,4 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-lock'
 
 /**
  * Restarts projections for the posts of stories whose assigned RSS URL changed.
@@ -12,9 +11,6 @@ export async function markStoryPostRelatedUrlProjectionsForStories(
 ): Promise<boolean> {
   const uniqueStoryIds = [...new Set(storyIds)]
   if (uniqueStoryIds.length === 0) return false
-
-  const postIds = await lockStoriesAndFindStoryPostIds(query, uniqueStoryIds)
-  if (postIds.length === 0) return false
 
   const { rows } = await query<{ post_id: string }>(
     `/* markStoryPostRelatedUrlProjectionsForStories */
@@ -69,24 +65,6 @@ export async function markStoryPostRelatedUrlProjectionsForStories(
     [markedPostIds(rows)],
   )
   return true
-}
-
-async function lockStoriesAndFindStoryPostIds(
-  query: TransactionQuery,
-  storyIds: readonly string[],
-): Promise<string[]> {
-  await lockStoryLifecycles(query, storyIds)
-  const { rows: postRows } = await query<{ post_id: string }>(
-    `/* markStoryPostRelatedUrlProjectionsForStories:posts */
-      SELECT post_story.post_id
-      FROM story_posts post_story
-      JOIN posts ON posts.id = post_story.post_id
-      WHERE post_story.story_id = ANY($1::uuid[])
-        AND posts.deleted_at IS NULL
-      ORDER BY post_story.post_id`,
-    [storyIds],
-  )
-  return markedPostIds(postRows)
 }
 
 function markedPostIds(rows: Array<{ post_id: string }>): string[] {

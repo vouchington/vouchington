@@ -10,11 +10,6 @@ export async function finalizeHardDeleteRssFeed(
   rssFeedId: string,
 ): Promise<{ deleted: boolean; remaining: RemainingPhase | null }> {
   await using query = await beginTransaction()
-  const { rows: footprint } = await query<{ topic_id: string }>(
-    `/* finalizeHardDeleteRssFeed:topicFootprint */
-    SELECT topic_id FROM rss_feeds WHERE id = $1::uuid AND hard_delete_requested_at IS NOT NULL`,
-    [rssFeedId],
-  )
   const { rows: feeds } = await query<{ topic_id: string }>(
     `/* finalizeHardDeleteRssFeed:feed */
      SELECT topic_id FROM rss_feeds WHERE id = $1::uuid AND hard_delete_requested_at IS NOT NULL FOR UPDATE`,
@@ -23,10 +18,6 @@ export async function finalizeHardDeleteRssFeed(
   if (feeds.length === 0) {
     await query.commit()
     return { deleted: false, remaining: null }
-  }
-  if (feeds[0]!.topic_id !== footprint[0]?.topic_id) {
-    await query.commit()
-    return { deleted: false, remaining: 'feed_categories' }
   }
   // Each EXISTS uses the feed FK's existing index and stops at one row.
   const { rows: pending } = await query<{ phase: RemainingPhase }>(

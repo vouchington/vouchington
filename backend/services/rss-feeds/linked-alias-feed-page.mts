@@ -1,5 +1,4 @@
 import { beginTransaction } from '@data-stores/psql'
-import type { TransactionQuery } from '@data-stores/psql/types'
 
 import createHttpError from 'http-errors'
 
@@ -9,7 +8,7 @@ type LinkedAliasFeedCandidate = {
   previous_topic_id: string | null
 }
 
-/** Applies one raw feed page after category row locks. */
+/** Applies one raw feed page while its alias owner and prior mappings still match. */
 export async function backfillLinkedAliasFeedPage(
   aliasId: string,
   alias: string,
@@ -43,10 +42,6 @@ export async function backfillLinkedAliasFeedPage(
     await transaction.commit()
     return 0
   }
-  await lockLinkedAliasFeedCategoryPage(transaction, candidates)
-  const { rows: currentCandidates } = await transaction(candidateSql, candidateParameters)
-  if (JSON.stringify(currentCandidates) !== JSON.stringify(candidates))
-    throw createHttpError(409, 'RSS feed category mapping changed before the category write')
   const { rows: owner } = await transaction<{ id: string }>(
     `/* backfillLinkedAliasFeedPage currentOwner */
      SELECT id FROM topic_aliases
@@ -66,33 +61,23 @@ export async function backfillLinkedAliasFeedPage(
      WHERE category.rss_feed_id = raw.rss_feed_id
        AND category.category_identity_id = raw.category_identity_id
        AND category.topic_id IS NOT DISTINCT FROM raw.previous_topic_id
-       AND category.topic_id IS DISTINCT FROM $1::uuid`,
+       AND category.topic_id IS DISTINCT FROM $1::uuid
+       AND EXISTS (
+         SELECT 1 FROM topic_aliases
+         WHERE id = $5::uuid AND alias = LOWER($6::text) AND topic_id = $1::uuid
+           AND unlink_requested_at IS NULL
+       )`,
     [
       topicId,
       candidates.map(row => row.rss_feed_id),
       candidates.map(row => row.category_identity_id),
       candidates.map(row => row.previous_topic_id),
+      aliasId,
+      alias,
     ],
   )
   if (rowCount !== candidates.length)
     throw createHttpError(409, 'RSS feed category mapping changed before backfill')
   await transaction.commit()
   return rowCount ?? 0
-}
-
-async function lockLinkedAliasFeedCategoryPage(
-  query: TransactionQuery,
-  candidates: readonly LinkedAliasFeedCandidate[],
-): Promise<void> {
-  await query(
-    `/* backfillLinkedAliasFeedPage lockCategories */
-     SELECT category.rss_feed_id
-     FROM UNNEST($1::uuid[], $2::uuid[]) AS raw(rss_feed_id, category_identity_id)
-     JOIN rss_feed_categories category
-       ON category.rss_feed_id = raw.rss_feed_id
-       AND category.category_identity_id = raw.category_identity_id
-     ORDER BY category.rss_feed_id, category.category_identity_id
-     FOR UPDATE OF category`,
-    [candidates.map(row => row.rss_feed_id), candidates.map(row => row.category_identity_id)],
-  )
 }

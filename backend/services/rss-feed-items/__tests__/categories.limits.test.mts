@@ -1,4 +1,7 @@
-import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
+import {
+  getTestRssFeedItemCategories,
+  setTestRssFeedItemCategoryTopicId,
+} from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { rssFeedItemsWorkConfig } from '@services/rss-feed-items/work-limits'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
@@ -12,7 +15,6 @@ import {
   createTestTopic,
   getTestPostgresBackendProcessId,
   insertTestRssFeedDirect,
-  lockTestRssFeedItemCategory,
 } from '@voucha/test-helpers'
 import { backfillCategoriesForTopicAliases as backfillRawCategoryPage } from '../backfill-categories-for-topic-aliases.mts'
 import { processReconcileTopicAliasCategoryMappings } from '../../rss-feeds/reconcile-topic-alias-category-mappings.mts'
@@ -212,7 +214,7 @@ describe('categories limits', () => {
       restoreBatchSize()
     }
   })
-  it('waits for locked matching categories instead of treating them as exhausted', async () => {
+  it('backfills a matching category after a concurrent write preserves its mapping', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const alias = `zzzz-locked-alias-${random}`
     const [item] = await upsertRssFeedItems(testRssFeedId, [
@@ -236,7 +238,7 @@ describe('categories limits', () => {
     async function holdMatchingCategory(): Promise<void> {
       await using query = await beginTransaction()
       holderProcessId.resolve(await getTestPostgresBackendProcessId(query))
-      await lockTestRssFeedItemCategory(item!.id, alias, query)
+      await setTestRssFeedItemCategoryTopicId(item!.id, alias, null, query)
       ready.resolve()
       await release.promise
       await query.commit()

@@ -119,50 +119,44 @@ export async function clearUnlinkedTopicAliasCategoryBatch(
   }
   const { rows } = await query<ReResolvedCategoryTopicMapping>(
     `/* clearCategoriesForUnlinkedTopicAlias */
-      WITH input AS (
-        SELECT * FROM UNNEST($1::uuid[], $2::uuid[], $3::text[], $4::uuid[], $5::uuid[])
-          AS row(rss_feed_item_id, category_identity_id, category_text, previous_topic_id, replacement_topic_id)
-      ), candidates AS (
-        SELECT input.*
-        FROM input
-        JOIN rss_feed_item_categories category
-          ON category.rss_feed_item_id = input.rss_feed_item_id
-          AND category.category_identity_id = input.category_identity_id
-        WHERE category.topic_id IS NOT DISTINCT FROM input.previous_topic_id
-          AND (
-            input.replacement_topic_id IS NULL
-            OR EXISTS (
-              SELECT 1 FROM topics replacement_topic
-              WHERE replacement_topic.id = input.replacement_topic_id
-                AND replacement_topic.deleted_at IS NULL
-                AND replacement_topic.merged_into_topic_id IS NULL
-            )
-          )
-          AND NOT EXISTS (
-            SELECT 1 FROM topic_aliases current_alias
-            WHERE current_alias.id = $6::uuid AND current_alias.topic_id IS NOT NULL
-          )
-        ORDER BY input.rss_feed_item_id, input.category_identity_id
-        FOR UPDATE OF category
-      )
       UPDATE rss_feed_item_categories target
-      SET topic_id = candidates.replacement_topic_id
-      FROM candidates
-      WHERE target.rss_feed_item_id = candidates.rss_feed_item_id
-        AND target.category_identity_id = candidates.category_identity_id
-        AND target.topic_id IS DISTINCT FROM candidates.replacement_topic_id
+      SET topic_id = input.replacement_topic_id
+      FROM UNNEST($1::uuid[], $2::uuid[], $3::uuid[], $4::uuid[])
+        AS input(rss_feed_item_id, category_identity_id, previous_topic_id, replacement_topic_id)
+      WHERE target.rss_feed_item_id = input.rss_feed_item_id
+        AND target.category_identity_id = input.category_identity_id
+        AND target.topic_id IS NOT DISTINCT FROM input.previous_topic_id
+        AND target.topic_id IS DISTINCT FROM input.replacement_topic_id
+        AND (
+          input.replacement_topic_id IS NULL
+          OR EXISTS (
+            SELECT 1 FROM topics replacement_topic
+            WHERE replacement_topic.id = input.replacement_topic_id
+              AND replacement_topic.deleted_at IS NULL
+              AND replacement_topic.merged_into_topic_id IS NULL
+          )
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM topic_aliases current_alias
+          WHERE current_alias.id = $5::uuid AND current_alias.topic_id IS NOT NULL
+        )
+        AND ($6::text <> 'alias_id' OR target.topic_alias_id = $5::uuid)
+        AND ($6::text <> 'alias_text' OR NOT EXISTS (
+          SELECT 1 FROM topic_aliases WHERE alias = LOWER($7::text) AND topic_id IS NOT NULL
+        ))
       RETURNING
         target.rss_feed_item_id,
         target.category_text,
-        candidates.previous_topic_id AS topic_id,
-        candidates.replacement_topic_id`,
+        input.previous_topic_id AS topic_id,
+        input.replacement_topic_id`,
     [
       candidateItems.map(row => row.rss_feed_item_id),
       candidateItems.map(row => row.category_identity_id),
-      candidateItems.map(row => row.category_text),
       candidateItems.map(row => row.previous_topic_id),
       candidateItems.map(row => row.replacement_topic_id),
       topicAliasId,
+      rawPage.match,
+      alias,
     ],
   )
   if (rows.length !== candidateItems.length)

@@ -9,7 +9,7 @@ export type RssFeedStateInsert = {
   reason?: string | null
 }
 
-export type LatestRssFeedState = { is_enabled: boolean; changed_by_id: string | null }
+export type LatestRssFeedState = { id: string; is_enabled: boolean; changed_by_id: string | null }
 
 function assertReason(reason: string | null | undefined): void {
   assert(reason === undefined || reason === null || reason.length <= 1000, 400, 'reason too long')
@@ -40,7 +40,7 @@ export async function insertRssFeedStateChanges(
   )
 }
 
-/** Locks the latest decision of each kind, returning only the kinds that have one. */
+/** Reads the latest decision of each kind, returning only the kinds that have one. */
 export async function lockLatestRssFeedStates(
   query: TransactionQuery,
   rssFeedId: string,
@@ -48,10 +48,10 @@ export async function lockLatestRssFeedStates(
 ): Promise<Map<RssFeedStateKind, LatestRssFeedState>> {
   const { rows } = await query(
     `/* lockLatestRssFeedStates */
-      SELECT kind.change_type, latest.is_enabled, latest.changed_by_id
+      SELECT kind.change_type, latest.id, latest.is_enabled, latest.changed_by_id
       FROM unnest($2::rss_feed_setting_change_types[]) AS kind(change_type)
       CROSS JOIN LATERAL (
-        SELECT is_enabled, changed_by_id
+        SELECT id, is_enabled, changed_by_id
         FROM rss_feed_setting_changes
         WHERE rss_feed_id = $1 AND change_type = kind.change_type
         ORDER BY id DESC
@@ -63,7 +63,7 @@ export async function lockLatestRssFeedStates(
   return new Map(
     (rows as Array<LatestRssFeedState & { change_type: RssFeedStateKind }>).map(row => [
       row.change_type,
-      { is_enabled: row.is_enabled, changed_by_id: row.changed_by_id },
+      { id: row.id, is_enabled: row.is_enabled, changed_by_id: row.changed_by_id },
     ]),
   )
 }
