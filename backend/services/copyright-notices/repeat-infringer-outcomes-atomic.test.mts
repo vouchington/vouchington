@@ -8,6 +8,9 @@ import {
   confirmTestRepeatInfringerNotice,
   createTestRepeatInfringerRestriction,
 } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
+import { interceptPostgresTransactionQueriesForTest } from '@voucha/test-helpers/injected-transaction-queries'
+import { readTestRepeatInfringerEnforcementState } from '@voucha/test-helpers/copyright-repeat-infringer-enforcement'
+import { readTestRepeatInfringerOpenReviewIds } from '@voucha/test-helpers/copyright-repeat-infringer'
 import { getPrivateUserByAny } from '@services/users/get'
 import { unsuspendUser } from '@services/users/suspension'
 import {
@@ -128,13 +131,26 @@ describe('atomic copyright repeat-infringer outcomes', () => {
     )
   })
 
-  it('does not suspend when reversal commits before enforcement', async () => {
+  it('keeps the review open when an incident stops counting before the outcome write', async () => {
     const { poster, moderator, admin, reviewId, reverse, enforce } = await thresholdFixture()
-    await reverse(moderator)
-    await expect(enforce(admin, reviewId)).rejects.toMatchObject({ status: 409 })
-    await expect(getPrivateUserByAny(poster.id)).resolves.toEqual(
-      expect.objectContaining({ suspended_at: null }),
+    const restore = interceptPostgresTransactionQueriesForTest(
+      (statement, values) =>
+        statement.includes('recordCopyrightRepeatInfringerReviewOutcome:current') &&
+        values.includes(reviewId),
+      async () => {
+        restore()
+        await reverse(moderator)
+      },
     )
+    try {
+      await expect(enforce(admin, reviewId)).rejects.toMatchObject({ status: 409 })
+    } finally {
+      restore()
+    }
+    await expect(
+      readTestRepeatInfringerEnforcementState({ accountId: poster.id, reviewId }),
+    ).resolves.toEqual({ outcome: null, suspended: false })
+    await expect(readTestRepeatInfringerOpenReviewIds(poster.id)).resolves.toEqual([reviewId])
   })
 
   it('suspends when enforcement commits before reversal', async () => {
