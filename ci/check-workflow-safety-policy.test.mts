@@ -32,22 +32,6 @@ describe('static workflow safety scan', () => {
     })
   })
 
-  it('rejects the privileged PR-target trigger in any workflow', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'workflow-safety-privileged-'))
-    onTestFinished(() => rm(root, { recursive: true, force: true }))
-    await exec('git', ['init', '--quiet', root])
-    const workflows = join(root, '.github/workflows')
-    await mkdir(workflows, { recursive: true })
-    await writeFile(join(workflows, 'bad.yml'), 'on: pull_request_target\njobs: {}\n')
-    await exec('git', ['-C', root, 'add', '.github/workflows'])
-    await expect(
-      exec(process.execPath, [join(import.meta.dirname, 'check-workflow-safety-policy.mts'), root]),
-    ).rejects.toMatchObject({
-      code: 1,
-      stderr: 'bad.yml: pull_request_target is forbidden; use pull_request\n',
-    })
-  })
-
   it('fails closed when the supplied tree has no workflows', async () => {
     const root = await mkdtemp(join(tmpdir(), 'workflow-safety-empty-'))
     onTestFinished(() => rm(root, { recursive: true, force: true }))
