@@ -1,5 +1,5 @@
 import { read } from '@data-stores/psql'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import sql from 'sql-template-strings'
 import {
   CLASSIFIER_UNREQUESTED_GRACE_MS,
@@ -32,7 +32,7 @@ export async function readUnrequestedClassifierFeedItems<C, L, E>(
   scope: ClassifierRunHealthScope = {},
 ): Promise<UnrequestedClassifierSubjects | null> {
   if (!adapter.requestsEveryEligibleFeedItem) return null
-  const since = timestampToUuidv7LowerBound(now.getTime() - CLASSIFIER_UNREQUESTED_LOOKBACK_MS)
+  const since = getMinUuidv7ForDate(new Date(now.getTime() - CLASSIFIER_UNREQUESTED_LOOKBACK_MS))
   const settledBefore = new Date(now.getTime() - CLASSIFIER_UNREQUESTED_GRACE_MS)
   const itemIds = scope.rssFeedItemIds ? [...scope.rssFeedItemIds] : null
   // Replica lag delays this alarm by at most one reconcile tick and never hides a run that is

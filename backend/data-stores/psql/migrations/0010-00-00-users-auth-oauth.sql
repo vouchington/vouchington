@@ -258,6 +258,10 @@ CREATE INDEX IF NOT EXISTS idx_users__deleted_at
   ON users (deleted_at)
   WHERE deleted_at IS NOT NULL;
 
+-- Bounded cyclic ballot cleanup walks only soft-deleted users in UUID order.
+CREATE INDEX IF NOT EXISTS idx_users__deleted_user_id
+  ON users (id) WHERE deleted_at IS NOT NULL;
+
 -- Age-milestone UUIDv7 ranges for users without an admin override.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_users__vote_weight_age_milestone

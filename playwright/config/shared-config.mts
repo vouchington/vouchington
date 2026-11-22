@@ -6,18 +6,15 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   assetHostResolverRule,
+  nodeServerCommand,
   originOrFallback,
   parseMaxWorkers,
-  withOptionalLaunchOptionArg,
-  withNodeOption,
-} from './config-helpers.mts'
-import {
-  createReporter,
-  imageLambdaEnv,
-  nodeServerCommand,
   shellQuote,
+  withNodeOption,
+  withOptionalLaunchOptionArg,
   withOtelNodeOptions,
-} from './web-server-command.mts'
+} from 'vouchington-tooling/playwright-config'
+import { createVouchaReporter, imageLambdaEnv, otelRegisterPreload } from './web-server-command.mts'
 import { playwrightTestTimeout } from './test-timeout.mts'
 import { playwrightWebPublicEnv } from './web-public-env.mts'
 const __dirname = fileURLToPath(new URL('../..', import.meta.url))
@@ -51,6 +48,7 @@ export const CHROMIUM_USE = withOptionalLaunchOptionArg(
 )
 const nodeOptions = withNodeOption(process.env.NODE_OPTIONS, '--disable-warning=DEP0205')
 const otelEnabled = process.env.OTEL_ENABLED === '1'
+const otelPreload = otelEnabled ? otelRegisterPreload : undefined
 const otelGracefulShutdown = otelEnabled
   ? { signal: 'SIGTERM' as const, timeout: 10_000 }
   : undefined
@@ -90,7 +88,7 @@ export function createPlaywrightConfig({
     workers,
     forbidOnly: CI,
     retries: CI ? 1 : 0,
-    reporter: createReporter(junitOutputFile, CI),
+    reporter: createVouchaReporter(junitOutputFile, CI),
     globalSetup,
     maxFailures: CI ? 3 : undefined,
     timeout,
@@ -117,7 +115,7 @@ export function createPlaywrightConfig({
           serviceName: 'voucha-api-e2e',
           command: backendCommand,
           logDir: PLAYWRIGHT_WEB_SERVER_LOG_DIR,
-          otelEnabled,
+          otelPreload,
         }),
         name: 'backend',
         url: `${BACKEND_URL}/infra/ping`,
@@ -134,7 +132,7 @@ export function createPlaywrightConfig({
           serviceName: 'voucha-lambdas-e2e',
           command: `IMAGE_LAMBDA_PORT=${IMAGE_LAMBDA_PORT} node lambdas/dev-server.mts`,
           logDir: PLAYWRIGHT_WEB_SERVER_LOG_DIR,
-          otelEnabled,
+          otelPreload,
         }),
         name: 'lambdas',
         url: `${IMAGE_LAMBDA_URL}/health`,
@@ -163,7 +161,7 @@ export function createPlaywrightConfig({
           ALLOW_TURNSTILE_TEST_KEY: process.env.ALLOW_TURNSTILE_TEST_KEY ?? 'true',
           IMAGE_ORIGIN: process.env.IMAGE_ORIGIN ?? IMAGE_LAMBDA_URL,
           GTM_ID: process.env.GTM_ID || process.env.NEXT_PUBLIC_GTM_ID || 'GTM-PLAYWRIGHT',
-          NODE_OPTIONS: withOtelNodeOptions(nodeOptions, otelEnabled),
+          NODE_OPTIONS: withOtelNodeOptions(nodeOptions, otelPreload),
           ...(otelEnabled ? { OTEL_LOGS_EXPORTER: 'otlp', OTEL_SERVICE_NAME: 'voucha-web' } : {}),
         },
         gracefulShutdown: otelGracefulShutdown,

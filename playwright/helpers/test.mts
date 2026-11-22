@@ -8,7 +8,7 @@ import {
 import {
   runnablePlaywrightTest,
   type RunnablePlaywrightTestInfo as TestInfo,
-} from '../config/public-test-contract.mts'
+} from 'vouchington-tooling/playwright-config'
 import {
   createBrowserErrorsFixture,
   withMonitoredPage as withBrowserIssueMonitoring,
@@ -48,7 +48,7 @@ export const test = runnablePlaywrightTest(
 export { protectPlaywrightHookTimeouts } from '../config/test-timeout.mts'
 
 export { expect }
-export type { RunnablePlaywrightTestInfo as TestInfo } from '../config/public-test-contract.mts'
+export type { RunnablePlaywrightTestInfo as TestInfo } from 'vouchington-tooling/playwright-config'
 export type { Browser, BrowserContext, Locator, Page, Request } from '@playwright/test'
 
 export function withMonitoredPage<T>(

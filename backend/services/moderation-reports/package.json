@@ -48,6 +48,7 @@
   "devDependencies": {
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",
-    "@voucha/types": "workspace:^"
+    "@voucha/types": "workspace:^",
+    "@vouchington/uuid-v7": "^0.0.0"
   }
 }

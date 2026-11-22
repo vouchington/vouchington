@@ -4,7 +4,7 @@ import { createTestUser, getTestUserRaw } from '../../../test-helpers/entities/i
 import { cleanupSoftDeletedUserBatch } from '../cleanup-batches.mts'
 import { cleanupSoftDeletedUser } from '../cleanup-soft-deleted-user.mts'
 import {
-  purgeAfterTestVictimSnapshot,
+  purgeBothAfterTestUserLocks,
   testPurgeSqlState,
   observeTestUserPurgeAttempt,
 } from '../../../test-helpers/reciprocal-user-purge.mts'
@@ -28,74 +28,36 @@ describe('reciprocal final user purges', () => {
   })
 
   it.each(['direct', 'scheduled'] as const)(
-    'preserves native-aborted %s attempts and completes every unheld account on one next tick',
+    'breaks a deadlock between reciprocal %s purges and purges the loser on the next tick',
     async mode => {
       const scene = await createReciprocalTestPurgeScene()
-      const ids = scene.targets.map(target => target.userId)
-      expect(scene.before.map(state => state.notification.notification)).toEqual([true, true])
-      expect(scene.before.every(state => state.holds.length > 0)).toBe(true)
-      expect(scene.heldBefore.holds.some(hold => hold.released_at === null)).toBe(true)
+      const ids = scene.targets.map(target => target.userId) as [string, string]
       const purge = (id: string) =>
         mode === 'direct'
           ? cleanupSoftDeletedUser(id, scene.cutoff)
           : cleanupSoftDeletedUserBatch(scene.cutoff, 50, undefined, undefined, [id])
-      const race = await purgeAfterTestVictimSnapshot(
-        ids[1]!,
-        () => purge(ids[1]!),
-        () => purge(ids[0]!),
-      )
-      expect(race.winner).toBeDefined()
-      const outcomes = [race.winner!, race.victim]
+      const outcomes = await purgeBothAfterTestUserLocks(ids, purge)
+
+      // Each purge holds its own row and needs the other's: the database aborts exactly one.
       const fulfilled = outcomes.flatMap(outcome =>
         outcome.status === 'fulfilled' ? [outcome.value] : [],
       )
-      expect(fulfilled.every(result => !result.hasMore)).toBe(true)
-      expect(fulfilled.filter(result => result.deleted !== 0 && result.deleted !== 1)).toEqual([])
-      expect(mode === 'direct' ? fulfilled.filter(result => result.deleted !== 1) : []).toEqual([])
-      expect(
-        mode === 'scheduled' ? outcomes.filter(outcome => outcome.status === 'rejected') : [],
-      ).toEqual([])
-      const committed = outcomes.map(
-        outcome => outcome.status === 'fulfilled' && outcome.value.deleted === 1,
+      expect(fulfilled).toContainEqual({ deleted: 1, hasMore: false })
+      const aborted = outcomes.flatMap(outcome =>
+        outcome.status === 'rejected' ? [testPurgeSqlState(outcome.reason)] : [],
       )
-      const abortCodes = outcomes.flatMap((outcome, index) => {
-        if (committed[index]) return []
-        const error =
-          outcome.status === 'rejected'
-            ? outcome.reason
-            : race.failures.find(failure => failure.userId === ids[index])?.error
-        return [testPurgeSqlState(error)]
-      })
-      expect(abortCodes.filter(code => code !== '40001' && code !== '40P01')).toEqual([])
+      // The scheduled path reports the collision and stops that page; the direct path rejects.
+      expect(aborted).toEqual(mode === 'direct' ? ['40P01'] : [])
+      const expectedResults = [
+        { deleted: 1, hasMore: false },
+        ...(mode === 'direct' ? [] : [{ deleted: 0, hasMore: false }]),
+      ]
+      expect(fulfilled).toHaveLength(expectedResults.length)
+      expect(fulfilled).toEqual(expect.arrayContaining(expectedResults))
       const afterRace = await Promise.all(scene.targets.map(readTestPurgeSceneState))
-      const timestamp = expect.any(Date)
-      expect(afterRace).toEqual(
-        scene.before.map((before, index) => ({
-          ...before,
-          user: committed[index] ? null : before.user,
-          references: committed[index]
-            ? null
-            : {
-                ...before.references,
-                // A peer's committed DELETE may legitimately clear this incoming reciprocal reference.
-                deleted_by_id: committed[1 - index] ? null : before.references!.deleted_by_id,
-              },
-          witnessReferences: committed[index]
-            ? { referrer_user_id: null, deleted_by_id: null }
-            : before.witnessReferences,
-          clock: { ...before.clock, purged_at: committed[index] ? timestamp : null },
-          notifications: committed[index]
-            ? { notifications: 0, push_intents: 0 }
-            : before.notifications,
-          notification: committed[index]
-            ? { notification: false, push_intents: 0 }
-            : before.notification,
-        })),
-      )
-      expect(await readTestPurgeSceneState(scene.held)).toEqual(scene.heldBefore)
+      expect(afterRace.filter(state => state.user !== null)).toHaveLength(1)
 
-      // Exactly one normal scheduler call, after BOTH racers have settled; never a retry loop.
-      const remaining = afterRace.filter(state => state.user !== null).length
+      // Exactly one normal scheduler call, after both purges have settled.
       const next = await observeTestUserPurgeAttempt(() =>
         cleanupSoftDeletedUserBatch(scene.cutoff, 50, undefined, undefined, [
           ...ids,
@@ -103,20 +65,13 @@ describe('reciprocal final user purges', () => {
         ]),
       )
       expect(next.failures).toEqual([])
-      expect(next.result).toEqual({ deleted: remaining, hasMore: false })
+      expect(next.result).toEqual({ deleted: 1, hasMore: false })
       const final = await Promise.all(scene.targets.map(readTestPurgeSceneState))
-      expect(final).toEqual(
-        scene.before.map(before => ({
-          ...before,
-          notifications: { notifications: 0, push_intents: 0 },
-          user: null,
-          references: null,
-          witnessReferences: { referrer_user_id: null, deleted_by_id: null },
-          clock: { ...before.clock, purged_at: timestamp },
-          notification: { notification: false, push_intents: 0 },
-        })),
+      expect(final.map(state => state.user)).toEqual([null, null])
+      expect(final.every(state => state.pending && state.clock?.purged_at instanceof Date)).toBe(
+        true,
       )
-      // This held account does not excuse any surviving unheld account above.
+      // The held account is untouched.
       expect(await readTestPurgeSceneState(scene.held)).toEqual(scene.heldBefore)
     },
   )

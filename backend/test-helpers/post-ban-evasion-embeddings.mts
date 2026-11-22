@@ -10,7 +10,8 @@ import { updatePostEmbeddingData } from './entities/posts-embeddings.mts'
 import { createTestUuidWindow } from './uuid-window.mts'
 import { processAuthorDeletionPublicationBatch } from '../services/post-publication/capture-author-deletion-batch.mts'
 import { rearmNextPostBanEvasionEmbedding } from '../services/posts/ban-evasion-embeddings.mts'
-import { observeTestTransactionLockNotice } from './postgres-advisory-lock-notice.mts'
+import { observeTestTransactionLockNotice } from 'vouchington-tooling/postgres-test-faults'
+import { testLockNoticeOptions } from './postgres-lock-notice-options.mts'
 
 export async function createTestBanEvasionEmbeddingChain() {
   const author = await createTestUser()
@@ -70,7 +71,11 @@ export async function deleteTestPostAfterBanEvasionMarkerWait(
   )
   const identity = rows[0]!
   const client = await writePool.connect()
-  const observer = observeTestTransactionLockNotice(client, identity.transaction_id)
+  const observer = observeTestTransactionLockNotice(
+    client,
+    identity.transaction_id,
+    testLockNoticeOptions,
+  )
   let released: Promise<void> | undefined
   const release = () => (released ??= releaseHolder())
   let completed: Promise<void> | undefined

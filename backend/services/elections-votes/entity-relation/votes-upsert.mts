@@ -58,9 +58,6 @@ export async function upsertEntityRelationElectionVotes(
     .toSorted((left, right) => left.entityId.localeCompare(right.entityId))
   const { enqueueVoteStats = true, ...queryOptions } = options
   const run = async (transaction: TransactionQuery) => {
-    await transaction(sql`/* lockActiveUserForEntityRelationElectionVoteMutation */
-      SELECT fn_lock_active_user_for_mutation(${normalizedUserId}::uuid)
-    `)
     // Keep the lookup row locked through the ballot insert on this transaction.
     const userAgentId = await upsertUserAgentString(context.userAgent?.trim() || null, {
       query: transaction,
@@ -115,6 +112,7 @@ export async function upsertEntityRelationElectionVotes(
       WHERE relation_index = `)
       query.append(String(index))
       query.append(sql`
+        AND EXISTS (SELECT 1 FROM users WHERE id = ${normalizedUserId}::uuid AND deleted_at IS NULL)
         AND score IS DISTINCT FROM (
           SELECT previous.score
           FROM `)

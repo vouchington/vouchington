@@ -138,8 +138,8 @@ async function deleteTerminalNotificationPushIntentBatch(
 ): Promise<number> {
   const query = sql`/* deleteTerminalNotificationPushIntentBatch */
     DELETE FROM notification_push_intents
-    WHERE (user_id, notification_id) IN (
-      SELECT user_id, notification_id
+    WHERE id = ANY(ARRAY(
+      SELECT id
       FROM notification_push_intents
       WHERE status IN ('delivered', 'suppressed')
         AND COALESCE(delivered_at, suppressed_at) < ${cutoffDate}
@@ -151,7 +151,7 @@ async function deleteTerminalNotificationPushIntentBatch(
       ORDER BY COALESCE(delivered_at, suppressed_at) ASC, user_id ASC, notification_id ASC
       LIMIT ${batchSize}
       FOR UPDATE SKIP LOCKED
-    )`)
+    ))`)
   const { rowCount } = await write(query)
   return rowCount ?? 0
 }

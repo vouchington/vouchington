@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@data-stores/valkey-core": "workspace:^",
-    "@voucha/test-helpers": "workspace:^"
+    "@voucha/test-helpers": "workspace:^",
+    "@vouchington/uuid-v7": "^0.0.0"
   }
 }

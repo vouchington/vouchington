@@ -22,7 +22,7 @@ import {
   listAiUsageRecordsForClassifierRun,
 } from '@voucha/test-helpers/entities/ai-usage'
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import { executeAutotaggerAgentRun } from './agent-run.mts'
 
 const adapter = createAutotaggerAgentRunAdapter()
@@ -230,7 +230,7 @@ describe('executeAutotaggerAgentRun failures (real PG)', () => {
     const callTurn = vi.fn<AgentToolTurnCaller>(async () => {
       // The first turn must leave known priced spend on the reserved day before the next check.
       await insertTestAiUsageRecord({
-        id: timestampToUuidv7LowerBound(Date.now()),
+        id: getMinUuidv7ForDate(new Date()),
         costMicrounits: 1,
       })
       await refreshDailyAiCostTotalMicrounits()

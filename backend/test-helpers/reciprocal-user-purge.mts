@@ -36,12 +36,10 @@ export async function readTestUserPurgeReferences(userId: string): Promise<{
 }
 
 type PurgeFailure = { userId: string | undefined; error: unknown }
-type BeforeQuery = (query: QueryExecutor, text: string, values: readonly unknown[]) => Promise<void>
 
 function observePurgeTransaction(
   transaction: OwnedTransaction,
   failures: PurgeFailure[],
-  before?: BeforeQuery,
 ): OwnedTransaction {
   let userId: string | undefined
   const commit = transaction.commit
@@ -60,7 +58,6 @@ function observePurgeTransaction(
       const text = typeof statement === 'string' ? statement : statement.text
       const values = typeof statement === 'string' ? (parameters ?? []) : statement.values
       if (text.includes('cleanupSoftDeletedUserBatch: check target')) userId = String(values[0])
-      await before?.(target, text, values)
       try {
         return await Reflect.apply(target, receiver, args)
       } catch (err) {
@@ -72,35 +69,45 @@ function observePurgeTransaction(
   })
 }
 
-/** Pin one actor's SSI snapshot before table reads, then settle its real competitor. */
-export async function purgeAfterTestVictimSnapshot<Result, Winner>(
-  victimId: string,
-  operation: () => Promise<Result>,
-  winner: () => Promise<Winner>,
-): Promise<{
-  victim: PromiseSettledResult<Result>
-  winner: PromiseSettledResult<Winner> | undefined
-  failures: PurgeFailure[]
-}> {
-  let competing: PromiseSettledResult<Winner> | undefined
-  let applied = false
-  const failures: PurgeFailure[] = []
-  const restore = interceptPostgresTransactionsForTest(transaction =>
-    observePurgeTransaction(transaction, failures, async (query, text, values) => {
-      if (
-        !applied &&
-        text.includes('cleanupSoftDeletedUserBatch: check target') &&
-        values.includes(victimId)
-      ) {
-        applied = true
-        await query('/* pinTestVictimPurgeSnapshot */ SELECT pg_current_snapshot()')
-        ;[competing] = await Promise.allSettled([winner()])
-      }
-    }),
+/**
+ * Settles both purges after each has locked its own account row, so each DELETE then needs the
+ * other's locked row (the users' incoming references) and the database must break the deadlock.
+ */
+export async function purgeBothAfterTestUserLocks<Result>(
+  ids: readonly [string, string],
+  purge: (id: string) => Promise<Result>,
+): Promise<PromiseSettledResult<Result>[]> {
+  const arrived = ids.map(() => Promise.withResolvers<void>())
+  const bothArrived = Promise.all(arrived.map(arrival => arrival.promise))
+  void bothArrived.catch(() => undefined)
+  const restore = interceptPostgresTransactionsForTest(
+    transaction =>
+      new Proxy(transaction, {
+        async apply(target, receiver, args: Parameters<QueryExecutor>) {
+          const result = await Reflect.apply(target, receiver, args)
+          const [statement, parameters] = args
+          const text = typeof statement === 'string' ? statement : statement.text
+          const values = typeof statement === 'string' ? (parameters ?? []) : statement.values
+          const index = ids.indexOf(String(values[0]))
+          if (text.includes('cleanupSoftDeletedUserBatch:lockUser') && index >= 0) {
+            arrived[index]!.resolve()
+            await bothArrived
+          }
+          return result
+        },
+      }),
   )
   try {
-    const [victim] = await Promise.allSettled([operation()])
-    return { victim: victim!, winner: competing, failures }
+    return await Promise.allSettled(
+      ids.map(async (id, index) => {
+        try {
+          return await purge(id)
+        } finally {
+          // A purge that settles before reaching the barrier would park the other forever.
+          arrived[index]!.reject(new Error('Purge settled before reaching the lock barrier'))
+        }
+      }),
+    )
   } finally {
     restore()
   }

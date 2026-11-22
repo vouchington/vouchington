@@ -5,7 +5,7 @@ import {
   countTestAiUsageRows,
   reserveTestAiUsageRetentionSweep,
 } from '@voucha/test-helpers/entities/ai-usage-rollups'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import { psql } from '@queues/psql/queues'
 import type { PsqlRetentionJobData } from '@queues/psql/types'
 import processPsql from '../processors.mts'
@@ -23,7 +23,7 @@ describe('AI usage retention continuation', () => {
     const month = new Date()
     const base = Date.UTC(month.getUTCFullYear(), month.getUTCMonth(), 1, 12)
     const idAt = (offset: number) =>
-      `${timestampToUuidv7LowerBound(base + offset * 1_000).slice(0, 24)}${randomBytes(6).toString('hex')}`
+      `${getMinUuidv7ForDate(new Date(base + offset * 1_000)).slice(0, 24)}${randomBytes(6).toString('hex')}`
     const ownedIds = [idAt(0), idAt(1), idAt(2)]
     const outsideId = idAt(3)
     for (const id of [...ownedIds, outsideId]) await insertTestAiUsageRecord({ id })

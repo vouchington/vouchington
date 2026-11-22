@@ -242,7 +242,7 @@ describe('ensureMembershipFromStripeSubscription provider transaction failures',
     try {
       await insertStripeEvent(event)
       const { result, error } = await withPostgresQueryFailureForTest(
-        '/* recordStripeMembershipProviderFacts: lock user before source state */',
+        '/* linkStripeMembershipSourceObservation */',
         () =>
           ensureMembershipFromStripeSubscription(eventId, subscriptionId, customerId, {
             applicationId,
@@ -252,7 +252,7 @@ describe('ensureMembershipFromStripeSubscription provider transaction failures',
             if (!('code' in err) || err.code !== '25P02') throw err
             return err
           }),
-        { command: 'SELECT' },
+        { command: 'UPDATE' },
       )
       expect(error).toMatchObject({ code: '25P02' })
       expect(result).toBe(error)

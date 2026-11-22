@@ -3,7 +3,7 @@ import { acquireTestAiUsageDateReservation, insertTestAiUsageRecord } from '@vou
 import { createAuthenticatedTestSession } from '@voucha/test-helpers/authenticated-session'
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import { acquireTestAiUsageDateReservationControlSlot } from '@voucha/test-helpers/entities/ai-usage-date-reservation'
 import { getTestAiUsageSlotGridForDate } from '@voucha/test-helpers/ai-usage-date-grid'
 import {
@@ -75,7 +75,7 @@ describe('acquireTestAiUsageDateReservation', () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date(`${first.day}T12:00:00.000Z`))
     await insertTestAiUsageRecord({
-      id: timestampToUuidv7LowerBound(Date.now()),
+      id: getMinUuidv7ForDate(new Date()),
       costMicrounits: 321,
     })
     // Refresh bypasses a stale entry that an earlier test left for this recycled day's fake noon.
@@ -108,7 +108,7 @@ describe('acquireTestAiUsageDateReservation', () => {
     onTestFinished(() => initial.release())
     const dayStartMs = Date.parse(`${initial.day}T00:00:00.000Z`)
     await insertTestAiUsageRecord({
-      id: timestampToUuidv7LowerBound(dayStartMs),
+      id: getMinUuidv7ForDate(new Date(dayStartMs)),
       costMicrounits: 999,
     })
     await initial.release()
@@ -120,7 +120,7 @@ describe('acquireTestAiUsageDateReservation', () => {
     await expect(refreshDailyAiCostTotalMicrounits()).resolves.toMatchObject({ totalMicrounits: 0 })
 
     await insertTestAiUsageRecord({
-      id: timestampToUuidv7LowerBound(dayStartMs + 12 * 60 * 60 * 1000),
+      id: getMinUuidv7ForDate(new Date(dayStartMs + 12 * 60 * 60 * 1000)),
       costMicrounits: 321,
     })
     await expect(refreshDailyAiCostTotalMicrounits()).resolves.toMatchObject({

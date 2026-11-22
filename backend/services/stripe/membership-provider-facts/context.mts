@@ -31,12 +31,11 @@ class StripeMembershipEventNotIngestedError extends Error {
   override name = 'StripeMembershipEventNotIngestedError'
 }
 
-export async function getLockedMembershipFact(
+export async function getMembershipFactForStripeEvent(
   options: { stripeEventId: string; membershipId: string },
   query: QueryExecutor,
 ): Promise<MembershipFact | null> {
   await assertStripeMembershipEventIngested(options.stripeEventId, query)
-  await lockMembershipFactUser(options.membershipId, query)
   return getMembershipFact(options, query)
 }
 
@@ -51,16 +50,6 @@ async function assertStripeMembershipEventIngested(
     throw new StripeMembershipEventNotIngestedError(
       `Stripe event ${stripeEventId} was not durably ingested`,
     )
-}
-
-async function lockMembershipFactUser(membershipId: string, query: QueryExecutor): Promise<void> {
-  await query(sql`/* recordStripeMembershipProviderFacts: lock user before source state */
-    SELECT member_user.id
-    FROM memberships membership
-    INNER JOIN users member_user ON member_user.id = membership.user_id
-    WHERE membership.id = ${membershipId}
-
-  `)
 }
 
 async function getMembershipFact(
@@ -82,8 +71,6 @@ async function getMembershipFact(
     WHERE membership.id = ${options.membershipId}
       AND source.source_kind = 'direct'
       AND context.provider = 'stripe'
-    /* deadlock-safe: membership.id reaches one source and its one current state */
-
   `)
   return (rows[0] as MembershipFact | undefined) ?? null
 }

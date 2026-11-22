@@ -1,5 +1,5 @@
 import { read } from '@data-stores/psql'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import sql from 'sql-template-strings'
 import type { ClassifierRunHealthScope } from './health-unrequested.mts'
 import { CLASSIFIER_TERMINAL_WINDOW_MS } from './health-thresholds.mts'
@@ -26,7 +26,7 @@ export async function readClassifierTerminalCounts(
   now: Date,
   scope: ClassifierRunHealthScope = {},
 ): Promise<ClassifierTerminalCounts> {
-  const since = timestampToUuidv7LowerBound(now.getTime() - CLASSIFIER_TERMINAL_WINDOW_MS)
+  const since = getMinUuidv7ForDate(new Date(now.getTime() - CLASSIFIER_TERMINAL_WINDOW_MS))
   // Replica lag delays this alarm by at most one reconcile tick and never hides a run that is
   // already terminal on the writer.
   const statement = sql`/* readClassifierTerminalCounts */

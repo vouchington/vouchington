@@ -5,9 +5,13 @@ import {
   type JWSTransactionDecodedPayload,
 } from '@apple/app-store-server-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getMembershipVerification } from '@services/memberships'
+import { getMembershipByUserId, getMembershipVerification } from '@services/memberships'
 import { processMembershipVerification } from '@services/memberships/process-verification'
-import { createTestUser } from '@voucha/test-helpers'
+import {
+  createTestMembershipProviderLineage,
+  createTestUser,
+  getTestMembershipProviderLineageAccountId,
+} from '@voucha/test-helpers'
 import {
   createTestAppleVerificationFixture,
   submitTestAppleVerification,
@@ -16,7 +20,7 @@ import { MembershipProviderUnavailableError } from '../provider-unavailable.mts'
 import { processAppleMembershipVerification } from './process-verification.mts'
 import type { AppleTransactionVerifier } from './types.mts'
 
-describe('Apple verification prior-attempt finalization', () => {
+describe('Apple verification finalization', () => {
   afterEach(() => vi.unstubAllEnvs())
 
   it('keeps a verification pending through a configuration outage and verifies it once restored', async () => {
@@ -51,18 +55,89 @@ describe('Apple verification prior-attempt finalization', () => {
       reason_code: 'verified',
     })
   })
+
+  it.each(['same', 'different'] as const)(
+    'preserves the winning token if a %s account binds the notification-first lineage',
+    async account => {
+      const user = await createTestUser()
+      const fixture = await createTestAppleVerificationFixture(user.id, undefined, 'production')
+      const winnerUser = account === 'same' ? user : await createTestUser()
+      const winnerFixture =
+        account === 'same'
+          ? fixture
+          : await createTestAppleVerificationFixture(
+              winnerUser.id,
+              fixture.applicationId,
+              'production',
+            )
+      const providerLineageId = `notification-first-race-${randomUUID()}`
+      const sourceIdentity = {
+        provider: 'apple_app_store' as const,
+        environment: 'production' as const,
+        applicationId: fixture.applicationId,
+        providerLineageId,
+      }
+      await createTestMembershipProviderLineage(sourceIdentity)
+      const verification = await submitTestAppleVerification(
+        user.id,
+        fixture,
+        `signed-${randomUUID()}`,
+      )
+      const winner = await submitTestAppleVerification(
+        winnerUser.id,
+        winnerFixture,
+        `signed-${randomUUID()}`,
+      )
+
+      const contenderReady = Promise.withResolvers<void>()
+      const winnerFinished = Promise.withResolvers<void>()
+      const contenderVerifier = makeProductionVerifier(fixture, providerLineageId)
+      const contender = processAppleMembershipVerification(verification.id, {
+        createVerifier: () => ({
+          async verifyAndDecodeTransaction(signedTransactionInfo) {
+            contenderReady.resolve()
+            await winnerFinished.promise
+            return contenderVerifier.verifyAndDecodeTransaction(signedTransactionInfo)
+          },
+        }),
+      })
+      try {
+        await Promise.race([contenderReady.promise, contender])
+        await processAppleMembershipVerification(winner.id, {
+          createVerifier: () => makeProductionVerifier(winnerFixture, providerLineageId),
+        })
+      } finally {
+        winnerFinished.resolve()
+        await contender
+      }
+
+      await expect(getTestMembershipProviderLineageAccountId(sourceIdentity)).resolves.toBe(
+        winnerFixture.purchaseIntentId,
+      )
+      await expect(getMembershipVerification(winnerUser.id, winner.id)).resolves.toMatchObject({
+        status: 'verified',
+      })
+      await expect(getMembershipVerification(user.id, verification.id)).resolves.toMatchObject(
+        account === 'same'
+          ? { status: 'verified', reason_code: 'verified' }
+          : { status: 'conflict', reason_code: 'wrong_account' },
+      )
+      await expect(getMembershipByUserId(winnerUser.id)).resolves.toMatchObject({ plan: 'plus' })
+      const contenderMembership = await getMembershipByUserId(user.id)
+      expect(contenderMembership?.plan ?? null).toBe(account === 'same' ? 'plus' : null)
+    },
+  )
 })
 
-function makeProductionVerifier(fixture: {
-  applicationId: string
-  providerProductId: string
-  purchaseIntentId: string
-}): AppleTransactionVerifier {
+function makeProductionVerifier(
+  fixture: { applicationId: string; providerProductId: string; purchaseIntentId: string },
+  providerLineageId = `original-transaction-${randomUUID()}`,
+): AppleTransactionVerifier {
   return {
     async verifyAndDecodeTransaction(): Promise<JWSTransactionDecodedPayload> {
       return {
         appAccountToken: fixture.purchaseIntentId,
-        originalTransactionId: `original-transaction-${randomUUID()}`,
+        originalTransactionId: providerLineageId,
         transactionId: `transaction-${randomUUID()}`,
         bundleId: fixture.applicationId,
         productId: fixture.providerProductId,

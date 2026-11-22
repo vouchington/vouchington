@@ -1,6 +1,22 @@
 /* v8 ignore start -- declarative schema-test allowlists have no executable branches */
 export const RETENTION_CURSOR_UUID_COLUMNS_WITHOUT_KEYS = [
   [
+    'deleted_user_ballot_cleanup_cursors.cursor_owner_id',
+    'User keyset position survives hard purge.',
+  ],
+  [
+    'deleted_user_ballot_cleanup_cursors.cursor_entity_id',
+    'Ballot partition position survives the swept entity.',
+  ],
+  [
+    'deleted_user_ballot_cleanup_cursors.cursor_ballot_id',
+    'Page position survives deletion of the inspected ballot.',
+  ],
+  [
+    'deleted_user_ballot_cleanup_cursors.sweep_upper_bound_id',
+    'Frozen keyset end survives the swept user.',
+  ],
+  [
     'import_retention_cursors.cursor_row_id',
     'Deletion-stable import row keyset position survives the swept row; it is not a relationship.',
   ],

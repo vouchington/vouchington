@@ -1,8 +1,7 @@
 import type { ReporterDescription } from '@playwright/test'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { TestLifecycleReporter } from 'vouchington-tooling/playwright'
-import { withNodeOption } from './config-helpers.mts'
+import { createReporter, definedEnv } from 'vouchington-tooling/playwright-config'
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
 const apiTestServerGuardReporter = join(
@@ -11,16 +10,10 @@ const apiTestServerGuardReporter = join(
   'config',
   'api-test-server-guard-reporter.mts',
 )
-const otelRegisterPreload = join(repoRoot, 'dev', 'otel-register.mts')
+export const otelRegisterPreload = join(repoRoot, 'dev', 'otel-register.mts')
 
-export function shellQuote(value: string): string {
-  return `'${value.replace(/'/g, `'\\''`)}'`
-}
-
-export function definedEnv(source: NodeJS.ProcessEnv): Record<string, string> {
-  return Object.fromEntries(
-    Object.entries(source).filter((entry): entry is [string, string] => entry[1] !== undefined),
-  )
+export function createVouchaReporter(junitOutputFile: string, ci: boolean): ReporterDescription[] {
+  return createReporter({ junitOutputFile, ci, extraReporters: [[apiTestServerGuardReporter]] })
 }
 
 export function imageLambdaEnv(source: NodeJS.ProcessEnv, port: string): Record<string, string> {
@@ -30,47 +23,4 @@ export function imageLambdaEnv(source: NodeJS.ProcessEnv, port: string): Record<
     S3_BUCKET_IMAGES: source.S3_BUCKET_IMAGES || 'test-images',
     S3_BUCKET_RENDERS: source.S3_BUCKET_RENDERS || 'test-renders',
   })
-}
-
-export function createReporter(junitOutputFile: string, ci: boolean): ReporterDescription[] {
-  return ci
-    ? [
-        ['github'],
-        ['junit', { outputFile: process.env.PLAYWRIGHT_JUNIT_OUTPUT_FILE || junitOutputFile }],
-        [TestLifecycleReporter.modulePath, { failOnSkippedTests: ci }],
-        [apiTestServerGuardReporter],
-      ]
-    : [['html', { open: 'never' }], [apiTestServerGuardReporter]]
-}
-
-function withOtelNodeImport(command: string, otelEnabled: boolean): string {
-  if (!otelEnabled) return command
-  return command.replace(/(^|\s)node(?=\s)/, `$1node --import ${shellQuote(otelRegisterPreload)}`)
-}
-
-export function withOtelNodeOptions(nodeOptions: string, otelEnabled: boolean): string {
-  if (!otelEnabled) return nodeOptions
-  return withNodeOption(nodeOptions, `--import "${otelRegisterPreload}"`)
-}
-
-export function nodeServerCommand({
-  name,
-  serviceName,
-  command,
-  logDir,
-  otelEnabled,
-}: {
-  name: string
-  serviceName: string
-  command: string
-  logDir: string
-  otelEnabled: boolean
-}): string {
-  const logPath = join(logDir, `${name}.log`)
-  const envPrefix = [
-    `OTEL_SERVICE_NAME=${serviceName}`,
-    ...(otelEnabled ? ['OTEL_LOGS_EXPORTER=otlp'] : []),
-  ].join(' ')
-  const instrumentedCommand = `${envPrefix} ${withOtelNodeImport(command, otelEnabled)}`
-  return `bash -lc ${shellQuote(`set -o pipefail; mkdir -p ${shellQuote(logDir)}; ${instrumentedCommand} 2>&1 | tee ${shellQuote(logPath)}`)}`
 }

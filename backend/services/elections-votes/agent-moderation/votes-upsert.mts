@@ -48,9 +48,6 @@ export async function upsertAgentModerationElectionVotes(
   // ballot is harmless to counts. Best effort: an overlapping double-submit can also record a
   // duplicate moderator action and training row, which have no natural key to dedupe on.
   return runWithTransaction(undefined, async (query: TransactionQuery) => {
-    await query(sql`/* lockActiveUserForAgentModerationElectionVoteMutation */
-      SELECT fn_lock_active_user_for_mutation(${userId}::uuid)
-    `)
     // Hold the lookup row's key-share lock until this ballot insert commits.
     const userAgentId = await upsertUserAgentString(context.userAgent?.trim() || null, { query })
     const { rows: previousVotes } = await query<{
@@ -94,7 +91,8 @@ export async function upsertAgentModerationElectionVotes(
     ORDER BY ballot.id DESC
     LIMIT 1
   ) previous_vote ON TRUE
-  WHERE input_votes.score IS DISTINCT FROM previous_vote.score
+  WHERE EXISTS (SELECT 1 FROM users WHERE id = ${userId}::uuid AND deleted_at IS NULL)
+    AND input_votes.score IS DISTINCT FROM previous_vote.score
   ORDER BY input_votes.agent_moderation_id
   RETURNING agent_moderation_id AS entity_id, post_id, user_id, score, created_at
   `)

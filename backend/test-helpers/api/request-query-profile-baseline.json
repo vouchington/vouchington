@@ -402,14 +402,6 @@
     ]
   },
   {
-    "annotation": "lockExistingTopicAliasPublicationScopes",
-    "maxCount": null,
-    "reason": "Alias claim reads existing alias ids before the alias row is updated, so a concurrent insert is visible to the conflict check.",
-    "permanent": true,
-    "code": "backend/services/topics/alias-publication-locks.mts:10",
-    "routes": ["POST /api/v1/posts/:idOrSlug/approvals"]
-  },
-  {
     "annotation": "lockSessionDeviceAuthority:userFence",
     "routes": ["POST /api/v1/app-attestation/attest"],
     "maxCount": 2,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import {
   createTestUser,
   deleteTestPost,
@@ -34,7 +34,7 @@ describe('automatic report judgement eligibility', () => {
     const createdAt = new Date(Date.now() + 60_000)
     const upperBound = new Date(createdAt.getTime() + 1000)
     const beforeCursor = {
-      id: timestampToUuidv7LowerBound(upperBound.getTime()),
+      id: getMinUuidv7ForDate(upperBound),
       createdAt: upperBound.toISOString(),
     }
     const communityReportId = await insertTestModerationReport({
