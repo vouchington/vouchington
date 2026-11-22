@@ -13,7 +13,8 @@ import {
   addLocalSecondaryEmailsForUser,
   countLocalEmailsForUser,
 } from '../../../../test-helpers/data-stores/psql/email-addresses.mts'
-import { runConfigDrivenStatementsInTransaction } from '../../migration-runner/config-driven-statements.mts'
+import { runConfigDrivenStatementsInTransaction } from '@vouchington/postgres'
+import { beginTransaction } from '../../setup.mts'
 import { buildSystemUserUpsertSQL, buildSeedAdminUserSQL } from '../utils/system-user-seed.mts'
 import generateSeedAdminUserSQL from '../0010-00-02-seed-admin-user.mts'
 
@@ -38,7 +39,7 @@ JOIN user_role_types urt ON urt.slug = 'moderator'
 WHERE u.username = '${reservedUsername}' AND u.platform_account_kind = 'official'
 ON CONFLICT (user_id, role_type_id) DO NOTHING;`
 
-    await runConfigDrivenStatementsInTransaction(sql, undefined)
+    await runConfigDrivenStatementsInTransaction(sql, { beginTransaction })
 
     const squatterState = await getLocalTestUserRaw(squatterId)
     expect(squatterState?.username).toMatch(/^reclaimed-[0-9a-f]{32}$/)
@@ -59,19 +60,18 @@ ON CONFLICT (user_id, role_type_id) DO NOTHING;`
     const username = localSafeUsername('seed-email-cap')
     const email = `tests+${username}@voucha.ai`
     const seed = buildSeedAdminUserSQL(username, email)
-    await runConfigDrivenStatementsInTransaction(seed, undefined)
+    await runConfigDrivenStatementsInTransaction(seed, { beginTransaction })
     const user = await getLocalTestUserRawByUsername(username)
     await addLocalSecondaryEmailsForUser(
       user!.id,
       Array.from({ length: 9 }, (_, index) => `tests+${username}-${index}@voucha.ai`),
     )
-    await runConfigDrivenStatementsInTransaction(seed, undefined)
+    await runConfigDrivenStatementsInTransaction(seed, { beginTransaction })
     const rejectedEmail = `tests+${username}-excess@voucha.ai`
     await expect(
-      runConfigDrivenStatementsInTransaction(
-        buildSeedAdminUserSQL(username, rejectedEmail),
-        undefined,
-      ),
+      runConfigDrivenStatementsInTransaction(buildSeedAdminUserSQL(username, rejectedEmail), {
+        beginTransaction,
+      }),
     ).rejects.toMatchObject({ code: '23514' })
     expect(await countLocalEmailsForUser(user!.id)).toBe(10)
     expect(await isLocalPrimaryEmailForUser(user!.id, email)).toBe(true)
@@ -79,8 +79,8 @@ ON CONFLICT (user_id, role_type_id) DO NOTHING;`
   })
 
   it('runs the real jong admin generator to a stable end state across reruns', async () => {
-    await runConfigDrivenStatementsInTransaction(generateSeedAdminUserSQL(), undefined)
-    await runConfigDrivenStatementsInTransaction(generateSeedAdminUserSQL(), undefined)
+    await runConfigDrivenStatementsInTransaction(generateSeedAdminUserSQL(), { beginTransaction })
+    await runConfigDrivenStatementsInTransaction(generateSeedAdminUserSQL(), { beginTransaction })
 
     const jong = await getLocalTestUserRawByUsername('jong')
     expect(jong?.platform_account_kind).toBe('official')
@@ -95,11 +95,11 @@ ON CONFLICT (user_id, role_type_id) DO NOTHING;`
   it('does not register a proposed orphan identity when an existing system user is seeded again', async () => {
     const reservedUsername = localSafeUsername('seed-replay')
     const sql = buildSystemUserUpsertSQL(reservedUsername)
-    await runConfigDrivenStatementsInTransaction(sql, undefined)
+    await runConfigDrivenStatementsInTransaction(sql, { beginTransaction })
     const existing = await getLocalTestUserRawByUsername(reservedUsername)
     expect(existing?.platform_account_kind).toBe('system')
 
-    await runConfigDrivenStatementsInTransaction(sql, undefined)
+    await runConfigDrivenStatementsInTransaction(sql, { beginTransaction })
     const replayed = await getLocalTestUserRawByUsername(reservedUsername)
     expect(replayed?.id).toBe(existing?.id)
     expect(await countLocalRetainedRootsFromCurrentUserVersion(replayed!.id)).toBe(0)

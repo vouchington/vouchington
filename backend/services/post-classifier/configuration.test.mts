@@ -5,7 +5,8 @@ import {
   POST_CLASSIFIER_PROMPT,
   POST_CLASSIFIER_REMOTE_QUESTIONS,
 } from '@voucha/types/entities/post-classifier'
-import { runConfigDrivenStatementsInTransaction } from '@data-stores/psql/migration-runner/config-driven-statements'
+import { runConfigDrivenStatementsInTransaction } from '@vouchington/postgres'
+import { beginTransaction } from '@data-stores/psql'
 import generateSeedPostClassifierSQL from '@data-stores/psql/config-driven/0635-00-03-seed-post-classifier'
 import {
   getPostClassifierSeedState,
@@ -29,7 +30,9 @@ describe('current post classifier configuration (real PG and Valkey)', () => {
   beforeAll(async () => {
     releaseSeedLock = (await acquirePostClassifierSeedTestLock()).release
     await moderationConfig.waitForInitialization()
-    await runConfigDrivenStatementsInTransaction(generateSeedPostClassifierSQL(), undefined)
+    await runConfigDrivenStatementsInTransaction(generateSeedPostClassifierSQL(), {
+      beginTransaction,
+    })
   })
   afterAll(async () => releaseSeedLock?.())
 
@@ -181,7 +184,7 @@ describe('current post classifier configuration (real PG and Valkey)', () => {
       ).resolves.not.toBeNull()
     } finally {
       await rotatePostClassifierPrompt('temporary cleanup prompt')
-      await runConfigDrivenStatementsInTransaction(seed, undefined)
+      await runConfigDrivenStatementsInTransaction(seed, { beginTransaction })
     }
   })
 })

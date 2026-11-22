@@ -1,4 +1,5 @@
-import { isUniqueViolation, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
+import { isUniqueViolation } from '@vouchington/postgres'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { validateLandingPageSlug, validateSubtitle, validateTitle } from './shared.mts'

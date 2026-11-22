@@ -5,7 +5,8 @@ import {
   POST_CLASSIFIER_REMOTE_QUESTIONS,
 } from '@voucha/types/entities/post-classifier'
 import { POST_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/user-constants'
-import { runConfigDrivenStatementsInTransaction } from '../../migration-runner/config-driven-statements.mts'
+import { runConfigDrivenStatementsInTransaction } from '@vouchington/postgres'
+import { beginTransaction } from '../../setup.mts'
 import {
   getPostClassifierSeedState,
   replacePostClassifierThreshold,
@@ -34,9 +35,9 @@ describe('post classifier config-driven seed (real DB)', () => {
 
   it('converges to one system actor, active prompt, and ten independently bounded candidates', async () => {
     const statements = generateSeedPostClassifierSQL()
-    await runConfigDrivenStatementsInTransaction(statements, undefined)
+    await runConfigDrivenStatementsInTransaction(statements, { beginTransaction })
     const first = await getPostClassifierSeedState()
-    await runConfigDrivenStatementsInTransaction(statements, undefined)
+    await runConfigDrivenStatementsInTransaction(statements, { beginTransaction })
     const second = await getPostClassifierSeedState()
 
     expect(second).toEqual(first)
@@ -64,12 +65,12 @@ describe('post classifier config-driven seed (real DB)', () => {
 
   it('keeps manual candidate bounds for an unchanged prompt and rotates prompt history', async () => {
     const statements = generateSeedPostClassifierSQL()
-    await runConfigDrivenStatementsInTransaction(statements, undefined)
+    await runConfigDrivenStatementsInTransaction(statements, { beginTransaction })
     const before = await getPostClassifierSeedState()
     const chosen = before.candidates[0]!
     try {
       await replacePostClassifierThreshold(chosen.candidateId, before.activePromptIds[0]!, 0.3, 0.8)
-      await runConfigDrivenStatementsInTransaction(statements, undefined)
+      await runConfigDrivenStatementsInTransaction(statements, { beginTransaction })
       const manual = await getPostClassifierSeedState()
       expect(manual.activePromptIds).toEqual(before.activePromptIds)
       expect(manual.candidates[0]).toMatchObject({ lower: 0.3, upper: 0.8 })
@@ -77,7 +78,7 @@ describe('post classifier config-driven seed (real DB)', () => {
       expect(manual.candidates.slice(1)).toEqual(before.candidates.slice(1))
 
       await rotatePostClassifierPrompt('temporary test prompt')
-      await runConfigDrivenStatementsInTransaction(statements, undefined)
+      await runConfigDrivenStatementsInTransaction(statements, { beginTransaction })
       const restored = await getPostClassifierSeedState()
       expect(restored.activePromptIds).toHaveLength(1)
       expect(restored.activePromptIds[0]).not.toBe(before.activePromptIds[0])
@@ -89,7 +90,7 @@ describe('post classifier config-driven seed (real DB)', () => {
       ).toBe(true)
     } finally {
       await rotatePostClassifierPrompt('temporary cleanup prompt')
-      await runConfigDrivenStatementsInTransaction(statements, undefined)
+      await runConfigDrivenStatementsInTransaction(statements, { beginTransaction })
     }
   })
 })

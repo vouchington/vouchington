@@ -1,7 +1,8 @@
 import { COMMUNITY_MODERATION_CLASSIFIER_SLUG } from '@voucha/types/entities/community-moderation-classifier'
 import { MODERATION_SYSTEM_USERNAME } from '@voucha/types/entities/user-constants'
 import { describe, expect, it } from 'vitest'
-import { runConfigDrivenStatementsInTransaction } from '../../migration-runner/config-driven-statements.mts'
+import { runConfigDrivenStatementsInTransaction } from '@vouchington/postgres'
+import { beginTransaction } from '../../setup.mts'
 import { getLocalClassifierSeedFacts } from '../../../../test-helpers/data-stores/psql/classifiers-seed.mts'
 import generateSeedCommunityModerationClassifierSQL from '../0635-00-04-seed-community-moderation-classifier.mts'
 
@@ -41,9 +42,9 @@ describe('0635-00-04-seed-community-moderation-classifier SQL shape', () => {
 
 describe('0635-00-04-seed-community-moderation-classifier (real DB)', () => {
   it('converges to one active classifier and prompt version across reruns', async () => {
-    await runConfigDrivenStatementsInTransaction(generated, undefined)
+    await runConfigDrivenStatementsInTransaction(generated, { beginTransaction })
     const first = await getLocalClassifierSeedFacts(COMMUNITY_MODERATION_CLASSIFIER_SLUG)
-    await runConfigDrivenStatementsInTransaction(generated, undefined)
+    await runConfigDrivenStatementsInTransaction(generated, { beginTransaction })
     const second = await getLocalClassifierSeedFacts(COMMUNITY_MODERATION_CLASSIFIER_SLUG)
 
     expect(second).toEqual(first)

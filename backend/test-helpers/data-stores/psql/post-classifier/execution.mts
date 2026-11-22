@@ -1,5 +1,5 @@
-import { write } from '@data-stores/psql'
-import { runConfigDrivenStatementsInTransaction } from '@data-stores/psql/migration-runner/config-driven-statements'
+import { runConfigDrivenStatementsInTransaction } from '@vouchington/postgres'
+import { beginTransaction, write } from '@data-stores/psql'
 import generateSeed from '@data-stores/psql/config-driven/0635-00-03-seed-post-classifier'
 import type { StructuredDecisionResult } from '@vouchington/ai/structured-decisions'
 import { POST_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/post-classifier'
@@ -25,7 +25,7 @@ export function createTestPostClassifierAdapter() {
 
 /** Restores the seeded active prompt version after a test rotated it. */
 export function reseedPostClassifierForTest() {
-  return runConfigDrivenStatementsInTransaction(generateSeed(), undefined)
+  return runConfigDrivenStatementsInTransaction(generateSeed(), { beginTransaction })
 }
 
 export async function initializePostClassifierExecutionTests() {

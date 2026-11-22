@@ -1,5 +1,6 @@
 import { uuidv7RandomToBase36, createSlugFromTitle, isUUID, validateSlug } from '@modules/utils'
-import { isUniqueViolation, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
+import { isUniqueViolation } from '@vouchington/postgres'
 import type { QueryOptions } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'

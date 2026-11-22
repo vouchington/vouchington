@@ -36,6 +36,7 @@
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/localization-compiler": "^0.3.0",
+    "@vouchington/postgres": "^0.6.2",
     "@vouchington/sentry": "^0.6.0",
     "sql-template-strings": "^2.2.2",
     "valkyries": "^0.15.0"

@@ -1,7 +1,8 @@
 import { hashToken as hashSecretToken } from '@modules/token-secrets'
 import { awaitReportedEnqueueAdmission } from '@data-stores/valkey-glide-mq'
 import { validateEmailAddress } from '@services/email-address-validator'
-import { isUniqueViolation, withTransactionOptions, type QueryOptions } from '@data-stores/psql'
+import { withTransactionOptions, type QueryOptions } from '@data-stores/psql'
+import { isUniqueViolation } from '@vouchington/postgres'
 import createHttpError from 'http-errors'
 import {
   lockEmailAuthenticationScope,
