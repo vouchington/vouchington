@@ -55,14 +55,12 @@ export async function runMembershipReversalCaseCreationScenario(): Promise<void>
     `exfam-${suffix.slice(0, 8)}`,
   ])
   await using familyTransaction = await beginTransaction()
-  const family = await createProviderMembershipSource(
-    {
-      userId: familyUserId,
-      sourceKind: 'family',
-      sourceIdentity: { ...sourceIdentity, providerLineageId: `family_${suffix}` },
-    },
-    familyTransaction,
-  )
+  const familyOptions = {
+    userId: familyUserId,
+    sourceKind: 'family' as const,
+    sourceIdentity: { ...sourceIdentity, providerLineageId: `family_${suffix}` },
+  }
+  const family = await createProviderMembershipSource(familyOptions, familyTransaction)
   await familyTransaction.commit()
   const { rows: membershipRows } = await write<{ id: string; user_id: string }>(
     `/* seedReversalWinnerMemberships */
@@ -153,14 +151,18 @@ export async function runMembershipReversalCaseCreationScenario(): Promise<void>
     subscriptionId: sourceIdentity.providerLineageId,
   }
   await runMembershipReversalReadScenarios(lookup)
-  await runMembershipReversalBindingScenarios({
-    userId,
-    sourceIdentity,
-    invoice,
-    stripePriceId: `price_${suffix}`,
-    winningSourceKind: 'family',
-    collisionAt: new Date(1_800_043_200_000),
-  })
+  await runMembershipReversalBindingScenarios(
+    {
+      userId,
+      sourceIdentity,
+      invoice,
+      stripePriceId: `price_${suffix}`,
+      winningSourceKind: 'family',
+      collisionAt: new Date(1_800_043_200_000),
+    },
+    source.lineageId,
+    { ...family, options: familyOptions },
+  )
   await runMembershipReversalSelectorScenarios(
     userId,
     familyUserId,

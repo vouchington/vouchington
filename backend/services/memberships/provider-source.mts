@@ -95,12 +95,12 @@ async function createOrLockProviderLineageBinding(
     ON CONFLICT DO NOTHING`)
   const { rows } =
     options.sourceKind === 'direct'
-      ? await query(sql`/* createMembership: lock provider binding */
+      ? await query(sql`/* createMembership: find provider binding */
           SELECT id, user_id FROM membership_lineage_bindings
           WHERE membership_provider_lineage_id = ${lineageId}
             AND source_kind = 'direct'
             AND released_at IS NULL`)
-      : await query(sql`/* createMembership: lock provider binding */
+      : await query(sql`/* createMembership: find provider binding */
           SELECT id, user_id FROM membership_lineage_bindings
           WHERE membership_provider_lineage_id = ${lineageId}
             AND source_kind = 'family'
