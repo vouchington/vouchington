@@ -1,6 +1,7 @@
 import { getUserDeletionsWorkLimit } from './work-limits.mts'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { purgeDeletedUserBallotPage } from './deleted-user-ballot-page.mts'
 import { getNextUserDeletionPhase } from './phases.mts'
 import { createUserDeletionSuccessor } from './successor.mts'
 import type { UserDeletionBatchResult, UserDeletionRequest } from './types.mts'
@@ -50,7 +51,8 @@ async function finalizeUserDeletionAttempt(
 
 /**
  * Locks the users row `FOR NO KEY UPDATE` before the "no remaining owned data" check. Writers
- * fence with `FOR SHARE` on this row, so one that started earlier commits first and is counted.
+ * that still fence take `FOR SHARE` on this row, so one that started earlier commits first and is
+ * counted. Ballot writers do not fence; a late ballot is removed by `canCompleteUserDeletion`.
  */
 async function lockUserRow(userId: string, query: TransactionQuery) {
   await query(sql`/* advanceUserDeletionAttempt:lockUser */
@@ -113,6 +115,15 @@ async function canCompleteUserDeletion(
     )
   `)
   if ((receipts.rowCount ?? 0) > 0) return false
+
+  // A ballot that commits after the votes phase would otherwise fail this check on every retry
+  // until the global sweep reaches the user. Ballots are append-only and never fenced.
+  const ballots = await purgeDeletedUserBallotPage(
+    query,
+    request.userId,
+    getUserDeletionsWorkLimit('straggler_ballot_batch_size'),
+  )
+  if (ballots > 0) return false
 
   const { rows } = await query(sql`/* advanceUserDeletionAttempt:canComplete */
     SELECT NOT EXISTS (

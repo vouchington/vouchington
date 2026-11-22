@@ -84,23 +84,33 @@ export async function createAppleVerificationLineage(
     ) ON CONFLICT (membership_provider_context_id, provider_lineage_id) DO NOTHING
     RETURNING id`)
   if (rows[0]) return (rows[0] as { id: string }).id
-  const { rows: existingRows } = await query(sql`/* lockAppleVerificationLineage */
+  const findLineage = sql`/* getAppleVerificationLineage */
+    SELECT id, provider_account_id FROM membership_provider_lineages
+    WHERE membership_provider_context_id = ${contextId}
+      AND provider_lineage_id = ${observation.providerLineageId}`
+  let {
+    rows: [existing],
+  } = await query<{
+    id: string
+    provider_account_id: string | null
+  }>(sql`/* lockAppleVerificationLineage */
     SELECT id, provider_account_id FROM membership_provider_lineages
     WHERE membership_provider_context_id = ${contextId}
       AND provider_lineage_id = ${observation.providerLineageId}
     FOR UPDATE`)
-  const existing = existingRows[0] as { id: string; provider_account_id: string | null } | undefined
   if (!existing) throw new AppleVerificationConflictError('wrong_account')
   if (observation.sourceKind === 'family') return existing.id
   if (existing.provider_account_id === null) {
-    const { rowCount } = await query(sql`/* bindAppleVerificationLineageAccount */
+    await query(sql`/* bindAppleVerificationLineageAccount */
       UPDATE membership_provider_lineages
       SET provider_account_id = ${observation.appAccountToken}
       WHERE id = ${existing.id} AND provider_account_id IS NULL`)
-    if (rowCount !== 1) throw new AppleVerificationConflictError('wrong_account')
-    return existing.id
+    const { rows: boundRows } = await query<{ id: string; provider_account_id: string | null }>(
+      findLineage,
+    )
+    existing = boundRows[0]
   }
-  if (existing.provider_account_id !== observation.appAccountToken)
+  if (!existing || existing.provider_account_id !== observation.appAccountToken)
     throw new AppleVerificationConflictError('wrong_account')
   return existing.id
 }

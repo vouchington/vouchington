@@ -22,6 +22,8 @@ import {
   withConcurrentCommunityArchiveForTest,
   withConcurrentCommunityMembershipRemovalForTest,
 } from '@voucha/test-helpers/post-delegated-write-race'
+import { softDeleteUser } from '@voucha/test-helpers/entities/users-lifecycle'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import { readStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
 import { withAbortedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-aborted-transaction'
 import { lockCommunityRestrictionWrites } from './lock.mts'
@@ -117,6 +119,24 @@ describe('community restriction writers after committed settings writes', () => 
     ).rejects.toMatchObject({ status: 401, message: 'User not found' })
     expect(await countTestCommunityRestrictions(community.id)).toBe(0)
     expect(await readStaffActionHistory(currentUser.id)).toEqual([])
+  })
+  it('refuses activation when the moderator is deleted after authorization', async () => {
+    const { currentUser, loaded, community } = await fixture()
+    const restore = runBeforePostgresStatementForTest('activateCommunityRestrictions:insert', () =>
+      softDeleteUser(currentUser.id),
+    )
+    try {
+      await expect(
+        activateCommunityRestrictions(currentUser, loaded, {
+          restrictionTypes: ['no_links'],
+          expiresAt: null,
+        }),
+      ).rejects.toMatchObject({ status: 401 })
+      expect(await countTestCommunityRestrictions(community.id)).toBe(0)
+      expect(await readStaffActionHistory(currentUser.id)).toEqual([])
+    } finally {
+      restore()
+    }
   })
   it('activates restrictions after a community settings write commits', async () => {
     const { currentUser, loaded, community } = await fixture()

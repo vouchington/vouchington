@@ -12194,6 +12194,9 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0

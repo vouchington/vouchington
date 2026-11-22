@@ -4,6 +4,7 @@ import { assertDispatchWorkPlan } from './plan-custom/dispatch-work.mts'
 import { assertMediaDeliveryReplayPlan } from './plan-custom/media-delivery-replay.mts'
 import { assertAppleNotificationRecoveryPlan } from './plan-custom/membership-apple-notifications.mts'
 import { assertAdminEmailIndexPlan } from './plan-custom/admin-email.mts'
+import { assertBatchPickEvaluatedOnce } from './plan-custom/batch-pick-once.mts'
 import { assertClassifierHumanVoteComparisonPlanIfApplicable } from './plan-custom/classifier-human-vote-comparison.mts'
 import { assertCopyrightStatementFactsIsTargetBounded } from './plan-custom/copyright-statement-facts.mts'
 import { assertClaimantMisuseCursorSeek } from './plan-custom/claimant-misuse-cursor.mts'
@@ -34,6 +35,7 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   mediaDeliveryReplay: assertMediaDeliveryReplayPlan,
   appleNotificationRecovery: assertAppleNotificationRecoveryPlan,
   adminEmail: assertAdminEmailIndexPlan,
+  batchPickEvaluatedOnce: assertBatchPickEvaluatedOnce,
   classifierBatch: assertClassifierHumanVoteComparisonPlanIfApplicable,
   copyrightFacts: assertCopyrightStatementFactsIsTargetBounded,
   claimantMisuseCursorSeek: assertClaimantMisuseCursorSeek,

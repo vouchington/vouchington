@@ -7,6 +7,8 @@ import {
   insertTestAgentPrompt,
   insertTestPost,
 } from '@voucha/test-helpers'
+import { deleteUser } from '@services/users/delete'
+import { getAgentModerationElectionVote } from './votes-get.mts'
 import { upsertAgentModerationElectionVotes } from './votes-upsert.mts'
 
 describe('latest agent moderation ballots', () => {
@@ -80,5 +82,33 @@ describe('latest agent moderation ballots', () => {
       ]),
     )
     expect(restored).toHaveLength(2)
+  })
+
+  it('writes no ballot for a deleted voter', async () => {
+    const [author, voter] = await Promise.all([createTestUser(), createTestUser()])
+    const agent = await createTestAgent({ agentType: 'moderator', activated: true })
+    const promptId = await insertTestAgentPrompt({ agentId: agent.id, activated: true })
+    const suffix = crypto.randomUUID()
+    const postId = await insertTestPost({
+      title: `Deleted voter ${suffix}`,
+      slug: `deleted-voter-${suffix}`,
+      createdById: author.id,
+      markdown: 'Deleted voter guard regression',
+    })
+    await insertTestAgentModeration({
+      postId,
+      promptId,
+      agentId: agent.id,
+      flagged: false,
+      results: { flagged: false },
+    })
+    const moderation = ((await getPostLLMModerations(postId)) as Array<{ id: string }>)[0]
+    if (!moderation) throw new Error('Agent moderation ID not found')
+    await deleteUser(voter, voter)
+
+    expect(
+      await upsertAgentModerationElectionVotes(voter.id, [{ entityId: moderation.id, score: 1 }]),
+    ).toEqual([])
+    expect(await getAgentModerationElectionVote(voter.id, moderation.id)).toBeNull()
   })
 })

@@ -22,3 +22,13 @@ export async function getTopicMergeAdmissionCheckpoint(
   )
   return rows[0]!
 }
+
+export async function readActiveTopicMergeAdmissionIds(sourceTopicIds: readonly string[]) {
+  const { rows } = await write<{ id: string }>(
+    `/* readActiveTopicMergeAdmissionIds */ SELECT id FROM topic_merge_operations
+      WHERE source_topic_id = ANY($1::uuid[])
+        AND completed_at IS NULL AND failed_at IS NULL`,
+    [sourceTopicIds],
+  )
+  return rows.map(row => row.id)
+}

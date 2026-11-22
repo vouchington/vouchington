@@ -85,7 +85,6 @@ export async function completeStripeRefundScanCycle(cycle: StripeRefundScanCycle
       SELECT generation::TEXT AS generation, completed_at AS "completedAt"
       FROM membership_ineligible_purchase_reversal_refund_scan_cycles
       WHERE membership_ineligible_purchase_reversal_case_id = ${cycle.reversalCaseId}
-      FOR UPDATE
     `)
     const current = currentRows[0]
     if (current?.generation !== String(cycle.generation) || current.completedAt === null)

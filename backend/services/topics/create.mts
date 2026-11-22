@@ -109,20 +109,8 @@ async function createTopicInDatabase(
 
   const { rows } = await write(
     sql`/* createTopicInDatabase */
-    WITH source_alias_owner AS (
-      SELECT topic.id
-      -- no-mistakes-disable-next-line postgres-required-predicates: source-alias owner must be soft-deleted to revive it
-      FROM topic_aliases source_alias
-      JOIN topics topic ON topic.id = source_alias.topic_id
-      WHERE source_alias.id = ${updates.source_topic_alias_id ?? null}
-        AND topic.id = ANY(${revivalIds}::uuid[])
-        AND topic.slug = ${updates.slug}
-        AND topic.deleted_at IS NOT NULL
-        AND topic.merged_into_topic_id IS NULL
-      FOR UPDATE OF topic
-    ),
     -- A revived topic keeps the provenance of the request that first created it.
-    revived_topic AS (
+    WITH revived_topic AS (
       UPDATE topics
       SET
         deleted_at = NULL,
@@ -132,8 +120,14 @@ async function createTopicInDatabase(
         updated_by_id = ${creator.id},
         bedrock_nova_multimodal_v1_content_sha256 = ${content_sha256},
         homepage_url_id = ${updates.homepage_url_id ?? null}
-      WHERE id = (SELECT id FROM source_alias_owner)
-      RETURNING id
+      FROM topic_aliases source_alias
+      WHERE source_alias.id = ${updates.source_topic_alias_id ?? null}
+        AND topics.id = source_alias.topic_id
+        AND topics.id = ANY(${revivalIds}::uuid[])
+        AND topics.slug = ${updates.slug}
+        AND topics.deleted_at IS NOT NULL
+        AND topics.merged_into_topic_id IS NULL
+      RETURNING topics.id
     ),
     inserted_topic AS (
       INSERT INTO topics (
@@ -155,7 +149,7 @@ async function createTopicInDatabase(
         ${updates.homepage_url_id ?? null},
         ${provenance.createdVia},
         ${provenance.oauthClientId}
-      WHERE NOT EXISTS (SELECT 1 FROM source_alias_owner)
+      WHERE NOT EXISTS (SELECT 1 FROM revived_topic)
       RETURNING id
     )
     SELECT id FROM revived_topic

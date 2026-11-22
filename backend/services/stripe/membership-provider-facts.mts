@@ -10,7 +10,7 @@ import {
 } from './membership-provider-facts/snapshot.mts'
 import { insertStripeMembershipObservation } from './membership-provider-facts/observation.mts'
 import {
-  getLockedMembershipFact,
+  getMembershipFactForStripeEvent,
   MissingStripeMembershipFactContextError,
   type MembershipFact,
 } from './membership-provider-facts/context.mts'
@@ -59,7 +59,7 @@ export async function recordStripeMembershipProviderFactsInTransaction(
   subscription: Stripe.Subscription,
   query: QueryExecutor,
 ): Promise<StripeProviderFacts> {
-  const fact = await getLockedMembershipFact(options, query)
+  const fact = await getMembershipFactForStripeEvent(options, query)
   if (!fact)
     throw new MissingStripeMembershipFactContextError(
       `Membership ${options.membershipId} has no Stripe fact context for event ${options.stripeEventId}`,

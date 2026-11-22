@@ -6,6 +6,7 @@ const defaultFields = {
   processing_timeout_minutes: 30,
   batch_size: 100,
   lifecycle_recovery_batch_size: 500,
+  straggler_ballot_batch_size: 100,
 }
 
 /** Hard ceilings for the current runtime configuration contract. */
@@ -14,6 +15,7 @@ export const userDeletionsWorkMaxValues = {
   processing_timeout_minutes: 720,
   batch_size: 1000,
   lifecycle_recovery_batch_size: 5000,
+  straggler_ballot_batch_size: 500,
 }
 
 export const userDeletionsWorkConfig = new DynamicConfig({
@@ -23,6 +25,7 @@ export const userDeletionsWorkConfig = new DynamicConfig({
     processing_timeout_minutes: 'number',
     batch_size: 'number',
     lifecycle_recovery_batch_size: 'number',
+    straggler_ballot_batch_size: 'number',
   },
   defaultFields,
 })

@@ -118,7 +118,7 @@ export async function deleteOrphanedOAuthAccountBatch(
     DELETE FROM `
     .append(validatedTable)
     .append(sql`
-    WHERE id IN (
+    WHERE id = ANY(ARRAY(
       SELECT id FROM `)
     .append(validatedTable).append(sql`
       WHERE user_id IS NULL
@@ -173,7 +173,7 @@ export async function deleteOrphanedOAuthAccountBatch(
       ORDER BY unlinked_at ASC, id ASC
       LIMIT ${batchSize}
       FOR UPDATE SKIP LOCKED
-    )`)
+    ))`)
 
   const { rowCount } = await write(query)
   return rowCount ?? 0
