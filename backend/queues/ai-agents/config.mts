@@ -4,20 +4,14 @@ import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 export const AI_AGENTS_QUEUE_NAME = 'ai_agents'
 export const aiAgentsQueueMaxValues = {
   background_response_recovery_concurrency: 8,
-  failed_job_reconcile_batch_size: 1000,
-  failed_job_history_limit: 1000,
 }
 const aiAgentsQueueDefaults = {
   background_response_recovery_concurrency: 2,
-  failed_job_reconcile_batch_size: 100,
-  failed_job_history_limit: 100,
 }
 export const aiAgentsQueueConfig = new DynamicConfig({
   key: 'ai-agents-queue-config',
   fieldTypes: {
     background_response_recovery_concurrency: 'number',
-    failed_job_reconcile_batch_size: 'number',
-    failed_job_history_limit: 'number',
   },
   defaultFields: aiAgentsQueueDefaults,
 })
@@ -33,30 +27,13 @@ export function getBackgroundResponseRecoveryConcurrency(): number {
   )
 }
 
-export function getFailedJobReconcileLimits(): { batchSize: number; historyLimit: number } {
-  return {
-    batchSize: getBoundedPositiveIntegerField(
-      aiAgentsQueueConfig,
-      'failed_job_reconcile_batch_size',
-      {
-        defaultValue: aiAgentsQueueDefaults.failed_job_reconcile_batch_size,
-        maxValue: aiAgentsQueueMaxValues.failed_job_reconcile_batch_size,
-      },
-    ),
-    historyLimit: getBoundedPositiveIntegerField(aiAgentsQueueConfig, 'failed_job_history_limit', {
-      defaultValue: aiAgentsQueueDefaults.failed_job_history_limit,
-      maxValue: aiAgentsQueueMaxValues.failed_job_history_limit,
-    }),
-  }
-}
-
 export const AI_AGENTS_DEFAULTS = {
   attempts: 3,
   backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },
   removeOnComplete: 100,
-  // A count-based prune on any job removes older manual rerun evidence from this shared queue.
-  // The bounded failed-job reconciler keeps the ordinary 100-job history explicitly.
-  removeOnFail: false,
+  // PostgreSQL owns failure state: the worker persists a terminal failure in the run row, and a
+  // sweep re-drives any run it missed. Removing the failed record also releases its stable job id.
+  removeOnFail: true,
 } as const
 
 /**
@@ -101,7 +78,7 @@ export type AIAgentJobName =
   | 'reconcile-copyright-form-effect-dispatches'
   | 'reconcile-copyright-appeal-dispatches'
   | 'reconcile-copyright-submission-guidance-dispatches'
-  | 'reconcile-ai-agent-failures'
+  | 'expire-stuck-report-judgement-runs'
   | 'expire-stuck-appeal-resolution-runs'
   | 'expire-stuck-dispute-resolution-runs'
 
@@ -127,7 +104,7 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   'reconcile-copyright-form-effect-dispatches': 100,
   'reconcile-copyright-appeal-dispatches': 100,
   'reconcile-copyright-submission-guidance-dispatches': 100,
-  'reconcile-ai-agent-failures': 100,
+  'expire-stuck-report-judgement-runs': 100,
   'expire-stuck-appeal-resolution-runs': 100,
   'expire-stuck-dispute-resolution-runs': 100,
 }
@@ -176,7 +153,7 @@ export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   'reconcile-copyright-form-effect-dispatches': false,
   'reconcile-copyright-appeal-dispatches': false,
   'reconcile-copyright-submission-guidance-dispatches': false,
-  'reconcile-ai-agent-failures': false,
+  'expire-stuck-report-judgement-runs': false,
   'expire-stuck-appeal-resolution-runs': false,
   'expire-stuck-dispute-resolution-runs': false,
 }

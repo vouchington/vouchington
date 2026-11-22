@@ -10,7 +10,10 @@ export const stuckResolutionRunExpiryRegistryEntry = defineBoundedWorkNamespace(
   maxValues: stuckResolutionRunExpiryMaxValues,
   label: 'Stuck AI resolution run expiry',
   descriptions: {
-    stuck_age_hours: 'Hours an active appeal or dispute AI resolution run waits before it expires.',
+    stuck_age_hours:
+      'Hours an active report judgement, appeal or dispute AI run waits before it expires.',
+    report_batch_size: 'Stuck report judgement runs expired per page.',
+    report_max_batches: 'Pages of stuck report judgement runs expired by one scheduled job.',
     appeal_batch_size: 'Stuck appeal resolution runs expired per page.',
     appeal_max_batches: 'Pages of stuck appeal resolution runs expired by one scheduled job.',
     dispute_batch_size: 'Stuck dispute resolution runs expired per page.',

@@ -13,10 +13,10 @@ import { ai_agents } from '../queues.mts'
 import { enqueueReconcileAutoDispatchJudgements } from './reconcile-auto-dispatch.mts'
 import { enqueueReconcileCopyrightAgentDispatchStage } from './reconcile-copyright-agent-dispatches.mts'
 import { enqueueReconcileClassifierRuns } from './reconcile-classifier-runs.mts'
-import { enqueueReconcileAIAgentFailures } from './reconcile-ai-agent-failures.mts'
 import {
   enqueueExpireStuckAppealResolutionRuns,
   enqueueExpireStuckDisputeResolutionRuns,
+  enqueueExpireStuckReportJudgementRuns,
 } from './expire-stuck-resolution-runs.mts'
 
 function reconcilerOptions(name: keyof typeof AGENT_PRIORITY): JobOptions {
@@ -30,24 +30,6 @@ function reconcilerOptions(name: keyof typeof AGENT_PRIORITY): JobOptions {
 }
 
 export const scheduledJobManifest = defineScheduledJobManifest(AI_AGENTS_QUEUE_NAME, [
-  {
-    schedulerId: 'reconcileAIAgentFailures',
-    repeat: { pattern: '*/5 * * * *' },
-    template: {
-      name: 'reconcile-ai-agent-failures',
-      data: {},
-      opts: () => reconcilerOptions('reconcile-ai-agent-failures'),
-    },
-    operatorSurfaces: [
-      {
-        kind: 'scheduled-jobs',
-        id: 'reconcileAIAgentFailures',
-        schedule: '*/5 * * * *',
-        description: 'Persist failed manual AI reruns and bound ordinary failed-job history',
-        trigger: enqueueReconcileAIAgentFailures,
-      },
-    ],
-  },
   {
     schedulerId: 'reconcileClassifierRuns',
     repeat: { pattern: '*/5 * * * *' },
@@ -108,6 +90,24 @@ export const scheduledJobManifest = defineScheduledJobManifest(AI_AGENTS_QUEUE_N
     ],
   },
   {
+    schedulerId: 'expireStuckReportJudgementRuns',
+    repeat: { pattern: '37 * * * *' },
+    template: {
+      name: 'expire-stuck-report-judgement-runs',
+      data: {},
+      opts: () => reconcilerOptions('expire-stuck-report-judgement-runs'),
+    },
+    operatorSurfaces: [
+      {
+        kind: 'scheduled-jobs',
+        id: 'expireStuckReportJudgementRuns',
+        schedule: '37 * * * *',
+        description: 'Expire report judgement runs left active after a crash or terminal stall',
+        trigger: enqueueExpireStuckReportJudgementRuns,
+      },
+    ],
+  },
+  {
     schedulerId: 'expireStuckAppealResolutionRuns',
     repeat: { pattern: '17 * * * *' },
     template: {
@@ -147,5 +147,4 @@ export const scheduledJobManifest = defineScheduledJobManifest(AI_AGENTS_QUEUE_N
 
 export async function upsertSchedules(): Promise<void> {
   await upsertScheduledJobManifest(ai_agents, scheduledJobManifest)
-  await enqueueReconcileAIAgentFailures()
 }

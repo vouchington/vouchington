@@ -60,10 +60,17 @@ contains only unfinished families. Retained child jobs collapse ordinary admissi
 trimming or a crash before the receipt can replay bounded, idempotent cleanup. A scheduled or
 operator seed restarts from durable cursor state after queue loss or a terminal failure.
 
+AI agent jobs keep no failed record: `removeOnFail` is `true`, and PostgreSQL owns every failure. A
+job on its last attempt (or throwing `UnrecoverableError`) persists the failure in its run row from
+the worker before it fails, for report-judgement reruns, appeal and dispute resolution, and the
+copyright recommendation runs. A crash or a stall past the limit skips that path, so an active run
+is never inferred from the queue.
+
 Automatic moderation-appeal and review-dispute resolution runs commit with their parent row, and the
-queue job is admitted after the commit. If that admission fails, the error is only logged. No failed
-job exists for `reconcile-ai-agent-failures` to find, so the run stays active and no AI draft is
-produced until a sweep ends it. Two scheduled jobs, `expire-stuck-appeal-resolution-runs` and
+queue job is admitted after the commit. If that admission fails, the error is only logged, and a
+manual report-judgement rerun can lose its job to a crash the same way, so the run stays active and
+no AI draft is produced until a sweep ends it. Three scheduled jobs,
+`expire-stuck-report-judgement-runs`, `expire-stuck-appeal-resolution-runs` and
 `expire-stuck-dispute-resolution-runs`, each expire the active runs older than a configured age in
 bounded pages. Each reads an active-run partial index below a UUIDv7 bound computed once per run and
 expires only rows still active, so a run that finished meanwhile is untouched. The age, page size,
