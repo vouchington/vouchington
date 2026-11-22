@@ -1,6 +1,6 @@
 {
   "baselineCommit": "65fb7b2cf",
-  "source": "meta.api and tool input fields in api-fixtures/v1/mcp.json at 65fb7b2cf; shared-route body projections audited against its handlers and REST twins",
+  "source": "meta.api and tool input fields in api-fixtures/v1/mcp.json at 65fb7b2cf, plus route contracts added since by their own pull requests; shared-route body projections audited against its handlers and REST twins",
   "facts": {
     "F01": {
       "scopes": ["moderation:agent-votes", "moderation:read"],
@@ -2808,6 +2808,17 @@
           "option": "note"
         },
         "decision": false
+      },
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I053",
+        "requestBodyFields": ["body", "community_id"],
+        "operation": {
+          "tool": "add_community_moderation",
+          "option": "create_mod_note"
+        },
+        "decision": false
       }
     ],
     "POST:/api/v1/vote-integrity/flags/:id/penalties": [
@@ -4370,2181 +4381,1761 @@
         },
         "decision": false
       }
+    ],
+    "GET:/api/v1/copyright-notices/association-targets": [
+      {
+        "audience": "legal",
+        "facts": "F11",
+        "inputFields": "I204",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "search_copyright_notices_for_association",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/copyright-email-intakes/:id/notice-associations": [
+      {
+        "audience": "legal",
+        "facts": "F25",
+        "inputFields": "I126",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "associate_copyright_email_intake_with_notice",
+          "option": null
+        },
+        "decision": true
+      }
+    ],
+    "PUT:/api/v1/posts/:id/vote": [
+      {
+        "audience": "user",
+        "facts": "F89",
+        "operation": {
+          "tool": "vote",
+          "option": "set_post"
+        },
+        "decision": false,
+        "inputFields": "I054",
+        "requestBodyFields": ["choice"]
+      }
+    ],
+    "DELETE:/api/v1/posts/:id/vote": [
+      {
+        "audience": "user",
+        "facts": "F89",
+        "operation": {
+          "tool": "vote",
+          "option": "clear_post"
+        },
+        "decision": false,
+        "inputFields": "I001",
+        "requestBodyFields": null
+      }
+    ],
+    "PUT:/api/v1/topics/:id/vote": [
+      {
+        "audience": "user",
+        "facts": "F89",
+        "operation": {
+          "tool": "vote",
+          "option": "set_topic"
+        },
+        "decision": false,
+        "inputFields": "I054",
+        "requestBodyFields": ["choice"]
+      }
+    ],
+    "DELETE:/api/v1/topics/:id/vote": [
+      {
+        "audience": "user",
+        "facts": "F89",
+        "operation": {
+          "tool": "vote",
+          "option": "clear_topic"
+        },
+        "decision": false,
+        "inputFields": "I001",
+        "requestBodyFields": null
+      }
+    ],
+    "PUT:/api/v1/rss-feed-items/:id/vote": [
+      {
+        "audience": "user",
+        "facts": "F89",
+        "operation": {
+          "tool": "vote",
+          "option": "set_rss_feed_item"
+        },
+        "decision": false,
+        "inputFields": "I054",
+        "requestBodyFields": ["choice"]
+      }
+    ],
+    "DELETE:/api/v1/rss-feed-items/:id/vote": [
+      {
+        "audience": "user",
+        "facts": "F89",
+        "operation": {
+          "tool": "vote",
+          "option": "clear_rss_feed_item"
+        },
+        "decision": false,
+        "inputFields": "I001",
+        "requestBodyFields": null
+      }
+    ],
+    "PUT:/api/v1/rss-feed-items/:id/read": [
+      {
+        "audience": "user",
+        "facts": "F90",
+        "operation": {
+          "tool": "set_rss_feed_item_read",
+          "option": "read"
+        },
+        "decision": false,
+        "inputFields": "I086",
+        "requestBodyFields": null
+      }
+    ],
+    "DELETE:/api/v1/rss-feed-items/:id/read": [
+      {
+        "audience": "user",
+        "facts": "F90",
+        "operation": {
+          "tool": "set_rss_feed_item_read",
+          "option": "unread"
+        },
+        "decision": false,
+        "inputFields": "I086",
+        "requestBodyFields": null
+      }
+    ],
+    "POST:/api/v1/rss-feed-items/:rssFeedItemId/shares": [
+      {
+        "audience": "user",
+        "facts": "F91",
+        "operation": {
+          "tool": "share_rss_feed_item",
+          "option": "share"
+        },
+        "decision": false,
+        "inputFields": "I086",
+        "requestBodyFields": null
+      }
+    ],
+    "POST:/api/v1/rss-feed-items/:rssFeedItemId/sends": [
+      {
+        "audience": "user",
+        "facts": "F91",
+        "operation": {
+          "tool": "share_rss_feed_item",
+          "option": "send"
+        },
+        "decision": false,
+        "inputFields": "I127",
+        "requestBodyFields": ["audience", "recipient_user_ids"]
+      }
+    ],
+    "POST:/api/v1/rss-feeds": [
+      {
+        "audience": "user",
+        "facts": "F92",
+        "operation": {
+          "tool": "submit_rss_feed",
+          "option": "submit"
+        },
+        "decision": false,
+        "inputFields": "I128",
+        "requestBodyFields": ["follow", "rss_feed_url"]
+      }
+    ],
+    "POST:/api/v1/my/import/rss-feeds": [
+      {
+        "audience": "user",
+        "facts": "F92",
+        "operation": {
+          "tool": "submit_rss_feed",
+          "option": "import"
+        },
+        "decision": false,
+        "inputFields": "I180",
+        "requestBodyFields": ["should_follow_imported_feeds", "urls"]
+      }
+    ],
+    "GET:/api/v1/my/import/rss-feeds/:importId": [
+      {
+        "audience": "user",
+        "facts": "F92",
+        "operation": {
+          "tool": "submit_rss_feed",
+          "option": "import_status"
+        },
+        "decision": false,
+        "inputFields": "I181",
+        "requestBodyFields": null
+      }
+    ],
+    "POST:/api/v1/mq/queues/:name/domains/:domain/pause": [
+      {
+        "audience": "admin",
+        "facts": "F30",
+        "inputFields": "I131",
+        "requestBodyFields": ["reason"],
+        "operation": {
+          "tool": "pause_queue",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/mq/queues/:name/domains/:domain/resume": [
+      {
+        "audience": "admin",
+        "facts": "F31",
+        "inputFields": "I132",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "resume_queue",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/mq/queues/:name/domains/:domain/retry-failed": [
+      {
+        "audience": "admin",
+        "facts": "F32",
+        "inputFields": "I132",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "retry_failed_queue_jobs",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/mq/queues/:name/domains": [
+      {
+        "audience": "admin",
+        "facts": "F13",
+        "inputFields": "I133",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_queue_catalog",
+          "option": "queues"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/applications": [
+      {
+        "audience": "community_moderation",
+        "facts": "F93",
+        "inputFields": "I134",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community_moderation",
+          "option": "list_applications"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/applications/:id": [
+      {
+        "audience": "community_moderation",
+        "facts": "F93",
+        "inputFields": "I164",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community_moderation",
+          "option": "read_application"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/automod/recent-actions": [
+      {
+        "audience": "community_moderation",
+        "facts": "F93",
+        "inputFields": "I135",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community_moderation",
+          "option": "list_automod_actions"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/bans": [
+      {
+        "audience": "community_moderation",
+        "facts": "F93",
+        "inputFields": "I136",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community_moderation",
+          "option": "list_bans"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/bans/users/:userId": [
+      {
+        "audience": "community_moderation",
+        "facts": "F93",
+        "inputFields": "I207",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community_moderation",
+          "option": "list_active_bans"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/bans/:banId": [
+      {
+        "audience": "community_moderation",
+        "facts": "F93",
+        "inputFields": "I206",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community_moderation",
+          "option": "read_ban"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/invites": [
+      {
+        "audience": "community_moderation",
+        "facts": "F93",
+        "inputFields": "I136",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community_moderation",
+          "option": "list_invites"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/moderation-analytics": [
+      {
+        "audience": "community_moderation",
+        "facts": "F93",
+        "inputFields": "I137",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community_moderation",
+          "option": "read_moderation_analytics"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/moderator-stats": [
+      {
+        "audience": "community_moderation",
+        "facts": "F93",
+        "inputFields": "I166",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community_moderation",
+          "option": "read_moderator_stats"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/moderator-vacation": [
+      {
+        "audience": "community_moderation",
+        "facts": "F93",
+        "inputFields": "I139",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community_moderation",
+          "option": "read_moderator_vacation"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/modlog": [
+      {
+        "audience": "community_moderation",
+        "facts": "F93",
+        "inputFields": "I140",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community_moderation",
+          "option": "read_modlog"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/posts/pending": [
+      {
+        "audience": "community_moderation",
+        "facts": "F93",
+        "inputFields": "I136",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community_moderation",
+          "option": "list_pending_posts"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/reports/pending": [
+      {
+        "audience": "community_moderation",
+        "facts": "F93",
+        "inputFields": "I141",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community_moderation",
+          "option": "list_pending_reports"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/restrictions": [
+      {
+        "audience": "community_moderation",
+        "facts": "F93",
+        "inputFields": "I136",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community_moderation",
+          "option": "list_restrictions"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/saved-replies": [
+      {
+        "audience": "community_moderation",
+        "facts": "F93",
+        "inputFields": "I136",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community_moderation",
+          "option": "list_saved_replies"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/communities/:idOrSlug/bans": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I142",
+        "requestBodyFields": ["expires_at", "reason", "user_id"],
+        "operation": {
+          "tool": "add_community_moderation",
+          "option": "ban_user"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/communities/:idOrSlug/list-items/domains": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I143",
+        "requestBodyFields": ["url_hostname_id"],
+        "operation": {
+          "tool": "add_community_moderation",
+          "option": "add_domain_to_list"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/communities/:idOrSlug/list-items/posts": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I144",
+        "requestBodyFields": ["post_id"],
+        "operation": {
+          "tool": "add_community_moderation",
+          "option": "add_post_to_list"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/communities/:idOrSlug/list-items/rss-feeds": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I145",
+        "requestBodyFields": ["rss_feed_id"],
+        "operation": {
+          "tool": "add_community_moderation",
+          "option": "add_rss_feed_to_list"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/communities/:idOrSlug/list-items/topics": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I146",
+        "requestBodyFields": ["topic_id"],
+        "operation": {
+          "tool": "add_community_moderation",
+          "option": "add_topic_to_list"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/communities/:idOrSlug/list-items/urls": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I147",
+        "requestBodyFields": ["url_id"],
+        "operation": {
+          "tool": "add_community_moderation",
+          "option": "add_url_to_list"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/communities/:idOrSlug/posts/:postId/automod-flag/dismissal": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I148",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "add_community_moderation",
+          "option": "dismiss_automod_flag"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/communities/:idOrSlug/posts/:postId/escalation": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I148",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "add_community_moderation",
+          "option": "escalate_post"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/communities/:idOrSlug/posts/:postId/mod-internal-thread": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I148",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "add_community_moderation",
+          "option": "open_post_mod_internal_thread"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/communities/:idOrSlug/reports/:reportId/escalation": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I149",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "add_community_moderation",
+          "option": "escalate_report"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/communities/:idOrSlug/reports/:reportId/mod-internal-thread": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I149",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "add_community_moderation",
+          "option": "open_report_mod_internal_thread"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/communities/:idOrSlug/restrictions": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I150",
+        "requestBodyFields": ["expires_at", "reason", "restriction_types"],
+        "operation": {
+          "tool": "add_community_moderation",
+          "option": "activate_restrictions"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/communities/:idOrSlug/saved-replies": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I151",
+        "requestBodyFields": ["body", "title"],
+        "operation": {
+          "tool": "add_community_moderation",
+          "option": "create_saved_reply"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/communities/:idOrSlug/warnings": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I152",
+        "requestBodyFields": ["publicMessage", "reason", "reportId", "resolveReport", "userId"],
+        "operation": {
+          "tool": "add_community_moderation",
+          "option": "issue_warning"
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/communities/:idOrSlug": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I153",
+        "requestBodyFields": [
+          "archive",
+          "banner_image_id",
+          "default_language",
+          "list_type",
+          "markdown",
+          "member_invites_allowed_at",
+          "member_roster_visibility",
+          "name",
+          "post_approval_required_at",
+          "profile_image_id",
+          "slug",
+          "visibility"
+        ],
+        "operation": {
+          "tool": "update_community_moderation",
+          "option": "update_community_settings"
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/communities/:idOrSlug/applications/:id": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I154",
+        "requestBodyFields": ["reason", "status"],
+        "operation": {
+          "tool": "update_community_moderation",
+          "option": "review_application"
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/communities/:idOrSlug/moderator-vacation": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I155",
+        "requestBodyFields": ["should_suppress_community_digests_while_on_vacation"],
+        "operation": {
+          "tool": "update_community_moderation",
+          "option": "set_vacation_digest_preference"
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/communities/:idOrSlug/modmail/:conversationId": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I156",
+        "requestBodyFields": ["assigned_moderator_user_id", "resolved"],
+        "operation": {
+          "tool": "update_community_moderation",
+          "option": "update_modmail_thread"
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/communities/:idOrSlug/post-type-settings": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I157",
+        "requestBodyFields": ["should_allow_data_point_posts", "should_allow_review_posts"],
+        "operation": {
+          "tool": "update_community_moderation",
+          "option": "update_post_type_settings"
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/communities/:idOrSlug/posts/:postId": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I158",
+        "requestBodyFields": ["private_note", "reason", "reason_code", "status"],
+        "operation": {
+          "tool": "update_community_moderation",
+          "option": "moderate_post"
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/communities/:idOrSlug/reports/:reportId": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I159",
+        "requestBodyFields": ["status"],
+        "operation": {
+          "tool": "update_community_moderation",
+          "option": "resolve_report"
+        },
+        "decision": false
+      }
+    ],
+    "PUT:/api/v1/communities/:idOrSlug/application-questions": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I160",
+        "requestBodyFields": ["questions"],
+        "operation": {
+          "tool": "update_community_moderation",
+          "option": "set_application_questions"
+        },
+        "decision": false
+      }
+    ],
+    "PUT:/api/v1/communities/:idOrSlug/moderator-vacation": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I161",
+        "requestBodyFields": ["ends_at"],
+        "operation": {
+          "tool": "update_community_moderation",
+          "option": "set_moderator_vacation"
+        },
+        "decision": false
+      }
+    ],
+    "PUT:/api/v1/communities/:idOrSlug/pinned-posts": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I162",
+        "requestBodyFields": ["post_ids"],
+        "operation": {
+          "tool": "update_community_moderation",
+          "option": "set_pinned_posts"
+        },
+        "decision": false
+      }
+    ],
+    "PUT:/api/v1/communities/:idOrSlug/posts/:postId/claim": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I148",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "update_community_moderation",
+          "option": "claim_post"
+        },
+        "decision": false
+      }
+    ],
+    "PUT:/api/v1/communities/:idOrSlug/reports/:reportId/claim": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I149",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "update_community_moderation",
+          "option": "claim_report"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/communities/:idOrSlug/ban-evasion/:userId": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I163",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_community_moderation",
+          "option": "dismiss_ban_evasion"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/communities/:idOrSlug/bans/:banId": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I206",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_community_moderation",
+          "option": "lift_ban"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/communities/:idOrSlug/bans/users/:userId": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I163",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_community_moderation",
+          "option": "lift_all_bans"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/communities/:idOrSlug/invites/:id": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I164",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_community_moderation",
+          "option": "revoke_invite"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/communities/:idOrSlug/list-items/domains/:itemId": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I165",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_community_moderation",
+          "option": "remove_domain_from_list"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/communities/:idOrSlug/list-items/posts/:itemId": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I165",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_community_moderation",
+          "option": "remove_post_from_list"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/communities/:idOrSlug/list-items/rss-feeds/:itemId": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I165",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_community_moderation",
+          "option": "remove_rss_feed_from_list"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/communities/:idOrSlug/list-items/topics/:itemId": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I165",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_community_moderation",
+          "option": "remove_topic_from_list"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/communities/:idOrSlug/list-items/urls/:itemId": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I165",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_community_moderation",
+          "option": "remove_url_from_list"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/communities/:idOrSlug/members/:userId": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I163",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_community_moderation",
+          "option": "remove_member"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/communities/:idOrSlug/moderator-vacation": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I139",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_community_moderation",
+          "option": "clear_moderator_vacation"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/communities/:idOrSlug/posts/:postId/claim": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I148",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_community_moderation",
+          "option": "release_post_claim"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/communities/:idOrSlug/posts/:postId/escalation": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I148",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_community_moderation",
+          "option": "deescalate_post"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/communities/:idOrSlug/reports/:reportId/claim": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I149",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_community_moderation",
+          "option": "release_report_claim"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/communities/:idOrSlug/reports/:reportId/escalation": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I149",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_community_moderation",
+          "option": "deescalate_report"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/communities/:idOrSlug/restrictions/:id": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I164",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_community_moderation",
+          "option": "lift_restriction"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/communities/:idOrSlug/saved-replies/:id": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I164",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_community_moderation",
+          "option": "delete_saved_reply"
+        },
+        "decision": false
+      }
+    ],
+    "PUT:/api/v1/hostnames/:id/vote": [
+      {
+        "audience": "user",
+        "facts": "F89",
+        "operation": {
+          "tool": "vote",
+          "option": "set_hostname"
+        },
+        "decision": false,
+        "inputFields": "I054",
+        "requestBodyFields": ["choice"]
+      }
+    ],
+    "DELETE:/api/v1/hostnames/:id/vote": [
+      {
+        "audience": "user",
+        "facts": "F89",
+        "operation": {
+          "tool": "vote",
+          "option": "clear_hostname"
+        },
+        "decision": false,
+        "inputFields": "I001",
+        "requestBodyFields": null
+      }
+    ],
+    "PUT:/api/v1/users/:id/vouch-vote": [
+      {
+        "audience": "user",
+        "facts": "F89",
+        "operation": {
+          "tool": "vote",
+          "option": "set_user_vouch"
+        },
+        "decision": false,
+        "inputFields": "I054",
+        "requestBodyFields": ["choice"]
+      }
+    ],
+    "DELETE:/api/v1/users/:id/vouch-vote": [
+      {
+        "audience": "user",
+        "facts": "F89",
+        "operation": {
+          "tool": "vote",
+          "option": "clear_user_vouch"
+        },
+        "decision": false,
+        "inputFields": "I001",
+        "requestBodyFields": null
+      }
+    ],
+    "GET:/api/v1/my/messages": [
+      {
+        "audience": "user",
+        "facts": "F96",
+        "operation": {
+          "tool": "read_my_messages",
+          "option": "list"
+        },
+        "decision": false,
+        "inputFields": "I005",
+        "requestBodyFields": null
+      }
+    ],
+    "GET:/api/v1/my/messages/:conversationId": [
+      {
+        "audience": "user",
+        "facts": "F96",
+        "operation": {
+          "tool": "read_my_messages",
+          "option": "get"
+        },
+        "decision": false,
+        "inputFields": "I167",
+        "requestBodyFields": null
+      }
+    ],
+    "GET:/api/v1/my/messages/:conversationId/messages": [
+      {
+        "audience": "user",
+        "facts": "F96",
+        "operation": {
+          "tool": "read_my_messages",
+          "option": "messages"
+        },
+        "decision": false,
+        "inputFields": "I168",
+        "requestBodyFields": null
+      }
+    ],
+    "GET:/api/v1/my/messages/:conversationId/participants": [
+      {
+        "audience": "user",
+        "facts": "F96",
+        "operation": {
+          "tool": "read_my_messages",
+          "option": "participants"
+        },
+        "decision": false,
+        "inputFields": "I168",
+        "requestBodyFields": null
+      }
+    ],
+    "POST:/api/v1/my/messages": [
+      {
+        "audience": "user",
+        "facts": "F97",
+        "operation": {
+          "tool": "manage_my_messages",
+          "option": "create"
+        },
+        "decision": false,
+        "inputFields": "I169",
+        "requestBodyFields": ["user_id", "user_ids"]
+      }
+    ],
+    "PATCH:/api/v1/my/messages/:conversationId": [
+      {
+        "audience": "user",
+        "facts": "F97",
+        "operation": {
+          "tool": "manage_my_messages",
+          "option": "update"
+        },
+        "decision": false,
+        "inputFields": "I170",
+        "requestBodyFields": ["participant_add_policy"]
+      }
+    ],
+    "POST:/api/v1/my/messages/:conversationId/messages": [
+      {
+        "audience": "user",
+        "facts": "F97",
+        "operation": {
+          "tool": "manage_my_messages",
+          "option": "send"
+        },
+        "decision": false,
+        "inputFields": "I171",
+        "requestBodyFields": ["text"]
+      }
+    ],
+    "POST:/api/v1/my/messages/:conversationId/participants": [
+      {
+        "audience": "user",
+        "facts": "F97",
+        "operation": {
+          "tool": "manage_my_messages",
+          "option": "add_participant"
+        },
+        "decision": false,
+        "inputFields": "I172",
+        "requestBodyFields": ["user_id"]
+      }
+    ],
+    "DELETE:/api/v1/my/messages/:conversationId/participants/:userId": [
+      {
+        "audience": "user",
+        "facts": "F97",
+        "operation": {
+          "tool": "manage_my_messages",
+          "option": "remove_participant"
+        },
+        "decision": false,
+        "inputFields": "I172",
+        "requestBodyFields": null
+      }
+    ],
+    "POST:/api/v1/posts/:idOrSlug/lock": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I173",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "add_community_moderation",
+          "option": "lock_post"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/posts/:idOrSlug/lock": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I173",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_community_moderation",
+          "option": "unlock_post"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/communities/:idOrSlug/ban-evasion/:userId": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I163",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "add_community_moderation",
+          "option": "confirm_ban_evasion"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/users/:userId/mod-notes/:noteId": [
+      {
+        "audience": "community_moderation",
+        "facts": "F95",
+        "inputFields": "I174",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_community_moderation",
+          "option": "delete_mod_note"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/communities/:idOrSlug/modmail": [
+      {
+        "audience": "user",
+        "facts": "F79",
+        "inputFields": "I175",
+        "requestBodyFields": ["subject_user_id"],
+        "operation": {
+          "tool": "participate_in_community",
+          "option": "open_modmail"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/communities/:idOrSlug/modmail/:conversationId/messages": [
+      {
+        "audience": "user",
+        "facts": "F79",
+        "inputFields": "I176",
+        "requestBodyFields": ["text"],
+        "operation": {
+          "tool": "participate_in_community",
+          "option": "reply_modmail"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/posts/:idOrSlug/ratings": [
+      {
+        "audience": "user",
+        "facts": "F74",
+        "operation": {
+          "tool": "act_on_post",
+          "option": "add_rating"
+        },
+        "decision": false,
+        "inputFields": "I177",
+        "requestBodyFields": ["order_index", "rating", "topic_id"]
+      }
+    ],
+    "PATCH:/api/v1/posts/:idOrSlug/ratings/:topicId": [
+      {
+        "audience": "user",
+        "facts": "F74",
+        "operation": {
+          "tool": "act_on_post",
+          "option": "edit_rating"
+        },
+        "decision": false,
+        "inputFields": "I177",
+        "requestBodyFields": ["order_index", "rating"]
+      }
+    ],
+    "DELETE:/api/v1/posts/:idOrSlug/ratings/:topicId": [
+      {
+        "audience": "user",
+        "facts": "F74",
+        "operation": {
+          "tool": "act_on_post",
+          "option": "delete_rating"
+        },
+        "decision": false,
+        "inputFields": "I178",
+        "requestBodyFields": null
+      }
+    ],
+    "POST:/api/v1/posts/:idOrSlug/shares": [
+      {
+        "audience": "user",
+        "facts": "F74",
+        "operation": {
+          "tool": "act_on_post",
+          "option": "share"
+        },
+        "decision": false,
+        "inputFields": "I001",
+        "requestBodyFields": null
+      }
+    ],
+    "POST:/api/v1/posts/:idOrSlug/sends": [
+      {
+        "audience": "user",
+        "facts": "F74",
+        "operation": {
+          "tool": "act_on_post",
+          "option": "send"
+        },
+        "decision": false,
+        "inputFields": "I179",
+        "requestBodyFields": ["audience", "recipient_user_ids"]
+      }
+    ],
+    "PUT:/api/v1/posts/:id/read": [
+      {
+        "audience": "user",
+        "facts": "F74",
+        "operation": {
+          "tool": "act_on_post",
+          "option": "read"
+        },
+        "decision": false,
+        "inputFields": "I001",
+        "requestBodyFields": null
+      }
+    ],
+    "DELETE:/api/v1/posts/:id/read": [
+      {
+        "audience": "user",
+        "facts": "F74",
+        "operation": {
+          "tool": "act_on_post",
+          "option": "unread"
+        },
+        "decision": false,
+        "inputFields": "I001",
+        "requestBodyFields": null
+      }
+    ],
+    "POST:/api/v1/my/import/topics": [
+      {
+        "audience": "user",
+        "facts": "F34",
+        "operation": {
+          "tool": "manage_bookmark",
+          "option": "set"
+        },
+        "decision": false,
+        "inputFields": "I183",
+        "requestBodyFields": null
+      }
+    ],
+    "POST:/api/v1/lists/:id/import": [
+      {
+        "audience": "user",
+        "facts": "F82",
+        "operation": {
+          "tool": "add_list_item",
+          "option": null
+        },
+        "decision": false,
+        "inputFields": "I182",
+        "requestBodyFields": null
+      }
+    ],
+    "GET:/api/v1/my/topic-claims": [
+      {
+        "audience": "brand",
+        "facts": "F98",
+        "operation": {
+          "tool": "read_my_topic_claims",
+          "option": "list"
+        },
+        "decision": false,
+        "inputFields": "I009",
+        "requestBodyFields": null
+      }
+    ],
+    "GET:/api/v1/topics/:idOrSlug/claims/:claimId": [
+      {
+        "audience": "brand",
+        "facts": "F98",
+        "operation": {
+          "tool": "read_my_topic_claims",
+          "option": "get"
+        },
+        "decision": false,
+        "inputFields": "I184",
+        "requestBodyFields": null
+      }
+    ],
+    "POST:/api/v1/topics/:idOrSlug/claims": [
+      {
+        "audience": "brand",
+        "facts": "F99",
+        "operation": {
+          "tool": "manage_topic_claim",
+          "option": "create"
+        },
+        "decision": false,
+        "inputFields": "I185",
+        "requestBodyFields": ["claimed_role", "evidence"]
+      }
+    ],
+    "POST:/api/v1/topics/:idOrSlug/claims/:claimId/verification-token": [
+      {
+        "audience": "brand",
+        "facts": "F99",
+        "operation": {
+          "tool": "manage_topic_claim",
+          "option": "issue_verification_token"
+        },
+        "decision": false,
+        "inputFields": "I184",
+        "requestBodyFields": null
+      }
+    ],
+    "POST:/api/v1/topics/:idOrSlug/claims/:claimId/domain-verification": [
+      {
+        "audience": "brand",
+        "facts": "F99",
+        "operation": {
+          "tool": "manage_topic_claim",
+          "option": "verify_domain"
+        },
+        "decision": false,
+        "inputFields": "I184",
+        "requestBodyFields": null
+      }
+    ],
+    "POST:/api/v1/topics/:idOrSlug/claims/:claimId/manual-review-submission": [
+      {
+        "audience": "brand",
+        "facts": "F99",
+        "operation": {
+          "tool": "manage_topic_claim",
+          "option": "submit_manual_review"
+        },
+        "decision": false,
+        "inputFields": "I186",
+        "requestBodyFields": ["evidence"]
+      }
+    ],
+    "GET:/api/v1/households": [
+      {
+        "audience": "user",
+        "facts": "F100",
+        "operation": {
+          "tool": "read_my_households",
+          "option": "list"
+        },
+        "decision": false,
+        "inputFields": "I187",
+        "requestBodyFields": null
+      }
+    ],
+    "GET:/api/v1/households/:id": [
+      {
+        "audience": "user",
+        "facts": "F100",
+        "operation": {
+          "tool": "read_my_households",
+          "option": "get"
+        },
+        "decision": false,
+        "inputFields": "I188",
+        "requestBodyFields": null
+      }
+    ],
+    "GET:/api/v1/households/:id/memberships": [
+      {
+        "audience": "user",
+        "facts": "F100",
+        "operation": {
+          "tool": "read_my_households",
+          "option": "memberships"
+        },
+        "decision": false,
+        "inputFields": "I189",
+        "requestBodyFields": null
+      }
+    ],
+    "GET:/api/v1/me/individual": [
+      {
+        "audience": "user",
+        "facts": "F100",
+        "operation": {
+          "tool": "read_my_households",
+          "option": "my_individual"
+        },
+        "decision": false,
+        "inputFields": "I009",
+        "requestBodyFields": null
+      }
+    ],
+    "POST:/api/v1/households": [
+      {
+        "audience": "user",
+        "facts": "F101",
+        "operation": {
+          "tool": "manage_my_households",
+          "option": "create"
+        },
+        "decision": false,
+        "inputFields": "I009",
+        "requestBodyFields": []
+      }
+    ],
+    "DELETE:/api/v1/households/:id": [
+      {
+        "audience": "user",
+        "facts": "F101",
+        "operation": {
+          "tool": "manage_my_households",
+          "option": "delete"
+        },
+        "decision": false,
+        "inputFields": "I188",
+        "requestBodyFields": null
+      }
+    ],
+    "POST:/api/v1/households/:id/memberships": [
+      {
+        "audience": "user",
+        "facts": "F101",
+        "operation": {
+          "tool": "manage_my_households",
+          "option": "add_member"
+        },
+        "decision": false,
+        "inputFields": "I190",
+        "requestBodyFields": ["individual_id", "relationship"]
+      }
+    ],
+    "DELETE:/api/v1/households/:id/memberships/:membershipId": [
+      {
+        "audience": "user",
+        "facts": "F101",
+        "operation": {
+          "tool": "manage_my_households",
+          "option": "remove_member"
+        },
+        "decision": false,
+        "inputFields": "I191",
+        "requestBodyFields": null
+      }
+    ],
+    "GET:/api/v1/households/:id/invitations": [
+      {
+        "audience": "user",
+        "facts": "F100",
+        "operation": {
+          "tool": "read_my_households",
+          "option": "invitations"
+        },
+        "decision": false,
+        "inputFields": "I192",
+        "requestBodyFields": null
+      }
+    ],
+    "GET:/api/v1/my/household-invitations": [
+      {
+        "audience": "user",
+        "facts": "F100",
+        "operation": {
+          "tool": "read_my_households",
+          "option": "my_invitations"
+        },
+        "decision": false,
+        "inputFields": "I193",
+        "requestBodyFields": null
+      }
+    ],
+    "POST:/api/v1/households/:id/invitations": [
+      {
+        "audience": "user",
+        "facts": "F101",
+        "operation": {
+          "tool": "manage_my_households",
+          "option": "invite"
+        },
+        "decision": false,
+        "inputFields": "I194",
+        "requestBodyFields": ["relationship", "user"]
+      }
+    ],
+    "DELETE:/api/v1/households/:id/invitations/:invitationId": [
+      {
+        "audience": "user",
+        "facts": "F101",
+        "operation": {
+          "tool": "manage_my_households",
+          "option": "revoke_invitation"
+        },
+        "decision": false,
+        "inputFields": "I195",
+        "requestBodyFields": null
+      }
+    ],
+    "POST:/api/v1/my/household-invitations/:invitationId/acceptance": [
+      {
+        "audience": "user",
+        "facts": "F101",
+        "operation": {
+          "tool": "manage_my_households",
+          "option": "accept_invitation"
+        },
+        "decision": false,
+        "inputFields": "I196",
+        "requestBodyFields": []
+      }
+    ],
+    "POST:/api/v1/my/household-invitations/:invitationId/decline": [
+      {
+        "audience": "user",
+        "facts": "F101",
+        "operation": {
+          "tool": "manage_my_households",
+          "option": "decline_invitation"
+        },
+        "decision": false,
+        "inputFields": "I197",
+        "requestBodyFields": []
+      }
+    ],
+    "GET:/api/v1/report-integrity/penalties/review-due": [
+      {
+        "audience": "admin",
+        "facts": "F14",
+        "inputFields": "I199",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_report_integrity",
+          "option": "penalties"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/vote-integrity/penalties/review-due": [
+      {
+        "audience": "admin",
+        "facts": "F14",
+        "inputFields": "I200",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_vote_integrity",
+          "option": "penalties"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/report-integrity/penalties/:id/reviews": [
+      {
+        "audience": "admin",
+        "facts": "F02",
+        "inputFields": "I198",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "lift_integrity_penalty",
+          "option": "report_abuse"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/vote-integrity/penalties/:id/reviews": [
+      {
+        "audience": "admin",
+        "facts": "F02",
+        "inputFields": "I198",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "lift_integrity_penalty",
+          "option": "vote_ring"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/topics/:sourceIdOrSlug/merges": [
+      {
+        "audience": "admin",
+        "facts": "F04",
+        "operation": {
+          "tool": "merge_topic",
+          "option": null
+        },
+        "decision": false,
+        "inputFields": "I201",
+        "requestBodyFields": ["destination_id_or_slug"]
+      }
+    ],
+    "GET:/api/v1/topics/:sourceIdOrSlug/merges/:operationId": [
+      {
+        "audience": "admin",
+        "facts": "F08",
+        "operation": {
+          "tool": "get_topic_merge",
+          "option": null
+        },
+        "decision": false,
+        "inputFields": "I202",
+        "requestBodyFields": null
+      }
+    ],
+    "GET:/api/v1/admin/landing-pages/:pageId": [
+      {
+        "audience": "admin",
+        "facts": "F08",
+        "operation": {
+          "tool": "get_landing_page_identity",
+          "option": null
+        },
+        "decision": false,
+        "inputFields": "I203",
+        "requestBodyFields": null
+      }
+    ],
+    "GET:/api/v1/copyright-notices/claimants/:claimantUserId/misuse-summary": [
+      {
+        "audience": "legal",
+        "facts": "F11",
+        "operation": {
+          "tool": "get_copyright_claimant_misuse_summary",
+          "option": null
+        },
+        "decision": false,
+        "inputFields": "I205",
+        "requestBodyFields": null
+      }
+    ],
+    "GET:/api/v1/reports/:id": [
+      {
+        "audience": "admin",
+        "facts": "F102",
+        "operation": {
+          "tool": "read_moderation_report",
+          "option": null
+        },
+        "decision": false,
+        "inputFields": "I001",
+        "requestBodyFields": null
+      }
     ]
-  },
-  "additions": {
-    "GET:/api/v1/copyright-notices/association-targets": {
-      "pullRequest": 4375,
-      "contracts": [
-        {
-          "audience": "legal",
-          "facts": "F11",
-          "inputFields": "I204",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "search_copyright_notices_for_association",
-            "option": null
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/copyright-email-intakes/:id/notice-associations": {
-      "pullRequest": 2763,
-      "contracts": [
-        {
-          "audience": "legal",
-          "facts": "F25",
-          "inputFields": "I126",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "associate_copyright_email_intake_with_notice",
-            "option": null
-          },
-          "decision": true
-        }
-      ]
-    },
-    "PUT:/api/v1/posts/:id/vote": {
-      "pullRequest": 2966,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F89",
-          "operation": {
-            "tool": "vote",
-            "option": "set_post"
-          },
-          "decision": false,
-          "inputFields": "I054",
-          "requestBodyFields": ["choice"]
-        }
-      ]
-    },
-    "DELETE:/api/v1/posts/:id/vote": {
-      "pullRequest": 2966,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F89",
-          "operation": {
-            "tool": "vote",
-            "option": "clear_post"
-          },
-          "decision": false,
-          "inputFields": "I001",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "PUT:/api/v1/topics/:id/vote": {
-      "pullRequest": 2966,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F89",
-          "operation": {
-            "tool": "vote",
-            "option": "set_topic"
-          },
-          "decision": false,
-          "inputFields": "I054",
-          "requestBodyFields": ["choice"]
-        }
-      ]
-    },
-    "DELETE:/api/v1/topics/:id/vote": {
-      "pullRequest": 2966,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F89",
-          "operation": {
-            "tool": "vote",
-            "option": "clear_topic"
-          },
-          "decision": false,
-          "inputFields": "I001",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "PUT:/api/v1/rss-feed-items/:id/vote": {
-      "pullRequest": 2966,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F89",
-          "operation": {
-            "tool": "vote",
-            "option": "set_rss_feed_item"
-          },
-          "decision": false,
-          "inputFields": "I054",
-          "requestBodyFields": ["choice"]
-        }
-      ]
-    },
-    "DELETE:/api/v1/rss-feed-items/:id/vote": {
-      "pullRequest": 2966,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F89",
-          "operation": {
-            "tool": "vote",
-            "option": "clear_rss_feed_item"
-          },
-          "decision": false,
-          "inputFields": "I001",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "PUT:/api/v1/rss-feed-items/:id/read": {
-      "pullRequest": 2966,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F90",
-          "operation": {
-            "tool": "set_rss_feed_item_read",
-            "option": "read"
-          },
-          "decision": false,
-          "inputFields": "I086",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "DELETE:/api/v1/rss-feed-items/:id/read": {
-      "pullRequest": 2966,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F90",
-          "operation": {
-            "tool": "set_rss_feed_item_read",
-            "option": "unread"
-          },
-          "decision": false,
-          "inputFields": "I086",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "POST:/api/v1/rss-feed-items/:rssFeedItemId/shares": {
-      "pullRequest": 2966,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F91",
-          "operation": {
-            "tool": "share_rss_feed_item",
-            "option": "share"
-          },
-          "decision": false,
-          "inputFields": "I086",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "POST:/api/v1/rss-feed-items/:rssFeedItemId/sends": {
-      "pullRequest": 2966,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F91",
-          "operation": {
-            "tool": "share_rss_feed_item",
-            "option": "send"
-          },
-          "decision": false,
-          "inputFields": "I127",
-          "requestBodyFields": ["audience", "recipient_user_ids"]
-        }
-      ]
-    },
-    "POST:/api/v1/rss-feeds": {
-      "pullRequest": 2966,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F92",
-          "operation": {
-            "tool": "submit_rss_feed",
-            "option": "submit"
-          },
-          "decision": false,
-          "inputFields": "I128",
-          "requestBodyFields": ["follow", "rss_feed_url"]
-        }
-      ]
-    },
-    "POST:/api/v1/my/import/rss-feeds": {
-      "pullRequest": 3380,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F92",
-          "operation": {
-            "tool": "submit_rss_feed",
-            "option": "import"
-          },
-          "decision": false,
-          "inputFields": "I180",
-          "requestBodyFields": ["should_follow_imported_feeds", "urls"]
-        }
-      ]
-    },
-    "GET:/api/v1/my/import/rss-feeds/:importId": {
-      "pullRequest": 3380,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F92",
-          "operation": {
-            "tool": "submit_rss_feed",
-            "option": "import_status"
-          },
-          "decision": false,
-          "inputFields": "I181",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "POST:/api/v1/mq/queues/:name/domains/:domain/pause": {
-      "pullRequest": 2923,
-      "contracts": [
-        {
-          "audience": "admin",
-          "facts": "F30",
-          "inputFields": "I131",
-          "requestBodyFields": ["reason"],
-          "operation": {
-            "tool": "pause_queue",
-            "option": null
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/mq/queues/:name/domains/:domain/resume": {
-      "pullRequest": 2923,
-      "contracts": [
-        {
-          "audience": "admin",
-          "facts": "F31",
-          "inputFields": "I132",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "resume_queue",
-            "option": null
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/mq/queues/:name/domains/:domain/retry-failed": {
-      "pullRequest": 2923,
-      "contracts": [
-        {
-          "audience": "admin",
-          "facts": "F32",
-          "inputFields": "I132",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "retry_failed_queue_jobs",
-            "option": null
-          },
-          "decision": false
-        }
-      ]
-    },
-    "GET:/api/v1/mq/queues/:name/domains": {
-      "pullRequest": 2923,
-      "contracts": [
-        {
-          "audience": "admin",
-          "facts": "F13",
-          "inputFields": "I133",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "read_queue_catalog",
-            "option": "queues"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "GET:/api/v1/communities/:idOrSlug/applications": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F93",
-          "inputFields": "I134",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "read_community_moderation",
-            "option": "list_applications"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "GET:/api/v1/communities/:idOrSlug/applications/:id": {
-      "pullRequest": 4882,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F93",
-          "inputFields": "I164",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "read_community_moderation",
-            "option": "read_application"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "GET:/api/v1/communities/:idOrSlug/automod/recent-actions": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F93",
-          "inputFields": "I135",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "read_community_moderation",
-            "option": "list_automod_actions"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "GET:/api/v1/communities/:idOrSlug/bans": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F93",
-          "inputFields": "I136",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "read_community_moderation",
-            "option": "list_bans"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "GET:/api/v1/communities/:idOrSlug/bans/users/:userId": {
-      "pullRequest": 5324,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F93",
-          "inputFields": "I207",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "read_community_moderation",
-            "option": "list_active_bans"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "GET:/api/v1/communities/:idOrSlug/bans/:banId": {
-      "pullRequest": 5324,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F93",
-          "inputFields": "I206",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "read_community_moderation",
-            "option": "read_ban"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "GET:/api/v1/communities/:idOrSlug/invites": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F93",
-          "inputFields": "I136",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "read_community_moderation",
-            "option": "list_invites"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "GET:/api/v1/communities/:idOrSlug/moderation-analytics": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F93",
-          "inputFields": "I137",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "read_community_moderation",
-            "option": "read_moderation_analytics"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "GET:/api/v1/communities/:idOrSlug/moderator-stats": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F93",
-          "inputFields": "I166",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "read_community_moderation",
-            "option": "read_moderator_stats"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "GET:/api/v1/communities/:idOrSlug/moderator-vacation": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F93",
-          "inputFields": "I139",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "read_community_moderation",
-            "option": "read_moderator_vacation"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "GET:/api/v1/communities/:idOrSlug/modlog": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F93",
-          "inputFields": "I140",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "read_community_moderation",
-            "option": "read_modlog"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "GET:/api/v1/communities/:idOrSlug/posts/pending": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F93",
-          "inputFields": "I136",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "read_community_moderation",
-            "option": "list_pending_posts"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "GET:/api/v1/communities/:idOrSlug/reports/pending": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F93",
-          "inputFields": "I141",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "read_community_moderation",
-            "option": "list_pending_reports"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "GET:/api/v1/communities/:idOrSlug/restrictions": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F93",
-          "inputFields": "I136",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "read_community_moderation",
-            "option": "list_restrictions"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "GET:/api/v1/communities/:idOrSlug/saved-replies": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F93",
-          "inputFields": "I136",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "read_community_moderation",
-            "option": "list_saved_replies"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/communities/:idOrSlug/bans": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I142",
-          "requestBodyFields": ["expires_at", "reason", "user_id"],
-          "operation": {
-            "tool": "add_community_moderation",
-            "option": "ban_user"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/communities/:idOrSlug/list-items/domains": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I143",
-          "requestBodyFields": ["url_hostname_id"],
-          "operation": {
-            "tool": "add_community_moderation",
-            "option": "add_domain_to_list"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/communities/:idOrSlug/list-items/posts": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I144",
-          "requestBodyFields": ["post_id"],
-          "operation": {
-            "tool": "add_community_moderation",
-            "option": "add_post_to_list"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/communities/:idOrSlug/list-items/rss-feeds": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I145",
-          "requestBodyFields": ["rss_feed_id"],
-          "operation": {
-            "tool": "add_community_moderation",
-            "option": "add_rss_feed_to_list"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/communities/:idOrSlug/list-items/topics": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I146",
-          "requestBodyFields": ["topic_id"],
-          "operation": {
-            "tool": "add_community_moderation",
-            "option": "add_topic_to_list"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/communities/:idOrSlug/list-items/urls": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I147",
-          "requestBodyFields": ["url_id"],
-          "operation": {
-            "tool": "add_community_moderation",
-            "option": "add_url_to_list"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/communities/:idOrSlug/posts/:postId/automod-flag/dismissal": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I148",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "add_community_moderation",
-            "option": "dismiss_automod_flag"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/communities/:idOrSlug/posts/:postId/escalation": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I148",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "add_community_moderation",
-            "option": "escalate_post"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/communities/:idOrSlug/posts/:postId/mod-internal-thread": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I148",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "add_community_moderation",
-            "option": "open_post_mod_internal_thread"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/communities/:idOrSlug/reports/:reportId/escalation": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I149",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "add_community_moderation",
-            "option": "escalate_report"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/communities/:idOrSlug/reports/:reportId/mod-internal-thread": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I149",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "add_community_moderation",
-            "option": "open_report_mod_internal_thread"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/communities/:idOrSlug/restrictions": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I150",
-          "requestBodyFields": ["expires_at", "reason", "restriction_types"],
-          "operation": {
-            "tool": "add_community_moderation",
-            "option": "activate_restrictions"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/communities/:idOrSlug/saved-replies": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I151",
-          "requestBodyFields": ["body", "title"],
-          "operation": {
-            "tool": "add_community_moderation",
-            "option": "create_saved_reply"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/communities/:idOrSlug/warnings": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I152",
-          "requestBodyFields": ["publicMessage", "reason", "reportId", "resolveReport", "userId"],
-          "operation": {
-            "tool": "add_community_moderation",
-            "option": "issue_warning"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "PATCH:/api/v1/communities/:idOrSlug": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I153",
-          "requestBodyFields": [
-            "archive",
-            "banner_image_id",
-            "default_language",
-            "list_type",
-            "markdown",
-            "member_invites_allowed_at",
-            "member_roster_visibility",
-            "name",
-            "post_approval_required_at",
-            "profile_image_id",
-            "slug",
-            "visibility"
-          ],
-          "operation": {
-            "tool": "update_community_moderation",
-            "option": "update_community_settings"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "PATCH:/api/v1/communities/:idOrSlug/applications/:id": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I154",
-          "requestBodyFields": ["reason", "status"],
-          "operation": {
-            "tool": "update_community_moderation",
-            "option": "review_application"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "PATCH:/api/v1/communities/:idOrSlug/moderator-vacation": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I155",
-          "requestBodyFields": ["should_suppress_community_digests_while_on_vacation"],
-          "operation": {
-            "tool": "update_community_moderation",
-            "option": "set_vacation_digest_preference"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "PATCH:/api/v1/communities/:idOrSlug/modmail/:conversationId": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I156",
-          "requestBodyFields": ["assigned_moderator_user_id", "resolved"],
-          "operation": {
-            "tool": "update_community_moderation",
-            "option": "update_modmail_thread"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "PATCH:/api/v1/communities/:idOrSlug/post-type-settings": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I157",
-          "requestBodyFields": ["should_allow_data_point_posts", "should_allow_review_posts"],
-          "operation": {
-            "tool": "update_community_moderation",
-            "option": "update_post_type_settings"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "PATCH:/api/v1/communities/:idOrSlug/posts/:postId": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I158",
-          "requestBodyFields": ["private_note", "reason", "reason_code", "status"],
-          "operation": {
-            "tool": "update_community_moderation",
-            "option": "moderate_post"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "PATCH:/api/v1/communities/:idOrSlug/reports/:reportId": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I159",
-          "requestBodyFields": ["status"],
-          "operation": {
-            "tool": "update_community_moderation",
-            "option": "resolve_report"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "PUT:/api/v1/communities/:idOrSlug/application-questions": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I160",
-          "requestBodyFields": ["questions"],
-          "operation": {
-            "tool": "update_community_moderation",
-            "option": "set_application_questions"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "PUT:/api/v1/communities/:idOrSlug/moderator-vacation": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I161",
-          "requestBodyFields": ["ends_at"],
-          "operation": {
-            "tool": "update_community_moderation",
-            "option": "set_moderator_vacation"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "PUT:/api/v1/communities/:idOrSlug/pinned-posts": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I162",
-          "requestBodyFields": ["post_ids"],
-          "operation": {
-            "tool": "update_community_moderation",
-            "option": "set_pinned_posts"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "PUT:/api/v1/communities/:idOrSlug/posts/:postId/claim": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I148",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "update_community_moderation",
-            "option": "claim_post"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "PUT:/api/v1/communities/:idOrSlug/reports/:reportId/claim": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I149",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "update_community_moderation",
-            "option": "claim_report"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "DELETE:/api/v1/communities/:idOrSlug/ban-evasion/:userId": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I163",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "remove_community_moderation",
-            "option": "dismiss_ban_evasion"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "DELETE:/api/v1/communities/:idOrSlug/bans/:banId": {
-      "pullRequest": 5324,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I206",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "remove_community_moderation",
-            "option": "lift_ban"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "DELETE:/api/v1/communities/:idOrSlug/bans/users/:userId": {
-      "pullRequest": 5324,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I163",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "remove_community_moderation",
-            "option": "lift_all_bans"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "DELETE:/api/v1/communities/:idOrSlug/invites/:id": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I164",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "remove_community_moderation",
-            "option": "revoke_invite"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "DELETE:/api/v1/communities/:idOrSlug/list-items/domains/:itemId": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I165",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "remove_community_moderation",
-            "option": "remove_domain_from_list"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "DELETE:/api/v1/communities/:idOrSlug/list-items/posts/:itemId": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I165",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "remove_community_moderation",
-            "option": "remove_post_from_list"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "DELETE:/api/v1/communities/:idOrSlug/list-items/rss-feeds/:itemId": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I165",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "remove_community_moderation",
-            "option": "remove_rss_feed_from_list"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "DELETE:/api/v1/communities/:idOrSlug/list-items/topics/:itemId": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I165",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "remove_community_moderation",
-            "option": "remove_topic_from_list"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "DELETE:/api/v1/communities/:idOrSlug/list-items/urls/:itemId": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I165",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "remove_community_moderation",
-            "option": "remove_url_from_list"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "DELETE:/api/v1/communities/:idOrSlug/members/:userId": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I163",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "remove_community_moderation",
-            "option": "remove_member"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "DELETE:/api/v1/communities/:idOrSlug/moderator-vacation": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I139",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "remove_community_moderation",
-            "option": "clear_moderator_vacation"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "DELETE:/api/v1/communities/:idOrSlug/posts/:postId/claim": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I148",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "remove_community_moderation",
-            "option": "release_post_claim"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "DELETE:/api/v1/communities/:idOrSlug/posts/:postId/escalation": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I148",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "remove_community_moderation",
-            "option": "deescalate_post"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "DELETE:/api/v1/communities/:idOrSlug/reports/:reportId/claim": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I149",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "remove_community_moderation",
-            "option": "release_report_claim"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "DELETE:/api/v1/communities/:idOrSlug/reports/:reportId/escalation": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I149",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "remove_community_moderation",
-            "option": "deescalate_report"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "DELETE:/api/v1/communities/:idOrSlug/restrictions/:id": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I164",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "remove_community_moderation",
-            "option": "lift_restriction"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "DELETE:/api/v1/communities/:idOrSlug/saved-replies/:id": {
-      "pullRequest": 2972,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I164",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "remove_community_moderation",
-            "option": "delete_saved_reply"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "PUT:/api/v1/hostnames/:id/vote": {
-      "pullRequest": 3131,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F89",
-          "operation": {
-            "tool": "vote",
-            "option": "set_hostname"
-          },
-          "decision": false,
-          "inputFields": "I054",
-          "requestBodyFields": ["choice"]
-        }
-      ]
-    },
-    "DELETE:/api/v1/hostnames/:id/vote": {
-      "pullRequest": 3131,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F89",
-          "operation": {
-            "tool": "vote",
-            "option": "clear_hostname"
-          },
-          "decision": false,
-          "inputFields": "I001",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "PUT:/api/v1/users/:id/vouch-vote": {
-      "pullRequest": 3131,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F89",
-          "operation": {
-            "tool": "vote",
-            "option": "set_user_vouch"
-          },
-          "decision": false,
-          "inputFields": "I054",
-          "requestBodyFields": ["choice"]
-        }
-      ]
-    },
-    "DELETE:/api/v1/users/:id/vouch-vote": {
-      "pullRequest": 3131,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F89",
-          "operation": {
-            "tool": "vote",
-            "option": "clear_user_vouch"
-          },
-          "decision": false,
-          "inputFields": "I001",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "GET:/api/v1/my/messages": {
-      "pullRequest": 3181,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F96",
-          "operation": {
-            "tool": "read_my_messages",
-            "option": "list"
-          },
-          "decision": false,
-          "inputFields": "I005",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "GET:/api/v1/my/messages/:conversationId": {
-      "pullRequest": 3181,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F96",
-          "operation": {
-            "tool": "read_my_messages",
-            "option": "get"
-          },
-          "decision": false,
-          "inputFields": "I167",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "GET:/api/v1/my/messages/:conversationId/messages": {
-      "pullRequest": 3181,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F96",
-          "operation": {
-            "tool": "read_my_messages",
-            "option": "messages"
-          },
-          "decision": false,
-          "inputFields": "I168",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "GET:/api/v1/my/messages/:conversationId/participants": {
-      "pullRequest": 3181,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F96",
-          "operation": {
-            "tool": "read_my_messages",
-            "option": "participants"
-          },
-          "decision": false,
-          "inputFields": "I168",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "POST:/api/v1/my/messages": {
-      "pullRequest": 3181,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F97",
-          "operation": {
-            "tool": "manage_my_messages",
-            "option": "create"
-          },
-          "decision": false,
-          "inputFields": "I169",
-          "requestBodyFields": ["user_id", "user_ids"]
-        }
-      ]
-    },
-    "PATCH:/api/v1/my/messages/:conversationId": {
-      "pullRequest": 3181,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F97",
-          "operation": {
-            "tool": "manage_my_messages",
-            "option": "update"
-          },
-          "decision": false,
-          "inputFields": "I170",
-          "requestBodyFields": ["participant_add_policy"]
-        }
-      ]
-    },
-    "POST:/api/v1/my/messages/:conversationId/messages": {
-      "pullRequest": 3181,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F97",
-          "operation": {
-            "tool": "manage_my_messages",
-            "option": "send"
-          },
-          "decision": false,
-          "inputFields": "I171",
-          "requestBodyFields": ["text"]
-        }
-      ]
-    },
-    "POST:/api/v1/my/messages/:conversationId/participants": {
-      "pullRequest": 3181,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F97",
-          "operation": {
-            "tool": "manage_my_messages",
-            "option": "add_participant"
-          },
-          "decision": false,
-          "inputFields": "I172",
-          "requestBodyFields": ["user_id"]
-        }
-      ]
-    },
-    "DELETE:/api/v1/my/messages/:conversationId/participants/:userId": {
-      "pullRequest": 3181,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F97",
-          "operation": {
-            "tool": "manage_my_messages",
-            "option": "remove_participant"
-          },
-          "decision": false,
-          "inputFields": "I172",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "POST:/api/v1/posts/:idOrSlug/lock": {
-      "pullRequest": 3171,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I173",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "add_community_moderation",
-            "option": "lock_post"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "DELETE:/api/v1/posts/:idOrSlug/lock": {
-      "pullRequest": 3171,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I173",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "remove_community_moderation",
-            "option": "unlock_post"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/communities/:idOrSlug/ban-evasion/:userId": {
-      "pullRequest": 3171,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I163",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "add_community_moderation",
-            "option": "confirm_ban_evasion"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/users/:userId/mod-notes": {
-      "pullRequest": 3171,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I053",
-          "requestBodyFields": ["body", "community_id"],
-          "operation": {
-            "tool": "add_community_moderation",
-            "option": "create_mod_note"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "DELETE:/api/v1/users/:userId/mod-notes/:noteId": {
-      "pullRequest": 3171,
-      "contracts": [
-        {
-          "audience": "community_moderation",
-          "facts": "F95",
-          "inputFields": "I174",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "remove_community_moderation",
-            "option": "delete_mod_note"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/communities/:idOrSlug/modmail": {
-      "pullRequest": 3171,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F79",
-          "inputFields": "I175",
-          "requestBodyFields": ["subject_user_id"],
-          "operation": {
-            "tool": "participate_in_community",
-            "option": "open_modmail"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/communities/:idOrSlug/modmail/:conversationId/messages": {
-      "pullRequest": 3171,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F79",
-          "inputFields": "I176",
-          "requestBodyFields": ["text"],
-          "operation": {
-            "tool": "participate_in_community",
-            "option": "reply_modmail"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/posts/:idOrSlug/ratings": {
-      "pullRequest": 3130,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F74",
-          "operation": {
-            "tool": "act_on_post",
-            "option": "add_rating"
-          },
-          "decision": false,
-          "inputFields": "I177",
-          "requestBodyFields": ["order_index", "rating", "topic_id"]
-        }
-      ]
-    },
-    "PATCH:/api/v1/posts/:idOrSlug/ratings/:topicId": {
-      "pullRequest": 3130,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F74",
-          "operation": {
-            "tool": "act_on_post",
-            "option": "edit_rating"
-          },
-          "decision": false,
-          "inputFields": "I177",
-          "requestBodyFields": ["order_index", "rating"]
-        }
-      ]
-    },
-    "DELETE:/api/v1/posts/:idOrSlug/ratings/:topicId": {
-      "pullRequest": 3130,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F74",
-          "operation": {
-            "tool": "act_on_post",
-            "option": "delete_rating"
-          },
-          "decision": false,
-          "inputFields": "I178",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "POST:/api/v1/posts/:idOrSlug/shares": {
-      "pullRequest": 3130,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F74",
-          "operation": {
-            "tool": "act_on_post",
-            "option": "share"
-          },
-          "decision": false,
-          "inputFields": "I001",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "POST:/api/v1/posts/:idOrSlug/sends": {
-      "pullRequest": 3130,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F74",
-          "operation": {
-            "tool": "act_on_post",
-            "option": "send"
-          },
-          "decision": false,
-          "inputFields": "I179",
-          "requestBodyFields": ["audience", "recipient_user_ids"]
-        }
-      ]
-    },
-    "PUT:/api/v1/posts/:id/read": {
-      "pullRequest": 3130,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F74",
-          "operation": {
-            "tool": "act_on_post",
-            "option": "read"
-          },
-          "decision": false,
-          "inputFields": "I001",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "DELETE:/api/v1/posts/:id/read": {
-      "pullRequest": 3130,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F74",
-          "operation": {
-            "tool": "act_on_post",
-            "option": "unread"
-          },
-          "decision": false,
-          "inputFields": "I001",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "POST:/api/v1/my/import/topics": {
-      "pullRequest": 3393,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F34",
-          "operation": {
-            "tool": "manage_bookmark",
-            "option": "set"
-          },
-          "decision": false,
-          "inputFields": "I183",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "POST:/api/v1/lists/:id/import": {
-      "pullRequest": 3393,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F82",
-          "operation": {
-            "tool": "add_list_item",
-            "option": null
-          },
-          "decision": false,
-          "inputFields": "I182",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "GET:/api/v1/my/topic-claims": {
-      "pullRequest": 3382,
-      "contracts": [
-        {
-          "audience": "brand",
-          "facts": "F98",
-          "operation": {
-            "tool": "read_my_topic_claims",
-            "option": "list"
-          },
-          "decision": false,
-          "inputFields": "I009",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "GET:/api/v1/topics/:idOrSlug/claims/:claimId": {
-      "pullRequest": 3382,
-      "contracts": [
-        {
-          "audience": "brand",
-          "facts": "F98",
-          "operation": {
-            "tool": "read_my_topic_claims",
-            "option": "get"
-          },
-          "decision": false,
-          "inputFields": "I184",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "POST:/api/v1/topics/:idOrSlug/claims": {
-      "pullRequest": 3382,
-      "contracts": [
-        {
-          "audience": "brand",
-          "facts": "F99",
-          "operation": {
-            "tool": "manage_topic_claim",
-            "option": "create"
-          },
-          "decision": false,
-          "inputFields": "I185",
-          "requestBodyFields": ["claimed_role", "evidence"]
-        }
-      ]
-    },
-    "POST:/api/v1/topics/:idOrSlug/claims/:claimId/verification-token": {
-      "pullRequest": 3382,
-      "contracts": [
-        {
-          "audience": "brand",
-          "facts": "F99",
-          "operation": {
-            "tool": "manage_topic_claim",
-            "option": "issue_verification_token"
-          },
-          "decision": false,
-          "inputFields": "I184",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "POST:/api/v1/topics/:idOrSlug/claims/:claimId/domain-verification": {
-      "pullRequest": 3382,
-      "contracts": [
-        {
-          "audience": "brand",
-          "facts": "F99",
-          "operation": {
-            "tool": "manage_topic_claim",
-            "option": "verify_domain"
-          },
-          "decision": false,
-          "inputFields": "I184",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "POST:/api/v1/topics/:idOrSlug/claims/:claimId/manual-review-submission": {
-      "pullRequest": 3382,
-      "contracts": [
-        {
-          "audience": "brand",
-          "facts": "F99",
-          "operation": {
-            "tool": "manage_topic_claim",
-            "option": "submit_manual_review"
-          },
-          "decision": false,
-          "inputFields": "I186",
-          "requestBodyFields": ["evidence"]
-        }
-      ]
-    },
-    "GET:/api/v1/households": {
-      "pullRequest": 3444,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F100",
-          "operation": {
-            "tool": "read_my_households",
-            "option": "list"
-          },
-          "decision": false,
-          "inputFields": "I187",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "GET:/api/v1/households/:id": {
-      "pullRequest": 3444,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F100",
-          "operation": {
-            "tool": "read_my_households",
-            "option": "get"
-          },
-          "decision": false,
-          "inputFields": "I188",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "GET:/api/v1/households/:id/memberships": {
-      "pullRequest": 3444,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F100",
-          "operation": {
-            "tool": "read_my_households",
-            "option": "memberships"
-          },
-          "decision": false,
-          "inputFields": "I189",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "GET:/api/v1/me/individual": {
-      "pullRequest": 3444,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F100",
-          "operation": {
-            "tool": "read_my_households",
-            "option": "my_individual"
-          },
-          "decision": false,
-          "inputFields": "I009",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "POST:/api/v1/households": {
-      "pullRequest": 3444,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F101",
-          "operation": {
-            "tool": "manage_my_households",
-            "option": "create"
-          },
-          "decision": false,
-          "inputFields": "I009",
-          "requestBodyFields": []
-        }
-      ]
-    },
-    "DELETE:/api/v1/households/:id": {
-      "pullRequest": 3444,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F101",
-          "operation": {
-            "tool": "manage_my_households",
-            "option": "delete"
-          },
-          "decision": false,
-          "inputFields": "I188",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "POST:/api/v1/households/:id/memberships": {
-      "pullRequest": 3444,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F101",
-          "operation": {
-            "tool": "manage_my_households",
-            "option": "add_member"
-          },
-          "decision": false,
-          "inputFields": "I190",
-          "requestBodyFields": ["individual_id", "relationship"]
-        }
-      ]
-    },
-    "DELETE:/api/v1/households/:id/memberships/:membershipId": {
-      "pullRequest": 3444,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F101",
-          "operation": {
-            "tool": "manage_my_households",
-            "option": "remove_member"
-          },
-          "decision": false,
-          "inputFields": "I191",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "GET:/api/v1/households/:id/invitations": {
-      "pullRequest": 3447,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F100",
-          "operation": {
-            "tool": "read_my_households",
-            "option": "invitations"
-          },
-          "decision": false,
-          "inputFields": "I192",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "GET:/api/v1/my/household-invitations": {
-      "pullRequest": 3447,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F100",
-          "operation": {
-            "tool": "read_my_households",
-            "option": "my_invitations"
-          },
-          "decision": false,
-          "inputFields": "I193",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "POST:/api/v1/households/:id/invitations": {
-      "pullRequest": 3447,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F101",
-          "operation": {
-            "tool": "manage_my_households",
-            "option": "invite"
-          },
-          "decision": false,
-          "inputFields": "I194",
-          "requestBodyFields": ["relationship", "user"]
-        }
-      ]
-    },
-    "DELETE:/api/v1/households/:id/invitations/:invitationId": {
-      "pullRequest": 3447,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F101",
-          "operation": {
-            "tool": "manage_my_households",
-            "option": "revoke_invitation"
-          },
-          "decision": false,
-          "inputFields": "I195",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "POST:/api/v1/my/household-invitations/:invitationId/acceptance": {
-      "pullRequest": 3447,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F101",
-          "operation": {
-            "tool": "manage_my_households",
-            "option": "accept_invitation"
-          },
-          "decision": false,
-          "inputFields": "I196",
-          "requestBodyFields": []
-        }
-      ]
-    },
-    "POST:/api/v1/my/household-invitations/:invitationId/decline": {
-      "pullRequest": 3447,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F101",
-          "operation": {
-            "tool": "manage_my_households",
-            "option": "decline_invitation"
-          },
-          "decision": false,
-          "inputFields": "I197",
-          "requestBodyFields": []
-        }
-      ]
-    },
-    "GET:/api/v1/report-integrity/penalties/review-due": {
-      "pullRequest": 3937,
-      "contracts": [
-        {
-          "audience": "admin",
-          "facts": "F14",
-          "inputFields": "I199",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "read_report_integrity",
-            "option": "penalties"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "GET:/api/v1/vote-integrity/penalties/review-due": {
-      "pullRequest": 3937,
-      "contracts": [
-        {
-          "audience": "admin",
-          "facts": "F14",
-          "inputFields": "I200",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "read_vote_integrity",
-            "option": "penalties"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/report-integrity/penalties/:id/reviews": {
-      "pullRequest": 3937,
-      "contracts": [
-        {
-          "audience": "admin",
-          "facts": "F02",
-          "inputFields": "I198",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "lift_integrity_penalty",
-            "option": "report_abuse"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/vote-integrity/penalties/:id/reviews": {
-      "pullRequest": 3937,
-      "contracts": [
-        {
-          "audience": "admin",
-          "facts": "F02",
-          "inputFields": "I198",
-          "requestBodyFields": null,
-          "operation": {
-            "tool": "lift_integrity_penalty",
-            "option": "vote_ring"
-          },
-          "decision": false
-        }
-      ]
-    },
-    "POST:/api/v1/topics/:sourceIdOrSlug/merges": {
-      "pullRequest": 3975,
-      "contracts": [
-        {
-          "audience": "admin",
-          "facts": "F04",
-          "operation": {
-            "tool": "merge_topic",
-            "option": null
-          },
-          "decision": false,
-          "inputFields": "I201",
-          "requestBodyFields": ["destination_id_or_slug"]
-        }
-      ]
-    },
-    "GET:/api/v1/topics/:sourceIdOrSlug/merges/:operationId": {
-      "pullRequest": 3975,
-      "contracts": [
-        {
-          "audience": "admin",
-          "facts": "F08",
-          "operation": {
-            "tool": "get_topic_merge",
-            "option": null
-          },
-          "decision": false,
-          "inputFields": "I202",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "GET:/api/v1/admin/landing-pages/:pageId": {
-      "pullRequest": 4373,
-      "contracts": [
-        {
-          "audience": "admin",
-          "facts": "F08",
-          "operation": {
-            "tool": "get_landing_page_identity",
-            "option": null
-          },
-          "decision": false,
-          "inputFields": "I203",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "GET:/api/v1/copyright-notices/claimants/:claimantUserId/misuse-summary": {
-      "pullRequest": 5002,
-      "contracts": [
-        {
-          "audience": "legal",
-          "facts": "F11",
-          "operation": {
-            "tool": "get_copyright_claimant_misuse_summary",
-            "option": null
-          },
-          "decision": false,
-          "inputFields": "I205",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "GET:/api/v1/reports/:id": {
-      "pullRequest": 5434,
-      "contracts": [
-        {
-          "audience": "admin",
-          "facts": "F102",
-          "operation": {
-            "tool": "read_moderation_report",
-            "option": null
-          },
-          "decision": false,
-          "inputFields": "I001",
-          "requestBodyFields": null
-        }
-      ]
-    }
   }
 }
