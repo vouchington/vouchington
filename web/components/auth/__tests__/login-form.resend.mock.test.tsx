@@ -5,7 +5,7 @@ import {
 import { ApiError } from '@vouchington/api-client'
 import { createNavMock } from 'vouchington-tooling/next-navigation-mock'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { LoginForm } from '../login-form'
 
 vi.mock(import('../mfa-step'), () => ({
@@ -85,7 +85,7 @@ describe('LoginForm email code spacing', () => {
     )
     render(<LoginForm />)
     fireEvent.submit(submitEmail())
-    await vi.waitFor(() => expect(turnstileCallbacks.reset).toHaveBeenCalled())
+    await waitFor(() => expect(turnstileCallbacks.reset).toHaveBeenCalled())
     expect(screen.queryByLabelText(/verification code/i)).toBeNull()
   })
 })

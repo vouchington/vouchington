@@ -81,6 +81,15 @@ export async function reserveEmailCodeRequestSlot(
   return { resendAfterSeconds }
 }
 
+async function validateThenReserveReAuthSlot(
+  rawEmailAddress: string,
+  sessionId: string,
+): Promise<{ emailAddress: string; resendAfterSeconds: number }> {
+  const emailAddress = await validateEmailAddress(rawEmailAddress)
+  const { resendAfterSeconds } = await reserveEmailCodeRequestSlot('reauth', sessionId)
+  return { emailAddress, resendAfterSeconds }
+}
+
 /**
  * Re-auth send: the 5-per-minute limits first, then address validation, then the one-slot-per-
  * interval session gate, so a rejected address never burns the interval. Returns the validated
@@ -93,7 +102,5 @@ export async function reserveReAuthEmailCodeRequest(
     ...identity,
     emailAddress: sanitizeEmailAddress(identity.emailAddress),
   })
-  const emailAddress = await validateEmailAddress(identity.emailAddress)
-  const { resendAfterSeconds } = await reserveEmailCodeRequestSlot('reauth', identity.sessionId)
-  return { emailAddress, resendAfterSeconds }
+  return validateThenReserveReAuthSlot(identity.emailAddress, identity.sessionId)
 }
