@@ -3,14 +3,21 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   createTestUser,
   deleteTestOAuthAuthorizationFixtures,
+  getTestFriend,
   getTestOAuthAccountRaw,
   getOAuthAccountUnlinkedAt,
+  insertTestGithubFriend,
   insertTestOAuthAccount,
   restoreUser,
   softDeleteUser,
   suspendTestUser,
   unsuspendTestUser,
 } from '@voucha/test-helpers'
+import {
+  withCommittedPostgresTransactionForTest,
+  withPostgresTransactionForTest,
+} from '@voucha/test-helpers/postgres-transaction'
+import { getTestFriendSyncStartTime } from '@voucha/test-helpers/entities/oauth-friend-edge-locks'
 import { connectOAuthAccountToUser } from './connect.mts'
 import { upsertOAuthAccount } from './upsert.mts'
 
@@ -76,6 +83,47 @@ describe('connectOAuthAccountToUser', () => {
       })
     },
   )
+
+  it('keeps the winning ownership and resolved edge when GitHub connections overlap', async () => {
+    const [winner, contender] = await Promise.all([createTestUser(), createTestUser()])
+    const sourceProviderId = `github-source-${randomUUID()}`
+    const targetProviderId = `github-target-${randomUUID()}`
+    const [source, target] = await Promise.all([
+      insertTestOAuthAccount('github', sourceProviderId),
+      insertTestOAuthAccount('github', targetProviderId),
+    ])
+    if (!source.account_id || !target.account_id) throw new Error('GitHub account id missing')
+    await insertTestGithubFriend(
+      source.account_id,
+      targetProviderId,
+      await getTestFriendSyncStartTime(),
+    )
+
+    const contenderReady = Promise.withResolvers<void>()
+    const handoff = await withCommittedPostgresTransactionForTest(async query => {
+      await connectOAuthAccountToUser('github', winner.id, targetProviderId, { query })
+      const competing = withPostgresTransactionForTest(
+        competingQuery =>
+          connectOAuthAccountToUser('github', contender.id, targetProviderId, {
+            query: competingQuery,
+          }),
+        {
+          marker: '/* assertOAuthAccountConnectionUserActive */',
+          complete: contenderReady.resolve,
+        },
+      )
+      await Promise.race([contenderReady.promise, competing])
+      return { competing }
+    })
+
+    await expect(handoff.competing).rejects.toMatchObject({ status: 409 })
+    await expect(getTestOAuthAccountRaw('github', targetProviderId)).resolves.toMatchObject({
+      user_id: winner.id,
+    })
+    await expect(
+      getTestFriend('github', sourceProviderId, targetProviderId),
+    ).resolves.toMatchObject([{ friend_github_account_id: target.account_id }])
+  })
 
   it('throws 404 when the provider account does not exist', async () => {
     const user = await createTestUser()
