@@ -108,6 +108,29 @@ backend tests and typecheck, which start from `changes`; only the image jobs wai
 `backend` gate still requires it. Main push workflows stay independent with
 `cancel-in-progress: false`.
 
+<a id="test-plan-shadow"></a>**Shadow test planning is live and changes nothing about what runs.**
+[`test-plan-shadow.yml`](../../.github/workflows/test-plan-shadow.yml) starts when a Backend, Web,
+Cloudflare Worker, Lambdas or Tooling run for a same-repository pull request finishes. It is a
+non-required job on `ubuntu-slim` that cannot fail the pull request. It stops early when the run
+uploaded no JUnit reports, as when path filters skipped the area. As a `workflow_run` workflow it
+runs from the default branch, so a change to it takes effect only after it merges.
+
+- **Plan.** It runs `no-mistakes tests plan` for Vitest and Playwright with the `pullRequest`
+  environment of [`.no-mistakes/testPlan`](../../.no-mistakes/testPlan/default.yml), over the pull
+  request's own diff. The plan holds two safety rules: any backend source change also selects
+  `backend-contract-artifacts`, and `backend/data-stores/psql/**` also selects the generated-columns
+  freshness test; `backend/api/**` selects every Playwright spec.
+- **Measurement.** It compares the plan with the run's own JUnit reports and writes a step summary,
+  one `test-plan-shadow` log line and a one-day `test-plan-shadow-<run id>` artifact. They hold the
+  planned and total test files, the estimated job-minutes saved (the summed JUnit durations of
+  unplanned files), and the misses: files that failed in the full run but were not planned.
+- **Bar.** Zero misses over about 200 pull requests, then a separate decision to apply planning on
+  pull requests only. Merge groups keep every suite either way, because each missed test costs a
+  merge-group ejection.
+- **Limit.** A miss shows only when a pull request actually breaks a test the plan skipped, so
+  planner blind spots on passing pull requests stay invisible. Finding them needs per-test-file
+  coverage from the full suites and `no-mistakes tests audit`, which our suites do not produce.
+
 <a id="area-workflows"></a>The per-area workflows run on pull-request
 events and merge groups, and their names are the Main ruleset's required gates (see
 [.github/workflows/AGENTS.md](../../.github/workflows/AGENTS.md)). `static` runs full static

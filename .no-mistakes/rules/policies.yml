@@ -2000,6 +2000,8 @@
   scope: repository
   options:
     projectFilters:
+      # Target-less full-suite trigger of the shadow test plan (.no-mistakes/testPlan).
+      root-config: [tooling, backend]
       ts-shared: [ts-shared]
       static-analysis-tools: [tooling]
       static-analysis-ast-grep: [tooling]
@@ -3507,6 +3509,7 @@
       .github/workflows/tests-web-api.yml: [prep, web-api-tests]
       .github/workflows/tests-web-integration.yml: [prep, web-integration-tests]
       .github/workflows/tests-web.yml: [prep, web-tests]
+      .github/workflows/test-plan-shadow.yml: [shadow]
       .github/workflows/tooling.yml:
         [
           cancel-initialize-smoke-test,
@@ -3772,6 +3775,8 @@
         { pending: coalesce-latest, cancellation: conditional, scope: [sha, input-resource] }
       .github/workflows/sync-articles.yml:
         { pending: coalesce-latest, cancellation: retain-running, scope: [run] }
+      .github/workflows/test-plan-shadow.yml:
+        { pending: coalesce-latest, cancellation: retain-running, scope: [event] }
       .github/workflows/tooling.yml:
         { pending: coalesce-latest, cancellation: conditional, scope: [pull-request, sha, event] }
       .github/workflows/web.yml:

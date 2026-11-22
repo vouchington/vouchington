@@ -1,0 +1,156 @@
+# Shadow-mode test plan for pull requests. Nothing here changes what CI runs: test-plan-shadow.yml
+# computes the `pullRequest` plan after the full suites finish and compares it with their JUnit
+# results. Merge groups and main keep every suite.
+playwright:
+  fullSuiteTriggers:
+    ignoreChangedTests:
+      - vitest
+    triggers:
+      - name: harness
+        paths:
+          - package.json
+          - cloudflare-worker/wrangler.local.jsonc
+          - playwright.config.*
+          - playwright/config/**
+          - playwright/setup/**
+          - ci/setup-web-integration.mts
+          - web/next.config.*
+          - web/proxy.*
+          - '!**/*.test.*'
+          - '!**/*.mock.test.*'
+          - '!**/__tests__/**'
+          - '!playwright/tests/**'
+      # Playwright planning never traces backend files, so a backend API change that breaks a
+      # browser flow (oauth-clients on #1527) is invisible to it: run every spec.
+      - name: backend-api
+        paths:
+          - backend/api/**
+          - '!**/*.test.*'
+          - '!**/__tests__/**'
+    # Project-relative paths; the list form is a full-suite trigger.
+    projects:
+      cloudflare-worker:
+        - src/**/*.mts
+        - '!src/**/*.test.mts'
+        - '!src/**/*.mock.test.mts'
+        - '!src/**/__tests__/**'
+        - '!src/**/test-helpers/**'
+        - '!src/auth/test-*.mts'
+      ci-playwright:
+        - '**'
+        - '!**/*.test.*'
+        - '!**/__tests__/**'
+      github-actions:
+        - workflows/tests-playwright.yml
+        - actions/build-web-targets/**
+  environments:
+    pullRequest:
+      globalConfigFallback: false
+      exclude:
+        - playwright/credentialed/**
+      groups:
+        - type: direct
+        - type: coverage
+        - type: dependencies
+        - type: sample
+          limit:
+            percent: 1
+          sampleWhenLimited: true
+vitest:
+  fullSuiteTriggers:
+    ignoreChangedTests:
+      - vitest
+    triggers:
+      - name: root-config
+        paths:
+          - package.json
+          - vitest.config.mts
+          - test-helpers/vitest-config/**
+      # Safety rules, fitted to the 2026-10 replay: every backend source change runs the contract
+      # artifact tests (write-openapi on #1143, #1359, #1475; backend-program on #1544), and a
+      # PostgreSQL change also runs the generated-columns freshness test (#1157), which lives in the
+      # static-analysis-tools project.
+      - name: backend-source-contracts
+        paths:
+          - backend/agents/**
+          - backend/api/**
+          - backend/config/**
+          - backend/data-stores/**
+          - backend/md/**
+          - backend/modules/**
+          - backend/rss/**
+          - backend/mcp/**
+          - backend/types/**
+          - backend/worker-runtime/**
+          - backend/workers/**
+          - backend/services/**
+          - backend/queues/**
+          - backend/service-registrations/**
+          - backend/dependency-cruiser-rules/**
+          - backend/entrypoints/api/**
+          - backend/entrypoints/worker-cpu/**
+          - backend/entrypoints/worker-io/**
+          - backend/test-helpers/**
+          - api-contracts/**
+          - api-fixtures/**
+          - '!**/*.test.*'
+          - '!**/__tests__/**'
+        targets:
+          - backend-contract-artifacts
+      - name: psql-generated-columns
+        paths:
+          - backend/data-stores/psql/**
+          - '!**/*.test.*'
+          - '!**/__tests__/**'
+        targets:
+          - static-analysis-tools
+      - name: postgres-resources
+        paths:
+          - backend/data-stores/psql/migrations/**/*.sql
+          - backend/data-stores/psql/config-driven/**/*.sql
+          - backend/data-stores/psql/config-driven/**/*.mts
+        targets:
+          - backend/analytics-integration
+          - backend-data-stores
+          - backend-postgres-schema
+          - backend-mocks
+          - backend-aws
+          - backend-openai
+          - backend-openrouter
+          - web-api
+          - web-integration
+      - name: mcp-catalog
+        paths:
+          - docs/overview/architecture/mcp/**
+          - api-fixtures/v1/mcp.json
+        targets:
+          - backend-data-stores
+      - name: tooling-docs
+        paths:
+          - docs/prompts/**
+          - .agents/skills/**
+          - .no-mistakes/**
+          - .github/ci-path-filters.yml
+          - .github/workflows/ci-detect-changes.yml
+        targets:
+          - github-actions
+          - ci-tools
+          - dev-tools
+          - static-analysis-tools
+      - name: localization-email-residuals
+        paths:
+          - email-templates/**
+          - ts-shared/ui-messages/**
+          - dev/localization/**
+        targets:
+          - backend-email-templates
+  environments:
+    pullRequest:
+      globalConfigFallback: false
+      groups:
+        - type: direct
+        - type: dependencies
+        - type: sample
+          limit:
+            percent: 1
+          sampleWhenLimited: true
