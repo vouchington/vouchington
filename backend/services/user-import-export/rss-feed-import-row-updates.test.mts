@@ -7,9 +7,13 @@ import {
   insertTestRssFeedDirect,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
+import { createTestUrlWithHostname } from '@voucha/test-helpers/entities/urls'
 import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import {
+  completeRssFeedImportBatchForTest,
+  getRssFeedImportDiscoveriesForTest,
   getFirstRssFeedImportRowId,
+  insertPendingRssFeedImportDiscoveryForTest,
   failRssFeedImportRowForLimitForTest,
   getRssFeedImportRowIds,
   lockRssFeedImportRowForTest,
@@ -193,5 +197,38 @@ describe('RSS import row-derived progress', () => {
       skipped_rows: 0,
       pending_rows: 0,
     })
+  })
+
+  it('rejects a discovery whose import batch completes during admission', async () => {
+    const user = await createTestUser()
+    const created = await createRssFeedImport(
+      user.id,
+      WEB_PROVENANCE,
+      [`https://discovery-${randomUUID()}.example.com/rss`],
+      false,
+    )
+    const batchId = created.import.id
+    const rowId = await getFirstRssFeedImportRowId(batchId)
+    const discoveryUrlId = await createTestUrlWithHostname()
+    await using holder = await beginTransaction()
+    await failRssFeedImportRowForLimitForTest(holder, rowId)
+    await completeRssFeedImportBatchForTest(holder, batchId)
+    await withTestOwnedPostgresWait(
+      {
+        holderProcessId: await getTestPostgresBackendProcessId(holder),
+        pool: 'write',
+        lock: { kind: 'transaction' },
+        queryMarker: 'insertPendingRssFeedImportDiscoveryForTest',
+        releaseHolder: () => holder[Symbol.asyncDispose](),
+      },
+      async waitForLock => {
+        const discovery = insertPendingRssFeedImportDiscoveryForTest(rowId, discoveryUrlId)
+        const outcome = discovery.catch((err: unknown) => err)
+        await waitForLock(discovery)
+        await holder.commit()
+        expect(await outcome).toMatchObject({ code: '23514' })
+      },
+    )
+    expect(await getRssFeedImportDiscoveriesForTest(rowId)).toEqual([])
   })
 })

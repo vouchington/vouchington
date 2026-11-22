@@ -4,6 +4,8 @@ import {
   reconcileTestRefundBalance,
 } from '@voucha/test-helpers/membership-reversal-case-fixtures'
 import { randomUUID } from 'node:crypto'
+import onError from '@modules/on-error'
+import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { describe, expect, it } from 'vitest'
 import {
   createTestFamilyMembership,
@@ -159,9 +161,15 @@ describe('family collision reversal ledger', () => {
     const claim = await claimPersistedIneligiblePurchaseReversalCase(options, [target])
     const reversal = claim!.reversals[0]!
 
-    await expect(
-      completeIneligiblePurchaseReversal(reversal, { amountMinorUnits, providerRefundId }),
-    ).rejects.toMatchObject({ status: 409 })
+    const failure = await completeIneligiblePurchaseReversal(reversal, {
+      amountMinorUnits,
+      providerRefundId,
+    }).catch((err: unknown) => err)
+    if (!(failure instanceof Error)) throw new Error('Expected refund completion to reject')
+    expect(failure).not.toHaveProperty('status')
+    expect(failure).not.toHaveProperty('statusCode')
+    onError(failure)
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(failure, expect.any(Object))
     await expect(
       getTestIneligiblePurchaseReversal(options.subscriptionId, options.providerEnvironment),
     ).resolves.toMatchObject({

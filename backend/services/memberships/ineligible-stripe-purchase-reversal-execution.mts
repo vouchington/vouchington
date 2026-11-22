@@ -1,6 +1,5 @@
 import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import createHttpError from 'http-errors'
 import { getIneligiblePurchaseReversalFailureMessage } from './ineligible-stripe-purchase-reversal-failure-message.mts'
 import type { ClaimedReversal } from './ineligible-stripe-purchase-reversal-types.mts'
 
@@ -27,7 +26,7 @@ export async function completeIneligiblePurchaseReversal(
     remainingRefundableMinorUnits !== null &&
     receipt.amountMinorUnits > remainingRefundableMinorUnits
   ) {
-    throw createHttpError(409, 'Refund amount exceeds the current refundable balance')
+    throw new Error('Refund amount exceeds the current refundable balance')
   }
   await transaction(sql`/* completeIneligiblePurchaseReversal:receipt */
       INSERT INTO membership_automatic_refund_receipts (

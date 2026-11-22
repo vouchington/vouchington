@@ -100,8 +100,14 @@ BEGIN
   IF TG_ARGV[0] NOT IN ('admin_import_batches', 'user_rss_feed_import_batches') THEN
     RAISE EXCEPTION 'Unsupported import batch parent' USING ERRCODE = 'check_violation';
   END IF;
-  EXECUTE format('SELECT completed_at FROM %I WHERE id = $1', TG_ARGV[0])
-    INTO batch_completed_at USING NEW.batch_id;
+  IF TG_TABLE_NAME = 'user_rss_feed_import_row_discoveries' THEN
+    -- Discovery runs after batch creation and can race its terminal update.
+    SELECT completed_at INTO batch_completed_at
+    FROM user_rss_feed_import_batches WHERE id = NEW.batch_id FOR SHARE;
+  ELSE
+    EXECUTE format('SELECT completed_at FROM %I WHERE id = $1', TG_ARGV[0])
+      INTO batch_completed_at USING NEW.batch_id;
+  END IF;
   IF batch_completed_at IS NOT NULL THEN
     RAISE EXCEPTION 'Completed import batches cannot acquire new children'
       USING ERRCODE = 'check_violation';
