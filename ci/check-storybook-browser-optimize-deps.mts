@@ -94,10 +94,18 @@ export async function storybookBrowserOptimizeDepsErrors({
       errors.push(`${entry}: ${parent} does not declare ${packageRoot(child)}`)
     }
   }
-  for (const parent of [...parents].toSorted()) {
-    const files = productionSourceFiles(root, packageDirectory(parent))
-    if (files.length === 0) continue
-    for (const specifier of runtimeImportSpecifiers(await readImports(root, files))) {
+  const audited = await Promise.all(
+    [...parents].toSorted().map(async parent => {
+      const files = productionSourceFiles(root, packageDirectory(parent))
+      return {
+        parent,
+        specifiers:
+          files.length === 0 ? [] : runtimeImportSpecifiers(await readImports(root, files)),
+      }
+    }),
+  )
+  for (const { parent, specifiers } of audited) {
+    for (const specifier of specifiers) {
       const dependency = packageRoot(specifier)
       const firstParty = dependency.startsWith('@vouchington/') || firstPartyNames.has(dependency)
       if (firstParty && !included.has(specifier) && !included.has(`${parent} > ${specifier}`)) {

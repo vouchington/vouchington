@@ -7,6 +7,7 @@ export async function mapPlanReads<Input, Output>(
   const results: Output[] = []
   for (let offset = 0; offset < values.length; offset += MAX_CONCURRENT_READS) {
     results.push(
+      // oxlint-disable-next-line no-await-in-loop -- concurrency is capped by MAX_CONCURRENT_READS; batches are the bound
       ...(await Promise.all(values.slice(offset, offset + MAX_CONCURRENT_READS).map(read))),
     )
   }

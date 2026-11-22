@@ -71,6 +71,7 @@ export async function computeRouteAliasMap(
   const routeAliases: RouteAliasSource[] = []
   for (const [index, route] of discovered.entries()) {
     diagnostics?.closureComputed()
+    // oxlint-disable-next-line no-await-in-loop -- scans share one text cache and report diagnostics in route order
     const scan = await scanDependencyResult(
       repoRoot,
       initialFiles.get(route.pattern) ?? route.files,
@@ -84,6 +85,7 @@ export async function computeRouteAliasMap(
   const globalAliases = new Set<string>()
   for (const [index, file] of globalFiles.entries()) {
     diagnostics?.closureComputed()
+    // oxlint-disable-next-line no-await-in-loop -- scans share one text cache and report diagnostics in route order
     const scan = await scanDependencyResult(
       repoRoot,
       initialFiles.get(`global:${file}`) ?? [file],

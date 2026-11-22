@@ -32,6 +32,7 @@ export async function checkMigrationSqlGuard(
     addMigrationCreateTableNames(content, observedCreateTableNames)
     checkEditedInPlaceMarkerWording(file, content, observedLegacyMarkerMigrations, errors)
     const stripped = stripSqlComments(content)
+    // oxlint-disable-next-line no-await-in-loop -- migration file count is unbounded; serial parsing keeps memory flat and error order deterministic
     for (const target of await extractPolymorphicTargetTables(stripped)) {
       observedPolymorphicTargets.add(target.tableName)
       if (ALLOWED_POLYMORPHIC_TARGET_TABLES.has(target.tableName)) continue

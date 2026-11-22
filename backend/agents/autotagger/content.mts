@@ -34,6 +34,7 @@ async function selectRssBodyRawField(item: ViewRssFeedItem): Promise<string | nu
   ]
   for (const raw of candidates) {
     if (!raw) continue
+    // oxlint-disable-next-line no-await-in-loop -- returns the first body field that sanitizes non-empty, so later fields must not be sanitized
     const sanitized = await sanitizeRssContent(raw)
     if (sanitized.trim()) return raw
   }

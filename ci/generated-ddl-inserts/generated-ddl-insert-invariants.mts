@@ -27,6 +27,7 @@ async function findViolation(
   const parsed = await parsePostgresSql({ sql })
   if (parsed.diagnostics.length > 0) return sql.trim()
   for (const statement of parsed.statements) {
+    // oxlint-disable-next-line no-await-in-loop -- returns the first violation, so later statements must not be parsed once one is found
     const violation = await findStatementViolation(statement, depth, schemaFacts)
     if (violation !== null) return violation
   }
@@ -69,6 +70,7 @@ async function findStatementViolation(
   }
   if (statement.kind === 'conditional') {
     for (const branch of statement.branches) {
+      // oxlint-disable-next-line no-await-in-loop -- returns the first violation, so later statements must not be parsed once one is found
       const violation = await findStatementsViolation(branch.statements, depth, schemaFacts)
       if (violation !== null) return violation
     }
@@ -83,6 +85,7 @@ async function findStatementsViolation(
   schemaFacts: InsertSchemaFacts,
 ): Promise<string | null> {
   for (const statement of statements) {
+    // oxlint-disable-next-line no-await-in-loop -- returns the first violation, so later statements must not be parsed once one is found
     const violation = await findStatementViolation(statement, depth + 1, schemaFacts)
     if (violation !== null) return violation
   }
@@ -96,6 +99,7 @@ async function findNestedViolations(
 ): Promise<string | null> {
   for (const statement of nested) {
     if (!statement.sql) return '?'
+    // oxlint-disable-next-line no-await-in-loop -- returns the first violation, so later statements must not be parsed once one is found
     const violation = await findViolation(statement.sql, depth + 1, schemaFacts)
     if (violation !== null) return violation
   }

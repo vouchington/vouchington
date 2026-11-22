@@ -86,8 +86,7 @@
         "executorFactoryNames": ["beginTransaction", "beginBoundedTransaction"],
         "executorTypeNames": ["TransactionQuery", "QueryExecutor"]
       }
-    ],
-    "no-await-in-loop": "off"
+    ]
   },
   "overrides": [
     {

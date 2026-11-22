@@ -42,6 +42,7 @@ async function unregisteredMcpToolFiles() {
   const unregistered = []
   for (const file of files) {
     /** @type {{default?: unknown}} */
+    // oxlint-disable-next-line no-await-in-loop -- tool modules are imported one at a time so module side effects stay ordered
     const mod = await import(pathToFileURL(join(toolsDir, file)).href)
     if (isUnregisteredMcpToolFile(mod.default, registeredNames, sourceCounts))
       unregistered.push(file)
