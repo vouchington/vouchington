@@ -3,36 +3,37 @@ import type { QueryExecutor, QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { ConsentType, UserConsent } from './types.mts'
 
-export function ensureConsentVersion(
+export async function ensureConsentVersion(
   userId: string,
   consentType: ConsentType,
   version: string,
   options?: QueryOptions,
 ): Promise<void> {
-  const upgrade = async (query: QueryExecutor): Promise<void> => {
-    if ((await readActiveConsentVersion(query, userId, consentType)) === version) return
-    await query(sql`/* ensureConsentVersion:lockDifferentVersion */
-      SELECT version FROM user_consents
-      WHERE user_id = ${userId}
-        AND consent_type = ${consentType}
-        AND revoked_at IS NULL
-        AND version <> ${version}
-      LIMIT 1
-      FOR UPDATE
-    `)
-    await replaceActiveConsentVersion(query, userId, consentType, version)
-  }
+  const activeVersion = await readActiveConsentVersion(options?.query ?? read, userId, consentType)
+  if (activeVersion === version) return
+  if (options?.query) return upgradeConsentVersion(options.query, userId, consentType, version)
 
-  if (options?.query) return upgrade(options.query)
+  await using query = await beginTransaction()
+  await upgradeConsentVersion(query, userId, consentType, version)
+  await query.commit()
+}
 
-  // The matching version is the common case and needs no write transaction.
-  return readActiveConsentVersion(read, userId, consentType).then(async activeVersion => {
-    if (activeVersion === version) return
-    await using query = await beginTransaction()
-    const result = await upgrade(query)
-    await query.commit()
-    return result
-  })
+async function upgradeConsentVersion(
+  query: QueryExecutor,
+  userId: string,
+  consentType: ConsentType,
+  version: string,
+): Promise<void> {
+  await query(sql`/* ensureConsentVersion */
+    SELECT version FROM user_consents
+    WHERE user_id = ${userId}
+      AND consent_type = ${consentType}
+      AND revoked_at IS NULL
+      AND version <> ${version}
+    LIMIT 1
+    FOR UPDATE
+  `)
+  await replaceActiveConsentVersion(query, userId, consentType, version)
 }
 
 async function replaceActiveConsentVersion(
@@ -61,7 +62,7 @@ async function readActiveConsentVersion(
   userId: string,
   consentType: ConsentType,
 ): Promise<string | undefined> {
-  const { rows } = await query<{ version: string }>(sql`/* readActiveConsentVersion */
+  const { rows } = await query<{ version: string }>(sql`/* ensureConsentVersion */
     SELECT version FROM user_consents
     WHERE user_id = ${userId}
       AND consent_type = ${consentType}
