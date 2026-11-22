@@ -8,6 +8,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { LoginForm } from '../login-form'
 
+vi.mock(import('../mfa-step'), () => ({
+  default: () => <div data-testid='mfa-step' />,
+}))
+
 createNavMock()
 
 function submitEmail() {
