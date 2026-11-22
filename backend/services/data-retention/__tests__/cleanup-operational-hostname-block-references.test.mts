@@ -6,7 +6,10 @@ import {
   operationalRowExistsForTest,
   resetOperationalRetentionCursorForTest,
 } from '@voucha/test-helpers'
-import { cleanupOperationalTombstonesForTest } from '@voucha/test-helpers/operational-retention-scopes'
+import {
+  cleanupOperationalTombstonePageForTest,
+  cleanupOperationalTombstonesForTest,
+} from '@voucha/test-helpers/operational-retention-scopes'
 
 const DAY_MS = 24 * 60 * 60 * 1_000
 
@@ -148,5 +151,70 @@ describe('hostname-block operational retention references', () => {
     expect(
       (await getOperationalRetentionCursorForTest(query, 'other_hostname_blocks')).cursor_record_id,
     ).toBeNull()
+  })
+
+  it('stalls behind a locked descendant and drains after the lock is released', async () => {
+    const now = new Date()
+    const { root, child } = await (async () => {
+      await using setup = await beginTransaction()
+      const rootBlock = await insertOperationalHostnameBlockForTest(setup, {
+        feed: false,
+        liftedAt: new Date(now.getTime() - 3 * 365 * DAY_MS),
+      })
+      const childBlock = await insertOperationalHostnameBlockForTest(setup, {
+        feed: false,
+        liftedAt: null,
+      })
+      await setup(
+        `/* attachLockedOperationalHostnameDescendantForTest */
+         UPDATE url_hostname_blocks SET relation_cleanup_root_block_id = $1::uuid
+         WHERE id = $2::uuid`,
+        [rootBlock.id, childBlock.id],
+      )
+      await setup.commit()
+      return { root: rootBlock, child: childBlock }
+    })()
+    try {
+      {
+        await using blocker = await beginTransaction()
+        await blocker(
+          `/* lockOperationalHostnameDescendantForTest */
+           SELECT id FROM url_hostname_blocks WHERE id = $1::uuid FOR UPDATE`,
+          [child.id],
+        )
+        await using cleanup = await beginTransaction()
+        expect(
+          await cleanupOperationalTombstonePageForTest('other_hostname_blocks', {
+            borrowedQuery: cleanup,
+            ids: [root.id],
+            batchSize: 1,
+            now,
+          }),
+        ).toMatchObject({ deleted: 0, hasMore: true, stalled: true })
+        expect(await operationalRowExistsForTest(cleanup, 'url_hostname_blocks', root.id)).toBe(
+          true,
+        )
+      }
+      await using retry = await beginTransaction()
+      expect(
+        await cleanupOperationalTombstonePageForTest('other_hostname_blocks', {
+          borrowedQuery: retry,
+          ids: [root.id],
+          batchSize: 1,
+          now,
+        }),
+      ).toMatchObject({ deleted: 1, hasMore: false, stalled: false })
+    } finally {
+      await using cleanup = await beginTransaction()
+      await cleanup(
+        '/* deleteOwnedHostnameBlocksForLockTest */ DELETE FROM url_hostname_blocks WHERE id = ANY($1::uuid[])',
+        [[child.id, root.id]],
+      )
+      await cleanup(
+        '/* deleteOwnedHostnamesForLockTest */ DELETE FROM url_hostnames WHERE id = ANY($1::uuid[])',
+        [[child.hostnameId, root.hostnameId]],
+      )
+      await cleanup.commit()
+    }
   })
 })

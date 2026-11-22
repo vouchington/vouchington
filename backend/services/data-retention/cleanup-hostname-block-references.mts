@@ -33,12 +33,11 @@ export async function detachHostnameBlockReferences(
      WITH page AS (
        SELECT id FROM url_hostname_blocks
        WHERE relation_cleanup_root_block_id = $1::uuid AND id <> $1::uuid
-       ORDER BY url_hostname_id LIMIT $2
+       ORDER BY url_hostname_id LIMIT $2 FOR UPDATE SKIP LOCKED
      )
      UPDATE url_hostname_blocks child
      SET relation_cleanup_root_block_id = NULL
-     WHERE child.id = ANY(ARRAY(SELECT id FROM page))
-       AND child.relation_cleanup_root_block_id = $1::uuid`,
+     WHERE child.id = ANY(ARRAY(SELECT id FROM page))`,
     [blockId, batchSize],
   )
   const remainingBudget = batchSize - (descendants.rowCount ?? 0)
