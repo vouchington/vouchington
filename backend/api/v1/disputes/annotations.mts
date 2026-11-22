@@ -1,3 +1,7 @@
+import {
+  disputeAnnotationsMaxValues,
+  getDisputeAnnotationPostLimit,
+} from '@services/review-disputes/annotation-limits'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
@@ -18,10 +22,13 @@ import {
 } from '@services/review-disputes'
 import { isModerationStaff } from '@services/users'
 
-const MAX_BATCH_ANNOTATION_POST_IDS = 50
-
 type BatchDisputeAnnotationsRequest = {
-  post_ids: ApiArrayContract<ApiUuidContract, 0, typeof MAX_BATCH_ANNOTATION_POST_IDS, false>
+  post_ids: ApiArrayContract<
+    ApiUuidContract,
+    0,
+    typeof disputeAnnotationsMaxValues.max_batch_post_ids,
+    false
+  >
 }
 type RemoveDisputeAnnotationRequest = { annotation_id: ApiUuidContract }
 
@@ -50,6 +57,8 @@ app.route('/api/v1/posts/batch-dispute-annotations').post(async (ctx: Context) =
   await requireAuth(ctx, 'POST:/api/v1/posts/batch-dispute-annotations')
   const body = (await parseJsonBody(ctx, '100kb')) as BatchDisputeAnnotationsRequest
   validateRequestContract(ctx, 'POST:/api/v1/posts/batch-dispute-annotations', { body })
+  const limit = getDisputeAnnotationPostLimit()
+  ctx.assert(body.post_ids.length <= limit, 422, `Too many post IDs (max ${limit})`)
   const annotations = await getActiveAnnotationsForPosts(body.post_ids)
   ctx.json({ annotations })
 })

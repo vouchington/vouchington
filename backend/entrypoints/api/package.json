@@ -43,6 +43,7 @@
     "@services/entity-relation-actions": "workspace:^",
     "@services/fediverse-instances": "workspace:^",
     "@services/jwt-session": "workspace:^",
+    "@services/mcp-work-config": "workspace:^",
     "@services/post-classifier": "workspace:^",
     "@services/post-writes": "workspace:^",
     "@services/queue-monitoring": "workspace:^",

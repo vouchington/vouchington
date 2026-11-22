@@ -1,3 +1,4 @@
+import { searchParamsMaxValues } from './config.mts'
 import { parseBooleanish } from '@ts-shared/utils/query'
 import {
   defineQueryContract,
@@ -15,7 +16,7 @@ import { getTopicIdByAnyCached, getTopicIdsByAnyCachedBatch } from '@services/en
 import { extractIdentifier, extractIdentifiers, checkShouldReturnEmpty } from './resolve.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { prepareQueryForValidation } from './prepare-query.mts'
-import { validateTopicSearchTerms, MAX_TOPIC_SEARCH_TERMS } from './hashtag-topic-search.mts'
+import { validateTopicSearchTerms } from './hashtag-topic-search.mts'
 
 function parseModerationBooleanParam(canFilter: boolean, value: unknown): boolean | undefined {
   if (!canFilter || value === undefined || value === 'null') return undefined
@@ -68,7 +69,11 @@ async function parseHostnamesSearchParamsImpl(
   const paginationOptions = hostnamesParser.parse(query, runtimeLimits)
   const canFilterModeration = currentUserCanFilterHostnameModeration(currentUser)
   const topicIdentifier = extractIdentifier(query, 'topic')
-  const topicIdentifiers = extractIdentifiers(query, ['topics'], MAX_TOPIC_SEARCH_TERMS)
+  const topicIdentifiers = extractIdentifiers(
+    query,
+    ['topics'],
+    searchParamsMaxValues.max_topic_search_terms,
+  )
   const [resolvedTopicId, resolvedTopicIds] = await Promise.all([
     topicIdentifier ? getTopicIdByAnyCached(topicIdentifier) : Promise.resolve(undefined),
     getTopicIdsByAnyCachedBatch(topicIdentifiers),

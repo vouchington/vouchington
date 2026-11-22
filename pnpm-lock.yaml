@@ -1034,6 +1034,9 @@ importers:
       '@services/mcp-tools':
         specifier: workspace:^
         version: link:../services/mcp-tools
+      '@services/mcp-work-config':
+        specifier: workspace:^
+        version: link:../services/mcp-work-config
       '@services/media-delivery-safety':
         specifier: workspace:^
         version: link:../services/media-delivery-safety
@@ -1632,6 +1635,9 @@ importers:
       '@services/jwt-session':
         specifier: workspace:^
         version: link:../../services/jwt-session
+      '@services/mcp-work-config':
+        specifier: workspace:^
+        version: link:../../services/mcp-work-config
       '@services/post-classifier':
         specifier: workspace:^
         version: link:../../services/post-classifier
@@ -6476,6 +6482,9 @@ importers:
       '@services/lists':
         specifier: workspace:^
         version: link:../lists
+      '@services/mcp-work-config':
+        specifier: workspace:^
+        version: link:../mcp-work-config
       '@services/media-delivery-safety':
         specifier: workspace:^
         version: link:../media-delivery-safety
@@ -6566,6 +6575,9 @@ importers:
       '@services/request-client-info':
         specifier: workspace:^
         version: link:../request-client-info
+      '@services/review-disputes':
+        specifier: workspace:^
+        version: link:../review-disputes
       '@services/route-rate-limits':
         specifier: workspace:^
         version: link:../route-rate-limits
@@ -6575,6 +6587,9 @@ importers:
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../rss-feeds
+      '@services/search-params':
+        specifier: workspace:^
+        version: link:../search-params
       '@services/sitemaps':
         specifier: workspace:^
         version: link:../sitemaps
@@ -7996,6 +8011,9 @@ importers:
       '@services/api-keys':
         specifier: workspace:^
         version: link:../api-keys
+      '@services/mcp-work-config':
+        specifier: workspace:^
+        version: link:../mcp-work-config
       '@services/oauth-authorization-server':
         specifier: workspace:^
         version: link:../oauth-authorization-server
@@ -8069,6 +8087,15 @@ importers:
       '@vouchington/rate-limit':
         specifier: ^0.4.0
         version: 0.4.0(@jongleberry/api-server@3.1.0)(valkyries@0.15.0)
+
+  backend/services/mcp-work-config:
+    dependencies:
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
 
   backend/services/media-delivery-safety:
     dependencies:
@@ -10662,6 +10689,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -10704,6 +10734,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -11156,6 +11189,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
@@ -11192,6 +11228,9 @@ importers:
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5

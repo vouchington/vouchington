@@ -1,10 +1,10 @@
+import { searchParamsMaxValues } from '@services/search-params/config'
 import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
 import { getRssFeedByIdCached } from '@services/entity-fetch'
 import type { ViewRssFeed } from '@services/rss-feeds/types'
 import { buildRssFeedsPage, decodeRssFeedsCursor, searchRssFeeds } from '@services/rss-feeds'
 import {
-  MAX_TOPIC_SEARCH_TERMS,
   prepareRssFeedsSearchParams,
   resolveRssFeedsSearchParams,
   RSS_FEED_SORTS,
@@ -66,7 +66,7 @@ export const searchRssFeedsTool: MergedToolSource<ListArgs, ListResult> = {
         topic_match: { type: 'string', enum: ['any', 'all'] },
         topics: {
           type: 'array',
-          maxItems: MAX_TOPIC_SEARCH_TERMS,
+          maxItems: searchParamsMaxValues.max_topic_search_terms,
           items: topicReferenceSchema,
           description: 'Up to five topic/#hashtag terms.',
         },

@@ -30,6 +30,7 @@
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/api-keys": "workspace:^",
+    "@services/mcp-work-config": "workspace:^",
     "@services/oauth-authorization-server": "workspace:^",
     "@services/openai-agents": "workspace:^",
     "@services/queue-domain-controls": "workspace:^",

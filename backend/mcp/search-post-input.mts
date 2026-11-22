@@ -1,6 +1,6 @@
+import { searchParamsMaxValues } from '@services/search-params/config'
 import type { PagedSearchArgs } from './paged-search.mts'
 import { CREDIT_CARD_RESULTS, CREDIT_SCORE_RANGES } from '@ts-shared/data-points'
-import { MAX_TOPIC_SEARCH_TERMS } from '@services/search-params'
 import type { PostSearchSort } from '@services/posts/search/types'
 import { topicReferenceSchema, userReferenceSchema } from './entity-reference-schema.mts'
 import { VALID_SEARCH_POST_TYPES, type SearchPostType } from '@ts-shared/feed-capabilities'
@@ -39,7 +39,7 @@ export function postSearchFilterSchemaProperties() {
     },
     categories: {
       type: 'array',
-      maxItems: MAX_TOPIC_SEARCH_TERMS,
+      maxItems: searchParamsMaxValues.max_topic_search_terms,
       items: { type: 'string' },
       description: 'All categories; at most five including category.',
     },
@@ -69,7 +69,7 @@ export function postSearchFilterSchemaProperties() {
     topic: topicReferenceSchema,
     topics: {
       type: 'array',
-      maxItems: MAX_TOPIC_SEARCH_TERMS,
+      maxItems: searchParamsMaxValues.max_topic_search_terms,
       items: topicReferenceSchema,
       description: 'All topics; at most five with hashtag terms.',
     },

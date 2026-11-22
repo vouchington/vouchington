@@ -1,3 +1,5 @@
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { disputeAnnotationsConfig } from '@services/review-disputes/annotation-limits'
 import { deliverReviewDisputeForTest } from '@voucha/test-helpers/dispute-delivery'
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
@@ -132,6 +134,34 @@ describe('POST /api/v1/posts/batch-dispute-annotations', () => {
       .set('Content-Type', 'application/json')
       .send({ post_ids: [] })
       .expect(401)
+  })
+
+  it('enforces the lowered post budget while allowing the boundary and empty input', async () => {
+    const restore = overrideDynamicConfigFieldsForTest(disputeAnnotationsConfig, {
+      max_batch_post_ids: 1,
+    })
+    try {
+      const request = createRequest()
+      await request.authenticateAs(regularUser)
+      await request
+        .post('/api/v1/posts/batch-dispute-annotations')
+        .send({ post_ids: [postIdWithAnnotation, postIdWithAnnotation] })
+        .expect(422)
+      const boundary = await request
+        .post('/api/v1/posts/batch-dispute-annotations')
+        .send({ post_ids: [postIdWithAnnotation] })
+        .expect(200)
+      expect(boundary.body.annotations).toEqual([
+        expect.objectContaining({ post_id: postIdWithAnnotation }),
+      ])
+      const empty = await request
+        .post('/api/v1/posts/batch-dispute-annotations')
+        .send({ post_ids: [] })
+        .expect(200)
+      expect(empty.body.annotations).toEqual([])
+    } finally {
+      restore()
+    }
   })
 
   it('returns 422 when post_ids is not an array', async () => {
