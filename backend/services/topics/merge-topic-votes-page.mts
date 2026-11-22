@@ -11,7 +11,7 @@ export async function processTopicMergeVoteReferencePage(
   const { rows } = await query<{ id: string }>(
     `/* processTopicMergeVoteReferencePage choose */ WITH page AS MATERIALIZED (
       SELECT id, user_id FROM topic_votes
-      WHERE topic_id = $2::uuid ORDER BY id LIMIT $4::integer
+      WHERE topic_id = $2::uuid ORDER BY id LIMIT $4::integer FOR UPDATE
     ), authors AS (SELECT DISTINCT user_id FROM page), chosen AS (
       INSERT INTO topic_merge_metric_users (operation_id, user_id, original_vote_topic_id)
       SELECT $1::uuid, author.user_id,
