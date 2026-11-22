@@ -33,7 +33,6 @@ async function startCopyrightFormScreeningInTransaction(
   intakeId: string,
   transaction: Transaction,
 ): Promise<CopyrightFormScreeningAttempt> {
-  await lockCopyrightFormReview(intakeId, transaction)
   await transaction(sql`/* startCopyrightFormScreening:finishPrior */
     UPDATE copyright_notice_form_screening_attempts SET failed_at = clock_timestamp()
     WHERE copyright_notice_form_intake_id = ${intakeId} AND state = 'pending'
