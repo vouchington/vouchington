@@ -15346,6 +15346,9 @@ importers:
       '@vouchington/localization-compiler':
         specifier: ^0.3.0
         version: 0.3.0(react@19.3.1)
+      '@vouchington/postgres':
+        specifier: ^0.6.2
+        version: 0.6.2
       coverage-check:
         specifier: ^0.18.1
         version: 0.18.1(@vitest/coverage-v8@5.1.0)(vitest@5.1.0)
