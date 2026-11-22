@@ -3,7 +3,7 @@ import {
   processRetainedSweep,
   type NamedQueueJob,
 } from '@data-stores/valkey-glide-mq'
-import { getWorkerConcurrency } from '@modules/queue-config'
+import { getWorkerConcurrency } from '@vouchington/utils/worker-concurrency'
 import { QUEUE_NAME } from '@queues/find-your-friends/config'
 import {
   enqueueResumeSyncFacebookFriends,

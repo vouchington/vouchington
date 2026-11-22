@@ -1,5 +1,5 @@
 import { createBatchWorker, type NamedQueueJob } from '@data-stores/valkey-glide-mq'
-import { getWorkerConcurrency } from '@modules/queue-config'
+import { getWorkerConcurrency } from '@vouchington/utils/worker-concurrency'
 import {
   BLOOM_FILTER_LOCK_DURATION_MS,
   BLOOM_FILTER_STALLED_INTERVAL_MS,

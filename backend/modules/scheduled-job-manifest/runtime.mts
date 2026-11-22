@@ -7,7 +7,7 @@ import {
   upsertScheduledJobManifest as upsertSharedManifest,
   type ScheduledJobQueue,
 } from '@vouchington/worker-runtime/schedule-manifest'
-import { clampScheduledJobRepeatToHourlyFloor } from './hourly-clamp.mts'
+import { clampScheduledJobRepeatToHourlyFloor } from '@vouchington/utils/hourly-schedule-clamp'
 import type { ScheduledJobManifest } from './types.mts'
 
 export async function upsertScheduledJobManifest(

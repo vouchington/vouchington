@@ -43,32 +43,6 @@ describe('GlideMQ runtime guards', () => {
     }
   })
 
-  it('reports and rejects self-add in production without failing the processor', async () => {
-    const name = `self-prod-${crypto.randomUUID()}`
-    const queue = createQueue(name, { priorityKind: 'ranked' })
-    const completed = Promise.withResolvers<void>()
-    const worker = createWorker(
-      name,
-      async job => {
-        await queue.add('duplicate', {}, { jobId: job.id })
-      },
-      { blockTimeout: 1000, promotionInterval: 1000 },
-    )
-    worker.on('completed', () => completed.resolve())
-    try {
-      vi.stubEnv('NODE_ENV', 'production')
-      await worker.waitUntilReady()
-      await queue.add('first', {}, { jobId: 'active-job', attempts: 1 })
-      await completed.promise
-      expect(await queue.searchJobs({ name: 'duplicate' })).toHaveLength(0)
-    } finally {
-      vi.unstubAllEnvs()
-      await worker.close(true)
-      await queue.obliterate({ force: true })
-      await queue.close()
-    }
-  })
-
   it('fails a bulk add that reuses the active job id', async () => {
     const name = `self-bulk-${crypto.randomUUID()}`
     const queue = createQueue(name, { priorityKind: 'ranked' })

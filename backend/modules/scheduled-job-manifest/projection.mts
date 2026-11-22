@@ -1,4 +1,7 @@
-import { alignedScheduleText, clampScheduledJobRepeatToHourlyFloor } from './hourly-clamp.mts'
+import {
+  alignedScheduleText,
+  clampScheduledJobRepeatToHourlyFloor,
+} from '@vouchington/utils/hourly-schedule-clamp'
 import type { ProjectedScheduledJob, ScheduledJobManifest } from './types.mts'
 import { validateScheduledJobManifests } from './validation.mts'
 

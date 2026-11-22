@@ -1,5 +1,5 @@
 import { createWorker } from '@data-stores/valkey-glide-mq'
-import { getWorkerConcurrency } from '@modules/queue-config'
+import { getWorkerConcurrency } from '@vouchington/utils/worker-concurrency'
 import { GLIDE_MQ_STATS_JOB_NAME, QUEUE_NAME } from '@queues/heartbeat/config'
 import type { HeartbeatData, HeartbeatResult } from '@queues/heartbeat/types'
 import type { Job } from 'glide-mq'

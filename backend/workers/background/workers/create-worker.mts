@@ -6,7 +6,7 @@ import {
 import { createWorker } from '@data-stores/valkey-glide-mq'
 import { observeActivityPubInboxReservations } from '@data-stores/valkey-glide-mq/activitypub-inbox-reservations'
 import onError from '@modules/on-error'
-import { getWorkerConcurrency } from '@modules/queue-config'
+import { getWorkerConcurrency } from '@vouchington/utils/worker-concurrency'
 import { BACKGROUND_QUEUE_NAME, type BackgroundDomain } from '@queues/background/config'
 import { getBackgroundWorkerBaseline } from '@queues/background/enqueues/registry'
 import type { BackgroundHandler } from '@queues/background/types'

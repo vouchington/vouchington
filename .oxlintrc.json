@@ -914,7 +914,6 @@
           "@local/**",
           "@modules/**",
           "/on-error",
-          "/queue-config",
           "@queues/**",
           "@services/**",
           "@ts-shared/**",

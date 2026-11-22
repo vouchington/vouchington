@@ -5,7 +5,7 @@ import {
 } from '@data-stores/valkey-glide-mq/worker-stall-budget'
 import { createWorker } from '@data-stores/valkey-glide-mq'
 import onError from '@modules/on-error'
-import { getWorkerConcurrency } from '@modules/queue-config'
+import { getWorkerConcurrency } from '@vouchington/utils/worker-concurrency'
 import { BACKGROUND_CPU_QUEUE_NAME, type BackgroundCpuDomain } from '@queues/background-cpu/config'
 import { getBackgroundCpuWorkerBaseline } from '@queues/background-cpu/enqueues/registry'
 import type { BackgroundCpuHandler } from '@queues/background-cpu/types'
