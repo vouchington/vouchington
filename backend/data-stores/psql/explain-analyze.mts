@@ -3,7 +3,6 @@ import {
   type ExplainPlanCacheMode,
   type ExplainResult,
 } from '@vouchington/explain-plan'
-import onError from '@modules/on-error'
 import type { QueryInput } from './types.mts'
 import { connectWithRetry } from './connect-with-retry.mts'
 import { readPool } from './setup.mts'
@@ -77,7 +76,6 @@ export async function explainAnalyze(
     jit: options.jit ?? getExplainJitMode(),
     workMem: EXPLAIN_WORK_MEM,
     statementTag: 'explainAnalyze',
-    onCleanupError: error => onError(error instanceof Error ? error : new Error(String(error))),
   })
 }
 
