@@ -25,7 +25,11 @@ export class IntegrityFlagMutationController<F> {
   private actionLoading: Record<string, boolean> = {}
   private reconciliationRequired: Record<string, boolean> = {}
 
-  constructor(private options: IntegrityFlagMutationControllerOptions<F>) {}
+  private options: IntegrityFlagMutationControllerOptions<F>
+
+  constructor(options: IntegrityFlagMutationControllerOptions<F>) {
+    this.options = options
+  }
 
   updateOptions(options: IntegrityFlagMutationControllerOptions<F>) {
     this.options = options
