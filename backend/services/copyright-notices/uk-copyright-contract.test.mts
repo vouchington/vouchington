@@ -1,3 +1,7 @@
+import {
+  failCopyrightWriteWithUnrelatedConflict,
+  readClaimantCopyrightNoticeIds,
+} from '@voucha/test-helpers/data-stores/psql/copyright-write-conflicts'
 import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
@@ -90,6 +94,35 @@ describe('UK copyright notice contracts', () => {
         ),
       ).rejects.toMatchObject({ status: 403, message: 'UK copyright notices are not available' })
     })
+  })
+
+  it('propagates an unrelated unique violation and rolls back the territorial receipt', async () => {
+    const [claimant, administrator] = await Promise.all([
+      createTestUser(),
+      createTestUser({ administrator: true }),
+    ])
+    await recordCopyrightJurisdictionPolicyApproval(administrator, {
+      jurisdiction: 'uk',
+      policyVersion: `uk-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
+    })
+    const key = crypto.randomUUID()
+    const restore = failCopyrightWriteWithUnrelatedConflict(
+      '/* receiveTerritorialCopyrightNotice:receipt */',
+      key,
+      claimant.id,
+    )
+    try {
+      await expect(
+        receiveUkCopyrightNotice(
+          { user: claimant, identity: `user:${claimant.id}` },
+          key,
+          noticeRequest(),
+        ),
+      ).rejects.toMatchObject({ code: '23505', constraint: 'retained_user_identities_pkey' })
+    } finally {
+      restore()
+    }
+    await expect(readClaimantCopyrightNoticeIds(claimant.id)).resolves.toEqual([])
   })
 
   it('records receipt, human review, and redress without EU rows or a US clock', async () => {
