@@ -254,24 +254,26 @@ test.describe('Topic Detail Pages', () => {
     await expect(unfollowedUserLinks).toHaveCount(0)
 
     await navigateTo(page, `/topic/${fixture.topicId}/reviews`)
-    const followedReview = page
-      .getByTestId('post-card-title-link')
-      .filter({ hasText: fixture.followedReviewTitle })
-      .first()
-    const unfollowedReview = page
-      .getByTestId('post-card-title-link')
-      .filter({ hasText: fixture.unfollowedReviewTitle })
-      .first()
+    const reviewTitles = page.getByTestId('post-card-title-link')
+    // hasText is a case-insensitive substring match, so 'Followed Review X' also matches
+    // 'Unfollowed Review X'. Anchor each title so a locator matches exactly one card.
+    const exactTitle = (title: string) => new RegExp(`^\\s*${title}\\s*$`)
+    const followedReview = reviewTitles.filter({
+      hasText: exactTitle(fixture.followedReviewTitle),
+    })
+    const unfollowedReview = reviewTitles.filter({
+      hasText: exactTitle(fixture.unfollowedReviewTitle),
+    })
 
-    await expect(followedReview).toBeVisible()
-    await page.keyboard.press('End')
-    await expect(unfollowedReview).toBeVisible()
+    await expect(followedReview).toHaveCount(1)
+    await expect(unfollowedReview).toHaveCount(1)
 
-    const followedBox = await followedReview.boundingBox()
-    const unfollowedBox = await unfollowedReview.boundingBox()
-
-    expect(followedBox).not.toBeNull()
-    expect(unfollowedBox).not.toBeNull()
-    expect(followedBox!.y).toBeLessThan(unfollowedBox!.y)
+    // Assert rank by DOM order. Viewport boxes measured one after the other drift while the
+    // page scrolls and lays out late content, so they cannot order two cards reliably.
+    const renderedTitles = (await reviewTitles.allTextContents()).map(title => title.trim())
+    const followedIndex = renderedTitles.indexOf(fixture.followedReviewTitle)
+    const unfollowedIndex = renderedTitles.indexOf(fixture.unfollowedReviewTitle)
+    expect(followedIndex).toBeGreaterThanOrEqual(0)
+    expect(followedIndex).toBeLessThan(unfollowedIndex)
   })
 })
