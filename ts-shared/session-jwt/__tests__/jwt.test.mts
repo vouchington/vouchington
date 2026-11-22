@@ -11,7 +11,7 @@ import {
 import { encodeJwkSet as encodeJwkSetForEnv } from '@vouchington/session-jwt'
 import { DEVICE_TOKEN_AUDIENCE, SESSION_JWT_ISSUER, SESSION_TOKEN_AUDIENCE } from '../types.mts'
 
-async function generatePrivateJwk(kid: string): Promise<jose.JWK> {
+async function generatePrivateJwk(kid: string): Promise<jose.JWK & { kid: string }> {
   const { privateKey } = await jose.generateKeyPair('RS512', { extractable: true })
   const jwk = await jose.exportJWK(privateKey)
   return { ...jwk, alg: 'RS512', kid, use: 'sig' }
@@ -22,7 +22,7 @@ async function signRawJwt({
   payload,
   audience,
 }: {
-  key: jose.JWK
+  key: jose.JWK & { kid: string }
   payload: jose.JWTPayload
   audience: string
 }): Promise<string> {

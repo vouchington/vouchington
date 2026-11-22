@@ -4,7 +4,7 @@ import { v7 as uuidv7 } from 'uuid'
 import { SESSION_JWT_ISSUER, signSessionJwt, verifySessionJwt } from '../index.mts'
 import { encodeJwkSet as encodeJwkSetForEnv, derivePublicJwk } from '@vouchington/session-jwt'
 
-async function generatePrivateJwk(kid: string): Promise<jose.JWK> {
+async function generatePrivateJwk(kid: string): Promise<jose.JWK & { kid: string }> {
   const { privateKey } = await jose.generateKeyPair('RS512', { extractable: true })
   const jwk = await jose.exportJWK(privateKey)
   return {
