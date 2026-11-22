@@ -28,6 +28,7 @@
     "@voucha/types": "workspace:^",
     "@vouchington/postgres": "^0.6.1",
     "@vouchington/sentry": "^0.6.0",
+    "@vouchington/uuid-v7": "^0.0.0",
     "sql-template-strings": "^2.2.2",
     "valkyries": "^0.15.0"
   },

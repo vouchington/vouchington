@@ -55,6 +55,7 @@
     "@services/notifications": "workspace:^",
     "@services/ses-bounce-events": "workspace:^",
     "@ts-shared/utils": "workspace:^",
-    "@voucha/test-helpers": "workspace:^"
+    "@voucha/test-helpers": "workspace:^",
+    "@vouchington/uuid-v7": "^0.0.0"
   }
 }

@@ -41,6 +41,7 @@
     "@data-stores/valkey-core": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
+    "@vouchington/uuid-v7": "^0.0.0",
     "glide-mq": "^0.20.0"
   }
 }
