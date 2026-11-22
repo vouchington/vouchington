@@ -77,6 +77,18 @@ export async function insertTestRetainedRelationIdentity(
   )
 }
 
+export async function deleteTestRetainedRelationIdentity(
+  relationTable: string,
+  subjectId: string,
+  relationId: string,
+): Promise<void> {
+  const config = getRetainedRelationConfig(relationTable)
+  await write(
+    `/* deleteTestRetainedRelationIdentity */ DELETE FROM ${config.retainedTable} WHERE subject_id = $1 AND id = $2`,
+    [subjectId, relationId],
+  )
+}
+
 export async function hasTestRetainedRelationIdentity(
   relationTable: string,
   subjectId: string,

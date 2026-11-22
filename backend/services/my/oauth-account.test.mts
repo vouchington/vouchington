@@ -19,6 +19,14 @@ import { cleanupOAuthFriendEdgeWork } from '../data-retention/cleanup-oauth-frie
 import { deleteOrphanedOAuthAccountBatch } from '../data-retention/cleanup-batches.mts'
 
 describe('disconnectOAuthAccount', () => {
+  it('returns 404 when no provider account is connected', async () => {
+    const user = await createTestUser()
+    await expect(disconnectOAuthAccount(user.id, 'github')).rejects.toMatchObject({
+      status: 404,
+      message: 'No github account connected',
+    })
+  })
+
   it('invalidates an observation committed after the unlink transaction began', async () => {
     const user = await createTestUser()
     const providerUserId = `github-unlink-clock-${randomUUID()}`
