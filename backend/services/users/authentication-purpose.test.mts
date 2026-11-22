@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import { v7 } from 'uuid'
 import { createTestUser, createRandomEmailAddress } from '@voucha/test-helpers'
-import { withRepeatableReadPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
+import {
+  withPostgresTransactionForTest,
+  withRepeatableReadPostgresTransactionForTest,
+} from '@voucha/test-helpers/postgres-transaction'
+import { rejectQuery } from '@voucha/test-helpers/injected-failures'
 import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 import { createEmailAddressLoginToken, verifyEmailAddressLoginToken } from './authentication.mts'
 
@@ -65,5 +69,33 @@ describe('email authentication code purposes', () => {
     expect(verified.success).toBe(true)
     const replayed = await verifyEmailAddressLoginToken(emailAddress, winner.token)
     expect(replayed.success).toBe(false)
+  })
+
+  it('propagates a uniqueness error from outside the pending-code indexes', async () => {
+    const emailAddress = createRandomEmailAddress()
+    const issued = await createEmailAddressLoginToken(emailAddress)
+    const duplicateToken = Object.assign(new Error('Duplicate stored token'), {
+      code: '23505',
+      constraint: 'email_address_login_tokens_token_key',
+    })
+
+    await withPostgresTransactionForTest(async query => {
+      await expect(
+        createEmailAddressLoginToken(
+          emailAddress,
+          { purpose: 'login' },
+          {
+            query: rejectQuery(
+              query,
+              statement => statement.startsWith('/* createEmailAddressLoginToken */'),
+              duplicateToken,
+            ),
+          },
+        ),
+      ).rejects.toBe(duplicateToken)
+    })
+
+    const verified = await verifyEmailAddressLoginToken(emailAddress, issued.token)
+    expect(verified.success).toBe(true)
   })
 })
