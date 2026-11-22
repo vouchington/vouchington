@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { write } from '@data-stores/psql'
+import { extractQueryName, getCapturedQueries, write } from '@data-stores/psql'
 import { cleanupPostModerationLedger } from '@services/data-retention/cleanup-post-moderation-ledger'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
@@ -53,6 +53,13 @@ export async function runPostModerationRetentionScenarios(): Promise<void> {
     },
     undefined,
     VERSION_PAGE,
+    {
+      afterCapture: async () => {
+        const names = getCapturedQueries().map(query => extractQueryName(query.text))
+        assert.equal(names.includes('cleanupPostModerationLedgerPage.lockPagePosts'), false)
+        assert.equal(names.includes('lockChangedPostModerationRetentionPost'), false)
+      },
+    },
   )
   await seedPostModerationRetentionSuccessors()
   registerScenarioContract('post-moderation-version-retention-page', {
@@ -110,6 +117,13 @@ export async function runPostModerationRetentionScenarios(): Promise<void> {
     },
     undefined,
     EVIDENCE_PAGE,
+    {
+      afterCapture: async () => {
+        const names = getCapturedQueries().map(query => extractQueryName(query.text))
+        assert.equal(names.includes('cleanupPostModerationLedgerPage.lockPagePosts'), false)
+        assert.equal(names.includes('lockChangedPostModerationRetentionPost'), false)
+      },
+    },
   )
   await rearmSeedPostModerationPassEvidence()
 

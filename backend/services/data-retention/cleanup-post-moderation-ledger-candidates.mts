@@ -28,7 +28,8 @@ export async function processPostModerationCandidatePage(
     const owner = ownerByVersion.get(row.version_id)
     return owner && owner.is_current !== expectedCurrent
   })
-  // Block keepers first, then revisit the still-due actionable rows on the next bounded page.
+  // A mixed page has two incompatible lock phases. Block its keepers without parent
+  // locks, then retry the still-due actionable rows on the next bounded page.
   if (kept.length > 0) {
     await blockPostModerationCandidates(query, kind, kept, ownerByVersion, revision)
     return { changed: 0, needsRetry: true }
@@ -41,6 +42,13 @@ export async function processPostModerationCandidatePage(
     ...new Set(actionable.map(row => ownerByVersion.get(row.version_id)!.post_id)),
   ].toSorted()
   if (postIds.length === 0) return { changed: 0, needsRetry: false }
+  const { rows: lockedPosts } = await query<{ id: string }>(
+    `/* cleanupPostModerationLedgerPage.lockPagePosts */
+     SELECT id FROM posts WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`,
+    [postIds],
+  )
+  const lockedPostIds = lockedPosts.map(row => row.id)
+  if (lockedPostIds.length === 0) return { changed: 0, needsRetry: false }
   const ids = actionable.map(row => row.id)
   const result =
     kind === 'superseded_versions'
@@ -56,7 +64,7 @@ export async function processPostModerationCandidatePage(
                WHERE successor.post_id = version.post_id
                  AND successor.id > version.id AND successor.id < $3::uuid
              )`,
-          [ids, revision, upperId, postIds],
+          [ids, revision, upperId, lockedPostIds],
         )
       : await query(
           `/* cleanupPostModerationLedgerPage.clearPassEvidence */
@@ -70,20 +78,20 @@ export async function processPostModerationCandidatePage(
              AND version.policy_revision = $2
              AND disposition.disposition = 'pass' AND disposition.source <> 'staff'
              AND disposition.evidence <> '{}'::jsonb`,
-          [ids, revision, postIds],
+          [ids, revision, lockedPostIds],
         )
-  // The digest can change between the initial filter and the guarded mutation.
-  // Block skipped keepers and queue their recheck after any further hash changes.
+  // The digest can change between the unlocked filter and the post lock. The guarded
+  // mutation then skips that row; block it now while the post lock closes the race.
   const { rows: newlyKept } = await query<{ id: string; version_id: string }>(
     kind === 'superseded_versions'
-      ? `/* listPostModerationVersionKeepers */
+      ? `/* listLockedPostModerationVersionKeepers */
          SELECT version.id, version.id AS version_id
          FROM post_moderation_versions version JOIN posts post ON post.id = version.post_id
          WHERE version.id = ANY($1::uuid[]) AND post.id = ANY($2::uuid[])
            AND version.retention_due_at IS NOT NULL
            AND (version.content_sha256 = post.llm_moderation_content_sha256
                 AND version.policy_revision = $3) IS TRUE`
-      : `/* listPostModerationPassKeepers */
+      : `/* listLockedPostModerationPassKeepers */
          SELECT disposition.id, disposition.version_id
          FROM post_moderation_dispositions disposition
          JOIN post_moderation_versions version ON version.id = disposition.version_id
@@ -92,7 +100,7 @@ export async function processPostModerationCandidatePage(
            AND disposition.retention_due_at IS NOT NULL
            AND (version.content_sha256 = post.llm_moderation_content_sha256
                 AND version.policy_revision = $3) IS NOT TRUE`,
-    [ids, postIds, revision],
+    [ids, lockedPostIds, revision],
   )
   await blockPostModerationCandidates(query, kind, newlyKept, ownerByVersion, revision)
   return { changed: result.rowCount ?? 0, needsRetry: false }
