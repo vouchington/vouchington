@@ -132,6 +132,8 @@ function parseSessionClientBinding(value: unknown, verifiedAt: Date | null): Ses
   }
 }
 
+const exactReplayClaims = ['client', 'dc', 'ua_hash', 'ja4_hash', 'iat', 'exp'] as const
+
 export async function verifyStoredDeviceCredentialReplay(
   row: SessionDeviceAuthorityRow,
   presented: DeviceTokenPayload,
@@ -139,18 +141,13 @@ export async function verifyStoredDeviceCredentialReplay(
 ): Promise<string> {
   const token = decryptSecret(row.device_token_encrypted!, deviceTokenSecretPurpose(expected.sid))
   const credential = await verifyDeviceJwt(token)
+  if (!credential) throw sessionReloginRequired()
   if (
-    !credential ||
     hashDeviceToken(token) !== row.device_token_digest ||
     credential.refresh_uid !== expected.uid ||
     credential.refresh_sid !== expected.sid ||
     credential.did !== expected.did ||
-    credential.client !== presented.client ||
-    credential.dc !== presented.dc ||
-    credential.ua_hash !== presented.ua_hash ||
-    credential.ja4_hash !== presented.ja4_hash ||
-    credential.iat !== presented.iat ||
-    credential.exp !== presented.exp
+    !exactReplayClaims.every(claim => credential[claim] === presented[claim])
   )
     throw sessionReloginRequired()
   return token
