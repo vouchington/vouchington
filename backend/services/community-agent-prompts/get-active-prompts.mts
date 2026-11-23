@@ -45,7 +45,7 @@ export async function getActiveCommunityAgentPromptPage(
         AND (activated_at, id) <= (${through.activatedAt}::timestamptz, ${through.id}::uuid)`)
   statement.append(sql`
       ORDER BY activated_at, id
-      LIMIT ${CLASSIFIER_MAX_PROMPT_CANDIDATES + 1}
+      LIMIT ${limit + 1}
     )
     SELECT cap.id, ${communityId}::uuid AS community_id, cap.created_by_id,
       true AS is_slot_allocated, cap.activated_at, NULL::timestamptz AS deactivated_at,
