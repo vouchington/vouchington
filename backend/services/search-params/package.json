@@ -35,7 +35,7 @@
     "@ts-shared/data-points": "workspace:^",
     "@ts-shared/feed-capabilities": "workspace:^",
     "@ts-shared/utils": "workspace:^",
-    "@vouchington/pagination": "^0.0.4",
+    "@vouchington/pagination": "^0.0.5",
     "http-errors": "^2.0.1",
     "valkyries": "^0.15.0"
   },

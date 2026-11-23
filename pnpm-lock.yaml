@@ -1299,8 +1299,8 @@ importers:
         specifier: ^0.8.0
         version: 0.8.0
       '@vouchington/pagination':
-        specifier: ^0.0.4
-        version: 0.0.4
+        specifier: ^0.0.5
+        version: 0.0.5
       '@vouchington/rate-limit':
         specifier: ^0.4.0
         version: 0.4.0(@jongleberry/api-server@3.1.0)(valkyries@0.15.0)
@@ -2541,8 +2541,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/pagination':
-        specifier: ^0.0.4
-        version: 0.0.4
+        specifier: ^0.0.5
+        version: 0.0.5
 
   backend/modules/queue-config: {}
 
@@ -5342,8 +5342,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/pagination':
-        specifier: ^0.0.4
-        version: 0.0.4
+        specifier: ^0.0.5
+        version: 0.0.5
       '@vouchington/sentry':
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.12.0)(@sentry/core@11.12.0)(@sentry/node@11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
@@ -7745,8 +7745,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/pagination':
-        specifier: ^0.0.4
-        version: 0.0.4
+        specifier: ^0.0.5
+        version: 0.0.5
       '@vouchington/sentry':
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.12.0)(@sentry/core@11.12.0)(@sentry/node@11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
@@ -7946,6 +7946,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      '@vouchington/pagination':
+        specifier: ^0.0.5
+        version: 0.0.5
       '@vouchington/utils':
         specifier: ^0.12.0
         version: 0.12.0
@@ -9565,8 +9568,8 @@ importers:
         specifier: workspace:^
         version: link:../../modules/search-utils
       '@vouchington/pagination':
-        specifier: ^0.0.4
-        version: 0.0.4
+        specifier: ^0.0.5
+        version: 0.0.5
       valkyries:
         specifier: ^0.15.0
         version: 0.15.0
@@ -10037,6 +10040,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      '@vouchington/pagination':
+        specifier: ^0.0.5
+        version: 0.0.5
       '@vouchington/sentry':
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.12.0)(@sentry/core@11.12.0)(@sentry/node@11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
@@ -10466,8 +10472,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/pagination':
-        specifier: ^0.0.4
-        version: 0.0.4
+        specifier: ^0.0.5
+        version: 0.0.5
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -11253,8 +11259,8 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/utils
       '@vouchington/pagination':
-        specifier: ^0.0.4
-        version: 0.0.4
+        specifier: ^0.0.5
+        version: 0.0.5
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -11625,8 +11631,8 @@ importers:
         specifier: ^0.0.0
         version: 0.0.0
       '@vouchington/pagination':
-        specifier: ^0.0.4
-        version: 0.0.4
+        specifier: ^0.0.5
+        version: 0.0.5
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -12421,8 +12427,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/pagination':
-        specifier: ^0.0.4
-        version: 0.0.4
+        specifier: ^0.0.5
+        version: 0.0.5
       '@vouchington/sentry':
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.12.0)(@sentry/core@11.12.0)(@sentry/node@11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
@@ -12865,6 +12871,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      '@vouchington/pagination':
+        specifier: ^0.0.5
+        version: 0.0.5
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -20986,8 +20995,8 @@ packages:
     resolution: {integrity: sha512-RzmiPcAMffkq/ieH8e4UfwPISpvEvrpah2Gfp0/MCOC5Q4quP7v2E9Uf4SUXHMGXMBHVekbxsPmkV3668vozWA==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/pagination@0.0.4':
-    resolution: {integrity: sha512-hw/XO5W9CRClK9+MBY6HGv1CF1kXSuUYaR07DbK3WLaYBcIGD8bq+KTUkLnlvrWRiOdqB0CY3jHVgAiRSCWghw==}
+  '@vouchington/pagination@0.0.5':
+    resolution: {integrity: sha512-GV+I3B4DpRqK4Uzp8dMucFcIhfrfV99fMPO0m1vNkdnl8E2IAR95xyz6kKjuwyKqiP31o2dmXjAdX99F5RPUgg==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/phone-validation@0.0.0':
@@ -29975,7 +29984,7 @@ snapshots:
     dependencies:
       '@vouchington/utils': 0.12.0
 
-  '@vouchington/pagination@0.0.4':
+  '@vouchington/pagination@0.0.5':
     dependencies:
       http-errors: 2.0.1
 

@@ -31,6 +31,7 @@
     "@services/entity-relations": "workspace:^",
     "@services/pagination": "workspace:^",
     "@voucha/types": "workspace:^",
+    "@vouchington/pagination": "^0.0.5",
     "@vouchington/utils": "^0.12.0",
     "http-assert": "^1.5.0",
     "sql-template-strings": "^2.2.2",

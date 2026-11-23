@@ -1,6 +1,6 @@
 import { assertWhitelistedSqlIdentifier, read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
-import { sliceRawKeysetPage } from '@modules/pagination'
+import { sliceRawKeysetPage } from '@vouchington/pagination'
 import type { PrivateUser } from '@services/users/types'
 import { isModerationStaff } from '@services/users/authorization'
 import { BLOCKED_POST_TYPES } from '@voucha/types/entities/post'

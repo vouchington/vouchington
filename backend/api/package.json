@@ -242,7 +242,7 @@
     "@voucha/types": "workspace:^",
     "@vouchington/localization": "^0.3.1",
     "@vouchington/oauth-server": "^0.8.0",
-    "@vouchington/pagination": "^0.0.4",
+    "@vouchington/pagination": "^0.0.5",
     "@vouchington/rate-limit": "^0.4.0",
     "@vouchington/sentry": "^0.6.0",
     "@vouchington/session-jwt": "^0.0.3",

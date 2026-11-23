@@ -74,6 +74,7 @@
     "@ts-shared/languages": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
+    "@vouchington/pagination": "^0.0.5",
     "@vouchington/sentry": "^0.6.0",
     "@vouchington/uuid-v7": "^0.0.0",
     "http-assert": "^1.5.0",
