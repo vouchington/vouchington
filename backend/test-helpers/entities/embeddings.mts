@@ -1,4 +1,4 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
+import { allowUnannotatedQuery } from '@vouchington/postgres'
 import { read, write, writePool } from '@data-stores/psql'
 import { EMBEDDINGS_TABLE, embeddingBloomFilter } from './_bedrock-embeddings-support.mts'
 

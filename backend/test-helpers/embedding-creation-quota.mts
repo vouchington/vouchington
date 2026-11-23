@@ -1,4 +1,4 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
+import { allowUnannotatedQuery } from '@vouchington/postgres'
 import { mintUuidv7 } from '@modules/utils/ids'
 import { expect, onTestFinished } from 'vitest'
 import { advisoryLockPool, read } from '@data-stores/psql'

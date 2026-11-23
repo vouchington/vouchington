@@ -1,4 +1,4 @@
-import { allowUnannotatedQuery } from '../../backend/data-stores/psql/prepared-statement-name.mts'
+import { allowUnannotatedQuery } from '@vouchington/postgres'
 // Sideload pipeline test. The image lambda serves the reserved Playwright cover locally, so CI
 // does not fetch an external host. Runs only in the credentialed Playwright workflow, which
 // provides AWS credentials and the image buckets. A missing credential fails the test.

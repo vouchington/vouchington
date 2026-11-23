@@ -1,4 +1,4 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
+import { allowUnannotatedQuery } from '@vouchington/postgres'
 import { write } from '@data-stores/psql'
 import { upsertTestRecentlyViewed } from './recently-viewed.mts'
 

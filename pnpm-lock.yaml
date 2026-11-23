@@ -15608,6 +15608,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../backend/test-helpers
+      '@vouchington/postgres':
+        specifier: ^0.6.2
+        version: 0.6.2
       '@vouchington/server-utils':
         specifier: ^0.0.1
         version: 0.0.1
