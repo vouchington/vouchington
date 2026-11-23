@@ -43,7 +43,7 @@ test.describe('Sources Page', () => {
     await navigateTo(page, '/sources')
 
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Sources')
-    expect(individualElectionRequests).toEqual([])
+    expect(individualElectionRequests).toStrictEqual([])
   })
 
   test('should search sources by text query via the combined search input', async ({ page }) => {

@@ -73,6 +73,7 @@
     "playwright/prefer-to-be": "error",
     "playwright/prefer-equality-matcher": "error",
     "playwright/no-export": "error",
+    "playwright/prefer-strict-equal": "error",
     "playwright/valid-title": "error"
   },
   "overrides": [

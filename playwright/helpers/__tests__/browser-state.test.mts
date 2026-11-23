@@ -21,7 +21,7 @@ describe('browser-state helpers', () => {
     await removeLocalStorageKeysBeforeNavigation(page as never, ['feed-style', 'feed-style'])
 
     expect(page.addInitScript).toHaveBeenCalledTimes(1)
-    expect(page.addInitScript.mock.calls[0][1]).toEqual(['feed-style'])
+    expect(page.addInitScript.mock.calls[0][1]).toStrictEqual(['feed-style'])
   })
 
   it('can clear keys on an already-loaded origin', async () => {
@@ -31,7 +31,7 @@ describe('browser-state helpers', () => {
     await removeLocalStorageKeys(page as never, ['theme'])
 
     expect(page.evaluate).toHaveBeenCalledTimes(1)
-    expect(page.evaluate.mock.calls[0][1]).toEqual(['theme'])
+    expect(page.evaluate.mock.calls[0][1]).toStrictEqual(['theme'])
   })
 
   it('clears cookies without clearing localStorage wholesale', async () => {
@@ -42,7 +42,7 @@ describe('browser-state helpers', () => {
 
     expect(page.context).toHaveBeenCalledTimes(1)
     expect(page.testContext.clearCookies).toHaveBeenCalledTimes(1)
-    expect(page.addInitScript.mock.calls[0][1]).toEqual(['list-style'])
+    expect(page.addInitScript.mock.calls[0][1]).toStrictEqual(['list-style'])
     expect(page.evaluate).not.toHaveBeenCalled()
   })
 })

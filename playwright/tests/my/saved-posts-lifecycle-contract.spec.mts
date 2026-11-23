@@ -41,7 +41,7 @@ test('executes every claimed private-post browser lifecycle scenario', async ({ 
   await loginAsUser(page, ownerId)
   for (const claim of claims) {
     const observed = await runPrivatePostCollectionScenario(page, claim)
-    expect(observed, claim.scenario.id).toEqual(claim.scenario.expected)
+    expect(observed, claim.scenario.id).toStrictEqual(claim.scenario.expected)
   }
 })
 

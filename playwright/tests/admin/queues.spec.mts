@@ -54,7 +54,7 @@ test.describe('Queue Dashboard', () => {
       await page.evaluate(
         () => (window as unknown as { playwrightCspViolations: string[] }).playwrightCspViolations,
       ),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   test('displays scheduled jobs table with expected columns', async ({ page }) => {
