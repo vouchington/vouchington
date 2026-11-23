@@ -124,7 +124,9 @@ describe('graceful shutdown wiring', () => {
 
   it('reports a frozen failure without mutating it and still reports later failures', async () => {
     const { onGracefulShutdown, addGracefulShutdownCallback } = await loadSubject()
-    const frozenError: Error = Object.freeze(new Error('frozen failure'))
+    const frozenError: Error = Object.freeze(
+      Object.assign(new Error('frozen failure'), { name: 'FrozenError', code: 'EFROZEN' }),
+    )
     const laterError = new Error('later failure')
     addGracefulShutdownCallback(async () => {
       throw frozenError
@@ -138,7 +140,11 @@ describe('graceful shutdown wiring', () => {
     expect(sentryCaptureExceptionMock).toHaveBeenCalledTimes(2)
     const [reported, context] = sentryCaptureExceptionMock.mock.calls[0] ?? []
     expect(reported).not.toBe(frozenError)
-    expect(reported).toMatchObject({ message: 'frozen failure' })
+    expect(reported).toMatchObject({
+      message: 'frozen failure',
+      name: 'FrozenError',
+      code: 'EFROZEN',
+    })
     expect(context).toEqual({ tags: { shutdown_phase: 'callbacks', shutdown_signal: 'SIGTERM' } })
     expect(Object.hasOwn(frozenError, 'tags')).toBe(false)
     expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(laterError, expect.anything())
