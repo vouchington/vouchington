@@ -13,18 +13,10 @@ export async function loadSubject() {
   const onGracefulShutdownPSQL = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
 
   const mod = await import('@data-stores/graceful-shutdown')
-  const onGracefulShutdown = (signal: string) =>
-    mod.onGracefulShutdown(signal, { onGracefulShutdownValkey, onGracefulShutdownPSQL })
-  const gracefulShutdown = (deps: { logger?: (...args: unknown[]) => void } = {}) =>
-    mod.gracefulShutdown({ onGracefulShutdownValkey, onGracefulShutdownPSQL, ...deps })
+  mod.registerGracefulShutdownValkey(onGracefulShutdownValkey)
+  mod.registerGracefulShutdownPSQL(onGracefulShutdownPSQL)
 
-  return {
-    ...mod,
-    onGracefulShutdown,
-    gracefulShutdown,
-    onGracefulShutdownValkey,
-    onGracefulShutdownPSQL,
-  }
+  return { ...mod, onGracefulShutdownValkey, onGracefulShutdownPSQL }
 }
 
 export const SIGNAL_LISTENERS_REGISTERED = Symbol.for('voucha.graceful-shutdown.signal-listeners')

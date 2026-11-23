@@ -5,10 +5,10 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { describe, expect, it, vi } from 'vitest'
-import { runWorkerIoCliSmoke } from './image-smoke.mts'
+import { runWorkerIoCliSmoke } from './worker-io-cli-smoke.mts'
 
 const execFileAsync = promisify(execFile)
-const cli = fileURLToPath(new URL('./image-smoke.mts', import.meta.url))
+const cli = fileURLToPath(new URL('./worker-io-cli-smoke.mts', import.meta.url))
 
 describe('worker-io cli smoke', () => {
   it('sorts and comms through the wrapper when TMPDIR is writable', async () => {

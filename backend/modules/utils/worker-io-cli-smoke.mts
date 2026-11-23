@@ -6,7 +6,7 @@ import {
   runCommand,
   type CommandFailureReason,
   type RunCommandOptions,
-} from './index.mts'
+} from '@vouchington/server-utils/child-process'
 
 const SORT_BIN = '/usr/bin/sort'
 const COMM_BIN = '/usr/bin/comm'
