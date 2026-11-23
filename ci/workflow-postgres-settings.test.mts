@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { postgresWorkflowPolicyViolations, type OpsWorkflow } from './workflow-ops-policy.mts'
 
 const common = '-c max_connections=300 -c log_min_messages=log'
-const eager = `${common} -c autovacuum_naptime=1s -c autovacuum_analyze_threshold=0 -c autovacuum_analyze_scale_factor=0 -c log_lock_waits=on -c log_min_error_statement=error -c log_line_prefix=%m_pid%p_app%a_xid%x_`
+const backendUnit =
+  '-c max_connections=300 -c log_min_messages=error' +
+  ' -c autovacuum_naptime=1s -c autovacuum_analyze_threshold=0 -c autovacuum_analyze_scale_factor=0' +
+  ' -c log_lock_waits=on -c log_min_error_statement=error -c log_line_prefix=%m_pid%p_app%a_xid%x_'
 const path = '.github/workflows/tests-backend-unit.yml'
 const sources = {
   [path]: `image: ghcr.io/vouchington/dependency-pgvector:synthetic@sha256:${'b'.repeat(64)}`,
@@ -16,17 +19,18 @@ function workflow(args: string, job = 'backend-tests'): OpsWorkflow {
 }
 
 describe('PostgreSQL workflow service settings', () => {
-  it('requires eager autoanalyze for backend unit shards', () => {
-    expect(postgresWorkflowPolicyViolations(sources, { [path]: workflow(eager) })).toEqual([])
+  it('requires eager autoanalyze and lock diagnostics for backend unit shards', () => {
+    expect(postgresWorkflowPolicyViolations(sources, { [path]: workflow(backendUnit) })).toEqual([])
     for (const args of [
       common,
-      eager.replace('-c autovacuum_naptime=1s', ''),
-      eager.replace('-c autovacuum_analyze_threshold=0', ''),
-      eager.replace('-c autovacuum_analyze_scale_factor=0', ''),
-      eager.replace('-c log_lock_waits=on', ''),
+      backendUnit.replace('-c log_min_messages=error', '-c log_min_messages=log'),
+      backendUnit.replace('-c autovacuum_naptime=1s ', ''),
+      backendUnit.replace('-c autovacuum_analyze_threshold=0 ', ''),
+      backendUnit.replace('-c autovacuum_analyze_scale_factor=0 ', ''),
+      backendUnit.replace('-c log_lock_waits=on ', ''),
     ]) {
       expect(postgresWorkflowPolicyViolations(sources, { [path]: workflow(args) })).toEqual([
-        `${path}#backend-tests POSTGRES_INITDB_ARGS must equal ${eager}`,
+        `${path}#backend-tests POSTGRES_INITDB_ARGS must equal ${backendUnit}`,
       ])
     }
   })
@@ -39,9 +43,9 @@ describe('PostgreSQL workflow service settings', () => {
       expect(postgresWorkflowPolicyViolations(sources, { [file]: workflow(common, job) })).toEqual(
         [],
       )
-      expect(postgresWorkflowPolicyViolations(sources, { [file]: workflow(eager, job) })).toEqual([
-        `${file}#${job} POSTGRES_INITDB_ARGS must equal ${common}`,
-      ])
+      expect(
+        postgresWorkflowPolicyViolations(sources, { [file]: workflow(backendUnit, job) }),
+      ).toEqual([`${file}#${job} POSTGRES_INITDB_ARGS must equal ${common}`])
     }
   })
 })

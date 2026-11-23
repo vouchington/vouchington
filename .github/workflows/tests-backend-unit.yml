@@ -104,12 +104,12 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_DB: postgres
           POSTGRES_HOST_AUTH_METHOD: trust
-          # Lock diagnostics name both sides of a deadlock; deadlock_timeout stays at its 1s default,
-          # which is also when log_lock_waits reports a wait. The prefix has no spaces because the
-          # image entrypoint word-splits (and evals) this value, so no spaces or shell metacharacters.
+          # The deadlock ERROR includes the wait graph and both statements. LOG lock-wait entries
+          # report the individual wait. The image entrypoint word-splits and evals this value, so
+          # keep spaces and shell metacharacters out of the log prefix.
           # Tests rapidly grow the empty restored baseline; refresh estimates during that growth.
           POSTGRES_INITDB_ARGS: >-
-            -c max_connections=300 -c log_min_messages=log
+            -c max_connections=300 -c log_min_messages=error
             -c autovacuum_naptime=1s -c autovacuum_analyze_threshold=0
             -c autovacuum_analyze_scale_factor=0
             -c log_lock_waits=on -c log_min_error_statement=error
