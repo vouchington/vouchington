@@ -1,7 +1,9 @@
+import {
+  createCrawlUrlErrorMocks,
+  withRecordedDnsFailure,
+} from '@voucha/test-helpers/services/crawls/crawl-url-error-mocks'
 import { setDomainRateLimitedBackground } from '@voucha/test-helpers/services/crawls/domain-rate-limit'
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
-
-import { crawlUrl } from '../crawl-url.mts'
 
 import { addUrl } from '@services/urls/upsert'
 
@@ -13,30 +15,11 @@ import { getUrlHostnameCrawlerDetailsById } from '@services/urls-hostnames'
 import { createTestUser } from '@voucha/test-helpers'
 
 import { getTestHostnameDnsStats } from '@voucha/test-helpers/entities/url-hostnames'
-import * as dnsFailures from '@services/urls-hostnames/dns-failures'
 
 import type { PrivateUser } from '@services/users/types'
 
-const fetchCrawlerHtml = vi.fn<VitestLooseMock>()
-const isUrlCrawlable = vi.fn<VitestLooseMock>().mockResolvedValue(true)
-const resolveDnsCanary = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
-const resolveSafeCrawlerAddresses = vi
-  .fn<VitestLooseMock>()
-  .mockResolvedValue([{ address: '93.184.216.34', family: 4 }])
-
-function crawlUrlForTest(...args: Parameters<typeof crawlUrl>) {
-  const [urlId, hopCount = 0, visitedUrls = new Set<string>(), options] = args
-  return crawlUrl(urlId, hopCount, visitedUrls, {
-    ...options,
-    dependencies: {
-      fetchCrawlerHtml,
-      isUrlCrawlable,
-      resolveDnsCanary,
-      resolveSafeCrawlerAddresses,
-      ...options?.dependencies,
-    },
-  })
-}
+const { fetchCrawlerHtml, resolveDnsCanary, resolveSafeCrawlerAddresses, crawlUrlForTest } =
+  createCrawlUrlErrorMocks()
 
 import { getDomainRateLimitRemainingMs } from '../domain-rate-limit.mts'
 
@@ -58,33 +41,6 @@ import {
 import { createCrawl } from '../create.mts'
 import { updateCrawl } from '../update.mts'
 import { recordCrawlError } from '../crawl-url/errors.mts'
-
-async function withRecordedDnsFailure<T>(run: () => Promise<T>): Promise<T> {
-  const record = dnsFailures.recordHostnameDnsFailure
-  const pending: Promise<unknown>[] = []
-  const spy = vi
-    .spyOn(dnsFailures, 'recordHostnameDnsFailure')
-    .mockImplementation((hostnameId, resolveCanary) => {
-      const result = record(hostnameId, resolveCanary)
-      pending.push(result)
-      return result
-    })
-  const [runResult] = await Promise.allSettled([Promise.resolve().then(run)])
-  // Drain every real DNS-counter write before restoring the callthrough observer.
-  const results = await Promise.allSettled(pending)
-  const restored = await Promise.allSettled([Promise.resolve().then(() => spy.mockRestore())])
-  const failures = [...results, ...restored].flatMap(result =>
-    result.status === 'rejected' ? [result.reason] : [],
-  )
-  if (failures.length > 0) {
-    throw new AggregateError(
-      runResult.status === 'rejected' ? [runResult.reason, ...failures] : failures,
-      'DNS failure recording failed',
-    )
-  }
-  if (runResult.status === 'rejected') throw runResult.reason
-  return runResult.value
-}
 
 let user: PrivateUser
 
