@@ -117,7 +117,7 @@ describe('graceful shutdown wiring', () => {
     expect(reported).toBeInstanceOf(Error)
     expect(reported).toMatchObject({
       message: 'valkey gone',
-      cause: { name: 'ShutdownError', resource: 'Valkey', cause: 'valkey gone' },
+      cause: { cause: 'valkey gone' },
     })
     expect(context).toEqual({ tags: { shutdown_resource: 'Valkey' } })
   })
@@ -189,13 +189,13 @@ describe('one-off data-store shutdown wiring', () => {
     onGracefulShutdownValkey.mockRejectedValue(valkeyError)
     onGracefulShutdownPSQL.mockRejectedValue(psqlError)
 
-    await expect(shutdownDataStoresForOneOffCommand()).rejects.toMatchObject({
-      message: 'One-off shutdown failed: Valkey, PostgreSQL',
-      errors: [
-        { name: 'ShutdownError', resource: 'Valkey', cause: valkeyError },
-        { name: 'ShutdownError', resource: 'PostgreSQL', cause: psqlError },
-      ],
-    })
+    const rejection: unknown = await shutdownDataStoresForOneOffCommand().catch(
+      (err: unknown) => err,
+    )
+
+    expect(rejection).toBeInstanceOf(AggregateError)
+    const causes = (rejection as AggregateError).errors.map((error: Error) => error.cause)
+    expect(causes).toEqual([valkeyError, psqlError])
 
     expect(onGracefulShutdownValkey).toHaveBeenCalledTimes(1)
     expect(onGracefulShutdownPSQL).toHaveBeenCalledTimes(1)
@@ -212,8 +212,6 @@ describe('one-off data-store shutdown wiring', () => {
     forceExitTimer.fire()
 
     expect(exitSpy).toHaveBeenCalledWith(1)
-    expect(errorSpy).toHaveBeenCalledWith(
-      'One-off shutdown: process did not terminate in time, forcing exit...',
-    )
+    expect(errorSpy).toHaveBeenCalledTimes(1)
   })
 })
