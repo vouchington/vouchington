@@ -34,8 +34,12 @@ describe('moderation-signals domain through real GlideMQ', () => {
       connection,
       createProcessor: createBackgroundProcessor,
       bodies: {
-        [MODERATION_SIGNALS_SPAM_DETECTION_JOB.name]: () => void seen.push('spam'),
-        [MODERATION_SIGNALS_BAN_EVASION_JOB.name]: () => void seen.push('ban'),
+        [MODERATION_SIGNALS_SPAM_DETECTION_JOB.name]: () => {
+          seen.push('spam')
+        },
+        [MODERATION_SIGNALS_BAN_EVASION_JOB.name]: () => {
+          seen.push('ban')
+        },
       },
     })
     const spam = await harness.add(MODERATION_SIGNALS_SPAM_DETECTION_JOB, {

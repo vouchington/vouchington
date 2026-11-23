@@ -4,8 +4,6 @@ import { AuthProvider } from '@/lib/auth/auth-provider'
 import { PodcastPlayerProvider } from './context'
 import { usePodcastPlayer } from './use-podcast-player'
 import { PodcastPlayerSpacer } from './spacer'
-import type { PodcastEpisode } from './types'
-import type { User } from '@/types/user'
 
 const { mockFetchPlaybackPosition, mockReportPlaybackPosition } = vi.hoisted(() => ({
   mockFetchPlaybackPosition: vi.fn<VitestLooseMock>(),
@@ -17,45 +15,12 @@ vi.mock(import('@/lib/api/client/podcast-playback'), () => ({
   reportPlaybackPosition: mockReportPlaybackPosition,
 }))
 
-const testUser: User = {
-  account_type: null,
-  id: 'user-1',
-  username: 'tester',
-  email_address: 'tests+tester@voucha.ai',
-  roles: ['user'],
-}
-const clientTestUser = { id: testUser.id, roles: testUser.roles, account_type: null }
-
-function makeEpisode(id: string): PodcastEpisode {
-  return {
-    episodeId: id,
-    enclosureUrl: `https://example.com/audio/${id}.mp3`,
-    enclosureType: 'audio/mpeg',
-    durationSeconds: 1800,
-    title: `Episode ${id}`,
-    showId: 'show-1',
-    showTitle: 'Test Show',
-    coverArtUrl: '/sideload/test-cover.jpg',
-    showHref: '/source/test-show/latest',
-  }
-}
-
-function CaptureContext({
-  onContext,
-}: {
-  onContext: (ctx: ReturnType<typeof usePodcastPlayer>) => void
-}) {
-  onContext(usePodcastPlayer())
-  return null
-}
-
-function AuthedWrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <AuthProvider initialUser={clientTestUser}>
-      <PodcastPlayerProvider>{children}</PodcastPlayerProvider>
-    </AuthProvider>
-  )
-}
+import {
+  AuthedWrapper,
+  CaptureContext,
+  clientTestUser,
+  makeEpisode,
+} from '@/test-helpers/lib/podcast-player-authed'
 
 describe('PodcastPlayerSpacer', () => {
   let resizeObserverCallback: ResizeObserverCallback | null = null

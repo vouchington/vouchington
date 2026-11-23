@@ -11,7 +11,7 @@ export async function markStoryPostRelatedUrlProjection(
   query: TransactionQuery,
   postId: string,
   storyId: string,
-): Promise<void> {
+): Promise<string | null> {
   await query(
     `/* markStoryPostRelatedUrlProjection */
       INSERT INTO story_post_related_url_projection_jobs (post_id, story_id)
@@ -23,7 +23,8 @@ export async function markStoryPostRelatedUrlProjection(
           lease_token = NULL, leased_at = NULL, lease_expires_at = NULL`,
     [postId, storyId],
   )
-  await refreshStoryPostRelatedUrlProjectionSources(query, [postId])
+  const [source] = await refreshStoryPostRelatedUrlProjectionSources(query, [postId])
+  return source?.sweep_upper_bound_source_id ?? null
 }
 
 export {

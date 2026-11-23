@@ -5,12 +5,8 @@ import { createTestPost, createTestUser } from '../../../backend/test-helpers/in
 import { createWebApiTestCookieHeader } from '../routes.mts'
 import { installUserAdminRouteHarness } from '../../test-helpers/user-admin-route-harness.mts'
 
-function unset(target: object, key: string) {
-  delete (target as Record<string, unknown>)[key]
-}
-
 describe('routes — user and admin', () => {
-  const harness = installUserAdminRouteHarness(unset)
+  const harness = installUserAdminRouteHarness()
 
   describe('archivePost and unarchivePost', () => {
     // Use dedicated user + post to avoid mutating the shared postId fixture

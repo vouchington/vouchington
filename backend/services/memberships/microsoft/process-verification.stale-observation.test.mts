@@ -2,11 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { memberships } from '@queues/memberships/queues'
 import { getMembershipByUserId, getMembershipSourceIdByMembershipId } from '@services/memberships'
-import {
-  createTestNativeMembershipProviderProduct,
-  createTestSku,
-  createTestUser,
-} from '@voucha/test-helpers'
+import { createTestMicrosoftStoreFixture } from '@voucha/test-helpers/microsoft-store-fixture'
 import { createTestMicrosoftStoreIdKey } from '@voucha/test-helpers/microsoft-store-id-key'
 import {
   getTestMicrosoftStoreCredentials,
@@ -21,7 +17,7 @@ describe('Microsoft Store stale observations', () => {
   afterEach(() => vi.unstubAllEnvs())
 
   it('retains fresh account keys without rolling back current-source metadata', async () => {
-    const fixture = await createFixture()
+    const fixture = await createTestMicrosoftStoreFixture()
     const recurrenceId = `recurrence-${randomUUID()}`
     const initialRevision = new Date(Date.now() - 2_000)
     const currentRevision = new Date(Date.now() - 1_000)
@@ -77,28 +73,9 @@ describe('Microsoft Store stale observations', () => {
   })
 })
 
-async function createFixture() {
-  const user = await createTestUser()
-  const applicationId = `voucha.microsoft.${randomUUID()}`
-  const productId = `9TEST${randomUUID().replaceAll('-', '').slice(0, 12)}`
-  const skuId = '0001'
-  const clientId = `microsoft-client-${randomUUID()}`
-  vi.stubEnv('MICROSOFT_STORE_CLIENT_ID', clientId)
-  const sku = await createTestSku({ plan: 'plus' })
-  await createTestNativeMembershipProviderProduct({
-    membershipProductId: sku.id,
-    provider: 'microsoft_store',
-    environment: 'test',
-    applicationId,
-    providerProductId: productId,
-    skuId,
-  })
-  return { user, applicationId, productId, skuId, clientId }
-}
-
 function testKey(
   kind: 'collections' | 'purchase',
-  fixture: Awaited<ReturnType<typeof createFixture>>,
+  fixture: Awaited<ReturnType<typeof createTestMicrosoftStoreFixture>>,
   now: Date,
 ): string {
   return createTestMicrosoftStoreIdKey({
@@ -111,7 +88,7 @@ function testKey(
 }
 
 async function verify(
-  fixture: Awaited<ReturnType<typeof createFixture>>,
+  fixture: Awaited<ReturnType<typeof createTestMicrosoftStoreFixture>>,
   expiry: Date,
   recurrenceId: string,
   revision: Date,
@@ -140,7 +117,7 @@ async function verify(
 }
 
 function client(
-  fixture: Awaited<ReturnType<typeof createFixture>>,
+  fixture: Awaited<ReturnType<typeof createTestMicrosoftStoreFixture>>,
   expiresAt: Date,
   recurrenceId: string,
   modifiedAt: Date,

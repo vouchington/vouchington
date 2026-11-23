@@ -13,13 +13,11 @@ import {
 } from '@voucha/test-helpers'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
 import { PARTITION_DROP_POLICIES } from '../config-driven/utils/partition-drop-policies.mts'
-import { beginTransaction, write } from '../setup.mts'
+import { beginTransaction } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
 import { guardAndRetireMonthlyPartition } from './guard-and-retire-monthly-partition.mts'
-import {
-  createPostClearancePartitions,
-  retireMonthlyPartitionCandidate,
-} from './monthly-partitions.mts'
+import { createPostClearancePartitions } from './create-post-clearance-partitions.mts'
+import { retireMonthlyPartitionCandidate } from './monthly-partitions.mts'
 import { getMonthlyPartitionUpperBound } from './partition-drop-guard.mts'
 
 type PartitionDropOutcome = Awaited<ReturnType<typeof retireMonthlyPartitionCandidate>>
@@ -93,11 +91,9 @@ describe('guardAndRetireMonthlyPartition', () => {
     const month = occurredAt.getUTCMonth() + 1
     const partition = buildMonthlyPartitionName(TABLE, year, month)
     // One owned child. A catalog sweep at this reference date would also retire live months.
-    await createPostClearancePartitions(
-      write,
-      [{ table: TABLE, pastMonths: 0, futureMonths: 0 }],
-      occurredAt,
-    )
+    const partitionConfig = { pastMonths: 0, futureMonths: 0 }
+    await createPostClearancePartitions(partitionConfig, occurredAt)
+    await createPostClearancePartitions(partitionConfig, occurredAt)
 
     const author = await createTestUser()
     const postId = await insertTestPost({

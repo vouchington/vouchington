@@ -1,3 +1,4 @@
+import '@/test-helpers/app/report-integrity/report-integrity-select.mock-support'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
@@ -17,39 +18,6 @@ vi.mock(
 vi.mock(import('@/components/shared/infinite-scroll'), () => ({
   InfiniteScroll: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }))
-
-vi.mock(
-  import('@/components/ui/select'),
-  () =>
-    ({
-      Select: ({
-        value,
-        onValueChange,
-        children,
-      }: {
-        value: string
-        onValueChange: (value: string) => void
-        children: ReactNode
-      }) => (
-        <div>
-          <div>{`Filter: ${value}`}</div>
-          <button
-            type='button'
-            onClick={() => onValueChange('resolved')}
-          >
-            set resolved
-          </button>
-          {children}
-        </div>
-      ),
-      SelectContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-      SelectItem: ({ value, children }: { value: string; children: ReactNode }) => (
-        <div data-value={value}>{children}</div>
-      ),
-      SelectTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-      SelectValue: () => null,
-    }) as unknown as typeof import('@/components/ui/select'),
-)
 
 vi.mock(import('@/lib/api/client/report-integrity'), () => ({
   resolveReportIntegrityFlag: vi.fn<VitestLooseMock>(),

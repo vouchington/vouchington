@@ -20,6 +20,15 @@ export function PaginatedUserTopicList({
   const state = usePaginatedList(initialData, endpoint, {})
   const handleLoadMore = state.loadMore
 
+  const topics = mergePageResultsById(state.pages)
+  const list = (
+    <UserTopicList
+      topics={topics}
+      emptyTitle={emptyTitle}
+      emptyDescription={emptyDescription}
+    />
+  )
+
   return (
     <InfiniteScroll
       hasNextPage={state.hasNextPage}
@@ -29,12 +38,10 @@ export function PaginatedUserTopicList({
       fetchError={state.fetchError}
       clearError={state.clearError}
       resetKey={state.resetKey}
+      isEmpty={topics.length === 0}
+      emptyState={list}
     >
-      <UserTopicList
-        topics={mergePageResultsById(state.pages)}
-        emptyTitle={emptyTitle}
-        emptyDescription={emptyDescription}
-      />
+      {list}
     </InfiniteScroll>
   )
 }

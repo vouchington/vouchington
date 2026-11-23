@@ -109,7 +109,7 @@ jobs:
           # image entrypoint word-splits (and evals) this value, so no spaces or shell metacharacters.
           # Tests rapidly grow the empty restored baseline; refresh estimates during that growth.
           POSTGRES_INITDB_ARGS: >-
-            -c max_connections=300 -c log_min_messages=log
+            -c max_connections=300 -c log_min_messages=error
             -c autovacuum_naptime=1s -c autovacuum_analyze_threshold=0
             -c autovacuum_analyze_scale_factor=0
             -c log_lock_waits=on -c log_min_error_statement=error
@@ -289,7 +289,9 @@ jobs:
         with:
           overwrite: true
           name: backend-postgres-log-shard-${{ matrix.shard }}
-          path: backend-postgres.log
+          path: |
+            backend-postgres.log
+            backend-postgres-relations.csv
           retention-days: 1
           if-no-files-found: ignore
 

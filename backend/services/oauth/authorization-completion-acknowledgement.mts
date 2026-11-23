@@ -23,17 +23,16 @@ export async function acknowledgeOAuthAuthorizationCompletion(
   const { rows } = await query<{ expires_at: Date }>(
     `/* acknowledgeOAuthAuthorizationCompletion */ UPDATE oauth_authorizations
        SET completion_token_hash = NULL
-       WHERE id = $1 AND status = 'completed' AND expires_at > $2
-         AND completion_token_hash = $3 RETURNING expires_at`,
-    [authorization.id, decisionAt, authorization.completion_token_hash],
+       WHERE id = $1 AND status = 'completed' AND completion_token_hash = $2
+       RETURNING expires_at`,
+    [authorization.id, authorization.completion_token_hash],
   )
   const written = rows[0]
-  if (!written) {
-    const current = await readAcknowledgement()
-    assertCompletionCaller(current, options)
-    if (current.expires_at <= new Date()) throw createHttpError(410, 'OAuth authorization expired')
-    throw createHttpError(409, 'OAuth authorization completion was already acknowledged')
-  }
+  // The read above passed the caller, status and expiry checks. Only an acknowledgement clears the
+  // token hash of a completed row, so a missed UPDATE means a concurrent acknowledgement consumed
+  // the credential (or retention deleted the row), which is the 401 a request arriving afterwards
+  // gets from the read.
+  if (!written) throw createHttpError(401, 'OAuth completion token is invalid')
   if (written.expires_at <= new Date()) throw createHttpError(410, 'OAuth authorization expired')
   await query.commit()
 

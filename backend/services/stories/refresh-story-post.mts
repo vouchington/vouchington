@@ -5,16 +5,21 @@ import { getSystemUserByUsername } from '@services/users/system-users'
 import { assertEntityRelationUpsertAllowed } from '@services/entity-relations/upsert'
 import { writeEntityRelations } from '@services/entity-relations/write-relations'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
+import { recordPostPublicationChange } from '@services/post-publication'
 import { enqueueStoryPostAgent } from '@queues/ai-agents/enqueues/story-post'
 import { enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort } from '@queues/story-post-related-url-projections/enqueues'
 import { getPostStoryByStoryId } from './get-post-stories.mts'
-import { dispatchStoryPostRelationEffects } from './story-post-relation-effects.mts'
+import {
+  dispatchStoryPostRelationEffects,
+  type StoryPostRelationEffects,
+} from './story-post-relation-effects.mts'
 import { markStoryPostRelatedUrlProjection } from './story-post-related-url-projection.mts'
 import type { PrivateUser } from '@services/users/types'
 
 type RefreshStoryPostQueryOptions = Omit<QueryOptions, 'query'> & {
   query?: TransactionQuery
   expectedPostId?: string
+  captureCategoryChanges?: boolean
 }
 type RefreshStoryPostTransactionOptions = RefreshStoryPostQueryOptions & {
   query: TransactionQuery
@@ -25,6 +30,9 @@ export type StoryPostRefreshResult = {
   impactedTopicIds: string[]
   dispatchPostCommitEffects: () => Promise<void>
 }
+
+type RefreshedStoryPost = StoryPostRefreshResult &
+  Pick<StoryPostRelationEffects, 'categoryTopicRelations'>
 
 /**
  * If a story post exists for this story, refresh it:
@@ -38,7 +46,7 @@ export type StoryPostRefreshResult = {
 export async function refreshStoryPostForStory(
   storyId: string,
   options: RefreshStoryPostQueryOptions = {},
-): Promise<StoryPostRefreshResult | null> {
+): Promise<RefreshedStoryPost | null> {
   const existingQuery = options.query
   if (!existingQuery) {
     await using query = await beginTransaction()
@@ -56,7 +64,7 @@ export async function refreshStoryPostForStory(
 async function refreshStoryPostForStoryInTransaction(
   storyId: string,
   options: RefreshStoryPostTransactionOptions,
-): Promise<StoryPostRefreshResult | null> {
+): Promise<RefreshedStoryPost | null> {
   const postStory = await getPostStoryByStoryId(storyId, options)
   if (!postStory || (options.expectedPostId && options.expectedPostId !== postStory.post_id))
     return null
@@ -141,9 +149,22 @@ async function refreshStoryPostForStoryInTransaction(
     })
     void enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort()
   }
+  const impactedTopicIds = [...new Set([...priorTopicIds, ...topicIds])]
+  if (
+    options.captureCategoryChanges &&
+    (impactedTopicIds.length !== priorTopicIds.length ||
+      impactedTopicIds.length !== topicIds.length)
+  ) {
+    await recordPostPublicationChange(options.query, {
+      scope: { type: 'post', postId },
+      reason: 'post_updated',
+      impactedTopicIds,
+    })
+  }
   return {
     postId,
-    impactedTopicIds: [...new Set([...priorTopicIds, ...topicIds])],
+    impactedTopicIds,
+    categoryTopicRelations,
     dispatchPostCommitEffects,
   }
 }

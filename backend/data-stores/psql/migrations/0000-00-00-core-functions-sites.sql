@@ -38,7 +38,7 @@ DECLARE
   column_name text;
   notice_id text := current_setting('app.copyright_case_purge_notice_id', true);
 BEGIN
-  IF NOT fn_copyright_case_purge_permitted(table_name)
+  IF fn_copyright_case_purge_permitted(table_name) IS NOT TRUE
     OR COALESCE(old_row ->> CASE WHEN table_name = 'copyright_notices' THEN 'id'
       ELSE 'copyright_notice_id' END, '') <> notice_id THEN RETURN false; END IF;
   allowed := CASE table_name
@@ -75,6 +75,7 @@ DECLARE
   actor_columns TEXT[] := COALESCE(TG_ARGV, ARRAY[]::TEXT[]);
   old_row JSONB;
   new_row JSONB;
+  partition_root REGCLASS;
 BEGIN
   IF TG_OP = 'UPDATE' AND TG_TABLE_SCHEMA = 'public'
     AND TG_TABLE_NAME = 'copyright_notice_storage_objects'
@@ -91,15 +92,34 @@ BEGIN
     AND (to_jsonb(OLD) - 'is_deletion_claimed') IS NOT DISTINCT FROM
       (to_jsonb(NEW) - 'is_deletion_claimed')
   THEN RETURN NEW; END IF;
+  -- The row trigger fires on the partition, while the purge scopes its permit to the parent.
   IF TG_OP = 'UPDATE' AND TG_TABLE_SCHEMA = 'public'
-    AND TG_TABLE_NAME = 'copyright_territorial_decisions'
+    AND pg_catalog.pg_partition_root(TG_RELID) =
+      pg_catalog.to_regclass('public.copyright_territorial_decisions')
     AND fn_copyright_case_purge_pointer_cut_permitted(
-      TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW))
+      'copyright_territorial_decisions', to_jsonb(OLD), to_jsonb(NEW))
   THEN RETURN NEW; END IF;
   IF TG_OP = 'DELETE' AND TG_TABLE_SCHEMA = 'public'
-    AND starts_with(TG_TABLE_NAME, 'copyright_')
-    AND fn_copyright_case_purge_permitted(TG_TABLE_NAME)
-  THEN RETURN OLD; END IF;
+    AND starts_with(TG_TABLE_NAME, 'copyright_') THEN
+    partition_root := pg_catalog.pg_partition_root(TG_RELID);
+    IF partition_root = pg_catalog.to_regclass('public.copyright_territorial_decisions') THEN
+      IF fn_copyright_case_purge_permitted('copyright_territorial_decisions')
+        AND OLD.copyright_notice_id =
+          NULLIF(current_setting('app.copyright_case_purge_notice_id', true), '')::uuid
+      THEN RETURN OLD; END IF;
+    ELSIF partition_root = pg_catalog.to_regclass('public.copyright_territorial_redress_decisions') THEN
+      IF fn_copyright_case_purge_permitted('copyright_territorial_redress_decisions')
+        AND EXISTS (
+          SELECT 1 FROM public.copyright_territorial_redress_requests request
+          WHERE request.id = OLD.copyright_territorial_redress_request_id
+            AND request.copyright_notice_id =
+              NULLIF(current_setting('app.copyright_case_purge_notice_id', true), '')::uuid
+        )
+      THEN RETURN OLD; END IF;
+    ELSIF fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN
+      RETURN OLD;
+    END IF;
+  END IF;
   IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1
     AND NOT (TG_TABLE_SCHEMA = 'public' AND TG_TABLE_NAME = 'amazon_ses_bounce_events')
   THEN RETURN OLD; END IF;

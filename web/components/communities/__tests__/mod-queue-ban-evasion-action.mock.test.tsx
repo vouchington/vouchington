@@ -1,5 +1,5 @@
+import '@/test-helpers/components/communities/sort-reports-select.mock-support'
 import { fireEvent, render, waitFor } from '@testing-library/react'
-import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import type {
@@ -17,36 +17,6 @@ const { mockConfirmCommunityBanEvasion, mockUsePaginatedList } = vi.hoisted(() =
 vi.mock(
   import('next/navigation'),
   () => navMockModule as unknown as typeof import('next/navigation'),
-)
-
-vi.mock(
-  import('@/components/ui/select'),
-  () =>
-    ({
-      Select: ({
-        children,
-        onValueChange,
-        value,
-      }: {
-        children: ReactNode
-        onValueChange: (value: string) => void
-        value: string
-      }) => (
-        <select
-          aria-label='Sort reports'
-          value={value}
-          onChange={event => onValueChange(event.currentTarget.value)}
-        >
-          {children}
-        </select>
-      ),
-      SelectContent: ({ children }: { children: ReactNode }) => children,
-      SelectItem: ({ children, value }: { children: ReactNode; value: string }) => (
-        <option value={value}>{children}</option>
-      ),
-      SelectTrigger: ({ children }: { children: ReactNode }) => children,
-      SelectValue: () => null,
-    }) as unknown as typeof import('@/components/ui/select'),
 )
 
 vi.mock(import('@/hooks/use-paginated-list'), () => ({

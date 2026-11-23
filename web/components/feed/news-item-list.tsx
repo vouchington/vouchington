@@ -80,16 +80,6 @@ export function NewsItemList({
   )
   const orderedItemIds = [...new Set(visibleResults.map(result => result.entity_id ?? result.id))]
 
-  if (allResults.length === 0) {
-    return (
-      <EmptyState
-        title={t('extracted.feed.newsItemList.noNewsFound_1cb8f117')}
-        description={t('extracted.feed.newsItemList.followTopicsOrSourcesToSee_48a88aa2')}
-        icon='inbox'
-      />
-    )
-  }
-
   const canLoadMore = hasNextPage && !!nextPageEndpoint
 
   return (
@@ -107,6 +97,14 @@ export function NewsItemList({
         fetchError={fetchError}
         clearError={clearError}
         resetKey={resetKey}
+        isEmpty={allResults.length === 0}
+        emptyState={
+          <EmptyState
+            title={t('extracted.feed.newsItemList.noNewsFound_1cb8f117')}
+            description={t('extracted.feed.newsItemList.followTopicsOrSourcesToSee_48a88aa2')}
+            icon='inbox'
+          />
+        }
       >
         <HackerNewsReferencesProvider references={allHackerNewsReferences}>
           <div className='space-y-4'>

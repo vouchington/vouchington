@@ -1,3 +1,4 @@
+import '@/test-helpers/components/topics/use-manage-source-page.mock-support'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getRssFeedCrawls } from '@/lib/api/client'
@@ -9,41 +10,6 @@ import {
 } from '@/lib/api/client/topic-additional-hostnames'
 import { useManageSourcePage } from '../use-manage-source-page'
 import { initialManageSourceState } from '../manage-source-model'
-
-vi.mock(import('@/lib/api/client'), () => ({
-  deleteRssFeed: vi.fn<VitestLooseMock>(),
-  getRssFeedCrawls: vi.fn<VitestLooseMock>(),
-  refreshRssFeed: vi.fn<VitestLooseMock>(),
-  updateRssFeed: vi.fn<VitestLooseMock>(),
-}))
-
-vi.mock(import('@/lib/api/client/topics'), () => ({
-  fetchRssFeeds: vi.fn<VitestLooseMock>(),
-  fetchTopic: vi.fn<VitestLooseMock>(),
-  updateTopic: vi.fn<VitestLooseMock>(),
-}))
-
-vi.mock(import('@/lib/api/client/topic-additional-hostnames'), () => ({
-  addAdditionalHostname: vi.fn<VitestLooseMock>(),
-  fetchAdditionalHostnames: vi.fn<VitestLooseMock>(),
-  removeAdditionalHostname: vi.fn<VitestLooseMock>(),
-}))
-
-const { toastMock } = vi.hoisted(() => {
-  const mock = Object.assign(vi.fn<VitestLooseMock>(), {
-    error: vi.fn<VitestLooseMock>(),
-    success: vi.fn<VitestLooseMock>(),
-  })
-  return { toastMock: mock }
-})
-
-vi.mock(
-  import('sonner'),
-  () =>
-    ({
-      toast: toastMock,
-    }) as unknown as typeof import('sonner'),
-)
 
 vi.mock(import('@/lib/on-error'), () => ({
   default: vi.fn<VitestLooseMock>(),

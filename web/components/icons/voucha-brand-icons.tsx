@@ -2,7 +2,6 @@ import type { SVGProps } from 'react'
 
 type BrandIconProps = SVGProps<SVGSVGElement>
 
-/* oxlint-disable jsx-a11y/prefer-tag-over-role -- inline SVG wordmarks need image semantics without becoming raster images. */
 export function VouchaWordmarkIcon({ className, ...props }: BrandIconProps) {
   return (
     <svg
@@ -46,4 +45,3 @@ export function VouchaWordmarkIcon({ className, ...props }: BrandIconProps) {
     </svg>
   )
 }
-/* oxlint-enable jsx-a11y/prefer-tag-over-role */

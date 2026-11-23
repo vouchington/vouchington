@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button'
 
 interface InfiniteScrollTestDoubleProps {
   children: ReactNode
+  isEmpty?: boolean
+  emptyState?: ReactNode
   hasNextPage: boolean
   fetchError?: Error | null
   onLoadMore: () => Promise<void | boolean>
@@ -11,6 +13,8 @@ interface InfiniteScrollTestDoubleProps {
 
 export function InfiniteScroll({
   children,
+  isEmpty,
+  emptyState,
   hasNextPage,
   fetchError,
   onLoadMore,
@@ -18,7 +22,7 @@ export function InfiniteScroll({
 }: InfiniteScrollTestDoubleProps) {
   return (
     <>
-      {children}
+      {isEmpty ? (hasNextPage ? null : emptyState) : children}
       {hasNextPage ? (
         <>
           <Button
@@ -34,7 +38,9 @@ export function InfiniteScroll({
           <Button
             type='button'
             data-pw='test-auto-continuation'
-            onClick={() => void onLoadMore()}
+            onClick={() => {
+              void onLoadMore()
+            }}
           >
             Auto load
           </Button>

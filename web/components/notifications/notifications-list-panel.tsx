@@ -29,6 +29,14 @@ export function NotificationsListPanel({
   onDelete,
   onOpen,
 }: NotificationsListPanelProps) {
+  const list = (
+    <NotificationList
+      notifications={notifications}
+      onOpen={onOpen}
+      onDelete={onDelete}
+    />
+  )
+
   return (
     <div className='overflow-hidden rounded-lg border bg-card'>
       <InfiniteScroll
@@ -39,12 +47,10 @@ export function NotificationsListPanel({
         fetchError={fetchError}
         clearError={clearError}
         resetKey={resetKey}
+        isEmpty={notifications.results.length === 0}
+        emptyState={list}
       >
-        <NotificationList
-          notifications={notifications}
-          onOpen={onOpen}
-          onDelete={onDelete}
-        />
+        {list}
       </InfiniteScroll>
     </div>
   )

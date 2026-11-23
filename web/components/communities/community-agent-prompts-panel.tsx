@@ -10,6 +10,7 @@ import {
 } from '@/lib/api/client/community-agent-prompts'
 import { CommunityAgentPromptForm } from './community-agent-prompt-form'
 import { CommunityAgentPromptItem } from './community-agent-prompt-item'
+import { pageHasContinuation } from '@/lib/api/page-has-continuation'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface Props {
@@ -33,12 +34,13 @@ export function CommunityAgentPromptsPanel({
     [prompts, pageInfo],
   )
   const [edits, setEdits] = useState<Record<string, CommunityAgentPrompt | null>>({})
-  const { pages, hasNextPage, loadingMore, fetchError, clearError, loadMore } = usePaginatedList(
-    initialPage,
-    `/api/v1/communities/${encodeURIComponent(communitySlug)}/agent-prompts`,
-    {},
-    { loadPage: after => fetchCommunityAgentPrompts(communitySlug, { after }) },
-  )
+  const { pages, hasNextPage, endCursor, loadingMore, fetchError, clearError, loadMore } =
+    usePaginatedList(
+      initialPage,
+      `/api/v1/communities/${encodeURIComponent(communitySlug)}/agent-prompts`,
+      {},
+      { loadPage: after => fetchCommunityAgentPrompts(communitySlug, { after }) },
+    )
   const byId = new Map<string, CommunityAgentPrompt>()
   for (const page of pages) {
     for (const prompt of page.community_agent_prompts) {
@@ -80,7 +82,8 @@ export function CommunityAgentPromptsPanel({
         className='space-y-2'
         data-pw='community-agent-prompt-list'
       >
-        {visiblePrompts.length === 0 ? (
+        {visiblePrompts.length === 0 &&
+        !pageHasContinuation({ has_next_page: hasNextPage, end_cursor: endCursor }) ? (
           <p className='text-sm text-muted-foreground'>
             {t('extracted.communities.communityAgentPromptsPanel.noAgentPromptsYet_dd2a8c90')}
           </p>

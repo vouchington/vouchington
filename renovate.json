@@ -33,11 +33,6 @@
       "groupName": "CI dependency consumer digests"
     },
     {
-      "description": "First-party sources skip the 7 day release age: the reviewed mirror digests are published by this repository",
-      "matchFileNames": ["ci/dependency-mirror/images.json"],
-      "minimumReleaseAge": null
-    },
-    {
       "description": "First-party GHCR dependency-* packages skip the 7 day release age",
       "matchPackageNames": ["ghcr.io/vouchington/dependency-*"],
       "minimumReleaseAge": null

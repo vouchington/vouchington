@@ -30,8 +30,9 @@ describe('config inventory canonical documentation policy', () => {
 
   it('requires every canonical config-inventory document to be tracked and readable', async () => {
     for (const missingDoc of Object.keys(canonicalDocs)) {
-      const files = { ...canonicalDocs }
-      delete files[missingDoc]
+      const files = Object.fromEntries(
+        Object.entries(canonicalDocs).filter(([doc]) => doc !== missingDoc),
+      )
       const errors = (await checkConfigInventoryPolicy(await makeCanonicalFixture(files))).errors
 
       expect(errors).toEqual(

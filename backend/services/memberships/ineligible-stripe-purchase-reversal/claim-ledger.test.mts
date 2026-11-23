@@ -5,6 +5,7 @@ import {
 } from '@voucha/test-helpers/membership-reversal-case-fixtures'
 import { randomUUID } from 'node:crypto'
 import onError from '@modules/on-error'
+import { replayStripePaymentIntentCharges } from '../../../test-helpers/stripe-payment-intent-replay.mts'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { describe, expect, it } from 'vitest'
 import {
@@ -24,16 +25,28 @@ import { claimPersistedIneligiblePurchaseReversalCase } from './claim-ledger.mts
 
 describe('persisted purchase reversal case lookup', () => {
   it('does not create operations when the immutable case does not exist', async () => {
+    const requests = replayStripePaymentIntentCharges([])
+    const invoiceId = `in_missing_case_${randomUUID()}`
     await expect(
       claimPersistedIneligiblePurchaseReversalCase(
         {
-          originatingInvoiceId: `in_missing_case_${randomUUID()}`,
+          originatingInvoiceId: invoiceId,
           providerEnvironment: 'production',
           subscriptionId: `sub_missing_case_${randomUUID()}`,
         },
-        [],
+        [
+          {
+            amountMinorUnits: 900,
+            chargeId: null,
+            currency: 'usd',
+            invoiceId,
+            paymentIntentId: `pi_missing_case_${randomUUID()}`,
+            qualifyingAmountMinorUnits: 900,
+          },
+        ],
       ),
     ).resolves.toBeNull()
+    expect(requests).toHaveLength(0)
   })
 })
 
@@ -118,7 +131,12 @@ describe('family collision reversal ledger', () => {
   })
 
   it('returns an existing completed receipt without reclaiming its execution lease', async () => {
-    const { options, snapshot, target } = await createCompletedReceiptTestCase()
+    const { options, snapshot, target: directTarget } = await createCompletedReceiptTestCase()
+    const paymentIntentId = `pi_completed_${randomUUID()}`
+    const target = { ...directTarget, chargeId: null, paymentIntentId }
+    const requests = replayStripePaymentIntentCharges([
+      { paymentIntentId, chargeId: directTarget.chargeId },
+    ])
     const initial = (await claimTestIneligiblePurchaseReversalOperations(
       options,
       [target],
@@ -140,11 +158,45 @@ describe('family collision reversal ledger', () => {
             leaseToken: null,
             hasReceipt: true,
             id: initial.reversals[0]!.id,
-            target: expect.objectContaining({ amountMinorUnits: 900 }),
+            idempotencyKey: initial.reversals[0]!.idempotencyKey,
+            target: expect.objectContaining({
+              amountMinorUnits: 900,
+              chargeId: null,
+              paymentIntentId,
+            }),
           }),
         ],
       }),
     )
+    expect(requests).toHaveLength(1)
+  })
+  it('uses the allocation committed during the Stripe charge lookup', async () => {
+    const { options, snapshot, target: directTarget } = await createCompletedReceiptTestCase()
+    const { cancellation } = await claimTestIneligiblePurchaseReversalOperations(
+      options,
+      [],
+      snapshot,
+    )
+    await markIneligiblePurchaseReversalCompleted(cancellation!)
+    const paymentIntentId = `pi_concurrent_${randomUUID()}`
+    const paymentIntentTarget = { ...directTarget, chargeId: null, paymentIntentId }
+    const requests = replayStripePaymentIntentCharges(
+      [{ paymentIntentId, chargeId: `ch_concurrent_${randomUUID()}` }],
+      async () => {
+        const winner = await claimPersistedIneligiblePurchaseReversalCase(options, [directTarget])
+        await completeIneligiblePurchaseReversal(winner!.reversals[0]!, {
+          amountMinorUnits: directTarget.amountMinorUnits,
+          providerRefundId: `re_winner_${randomUUID()}`,
+        })
+      },
+    )
+
+    await expect(
+      claimPersistedIneligiblePurchaseReversalCase(options, [paymentIntentTarget, directTarget]),
+    ).resolves.toMatchObject({
+      reversals: [{ completed: true, target: directTarget, leaseToken: null }],
+    })
+    expect(requests).toHaveLength(1)
   })
   it('rolls back completion when the saved provider refund exceeds the reconciled balance', async () => {
     const { options, target, snapshot } = await createCompletedReceiptTestCase()

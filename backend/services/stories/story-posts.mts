@@ -1,6 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
-import type { PrivateUser } from '@services/users/types'
+import type { BasicUser, PrivateUser } from '@services/users/types'
 import type { Post } from '@services/posts/types'
 import type { PostStory, Story } from './types.mts'
 import {
@@ -9,7 +9,6 @@ import {
   finalizeCreatedStoryPost,
   loadStoryTellerUser,
   type CreatedStoryPost,
-  type StoryPostCreateDependencies,
 } from './story-post-create.mts'
 
 export type StoryPostResult = {
@@ -31,7 +30,7 @@ export async function prepareStoryPost(
   storyId: string,
   initiatedBy: PrivateUser,
   options: { ai_summary_markdown?: string; query?: TransactionQuery } = {},
-  dependencies: StoryPostCreateDependencies = {},
+  dependencies: { getStoryTeller?: () => Promise<BasicUser | null> } = {},
 ): Promise<PreparedStoryPost> {
   const storyTellerUser = await loadStoryTellerUser(dependencies.getStoryTeller)
   const categoryTopicRelation = getEntityRelationMetadataOrThrow({

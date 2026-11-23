@@ -29,34 +29,26 @@ export function PaginatedUserRssFeedList({
   const hostnameElections = mergeRecords(state.pages, page => page.hostname_elections)
   const electionVotes = mergeRecords(state.pages, page => page.election_votes ?? {})
   const handleLoadMore = state.loadMore
-  const body =
-    results.length === 0 ? (
-      <EmptyState
-        title={emptyTitle}
-        description={emptyDescription}
-      />
-    ) : (
-      <div className='space-y-4'>
-        {results.map(feed => (
-          <RssFeedListItem
-            key={feed.id}
-            feed={feed}
-            isFollowing={bookmarks[feed.id]?.follow === true}
-            isFollowingTopic={bookmarks[feed.topic.id]?.follow === true}
-            hostnameElection={feed.hostname?.id ? hostnameElections[feed.hostname.id] : undefined}
-            topicElection={topicElections[feed.topic.id]}
-            electionVoteChoice={
-              electionVotes[feed.topic.id]?.choice as
-                | import('@/lib/api/client/elections').SentimentChoice
-                | undefined
-            }
-            refreshOnUnfollow={refreshOnUnfollow}
-          />
-        ))}
-      </div>
-    )
-  // A short page can be empty while later keys are still eligible.
-  if (results.length === 0 && !state.hasNextPage) return body
+  const body = (
+    <div className='space-y-4'>
+      {results.map(feed => (
+        <RssFeedListItem
+          key={feed.id}
+          feed={feed}
+          isFollowing={bookmarks[feed.id]?.follow === true}
+          isFollowingTopic={bookmarks[feed.topic.id]?.follow === true}
+          hostnameElection={feed.hostname?.id ? hostnameElections[feed.hostname.id] : undefined}
+          topicElection={topicElections[feed.topic.id]}
+          electionVoteChoice={
+            electionVotes[feed.topic.id]?.choice as
+              | import('@/lib/api/client/elections').SentimentChoice
+              | undefined
+          }
+          refreshOnUnfollow={refreshOnUnfollow}
+        />
+      ))}
+    </div>
+  )
 
   return (
     <InfiniteScroll
@@ -67,6 +59,13 @@ export function PaginatedUserRssFeedList({
       fetchError={state.fetchError}
       clearError={state.clearError}
       resetKey={state.resetKey}
+      isEmpty={results.length === 0}
+      emptyState={
+        <EmptyState
+          title={emptyTitle}
+          description={emptyDescription}
+        />
+      }
     >
       {body}
     </InfiniteScroll>

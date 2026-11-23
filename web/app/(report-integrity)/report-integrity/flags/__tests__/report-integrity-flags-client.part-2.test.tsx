@@ -116,12 +116,12 @@ describe('ReportIntegrityFlagsClient — rendering', () => {
   it('renders table column headers', () => {
     render(
       <ReportIntegrityFlagsClient
-        initialData={makeInitialData()}
+        initialData={makeInitialData([makeFlag()])}
         initialStatus='pending'
       />,
     )
     expect(screen.getByText('Flag Type')).toBeInTheDocument()
-    expect(screen.getByText('Target')).toBeInTheDocument()
+    expect(screen.getAllByText('Target')[0]).toBeInTheDocument()
     expect(screen.getByText('Reporters')).toBeInTheDocument()
     expect(screen.getByText('New Account %')).toBeInTheDocument()
     expect(screen.getByText('Status')).toBeInTheDocument()

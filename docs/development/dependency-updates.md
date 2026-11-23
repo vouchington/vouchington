@@ -19,8 +19,9 @@ rule rejects a glob that is not in its registry.
 
 Renovate applies the same gate: a global `minimumReleaseAge` of `7 days` with
 `internalChecksFilter: "strict"`, so a version younger than seven days is skipped instead of opening
-a pending PR. Packages published by this repository (the `ghcr.io/vouchington/dependency-*` images
-and the `ci/dependency-mirror/images.json` digests) set `minimumReleaseAge: null` and wait zero days.
+a pending PR. Packages published by this repository (the `ghcr.io/vouchington/dependency-*` images)
+set `minimumReleaseAge: null` and wait zero days. The third-party images tracked in
+`ci/dependency-mirror/images.json` get the 7 day gate.
 Third-party tools that float on their own (for example `PNPM_VERSION=12` in the Dockerfiles and the
 `.nvmrc` major) have no gate of their own; see the PR that introduced this policy for the list.
 

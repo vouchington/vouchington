@@ -70,43 +70,34 @@ async function countRows(annotation: string): Promise<number> {
 async function assertNoEmit(annotation: string): Promise<void> {
   const sentinel = uid()
   const saved = process.env.PG_QUERY_TIMING_SAMPLE
-  process.env.PG_QUERY_TIMING_SAMPLE = ''
+  vi.stubEnv('PG_QUERY_TIMING_SAMPLE', '')
   const emitted = whenQueryTimingEmitted(sentinel)
   record(sentinel)
-  if (saved === undefined) delete process.env.PG_QUERY_TIMING_SAMPLE
-  else process.env.PG_QUERY_TIMING_SAMPLE = saved
+  vi.stubEnv('PG_QUERY_TIMING_SAMPLE', saved)
   await emitted
   expect(await countRows(annotation)).toBe(0)
 }
 
 describe('recordQueryTiming', () => {
   let testDir: string
-  let prior: { backend?: string; dir?: string; sample?: string }
 
   beforeAll(async () => {
-    prior = {
-      backend: process.env.ANALYTICS_BACKEND,
-      dir: process.env.ANALYTICS_LOCAL_DIR,
-      sample: process.env.PG_QUERY_TIMING_SAMPLE,
-    }
     testDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'pg-query-timing-test-'))
-    process.env.ANALYTICS_LOCAL_DIR = testDir
-    process.env.ANALYTICS_BACKEND = 'local'
-    delete process.env.PG_QUERY_TIMING_SAMPLE
+    vi.stubEnv('ANALYTICS_LOCAL_DIR', testDir)
+    vi.stubEnv('ANALYTICS_BACKEND', 'local')
+    vi.stubEnv('PG_QUERY_TIMING_SAMPLE', undefined)
     // Warm the lazily-imported analytics barrel so the first emit's import() resolves promptly.
     await import('@data-stores/analytics')
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
-    process.env.ANALYTICS_BACKEND = 'local'
-    delete process.env.PG_QUERY_TIMING_SAMPLE
+    vi.stubEnv('ANALYTICS_BACKEND', 'local')
+    vi.stubEnv('PG_QUERY_TIMING_SAMPLE', undefined)
   })
 
   afterAll(async () => {
-    restore('ANALYTICS_BACKEND', prior.backend)
-    restore('ANALYTICS_LOCAL_DIR', prior.dir)
-    restore('PG_QUERY_TIMING_SAMPLE', prior.sample)
+    vi.unstubAllEnvs()
     await fs.promises.rm(testDir, { recursive: true, force: true })
   })
 
@@ -243,8 +234,3 @@ describe('recordQueryTiming', () => {
     })
   })
 })
-
-function restore(key: string, value: string | undefined): void {
-  if (value === undefined) delete process.env[key]
-  else process.env[key] = value
-}

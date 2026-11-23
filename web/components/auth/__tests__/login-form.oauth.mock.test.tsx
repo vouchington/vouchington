@@ -80,7 +80,9 @@ vi.mock(import('../oauth-login-button'), () => ({
     <button
       type='button'
       disabled={disabled}
-      onClick={() => void onToken({ provider: provider as any, token: 'mock-token' })}
+      onClick={() => {
+        void onToken({ provider: provider as any, token: 'mock-token' })
+      }}
     >{`Continue with ${provider}`}</button>
   ),
 }))

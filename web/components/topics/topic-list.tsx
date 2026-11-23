@@ -51,15 +51,6 @@ export function TopicList({
   const allFediverseInstances = mergeRecords(pages, page => page.fediverse_instances ?? {})
   const allHostnameElections = mergeRecords(pages, page => page.hostname_elections ?? {})
 
-  if (allResults.length === 0) {
-    return (
-      <EmptyState
-        title={t('extracted.topics.topicList.noTopicsFound_a32677cf')}
-        description={t('extracted.topics.topicList.tryAdjustingYourSearchOrFilters_54f7b4c2')}
-      />
-    )
-  }
-
   const canLoadMore = hasNextPage && !!nextPageEndpoint
 
   return (
@@ -71,6 +62,13 @@ export function TopicList({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
+      isEmpty={allResults.length === 0}
+      emptyState={
+        <EmptyState
+          title={t('extracted.topics.topicList.noTopicsFound_a32677cf')}
+          description={t('extracted.topics.topicList.tryAdjustingYourSearchOrFilters_54f7b4c2')}
+        />
+      }
     >
       <div className='space-y-4'>
         {allResults.map(result => {

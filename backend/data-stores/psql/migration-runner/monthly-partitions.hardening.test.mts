@@ -60,7 +60,7 @@ describe('monthly decision history lifecycle', () => {
     expect(await readTestCommunityReviewChild(post.id)).toBe(
       currentMonth('community_post_review_changes'),
     )
-    await expect(createMonthlyPartitions(write)).resolves.toBeUndefined()
+    await expect(createMonthlyPartitions()).resolves.toBeUndefined()
   })
 
   it('routes both histories through guarded retirement only beyond 72 calendar months', async () => {

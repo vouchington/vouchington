@@ -62,7 +62,6 @@
     "typescript/no-unsafe-call": "off",
     "typescript/no-unsafe-return": "off",
     "typescript/no-unsafe-argument": "off",
-    "no-void": "off",
     "no-await-in-loop": "off",
     "react-doctor/no-json-parse-stringify-clone": "off",
     "react/jsx-no-target-blank": "off",

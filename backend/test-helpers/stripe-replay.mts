@@ -72,8 +72,9 @@ export function routeStripeReplay(replay: ProviderReplay): StripeRoutes {
   }
   return {
     fetch,
-    on: (method, path, ...responses) =>
-      void routes.set(`${method} ${path}`, { responses, served: 0 }),
+    on: (method, path, ...responses) => {
+      routes.set(`${method} ${path}`, { responses, served: 0 })
+    },
     assertAnswered: () => {
       for (const [key, { responses, served }] of routes) {
         if (served < responses.length) {

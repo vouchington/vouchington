@@ -49,6 +49,17 @@ export function PaginatedEntityTagList({
     return relation ? [relation] : []
   })
 
+  const list = (
+    <TagList
+      relations={relations}
+      electionVotes={merged.election_votes}
+      objectType={objectType}
+      showVoting={showVoting}
+      isAuthenticated={isAuthenticated}
+      t={t}
+    />
+  )
+
   return (
     <InfiniteScroll
       hasNextPage={pagination.hasNextPage}
@@ -58,15 +69,10 @@ export function PaginatedEntityTagList({
       fetchError={pagination.fetchError}
       clearError={pagination.clearError}
       resetKey={pagination.resetKey}
+      isEmpty={relations.length === 0}
+      emptyState={list}
     >
-      <TagList
-        relations={relations}
-        electionVotes={merged.election_votes}
-        objectType={objectType}
-        showVoting={showVoting}
-        isAuthenticated={isAuthenticated}
-        t={t}
-      />
+      {list}
     </InfiniteScroll>
   )
 }

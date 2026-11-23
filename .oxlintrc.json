@@ -867,6 +867,10 @@
     "react-doctor/js-min-max-loop": "error",
     "react-doctor/no-json-parse-stringify-clone": "error",
     "react-doctor/js-set-map-lookups": "off", // 68 findings / 49 files on 2026-08-19
+    // Accepts only an unconditional reset in finally. On 2026-11-23, 0 of its 32 findings were
+    // stuck flags; 24 were deliberate (stay disabled after success, skip stale or aborted
+    // requests) and would need suppressions. See #6256.
+    "react-doctor/no-loading-flag-reset-outside-finally": "off",
     "no-mistakes/await-array-methods": "error",
     "no-mistakes/no-delete-property": "error",
     "no-mistakes/no-import-only-test-files": "error",
@@ -1516,7 +1520,6 @@
         "**/__tests__/**/*.{mts,ts,tsx}"
       ],
       "rules": {
-        "typescript/no-dynamic-delete": "off",
         "no-mistakes/no-delete-property": "off"
       }
     },
@@ -1564,7 +1567,6 @@
         "**/test-helpers/**"
       ],
       "rules": {
-        "no-void": "off",
         "no-await-in-loop": "off",
         // Tests assert the serialized wire shape (Dates become strings, undefined keys drop), which structuredClone would not reproduce.
         "react-doctor/no-json-parse-stringify-clone": "off"

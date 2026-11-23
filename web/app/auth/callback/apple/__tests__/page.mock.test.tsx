@@ -10,9 +10,6 @@ vi.mock(
 
 const mockNav = createNavMock()
 const originalLocationHref = window.location.href
-const originalWindowLocationDescriptor = Object.getOwnPropertyDescriptor(window, 'location')
-const originalCloseDescriptor = Object.getOwnPropertyDescriptor(window, 'close')
-const originalOpenerDescriptor = Object.getOwnPropertyDescriptor(window, 'opener')
 
 describe('Apple callback page', () => {
   beforeEach(() => {
@@ -20,16 +17,11 @@ describe('Apple callback page', () => {
     mockNav.reset()
     mockNav.setSearchParams('id_token=apple-id-token&state=return-state&userName=Ada%20Lovelace')
     window.history.replaceState(null, '', originalLocationHref)
-    Object.defineProperty(window, 'close', {
-      configurable: true,
-      value: vi.fn<VitestLooseMock>(),
-    })
+    vi.stubGlobal('close', vi.fn<VitestLooseMock>())
   })
 
   afterEach(() => {
-    restoreWindowProperty('close', originalCloseDescriptor)
-    restoreWindowProperty('location', originalWindowLocationDescriptor)
-    restoreWindowProperty('opener', originalOpenerDescriptor)
+    vi.unstubAllGlobals()
     window.history.replaceState(null, '', originalLocationHref)
   })
 
@@ -72,10 +64,7 @@ describe('Apple callback page', () => {
   })
 
   it('posts Apple callback params to the opener when a popup is present', async () => {
-    Object.defineProperty(window, 'opener', {
-      configurable: true,
-      value: { postMessage: vi.fn<VitestLooseMock>() },
-    })
+    vi.stubGlobal('opener', { postMessage: vi.fn<VitestLooseMock>() })
     const mockLocationAssign = vi.fn<VitestLooseMock>()
     setLocationMethod('assign', mockLocationAssign)
 
@@ -98,27 +87,13 @@ describe('Apple callback page', () => {
   })
 })
 
-function restoreWindowProperty(
-  propertyName: 'close' | 'location' | 'opener',
-  descriptor: PropertyDescriptor | undefined,
-) {
-  if (descriptor) {
-    Object.defineProperty(window, propertyName, descriptor)
-  } else {
-    delete (window as Window & Partial<Record<typeof propertyName, unknown>>)[propertyName]
-  }
-}
-
 function setLocationMethod(method: 'assign', implementation: typeof window.location.assign) {
   const realLocation = window.location
-  Object.defineProperty(window, 'location', {
-    configurable: true,
-    value: {
-      origin: realLocation.origin,
-      get hash() {
-        return realLocation.hash
-      },
-      [method]: implementation,
+  vi.stubGlobal('location', {
+    origin: realLocation.origin,
+    get hash() {
+      return realLocation.hash
     },
+    [method]: implementation,
   })
 }

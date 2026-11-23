@@ -15,13 +15,8 @@ const { createLinkPostFromRssFeedItem } = createRssFeedItemClientActions(
   admissionIdempotency,
 )
 
-function unset(target: object, key: string) {
-  delete (target as Record<string, unknown>)[key]
-}
-
 describe('client-content-routes', () => {
   const harness = installClientContentRouteHarness({
-    unset,
     afterStoryLinked: async () => {
       const secondItem = await createTestRssFeedItemWithUrl(harness.rssFeedId)
       await setTestItemStoryId(secondItem.id, harness.storyId)

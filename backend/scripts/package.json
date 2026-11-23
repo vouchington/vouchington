@@ -137,7 +137,7 @@
     "@vouchington/utils": "^0.13.0",
     "@vouchington/uuid-v7": "^0.0.0",
     "@workers/openai-moderation": "workspace:^",
-    "oxfmt": "^0.78.0",
+    "oxfmt": "^0.79.0",
     "pgvector": "^0.3.0",
     "sql-template-strings": "^2.2.2",
     "uuid": "^14.0.3",

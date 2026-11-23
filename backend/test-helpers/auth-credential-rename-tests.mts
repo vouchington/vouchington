@@ -60,60 +60,17 @@ async function renamedCredential(options: {
   return found?.name
 }
 
-function registerPasskeyRenameTests(options: PasskeyRenameTests): void {
+/** Shared passkey and TOTP PATCH rename cases. Call from a literal `describe`. */
+export function registerAuthCredentialRenameTests(
+  options: PasskeyRenameTests | TotpRenameTests,
+): void {
   const { getUser, pathPrefix, insertCredential, suffix, renamedName } = options
 
   it('returns 401 without auth', async () => {
     await createRequest().patch(`${pathPrefix}/${v7()}`).send({ name: 'New Name' }).expect(401)
   })
 
-  it('returns 415 for non-JSON content type', async () => {
-    await (
-      await authedRequest(getUser())
-    )
-      .patch(`${pathPrefix}/${v7()}`)
-      .set('Content-Type', 'text/plain')
-      .send('not json')
-      .expect(415)
-  })
-
-  it('returns 422 for invalid name', async () => {
-    const { emptyName, tooLong } = await invalidNameResponses(pathPrefix, getUser())
-    expect(emptyName.body.message).toContain(NAME_LENGTH_MESSAGE)
-    expect(tooLong.body.message).toContain(NAME_LENGTH_MESSAGE)
-  })
-
-  it('returns 404 for non-existent passkey', async () => {
-    await (
-      await authedRequest(getUser())
-    )
-      .patch(`${pathPrefix}/${v7()}`)
-      .send({ name: 'New Name' })
-      .expect(404)
-  })
-
-  it('renames a passkey and returns 204', async () => {
-    const user = getUser()
-    expect(
-      await renamedCredential({
-        pathPrefix,
-        user,
-        insertCredential,
-        suffix: suffix(),
-        renamedName,
-      }),
-    ).toBe(renamedName)
-  })
-}
-
-function registerTotpRenameTests(options: TotpRenameTests): void {
-  const { getUser, pathPrefix, insertCredential, suffix, renamedName } = options
-
-  it('returns 401 without auth', async () => {
-    await createRequest().patch(`${pathPrefix}/${v7()}`).send({ name: 'New Name' }).expect(401)
-  })
-
-  it('returns 415 without JSON content-type', async () => {
+  it('returns 415 for non-JSON content-type', async () => {
     await (
       await authedRequest(getUser())
     )
@@ -129,7 +86,7 @@ function registerTotpRenameTests(options: TotpRenameTests): void {
     expect(tooLong.body.message).toContain(NAME_LENGTH_MESSAGE)
   })
 
-  it('returns 404 for non-existent authenticator', async () => {
+  it('returns 404 for non-existent credential', async () => {
     await (
       await authedRequest(getUser())
     )
@@ -138,7 +95,7 @@ function registerTotpRenameTests(options: TotpRenameTests): void {
       .expect(404)
   })
 
-  it('renames the authenticator and returns 204', async () => {
+  it('renames the credential and returns 204', async () => {
     const user = getUser()
     expect(
       await renamedCredential({
@@ -150,15 +107,4 @@ function registerTotpRenameTests(options: TotpRenameTests): void {
       }),
     ).toBe(renamedName)
   })
-}
-
-/** Shared passkey and TOTP PATCH rename cases. Call from a literal `describe`. */
-export function registerAuthCredentialRenameTests(
-  options: PasskeyRenameTests | TotpRenameTests,
-): void {
-  if (options.pathPrefix === '/api/v1/auth/passkeys') {
-    registerPasskeyRenameTests(options)
-    return
-  }
-  registerTotpRenameTests(options)
 }
