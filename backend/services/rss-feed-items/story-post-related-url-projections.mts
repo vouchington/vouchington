@@ -40,9 +40,9 @@ export async function markStoryPostRelatedUrlProjectionsForStories(
 export async function refreshStoryPostRelatedUrlProjectionSources(
   query: TransactionQuery,
   postIds: readonly string[],
-): Promise<void> {
+): Promise<{ sweep_upper_bound_source_id: string | null }[]> {
   // A restart can wait for another membership write. Read its committed changes in a fresh snapshot.
-  await query(
+  const { rows } = await query<{ sweep_upper_bound_source_id: string | null }>(
     `/* refreshStoryPostRelatedUrlProjectionSources */
       UPDATE story_post_related_url_projection_jobs post_stories
       SET sweep_upper_bound_source_id = (
@@ -54,7 +54,8 @@ export async function refreshStoryPostRelatedUrlProjectionSources(
             ORDER BY rss_feed_items.id DESC
             LIMIT 1
       )
-      WHERE post_stories.post_id = ANY($1::uuid[])`,
+      WHERE post_stories.post_id = ANY($1::uuid[])
+      RETURNING post_stories.sweep_upper_bound_source_id`,
     [postIds],
   )
   await query(
@@ -71,4 +72,5 @@ export async function refreshStoryPostRelatedUrlProjectionSources(
       ON CONFLICT (post_id, generation, relation_id) DO NOTHING`,
     [postIds],
   )
+  return rows
 }

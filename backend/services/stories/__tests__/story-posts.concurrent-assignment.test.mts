@@ -16,6 +16,7 @@ import {
   setTestItemStoryId,
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
+import { rejectPostgresWriteForTest } from '@voucha/test-helpers/injected-failures'
 import { upsertSystemUser } from '@services/users/system-users'
 import { adminAssignItemToStory } from '../assign.mts'
 import { isStoryItem } from '../get.mts'
@@ -106,6 +107,66 @@ describe('concurrent story post creation and assignment', () => {
     },
   )
 
+  it('repairs the URL projection when the newest member returns after the work bound was captured', async () => {
+    await upsertSystemUser('story-teller')
+    const suffix = randomUUID()
+    const [user, story, otherStory, feed, initialUrl, newestUrl, category] = await Promise.all([
+      createTestUserDirect(),
+      insertTestStory({ title: `Story projection bound ${suffix}` }),
+      insertTestStory({ title: `Temporary story ${suffix}` }),
+      createTestRssFeed({}),
+      insertTestUrlDirect(null, `https://initial-${suffix}.example.test/article`),
+      insertTestUrlDirect(null, `https://newest-${suffix}.example.test/article`),
+      createTestTopic({ name: `Newest story category ${suffix}` }),
+    ])
+    if (!initialUrl || !newestUrl) throw new Error('Expected story item URLs')
+    await insertTestStoryRssFeedItemsBatch({ storyId: story.id, urlId: initialUrl.id, count: 2 })
+    const itemData = { title: `Newest item ${suffix}`, link: newestUrl.url }
+    const itemId = await insertTestRssFeedItem({
+      rssFeedId: feed.id,
+      urlId: newestUrl.id,
+      guid: suffix,
+      itemData,
+      contentSha256: createHash('sha256').update(JSON.stringify(itemData)).digest(),
+    })
+    await addCategoryToRssFeedItem(itemId, category.id, category.name)
+    await setTestItemStoryId(itemId, story.id)
+
+    let movedItemId: string | null = null
+    let returnedItemId: string | null = null
+    let projectionPostId: unknown
+    const { result: prepared } = await observeTestPostgresClientQueries(
+      () => prepareStoryPost(story.id, user),
+      async ({ text, values }) => {
+        const [firstValue, secondValue] = values
+        if (text.includes('/* createStoryPost:items */') && firstValue === story.id) {
+          movedItemId = await adminAssignItemToStory(user.id, otherStory.id, itemId)
+        }
+        if (text.includes('/* markStoryPostRelatedUrlProjection */') && secondValue === story.id) {
+          projectionPostId = firstValue
+        }
+        if (
+          text.includes('/* refreshStoryPostRelatedUrlProjectionSources */') &&
+          typeof projectionPostId === 'string' &&
+          Array.isArray(firstValue) &&
+          firstValue.includes(projectionPostId)
+        ) {
+          returnedItemId = await adminAssignItemToStory(user.id, story.id, itemId)
+        }
+      },
+    )
+
+    expect(movedItemId).toBe(itemId)
+    expect(returnedItemId).toBe(itemId)
+    await prepared.finalize()
+    const { post } = prepared.response
+    await drainStoryPostRelatedUrlProjection(post.id)
+    await expect(isStoryItem(story.id, itemId)).resolves.toBe(true)
+    await expect(getPostCategoryTopicIds(post.id)).resolves.toEqual([category.id])
+    const relatedUrlIds = await getPostRelatedUrlIds(post.id)
+    expect(relatedUrlIds.toSorted()).toEqual([initialUrl.id, newestUrl.id].toSorted())
+  })
+
   it('preserves the committed assignment and initial projection work when both repairs fail', async () => {
     await upsertSystemUser('story-teller')
     const [user, story, feed, initialUrl] = await Promise.all([
@@ -122,29 +183,35 @@ describe('concurrent story post creation and assignment', () => {
     const prepared = await prepareStoryPost(story.id, user, { query })
     const createRepairError = new Error('Injected story post creation repair failure')
     const assignmentRepairError = new Error('Injected story assignment repair failure')
-    let assignmentReadAssociation = false
-    const { result: assignedId } = await observeTestPostgresClientQueries(
-      () => adminAssignItemToStory(user.id, story.id, item.id),
-      async ({ text, values }) => {
-        const [storyScope] = values
-        if (text.includes('/* getPostStoryByStoryId */') && storyScope === story.id) {
-          throw createRepairError
-        }
-        if (
-          !text.includes('/* getPostStoryIdsByStoryIds */') ||
-          !Array.isArray(storyScope) ||
-          !storyScope.includes(story.id)
-        )
-          return
-        if (assignmentReadAssociation) throw assignmentRepairError
-
-        assignmentReadAssociation = true
-        await query.commit()
-        await prepared.finalize()
-      },
+    const restoreCreationRepair = rejectPostgresWriteForTest(
+      '/* storyPostCreationSourcesChanged */',
+      createRepairError,
+      ([storyId]) => storyId === story.id,
     )
+    let assignmentReadAssociation = false
+    try {
+      const { result: assignedId } = await observeTestPostgresClientQueries(
+        () => adminAssignItemToStory(user.id, story.id, item.id),
+        async ({ text, values }) => {
+          const [storyScope] = values
+          if (
+            !text.includes('/* getPostStoryIdsByStoryIds */') ||
+            !Array.isArray(storyScope) ||
+            !storyScope.includes(story.id)
+          )
+            return
+          if (assignmentReadAssociation) throw assignmentRepairError
 
-    expect(assignedId).toBe(item.id)
+          assignmentReadAssociation = true
+          await query.commit()
+          await prepared.finalize()
+        },
+      )
+      expect(assignedId).toBe(item.id)
+    } finally {
+      restoreCreationRepair()
+    }
+
     expect(sentryCaptureExceptionMock.mock.calls.map(([error]) => error)).toEqual(
       expect.arrayContaining([createRepairError, assignmentRepairError]),
     )
