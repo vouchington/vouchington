@@ -29,8 +29,7 @@ async function deleteTextEmbeddingCachePage(
   options: Options,
 ): Promise<PersistedPage<never>> {
   await using query = await beginTransaction()
-  const cutoffParameters = options.lowerBoundDate ? [cutoff, options.lowerBoundDate] : [cutoff]
-  const lowerBoundPredicate = options.lowerBoundDate ? 'AND updated_at >= $2::timestamptz' : ''
+  const bounds = [cutoff, options.lowerBoundDate ?? '-infinity']
   const { rows: candidates } = await query<{
     content_sha256: string
   }>(
@@ -38,21 +37,21 @@ async function deleteTextEmbeddingCachePage(
     SELECT encode(content_sha256, 'hex') AS content_sha256
     FROM bedrock_nova_multimodal_v1_embeddings cache
     WHERE updated_at < $1::timestamptz
-      ${lowerBoundPredicate}
+      AND updated_at >= $2::timestamptz
     ORDER BY cache.updated_at, encode(cache.content_sha256, 'hex')
-    LIMIT $${cutoffParameters.length + 1} FOR UPDATE`,
-    [...cutoffParameters, batchSize],
+    LIMIT $3 FOR UPDATE`,
+    [...bounds, batchSize],
   )
   const hashes = candidates.map(row => row.content_sha256)
   const { rowCount } = await query(
     `/* deleteTextEmbeddingRetentionPage */
     DELETE FROM bedrock_nova_multimodal_v1_embeddings
     WHERE updated_at < $1::timestamptz
-      ${lowerBoundPredicate}
+      AND updated_at >= $2::timestamptz
       AND content_sha256 = ANY(
-        SELECT decode(hash, 'hex') FROM unnest($${cutoffParameters.length + 1}::text[]) hash
+        SELECT decode(hash, 'hex') FROM unnest($3::text[]) hash
       )`,
-    [...cutoffParameters, hashes],
+    [...bounds, hashes],
   )
   const hasMore =
     candidates.length === batchSize &&
@@ -60,8 +59,8 @@ async function deleteTextEmbeddingCachePage(
       await query(
         `/* hasMoreTextEmbeddingRetentionCandidates */
       SELECT 1 FROM bedrock_nova_multimodal_v1_embeddings
-      WHERE updated_at < $1::timestamptz ${lowerBoundPredicate} LIMIT 1`,
-        cutoffParameters,
+      WHERE updated_at < $1::timestamptz AND updated_at >= $2::timestamptz LIMIT 1`,
+        bounds,
       )
     ).rows.length > 0
   await query.commit()
