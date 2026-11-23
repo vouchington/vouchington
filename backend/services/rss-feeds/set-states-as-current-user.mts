@@ -10,7 +10,7 @@ import { applyCommittedRssFeedStateChangeEffects } from './state-effects.mts'
 import { runRssFeedStateTransaction } from './state-transaction.mts'
 import {
   insertRssFeedStateChanges,
-  lockLatestRssFeedStates,
+  readLatestRssFeedStates,
   type RssFeedStateInsert,
 } from './state-changes.mts'
 
@@ -35,7 +35,7 @@ export async function setRssFeedStatesAsCurrentUser(
   if (changes.length === 0) return 'noop'
   for (const change of changes) assert(currentUserCanModify(currentUser, change), 403, 'Forbidden')
   const run = async (query: TransactionQuery): Promise<SetStatesResult> => {
-    const latest = await lockLatestRssFeedStates(
+    const latest = await readLatestRssFeedStates(
       query,
       rssFeedId,
       changes.map(change => change.kind),

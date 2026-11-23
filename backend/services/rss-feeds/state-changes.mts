@@ -41,13 +41,13 @@ export async function insertRssFeedStateChanges(
 }
 
 /** Reads the latest decision of each kind, returning only the kinds that have one. */
-export async function lockLatestRssFeedStates(
+export async function readLatestRssFeedStates(
   query: TransactionQuery,
   rssFeedId: string,
   kinds: readonly RssFeedStateKind[],
 ): Promise<Map<RssFeedStateKind, LatestRssFeedState>> {
   const { rows } = await query(
-    `/* lockLatestRssFeedStates */
+    `/* readLatestRssFeedStates */
       SELECT kind.change_type, latest.id, latest.is_enabled, latest.changed_by_id
       FROM unnest($2::rss_feed_setting_change_types[]) AS kind(change_type)
       CROSS JOIN LATERAL (
