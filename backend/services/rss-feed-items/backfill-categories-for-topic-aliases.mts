@@ -11,11 +11,10 @@ import { markRssFeedItemCategorySnapshotsForReconciliation } from './category-sn
 import { recordStoryPublicationChangesForCategoryTopics } from './story-publication-change.mts'
 import { runCategoryTransaction } from './category-transaction.mts'
 import { publishCategoryBackfillEffects } from './category-backfill-effects.mts'
-import {
-  stillOwnsCategoryBackfill,
-  type CategoryBackfillMatch,
-} from './category-backfill-owner.mts'
-import { lockCategoryItemsAndRows } from './category-backfill-locks.mts'
+
+type CategoryBackfillMatch =
+  | { kind: 'alias_id' | 'alias_text'; aliasId: string; alias: string }
+  | { kind: 'topic_name'; sourceText: string; sourcePhase: 0 | 1 }
 
 export type CategoryBackfillRawPage = {
   rows: Array<{ rss_feed_item_id: string; category_identity_id: string }>
@@ -85,9 +84,6 @@ async function backfillCategoryBatch(
     const candidateItemIds = [...new Set(candidateItems.map(row => row.rss_feed_item_id))]
     if (candidateItemIds.length === 0)
       return { rows: [], changedItemIds: [], statTargets: [], hasMore }
-    await lockCategoryItemsAndRows(query, candidateItemIds, candidateItems)
-    if (!(await stillOwnsCategoryBackfill(query, topicId, rawPage.match)))
-      return { rows: [], changedItemIds: [], statTargets: [], hasMore }
     const oldTopicIds = candidateItems.flatMap(row =>
       row.previous_topic_id ? [row.previous_topic_id] : [],
     )
@@ -100,15 +96,15 @@ async function backfillCategoryBatch(
         SELECT * FROM UNNEST($5::uuid[], $6::uuid[], $7::uuid[])
           AS row(rss_feed_item_id, category_identity_id, previous_topic_id)
       ), candidates AS (
-        SELECT category.row_tid, category.rss_feed_item_id,
-          category.category_identity_id, category.topic_id AS previous_topic_id
+        SELECT category.rss_feed_item_id, category.category_identity_id,
+          category.topic_id AS previous_topic_id
         FROM input
         JOIN LATERAL (
-          SELECT ctid AS row_tid, rss_feed_item_id, category_identity_id, topic_id
+          SELECT rss_feed_item_id, category_identity_id, topic_id
           FROM rss_feed_item_categories
           WHERE rss_feed_item_id = input.rss_feed_item_id
             AND category_identity_id = input.category_identity_id
-          LIMIT 1 FOR UPDATE
+          LIMIT 1
         ) category ON TRUE
         WHERE category.rss_feed_item_id = ANY($3::uuid[])
           AND category.topic_id IS NOT DISTINCT FROM input.previous_topic_id
@@ -119,8 +115,23 @@ async function backfillCategoryBatch(
       UPDATE rss_feed_item_categories target
       SET topic_id = $1
       FROM candidates
-      WHERE target.ctid = candidates.row_tid
+      WHERE target.rss_feed_item_id = candidates.rss_feed_item_id
+        AND target.category_identity_id = candidates.category_identity_id
         AND target.rss_feed_item_id = ANY($3::uuid[])
+        AND target.topic_id IS NOT DISTINCT FROM candidates.previous_topic_id
+        AND (NOT $11::boolean OR target.topic_alias_id = $10::uuid)
+        AND (
+          ($8::integer IS NOT NULL AND EXISTS (
+            SELECT 1 FROM topics
+            WHERE id = $1::uuid AND deleted_at IS NULL AND merged_into_topic_id IS NULL
+              AND CASE $8::integer WHEN 0 THEN LOWER(name) WHEN 1 THEN slug END = $9::text
+          ))
+          OR ($8::integer IS NULL AND EXISTS (
+            SELECT 1 FROM topic_aliases
+            WHERE id = $10::uuid AND alias = LOWER($9::text) AND topic_id = $1::uuid
+              AND unlink_requested_at IS NULL
+          ))
+        )
       RETURNING target.rss_feed_item_id, candidates.previous_topic_id
     `,
       [
@@ -131,8 +142,13 @@ async function backfillCategoryBatch(
         candidateItems.map(row => row.rss_feed_item_id),
         candidateItems.map(row => row.category_identity_id),
         candidateItems.map(row => row.previous_topic_id),
+        rawPage.match.kind === 'topic_name' ? rawPage.match.sourcePhase : null,
+        rawPage.match.kind === 'topic_name' ? rawPage.match.sourceText : rawPage.match.alias,
+        rawPage.match.kind === 'topic_name' ? null : rawPage.match.aliasId,
+        rawPage.match.kind === 'alias_id',
       ],
     )
+    if (rows.length === 0) return { rows: [], changedItemIds: [], statTargets: [], hasMore }
     const changedItemIds = [...new Set(rows.map(row => row.rss_feed_item_id))]
     const [createdTargets, clearedVotes] = await Promise.all([
       createCategoryTopicRelationsInTransaction(

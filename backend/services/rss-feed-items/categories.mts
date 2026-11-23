@@ -26,7 +26,6 @@ import {
   applyRssFeedItemCategorySnapshots,
   type PendingRssFeedItemCategorySnapshot,
 } from './category-projection-result.mts'
-import { lockRssFeedItemsForStoryPublicationChanges } from './story-publication-change.mts'
 // Keeps per-call Valkey work below the client in-flight ceiling during large category imports.
 // Canonical definition lives in @voucha/types/entities/rss-feed-item (avoids a
 // @queues/rss-feed-maintenance <-> @services/rss-feed-items workspace cycle:
@@ -134,10 +133,6 @@ async function upsertRssFeedItemCategorySnapshots(
         409,
         'RSS item category topics changed while acquiring attachment fences',
       )
-    await lockRssFeedItemsForStoryPublicationChanges(query, [
-      ...toInsert.map(category => category.rss_feed_item_id),
-      ...toUpdate.map(category => category.rss_feed_item_id),
-    ])
     const [inserted, updated] = await Promise.all([
       insertMissingCategories(toInsert, query),
       updateMatchedCategories(toUpdate, query),

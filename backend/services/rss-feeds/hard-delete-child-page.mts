@@ -72,38 +72,14 @@ export async function hardDeleteRssFeedChildPage(
   if (!target) throw new TypeError(`Unsupported RSS feed hard-delete phase ${phase}`)
   const limit = getPostPublicationWorkLimit('rss_feed_hard_delete_capture_batch_size')
   await using query = await beginTransaction()
-  const { rows: parentFootprint } =
-    phase === 'feed_categories'
-      ? await query<{ topic_id: string }>(
-          `/* hardDeleteRssFeedChildPage:parentTopicFootprint */
-          SELECT topic_id FROM rss_feeds
-          WHERE id = $1::uuid AND hard_delete_requested_at IS NOT NULL`,
-          [rssFeedId],
-        )
-      : { rows: [] }
-  const categoryFootprint =
-    phase === 'feed_categories'
-      ? (
-          await query<{ category_identity_id: string; topic_id: string | null }>(
-            `/* hardDeleteRssFeedChildPage:categoryFootprint */
-            SELECT category_identity_id, topic_id FROM rss_feed_categories
-            WHERE rss_feed_id = $1::uuid ORDER BY category_identity_id LIMIT $2`,
-            [rssFeedId, limit],
-          )
-        ).rows
-      : null
-  const feed = await query<{ id: string; topic_id: string }>(
+  const feed = await query<{ id: string }>(
     `/* hardDeleteRssFeedChildPage:feed */
-    SELECT id, topic_id FROM rss_feeds WHERE id = $1::uuid AND hard_delete_requested_at IS NOT NULL FOR UPDATE`,
+    SELECT id FROM rss_feeds WHERE id = $1::uuid AND hard_delete_requested_at IS NOT NULL`,
     [rssFeedId],
   )
   if (feed.rows.length === 0) {
     await query.commit()
     return { removed: 0, hasMore: false }
-  }
-  if (categoryFootprint && feed.rows[0]!.topic_id !== parentFootprint[0]?.topic_id) {
-    await query.commit()
-    return { removed: 0, hasMore: true }
   }
   if (expectedCursor !== undefined) {
     const current = (await listHardDeleteRssFeedNextPages([rssFeedId], { query }))[0]
@@ -116,18 +92,6 @@ export async function hardDeleteRssFeedChildPage(
   if (expectedCursor !== undefined && rows[0]?.id !== expectedCursor) {
     await query.commit()
     return { removed: 0, hasMore: false }
-  }
-  if (
-    categoryFootprint &&
-    (rows.length !== categoryFootprint.length ||
-      rows.some(
-        (row, index) =>
-          row.id !== categoryFootprint[index]?.category_identity_id ||
-          row.topic_id !== categoryFootprint[index]?.topic_id,
-      ))
-  ) {
-    await query.commit()
-    return { removed: 0, hasMore: true }
   }
   if (rows.length > 0) {
     const ids = rows.map(row => row.id)

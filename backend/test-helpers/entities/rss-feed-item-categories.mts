@@ -1,12 +1,13 @@
-import { read, write } from '@data-stores/psql'
+import { read, write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function setTestRssFeedItemCategoryTopicId(
   rssFeedItemId: string,
   categoryText: string,
   topicId: string | null,
+  query: QueryExecutor = write,
 ): Promise<void> {
-  await write(
+  await query(
     sql`/* setTestRssFeedItemCategoryTopicId */
     UPDATE rss_feed_item_categories
     SET topic_id = ${topicId}

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { createTestUser, getLatestTestRssFeedStateChange } from '@voucha/test-helpers'
+import {
+  beginTransaction,
+  createTestUser,
+  getLatestTestRssFeedStateChange,
+} from '@voucha/test-helpers'
+import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
+import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { setRssFeedDiscoverabilityAsSystem } from './discoverability.mts'
 import { setRssFeedStatesAsCurrentUser } from './set-states-as-current-user.mts'
@@ -37,6 +43,37 @@ describe('setRssFeedStatesAsCurrentUser', () => {
         { kind: 'discoverability', is_enabled: true },
       ]),
     ).resolves.toBe('noop')
+  })
+
+  it('coalesces queued effects for decisions that see the same prior state', async () => {
+    const feed = await createTestRssFeed({})
+    const administrator = await createTestUser({ administrator: true })
+    const changes = [{ kind: 'enablement' as const, is_enabled: false }]
+
+    const effects = await captureAddedPublicationEffectsForScope(feed.id, async () => {
+      await using first = await beginTransaction()
+      await expect(
+        setRssFeedStatesAsCurrentUser(administrator, feed.id, changes, { query: first }),
+      ).resolves.toBe('updated')
+      const restore = beforePostgresTransactionQueryForTest(
+        '/* insertRssFeedSettingChange */',
+        values => values[0] === feed.id,
+        () => first.commit(),
+      )
+      try {
+        await expect(setRssFeedStatesAsCurrentUser(administrator, feed.id, changes)).resolves.toBe(
+          'updated',
+        )
+      } finally {
+        restore()
+      }
+    })
+
+    expect(effects.map(effect => effect.reason)).toEqual(['rss_feed_enablement_changed'])
+    await expect(getLatestTestRssFeedStateChange('enablement', feed.id)).resolves.toMatchObject({
+      is_enabled: false,
+      changed_by_id: administrator.id,
+    })
   })
 
   it('refuses a caller who cannot change a kind before it writes anything', async () => {
