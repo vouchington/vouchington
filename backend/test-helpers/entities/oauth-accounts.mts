@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import { upsertTestEmailDomainHostnameId } from './email-domain-hostname.mts'
@@ -7,6 +8,11 @@ import {
   type OAuthProvider,
   type OAuthAccount,
 } from './_oauth-config-support.mts'
+
+/** Random provider user id from a wide safe-integer range; tests share one dirty database. */
+export function createRandomTestProviderUserId(): string {
+  return String(randomInt(1_000_000_000, 2 ** 47))
+}
 
 export async function insertTestOAuthAccount(
   provider: OAuthProvider,

@@ -7,6 +7,7 @@ import {
   getTestFriend,
   getTestOAuthAccountFriendsSyncedAt,
   insertTestFriends,
+  createRandomTestProviderUserId,
   insertTestOAuthAccount,
   setTestOAuthAccountAccessToken,
 } from '@voucha/test-helpers'
@@ -34,7 +35,7 @@ describe('syncGithubFriends continuation', () => {
   let restoreLimits: (() => void) | undefined
 
   beforeEach(async () => {
-    githubUserId = String(Math.floor(Math.random() * 1_000_000) + 400_000)
+    githubUserId = createRandomTestProviderUserId()
     await insertTestOAuthAccount('github', githubUserId, null)
     const user = await createTestUserDirect()
     await connectTestOAuthAccount('github', user.id, githubUserId)
@@ -51,8 +52,8 @@ describe('syncGithubFriends continuation', () => {
     restoreLimits = overrideDynamicConfigFieldsForTest(oauthGithubWorkConfig, {
       max_provider_pages_per_run: 1,
     })
-    const firstId = `${900_000 + Math.floor(Math.random() * 99_999)}`
-    const secondId = `${100_000 + Math.floor(Math.random() * 99_999)}`
+    const firstId = createRandomTestProviderUserId()
+    const secondId = createRandomTestProviderUserId()
     fetchSpy.mockResolvedValueOnce(following([{ id: Number(firstId), login: 'first' }], NEXT_LINK))
 
     const resume = await syncGithubFriends(githubUserId)

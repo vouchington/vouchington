@@ -10,6 +10,7 @@ import {
   getTestFriend,
   getTestOAuthAccountFriendsSyncedAt,
   insertTestFriends,
+  createRandomTestProviderUserId,
   insertTestOAuthAccount,
   setTestOAuthAccountAccessToken,
   softDeleteUser,
@@ -39,7 +40,7 @@ describe('syncGithubFriends batching', () => {
     await insertTestOAuthAccount('github', providerUserId, null)
     await connectTestOAuthAccount('github', user.id, providerUserId)
     await setTestOAuthAccountAccessToken('github', providerUserId, 'fake-access-token')
-    const staleFriendId = randomGithubId(4_000_000)
+    const staleFriendId = randomGithubId()
     fetchSpy.mockResolvedValueOnce({
       ok: true,
       headers: new Headers(),
@@ -57,8 +58,8 @@ describe('syncGithubFriends batching', () => {
 
   it('keeps a committed page and discards the next page after owner deletion', async () => {
     const { providerUserId, userId } = await createGithubSyncAccount()
-    const firstFriendId = randomGithubId(2_000_000)
-    const secondFriendId = randomGithubId(3_000_000)
+    const firstFriendId = randomGithubId()
+    const secondFriendId = randomGithubId()
     fetchSpy
       .mockResolvedValueOnce(
         githubResponse(
@@ -145,8 +146,8 @@ function githubResponse(users: Array<{ id: number; login: string }>, link?: stri
   })
 }
 
-function randomGithubId(offset: number): number {
-  return offset + Math.floor(Math.random() * 500_000)
+function randomGithubId(): number {
+  return Number(createRandomTestProviderUserId())
 }
 
 function makeFriendIds(prefix: string, count: number): string[] {
