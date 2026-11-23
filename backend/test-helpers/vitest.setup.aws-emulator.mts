@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
 import { inject, vi } from 'vitest'
-import { trustAwsEmulatorCertificate } from './aws-emulator.mts'
+import { trustAwsEmulatorCertificate } from '@vouchington/aws/testing'
 
 // Every AWS SDK client in a test talks to the AWS Emulator started by
 // `vitest.setup.aws-emulator-server.mts`: requests, signatures, presigned URLs and stored state are

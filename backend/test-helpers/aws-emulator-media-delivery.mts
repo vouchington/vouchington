@@ -4,7 +4,7 @@ import {
   CreateDistributionCommand,
   type DistributionConfig,
 } from '@aws-sdk/client-cloudfront'
-import type { AwsEmulatorConnection } from './aws-emulator.mts'
+import type { AwsEmulatorConnection } from '@vouchington/aws/testing'
 
 /** The DynamoDB table the edge viewer-request function reads; Lambda@Edge runs in us-east-1. */
 export const MEDIA_DELIVERY_REGISTRY_TEST_TABLE = 'test-media-delivery-registry'

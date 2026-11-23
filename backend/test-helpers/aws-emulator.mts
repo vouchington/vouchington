@@ -1,124 +1,43 @@
-import { spawn, type ChildProcess } from 'node:child_process'
-import { once } from 'node:events'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
-import { request } from 'node:https'
-import { platform, tmpdir } from 'node:os'
-import { join } from 'node:path'
-import tls from 'node:tls'
-import { ensureAwsEmulatorBinary } from './aws-emulator-package.mts'
-import {
-  AWS_EMULATOR_IDLE_TIMEOUT_SECONDS,
-  startAwsEmulatorInDocker,
-  readAnnouncedPort,
-  type StartedAwsEmulatorProcess,
-} from './aws-emulator-docker.mts'
-
-const READY_DEADLINE_MS = 60_000
-
-export type AwsEmulatorConnection = {
-  endpoint: string
-  region: string
-  caPem: string
-  accessKeyId: string
-  secretAccessKey: string
-}
-
-export type RunningAwsEmulator = AwsEmulatorConnection & { stop: () => Promise<void> }
-
-/** Starts a private emulator on a free port with telemetry off and returns its connection. */
-export async function startAwsEmulator(): Promise<RunningAwsEmulator> {
-  const home = await mkdtemp(join(tmpdir(), 'voucha-aws-emulator-'))
-  const running =
-    platform() === 'linux' ? await startNative(home) : await startAwsEmulatorInDocker(home)
-  try {
-    const port = await running.port
-    const stateDir = join(home, '.aws', 'emulator', String(running.statePort ?? port))
-    const caPem = await readFile(join(stateDir, 'ca.pem'), 'utf8')
-    const credentials = parseCredentials(
-      await readFile(join(stateDir, 'emulator_credentials'), 'utf8'),
-    )
-    const endpoint = `https://127.0.0.1:${port}`
-    await checkHealth(endpoint, caPem)
-    return {
-      endpoint,
-      region: 'us-west-2',
-      caPem,
-      ...credentials,
-      stop: async () => {
-        await running.stop()
-        await rm(home, { recursive: true, force: true })
-      },
-    }
-  } catch (err) {
-    await running.stop()
-    await rm(home, { recursive: true, force: true })
-    throw err
-  }
-}
-
-async function startNative(home: string): Promise<StartedAwsEmulatorProcess> {
-  const binary = await ensureAwsEmulatorBinary()
-  const child = spawn(
-    binary,
-    [
-      '--port',
-      '0',
-      '--telemetry',
-      'off',
-      '--idle-timeout',
-      String(AWS_EMULATOR_IDLE_TIMEOUT_SECONDS),
-    ],
-    {
-      env: { PATH: process.env.PATH, HOME: home, EMULATOR_TELEMETRY: 'off' },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    },
-  )
-  return { port: readAnnouncedPort(child), stop: () => stopChild(child) }
-}
-
-async function stopChild(child: ChildProcess): Promise<void> {
-  // A failed spawn has no pid and never emits 'exit'.
-  if (child.pid === undefined || child.exitCode !== null || child.signalCode !== null) return
-  const exited = once(child, 'exit')
-  child.kill('SIGTERM')
-  // The runtime owns the timer behind AbortSignal.timeout; a stuck emulator is killed outright.
-  const forceKill = AbortSignal.timeout(5_000)
-  const onForceKill = () => child.kill('SIGKILL')
-  forceKill.addEventListener('abort', onForceKill, { once: true })
-  await exited
-  forceKill.removeEventListener('abort', onForceKill)
-}
-
-// The emulator logs its endpoint once it listens, so one request confirms it serves.
-async function checkHealth(endpoint: string, caPem: string): Promise<void> {
-  const status = await new Promise<number | undefined>((resolveStatus, reject) => {
-    const req = request(
-      `${endpoint}/__admin/health`,
-      { ca: caPem, signal: AbortSignal.timeout(READY_DEADLINE_MS) },
-      res => {
-        res.resume()
-        resolveStatus(res.statusCode)
-      },
-    )
-    req.once('error', reject)
-    req.end()
-  })
-  if (status !== 200) throw new Error(`AWS Emulator at ${endpoint} answered health with ${status}`)
-}
-
-function parseCredentials(file: string): { accessKeyId: string; secretAccessKey: string } {
-  const accessKeyId = /^\s*aws_access_key_id\s*=\s*(\S+)/m.exec(file)?.[1]
-  const secretAccessKey = /^\s*aws_secret_access_key\s*=\s*(\S+)/m.exec(file)?.[1]
-  if (!accessKeyId || !secretAccessKey) throw new Error('AWS Emulator wrote no credentials')
-  return { accessKeyId, secretAccessKey }
-}
+import { resolve } from 'node:path'
+import undici from 'undici'
+import { startAwsEmulator, type RunningAwsEmulator } from '@vouchington/aws/testing'
 
 /**
- * Adds the run's self-signed emulator certificate to Node's default trust store, which every TLS
- * client in this process (the SDK's handler, `fetch`) reads unless it passes its own `ca`.
+ * The AWS Emulator package every test run uses. AWS publishes versioned packages under
+ * `LTS/` (listed in `LTS/versions.json`) and signs each with the SSM Publishing key
+ * (fingerprint 98BC F336 A3BE 53B7 34E9 67C5 2E5B F49B D940 F624). A version bump verifies the
+ * new `.deb.sig` files with that key, then records each package's SHA-256 here; the test harness
+ * only checks the recorded digest.
  */
-export function trustAwsEmulatorCertificate(caPem: string): void {
-  const current = tls.getCACertificates('default')
-  if (current.includes(caPem)) return
-  tls.setDefaultCACertificates([...current, caPem])
+const AWS_EMULATOR_PACKAGE_PIN = {
+  version: '1.0.322',
+  sha256: {
+    amd64: 'ef3c75e5d4196bf2c0170b55b75b01e340e0ef497e636b700a1efe68d68a60d7',
+    arm64: '8cfabb461ccfbfa75468393e8dfbf5216b07ef54fcf20584c11d02a9fc854b03',
+  },
+} as const
+
+// macOS cannot run the Linux binary, so it runs inside the mirrored Debian Node image.
+const LINUX_RUNTIME_IMAGE =
+  'ghcr.io/vouchington/dependency-node:26-trixie-slim@sha256:36793bcbb160a6a16cede1e62b93f84e26b78a972a8a4c0b879c1c12f22761ec'
+
+const cacheDir = resolve(import.meta.dirname, '..', '..', '.cache', 'aws-emulator')
+
+/** Starts the pinned emulator; the package download honors HTTPS_PROXY where a sandbox needs one. */
+export async function startVouchaAwsEmulator(): Promise<RunningAwsEmulator> {
+  const dispatcher = new undici.EnvHttpProxyAgent()
+  try {
+    return await startAwsEmulator({
+      package: {
+        pin: AWS_EMULATOR_PACKAGE_PIN,
+        cacheDir,
+        fetch: (url, init) =>
+          undici.fetch(url, { dispatcher, signal: init.signal }) as unknown as Promise<Response>,
+      },
+      dockerImage: LINUX_RUNTIME_IMAGE,
+      namePrefix: 'voucha-aws-emulator',
+    })
+  } finally {
+    await dispatcher.close()
+  }
 }

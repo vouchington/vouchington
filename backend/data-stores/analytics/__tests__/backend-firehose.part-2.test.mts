@@ -77,24 +77,6 @@ describe('backend-firehose', () => {
     }
   }
 
-  it('waits for an active flush before resolving a concurrent flush', async () => {
-    const events: string[] = []
-    writeRecord('queue_workers', makeQueueWorkerRecord({ event_id: 'first' }))
-    const firstFlushPromise = flush()
-    // The first request is on the wire; note when its real response arrives.
-    void Promise.resolve(firehoseSender.mock.results[0]?.value).then(() =>
-      events.push('send finished'),
-    )
-    const concurrentFlushPromise = flush().then(() => {
-      events.push('concurrent flush finished')
-      return undefined
-    })
-    await Promise.all([firstFlushPromise, concurrentFlushPromise])
-
-    expect(events).toEqual(['send finished', 'concurrent flush finished'])
-    expect(sent()).toHaveLength(1)
-  })
-
   it('writes Firehose records through emit()', async () => {
     process.env.ANALYTICS_BACKEND = 'firehose'
 

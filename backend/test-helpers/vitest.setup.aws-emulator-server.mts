@@ -1,10 +1,10 @@
 import { CreateBucketCommand, S3Client } from '@aws-sdk/client-s3'
 import {
-  startAwsEmulator,
   trustAwsEmulatorCertificate,
   type AwsEmulatorConnection,
   type RunningAwsEmulator,
-} from './aws-emulator.mts'
+} from '@vouchington/aws/testing'
+import { startVouchaAwsEmulator } from './aws-emulator.mts'
 import { provisionAnalyticsFirehose } from './aws-emulator-firehose.mts'
 import { provisionMediaDeliveryEdge } from './aws-emulator-media-delivery.mts'
 import { testS3BucketNames } from './s3-test-environment.mts'
@@ -43,7 +43,7 @@ export async function teardown(): Promise<void> {
 }
 
 async function startAndProvision(): Promise<RunningAwsEmulator> {
-  const emulator = await startAwsEmulator()
+  const emulator = await startVouchaAwsEmulator()
   try {
     trustAwsEmulatorCertificate(emulator.caPem)
     const client = new S3Client({

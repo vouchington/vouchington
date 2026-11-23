@@ -20,7 +20,6 @@
     "@email-templates/core": "workspace:^",
     "@modules/aws": "workspace:^",
     "@modules/on-error": "workspace:^",
-    "@modules/queue-errors": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/background": "workspace:^",
     "@queues/email-digests": "workspace:^",
@@ -31,6 +30,7 @@
     "@services/email-classification": "workspace:^",
     "@services/engagement-emails": "workspace:^",
     "@services/users": "workspace:^",
+    "@vouchington/aws": "^0.1.2",
     "@workers/emails": "workspace:^"
   },
   "devDependencies": {
