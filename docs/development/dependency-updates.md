@@ -17,6 +17,13 @@ Dependabot waits seven days after a release (`cooldown`), except for first-party
 match. List first-party exclusions by exact package name, not globs: the `pnpm-release-age-policy`
 rule rejects a glob that is not in its registry.
 
+Renovate applies the same gate: a global `minimumReleaseAge` of `7 days` with
+`internalChecksFilter: "strict"`, so a version younger than seven days is skipped instead of opening
+a pending PR. Packages published by this repository (the `ghcr.io/vouchington/dependency-*` images
+and the `ci/dependency-mirror/images.json` digests) set `minimumReleaseAge: null` and wait zero days.
+Third-party tools that float on their own (for example `PNPM_VERSION=12` in the Dockerfiles and the
+`.nvmrc` major) have no gate of their own; see the PR that introduced this policy for the list.
+
 `engines.node` is a floor, not the runtime pin. Dependabot's hosted updater runs the active Node LTS
 and cannot be configured, and `engineStrict` makes every pnpm call there fail when the floor is above
 that version, which stops all npm version and security updates. Keep the floor at or below

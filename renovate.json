@@ -8,6 +8,8 @@
   "timezone": "America/Los_Angeles",
   "prHourlyLimit": 4,
   "prConcurrentLimit": 8,
+  "minimumReleaseAge": "7 days",
+  "internalChecksFilter": "strict",
   "packageRules": [
     {
       "description": "Propose dependency mirror digest updates as reviewable PRs whenever Renovate runs",
@@ -29,6 +31,16 @@
       "matchPackageNames": ["ghcr.io/vouchington/dependency-*"],
       "schedule": ["at any time"],
       "groupName": "CI dependency consumer digests"
+    },
+    {
+      "description": "First-party sources skip the 7 day release age: the reviewed mirror digests are published by this repository",
+      "matchFileNames": ["ci/dependency-mirror/images.json"],
+      "minimumReleaseAge": null
+    },
+    {
+      "description": "First-party GHCR dependency-* packages skip the 7 day release age",
+      "matchPackageNames": ["ghcr.io/vouchington/dependency-*"],
+      "minimumReleaseAge": null
     }
   ],
   "customManagers": [
