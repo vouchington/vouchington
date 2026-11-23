@@ -20,10 +20,7 @@ import {
   readAllQueueJobs,
 } from '@voucha/test-helpers'
 import { setTestRssFeedItemCategoryTopicId } from '@voucha/test-helpers/entities/rss-feed-item-categories'
-import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
-import { getTestPostgresBackendProcessId } from '@voucha/test-helpers/postgres-lock-wait'
-import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
-import { upsertEntityRelation } from '@services/entity-relations/upsert'
+import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import type { PrivateUser } from '@services/users/types'
 import { upsertSystemUser } from '@services/users/system-users'
@@ -92,7 +89,7 @@ describe('refreshStoryPostForStory', () => {
     expect(post.post_type).toBe('story')
   })
 
-  it('uses committed item topics after waiting to lock the previous post topic', async () => {
+  it('uses item topics committed during refresh', async () => {
     const suffix = crypto.randomUUID()
     const story = await insertTestStory({ title: `Concurrent topic refresh ${suffix}` })
     const previousTopic = await insertTestTopic({
@@ -114,31 +111,16 @@ describe('refreshStoryPostForStory', () => {
     const { post } = prepared.response
     await expect(getPostCategoryTopicIds(post.id)).resolves.toEqual([previousTopic])
 
-    await using holder = await beginTransaction()
-    const relation = getEntityRelationMetadataOrThrow({
-      subjectType: 'post',
-      predicate: 'category',
-      objectType: 'topic',
-    })
-    await upsertEntityRelation(testUser, relation, { id: post.id }, [{ id: previousTopic }], {
-      query: holder,
-    })
-    await withTestOwnedPostgresWait(
-      {
-        holderProcessId: await getTestPostgresBackendProcessId(holder),
-        pool: 'write',
-        lock: { kind: 'transaction' },
-        queryMarker: 'refreshStoryPostForStory:lockTopics',
-        releaseHolder: () => holder[Symbol.asyncDispose](),
-      },
-      async waitForLock => {
-        const refresh = refreshStoryPostForStory(story.id)
-        await waitForLock(refresh)
-        await setTestRssFeedItemCategoryTopicId(itemId, category, currentTopic)
-        await holder.commit()
-        return refresh
-      },
+    const restore = beforePostgresTransactionQueryForTest(
+      '/* markStoryPostRelatedUrlProjection */',
+      values => values.includes(post.id),
+      () => setTestRssFeedItemCategoryTopicId(itemId, category, currentTopic),
     )
+    try {
+      await refreshStoryPostForStory(story.id)
+    } finally {
+      restore()
+    }
     await expect(getPostCategoryTopicIds(post.id)).resolves.toEqual([currentTopic])
   })
 

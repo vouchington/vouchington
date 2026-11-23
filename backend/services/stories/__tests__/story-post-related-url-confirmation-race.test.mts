@@ -1,14 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
-  beginTransaction,
   createTestUserDirect,
   getPostRelatedUrlIds,
   insertTestStory,
   insertTestStoryRssFeedItemsBatch,
   insertTestUrlDirect,
 } from '@voucha/test-helpers'
-import { getTestPostgresBackendProcessId } from '@voucha/test-helpers/postgres-lock-wait'
-import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
+import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { softDeleteEntityRelation } from '@services/entity-relations/delete'
@@ -44,24 +42,18 @@ describe('story related URL confirmation during refresh', () => {
     await softDeleteEntityRelation(storyTeller, relatedUrl, subject, confirmation)
     await refreshStoryPostForStory(story.id)
 
-    await using manual = await beginTransaction()
-    const holderProcessId = await getTestPostgresBackendProcessId(manual)
-    await upsertEntityRelation(actor, relatedUrl, subject, confirmation, { query: manual })
-    await withTestOwnedPostgresWait(
-      {
-        pool: 'write',
-        holderProcessId,
-        lock: { kind: 'transaction' },
-        queryMarker: 'lockStoryPostRelations:urls',
-        releaseHolder: () => manual[Symbol.asyncDispose](),
-      },
-      async waitUntilRefreshCanContinue => {
-        const refresh = refreshStoryPostForStory(story.id)
-        await waitUntilRefreshCanContinue(refresh)
-        await manual.commit()
-        await refresh
+    const restore = afterPostgresTransactionQueryForTest(
+      '/* getPostStoryByStoryId */',
+      values => values.includes(story.id),
+      async () => {
+        await upsertEntityRelation(actor, relatedUrl, subject, confirmation)
       },
     )
+    try {
+      await refreshStoryPostForStory(story.id)
+    } finally {
+      restore()
+    }
 
     await drainStoryPostRelatedUrlProjection(post.id)
     expect((await getPostRelatedUrlIds(post.id)).toSorted()).toEqual(
