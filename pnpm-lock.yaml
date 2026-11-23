@@ -1308,8 +1308,8 @@ importers:
         specifier: ^0.7.0
         version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
       '@vouchington/session-jwt':
         specifier: ^0.0.3
         version: 0.0.3
@@ -1423,8 +1423,8 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
     devDependencies:
       vitest:
         specifier: ^5.1.0
@@ -2443,8 +2443,8 @@ importers:
   backend/modules/http-signatures:
     dependencies:
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
 
   backend/modules/markdown-extraction:
     dependencies:
@@ -2609,8 +2609,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
 
   backend/modules/rss-unreliable-status-codes:
     dependencies:
@@ -2694,8 +2694,8 @@ importers:
   backend/modules/token-secrets:
     dependencies:
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
 
   backend/modules/topic-labels: {}
 
@@ -2735,8 +2735,8 @@ importers:
         specifier: ^0.7.0
         version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -7230,8 +7230,8 @@ importers:
         specifier: ^0.7.0
         version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -8022,8 +8022,8 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/utils
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -10995,8 +10995,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
 
   backend/services/rss-feeds:
     dependencies:
@@ -12109,8 +12109,8 @@ importers:
         specifier: ^0.2.1
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
       pg-copy-streams:
         specifier: ^7.0.0
         version: 7.0.0
@@ -13194,8 +13194,8 @@ importers:
         specifier: workspace:^
         version: link:../../ts-shared/deploy-environment
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -15532,8 +15532,8 @@ importers:
         specifier: ^0.2.0
         version: 0.2.0
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
       satori:
         specifier: ^0.63.2
         version: 0.63.2
@@ -15610,8 +15610,8 @@ importers:
         specifier: ^0.6.2
         version: 0.6.2
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -15753,8 +15753,8 @@ importers:
   ts-shared/url-signing:
     dependencies:
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
 
   ts-shared/user-profile-collections:
     dependencies:
@@ -15912,8 +15912,8 @@ importers:
         specifier: ^0.7.0
         version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -21137,8 +21137,8 @@ packages:
       '@sentry/node':
         optional: true
 
-  '@vouchington/server-utils@0.0.1':
-    resolution: {integrity: sha512-a1IvEvOMpSJNgXTTQkT5j9WZFy368dOYcW9G2SfzURf1FkJGsZbUhP5kSQPCrb8WXk3tGb+k73ox3KsDUAyEjQ==}
+  '@vouchington/server-utils@0.1.0':
+    resolution: {integrity: sha512-BmRv8osxxZcIMQ8LpxEK/DY0e4l+9CNSfMIL57k29z4Z41kR63V9xXR7x7tXnhbX2BqFycpuAbo3M6Wz5eZtwA==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/session-jwt@0.0.3':
@@ -30082,7 +30082,7 @@ snapshots:
       '@sentry/browser': 11.13.0
       '@sentry/node': 11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
 
-  '@vouchington/server-utils@0.0.1': {}
+  '@vouchington/server-utils@0.1.0': {}
 
   '@vouchington/session-jwt@0.0.3':
     dependencies:
@@ -34328,7 +34328,7 @@ snapshots:
       acorn-import-phases: 1.0.4(acorn@8.19.0)
       browserslist: 4.29.0
       chrome-trace-event: 1.0.4
-      enhanced-resolve: 5.26.0
+      enhanced-resolve: 5.27.0
       es-module-lexer: 2.3.2
       eslint-scope: 5.1.1
       events: 3.3.0
