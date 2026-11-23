@@ -11,7 +11,7 @@ export type ContentVisibilityPage = {
   nextCursor?: ContentVisibilityCursor
 }
 
-/** Lock one raw target page, then probe each exact primary key. Eligibility is read anew. */
+/** Inspect one raw target page, then update eligible rows by exact primary key. */
 export async function reconcilePostContentNotificationVisibility(
   postId: string,
   after?: ContentVisibilityCursor,
@@ -31,7 +31,6 @@ export async function reconcilePostContentNotificationVisibility(
             ${cursorOperator} ($1::uuid, $2::uuid, $3::uuid)
         ORDER BY notification.publication_post_id, notification.user_id, notification.id
         LIMIT $6
-        FOR UPDATE OF notification
       ), changed AS (
         UPDATE notifications notification
         SET deleted_at = CASE WHEN notification.delivery_type = 'manual_send' AND $4::boolean
@@ -92,7 +91,6 @@ export async function reconcileRssFeedItemContentNotificationVisibility(
             ${cursorOperator} ($1::uuid, $2::uuid, $3::uuid)
         ORDER BY notification.publication_rss_feed_item_id, notification.user_id, notification.id
         LIMIT $5
-        FOR UPDATE OF notification
       ), changed AS (
         UPDATE notifications notification
         SET deleted_at = CASE WHEN $4::boolean THEN NULL ELSE CURRENT_TIMESTAMP END,
