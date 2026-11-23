@@ -80,10 +80,8 @@ async function openModInternalThreadForReport(
       created_by_id, created_at, updated_at, resolved_at, resolved_by_id
   `)
 
-  let thread: ModInternalThread
-
-  if (convRows.length === 0) {
-    const { rows: existingRows } = await query(sql`/* openModInternalThread:existing_report */
+  return resolveOpenedThread(query, currentUserId, convRows, () =>
+    query(sql`/* openModInternalThread:existing_report */
       SELECT
         id, channel_type, community_id, moderation_report_id, post_id,
         created_by_id, created_at, updated_at, resolved_at, resolved_by_id
@@ -93,20 +91,8 @@ async function openModInternalThreadForReport(
         AND resolved_at IS NULL
         AND deleted_at IS NULL
       LIMIT 1
-    `)
-    /* v8 ignore next 3 -- race: thread resolved between INSERT DO NOTHING and SELECT */
-    if (!existingRows[0]) {
-      throw createError(409, 'Mod internal thread was resolved concurrently — please try again')
-    }
-    thread = existingRows[0] as ModInternalThread
-  } else {
-    thread = convRows[0] as ModInternalThread
-    await admitConversationParticipants(query, thread.id, [
-      { userId: currentUserId, role: 'admin' },
-    ])
-  }
-
-  return thread
+    `),
+  )
 }
 
 async function openModInternalThreadForPost(
@@ -129,10 +115,8 @@ async function openModInternalThreadForPost(
       created_by_id, created_at, updated_at, resolved_at, resolved_by_id
   `)
 
-  let thread: ModInternalThread
-
-  if (convRows.length === 0) {
-    const { rows: existingRows } = await query(sql`/* openModInternalThread:existing_post */
+  return resolveOpenedThread(query, currentUserId, convRows, () =>
+    query(sql`/* openModInternalThread:existing_post */
       SELECT
         id, channel_type, community_id, moderation_report_id, post_id,
         created_by_id, created_at, updated_at, resolved_at, resolved_by_id
@@ -142,19 +126,27 @@ async function openModInternalThreadForPost(
         AND resolved_at IS NULL
         AND deleted_at IS NULL
       LIMIT 1
-    `)
+    `),
+  )
+}
+
+/** Return the thread the INSERT created, or the open thread that already existed. */
+async function resolveOpenedThread(
+  query: TransactionQuery,
+  currentUserId: string,
+  insertedRows: unknown[],
+  selectExisting: () => Promise<{ rows: unknown[] }>,
+): Promise<ModInternalThread> {
+  if (insertedRows.length === 0) {
+    const { rows: existingRows } = await selectExisting()
     /* v8 ignore next 3 -- race: thread resolved between INSERT DO NOTHING and SELECT */
     if (!existingRows[0]) {
       throw createError(409, 'Mod internal thread was resolved concurrently — please try again')
     }
-    thread = existingRows[0] as ModInternalThread
-  } else {
-    thread = convRows[0] as ModInternalThread
-    await admitConversationParticipants(query, thread.id, [
-      { userId: currentUserId, role: 'admin' },
-    ])
+    return existingRows[0] as ModInternalThread
   }
-
+  const thread = insertedRows[0] as ModInternalThread
+  await admitConversationParticipants(query, thread.id, [{ userId: currentUserId, role: 'admin' }])
   return thread
 }
 
