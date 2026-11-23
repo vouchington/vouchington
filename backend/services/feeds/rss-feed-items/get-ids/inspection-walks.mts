@@ -11,9 +11,14 @@ function capSql(options: FeedPageQueryOptions): SQLStatement {
   return sql`LEAST(${options.inspectionCap}::int, ${options.inspectionCapMax}::int)`
 }
 
+/**
+ * The partial published_at/id index only covers live rows, so the walk carries its predicate and
+ * deleted rows do not count toward the cap.
+ */
 function appendDirectRange(query: SQLStatement, options: FeedPageQueryOptions): void {
   query.append(sql` FROM rss_feed_items feed_item
     WHERE ${options.includeDirectItems}
+      AND feed_item.deleted_at IS NULL
       AND feed_item.published_at >= ${options.cutoffDate}
       AND feed_item.id >= ${options.itemCutoffId}::uuid`)
   if (options.cursorSortAt && options.cursorId)
