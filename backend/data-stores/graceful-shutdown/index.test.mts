@@ -122,6 +122,28 @@ describe('graceful shutdown wiring', () => {
     expect(context).toEqual({ tags: { shutdown_resource: 'Valkey' } })
   })
 
+  it('reports a frozen failure without mutating it and still reports later failures', async () => {
+    const { onGracefulShutdown, addGracefulShutdownCallback } = await loadSubject()
+    const frozenError: Error = Object.freeze(new Error('frozen failure'))
+    const laterError = new Error('later failure')
+    addGracefulShutdownCallback(async () => {
+      throw frozenError
+    })
+    addGracefulShutdownCallback(async () => {
+      throw laterError
+    })
+
+    await expect(onGracefulShutdown('SIGTERM')).resolves.toBeUndefined()
+
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledTimes(2)
+    const [reported, context] = sentryCaptureExceptionMock.mock.calls[0] ?? []
+    expect(reported).not.toBe(frozenError)
+    expect(reported).toMatchObject({ message: 'frozen failure' })
+    expect(context).toEqual({ tags: { shutdown_phase: 'callbacks', shutdown_signal: 'SIGTERM' } })
+    expect(Object.hasOwn(frozenError, 'tags')).toBe(false)
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(laterError, expect.anything())
+  })
+
   it('gracefulShutdown only closes data stores', async () => {
     const { gracefulShutdown, onGracefulShutdownValkey, onGracefulShutdownPSQL } =
       await loadSubject()
