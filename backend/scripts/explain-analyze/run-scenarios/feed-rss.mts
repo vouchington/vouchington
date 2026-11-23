@@ -15,16 +15,21 @@ export async function runFeedRssScenarios(): Promise<void> {
     time_range: '1w',
   })
   // A low cap makes both arms capped, so the page statement also runs the boundary lookups.
-  const restoreCap = overrideDynamicConfigFieldsForTest(rssFeedItemsWorkConfig, {
-    feed_candidate_inspection_cap: 100,
-  })
-  try {
-    registerRssFeedPageScenario('rss-feed-item-feed-capped', true)
-    await runAndCapture('rss-feed-item-feed-capped', () =>
-      getRssFeedItemFeedIds(seedUser, { limit: 25, time_range: '1w' }),
-    )
-  } finally {
-    restoreCap()
+  for (const [scenarioId, cap] of [
+    ['rss-feed-item-feed-capped', 100],
+    ['rss-feed-item-feed-capped-1000', 1000],
+  ] as const) {
+    const restoreCap = overrideDynamicConfigFieldsForTest(rssFeedItemsWorkConfig, {
+      feed_candidate_inspection_cap: cap,
+    })
+    try {
+      registerRssFeedPageScenario(scenarioId, true)
+      await runAndCapture(scenarioId, () =>
+        getRssFeedItemFeedIds(seedUser, { limit: 25, time_range: '1w' }),
+      )
+    } finally {
+      restoreCap()
+    }
   }
   registerRssFeedPageScenario('rss-feed-item-feed-follow-rss-feeds')
   await runAndCapture('rss-feed-item-feed-follow-rss-feeds', () =>

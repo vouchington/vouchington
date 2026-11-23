@@ -36,6 +36,8 @@ export const POSTS_AND_FEEDS_SCENARIOS = [
   'remote-follower-inbox-late-cursor',
   'rss-feed-item-feed',
   'rss-feed-item-feed-after',
+  'rss-feed-item-feed-capped',
+  'rss-feed-item-feed-capped-1000',
   'rss-feed-item-feed-sparse-source-filter',
   'rss-feed-item-feed-sparse-source-filter-after',
   'rss-feed-item-feed-heavy-follows-after',
