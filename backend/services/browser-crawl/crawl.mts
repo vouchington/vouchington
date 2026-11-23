@@ -1,4 +1,11 @@
-import type { Browser, BrowserContext, Page, Route, WebSocketRoute } from 'playwright-core'
+import {
+  BrowserCrawlConnectError,
+  BrowserCrawlNavigationError,
+  BrowserCrawlTimeoutError,
+  crawlWithBrowser as crawlWithPlatformBrowser,
+  type BrowserCrawlResult,
+} from '@vouchington/browser-crawl'
+import { chromium } from 'playwright-core'
 import onError from '@modules/on-error'
 import {
   CrawlerConnectError,
@@ -6,18 +13,9 @@ import {
   CrawlerTimeoutError,
 } from '@modules/on-error/errors'
 import { assertSafeUrlSync } from './ssrf.mts'
-import type { BrowserCrawlResult } from './types.mts'
-import {
-  NAVIGATION_TIMEOUT_MS,
-  CSR_HYDRATION_WAIT_MS,
-  MIN_CONTENT_LENGTH,
-  PAGE_MEASUREMENT_LIMITS,
-  MAX_TITLE_BYTES,
-} from './config.mts'
+import { NAVIGATION_TIMEOUT_MS, CSR_HYDRATION_WAIT_MS } from './config.mts'
 import { getBlocker } from './adblocker-cache.mts'
 import { redactTokenFromError } from './token-redaction.mts'
-import { measureAndSerializePage } from './page-content.mts'
-import { openBrowserSession } from './browser-session.mts'
 
 const WEBSOCKET_ALLOWED_SCHEMES = ['ws:', 'wss:'] as const
 
@@ -40,127 +38,64 @@ export async function crawlWithBrowser(url: string): Promise<BrowserCrawlResult>
   const token = process.env.LIGHTPANDA_TOKEN?.trim()
   if (!token) throw new Error('LIGHTPANDA_TOKEN is not set')
 
-  let browser: Browser | undefined
-  let context: BrowserContext | undefined
-  let page: Page | undefined
-  let ssrfError: Error | undefined
+  // Token stays on this in-memory URL only; redactTokenFromError() scrubs it from any failure.
+  const wsEndpoint = new URL(cdpEndpoint.href)
+  wsEndpoint.searchParams.set('token', token)
+
+  let result: BrowserCrawlResult
   try {
-    // Connect through route registration is provider setup, not navigation — failures here throw CrawlerConnectError so processors.mts retries instead of marking the link unhealthy.
-    try {
-      // Token stays on this in-memory URL only; redactToken() below scrubs it from any failure.
-      const wsEndpoint = new URL(cdpEndpoint.href)
-      wsEndpoint.searchParams.set('token', token)
-      const session = await openBrowserSession(wsEndpoint.href)
-      browser = session.browser
-      context = session.context
-      page = session.page
-      page.setDefaultTimeout(NAVIGATION_TIMEOUT_MS)
-
-      const blocker = await getBlocker()
-
-      if (blocker) await blocker.enableBlockingInPage(page)
-
-      // SSRF guard: DNS-rebinding protection (a hostname resolving to a private IP only at
-      // request time) is delegated to Lightpanda cloud's own private-network blocking.
-      await page.route('**/*', async (route: Route) => {
-        const rawUrl = route.request().url()
-        if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://')) {
+    result = await crawlWithPlatformBrowser({
+      url,
+      endpoint: wsEndpoint.href,
+      connect: endpoint => chromium.connectOverCDP(endpoint),
+      navigationTimeoutMs: NAVIGATION_TIMEOUT_MS,
+      // 'load' plus this wait is the analog of the previous Puppeteer 'networkidle2' milestone,
+      // which Playwright cannot express; 'networkidle' times out on persistent connections.
+      hydrationWaitMs: CSR_HYDRATION_WAIT_MS,
+      onCleanupError: err => onError(asError(err)),
+      // Provider setup, not navigation: a failing blocker is a connect error so processors.mts retries.
+      preparePage: async page => {
+        const blocker = await getBlocker()
+        if (blocker) await blocker.enableBlockingInPage(page)
+      },
+      // DNS-rebinding protection is delegated to Lightpanda cloud's own private-network blocking.
+      requestPolicy: (requestUrl, kind) => {
+        if (kind === 'websocket') {
+          assertSafeUrlSync(requestUrl, WEBSOCKET_ALLOWED_SCHEMES)
+        } else if (requestUrl.startsWith('http://') || requestUrl.startsWith('https://')) {
           // Non-http(s) resources (data:, blob:, about:) bypass both the SSRF guard and the ad-blocker.
-          await route.continue()
-          return
+          assertSafeUrlSync(requestUrl)
         }
-        try {
-          assertSafeUrlSync(rawUrl)
-        } catch (err) {
-          // Captured so the navigation catch below can rethrow it as CrawlerSsrfError instead of the generic aborted-navigation error Playwright raises.
-          if (route.request().isNavigationRequest() && err instanceof Error) ssrfError = err
-          await route.abort('blockedbyclient')
-          return
-        }
-        // SSRF-safe: defer to the ad-blocker's handler registered below us in the route stack; with none installed, fallback() continues to network.
-        await route.fallback()
-      })
-
-      // page.route() does not see WebSocket handshakes — Playwright intercepts them through a
-      // separate API. connectToServer() dials the real ws/wss endpoint from inside the page's
-      // own sandbox, layering an app-level guard on top of (not replacing) Lightpanda cloud's own network-level private-address blocking.
-      await page.routeWebSocket('**/*', async (ws: WebSocketRoute) => {
-        try {
-          assertSafeUrlSync(ws.url(), WEBSOCKET_ALLOWED_SCHEMES)
-        } catch {
-          await ws.close({ code: 1008, reason: 'blocked by client' })
-          return
-        }
-        ws.connectToServer()
-      })
-    } catch (err) {
-      // redactTokenFromError() only redacts when a token is present, so applying it region-wide to non-connect errors here is harmless.
-      const original = err instanceof Error ? err : new Error(String(err))
-      throw new CrawlerConnectError(url, 0, redactTokenFromError(original, token))
-    }
-
-    let statusCode = 200
-    let gotoResponse: Awaited<ReturnType<Page['goto']>>
-    try {
-      // 'networkidle' requires zero in-flight connections and times out on real-world
-      // referral pages that hold a persistent connection open (WebSockets, SSE,
-      // long-polling analytics/chat widgets). 'load' plus the CSR_HYDRATION_WAIT_MS wait
-      // below is the reliable analog of the previous Puppeteer 'networkidle2' milestone
-      // (<=2 connections tolerated), which we can no longer express directly in Playwright.
-      gotoResponse = await page.goto(url, {
-        waitUntil: 'load',
-        timeout: NAVIGATION_TIMEOUT_MS,
-      })
-    } catch (err) {
-      if (ssrfError) throw ssrfError
-      const error = err instanceof Error ? err : new Error(String(err))
-      if (error.name === 'TimeoutError' || error.constructor.name === 'TimeoutError') {
-        throw new CrawlerTimeoutError(url, NAVIGATION_TIMEOUT_MS, NAVIGATION_TIMEOUT_MS)
-      }
-      throw new CrawlerNetworkError(url, 0, error)
-    }
-    if (gotoResponse) statusCode = gotoResponse.status()
-    // Lightpanda completes navigation with status 0 when its egress proxy fetched nothing; that is a provider failure, not an HTTP response.
-    if (statusCode === 0) {
-      throw new CrawlerNetworkError(
-        url,
-        0,
-        new Error('navigation completed without an HTTP response'),
-      )
-    }
-
-    await new Promise(resolve => {
-      setTimeout(resolve, CSR_HYDRATION_WAIT_MS)
+      },
     })
-
-    const finalUrl = page.url() // post-redirect landed URL, incl. any redirect-minted tokens
-    const pageContent = (await page.evaluate(measureAndSerializePage, {
-      maxContentLength: MIN_CONTENT_LENGTH,
-      ...PAGE_MEASUREMENT_LIMITS,
-      maxTitleBytes: MAX_TITLE_BYTES,
-    })) as {
-      contentLength: number
-      html?: string
-      title: string
-    }
-    const title = pageContent.title
-
-    const hasContent = title.trim().length > 0 || pageContent.contentLength >= MIN_CONTENT_LENGTH
-
-    return {
-      statusCode,
-      hasContent,
-      title,
-      contentLength: pageContent.contentLength,
-      html: pageContent.html,
-      finalUrl,
-    }
-  } finally {
-    if (page) await page.close().catch(onError)
-    if (context) await context.close().catch(onError)
-    if (browser)
-      await browser.close().catch((err: unknown) => {
-        console.error('Failed to close browser', err)
-      })
+  } catch (err) {
+    throw toLocalCrawlError(err, url, token)
   }
+
+  // Lightpanda completes navigation with status 0 when its egress proxy fetched nothing; that is a provider failure, not an HTTP response.
+  if (result.statusCode === 0) {
+    throw new CrawlerNetworkError(
+      url,
+      0,
+      new Error('navigation completed without an HTTP response'),
+    )
+  }
+  return result
+}
+
+function asError(value: unknown): Error {
+  return value instanceof Error ? value : new Error(String(value))
+}
+
+function toLocalCrawlError(err: unknown, url: string, token: string): unknown {
+  if (err instanceof BrowserCrawlConnectError) {
+    return new CrawlerConnectError(url, 0, redactTokenFromError(asError(err.cause), token))
+  }
+  if (err instanceof BrowserCrawlTimeoutError) {
+    return new CrawlerTimeoutError(url, NAVIGATION_TIMEOUT_MS, NAVIGATION_TIMEOUT_MS)
+  }
+  if (err instanceof BrowserCrawlNavigationError) {
+    return new CrawlerNetworkError(url, 0, asError(err.cause))
+  }
+  return err
 }

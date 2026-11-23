@@ -64,19 +64,18 @@ describe('crawlWithBrowser — request interception', () => {
     return page
   }
 
-  it('calls route.continue() for non-http(s) URLs (e.g. data:)', async () => {
+  it('does not abort non-http(s) URLs (e.g. data:)', async () => {
     const page = await setupAndGetPage(false)
     const route = makeMockRoute('data:text/plain,hello')
-    page.fireRoute(route)
-    expect(route.continue).toHaveBeenCalled()
+    await page.fireRoute(route)
+    expect(route.fallback).toHaveBeenCalled()
     expect(route.abort).not.toHaveBeenCalled()
-    expect(route.fallback).not.toHaveBeenCalled()
   })
 
   it('calls route.abort("blockedbyclient") for private IP URLs', async () => {
     const page = await setupAndGetPage(false)
     const route = makeMockRoute('http://192.168.1.1/endpoint')
-    page.fireRoute(route)
+    await page.fireRoute(route)
     expect(route.abort).toHaveBeenCalledWith('blockedbyclient')
     expect(route.continue).not.toHaveBeenCalled()
     expect(route.fallback).not.toHaveBeenCalled()
@@ -85,7 +84,7 @@ describe('crawlWithBrowser — request interception', () => {
   it('calls route.fallback() for SSRF-safe URLs when no blocker is installed', async () => {
     const page = await setupAndGetPage(false)
     const route = makeMockRoute('https://example.com/safe')
-    page.fireRoute(route)
+    await page.fireRoute(route)
     expect(route.fallback).toHaveBeenCalled()
     expect(route.abort).not.toHaveBeenCalled()
     expect(route.continue).not.toHaveBeenCalled()
@@ -94,7 +93,7 @@ describe('crawlWithBrowser — request interception', () => {
   it('calls route.fallback() for SSRF-safe URLs when a blocker is present, deferring to it', async () => {
     const page = await setupAndGetPage(true)
     const route = makeMockRoute('https://example.com/safe')
-    page.fireRoute(route)
+    await page.fireRoute(route)
     expect(route.fallback).toHaveBeenCalled()
     expect(route.abort).not.toHaveBeenCalled()
     expect(route.continue).not.toHaveBeenCalled()
@@ -110,7 +109,7 @@ describe('crawlWithBrowser — request interception', () => {
   it('calls ws.connectToServer() for SSRF-safe WebSocket URLs', async () => {
     const page = await setupAndGetPage(false)
     const ws = makeMockWebSocketRoute('wss://example.com/socket')
-    page.fireWebSocketRoute(ws)
+    await page.fireWebSocketRoute(ws)
     expect(ws.connectToServer).toHaveBeenCalled()
     expect(ws.close).not.toHaveBeenCalled()
   })
@@ -119,7 +118,7 @@ describe('crawlWithBrowser — request interception', () => {
     const page = await setupAndGetPage(false)
     // Fixture string for a mock WebSocketRoute, not a live connection; the test asserts this URL gets blocked.
     const ws = makeMockWebSocketRoute('ws://192.168.1.1/socket')
-    page.fireWebSocketRoute(ws)
+    await page.fireWebSocketRoute(ws)
     expect(ws.close).toHaveBeenCalledWith({ code: 1008, reason: 'blocked by client' })
     expect(ws.connectToServer).not.toHaveBeenCalled()
   })
@@ -127,7 +126,7 @@ describe('crawlWithBrowser — request interception', () => {
   it('closes with code 1008 for WebSocket URLs outside the ws and wss schemes', async () => {
     const page = await setupAndGetPage(false)
     const ws = makeMockWebSocketRoute('https://example.com/socket')
-    page.fireWebSocketRoute(ws)
+    await page.fireWebSocketRoute(ws)
     expect(ws.close).toHaveBeenCalledWith({ code: 1008, reason: 'blocked by client' })
     expect(ws.connectToServer).not.toHaveBeenCalled()
   })
