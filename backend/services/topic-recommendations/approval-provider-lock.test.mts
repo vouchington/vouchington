@@ -1,6 +1,6 @@
 import { createTestTopicRecommendation } from '@voucha/test-helpers/topic-recommendation-fixtures'
-import undici, { Response as UndiciResponse } from 'undici'
 import { describe, expect, it, vi } from 'vitest'
+import * as http from '@modules/utils/http'
 import {
   createTestUser,
   overrideDynamicConfigFieldsForTest,
@@ -32,9 +32,9 @@ describe('approval provider assessment precedes ownership locks', () => {
     await webRiskConfig.waitForInitialization()
     const restore = overrideDynamicConfigFieldsForTest(webRiskConfig, { enabled: true })
     vi.stubEnv('GOOGLE_WEB_RISK_API_KEY', 'test-web-risk-key')
-    const fetch = vi
-      .spyOn(undici, 'fetch')
-      .mockResolvedValue(UndiciResponse.json({ threat: { threatTypes: ['MALWARE'] } }))
+    const externalFetch = vi
+      .spyOn(http, 'getExternalFetch')
+      .mockReturnValue(async () => Response.json({ threat: { threatTypes: ['MALWARE'] } }))
     try {
       await expect(
         approveTopicRecommendation(admin, WEB_PROVENANCE, recommendation),
@@ -42,7 +42,7 @@ describe('approval provider assessment precedes ownership locks', () => {
       expect((await getUrlHostnameByAny(ancestor))?.is_blocked).toBe(true)
       expect(await getTopicByAny(slug)).toBeNull()
     } finally {
-      fetch.mockRestore()
+      externalFetch.mockRestore()
       restore()
       vi.unstubAllEnvs()
     }

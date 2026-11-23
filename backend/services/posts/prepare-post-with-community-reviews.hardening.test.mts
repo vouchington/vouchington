@@ -1,5 +1,5 @@
-import undici, { Response as UndiciResponse } from 'undici'
 import { describe, expect, it, vi } from 'vitest'
+import * as http from '@modules/utils/http'
 import {
   createTestUser,
   overrideDynamicConfigFieldsForTest,
@@ -12,6 +12,8 @@ import { webRiskConfig } from '../web-risk/config.mts'
 import { blockHostname } from '../hostname-blocking/block-hostname.mts'
 import { createPost } from './create.mts'
 
+type ExternalFetch = ReturnType<typeof http.getExternalFetch>
+
 describe('post URL policy across ownership and publication', () => {
   it('persists an assessed source relation without another provider request', async () => {
     const admin = await createTestUser({ administrator: true })
@@ -21,13 +23,14 @@ describe('post URL policy across ownership and publication', () => {
     await webRiskConfig.waitForInitialization()
     const restore = overrideDynamicConfigFieldsForTest(webRiskConfig, { enabled: true })
     vi.stubEnv('GOOGLE_WEB_RISK_API_KEY', 'test-web-risk-key')
-    const fetch = vi.spyOn(undici, 'fetch').mockImplementation(async () => UndiciResponse.json({}))
+    const fetch = vi.fn<ExternalFetch>(async () => Response.json({}))
+    const externalFetch = vi.spyOn(http, 'getExternalFetch').mockReturnValue(fetch)
     try {
       const result = await createPost(admin, WEB_PROVENANCE, { post_type: 'link', url: href })
       expect(await getTestPostCreationSourceUrlId(result.id)).toBe(url!.id)
       expect(fetch).toHaveBeenCalledTimes(1)
     } finally {
-      fetch.mockRestore()
+      externalFetch.mockRestore()
       restore()
       vi.unstubAllEnvs()
     }
@@ -44,10 +47,10 @@ describe('post URL policy across ownership and publication', () => {
     vi.stubEnv('GOOGLE_WEB_RISK_API_KEY', 'test-web-risk-key')
     const requested = Promise.withResolvers<void>()
     const release = Promise.withResolvers<void>()
-    const fetch = vi.spyOn(undici, 'fetch').mockImplementation(async () => {
+    const externalFetch = vi.spyOn(http, 'getExternalFetch').mockReturnValue(async () => {
       requested.resolve()
       await release.promise
-      return UndiciResponse.json({})
+      return Response.json({})
     })
     const creating = createPost(admin, WEB_PROVENANCE, { post_type: 'link', url: href })
       .then(() => null)
@@ -63,7 +66,7 @@ describe('post URL policy across ownership and publication', () => {
       expect((await getUrlHostnameByAny(hostname))?.is_blocked).toBe(true)
     } finally {
       release.resolve()
-      fetch.mockRestore()
+      externalFetch.mockRestore()
       restore()
       vi.unstubAllEnvs()
     }
