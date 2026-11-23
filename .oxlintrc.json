@@ -1520,7 +1520,6 @@
         "**/__tests__/**/*.{mts,ts,tsx}"
       ],
       "rules": {
-        "typescript/no-dynamic-delete": "off",
         "no-mistakes/no-delete-property": "off"
       }
     },

@@ -1,4 +1,4 @@
-import { afterAll, beforeAll } from 'vitest'
+import { afterAll, beforeAll, vi } from 'vitest'
 import http from 'node:http'
 
 import serverApp from '../../backend/entrypoints/api/index.mts'
@@ -49,7 +49,6 @@ export type ClientContentFixtureContext = {
 type FixtureHook = (ctx: ClientContentFixtureContext) => Promise<void>
 
 export type ClientContentRouteHarnessOptions = {
-  unset: (target: object, key: string) => void
   rssFeedItemOptions?: () => { createdAt?: Date }
   afterPrimaryItem?: FixtureHook
   afterStoryLinked?: FixtureHook
@@ -57,14 +56,10 @@ export type ClientContentRouteHarnessOptions = {
 }
 
 export function installClientContentRouteHarness(
-  options: ClientContentRouteHarnessOptions,
+  options: ClientContentRouteHarnessOptions = {},
 ): ClientContentRouteHarness {
   let backendServer: http.Server
-  let previousApiBaseUrl: string | undefined
-  let previousPublicApiBaseUrl: string | undefined
   let previousFetch: typeof globalThis.fetch
-  let hadWindow: boolean
-  let previousWindow: unknown
   let backendBaseUrl: string
   let clientRuntimeActive = false
   let clientCookieValue: string | undefined
@@ -84,18 +79,13 @@ export function installClientContentRouteHarness(
   }
 
   beforeAll(async () => {
-    previousApiBaseUrl = process.env.API_BASE_URL
-    previousPublicApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
-
     backendServer = createWebApiTestServer(serverApp.callback())
     backendBaseUrl = await listenOnFetchSafeLoopback(backendServer)
-    process.env.API_BASE_URL = backendBaseUrl
-    process.env.NEXT_PUBLIC_API_BASE_URL = backendBaseUrl
-    process.env.PLAYWRIGHT_TEST = 'true'
+    vi.stubEnv('API_BASE_URL', backendBaseUrl)
+    vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', backendBaseUrl)
+    vi.stubEnv('PLAYWRIGHT_TEST', 'true')
 
     previousFetch = globalThis.fetch
-    hadWindow = Object.hasOwn(globalThis, 'window')
-    previousWindow = (globalThis as { window?: unknown }).window
     globalThis.fetch = (input, init) => {
       if (!clientRuntimeActive || typeof input !== 'string' || !input.startsWith('/')) {
         return previousFetch(input, init)
@@ -147,23 +137,9 @@ export function installClientContentRouteHarness(
     await new Promise<void>(resolve => {
       backendServer.close(() => resolve())
     })
-    if (previousApiBaseUrl === undefined) {
-      options.unset(process.env, 'API_BASE_URL')
-    } else {
-      process.env.API_BASE_URL = previousApiBaseUrl
-    }
-    if (previousPublicApiBaseUrl === undefined) {
-      options.unset(process.env, 'NEXT_PUBLIC_API_BASE_URL')
-    } else {
-      process.env.NEXT_PUBLIC_API_BASE_URL = previousPublicApiBaseUrl
-    }
-    options.unset(process.env, 'PLAYWRIGHT_TEST')
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
     globalThis.fetch = previousFetch
-    if (hadWindow) {
-      ;(globalThis as { window?: unknown }).window = previousWindow
-    } else {
-      options.unset(globalThis, 'window')
-    }
   })
 
   async function withClientRuntime<T>(
@@ -172,17 +148,13 @@ export function installClientContentRouteHarness(
   ): Promise<T> {
     clientRuntimeActive = true
     clientCookieValue = cookieHeader?.Cookie
-    ;(globalThis as { window?: unknown }).window = {}
+    vi.stubGlobal('window', {})
     try {
       return await run()
     } finally {
       clientRuntimeActive = false
       clientCookieValue = undefined
-      if (hadWindow) {
-        ;(globalThis as { window?: unknown }).window = previousWindow
-      } else {
-        options.unset(globalThis, 'window')
-      }
+      vi.unstubAllGlobals()
     }
   }
 

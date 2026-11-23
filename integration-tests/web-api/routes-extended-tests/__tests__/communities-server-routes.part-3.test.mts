@@ -3,13 +3,8 @@ import * as serverRoutes from '@/lib/api/server'
 import { createTestUser, safeUsername } from '../../../../backend/test-helpers/index.mts'
 import { installRoutesExtendedHarness } from '../../../test-helpers/routes-extended-harness.mts'
 
-function unset(target: object, key: string) {
-  delete (target as Record<string, unknown>)[key]
-}
-
 describe('routes-extended', () => {
   const harness = installRoutesExtendedHarness({
-    unset,
     workerSecret: 'always',
   })
 
