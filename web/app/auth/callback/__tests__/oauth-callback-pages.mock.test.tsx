@@ -12,8 +12,6 @@ vi.mock(
 )
 
 const mockNav = createNavMock()
-const originalCloseDescriptor = Object.getOwnPropertyDescriptor(window, 'close')
-const originalOpenerDescriptor = Object.getOwnPropertyDescriptor(window, 'opener')
 
 const CASES = [
   {
@@ -43,19 +41,12 @@ describe('OAuth callback pages', () => {
     vi.clearAllMocks()
     mockNav.reset()
     mockNav.setSearchParams('code=oauth-code&state=return-state')
-    Object.defineProperty(window, 'opener', {
-      configurable: true,
-      value: { postMessage: vi.fn<VitestLooseMock>() },
-    })
-    Object.defineProperty(window, 'close', {
-      configurable: true,
-      value: vi.fn<VitestLooseMock>(),
-    })
+    vi.stubGlobal('opener', { postMessage: vi.fn<VitestLooseMock>() })
+    vi.stubGlobal('close', vi.fn<VitestLooseMock>())
   })
 
   afterEach(() => {
-    restoreWindowProperty('close', originalCloseDescriptor)
-    restoreWindowProperty('opener', originalOpenerDescriptor)
+    vi.unstubAllGlobals()
   })
 
   for (const { Page, provider, label } of CASES) {
@@ -75,14 +66,3 @@ describe('OAuth callback pages', () => {
     })
   }
 })
-
-function restoreWindowProperty(
-  propertyName: 'close' | 'opener',
-  descriptor: PropertyDescriptor | undefined,
-) {
-  if (descriptor) {
-    Object.defineProperty(window, propertyName, descriptor)
-  } else {
-    delete (window as Window & Partial<Record<typeof propertyName, unknown>>)[propertyName]
-  }
-}

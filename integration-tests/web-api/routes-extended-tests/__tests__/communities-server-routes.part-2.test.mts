@@ -3,13 +3,8 @@ import { randomUUID } from 'node:crypto'
 import * as clientRoutes from '@/lib/api/client'
 import { installRoutesExtendedHarness } from '../../../test-helpers/routes-extended-harness.mts'
 
-function unset(target: object, key: string) {
-  delete (target as Record<string, unknown>)[key]
-}
-
 describe('routes-extended', () => {
   const harness = installRoutesExtendedHarness({
-    unset,
     workerSecret: 'always',
   })
 

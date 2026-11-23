@@ -7,17 +7,12 @@ import {
 } from '../../../../backend/test-helpers/index.mts'
 import { installRoutesExtendedHarness } from '../../../test-helpers/routes-extended-harness.mts'
 
-function unset(target: object, key: string) {
-  delete (target as Record<string, unknown>)[key]
-}
-
 describe('routes-extended', () => {
   let communitySlug: string
   let communitySearchToken: string
   let communityId: string
 
   const harness = installRoutesExtendedHarness({
-    unset,
     workerSecret: 'always',
     async seedCommunity(adminId) {
       communitySearchToken = randomUUID().replace(/-/g, '')

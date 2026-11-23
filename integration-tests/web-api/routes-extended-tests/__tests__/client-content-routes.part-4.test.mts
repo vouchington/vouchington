@@ -15,15 +15,10 @@ import { installClientContentRouteHarness } from '../../../test-helpers/client-c
 
 const integrationClientReads = createIntegrationClientReads(clientRoutes.clientApi)
 
-function unset(target: object, key: string) {
-  delete (target as Record<string, unknown>)[key]
-}
-
 describe('client-content-routes', () => {
   let pendingFlagId = ''
 
   const harness = installClientContentRouteHarness({
-    unset,
     afterPenalty: async ({ admin }) => {
       const flagPost = await createTestPost({ user: admin })
       pendingFlagId = await insertTestVoteIntegrityFlag({ postId: flagPost.id })

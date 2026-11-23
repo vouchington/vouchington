@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import * as jose from 'jose'
 import { EDGE_ANON_SESSION_JWT_ISSUER, signDeviceJwt, signSessionJwt } from '@ts-shared/session-jwt'
 import { encodeJwkSet as encodeJwkSetForEnv } from '@vouchington/session-jwt'
@@ -17,12 +17,9 @@ describe('edge-anon verification', () => {
     const sid = v7()
     const uid = v7()
     const legacyKey = await generatePrivateJwk('legacy-key')
-    const previousEdgePublicKeys = process.env.VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64
-    const previousPublicKeys = process.env.VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64
-    const previousPrivateKeys = process.env.VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64
-    delete process.env.VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64
-    delete process.env.VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64
-    process.env.VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64 = encodeJwkSetForEnv([legacyKey])
+    vi.stubEnv('VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64', undefined)
+    vi.stubEnv('VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64', undefined)
+    vi.stubEnv('VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64', encodeJwkSetForEnv([legacyKey]))
 
     try {
       const deviceToken = await signDeviceJwt(
@@ -46,18 +43,7 @@ describe('edge-anon verification', () => {
         verifyDeviceAndSessionTokens({ deviceToken, sessionToken: forgedUserSessionToken }),
       ).resolves.toBe(false)
     } finally {
-      restoreEnv('VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64', previousEdgePublicKeys)
-      restoreEnv('VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64', previousPublicKeys)
-      restoreEnv('VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64', previousPrivateKeys)
+      vi.unstubAllEnvs()
     }
   })
 })
-
-function restoreEnv(key: string, previousValue: string | undefined): void {
-  if (previousValue === undefined) {
-    delete process.env[key]
-    return
-  }
-
-  process.env[key] = previousValue
-}

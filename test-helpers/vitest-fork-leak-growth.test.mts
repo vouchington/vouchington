@@ -1,10 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { EventEmitter } from 'node:events'
-import {
-  registerPsqlPoolMetrics,
-  type PsqlPoolMetrics,
-  type PsqlPoolSocketHandles,
-} from '../backend/test-helpers/psql-pool-metrics.mts'
+import { registerPsqlPoolMetrics } from '../backend/test-helpers/psql-pool-metrics.mts'
 import { getRegisteredPoolMetrics } from 'vouchington-tooling/vitest-diagnostics'
 
 function fakePsqlPool(
@@ -21,11 +17,8 @@ function fakePsqlPool(
 
 describe('fork leak growth diagnostics', () => {
   it('reads existing PostgreSQL pool metrics without creating a pool', () => {
-    const target = globalThis as typeof globalThis & Record<symbol, unknown>
-    const metricsKey = Symbol.for('vitest-fork-leak-pool-metrics')
-    const handlesKey = Symbol.for('vitest-fork-leak-pool-socket-handles')
-    const previousMetrics = target[metricsKey]
-    const previousHandles = target[handlesKey]
+    vi.stubGlobal(Symbol.for('vitest-fork-leak-pool-metrics'), undefined)
+    vi.stubGlobal(Symbol.for('vitest-fork-leak-pool-socket-handles'), undefined)
     const write = fakePsqlPool(20, 17, 2)
     const read = fakePsqlPool(8, 8, 0)
     const advisoryLock = fakePsqlPool(4, 1, 3)
@@ -63,10 +56,7 @@ describe('fork leak growth diagnostics', () => {
         },
       })
     } finally {
-      if (previousMetrics === undefined) delete target[metricsKey]
-      else target[metricsKey] = previousMetrics as () => PsqlPoolMetrics
-      if (previousHandles === undefined) delete target[handlesKey]
-      else target[handlesKey] = previousHandles as () => PsqlPoolSocketHandles
+      vi.unstubAllGlobals()
     }
   })
 })

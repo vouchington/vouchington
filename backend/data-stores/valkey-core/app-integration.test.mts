@@ -172,13 +172,13 @@ describe('valkey app integration', () => {
     const cacheName = `orders-${crypto.randomUUID()}`
     const bridgeKey = Symbol.for('voucha.valkey.cache-metric-bridge')
     const integrationState = getIntegrationState()
-    const staleBridge = integrationState?.bridge
-    expect(staleBridge).toBeTypeOf('function')
-    if (!staleBridge) throw new Error('Expected cache metric bridge to be initialized')
+    if (!integrationState.bridge) throw new Error('Expected cache metric bridge to be initialized')
+    // A fresh function carries no tag, like a bridge installed before tagging existed.
+    const staleBridge = vi.fn<(metric: unknown) => void>(integrationState.bridge)
+    integrationState.bridge = staleBridge
 
     useAnalyticsLoader(createAnalyticsLoader(emitted))
     valkeyEvents.removeAllListeners('cache:call')
-    delete (staleBridge as unknown as Record<symbol, true | undefined>)[bridgeKey]
     valkeyEvents.on('cache:call', staleBridge)
 
     await reloadValkeyAppIntegration()

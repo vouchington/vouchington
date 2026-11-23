@@ -263,7 +263,8 @@ describe('bounded viewer input plans', () => {
       'requires measured %s on the underlying scan',
       field => {
         const result = fixture()
-        delete (prefix(result).Plans as Node[])[0]![field]
+        const plans = prefix(result).Plans as Node[]
+        plans[0] = Object.fromEntries(Object.entries(plans[0]!).filter(([key]) => key !== field))
         expect(() => assertTopicViewerInputsAreBounded(result)).toThrow('must bound raw reads')
       },
     )
