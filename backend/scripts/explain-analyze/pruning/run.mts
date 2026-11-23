@@ -1,8 +1,8 @@
+import type { ExplainResult } from '@vouchington/explain-plan'
 import { execFile, spawn } from 'node:child_process'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { promisify } from 'node:util'
-import type { ExplainResult } from '@data-stores/psql/explain-analyze'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import {
   createOwnedPruningDatabase,

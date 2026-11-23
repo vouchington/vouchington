@@ -1,5 +1,4 @@
-import type { ExplainResult } from '@data-stores/psql'
-import { collectPlanNodes } from '../plan-nodes.mts'
+import { collectPlanNodes, type ExplainResult } from '@vouchington/explain-plan'
 
 /**
  * A batch delete's `LIMIT n ... FOR UPDATE SKIP LOCKED` pick must run once. A Limit node that

@@ -1,12 +1,11 @@
-import type { ExplainResult } from '@data-stores/psql'
 import {
   collectPlanNodes,
+  type ExplainResult,
+  type PlanNode,
   planNodeUsesIndex,
   processedRows,
-  sequentiallyScanned,
-  baseRelationName,
-  type PlanNode,
-} from './plan-nodes.mts'
+} from '@vouchington/explain-plan'
+import { sequentiallyScanned, baseRelationName } from './plan-nodes.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { executingPartitionLeaves } from './pruning/plan-gate.mts'
 import { getScenarioContract, type PlanExpectation } from './plan-expectations.mts'

@@ -1,6 +1,5 @@
-import type { ExplainResult } from '@data-stores/psql'
+import { collectPlanNodes, type ExplainResult, type PlanNode } from '@vouchington/explain-plan'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
-import { collectPlanNodes, type PlanNode } from '../plan-nodes.mts'
 
 const SCENARIO_IDS = new Set(['copyright-statement-facts', 'copyright-delivery-inputs'])
 // A hashed SubPlan reads its whole relation once per execution, so it must never be the way the

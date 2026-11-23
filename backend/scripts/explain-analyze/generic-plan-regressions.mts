@@ -1,4 +1,4 @@
-import type { ExplainResult } from '@data-stores/psql'
+import type { ExplainResult } from '@vouchington/explain-plan'
 
 const GENERIC_PLAN_MAX_RATIO = 10
 const GENERIC_PLAN_MIN_ADDED_EXECUTION_MS = 200

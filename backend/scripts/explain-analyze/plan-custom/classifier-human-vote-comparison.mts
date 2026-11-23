@@ -1,6 +1,5 @@
-import type { ExplainResult } from '@data-stores/psql'
+import { collectPlanNodes, type ExplainResult } from '@vouchington/explain-plan'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
-import { collectPlanNodes } from '../plan-nodes.mts'
 
 const ALLOWED_INDEXES = new Map<string, readonly string[]>([
   ['classifier-human-vote-comparison-classifier', ['idx_classifier_decision_batches__classifier']],

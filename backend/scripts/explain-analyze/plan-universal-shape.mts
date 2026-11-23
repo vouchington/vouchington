@@ -1,10 +1,10 @@
-import type { ExplainResult } from '@data-stores/psql'
+import { type ExplainResult, type PlanNode, processedRows } from '@vouchington/explain-plan'
 import {
   PARTITION_POLICIES,
   UNBOUNDED_UNPARTITIONED_TABLES,
 } from '@data-stores/psql/schema-growth-registry'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
-import { baseRelationName, processedRows, type PlanNode } from './plan-nodes.mts'
+import { baseRelationName } from './plan-nodes.mts'
 import type { ScenarioPlanContract } from './plan-expectations.mts'
 import { executingPartitionLeaves } from './pruning/plan-gate.mts'
 

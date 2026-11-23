@@ -145,6 +145,7 @@
   },
   "devDependencies": {
     "@services/openai-agents": "workspace:^",
+    "@vouchington/explain-plan": "^0.0.1",
     "husky": "^9.1.7",
     "vouchington-tooling": "^3.6.0"
   }

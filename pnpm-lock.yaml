@@ -4026,6 +4026,9 @@ importers:
       '@services/openai-agents':
         specifier: workspace:^
         version: link:../services/openai-agents
+      '@vouchington/explain-plan':
+        specifier: ^0.0.1
+        version: 0.0.1
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -13095,6 +13098,9 @@ importers:
       '@types/supertest':
         specifier: ^7.2.1
         version: 7.2.1
+      '@vouchington/explain-plan':
+        specifier: ^0.0.1
+        version: 0.0.1
       stripe:
         specifier: ^23.1.0
         version: 23.1.0(@types/node@26.6.6)
@@ -20947,6 +20953,10 @@ packages:
 
   '@vouchington/embeds@0.1.0':
     resolution: {integrity: sha512-bntvy/s7Dvug+vFSUGtAUMeD6DOYgENnZe8V/V2I8bRmjyHU9eP4eRFOw2zpFtGCGfQlQPxDTtKp3HIwtGeIvA==}
+    engines: {node: '>=24.0.0'}
+
+  '@vouchington/explain-plan@0.0.1':
+    resolution: {integrity: sha512-xg2E6aeYhrAgErBQjCd4LApm23gwY2vshHr5mlN0+oFVows5nSdp7wK3Pd66Uk5j0zvNVckKOmHnKbsXMna09A==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/frontmatter@0.0.0':
@@ -29935,6 +29945,8 @@ snapshots:
       '@vouchington/crawler-html': 0.0.1
       '@vouchington/http-transport': 0.1.1
       parse5: 8.1.1
+
+  '@vouchington/explain-plan@0.0.1': {}
 
   '@vouchington/frontmatter@0.0.0':
     dependencies:

@@ -1,23 +1,13 @@
-import type { ExplainResult } from '@data-stores/psql'
+import {
+  assertNoPressureRegressions,
+  type ExplainResult,
+  formatMarkdownReport,
+  type PressureBaseline,
+} from '@vouchington/explain-plan'
 import { assertNoGenericPlanRegressions } from './generic-plan-regressions.mts'
-import {
-  analyzeResult,
-  functionCallReports,
-  getResourcePressureFingerprints,
-} from './plan-warnings.mts'
-import {
-  confirmsRepeatedWalFingerprint,
-  isCheckpointSensitiveWalFingerprint,
-} from './repeated-wal.mts'
-import {
-  RESOURCE_PRESSURE_BASELINE,
-  type ResourcePressureBaseline,
-} from './resource-pressure-baseline.mts'
-import {
-  assertNoNewSeqScans,
-  getExplainResultIdentity,
-  getSeqScanNearTies,
-} from './seq-scan-baseline.mts'
+import { PLAN_ANALYSIS_OPTIONS } from './plan-analysis-options.mts'
+import { RESOURCE_PRESSURE_BASELINE } from './resource-pressure-baseline.mts'
+import { assertNoNewSeqScans, getSeqScanNearTies } from './seq-scan-baseline.mts'
 
 function getUserLabel(name: string): 'baseline' | 'heavy' {
   return name.split(':').some(segment => segment === 'heavy' || segment.startsWith('heavy-'))
@@ -29,46 +19,11 @@ function getDisplayName(name: string): string {
   return name.replace(/:heavy(?=:|$)/, '')
 }
 
-// WAL bytes include checkpoint full-page images, so one capture can cross the threshold while the
-// repeated capture of the same plan does not. Fail when both captures show that fingerprint, or
-// when a node fingerprint and `query:wal-aggregate` trade places. A missing repeat stays
-// fail-closed. Temp, spill, and hash-batch fingerprints still use the first capture.
-function assertNoDisallowedRegressions(
-  results: readonly ExplainResult[],
-  repeatedResults: readonly ExplainResult[],
-  baseline: ResourcePressureBaseline = RESOURCE_PRESSURE_BASELINE,
-): void {
-  const repeatedWalByIdentity = new Map(
-    repeatedResults.map(result => [
-      getExplainResultIdentity(result),
-      new Set(getResourcePressureFingerprints(result).filter(isCheckpointSensitiveWalFingerprint)),
-    ]),
-  )
-  const regressions = results.flatMap(result => {
-    const identity = getExplainResultIdentity(result)
-    const allowed = new Set(baseline[identity] ?? [])
-    const repeatedWal = repeatedWalByIdentity.get(identity)
-    return getResourcePressureFingerprints(result)
-      .filter(fingerprint => !allowed.has(fingerprint))
-      .filter(
-        fingerprint =>
-          !isCheckpointSensitiveWalFingerprint(fingerprint) ||
-          confirmsRepeatedWalFingerprint(fingerprint, repeatedWal),
-      )
-      .map(fingerprint => `${identity}=${fingerprint}`)
-  })
-  if (regressions.length > 0) {
-    throw new Error(
-      `EXPLAIN found new disallowed temp, spill, hash-batch, or WAL pressure: ${regressions.join(', ')}`,
-    )
-  }
-}
-
 export function analyzePairedResults(
   filePath: string,
   results: readonly ExplainResult[],
   repeatedResults: readonly ExplainResult[],
-  baseline: ResourcePressureBaseline = RESOURCE_PRESSURE_BASELINE,
+  baseline: PressureBaseline = RESOURCE_PRESSURE_BASELINE,
 ): void {
   console.error(`Reading: ${filePath}`)
   if (results.length === 0 || repeatedResults.length === 0)
@@ -81,116 +36,16 @@ export function analyzePairedResults(
     console.error(
       `Sequential scans within a near-tie of an index plan (advisory): ${nearTies.join(',')}`,
     )
-  assertNoDisallowedRegressions(results, repeatedResults, baseline)
+  assertNoPressureRegressions(results, repeatedResults, baseline)
   assertNoGenericPlanRegressions(results, repeatedResults)
   console.error(`Loaded ${results.length} query results`)
 
-  const sorted = results.toSorted((a, b) => b.execution_time_ms - a.execution_time_ms)
-
-  // Print markdown summary table
-  console.log('## EXPLAIN ANALYZE Results\n')
-  console.log('| Query | User | Exec (ms) | Plan (ms) | Warnings |')
-  console.log('|-------|------|----------:|----------:|----------|')
-
-  for (const r of sorted) {
-    const displayName = getDisplayName(r.name)
-    const user = getUserLabel(r.name)
-    const warnings = analyzeResult(r)
-    const warningParts: string[] = []
-    if (warnings.seqScans.length > 0) {
-      warningParts.push(`Seq scan: ${warnings.seqScans.map(s => s.relationName).join(', ')}`)
-    }
-    if (warnings.estimateMismatches.length > 0) {
-      const worst = warnings.estimateMismatches[0]
-      warningParts.push(`Est. mismatch ${worst.ratio.toFixed(0)}x on ${worst.relationName}`)
-    }
-    if (warnings.appendOverhead.length > 0) {
-      warningParts.push(
-        `Append overhead: ${warnings.appendOverhead.map(a => `${a.childCount} children`).join(', ')}`,
-      )
-    }
-    if (warnings.highPlanningRatio) {
-      warningParts.push(
-        `High plan ratio: ${r.planning_time_ms.toFixed(1)}ms/${r.execution_time_ms.toFixed(1)}ms`,
-      )
-    }
-    if (warnings.highSharedBuffers.length > 0) {
-      const worst = warnings.highSharedBuffers[0]
-      warningParts.push(
-        `High buffers: ${worst.sharedBlocks} shared on ${worst.relationName ?? worst.nodeType}`,
-      )
-    }
-    const warningStr = warningParts.join('; ') || '-'
-    console.log(
-      `| ${displayName} | ${user} | ${r.execution_time_ms.toFixed(1)} | ${r.planning_time_ms.toFixed(1)} | ${warningStr} |`,
-    )
-  }
-
-  const callReports = functionCallReports(sorted)
-  if (callReports.length > 0) {
-    console.log('\n### Function-call findings\n')
-    for (const { result, busiest } of callReports) {
-      const detail = busiest
-        ? `${busiest.funcname} called ${busiest.calls} times`
-        : 'incomplete: parallel workers omit calls from leader-local counts'
-      console.log(`- ${result.name}: ${detail}`)
-    }
-  }
-
-  // Print detailed warnings section
-  const queriesWithWarnings = sorted.filter(r => {
-    const w = analyzeResult(r)
-    return (
-      w.seqScans.length > 0 ||
-      w.estimateMismatches.length > 0 ||
-      w.appendOverhead.length > 0 ||
-      w.highPlanningRatio ||
-      w.highSharedBuffers.length > 0
-    )
-  })
-
-  if (queriesWithWarnings.length > 0) {
-    console.log('\n### Warnings\n')
-    for (const r of queriesWithWarnings) {
-      const warnings = analyzeResult(r)
-      console.log(
-        `**${r.name}** (exec ${r.execution_time_ms.toFixed(1)}ms, plan ${r.planning_time_ms.toFixed(1)}ms)\n`,
-      )
-
-      if (warnings.seqScans.length > 0) {
-        for (const s of warnings.seqScans) {
-          console.log(
-            `- Seq scan on \`${s.relationName}\` (${s.scannedRows} rows scanned, ${s.actualRows} rows output)`,
-          )
-        }
-      }
-      if (warnings.estimateMismatches.length > 0) {
-        for (const e of warnings.estimateMismatches) {
-          console.log(
-            `- Row estimate mismatch: ${e.nodeType} on \`${e.relationName}\` — estimated ${e.planRows}, actual ${e.actualRows} (${e.ratio.toFixed(0)}x)`,
-          )
-        }
-      }
-      if (warnings.appendOverhead.length > 0) {
-        for (const a of warnings.appendOverhead) {
-          console.log(`- Append node overhead: ${a.childCount} children (${a.nodeType})`)
-        }
-      }
-      if (warnings.highPlanningRatio) {
-        console.log(
-          `- High planning:execution ratio: ${r.planning_time_ms.toFixed(1)}ms planning vs ${r.execution_time_ms.toFixed(1)}ms execution`,
-        )
-      }
-      if (warnings.highSharedBuffers.length > 0) {
-        for (const b of warnings.highSharedBuffers) {
-          console.log(
-            `- High shared buffers: ${b.nodeType} on \`${b.relationName ?? 'unknown'}\` touched ${b.sharedBlocks} shared blocks (${b.sharedHitBlocks} hit, ${b.sharedReadBlocks} read, ${b.sharedDirtiedBlocks} dirtied, ${b.sharedWrittenBlocks} written)`,
-          )
-        }
-      }
-      console.log('')
-    }
-  }
-
-  console.log(`\n*${results.length} queries analyzed from ${filePath}*`)
+  console.log(
+    formatMarkdownReport(results, {
+      ...PLAN_ANALYSIS_OPTIONS,
+      source: filePath,
+      displayName: getDisplayName,
+      columns: [{ header: 'User', value: result => getUserLabel(result.name) }],
+    }),
+  )
 }

@@ -1,5 +1,9 @@
-import type { ExplainResult } from '@data-stores/psql'
-import { getLargeTableSeqScanRelations } from './plan-warnings.mts'
+import {
+  type ExplainResult,
+  getExplainResultIdentity,
+  getLargeTableSeqScanRelations,
+} from '@vouchington/explain-plan'
+import { PLAN_ANALYSIS_OPTIONS } from './plan-analysis-options.mts'
 import { BASELINE_FINGERPRINTS } from './seq-scan-baseline-data.mts'
 import {
   isSeqScanNearTie,
@@ -22,15 +26,6 @@ for (const fingerprint of BASELINE_FINGERPRINTS) {
 }
 export const SEQ_SCAN_BASELINE: SeqScanBaseline = Object.fromEntries(baselineByIdentity)
 
-export function getExplainResultIdentity(result: ExplainResult): string {
-  return [
-    result.scenario_id ?? 'unscoped',
-    result.capture_index ?? 0,
-    result.name,
-    result.plan_cache_mode ?? 'auto',
-  ].join('|')
-}
-
 // The scan gate fails a fingerprint seen in both passes, or a baselined one absent from both, so
 // the repeated pass re-samples the relations the first pass scanned and the baselined relations it
 // skipped. Re-analyzing every other large relation a plan touched took most of the run (#3402).
@@ -41,7 +36,7 @@ export function getResampleRelations(
   return [
     ...new Set(
       results.flatMap(result => [
-        ...getLargeTableSeqScanRelations(result),
+        ...getLargeTableSeqScanRelations(result, PLAN_ANALYSIS_OPTIONS),
         ...(baseline[getExplainResultIdentity(result)] ?? []),
       ]),
     ),
@@ -138,7 +133,7 @@ function scanFingerprints(results: readonly ExplainResult[]): Set<string> {
   const observed = new Set<string>()
   for (const result of results) {
     const identity = getExplainResultIdentity(result)
-    for (const relation of getLargeTableSeqScanRelations(result))
+    for (const relation of getLargeTableSeqScanRelations(result, PLAN_ANALYSIS_OPTIONS))
       observed.add(`${identity}:${relation}`)
   }
   return observed

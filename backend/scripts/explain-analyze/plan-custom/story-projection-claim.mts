@@ -1,5 +1,9 @@
-import type { ExplainResult } from '@data-stores/psql'
-import { collectPlanNodes, processedRows, type PlanNode } from '../plan-nodes.mts'
+import {
+  collectPlanNodes,
+  type ExplainResult,
+  type PlanNode,
+  processedRows,
+} from '@vouchington/explain-plan'
 
 /** One claim walks a single index ordered row. A sort may only see that one candidate. */
 export function assertStoryProjectionClaimCandidates(result: ExplainResult): void {

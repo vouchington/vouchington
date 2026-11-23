@@ -1,4 +1,5 @@
-import { baseRelationName, collectPlanNodes, processedRows, type PlanNode } from '../plan-nodes.mts'
+import { collectPlanNodes, type PlanNode, processedRows } from '@vouchington/explain-plan'
+import { baseRelationName } from '../plan-nodes.mts'
 
 import { validTopicViewerPrefixCondition } from './topic-viewer-prefix-condition.mts'
 

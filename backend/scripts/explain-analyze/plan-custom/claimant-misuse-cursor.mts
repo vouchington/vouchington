@@ -1,5 +1,4 @@
-import type { ExplainResult } from '@data-stores/psql'
-import { collectPlanNodes } from '../plan-nodes.mts'
+import { collectPlanNodes, type ExplainResult } from '@vouchington/explain-plan'
 
 const CLAIMANT_NOTICES_INDEX = 'idx_copyright_notices__claimant_user'
 

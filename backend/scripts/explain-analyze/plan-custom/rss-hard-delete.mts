@@ -1,5 +1,4 @@
-import type { ExplainResult } from '@data-stores/psql'
-import { collectPlanNodes } from '../plan-nodes.mts'
+import { collectPlanNodes, type ExplainResult } from '@vouchington/explain-plan'
 
 /** A resumed recovery must seek its cursor inside the partial index, never filter a prefix. */
 export function assertRssHardDeleteRecoverySeek(result: ExplainResult): void {

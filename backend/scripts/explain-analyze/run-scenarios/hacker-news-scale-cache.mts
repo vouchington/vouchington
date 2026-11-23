@@ -1,5 +1,6 @@
-import { explainAnalyze, write, type ExplainPlanCacheMode } from '@data-stores/psql'
-import { collectPlanNodes } from '../plan-nodes.mts'
+import { collectPlanNodes, type ExplainPlanCacheMode } from '@vouchington/explain-plan'
+import { write } from '@data-stores/psql'
+import { explainAnalyze } from '@voucha/test-helpers/explain-analyze'
 import type { BeforeExplain } from '../capture-passes.mts'
 
 export type HackerNewsCacheState = 'cold' | 'warm'

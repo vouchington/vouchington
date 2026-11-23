@@ -1,6 +1,5 @@
-import type { ExplainResult } from '@data-stores/psql'
+import { collectPlanNodes, type ExplainResult } from '@vouchington/explain-plan'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
-import { collectPlanNodes } from '../plan-nodes.mts'
 
 const EMAIL_INDEX = 'idx_user_email_addresses__email_primary'
 

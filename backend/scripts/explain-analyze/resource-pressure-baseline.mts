@@ -1,4 +1,4 @@
-export type ResourcePressureBaseline = Readonly<Record<string, readonly string[]>>
+import type { PressureBaseline } from '@vouchington/explain-plan'
 
 // Add an exact query identity and pressure fingerprint only after validating that the pressure is
 // intentional. A different node, relation, or pressure kind remains a new regression.
@@ -18,4 +18,4 @@ export type ResourcePressureBaseline = Readonly<Record<string, readonly string[]
 // This gate is fail-closed with an empty baseline: if the seed grows enough to push this sort
 // (or any other) past 32MB, CI will catch it as a new regression rather than silently matching a
 // stale allowance.
-export const RESOURCE_PRESSURE_BASELINE: ResourcePressureBaseline = {}
+export const RESOURCE_PRESSURE_BASELINE: PressureBaseline = {}

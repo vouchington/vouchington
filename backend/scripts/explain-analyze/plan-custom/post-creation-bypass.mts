@@ -1,6 +1,6 @@
+import { collectPlanNodes, type ExplainResult } from '@vouchington/explain-plan'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
-import type { ExplainResult } from '@data-stores/psql'
-import { baseRelationName, collectPlanNodes } from '../plan-nodes.mts'
+import { baseRelationName } from '../plan-nodes.mts'
 
 const POST_ID_PREDICATE = /\bWHERE\s+id\s*=\s*\$[1-9]\d*/iu
 const POST_ID_INDEX_CONDITION = /\bid\s*=/iu

@@ -1,5 +1,5 @@
+import type { ExplainResult } from '@vouchington/explain-plan'
 import { describe, expect, it } from 'vitest'
-import type { ExplainResult } from '@data-stores/psql'
 import { assertBatchPickEvaluatedOnce } from './batch-pick-once.mts'
 
 function result(plans: Record<string, unknown>[]): ExplainResult {

@@ -1,7 +1,7 @@
+import { collectPlanNodes, type ExplainResult, processedRows } from '@vouchington/explain-plan'
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { ExplainResult } from '@data-stores/psql'
-import { baseRelationName, collectPlanNodes, processedRows } from '../plan-nodes.mts'
+import { baseRelationName } from '../plan-nodes.mts'
 import { getResults, OUTPUT_DIR } from '../run-support.mts'
 import type { HackerNewsScaleFixture } from '../seed-data/hacker-news-scale-fixture.mts'
 

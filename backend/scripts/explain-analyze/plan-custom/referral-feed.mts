@@ -1,5 +1,4 @@
-import type { ExplainResult } from '@data-stores/psql'
-import { processedRows, type PlanNode } from '../plan-nodes.mts'
+import { type ExplainResult, type PlanNode, processedRows } from '@vouchington/explain-plan'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const inspectionBounds: Readonly<Record<string, number>> = {

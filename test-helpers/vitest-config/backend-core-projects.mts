@@ -47,6 +47,7 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
         '**/node_modules/**',
         '**/.git/**',
         'backend/test-helpers/election-vote-stats.test.mts',
+        'backend/test-helpers/explain-analyze.test.mts',
         'backend/test-helpers/psql-pool-metrics.test.mts',
         'backend/test-helpers/post-search-query-syntax.test.mts',
         'backend/test-helpers/dynamic-config.test.mts',

@@ -1,5 +1,5 @@
+import type { ExplainResult } from '@vouchington/explain-plan'
 import { describe, expect, it } from 'vitest'
-import type { ExplainResult } from '@data-stores/psql'
 import { getTopicsWorkLimit } from '@services/topics/work-limits'
 import { buildTopicViewerDiscussionInputs } from '@services/topics/metrics-viewer-discussions'
 import { assertTopicViewerInputsAreBounded } from './topic-viewer-bounded-inputs.mts'

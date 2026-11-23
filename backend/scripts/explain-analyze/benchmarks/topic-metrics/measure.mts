@@ -1,4 +1,4 @@
-import type { ExplainPlanCacheMode, ExplainResult } from '@data-stores/psql'
+import type { ExplainPlanCacheMode, ExplainResult } from '@vouchington/explain-plan'
 import type { TopicMetrics } from '@services/topics/types'
 import { effectiveRows, maximum, measureBurst, measureSequential, summarize } from './sampling.mts'
 

@@ -1,11 +1,10 @@
 import { gracefulShutdown } from '@data-stores/graceful-shutdown'
+import { beginTransaction, write } from '@data-stores/psql'
 import {
   disableQueryCapture,
   enableQueryCapture,
-  beginTransaction,
   getCapturedQueries,
-  write,
-} from '@data-stores/psql'
+} from '@voucha/test-helpers/explain-analyze'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import {
   getRelationLimitState,
