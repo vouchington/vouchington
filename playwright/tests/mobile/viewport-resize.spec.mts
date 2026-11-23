@@ -11,10 +11,30 @@ import {
 
 const MOBILE = MOBILE_VIEWPORTS['iphone-se']
 
-const KEY_PAGES: { name: string; path: () => string; requiresAuth: boolean }[] = [
-  { name: 'landing', path: () => `/@${TEST_USER_USERNAME}`, requiresAuth: false },
-  { name: 'discussions', path: () => '/discussions', requiresAuth: false },
-  { name: 'post-form', path: () => '/data-points/create', requiresAuth: true },
+const KEY_PAGES: {
+  toMobileTitle: string
+  toDesktopTitle: string
+  path: () => string
+  requiresAuth: boolean
+}[] = [
+  {
+    toMobileTitle: 'landing: no horizontal scroll after resize to mobile',
+    toDesktopTitle: 'landing: no horizontal scroll after resize to desktop',
+    path: () => `/@${TEST_USER_USERNAME}`,
+    requiresAuth: false,
+  },
+  {
+    toMobileTitle: 'discussions: no horizontal scroll after resize to mobile',
+    toDesktopTitle: 'discussions: no horizontal scroll after resize to desktop',
+    path: () => '/discussions',
+    requiresAuth: false,
+  },
+  {
+    toMobileTitle: 'post-form: no horizontal scroll after resize to mobile',
+    toDesktopTitle: 'post-form: no horizontal scroll after resize to desktop',
+    path: () => '/data-points/create',
+    requiresAuth: true,
+  },
 ]
 
 test.describe('Viewport resize stability', () => {
@@ -26,10 +46,10 @@ test.describe('Viewport resize stability', () => {
         expect(requireTestValue(response, 'Expected landing page response').status()).toBe(200)
       })
 
-      for (const { name, path, requiresAuth } of KEY_PAGES) {
+      for (const { toMobileTitle, path, requiresAuth } of KEY_PAGES) {
         if (requiresAuth) continue
 
-        test(`${name}: no horizontal scroll after resize to mobile`, async ({ page }) => {
+        test(toMobileTitle, async ({ page }) => {
           await page.setViewportSize(DESKTOP_VIEWPORT)
 
           await navigateTo(page, path())
@@ -46,10 +66,10 @@ test.describe('Viewport resize stability', () => {
     test.describe('authenticated pages', () => {
       test.use({ storageState: AUTH_STATE })
 
-      for (const { name, path, requiresAuth } of KEY_PAGES) {
+      for (const { toMobileTitle, path, requiresAuth } of KEY_PAGES) {
         if (!requiresAuth) continue
 
-        test(`${name}: no horizontal scroll after resize to mobile`, async ({ page }) => {
+        test(toMobileTitle, async ({ page }) => {
           await page.setViewportSize(DESKTOP_VIEWPORT)
 
           await navigateTo(page, path())
@@ -72,10 +92,10 @@ test.describe('Viewport resize stability', () => {
         expect(requireTestValue(response, 'Expected landing page response').status()).toBe(200)
       })
 
-      for (const { name, path, requiresAuth } of KEY_PAGES) {
+      for (const { toDesktopTitle, path, requiresAuth } of KEY_PAGES) {
         if (requiresAuth) continue
 
-        test(`${name}: no horizontal scroll after resize to desktop`, async ({ page }) => {
+        test(toDesktopTitle, async ({ page }) => {
           await page.setViewportSize(MOBILE)
 
           await navigateTo(page, path())
@@ -92,10 +112,10 @@ test.describe('Viewport resize stability', () => {
     test.describe('authenticated pages', () => {
       test.use({ storageState: AUTH_STATE })
 
-      for (const { name, path, requiresAuth } of KEY_PAGES) {
+      for (const { toDesktopTitle, path, requiresAuth } of KEY_PAGES) {
         if (!requiresAuth) continue
 
-        test(`${name}: no horizontal scroll after resize to desktop`, async ({ page }) => {
+        test(toDesktopTitle, async ({ page }) => {
           await page.setViewportSize(MOBILE)
 
           await navigateTo(page, path())

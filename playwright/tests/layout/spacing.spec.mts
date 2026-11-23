@@ -17,11 +17,13 @@ test.describe('Layout spacing', () => {
     } as const
 
     for (const [name, viewport] of Object.entries(viewports)) {
-      test(`discussions page at ${name} (${viewport.width}px)`, async ({ page }) => {
-        await page.setViewportSize(viewport)
-        const response = await page.goto('/discussions')
-        expect(response?.status()).toBe(200)
-        await assertNoHorizontalScroll(page)
+      test.describe(name, () => {
+        test('discussions page', async ({ page }) => {
+          await page.setViewportSize(viewport)
+          const response = await page.goto('/discussions')
+          expect(response?.status()).toBe(200)
+          await assertNoHorizontalScroll(page)
+        })
       })
     }
   })

@@ -153,27 +153,27 @@ test.describe('Post Detail Pages', () => {
   })
 
   for (const { type, segment, id } of POST_TYPE_CASES) {
-    test(`Posted by byline appears below content on ${type}`, async ({ page }) => {
-      await navigateTo(page, `/${segment}/${id}`)
+    test.describe(type, () => {
+      test('Posted by byline appears below content', async ({ page }) => {
+        await navigateTo(page, `/${segment}/${id}`)
 
-      const heading = page.getByTestId('post-detail-heading')
-      const byline = page.getByTestId('post-detail-byline').first()
-      await expect(heading).toBeVisible()
-      await expect(byline).toBeVisible()
+        const heading = page.getByTestId('post-detail-heading')
+        const byline = page.getByTestId('post-detail-byline').first()
+        await expect(heading).toBeVisible()
+        await expect(byline).toBeVisible()
 
-      const headingBox = await heading.boundingBox()
-      const bylineBox = await byline.boundingBox()
-      expect(headingBox).not.toBeNull()
-      expect(bylineBox).not.toBeNull()
-      expect(bylineBox!.y).toBeGreaterThanOrEqual(headingBox!.y + headingBox!.height)
-    })
-  }
+        const headingBox = await heading.boundingBox()
+        const bylineBox = await byline.boundingBox()
+        expect(headingBox).not.toBeNull()
+        expect(bylineBox).not.toBeNull()
+        expect(bylineBox!.y).toBeGreaterThanOrEqual(headingBox!.y + headingBox!.height)
+      })
 
-  for (const { type, segment, id } of POST_TYPE_CASES) {
-    test(`Manage Tags tab visible on ${type} for authenticated user`, async ({ page }) => {
-      await navigateTo(page, `/${segment}/${id}`)
+      test('Manage Tags tab visible for authenticated user', async ({ page }) => {
+        await navigateTo(page, `/${segment}/${id}`)
 
-      await expect(page.getByTestId('post-detail-tab-manage-tags')).toBeVisible()
+        await expect(page.getByTestId('post-detail-tab-manage-tags')).toBeVisible()
+      })
     })
   }
 

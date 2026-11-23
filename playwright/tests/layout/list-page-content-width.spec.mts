@@ -18,17 +18,24 @@ test.describe('List page content width matches header when columns collapsed', (
 
   // Representative subset of PostListPage routes (also covers /stories, /reviews, /data-points
   // which share the same PostListPage component and are not exhaustively listed here)
-  const postListPages = ['/discussions', '/posts', '/stories', '/reviews', '/data-points']
+  const postListPages = [
+    { path: '/discussions', title: '/discussions content wrapper spans the full 1200px column' },
+    { path: '/posts', title: '/posts content wrapper spans the full 1200px column' },
+    { path: '/stories', title: '/stories content wrapper spans the full 1200px column' },
+    { path: '/reviews', title: '/reviews content wrapper spans the full 1200px column' },
+    { path: '/data-points', title: '/data-points content wrapper spans the full 1200px column' },
+  ]
 
   // Representative subset of TopicListPage routes (also covers /cards, /rewards-programs,
   // /referral-programs, /spending-categories which share the same component).
   // /sources uses PageWithAside directly (no TopicListPage) but is included as a no-aside variant.
-  const topicListPages = ['/topics', '/sources']
+  const topicListPages = [
+    { path: '/topics', title: '/topics content wrapper spans the full 1200px column' },
+    { path: '/sources', title: '/sources content wrapper spans the full 1200px column' },
+  ]
 
-  for (const path of [...postListPages, ...topicListPages]) {
-    test(`${path} content wrapper spans the full 1200px column after collapsing sidebar + aside`, async ({
-      page,
-    }) => {
+  for (const { path, title } of [...postListPages, ...topicListPages]) {
+    test(title, async ({ page }) => {
       await page.setViewportSize(WIDE_VIEWPORT)
       await navigateTo(page, path)
 
