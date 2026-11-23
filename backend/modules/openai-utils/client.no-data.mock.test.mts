@@ -28,9 +28,9 @@ describe('openai client', () => {
     vi.stubEnv('OPENAI_API_KEY', '')
     try {
       // Any property access forces the Proxy to lazily construct the client (see client.mts).
-      expect(() => void (openaiClient as unknown as Record<string, unknown>).apiKey).toThrow(
-        MissingModelClientCredentialError,
-      )
+      expect(() => {
+        void (openaiClient as unknown as Record<string, unknown>).apiKey
+      }).toThrow(MissingModelClientCredentialError)
       expect(openAIConstructorMock).not.toHaveBeenCalled()
       vi.stubEnv('OPENAI_API_KEY', 'test-key')
       void (openaiClient as unknown as Record<string, unknown>).apiKey

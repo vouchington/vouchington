@@ -27,7 +27,9 @@ export const taggingEfficiencyDriver: EfficiencyDriver = {
       candidates: topicCount,
       effects: () => readSubjectTopicRelationFacts(fixture.subject),
       // A topic nearer than the captured ones: a later search finds it, the receipt never asks.
-      addCandidate: async () => void (await createNearbyTopic(fixture.embedding, 0.0001)),
+      addCandidate: async () => {
+        await createNearbyTopic(fixture.embedding, 0.0001)
+      },
     }
   },
   executeWithoutCompleting: run =>

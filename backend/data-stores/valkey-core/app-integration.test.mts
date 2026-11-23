@@ -5,6 +5,7 @@ import './app-integration.mts'
 import { reloadValkeyAppIntegration } from '../../test-helpers/valkey-app-integration.mts'
 
 type EmittedAnalyticsEvent = [string, Record<string, unknown>]
+type Emit = (event: string, payload: Record<string, unknown>) => void | Promise<void>
 const metric = { cacheName: 'u', batch: false, hits: 0, misses: 1, bloomMisses: 0, durationMs: 1 }
 function emitCacheMetric(cacheName: string, overrides: Partial<typeof metric> = {}) {
   valkeyEvents.emit('cache:call', { ...metric, ...overrides, cacheName })
@@ -32,10 +33,9 @@ function useAnalyticsLoader(loader: IntegrationState['loadAnalytics']) {
 
 function createAnalyticsLoader(
   emitted: EmittedAnalyticsEvent[],
-  emit: (event: string, payload: Record<string, unknown>) => void | Promise<void> = (
-    event,
-    payload,
-  ) => void emitted.push([event, payload]),
+  emit: Emit = (event, payload) => {
+    emitted.push([event, payload])
+  },
 ) {
   return async () =>
     ({
@@ -280,11 +280,11 @@ describe('valkey app integration', () => {
       throw reportingError
     })
     useAnalyticsLoader(
-      createAnalyticsLoader(emitted, (event, payload) =>
-        payload.cache_name === 'u'
-          ? Promise.reject(emitError)
-          : delayed.promise.then(() => void emitted.push([event, payload])),
-      ),
+      createAnalyticsLoader(emitted, async (event, payload) => {
+        if (payload.cache_name === 'u') throw emitError
+        await delayed.promise
+        emitted.push([event, payload])
+      }),
     )
     emitCacheMetric('u')
     emitCacheMetric('delayed')
