@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeCommunity, makeCommunityResponse } from '@/test-helpers/api-responses/communities'
+import {
+  makeCommunity,
+  makeCommunityMember,
+  makeCommunityResponse,
+} from '@/test-helpers/api-responses/communities'
 import type { CommunityMember } from '@/types/api-responses'
 import { requireCommunityStaff } from './require-community-staff'
 
@@ -24,18 +28,7 @@ vi.mock(import('next/navigation'), () => ({
 const community = makeCommunity()
 
 function membership(role: CommunityMember['role'], removedAt: string | null = null) {
-  return {
-    __entity_type: 'community_member',
-    id: 'member-1',
-    community_id: community.id,
-    user_id: 'user-1',
-    role,
-    approved_by_id: null,
-    created_at: '2026-01-01T00:00:00.000Z',
-    updated_at: '2026-01-01T00:00:00.000Z',
-    removed_at: removedAt,
-    removed_by_id: null,
-  } satisfies CommunityMember
+  return makeCommunityMember({ role, removed_at: removedAt })
 }
 
 describe('requireCommunityStaff', () => {

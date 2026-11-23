@@ -3,6 +3,7 @@ import type {
   Community,
   CommunityAiAgent,
   CommunityAiAgentResponseBody,
+  CommunityMember,
   CommunityMetrics,
   CommunityInvite,
   CommunityResponseBody,
@@ -68,6 +69,22 @@ export function makeCommunitiesSearchResponse({
       ? {}
       : { pending_application_community_ids: pendingApplicationCommunityIds }),
     ...(bookmarks === undefined ? {} : { bookmarks }),
+  }
+}
+
+export function makeCommunityMember(overrides: Partial<CommunityMember> = {}): CommunityMember {
+  return {
+    __entity_type: 'community_member',
+    id: 'member-1',
+    community_id: 'community-1',
+    user_id: 'user-1',
+    role: 'member',
+    approved_by_id: null,
+    created_at: '2026-01-01T00:00:00.000Z',
+    updated_at: '2026-01-01T00:00:00.000Z',
+    removed_at: null,
+    removed_by_id: null,
+    ...overrides,
   }
 }
 

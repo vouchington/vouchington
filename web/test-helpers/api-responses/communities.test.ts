@@ -4,6 +4,7 @@ import {
   makeCommunity,
   makeCommunityAiAgent,
   makeCommunityAiAgentResponse,
+  makeCommunityMember,
   makeCommunityMetrics,
   makeCommunityResponse,
 } from './communities'
@@ -82,6 +83,11 @@ describe('community API response factories', () => {
     const response = makeCommunityResponse({ communityMetrics: null })
 
     expect(response.community_metrics).toBeNull()
+  })
+
+  it('builds an active community member with role overrides', () => {
+    expect(makeCommunityMember()).toMatchObject({ role: 'member', removed_at: null })
+    expect(makeCommunityMember({ role: 'owner' }).role).toBe('owner')
   })
 
   it('builds a typed community AI-agent response', () => {
