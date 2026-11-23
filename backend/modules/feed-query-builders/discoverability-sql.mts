@@ -24,14 +24,12 @@ export function itemHasDiscoverableSourceSql(
     SELECT 1
     FROM rss_feed_item_sources rfis
     JOIN rss_feeds rf ON rf.id = rfis.rss_feed_id
-    JOIN view_rss_feed_current_states current_state
-      ON current_state.rss_feed_id = rf.id
     WHERE rfis.rss_feed_item_id = `
   stmt.append(itemColumnSql)
   stmt.append(sql`
       AND rf.deleted_at IS NULL
-      AND current_state.is_enabled = TRUE
-      AND current_state.is_discoverable = TRUE
+      AND rf.is_enabled = TRUE
+      AND rf.is_discoverable = TRUE
   `)
   stmt.append(sourceEligibility).append(sql`)`)
   return stmt
