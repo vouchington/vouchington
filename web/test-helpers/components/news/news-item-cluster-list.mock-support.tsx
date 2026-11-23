@@ -34,7 +34,7 @@ vi.mock(import('@/components/shared/infinite-scroll'), () => ({
     children: ReactNode
     hasNextPage: boolean
     endCursor: string | null
-    onLoadMore: () => Promise<boolean>
+    onLoadMore: () => Promise<boolean | void>
   }) => (
     <div>
       {children}
