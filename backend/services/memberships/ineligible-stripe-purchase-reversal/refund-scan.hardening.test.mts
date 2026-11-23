@@ -58,6 +58,19 @@ describe('durable Stripe refund scan hardening', () => {
     expect(cycles).toEqual([expected, expected])
   })
 
+  it('refuses to register a scan against a cycle generation that has been rotated', async () => {
+    const fixture = await createRefundScanCase()
+    const oldCycle = await getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)
+    await completeStripeRefundScanCycle(oldCycle)
+    const newCycle = await getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)
+
+    await expect(getOrCreateStripeRefundScan(oldCycle, fixture.target)).rejects.toThrow()
+
+    const scan = await getOrCreateStripeRefundScan(newCycle, fixture.target)
+    expect(newCycle.generation).toBe(oldCycle.generation + 1)
+    expect(scan.registeredCycleGeneration).toBe(newCycle.generation)
+  })
+
   it('refuses to complete a cycle with an unverified registered target', async () => {
     const fixture = await createRefundScanCase()
     const cycle = await getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)
