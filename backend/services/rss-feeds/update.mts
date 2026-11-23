@@ -44,7 +44,9 @@ export const updateRssFeedById = async (
       await assertTopicHasHostname(changes.topic_id, { query })
     }
     const existing = await query<{ id: string; topic_id: string }>(
-      sql`/* updateRssFeedById:lock */ SELECT id, topic_id FROM rss_feeds WHERE id = ${id} FOR UPDATE`,
+      changes.topic_id === undefined && stateChanges.length === 0
+        ? sql`/* updateRssFeedById:exists */ SELECT id, topic_id FROM rss_feeds WHERE id = ${id}`
+        : sql`/* updateRssFeedById:lock */ SELECT id, topic_id FROM rss_feeds WHERE id = ${id} FOR UPDATE`,
     )
     if (existing.rows.length === 0) return null
     const previousTopicId = existing.rows[0]!.topic_id

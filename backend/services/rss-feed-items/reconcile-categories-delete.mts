@@ -5,10 +5,7 @@ import {
   retractUnsupportedCategorizerVotes,
   type StaleCategory,
 } from './reconcile-category-votes.mts'
-import {
-  lockRssFeedItemsForStoryPublicationChanges,
-  recordStoryPublicationChangesForCategoryTopics,
-} from './story-publication-change.mts'
+import { recordStoryPublicationChangesForCategoryTopics } from './story-publication-change.mts'
 import { recordTopicAliasPublicationWork } from '@services/post-publication'
 
 export async function deleteStaleCategoriesAndRetractVotes(
@@ -16,9 +13,6 @@ export async function deleteStaleCategoriesAndRetractVotes(
   query: TransactionQuery,
 ): Promise<{ staleCategories: StaleCategory[]; hasMore: boolean }> {
   const limit = getRssFeedItemsWorkLimit('category_clear_batch_size')
-  const itemIds = snapshots.map(snapshot => snapshot.rss_feed_item_id)
-  // ast-grep-ignore: no-three-sequential-awaits -- lock the rss_feed_items rows this writer updates before selecting and deleting their stale category keys
-  await lockRssFeedItemsForStoryPublicationChanges(query, itemIds)
   const staleKeys = await getStaleCategoryKeys(query, snapshots, limit)
   const staleCategories = await deleteStaleCategoryKeys(query, staleKeys)
   const candidateCount = staleKeys.length

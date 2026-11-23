@@ -59,17 +59,6 @@ export async function clearUnlinkedTopicAliasFeedPage(
     ),
   )
   await assertNoActiveTopicMerges(query, topicIds)
-  await query(
-    `/* clearUnlinkedTopicAliasFeedPage lockCategories */
-     SELECT category.rss_feed_id
-     FROM UNNEST($1::uuid[], $2::uuid[]) AS raw(rss_feed_id, category_identity_id)
-     JOIN rss_feed_categories category
-       ON category.rss_feed_id = raw.rss_feed_id
-       AND category.category_identity_id = raw.category_identity_id
-     ORDER BY category.rss_feed_id, category.category_identity_id
-     FOR UPDATE OF category`,
-    [candidates.map(row => row.rss_feed_id), candidates.map(row => row.category_identity_id)],
-  )
   const { rows: linkedOwner } = await query<{ id: string }>(
     `/* clearUnlinkedTopicAliasFeedPage currentTextOwner */
      SELECT id FROM topic_aliases WHERE alias = LOWER($1::text) AND topic_id IS NOT NULL`,
@@ -81,7 +70,7 @@ export async function clearUnlinkedTopicAliasFeedPage(
     candidateParameters,
   )
   if (JSON.stringify(currentCandidates) !== JSON.stringify(candidates))
-    throw createHttpError(409, 'RSS feed category mapping changed while acquiring topic fences')
+    throw createHttpError(409, 'RSS feed category mapping changed before update')
   const replacementIds = [
     ...new Set(
       candidates.flatMap(row => (row.replacement_topic_id ? [row.replacement_topic_id] : [])),
@@ -107,6 +96,9 @@ export async function clearUnlinkedTopicAliasFeedPage(
        AND category.category_identity_id = raw.category_identity_id
        AND category.topic_id = raw.previous_topic_id
        AND category.topic_id IS DISTINCT FROM raw.replacement_topic_id
+       AND NOT EXISTS (
+         SELECT 1 FROM topic_aliases WHERE alias = LOWER($5::text) AND topic_id IS NOT NULL
+       )
        AND (raw.replacement_topic_id IS NULL OR EXISTS (
          SELECT 1 FROM topics replacement
          WHERE replacement.id = raw.replacement_topic_id
@@ -118,6 +110,7 @@ export async function clearUnlinkedTopicAliasFeedPage(
       candidates.map(row => row.category_identity_id),
       candidates.map(row => row.previous_topic_id),
       candidates.map(row => row.replacement_topic_id),
+      alias,
     ],
   )
   if (rowCount !== candidates.length)

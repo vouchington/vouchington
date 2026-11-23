@@ -1,3 +1,5 @@
+import { setTestRssFeedCategoryTopicId } from '@voucha/test-helpers/entities/rss-feed-categories'
+import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { describe, expect, it } from 'vitest'
 
@@ -134,6 +136,42 @@ describe('unlinked RSS topic alias category cleanup', () => {
     await expect(getTestRssFeedItemCategories(item.id)).resolves.toContainEqual(
       expect.objectContaining({ category_text: `#${aliasText}`, topic_id: null }),
     )
+  })
+
+  it('rejects a stale feed category mapping and keeps the committed replacement', async () => {
+    const suffix = crypto.randomUUID()
+    const previousTopic = await createTestTopic({ name: `Previous ${suffix}` })
+    const competingTopic = await createTestTopic({ name: `Concurrent ${suffix}` })
+    const aliasText = `stale-feed-mapping-${suffix}`
+    const [alias] = await createTopicAliases(previousTopic.id, aliasText)
+    if (!alias) throw new Error('Expected linked alias')
+    const feed = await insertTestRssFeedDirect({
+      rssFeedUrl: `https://stale-feed-${suffix}.example.com/feed.xml`,
+    })
+    await insertTestRssFeedCategory(feed.id, aliasText, previousTopic.id)
+    const categoryIdentityId = await registerTestRssCategoryIdentity(aliasText)
+    await unlinkTopicAlias(alias.id, { expectedTopicId: previousTopic.id, skipSideEffects: true })
+
+    const restore = afterPostgresTransactionQueryForTest(
+      '/* clearUnlinkedTopicAliasFeedPage candidates */',
+      values => values[0] === alias.id,
+      () => setTestRssFeedCategoryTopicId(feed.id, categoryIdentityId, competingTopic.id),
+    )
+    try {
+      await using query = await beginTransaction()
+      await expect(
+        clearUnlinkedTopicAliasFeedPage(query, alias.id, alias.alias, [
+          { rss_feed_id: feed.id, category_identity_id: categoryIdentityId },
+        ]),
+      ).rejects.toMatchObject({ status: 409 })
+    } finally {
+      restore()
+    }
+
+    await expect(getTestRssFeedCategories(feed.id)).resolves.toContainEqual({
+      category_text: aliasText,
+      topic_id: competingTopic.id,
+    })
   })
 
   it('re-resolves feed and item categories through an active topic slug after alias unlink', async () => {

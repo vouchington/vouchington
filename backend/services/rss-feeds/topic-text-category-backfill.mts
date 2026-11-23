@@ -60,43 +60,25 @@ export async function backfillTopicTextFeedPage(
   await selection.commit()
   if (page.rows.length === 0) return { updated: 0, hasMore: page.hasMore, cursor: page.cursor }
   await using transaction = await beginTransaction()
-  const { rows: locked } = await transaction<{ rss_feed_id: string }>(
-    `/* backfillTopicTextFeedPage lockCategories */
-     SELECT category.rss_feed_id
-     FROM UNNEST($1::uuid[], $2::uuid[]) AS raw(rss_feed_id, category_identity_id)
-     JOIN rss_feed_categories category
-       ON category.rss_feed_id = raw.rss_feed_id
-       AND category.category_identity_id = raw.category_identity_id
-     ORDER BY category.rss_feed_id, category.category_identity_id
-     FOR UPDATE OF category`,
-    [page.rows.map(row => row.content_id), page.rows.map(row => row.category_identity_id)],
-  )
-  if (locked.length === 0) {
-    await transaction.commit()
-    return { updated: 0, hasMore: page.hasMore, cursor: page.cursor }
-  }
-  const { rows: currentTopic } = await transaction<{ name: string; slug: string }>(
-    `/* backfillTopicTextFeedPage currentTopic */
-     SELECT LOWER(name) AS name, slug FROM topics
-     WHERE id = $1::uuid AND deleted_at IS NULL AND merged_into_topic_id IS NULL`,
-    [topicId],
-  )
-  if (
-    !currentTopic[0] ||
-    (page.sourcePhase === 0 && currentTopic[0].name !== page.cursor?.name) ||
-    (page.sourcePhase === 1 && currentTopic[0].slug !== page.cursor?.slug)
-  ) {
-    await transaction.commit()
-    return { updated: 0, hasMore: page.hasMore, cursor: page.cursor }
-  }
   const { rowCount } = await transaction(
     `/* backfillTopicTextFeedPage update */
      UPDATE rss_feed_categories category SET topic_id = $1::uuid
      FROM UNNEST($2::uuid[], $3::uuid[]) AS raw(rss_feed_id, category_identity_id)
      WHERE category.rss_feed_id = raw.rss_feed_id
        AND category.category_identity_id = raw.category_identity_id
-       AND category.topic_id IS NULL`,
-    [topicId, page.rows.map(row => row.content_id), page.rows.map(row => row.category_identity_id)],
+       AND category.topic_id IS NULL
+       AND EXISTS (
+         SELECT 1 FROM topics
+         WHERE id = $1::uuid AND deleted_at IS NULL AND merged_into_topic_id IS NULL
+           AND CASE $4::integer WHEN 0 THEN LOWER(name) WHEN 1 THEN slug END = $5::text
+       )`,
+    [
+      topicId,
+      page.rows.map(row => row.content_id),
+      page.rows.map(row => row.category_identity_id),
+      page.sourcePhase,
+      page.sourcePhase === 0 ? page.cursor?.name : page.cursor?.slug,
+    ],
   )
   await transaction.commit()
   return { updated: rowCount ?? 0, hasMore: page.hasMore, cursor: page.cursor }

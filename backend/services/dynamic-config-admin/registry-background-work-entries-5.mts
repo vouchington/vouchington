@@ -58,8 +58,6 @@ export const backgroundWorkRegistryEntries5 = {
       sql_batch_size: 'Sql batch size for rss feed items processing.',
       category_sql_batch_size: 'Category sql batch size for rss feed items processing.',
       enqueue_batch_size: 'Enqueue batch size for rss feed items processing.',
-      story_category_item_batch_size:
-        'Story category item batch size for rss feed items processing.',
       story_category_change_batch_size:
         'Story category change batch size for rss feed items processing.',
     },
