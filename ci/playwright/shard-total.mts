@@ -8,12 +8,15 @@ export { GITHUB_MATRIX_MAX_JOBS } from '../shard-limits.mts'
 // spec with three Playwright workers.
 export const PLAYWRIGHT_ESTIMATED_SECONDS_PER_SPEC = 6.1
 // Allocation heuristic, not a per-spec SLA: this is the average per-shard test-execution budget the
-// shard-total formula below solves against. Count-based sharding leaves the heaviest shard about
-// 1.2x the average test-step time on hosted runners, so a 300-second average puts that shard near
-// 350 seconds. With the fixed build, migrate, and compile steps, that keeps each playwright-tests
-// job around eight minutes under its ten-minute cap; the current full suite resolves to seven
-// shards.
-export const PLAYWRIGHT_EXECUTION_BUDGET_SECONDS = 300
+// shard-total formula below solves against. Playwright's --shard splits by test count, not time, and
+// the alphabetically last shards hold the heaviest specs (topics/), so the slowest shard runs about
+// 1.25x the average (merge-queue runs, 2026-11-23: 999 s of summed test time against a 803 s mean at
+// eight shards). The "Run Playwright tests" step adds about 35 seconds of server startup and is
+// killed at 480 seconds. A 200-second average puts the heaviest shard near 285 seconds, about 40%
+// under that kill. The previous 300-second budget (eight shards) left the heaviest at a median of
+// 364 seconds, 24% under it, so a runner that was 1.3x slower killed shards whose tests all passed.
+// The current full suite resolves to eleven shards.
+export const PLAYWRIGHT_EXECUTION_BUDGET_SECONDS = 200
 
 export function isRunnablePlaywrightSpec(file: string): boolean {
   return file.startsWith('playwright/tests/') && file.endsWith('.spec.mts')
