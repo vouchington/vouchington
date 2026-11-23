@@ -148,7 +148,7 @@ describe('dependency update configuration', () => {
         rule.minimumReleaseAge === undefined ? [] : [rule.minimumReleaseAge],
       ) ?? []
 
-    expect(workspace.minimumReleaseAge).toBe(2880)
+    expect(workspace.minimumReleaseAge).toBe(10080)
     expect(cooldowns).toHaveLength(dependabot.updates?.length ?? 0)
     expect(cooldowns.every(days => days === 7)).toBe(true)
     const cooldownMinutes = cooldowns.map(days => {
