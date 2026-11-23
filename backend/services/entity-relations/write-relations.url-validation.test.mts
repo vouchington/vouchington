@@ -73,7 +73,6 @@ describe('writeEntityRelations (url validation)', () => {
       hostname: `write-relations-transaction-referral-${random}.example.com`,
       pathname: '/ref/%',
     })
-    let urlId: string | undefined
 
     await using query = await beginTransaction()
     const url = await addUrl(user!.id, `https://${fixture.hostname}/ref/article`, {
@@ -82,7 +81,6 @@ describe('writeEntityRelations (url validation)', () => {
       skipCreatedEvents: true,
     })
     expect(url).not.toBeNull()
-    urlId = url!.id
 
     await expect(
       writeEntityRelations(
@@ -95,6 +93,6 @@ describe('writeEntityRelations (url validation)', () => {
 
     await query.commit()
 
-    expect(await getEntityRelation(relatedUrlRelation.table_name, post.id, urlId!)).toEqual([])
+    expect(await getEntityRelation(relatedUrlRelation.table_name, post.id, url!.id)).toEqual([])
   })
 })

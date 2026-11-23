@@ -82,8 +82,7 @@ async function reconcileStripeMembershipCatalogBody(
   context: StripeCatalogContext,
   resolvePrice: typeof resolveRecurringCatalogPrice,
 ): Promise<void> {
-  let prices: Awaited<ReturnType<typeof resolveRecurringCatalogPrice>>[]
-  prices = await Promise.all(
+  const prices = await Promise.all(
     CATALOG.map(item =>
       resolvePrice({
         lookupKey: item.lookupKey,

@@ -25,11 +25,10 @@ export async function createEmbeddingCountSnapshot(
     void operation.catch(() => {})
     return operation
   }
-  let setup: Promise<Awaited<ReturnType<typeof getActiveBatchStats>>>
   const close = () => (closing ??= dispose())
   // The registered disposer waits for a transaction acquired after cleanup has started.
   quota.beforeRelease(close)
-  setup = start(async () => {
+  const setup = start(async () => {
     transaction = await beginTransaction()
     quota.assertOpen()
     await transaction(allowUnannotatedQuery('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ'))

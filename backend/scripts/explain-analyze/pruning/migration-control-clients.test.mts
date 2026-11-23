@@ -23,7 +23,7 @@ function closed(input: {
   sleep?: (milliseconds: number) => Promise<void>
   run: (file: string, args: string[]) => Promise<{ stdout: string }>
 }) {
-  let now = 0
+  const now = 0
   return assertMigrationServerClientsClosed({
     databaseName: input.databaseName ?? ownedDatabase,
     sourceUrl: 'postgres://postgres@127.0.0.1/postgres',

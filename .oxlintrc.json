@@ -448,7 +448,7 @@
     ],
     "no-warning-comments": "off",
     "operator-assignment": "error",
-    "prefer-const": "off",
+    "prefer-const": ["error", { "ignoreReadBeforeAssign": true }],
     "prefer-destructuring": "off",
     "prefer-exponentiation-operator": "error",
     "prefer-numeric-literals": "error",
