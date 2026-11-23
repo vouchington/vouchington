@@ -1,48 +1,10 @@
+import { receiveLoadMore } from '@/test-helpers/components/users/paginated-user-list.mock-support'
 import { act, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeTopic } from '@/test-helpers/api-responses/topics'
 import type { TopicsListResponseBody } from '@/types/api-responses'
 import { getPaginatedPage } from '@/lib/api/client'
 import { PaginatedUserTopicList } from '../paginated-user-topic-list'
-
-const { receiveLoadMore } = vi.hoisted(() => ({
-  receiveLoadMore: vi.fn<VitestLooseMock>(),
-}))
-
-vi.mock(import('@/lib/api/client'), () => ({
-  getPaginatedPage: vi.fn<VitestLooseMock>(),
-}))
-
-vi.mock(import('@/components/shared/infinite-scroll'), () => ({
-  InfiniteScroll: ({
-    children,
-    clearError,
-    fetchError,
-    onLoadMore,
-  }: React.PropsWithChildren<{
-    clearError?: () => void
-    fetchError?: Error | null
-    onLoadMore: () => void
-  }>) => {
-    receiveLoadMore(onLoadMore)
-    return (
-      <div>
-        {children}
-        {fetchError ? (
-          <button
-            type='button'
-            onClick={() => {
-              clearError?.()
-              onLoadMore()
-            }}
-          >
-            Retry
-          </button>
-        ) : null}
-      </div>
-    )
-  },
-}))
 
 vi.mock(import('../user-topic-list'), () => ({
   UserTopicList: ({ topics }: { topics: Array<{ id: string }> }) => (

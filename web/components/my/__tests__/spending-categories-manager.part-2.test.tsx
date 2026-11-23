@@ -1,12 +1,11 @@
 import {
   makeInitialData,
   mockCreate,
-  mockDelete,
   mockOnSuccess,
-  mockUpdate,
+  resetSpendingCategoryApiMocks,
 } from '@/test-helpers/components/my/spending-categories-manager.mock-support'
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { esMessages } from '@ts-shared/test-helpers/locale-catalogs.mts'
@@ -18,36 +17,7 @@ describe('SpendingCategoriesManager Integration Flow', () => {
   mergeMessages('es', esMessages)
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockCreate.mockResolvedValue({
-      spending_category: {
-        id: 'sc-2',
-        spending_category_topic_id: 'cat-2',
-        amount: { amount: 20_000, currency: 'usd' },
-        spending_frequency: 'monthly',
-        note: 'Grocery note',
-        spending_category: {
-          id: 'cat-2',
-          name: 'Grocery',
-          slug: 'grocery',
-        },
-      },
-    } as any)
-    mockUpdate.mockResolvedValue({
-      spending_category: {
-        id: 'sc-1',
-        spending_category_topic_id: 'cat-1',
-        amount: { amount: 18_000, currency: 'usd' },
-        spending_frequency: 'annually',
-        note: 'Updated Coffee Note',
-        spending_category: {
-          id: 'cat-1',
-          name: 'Coffee',
-          slug: 'coffee',
-        },
-      },
-    } as any)
-    mockDelete.mockResolvedValue(undefined as any)
+    resetSpendingCategoryApiMocks()
   })
 
   it('successfully creates a new spending category', async () => {

@@ -140,3 +140,36 @@ export function makeInitialData() {
     page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
   }
 }
+
+export function resetSpendingCategoryApiMocks() {
+  vi.clearAllMocks()
+  mockCreate.mockResolvedValue({
+    spending_category: {
+      id: 'sc-2',
+      spending_category_topic_id: 'cat-2',
+      amount: { amount: 20_000, currency: 'usd' },
+      spending_frequency: 'monthly',
+      note: 'Grocery note',
+      spending_category: {
+        id: 'cat-2',
+        name: 'Grocery',
+        slug: 'grocery',
+      },
+    },
+  } as any)
+  mockUpdate.mockResolvedValue({
+    spending_category: {
+      id: 'sc-1',
+      spending_category_topic_id: 'cat-1',
+      amount: { amount: 18_000, currency: 'usd' },
+      spending_frequency: 'annually',
+      note: 'Updated Coffee Note',
+      spending_category: {
+        id: 'cat-1',
+        name: 'Coffee',
+        slug: 'coffee',
+      },
+    },
+  } as any)
+  mockDelete.mockResolvedValue(undefined as any)
+}

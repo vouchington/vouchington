@@ -1,3 +1,9 @@
+import {
+  mockBookmarkEntity,
+  mockUnbookmarkEntity,
+  mockGetEntityBookmarks,
+  mockToastError,
+} from '@/test-helpers/components/shared/entity-bookmark-button.mock-support'
 import { ApiError } from '@vouchington/api-client'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 
@@ -22,37 +28,6 @@ vi.mock(
         <div>{children}</div>
       ),
     }) as unknown as typeof import('@/components/ui/tooltip'),
-)
-
-const {
-  mockBookmarkEntity,
-  mockUnbookmarkEntity,
-  mockGetEntityBookmarks,
-  mockToastError,
-  mockToastSuccess,
-} = vi.hoisted(() => ({
-  mockBookmarkEntity: vi.fn<VitestLooseMock>(),
-  mockUnbookmarkEntity: vi.fn<VitestLooseMock>(),
-  mockGetEntityBookmarks: vi.fn<VitestLooseMock>(),
-  mockToastError: vi.fn<VitestLooseMock>(),
-  mockToastSuccess: vi.fn<VitestLooseMock>(),
-}))
-
-vi.mock(import('@/lib/api/client/bookmarks'), () => ({
-  bookmarkEntity: mockBookmarkEntity,
-  unbookmarkEntity: mockUnbookmarkEntity,
-  getEntityBookmarks: mockGetEntityBookmarks,
-}))
-
-vi.mock(
-  import('sonner'),
-  () =>
-    ({
-      toast: {
-        error: mockToastError,
-        success: mockToastSuccess,
-      },
-    }) as unknown as typeof import('sonner'),
 )
 
 describe('EntityBookmarkButton', () => {

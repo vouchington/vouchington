@@ -1,91 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import type { ReactNode } from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import type { OAuthProvider } from '@/types/user'
+import { mockContinueOAuthLogin } from '@/test-helpers/components/auth/login-form.email.mock-support'
 import {
   clearRuntimePublicConfigForTest,
   setRuntimePublicConfigForTest,
 } from '@/test-helpers/runtime-public-config'
-
-vi.mock(
-  import('next/link'),
-  () =>
-    ({
-      default: ({
-        children,
-        href,
-        ...props
-      }: {
-        children: ReactNode
-        href: string
-        [k: string]: unknown
-      }) => (
-        <a
-          href={href}
-          {...props}
-        >
-          {children}
-        </a>
-      ),
-    }) as unknown as typeof import('next/link'),
-)
-
-const mockRouter = vi.hoisted(() => ({
-  refresh: vi.fn<VitestLooseMock>(),
-  replace: vi.fn<VitestLooseMock>(),
-}))
-vi.mock(
-  import('next/navigation'),
-  () =>
-    ({
-      useRouter: () => mockRouter,
-    }) as unknown as typeof import('next/navigation'),
-)
-
-const mockSendEmailLoginToken = vi.hoisted(() => vi.fn<VitestLooseMock>().mockResolvedValue({}))
-const mockLoginWithEmailAddress = vi.hoisted(() =>
-  vi.fn<VitestLooseMock>().mockResolvedValue({ user: {} }),
-)
-const mockContinueOAuthLogin = vi.hoisted(() => vi.fn<VitestLooseMock>())
-const mockGetConfiguredOAuthProviders = vi.hoisted(() =>
-  vi.fn<VitestLooseMock>().mockResolvedValue({ providers: ['facebook'] }),
-)
-vi.mock(import('@/lib/api/client'), () => ({
-  continueOAuthLogin: mockContinueOAuthLogin,
-  getConfiguredOAuthProviders: mockGetConfiguredOAuthProviders,
-  loginWithEmailAddress: mockLoginWithEmailAddress,
-  sendEmailLoginToken: mockSendEmailLoginToken,
-}))
-
-vi.mock(import('@/hooks/use-facebook-sdk'), async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks/use-facebook-sdk')>()
-  return {
-    ...actual,
-    useFacebookSDK: () => ({ isAvailable: false }),
-  } as unknown as typeof import('@/hooks/use-facebook-sdk')
-})
-
-vi.mock(import('../oauth-login-button'), () => ({
-  OAuthLoginButton: ({
-    provider,
-    onToken,
-    disabled,
-  }: {
-    provider: OAuthProvider
-    onToken: (token: any) => Promise<void>
-    disabled?: boolean
-  }) => (
-    <button
-      type='button'
-      disabled={disabled}
-      onClick={() => void onToken({ provider: provider as any, token: 'mock-token' })}
-    >{`Continue with ${provider}`}</button>
-  ),
-}))
-
-vi.mock(import('@/hooks/use-turnstile-action'), () => ({
-  useTurnstileAction: () => ({ ref: () => {}, reset: vi.fn<VitestLooseMock>(), isError: false }),
-}))
 
 vi.mock(import('../mfa-step'), () => ({
   default: () => <div data-testid='mfa-step' />,

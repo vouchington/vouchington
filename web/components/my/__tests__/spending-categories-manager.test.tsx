@@ -1,49 +1,18 @@
 import {
   initialCategories,
   makeInitialData,
-  mockCreate,
-  mockDelete,
   mockOnError,
-  mockUpdate,
+  resetSpendingCategoryApiMocks,
 } from '@/test-helpers/components/my/spending-categories-manager.mock-support'
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { fireEvent, render, screen } from '@testing-library/react'
 import { SpendingCategoriesManager } from '../spending-categories-manager'
 
 describe('SpendingCategoriesManager Integration Flow', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockCreate.mockResolvedValue({
-      spending_category: {
-        id: 'sc-2',
-        spending_category_topic_id: 'cat-2',
-        amount: { amount: 20_000, currency: 'usd' },
-        spending_frequency: 'monthly',
-        note: 'Grocery note',
-        spending_category: {
-          id: 'cat-2',
-          name: 'Grocery',
-          slug: 'grocery',
-        },
-      },
-    } as any)
-    mockUpdate.mockResolvedValue({
-      spending_category: {
-        id: 'sc-1',
-        spending_category_topic_id: 'cat-1',
-        amount: { amount: 18_000, currency: 'usd' },
-        spending_frequency: 'annually',
-        note: 'Updated Coffee Note',
-        spending_category: {
-          id: 'cat-1',
-          name: 'Coffee',
-          slug: 'coffee',
-        },
-      },
-    } as any)
-    mockDelete.mockResolvedValue(undefined as any)
+    resetSpendingCategoryApiMocks()
   })
 
   it('renders member-only household categories as read only', () => {
