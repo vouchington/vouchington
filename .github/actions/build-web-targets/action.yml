@@ -9,7 +9,7 @@ inputs:
     # github.job is identical across matrix shards of the same job (composite actions cannot read
     # matrix.*), so a matrix caller (tests-playwright.yml) must pass a per-shard suffix here or its
     # shards upload the timing artifact to the same name and race.
-    description: Suffix for the one-day web-build-timings artifact, required for matrix callers.
+    description: Suffix for the 7-day web-build-timings artifact, required for matrix callers.
     required: false
     default: generic
   web-build-fs-cache-enabled:
