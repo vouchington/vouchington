@@ -28,9 +28,10 @@ export async function acknowledgeOAuthAuthorizationCompletion(
     [authorization.id, authorization.completion_token_hash],
   )
   const written = rows[0]
-  // The read above passed the caller, status and expiry checks, and only an acknowledgement
-  // clears the token hash. A missed UPDATE therefore means a concurrent acknowledgement consumed
-  // the credential, which is the 401 a request arriving afterwards gets from the read.
+  // The read above passed the caller, status and expiry checks. Only an acknowledgement clears the
+  // token hash of a completed row, so a missed UPDATE means a concurrent acknowledgement consumed
+  // the credential (or retention deleted the row), which is the 401 a request arriving afterwards
+  // gets from the read.
   if (!written) throw createHttpError(401, 'OAuth completion token is invalid')
   if (written.expires_at <= new Date()) throw createHttpError(410, 'OAuth authorization expired')
   await query.commit()
