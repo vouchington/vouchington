@@ -17,6 +17,6 @@
     "@vouchington/server-utils": "^0.0.1",
     "@vouchington/utils": "^0.13.0",
     "vitest": "^5.1.0",
-    "vouchington-tooling": "^3.6.1"
+    "vouchington-tooling": "^3.6.2"
   }
 }

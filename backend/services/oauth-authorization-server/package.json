@@ -31,9 +31,9 @@
     "@services/jwt-session": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/user-product-limits": "workspace:^",
-    "@vouchington/oauth-server": "^0.8.0",
+    "@vouchington/oauth-server": "^0.9.0",
     "@vouchington/postgres": "^0.6.2",
-    "@vouchington/sentry": "^0.6.0",
+    "@vouchington/sentry": "^0.7.0",
     "confusables": "^1.1.1",
     "ssrf-guard": "^1.0.0",
     "uuid": "^14.0.3"

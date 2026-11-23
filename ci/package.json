@@ -14,14 +14,14 @@
     "@vouchington/postgres": "^0.6.2",
     "coverage-check": "^0.18.1",
     "jsonc-parser": "^3.3.1",
-    "no-mistakes": "^0.109.112",
+    "no-mistakes": "^0.109.117",
     "picomatch": "^4.0.4",
     "rehype-stringify": "^10.0.1",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
     "remark-rehype": "^11.1.2",
     "unified": "^11.0.5",
-    "vouchington-tooling": "^3.6.1"
+    "vouchington-tooling": "^3.6.2"
   },
   "devDependencies": {
     "@types/picomatch": "^4.0.3",

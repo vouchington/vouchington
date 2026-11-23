@@ -76,7 +76,7 @@
     "@voucha/types": "workspace:^",
     "@vouchington/pagination": "^0.0.5",
     "@vouchington/postgres": "^0.6.2",
-    "@vouchington/sentry": "^0.6.0",
+    "@vouchington/sentry": "^0.7.0",
     "@vouchington/uuid-v7": "^0.0.0",
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
