@@ -85,9 +85,41 @@ describe('graceful shutdown wiring', () => {
 
     await onGracefulShutdown('SIGTERM')
 
-    expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(valkeyError, expect.anything())
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(valkeyError, {
+      tags: { shutdown_resource: 'Valkey' },
+    })
     expect(onGracefulShutdownPSQL).toHaveBeenCalledTimes(1)
     expect(sentryFlushMock).toHaveBeenCalledWith(2000)
+  })
+
+  it('reports a failing callback as its original error tagged with phase and signal', async () => {
+    const { onGracefulShutdown, addGracefulShutdownCallback } = await loadSubject()
+    const callbackError = new Error('drain queue failed')
+    addGracefulShutdownCallback(async () => {
+      throw callbackError
+    })
+
+    await onGracefulShutdown('SIGTERM')
+
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledTimes(1)
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(callbackError, {
+      tags: { shutdown_phase: 'callbacks', shutdown_signal: 'SIGTERM' },
+    })
+  })
+
+  it('wraps a non-Error rejection so Sentry still gets an Error with the resource', async () => {
+    const { gracefulShutdown, onGracefulShutdownValkey } = await loadSubject()
+    onGracefulShutdownValkey.mockRejectedValueOnce('valkey gone')
+
+    await gracefulShutdown()
+
+    const [reported, context] = sentryCaptureExceptionMock.mock.calls[0] ?? []
+    expect(reported).toBeInstanceOf(Error)
+    expect(reported).toMatchObject({
+      message: 'valkey gone',
+      cause: { name: 'ShutdownError', resource: 'Valkey', cause: 'valkey gone' },
+    })
+    expect(context).toEqual({ tags: { shutdown_resource: 'Valkey' } })
   })
 
   it('gracefulShutdown only closes data stores', async () => {
@@ -158,7 +190,11 @@ describe('one-off data-store shutdown wiring', () => {
     onGracefulShutdownPSQL.mockRejectedValue(psqlError)
 
     await expect(shutdownDataStoresForOneOffCommand()).rejects.toMatchObject({
-      errors: [valkeyError, psqlError],
+      message: 'One-off shutdown failed: Valkey, PostgreSQL',
+      errors: [
+        { name: 'ShutdownError', resource: 'Valkey', cause: valkeyError },
+        { name: 'ShutdownError', resource: 'PostgreSQL', cause: psqlError },
+      ],
     })
 
     expect(onGracefulShutdownValkey).toHaveBeenCalledTimes(1)

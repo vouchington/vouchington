@@ -1,5 +1,6 @@
 import { gracefulShutdownPeriodSeconds } from '@voucha/config'
-import onError, { flushSentry } from '@modules/on-error'
+import { flushSentry } from '@modules/on-error'
+import { reportShutdownError } from './report-shutdown-error.mts'
 import {
   createGracefulShutdown,
   createShutdownRegistry,
@@ -22,19 +23,16 @@ function logError(...args: unknown[]) {
 // @data-stores/analytics's graceful-shutdown.mts). This package must not import those data stores
 // directly — doing so previously created a workspace dependency cycle
 // (graceful-shutdown -> psql/valkey -> ... -> analytics -> graceful-shutdown).
-const dataStores = createShutdownRegistry({
-  log,
-  successMessage: name => `Graceful Shutdown: ${name} connection closed.`,
-})
+const dataStores = createShutdownRegistry({ log })
 
 export async function gracefulShutdown(): Promise<void> {
   const errors = await dataStores.close()
-  for (const error of errors) onError(error)
+  for (const error of errors) reportShutdownError(error)
 }
 
 const runner = createGracefulShutdown({
   gracePeriodMs,
-  onError,
+  onError: reportShutdownError,
   closeResources: gracefulShutdown,
   flush: () => flushSentry(2000),
   log,
