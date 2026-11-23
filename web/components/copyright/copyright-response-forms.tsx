@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { TurnstileField } from '@/components/shared/turnstile-field'
 import { useTurnstileToken } from '@/hooks/use-turnstile-token'
 import { createCopyrightCounterNotice } from '@/lib/api/client/copyright-notices'
+import { useTranslations } from '@/lib/i18n/use-translations'
 import onError, { onSuccess } from '@/lib/on-error'
 import { DeclarationCheckbox, LabeledInput } from './copyright-form-fields'
 import { TargetScopeSelector } from './copyright-appeal-form'
@@ -22,6 +23,7 @@ export function CopyrightCounterNoticeForm({
   targetIds: string[]
 }) {
   const router = useRouter()
+  const t = useTranslations()
   const turnstile = useTurnstileToken('copyright-notices.counter-notice')
   const [submitted, setSubmitted] = useState(false)
   const [values, setValues] = useState({ name: '', address: '', telephone: '', signature: '' })
@@ -60,6 +62,9 @@ export function CopyrightCounterNoticeForm({
       } catch (err) {
         onError(err, {
           fallback: 'We could not submit this counter-notice. Please try again.',
+          displayMessageByCode: {
+            copyright_submission_in_progress: t('shared.copyrightSubmissionInProgress'),
+          },
           tags: { form: 'copyright-counter-notice' },
         })
         turnstile.reset()

@@ -5,7 +5,6 @@ import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
 import {
   assertPolicyVersion,
-  territorialCopyrightUnavailableMessage,
   type TerritorialCopyrightJurisdiction,
 } from './territorial-fields.mts'
 
@@ -69,13 +68,11 @@ export async function getCopyrightJurisdictionAvailability(): Promise<{
 export async function lockCurrentCopyrightJurisdictionPolicy(
   jurisdiction: TerritorialCopyrightJurisdiction,
   transaction: TransactionQuery,
-): Promise<CopyrightJurisdictionPolicyApproval> {
+): Promise<CopyrightJurisdictionPolicyApproval | null> {
   const { rows } = await transaction<CopyrightJurisdictionPolicyApproval>(
     currentCopyrightJurisdictionPolicySql(jurisdiction).append(sql`FOR UPDATE OF approval`),
   )
-  const approval = rows[0]
-  assert(approval, 403, territorialCopyrightUnavailableMessage(jurisdiction))
-  return approval
+  return rows[0] ?? null
 }
 
 export async function recordCopyrightJurisdictionPolicyApproval(

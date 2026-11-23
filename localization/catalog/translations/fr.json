@@ -18,6 +18,7 @@
 {"id":"copy.copyright.claimantMisuse.newestNoticeReceived","value":"Avis reçu le plus récent"},
 {"id":"copy.copyright.claimantMisuse.noticesInspected","value":{"one":"{count} avis examiné","other":"{count} avis examinés"}},
 {"id":"copy.copyright.claimantMisuse.oldestNoticeReceived","value":"Avis reçu le plus ancien"},
+{"id":"copy.copyright.submissionInProgress","value":"Votre demande est toujours en cours de traitement. Réessayez dans un instant."},
 {"id":"copy.copyright.targetLimit","value":"Cet avis désigne trop d’éléments. Retirez-en un et réessayez."},
 {"id":"copy.copyright.targetLimitMax","value":{"one":"Un avis peut désigner jusqu’à {max} élément. Retirez-en un avant d’en ajouter un autre.","other":"Un avis peut désigner jusqu’à {max} éléments. Retirez-en un avant d’en ajouter un autre."}},
 {"id":"copy.email.api-key-expiry.action","value":"Renouvelez-la et mettez à jour vos applications pour maintenir leur connexion."},

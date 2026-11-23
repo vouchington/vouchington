@@ -52,6 +52,7 @@ export const DUPLICATE_RECOMMENDATION = 'DUPLICATE_RECOMMENDATION'
 
 // Copyright notices
 export const COPYRIGHT_EMAIL_QUARANTINED = 'COPYRIGHT_EMAIL_QUARANTINED'
+export const COPYRIGHT_SUBMISSION_IN_PROGRESS = 'copyright_submission_in_progress'
 export const COPYRIGHT_EMAIL_THREAD_CHANGED = 'copyright_email_thread_changed'
 
 // Contribution gating

@@ -18,6 +18,7 @@
 {"id":"copy.copyright.claimantMisuse.newestNoticeReceived","value":"Newest notice received"},
 {"id":"copy.copyright.claimantMisuse.noticesInspected","value":{"one":"{count} notice inspected","other":"{count} notices inspected"}},
 {"id":"copy.copyright.claimantMisuse.oldestNoticeReceived","value":"Oldest notice received"},
+{"id":"copy.copyright.submissionInProgress","value":"Your submission is still being processed. Try again in a moment."},
 {"id":"copy.copyright.targetLimit","value":"This notice names too many items. Remove one and try again."},
 {"id":"copy.copyright.targetLimitMax","value":{"one":"A notice can name up to {max} item. Remove one before adding another.","other":"A notice can name up to {max} items. Remove one before adding another."}},
 {"id":"copy.email.api-key-expiry.action","value":"Rotate it and update your apps to keep them connected."},
