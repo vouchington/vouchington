@@ -61,4 +61,52 @@ describe('OAuth completion acknowledgement', () => {
       completion_token_hash: before?.completion_token_hash,
     })
   })
+
+  it('rejects an acknowledgement that loses the race to a concurrent acknowledgement', async () => {
+    const cleanup = registerCleanup()
+    const user = await createTestUser()
+    cleanup.userIds.push(user.id)
+    const account = await createOAuthAccount('github', cleanup)
+    const completionToken = randomBytes(32).toString('base64url')
+    const deviceId = uuidv7()
+    const sessionId = uuidv7()
+    const completedAt = new Date()
+    const flowId = await insertTestOAuthAuthorization({
+      provider: 'github',
+      status: 'completed',
+      callbackReceivedAt: completedAt,
+      completionReadyAt: completedAt,
+      completedAt,
+      deviceId,
+      sessionId,
+      completionToken,
+      providerUserId: account.provider_user_id,
+      resultKind: 'authenticated',
+      resultUserId: user.id,
+    })
+    cleanup.authorizationIds.push(flowId)
+
+    onTestFinished(
+      runBeforePostgresStatementForTest(
+        '/* acknowledgeOAuthAuthorizationCompletion */',
+        async transaction => {
+          await transaction(
+            `/* testConcurrentAcknowledgement */ UPDATE oauth_authorizations
+             SET completion_token_hash = NULL WHERE id = $1`,
+            [flowId],
+          )
+        },
+      ),
+    )
+
+    await expect(
+      acknowledgeOAuthAuthorizationCompletion({
+        flowId,
+        deviceId,
+        sessionId,
+        completionToken,
+        completionTokenSource: 'cookie',
+      }),
+    ).rejects.toMatchObject({ status: 401 })
+  })
 })

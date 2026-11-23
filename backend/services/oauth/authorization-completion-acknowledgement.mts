@@ -29,7 +29,7 @@ export async function acknowledgeOAuthAuthorizationCompletion(
   )
   const written = rows[0]
   if (!written) {
-    const current = await readAcknowledgement()
+    const current = await classifyAcknowledgementLoss()
     assertCompletionCaller(current, options)
     if (current.expires_at <= new Date()) throw createHttpError(410, 'OAuth authorization expired')
     throw createHttpError(409, 'OAuth authorization completion was already acknowledged')
@@ -43,8 +43,22 @@ export async function acknowledgeOAuthAuthorizationCompletion(
        FROM view_oauth_authorization_current_records WHERE id = $1`,
       [options.flowId],
     )
-    const row = current[0] as CompletionRow | undefined
-    if (!row) throw createHttpError(404, 'OAuth authorization not found')
-    return row
+    return requireRow(current[0])
   }
+
+  // Own query name: the lost-race re-read happens only when a concurrent acknowledgement or
+  // expiry wins, so it must not count as a repeat of the first read.
+  async function classifyAcknowledgementLoss(): Promise<CompletionRow> {
+    const { rows: current } = await query(
+      `/* classifyOAuthAuthorizationAcknowledgementLoss */ SELECT *
+       FROM view_oauth_authorization_current_records WHERE id = $1`,
+      [options.flowId],
+    )
+    return requireRow(current[0])
+  }
+}
+
+function requireRow(row: unknown): CompletionRow {
+  if (!row) throw createHttpError(404, 'OAuth authorization not found')
+  return row as CompletionRow
 }
