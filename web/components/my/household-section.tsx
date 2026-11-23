@@ -1,3 +1,5 @@
+import type { ComponentProps } from 'react'
+import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import { Button } from '@/components/ui/button'
 import type { HouseholdMembership, HouseholdSection } from '@/types/my'
 
@@ -7,6 +9,7 @@ interface Props {
   onConfirmRemove: (section: HouseholdSection, membership: HouseholdMembership) => void
   onRequestRemove: (requestKey: string) => void
   onRetry: () => void
+  pagination: Omit<ComponentProps<typeof InfiniteScroll>, 'children' | 'itemCount' | 'emptyState'>
   retrying: boolean
   section: HouseholdSection
   sharedCount: number
@@ -24,6 +27,7 @@ export function HouseholdSectionView({
   onConfirmRemove,
   onRequestRemove,
   onRetry,
+  pagination,
   retrying,
   section,
   sharedCount,
@@ -70,75 +74,81 @@ export function HouseholdSectionView({
           </Button>
         </div>
       )}
-      {!section.membershipLoadError && section.memberships.length === 0 ? (
-        <p
-          className='text-sm text-muted-foreground'
-          data-pw='household-members-empty'
+      {(!section.membershipLoadError || section.memberships.length > 0) && (
+        <InfiniteScroll
+          {...pagination}
+          itemCount={section.memberships.length}
+          emptyState={
+            <p
+              className='text-sm text-muted-foreground'
+              data-pw='household-members-empty'
+            >
+              No members yet.
+            </p>
+          }
         >
-          No members yet.
-        </p>
-      ) : section.memberships.length > 0 ? (
-        <ul className='space-y-2'>
-          {section.memberships.map(membership => {
-            const requestKey = `${section.household.id}:${membership.id}`
-            return (
-              <li
-                key={membership.id}
-                className='flex flex-col gap-2 rounded-md border p-3 sm:flex-row sm:items-center sm:justify-between'
-                data-pw='household-member-row'
-              >
-                <div>
-                  <p
-                    className='text-sm font-medium'
-                    data-pw='household-member-name'
-                  >
-                    {memberName(membership)}
-                  </p>
-                  {membership.relationship?.trim() && (
-                    <span className='rounded bg-secondary px-1.5 py-0.5 text-xs'>
-                      {membership.relationship.trim()}
-                    </span>
-                  )}
-                </div>
-                {section.isOwner &&
-                  (confirmingKey === requestKey ? (
-                    <div
-                      className='flex flex-wrap gap-2'
-                      data-pw='household-remove-confirmation'
+          <ul className='space-y-2'>
+            {section.memberships.map(membership => {
+              const requestKey = `${section.household.id}:${membership.id}`
+              return (
+                <li
+                  key={membership.id}
+                  className='flex flex-col gap-2 rounded-md border p-3 sm:flex-row sm:items-center sm:justify-between'
+                  data-pw='household-member-row'
+                >
+                  <div>
+                    <p
+                      className='text-sm font-medium'
+                      data-pw='household-member-name'
                     >
-                      <span className='self-center text-sm text-destructive'>Remove member?</span>
-                      <Button
-                        size='sm'
-                        variant='destructive'
-                        onClick={() => onConfirmRemove(section, membership)}
-                        data-pw='household-remove-confirm'
+                      {memberName(membership)}
+                    </p>
+                    {membership.relationship?.trim() && (
+                      <span className='rounded bg-secondary px-1.5 py-0.5 text-xs'>
+                        {membership.relationship.trim()}
+                      </span>
+                    )}
+                  </div>
+                  {section.isOwner &&
+                    (confirmingKey === requestKey ? (
+                      <div
+                        className='flex flex-wrap gap-2'
+                        data-pw='household-remove-confirmation'
                       >
-                        Confirm
-                      </Button>
+                        <span className='self-center text-sm text-destructive'>Remove member?</span>
+                        <Button
+                          size='sm'
+                          variant='destructive'
+                          onClick={() => onConfirmRemove(section, membership)}
+                          data-pw='household-remove-confirm'
+                        >
+                          Confirm
+                        </Button>
+                        <Button
+                          size='sm'
+                          variant='outline'
+                          onClick={onCancelRemove}
+                          data-pw='household-remove-cancel'
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
                       <Button
                         size='sm'
                         variant='outline'
-                        onClick={onCancelRemove}
-                        data-pw='household-remove-cancel'
+                        onClick={() => onRequestRemove(requestKey)}
+                        data-pw='household-remove'
                       >
-                        Cancel
+                        Remove
                       </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      size='sm'
-                      variant='outline'
-                      onClick={() => onRequestRemove(requestKey)}
-                      data-pw='household-remove'
-                    >
-                      Remove
-                    </Button>
-                  ))}
-              </li>
-            )
-          })}
-        </ul>
-      ) : null}
+                    ))}
+                </li>
+              )
+            })}
+          </ul>
+        </InfiniteScroll>
+      )}
     </section>
   )
 }

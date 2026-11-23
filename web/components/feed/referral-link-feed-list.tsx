@@ -52,7 +52,7 @@ export function ReferralLinkFeedList({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
-      isEmpty={allResults.length === 0}
+      itemCount={allResults.length}
       emptyState={emptyContent}
     >
       <div className='space-y-4'>

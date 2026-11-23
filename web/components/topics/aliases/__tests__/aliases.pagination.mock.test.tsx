@@ -19,12 +19,16 @@ vi.mock(import('@/hooks/use-paginated-list'), () => ({
   usePaginatedList: mockUsePaginatedList,
 }))
 
-vi.mock(import('@/components/shared/infinite-scroll'), () => ({
-  InfiniteScroll: ({ children, ...props }: InfiniteScrollProps) => {
-    mockInfiniteScrollProps(props)
-    return <div>{props.isEmpty ? props.emptyState : children}</div>
-  },
-}))
+vi.mock(import('@/components/shared/infinite-scroll'), async importOriginal => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    InfiniteScroll: ({ children, ...props }: InfiniteScrollProps) => {
+      mockInfiniteScrollProps(props)
+      return <actual.InfiniteScroll {...props}>{children}</actual.InfiniteScroll>
+    },
+  }
+})
 
 vi.mock(import('@/lib/api/client/topics'), () => ({
   fetchTopicAliases: vi.fn<VitestLooseMock>(),

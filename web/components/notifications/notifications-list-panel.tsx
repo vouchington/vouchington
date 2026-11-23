@@ -47,7 +47,7 @@ export function NotificationsListPanel({
         fetchError={fetchError}
         clearError={clearError}
         resetKey={resetKey}
-        isEmpty={notifications.results.length === 0}
+        itemCount={notifications.results.length}
         emptyState={list}
       >
         {list}

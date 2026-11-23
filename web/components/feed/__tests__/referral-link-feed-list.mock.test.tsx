@@ -18,32 +18,20 @@ vi.mock(import('../referral-link-feed-card'), () => ({
   ),
 }))
 
-vi.mock(import('@/components/shared/infinite-scroll'), () => ({
-  InfiniteScroll: ({
-    children,
-    endCursor,
-    fetchError,
-    hasNextPage,
-    isEmpty,
-    emptyState,
-  }: {
-    children: React.ReactNode
-    isEmpty?: boolean
-    emptyState?: React.ReactNode
-    endCursor: string | null
-    fetchError?: Error | null
-    hasNextPage: boolean
-  }) => (
-    <div
-      data-testid='infinite-scroll'
-      data-end-cursor={endCursor ?? ''}
-      data-has-next-page={hasNextPage}
-    >
-      {isEmpty ? (hasNextPage && endCursor ? null : emptyState) : children}
-      {fetchError && <button type='button'>Retry</button>}
-    </div>
-  ),
-}))
+vi.mock(import('@/components/shared/infinite-scroll'), async importOriginal => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    InfiniteScroll: (props: Parameters<typeof actual.InfiniteScroll>[0]) => (
+      <div
+        data-testid='infinite-scroll'
+        data-end-cursor={props.endCursor ?? ''}
+      >
+        <actual.InfiniteScroll {...props} />
+      </div>
+    ),
+  }
+})
 
 vi.mock(import('@/components/shared/empty-state'), () => ({
   EmptyState: () => <div>default empty state</div>,
@@ -123,7 +111,9 @@ describe('ReferralLinkFeedList', () => {
     )
 
     expect(screen.queryByText('default empty state')).toBeNull()
-    expect(screen.getByTestId('infinite-scroll').getAttribute('data-end-cursor')).toBe(
+    expect(screen.getByRole('button', { name: 'Load more' })).toBeEnabled()
+    expect(screen.getByTestId('infinite-scroll')).toHaveAttribute(
+      'data-end-cursor',
       'last-inspected-id',
     )
   })
@@ -159,7 +149,9 @@ describe('ReferralLinkFeedList', () => {
     )
 
     expect(screen.getByTestId('mock-feed-card')).toBeDefined()
-    expect(screen.getByTestId('infinite-scroll').getAttribute('data-end-cursor')).toBe(
+    expect(screen.getByRole('button', { name: 'Load more' })).toBeEnabled()
+    expect(screen.getByTestId('infinite-scroll')).toHaveAttribute(
+      'data-end-cursor',
       'last-inspected-id',
     )
   })

@@ -100,6 +100,31 @@ describe('HouseholdManager pagination', () => {
     expect(mockGetHouseholds.mock.calls[0]).toEqual(mockGetHouseholds.mock.calls[1])
   })
 
+  it('keeps the section visible and defers its empty state while members can still load', async () => {
+    const section = makeSection({
+      memberships: [],
+      membershipPageInfo: { ...terminalPageInfo, has_next_page: true, end_cursor: 'member-next' },
+    })
+    render(
+      <HouseholdManager
+        initialOwnedSection={section}
+        initialSharedPage={{ results: [], page_info: terminalPageInfo }}
+        ownedProbeSucceeded
+        sharedLoadError={false}
+      />,
+    )
+
+    expect(screen.getByRole('heading', { name: 'Your household' })).toBeVisible()
+    expect(screen.queryByText('No members yet.')).not.toBeInTheDocument()
+    fireEvent.click(within(allByPw('paginated-list-continuation')[0]!).getByRole('button'))
+
+    expect(await screen.findByText('No members yet.')).toBeVisible()
+    expect(mockGetMemberships).toHaveBeenCalledExactlyOnceWith(section.household.id, {
+      after: 'member-next',
+      limit: 25,
+    })
+  })
+
   it('paginates memberships independently and keeps removed rows tombstoned', async () => {
     const nextPage = deferred<{ results: Membership[]; page_info: PageInfo }>()
     mockGetMemberships.mockReturnValueOnce(nextPage.promise)

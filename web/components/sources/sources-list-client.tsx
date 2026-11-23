@@ -31,6 +31,7 @@ export function SourcesListClient({ initialData, searchParams }: SourcesListClie
 
   return (
     <InfiniteScroll
+      itemCount={allResults.length}
       hasNextPage={canLoadMore}
       endCursor={endCursor}
       onLoadMore={loadMore}

@@ -43,7 +43,7 @@ export function PaginatedUserList({
       fetchError={state.fetchError}
       clearError={state.clearError}
       resetKey={state.resetKey}
-      isEmpty={users.length === 0}
+      itemCount={users.length}
       emptyState={list}
     >
       {list}

@@ -12,18 +12,6 @@ vi.mock(import('@/hooks/use-paginated-list'), () => ({
   usePaginatedList: mockUsePaginatedList,
 }))
 
-vi.mock(import('@/components/shared/infinite-scroll'), () => ({
-  InfiniteScroll: ({
-    children,
-    isEmpty,
-    emptyState,
-  }: {
-    children: ReactNode
-    isEmpty?: boolean
-    emptyState?: ReactNode
-  }) => <div>{isEmpty ? emptyState : children}</div>,
-}))
-
 vi.mock(
   import('@/components/shared/empty-state'),
   () =>

@@ -88,7 +88,7 @@ export function PostList({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
-      isEmpty={allResults.length === 0}
+      itemCount={allResults.length}
       emptyState={
         emptyState !== undefined ? (
           emptyState

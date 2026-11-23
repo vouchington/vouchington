@@ -97,7 +97,7 @@ export function NewsItemList({
         fetchError={fetchError}
         clearError={clearError}
         resetKey={resetKey}
-        isEmpty={allResults.length === 0}
+        itemCount={allResults.length}
         emptyState={
           <EmptyState
             title={t('extracted.feed.newsItemList.noNewsFound_1cb8f117')}

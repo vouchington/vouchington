@@ -55,7 +55,7 @@ export function PaginatedUserReferralLinkList({
       fetchError={state.fetchError}
       clearError={state.clearError}
       resetKey={state.resetKey}
-      isEmpty={links.length === 0}
+      itemCount={links.length}
       emptyState={
         <EmptyState
           title={emptyTitle}

@@ -39,12 +39,12 @@ export function CommunityAgentPromptHistory({
 }: Props) {
   const t = useTranslations()
   const [extraEntries, setExtraEntries] = useState<CommunityAgentPromptHistoryEntry[]>([])
-  const [loadMoreCursor, setLoadMoreCursor] = useState<string | null>(null)
+  const [loadMoreCursor, setLoadMoreCursor] = useState<string | null>()
   const [loadMoreError, setLoadMoreError] = useState<Error | null>(null)
   const [isLoading, startLoading] = useTransition()
 
   const entries = [...initialEntries, ...extraEntries]
-  const currentCursor = extraEntries.length === 0 ? initialNextCursor : loadMoreCursor
+  const currentCursor = loadMoreCursor === undefined ? initialNextCursor : loadMoreCursor
 
   function handleLoadMore() {
     if (!currentCursor) return
@@ -76,9 +76,12 @@ export function CommunityAgentPromptHistory({
       </CardHeader>
       <CardContent>
         {entries.length === 0 ? (
-          <p className='text-sm text-muted-foreground'>
-            {t('extracted.communities.communityAgentPromptHistory.noChangesRecorded_fc21a407')}
-          </p>
+          !currentCursor &&
+          !loadMoreError && (
+            <p className='text-sm text-muted-foreground'>
+              {t('extracted.communities.communityAgentPromptHistory.noChangesRecorded_fc21a407')}
+            </p>
+          )
         ) : (
           <div className='space-y-3'>
             {entries.map(entry => (

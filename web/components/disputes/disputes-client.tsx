@@ -79,7 +79,7 @@ export function DisputesClient({
         fetchError={fetchError}
         clearError={clearError}
         resetKey={resetKey}
-        isEmpty={disputes.length === 0}
+        itemCount={disputes.length}
         emptyState={list}
       >
         {list}

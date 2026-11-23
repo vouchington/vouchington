@@ -53,7 +53,7 @@ export function ReferralClicksPage({ initialData }: { initialData: ReferralClick
         fetchError={fetchError}
         clearError={clearError}
         resetKey={resetKey}
-        isEmpty={results.length === 0}
+        itemCount={results.length}
         emptyState={
           <p className='rounded-lg border p-6 text-center text-sm text-muted-foreground'>
             {t('extracted.my.referralClicksPage.noReferralClicksYet_a38e7431')}

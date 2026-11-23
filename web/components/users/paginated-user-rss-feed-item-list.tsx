@@ -56,7 +56,7 @@ export function PaginatedUserRssFeedItemList({
       fetchError={state.fetchError}
       clearError={state.clearError}
       resetKey={state.resetKey}
-      isEmpty={items.length === 0}
+      itemCount={items.length}
       emptyState={list}
     >
       {list}

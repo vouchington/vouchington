@@ -62,7 +62,7 @@ export function TopicList({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
-      isEmpty={allResults.length === 0}
+      itemCount={allResults.length}
       emptyState={
         <EmptyState
           title={t('extracted.topics.topicList.noTopicsFound_a32677cf')}

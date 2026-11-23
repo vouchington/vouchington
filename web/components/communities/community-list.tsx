@@ -48,7 +48,7 @@ export function CommunityList({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
-      isEmpty={allResults.length === 0}
+      itemCount={allResults.length}
       emptyState={
         <EmptyState
           icon='search'

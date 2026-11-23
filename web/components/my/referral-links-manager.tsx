@@ -181,7 +181,7 @@ export function ReferralLinksManager({ initialLinks, initialPageInfo, hasPlusTie
         fetchError={fetchError}
         clearError={clearError}
         resetKey={resetKey}
-        isEmpty={groups.length === 0}
+        itemCount={groups.length}
         emptyState={list}
       >
         {list}

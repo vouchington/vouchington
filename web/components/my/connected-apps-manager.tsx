@@ -53,7 +53,7 @@ export function ConnectedAppsManager({ initialData }: { initialData: ListRespons
       fetchError={pagination.fetchError}
       clearError={pagination.clearError}
       resetKey={pagination.resetKey}
-      isEmpty={grants.length === 0}
+      itemCount={grants.length}
       emptyState={
         <p className='text-sm text-muted-foreground'>
           {t('extracted.my.connectedAppsManager.noAppsHaveAccessToYour_64aaf35e')}

@@ -24,7 +24,7 @@ export function VoteIntegrityFlagsTable(props: VoteIntegrityFlagsTableProps) {
       fetchError={props.fetchError}
       clearError={props.clearError}
       resetKey={props.resetKey}
-      isEmpty={props.flags.length === 0}
+      itemCount={props.flags.length}
       emptyState={
         <div className='p-12 text-center'>
           <p className='text-muted-foreground'>

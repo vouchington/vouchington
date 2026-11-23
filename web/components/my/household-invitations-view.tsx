@@ -106,11 +106,7 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
             {t('settings.householdInvitations.retry')}
           </Button>
         </div>
-      ) : props.invitations.length === 0 ? (
-        <p className='text-sm text-muted-foreground'>
-          {t('settings.householdInvitations.noPendingInvitations')}
-        </p>
-      ) : (
+      ) : props.invitations.length > 0 ? (
         <ul className='space-y-3'>
           {props.invitations.map(invitation => (
             <li
@@ -179,7 +175,11 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
             </li>
           ))}
         </ul>
-      )}
+      ) : !props.hasMore && !props.pageError ? (
+        <p className='text-sm text-muted-foreground'>
+          {t('settings.householdInvitations.noPendingInvitations')}
+        </p>
+      ) : null}
       {!props.loadError && (props.hasMore || props.pageError) && (
         <Button
           data-pw='household-invitations-view-load-more'

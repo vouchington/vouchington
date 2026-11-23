@@ -34,7 +34,7 @@ describe('NewsItemClusterList empty page with a next page', () => {
     renderClusterList(emptyPageWithMore, { nextPageEndpoint: endpoint })
 
     expect(screen.queryByText('No news found')).toBeNull()
-    fireEvent.click(screen.getByTestId('mock-load-more'))
+    fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
 
     expect(await screen.findByText('Older Article')).toBeDefined()
     expect(getPaginatedPage).toHaveBeenCalledWith(endpoint, { after: 'cursor-1' })
@@ -59,7 +59,7 @@ describe('NewsItemClusterList empty page with a next page', () => {
     })
     renderClusterList(emptyPageWithMore, { nextPageEndpoint: endpoint })
 
-    fireEvent.click(screen.getByTestId('mock-load-more'))
+    fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
 
     await waitFor(() => expect(screen.getByText('No news found')).toBeDefined())
   })

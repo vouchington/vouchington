@@ -48,6 +48,10 @@ export function CommunityFeed({
   const pinnedPostIds = data.pinned_post_ids ?? []
   const results = mergePageResultsById(pages).filter(r => !pinnedPostIds.includes(r.id))
   const posts = mergeRecords(pages, page => page.posts)
+  const visiblePosts = results.flatMap(result => {
+    const post = posts[result.id]
+    return post ? [post] : []
+  })
   const metrics = mergeRecords(pages, page => page.posts_metrics)
   const communities = mergeRecords(pages, page => page.communities ?? {})
   const hackerNewsReferences = mergeRecords(pages, page => page.post_hacker_news_references ?? {})
@@ -61,7 +65,7 @@ export function CommunityFeed({
       t={t}
     />
   ) : null
-  if (pinnedPosts.length === 0 && results.length === 0 && !(hasNextPage && endCursor)) {
+  if (pinnedPosts.length === 0 && visiblePosts.length === 0 && !(hasNextPage && endCursor)) {
     return (
       <EmptyState
         icon='pen-line'
@@ -101,6 +105,7 @@ export function CommunityFeed({
         </div>
       )}
       <InfiniteScroll
+        itemCount={visiblePosts.length}
         hasNextPage={hasNextPage && !!endCursor}
         endCursor={endCursor}
         onLoadMore={retryReferenceRefresh.handleLoadMore(loadMore)}
@@ -110,20 +115,15 @@ export function CommunityFeed({
         resetKey={resetKey}
       >
         <div className='space-y-3'>
-          {results.map(result => {
-            const post = posts[result.id]
-            if (!post) return null
-
-            return (
-              <PostCard
-                key={post.id}
-                post={post}
-                metrics={metrics[post.id]}
-                community={post.community_id ? communities[post.community_id] : undefined}
-                linkEmbed={linkEmbeds[post.id]}
-              />
-            )
-          })}
+          {visiblePosts.map(post => (
+            <PostCard
+              key={post.id}
+              post={post}
+              metrics={metrics[post.id]}
+              community={post.community_id ? communities[post.community_id] : undefined}
+              linkEmbed={linkEmbeds[post.id]}
+            />
+          ))}
         </div>
       </InfiniteScroll>
     </HackerNewsReferencesProvider>

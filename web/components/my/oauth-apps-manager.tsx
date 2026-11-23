@@ -57,7 +57,7 @@ export function OAuthAppsManager({ initialData, scopeCatalog }: OAuthAppsManager
         fetchError={pagination.fetchError}
         clearError={pagination.clearError}
         resetKey={pagination.resetKey}
-        isEmpty={manager.apps.length === 0}
+        itemCount={manager.apps.length}
         emptyState={
           <p className='text-sm text-muted-foreground'>
             {t('extracted.my.oauthAppsManager.youHaveNotRegisteredAnyOauth_40be670b')}

@@ -45,7 +45,7 @@ export function MyRemovedPostsClient({ initialData }: MyRemovedPostsClientProps)
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
-      isEmpty={removedPosts.length === 0}
+      itemCount={removedPosts.length}
       emptyState={emptyState}
     >
       <ul

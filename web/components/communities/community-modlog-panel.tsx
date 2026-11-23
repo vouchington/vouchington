@@ -54,7 +54,7 @@ export function CommunityModlogPanel({ community, initialData }: Props) {
           fetchError={fetchError}
           clearError={clearError}
           resetKey={resetKey}
-          isEmpty={actions.length === 0}
+          itemCount={actions.length}
           emptyState={
             <p
               className='text-sm text-muted-foreground'

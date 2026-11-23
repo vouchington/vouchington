@@ -33,7 +33,7 @@ describe('InfiniteScroll empty state', () => {
   })
 
   function renderList(options: {
-    isEmpty: boolean
+    itemCount: number
     hasNextPage: boolean
     endCursor: string | null
     onLoadMore?: () => Promise<boolean>
@@ -43,7 +43,7 @@ describe('InfiniteScroll empty state', () => {
         hasNextPage={options.hasNextPage}
         endCursor={options.endCursor}
         onLoadMore={options.onLoadMore ?? (async () => true)}
-        isEmpty={options.isEmpty}
+        itemCount={options.itemCount}
         emptyState={<p>Nothing here</p>}
       >
         <p>Row</p>
@@ -54,7 +54,7 @@ describe('InfiniteScroll empty state', () => {
   it('keeps paging an empty list that has a next page and a cursor', () => {
     const onLoadMore = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
     const { container } = renderList({
-      isEmpty: true,
+      itemCount: 0,
       hasNextPage: true,
       endCursor: 'c1',
       onLoadMore,
@@ -68,22 +68,37 @@ describe('InfiniteScroll empty state', () => {
   })
 
   it('shows the empty state when there is no next page', () => {
-    const { container } = renderList({ isEmpty: true, hasNextPage: false, endCursor: null })
+    const { container } = renderList({ itemCount: 0, hasNextPage: false, endCursor: null })
 
     expect(screen.getByText('Nothing here')).toBeDefined()
     expect(container.querySelector('[data-pw="infinite-scroll-sentinel"]')).toBeNull()
   })
 
   it('shows the empty state when a next page has no cursor to request it with', () => {
-    renderList({ isEmpty: true, hasNextPage: true, endCursor: null })
+    renderList({ itemCount: 0, hasNextPage: true, endCursor: null })
 
     expect(screen.getByText('Nothing here')).toBeDefined()
+  })
+
+  it('preserves list controls when it has no rows or replacement empty state', () => {
+    render(
+      <InfiniteScroll
+        itemCount={0}
+        hasNextPage={false}
+        endCursor={null}
+        onLoadMore={async () => true}
+      >
+        <button type='button'>Add row</button>
+      </InfiniteScroll>,
+    )
+
+    expect(screen.getByRole('button', { name: 'Add row' })).toBeVisible()
   })
 
   it('keeps paging a short non-empty page and waits for a scroll', () => {
     const onLoadMore = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
     const { container } = renderList({
-      isEmpty: false,
+      itemCount: 1,
       hasNextPage: true,
       endCursor: 'c1',
       onLoadMore,

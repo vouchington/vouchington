@@ -158,6 +158,7 @@ export function PointValuationsManager({ initialData }: { initialData: PointValu
       data-pw='point-valuations-manager'
     >
       <InfiniteScroll
+        itemCount={valuations.length}
         hasNextPage={pagination.hasNextPage}
         endCursor={pagination.endCursor}
         onLoadMore={handleLoadMore}
@@ -180,7 +181,6 @@ export function PointValuationsManager({ initialData }: { initialData: PointValu
           setEditingId={setEditingId}
         />
       </InfiniteScroll>
-
       <AddValuationForm
         loading={loadingIds.has('add')}
         newValuePerPoint={newValuePerPoint}

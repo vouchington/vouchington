@@ -101,7 +101,7 @@ export function FriendRecommendationsList({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
-      isEmpty={visibleRecommendations.length === 0}
+      itemCount={visibleRecommendations.length}
       emptyState={
         <p className='text-sm text-muted-foreground'>
           {t('extracted.my.friendRecommendationsList.noFriendRecommendationsAtThisTime_fb21db17')}{' '}
