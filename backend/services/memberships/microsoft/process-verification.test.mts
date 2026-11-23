@@ -3,11 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { memberships } from '@queues/memberships/queues'
 import { getMembershipByUserId, getMembershipSourceIdByMembershipId } from '@services/memberships'
 import { createMembershipVerification, getMembershipVerification } from '../verifications.mts'
-import {
-  createTestNativeMembershipProviderProduct,
-  createTestSku,
-  createTestUser,
-} from '@voucha/test-helpers'
+import { createTestUser } from '@voucha/test-helpers'
+import { createTestMicrosoftStoreFixture } from '@voucha/test-helpers/microsoft-store-fixture'
 import { createTestMicrosoftStoreIdKey } from '@voucha/test-helpers/microsoft-store-id-key'
 import { getTestPendingMicrosoftStoreVerification } from '@voucha/test-helpers/microsoft-store-memberships'
 import { processWithMicrosoftStore } from '@voucha/test-helpers/microsoft-store-provider-stub'
@@ -173,27 +170,10 @@ describe('Microsoft Store membership verification', () => {
 })
 
 async function createFixture() {
-  const user = await createTestUser()
-  const applicationId = `voucha.microsoft.${randomUUID()}`
-  const productId = `9TEST${randomUUID().replaceAll('-', '').slice(0, 12)}`
-  const skuId = '0001'
-  const clientId = `microsoft-client-${randomUUID()}`
-  vi.stubEnv('MICROSOFT_STORE_CLIENT_ID', clientId)
-  const sku = await createTestSku({ plan: 'plus' })
-  await createTestNativeMembershipProviderProduct({
-    membershipProductId: sku.id,
-    provider: 'microsoft_store',
-    environment: 'test',
-    applicationId,
-    providerProductId: productId,
-    skuId,
-  })
+  const base = await createTestMicrosoftStoreFixture()
+  const { user, applicationId, productId, skuId, clientId } = base
   return {
-    user,
-    applicationId,
-    productId,
-    skuId,
-    clientId,
+    ...base,
     submit: (overrides = {}) =>
       submitMicrosoftStoreVerification({
         user,
