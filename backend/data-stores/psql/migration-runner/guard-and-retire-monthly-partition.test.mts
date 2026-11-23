@@ -13,7 +13,7 @@ import {
 } from '@voucha/test-helpers'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
 import { PARTITION_DROP_POLICIES } from '../config-driven/utils/partition-drop-policies.mts'
-import { beginTransaction, write } from '../setup.mts'
+import { beginTransaction } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
 import { guardAndRetireMonthlyPartition } from './guard-and-retire-monthly-partition.mts'
 import { createPostClearancePartitions } from './create-post-clearance-partitions.mts'
