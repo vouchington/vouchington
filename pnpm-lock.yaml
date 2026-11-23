@@ -137,8 +137,8 @@ importers:
         specifier: ^1.65.1
         version: 1.65.1
       squawk-cli:
-        specifier: ^2.72.0
-        version: 2.72.0
+        specifier: ^2.73.0
+        version: 2.73.0
       syncpack:
         specifier: ^15.3.3
         version: 15.3.3
@@ -20090,42 +20090,42 @@ packages:
   '@speed-highlight/core@1.2.24':
     resolution: {integrity: sha512-qeW2e1l78afw8VhRPfPQ1Gjj+KU5XFQ/OFV5ti6eTa9bruO7mJyZtA4vw0ofqmA3tKCkROE9xLk3VZoeRc98nw==}
 
-  '@squawk-cli/darwin-arm64@2.72.0':
-    resolution: {integrity: sha512-x9GbT+MpokUApC0hTO3aiZGXIk9NQRHIgilENX3078OVWtYQZ8K+nvZ8Fx3Hs2L3tDMVpK+G3ZO8eF7+vm+uIw==}
+  '@squawk-cli/darwin-arm64@2.73.0':
+    resolution: {integrity: sha512-voKI5K4wCuy/cFJaw0nWEISqDItBP3dhng74gGEIr+mSUgtaWpYRGB9+ZoTCAQ/XIAIStQnUQii7jn6daMZGDQ==}
     cpu: [arm64]
     os: [darwin]
 
-  '@squawk-cli/darwin-x64@2.72.0':
-    resolution: {integrity: sha512-U49fefGycKA6/ClFvG1N2XsVubKCKXXAWya2fizDi64wmKc+9khNEkniHwLb12Xr/0gd9cJTLF7pXCPhba4TDg==}
+  '@squawk-cli/darwin-x64@2.73.0':
+    resolution: {integrity: sha512-SB5QPf7uW/9JCVWoi9dP98C+505wjHgS28iKPxssaVDpBSZAXKQ+UIjrjcyVUDDNLiKA6Nl85I1wKFrNjycC9w==}
     cpu: [x64]
     os: [darwin]
 
-  '@squawk-cli/linux-arm64-musl@2.72.0':
-    resolution: {integrity: sha512-unIaLzFKyDaSyOIXXKBBsXgHehr9/DqQvTNKKKMjVlNMOOsHlCHASwPQDmlfjnlRgcL0dGPGZ9j+jJqUhNbCYQ==}
+  '@squawk-cli/linux-arm64-musl@2.73.0':
+    resolution: {integrity: sha512-WY91BOP+Xfx7AviM/NIbR0r+UH61KYfpK8E3tuCLJDIQY5mP4ojcHKTqyj4E6lBxsEHfOdDg/3wEVQUY9inBog==}
     cpu: [arm64]
     os: [linux]
     libc: [musl]
 
-  '@squawk-cli/linux-arm64@2.72.0':
-    resolution: {integrity: sha512-Nb1SKgcrwnM+PWDFEn6Q1I0jYWdATicvbpkryiJcSGnr1SwwRKKEcM23qPNzjyxJvjQeE8GoAQ4O22J23ULWwQ==}
+  '@squawk-cli/linux-arm64@2.73.0':
+    resolution: {integrity: sha512-5RUA2VYkU97bRsWUlhpg2kvjdcPye47156KIERsUaJuRQ1UEsmKxMvPly6Gf5v1XUJF7uoX03A+vEJTqlVM0AA==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@squawk-cli/linux-x64-musl@2.72.0':
-    resolution: {integrity: sha512-VS5Lste4yQyrwrXJ1TuRO40BZlq898MZtRTb49X9KDQl0yj6ZrQ8KD8K00bZUzH2m/iv9QQtSNLynyMt533Xbw==}
+  '@squawk-cli/linux-x64-musl@2.73.0':
+    resolution: {integrity: sha512-dCLvPvBfRiAKpbYkTLXo8wxtdx35I+9kGSwvEwhi+RHy6XNRwRqs+c2aUzy25AY35ccR1LrxMyqtPaYeEUu2lg==}
     cpu: [x64]
     os: [linux]
     libc: [musl]
 
-  '@squawk-cli/linux-x64@2.72.0':
-    resolution: {integrity: sha512-7M2tL5E8EhI9aCAFiUQe5jfMcdSBk3aSboep1U16ZqRQo6fXLUVfvpATdEXj0c4J8e9AcavTAMXSc2rQnNBRVA==}
+  '@squawk-cli/linux-x64@2.73.0':
+    resolution: {integrity: sha512-SMMp5x6SfZoo+6o+WQHg5ife04rvmg5mKw3Ok5En2FleISx7/w2esERQHiJ/NmI4SUYMSu6j+PW0ieA09hmTZg==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@squawk-cli/win32-x64@2.72.0':
-    resolution: {integrity: sha512-PeSXhOZIlB7n4eMApujqDF1jGrTPDBnMAYohL95RZ5IoYvr9TSDqoH23rpdguj+TBDxfA9GA3KSO2fXB5NwwBw==}
+  '@squawk-cli/win32-x64@2.73.0':
+    resolution: {integrity: sha512-o26xbHqIcOlGbjG4E2kniIHAhpba0MtwlgSGg6fX+/6Mo6o+Vd1QvYjJTK88F3OWSiIPVcSAKlzCo7SAyy7HwA==}
     cpu: [x64]
     os: [win32]
 
@@ -24261,8 +24261,8 @@ packages:
     resolution: {integrity: sha512-UXhXR2869FQaD+GMly8jAMCRZ94nU5KcrFetZfWEMd+LVVG6y0ExgHAhatEcKZ/wk8YcKPdi+hiD2wm75lq3/Q==}
     engines: {node: '>=4.0.0'}
 
-  squawk-cli@2.72.0:
-    resolution: {integrity: sha512-4vKiq4quUG8lMBZvzh19NBsqPgoB5CFNAhZwFLFk3exFLJD58viyKR9Jd8jyvRdJ6Y4GBGp23upirSPRMI5WlQ==}
+  squawk-cli@2.73.0:
+    resolution: {integrity: sha512-RTAH31j8vPO88vk7FSLZMgv3Upd0+EZkC1KU5SqSxQe7p699hGy2lclUBHH24mo1rFRZzWdP9UzVypTXgTehBw==}
     hasBin: true
 
   ssrf-guard@1.0.0:
@@ -29108,25 +29108,25 @@ snapshots:
 
   '@speed-highlight/core@1.2.24': {}
 
-  '@squawk-cli/darwin-arm64@2.72.0':
+  '@squawk-cli/darwin-arm64@2.73.0':
     optional: true
 
-  '@squawk-cli/darwin-x64@2.72.0':
+  '@squawk-cli/darwin-x64@2.73.0':
     optional: true
 
-  '@squawk-cli/linux-arm64-musl@2.72.0':
+  '@squawk-cli/linux-arm64-musl@2.73.0':
     optional: true
 
-  '@squawk-cli/linux-arm64@2.72.0':
+  '@squawk-cli/linux-arm64@2.73.0':
     optional: true
 
-  '@squawk-cli/linux-x64-musl@2.72.0':
+  '@squawk-cli/linux-x64-musl@2.73.0':
     optional: true
 
-  '@squawk-cli/linux-x64@2.72.0':
+  '@squawk-cli/linux-x64@2.73.0':
     optional: true
 
-  '@squawk-cli/win32-x64@2.72.0':
+  '@squawk-cli/win32-x64@2.73.0':
     optional: true
 
   '@stablelib/base64@1.0.1': {}
@@ -33648,15 +33648,15 @@ snapshots:
 
   sql-template-strings@2.2.2: {}
 
-  squawk-cli@2.72.0:
+  squawk-cli@2.73.0:
     optionalDependencies:
-      '@squawk-cli/darwin-arm64': 2.72.0
-      '@squawk-cli/darwin-x64': 2.72.0
-      '@squawk-cli/linux-arm64': 2.72.0
-      '@squawk-cli/linux-arm64-musl': 2.72.0
-      '@squawk-cli/linux-x64': 2.72.0
-      '@squawk-cli/linux-x64-musl': 2.72.0
-      '@squawk-cli/win32-x64': 2.72.0
+      '@squawk-cli/darwin-arm64': 2.73.0
+      '@squawk-cli/darwin-x64': 2.73.0
+      '@squawk-cli/linux-arm64': 2.73.0
+      '@squawk-cli/linux-arm64-musl': 2.73.0
+      '@squawk-cli/linux-x64': 2.73.0
+      '@squawk-cli/linux-x64-musl': 2.73.0
+      '@squawk-cli/win32-x64': 2.73.0
 
   ssrf-guard@1.0.0:
     dependencies:
