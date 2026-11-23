@@ -8,6 +8,7 @@
 import { useEffect, useRef } from 'react'
 import { pageHasContinuation } from '@/lib/api/page-has-continuation'
 import { PaginatedListFooter } from './paginated-list-footer'
+import { useConsecutiveEmptyPages } from './use-consecutive-empty-pages'
 
 /**
  * Empty-state switch shared by every paginated list: a short or empty page is not the end of
@@ -50,6 +51,7 @@ export function InfiniteScroll({
   emptyState,
 }: InfiniteScrollProps) {
   const canContinue = pageHasContinuation({ has_next_page: hasNextPage, end_cursor: endCursor })
+  const emptyPages = useConsecutiveEmptyPages(isEmpty, endCursor, resetKey)
   const observerRef = useRef<HTMLDivElement>(null)
   const loadingRef = useRef(false)
   const attemptedCursorRef = useRef<string | null>(null)
@@ -63,6 +65,9 @@ export function InfiniteScroll({
     if ((!hasNextPage || !endCursor) && !retryingFailure) return
     if (loadingMore || loadingRef.current) return
     if (attemptedCursorRef.current === endCursor && !retryingFailure) return
+    // After MAX_CONSECUTIVE_EMPTY_PAGES empty pages only an explicit "Load more" continues.
+    if (!manual && emptyPages.autoLoadPaused()) return
+    if (manual) emptyPages.restart()
 
     loadingRef.current = true
     // Only stamp the guard once onLoadMore confirms it actually started a request — an
