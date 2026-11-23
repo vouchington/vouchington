@@ -43,6 +43,18 @@ export function PaginatedUserPostRelationList({
   const hackerNewsReferences = mergeRecords(pages, page => page.post_hacker_news_references ?? {})
   const canLoadMore = hasNextPage && !!endpoint
 
+  const list = (
+    <HackerNewsReferencesProvider references={hackerNewsReferences}>
+      <UserPostRelationList
+        posts={posts}
+        emptyTitle={emptyTitle}
+        emptyDescription={emptyDescription}
+        relationAction={relationAction}
+        onRemoved={removePost}
+      />
+    </HackerNewsReferencesProvider>
+  )
+
   return (
     <InfiniteScroll
       hasNextPage={canLoadMore}
@@ -52,16 +64,10 @@ export function PaginatedUserPostRelationList({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
+      isEmpty={posts.length === 0}
+      emptyState={list}
     >
-      <HackerNewsReferencesProvider references={hackerNewsReferences}>
-        <UserPostRelationList
-          posts={posts}
-          emptyTitle={emptyTitle}
-          emptyDescription={emptyDescription}
-          relationAction={relationAction}
-          onRemoved={removePost}
-        />
-      </HackerNewsReferencesProvider>
+      {list}
     </InfiniteScroll>
   )
 }

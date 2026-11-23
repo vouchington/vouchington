@@ -6,9 +6,21 @@
  */
 
 import { useEffect, useRef } from 'react'
+import { pageHasContinuation } from '@/lib/api/page-has-continuation'
 import { PaginatedListFooter } from './paginated-list-footer'
+import { useConsecutiveEmptyPages } from './use-consecutive-empty-pages'
 
-interface InfiniteScrollProps {
+/**
+ * Empty-state switch shared by every paginated list: a short or empty page is not the end of
+ * the list, so `emptyState` replaces the children only when nothing is loaded and no next page
+ * can be requested. While a next page can still be requested, an empty list renders only the
+ * sentinel so the page keeps loading.
+ */
+type EmptyStateProps =
+  | { isEmpty: boolean; emptyState: React.ReactNode }
+  | { isEmpty?: undefined; emptyState?: undefined }
+
+type InfiniteScrollProps = EmptyStateProps & {
   hasNextPage: boolean
   endCursor: string | null
   onLoadMore: () => Promise<void | boolean>
@@ -35,7 +47,11 @@ export function InfiniteScroll({
   clearError = NOOP_CLEAR_ERROR,
   children,
   resetKey,
+  isEmpty = false,
+  emptyState,
 }: InfiniteScrollProps) {
+  const canContinue = pageHasContinuation({ has_next_page: hasNextPage, end_cursor: endCursor })
+  const emptyPages = useConsecutiveEmptyPages(isEmpty, endCursor, resetKey)
   const observerRef = useRef<HTMLDivElement>(null)
   const loadingRef = useRef(false)
   const attemptedCursorRef = useRef<string | null>(null)
@@ -49,6 +65,9 @@ export function InfiniteScroll({
     if ((!hasNextPage || !endCursor) && !retryingFailure) return
     if (loadingMore || loadingRef.current) return
     if (attemptedCursorRef.current === endCursor && !retryingFailure) return
+    // After MAX_CONSECUTIVE_EMPTY_PAGES empty pages only an explicit "Load more" continues.
+    if (!manual && emptyPages.autoLoadPaused()) return
+    if (manual) emptyPages.restart()
 
     loadingRef.current = true
     // Only stamp the guard once onLoadMore confirms it actually started a request — an
@@ -94,6 +113,8 @@ export function InfiniteScroll({
     if (!hasNextPage || !endCursor || !observerRef.current) return undefined
 
     const element = observerRef.current
+    // An empty list has nothing to scroll, so the next page is requested without a scroll.
+    if (isEmpty) hasScrolledRef.current = true
     const observer = new IntersectionObserver(
       entries => {
         if (entries[0]!.isIntersecting && !fetchError && hasScrolledRef.current) {
@@ -139,12 +160,12 @@ export function InfiniteScroll({
     // endCursor, and fetchError are all unchanged (the coincidental-same-cursor case) —
     // observe() delivers a fresh intersection callback for the current DOM state, which is
     // the only thing that can retrigger a scroll-gated load once the guard above is cleared.
-  }, [hasNextPage, endCursor, fetchError, resetKey])
+  }, [hasNextPage, endCursor, fetchError, resetKey, isEmpty])
 
   return (
     <>
-      {children}
-      {((hasNextPage && endCursor) || fetchError) && (
+      {isEmpty ? (!canContinue && !fetchError ? emptyState : null) : children}
+      {(canContinue || fetchError) && (
         <div
           ref={observerRef}
           data-pw='infinite-scroll-sentinel'

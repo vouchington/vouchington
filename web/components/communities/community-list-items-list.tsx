@@ -1,7 +1,6 @@
 'use client'
 
 import { usePaginatedList } from '@/hooks/use-paginated-list'
-import { pageHasContinuation } from '@/lib/api/page-has-continuation'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import { EmptyState } from '@/components/shared/empty-state'
 import { CommunityListItemCard } from './community-list-item-card'
@@ -34,21 +33,6 @@ export function CommunityListItemsList({
     mergedData.community_list_items[r.id] != null ? [mergedData.community_list_items[r.id]!] : [],
   )
 
-  if (
-    items.length === 0 &&
-    !pageHasContinuation({ has_next_page: hasNextPage, end_cursor: endCursor })
-  ) {
-    return (
-      <EmptyState
-        icon='inbox'
-        title={t('extracted.communities.communityListItemsList.noItemsYet_2e5bdbbd')}
-        description={t(
-          'extracted.communities.communityListItemsList.noItemsHaveBeenAddedTo_fe8e8105',
-        )}
-      />
-    )
-  }
-
   return (
     <InfiniteScroll
       hasNextPage={hasNextPage}
@@ -58,6 +42,16 @@ export function CommunityListItemsList({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
+      isEmpty={items.length === 0}
+      emptyState={
+        <EmptyState
+          icon='inbox'
+          title={t('extracted.communities.communityListItemsList.noItemsYet_2e5bdbbd')}
+          description={t(
+            'extracted.communities.communityListItemsList.noItemsHaveBeenAddedTo_fe8e8105',
+          )}
+        />
+      }
     >
       <div className='space-y-3'>
         {items.map(item => (

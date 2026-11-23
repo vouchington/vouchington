@@ -57,24 +57,24 @@ export function OAuthAppsManager({ initialData, scopeCatalog }: OAuthAppsManager
         fetchError={pagination.fetchError}
         clearError={pagination.clearError}
         resetKey={pagination.resetKey}
-      >
-        {manager.apps.length > 0 ? (
-          <ul className='space-y-3'>
-            {manager.apps.map(app => (
-              <OAuthAppRow
-                key={app.id}
-                app={app}
-                onRevoke={manager.handleRevoke}
-                onRotate={manager.handleRotate}
-                onUpdate={manager.handleUpdate}
-              />
-            ))}
-          </ul>
-        ) : (
+        isEmpty={manager.apps.length === 0}
+        emptyState={
           <p className='text-sm text-muted-foreground'>
             {t('extracted.my.oauthAppsManager.youHaveNotRegisteredAnyOauth_40be670b')}
           </p>
-        )}
+        }
+      >
+        <ul className='space-y-3'>
+          {manager.apps.map(app => (
+            <OAuthAppRow
+              key={app.id}
+              app={app}
+              onRevoke={manager.handleRevoke}
+              onRotate={manager.handleRotate}
+              onUpdate={manager.handleUpdate}
+            />
+          ))}
+        </ul>
       </InfiniteScroll>
       <RegisterOAuthAppForm
         isAdmin={isAdmin}

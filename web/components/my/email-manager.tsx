@@ -130,6 +130,8 @@ export function EmailManager({ initialData, initialEmailAddresses }: Props) {
     }
   }
 
+  const listProps = { emails, loading, onRemove: handleRemove, onSetPrimary: handleSetPrimary }
+
   return (
     <div className='space-y-4'>
       <MfaReauthDialog {...authentication.dialogProps} />
@@ -145,13 +147,10 @@ export function EmailManager({ initialData, initialEmailAddresses }: Props) {
         fetchError={pagination.fetchError}
         clearError={pagination.clearError}
         resetKey={pagination.resetKey}
+        isEmpty={emails.length === 0}
+        emptyState={<EmailList {...listProps} />}
       >
-        <EmailList
-          emails={emails}
-          loading={loading}
-          onRemove={handleRemove}
-          onSetPrimary={handleSetPrimary}
-        />
+        <EmailList {...listProps} />
       </InfiniteScroll>
 
       {step === 'list' && (

@@ -93,14 +93,6 @@ export function CommunityBansPanel({ community, initialData }: Props) {
       </CardHeader>
       <CardContent className='space-y-3'>
         {liftError && <p className='text-sm text-destructive'>{liftError}</p>}
-        {bans.length === 0 && (
-          <p
-            className='text-sm text-muted-foreground'
-            data-pw='community-bans-empty'
-          >
-            {t('extracted.communities.communityBansPanel.noBansOnRecord_7ee4f2c8')}
-          </p>
-        )}
         <InfiniteScroll
           hasNextPage={hasNextPage}
           endCursor={endCursor}
@@ -109,6 +101,15 @@ export function CommunityBansPanel({ community, initialData }: Props) {
           fetchError={fetchError}
           clearError={clearError}
           resetKey={resetKey}
+          isEmpty={bans.length === 0}
+          emptyState={
+            <p
+              className='text-sm text-muted-foreground'
+              data-pw='community-bans-empty'
+            >
+              {t('extracted.communities.communityBansPanel.noBansOnRecord_7ee4f2c8')}
+            </p>
+          }
         >
           {bans.map(ban => {
             const user = users[ban.user_id]

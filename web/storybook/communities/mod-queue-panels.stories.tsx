@@ -56,6 +56,7 @@ const queue = {
   posts: [],
   reports: [],
   reportPagination: { hasNextPage: false },
+  state: { activeAction: null, loading: false, rejectionReason: '' },
 } as unknown as ModQueueData
 
 const shared = {

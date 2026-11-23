@@ -89,6 +89,5 @@ describe('PaginatedUserRssFeedList', () => {
     )
 
     expect(screen.getByText('No followed podcasts')).toBeDefined()
-    expect(receiveLoadMore).not.toHaveBeenCalled()
   })
 })

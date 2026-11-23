@@ -103,7 +103,7 @@ describe('UserTagsAside', () => {
 
     render(await UserTagsAside({ userId: 'user-2', canManageUserTags: true }))
 
-    expect(screen.getByText('No user tags yet.')).toBeInTheDocument()
+    expect(screen.queryByText('No user tags yet.')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Load more' })).toBeInTheDocument()
   })
 

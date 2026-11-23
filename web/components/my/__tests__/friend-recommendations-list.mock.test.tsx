@@ -36,7 +36,15 @@ vi.mock(import('@/lib/api/client/bookmarks'), () => ({
 }))
 
 vi.mock(import('@/components/shared/infinite-scroll'), () => ({
-  InfiniteScroll: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  InfiniteScroll: ({
+    children,
+    isEmpty,
+    emptyState,
+  }: {
+    children: ReactNode
+    isEmpty?: boolean
+    emptyState?: ReactNode
+  }) => <div>{isEmpty ? emptyState : children}</div>,
 }))
 vi.mock(import('@/components/users/user-list'), () => ({
   UserListItem: ({ user, actions }: { user: { username?: string }; actions?: ReactNode }) => (

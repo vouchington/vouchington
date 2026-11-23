@@ -24,8 +24,12 @@ vi.mock(import('@/components/shared/infinite-scroll'), () => ({
     endCursor,
     fetchError,
     hasNextPage,
+    isEmpty,
+    emptyState,
   }: {
     children: React.ReactNode
+    isEmpty?: boolean
+    emptyState?: React.ReactNode
     endCursor: string | null
     fetchError?: Error | null
     hasNextPage: boolean
@@ -35,7 +39,7 @@ vi.mock(import('@/components/shared/infinite-scroll'), () => ({
       data-end-cursor={endCursor ?? ''}
       data-has-next-page={hasNextPage}
     >
-      {children}
+      {isEmpty ? (hasNextPage && endCursor ? null : emptyState) : children}
       {fetchError && <button type='button'>Retry</button>}
     </div>
   ),

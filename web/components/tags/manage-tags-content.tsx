@@ -61,6 +61,16 @@ export function ManageTagsContent({
     return rel ? [rel] : []
   })
   const excludeIds = relations.flatMap(r => (r.object_id ? [r.object_id] : []))
+  const tagList = (
+    <TagList
+      relations={relations}
+      electionVotes={election_votes}
+      objectType={objectType}
+      showVoting
+      isAuthenticated={isAuthenticated}
+      onVoteSubmitted={onRelationsChange}
+    />
+  )
 
   return (
     <div className='space-y-6'>
@@ -92,15 +102,10 @@ export function ManageTagsContent({
           fetchError={pagination.fetchError}
           clearError={pagination.clearError}
           resetKey={pagination.resetKey}
+          isEmpty={relations.length === 0}
+          emptyState={tagList}
         >
-          <TagList
-            relations={relations}
-            electionVotes={election_votes}
-            objectType={objectType}
-            showVoting
-            isAuthenticated={isAuthenticated}
-            onVoteSubmitted={onRelationsChange}
-          />
+          {tagList}
         </InfiniteScroll>
       </div>
     </div>

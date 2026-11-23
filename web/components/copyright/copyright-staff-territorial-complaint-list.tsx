@@ -1,5 +1,6 @@
 'use client'
 
+import { pageHasContinuation } from '@/lib/api/page-has-continuation'
 import { PaginatedListFooter } from '@/components/shared/paginated-list-footer'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import {
@@ -21,12 +22,13 @@ export function CopyrightStaffTerritorialComplaintList({
   onReview: SubmitReview
   pending: boolean
 }) {
-  const { pages, hasNextPage, loadingMore, fetchError, clearError, loadMore } = usePaginatedList(
-    initialPage,
-    `/api/v1/copyright-notices/${item.id}/territorial-complaints`,
-    {},
-    { loadPage: after => listCopyrightTerritorialComplaints(item.id, { after }) },
-  )
+  const { pages, hasNextPage, endCursor, loadingMore, fetchError, clearError, loadMore } =
+    usePaginatedList(
+      initialPage,
+      `/api/v1/copyright-notices/${item.id}/territorial-complaints`,
+      {},
+      { loadPage: after => listCopyrightTerritorialComplaints(item.id, { after }) },
+    )
   const complaintById = new Map<
     string,
     CopyrightTerritorialComplaintsPage['copyright_territorial_complaints'][number]
@@ -39,7 +41,8 @@ export function CopyrightStaffTerritorialComplaintList({
   const complaints = [...complaintById.values()]
   return (
     <div className='space-y-3'>
-      {complaints.length === 0 ? (
+      {complaints.length === 0 &&
+      !pageHasContinuation({ has_next_page: hasNextPage, end_cursor: endCursor }) ? (
         <p className='text-sm text-muted-foreground'>No complaints have been filed.</p>
       ) : (
         complaints.map(complaint => (

@@ -20,15 +20,19 @@ vi.mock(import('@/components/shared/infinite-scroll'), () => ({
   InfiniteScroll: ({
     children,
     onLoadMore,
+    isEmpty,
+    emptyState,
   }: {
     children: React.ReactNode
+    isEmpty?: boolean
+    emptyState?: React.ReactNode
     hasNextPage: boolean
     endCursor: string | null
     onLoadMore: () => Promise<void | boolean>
     resetKey?: unknown
   }) => {
     mockReceiveLoadMore(onLoadMore)
-    return <div>{children}</div>
+    return <div>{isEmpty ? emptyState : children}</div>
   },
 }))
 

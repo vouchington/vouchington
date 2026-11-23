@@ -46,14 +46,6 @@ export function CommunityModlogPanel({ community, initialData }: Props) {
         </CardDescription>
       </CardHeader>
       <CardContent className='space-y-3'>
-        {actions.length === 0 && (
-          <p
-            className='text-sm text-muted-foreground'
-            data-pw='community-modlog-empty'
-          >
-            {t('extracted.communities.communityModlogPanel.noModerationActionsOnRecord_bbada885')}
-          </p>
-        )}
         <InfiniteScroll
           hasNextPage={hasNextPage}
           endCursor={endCursor}
@@ -62,6 +54,15 @@ export function CommunityModlogPanel({ community, initialData }: Props) {
           fetchError={fetchError}
           clearError={clearError}
           resetKey={resetKey}
+          isEmpty={actions.length === 0}
+          emptyState={
+            <p
+              className='text-sm text-muted-foreground'
+              data-pw='community-modlog-empty'
+            >
+              {t('extracted.communities.communityModlogPanel.noModerationActionsOnRecord_bbada885')}
+            </p>
+          }
         >
           {actions.map(action => {
             const actor = action.actor_user_id ? users[action.actor_user_id] : null

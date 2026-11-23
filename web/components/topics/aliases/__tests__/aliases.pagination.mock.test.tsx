@@ -22,7 +22,7 @@ vi.mock(import('@/hooks/use-paginated-list'), () => ({
 vi.mock(import('@/components/shared/infinite-scroll'), () => ({
   InfiniteScroll: ({ children, ...props }: InfiniteScrollProps) => {
     mockInfiniteScrollProps(props)
-    return <div>{children}</div>
+    return <div>{props.isEmpty ? props.emptyState : children}</div>
   },
 }))
 

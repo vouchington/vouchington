@@ -23,13 +23,17 @@ vi.mock(
 vi.mock(import('@/components/shared/infinite-scroll'), () => ({
   InfiniteScroll: ({
     children,
+    isEmpty,
+    emptyState,
   }: {
     children: React.ReactNode
+    isEmpty?: boolean
+    emptyState?: React.ReactNode
     hasNextPage: boolean
     endCursor: string | null
     onLoadMore: () => Promise<void | boolean>
     resetKey?: unknown
-  }) => <div>{children}</div>,
+  }) => <div>{isEmpty ? emptyState : children}</div>,
 }))
 
 vi.mock(import('@/lib/api/client'), () => ({

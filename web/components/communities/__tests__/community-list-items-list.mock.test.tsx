@@ -14,9 +14,15 @@ vi.mock(import('@/lib/api/client'), () => ({
 }))
 
 vi.mock(import('@/components/shared/infinite-scroll'), () => ({
-  InfiniteScroll: ({ children, hasNextPage, onLoadMore }: InfiniteScrollProps) => (
+  InfiniteScroll: ({
+    children,
+    hasNextPage,
+    isEmpty,
+    emptyState,
+    onLoadMore,
+  }: InfiniteScrollProps) => (
     <div>
-      {children}
+      {isEmpty ? (hasNextPage ? null : emptyState) : children}
       {hasNextPage ? (
         <button
           type='button'

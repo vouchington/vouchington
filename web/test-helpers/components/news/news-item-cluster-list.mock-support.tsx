@@ -30,14 +30,18 @@ vi.mock(import('@/components/shared/infinite-scroll'), () => ({
     hasNextPage,
     endCursor,
     onLoadMore,
+    isEmpty,
+    emptyState,
   }: {
     children: ReactNode
+    isEmpty?: boolean
+    emptyState?: ReactNode
     hasNextPage: boolean
     endCursor: string | null
     onLoadMore: () => Promise<boolean | void>
   }) => (
     <div>
-      {children}
+      {isEmpty ? (hasNextPage && endCursor ? null : emptyState) : children}
       {hasNextPage && endCursor ? (
         <button
           type='button'

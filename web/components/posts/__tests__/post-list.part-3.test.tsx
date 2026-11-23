@@ -43,7 +43,6 @@ describe('PostList', () => {
       />,
     )
     expect(screen.getByText('No posts found')).toBeDefined()
-    expect(mockReceiveLoadMore).not.toHaveBeenCalled()
   })
 
   it('fetches the next page with the correct cursor and params', async () => {

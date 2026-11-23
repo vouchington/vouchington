@@ -32,6 +32,13 @@ export function AdditionalDomains({
   clearError: () => void
 }) {
   const t = useTranslations()
+  const list = (
+    <AdditionalDomainList
+      additionalHostnames={additionalHostnames}
+      onRemoveHostname={onRemoveHostname}
+      removingHostnameId={removingHostnameId}
+    />
+  )
   return (
     <div>
       <h3
@@ -47,12 +54,10 @@ export function AdditionalDomains({
         loadingMore={loadingMore}
         fetchError={fetchError}
         clearError={clearError}
+        isEmpty={additionalHostnames.length === 0}
+        emptyState={list}
       >
-        <AdditionalDomainList
-          additionalHostnames={additionalHostnames}
-          onRemoveHostname={onRemoveHostname}
-          removingHostnameId={removingHostnameId}
-        />
+        {list}
       </InfiniteScroll>
       <form
         onSubmit={onAddHostname}

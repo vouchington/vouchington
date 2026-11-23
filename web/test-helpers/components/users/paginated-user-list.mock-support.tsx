@@ -12,9 +12,15 @@ vi.mock(import('@/components/shared/infinite-scroll'), () => ({
   InfiniteScroll: ({
     children,
     clearError,
+    emptyState,
     fetchError,
+    hasNextPage,
+    isEmpty,
     onLoadMore,
   }: React.PropsWithChildren<{
+    emptyState?: React.ReactNode
+    hasNextPage?: boolean
+    isEmpty?: boolean
     clearError?: () => void
     fetchError?: Error | null
     onLoadMore: () => void
@@ -22,7 +28,7 @@ vi.mock(import('@/components/shared/infinite-scroll'), () => ({
     receiveLoadMore(onLoadMore)
     return (
       <div>
-        {children}
+        {isEmpty ? (hasNextPage ? null : emptyState) : children}
         {fetchError ? (
           // ast-grep-ignore: web-no-raw-form-elements -- test double replaces the load-more control with a native button the tests click
           <button
