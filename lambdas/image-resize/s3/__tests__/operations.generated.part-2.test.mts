@@ -106,7 +106,8 @@ describe('putImageToCache', () => {
     )
 
     expect(mockSend).toHaveBeenCalledOnce()
-    const command = mockSend.mock.calls[0][0]
+    // `calls[0]!`: the handler under test has just run, so the mock was called at least once.
+    const command = mockSend.mock.calls[0]![0]
     expect(command.input.Bucket).toBe('cache-bucket')
     expect(command.input.Key).toBe('cache-key')
     expect(command.input.Body).toBe(buffer)
@@ -131,7 +132,7 @@ describe('putImageToCache', () => {
       '"quoted-etag"',
     )
 
-    const command = mockSend.mock.calls[0][0]
+    const command = mockSend.mock.calls[0]![0]
     expect(command.input.Metadata?.originEtag).toBe('quoted-etag')
   })
 

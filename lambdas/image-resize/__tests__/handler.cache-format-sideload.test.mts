@@ -96,7 +96,8 @@ describe('handler.cache-format', () => {
         expect(result.statusCode).toBe(200)
         expect(result.headers?.['Content-Type']).toBe('image/avif')
 
-        const cacheKey = mockFetchImageFromS3.mock.calls[0][2]
+        // `calls[0]!`: the handler under test has just run, so the mock was called at least once.
+        const cacheKey = mockFetchImageFromS3.mock.calls[0]![2]
         expect(cacheKey).toContain('-favif-')
       })
 
@@ -112,7 +113,7 @@ describe('handler.cache-format', () => {
         expect(result.statusCode).toBe(200)
         expect(result.headers?.['Content-Type']).toBe('image/webp')
 
-        const cacheKey = mockFetchImageFromS3.mock.calls[0][2]
+        const cacheKey = mockFetchImageFromS3.mock.calls[0]![2]
         expect(cacheKey).toContain('-fwebp-')
       })
 
@@ -122,7 +123,7 @@ describe('handler.cache-format', () => {
         )
 
         expect(result.statusCode).toBe(200)
-        const cacheKey = mockFetchImageFromS3.mock.calls[0][2]
+        const cacheKey = mockFetchImageFromS3.mock.calls[0]![2]
         expect(cacheKey).toContain('-fjpeg-')
       })
 
@@ -142,8 +143,8 @@ describe('handler.cache-format', () => {
           ),
         )
 
-        const avifKey = mockFetchImageFromS3.mock.calls[0][2]
-        const webpKey = mockFetchImageFromS3.mock.calls[1][2]
+        const avifKey = mockFetchImageFromS3.mock.calls[0]![2]
+        const webpKey = mockFetchImageFromS3.mock.calls[1]![2]
 
         expect(avifKey).toContain('-favif-')
         expect(webpKey).toContain('-fwebp-')
@@ -167,8 +168,8 @@ describe('handler.cache-format', () => {
         expect(result.statusCode).toBe(200)
         expect(result.headers?.['Content-Type']).toBe('image/webp')
 
-        const cacheReadKey = mockFetchImageFromS3.mock.calls[0][2]
-        const cacheWriteKey = mockPutImageToCache.mock.calls[0][2]
+        const cacheReadKey = mockFetchImageFromS3.mock.calls[0]![2]
+        const cacheWriteKey = mockPutImageToCache.mock.calls[0]![2]
 
         expect(cacheReadKey).toContain('-fwebp-')
         expect(cacheWriteKey).toContain('-fwebp-')

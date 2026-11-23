@@ -77,7 +77,7 @@ describe('media source policy before cache delivery', () => {
   it('serves a warm transformed object without fetching the source again', async () => {
     const result = await handler(sideloadEvent(SOURCE))
     expect(result.statusCode).toBe(200)
-    const cacheKey = vi.mocked(dependencies.fetchImageFromS3).mock.calls[0]?.[2]
+    const cacheKey = vi.mocked(dependencies.fetchImageFromS3).mock.calls[0]![2]!
     expect(cacheKey?.startsWith(`${TRANSFORMED_SIDELOAD_CACHE_PREFIX}${sha256(SOURCE)}`)).toBe(true)
     expect(dependencies.fetchImageFromUrl).not.toHaveBeenCalled()
   })
@@ -93,7 +93,7 @@ describe('media source policy before cache delivery', () => {
       expect.any(Number),
       expect.any(Number),
     )
-    const cacheKey = vi.mocked(dependencies.fetchImageFromS3).mock.calls[0]?.[2]
+    const cacheKey = vi.mocked(dependencies.fetchImageFromS3).mock.calls[0]![2]!
     expect(cacheKey.startsWith(TRANSFORMED_SIDELOAD_CACHE_PREFIX)).toBe(true)
     expect(cacheKey.startsWith(sha256(SOURCE))).toBe(false)
   })
