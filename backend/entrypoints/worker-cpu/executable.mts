@@ -15,7 +15,7 @@ const ENTRYPOINTS: Record<string, () => Promise<unknown>> = {
   'check-native-addons.mts': () => import('./check-native-addons.mts'),
   'enqueue-heartbeat.mts': () => import('@backend/worker-runtime/enqueue-heartbeat'),
   'cli-smoke.mts': async () => {
-    const { runWorkerIoCliSmoke } = await import('@modules/child-process/image-smoke')
+    const { runWorkerIoCliSmoke } = await import('@modules/utils/worker-io-cli-smoke')
     await runWorkerIoCliSmoke()
   },
   'serve.mts': () => import('./serve.mts'),

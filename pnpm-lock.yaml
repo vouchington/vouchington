@@ -1422,6 +1422,9 @@ importers:
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
+      '@vouchington/server-utils':
+        specifier: ^0.0.1
+        version: 0.0.1
     devDependencies:
       vitest:
         specifier: ^5.1.0
@@ -1714,9 +1717,6 @@ importers:
       '@jongleberry/vurst-runtime':
         specifier: ^0.4.4
         version: 0.4.4
-      '@modules/child-process':
-        specifier: workspace:^
-        version: link:../../modules/child-process
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -1808,9 +1808,6 @@ importers:
       '@data-stores/graceful-shutdown':
         specifier: workspace:^
         version: link:../../data-stores/graceful-shutdown
-      '@modules/child-process':
-        specifier: workspace:^
-        version: link:../../modules/child-process
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -2409,8 +2406,6 @@ importers:
         specifier: ^0.1.0
         version: 0.1.0(@atproto/oauth-client-node@0.5.16)
 
-  backend/modules/child-process: {}
-
   backend/modules/csv:
     dependencies:
       '@vouchington/csv':
@@ -2739,6 +2734,9 @@ importers:
       '@vouchington/sentry':
         specifier: ^0.7.0
         version: 0.7.0(@sentry/browser@11.12.0)(@sentry/core@11.12.0)(@sentry/node@11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+      '@vouchington/server-utils':
+        specifier: ^0.0.1
+        version: 0.0.1
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -12095,9 +12093,6 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
-      '@modules/child-process':
-        specifier: workspace:^
-        version: link:../../modules/child-process
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -12113,6 +12108,9 @@ importers:
       '@vouchington/queue-errors':
         specifier: ^0.2.1
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+      '@vouchington/server-utils':
+        specifier: ^0.0.1
+        version: 0.0.1
       pg-copy-streams:
         specifier: ^7.0.0
         version: 7.0.0
