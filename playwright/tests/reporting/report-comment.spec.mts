@@ -39,7 +39,7 @@ test.describe('Report comment', () => {
     await waitForBelowFoldHydration(page)
 
     const kebabButton = page.getByTestId('report-menu-kebab-trigger')
-    await expect(kebabButton).toBeVisible({ timeout: 10_000 })
+    await expect(kebabButton).toBeVisible()
     await kebabButton.click()
 
     const reportMenuItem = page.getByTestId('report-menu-item')

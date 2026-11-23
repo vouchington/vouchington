@@ -30,8 +30,6 @@ test.describe('Report post card — always-present affordance', () => {
       .getByTestId('post-card-root')
       .and(page.locator('[data-post-slug^="rpt-card-post-"]'))
       .first()
-    await expect(seededCard.getByTestId('post-card-report-button')).toBeVisible({
-      timeout: 10_000,
-    })
+    await expect(seededCard.getByTestId('post-card-report-button')).toBeVisible()
   })
 })

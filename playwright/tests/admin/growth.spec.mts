@@ -19,7 +19,7 @@ test.describe('Growth Dashboard', () => {
       .filter({ has: page.getByRole('heading', { level: 2 }).filter({ hasText: 'Key Metrics' }) })
     await expect(kpiSection).toBeVisible()
     const cards = kpiSection.getByTestId('kpi-card')
-    await expect(cards).toContainText(['Total Users', 'MRR'], { timeout: 10_000 })
+    await expect(cards).toContainText(['Total Users', 'MRR'])
   })
 
   test('date range filter changes URL', async ({ page }) => {

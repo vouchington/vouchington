@@ -1,6 +1,7 @@
 import { test, expect } from '../../helpers/test.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
 import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
+import { SHORT_WAIT_TIMEOUT_MS } from '../../helpers/timeouts.mts'
 
 test.describe('Queue Dashboard', () => {
   test.use({ storageState: ADMIN_AUTH_STATE })
@@ -15,7 +16,7 @@ test.describe('Queue Dashboard', () => {
 
   test('glidemq dashboard link renews before opening the dashboard', async ({ page }) => {
     const link = page.getByTestId('glidemq-dashboard-link')
-    await expect(link).toBeVisible({ timeout: 10_000 })
+    await expect(link).toBeVisible()
     await expect(link).toHaveAttribute('href', '/session-renewal?next=%2Fadmin%2Fmq-dashboard')
     await expect(link).toHaveAttribute('target', '_blank')
   })
@@ -59,17 +60,15 @@ test.describe('Queue Dashboard', () => {
 
   test('displays scheduled jobs table with expected columns', async ({ page }) => {
     const table = page.getByTestId('scheduled-jobs-table')
-    await expect(table).toBeVisible({ timeout: 10_000 })
+    await expect(table).toBeVisible()
     const headers = table.locator('th')
-    await expect(headers).toContainText(['Queue', 'Job', 'Schedule', 'Action'], {
-      timeout: 10_000,
-    })
+    await expect(headers).toContainText(['Queue', 'Job', 'Schedule', 'Action'])
   })
 
   test('displays trigger buttons for each job', async ({ page }) => {
     await expect(page.getByTestId('scheduled-jobs-header-refresh')).toBeVisible()
     const table = page.getByTestId('scheduled-jobs-table')
-    await expect(table).toBeVisible({ timeout: 10_000 })
+    await expect(table).toBeVisible()
     const triggerButtons = table.locator('tbody button')
     const count = await triggerButtons.count()
     expect(count).toBeGreaterThan(0)
@@ -78,52 +77,50 @@ test.describe('Queue Dashboard', () => {
   test('clicking trigger button opens confirmation dialog', async ({ page }) => {
     const table = page.getByTestId('scheduled-jobs-table')
     const firstTriggerButton = table.locator('tbody button').first()
-    await expect(firstTriggerButton).toBeVisible({ timeout: 10_000 })
+    await expect(firstTriggerButton).toBeVisible()
     await firstTriggerButton.click()
 
     const confirmationDialog = page.getByRole('alertdialog')
-    await expect(confirmationDialog).toBeVisible({ timeout: 5000 })
+    await expect(confirmationDialog).toBeVisible({ timeout: SHORT_WAIT_TIMEOUT_MS })
     await expect(page.getByTestId('scheduled-job-trigger-dialog-trigger')).toBeVisible()
     const buttons = confirmationDialog.locator('button')
-    await expect(buttons).toHaveCount(2, { timeout: 5000 })
+    await expect(buttons).toHaveCount(2, { timeout: SHORT_WAIT_TIMEOUT_MS })
   })
 
   test('confirmation dialog can be cancelled', async ({ page }) => {
     const table = page.getByTestId('scheduled-jobs-table')
     const firstTriggerButton = table.locator('tbody button').first()
-    await expect(firstTriggerButton).toBeVisible({ timeout: 10_000 })
+    await expect(firstTriggerButton).toBeVisible()
     await firstTriggerButton.click()
 
     const confirmationDialog = page.getByRole('alertdialog')
-    await expect(confirmationDialog).toBeVisible({ timeout: 5000 })
+    await expect(confirmationDialog).toBeVisible({ timeout: SHORT_WAIT_TIMEOUT_MS })
     const buttons = confirmationDialog.locator('button')
     // First button is Cancel, second is Trigger
     await buttons.first().click()
 
-    await expect(page.getByRole('alertdialog')).not.toBeVisible({ timeout: 5000 })
+    await expect(page.getByRole('alertdialog')).not.toBeVisible({ timeout: SHORT_WAIT_TIMEOUT_MS })
   })
 
   test('displays backfills table with expected columns', async ({ page }) => {
     const table = page.getByTestId('backfills-table')
-    await expect(table).toBeVisible({ timeout: 10_000 })
+    await expect(table).toBeVisible()
     await expect(table.getByTestId('queue-catalog-table-activate').first()).toBeVisible()
     await table.getByTestId('queue-catalog-table-activate').first().click()
     await expect(page.getByTestId('backfill-trigger-dialog-run-backfill')).toBeVisible()
     const headers = table.locator('th')
-    await expect(headers).toContainText(['Queue', 'Description', 'Source Table', 'Action'], {
-      timeout: 10_000,
-    })
+    await expect(headers).toContainText(['Queue', 'Description', 'Source Table', 'Action'])
   })
 
   test('displays AI Agents section with toggle button reflecting live queue state', async ({
     page,
   }) => {
     const section = page.getByTestId('ai-agents-section')
-    await expect(section).toBeVisible({ timeout: 10_000 })
+    await expect(section).toBeVisible()
     const toggle = page.getByTestId('ai-agents-toggle')
-    await expect(toggle).toBeVisible({ timeout: 10_000 })
+    await expect(toggle).toBeVisible()
     // Button becomes enabled once queue state is loaded (not null) and shows a live label
-    await expect(toggle).toBeEnabled({ timeout: 10_000 })
+    await expect(toggle).toBeEnabled()
     const label = await toggle.textContent()
     expect(['Enable AI Agents', 'Disable AI Agents']).toContain(label?.trim())
   })
@@ -131,10 +128,10 @@ test.describe('Queue Dashboard', () => {
   test('lists background domains with counts and round-trips pause and resume', async ({
     page,
   }) => {
-    await expect(page.getByTestId('queue-domains-section')).toBeVisible({ timeout: 10_000 })
-    await expect(page.getByTestId('queue-domains-table')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByTestId('queue-domains-section')).toBeVisible()
+    await expect(page.getByTestId('queue-domains-table')).toBeVisible()
     const row = page.getByTestId('queue-domain-row').filter({ hasText: 'ses-inbound' })
-    await expect(row).toBeVisible({ timeout: 10_000 })
+    await expect(row).toBeVisible()
     await expect(row.getByTestId('queue-domain-status')).toBeVisible()
     await expect(row.getByTestId('queue-domain-waiting')).toBeVisible()
     await expect(row.getByTestId('queue-domain-active')).toBeVisible()
@@ -145,7 +142,7 @@ test.describe('Queue Dashboard', () => {
     await row.getByTestId('queue-domain-pause').click()
     // Always resume so the shared background queue is left running.
     await row.getByTestId('queue-domain-resume').click()
-    await expect(row.getByTestId('queue-domain-pause')).toBeVisible({ timeout: 10_000 })
+    await expect(row.getByTestId('queue-domain-pause')).toBeVisible()
   })
 })
 
@@ -159,7 +156,7 @@ test.describe('Queue Dashboard — kill switch error states', () => {
     // treats ERR_ABORTED as an expected cancellation and does not record it as an issue.
     await page.route('**/api/v1/mq/queues', route => route.abort('aborted'))
     await navigateTo(page, '/admin/queues')
-    await expect(page.getByTestId('ai-agents-retry')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByTestId('ai-agents-retry')).toBeVisible()
   })
 
   test('shows retry button for background domains when the domains endpoint fails', async ({
@@ -167,6 +164,6 @@ test.describe('Queue Dashboard — kill switch error states', () => {
   }) => {
     await page.route('**/api/v1/mq/queues/background/domains', route => route.abort('aborted'))
     await navigateTo(page, '/admin/queues')
-    await expect(page.getByTestId('queue-domains-retry')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByTestId('queue-domains-retry')).toBeVisible()
   })
 })
