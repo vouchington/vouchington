@@ -30,14 +30,55 @@ export async function clearTerritorialDecisionPredecessorWithScope(
   table: string | null,
 ) {
   return withTransactionOptions({}, async query => {
-    const scope = sql`/* setTerritorialDecisionPointerCutTestScope */
-      SELECT set_config('app.copyright_case_purge_notice_id', ${noticeId}, true)`
-    if (table !== null)
-      scope.append(sql`, set_config('app.copyright_case_purge_table', ${table}, true)`)
-    await query(scope)
+    await query(territorialPurgeScope(noticeId, table))
     await query(sql`/* clearTerritorialDecisionPredecessorWithScope */
       UPDATE copyright_territorial_decisions SET supersedes_decision_id = NULL
       WHERE id = ${decisionId}
     `)
   })
+}
+
+export async function readTerritorialPurgeDecisionPartitions(
+  decisionId: string,
+  redressId: string,
+) {
+  const { rows } = await write<{ decision: string | null; redress: string | null }>(sql`
+    /* readTerritorialPurgeDecisionPartitions */
+    SELECT
+      (SELECT tableoid::regclass::text FROM copyright_territorial_decisions
+        WHERE id = ${decisionId}) AS decision,
+      (SELECT tableoid::regclass::text FROM copyright_territorial_redress_decisions
+        WHERE id = ${redressId}) AS redress
+  `)
+  return rows[0]!
+}
+
+export async function deleteTerritorialDecisionWithScope(
+  target: 'decision' | 'redress',
+  decisionId: string,
+  noticeId: string | null,
+  table: string | null,
+) {
+  await withTransactionOptions({}, async query => {
+    await query(territorialPurgeScope(noticeId, table))
+    await query(
+      target === 'decision'
+        ? sql`/* deleteTerritorialDecisionWithScope */
+            DELETE FROM copyright_territorial_decisions WHERE id = ${decisionId}`
+        : sql`/* deleteTerritorialRedressDecisionWithScope */
+            DELETE FROM copyright_territorial_redress_decisions WHERE id = ${decisionId}`,
+    )
+  })
+}
+
+function territorialPurgeScope(noticeId: string | null, table: string | null) {
+  if (noticeId === null) {
+    return sql`/* setTerritorialCasePurgeTestTable */
+      SELECT set_config('app.copyright_case_purge_table', ${table}, true)`
+  }
+  const scope = sql`/* setTerritorialCasePurgeTestScope */
+    SELECT set_config('app.copyright_case_purge_notice_id', ${noticeId}, true)`
+  if (table !== null)
+    scope.append(sql`, set_config('app.copyright_case_purge_table', ${table}, true)`)
+  return scope
 }
