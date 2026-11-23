@@ -26,6 +26,53 @@ describe('durable Stripe refund scan hardening', () => {
     ).resolves.toEqual([undefined, undefined])
   })
 
+  it('rotates a completed cycle once and returns the same open generation after', async () => {
+    const fixture = await createRefundScanCase()
+    const completed = await getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)
+    await completeStripeRefundScanCycle(completed)
+
+    const rotated = await getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)
+    const joined = await getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)
+
+    expect(rotated).toEqual({
+      generation: completed.generation + 1,
+      reversalCaseId: fixture.reversalCaseId,
+    })
+    expect(joined).toEqual(rotated)
+  })
+
+  it('rotates a completed cycle once for concurrent workers', async () => {
+    const fixture = await createRefundScanCase()
+    const completed = await getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)
+    await completeStripeRefundScanCycle(completed)
+
+    const cycles = await Promise.all([
+      getOrCreateStripeRefundScanCycle(fixture.reversalCaseId),
+      getOrCreateStripeRefundScanCycle(fixture.reversalCaseId),
+    ])
+
+    const expected = {
+      generation: completed.generation + 1,
+      reversalCaseId: fixture.reversalCaseId,
+    }
+    expect(cycles).toEqual([expected, expected])
+  })
+
+  it('refuses to register a scan against a cycle generation that has been rotated', async () => {
+    const fixture = await createRefundScanCase()
+    const oldCycle = await getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)
+    await completeStripeRefundScanCycle(oldCycle)
+    const newCycle = await getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)
+
+    await expect(getOrCreateStripeRefundScan(oldCycle, fixture.target)).rejects.toThrow(
+      'no longer active',
+    )
+
+    const scan = await getOrCreateStripeRefundScan(newCycle, fixture.target)
+    expect(newCycle.generation).toBe(oldCycle.generation + 1)
+    expect(scan.registeredCycleGeneration).toBe(newCycle.generation)
+  })
+
   it('refuses to complete a cycle with an unverified registered target', async () => {
     const fixture = await createRefundScanCase()
     const cycle = await getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)
