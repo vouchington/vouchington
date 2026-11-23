@@ -1,6 +1,5 @@
 import type { PrivateUser } from '@services/users/types'
-import { getRssFeedItemFeedIds } from '../run-services.mts'
-import { runAndCapture } from '../run-support.mts'
+import { captureFirstPageAndPageToEnd } from './rss-feed-page-to-end.mts'
 import {
   RSS_FEED_WEEKLY_PROXY_RARE_MATCH_COUNT,
   RSS_FEED_WEEKLY_PROXY_VIEWER_ID,
@@ -42,18 +41,12 @@ export async function runRssFeedWeeklyProxyScenario(): Promise<void> {
         'The proxy-list viewer reaches rare recent items through followed list topics.',
     },
   })
-  await runAndCapture(SCENARIO_ID, async () => {
-    const page = await getRssFeedItemFeedIds(proxyViewer, {
-      feed_type: 'any',
-      time_range: 'all',
-      text_search_query: RSS_FEED_WEEKLY_WORKLOAD_RARE_TOKEN,
-      limit: 25,
-    })
-    if (
-      page.results.length !== RSS_FEED_WEEKLY_PROXY_RARE_MATCH_COUNT ||
-      page.page_info.has_next_page
-    ) {
-      throw new Error('Proxy-list RSS query must return its two topic-matched rare weekly items')
-    }
+  const paged = await captureFirstPageAndPageToEnd(SCENARIO_ID, proxyViewer, {
+    feed_type: 'any',
+    time_range: 'all',
+    text_search_query: RSS_FEED_WEEKLY_WORKLOAD_RARE_TOKEN,
+    limit: 25,
   })
+  if (paged.results.length !== RSS_FEED_WEEKLY_PROXY_RARE_MATCH_COUNT)
+    throw new Error('Proxy-list RSS query must return its two topic-matched rare weekly items')
 }

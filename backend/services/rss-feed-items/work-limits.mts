@@ -31,7 +31,7 @@ export const rssFeedItemsWorkMaxValues = {
   enqueue_batch_size: 10000,
   story_category_item_batch_size: 5000,
   story_category_change_batch_size: 10000,
-  feed_candidate_inspection_cap: 20000,
+  feed_candidate_inspection_cap: 50000,
 }
 
 export const rssFeedItemsWorkConfig = new DynamicConfig({

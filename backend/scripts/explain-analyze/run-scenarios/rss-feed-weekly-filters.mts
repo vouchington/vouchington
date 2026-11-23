@@ -3,8 +3,8 @@ import {
   RSS_FEED_WEEKLY_WORKLOAD_SOURCE_COUNT,
   RSS_FEED_WEEKLY_WORKLOAD_OUTSIDE_TOKEN,
 } from '../seed-data/rss-feed-weekly-workload.mts'
-import { heavyFollowUser, runAndCapture } from '../run-support.mts'
-import { getRssFeedItemFeedIds } from '../run-services.mts'
+import { heavyFollowUser } from '../run-support.mts'
+import { captureFirstPageAndPageToEnd } from './rss-feed-page-to-end.mts'
 import {
   registerRssFeedPageScenario,
   runRssFeedFirstAndContinuationScenarios,
@@ -35,17 +35,15 @@ export async function runRssFeedWeeklyFilterScenarios(): Promise<void> {
     const outsideScenarioId = `${scenarioId}-outside-window`
     registerRssFeedPageScenario(outsideScenarioId, true)
     // no-mistakes-disable-next-line query-reached-per-item: each fixed range needs its own captured outside-window witness.
-    await runAndCapture(outsideScenarioId, async () => {
-      const page = await getRssFeedItemFeedIds(heavyFollowUser, {
-        feed_type: 'all',
-        limit: 25,
-        time_range,
-        text_search_query: RSS_FEED_WEEKLY_WORKLOAD_OUTSIDE_TOKEN,
-      })
-      if (page.results.length !== 0 || page.page_info.has_next_page)
-        throw new Error(
-          `${time_range} RSS feed query included an item older than the seven-day horizon`,
-        )
+    const outside = await captureFirstPageAndPageToEnd(outsideScenarioId, heavyFollowUser, {
+      feed_type: 'all',
+      limit: 25,
+      time_range,
+      text_search_query: RSS_FEED_WEEKLY_WORKLOAD_OUTSIDE_TOKEN,
     })
+    if (outside.results.length !== 0 || outside.last.page_info.has_next_page)
+      throw new Error(
+        `${time_range} RSS feed query included an item older than the seven-day horizon`,
+      )
   }
 }
