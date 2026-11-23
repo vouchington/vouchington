@@ -1,5 +1,4 @@
 export * from './clients.mts'
-export * from './explain-analyze.mts'
 export * from './cursors.mts'
 export * from './shutdown.mts'
 export * from './setup.mts'

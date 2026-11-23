@@ -1,6 +1,7 @@
 import type { ExplainResult } from '@vouchington/explain-plan'
 import assert from 'node:assert/strict'
-import { explainAnalyze, read } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
+import { explainAnalyze } from '@data-stores/psql/explain-analyze'
 import { buildPostSearchQuery } from '@services/posts/search/query-builder'
 import { partitionIndexLeaves } from '../partition-index-leaves.mts'
 import { getHackerNewsUrlIdsByPostIds } from '@services/urls/hacker-news-post-urls'

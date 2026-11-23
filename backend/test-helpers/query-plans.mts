@@ -1,5 +1,5 @@
 import type { ExplainPlanCacheMode } from '@vouchington/explain-plan'
-import { explainAnalyze } from '@data-stores/psql'
+import { explainAnalyze } from '@data-stores/psql/explain-analyze'
 import type { CapturedTestQuery } from './query-capture.mts'
 
 declare const planStatisticsRefreshBrand: unique symbol

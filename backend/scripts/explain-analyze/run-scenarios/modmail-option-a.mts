@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { extractQueryName, getCapturedQueries, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
+import { extractQueryName, getCapturedQueries } from '@data-stores/psql/explain-analyze'
 import { openModmailThread } from '@services/modmail/threads'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { seedUuid } from '../seed-data/common.mts'

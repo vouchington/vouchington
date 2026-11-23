@@ -1,4 +1,5 @@
-import { extractQueryName, read, write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
+import { extractQueryName } from '@data-stores/psql/explain-analyze'
 import { runWithCapturedQueries } from '@data-stores/psql/query-capture'
 import {
   getPrioritizedReferralLinks,

@@ -1,14 +1,13 @@
 import type { ExplainResult } from '@vouchington/explain-plan'
+import { beginTransaction, read } from '@data-stores/psql'
 import {
-  beginTransaction,
   clearCapturedQueries,
   disableQueryCapture,
   enableQueryCapture,
   explainAnalyze,
   extractQueryName,
   getCapturedQueries,
-  read,
-} from '@data-stores/psql'
+} from '@data-stores/psql/explain-analyze'
 import { getPostByAny } from '@services/posts/get'
 import { getConversationMessagesByConversationId } from '@services/conversations-messages/messages'
 import { updateEntityRelationElectionVoteStatsFromPrimaryBatch } from '@services/elections-votes/entity-relation/vote-stats-batch'

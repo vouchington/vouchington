@@ -1,12 +1,12 @@
+import { write } from '@data-stores/psql'
 import {
   clearCapturedQueries,
   disableQueryCapture,
   getCapturedQueries,
-  write,
-} from '@data-stores/psql'
+} from '@data-stores/psql/explain-analyze'
 import { runWithCapturedQueries } from '@data-stores/psql/query-capture'
 
-export { enableQueryCapture } from '@data-stores/psql'
+export { enableQueryCapture } from '@data-stores/psql/explain-analyze'
 
 export async function captureScopedTestQueries(
   run: () => Promise<unknown>,

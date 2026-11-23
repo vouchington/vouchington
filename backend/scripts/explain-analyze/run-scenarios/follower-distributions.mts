@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { beginTransaction, getCapturedQueries, read } from '@data-stores/psql'
+import { beginTransaction, read } from '@data-stores/psql'
+import { getCapturedQueries } from '@data-stores/psql/explain-analyze'
 import { assertCanDistribute } from '@services/follower-distributions/create-guards'
 import { hasPostCreationModerationBypass } from '@services/posts/create/moderation-bypass'
 import { registerScenarioContract } from '../plan-expectations.mts'

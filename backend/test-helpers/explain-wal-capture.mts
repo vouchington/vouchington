@@ -1,4 +1,5 @@
-import { explainAnalyze, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
+import { explainAnalyze } from '@data-stores/psql/explain-analyze'
 import { coldWalPageAddress, selectSealedUsers, type LocatedUser } from './explain-wal-pages.mts'
 
 // Fullness is the page hole, not a live-row count. A dirty users page can be
