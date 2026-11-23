@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import {
   closeWebApiClientRuntime,
@@ -24,35 +24,22 @@ import { clientFetch } from '@/test-helpers/api-fixture-fetch'
 
 import { getPaginatedPage } from '@/lib/api/client/paginated'
 
-function unset(target: object, key: string) {
-  delete (target as Record<string, unknown>)[key]
-}
-
 describe('client-utilities', () => {
   describe('raw-fetch and paginated (HTTP-backed)', () => {
     let backendServer: http.Server
-    let previousApiBaseUrl: string | undefined
-    let previousPublicApiBaseUrl: string | undefined
     let previousFetch: typeof globalThis.fetch
-    let hadWindow: boolean
-    let previousWindow: unknown
     let backendBaseUrl: string
     let clientRuntimeActive = false
     let clientCookieValue: string | undefined
     let userCookieHeader: CookieHeader
 
     beforeAll(async () => {
-      previousApiBaseUrl = process.env.API_BASE_URL
-      previousPublicApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
-
       backendServer = createWebApiTestServer(serverApp.callback())
       backendBaseUrl = await listenOnFetchSafeLoopback(backendServer)
-      process.env.API_BASE_URL = backendBaseUrl
-      process.env.NEXT_PUBLIC_API_BASE_URL = backendBaseUrl
+      vi.stubEnv('API_BASE_URL', backendBaseUrl)
+      vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', backendBaseUrl)
 
       previousFetch = globalThis.fetch
-      hadWindow = Object.hasOwn(globalThis, 'window')
-      previousWindow = (globalThis as { window?: unknown }).window
       globalThis.fetch = (input, init) => {
         if (!clientRuntimeActive || typeof input !== 'string' || !input.startsWith('/')) {
           return previousFetch(input, init)
@@ -83,12 +70,7 @@ describe('client-utilities', () => {
     afterAll(() =>
       closeWebApiClientRuntime({
         backendServer,
-        previousApiBaseUrl,
-        previousPublicApiBaseUrl,
         previousFetch,
-        hadWindow,
-        previousWindow,
-        unset,
       }),
     )
 
@@ -97,14 +79,11 @@ describe('client-utilities', () => {
       cookieHeader?: Record<string, string>,
     ): Promise<T> {
       return withWebApiClientRuntime({
-        hadWindow,
-        previousWindow,
         cookieHeader,
         setActive: (active, cookie) => {
           clientRuntimeActive = active
           clientCookieValue = cookie
         },
-        unset,
         run,
       })
     }
