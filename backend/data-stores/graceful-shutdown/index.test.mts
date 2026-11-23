@@ -60,8 +60,12 @@ describe('graceful shutdown wiring', () => {
     const { onGracefulShutdown, onGracefulShutdownValkey, onGracefulShutdownPSQL } =
       await loadSubject()
     const order: string[] = []
-    onGracefulShutdownValkey.mockImplementation(async () => void order.push('valkey'))
-    onGracefulShutdownPSQL.mockImplementation(async () => void order.push('psql'))
+    onGracefulShutdownValkey.mockImplementation(async () => {
+      order.push('valkey')
+    })
+    onGracefulShutdownPSQL.mockImplementation(async () => {
+      order.push('psql')
+    })
     sentryFlushMock.mockImplementation(async () => {
       order.push('flush')
       return true
