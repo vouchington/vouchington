@@ -95,9 +95,7 @@ test.describe('Community automod review panel', () => {
     await navigateTo(page, `/communities/${communitySlug}/settings/moderation`)
 
     await expect(page.getByTestId('community-moderation-heading')).toBeVisible()
-    await expect(page.getByTestId('community-automod-review-panel')).toBeVisible({
-      timeout: 10_000,
-    })
+    await expect(page.getByTestId('community-automod-review-panel')).toBeVisible()
     await expect(
       page.getByTestId('community-automod-review-action-reason-select').first(),
     ).toBeVisible()
@@ -161,9 +159,7 @@ test.describe('Community automod review panel', () => {
     await loginAsUser(page, owner.id)
     await navigateTo(page, `/communities/${slug}/settings/moderation`)
 
-    await expect(page.getByTestId('community-automod-review-panel')).toBeVisible({
-      timeout: 10_000,
-    })
+    await expect(page.getByTestId('community-automod-review-panel')).toBeVisible()
 
     const rejectButton = page.getByTestId('automod-reject-button').first()
     await expect(rejectButton).toBeVisible()
@@ -180,9 +176,7 @@ test.describe('Community automod review panel', () => {
 
     // After labelling, the panel removes the completed item. The POST response
     // triggers a router.refresh() RSC round-trip; give the assertion extra time.
-    await expect(page.getByTestId('community-automod-review-panel')).not.toBeAttached({
-      timeout: 10_000,
-    })
+    await expect(page.getByTestId('community-automod-review-panel')).not.toBeAttached()
   })
 
   test('moderation page loads without automod panel when no flagged actions exist', async ({

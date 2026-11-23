@@ -1,4 +1,4 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
+import { allowUnannotatedQuery } from '@vouchington/postgres'
 import { randomBytes } from 'node:crypto'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'

@@ -33,10 +33,7 @@ describe('setFeatureFlags', () => {
     )
 
     expect(mockRetryOnConnectionLost).toHaveBeenCalledOnce()
-    expect(page.goto).toHaveBeenCalledWith('/', {
-      waitUntil: 'domcontentloaded',
-      timeout: 15_000,
-    })
+    expect(page.goto).toHaveBeenCalledWith('/', { waitUntil: 'domcontentloaded' })
     expect(mockAddCookies).toHaveBeenCalledWith([
       {
         name: FF_COOKIE,

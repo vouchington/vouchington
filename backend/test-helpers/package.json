@@ -65,7 +65,7 @@
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/ai": "^0.4.1",
-    "@vouchington/aws": "^0.1.2",
+    "@vouchington/aws": "^0.1.3",
     "@vouchington/http-transport": "^0.1.1",
     "@vouchington/localization": "^0.3.1",
     "@vouchington/localization-compiler": "^0.3.0",
@@ -78,7 +78,7 @@
     "@vouchington/worker-runtime": "^0.3.2",
     "glide-mq": "^0.20.0",
     "jose": "^6.2.17",
-    "no-mistakes": "^0.109.112",
+    "no-mistakes": "^0.109.117",
     "openai": "^7.57.0",
     "otpauth": "^9.6.0",
     "pgvector": "^0.3.0",
@@ -88,7 +88,7 @@
     "undici": "^8.12.4",
     "uuid": "^14.0.3",
     "valkyries": "^0.15.0",
-    "vouchington-tooling": "^3.6.1"
+    "vouchington-tooling": "^3.6.2"
   },
   "devDependencies": {
     "@apple/app-store-server-library": "^3.1.0",

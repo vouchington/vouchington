@@ -1,4 +1,4 @@
-import { allowUnannotatedQuery } from '../../backend/data-stores/psql/prepared-statement-name.mts'
+import { allowUnannotatedQuery } from '@vouchington/postgres'
 import { setRssFeedItemMediaDetails } from '../../backend/test-helpers/entities/rss-feed-items-media.mts'
 import { write } from '../../backend/data-stores/psql/clients.mts'
 import { insertTestRssFeedItem } from '../../backend/test-helpers/entities/rss-feed-items.mts'

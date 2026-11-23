@@ -1,4 +1,4 @@
-import { allowUnannotatedQuery } from '../../backend/data-stores/psql/prepared-statement-name.mts'
+import { allowUnannotatedQuery } from '@vouchington/postgres'
 import { write } from '../../backend/data-stores/psql/clients.mts'
 
 interface TestRssFeedCrawl {

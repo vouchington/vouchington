@@ -10,6 +10,8 @@ import { insertTestTopic } from '../../playwright/helpers/insert-test-topic.mts'
 const hasAwsCredentials = Boolean(process.env.S3_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID)
 const imageUploadsBucket = process.env.S3_BUCKET_IMAGE_UPLOADS?.trim()
 const S3_DUALSTACK_HOST_SUFFIX = '.s3.dualstack.us-west-2.amazonaws.com'
+// A real S3 PUT from CI is slower than the 10 s default response wait.
+const S3_UPLOAD_RESPONSE_TIMEOUT_MS = 15_000
 
 function expectNoEmptyChecksumQueryParams(uploadUrl: URL): void {
   const emptyChecksumParams = [...uploadUrl.searchParams].filter(
@@ -38,7 +40,7 @@ test('uploads logo image to S3 without CORS error', async ({ page }) => {
     response =>
       new URL(response.url()).hostname === `${imageUploadsBucket}${S3_DUALSTACK_HOST_SUFFIX}` &&
       response.request().method() === 'PUT',
-    { timeout: 15_000 },
+    { timeout: S3_UPLOAD_RESPONSE_TIMEOUT_MS },
   )
 
   await page

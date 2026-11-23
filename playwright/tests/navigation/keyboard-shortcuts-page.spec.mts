@@ -1,5 +1,6 @@
 import { test, expect } from '../../helpers/test.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
+import { SHORT_WAIT_TIMEOUT_MS } from '../../helpers/timeouts.mts'
 
 test.describe('Keyboard shortcuts article', () => {
   test('page is discoverable via command palette', async ({ page }) => {
@@ -13,7 +14,7 @@ test.describe('Keyboard shortcuts article', () => {
     await input.pressSequentially('keyboard')
 
     await expect(page.getByTestId('search-page-shortcut-article-keyboard-shortcuts')).toBeVisible({
-      timeout: 5000,
+      timeout: SHORT_WAIT_TIMEOUT_MS,
     })
   })
 

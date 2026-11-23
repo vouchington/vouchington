@@ -1,6 +1,7 @@
 import { expect, test } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
+import { SHORT_WAIT_TIMEOUT_MS } from '../../helpers/timeouts.mts'
 
 // Rate limiting is disabled by default (enabled=false in DynamicConfig).
 // These tests verify the frontend rate limit error handling by intercepting
@@ -44,7 +45,7 @@ test.describe('rate limit error handling', () => {
 
     // Verify the rate limit toast appears
     const toast = page.locator('[data-sonner-toast]').filter({ hasText: /too many requests/i })
-    await expect(toast).toBeVisible({ timeout: 5000 })
+    await expect(toast).toBeVisible({ timeout: SHORT_WAIT_TIMEOUT_MS })
   })
 
   test('shows generic rate limit toast when no Retry-After header', async ({ page }) => {
@@ -75,6 +76,6 @@ test.describe('rate limit error handling', () => {
     await submitButton.click()
 
     const toast = page.locator('[data-sonner-toast]').filter({ hasText: /too many requests/i })
-    await expect(toast).toBeVisible({ timeout: 5000 })
+    await expect(toast).toBeVisible({ timeout: SHORT_WAIT_TIMEOUT_MS })
   })
 })

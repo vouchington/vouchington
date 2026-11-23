@@ -1,7 +1,7 @@
 import { mintUuidv7 } from '@modules/utils/ids'
 import { expect } from 'vitest'
 import { beginTransaction, read, type OwnedTransaction } from '@data-stores/psql'
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
+import { allowUnannotatedQuery } from '@vouchington/postgres'
 import { getActiveBatchStats } from '../services/bedrock-embeddings/batch/orchestrator/poll-queries.mts'
 import { getBatchCreationLimits } from '../services/bedrock-embeddings-batch/rate-limits.mts'
 import { createBatch } from '../services/bedrock-embeddings-batch/orchestrator/create.mts'

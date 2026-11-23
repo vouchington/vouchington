@@ -18,7 +18,7 @@ test.describe('Report domain', () => {
     await withCleanUser(page)
     await navigateTo(page, `/domain/${hostnameId}`)
 
-    await expect(page.getByTestId('domain-detail-heading')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByTestId('domain-detail-heading')).toBeVisible()
 
     const reportButton = page.getByTestId('report-inline-button').first()
     await expect(reportButton).toBeVisible()

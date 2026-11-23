@@ -94,7 +94,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.checkout-2.outcome != 'success'
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@715ee5feea88a3a616d33ce9365987ba58a8849e # v3.5.3
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@95129ce4ac652ea4adf29635b91e42de2557c502 # v3.6.2
         timeout-minutes: 5
         with:
           deadline-seconds: '270'
@@ -132,7 +132,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.checkout-3.outcome != 'success'
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@715ee5feea88a3a616d33ce9365987ba58a8849e # v3.5.3
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@95129ce4ac652ea4adf29635b91e42de2557c502 # v3.6.2
         timeout-minutes: 5
         with:
           deadline-seconds: '270'
@@ -164,7 +164,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.checkout-4.outcome != 'success'
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@715ee5feea88a3a616d33ce9365987ba58a8849e # v3.5.3
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@95129ce4ac652ea4adf29635b91e42de2557c502 # v3.6.2
         timeout-minutes: 5
         with:
           deadline-seconds: '270'

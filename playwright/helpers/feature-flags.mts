@@ -26,7 +26,7 @@ export async function setFeatureFlags(
   const value = encodeFeatureFlagCookie(overrides, featureFlagCookieCodec)
 
   await retry(async () => {
-    await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 15_000 })
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
     const origin = new URL(page.url()).origin
 
     await page.context().addCookies([

@@ -12,6 +12,7 @@
  */
 import { test, expect, type Page } from '../../helpers/test.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
+import { SHORT_WAIT_TIMEOUT_MS } from '../../helpers/timeouts.mts'
 
 const FAKE_OPTIONS = {
   challenge: 'dGVzdC1jaGFsbGVuZ2U',
@@ -110,7 +111,7 @@ test.describe('Discoverable passkey sign-in', () => {
     await expect(page.getByTestId('login-passkey-button')).toBeVisible()
     await page.getByTestId('login-passkey-button').click()
 
-    await expect(page).toHaveURL('/', { timeout: 10_000 })
+    await expect(page).toHaveURL('/')
   })
 
   test('stays on login page when passkey sign-in is cancelled', async ({ page }) => {
@@ -129,7 +130,7 @@ test.describe('Discoverable passkey sign-in', () => {
     await page.getByTestId('login-passkey-button').click()
 
     // Should remain on /login after cancellation
-    await page.waitForURL('/login', { timeout: 5000 })
+    await page.waitForURL('/login', { timeout: SHORT_WAIT_TIMEOUT_MS })
     await expect(page.getByTestId('login-passkey-button')).toBeVisible()
   })
 
@@ -158,7 +159,7 @@ test.describe('Discoverable passkey sign-in', () => {
     await page.getByTestId('login-passkey-button').click()
 
     // Should remain on /login
-    await page.waitForURL('/login', { timeout: 5000 })
+    await page.waitForURL('/login', { timeout: SHORT_WAIT_TIMEOUT_MS })
     await expect(page.getByTestId('login-passkey-button')).toBeVisible()
   })
 })

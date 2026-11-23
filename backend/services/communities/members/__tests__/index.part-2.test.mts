@@ -3,6 +3,7 @@ import { it, expect, beforeAll, describe } from 'vitest'
 import {
   createTestUser,
   createTestUserDirect,
+  createTestOwnerWithPublicAndPrivateCommunities,
   insertTestCommunity,
   insertTestCommunityMember,
   readEnqueuedJob,
@@ -38,27 +39,8 @@ describe('index', () => {
 
   let publicCommunity: Community
 
-  let privateCommunity: Community
-
   beforeAll(async () => {
-    owner = await createTestUser()
-    ;[publicCommunity, privateCommunity] = await Promise.all([
-      insertTestCommunity({ createdById: owner.id, visibility: 'public' }),
-      insertTestCommunity({ createdById: owner.id, visibility: 'private' }),
-    ])
-    // Add owner as member in both
-    await Promise.all([
-      insertTestCommunityMember({
-        communityId: publicCommunity.id,
-        userId: owner.id,
-        role: 'owner',
-      }),
-      insertTestCommunityMember({
-        communityId: privateCommunity.id,
-        userId: owner.id,
-        role: 'owner',
-      }),
-    ])
+    ;({ owner, publicCommunity } = await createTestOwnerWithPublicAndPrivateCommunities())
   })
 
   describe('updateMemberRole', () => {

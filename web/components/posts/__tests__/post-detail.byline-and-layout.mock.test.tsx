@@ -1,4 +1,5 @@
 import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
+import '@/test-helpers/components/posts/post-detail-leaf.mock-support'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { PostDetailView as PostDetail } from '../post-detail-view'
@@ -18,36 +19,6 @@ vi.mock(
       useRouter: () => ({ push: vi.fn<VitestLooseMock>() }),
     }) as unknown as typeof import('next/navigation'),
 )
-
-vi.mock(
-  import('@/components/shared/time-ago'),
-  () =>
-    ({
-      TimeAgo: ({ date }: { date: string }) => <span>{date}</span>,
-    }) as unknown as typeof import('@/components/shared/time-ago'),
-)
-
-vi.mock(import('@/components/shared/post-image'), () => {
-  const Img = 'img' as const
-
-  return {
-    PostImage: ({
-      alt,
-      imageId,
-      priority,
-    }: {
-      alt?: string
-      imageId: string
-      priority?: boolean
-    }) => (
-      <Img
-        alt={alt}
-        data-image-id={imageId}
-        data-priority={String(Boolean(priority))}
-      />
-    ),
-  }
-})
 
 vi.mock(import('@/components/shared/entity-bookmark-button'), () => ({
   EntityBookmarkButton: ({ inactiveLabel = 'Subscribe' }: { inactiveLabel?: string }) => (

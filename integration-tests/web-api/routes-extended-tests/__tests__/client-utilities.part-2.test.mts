@@ -1,5 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import {
+  closeWebApiClientRuntime,
+  withWebApiClientRuntime,
+} from '../../../test-helpers/web-api-client-runtime.mts'
+
 import http from 'node:http'
 
 import serverApp from '../../../../backend/entrypoints/api/index.mts'
@@ -18,6 +23,10 @@ import type { CookieHeader } from '../../routes-extended.mts'
 import { clientFetch } from '@/test-helpers/api-fixture-fetch'
 
 import { getPaginatedPage } from '@/lib/api/client/paginated'
+
+function unset(target: object, key: string) {
+  delete (target as Record<string, unknown>)[key]
+}
 
 describe('client-utilities', () => {
   describe('raw-fetch and paginated (HTTP-backed)', () => {
@@ -71,46 +80,33 @@ describe('client-utilities', () => {
       await createTestPost({ user })
     })
 
-    afterAll(async () => {
-      await new Promise<void>(resolve => {
-        backendServer.close(() => resolve())
-      })
-      if (previousApiBaseUrl === undefined) {
-        delete process.env.API_BASE_URL
-      } else {
-        process.env.API_BASE_URL = previousApiBaseUrl
-      }
-      if (previousPublicApiBaseUrl === undefined) {
-        delete process.env.NEXT_PUBLIC_API_BASE_URL
-      } else {
-        process.env.NEXT_PUBLIC_API_BASE_URL = previousPublicApiBaseUrl
-      }
-      globalThis.fetch = previousFetch
-      if (hadWindow) {
-        ;(globalThis as { window?: unknown }).window = previousWindow
-      } else {
-        delete (globalThis as { window?: unknown }).window
-      }
-    })
+    afterAll(() =>
+      closeWebApiClientRuntime({
+        backendServer,
+        previousApiBaseUrl,
+        previousPublicApiBaseUrl,
+        previousFetch,
+        hadWindow,
+        previousWindow,
+        unset,
+      }),
+    )
 
-    async function withClientRuntime<T>(
+    function withClientRuntime<T>(
       run: () => Promise<T>,
       cookieHeader?: Record<string, string>,
     ): Promise<T> {
-      clientRuntimeActive = true
-      clientCookieValue = cookieHeader?.Cookie
-      ;(globalThis as { window?: unknown }).window = {}
-      try {
-        return await run()
-      } finally {
-        clientRuntimeActive = false
-        clientCookieValue = undefined
-        if (hadWindow) {
-          ;(globalThis as { window?: unknown }).window = previousWindow
-        } else {
-          delete (globalThis as { window?: unknown }).window
-        }
-      }
+      return withWebApiClientRuntime({
+        hadWindow,
+        previousWindow,
+        cookieHeader,
+        setActive: (active, cookie) => {
+          clientRuntimeActive = active
+          clientCookieValue = cookie
+        },
+        unset,
+        run,
+      })
     }
 
     it('clientFetch without init calls fetch directly (success path)', async () => {

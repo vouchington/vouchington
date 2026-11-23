@@ -137,9 +137,7 @@
       "entry": ["**/*.mts"],
       "ignoreIssues": {
         "migrations/0000-00-00-0-finite-values.mts": ["exports"],
-        // Dev-only consumers: the explain-analyze wrapper and query-capture helpers in backend/test-helpers.
-        "connect-with-retry.mts": ["exports"],
-        "prepared-statement-name.mts": ["exports"],
+        // Dev-only consumers: the query-capture helpers in backend/test-helpers and the EXPLAIN scripts.
         "query-capture.mts": ["exports"],
       },
     },

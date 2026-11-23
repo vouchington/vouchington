@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test'
+import { SHORT_WAIT_TIMEOUT_MS } from './timeouts.mts'
 
 export const WIDE_VIEWPORT = { width: 1920, height: 1080 }
 
@@ -39,7 +40,7 @@ export async function collapseAside(page: Page) {
           const aside = document.querySelector('aside')
           return aside ? parseFloat(window.getComputedStyle(aside).width) : null
         }),
-      { timeout: 5000, intervals: [50, 100] },
+      { timeout: SHORT_WAIT_TIMEOUT_MS, intervals: [50, 100] },
     )
     .toBeLessThanOrEqual(1)
 }

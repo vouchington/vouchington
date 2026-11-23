@@ -865,6 +865,7 @@
     "react-doctor/js-index-maps": "error",
     "react-doctor/js-length-check-first": "error",
     "react-doctor/js-min-max-loop": "error",
+    "react-doctor/no-json-parse-stringify-clone": "error",
     "react-doctor/js-set-map-lookups": "off", // 68 findings / 49 files on 2026-08-19
     "no-mistakes/await-array-methods": "error",
     "no-mistakes/no-delete-property": "error",
@@ -1564,7 +1565,9 @@
       ],
       "rules": {
         "no-void": "off",
-        "no-await-in-loop": "off"
+        "no-await-in-loop": "off",
+        // Tests assert the serialized wire shape (Dates become strings, undefined keys drop), which structuredClone would not reproduce.
+        "react-doctor/no-json-parse-stringify-clone": "off"
       }
     }
   ]
