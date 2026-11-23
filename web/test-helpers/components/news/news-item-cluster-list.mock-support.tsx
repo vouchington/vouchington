@@ -25,7 +25,29 @@ vi.mock(
 )
 
 vi.mock(import('@/components/shared/infinite-scroll'), () => ({
-  InfiniteScroll: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  InfiniteScroll: ({
+    children,
+    hasNextPage,
+    endCursor,
+    onLoadMore,
+  }: {
+    children: ReactNode
+    hasNextPage: boolean
+    endCursor: string | null
+    onLoadMore: () => Promise<boolean | void>
+  }) => (
+    <div>
+      {children}
+      {hasNextPage && endCursor ? (
+        <button
+          type='button'
+          data-pw='mock-load-more'
+          aria-label='Load more'
+          onClick={() => void onLoadMore()}
+        />
+      ) : null}
+    </div>
+  ),
 }))
 
 vi.mock(import('@/lib/api/client'), () => ({
@@ -141,13 +163,14 @@ export const makeClusterStoryPage = (itemIds: string[]) => ({
 
 export function renderClusterList(
   data: RssFeedItemsFeedResponseBody,
-  options?: { modal?: ReactNode; nav?: boolean },
+  options?: { modal?: ReactNode; nav?: boolean; nextPageEndpoint?: string },
 ) {
   const modal = options?.nav ? <ClusterListNavIds /> : options?.modal
   return render(
     <FeedStyleProvider>
       <NewsItemClusterList
         data={data}
+        nextPageEndpoint={options?.nextPageEndpoint}
         modal={modal}
       />
     </FeedStyleProvider>,
