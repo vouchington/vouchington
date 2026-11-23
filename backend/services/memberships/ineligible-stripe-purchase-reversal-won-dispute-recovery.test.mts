@@ -9,6 +9,7 @@ import {
   createRecoveryOperations,
   createWonDisputeRecoveryFixture,
 } from '../../test-helpers/services/memberships/won-dispute-recovery-fixtures.mts'
+import { replayStripePaymentIntentCharges } from '../../test-helpers/stripe-payment-intent-replay.mts'
 import { getIneligiblePurchaseReversalCase } from './ineligible-stripe-purchase-reversal/case-read.mts'
 import { failIneligiblePurchaseReversals } from './ineligible-stripe-purchase-reversal-execution.mts'
 import { claimWonStripeDisputeRecovery } from './ineligible-stripe-purchase-reversal/won-dispute-recovery-ledger.mts'
@@ -166,6 +167,7 @@ describe('won Stripe dispute reversal recovery', () => {
     const fixture = await createWonDisputeRecoveryFixture()
     const reversalCase = await getReversalCase(fixture)
     const target = getTarget(fixture, fixture.paymentIntentIds[0]!)
+    const requests = replayStripePaymentIntentCharges([])
 
     await expect(
       claimWonStripeDisputeRecovery(
@@ -181,25 +183,61 @@ describe('won Stripe dispute reversal recovery', () => {
         getTarget(fixture, `pi_absent_${randomUUID()}`),
       ),
     ).resolves.toBeNull()
+    expect(requests).toHaveLength(0)
+  })
+
+  it('discards a prepared charge after another dispute claims the refundable remainder', async () => {
+    const fixture = await createWonDisputeRecoveryFixture()
+    const reversalCase = await getReversalCase(fixture)
+    const paymentIntentId = fixture.paymentIntentIds[0]!
+    const target = getTarget(fixture, paymentIntentId)
+    const winningDisputeId = `dp_winning_${randomUUID()}`
+    const requests = replayStripePaymentIntentCharges(
+      [{ paymentIntentId, chargeId: fixture.chargeIds[0]! }],
+      async () => {
+        const winner = await claimWonStripeDisputeRecovery(reversalCase, winningDisputeId, target)
+        expect(winner).toMatchObject({ target, leaseToken: expect.any(String) })
+      },
+    )
+
+    await expect(
+      claimWonStripeDisputeRecovery(reversalCase, fixture.disputeId, target),
+    ).resolves.toBeNull()
+    await expect(
+      claimWonStripeDisputeRecovery(reversalCase, `dp_no_remainder_${randomUUID()}`, target),
+    ).resolves.toBeNull()
+    expect(requests).toHaveLength(2)
   })
 
   it('terminalizes an existing recovery receipt before replay completes', async () => {
     const fixture = await createWonDisputeRecoveryFixture()
     const reversalCase = await getReversalCase(fixture)
-    const target = getTarget(fixture, fixture.paymentIntentIds[0]!)
+    const paymentIntentId = fixture.paymentIntentIds[0]!
+    const target = getTarget(fixture, paymentIntentId)
+    const requests = replayStripePaymentIntentCharges([
+      { paymentIntentId, chargeId: fixture.chargeIds[0]! },
+    ])
     const recovery = (await claimWonStripeDisputeRecovery(reversalCase, fixture.disputeId, target))!
+    const providerRefundId = `re_receipt_${randomUUID()}`
     await recordTestIneligiblePurchaseReversalReceipt(
       recovery.id,
-      `re_receipt_${randomUUID()}`,
+      providerRefundId,
       fixture.amountMinorUnits,
     )
 
     await expect(
       claimWonStripeDisputeRecovery(reversalCase, fixture.disputeId, target),
-    ).resolves.toMatchObject({ completed: true, hasReceipt: true })
+    ).resolves.toMatchObject({
+      completed: true,
+      hasReceipt: true,
+      id: recovery.id,
+      idempotencyKey: recovery.idempotencyKey,
+      target,
+    })
     await expect(
       getTestWonDisputeRecovery(fixture.subscriptionId, 'production'),
     ).resolves.toMatchObject({ completed_at: expect.any(Date) })
+    expect(requests).toHaveLength(1)
   })
 })
 
