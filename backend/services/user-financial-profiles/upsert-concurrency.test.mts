@@ -1,7 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
+import {
+  assignTestRepresentativeIndividual,
+  createTestIndividual,
+} from '@voucha/test-helpers/entities/individuals'
+import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
+import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { getUserFinancialProfile } from './get.mts'
+import type { UserFinancialProfile } from './types.mts'
 import { upsertUserFinancialProfile } from './upsert.mts'
 
 describe('upsertUserFinancialProfile concurrency', () => {
@@ -25,43 +32,53 @@ describe('upsertUserFinancialProfile concurrency', () => {
     ).resolves.toMatchObject({ total_credit_limit: { amount: 100, currency: 'usd' } })
   })
 
-  it('serializes competing first creates without mixing amount state across currencies', async () => {
+  it('rejects a monetary edit validated before the existing profile changed currency', async () => {
     const user = await createTestUser()
+    const individual = await createTestIndividual()
+    await assignTestRepresentativeIndividual(user.id, individual.id)
+    await upsertUserFinancialProfile(user.id, {
+      stated_income_range: { minimum: { amount: 3_000_000, currency: 'usd' }, maximum: null },
+      total_credit_limit: { amount: 500_000, currency: 'usd' },
+    })
     const jpyIncome = {
       minimum: { amount: 5_000_000, currency: 'jpy' as const },
       maximum: { amount: 7_500_000, currency: 'jpy' as const },
     }
-    const usdCreditLimit = { amount: 900_000, currency: 'usd' as const }
+    const expectedProfile = {
+      currency: 'jpy',
+      stated_income_range: jpyIncome,
+      total_credit_limit: null,
+    } as const
 
-    const outcomes = await Promise.allSettled([
-      upsertUserFinancialProfile(user.id, { stated_income_range: jpyIncome }),
-      upsertUserFinancialProfile(user.id, { total_credit_limit: usdCreditLimit }),
-    ])
-
-    expect(outcomes.filter(outcome => outcome.status === 'fulfilled')).toHaveLength(1)
-    expect(outcomes.filter(outcome => outcome.status === 'rejected')).toHaveLength(1)
-    expect(outcomes.find(outcome => outcome.status === 'rejected')).toMatchObject({
-      reason: { status: 422 },
-    })
-
-    const profile = await getUserFinancialProfile(user.id)
-    const validFinalStates = [
-      {
-        currency: 'jpy',
-        stated_income_range: jpyIncome,
-        total_credit_limit: null,
+    let currencyChange: Promise<[PromiseSettledResult<UserFinancialProfile>]> | undefined
+    let changedProfile: UserFinancialProfile | undefined
+    const restore = beforePostgresTransactionQueryForTest(
+      'INSERT INTO individual_financial_profiles',
+      values => values[0] === individual.id,
+      async () => {
+        const pending = Promise.allSettled([upsertUserFinancialProfile(user.id, expectedProfile)])
+        currencyChange = pending
+        const [change] = await waitForRealGlideEvent(
+          pending,
+          'The competing profile currency change',
+          3_000,
+        )
+        if (change.status === 'rejected') throw change.reason
+        changedProfile = change.value
       },
-      {
-        currency: 'usd',
-        stated_income_range: null,
-        total_credit_limit: usdCreditLimit,
-      },
-    ]
-    expect(validFinalStates).toContainEqual({
-      currency: profile?.currency,
-      stated_income_range: profile?.stated_income_range,
-      total_credit_limit: profile?.total_credit_limit,
-    })
+    )
+    try {
+      await expect(
+        upsertUserFinancialProfile(user.id, {
+          total_credit_limit: { amount: 900_000, currency: 'usd' },
+        }),
+      ).rejects.toMatchObject({ status: 409 })
+      expect(changedProfile).toMatchObject(expectedProfile)
+      expect(await getUserFinancialProfile(user.id)).toEqual(changedProfile)
+    } finally {
+      await currencyChange
+      restore()
+    }
   })
 
   it('returns 404 when the profile owner does not exist', async () => {
