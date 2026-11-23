@@ -20,7 +20,7 @@ export async function fetchWithPinnedDns(
   try {
     return await safeFetch(url, {
       blockedHostnames: blockedHostnamePolicy(),
-      maxRedirects: options.maxRedirects,
+      ...(options.maxRedirects === undefined ? {} : { maxRedirects: options.maxRedirects }),
       signal,
       headers: { 'User-Agent': 'Voucha-Image-Resize/1.0' },
     })

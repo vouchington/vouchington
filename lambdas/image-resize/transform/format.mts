@@ -8,8 +8,8 @@ export function negotiateFormat(
   requestedFormat?: OutputFormat,
 ): OutputFormat {
   return negotiateImageFormat({
-    accept: acceptHeader,
-    requested: requestedFormat,
+    ...(acceptHeader === undefined ? {} : { accept: acceptHeader }),
+    ...(requestedFormat === undefined ? {} : { requested: requestedFormat }),
     supported: NEGOTIATED_FORMAT_ORDER,
     fallback: DEFAULT_FORMAT,
   })
