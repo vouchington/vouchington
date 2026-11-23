@@ -1,3 +1,4 @@
+import '@/test-helpers/app/curated-asides/tabs.mock-support'
 import type { ReactNode } from 'react'
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
@@ -106,48 +107,6 @@ vi.mock(
       ),
     }) as unknown as typeof import('@/components/admin/curated-asides/curated-aside-entity-autocomplete'),
 )
-
-vi.mock(import('@/components/ui/tabs'), () => {
-  let selectedValue = ''
-  let selectValue: (value: string) => void = () => undefined
-
-  return {
-    Tabs: ({
-      children,
-      onValueChange,
-      value,
-    }: {
-      children?: ReactNode
-      onValueChange: (value: string) => void
-      value: string
-    }) => {
-      selectedValue = value
-      selectValue = onValueChange
-      return <div>{children}</div>
-    },
-    TabsContent: ({ children, value }: { children?: ReactNode; value: string }) => {
-      return selectedValue === value ? <div role='tabpanel'>{children}</div> : null
-    },
-    TabsList: ({ children }: { children?: ReactNode }) => <div role='tablist'>{children}</div>,
-    TabsTrigger: ({
-      children,
-      value,
-    }: {
-      children?: ReactNode
-      value: string
-      asChild?: boolean
-    }) => (
-      <button
-        aria-selected={selectedValue === value}
-        onClick={() => selectValue(value)}
-        role='tab'
-        type='button'
-      >
-        {children}
-      </button>
-    ),
-  } as unknown as typeof import('@/components/ui/tabs')
-})
 
 const mockList = vi.mocked(adminListCuratedAsides)
 const mockCreate = vi.mocked(adminCreateCuratedAside)

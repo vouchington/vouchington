@@ -1,5 +1,5 @@
+import '@/test-helpers/components/notifications/inbox-button-ui.mock-support'
 import { EMPTY_NOTIFICATION_HYDRATION } from '@/components/notifications/empty-notification-hydration'
-import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { toast } from 'sonner'
@@ -39,42 +39,6 @@ vi.mock(
     ({
       toast: { success: vi.fn<VitestLooseMock>(), error: vi.fn<VitestLooseMock>() },
     }) as unknown as typeof import('sonner'),
-)
-
-vi.mock(
-  import('@/components/ui/dropdown-menu'),
-  () =>
-    ({
-      DropdownMenu: ({ children, open }: { children: ReactNode; open?: boolean }) =>
-        open ? <div>{children}</div> : <div data-dropdown-closed>{children}</div>,
-      DropdownMenuTrigger: ({ children }: { children: ReactNode; asChild?: boolean }) => (
-        <div>{children}</div>
-      ),
-      DropdownMenuContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-      DropdownMenuLabel: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-      DropdownMenuSeparator: () => <hr />,
-    }) as unknown as typeof import('@/components/ui/dropdown-menu'),
-)
-
-vi.mock(
-  import('@/components/ui/tooltip'),
-  () =>
-    ({
-      TooltipProvider: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-      Tooltip: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-      TooltipTrigger: ({ children }: { children: ReactNode; asChild?: boolean }) => (
-        <div>{children}</div>
-      ),
-      TooltipContent: () => null,
-    }) as unknown as typeof import('@/components/ui/tooltip'),
-)
-
-vi.mock(
-  import('@/components/ui/scroll-area'),
-  () =>
-    ({
-      ScrollArea: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-    }) as unknown as typeof import('@/components/ui/scroll-area'),
 )
 
 vi.mock(

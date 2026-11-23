@@ -1,4 +1,5 @@
 import '@/test-helpers/i18n/mock-json-messages'
+import '@/test-helpers/lib/routes/post-route-seo.mock-support'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { mockGetPost, mockGetPostDescendants, mockNotFound } = vi.hoisted(() => ({
@@ -19,29 +20,6 @@ vi.mock(
 vi.mock(import('@/lib/api/server'), () => ({
   getPost: mockGetPost,
   getPostDescendants: mockGetPostDescendants,
-}))
-vi.mock(import('@/lib/auth/get-current-user'), () => ({
-  getCurrentUser: vi.fn<VitestLooseMock>(() => Promise.resolve(null)),
-}))
-vi.mock(import('@/lib/seo/metadata'), () => ({
-  createNoIndexMetadata: vi.fn<VitestLooseMock>(() => ({ noIndex: true })),
-  createPageMetadata: vi.fn<VitestLooseMock>(() => ({})),
-}))
-vi.mock(import('@/lib/seo/post-schema'), () => ({
-  createPostSchema: vi.fn<VitestLooseMock>(() => ({})),
-}))
-vi.mock(import('@/lib/seo/structured-data-breadcrumbs'), () => ({
-  createBreadcrumbSchema: vi.fn<VitestLooseMock>(() => ({})),
-}))
-vi.mock(import('@/lib/seo/post-schema-helpers'), () => ({
-  buildCommentsForSchema: vi.fn<VitestLooseMock>(() => []),
-  buildInteractionStats: vi.fn<VitestLooseMock>(() => ({})),
-}))
-vi.mock(import('@/lib/seo/indexability'), () => ({
-  isIndexableForSeo: vi.fn<VitestLooseMock>(() => true),
-}))
-vi.mock(import('@/lib/seo/schema-org-types'), () => ({
-  getSchemaOrgType: vi.fn<VitestLooseMock>(() => 'Thing'),
 }))
 vi.mock(import('@/lib/post-helpers'), () => ({
   getPostCollectionLabel: vi.fn<VitestLooseMock>(() => 'Reviews'),
