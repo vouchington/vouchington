@@ -196,9 +196,9 @@ describe('fetchImageFromUrl', () => {
     expect(response.body.cancel).toHaveBeenCalled()
   })
 
-  it('should handle content-type with charset', async () => {
+  it('normalizes a mixed-case content-type with charset', async () => {
     mockFetchWithPinnedDns.mockResolvedValue(
-      imageResponse({ body: 'image data', contentType: 'image/jpeg; charset=utf-8' }) as never,
+      imageResponse({ body: 'image data', contentType: 'Image/JPEG; charset=utf-8' }) as never,
     )
 
     const result = await fetchImageFromUrl('https://example.com/image.jpg', undefined, undefined, {
