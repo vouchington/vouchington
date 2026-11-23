@@ -110,7 +110,7 @@ describe('contribution admission response publication', () => {
     const response = { post: { id: crypto.randomUUID() } }
 
     enableQueryCapture()
-    let capturedQueries: ReturnType<typeof stopTestQueryCapture> = []
+    let capturedQueries: ReturnType<typeof stopTestQueryCapture>
     try {
       await expect(
         runContributionAdmission({

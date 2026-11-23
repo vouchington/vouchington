@@ -55,7 +55,7 @@ async function readRelationPage(
   if (child.after) {
     const tsIdx = ++paramIdx
     params.push(child.after.timestamp)
-    const idIdx = ++paramIdx
+    const idIdx = paramIdx + 1
     params.push(child.after.id)
     conditions.push(
       `(rel.created_at, rel.object_id) < (TO_TIMESTAMP($${tsIdx}::numeric / 1000000), $${idIdx}::uuid)`,

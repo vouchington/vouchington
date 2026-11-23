@@ -76,7 +76,7 @@ export function maybeCaptureQuery(input: QueryInput, values?: QueryValues): void
   if (scope) scope.captured = true
 
   let text: string
-  let resolvedValues: readonly unknown[] = []
+  let resolvedValues: readonly unknown[]
   if (typeof input === 'string') {
     text = input
     resolvedValues = Array.isArray(values) ? values : []

@@ -2,7 +2,7 @@ export function sanitizeLoginNext(value: string | undefined): string {
   if (!value || !value.startsWith('/') || value.startsWith('//')) return '/'
   if (hasUnsafePathCharacter(value)) return '/'
 
-  let decodedValue = value
+  let decodedValue: string
   try {
     decodedValue = decodeURIComponent(value)
   } catch {

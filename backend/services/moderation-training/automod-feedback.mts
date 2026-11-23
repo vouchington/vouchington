@@ -25,7 +25,6 @@ export async function recordAutomodActionFeedback(input: RecordAutomodActionFeed
     422,
     'Only true positives can be kept removed',
   )
-  let postIdToInvalidate: string | null = null
   await using query = await beginTransaction()
   let context = await getAutomodFeedbackContext(
     input.communityId,
@@ -59,7 +58,7 @@ export async function recordAutomodActionFeedback(input: RecordAutomodActionFeed
     409,
     'Automod action already reviewed',
   )
-  postIdToInvalidate = context.post_id
+  const postIdToInvalidate = context.post_id
 
   const trainingFeedback = await recordModerationTrainingFeedback(
     {

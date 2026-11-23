@@ -29,7 +29,7 @@ export default async function NotificationRedirectPage({
   const notificationId = typeof params.notification_id === 'string' ? params.notification_id : null
   if (!notificationId) redirect('/')
 
-  let redirectTarget = '/'
+  let redirectTarget: string
   try {
     const response = await getMyNotificationRedirectTarget(notificationId)
     redirectTarget = getSafeRedirectTarget(response.target_url)

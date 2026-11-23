@@ -51,7 +51,6 @@ export async function processExtractImageMetadata(imageId: string): Promise<void
     unrecoverable(error)
   }
 
-  let shouldEnqueueImageCreated = false
   try {
     // ast-grep-ignore: no-three-sequential-awaits -- the S3 body supplies the temporary file; its extracted metadata supplies the finalized image transition
     const body = await readS3Body(canonicalS3Key)
@@ -75,7 +74,6 @@ export async function processExtractImageMetadata(imageId: string): Promise<void
     const { rowCount } = await finalizeImageMetadata(imageId, metadata)
     if (rowCount === 0) return
 
-    shouldEnqueueImageCreated = true
     imageStatePubSub
       .publish(imageId, {
         id: imageId,
@@ -91,22 +89,20 @@ export async function processExtractImageMetadata(imageId: string): Promise<void
     throw err
   }
 
-  if (shouldEnqueueImageCreated) {
-    try {
-      await enqueueOnImageCreated(imageId)
-    } catch (err) {
-      const reportError = (
-        err instanceof Error
-          ? err
-          : new Error('Failed to enqueue image-created listener', { cause: err })
-      ) as ReportableError
-      reportError.tags = { imageId }
-      reportError.extra = {
-        s3Key: image.s3_key,
-        context: 'extractImageMetadata.enqueueOnImageCreated',
-      }
-      onError(reportError)
+  try {
+    await enqueueOnImageCreated(imageId)
+  } catch (err) {
+    const reportError = (
+      err instanceof Error
+        ? err
+        : new Error('Failed to enqueue image-created listener', { cause: err })
+    ) as ReportableError
+    reportError.tags = { imageId }
+    reportError.extra = {
+      s3Key: image.s3_key,
+      context: 'extractImageMetadata.enqueueOnImageCreated',
     }
+    onError(reportError)
   }
 }
 

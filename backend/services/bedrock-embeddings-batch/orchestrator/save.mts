@@ -25,7 +25,6 @@ export async function applyBatchUpdates(
   }
 
   const tempTable = `temp_embedding_updates_${randomUUID().replaceAll('-', '')}`
-  let updatedIds: string[] = []
   await using query = await beginTransaction()
 
   await query(
@@ -89,7 +88,7 @@ export async function applyBatchUpdates(
       RETURNING ${tableName}.id`,
     { query },
   )
-  updatedIds = rows.map((r: { id: string }) => r.id)
+  const updatedIds = rows.map((r: { id: string }) => r.id)
 
   await query.commit()
 

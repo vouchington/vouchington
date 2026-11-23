@@ -60,7 +60,7 @@ export function reportToolingUnfinished(
       .slice(0, 15)
       .join('\n'),
 ): string {
-  let progress = ''
+  let progress: string
   try {
     progress = progressFile ? readFileSync(progressFile, 'utf8') : ''
   } catch {

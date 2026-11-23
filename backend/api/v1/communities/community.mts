@@ -97,7 +97,7 @@ app
       )
     }
 
-    let updated = community
+    let updated: typeof community
     if (archive !== undefined && hasUpdateFields) {
       updated = await updateCommunityAndSetArchiveState(
         currentUser,

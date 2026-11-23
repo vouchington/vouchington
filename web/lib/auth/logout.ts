@@ -56,7 +56,6 @@ async function logoutWithPushCleanup(): Promise<void> {
       }
     }
   } catch {
-    activeRegistration = undefined
     binding = undefined
   }
   if (binding) {

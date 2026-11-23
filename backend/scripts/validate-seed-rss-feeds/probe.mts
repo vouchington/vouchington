@@ -74,7 +74,7 @@ function transientRetryDelayMs(
 
 async function probeUrl(url: string): Promise<ProbeResult> {
   let response: Response
-  let finalUrl = url
+  let finalUrl: string
   try {
     response = await externalFetch(url, {
       method: 'GET',

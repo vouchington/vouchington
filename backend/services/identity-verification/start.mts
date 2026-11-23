@@ -76,7 +76,7 @@ export async function startIdentityVerification(
 
   // Atomically mark this exact attempt and persist the user's Checkout claim. The durable
   // attempt marker distinguishes an acknowledgement-lost committed claim from a concurrent loser.
-  let claimCommitted = false
+  let claimCommitted: boolean
   try {
     await using transaction = await beginTransaction()
     const { rows } = await transaction(

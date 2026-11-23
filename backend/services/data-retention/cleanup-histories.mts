@@ -115,7 +115,6 @@ async function cleanupHistoryPage(
   const persistent = lowerBoundId === null || persistentCursorForTest
   let cursorId = testCursorId
   let sweepCutoffId = getMinUuidv7ForDate(cutoff)
-  let sweepComplete = false
   if (upperBoundId && upperBoundId < sweepCutoffId) sweepCutoffId = upperBoundId
   if (persistent) {
     await transaction(
@@ -136,7 +135,7 @@ async function cleanupHistoryPage(
     )
     if (!rows[0]) throw new Error(`${kind} history retention cursor is missing`)
     cursorId = rows[0].cursor_id
-    sweepComplete = rows[0].is_sweep_complete
+    const sweepComplete = rows[0].is_sweep_complete
     const priorCutoffId = rows[0].sweep_cutoff_id
     if (priorCutoffId && (!sweepComplete || priorCutoffId > sweepCutoffId)) {
       sweepCutoffId = priorCutoffId

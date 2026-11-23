@@ -36,7 +36,7 @@ describe('migration SQL initialization failures', () => {
     const release = Promise.withResolvers<void>()
     let astSettled = false
     let astOperation: Promise<void> | undefined
-    let astResults: PromiseSettledResult<void>[] = []
+    let astResults: PromiseSettledResult<void>[]
     initialization.parser.mockRejectedValueOnce(parserError)
     initialization.ast.mockImplementationOnce(() => {
       astOperation = release.promise.then(() => {
