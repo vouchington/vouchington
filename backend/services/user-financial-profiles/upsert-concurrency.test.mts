@@ -5,8 +5,10 @@ import {
   assignTestRepresentativeIndividual,
   createTestIndividual,
 } from '@voucha/test-helpers/entities/individuals'
-import { interceptPostgresTransactionQueriesForTest } from '@voucha/test-helpers/injected-transaction-queries'
+import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
+import { waitForObservedTransactionWork } from '@voucha/test-helpers/injected-transaction-queries'
 import { getUserFinancialProfile } from './get.mts'
+import type { UserFinancialProfile } from './types.mts'
 import { upsertUserFinancialProfile } from './upsert.mts'
 
 describe('upsertUserFinancialProfile concurrency', () => {
@@ -30,53 +32,50 @@ describe('upsertUserFinancialProfile concurrency', () => {
     ).resolves.toMatchObject({ total_credit_limit: { amount: 100, currency: 'usd' } })
   })
 
-  it('serializes competing first creates without mixing amount state across currencies', async () => {
+  it('rejects a monetary edit validated before the existing profile changed currency', async () => {
     const user = await createTestUser()
+    const individual = await createTestIndividual()
+    await assignTestRepresentativeIndividual(user.id, individual.id)
+    await upsertUserFinancialProfile(user.id, {
+      stated_income_range: { minimum: { amount: 3_000_000, currency: 'usd' }, maximum: null },
+      total_credit_limit: { amount: 500_000, currency: 'usd' },
+    })
     const jpyIncome = {
       minimum: { amount: 5_000_000, currency: 'jpy' as const },
       maximum: { amount: 7_500_000, currency: 'jpy' as const },
     }
-    const usdCreditLimit = { amount: 900_000, currency: 'usd' as const }
+    const expectedProfile = {
+      currency: 'jpy',
+      stated_income_range: jpyIncome,
+      total_credit_limit: null,
+    } as const
 
-    const individual = await createTestIndividual()
-    await assignTestRepresentativeIndividual(user.id, individual.id)
-    const barrier = Promise.withResolvers<void>()
-    let writes = 0
-    const restore = interceptPostgresTransactionQueriesForTest(
-      (statement, values) =>
-        statement.includes('INSERT INTO individual_financial_profiles') &&
-        values[0] === individual.id,
-      () => {
-        writes++
-        if (writes === 2) barrier.resolve()
-        return barrier.promise
+    let currencyChange: Promise<[PromiseSettledResult<UserFinancialProfile>]> | undefined
+    let changedProfile: UserFinancialProfile | undefined
+    const restore = beforePostgresTransactionQueryForTest(
+      'INSERT INTO individual_financial_profiles',
+      values => values[0] === individual.id,
+      async () => {
+        const pending = Promise.allSettled([upsertUserFinancialProfile(user.id, expectedProfile)])
+        currencyChange = pending
+        const [change] = await waitForObservedTransactionWork(
+          pending,
+          'The competing profile currency change',
+        )
+        if (change.status === 'rejected') throw change.reason
+        changedProfile = change.value
       },
     )
     try {
-      const outcomes = await Promise.allSettled([
-        upsertUserFinancialProfile(user.id, { stated_income_range: jpyIncome }).finally(
-          barrier.resolve,
-        ),
-        upsertUserFinancialProfile(user.id, { total_credit_limit: usdCreditLimit }).finally(
-          barrier.resolve,
-        ),
-      ])
-
-      expect(writes).toBe(2)
-      const winners = outcomes.filter(outcome => outcome.status === 'fulfilled')
-      const conflicts = outcomes.filter(outcome => outcome.status === 'rejected')
-      expect(winners).toHaveLength(1)
-      expect(conflicts).toHaveLength(1)
-      expect(conflicts[0]?.reason).toMatchObject({ status: 409 })
-      const profile = await getUserFinancialProfile(user.id)
-      expect(profile).toEqual(winners[0]?.value)
-      expect(profile).toMatchObject(
-        outcomes[0]?.status === 'fulfilled'
-          ? { currency: 'jpy', stated_income_range: jpyIncome, total_credit_limit: null }
-          : { currency: 'usd', stated_income_range: null, total_credit_limit: usdCreditLimit },
-      )
+      await expect(
+        upsertUserFinancialProfile(user.id, {
+          total_credit_limit: { amount: 900_000, currency: 'usd' },
+        }),
+      ).rejects.toMatchObject({ status: 409 })
+      expect(changedProfile).toMatchObject(expectedProfile)
+      expect(await getUserFinancialProfile(user.id)).toEqual(changedProfile)
     } finally {
-      barrier.resolve()
+      await currencyChange
       restore()
     }
   })

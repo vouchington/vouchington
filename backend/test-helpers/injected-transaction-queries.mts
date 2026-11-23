@@ -1,6 +1,20 @@
 import { vi } from 'vitest'
+import { addAbortListener } from 'node:events'
 import * as psql from '@data-stores/psql'
 import type { QueryExecutor } from '@data-stores/psql'
+
+/** Bound an intercepted transaction's wait so its rollback can release any competing writer. */
+export async function waitForObservedTransactionWork<Result>(
+  work: Promise<Result>,
+  description: string,
+): Promise<Result> {
+  const expired = Promise.withResolvers<never>()
+  const deadline = AbortSignal.timeout(3_000)
+  using listener = addAbortListener(deadline, () => {
+    expired.reject(new Error(`${description} did not settle within 3000ms`))
+  })
+  return await Promise.race([work, expired.promise])
+}
 
 /**
  * Run `intercept` before every statement of a default-pool `beginTransaction()` transaction that

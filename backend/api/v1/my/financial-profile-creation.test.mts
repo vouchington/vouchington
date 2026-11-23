@@ -5,7 +5,10 @@ import {
   assignTestRepresentativeIndividual,
   createTestIndividual,
 } from '@voucha/test-helpers/entities/individuals'
-import { interceptPostgresTransactionQueriesForTest } from '@voucha/test-helpers/injected-transaction-queries'
+import {
+  interceptPostgresTransactionQueriesForTest,
+  waitForObservedTransactionWork,
+} from '@voucha/test-helpers/injected-transaction-queries'
 
 describe('PUT /api/v1/my/financial-profile first creation', () => {
   it('accepts a partial non-money update and defaults the profile currency to usd', async () => {
@@ -79,7 +82,10 @@ describe('PUT /api/v1/my/financial-profile first creation', () => {
       () => {
         writes++
         if (writes === 2) barrier.resolve()
-        return barrier.promise
+        return waitForObservedTransactionWork(
+          barrier.promise,
+          'Both first profile writes reaching the upsert',
+        )
       },
     )
     try {
