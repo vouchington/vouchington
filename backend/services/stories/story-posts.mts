@@ -6,10 +6,10 @@ import type { PostStory, Story } from './types.mts'
 import {
   createStoryPostInOwnedTransaction,
   createStoryPostInTransaction,
-  finalizeCreatedStoryPost,
   loadStoryTellerUser,
   type CreatedStoryPost,
 } from './story-post-create.mts'
+import { finalizeCreatedStoryPost } from './story-post-delivery.mts'
 
 export type StoryPostResult = {
   post: Post

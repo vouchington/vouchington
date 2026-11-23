@@ -1,11 +1,10 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import onError from '@modules/on-error'
 import { getSystemUserByUsername } from '@services/users/system-users'
 import { assertEntityRelationUpsertAllowed } from '@services/entity-relations/upsert'
 import { writeEntityRelations } from '@services/entity-relations/write-relations'
-import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
+import type { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import {
   createPostTextEmbeddingContent,
   createPostModerationContent,
@@ -18,12 +17,9 @@ import { createPostStory } from './update.mts'
 import type { PostStory, Story } from './types.mts'
 import type { Post } from '@services/posts/types'
 import { recordPostPublicationChange } from '@services/post-publication'
-import { deliverStoryPost } from './story-post-delivery.mts'
 import { markStoryPostRelatedUrlProjection } from './story-post-related-url-projection.mts'
-import { refreshStoryPostForStory } from './refresh-story-post.mts'
 import {
   readStoryPostCreationSources,
-  storyPostCreationSourcesChanged,
   type StoryPostCreationSnapshot,
 } from './story-post-creation-sources.mts'
 
@@ -162,39 +158,4 @@ export async function createStoryPostInTransaction(
       sourceUpperBoundId,
     },
   }
-}
-
-export async function finalizeCreatedStoryPost(created: CreatedStoryPost): Promise<void> {
-  let categoryTopicRelations = created.categoryTopicRelations
-  try {
-    // An assignment may have committed after creation read the membership and before
-    // it could see the new story post. Check committed sources before restarting projection.
-    if (await storyPostCreationSourcesChanged(created.postStory.story_id, created.sourceSnapshot)) {
-      await using query = await beginTransaction()
-      const refreshed = await refreshStoryPostForStory(created.postStory.story_id, {
-        query,
-        expectedPostId: created.post.id,
-        captureCategoryChanges: true,
-      })
-      await query.commit()
-      if (refreshed) categoryTopicRelations = refreshed.categoryTopicRelations
-    }
-  } catch (err) {
-    onError(err instanceof Error ? err : new Error(String(err)))
-  }
-  return deliverStoryPost({
-    post: created.post,
-    postStory: created.postStory,
-    storyTellerUser: created.storyTellerUser,
-    relationEffects: {
-      relatedUrlRelation: getEntityRelationMetadataOrThrow({
-        subjectType: 'post',
-        objectType: 'url',
-        predicate: 'related',
-      }),
-      relatedUrlRelations: [],
-      categoryTopicRelation: created.categoryTopicRelation,
-      categoryTopicRelations,
-    },
-  })
 }
