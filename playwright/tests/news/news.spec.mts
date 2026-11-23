@@ -221,7 +221,7 @@ test.describe('News Page', () => {
           [...element.attributes].some(attr => /^on/i.test(attr.name)) ? [element.outerHTML] : [],
         ),
       )
-    expect(elementsWithInlineHandlers).toEqual([])
+    expect(elementsWithInlineHandlers).toStrictEqual([])
 
     const unsafeLinkHrefs = await contentArea.locator('a[href]').evaluateAll(links =>
       // Only flag hrefs that have a URL scheme that isn't in the safe list.
@@ -233,7 +233,7 @@ test.describe('News Page', () => {
           : []
       }),
     )
-    expect(unsafeLinkHrefs).toEqual([])
+    expect(unsafeLinkHrefs).toStrictEqual([])
   })
 
   test('/news modal title is a clickable link to original article', async ({ page }) => {

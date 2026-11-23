@@ -111,7 +111,7 @@ test.describe('My Household', () => {
     await page.getByTestId('household-create').click()
     const response = await createResponse
 
-    expect(response.request().postDataJSON()).toEqual({})
+    expect(response.request().postDataJSON()).toStrictEqual({})
     await expect(page.getByTestId('household-members-heading').nth(0)).toHaveText('Your household')
     await expect(page.getByTestId('household-read-only-copy')).toBeVisible()
   })
@@ -230,7 +230,7 @@ test.describe('My Household', () => {
     )
     await page.getByTestId('household-create').click()
     const response = await createResponse
-    expect(response.request().postDataJSON()).toEqual({})
+    expect(response.request().postDataJSON()).toStrictEqual({})
     await expect(page.getByTestId('household-members-heading').nth(0)).toHaveText('Your household')
     const dimensions = await page.evaluate(() => ({
       contentWidth: document.documentElement.scrollWidth,

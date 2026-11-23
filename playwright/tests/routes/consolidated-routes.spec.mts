@@ -28,7 +28,7 @@ test.describe('Consolidated routes browser requests', () => {
 
     await navigateTo(page, `/card/${CARD_ID}/discussions`)
 
-    expect(removedEndpointRequests).toEqual([])
+    expect(removedEndpointRequests).toStrictEqual([])
   })
 
   test('post detail pages do not request removed metrics or election detail endpoints in the browser', async ({
@@ -38,6 +38,6 @@ test.describe('Consolidated routes browser requests', () => {
 
     await navigateTo(page, `/discussion/${DISCUSSION_ID}`)
 
-    expect(removedEndpointRequests).toEqual([])
+    expect(removedEndpointRequests).toStrictEqual([])
   })
 })

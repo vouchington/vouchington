@@ -70,7 +70,7 @@ test('authenticate seeded administrator through login and verified TOTP', async 
   const { deviceToken, sessionToken } = await createVerifiedMfaTestSession(TEST_USER_ID, {
     user_agent: await page.evaluate(() => navigator.userAgent),
   })
-  expect(sessionToken.payload.mfa_at).toEqual(expect.any(Number))
+  expect(sessionToken.payload.mfa_at).toStrictEqual(expect.any(Number))
   expect(deviceToken.payload.mfa_at).toBe(sessionToken.payload.mfa_at)
   expect(sessionToken.payload.rol).toContain('administrator')
   const origin = new URL(page.url()).origin

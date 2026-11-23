@@ -216,7 +216,7 @@ test.describe('News page modal and layout checks', () => {
       .toBeGreaterThan(0)
 
     await expect(voteTrigger(page, 'news-item-vote').first()).toBeVisible()
-    expect(individualElectionRequests).toEqual([])
+    expect(individualElectionRequests).toStrictEqual([])
   })
 
   test('/news modal footer shows semantic voting', async ({ page }) => {

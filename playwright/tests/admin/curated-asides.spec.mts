@@ -151,14 +151,14 @@ test.describe('Curated Asides admin page', () => {
         .poll(() => getFixtureOrder(page, fixtures), {
           message: 'second fixture row should move before the first fixture row',
         })
-        .toEqual(['second', 'first'])
+        .toStrictEqual(['second', 'first'])
 
       await secondRow.getByTestId('curated-item-move-down').click()
       await expect
         .poll(() => getFixtureOrder(page, fixtures), {
           message: 'second fixture row should move after the first fixture row',
         })
-        .toEqual(['first', 'second'])
+        .toStrictEqual(['first', 'second'])
     })
   })
 })

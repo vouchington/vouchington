@@ -26,7 +26,7 @@ test.describe('Admin Hostname Blocking', () => {
     }, hostnameId)
 
     expect(blockResult.status).toBe(200)
-    expect(blockResult.body).toEqual({
+    expect(blockResult.body).toStrictEqual({
       operation_id: expect.any(String),
       status: 'pending',
       totals: null,

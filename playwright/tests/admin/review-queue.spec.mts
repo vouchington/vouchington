@@ -89,7 +89,7 @@ test.describe('Admin review queue', () => {
       markForReviewButton.click(),
     ])
 
-    expect(request.postDataJSON()).toEqual({
+    expect(request.postDataJSON()).toStrictEqual({
       status: 'in_review',
       reason_code: 'staff_reviewed',
     })

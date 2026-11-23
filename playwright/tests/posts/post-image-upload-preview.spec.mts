@@ -105,7 +105,7 @@ test.describe('Selected post image previews', () => {
           }),
         ),
       )
-      .toEqual([
+      .toStrictEqual([
         [8, 6],
         [13, 9],
         [21, 11],
@@ -115,15 +115,15 @@ test.describe('Selected post image previews', () => {
     )
     expect(urls.every(url => url.startsWith('blob:'))).toBe(true)
     expect(new Set(urls).size).toBe(3)
-    expect(uploads.completedIds.toSorted()).toEqual(uploads.imageIds.toSorted())
-    expect(uploads.putIds.toSorted()).toEqual(uploads.imageIds.toSorted())
+    expect(uploads.completedIds.toSorted()).toStrictEqual(uploads.imageIds.toSorted())
+    expect(uploads.putIds.toSorted()).toStrictEqual(uploads.imageIds.toSorted())
     expect(uploads.imageIds).toHaveLength(3)
 
     const caption = page.getByTestId('post-form-image-caption-input').nth(1)
     await caption.pressSequentially('Selected green image')
     await expect(previews.nth(1)).toHaveAttribute('alt', 'Selected green image')
     await expect(previews.nth(1)).toHaveAttribute('src', urls[1]!)
-    expect(uploads.publicImageRequests).toEqual([])
+    expect(uploads.publicImageRequests).toStrictEqual([])
 
     const screenshotPath = join(
       await mkdtemp(join(tmpdir(), 'voucha-upload-preview-')),
@@ -151,9 +151,9 @@ test.describe('Selected post image previews', () => {
     await expect(page.getByTestId('post-form-image-caption-input')).toBeVisible()
     await expect(page.getByRole('status')).toContainText('Preview unavailable')
     await expect(page.getByTestId('upload-image-preview')).toHaveCount(0)
-    expect(uploads.completedIds).toEqual(uploads.imageIds)
-    expect(uploads.putIds).toEqual(uploads.imageIds)
+    expect(uploads.completedIds).toStrictEqual(uploads.imageIds)
+    expect(uploads.putIds).toStrictEqual(uploads.imageIds)
     expect(uploads.imageIds).toHaveLength(1)
-    expect(uploads.publicImageRequests).toEqual([])
+    expect(uploads.publicImageRequests).toStrictEqual([])
   })
 })
