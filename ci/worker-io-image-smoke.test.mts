@@ -12,7 +12,7 @@ describe('worker-io image cli smoke', () => {
     const dir = await mkdtemp(join(tmpdir(), 'worker-io-cli-smoke-'))
     try {
       await expect(
-        execFileAsync(process.execPath, ['backend/modules/child-process/image-smoke.mts'], {
+        execFileAsync(process.execPath, ['backend/modules/utils/worker-io-cli-smoke.mts'], {
           env: { ...process.env, TMPDIR: dir },
         }),
       ).resolves.toMatchObject({ stdout: '' })
