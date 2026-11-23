@@ -62,6 +62,8 @@ export const backgroundWorkRegistryEntries5 = {
         'Story category item batch size for rss feed items processing.',
       story_category_change_batch_size:
         'Story category change batch size for rss feed items processing.',
+      feed_candidate_inspection_cap:
+        'Maximum candidates one signed-in RSS feed request inspects per delivery arm before returning a short page with a continuation cursor.',
     },
   }),
   'rss-feeds-work-config': defineBoundedWorkNamespace({

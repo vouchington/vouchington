@@ -11,6 +11,11 @@ import {
 } from './cursor.mts'
 import { getCutoffDateForTimeRange } from './query-utils.mts'
 import { buildRssFeedItemPageQuery } from './get-ids/build-page-query.mts'
+import { resolveInspectedPage } from './inspection-continuation.mts'
+import {
+  getRssFeedItemsWorkLimit,
+  rssFeedItemsWorkMaxValues,
+} from '@services/rss-feed-items/work-limits'
 
 export async function getRssFeedItemFeedIds(
   currentUser: PrivateUser | null,
@@ -58,14 +63,15 @@ export async function getRssFeedItemFeedIds(
     cursorSortAt: sort_at_lt,
     cursorId: id_lt,
     safeLimit,
+    inspectionCap: getRssFeedItemsWorkLimit('feed_candidate_inspection_cap'),
+    inspectionCapMax: rssFeedItemsWorkMaxValues.feed_candidate_inspection_cap,
     minScoreFollowRssFeeds,
     minScoreFollowTopics,
     includeDirectItems,
     includeSharedItems,
   })
   const { rows } = await read(`/* getRssFeedItemFeedIds */ WITH ${query.text}`, query.values)
-  const hasNextPage = rows.length > safeLimit
-  const pageRows = rows.slice(0, safeLimit)
+  const { pageRows, hasNextPage, inspectedStop } = resolveInspectedPage(rows, safeLimit)
   return {
     results: pageRows.map(row => ({
       __entity_type: 'rss_feed_item' as const,
@@ -84,6 +90,7 @@ export async function getRssFeedItemFeedIds(
       })),
       hasNextPage,
       cursorScope,
+      inspectedStop,
     ),
   }
 }

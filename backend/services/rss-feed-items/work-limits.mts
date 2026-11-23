@@ -14,6 +14,7 @@ const defaultFields = {
   enqueue_batch_size: 1000,
   story_category_item_batch_size: 500,
   story_category_change_batch_size: 1000,
+  feed_candidate_inspection_cap: 10000,
 }
 
 /** Hard ceilings for the current runtime configuration contract. */
@@ -30,6 +31,7 @@ export const rssFeedItemsWorkMaxValues = {
   enqueue_batch_size: 10000,
   story_category_item_batch_size: 5000,
   story_category_change_batch_size: 10000,
+  feed_candidate_inspection_cap: 50000,
 }
 
 export const rssFeedItemsWorkConfig = new DynamicConfig({
@@ -47,6 +49,7 @@ export const rssFeedItemsWorkConfig = new DynamicConfig({
     enqueue_batch_size: 'number',
     story_category_item_batch_size: 'number',
     story_category_change_batch_size: 'number',
+    feed_candidate_inspection_cap: 'number',
   },
   defaultFields,
 })
