@@ -12,6 +12,12 @@ import {
   insertTestReleasedModerationTransparencyRollupRow,
 } from '@voucha/test-helpers'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
+import {
+  createTestClearancePartitionFeedbackRace,
+  getTestClearancePartitionState,
+  readTestClearanceFeedbackIds,
+  recordFeedbackDuringClearancePartitionCreation,
+} from '@voucha/test-helpers/clearance-partition-feedback-race'
 import { PARTITION_DROP_POLICIES } from '../config-driven/utils/partition-drop-policies.mts'
 import { beginTransaction } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
@@ -81,6 +87,18 @@ const METRIC = 'automated_moderation'
 const CATEGORY = 'post_clearance_reject'
 /** Public release refuses a cohort below this count, so the fixture must cross it. */
 const PUBLIC_RELEASE_COUNT = 20
+
+describe('createPostClearancePartitions', () => {
+  it('commits clearance partition creation alongside moderation training feedback', async () => {
+    const fixture = await createTestClearancePartitionFeedbackRace()
+    const ids = await recordFeedbackDuringClearancePartitionCreation(fixture, () =>
+      createPostClearancePartitions({ pastMonths: 0, futureMonths: 0 }, fixture.occurredAt),
+    )
+
+    expect(await getTestClearancePartitionState(fixture.partition)).toBe('attached')
+    expect((await readTestClearanceFeedbackIds(ids)).toSorted()).toEqual(ids.toSorted())
+  })
+})
 
 describe('guardAndRetireMonthlyPartition', () => {
   it('keeps a released moderation transparency cohort when its clearance month is dropped', async () => {
