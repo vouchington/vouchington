@@ -37,7 +37,9 @@ vi.mock(import('@/components/shared/infinite-scroll'), () => ({
       {hasNextPage ? (
         <button
           type='button'
-          onClick={() => void onLoadMore()}
+          onClick={() => {
+            void onLoadMore()
+          }}
         >
           Load next page
         </button>

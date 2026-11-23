@@ -47,7 +47,9 @@ vi.mock(import('@/components/shared/infinite-scroll'), () => ({
           type='button'
           data-pw='mock-load-more'
           aria-label='Load more'
-          onClick={() => void onLoadMore()}
+          onClick={() => {
+            void onLoadMore()
+          }}
         />
       ) : null}
     </div>

@@ -69,7 +69,7 @@ export const setupMemoryCaches = (): void => {
     delete: () => Promise.resolve(false),
     has: () => Promise.resolve(true),
     keys: () => Promise.resolve([]),
-    match: () => Promise.resolve<Response | undefined>(void 0),
+    match: () => Promise.resolve<Response | undefined>(undefined),
   } as unknown as CacheStorage
 }
 

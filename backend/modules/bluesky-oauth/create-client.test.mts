@@ -21,8 +21,12 @@ function inMemoryStateStore(): NodeSavedStateStore {
   const store = new Map<string, NodeSavedState>()
   return {
     get: async key => store.get(key),
-    set: async (key, value) => void store.set(key, value),
-    del: async key => void store.delete(key),
+    set: async (key, value) => {
+      store.set(key, value)
+    },
+    del: async key => {
+      store.delete(key)
+    },
   }
 }
 
@@ -30,8 +34,12 @@ function inMemorySessionStore(): NodeSavedSessionStore {
   const store = new Map<string, NodeSavedSession>()
   return {
     get: async key => store.get(key),
-    set: async (key, value) => void store.set(key, value),
-    del: async key => void store.delete(key),
+    set: async (key, value) => {
+      store.set(key, value)
+    },
+    del: async key => {
+      store.delete(key)
+    },
   }
 }
 

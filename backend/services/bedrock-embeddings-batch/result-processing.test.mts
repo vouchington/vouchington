@@ -42,7 +42,13 @@ describe('batch result processing', () => {
     ])
     const batches: unknown[][] = []
 
-    await processBatchResultsInBatches(filePath, async updates => void batches.push(updates), 1)
+    await processBatchResultsInBatches(
+      filePath,
+      async updates => {
+        batches.push(updates)
+      },
+      1,
+    )
 
     expect(batches).toEqual([
       [
@@ -74,7 +80,9 @@ describe('batch result processing', () => {
     ])
     const batches: unknown[][] = []
 
-    await processImageBatchResultsInBatches(filePath, async updates => void batches.push(updates))
+    await processImageBatchResultsInBatches(filePath, async updates => {
+      batches.push(updates)
+    })
 
     expect(batches).toEqual([
       [{ entity_id: 'i1', image_sha_256: Buffer.from(hash, 'hex'), embedding: [0.5] }],

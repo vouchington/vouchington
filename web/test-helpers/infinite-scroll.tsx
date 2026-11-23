@@ -38,7 +38,9 @@ export function InfiniteScroll({
           <Button
             type='button'
             data-pw='test-auto-continuation'
-            onClick={() => void onLoadMore()}
+            onClick={() => {
+              void onLoadMore()
+            }}
           >
             Auto load
           </Button>

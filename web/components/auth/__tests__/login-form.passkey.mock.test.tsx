@@ -91,7 +91,9 @@ vi.mock(
         <button
           type='button'
           disabled={disabled}
-          onClick={() => void onToken({ provider: provider as unknown, token: 'mock-token' })}
+          onClick={() => {
+            void onToken({ provider: provider as unknown, token: 'mock-token' })
+          }}
         >{`Continue with ${provider}`}</button>
       ),
     }) as unknown as typeof import('../oauth-login-button'),
