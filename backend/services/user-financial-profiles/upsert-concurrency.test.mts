@@ -6,7 +6,7 @@ import {
   createTestIndividual,
 } from '@voucha/test-helpers/entities/individuals'
 import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
-import { waitForObservedTransactionWork } from '@voucha/test-helpers/injected-transaction-queries'
+import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { getUserFinancialProfile } from './get.mts'
 import type { UserFinancialProfile } from './types.mts'
 import { upsertUserFinancialProfile } from './upsert.mts'
@@ -58,9 +58,10 @@ describe('upsertUserFinancialProfile concurrency', () => {
       async () => {
         const pending = Promise.allSettled([upsertUserFinancialProfile(user.id, expectedProfile)])
         currencyChange = pending
-        const [change] = await waitForObservedTransactionWork(
+        const [change] = await waitForRealGlideEvent(
           pending,
           'The competing profile currency change',
+          3_000,
         )
         if (change.status === 'rejected') throw change.reason
         changedProfile = change.value

@@ -5,10 +5,8 @@ import {
   assignTestRepresentativeIndividual,
   createTestIndividual,
 } from '@voucha/test-helpers/entities/individuals'
-import {
-  interceptPostgresTransactionQueriesForTest,
-  waitForObservedTransactionWork,
-} from '@voucha/test-helpers/injected-transaction-queries'
+import { interceptPostgresTransactionQueriesForTest } from '@voucha/test-helpers/injected-transaction-queries'
+import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 
 describe('PUT /api/v1/my/financial-profile first creation', () => {
   it('accepts a partial non-money update and defaults the profile currency to usd', async () => {
@@ -82,9 +80,10 @@ describe('PUT /api/v1/my/financial-profile first creation', () => {
       () => {
         writes++
         if (writes === 2) barrier.resolve()
-        return waitForObservedTransactionWork(
+        return waitForRealGlideEvent(
           barrier.promise,
           'Both first profile writes reaching the upsert',
+          3_000,
         )
       },
     )
