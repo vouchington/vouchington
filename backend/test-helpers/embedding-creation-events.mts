@@ -21,6 +21,8 @@ export function createOwnedEmbeddingQueue(
   const writes: Promise<unknown>[] = []
   const creations: Promise<Worker>[] = []
   const release: Array<() => void> = []
+  // oxlint-disable-next-line prefer-const -- cleanup registered before the assignment can read this if setup throws; const would throw a TDZ ReferenceError
+  let events: QueueEvents | undefined
   let closing: Promise<void> | undefined
   let accepting = true
   let writersDrained = false
@@ -56,7 +58,7 @@ export function createOwnedEmbeddingQueue(
   }
   queue.on('error', onError)
   fixture.assertOpen()
-  const events = new QueueEvents(name, { ...options, lastEventId: '0-0' })
+  events = new QueueEvents(name, { ...options, lastEventId: '0-0' })
   for (const event of ['added', 'delay-changed', 'completed', 'failed'] as const)
     events.on(event, (payload: { jobId: string }) => {
       const counts = history.get(payload.jobId) ?? new Map<EventName, number>()
@@ -122,7 +124,7 @@ export function createOwnedEmbeddingQueue(
       await cleanup()
       return result
     },
-    ready: () => start(() => events.waitUntilReady()),
+    ready: () => start(() => events!.waitUntilReady()),
     promote: (job: Pick<Job, 'promote'>) => start(() => job.promote()),
     /** A zero-delay continuation may already be promoted; require its actual completion. */
     promoteContinuation: (job: Pick<Job, 'promote'>, completed: Promise<void>) =>
