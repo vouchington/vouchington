@@ -73,7 +73,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@715ee5feea88a3a616d33ce9365987ba58a8849e # v3.5.3
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@95129ce4ac652ea4adf29635b91e42de2557c502 # v3.6.2
         with:
           suite: backend-modules
       - name: Upload full backend-modules LCOV to GitHub (attempt 2)
@@ -81,7 +81,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@715ee5feea88a3a616d33ce9365987ba58a8849e # v3.5.3
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@95129ce4ac652ea4adf29635b91e42de2557c502 # v3.6.2
         with:
           suite: backend-modules
           name-suffix: -retry
