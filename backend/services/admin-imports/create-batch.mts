@@ -1,4 +1,4 @@
-import { adminImportsWorkMaxValues, getAdminImportsWorkLimit } from '@queues/admin-imports/config'
+import { getAdminImportsWorkLimit } from '@queues/admin-imports/config'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { runWithTransaction, write } from '@data-stores/psql'
 import assert from 'http-assert'
@@ -18,15 +18,12 @@ export async function createImportBatch(
   inputRows: Record<string, unknown>[],
   metadata?: Record<string, unknown>,
 ): Promise<CreateBatchResult> {
-  const CHUNK_SIZE = getAdminImportsWorkLimit('insert_chunk_size')
   const totalRows = inputRows.length
-  const limit = getAdminImportsWorkLimit('max_rows_per_batch')
   assert(totalRows > 0, 400, 'Batch must have at least one row')
-  assert(
-    totalRows <= limit && totalRows <= adminImportsWorkMaxValues.max_rows_per_batch,
-    400,
-    `Batch must not exceed ${limit} rows`,
-  )
+
+  const limit = getAdminImportsWorkLimit('max_rows_per_batch')
+  assert(totalRows <= limit, 400, `Batch must not exceed ${limit} rows`)
+  const CHUNK_SIZE = getAdminImportsWorkLimit('insert_chunk_size')
 
   return runWithTransaction(undefined, async query => {
     const { rows: batchRows } = await write(
