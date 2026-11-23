@@ -8,6 +8,10 @@ import {
   type MonthlyPartitionTableConfig,
 } from '@vouchington/postgres/partitions'
 import { beginTransaction } from '../setup.mts'
+import {
+  findMissingClearancePartitions,
+  type ClearanceCatalogChild,
+} from './clearance-partition-catalog.mts'
 
 export const POST_CLEARANCE_CHANGES = 'post_clearance_changes'
 
@@ -42,11 +46,7 @@ export async function createPostClearancePartitions(
   await using transaction = await beginTransaction()
   await transaction(`/* createPostClearancePartitions:lockPosts */
     LOCK TABLE posts IN SHARE ROW EXCLUSIVE MODE`)
-  const { rows } = await transaction<{
-    name: string
-    bound: string | null
-    detach_pending: boolean
-  }>(
+  const { rows } = await transaction<ClearanceCatalogChild>(
     `/* createPostClearancePartitions:attachedChildren */
     SELECT child.relname::text AS name, pg_get_expr(child.relpartbound, child.oid) AS bound,
       inheritance.inhdetachpending AS detach_pending
@@ -59,17 +59,7 @@ export async function createPostClearancePartitions(
         (child.relnamespace = parent_table.relnamespace AND child.relname = ANY($1::name[])))`,
     [partitions.map(partition => partition.name)],
   )
-  if (rows.some(row => row.bound === 'DEFAULT')) {
-    throw new Error('Unexpected default partition for post_clearance_changes')
-  }
-  const attached = new Map(rows.map(row => [row.name, row]))
-  const missing = partitions.filter(({ name, bound }) => {
-    const child = attached.get(name)
-    if (child && (child.bound !== bound || child.detach_pending)) {
-      throw new Error(`Unexpected state for post clearance partition ${name}`)
-    }
-    return !child
-  })
+  const missing = findMissingClearancePartitions(partitions, rows)
   // ATTACH lets feedback FK checks read the parent while it installs FK triggers.
   await runSequentially(
     missing.flatMap(({ name, bound }) => [
