@@ -26,18 +26,36 @@ describe('durable Stripe refund scan hardening', () => {
     ).resolves.toEqual([undefined, undefined])
   })
 
-  it('joins the generation a concurrent worker rotated a completed cycle to', async () => {
+  it('rotates a completed cycle once and returns the same open generation after', async () => {
     const fixture = await createRefundScanCase()
     const completed = await getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)
     await completeStripeRefundScanCycle(completed)
 
-    const cycles = await Promise.all(
-      Array.from({ length: 8 }, () => getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)),
-    )
+    const rotated = await getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)
+    const joined = await getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)
 
-    expect(new Set(cycles.map(cycle => cycle.generation))).toEqual(
-      new Set([completed.generation + 1]),
-    )
+    expect(rotated).toEqual({
+      generation: completed.generation + 1,
+      reversalCaseId: fixture.reversalCaseId,
+    })
+    expect(joined).toEqual(rotated)
+  })
+
+  it('rotates a completed cycle once for concurrent workers', async () => {
+    const fixture = await createRefundScanCase()
+    const completed = await getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)
+    await completeStripeRefundScanCycle(completed)
+
+    const cycles = await Promise.all([
+      getOrCreateStripeRefundScanCycle(fixture.reversalCaseId),
+      getOrCreateStripeRefundScanCycle(fixture.reversalCaseId),
+    ])
+
+    const expected = {
+      generation: completed.generation + 1,
+      reversalCaseId: fixture.reversalCaseId,
+    }
+    expect(cycles).toEqual([expected, expected])
   })
 
   it('refuses to complete a cycle with an unverified registered target', async () => {

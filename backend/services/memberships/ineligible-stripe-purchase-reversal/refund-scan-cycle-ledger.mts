@@ -23,31 +23,23 @@ export type StripeRefundScanCycle = {
 export async function getOrCreateStripeRefundScanCycle(
   reversalCaseId: string,
 ): Promise<StripeRefundScanCycle> {
-  await write(sql`/* getOrCreateStripeRefundScanCycle:insert */
-    INSERT INTO membership_ineligible_purchase_reversal_refund_scan_cycles (
+  // Creates the cycle or rotates a completed one. A concurrent caller waits on the row,
+  // re-checks completed_at against the committed winner and updates nothing, so a
+  // completed cycle rotates exactly once. No row lock is taken: a cycle may complete
+  // while a late scan registered concurrently is still unverified. That worker verifies
+  // its own scan before any refund and the next run rotates and re-registers;
+  // completed_at only feeds case-closed retention.
+  await write(sql`/* getOrCreateStripeRefundScanCycle:upsert */
+    INSERT INTO membership_ineligible_purchase_reversal_refund_scan_cycles AS cycle (
       membership_ineligible_purchase_reversal_case_id
-    ) VALUES (${reversalCaseId}) ON CONFLICT DO NOTHING
+    ) VALUES (${reversalCaseId})
+    ON CONFLICT (membership_ineligible_purchase_reversal_case_id) DO UPDATE
+    SET generation = cycle.generation + 1, completed_at = NULL
+    WHERE cycle.completed_at IS NOT NULL
   `)
-  // No row lock: a cycle is only ever advanced by the guarded rotate below, and a
-  // cycle may complete while a late scan registered concurrently is still unverified.
-  // That worker verifies its own scan before any refund and the next run rotates and
-  // re-registers; completed_at only feeds case-closed retention.
   const current = await readCycle(reversalCaseId)
-  if (!current.completedAt) return { generation: current.generation, reversalCaseId }
-  const { rows: rotated } = await write<{ generation: string }>(
-    sql`/* getOrCreateStripeRefundScanCycle:rotate */
-      UPDATE membership_ineligible_purchase_reversal_refund_scan_cycles
-      SET generation = generation + 1, completed_at = NULL
-      WHERE membership_ineligible_purchase_reversal_case_id = ${reversalCaseId}
-        AND generation = ${current.generation} AND completed_at IS NOT NULL
-      RETURNING generation::TEXT AS generation
-    `,
-  )
-  if (rotated[0]) return { generation: Number(rotated[0].generation), reversalCaseId }
-  // Lost the rotate race: join the generation the winner opened.
-  const joined = await readCycle(reversalCaseId)
-  if (joined.completedAt) throw new Error('Could not rotate Stripe refund scan cycle')
-  return { generation: joined.generation, reversalCaseId }
+  if (current.completedAt) throw new Error('Could not rotate Stripe refund scan cycle')
+  return { generation: current.generation, reversalCaseId }
 }
 
 async function readCycle(
