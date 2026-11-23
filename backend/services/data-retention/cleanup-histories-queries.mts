@@ -7,6 +7,39 @@ import {
 import { getRetentionCutoffDate } from './cleanup-options.mts'
 import type { HistoryKind } from './cleanup-histories-candidates.mts'
 
+export type HistoryRetentionCursor = {
+  cursor_id: string | null
+  sweep_cutoff_id: string | null
+  is_sweep_complete: boolean
+}
+
+export async function checkpointHistoryRetentionCursor(
+  query: TransactionQuery,
+  kind: HistoryKind,
+  previous: HistoryRetentionCursor,
+  next: HistoryRetentionCursor,
+): Promise<boolean> {
+  const { rowCount } = await query(
+    `/* checkpointHistoryRetentionCursor */
+     UPDATE history_retention_cursors
+     SET cursor_id = $2::uuid, sweep_cutoff_id = $3::uuid, is_sweep_complete = $4::boolean
+     WHERE cleanup_name = $1::history_retention_cleanup_names
+       AND cursor_id IS NOT DISTINCT FROM $5::uuid
+       AND sweep_cutoff_id IS NOT DISTINCT FROM $6::uuid
+       AND is_sweep_complete = $7::boolean`,
+    [
+      kind,
+      next.cursor_id,
+      next.sweep_cutoff_id,
+      next.is_sweep_complete,
+      previous.cursor_id,
+      previous.sweep_cutoff_id,
+      previous.is_sweep_complete,
+    ],
+  )
+  return rowCount === 1
+}
+
 /** Mutate only candidate ids; per-key probes stop at the owner-approved rank. */
 export async function mutatePage(
   query: TransactionQuery,

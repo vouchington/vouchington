@@ -30,6 +30,7 @@ import {
   restoreHistoryCursorForTest,
   snapshotHistoryCursorForTest,
 } from '@voucha/test-helpers/history-retention-reads'
+import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { cleanupHistories } from '../cleanup-histories.mts'
 
 function afterUtcMonths(base: Date, months: number, milliseconds = 0): Date {
@@ -118,6 +119,47 @@ describe('bounded per-key history retention', () => {
           await lock.release()
         }
       }
+    }
+  })
+
+  it('keeps the newer history cursor after an older raw page finishes', async () => {
+    const kind = 'dynamic_configuration_revisions'
+    const ownedIds = await reserveHistoryRetentionFixtureIds(kind)
+    const priorCursor = await snapshotHistoryCursorForTest(kind)
+    const { base, lowerBoundDate, upperBoundDate } = createHistoryRetentionWindow(5)
+    try {
+      await positionHistoryCursorForTest(kind, lowerBoundDate)
+      const ids = await insertConfigHistoryBatch(`retention-${crypto.randomUUID()}`, base, 3)
+      ownedIds.push(...ids)
+      const options = {
+        kinds: [kind],
+        batchSize: 1,
+        maxBatches: 1,
+        now: afterUtcMonths(base, 12, 4),
+        lowerBoundDate,
+        upperBoundDate,
+        persistentCursorForTest: true,
+      } as const
+      const restore = beforePostgresTransactionQueryForTest(
+        'checkpointHistoryRetentionCursor',
+        values => values[0] === kind,
+        async () => {
+          expect((await cleanupHistories({ ...options, batchSize: 2 }))[kind]).toEqual({
+            scanned: 2,
+            changed: 0,
+            hasMore: true,
+          })
+        },
+      )
+      try {
+        const result = (await cleanupHistories(options))[kind]
+        expect(await readHistoryCursor(kind)).toMatchObject({ cursor_id: ids[1] })
+        expect(result).toEqual({ scanned: 1, changed: 0, hasMore: false })
+      } finally {
+        restore()
+      }
+    } finally {
+      await restoreHistoryCursorForTest(kind, priorCursor)
     }
   })
 

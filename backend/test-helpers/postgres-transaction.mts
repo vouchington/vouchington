@@ -36,3 +36,22 @@ export async function withRepeatableReadPostgresTransactionForTest<Result>(
   await using query = await beginTransaction({ isolationLevel: 'repeatable read' })
   return await operation(query)
 }
+
+export function beforeBorrowedPostgresQueryForTest(
+  query: TransactionQuery,
+  marker: string,
+  effect: () => Promise<void>,
+): TransactionQuery {
+  let applied = false
+  return new Proxy(query, {
+    async apply(target, thisArgument, argumentsList: Parameters<TransactionQuery>) {
+      const [input] = argumentsList
+      const statement = typeof input === 'string' ? input : input.text
+      if (!applied && statement.includes(marker)) {
+        applied = true
+        await effect()
+      }
+      return Reflect.apply(target, thisArgument, argumentsList)
+    },
+  })
+}

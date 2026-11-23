@@ -14,8 +14,8 @@ export type MembershipOperationalCleanupOptions = {
 }
 
 type CursorKind = 'entitlement_effects' | 'renewal_notices' | 'google_acknowledgments'
-type CursorRow = { cursor_at: Date | null; cursor_id: string | null }
-type Candidate = { id: string; due_at: Date }
+type CursorRow = { cursor_at: string | null; cursor_id: string | null }
+type Candidate = { id: string; due_at: string }
 
 export async function cleanupDeliveredMembershipEntitlementEffects(
   options: MembershipOperationalCleanupOptions,
@@ -60,7 +60,7 @@ async function runMembershipOperationalPages(
   let hasMore = false
   // oxlint-disable no-await-in-loop -- each checkpoint determines the next keyset page
   for (let batch = 0; batch < maxBatches; batch += 1) {
-    // no-mistakes-disable-next-line query-reached-per-item: each call deletes a bounded SQL page; the persisted cursor serializes pages, not individual rows
+    // no-mistakes-disable-next-line query-reached-per-item: each call deletes a bounded SQL page and checkpoints its progress
     const page = await deleteMembershipOperationalPage(
       kind,
       cutoff,
@@ -86,7 +86,7 @@ async function deleteMembershipOperationalPage(
   await using transaction = await beginTransaction()
   const { rows: cursorRows } = await transaction<CursorRow>(sql`
     /* deleteMembershipOperationalPage.readCursor */
-    SELECT cursor_at, cursor_id FROM membership_operational_cleanup_cursors
+    SELECT cursor_at::text AS cursor_at, cursor_id FROM membership_operational_cleanup_cursors
     WHERE kind = ${kind}
   `)
   const cursor = cursorRows[0]
@@ -98,7 +98,7 @@ async function deleteMembershipOperationalPage(
   if (kind === 'entitlement_effects') {
     const statement = sql`
       /* deleteMembershipOperationalPage.entitlementCandidates */
-      SELECT id, delivered_at AS due_at FROM membership_entitlement_effects
+      SELECT id, delivered_at::text AS due_at FROM membership_entitlement_effects
       WHERE delivered_at IS NOT NULL AND delivered_at < ${cutoff}
         AND delivered_at >= COALESCE(${lower}::timestamptz, '-infinity'::timestamptz)
         AND (delivered_at, id) > (
@@ -113,7 +113,7 @@ async function deleteMembershipOperationalPage(
   } else if (kind === 'renewal_notices') {
     const statement = sql`
       /* deleteMembershipOperationalPage.renewalCandidates */
-      SELECT membership_id AS id, projection_ended_at AS due_at
+      SELECT membership_id AS id, projection_ended_at::text AS due_at
       FROM membership_renewal_price_increase_notification_work_items
       WHERE projection_ended_at IS NOT NULL AND projection_ended_at < ${cutoff}
         AND projection_ended_at >= COALESCE(${lower}::timestamptz, '-infinity'::timestamptz)
@@ -130,7 +130,7 @@ async function deleteMembershipOperationalPage(
   } else {
     ;({ rows } = await transaction<Candidate>(sql`
       /* deleteMembershipOperationalPage.googleCandidates */
-      SELECT id, COALESCE(acknowledged_at, skipped_at) AS due_at
+      SELECT id, COALESCE(acknowledged_at, skipped_at)::text AS due_at
       FROM membership_google_play_acknowledgments
       WHERE (acknowledged_at IS NOT NULL OR skipped_at IS NOT NULL)
         AND COALESCE(acknowledged_at, skipped_at) < ${cutoff}
@@ -167,11 +167,13 @@ async function deleteMembershipOperationalPage(
   }
   const hasMore = rows.length > batchSize
   const last = hasMore ? page.at(-1) : undefined
-  await transaction(sql`/* deleteMembershipOperationalPage.checkpoint */
+  const { rowCount } = await transaction(sql`/* deleteMembershipOperationalPage.checkpoint */
     UPDATE membership_operational_cleanup_cursors
-    SET cursor_at = ${last?.due_at ?? null}, cursor_id = ${last?.id ?? null}::uuid
+    SET cursor_at = ${last?.due_at ?? null}::timestamptz, cursor_id = ${last?.id ?? null}::uuid
     WHERE kind = ${kind}
+      AND cursor_at IS NOT DISTINCT FROM ${afterAt}::timestamptz
+      AND cursor_id IS NOT DISTINCT FROM ${afterId}::uuid
   `)
   await transaction.commit()
-  return { deleted, hasMore }
+  return { deleted, hasMore: rowCount === 1 && hasMore }
 }

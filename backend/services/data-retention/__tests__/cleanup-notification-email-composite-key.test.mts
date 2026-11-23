@@ -46,6 +46,7 @@ describe('notification tombstone retention composite key', () => {
       await getTestNotificationEmailRetentionCursor(query, 'user_deleted_notifications'),
     ).toEqual({
       cursor_notification_id: sharedId,
+      cursor_notification_partition_id: users[0],
       sweep_cutoff_at: window.upperBoundDate,
     })
     expect(await listTestSameIdNotificationOwners(query, sharedId, users)).toEqual([users[1]])

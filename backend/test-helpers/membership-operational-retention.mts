@@ -80,3 +80,22 @@ export async function googlePlayAcknowledgmentExists(id: string): Promise<boolea
   `)
   return rows[0]?.exists ?? false
 }
+
+type MembershipRetentionCursor = { cursor_at: string | null; cursor_id: string | null }
+
+export async function readMembershipEntitlementRetentionCursor(): Promise<MembershipRetentionCursor> {
+  const { rows } = await write<MembershipRetentionCursor>(sql`
+    /* readMembershipEntitlementRetentionCursor */
+    SELECT cursor_at::text AS cursor_at, cursor_id FROM membership_operational_cleanup_cursors
+    WHERE kind = 'entitlement_effects'`)
+  return rows[0]!
+}
+
+export async function restoreMembershipEntitlementRetentionCursor(
+  cursor: MembershipRetentionCursor,
+): Promise<void> {
+  await write(sql`/* restoreMembershipEntitlementRetentionCursor */
+    UPDATE membership_operational_cleanup_cursors
+    SET cursor_at = ${cursor.cursor_at}::timestamptz, cursor_id = ${cursor.cursor_id}::uuid
+    WHERE kind = 'entitlement_effects'`)
+}

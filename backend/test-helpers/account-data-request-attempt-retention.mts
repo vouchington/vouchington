@@ -36,3 +36,39 @@ export async function countDataRequestAttemptsForRetention(requestId: string): P
     SELECT count(*) AS count FROM user_data_request_attempts WHERE request_id = ${requestId}`)
   return Number(rows[0]!.count)
 }
+
+type AttemptRetentionCursor = {
+  cursor_request_id: string | null
+  cursor_processing_attempt_id: string | null
+  cursor_upper_id: string | null
+}
+
+export async function readDataRequestAttemptRetentionCursor(): Promise<AttemptRetentionCursor | null> {
+  const { rows } = await write<AttemptRetentionCursor>(sql`
+    /* readDataRequestAttemptRetentionCursor */
+    SELECT cursor_request_id, cursor_processing_attempt_id, cursor_upper_id
+    FROM user_data_request_attempt_retention_cursors WHERE cleanup_name = 'expired_attempts'`)
+  return rows[0] ?? null
+}
+
+export async function restoreDataRequestAttemptRetentionCursor(
+  cursor: AttemptRetentionCursor | null,
+): Promise<void> {
+  if (!cursor) {
+    await write(sql`/* removeDataRequestAttemptRetentionCursor */
+      DELETE FROM user_data_request_attempt_retention_cursors WHERE cleanup_name = 'expired_attempts'`)
+    return
+  }
+  await write(sql`/* restoreDataRequestAttemptRetentionCursor */
+    UPDATE user_data_request_attempt_retention_cursors
+    SET cursor_request_id = ${cursor.cursor_request_id},
+        cursor_processing_attempt_id = ${cursor.cursor_processing_attempt_id},
+        cursor_upper_id = ${cursor.cursor_upper_id}
+    WHERE cleanup_name = 'expired_attempts'`)
+}
+
+export async function ensureDataRequestAttemptRetentionCursor(): Promise<void> {
+  await write(sql`/* ensureDataRequestAttemptRetentionCursorForTest */
+    INSERT INTO user_data_request_attempt_retention_cursors (cleanup_name)
+    VALUES ('expired_attempts') ON CONFLICT (cleanup_name) DO NOTHING`)
+}

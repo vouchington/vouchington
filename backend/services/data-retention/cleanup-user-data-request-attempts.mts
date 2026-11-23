@@ -106,19 +106,26 @@ async function deleteAttemptPage(
   }
   const hasMore = rows.length > page.length
   const last = page.at(-1)
-  await query(
+  const { rowCount } = await query(
     `/* updateUserDataRequestAttemptRetentionCursor */
     UPDATE user_data_request_attempt_retention_cursors
     SET cursor_request_id = $1, cursor_processing_attempt_id = $2,
         cursor_upper_id = $3
-    WHERE cleanup_name = 'expired_attempts'`,
+    WHERE cleanup_name = 'expired_attempts'
+      AND cursor_request_id IS NOT DISTINCT FROM $4::uuid
+      AND cursor_processing_attempt_id IS NOT DISTINCT FROM $5::uuid
+      AND cursor_upper_id IS NOT DISTINCT FROM $6::uuid`,
     [
       hasMore ? last?.request_id : null,
       hasMore ? last?.processing_attempt_id : null,
       hasMore ? sweepCutoffId : null,
+      cursor.cursor_request_id,
+      cursor.cursor_processing_attempt_id,
+      cursor.cursor_upper_id,
     ],
   )
   await query.commit()
+  if (rowCount === 0) return { deleted, hasMore: false, continuation: null }
   return {
     deleted,
     hasMore,

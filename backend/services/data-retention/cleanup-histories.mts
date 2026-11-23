@@ -10,7 +10,11 @@ import {
   listResidualCandidate,
   type HistoryKind,
 } from './cleanup-histories-candidates.mts'
-import { mutatePage } from './cleanup-histories-queries.mts'
+import {
+  checkpointHistoryRetentionCursor,
+  mutatePage,
+  type HistoryRetentionCursor,
+} from './cleanup-histories-queries.mts'
 export type { HistoryKind } from './cleanup-histories-candidates.mts'
 export type HistoryCleanupResult = { scanned: number; changed: number; hasMore: boolean }
 export type HistoryCleanupOptions = {
@@ -113,6 +117,7 @@ async function cleanupHistoryPage(
 ): Promise<Page> {
   await using transaction = await beginTransaction()
   const persistent = lowerBoundId === null || persistentCursorForTest
+  let cursor: HistoryRetentionCursor | undefined
   let cursorId = testCursorId
   let sweepCutoffId = getMinUuidv7ForDate(cutoff)
   if (upperBoundId && upperBoundId < sweepCutoffId) sweepCutoffId = upperBoundId
@@ -123,21 +128,17 @@ async function cleanupHistoryPage(
        VALUES ($1::history_retention_cleanup_names) ON CONFLICT DO NOTHING`,
       [kind],
     )
-    const { rows } = await transaction<{
-      cursor_id: string | null
-      sweep_cutoff_id: string | null
-      is_sweep_complete: boolean
-    }>(
+    const { rows } = await transaction<HistoryRetentionCursor>(
       `/* readHistoryRetentionCursor */
        SELECT cursor_id, sweep_cutoff_id, is_sweep_complete FROM history_retention_cursors
        WHERE cleanup_name = $1::history_retention_cleanup_names`,
       [kind],
     )
-    if (!rows[0]) throw new Error(`${kind} history retention cursor is missing`)
-    cursorId = rows[0].cursor_id
-    const sweepComplete = rows[0].is_sweep_complete
-    const priorCutoffId = rows[0].sweep_cutoff_id
-    if (priorCutoffId && (!sweepComplete || priorCutoffId > sweepCutoffId)) {
+    cursor = rows[0]
+    if (!cursor) throw new Error(`${kind} history retention cursor is missing`)
+    cursorId = cursor.cursor_id
+    const priorCutoffId = cursor.sweep_cutoff_id
+    if (priorCutoffId && (!cursor.is_sweep_complete || priorCutoffId > sweepCutoffId)) {
       sweepCutoffId = priorCutoffId
     }
   }
@@ -177,16 +178,19 @@ async function cleanupHistoryPage(
     : hasMore
       ? forwardIds.at(-1)!
       : null
-  if (persistent) {
-    const { rowCount } = await transaction(
-      `/* checkpointHistoryRetentionCursor */
-       UPDATE history_retention_cursors
-       SET cursor_id = $2::uuid, sweep_cutoff_id = $3::uuid, is_sweep_complete = $4::boolean
-       WHERE cleanup_name = $1::history_retention_cleanup_names`,
-      [kind, nextCursorId, monotonic || hasMore ? sweepCutoffId : null, !hasMore],
-    )
-    if (rowCount !== 1) throw new Error(`${kind} history retention checkpoint was not saved`)
+  let checkpointSaved = true
+  if (cursor) {
+    checkpointSaved = await checkpointHistoryRetentionCursor(transaction, kind, cursor, {
+      cursor_id: nextCursorId,
+      sweep_cutoff_id: monotonic || hasMore ? sweepCutoffId : null,
+      is_sweep_complete: !hasMore,
+    })
   }
   await transaction.commit()
-  return { scanned: pageIds.length, changed, hasMore, cursorId: nextCursorId }
+  return {
+    scanned: pageIds.length,
+    changed,
+    hasMore: checkpointSaved && hasMore,
+    cursorId: checkpointSaved ? nextCursorId : null,
+  }
 }

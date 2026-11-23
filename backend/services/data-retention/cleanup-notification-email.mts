@@ -126,6 +126,7 @@ async function cleanupPageInTransaction(
         [name],
       )
     ).rows[0]
+    if (!cursor) throw new Error(`Missing notification email retention cursor: ${name}`)
   }
   const sweepCutoff = cursor?.sweep_cutoff_at ?? cutoff
   const candidates = await listNotificationEmailCandidates(
@@ -150,20 +151,29 @@ async function cleanupPageInTransaction(
       ...(last.user_id ? { userId: last.user_id } : {}),
     }
   }
-  if (persistCursor) {
-    await query(
+  if (cursor) {
+    const { rowCount } = await query(
       `/* checkpointNotificationEmailRetentionCursor */
        UPDATE notification_email_retention_cleanup_cursors
        SET cursor_at = $2, cursor_notification_id = $3, cursor_notification_partition_id = $4, sweep_cutoff_at = $5
-       WHERE cleanup_name = $1`,
+       WHERE cleanup_name = $1
+         AND cursor_at IS NOT DISTINCT FROM $6::timestamptz
+         AND cursor_notification_id IS NOT DISTINCT FROM $7::uuid
+         AND cursor_notification_partition_id IS NOT DISTINCT FROM $8::uuid
+         AND sweep_cutoff_at IS NOT DISTINCT FROM $9::timestamptz`,
       [
         name,
         continuation?.at ?? null,
         continuation?.id ?? null,
         continuation?.userId ?? null,
         hasMore ? sweepCutoff : null,
+        cursor.cursor_at,
+        cursor.cursor_notification_id,
+        cursor.cursor_notification_partition_id,
+        cursor.sweep_cutoff_at,
       ],
     )
+    if (rowCount === 0) return { deleted, hasMore: false, continuation: null }
   }
   return { deleted, hasMore, continuation }
 }

@@ -6,12 +6,15 @@ import {
   createEndedMembershipRenewalNoticeForRetention,
   membershipEffectExists,
   membershipRenewalNoticeExists,
+  readMembershipEntitlementRetentionCursor,
   resetMembershipOperationalRetentionCursor,
+  restoreMembershipEntitlementRetentionCursor,
 } from '@voucha/test-helpers/membership-operational-retention'
 import {
   cleanupDeliveredMembershipEntitlementEffects,
   cleanupEndedMembershipRenewalNotices,
 } from '../cleanup-membership-operational.mts'
+import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { cleanupMembershipOperational } from '../cleanup-membership-operational-families.mts'
 
 const DAY_MS = 86_400_000
@@ -73,6 +76,63 @@ describe('membership operational retention', () => {
     expect(await membershipEffectExists(first.effectId)).toBe(false)
     expect(await membershipEffectExists(second.effectId)).toBe(false)
     expect(await membershipEffectExists(later.effectId)).toBe(true)
+  })
+
+  it('keeps the newer membership cursor and commits the older page deletion', async () => {
+    const lock = await acquireMembershipOperationalRetentionTestLock()
+    onTestFinished(() => lock.release())
+    const priorCursor = await readMembershipEntitlementRetentionCursor()
+    try {
+      await resetMembershipOperationalRetentionCursor('entitlement_effects')
+      const firstUser = await createTestUser()
+      const secondUser = await createTestUser()
+      const thirdUser = await createTestUser()
+      const dueAt = new Date(Date.now() - 150 * DAY_MS)
+      const first = await createDeliveredMembershipEffectForRetention(firstUser.id, dueAt)
+      const second = await createDeliveredMembershipEffectForRetention(
+        secondUser.id,
+        new Date(dueAt.getTime() + 1),
+      )
+      const third = await createDeliveredMembershipEffectForRetention(
+        thirdUser.id,
+        new Date(dueAt.getTime() + 2),
+      )
+      const options = {
+        batchSize: 1,
+        maxBatches: 1,
+        lowerBoundDate: dueAt,
+        now: new Date(dueAt.getTime() + 30 * DAY_MS + 3),
+        recordIds: [first.effectId, second.effectId, third.effectId],
+      }
+      const restore = beforePostgresTransactionQueryForTest(
+        'deleteMembershipOperationalPage.entitlementDelete',
+        values => Array.isArray(values[0]) && values[0].includes(first.effectId),
+        async () => {
+          expect(
+            await cleanupDeliveredMembershipEntitlementEffects({
+              ...options,
+              recordIds: [second.effectId, third.effectId],
+            }),
+          ).toEqual({ deleted: 1, hasMore: true })
+        },
+      )
+      try {
+        const stale = await cleanupDeliveredMembershipEntitlementEffects({
+          ...options,
+          maxBatches: 2,
+        })
+        expect(await readMembershipEntitlementRetentionCursor()).toMatchObject({
+          cursor_id: second.effectId,
+        })
+        expect(stale).toEqual({ deleted: 1, hasMore: false })
+        expect(await membershipEffectExists(first.effectId)).toBe(false)
+        expect(await membershipEffectExists(third.effectId)).toBe(true)
+      } finally {
+        restore()
+      }
+    } finally {
+      await restoreMembershipEntitlementRetentionCursor(priorCursor)
+    }
   })
 
   it('removes notices only after their membership projection has ended', async () => {

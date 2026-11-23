@@ -51,7 +51,7 @@ export async function cleanupOldPendingNotificationPushIntents(
   }
   // oxlint-disable no-await-in-loop -- the committed cursor determines the next page
   for (let batch = 0; batch < maxBatches; batch += 1) {
-    // no-mistakes-disable-next-line query-reached-per-item: each committed, runtime-capped page advances one durable cursor; pages cannot run concurrently
+    // no-mistakes-disable-next-line query-reached-per-item: each runtime-capped page commits before this run selects its next page
     const page = await deleteOldPendingNotificationPushIntentPage(cutoff, batchSize, options)
     result = {
       deleted: result.deleted + page.deleted,
@@ -107,12 +107,15 @@ async function deleteOldPendingNotificationPushIntentPage(
   }
   const hasMore = rows.length > batchSize
   const last = hasMore ? page.at(-1)! : null
-  await query(sql`/* advancePendingPushRetentionCursor */
+  const { rowCount } = await query(sql`/* advancePendingPushRetentionCursor */
     UPDATE notification_push_intent_retention_cursors
     SET cursor_notification_push_intent_id = ${last?.id ?? null}::uuid,
         sweep_upper_bound_notification_push_intent_id = ${hasMore ? upperBound : null}::uuid
-    WHERE is_singleton`)
+    WHERE is_singleton
+      AND cursor_notification_push_intent_id IS NOT DISTINCT FROM ${cursor.cursor_notification_push_intent_id}::uuid
+      AND sweep_upper_bound_notification_push_intent_id IS NOT DISTINCT FROM ${cursor.sweep_upper_bound_notification_push_intent_id}::uuid`)
   if (ownedQuery) await ownedQuery.commit()
+  if (rowCount === 0) return { deleted, hasMore: false, continuation: null }
   return {
     deleted,
     hasMore,

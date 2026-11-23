@@ -3,11 +3,15 @@ import { createTestUser } from '@voucha/test-helpers'
 import {
   countDataRequestAttemptsForRetention,
   createDataRequestAttemptRetentionFixture,
+  ensureDataRequestAttemptRetentionCursor,
+  readDataRequestAttemptRetentionCursor,
+  restoreDataRequestAttemptRetentionCursor,
 } from '@voucha/test-helpers/account-data-request-attempt-retention'
 import {
   createExactRetentionWindow,
   createIsolatedRetentionWindow,
 } from '@voucha/test-helpers/retention-window'
+import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { cleanupExpiredUserDataRequestAttempts } from '../cleanup-user-data-request-attempts.mts'
 
 describe('export attempt retention', () => {
@@ -88,5 +92,63 @@ describe('export attempt retention', () => {
     })
     expect(secondPage).toMatchObject({ deleted: 1, hasMore: false, continuation: null })
     expect(await countDataRequestAttemptsForRetention(second)).toBe(0)
+  })
+
+  it('keeps the newer attempt cursor and commits the older request deletion', async () => {
+    const user = await createTestUser()
+    const { aged, now: windowNow, lowerBoundDate } = createExactRetentionWindow(30)
+    const middleDate = new Date(aged.getTime() + 1)
+    const lastDate = new Date(aged.getTime() + 2)
+    const fixture = { terminalAt: aged, attemptStartedAt: aged }
+    const first = await createDataRequestAttemptRetentionFixture(user.id, {
+      ...fixture,
+      createdAt: aged,
+    })
+    const second = await createDataRequestAttemptRetentionFixture(user.id, {
+      ...fixture,
+      createdAt: middleDate,
+    })
+    const third = await createDataRequestAttemptRetentionFixture(user.id, {
+      ...fixture,
+      createdAt: lastDate,
+    })
+    const options = {
+      now: new Date(windowNow.getTime() + 2),
+      lowerBoundDate,
+      batchSize: 1,
+      maxBatches: 1,
+    }
+    const priorCursor = await readDataRequestAttemptRetentionCursor()
+    await ensureDataRequestAttemptRetentionCursor()
+    const newer = { processingAttemptId: undefined as string | undefined }
+    const restore = beforePostgresTransactionQueryForTest(
+      'deleteExpiredUserDataRequestAttemptPage',
+      values => values[0] === first,
+      async () => {
+        const result = await cleanupExpiredUserDataRequestAttempts({
+          ...options,
+          lowerBoundDate: middleDate,
+        })
+        expect(result).toMatchObject({
+          deleted: 1,
+          hasMore: true,
+          continuation: { requestId: second, processingAttemptId: expect.any(String) },
+        })
+        newer.processingAttemptId = result.continuation?.processingAttemptId
+      },
+    )
+    try {
+      const stale = await cleanupExpiredUserDataRequestAttempts({ ...options, maxBatches: 2 })
+      expect(await readDataRequestAttemptRetentionCursor()).toMatchObject({
+        cursor_request_id: second,
+        cursor_processing_attempt_id: newer.processingAttemptId,
+      })
+      expect(stale).toEqual({ deleted: 1, hasMore: false, continuation: null })
+      expect(await countDataRequestAttemptsForRetention(first)).toBe(0)
+      expect(await countDataRequestAttemptsForRetention(third)).toBe(1)
+    } finally {
+      restore()
+      await restoreDataRequestAttemptRetentionCursor(priorCursor)
+    }
   })
 })

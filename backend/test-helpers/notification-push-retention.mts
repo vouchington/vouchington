@@ -49,3 +49,14 @@ export async function setTestPendingPushIntentRetentionState(
       AND notification_id = ${input.notificationId}::uuid`)
   if (rowCount !== 1) throw new Error('Expected owned pending push intent')
 }
+
+export async function readTestPendingPushRetentionPosition(
+  query: TransactionQuery,
+): Promise<string | null> {
+  const { rows } = await query<{ cursor_notification_push_intent_id: string | null }>(sql`
+    /* readTestPendingPushRetentionPosition */
+    SELECT cursor_notification_push_intent_id
+    FROM notification_push_intent_retention_cursors
+    WHERE is_singleton`)
+  return rows[0]?.cursor_notification_push_intent_id ?? null
+}
