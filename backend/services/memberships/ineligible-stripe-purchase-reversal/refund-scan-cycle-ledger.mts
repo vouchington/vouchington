@@ -1,4 +1,4 @@
-import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
+import { beginTransaction, type QueryExecutor, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { StripeRefundScanTarget } from './refund-scan-target.mts'
 
@@ -23,18 +23,41 @@ export type StripeRefundScanCycle = {
 export async function getOrCreateStripeRefundScanCycle(
   reversalCaseId: string,
 ): Promise<StripeRefundScanCycle> {
-  await using transaction = await beginTransaction()
-  await transaction(sql`/* getOrCreateStripeRefundScanCycle:insert */
+  await write(sql`/* getOrCreateStripeRefundScanCycle:insert */
     INSERT INTO membership_ineligible_purchase_reversal_refund_scan_cycles (
       membership_ineligible_purchase_reversal_case_id
     ) VALUES (${reversalCaseId}) ON CONFLICT DO NOTHING
   `)
-  const { rows } = await transaction<{ completedAt: Date | null; generation: string }>(
-    sql`/* getOrCreateStripeRefundScanCycle:lock */
+  // No row lock: a cycle is only ever advanced by the guarded rotate below, and a
+  // cycle may complete while a late scan registered concurrently is still unverified.
+  // That worker verifies its own scan before any refund and the next run rotates and
+  // re-registers; completed_at only feeds case-closed retention.
+  const current = await readCycle(reversalCaseId)
+  if (!current.completedAt) return { generation: current.generation, reversalCaseId }
+  const { rows: rotated } = await write<{ generation: string }>(
+    sql`/* getOrCreateStripeRefundScanCycle:rotate */
+      UPDATE membership_ineligible_purchase_reversal_refund_scan_cycles
+      SET generation = generation + 1, completed_at = NULL
+      WHERE membership_ineligible_purchase_reversal_case_id = ${reversalCaseId}
+        AND generation = ${current.generation} AND completed_at IS NOT NULL
+      RETURNING generation::TEXT AS generation
+    `,
+  )
+  if (rotated[0]) return { generation: Number(rotated[0].generation), reversalCaseId }
+  // Lost the rotate race: join the generation the winner opened.
+  const joined = await readCycle(reversalCaseId)
+  if (joined.completedAt) throw new Error('Could not rotate Stripe refund scan cycle')
+  return { generation: joined.generation, reversalCaseId }
+}
+
+async function readCycle(
+  reversalCaseId: string,
+): Promise<{ completedAt: Date | null; generation: number }> {
+  const { rows } = await write<{ completedAt: Date | null; generation: string }>(
+    sql`/* getOrCreateStripeRefundScanCycle:read */
       SELECT generation::TEXT AS generation, completed_at AS "completedAt"
       FROM membership_ineligible_purchase_reversal_refund_scan_cycles
       WHERE membership_ineligible_purchase_reversal_case_id = ${reversalCaseId}
-      FOR UPDATE
     `,
   )
   const current = rows[0]
@@ -42,24 +65,7 @@ export async function getOrCreateStripeRefundScanCycle(
   const generation = Number(current.generation)
   if (!Number.isSafeInteger(generation) || generation < 1)
     throw new Error('Persisted Stripe refund scan cycle generation is invalid')
-  if (!current.completedAt) {
-    await transaction.commit()
-    return { generation, reversalCaseId }
-  }
-  const { rows: rotated } = await transaction<{ generation: string }>(
-    sql`/* getOrCreateStripeRefundScanCycle:rotate */
-      UPDATE membership_ineligible_purchase_reversal_refund_scan_cycles
-      SET generation = generation + 1, completed_at = NULL
-      WHERE membership_ineligible_purchase_reversal_case_id = ${reversalCaseId}
-        AND generation = ${generation} AND completed_at IS NOT NULL
-      RETURNING generation::TEXT AS generation
-    `,
-  )
-  const nextGeneration = Number(rotated[0]?.generation)
-  if (!Number.isSafeInteger(nextGeneration) || nextGeneration < 1)
-    throw new Error('Could not rotate Stripe refund scan cycle')
-  await transaction.commit()
-  return { generation: nextGeneration, reversalCaseId }
+  return { completedAt: current.completedAt, generation }
 }
 
 export async function completeStripeRefundScanCycle(cycle: StripeRefundScanCycle): Promise<void> {
@@ -103,20 +109,19 @@ export async function getOrCreateStripeRefundScan(
     await transaction.commit()
     return scan
   }
-  const { rows } = await transaction<{ id: string }>(sql`/* getOrCreateStripeRefundScan:cycle */
-    SELECT membership_ineligible_purchase_reversal_case_id AS id
-    FROM membership_ineligible_purchase_reversal_refund_scan_cycles
-    WHERE membership_ineligible_purchase_reversal_case_id = ${cycle.reversalCaseId}
-      AND generation = ${cycle.generation} AND completed_at IS NULL FOR UPDATE
-  `)
-  if (!rows[0]) throw new Error('Stripe refund scan cycle is no longer active')
-  await transaction(sql`/* getOrCreateStripeRefundScan:upsert */
+  // The cycle is checked unlocked, inside the upsert. A cycle may complete while this
+  // late scan is registered; this worker still verifies the scan before any refund.
+  const { rows } = await transaction<{ id: string }>(sql`/* getOrCreateStripeRefundScan:upsert */
     INSERT INTO membership_ineligible_purchase_reversal_refund_scans (
       membership_ineligible_purchase_reversal_case_id, invoice_id, currency_code,
       charge_id, payment_intent_id, registered_cycle_generation
-    ) VALUES (
-      ${cycle.reversalCaseId}, ${target.invoiceId}, ${target.currency},
-      ${target.chargeId}, ${target.paymentIntentId}, ${cycle.generation}
+    ) SELECT ${cycle.reversalCaseId}::UUID, ${target.invoiceId}::TEXT,
+      ${target.currency}::currency_codes, ${target.chargeId}::TEXT,
+      ${target.paymentIntentId}::TEXT, ${cycle.generation}::BIGINT
+    WHERE EXISTS (
+      SELECT 1 FROM membership_ineligible_purchase_reversal_refund_scan_cycles
+      WHERE membership_ineligible_purchase_reversal_case_id = ${cycle.reversalCaseId}
+        AND generation = ${cycle.generation} AND completed_at IS NULL
     ) ON CONFLICT (membership_ineligible_purchase_reversal_case_id, invoice_id, currency_code,
       charge_id, payment_intent_id) DO UPDATE
     SET registered_cycle_generation = EXCLUDED.registered_cycle_generation,
@@ -130,7 +135,9 @@ export async function getOrCreateStripeRefundScan(
       reached_end_at = CASE WHEN membership_ineligible_purchase_reversal_refund_scans.nonterminal_refund_seen_at IS NOT NULL THEN NULL ELSE membership_ineligible_purchase_reversal_refund_scans.reached_end_at END,
       nonterminal_refund_seen_at = CASE WHEN membership_ineligible_purchase_reversal_refund_scans.nonterminal_refund_seen_at IS NOT NULL THEN NULL ELSE membership_ineligible_purchase_reversal_refund_scans.nonterminal_refund_seen_at END,
       completed_at = CASE WHEN membership_ineligible_purchase_reversal_refund_scans.nonterminal_refund_seen_at IS NOT NULL THEN NULL ELSE membership_ineligible_purchase_reversal_refund_scans.completed_at END
+    RETURNING id
   `)
+  if (!rows[0]) throw new Error('Stripe refund scan cycle is no longer active')
   const registered = await getStripeRefundScanLocked(cycle.reversalCaseId, target, transaction)
   if (!registered) throw new Error('Could not create Stripe refund scan')
   await transaction.commit()
