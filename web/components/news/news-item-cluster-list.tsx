@@ -56,7 +56,7 @@ export function NewsItemClusterList({
       loadingMore={news.loadingMore}
       onLoadMore={news.handleLoadMore}
     >
-      {news.allResults.length === 0 && !canLoadMore ? (
+      {news.allResults.length === 0 && !(canLoadMore && news.endCursor) ? (
         emptyContent
       ) : (
         <InfiniteScroll

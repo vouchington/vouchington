@@ -40,6 +40,18 @@ describe('NewsItemClusterList empty page with a next page', () => {
     expect(getPaginatedPage).toHaveBeenCalledWith(endpoint, { after: 'cursor-1' })
   })
 
+  it('shows the empty state when a next page has no cursor to continue with', () => {
+    renderClusterList(
+      {
+        ...emptyPageWithMore,
+        page_info: { has_next_page: true, end_cursor: null, start_cursor: null },
+      },
+      { nextPageEndpoint: endpoint },
+    )
+
+    expect(screen.getByText('No news found')).toBeDefined()
+  })
+
   it('shows the empty state once the last page is empty', async () => {
     vi.mocked(getPaginatedPage).mockResolvedValueOnce({
       ...emptyPageWithMore,
