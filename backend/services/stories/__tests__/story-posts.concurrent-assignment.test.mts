@@ -74,12 +74,10 @@ describe('concurrent story post creation and assignment', () => {
         const { result } = await observeTestPostgresClientQueries(
           () => adminAssignItemToStory(user.id, story.id, itemId),
           async ({ text, values }) => {
-            const [storyIds] = values
             if (
               finalizedDuringAssignment ||
-              !text.includes('/* getPostStoryIdsByStoryIds */') ||
-              !Array.isArray(storyIds) ||
-              !storyIds.includes(story.id)
+              !text.includes('/* adminAssignItemToStory */') ||
+              !values.includes(itemId)
             )
               return
 
@@ -88,7 +86,7 @@ describe('concurrent story post creation and assignment', () => {
             await prepared.finalize()
           },
         )
-        if (!finalizedDuringAssignment) throw new Error('Assignment did not read the story post')
+        if (!finalizedDuringAssignment) throw new Error('The assignment update was not observed')
         assignedId = result
       }
 
@@ -188,23 +186,23 @@ describe('concurrent story post creation and assignment', () => {
       createRepairError,
       ([storyId]) => storyId === story.id,
     )
-    let assignmentReadAssociation = false
     try {
       const { result: assignedId } = await observeTestPostgresClientQueries(
         () => adminAssignItemToStory(user.id, story.id, item.id),
         async ({ text, values }) => {
           const [storyScope] = values
           if (
-            !text.includes('/* getPostStoryIdsByStoryIds */') ||
-            !Array.isArray(storyScope) ||
-            !storyScope.includes(story.id)
-          )
-            return
-          if (assignmentReadAssociation) throw assignmentRepairError
+            text.includes('/* getPostStoryIdsByStoryIds */') &&
+            Array.isArray(storyScope) &&
+            storyScope.includes(story.id)
+          ) {
+            throw assignmentRepairError
+          }
 
-          assignmentReadAssociation = true
-          await query.commit()
-          await prepared.finalize()
+          if (text.includes('/* adminAssignItemToStory */') && values.includes(item.id)) {
+            await query.commit()
+            await prepared.finalize()
+          }
         },
       )
       expect(assignedId).toBe(item.id)

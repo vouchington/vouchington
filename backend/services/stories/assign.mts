@@ -23,26 +23,35 @@ export async function adminAssignItemToStory(
   const assignedId = await runWithTransaction(undefined, async (query: TransactionQuery) => {
     const {
       rows: [row],
-    } = await query<{ id: string; prior_story_id: string | null }>(
+    } = await query<{
+      id: string
+      story_id: string
+      prior_story_id: string | null
+      post_id: string | null
+      prior_post_id: string | null
+    }>(
       sql`/* adminAssignItemToStory */
       UPDATE rss_feed_items
       SET story_id = ${storyId}, story_locked_at = CURRENT_TIMESTAMP
       WHERE id = ${itemId} AND deleted_at IS NULL
-      RETURNING rss_feed_items.id, old.story_id AS prior_story_id`,
+      RETURNING rss_feed_items.id, new.story_id, old.story_id AS prior_story_id,
+        (SELECT post_id FROM story_posts WHERE story_id = new.story_id) AS post_id,
+        CASE WHEN old.story_id <> new.story_id THEN
+          (SELECT post_id FROM story_posts WHERE story_id = old.story_id)
+        END AS prior_post_id`,
     )
     if (!row) return null
-    if (row.prior_story_id !== storyId)
-      await clearMovedStoryOfficialItem(query, row.prior_story_id, itemId)
-    const affectedStoryIds = [
-      ...new Set(
-        [storyId, row.prior_story_id].filter(
-          (candidate): candidate is string => candidate !== null,
-        ),
-      ),
-    ]
-    const affectedPostIds = await getPostStoryIdsByStoryIds(affectedStoryIds, { query })
+    const priorStoryChanged = row.prior_story_id !== row.story_id
+    if (priorStoryChanged) await clearMovedStoryOfficialItem(query, row.prior_story_id, itemId)
+    const affectedPostIds: Record<string, string> = {}
+    const missingStoryIds: string[] = []
+    if (row.post_id) affectedPostIds[row.story_id] = row.post_id
+    else missingStoryIds.push(row.story_id)
+    if (row.prior_story_id && priorStoryChanged) {
+      if (row.prior_post_id) affectedPostIds[row.prior_story_id] = row.prior_post_id
+      else missingStoryIds.push(row.prior_story_id)
+    }
     const refreshResults = await refreshAssignedStoryPosts(query, affectedPostIds)
-    const missingStoryIds = affectedStoryIds.filter(id => !affectedPostIds[id])
     await recordModeratorAction(
       actorId,
       {
