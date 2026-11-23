@@ -1,16 +1,18 @@
 import { randomUUID } from 'node:crypto'
-import { Response } from 'undici'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  decisionResponseBody,
-  readAskedQuestions,
-} from '@voucha/test-helpers/structured-decision-dialect'
 import { createStoryClusteringClient, executeStoryClusteringRun } from '@agents/story-clustering'
 import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/transport'
 import { CLASSIFIER_RUN_ATTEMPTS } from '@queues/ai-agents/config'
 import { spendCapConfig } from '@services/ai-usage'
 import { claimClassifierRun } from '@services/classifier-runs'
-import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
+import { insertTestStory, setTestItemStoryId } from '@voucha/test-helpers'
+import {
+  attemptStoryClusteringJoin,
+  commitCompetingStoryMembership,
+  createIncomingWithStoryNeighbor,
+  storyClusteringDecisionResponse,
+  storyExistsWithTitle,
+} from '@voucha/test-helpers/story-clustering-membership'
 import { createStoryClusteringRunAdapter } from '@services/stories'
 import { classifierRunJobFor } from '@voucha/test-helpers/classifier-run-worker'
 import {
@@ -20,7 +22,6 @@ import {
 import { reviseStoryClusteringItem } from '@voucha/test-helpers/data-stores/psql/classifier-runs/story-clustering-edits'
 import {
   createStoryClusteringItem,
-  makeStoryClusteringVectors,
   readItemStoryId,
   readStoryFacts,
   readStoryRunCandidates,
@@ -48,37 +49,15 @@ let askedCriteria: string[][] = []
 
 /** A provider that picks `chosen` (a criterion key) for every question it is asked. */
 function pick(chosen: (criteria: string[]) => string) {
-  provider.mockImplementation(async (_url, init) => {
-    const answers = Object.entries(readAskedQuestions(init)).map(([id, question]) => {
-      const criteria = Object.keys(question.criteria)
+  provider.mockImplementation(async (_url, init) =>
+    storyClusteringDecisionResponse(init, criteria => {
       askedCriteria.push(criteria)
-      const choice = chosen(criteria)
-      const rest = 0.1 / (criteria.length - 1)
-      const probabilities = Object.fromEntries(
-        criteria.map(key => [key, key === choice ? 0.9 : rest]),
-      )
-      return { id, type: 'choice', choice, confidence: 0.9, probabilities }
-    })
-    return Response.json(
-      decisionResponseBody(init, {
-        id: `decision-${randomUUID()}`,
-        usage: { input_tokens: 12, output_tokens: 0, cost: 0 },
-        answers,
-      }),
-    )
-  })
+      return chosen(criteria)
+    }),
+  )
 }
 
 const pickNeighbor = (item: StoryClusteringItem) => () => `rss_feed_item:${item.itemId}`
-
-/** An embedded incoming item with one standalone neighbor close enough to be captured. */
-async function incomingWithNeighbor() {
-  const { unit, near, at } = makeStoryClusteringVectors()
-  const feed = await createTestRssFeed({})
-  const neighbor = await createStoryClusteringItem({ feedId: feed.id, embedding: near })
-  const incoming = await createStoryClusteringItem({ feedId: feed.id, embedding: unit })
-  return { feed, neighbor, incoming, at }
-}
 
 const runFacts = async (item: StoryClusteringItem) =>
   (await getSubjectClassifierRunFacts(item.subject, SLUG))[0]
@@ -104,7 +83,7 @@ describe('C9 story clustering through the shared lifecycle (real PG, mocked prov
   afterAll(() => restoreSpendCap?.())
 
   it('makes one provider call for the whole candidate set and joins the picked pair into a story', async () => {
-    const { neighbor, incoming } = await incomingWithNeighbor()
+    const { neighbor, incoming } = await createIncomingWithStoryNeighbor()
     pick(pickNeighbor(neighbor))
     const run = await reserveStoryClusteringRun(incoming)
 
@@ -127,8 +106,75 @@ describe('C9 story clustering through the shared lifecycle (real PG, mocked prov
     })
   })
 
+  it('leaves the incoming item standalone when the candidate moves before the join writes', async () => {
+    const { neighbor, incoming } = await createIncomingWithStoryNeighbor()
+    const [initialStory, destinationStory] = await Promise.all([
+      insertTestStory(),
+      insertTestStory(),
+    ])
+    pick(pickNeighbor(neighbor))
+    const data = toClassifierRunJobData(SLUG, await reserveStoryClusteringRun(incoming))
+    await setTestItemStoryId(neighbor.itemId, initialStory.id)
+    const restoreMove = commitCompetingStoryMembership('join', neighbor.itemId, destinationStory.id)
+
+    try {
+      await expect(processClassifierRun(classifierRunJobFor(data))).resolves.toEqual({
+        kind: 'completed',
+      })
+      await expect(readItemStoryId(neighbor.itemId)).resolves.toBe(destinationStory.id)
+      await expect(readItemStoryId(incoming.itemId)).resolves.toBeNull()
+    } finally {
+      restoreMove()
+    }
+  })
+
+  it('leaves the incoming item standalone when its digest changed before joining', async () => {
+    const { incoming } = await createIncomingWithStoryNeighbor()
+    const story = await insertTestStory()
+    await reviseStoryClusteringItem(incoming.itemId)
+
+    await expect(
+      attemptStoryClusteringJoin(incoming.itemId, story.id, incoming.inputSha256),
+    ).resolves.toEqual({ kind: 'skipped', reason: 'item_unavailable' })
+    await expect(readItemStoryId(incoming.itemId)).resolves.toBeNull()
+  })
+
+  it('rolls back a partial founding assignment and converges after lease expiry', async () => {
+    const provisionalTitle = `Provisional story ${randomUUID()}`
+    const { neighbor, incoming } = await createIncomingWithStoryNeighbor(provisionalTitle)
+    const winnerStory = await insertTestStory()
+    pick(pickNeighbor(neighbor))
+    const run = await reserveStoryClusteringRun(incoming)
+    const data = toClassifierRunJobData(SLUG, run)
+    const restore = commitCompetingStoryMembership('pair', neighbor.itemId, winnerStory.id)
+
+    try {
+      await expect(processClassifierRun(classifierRunJobFor(data))).rejects.toThrow(
+        'Story clustering could not assign both founding members',
+      )
+    } finally {
+      restore()
+    }
+
+    await expect(readItemStoryId(neighbor.itemId)).resolves.toBe(winnerStory.id)
+    await expect(readItemStoryId(incoming.itemId)).resolves.toBeNull()
+    await expect(storyExistsWithTitle(provisionalTitle)).resolves.toBe(false)
+    expect(await runFacts(incoming)).toMatchObject({
+      completed_at: null,
+      provider_attempts_started: 1,
+    })
+
+    await expireClassifierRunLeaseForTest(run.runId)
+    await expect(processClassifierRun(classifierRunJobFor(data))).resolves.toEqual({
+      kind: 'completed',
+    })
+    expect(provider).toHaveBeenCalledOnce()
+    await expect(readItemStoryId(incoming.itemId)).resolves.toBe(winnerStory.id)
+    expect(await runFacts(incoming)).toMatchObject({ completed_at: expect.any(Date) })
+  })
+
   it('leaves the item standalone when the model picks none of the candidates', async () => {
-    const { incoming } = await incomingWithNeighbor()
+    const { incoming } = await createIncomingWithStoryNeighbor()
     pick(() => 'none')
     const run = await reserveStoryClusteringRun(incoming)
 
@@ -142,7 +188,7 @@ describe('C9 story clustering through the shared lifecycle (real PG, mocked prov
   })
 
   it('replays a completed run without reserving or billing a second provider attempt', async () => {
-    const { neighbor, incoming } = await incomingWithNeighbor()
+    const { neighbor, incoming } = await createIncomingWithStoryNeighbor()
     pick(pickNeighbor(neighbor))
     const data = toClassifierRunJobData(SLUG, await reserveStoryClusteringRun(incoming))
     await processClassifierRun(classifierRunJobFor(data))
@@ -161,7 +207,7 @@ describe('C9 story clustering through the shared lifecycle (real PG, mocked prov
   })
 
   it('completes a run whose lease expired after its decision persisted, without asking again', async () => {
-    const { neighbor, incoming } = await incomingWithNeighbor()
+    const { neighbor, incoming } = await createIncomingWithStoryNeighbor()
     pick(pickNeighbor(neighbor))
     const run = await reserveStoryClusteringRun(incoming)
     const claim = await claimClassifierRun(adapter, {
@@ -206,7 +252,7 @@ describe('C9 story clustering through the shared lifecycle (real PG, mocked prov
   })
 
   it('keeps asking the captured candidates when a closer neighbor has appeared since', async () => {
-    const { feed, neighbor, incoming, at } = await incomingWithNeighbor()
+    const { feed, neighbor, incoming, at } = await createIncomingWithStoryNeighbor()
     pick(() => 'none')
     const run = await reserveStoryClusteringRun(incoming)
     const captured = await readStoryRunCandidates(run.runId)
@@ -219,7 +265,7 @@ describe('C9 story clustering through the shared lifecycle (real PG, mocked prov
   })
 
   it('ends the run at the attempt cap and never reaches the provider again', async () => {
-    const { incoming } = await incomingWithNeighbor()
+    const { incoming } = await createIncomingWithStoryNeighbor()
     const data = toClassifierRunJobData(SLUG, await reserveStoryClusteringRun(incoming))
     provider.mockRejectedValue(new Error('provider unreachable'))
     const attempt = () =>
@@ -239,7 +285,7 @@ describe('C9 story clustering through the shared lifecycle (real PG, mocked prov
   })
 
   it('does not bill a provider call for an item whose content changed after the request', async () => {
-    const { incoming } = await incomingWithNeighbor()
+    const { incoming } = await createIncomingWithStoryNeighbor()
     pick(() => 'none')
     const data = toClassifierRunJobData(SLUG, await reserveStoryClusteringRun(incoming))
     await reviseStoryClusteringItem(incoming.itemId)

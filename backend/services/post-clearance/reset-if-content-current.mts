@@ -16,13 +16,14 @@ export async function resetPostClearanceIfContentCurrent(
   return contentCurrent
 
   async function resetClearanceWhenContentCurrent(): Promise<boolean> {
-    const { rows } = await query(sql`/* resetPostClearanceIfContentCurrent */
+    const statement = sql`/* resetPostClearanceIfContentCurrent */
       SELECT id
       FROM posts
       WHERE id = ${postId}
         AND llm_moderation_content_sha256 = ${contentSha256}
-      FOR UPDATE
-    `)
+    `
+    if (!alreadyReset) statement.append(' FOR UPDATE')
+    const { rows } = await query(statement)
     if (rows.length === 0) return false
     // A durable producer reset must not be repeated when its listener admission is replayed.
     if (!alreadyReset) clearanceChanged = await resetPostClearance(postId, null, { query })
