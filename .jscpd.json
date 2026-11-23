@@ -56,7 +56,8 @@
       "web/test-helpers/vitest.setup.storybook-browser-guard.mts",
       "dev/sandbox-command-audit/rules.mts",
       "dev/launch-services.mts",
-      "scripts/admin/import-rss-feeds.mts"
+      "scripts/admin/import-rss-feeds.mts",
+      "backend/services/data-retention/cleanup-payment-reversal-case-children.mts"
     ]
   },
   "ignore": [
