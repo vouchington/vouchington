@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   createTestMembership,
   createTestUser,
@@ -9,12 +9,14 @@ import {
   editTestCommunityRule,
   setTestCommunityAutomodAction,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/community-moderation-fixture'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { setTestCommunityModerationPromptActivatedAt } from '@voucha/test-helpers/community-moderation-prompt-activation'
 import {
   getActiveCommunityAgentPromptPage,
   type ActiveCommunityAgentPromptCursor,
 } from './get-active-prompts.mts'
 import type { CommunityAgentPrompt } from './types.mts'
+import { communityAgentPromptsConfig } from './config.mts'
 import { resolveCommunityModerationRunConfiguration } from './moderation-run-configuration.mts'
 
 async function getActiveCommunityAgentPrompts(
@@ -81,6 +83,20 @@ describe('community moderation prompt selection', () => {
       promptIds: resolved?.configuration.prompts.map(row => row.id),
     })
     expect(resolved?.configuration.nextCursor).not.toBeNull()
+  })
+
+  it('keeps later prompts reachable at a lower configured limit', async () => {
+    const { community, active } = await communityWithPrompts(2, 10)
+    await communityAgentPromptsConfig.waitForInitialization()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(communityAgentPromptsConfig, { moderation_page_size: 1 }),
+    )
+
+    const resolved = await resolveCommunityModerationRunConfiguration(community.id)
+    expect(resolved?.remote).toMatchObject({ promptIds: [active[0]!.id] })
+    const cursor = resolved?.configuration.nextCursor ?? null
+    const next = await getActiveCommunityAgentPromptPage(community.id, cursor, 1)
+    expect(next.items.map(row => row.id)).toEqual([active[1]!.id])
   })
 
   it('pins id-sorted prompts when activation order differs in both directions', async () => {
