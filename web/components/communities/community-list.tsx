@@ -37,16 +37,6 @@ export function CommunityList({
   const allMemberships = mergeRecords(pages, page => page.community_memberships ?? {})
   const allPendingIds = new Set(pages.flatMap(page => page.pending_application_community_ids ?? []))
 
-  if (allResults.length === 0) {
-    return (
-      <EmptyState
-        icon='search'
-        title={t('extracted.communities.communityList.noCommunitiesFound_1875e081')}
-        description={t('extracted.communities.communityList.checkBackLaterOrTryAdjusting_e1730dbd')}
-      />
-    )
-  }
-
   const canLoadMore = hasNextPage && !!nextPageEndpoint
 
   return (
@@ -58,6 +48,16 @@ export function CommunityList({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
+      isEmpty={allResults.length === 0}
+      emptyState={
+        <EmptyState
+          icon='search'
+          title={t('extracted.communities.communityList.noCommunitiesFound_1875e081')}
+          description={t(
+            'extracted.communities.communityList.checkBackLaterOrTryAdjusting_e1730dbd',
+          )}
+        />
+      }
     >
       <div className='space-y-3'>
         {allResults.map(result => {

@@ -156,35 +156,37 @@ export function InviteManager({ data, communitySlug, onInviteCreated }: InviteMa
         <h2 className='mb-4 text-lg font-semibold'>
           {t('extracted.communities.inviteManager.existingInvites_cd3b70b6')}
         </h2>
-        {invites.length === 0 && !hasNextPage ? (
-          <EmptyState
-            icon='inbox'
-            title={t('extracted.communities.inviteManager.noInvitesSentYet_a4946f76')}
-            description={t('extracted.communities.inviteManager.useTheFormAboveToInvite_59a67720')}
-            className='rounded-md border bg-card p-4'
-          />
-        ) : (
-          <InfiniteScroll
-            hasNextPage={hasNextPage}
-            endCursor={endCursor}
-            onLoadMore={loadMore}
-            loadingMore={loadingMore}
-            fetchError={fetchError}
-            clearError={clearError}
-            resetKey={resetKey}
-          >
-            <div className='space-y-3'>
-              {invites.map(invite => (
-                <InviteItem
-                  key={invite.id}
-                  invite={invite}
-                  loading={loading === invite.id}
-                  onRevoke={handleRevoke}
-                />
-              ))}
-            </div>
-          </InfiniteScroll>
-        )}
+        <InfiniteScroll
+          hasNextPage={hasNextPage}
+          endCursor={endCursor}
+          onLoadMore={loadMore}
+          loadingMore={loadingMore}
+          fetchError={fetchError}
+          clearError={clearError}
+          resetKey={resetKey}
+          isEmpty={invites.length === 0}
+          emptyState={
+            <EmptyState
+              icon='inbox'
+              title={t('extracted.communities.inviteManager.noInvitesSentYet_a4946f76')}
+              description={t(
+                'extracted.communities.inviteManager.useTheFormAboveToInvite_59a67720',
+              )}
+              className='rounded-md border bg-card p-4'
+            />
+          }
+        >
+          <div className='space-y-3'>
+            {invites.map(invite => (
+              <InviteItem
+                key={invite.id}
+                invite={invite}
+                loading={loading === invite.id}
+                onRevoke={handleRevoke}
+              />
+            ))}
+          </div>
+        </InfiniteScroll>
       </div>
     </div>
   )

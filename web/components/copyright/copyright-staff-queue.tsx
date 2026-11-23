@@ -1,5 +1,6 @@
 'use client'
 
+import { pageHasContinuation } from '@/lib/api/page-has-continuation'
 import { useState, useTransition } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
@@ -85,7 +86,10 @@ export function CopyrightStaffQueue({
       }
     })
   }
-  if (notices.length === 0 && !hasNextPage)
+  if (
+    notices.length === 0 &&
+    !pageHasContinuation({ has_next_page: hasNextPage, end_cursor: endCursor })
+  )
     return <p className='text-muted-foreground'>No copyright cases need review.</p>
   return (
     <div className='space-y-5'>

@@ -29,6 +29,24 @@ export function PaginatedUserRssFeedItemList({
   const state = usePaginatedList(initialData, endpoint, params ?? {})
   const handleLoadMore = state.loadMore
 
+  const items = mergePageResultsById(state.pages)
+  const list = (
+    <UserRssFeedItemList
+      items={items}
+      emptyTitle={emptyTitle}
+      emptyDescription={emptyDescription}
+      relationAction={relationAction}
+      thumbnailUrls={mergeRecords(state.pages, page => page.rss_feed_item_thumbnail_url ?? {})}
+      embeds={mergeRecords(state.pages, page => page.rss_feed_item_embeds ?? {})}
+      hackerNewsReferences={mergeRecords(
+        state.pages,
+        page => page.rss_feed_item_hacker_news_references ?? {},
+      )}
+    >
+      {children}
+    </UserRssFeedItemList>
+  )
+
   return (
     <InfiniteScroll
       hasNextPage={state.hasNextPage}
@@ -38,21 +56,10 @@ export function PaginatedUserRssFeedItemList({
       fetchError={state.fetchError}
       clearError={state.clearError}
       resetKey={state.resetKey}
+      isEmpty={items.length === 0}
+      emptyState={list}
     >
-      <UserRssFeedItemList
-        items={mergePageResultsById(state.pages)}
-        emptyTitle={emptyTitle}
-        emptyDescription={emptyDescription}
-        relationAction={relationAction}
-        thumbnailUrls={mergeRecords(state.pages, page => page.rss_feed_item_thumbnail_url ?? {})}
-        embeds={mergeRecords(state.pages, page => page.rss_feed_item_embeds ?? {})}
-        hackerNewsReferences={mergeRecords(
-          state.pages,
-          page => page.rss_feed_item_hacker_news_references ?? {},
-        )}
-      >
-        {children}
-      </UserRssFeedItemList>
+      {list}
     </InfiniteScroll>
   )
 }

@@ -45,91 +45,91 @@ export function ReferralClicksPage({ initialData }: { initialData: ReferralClick
         </p>
       </div>
 
-      {results.length === 0 && !hasNextPage ? (
-        <p className='rounded-lg border p-6 text-center text-sm text-muted-foreground'>
-          {t('extracted.my.referralClicksPage.noReferralClicksYet_a38e7431')}
-        </p>
-      ) : (
-        <InfiniteScroll
-          hasNextPage={hasNextPage}
-          endCursor={endCursor}
-          onLoadMore={loadMore}
-          loadingMore={loadingMore}
-          fetchError={fetchError}
-          clearError={clearError}
-          resetKey={resetKey}
-        >
-          <div className='rounded-lg border'>
-            <table className='w-full text-sm'>
-              <thead>
-                <tr className='border-b bg-muted/50'>
-                  <th className='px-4 py-3 text-left font-medium'>
-                    {t('extracted.my.referralClicksPage.landingUrl_e50a8a19')}
-                  </th>
-                  <th className='px-4 py-3 text-left font-medium'>
-                    {t('extracted.my.referralClicksPage.date_99c40ab4')}
-                  </th>
-                  <th className='px-4 py-3 text-left font-medium'>
-                    {t('extracted.my.referralClicksPage.signedUp_1b64747b')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {results.map(result => {
-                  const click = clicks[result.id]
-                  if (!click) return null
-                  const user = click.user_id ? users[click.user_id] : null
-                  return (
-                    <tr
-                      key={result.id}
-                      className='border-b last:border-b-0'
-                    >
-                      <td className='px-4 py-3'>
-                        {click.landing_url === null ? (
-                          <span>—</span>
-                        ) : /^https?:\/\//i.test(click.landing_url) ? (
-                          <ExternalLink
-                            data-pw='referral-clicks-landing-url'
-                            href={click.landing_url}
-                            className='text-primary hover:underline'
-                            title={click.landing_url}
-                          >
-                            {truncateUrl(click.landing_url)}
-                          </ExternalLink>
-                        ) : (
-                          <span title={click.landing_url}>{truncateUrl(click.landing_url)}</span>
-                        )}
-                      </td>
-                      <td className='px-4 py-3 text-muted-foreground'>
-                        <TimeAgo date={click.created_at} />
-                      </td>
-                      <td className='px-4 py-3'>
-                        {user?.username ? (
-                          <Link
-                            href={userHref(user)}
-                            prefetch={false}
-                            className='text-primary hover:underline'
-                          >
-                            @{user.username}
-                          </Link>
-                        ) : click.signed_up_at ? (
-                          <span className='text-muted-foreground'>
-                            {t('extracted.my.referralClicksPage.anonymous_e7a8aa2d')}
-                          </span>
-                        ) : (
-                          <span className='text-muted-foreground'>
-                            {t('extracted.my.referralClicksPage.text_bda05058')}
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </InfiniteScroll>
-      )}
+      <InfiniteScroll
+        hasNextPage={hasNextPage}
+        endCursor={endCursor}
+        onLoadMore={loadMore}
+        loadingMore={loadingMore}
+        fetchError={fetchError}
+        clearError={clearError}
+        resetKey={resetKey}
+        isEmpty={results.length === 0}
+        emptyState={
+          <p className='rounded-lg border p-6 text-center text-sm text-muted-foreground'>
+            {t('extracted.my.referralClicksPage.noReferralClicksYet_a38e7431')}
+          </p>
+        }
+      >
+        <div className='rounded-lg border'>
+          <table className='w-full text-sm'>
+            <thead>
+              <tr className='border-b bg-muted/50'>
+                <th className='px-4 py-3 text-left font-medium'>
+                  {t('extracted.my.referralClicksPage.landingUrl_e50a8a19')}
+                </th>
+                <th className='px-4 py-3 text-left font-medium'>
+                  {t('extracted.my.referralClicksPage.date_99c40ab4')}
+                </th>
+                <th className='px-4 py-3 text-left font-medium'>
+                  {t('extracted.my.referralClicksPage.signedUp_1b64747b')}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {results.map(result => {
+                const click = clicks[result.id]
+                if (!click) return null
+                const user = click.user_id ? users[click.user_id] : null
+                return (
+                  <tr
+                    key={result.id}
+                    className='border-b last:border-b-0'
+                  >
+                    <td className='px-4 py-3'>
+                      {click.landing_url === null ? (
+                        <span>—</span>
+                      ) : /^https?:\/\//i.test(click.landing_url) ? (
+                        <ExternalLink
+                          data-pw='referral-clicks-landing-url'
+                          href={click.landing_url}
+                          className='text-primary hover:underline'
+                          title={click.landing_url}
+                        >
+                          {truncateUrl(click.landing_url)}
+                        </ExternalLink>
+                      ) : (
+                        <span title={click.landing_url}>{truncateUrl(click.landing_url)}</span>
+                      )}
+                    </td>
+                    <td className='px-4 py-3 text-muted-foreground'>
+                      <TimeAgo date={click.created_at} />
+                    </td>
+                    <td className='px-4 py-3'>
+                      {user?.username ? (
+                        <Link
+                          href={userHref(user)}
+                          prefetch={false}
+                          className='text-primary hover:underline'
+                        >
+                          @{user.username}
+                        </Link>
+                      ) : click.signed_up_at ? (
+                        <span className='text-muted-foreground'>
+                          {t('extracted.my.referralClicksPage.anonymous_e7a8aa2d')}
+                        </span>
+                      ) : (
+                        <span className='text-muted-foreground'>
+                          {t('extracted.my.referralClicksPage.text_bda05058')}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </InfiniteScroll>
     </div>
   )
 }

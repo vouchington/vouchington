@@ -28,16 +28,6 @@ export function WebSearchListClient({ initialData, query }: WebSearchListClientP
     }
   }
 
-  if (results.length === 0) {
-    return (
-      <EmptyState
-        icon='search'
-        title={t('extracted.webSearch.webSearchListClient.noResultsFound_7d7e3605')}
-        description={t('extracted.webSearch.webSearchListClient.tryADifferentSearchQuery_67989328')}
-      />
-    )
-  }
-
   return (
     <InfiniteScroll
       hasNextPage={hasNextPage}
@@ -47,6 +37,16 @@ export function WebSearchListClient({ initialData, query }: WebSearchListClientP
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
+      isEmpty={results.length === 0}
+      emptyState={
+        <EmptyState
+          icon='search'
+          title={t('extracted.webSearch.webSearchListClient.noResultsFound_7d7e3605')}
+          description={t(
+            'extracted.webSearch.webSearchListClient.tryADifferentSearchQuery_67989328',
+          )}
+        />
+      }
     >
       <div className='divide-y divide-border overflow-hidden bg-card shadow-sm dark:shadow-none sm:rounded-lg'>
         <div className='px-4'>

@@ -79,17 +79,6 @@ export function PostList({
     page => page.post_hacker_news_references ?? {},
   )
   const canLoadMore = hasNextPage && !!nextPageEndpoint && !!endCursor
-  if (allResults.length === 0 && !canLoadMore) {
-    return emptyState !== undefined ? (
-      emptyState
-    ) : (
-      <EmptyState
-        title={t('extracted.posts.postList.noPostsFound_3d0c20ef')}
-        description={t('extracted.posts.postList.tryAdjustingYourSearchOrFilters_54f7b4c2')}
-      />
-    )
-  }
-
   return (
     <InfiniteScroll
       hasNextPage={canLoadMore}
@@ -99,6 +88,17 @@ export function PostList({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
+      isEmpty={allResults.length === 0}
+      emptyState={
+        emptyState !== undefined ? (
+          emptyState
+        ) : (
+          <EmptyState
+            title={t('extracted.posts.postList.noPostsFound_3d0c20ef')}
+            description={t('extracted.posts.postList.tryAdjustingYourSearchOrFilters_54f7b4c2')}
+          />
+        )
+      }
     >
       <HackerNewsReferencesProvider references={allHackerNewsReferences}>
         <div className='space-y-4'>

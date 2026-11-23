@@ -53,25 +53,25 @@ export function ConnectedAppsManager({ initialData }: { initialData: ListRespons
       fetchError={pagination.fetchError}
       clearError={pagination.clearError}
       resetKey={pagination.resetKey}
-    >
-      {grants.length > 0 ? (
-        <ul
-          className='space-y-3'
-          data-pw='connected-apps-list'
-        >
-          {grants.map(grant => (
-            <ConnectedAppRow
-              key={grant.id}
-              grant={grant}
-              onRevoke={handleRevoke}
-            />
-          ))}
-        </ul>
-      ) : (
+      isEmpty={grants.length === 0}
+      emptyState={
         <p className='text-sm text-muted-foreground'>
           {t('extracted.my.connectedAppsManager.noAppsHaveAccessToYour_64aaf35e')}
         </p>
-      )}
+      }
+    >
+      <ul
+        className='space-y-3'
+        data-pw='connected-apps-list'
+      >
+        {grants.map(grant => (
+          <ConnectedAppRow
+            key={grant.id}
+            grant={grant}
+            onRevoke={handleRevoke}
+          />
+        ))}
+      </ul>
     </InfiniteScroll>
   )
 }

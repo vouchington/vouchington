@@ -12,6 +12,7 @@ import { MODERATION_QUEUE_SHORTCUTS } from '@/lib/keyboard-shortcuts'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { ModQueueTabs } from './mod-queue-tabs'
 import type { ModQueueTab } from './mod-queue-state'
+import { pageHasContinuation } from '@/lib/api/page-has-continuation'
 import type { ModQueueData } from './use-mod-queue-data'
 import type { ModQueueItemActions } from './use-mod-queue-item-actions'
 import type { ModQueueSelection } from './use-mod-queue-selection'
@@ -60,8 +61,11 @@ export function ModQueueView({
   if (
     queue.posts.length === 0 &&
     queue.reports.length === 0 &&
-    !queue.hasNextPage &&
-    !queue.reportPagination.hasNextPage
+    !pageHasContinuation({ has_next_page: queue.hasNextPage, end_cursor: queue.endCursor }) &&
+    !pageHasContinuation({
+      has_next_page: queue.reportPagination.hasNextPage,
+      end_cursor: queue.reportPagination.endCursor,
+    })
   ) {
     return (
       <div
