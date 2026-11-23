@@ -69,10 +69,7 @@ describe('loginAsUser helpers', () => {
       deviceContext: { user_agent: 'Synthetic browser' },
     })
     expect(mockRetryOnConnectionLost).toHaveBeenCalledTimes(1)
-    expect(page.goto).toHaveBeenNthCalledWith(1, '/', {
-      waitUntil: 'domcontentloaded',
-      timeout: 15_000,
-    })
+    expect(page.goto).toHaveBeenNthCalledWith(1, '/', { waitUntil: 'domcontentloaded' })
     // Exactly one navigation: the origin-establishing goto. Guards against a
     // future regression that re-adds a post-login navigation.
     expect(page.goto).toHaveBeenCalledTimes(1)

@@ -13,7 +13,7 @@ test.describe('Report dialog', () => {
 
     // The Report inline button is rendered in the user aside — wait for it (dynamic import)
     const reportButton = page.getByTestId('report-inline-button').first()
-    await expect(reportButton).toBeVisible({ timeout: 10_000 })
+    await expect(reportButton).toBeVisible()
     await reportButton.click()
 
     // Verify report dialog appears

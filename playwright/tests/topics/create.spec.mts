@@ -2,6 +2,7 @@ import { test, expect } from '../../helpers/test.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
+import { SHORT_WAIT_TIMEOUT_MS } from '../../helpers/timeouts.mts'
 
 test.describe('Topics Create', () => {
   test.use({ storageState: AUTH_STATE })
@@ -50,13 +51,15 @@ test.describe('Topics Create', () => {
     try {
       const skeletons = page.getByTestId('similarity-panel-loading-skeleton')
       await expect(skeletons).toHaveCount(3)
-      await expect(skeletons.first()).toBeVisible({ timeout: 5000 })
+      await expect(skeletons.first()).toBeVisible({ timeout: SHORT_WAIT_TIMEOUT_MS })
     } finally {
       releaseSimilarityResponses()
     }
 
     // Panels container appears after debounce fires (400ms) and API responds
-    await expect(page.getByTestId('similarity-panels')).toBeVisible({ timeout: 5000 })
+    await expect(page.getByTestId('similarity-panels')).toBeVisible({
+      timeout: SHORT_WAIT_TIMEOUT_MS,
+    })
     // All three panel headings should be present
     await expect(page.getByText('Similar topics')).toBeVisible()
     await expect(page.getByText('Similar news')).toBeVisible()
