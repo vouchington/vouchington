@@ -1,4 +1,5 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import * as http from '@modules/utils/http'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-token'
 import { createTestUser, insertTestPost, softDeleteUser } from '@voucha/test-helpers'
@@ -6,9 +7,8 @@ import { removeTestUserRole } from '@voucha/test-helpers/entities/user-role-remo
 import { upsertTestHostnameId } from '@voucha/test-helpers/entities/email-domain-hostname'
 import { Response as UndiciResponse } from 'undici'
 import type { PrivateUser } from '@services/users/types'
-import type * as Undici from 'undici'
 
-const mockFetch = vi.hoisted(() => vi.fn<typeof Undici.fetch>())
+const mockFetch = vi.hoisted(() => vi.fn<VitestLooseMock>())
 
 vi.mock<typeof import('undici')>(import('undici'), async importOriginal => {
   const actual = await importOriginal()
@@ -33,6 +33,7 @@ describe('POST /api/v1/reports CAPTCHA', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.spyOn(http, 'getExternalFetch').mockReturnValue(mockFetch)
     vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'false')
     mockFetch.mockResolvedValue(
       new UndiciResponse(JSON.stringify({ success: true, hostname: 'localhost', action: 'test' })),

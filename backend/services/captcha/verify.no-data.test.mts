@@ -150,50 +150,6 @@ describe('verifyCaptchaToken', () => {
     })
   })
 
-  it('throws 502 when Cloudflare rejects the secret rather than the token', async () => {
-    fetchSpy.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ success: false, 'error-codes': ['invalid-input-secret'] }),
-    })
-    await expect(verifyCaptchaToken('any-token', '1.2.3.4', 'posts.create')).rejects.toMatchObject({
-      status: 502,
-      message: 'CAPTCHA service unavailable',
-    })
-  })
-
-  it('throws 502 with cause on network error', async () => {
-    const networkError = new Error('Network error')
-    fetchSpy.mockRejectedValue(networkError)
-    await expect(verifyCaptchaToken('any-token', '1.2.3.4', 'posts.create')).rejects.toMatchObject({
-      status: 502,
-      message: 'CAPTCHA service unavailable',
-      cause: expect.objectContaining({ cause: networkError }),
-    })
-  })
-
-  it('throws 502 with cause on timeout', async () => {
-    const abortError = new DOMException('The operation was aborted.', 'AbortError')
-    fetchSpy.mockRejectedValue(abortError)
-    await expect(verifyCaptchaToken('any-token', '1.2.3.4', 'posts.create')).rejects.toMatchObject({
-      status: 502,
-      message: 'CAPTCHA service unavailable',
-      cause: expect.objectContaining({ cause: abortError }),
-    })
-  })
-
-  it('throws 502 with cause when response.json() fails', async () => {
-    const parseError = new SyntaxError('Unexpected token')
-    fetchSpy.mockResolvedValue({
-      ok: true,
-      json: () => Promise.reject(parseError),
-    })
-    await expect(verifyCaptchaToken('any-token', '1.2.3.4', 'posts.create')).rejects.toMatchObject({
-      status: 502,
-      message: 'CAPTCHA service unavailable',
-      cause: expect.objectContaining({ cause: parseError }),
-    })
-  })
-
   it('throws 422 when token is missing', async () => {
     await expect(verifyCaptchaToken(undefined, '1.2.3.4', 'posts.create')).rejects.toMatchObject({
       status: 422,

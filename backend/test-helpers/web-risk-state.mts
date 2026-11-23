@@ -158,8 +158,8 @@ export async function withGoogleWebRiskTest(
     const activeFetchSpy = vi
       .fn<ExternalFetch>()
       .mockRejectedValue(new Error('Unexpected Web Risk provider request'))
-    restores.push(() => vi.mocked(http.getExternalFetch).mockRestore())
-    vi.spyOn(http, 'getExternalFetch').mockReturnValue(activeFetchSpy)
+    const externalFetchSpy = vi.spyOn(http, 'getExternalFetch').mockReturnValue(activeFetchSpy)
+    restores.push(() => externalFetchSpy.mockRestore())
     const context: WebRiskTestContext = {
       fixture,
       ownFixture,

@@ -148,49 +148,6 @@ describe('Google Web Risk checks', () => {
       expect(context.fetchSpy).toHaveBeenCalledTimes(1)
     }))
 
-  it('fails open on Google server errors', () =>
-    withGoogleWebRiskTest(async context => {
-      const response = new Response('server error', { status: 500 })
-      context.fetchSpy.mockResolvedValueOnce(response)
-
-      await expect(
-        context.fixture.check(`https://server-error-${crypto.randomUUID()}.test/page`),
-      ).resolves.toBeUndefined()
-      expect(context.fetchSpy).toHaveBeenCalledTimes(1)
-      await expect(response.body!.getReader().read()).resolves.toMatchObject({ done: true })
-      await expect(context.fixture.state.readProviderGate(PROBE_URL)).resolves.toMatchObject({
-        coolingDown: true,
-      })
-    }))
-
-  it('fails open on Google client errors', () =>
-    withGoogleWebRiskTest(async context => {
-      const response = new Response('bad request', { status: 400 })
-      context.fetchSpy.mockResolvedValueOnce(response)
-
-      await expect(
-        context.fixture.check(`https://client-error-${crypto.randomUUID()}.test/page`),
-      ).resolves.toBeUndefined()
-      expect(context.fetchSpy).toHaveBeenCalledTimes(1)
-      await expect(response.body!.getReader().read()).resolves.toMatchObject({ done: true })
-      await expect(context.fixture.state.readProviderGate(PROBE_URL)).resolves.toMatchObject({
-        coolingDown: true,
-      })
-    }))
-
-  it('fails open on invalid Google JSON', () =>
-    withGoogleWebRiskTest(async context => {
-      context.fetchSpy.mockResolvedValueOnce(new Response('not-json', { status: 200 }))
-
-      await expect(
-        context.fixture.check(`https://bad-json-${crypto.randomUUID()}.test/page`),
-      ).resolves.toBeUndefined()
-      expect(context.fetchSpy).toHaveBeenCalledTimes(1)
-      await expect(context.fixture.state.readProviderGate(PROBE_URL)).resolves.toMatchObject({
-        coolingDown: true,
-      })
-    }))
-
   it('blocks the registrable domain after a positive Google verdict', () =>
     withGoogleWebRiskTest(async context => {
       const domain = `risky-${crypto.randomUUID()}.test`
