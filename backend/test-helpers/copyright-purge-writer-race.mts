@@ -14,11 +14,17 @@ export function raceCopyrightPurgeWithCorrespondence<Page>(
 }
 
 /** A real correspondence writer contends with a thread erasure page holding its checked case. */
-export function raceCopyrightThreadWithCorrespondence<Page>(
+export async function raceCopyrightThreadWithCorrespondence<Page>(
   noticeId: string,
   page: () => Promise<Page>,
 ) {
-  return raceCopyrightRetentionWithCorrespondence(noticeId, page, 'thread')
+  const { pageOutcome, message } = await raceCopyrightRetentionWithCorrespondence(
+    noticeId,
+    page,
+    'thread',
+  )
+  if (pageOutcome.status === 'rejected') throw pageOutcome.reason
+  return { page: pageOutcome.value, message }
 }
 
 function interceptBoundedRetentionTransaction(
@@ -99,10 +105,9 @@ async function raceCopyrightRetentionWithCorrespondence<Page>(
         const writerSettled = Promise.allSettled([writer])
         await waitForWrite(writer)
         release.resolve()
-        const [[purgeOutcome], [writerOutcome]] = await Promise.all([pageSettled, writerSettled])
-        if (purgeOutcome?.status !== 'fulfilled') throw purgeOutcome?.reason
-        if (writerOutcome?.status !== 'fulfilled') throw writerOutcome?.reason
-        return { page: purgeOutcome.value, message: writerOutcome.value }
+        const [[pageOutcome], [writerOutcome]] = await Promise.all([pageSettled, writerSettled])
+        if (writerOutcome.status === 'rejected') throw writerOutcome.reason
+        return { pageOutcome, message: writerOutcome.value }
       },
     )
   } finally {

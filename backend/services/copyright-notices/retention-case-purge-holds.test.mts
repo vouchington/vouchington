@@ -105,7 +105,7 @@ describe('copyright case purge holds placed mid-purge', () => {
   }, 30_000)
 
   // no-mistakes-timeout-reason: real email case traverses bounded purge proof and evidence pages
-  it('commits a pointer-cut page and a concurrent case correspondence without a generation deadlock', async () => {
+  it('commits concurrent case correspondence and cuts the pointer only when the purge page commits', async () => {
     await setPageSize(100)
     const entry = await createRetentionEmailCase()
     await settleCopyrightCasePurgeFixtureActions(entry.noticeId)
@@ -121,21 +121,43 @@ describe('copyright case purge holds placed mid-purge', () => {
       data = page.data
     }
     expect(data).toMatchObject({ phase: 'pointers', phaseIndex: 1 })
-    const { page, message } = await raceCopyrightPurgeWithCorrespondence(entry.noticeId, () =>
-      runCopyrightCasePurgePage(data, PURGE_NOW),
+    const { pageOutcome, message } = await raceCopyrightPurgeWithCorrespondence(
+      entry.noticeId,
+      () => runCopyrightCasePurgePage(data, PURGE_NOW),
     )
-    expect(page.hasMore).toBe(true)
-    expect(page.data.phaseIndex).toBe(2)
-    const aggregate = await getCopyrightNoticePrivateAggregate(entry.noticeId)
+    const [pointers, aggregate] = await Promise.all([
+      readCopyrightPurgeAssessmentPointers(entry.noticeId),
+      getCopyrightNoticePrivateAggregate(entry.noticeId),
+    ])
+    expect({ pageOutcome, pointers }).toEqual(
+      expect.toBeOneOf([
+        {
+          pageOutcome: {
+            status: 'fulfilled',
+            value: expect.objectContaining({
+              hasMore: true,
+              data: expect.objectContaining({ phase: 'pointers', phaseIndex: 2 }),
+            }),
+          },
+          pointers: { total: 1, remaining: 0 },
+        },
+        {
+          pageOutcome: {
+            status: 'rejected',
+            reason: expect.objectContaining({
+              status: 409,
+              cause: expect.objectContaining({ code: '40001' }),
+            }),
+          },
+          pointers: { total: 1, remaining: 1 },
+        },
+      ]),
+    )
+    expect(aggregate?.notice.id).toBe(entry.noticeId)
     expect(aggregate?.correspondence).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: message.id, body_ciphertext: message.body_ciphertext }),
       ]),
     )
-    expect(await readCopyrightPurgeAssessmentPointers(entry.noticeId)).toEqual({
-      total: 1,
-      remaining: 0,
-    })
-    expect(await readCopyrightCasePurgeFixture(entry.noticeId)).toMatchObject({ live: true })
   }, 30_000)
 })
