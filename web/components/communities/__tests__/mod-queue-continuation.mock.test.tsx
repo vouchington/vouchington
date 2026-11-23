@@ -65,7 +65,7 @@ describe('ModQueue pending-post continuation', () => {
       />,
     )
 
-    expect(screen.getByText('No pending posts.')).toBeVisible()
+    expect(screen.queryByText('No pending posts.')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
     expect(loadMore).toHaveBeenCalledOnce()
   })

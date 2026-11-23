@@ -54,16 +54,22 @@ export const mockReceiveLoadMore = vi.fn<VitestLooseMock>()
 vi.mock(import('@/components/shared/infinite-scroll'), () => ({
   InfiniteScroll: ({
     children,
+    isEmpty,
+    emptyState,
+    hasNextPage,
+    endCursor,
     onLoadMore,
   }: {
     children: ReactNode
+    isEmpty?: boolean
+    emptyState?: ReactNode
     hasNextPage: boolean
     endCursor: string | null
     onLoadMore: () => Promise<void | boolean>
     resetKey?: unknown
   }) => {
     mockReceiveLoadMore(onLoadMore)
-    return <div>{children}</div>
+    return <div>{isEmpty ? (hasNextPage && endCursor ? null : emptyState) : children}</div>
   },
 }))
 

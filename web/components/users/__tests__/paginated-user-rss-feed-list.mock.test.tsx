@@ -17,9 +17,15 @@ vi.mock(import('@/components/shared/infinite-scroll'), () => ({
   InfiniteScroll: ({
     children,
     clearError,
+    emptyState,
     fetchError,
+    hasNextPage,
+    isEmpty,
     onLoadMore,
   }: React.PropsWithChildren<{
+    emptyState?: React.ReactNode
+    hasNextPage?: boolean
+    isEmpty?: boolean
     clearError?: () => void
     fetchError?: Error | null
     onLoadMore: () => void
@@ -27,7 +33,7 @@ vi.mock(import('@/components/shared/infinite-scroll'), () => ({
     receiveLoadMore(onLoadMore)
     return (
       <div>
-        {children}
+        {isEmpty ? (hasNextPage ? null : emptyState) : children}
         {fetchError ? (
           <button
             type='button'
@@ -127,6 +133,5 @@ describe('PaginatedUserRssFeedList', () => {
     )
 
     expect(screen.getByText('No followed podcasts')).toBeDefined()
-    expect(receiveLoadMore).not.toHaveBeenCalled()
   })
 })

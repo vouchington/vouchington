@@ -12,7 +12,15 @@ vi.mock(
 )
 
 vi.mock(import('@/components/shared/infinite-scroll'), () => ({
-  InfiniteScroll: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  InfiniteScroll: ({
+    children,
+    isEmpty,
+    emptyState,
+  }: {
+    children: ReactNode
+    isEmpty?: boolean
+    emptyState?: ReactNode
+  }) => <div>{isEmpty ? emptyState : children}</div>,
 }))
 
 vi.mock(

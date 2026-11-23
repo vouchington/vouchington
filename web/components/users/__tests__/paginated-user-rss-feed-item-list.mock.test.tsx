@@ -50,7 +50,7 @@ describe('PaginatedUserRssFeedItemList', () => {
       />,
     )
 
-    expect(screen.getByText('No saved RSS items')).toBeDefined()
+    expect(screen.queryByText('No saved RSS items')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
 
     await waitFor(() => {
