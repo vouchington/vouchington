@@ -60,7 +60,6 @@ import { NATIVE_CONSUMER_MANIFEST_CLAIMS_55_NOTIFICATION_KINDS } from './native-
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_56_CAPPED_REQUEST_COPY } from './native-consumer-manifest/claims-56-capped-request-copy.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_57_COPYRIGHT_TARGET_LIMIT } from './native-consumer-manifest/claims-57-copyright-target-limit.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_58_POST_CATEGORY_LIMIT } from './native-consumer-manifest/claims-58-post-category-limit.mts'
-import { NATIVE_CONSUMER_MANIFEST_CLAIMS_59_GENERATE_TITLE } from './native-consumer-manifest/claims-59-generate-title.mts'
 import type { NativeConsumerManifestEntry } from './native-consumer-manifest/types.mts'
 
 export type {
@@ -132,7 +131,6 @@ const NATIVE_CONSUMER_MANIFEST_CLAIM_SLICES: readonly (readonly NativeConsumerMa
   NATIVE_CONSUMER_MANIFEST_CLAIMS_56_CAPPED_REQUEST_COPY,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_57_COPYRIGHT_TARGET_LIMIT,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_58_POST_CATEGORY_LIMIT,
-  NATIVE_CONSUMER_MANIFEST_CLAIMS_59_GENERATE_TITLE,
 ]
 
 export const NATIVE_CONSUMER_MANIFEST =
