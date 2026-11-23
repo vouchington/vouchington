@@ -64,6 +64,7 @@
     "typescript/no-unsafe-argument": "off",
     "no-void": "off",
     "no-await-in-loop": "off",
+    "react-doctor/no-json-parse-stringify-clone": "off",
     "react/jsx-no-target-blank": "off",
     "no-mistakes/ts-no-const-aliases": "off",
     "nextjs/no-html-link-for-pages": "off"
