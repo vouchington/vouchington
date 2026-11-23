@@ -23,14 +23,21 @@ export type StripeRefundScanCycle = {
 export async function getOrCreateStripeRefundScanCycle(
   reversalCaseId: string,
 ): Promise<StripeRefundScanCycle> {
-  // Three unconditional statements, no row lock taken on a row this call does not write.
-  // The rotate UPDATE matches nothing on an open cycle. On a completed cycle a concurrent
-  // second caller waits on the row the first is writing, re-checks completed_at and
-  // updates nothing, so the cycle rotates exactly once; the only row lock left here is
-  // the one that UPDATE takes on the row it writes. A cycle may complete while a late
-  // scan registered concurrently is still unverified. That worker verifies its own scan
-  // before any refund and the next run rotates and re-registers; completed_at only feeds
-  // case-closed retention.
+  await createOrRotateCycle(reversalCaseId)
+  const current = await readCycle(reversalCaseId)
+  if (current.completedAt) throw new Error('Could not rotate Stripe refund scan cycle')
+  return { generation: current.generation, reversalCaseId }
+}
+
+// Two unconditional statements, no row lock taken on a row this call does not write.
+// The rotate UPDATE matches nothing on an open cycle. On a completed cycle a concurrent
+// second caller waits on the row the first is writing, re-checks completed_at and
+// updates nothing, so the cycle rotates exactly once; the only row lock left in
+// getOrCreateStripeRefundScanCycle is the one that UPDATE takes on the row it writes.
+// A cycle may complete while a late scan registered concurrently is still unverified.
+// That worker verifies its own scan before any refund and the next run rotates and
+// re-registers; completed_at only feeds case-closed retention.
+async function createOrRotateCycle(reversalCaseId: string): Promise<void> {
   await write(sql`/* getOrCreateStripeRefundScanCycle:insert */
     INSERT INTO membership_ineligible_purchase_reversal_refund_scan_cycles (
       membership_ineligible_purchase_reversal_case_id
@@ -42,9 +49,6 @@ export async function getOrCreateStripeRefundScanCycle(
     WHERE membership_ineligible_purchase_reversal_case_id = ${reversalCaseId}
       AND completed_at IS NOT NULL
   `)
-  const current = await readCycle(reversalCaseId)
-  if (current.completedAt) throw new Error('Could not rotate Stripe refund scan cycle')
-  return { generation: current.generation, reversalCaseId }
 }
 
 async function readCycle(
