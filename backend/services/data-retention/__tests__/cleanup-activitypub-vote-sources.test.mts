@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import {
+  beginTransaction,
   createTestUserDirect,
   getTestPostVoteIds,
   getTestPostVoteRetentionDeferredAt,
@@ -10,6 +11,8 @@ import {
   setTestPostVoteActivityPubSource,
   setTestPostVoteRetentionDeferredAt,
 } from '@voucha/test-helpers'
+import { finishTestPostgresActionWithoutWaiting } from '@voucha/test-helpers/postgres-lock-skip'
+import { reserveTestVoteRetention } from '@voucha/test-helpers/vote-retention-reservation'
 import { listPendingOutboundDistributionPage } from '../../activitypub-delivery/distribution-recovery.mts'
 import { cleanupSupersededVoteBallots } from '../cleanup-vote-ballots.mts'
 import { cleanupDeferredPostVoteBallots } from '../cleanup-deferred-post-votes.mts'
@@ -103,6 +106,44 @@ describe('ActivityPub ballot source retention', () => {
     await cleanupDeferredPostVoteBallots(1, NOW, { voteIds: [voteId] })
     expect(await getTestPostVoteIds(postId, userId)).toEqual([voteId])
     expect(await getTestPostVoteRetentionDeferredAt(postId, voteId)).toBeNull()
+  })
+
+  it('retires the current page while a later due ballot is busy', async () => {
+    const { userId, postId } = await postForTest()
+    // The unscoped sweep orders by ID. Use owned UUIDv7s before ordinary fixture dates.
+    const first = uuidv7({ msecs: 0 })
+    const next = uuidv7({ msecs: 1 })
+    const superseder = uuidv7({ msecs: 2 })
+    const reservation = await reserveTestVoteRetention()
+    onTestFinished(async () => {
+      try {
+        await cleanupDeferredPostVoteBallots(2, NOW, { voteIds: [first, next] })
+      } finally {
+        await reservation.release()
+      }
+    })
+    for (const id of [first, next, superseder])
+      await insertTestPostVote(postId, userId, '127.0.0.1', 1, id)
+    await setTestPostVoteRetentionDeferredAt(postId, first, NOW)
+    await setTestPostVoteRetentionDeferredAt(postId, next, NOW)
+
+    await using holder = await beginTransaction()
+    await setTestPostVoteRetentionDeferredAt(postId, next, new Date(NOW.getTime() + 1), holder)
+    const page = await finishTestPostgresActionWithoutWaiting(
+      holder,
+      'DeferredPostVoteSources',
+      () => cleanupDeferredPostVoteBallots(1, NOW),
+    )
+    expect(page).toEqual({ scanned: 1, deleted: 1, hasMore: true })
+    await holder.rollback()
+    expect(await getTestPostVoteIds(postId, userId)).toEqual([next, superseder])
+
+    expect(await cleanupDeferredPostVoteBallots(1, NOW, { voteIds: [next] })).toEqual({
+      scanned: 1,
+      deleted: 1,
+      hasMore: false,
+    })
+    expect(await getTestPostVoteIds(postId, userId)).toEqual([superseder])
   })
 
   it('limits a due-source cleanup to its owned vote ID', async () => {

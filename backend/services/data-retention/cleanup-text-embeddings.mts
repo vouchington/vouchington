@@ -29,7 +29,8 @@ async function deleteTextEmbeddingCachePage(
   options: Options,
 ): Promise<PersistedPage<never>> {
   await using query = await beginTransaction()
-  const lowerBoundPredicate = options.lowerBoundDate ? 'AND updated_at >= $3::timestamptz' : ''
+  const cutoffParameters = options.lowerBoundDate ? [cutoff, options.lowerBoundDate] : [cutoff]
+  const lowerBoundPredicate = options.lowerBoundDate ? 'AND updated_at >= $2::timestamptz' : ''
   const { rows: candidates } = await query<{
     content_sha256: string
   }>(
@@ -39,18 +40,30 @@ async function deleteTextEmbeddingCachePage(
     WHERE updated_at < $1::timestamptz
       ${lowerBoundPredicate}
     ORDER BY cache.updated_at, encode(cache.content_sha256, 'hex')
-    LIMIT $2 FOR UPDATE`,
-    [cutoff, batchSize + 1, ...(options.lowerBoundDate ? [options.lowerBoundDate] : [])],
+    LIMIT $${cutoffParameters.length + 1} FOR UPDATE`,
+    [...cutoffParameters, batchSize],
   )
-  const page = candidates.slice(0, batchSize)
-  const hashes = page.map(row => row.content_sha256)
+  const hashes = candidates.map(row => row.content_sha256)
   const { rowCount } = await query(
     `/* deleteTextEmbeddingRetentionPage */
     DELETE FROM bedrock_nova_multimodal_v1_embeddings
-    WHERE content_sha256 = ANY(SELECT decode(hash, 'hex') FROM unnest($1::text[]) hash)`,
-    [hashes],
+    WHERE updated_at < $1::timestamptz
+      ${lowerBoundPredicate}
+      AND content_sha256 = ANY(
+        SELECT decode(hash, 'hex') FROM unnest($${cutoffParameters.length + 1}::text[]) hash
+      )`,
+    [...cutoffParameters, hashes],
   )
-  const hasMore = candidates.length > batchSize
+  const hasMore =
+    candidates.length === batchSize &&
+    (
+      await query(
+        `/* hasMoreTextEmbeddingRetentionCandidates */
+      SELECT 1 FROM bedrock_nova_multimodal_v1_embeddings
+      WHERE updated_at < $1::timestamptz ${lowerBoundPredicate} LIMIT 1`,
+        cutoffParameters,
+      )
+    ).rows.length > 0
   await query.commit()
   return {
     deleted: rowCount ?? 0,

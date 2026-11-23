@@ -19,6 +19,18 @@ export async function insertTextEmbeddingForRetentionTest(
   return hash
 }
 
+export async function backfillTextEmbeddingTokensForRetentionTest(
+  query: TransactionQuery,
+  hash: string,
+): Promise<void> {
+  await query(
+    `/* backfillTextEmbeddingTokensForRetentionTest */
+    UPDATE bedrock_nova_multimodal_v1_embeddings SET input_token_count = 1
+    WHERE content_sha256 = decode($1, 'hex')`,
+    [hash],
+  )
+}
+
 export async function textEmbeddingExistsForRetentionTest(
   query: TransactionQuery,
   hash: string,
