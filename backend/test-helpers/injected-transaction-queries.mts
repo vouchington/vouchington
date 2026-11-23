@@ -10,10 +10,14 @@ export async function waitForObservedTransactionWork<Result>(
 ): Promise<Result> {
   const expired = Promise.withResolvers<never>()
   const deadline = AbortSignal.timeout(3_000)
-  using listener = addAbortListener(deadline, () => {
+  const listener = addAbortListener(deadline, () => {
     expired.reject(new Error(`${description} did not settle within 3000ms`))
   })
-  return await Promise.race([work, expired.promise])
+  try {
+    return await Promise.race([work, expired.promise])
+  } finally {
+    listener[Symbol.dispose]()
+  }
 }
 
 /**
