@@ -1,6 +1,7 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
+import onError from '@modules/on-error'
 import { getSystemUserByUsername } from '@services/users/system-users'
 import { assertEntityRelationUpsertAllowed } from '@services/entity-relations/upsert'
 import { writeEntityRelations } from '@services/entity-relations/write-relations'
@@ -19,10 +20,12 @@ import type { Post } from '@services/posts/types'
 import { recordPostPublicationChange } from '@services/post-publication'
 import { deliverStoryPost } from './story-post-delivery.mts'
 import { markStoryPostRelatedUrlProjection } from './story-post-related-url-projection.mts'
-
-export type StoryPostCreateDependencies = {
-  getStoryTeller?: () => Promise<BasicUser | null>
-}
+import { refreshStoryPostForStory } from './refresh-story-post.mts'
+import {
+  readStoryPostCreationSources,
+  storyPostCreationSourcesChanged,
+  type StoryPostCreationSnapshot,
+} from './story-post-creation-sources.mts'
 
 export type CreatedStoryPost = {
   post: Post
@@ -31,6 +34,7 @@ export type CreatedStoryPost = {
   categoryTopicRelations: Awaited<ReturnType<typeof writeEntityRelations>>
   storyTellerUser: PrivateUser
   categoryTopicRelation: ReturnType<typeof getEntityRelationMetadataOrThrow>
+  sourceSnapshot: StoryPostCreationSnapshot
 }
 
 export async function loadStoryTellerUser(
@@ -88,26 +92,14 @@ export async function createStoryPostInTransaction(
   assert(story, 404, 'Story not found')
   const existingPostStory = await getPostStoryByStoryId(storyId, txOptions)
   assert(!existingPostStory, 409, 'Story already has a post')
-  const { rows } = await query(
-    sql`/* createStoryPost:items */
-        SELECT
-          ARRAY_AGG(DISTINCT c.topic_id) FILTER (WHERE c.topic_id IS NOT NULL) AS topic_ids,
-          COUNT(DISTINCT rfi.id) AS item_count,
-          MAX(CASE WHEN rfi.data->>'title' IS NOT NULL AND rfi.data->>'title' <> '' THEN rfi.data->>'title' END) AS single_item_title,
-          s.title AS story_title
-        FROM stories s
-        -- no-mistakes-disable-next-line postgres-required-predicates: story membership can attach already-created items, so item IDs may predate story_id
-        LEFT JOIN rss_feed_items rfi ON rfi.story_id = s.id AND rfi.deleted_at IS NULL
-        LEFT JOIN rss_feed_item_categories c ON c.rss_feed_item_id = rfi.id AND c.topic_id IS NOT NULL
-        WHERE s.id = ${storyId}
-        GROUP BY s.title`,
+  const sourceSnapshot = await readStoryPostCreationSources(storyId, query)
+  assert(
+    sourceSnapshot && Number(sourceSnapshot.item_count) >= 2,
+    422,
+    'Story posts require at least 2 news items',
   )
-  const topicIds = (rows[0]?.topic_ids as string[] | null) ?? []
-  assert(Number(rows[0]?.item_count ?? 0) >= 2, 422, 'Story posts require at least 2 news items')
-  const title =
-    (rows[0]?.story_title as string | null) ??
-    (rows[0]?.single_item_title as string | null) ??
-    'Story'
+  const topicIds = sourceSnapshot.topic_ids ?? []
+  const title = sourceSnapshot.story_title ?? sourceSnapshot.single_item_title ?? 'Story'
   const post = await insertStoryPostRecord(
     {
       title,
@@ -129,7 +121,7 @@ export async function createStoryPostInTransaction(
   )
   const postStory = await createPostStory(post.id, storyId, initiatedBy.id, txOptions)
   assert(postStory, 409, 'Story already has a post')
-  await markStoryPostRelatedUrlProjection(query, post.id, storyId)
+  const sourceUpperBoundId = await markStoryPostRelatedUrlProjection(query, post.id, storyId)
   const categoryTopicObjects: Array<{ id: string }> = []
   for (const id of topicIds) categoryTopicObjects.push({ id })
   if (categoryTopicObjects.length > 0) {
@@ -157,10 +149,39 @@ export async function createStoryPostInTransaction(
     impactedTopicIds: topicIds,
     footprint: { priorAuthorUserId: storyTellerUser.id },
   })
-  return { post, story, postStory, categoryTopicRelations, storyTellerUser, categoryTopicRelation }
+  return {
+    post,
+    story,
+    postStory,
+    categoryTopicRelations,
+    storyTellerUser,
+    categoryTopicRelation,
+    sourceSnapshot: {
+      item_count: sourceSnapshot.item_count,
+      topic_ids: topicIds,
+      sourceUpperBoundId,
+    },
+  }
 }
 
-export function finalizeCreatedStoryPost(created: CreatedStoryPost): Promise<void> {
+export async function finalizeCreatedStoryPost(created: CreatedStoryPost): Promise<void> {
+  let categoryTopicRelations = created.categoryTopicRelations
+  try {
+    // An assignment may have committed after creation read the membership and before
+    // it could see the new story post. Check committed sources before restarting projection.
+    if (await storyPostCreationSourcesChanged(created.postStory.story_id, created.sourceSnapshot)) {
+      await using query = await beginTransaction()
+      const refreshed = await refreshStoryPostForStory(created.postStory.story_id, {
+        query,
+        expectedPostId: created.post.id,
+        captureCategoryChanges: true,
+      })
+      await query.commit()
+      if (refreshed) categoryTopicRelations = refreshed.categoryTopicRelations
+    }
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
+  }
   return deliverStoryPost({
     post: created.post,
     postStory: created.postStory,
@@ -173,7 +194,7 @@ export function finalizeCreatedStoryPost(created: CreatedStoryPost): Promise<voi
       }),
       relatedUrlRelations: [],
       categoryTopicRelation: created.categoryTopicRelation,
-      categoryTopicRelations: created.categoryTopicRelations,
+      categoryTopicRelations,
     },
   })
 }
