@@ -15381,8 +15381,8 @@ importers:
         specifier: workspace:^
         version: link:../backend/config
       '@vouchington/edge':
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: ^0.8.1
+        version: 0.8.1
       '@vouchington/rate-limit':
         specifier: ^0.4.0
         version: 0.4.0(@jongleberry/api-server@3.1.0)(valkyries@0.15.0)
@@ -20933,8 +20933,8 @@ packages:
     peerDependencies:
       valkyries: ^0.10.0
 
-  '@vouchington/edge@0.8.0':
-    resolution: {integrity: sha512-rsVjMcseE9xzl0MC2KedqWDaJryNgY+2e3toX7cnPCgiDpMS56Vu1MkcwQ6X5GO3jcIkm5DTWmiDRhUTEWR8tw==}
+  '@vouchington/edge@0.8.1':
+    resolution: {integrity: sha512-f+WUoaAPzJVqJfobxSIsNcbmeHxIh7mT1eo2vqdjDCe+JbH0L9ZLAbq6rQ+kj6v/WESYfFERtzEB9x1L3Qdonw==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/email@0.2.1':
@@ -29919,7 +29919,7 @@ snapshots:
     dependencies:
       valkyries: 0.15.0
 
-  '@vouchington/edge@0.8.0':
+  '@vouchington/edge@0.8.1':
     dependencies:
       '@vouchington/utils': 0.12.0
 

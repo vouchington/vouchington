@@ -17,4 +17,4 @@ Blocking happens before cookie parsing, JWT verification, staging Basic Auth, an
 
 Tor exit nodes (`T1`) and unknown country (`XX`) are not blocked by default but can be added via the env var.
 
-**Module:** [`src/geo-block.mts`](../../../../cloudflare-worker/src/geo-block.mts) — two pure functions: `parseBlockedCountries()` and `isGeoBlocked()`.
+**Module:** two pure functions, `parseBlockedCountries()` and `isGeoBlocked()`, from `@vouchington/edge`; `src/inline-responses.mts` calls them.

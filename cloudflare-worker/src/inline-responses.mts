@@ -1,6 +1,5 @@
 import { buildApiCatalogLinkset } from './api-catalog.mts'
-import { edgeErrorResponse } from '@vouchington/edge'
-import { isGeoBlocked, parseBlockedCountries } from './geo-block.mts'
+import { edgeErrorResponse, isGeoBlocked, parseBlockedCountries } from '@vouchington/edge'
 import { generateRobotsTxt } from './robots-txt.mts'
 import { getRuntimeSentryConfigResponse } from './runtime-sentry-config.mts'
 import {
