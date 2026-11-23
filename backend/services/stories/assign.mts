@@ -1,7 +1,8 @@
 import { clearMovedStoryOfficialItem } from './clear-moved-official-item.mts'
 import { dispatchPostCommitEffectsBestEffort } from './assignment-effects.mts'
 import { recordModeratorAction } from '@services/moderator-actions'
-import { runWithTransaction, type TransactionQuery } from '@data-stores/psql'
+import { beginTransaction, runWithTransaction, type TransactionQuery } from '@data-stores/psql'
+import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
 import { enqueueBulkStoryPostAgents } from '@queues/ai-agents/enqueues/story-post'
 import { refreshStoryPostForStory, type StoryPostRefreshResult } from './refresh-story-post.mts'
@@ -20,7 +21,6 @@ export async function adminAssignItemToStory(
 ): Promise<string | null> {
   let afterCommit: (() => Promise<void>) | undefined
   const assignedId = await runWithTransaction(undefined, async (query: TransactionQuery) => {
-    const refreshResults: StoryPostRefreshResult[] = []
     const {
       rows: [row],
     } = await query<{ id: string; prior_story_id: string | null }>(
@@ -30,47 +30,43 @@ export async function adminAssignItemToStory(
       WHERE id = ${itemId} AND deleted_at IS NULL
       RETURNING rss_feed_items.id, old.story_id AS prior_story_id`,
     )
-    if (row) {
-      if (row.prior_story_id !== storyId)
-        await clearMovedStoryOfficialItem(query, row.prior_story_id, itemId)
-      const affectedStoryIds = [
-        ...new Set(
-          [storyId, row.prior_story_id].filter(
-            (candidate): candidate is string => candidate !== null,
-          ),
-        ),
-      ]
-      const affectedPostIds = await getPostStoryIdsByStoryIds(affectedStoryIds, { query })
-      // Assignment and batch RSS projection restarts visit the same job keys in post-ID order.
-      const [first, second] = Object.entries(affectedPostIds).toSorted(([, left], [, right]) =>
-        left.localeCompare(right, 'en'),
-      )
-      if (first) {
-        const refreshed = await refreshAssignedStoryPost(query, first)
-        if (refreshed) refreshResults.push(refreshed)
-      }
-      if (second) {
-        const refreshed = await refreshAssignedStoryPost(query, second)
-        if (refreshed) refreshResults.push(refreshed)
-      }
-    }
-    if (row)
-      await recordModeratorAction(
-        actorId,
-        {
-          actionType: 'story_item_add',
-          metadata: {
-            story_id: storyId,
-            rss_feed_item_id: itemId,
-            prior_story_id: row.prior_story_id,
-          },
-        },
-        { query },
-      )
     if (!row) return null
+    if (row.prior_story_id !== storyId)
+      await clearMovedStoryOfficialItem(query, row.prior_story_id, itemId)
+    const affectedStoryIds = [
+      ...new Set(
+        [storyId, row.prior_story_id].filter(
+          (candidate): candidate is string => candidate !== null,
+        ),
+      ),
+    ]
+    const affectedPostIds = await getPostStoryIdsByStoryIds(affectedStoryIds, { query })
+    const refreshResults = await refreshAssignedStoryPosts(query, affectedPostIds)
+    const missingStoryIds = affectedStoryIds.filter(id => !affectedPostIds[id])
+    await recordModeratorAction(
+      actorId,
+      {
+        actionType: 'story_item_add',
+        metadata: {
+          story_id: storyId,
+          rss_feed_item_id: itemId,
+          prior_story_id: row.prior_story_id,
+        },
+      },
+      { query },
+    )
     afterCommit = async () => {
+      if (missingStoryIds.length > 0) {
+        // Creation may have committed after the assignment's association lookup.
+        try {
+          const repaired = await refreshMissingStoryPosts(missingStoryIds)
+          refreshResults.push(...repaired)
+        } catch (err) {
+          onError(err instanceof Error ? err : new Error(String(err)))
+        }
+      }
       await dispatchPostCommitEffectsBestEffort(refreshResults)
-      const postIds = refreshResults.map(({ postId }) => postId)
+      const postIds = refreshResults.map(({ postId }) => postId).toSorted()
       void enqueueBulkStoryPostAgents(postIds, { force: true })
       if (postIds.length > 0) await invalidate.posts(...postIds)
     }
@@ -138,6 +134,34 @@ export async function adminRemoveItemFromStory(
   })
   await afterCommit?.()
   return removedId
+}
+
+async function refreshAssignedStoryPosts(
+  query: TransactionQuery,
+  postIdsByStoryId: Record<string, string>,
+): Promise<StoryPostRefreshResult[]> {
+  // Assignment and batch RSS projection restarts visit the same job keys in post-ID order.
+  const [first, second] = Object.entries(postIdsByStoryId).toSorted(([, left], [, right]) =>
+    left.localeCompare(right, 'en'),
+  )
+  const results: StoryPostRefreshResult[] = []
+  if (first) {
+    const refreshed = await refreshAssignedStoryPost(query, first)
+    if (refreshed) results.push(refreshed)
+  }
+  if (second) {
+    const refreshed = await refreshAssignedStoryPost(query, second)
+    if (refreshed) results.push(refreshed)
+  }
+  return results
+}
+
+async function refreshMissingStoryPosts(storyIds: string[]): Promise<StoryPostRefreshResult[]> {
+  await using query = await beginTransaction()
+  const postIds = await getPostStoryIdsByStoryIds(storyIds, { query })
+  const results = await refreshAssignedStoryPosts(query, postIds)
+  await query.commit()
+  return results
 }
 
 async function refreshAssignedStoryPost(

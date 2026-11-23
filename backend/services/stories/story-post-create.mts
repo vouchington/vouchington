@@ -1,6 +1,7 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
+import onError from '@modules/on-error'
 import { getSystemUserByUsername } from '@services/users/system-users'
 import { assertEntityRelationUpsertAllowed } from '@services/entity-relations/upsert'
 import { writeEntityRelations } from '@services/entity-relations/write-relations'
@@ -19,6 +20,7 @@ import type { Post } from '@services/posts/types'
 import { recordPostPublicationChange } from '@services/post-publication'
 import { deliverStoryPost } from './story-post-delivery.mts'
 import { markStoryPostRelatedUrlProjection } from './story-post-related-url-projection.mts'
+import { refreshStoryPostForStory } from './refresh-story-post.mts'
 
 export type StoryPostCreateDependencies = {
   getStoryTeller?: () => Promise<BasicUser | null>
@@ -160,7 +162,22 @@ export async function createStoryPostInTransaction(
   return { post, story, postStory, categoryTopicRelations, storyTellerUser, categoryTopicRelation }
 }
 
-export function finalizeCreatedStoryPost(created: CreatedStoryPost): Promise<void> {
+export async function finalizeCreatedStoryPost(created: CreatedStoryPost): Promise<void> {
+  let categoryTopicRelations = created.categoryTopicRelations
+  try {
+    // An assignment may have committed after creation read the membership and before
+    // it could see the new story post. Refresh both projections from committed membership.
+    await using query = await beginTransaction()
+    const refreshed = await refreshStoryPostForStory(created.postStory.story_id, {
+      query,
+      expectedPostId: created.post.id,
+      captureCategoryChanges: true,
+    })
+    await query.commit()
+    if (refreshed) categoryTopicRelations = refreshed.categoryTopicRelations
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
+  }
   return deliverStoryPost({
     post: created.post,
     postStory: created.postStory,
@@ -173,7 +190,7 @@ export function finalizeCreatedStoryPost(created: CreatedStoryPost): Promise<voi
       }),
       relatedUrlRelations: [],
       categoryTopicRelation: created.categoryTopicRelation,
-      categoryTopicRelations: created.categoryTopicRelations,
+      categoryTopicRelations,
     },
   })
 }
