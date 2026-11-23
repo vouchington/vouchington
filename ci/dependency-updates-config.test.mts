@@ -163,9 +163,7 @@ describe('dependency update configuration', () => {
     )
     expect(renovate.minimumReleaseAge).toBe('7 days')
     expect(renovate.internalChecksFilter).toBe('strict')
-    expect(firstPartyExemptions.flatMap(rule => rule.matchFileNames ?? [])).toEqual([
-      'ci/dependency-mirror/images.json',
-    ])
+    expect(firstPartyExemptions.flatMap(rule => rule.matchFileNames ?? [])).toEqual([])
     expect(firstPartyExemptions.flatMap(rule => rule.matchPackageNames ?? [])).toEqual([
       'ghcr.io/vouchington/dependency-*',
     ])
