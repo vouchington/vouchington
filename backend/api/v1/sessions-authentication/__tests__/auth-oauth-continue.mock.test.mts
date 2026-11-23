@@ -18,7 +18,7 @@ vi.doMock<typeof import('undici')>(import('undici'), async () => {
   return { ...actual, fetch: mockFetch }
 })
 
-const { createRandomString } = await import('@voucha/test-helpers')
+const { createRandomString, createRandomTestProviderUserId } = await import('@voucha/test-helpers')
 const { createRequest } = await import('@voucha/test-helpers/api/server')
 const { Response: UndiciResponse } = await import('undici')
 
@@ -32,7 +32,7 @@ describe('POST /api/v1/auth/oauth/github/continue success', () => {
   })
 
   it('creates a new user, mints session/device tokens, and sets auth cookies', async () => {
-    const githubUserId = String(Math.floor(Math.random() * 1_000_000) + 100_000)
+    const githubUserId = createRandomTestProviderUserId()
     const login = `test-${createRandomString(8)}`
     const email = `tests+${login}@voucha.ai`
 
@@ -97,7 +97,7 @@ describe('POST /api/v1/auth/oauth/github/continue success', () => {
     // Regression: deviceClass must come from getSessionTokenData() (which verifies
     // edge-anon-issued dt/st pairs), not getDeviceTokenData() (which only verifies
     // backend-issued dt tokens and silently drops dc for edge-anon devices).
-    const githubUserId = String(Math.floor(Math.random() * 1_000_000) + 100_000)
+    const githubUserId = createRandomTestProviderUserId()
     const login = `test-${createRandomString(8)}`
     const email = `tests+${login}@voucha.ai`
 

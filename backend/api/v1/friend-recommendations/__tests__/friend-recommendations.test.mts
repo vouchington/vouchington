@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
+  createRandomTestProviderUserId,
   insertTestOAuthAccount,
   connectTestOAuthAccount,
   insertTestFriend,
@@ -12,9 +13,9 @@ import type { PrivateUser } from '@services/users/types'
 describe('GET /api/v1/my/friend-recommendations', () => {
   let user: PrivateUser
 
-  const userGithubId = String(Math.floor(Math.random() * 1_000_000) + 900_000)
+  const userGithubId = createRandomTestProviderUserId()
   let friendUser: PrivateUser
-  const friendGithubId = String(Math.floor(Math.random() * 1_000_000) + 1_000_000)
+  const friendGithubId = createRandomTestProviderUserId()
 
   beforeAll(async () => {
     user = await createTestUser()
