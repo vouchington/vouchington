@@ -33,6 +33,10 @@ export function CommunityList({
 
   const allResults = mergePageResultsById(pages)
   const allCommunities = mergeRecords(pages, page => page.communities)
+  const visibleCommunities = allResults.flatMap(result => {
+    const community = allCommunities[result.id]
+    return community ? [community] : []
+  })
   const allMetrics = mergeRecords(pages, page => page.community_metrics ?? {})
   const allMemberships = mergeRecords(pages, page => page.community_memberships ?? {})
   const allPendingIds = new Set(pages.flatMap(page => page.pending_application_community_ids ?? []))
@@ -48,7 +52,7 @@ export function CommunityList({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
-      isEmpty={allResults.length === 0}
+      itemCount={visibleCommunities.length}
       emptyState={
         <EmptyState
           icon='search'
@@ -60,20 +64,15 @@ export function CommunityList({
       }
     >
       <div className='space-y-3'>
-        {allResults.map(result => {
-          const community = allCommunities[result.id]
-          if (!community) return null
-
-          return (
-            <CommunityCard
-              key={community.id}
-              community={community}
-              metrics={allMetrics[community.id]}
-              membership={allMemberships[community.id]}
-              hasPendingApplication={allPendingIds.has(community.id)}
-            />
-          )
-        })}
+        {visibleCommunities.map(community => (
+          <CommunityCard
+            key={community.id}
+            community={community}
+            metrics={allMetrics[community.id]}
+            membership={allMemberships[community.id]}
+            hasPendingApplication={allPendingIds.has(community.id)}
+          />
+        ))}
       </div>
     </InfiniteScroll>
   )

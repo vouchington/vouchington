@@ -42,7 +42,7 @@ export function SourceCrawlsPage({ data, rssFeedId, topic }: SourceCrawlsPagePro
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
-      isEmpty={crawls.length === 0}
+      itemCount={crawls.length}
       emptyState={
         <p className='text-sm text-muted-foreground'>
           {t('extracted.manageSource.crawlHistorySection.noCrawlsYet_12d0f59a')}

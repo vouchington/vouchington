@@ -41,7 +41,7 @@ export function CommunityMembersManager({ community, currentUserMembership, data
         fetchError={state.fetchError}
         clearError={state.clearError}
         resetKey={state.resetKey}
-        isEmpty={state.members.length === 0}
+        itemCount={state.members.length}
         emptyState={
           <EmptyState
             icon='search'

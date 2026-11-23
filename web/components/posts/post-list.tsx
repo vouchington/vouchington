@@ -78,6 +78,14 @@ export function PostList({
     pages,
     page => page.post_hacker_news_references ?? {},
   )
+  const visibleRows = allResults.flatMap((result, index) => {
+    const post = allPosts[result.entity_id ?? result.id]
+    if (!post) return []
+    // Hidden comments still appear in lists. Only their thread presentation is collapsed.
+    if (post.post_type !== 'comment' && (allBookmarks[post.id]?.hide || hiddenPostIds.has(post.id)))
+      return []
+    return [{ result, post, priority: index === 0 }]
+  })
   const canLoadMore = hasNextPage && !!nextPageEndpoint && !!endCursor
   return (
     <InfiniteScroll
@@ -88,7 +96,7 @@ export function PostList({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
-      isEmpty={allResults.length === 0}
+      itemCount={visibleRows.length}
       emptyState={
         emptyState !== undefined ? (
           emptyState
@@ -102,16 +110,7 @@ export function PostList({
     >
       <HackerNewsReferencesProvider references={allHackerNewsReferences}>
         <div className='space-y-4'>
-          {allResults.map((result, i) => {
-            const post = allPosts[result.entity_id ?? result.id]
-            if (!post) return null
-            // A hidden comment is only collapsed in its thread; it never leaves a list.
-            if (
-              post.post_type !== 'comment' &&
-              (allBookmarks[post.id]?.hide || hiddenPostIds.has(post.id))
-            )
-              return null
-
+          {visibleRows.map(({ result, post, priority }) => {
             const postModerations = AGENT_EXCLUDED_POST_TYPES.has(post.post_type)
               ? undefined
               : allModerations?.[post.id]
@@ -127,7 +126,7 @@ export function PostList({
               <PostCard
                 key={result.id}
                 post={post}
-                priority={i === 0}
+                priority={priority}
                 metrics={allMetrics[post.id]}
                 election={allElections?.[post.id]}
                 html={allHtml?.[post.id]}

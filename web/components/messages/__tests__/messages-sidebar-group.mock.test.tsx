@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, waitFor, fireEvent, act } from '@testing-library/react'
 import type { ReactNode } from 'react'
+import { setupInfiniteScrollObserverHarness } from '@/test-helpers/infinite-scroll-observer-harness'
 
 const mockUseAuth = vi.hoisted(() => vi.fn<VitestLooseMock>())
 vi.mock(import('@/lib/auth/context'), () => ({ useAuth: mockUseAuth }))
@@ -72,6 +73,8 @@ import '@/test-helpers/components/messages/messages-sidebar-group.mock-support'
 import { MessagesSidebarGroup } from '../messages-sidebar-group'
 
 describe('MessagesSidebarGroup', () => {
+  const { flushRaf, triggerIntersection, triggerScroll } = setupInfiniteScrollObserverHarness()
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockUseAuth.mockReturnValue({ isAuthenticated: true })
@@ -201,11 +204,13 @@ describe('MessagesSidebarGroup', () => {
         page_info: makePageInfo(),
       })
 
-    const { getByText } = renderWithProvider()
-    await waitFor(() => expect(getByText('Auto load')).toBeDefined())
-    fireEvent.click(getByText('Auto load'))
-    await waitFor(() => expect(mockGetMyMessages).toHaveBeenCalledWith('cursor-1'))
-    fireEvent.click(getByText('Load more'))
+    const { findByRole, getByRole } = renderWithProvider()
+    await findByRole('button', { name: 'Load more' })
+    flushRaf()
+    triggerScroll()
+    await act(async () => triggerIntersection(true))
+    expect(mockGetMyMessages).toHaveBeenCalledWith('cursor-1')
+    fireEvent.click(getByRole('button', { name: 'Load more' }))
     await waitFor(() => expect(mockGetMyMessages).toHaveBeenCalledWith('cursor-2'))
   })
 })

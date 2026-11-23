@@ -30,7 +30,7 @@ export function CopyrightEmailReviewQueueList({
       fetchError={queue.fetchError}
       clearError={queue.clearError}
       resetKey={queue.resetKey}
-      isEmpty={queue.items.length === 0}
+      itemCount={queue.items.length}
       emptyState={<p className='text-muted-foreground'>No copyright emails need review.</p>}
     >
       <ul className='space-y-1'>

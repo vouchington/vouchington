@@ -61,6 +61,8 @@ export function ModQueueView({
   if (
     queue.posts.length === 0 &&
     queue.reports.length === 0 &&
+    !queue.fetchError &&
+    !queue.reportPagination.fetchError &&
     !pageHasContinuation({ has_next_page: queue.hasNextPage, end_cursor: queue.endCursor }) &&
     !pageHasContinuation({
       has_next_page: queue.reportPagination.hasNextPage,
@@ -78,6 +80,11 @@ export function ModQueueView({
       </div>
     )
   }
+
+  const reportsTab = activeTab === 'reports'
+  const reportItemCount = reportsTab
+    ? queue.pendingReports.length
+    : queue.escalatedReports.length + queue.escalatedPosts.length
 
   return (
     <ExposureCooldownGate cooldown={cooldown}>
@@ -123,6 +130,24 @@ export function ModQueueView({
             fetchError={queue.reportPagination.fetchError}
             clearError={queue.reportPagination.clearError}
             resetKey={queue.reportPagination.resetKey}
+            itemCount={reportItemCount}
+            emptyState={
+              reportsTab ? (
+                <p
+                  className='py-6 text-center text-sm text-muted-foreground'
+                  data-pw='mod-queue-reports-empty'
+                >
+                  {t('extracted.communities.modQueue.noPendingReports_36379210')}
+                </p>
+              ) : (
+                <p
+                  className='py-6 text-center text-sm text-muted-foreground'
+                  data-pw='mod-queue-escalated-empty'
+                >
+                  {t('extracted.communities.modQueue.noEscalatedItems_3305d869')}
+                </p>
+              )
+            }
           >
             {null}
           </InfiniteScroll>

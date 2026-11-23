@@ -26,6 +26,10 @@ export function ReferralClicksPage({ initialData }: { initialData: ReferralClick
     usePaginatedList(initialData, '/api/v1/my/referral-clicks', {})
   const results = mergePageResultsById(pages)
   const clicks = mergeRecords(pages, page => page.clicks)
+  const visibleClicks = results.flatMap(result => {
+    const click = clicks[result.id]
+    return click ? [{ id: result.id, click }] : []
+  })
   const users = mergeRecords(pages, page => page.users)
 
   return (
@@ -53,7 +57,7 @@ export function ReferralClicksPage({ initialData }: { initialData: ReferralClick
         fetchError={fetchError}
         clearError={clearError}
         resetKey={resetKey}
-        isEmpty={results.length === 0}
+        itemCount={visibleClicks.length}
         emptyState={
           <p className='rounded-lg border p-6 text-center text-sm text-muted-foreground'>
             {t('extracted.my.referralClicksPage.noReferralClicksYet_a38e7431')}
@@ -76,13 +80,11 @@ export function ReferralClicksPage({ initialData }: { initialData: ReferralClick
               </tr>
             </thead>
             <tbody>
-              {results.map(result => {
-                const click = clicks[result.id]
-                if (!click) return null
+              {visibleClicks.map(({ id, click }) => {
                 const user = click.user_id ? users[click.user_id] : null
                 return (
                   <tr
-                    key={result.id}
+                    key={id}
                     className='border-b last:border-b-0'
                   >
                     <td className='px-4 py-3'>

@@ -8,14 +8,6 @@ const { mockGetPaginatedPage } = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/lib/api/client'), () => ({ getPaginatedPage: mockGetPaginatedPage }))
-vi.mock<typeof import('@/test-helpers/infinite-scroll')>(
-  import('@/test-helpers/infinite-scroll'),
-  async importOriginal => importOriginal(),
-)
-vi.mock(
-  import('@/components/shared/infinite-scroll'),
-  () => import('@/test-helpers/infinite-scroll'),
-)
 vi.mock(
   import('@/components/topics/topic-card'),
   () =>

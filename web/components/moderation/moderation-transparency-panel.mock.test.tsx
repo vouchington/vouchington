@@ -78,6 +78,21 @@ describe('ModerationTransparencyPanel', () => {
     expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull()
   })
 
+  it('offers manual continuation on an empty all-time page', async () => {
+    fetchModerationTransparencyMock.mockResolvedValueOnce({ range: 'all', buckets: [] })
+    renderPanel({ range: 'all', buckets: [], next_cursor: 'older-empty' })
+
+    expect(screen.queryByText('No aggregate data is available for this period.')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
+
+    expect(await screen.findByText('No aggregate data is available for this period.')).toBeVisible()
+    expect(fetchModerationTransparencyMock).toHaveBeenCalledWith({
+      range: 'all',
+      after: 'older-empty',
+    })
+    expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull()
+  })
+
   it('replaces paid rows when an all-time continuation loses access', async () => {
     fetchModerationTransparencyMock.mockRejectedValueOnce(new ApiError('Forbidden', 403))
     renderPanel({ ...makeTransparency(), range: 'all', next_cursor: 'older' })

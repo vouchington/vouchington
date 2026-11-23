@@ -13,6 +13,7 @@ describe('InfiniteScroll', () => {
   it('renders children', () => {
     const { getByText } = render(
       <InfiniteScroll
+        itemCount={1}
         hasNextPage={false}
         endCursor={null}
         onLoadMore={vi.fn<VitestLooseMock>()}
@@ -26,6 +27,7 @@ describe('InfiniteScroll', () => {
   it('does not observe when hasNextPage is false', () => {
     render(
       <InfiniteScroll
+        itemCount={1}
         hasNextPage={false}
         endCursor={null}
         onLoadMore={vi.fn<VitestLooseMock>()}
@@ -40,6 +42,7 @@ describe('InfiniteScroll', () => {
   it('defers observer.observe() until requestAnimationFrame fires', () => {
     render(
       <InfiniteScroll
+        itemCount={1}
         hasNextPage
         endCursor='cursor1'
         onLoadMore={vi.fn<VitestLooseMock>()}
@@ -55,6 +58,7 @@ describe('InfiniteScroll', () => {
   it('cancels the pending requestAnimationFrame on cleanup before it fires', () => {
     const { unmount } = render(
       <InfiniteScroll
+        itemCount={1}
         hasNextPage
         endCursor='cursor1'
         onLoadMore={vi.fn<VitestLooseMock>()}
@@ -72,6 +76,7 @@ describe('InfiniteScroll', () => {
     const onLoadMore = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
     render(
       <InfiniteScroll
+        itemCount={1}
         hasNextPage
         endCursor='cursor1'
         onLoadMore={onLoadMore}
@@ -92,6 +97,7 @@ describe('InfiniteScroll', () => {
     const onLoadMore = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
     render(
       <InfiniteScroll
+        itemCount={1}
         hasNextPage
         endCursor='cursor1'
         onLoadMore={onLoadMore}
@@ -114,6 +120,7 @@ describe('InfiniteScroll', () => {
     render(
       <div data-testid='nested-scroll-container'>
         <InfiniteScroll
+          itemCount={1}
           hasNextPage
           endCursor='cursor1'
           onLoadMore={onLoadMore}
@@ -141,6 +148,7 @@ describe('InfiniteScroll', () => {
     const onLoadMore = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
     render(
       <InfiniteScroll
+        itemCount={1}
         hasNextPage
         endCursor='cursor1'
         onLoadMore={onLoadMore}

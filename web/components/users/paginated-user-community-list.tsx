@@ -42,7 +42,7 @@ export function PaginatedUserCommunityList({
       fetchError={state.fetchError}
       clearError={state.clearError}
       resetKey={state.resetKey}
-      isEmpty={communities.length === 0}
+      itemCount={communities.length}
       emptyState={
         <EmptyState
           title={emptyTitle}

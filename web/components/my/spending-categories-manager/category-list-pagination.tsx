@@ -13,6 +13,7 @@ export function CategoryListPagination({ pagination, ...categoryListProps }: Pro
   const handleLoadMore = pagination.loadMore
   return (
     <InfiniteScroll
+      itemCount={categoryListProps.categories.length}
       hasNextPage={pagination.hasNextPage}
       endCursor={pagination.endCursor}
       onLoadMore={handleLoadMore}

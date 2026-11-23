@@ -2,15 +2,6 @@ import type { ReactNode } from 'react'
 import { vi } from 'vitest'
 import { Button } from '@/components/ui/button'
 
-vi.mock<typeof import('@/test-helpers/infinite-scroll')>(
-  import('@/test-helpers/infinite-scroll'),
-  async importOriginal => importOriginal(),
-)
-vi.mock(
-  import('@/components/shared/infinite-scroll'),
-  async () => import('@/test-helpers/infinite-scroll'),
-)
-
 vi.mock(
   import('@/components/ui/sidebar'),
   () =>

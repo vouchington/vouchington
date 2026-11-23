@@ -79,7 +79,7 @@ export function AppealsClient({
         fetchError={fetchError}
         clearError={clearError}
         resetKey={resetKey}
-        isEmpty={appeals.length === 0}
+        itemCount={appeals.length}
         emptyState={list}
       >
         {list}

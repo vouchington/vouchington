@@ -83,6 +83,7 @@ export function MessagesSidebarGroup() {
 
   return (
     <InfiniteScroll
+      itemCount={conversations.length}
       hasNextPage={canLoadMore}
       endCursor={pageInfo?.end_cursor ?? null}
       onLoadMore={handleLoadMore}

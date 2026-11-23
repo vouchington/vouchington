@@ -178,6 +178,7 @@ export function HouseholdManager({
         />
       ) : (
         <InfiniteScroll
+          itemCount={sharedSections.length}
           hasNextPage={pagination.hasNextPage}
           endCursor={pagination.endCursor}
           onLoadMore={handleLoadMoreShared}

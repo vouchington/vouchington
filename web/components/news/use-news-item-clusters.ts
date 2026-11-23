@@ -71,13 +71,12 @@ export function useNewsItemClusters(
   const continuationPages = Object.entries(storyContinuations.byStory).flatMap(([storyId, state]) =>
     selections.get(storyId)?.primaryId === state.primaryId ? state.pages : [],
   )
-  const merged = mergeClusterPages(pages, feedPages, continuationPages)
-  const clusters = buildClusters(
-    merged.allResults,
-    merged.allItems,
-    selections,
-    storyContinuations.byStory,
+  const { allResults, allItems, ...sidecars } = mergeClusterPages(
+    pages,
+    feedPages,
+    continuationPages,
   )
+  const clusters = buildClusters(allResults, allItems, selections, storyContinuations.byStory)
   const visibleClusters = clusters.flatMap(cluster => {
     if (hiddenItemIds.has(cluster.primary.id)) return []
     return [
@@ -110,7 +109,7 @@ export function useNewsItemClusters(
 
   return {
     ...pagination,
-    ...merged,
+    ...sidecars,
     expandedStoryIds: currentExpansion.ids,
     handleExpandedStoryIdsChange: setExpandedStoryIds,
     handleLoadMore: retryReferenceRefresh.handleLoadMore(pagination.loadMore),

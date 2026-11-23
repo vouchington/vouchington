@@ -26,6 +26,7 @@ type MfaCredentialManagerAction =
 interface MfaCredentialManagerShellProps {
   action: MfaCredentialManagerAction
   credential: MfaCredential
+  itemCount: number
   list: ReactNode
   mfaStatus: MfaStatus
   onReauthClose: () => void
@@ -37,6 +38,7 @@ interface MfaCredentialManagerShellProps {
 export function MfaCredentialManagerShell({
   action,
   credential,
+  itemCount,
   list,
   mfaStatus,
   onReauthClose,
@@ -50,6 +52,7 @@ export function MfaCredentialManagerShell({
     <div className='space-y-4'>
       <CredentialIntro credential={credential} />
       <InfiniteScroll
+        itemCount={itemCount}
         hasNextPage={pagination.hasNextPage}
         endCursor={pagination.endCursor}
         onLoadMore={handleLoadMore}

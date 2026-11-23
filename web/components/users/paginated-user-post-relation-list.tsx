@@ -64,7 +64,7 @@ export function PaginatedUserPostRelationList({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
-      isEmpty={posts.length === 0}
+      itemCount={posts.length}
       emptyState={list}
     >
       {list}

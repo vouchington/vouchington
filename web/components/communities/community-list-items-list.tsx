@@ -42,7 +42,7 @@ export function CommunityListItemsList({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
-      isEmpty={items.length === 0}
+      itemCount={items.length}
       emptyState={
         <EmptyState
           icon='inbox'

@@ -23,6 +23,7 @@ export function UrlListPage({ data, nextPageParams }: UrlListPageProps) {
 
   return (
     <InfiniteScroll
+      itemCount={results.length}
       hasNextPage={hasNextPage}
       endCursor={endCursor}
       onLoadMore={loadMore}

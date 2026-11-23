@@ -101,7 +101,7 @@ export function MessagesInboxClient({
       fetchError={fetchError}
       clearError={() => setFetchError(null)}
       resetKey={refreshGeneration}
-      isEmpty={conversations.length === 0}
+      itemCount={conversations.length}
       emptyState={
         <div className='rounded-lg border bg-card p-12 text-center'>
           <p className='text-muted-foreground'>

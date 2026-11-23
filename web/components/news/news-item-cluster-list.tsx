@@ -64,7 +64,7 @@ export function NewsItemClusterList({
         fetchError={news.fetchError}
         clearError={news.clearError}
         resetKey={news.resetKey}
-        isEmpty={news.allResults.length === 0}
+        itemCount={news.visibleClusters.length}
         emptyState={emptyContent}
       >
         <HackerNewsReferencesProvider references={news.allHackerNewsReferences}>

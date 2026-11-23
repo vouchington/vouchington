@@ -26,16 +26,7 @@ export function ModQueueEscalatedPanel({
 }) {
   const t = useTranslations()
   const escalatedCount = queue.escalatedReports.length + queue.escalatedPosts.length
-  if (escalatedCount === 0) {
-    return (
-      <p
-        className='py-6 text-center text-sm text-muted-foreground'
-        data-pw='mod-queue-escalated-empty'
-      >
-        {t('extracted.communities.modQueue.noEscalatedItems_3305d869')}
-      </p>
-    )
-  }
+  if (escalatedCount === 0) return null
 
   return (
     <div

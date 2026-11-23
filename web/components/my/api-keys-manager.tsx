@@ -88,11 +88,13 @@ export function ApiKeysManager({
             fetchError={pagination.fetchError}
             clearError={pagination.clearError}
             resetKey={pagination.resetKey}
-            isEmpty={activeKeys.length === 0 && !creating && !loadError}
+            itemCount={activeKeys.length}
             emptyState={
-              <p className='text-sm text-muted-foreground'>
-                {t('extracted.my.apiKeysManager.noActiveApiKeys_de64e83d')}
-              </p>
+              !creating && !loadError ? (
+                <p className='text-sm text-muted-foreground'>
+                  {t('extracted.my.apiKeysManager.noActiveApiKeys_de64e83d')}
+                </p>
+              ) : undefined
             }
           >
             <ActiveApiKeysList

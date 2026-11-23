@@ -44,7 +44,7 @@ export function DomainsListClient({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
-      isEmpty={allResults.length === 0}
+      itemCount={allResults.length}
       emptyState={
         <EmptyState
           title={t('extracted.domains.domainsListClient.noDomainsFound_7bb966c1')}

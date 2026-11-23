@@ -97,7 +97,7 @@ export function IntegrityPenaltiesTable<P extends IntegrityPenaltyRecord>(
       endCursor={props.state.endCursor}
       onLoadMore={handleLoadMore}
       resetKey={props.state.pages[0]}
-      isEmpty={props.state.penalties.length === 0}
+      itemCount={props.state.penalties.length}
       emptyState={list}
     >
       {list}

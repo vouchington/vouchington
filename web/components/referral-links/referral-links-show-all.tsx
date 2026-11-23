@@ -94,7 +94,7 @@ export function ReferralLinksShowAll({ referralProgramId }: ReferralLinksShowAll
           loadingMore={loadingMore}
           fetchError={fetchError}
           clearError={() => setFetchError(null)}
-          isEmpty={data.links.length === 0}
+          itemCount={data.links.length}
           emptyState={<ShowAllList data={data} />}
         >
           <ShowAllList data={data} />

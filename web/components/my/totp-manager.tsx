@@ -23,6 +23,7 @@ export function TotpManager({ initialData, mfaStatus }: Props) {
           : { kind: 'setup', panel: <TotpManagerSetup totp={totp} /> }
       }
       credential='totp'
+      itemCount={totp.authenticators.length}
       list={<TotpManagerList totp={totp} />}
       mfaStatus={mfaStatus}
       onReauthClose={totp.handleCloseReauthDialog}

@@ -43,7 +43,7 @@ export function ModQueuePostsPanel({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
-      isEmpty={queue.pendingPosts.length === 0}
+      itemCount={queue.pendingPosts.length}
       emptyState={pendingPostsEmpty}
     >
       <ModQueuePosts
