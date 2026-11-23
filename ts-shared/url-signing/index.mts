@@ -1,4 +1,4 @@
-import { buildSignedProxyUrl } from '@vouchington/utils/url-signing'
+import { buildSignedProxyUrl } from '@vouchington/server-utils/url-signing'
 import { isFirstPartyMediaUrl } from './media-host-policy.mts'
 import { CURRENT_SIDELOAD_PATH_PREFIX } from './media-source-policy.mts'
 

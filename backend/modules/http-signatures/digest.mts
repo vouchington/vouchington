@@ -1,1 +1,1 @@
-export { verifyDigest } from '@vouchington/utils/http-signatures'
+export { verifyDigest } from '@vouchington/server-utils/http-signatures'

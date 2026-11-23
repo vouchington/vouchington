@@ -27,7 +27,7 @@
     "@services/copyright-notices": "workspace:^",
     "@services/email-classification": "workspace:^",
     "@services/users": "workspace:^",
-    "@vouchington/utils": "^0.12.1",
+    "@vouchington/utils": "^0.13.0",
     "glide-mq": "^0.20.0"
   },
   "devDependencies": {

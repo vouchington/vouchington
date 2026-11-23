@@ -23,7 +23,7 @@
     "@services/rss-feed-items": "workspace:^",
     "@services/rss-feeds": "workspace:^",
     "@services/topics": "workspace:^",
-    "@vouchington/utils": "^0.12.1",
+    "@vouchington/utils": "^0.13.0",
     "glide-mq": "^0.20.0"
   },
   "devDependencies": {

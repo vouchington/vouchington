@@ -3,7 +3,7 @@ import {
   getErrorStatus,
   getErrorResponseMessage,
   getErrorResponseCode,
-} from '@vouchington/utils/api-errors'
+} from '@vouchington/server-utils/api-errors'
 import type { Context } from '@jongleberry/api-server'
 import {
   normalizeFixedClientGeneratedChatModelName,

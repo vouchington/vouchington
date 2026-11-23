@@ -30,7 +30,7 @@
     "@services/stripe-event-processing": "workspace:^",
     "@services/users": "workspace:^",
     "@vouchington/queue-errors": "^0.2.1",
-    "@vouchington/utils": "^0.12.1",
+    "@vouchington/utils": "^0.13.0",
     "glide-mq": "^0.20.0"
   },
   "devDependencies": {

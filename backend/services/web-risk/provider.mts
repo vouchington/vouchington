@@ -1,89 +1,18 @@
-import { getExternalRequestDispatcher } from '@modules/utils/http'
-import undici from 'undici'
-import type { WebRiskState } from './state.mts'
+import { getExternalFetch } from '@modules/utils/http'
+import { type WebRiskLookupResult, lookupWebRiskUri } from '@vouchington/utils/web-risk'
 
-const WEB_RISK_LOOKUP_URL = 'https://webrisk.googleapis.com/v1/uris:search'
-const THREAT_TYPES = [
-  'MALWARE',
-  'SOCIAL_ENGINEERING',
-  'UNWANTED_SOFTWARE',
-  'SOCIAL_ENGINEERING_EXTENDED_COVERAGE',
-] as const
 export const SHORT_FAILURE_COOLDOWN_SECONDS = 10
 
-export type WebRiskThreat = {
-  threatTypes: string[]
-  expireTime: string | null
-}
-
-export class WebRiskRateLimitError extends Error {
-  override name = 'WebRiskRateLimitError'
-}
-
 /* no-mistakes: integration=google-web-risk */
-export async function checkWebRiskUrl(
+export function checkWebRiskUrl(
   url: URL,
-  state: WebRiskState,
+  apiKey: string,
   signal?: AbortSignal,
-): Promise<WebRiskThreat | null> {
-  const apiKey = getWebRiskApiKey()
-  if (!apiKey) throw new Error('Google Web Risk API key is not configured')
-
-  const requestUrl = new URL(WEB_RISK_LOOKUP_URL)
-  requestUrl.searchParams.set('uri', url.toString())
-  requestUrl.searchParams.set('key', apiKey)
-  for (const threatType of THREAT_TYPES) {
-    requestUrl.searchParams.append('threatTypes', threatType)
-  }
-
-  const response = await undici
-    .fetch(requestUrl, {
-      dispatcher: getExternalRequestDispatcher(),
-      signal: signal
-        ? AbortSignal.any([AbortSignal.timeout(5000), signal])
-        : AbortSignal.timeout(5000),
-    })
-    .catch((err: unknown) => {
-      throw new Error('Google Web Risk lookup request failed', { cause: err })
-    })
-
-  if (response.status === 429 || response.status === 403) {
-    await state.setProviderCooldownFromResponse(response)
-    await response.body?.cancel()
-    throw new WebRiskRateLimitError(`Google Web Risk lookup rate limited (HTTP ${response.status})`)
-  }
-  if (response.status >= 500) {
-    await response.body?.cancel()
-    throw new Error(`Google Web Risk lookup returned HTTP ${response.status}`)
-  }
-  if (!response.ok) {
-    await response.body?.cancel()
-    throw new Error(`Google Web Risk lookup returned HTTP ${response.status}`)
-  }
-
-  let data: unknown
-  try {
-    data = await response.json()
-  } catch (err) {
-    throw new Error('Google Web Risk lookup returned invalid JSON', { cause: err })
-  }
-  return parseWebRiskThreat(data)
+): Promise<WebRiskLookupResult> {
+  return lookupWebRiskUri({ fetch: getExternalFetch(), apiKey, uri: url.toString(), signal })
 }
 
-function parseWebRiskThreat(data: unknown): WebRiskThreat | null {
-  const threat = ((data ?? {}) as Record<string, unknown>).threat as Record<string, unknown> | null
-  if (!threat) return null
-  const threatTypes = Array.isArray(threat.threatTypes)
-    ? threat.threatTypes.filter((value): value is string => typeof value === 'string')
-    : []
-  if (threatTypes.length === 0) return null
-  return {
-    threatTypes,
-    expireTime: typeof threat.expireTime === 'string' ? threat.expireTime : null,
-  }
-}
-
-function getWebRiskApiKey(): string | undefined {
+export function getWebRiskApiKey(): string | undefined {
   return process.env.GOOGLE_WEB_RISK_API_KEY?.trim() || undefined
 }
 

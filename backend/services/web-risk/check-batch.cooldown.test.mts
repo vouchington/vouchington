@@ -1,4 +1,3 @@
-import { Response as UndiciResponse } from 'undici'
 import { describe, expect, it } from 'vitest'
 import { withGoogleWebRiskTest } from '@voucha/test-helpers/web-risk-state'
 import { blockedUrlsFromWebRiskScreenWithState } from './check-batch.mts'
@@ -8,7 +7,7 @@ describe('Web Risk batch provider cooldown', () => {
     withGoogleWebRiskTest(async context => {
       const firstUrl = `https://batch-rate-${crypto.randomUUID()}.test/one`
       const secondUrl = `https://batch-rate-${crypto.randomUUID()}.test/two`
-      context.fetchSpy.mockResolvedValueOnce(new UndiciResponse(null, { status: 429 }))
+      context.fetchSpy.mockResolvedValueOnce(new Response(null, { status: 429 }))
 
       await expect(
         blockedUrlsFromWebRiskScreenWithState(context.fixture.state, [firstUrl, secondUrl]),

@@ -7,7 +7,7 @@ import {
   trackQueueWorkerJobCompletedEvent,
 } from '@services/analytics'
 import { getDeployEnvironment } from '@ts-shared/deploy-environment'
-import { formatErrorTree } from '@vouchington/utils/error-tree'
+import { formatErrorTree } from '@vouchington/server-utils/error-tree'
 import {
   WorkerLogger,
   addWorkerEventListeners as addSharedWorkerEventListeners,

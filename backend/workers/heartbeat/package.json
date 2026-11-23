@@ -20,7 +20,7 @@
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@queues/heartbeat": "workspace:^",
     "@services/queue-monitoring": "workspace:^",
-    "@vouchington/utils": "^0.12.1",
+    "@vouchington/utils": "^0.13.0",
     "glide-mq": "^0.20.0"
   }
 }

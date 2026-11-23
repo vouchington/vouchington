@@ -1,4 +1,4 @@
-import { createTokenSecrets, parseEncryptionKeys } from '@vouchington/utils/token-secrets'
+import { createTokenSecrets, parseEncryptionKeys } from '@vouchington/server-utils/token-secrets'
 
 const ENCRYPTION_KEYS_ENV = 'VOUCHA_STORED_SECRET_ENCRYPTION_KEYS'
 

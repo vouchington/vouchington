@@ -10,7 +10,7 @@ export const storybookBrowserOptimizeDeps = [
   '@ts-shared/feature-flags > @vouchington/utils/feature-flags',
   '@ts-shared/languages > @vouchington/utils/language-tags',
   '@ts-shared/ui-messages > @vouchington/utils/message-catalog',
-  '@ts-shared/url-signing > @vouchington/utils/url-signing',
+  '@ts-shared/url-signing > @vouchington/server-utils/url-signing',
   '@ts-shared/utils > @vouchington/html-utils',
   '@ts-shared/utils > @vouchington/memberships',
   '@ts-shared/utils > @vouchington/phone-validation',
@@ -37,7 +37,7 @@ export const storybookBrowserOptimizeDeps = [
   '@ts-shared/money > @vouchington/utils/money',
   '@ts-shared/session-jwt > @vouchington/utils/cookies',
   '@ts-shared/session-jwt > @vouchington/utils/deploy-environment',
-  '@ts-shared/url-signing > @vouchington/utils/url-signing',
+  '@ts-shared/url-signing > @vouchington/server-utils/url-signing',
   // The root fake-timer guard setup file imports it in every project, including the browser.
   'vouchington-tooling/vitest-diagnostics/browser',
 ] as const

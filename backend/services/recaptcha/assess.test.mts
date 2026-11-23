@@ -2,28 +2,34 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import type { PrivateUser } from '@services/users/types'
 import type { RecaptchaConfig } from './config.mts'
-import type { RecaptchaAssessment } from './fetch-assessment.mts'
+import type { RecaptchaAssessmentResult } from '@vouchington/utils/recaptcha-enterprise'
+import type { RecaptchaCredentials } from './fetch-assessment.mts'
 import { assessRecaptchaToken } from './assess.mts'
 
 const captureException = sentryCaptureExceptionMock
 
 const mockGetRecaptchaConfig = vi.fn<() => RecaptchaConfig>()
 const mockFetchAssessment =
-  vi.fn<(token: string, action: string, ip: string | undefined) => Promise<RecaptchaAssessment>>()
-const mockHasCredentials = vi.fn<() => boolean>()
+  vi.fn<
+    (
+      credentials: RecaptchaCredentials,
+      token: string,
+      action: string,
+      ip: string | undefined,
+    ) => Promise<RecaptchaAssessmentResult>
+  >()
+const mockGetCredentials = vi.fn<() => RecaptchaCredentials | undefined>()
 const mockIsLockedOut = vi.fn<() => Promise<boolean>>()
 const mockSetLockoutBackground = vi.fn<() => void>()
-class TestRecaptchaRateLimitError extends Error {
-  override name = 'RecaptchaRateLimitError'
-}
 const dependencies = {
   getRecaptchaConfig: mockGetRecaptchaConfig,
   fetchRecaptchaAssessment: mockFetchAssessment,
-  hasRecaptchaCredentials: mockHasCredentials,
+  getRecaptchaCredentials: mockGetCredentials,
   isRecaptchaLockedOut: mockIsLockedOut,
-  recaptchaRateLimitError: TestRecaptchaRateLimitError,
   setRecaptchaLockedOutBackground: mockSetLockoutBackground,
 }
+
+const CREDENTIALS = { projectId: 'proj-123', apiKey: 'api-key', siteKey: 'site-key' }
 
 const NORMAL_USER = { id: 'user-1', roles: [] } as unknown as PrivateUser
 const ADMIN_USER = { id: 'admin-1', roles: ['administrator'] } as unknown as PrivateUser
@@ -34,8 +40,33 @@ function config(overrides: Partial<RecaptchaConfig> = {}): RecaptchaConfig {
   return { enabled: true, blocking_enabled: false, block_threshold: 0.5, ...overrides }
 }
 
-function assessment(overrides: Partial<RecaptchaAssessment> = {}): RecaptchaAssessment {
-  return { valid: true, action: 'create_post', score: 0.9, reasons: [], ...overrides }
+function assessment(
+  overrides: { score?: number; action?: string | null } = {},
+): RecaptchaAssessmentResult {
+  const action = overrides.action === undefined ? 'create_post' : overrides.action
+  return {
+    status: 'assessed',
+    score: overrides.score ?? 0.9,
+    action,
+    actionMatches: action === 'create_post',
+    reasons: [],
+  }
+}
+
+function providerError(
+  kind: 'rate-limited' | 'transport' | 'malformed-response',
+): RecaptchaAssessmentResult {
+  return {
+    status: 'error',
+    failure: {
+      kind,
+      retryable: kind !== 'malformed-response',
+      message: `reCAPTCHA Enterprise assessment ${kind}`,
+      status: kind === 'rate-limited' ? 429 : null,
+      retryAfterMs: null,
+      cause: null,
+    },
+  }
 }
 
 describe('assessRecaptchaToken', () => {
@@ -44,7 +75,7 @@ describe('assessRecaptchaToken', () => {
     vi.stubEnv('ENVIRONMENT', 'staging')
     vi.stubEnv('NODE_ENV', 'production')
     mockGetRecaptchaConfig.mockReturnValue(config())
-    mockHasCredentials.mockReturnValue(true)
+    mockGetCredentials.mockReturnValue(CREDENTIALS)
     mockIsLockedOut.mockResolvedValue(false)
     mockFetchAssessment.mockResolvedValue(assessment())
   })
@@ -78,7 +109,7 @@ describe('assessRecaptchaToken', () => {
     })
 
     it('skips when credentials are missing', async () => {
-      mockHasCredentials.mockReturnValue(false)
+      mockGetCredentials.mockReturnValue(undefined)
       await call()
       expect(mockFetchAssessment).not.toHaveBeenCalled()
     })
@@ -101,32 +132,25 @@ describe('assessRecaptchaToken', () => {
   })
 
   describe('assessRecaptchaToken — fail-open error handling', () => {
-    it('engages the daily lockout and fails open on HTTP 429', async () => {
-      mockFetchAssessment.mockRejectedValue(new TestRecaptchaRateLimitError('429'))
+    it('engages the daily lockout and fails open when rate limited', async () => {
+      mockFetchAssessment.mockResolvedValue(providerError('rate-limited'))
       await expect(call()).resolves.toBeUndefined()
       expect(mockSetLockoutBackground).toHaveBeenCalledOnce()
       expect(captureException).toHaveBeenCalledOnce()
     })
 
-    it('fails open and logs on a generic error without locking out', async () => {
-      mockFetchAssessment.mockRejectedValue(new Error('network down'))
+    it('fails open and logs on a transport error without locking out', async () => {
+      mockFetchAssessment.mockResolvedValue(providerError('transport'))
       await expect(call()).resolves.toBeUndefined()
       expect(mockSetLockoutBackground).not.toHaveBeenCalled()
       expect(captureException).toHaveBeenCalledOnce()
-    })
-
-    it('wraps a non-Error rejection before logging', async () => {
-      mockFetchAssessment.mockRejectedValue('boom')
-      await expect(call()).resolves.toBeUndefined()
-      expect(captureException).toHaveBeenCalledOnce()
-      expect(captureException.mock.calls[0][0]).toBeInstanceOf(Error)
     })
   })
 
   describe('assessRecaptchaToken — scoring', () => {
     it('forwards token, expected action, and ip to the assessment', async () => {
       await call({ expectedAction: 'create_comment' })
-      expect(mockFetchAssessment).toHaveBeenCalledWith(TOKEN, 'create_comment', IP)
+      expect(mockFetchAssessment).toHaveBeenCalledWith(CREDENTIALS, TOKEN, 'create_comment', IP)
     })
 
     it('passes silently for a high score', async () => {
@@ -137,15 +161,20 @@ describe('assessRecaptchaToken', () => {
 
     it('logs and fails open when the token is invalid (blocking on)', async () => {
       mockGetRecaptchaConfig.mockReturnValue(config({ blocking_enabled: true }))
-      mockFetchAssessment.mockResolvedValue(assessment({ valid: false, score: 0.9 }))
+      mockFetchAssessment.mockResolvedValue({
+        status: 'invalid-token',
+        invalidReason: 'EXPIRED',
+        action: 'create_post',
+      })
       await expect(call()).resolves.toBeUndefined()
       expect(captureException).toHaveBeenCalledOnce()
     })
 
-    it('logs and fails open when the score is missing (blocking on)', async () => {
+    it('logs and fails open without locking out when the score is missing (blocking on)', async () => {
       mockGetRecaptchaConfig.mockReturnValue(config({ blocking_enabled: true }))
-      mockFetchAssessment.mockResolvedValue(assessment({ valid: true, score: null }))
+      mockFetchAssessment.mockResolvedValue(providerError('malformed-response'))
       await expect(call()).resolves.toBeUndefined()
+      expect(mockSetLockoutBackground).not.toHaveBeenCalled()
       expect(captureException).toHaveBeenCalledOnce()
     })
 

@@ -26,7 +26,7 @@
     "@services/images": "workspace:^",
     "@services/queue-domain-controls": "workspace:^",
     "@vouchington/queue-errors": "^0.2.1",
-    "@vouchington/utils": "^0.12.1",
+    "@vouchington/utils": "^0.13.0",
     "@workers/ai-agents": "workspace:^",
     "@workers/bedrock-embeddings": "workspace:^",
     "@workers/bedrock-embeddings-batch": "workspace:^",

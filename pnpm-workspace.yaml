@@ -105,6 +105,7 @@ minimumReleaseAgeExclude:
   - '@vouchington/robots'
   - '@vouchington/script-loader'
   - '@vouchington/sentry'
+  - '@vouchington/server-utils'
   - '@vouchington/session-jwt'
   - '@vouchington/stripe'
   - '@vouchington/utils'

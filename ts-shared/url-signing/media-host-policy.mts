@@ -1,4 +1,4 @@
-import { createProtectedHostPolicy } from '@vouchington/utils/url-signing'
+import { createProtectedHostPolicy } from '@vouchington/server-utils/url-signing'
 
 const CANONICAL_FIRST_PARTY_MEDIA_HOSTS = ['images.voucha.ai', 'images-staging.voucha.ai'] as const
 

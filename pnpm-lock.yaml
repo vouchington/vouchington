@@ -1307,12 +1307,15 @@ importers:
       '@vouchington/sentry':
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.12.0)(@sentry/core@11.12.0)(@sentry/node@11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+      '@vouchington/server-utils':
+        specifier: ^0.0.1
+        version: 0.0.1
       '@vouchington/session-jwt':
         specifier: ^0.0.3
         version: 0.0.3
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
         version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
@@ -1457,8 +1460,8 @@ importers:
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.12.0)(@sentry/core@11.12.0)(@sentry/node@11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       pg:
         specifier: ^8.23.1
         version: 8.23.1
@@ -1537,8 +1540,8 @@ importers:
         specifier: workspace:^
         version: link:../../modules/on-error
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
         version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
@@ -2444,9 +2447,9 @@ importers:
 
   backend/modules/http-signatures:
     dependencies:
-      '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+      '@vouchington/server-utils':
+        specifier: ^0.0.1
+        version: 0.0.1
 
   backend/modules/markdown-extraction:
     dependencies:
@@ -2589,8 +2592,8 @@ importers:
         specifier: ^0.0.3
         version: 0.0.3
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -2610,9 +2613,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
-      '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+      '@vouchington/server-utils':
+        specifier: ^0.0.1
+        version: 0.0.1
 
   backend/modules/rss-unreliable-status-codes:
     dependencies:
@@ -2630,8 +2633,8 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/deploy-environment
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
         version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
@@ -2639,8 +2642,8 @@ importers:
   backend/modules/scopes:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
 
   backend/modules/search-utils:
     dependencies:
@@ -2665,8 +2668,8 @@ importers:
         specifier: ^0.2.0
         version: 0.2.0(stripe@23.1.0(@types/node@26.6.6))
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       stripe:
         specifier: ^23.1.0
         version: 23.1.0(@types/node@26.6.6)
@@ -2695,9 +2698,9 @@ importers:
 
   backend/modules/token-secrets:
     dependencies:
-      '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+      '@vouchington/server-utils':
+        specifier: ^0.0.1
+        version: 0.0.1
 
   backend/modules/topic-labels: {}
 
@@ -2737,8 +2740,8 @@ importers:
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.12.0)(@sentry/core@11.12.0)(@sentry/node@11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       '@vouchington/uuid-v7':
         specifier: ^0.0.0
         version: 0.0.0
@@ -4003,8 +4006,8 @@ importers:
         specifier: ^0.1.0
         version: 0.1.0
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       '@vouchington/uuid-v7':
         specifier: ^0.0.0
         version: 0.0.0
@@ -4308,8 +4311,8 @@ importers:
         specifier: ^0.6.2
         version: 0.6.2
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       p-map:
         specifier: ^7.1.1
         version: 7.1.1
@@ -4753,8 +4756,8 @@ importers:
         specifier: ^0.2.1
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       pg-copy-streams:
         specifier: ^7.0.0
         version: 7.0.0
@@ -4832,8 +4835,8 @@ importers:
         specifier: ^0.2.0
         version: 0.2.0(@types/node@26.6.6)
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       pg-copy-streams:
         specifier: ^7.0.0
         version: 7.0.0
@@ -5116,12 +5119,12 @@ importers:
       '@vouchington/sentry':
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.12.0)(@sentry/core@11.12.0)(@sentry/node@11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+      '@vouchington/utils':
+        specifier: ^0.13.0
+        version: 0.13.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
-      undici:
-        specifier: ^8.12.4
-        version: 8.12.4
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -6187,8 +6190,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
@@ -7228,9 +7231,9 @@ importers:
       '@vouchington/sentry':
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.12.0)(@sentry/core@11.12.0)(@sentry/node@11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
-      '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+      '@vouchington/server-utils':
+        specifier: ^0.0.1
+        version: 0.0.1
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -7260,8 +7263,8 @@ importers:
         specifier: workspace:^
         version: link:../../data-stores/valkey
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
 
   backend/services/fediverse-instances:
     dependencies:
@@ -7776,8 +7779,8 @@ importers:
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.12.0)(@sentry/core@11.12.0)(@sentry/node@11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -7975,8 +7978,8 @@ importers:
         specifier: ^0.0.5
         version: 0.0.5
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -8020,9 +8023,9 @@ importers:
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
-      '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+      '@vouchington/server-utils':
+        specifier: ^0.0.1
+        version: 0.0.1
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -8261,8 +8264,8 @@ importers:
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.12.0)(@sentry/core@11.12.0)(@sentry/node@11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -8711,8 +8714,8 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/utils
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -9167,8 +9170,8 @@ importers:
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.12.0)(@sentry/core@11.12.0)(@sentry/node@11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -9195,8 +9198,8 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -9287,8 +9290,8 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -9336,8 +9339,8 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -9367,8 +9370,8 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -9389,8 +9392,8 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
     devDependencies:
       undici:
         specifier: ^8.12.4
@@ -9408,8 +9411,8 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -9451,8 +9454,8 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -9574,8 +9577,8 @@ importers:
         specifier: workspace:^
         version: link:../users
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -10418,12 +10421,12 @@ importers:
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
+      '@vouchington/utils':
+        specifier: ^0.13.0
+        version: 0.13.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
-      undici:
-        specifier: ^8.12.4
-        version: 8.12.4
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -10962,9 +10965,6 @@ importers:
       '@vouchington/embeds':
         specifier: ^0.1.0
         version: 0.1.0
-      '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -10999,6 +10999,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      '@vouchington/server-utils':
+        specifier: ^0.0.1
+        version: 0.0.1
 
   backend/services/rss-feeds:
     dependencies:
@@ -11872,8 +11875,8 @@ importers:
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.12.0)(@sentry/core@11.12.0)(@sentry/node@11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -12028,8 +12031,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       htmlparser2:
         specifier: ^12.0.0
         version: 12.0.0
@@ -12287,8 +12290,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -12850,9 +12853,6 @@ importers:
       '@data-stores/valkey-rate-limiter':
         specifier: workspace:^
         version: link:../../data-stores/valkey-rate-limiter
-      '@jongleberry/api-server':
-        specifier: ^3.1.0
-        version: 3.1.0
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -12874,15 +12874,15 @@ importers:
       '@valkey/valkey-glide':
         specifier: ^2.6.0
         version: 2.6.0
+      '@vouchington/utils':
+        specifier: ^0.13.0
+        version: 0.13.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
       tldts:
         specifier: ^7.5.4
         version: 7.5.4
-      undici:
-        specifier: ^8.12.4
-        version: 8.12.4
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -13075,8 +13075,8 @@ importers:
         specifier: ^0.2.0
         version: 0.2.0(stripe@23.1.0(@types/node@26.6.6))
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       '@vouchington/uuid-v7':
         specifier: ^0.0.0
         version: 0.0.0
@@ -13204,9 +13204,12 @@ importers:
       '@ts-shared/deploy-environment':
         specifier: workspace:^
         version: link:../../ts-shared/deploy-environment
+      '@vouchington/server-utils':
+        specifier: ^0.0.1
+        version: 0.0.1
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
         version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
@@ -13505,8 +13508,8 @@ importers:
         specifier: ^0.2.1
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -13606,8 +13609,8 @@ importers:
         specifier: ^0.2.1
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       '@workers/account-lifecycle':
         specifier: workspace:^
         version: link:../account-lifecycle
@@ -13784,8 +13787,8 @@ importers:
         specifier: ^0.2.1
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       '@workers/ai-agents':
         specifier: workspace:^
         version: link:../ai-agents
@@ -13980,8 +13983,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/urls-domains-blacklist
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -14207,8 +14210,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/crawl-embeds
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -14370,8 +14373,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/users
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -14528,8 +14531,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/oauth-x
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -14639,8 +14642,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/queue-monitoring
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -14678,8 +14681,8 @@ importers:
         specifier: ^0.2.1
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -14745,8 +14748,8 @@ importers:
         specifier: ^0.2.1
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -14984,8 +14987,8 @@ importers:
         specifier: ^0.2.1
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -15021,8 +15024,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/topics
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -15442,8 +15445,8 @@ importers:
         specifier: ^0.0.3
         version: 0.0.3
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       isbot:
         specifier: ^5.2.3
         version: 5.2.3
@@ -15539,9 +15542,9 @@ importers:
       '@vouchington/media':
         specifier: ^0.2.0
         version: 0.2.0
-      '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+      '@vouchington/server-utils':
+        specifier: ^0.0.1
+        version: 0.0.1
       satori:
         specifier: ^0.63.2
         version: 0.63.2
@@ -15614,9 +15617,12 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../backend/test-helpers
+      '@vouchington/server-utils':
+        specifier: ^0.0.1
+        version: 0.0.1
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       vitest:
         specifier: ^5.1.0
         version: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
@@ -15664,8 +15670,8 @@ importers:
   ts-shared/cache:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
 
   ts-shared/data-points:
     dependencies:
@@ -15676,40 +15682,40 @@ importers:
   ts-shared/deploy-environment:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
 
   ts-shared/env-contract:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
 
   ts-shared/feature-flags:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
 
   ts-shared/feed-capabilities: {}
 
   ts-shared/languages:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
 
   ts-shared/money:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
 
   ts-shared/request-client-info:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
 
   ts-shared/route-classification:
     dependencies:
@@ -15725,8 +15731,8 @@ importers:
         specifier: ^0.0.3
         version: 0.0.3
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       jose:
         specifier: ^6.2.17
         version: 6.2.17
@@ -15743,8 +15749,8 @@ importers:
         specifier: ^0.3.1
         version: 0.3.1(react@19.3.1)
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       fast-xml-parser:
         specifier: ^5.12.1
         version: 5.12.1
@@ -15754,9 +15760,9 @@ importers:
 
   ts-shared/url-signing:
     dependencies:
-      '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+      '@vouchington/server-utils':
+        specifier: ^0.0.1
+        version: 0.0.1
 
   ts-shared/user-profile-collections:
     dependencies:
@@ -15779,14 +15785,14 @@ importers:
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.12.0)(@sentry/core@11.12.0)(@sentry/node@11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
 
   ts-shared/utm:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
 
   web:
     dependencies:
@@ -15913,9 +15919,12 @@ importers:
       '@vouchington/sentry':
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.12.0)(@sentry/core@11.12.0)(@sentry/node@11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+      '@vouchington/server-utils':
+        specifier: ^0.0.1
+        version: 0.0.1
       '@vouchington/utils':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -21129,6 +21138,10 @@ packages:
       '@sentry/node':
         optional: true
 
+  '@vouchington/server-utils@0.0.1':
+    resolution: {integrity: sha512-a1IvEvOMpSJNgXTTQkT5j9WZFy368dOYcW9G2SfzURf1FkJGsZbUhP5kSQPCrb8WXk3tGb+k73ox3KsDUAyEjQ==}
+    engines: {node: '>=24.0.0'}
+
   '@vouchington/session-jwt@0.0.3':
     resolution: {integrity: sha512-prTvYc0ihJ6UutaGIx52ZdZSy+Oi/tAVCkOpPkGHDK26UN3BgZT6d6TjQ7n60pFZ91zz/mBxklBPVxqeaiRabg==}
     engines: {node: '>=24.0.0'}
@@ -21141,6 +21154,10 @@ packages:
 
   '@vouchington/utils@0.12.1':
     resolution: {integrity: sha512-WqiMHYTFBDhie9lDt9zwTQkqRPNgU4EymSqdhjw4ju/vZ9R4lzVvOBiTmXXGjwhoKucM8LZtZp0H038V57xhNQ==}
+    engines: {node: '>=24.0.0'}
+
+  '@vouchington/utils@0.13.0':
+    resolution: {integrity: sha512-YSoeqrJ1dKv5+7uVFUYFxLJOTtuI2kwX5FauvYbuors1Q+N/ezYDbcYW+3ciG0C7dQNNyLfH0fQEOmhyc0p8bw==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/uuid-v7@0.0.0':
@@ -30123,6 +30140,8 @@ snapshots:
       '@sentry/browser': 11.12.0
       '@sentry/node': 11.12.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
 
+  '@vouchington/server-utils@0.0.1': {}
+
   '@vouchington/session-jwt@0.0.3':
     dependencies:
       '@vouchington/uuid-v7': 0.0.0
@@ -30133,6 +30152,8 @@ snapshots:
       stripe: 23.1.0(@types/node@26.6.6)
 
   '@vouchington/utils@0.12.1': {}
+
+  '@vouchington/utils@0.13.0': {}
 
   '@vouchington/uuid-v7@0.0.0':
     dependencies:

@@ -9,7 +9,7 @@ import { insertTestTopic } from '../helpers/insert-test-topic.mts'
 import { insertTestRssFeed } from '../helpers/insert-test-rss-feed.mts'
 import { write } from '../../backend/data-stores/psql/clients.mts'
 import { insertTestRssFeedItem } from '../../backend/test-helpers/entities/rss-feed-items.mts'
-import { parseSigningKeys, signPath } from '@vouchington/utils/url-signing'
+import { parseSigningKeys, signPath } from '@vouchington/server-utils/url-signing'
 import { SIDELOAD_SIGNING_KEYS_ENV } from '../../ts-shared/url-signing/index.mts'
 
 test.describe('sideloaded images in RSS item modal', () => {

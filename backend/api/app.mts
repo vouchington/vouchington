@@ -12,7 +12,7 @@ import { createRequestContextListener } from './context/request-context.mts'
 import applyContext from './context/index.mts'
 import applyRateLimitContext from './context/rate-limit.mts'
 import applyRequestVerificationContext from './context/request-verification.mts'
-import { buildApiErrorEnvelope, normalizeErrorForLogging } from '@vouchington/utils/api-errors'
+import { buildApiErrorEnvelope, normalizeErrorForLogging } from '@vouchington/server-utils/api-errors'
 import { isBotChallengeRequiredError } from './bot-challenge.mts'
 
 type HttpListener = (req: IncomingMessage, res: ServerResponse) => void | Promise<void>
