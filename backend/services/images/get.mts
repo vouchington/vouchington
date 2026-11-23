@@ -6,6 +6,31 @@ type GetImageOptions = {
   includeQuarantinePending?: boolean
 }
 
+/** Columns of an image row including its upload state; shared by the upload-state lookups. */
+const IMAGE_UPLOAD_STATE_COLUMNS = `
+      id,
+      created_by_id,
+      created_at,
+      updated_at,
+      deleted_at,
+      deleted_by_id,
+      data,
+      sha_256,
+      s3_key,
+      upload_started_at,
+      upload_completed_at,
+      upload_failed_at,
+      upload_error,
+      upload_staged_at,
+      upload_source_deleted_at,
+      quarantine_pending_at,
+      quarantined_at,
+      quarantine_s3_key,
+      openai_omni_moderation_results,
+      is_flagged_by_openai_omni_moderation,
+      openai_omni_moderation_created_at
+`
+
 export const getImageByAny = async (
   string: string | Buffer,
   { includeQuarantinePending = false }: GetImageOptions = {},
@@ -56,47 +81,6 @@ export const getImageByAny = async (
   return result.rows[0] || null
 }
 
-/** Shared SELECT for upload-state image lookups; `run` picks the replica or the primary. */
-const selectImageWithUploadState = async (
-  run: typeof read,
-  label: string,
-  filters: string[],
-  values: unknown[],
-): Promise<(ImageLookupRow & ImageUploadState) | null> => {
-  const result = await run<ImageLookupRow & ImageUploadState>(
-    `/* ${label} */
-    SELECT
-      id,
-      created_by_id,
-      created_at,
-      updated_at,
-      deleted_at,
-      deleted_by_id,
-      data,
-      sha_256,
-      s3_key,
-      upload_started_at,
-      upload_completed_at,
-      upload_failed_at,
-      upload_error,
-      upload_staged_at,
-      upload_source_deleted_at,
-      quarantine_pending_at,
-      quarantined_at,
-      quarantine_s3_key,
-      openai_omni_moderation_results,
-      is_flagged_by_openai_omni_moderation,
-      openai_omni_moderation_created_at
-    FROM images
-    WHERE ${filters.join(' AND ')}
-    LIMIT 1
-  `,
-    values,
-  )
-
-  return result.rows[0] || null
-}
-
 export const getImageById = async (
   id: string,
   includeDeleted = false,
@@ -112,7 +96,18 @@ export const getImageById = async (
   }
   if (!includeQuarantinePending) filters.push('quarantine_pending_at IS NULL')
 
-  return selectImageWithUploadState(read, 'getImageById', filters, values)
+  const result = await read<ImageLookupRow & ImageUploadState>(
+    `/* getImageById */
+    SELECT
+      ${IMAGE_UPLOAD_STATE_COLUMNS}
+    FROM images
+    WHERE ${filters.join(' AND ')}
+    LIMIT 1
+  `,
+    values,
+  )
+
+  return result.rows[0] || null
 }
 
 /** Read an image from the primary so workers do not observe a lagging replica immediately after completion. */
@@ -127,7 +122,18 @@ export const getImageByIdFromPrimary = async (
   }
   if (!includeQuarantinePending) filters.push('quarantine_pending_at IS NULL')
 
-  return selectImageWithUploadState(write, 'getImageByIdFromPrimary', filters, [id])
+  const result = await write<ImageLookupRow & ImageUploadState>(
+    `/* getImageByIdFromPrimary */
+    SELECT
+      ${IMAGE_UPLOAD_STATE_COLUMNS}
+    FROM images
+    WHERE ${filters.join(' AND ')}
+    LIMIT 1
+  `,
+    [id],
+  )
+
+  return result.rows[0] || null
 }
 
 export const getImageByHash = async (
@@ -144,5 +150,16 @@ export const getImageByHash = async (
   }
   if (!includeQuarantinePending) filters.push('quarantine_pending_at IS NULL')
 
-  return selectImageWithUploadState(write, 'getImageByHash', filters, values)
+  const result = await write<ImageLookupRow & ImageUploadState>(
+    `/* getImageByHash */
+    SELECT
+      ${IMAGE_UPLOAD_STATE_COLUMNS}
+    FROM images
+    WHERE ${filters.join(' AND ')}
+    LIMIT 1
+  `,
+    values,
+  )
+
+  return result.rows[0] || null
 }
