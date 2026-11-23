@@ -31,7 +31,9 @@ export const storyClusteringEfficiencyDriver: EfficiencyDriver = {
         const storyId = await readItemStoryId(incoming.itemId)
         return { storyId, members: storyId ? (await readStoryFacts(storyId)).member_ids : [] }
       },
-      addCandidate: async () => void (await neighbor()),
+      addCandidate: async () => {
+        await neighbor()
+      },
     }
   },
   executeWithoutCompleting: run =>

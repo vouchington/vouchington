@@ -3,6 +3,9 @@ import {
   readClaimantCopyrightNoticeIds,
 } from '@voucha/test-helpers/data-stores/psql/copyright-write-conflicts'
 import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
+import { COPYRIGHT_SUBMISSION_IN_PROGRESS } from '@modules/on-error/error-codes'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
+import { getTestPostgresBackendProcessId } from '@voucha/test-helpers/postgres-lock-wait'
 import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
 import { describe, expect, it } from 'vitest'
 import {
@@ -94,6 +97,7 @@ describe('copyright form intakes', () => {
     try {
       await expect(createCopyrightFormIntake(input)).rejects.toMatchObject({
         status: 409,
+        code: COPYRIGHT_SUBMISSION_IN_PROGRESS,
         cause: { code: '23505' },
       })
     } finally {
@@ -169,20 +173,45 @@ describe('copyright form intakes', () => {
 
   it('records a CAPTCHA-gated caller’s statutory counter-notice scope idempotently', async () => {
     const { poster, noticeId, targetId, submit } = await createCounterNoticeFixture()
+    const firstInserted = Promise.withResolvers<number>()
+    const releaseFirst = Promise.withResolvers<void>()
     const restore = afterPostgresTransactionQueryForTest(
-      'createCopyrightSubmission:existing',
-      values => values.includes(poster.id),
-      async () => {
-        expect(await submit()).toMatchObject({ isDuplicate: false })
+      'createCopyrightSubmission:scopeAndReceipt',
+      values => values.includes(noticeId),
+      async transaction => {
+        firstInserted.resolve(await getTestPostgresBackendProcessId(transaction))
+        await releaseFirst.promise
       },
     )
+    const first = submit()
+    void first.catch(firstInserted.reject)
+    let replay: Awaited<ReturnType<typeof submit>>
     try {
-      await expect(submit()).rejects.toMatchObject({ status: 409, cause: { code: '23505' } })
+      const holderProcessId = await firstInserted.promise
+      replay = await withTestOwnedPostgresWait(
+        {
+          holderProcessId,
+          pool: 'write',
+          lock: { kind: 'transaction' },
+          queryMarker: 'lockCopyrightNoticeForLegalWrite',
+          releaseHolder: async () => releaseFirst.resolve(),
+        },
+        async waitForLock => {
+          const second = submit()
+          await waitForLock(second)
+          releaseFirst.resolve()
+          return second
+        },
+      )
     } finally {
+      releaseFirst.resolve()
+      await Promise.allSettled([first])
       restore()
     }
-    const replay = await submit()
+    const original = await first
+    expect(original.isDuplicate).toBe(false)
     expect(replay.isDuplicate).toBe(true)
+    expect(replay.submission.id).toBe(original.submission.id)
     const afterRetry = await getCopyrightNoticePrivateAggregate(noticeId)
     expect(
       afterRetry?.submissions.filter(submission => submission.kind === 'counter_notice'),

@@ -11,12 +11,8 @@ import { installClientContentRouteHarness } from '../../../test-helpers/client-c
 
 const integrationClientReads = createIntegrationClientReads(clientRoutes.clientApi)
 
-function unset(target: object, key: string) {
-  delete (target as Record<string, unknown>)[key]
-}
-
 describe('client-content-routes', () => {
-  const harness = installClientContentRouteHarness({ unset })
+  const harness = installClientContentRouteHarness()
 
   describe('rss-feeds client routes', () => {
     it('createSource returns a pollable import', async () => {

@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import http from 'node:http'
 import serverApp from '../../../backend/entrypoints/api/index.mts'
 import * as clientRoutes from '@/lib/api/client'
@@ -18,17 +18,9 @@ import {
   withWebApiClientRuntime,
 } from '../../test-helpers/web-api-client-runtime.mts'
 
-function unset(target: object, key: string) {
-  delete (target as Record<string, unknown>)[key]
-}
-
 describe('routes — public and direct', () => {
   let backendServer: http.Server
-  let previousApiBaseUrl: string | undefined
-  let previousPublicApiBaseUrl: string | undefined
   let previousFetch: typeof globalThis.fetch
-  let hadWindow: boolean
-  let previousWindow: unknown
   let backendBaseUrl: string
   let clientRuntimeActive = false
   let clientCookieValue: string | undefined
@@ -39,17 +31,12 @@ describe('routes — public and direct', () => {
   let postId: string
 
   beforeAll(async () => {
-    previousApiBaseUrl = process.env.API_BASE_URL
-    previousPublicApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
-
     backendServer = createWebApiTestServer(serverApp.callback())
     backendBaseUrl = await listenOnFetchSafeLoopback(backendServer)
-    process.env.API_BASE_URL = backendBaseUrl
-    process.env.NEXT_PUBLIC_API_BASE_URL = backendBaseUrl
+    vi.stubEnv('API_BASE_URL', backendBaseUrl)
+    vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', backendBaseUrl)
 
     previousFetch = globalThis.fetch
-    hadWindow = Object.hasOwn(globalThis, 'window')
-    previousWindow = (globalThis as { window?: unknown }).window
     globalThis.fetch = (input, init) => {
       if (!clientRuntimeActive || typeof input !== 'string' || !input.startsWith('/')) {
         return previousFetch(input, init)
@@ -87,12 +74,7 @@ describe('routes — public and direct', () => {
   afterAll(() =>
     closeWebApiClientRuntime({
       backendServer,
-      previousApiBaseUrl,
-      previousPublicApiBaseUrl,
       previousFetch,
-      hadWindow,
-      previousWindow,
-      unset,
     }),
   )
 
@@ -101,14 +83,11 @@ describe('routes — public and direct', () => {
     cookieHeader?: Record<string, string>,
   ): Promise<T> {
     return withWebApiClientRuntime({
-      hadWindow,
-      previousWindow,
       cookieHeader,
       setActive: (active, cookie) => {
         clientRuntimeActive = active
         clientCookieValue = cookie
       },
-      unset,
       run,
     })
   }

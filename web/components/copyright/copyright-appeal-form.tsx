@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { TurnstileField } from '@/components/shared/turnstile-field'
 import { useTurnstileToken } from '@/hooks/use-turnstile-token'
 import { createCopyrightAppeal } from '@/lib/api/client/copyright-notices'
+import { useTranslations } from '@/lib/i18n/use-translations'
 import onError, { onSuccess } from '@/lib/on-error'
 import { useCopyrightTargetSelection } from './copyright-target-selection'
 
@@ -18,6 +19,7 @@ export function CopyrightAppealForm({
   noticeId: string
   targetIds: string[]
 }) {
+  const t = useTranslations()
   const turnstile = useTurnstileToken('copyright-notices.appeal')
   const [reason, setReason] = useState('')
   const [selectedTargetIds, setSelectedTargetIds] = useCopyrightTargetSelection(targetIds)
@@ -40,6 +42,9 @@ export function CopyrightAppealForm({
       } catch (err) {
         onError(err, {
           fallback: 'We could not submit this appeal. Please try again.',
+          displayMessageByCode: {
+            copyright_submission_in_progress: t('shared.copyrightSubmissionInProgress'),
+          },
           tags: { form: 'copyright-appeal' },
         })
         turnstile.reset()

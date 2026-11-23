@@ -115,7 +115,9 @@ function renderCollections(jurisdiction: 'eu_dsa' | 'uk') {
     <CopyrightStaffTerritorialCollections
       item={makeItem(jurisdiction)}
       pending={false}
-      onReview={action => void action()}
+      onReview={action => {
+        void action()
+      }}
       onClose={() => undefined}
     />,
   )

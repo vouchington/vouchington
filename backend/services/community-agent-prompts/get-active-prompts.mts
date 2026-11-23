@@ -1,4 +1,5 @@
 import { read, type QueryExecutor } from '@data-stores/psql'
+import { CLASSIFIER_MAX_PROMPT_CANDIDATES } from '@services/classifiers/decision-result-limits'
 import sql from 'sql-template-strings'
 import type { CommunityAgentPrompt } from './types.mts'
 
@@ -21,8 +22,10 @@ export async function getActiveCommunityAgentPromptPage(
   query: QueryExecutor = read,
   through: ActiveCommunityAgentPromptCursor | null = null,
 ): Promise<ActiveCommunityAgentPromptPage> {
-  if (!Number.isInteger(limit) || limit < 1 || limit > 30) {
-    throw new Error('active community prompt page limit must be between 1 and 30')
+  if (!Number.isInteger(limit) || limit < 1 || limit > CLASSIFIER_MAX_PROMPT_CANDIDATES) {
+    throw new Error(
+      `active community prompt page limit must be between 1 and ${CLASSIFIER_MAX_PROMPT_CANDIDATES}`,
+    )
   }
   const statement = sql`
     /* getActiveCommunityAgentPromptPage */

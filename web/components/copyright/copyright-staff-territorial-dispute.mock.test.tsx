@@ -98,7 +98,9 @@ function makePage(settlements: Settlements): CopyrightEuDisputeSettlementsPage {
   }
 }
 
-const submit = (action: () => Promise<unknown>) => void action()
+const submit = (action: () => Promise<unknown>) => {
+  void action()
+}
 
 describe('CopyrightStaffTerritorialDispute', () => {
   afterEach(() => vi.clearAllMocks())
@@ -236,7 +238,9 @@ describe('CopyrightStaffTerritorialDispute', () => {
       <CopyrightStaffTerritorialDispute
         item={makeItem()}
         initialPage={makePage([])}
-        onReview={action => void action().catch(() => undefined)}
+        onReview={action => {
+          void action().catch(() => undefined)
+        }}
         pending={false}
         {...loadedRecipients}
       />,

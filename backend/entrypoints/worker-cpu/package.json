@@ -26,7 +26,6 @@
     "@data-stores/graceful-shutdown": "workspace:^",
     "@entrypoints/worker-io": "workspace:^",
     "@jongleberry/vurst-runtime": "^0.4.4",
-    "@modules/child-process": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
     "@modules/worker-queue-inventory": "workspace:^",

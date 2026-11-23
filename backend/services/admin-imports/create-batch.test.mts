@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, onTestFinished } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { adminImportsWorkConfig } from '@queues/admin-imports/config'
@@ -16,6 +16,25 @@ describe('create-batch', () => {
   })
 
   describe('createImportBatch', () => {
+    it('lowers admission without hiding rows in an existing batch', async () => {
+      await adminImportsWorkConfig.waitForInitialization()
+      const suffix = randomSuffix()
+      const inputRows = [{ slug: `cap-a-${suffix}` }, { slug: `cap-b-${suffix}` }]
+      const existing = await createImportBatch(admin, 'topic', inputRows)
+      onTestFinished(
+        overrideDynamicConfigFieldsForTest(adminImportsWorkConfig, { max_rows_per_batch: 1 }),
+      )
+
+      await expect(createImportBatch(admin, 'topic', inputRows)).rejects.toMatchObject({
+        status: 400,
+      })
+      await expect(getImportRowsByBatchId(existing.batch.id)).resolves.toMatchObject(
+        inputRows.map(input_data => ({ input_data })),
+      )
+      const admitted = await createImportBatch(admin, 'topic', inputRows.slice(0, 1))
+      await expect(getImportRowsByBatchId(admitted.batch.id)).resolves.toHaveLength(1)
+    })
+
     it('creates batch with correct metadata and rows', async () => {
       const suffix = randomSuffix()
       const inputRows = [{ slug: `batch-test-${suffix}`, name: 'Batch Test Topic' }]

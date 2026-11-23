@@ -2,9 +2,9 @@ import {
   failCopyrightWriteWithUnrelatedConflict,
   readClaimantCopyrightNoticeIds,
 } from '@voucha/test-helpers/data-stores/psql/copyright-write-conflicts'
-import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
+import { createTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-waiter'
 import { describe, expect, it } from 'vitest'
-import { createTestUser } from '@voucha/test-helpers'
+import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import {
   concealJurisdictionPolicyApprovals,
   insertJurisdictionPolicyApproval,
@@ -75,15 +75,21 @@ describe('UK copyright notice contracts', () => {
         `uk-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
         claimant.id,
       )
+      const requester = { user: claimant, identity: `user:${claimant.id}` }
+      const key = crypto.randomUUID()
+      const request = noticeRequest()
       const opened = await receiveTerritorialCopyrightNoticeInTransaction(
-        { user: claimant, identity: `user:${claimant.id}` },
+        requester,
         'uk',
-        crypto.randomUUID(),
-        noticeRequest(),
+        key,
+        request,
         transaction,
       )
       expect(opened.route_destination).toBe('staff_queue')
       await insertJurisdictionPolicyWithdrawal(transaction, approvalId, claimant.id)
+      await expect(
+        receiveTerritorialCopyrightNoticeInTransaction(requester, 'uk', key, request, transaction),
+      ).resolves.toEqual({ ...opened, is_duplicate: true })
       await expect(
         receiveTerritorialCopyrightNoticeInTransaction(
           { user: claimant, identity: `user:${claimant.id}` },
@@ -138,22 +144,36 @@ describe('UK copyright notice contracts', () => {
     })
     const key = crypto.randomUUID()
     const request = noticeRequest()
-    const submit = () =>
-      receiveUkCopyrightNotice({ user: claimant, identity: `user:${claimant.id}` }, key, request)
-    const restore = afterPostgresTransactionQueryForTest(
-      'receiveTerritorialCopyrightNotice:existing',
-      values => values.includes(key),
-      async () => {
-        expect(await submit()).toMatchObject({ is_duplicate: false })
-      },
+    const requester = { user: claimant, identity: `user:${claimant.id}` }
+    await using holder = await beginTransaction()
+    const first = await receiveTerritorialCopyrightNoticeInTransaction(
+      requester,
+      'uk',
+      key,
+      request,
+      holder,
     )
-    try {
-      await expect(submit()).rejects.toMatchObject({ status: 409, cause: { code: '23505' } })
-    } finally {
-      restore()
-    }
-    const receipt = await submit()
-    expect(receipt.is_duplicate).toBe(true)
+    await using waiter = await createTestPostgresLockWaiter({
+      holder,
+      lock: { kind: 'transaction' },
+      selected: {
+        marker: '/* currentCopyrightJurisdictionPolicy */',
+        binding: { index: 0, value: 'uk' },
+      },
+    })
+    const second = receiveTerritorialCopyrightNoticeInTransaction(
+      requester,
+      'uk',
+      key,
+      request,
+      waiter.query,
+    )
+    await waiter.waitForLock(second)
+    await holder.commit()
+    const receipt = await second
+    await waiter.query.commit()
+    expect(first.is_duplicate).toBe(false)
+    expect(receipt).toEqual({ ...first, is_duplicate: true })
     const acknowledgment = await acknowledgeUkCopyrightNotice(claimant, receipt.notice_id)
     expect(receipt.route_destination).toBe('staff_queue')
     expect(acknowledgment.acknowledged_at).toBeInstanceOf(Date)

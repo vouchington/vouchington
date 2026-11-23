@@ -1,4 +1,4 @@
-import { afterAll, beforeAll } from 'vitest'
+import { afterAll, beforeAll, vi } from 'vitest'
 import { randomUUID } from 'node:crypto'
 import http from 'node:http'
 
@@ -32,15 +32,9 @@ export type UserAdminRouteHarness = {
   withClientRuntime: <T>(run: () => Promise<T>, cookieHeader?: Record<string, string>) => Promise<T>
 }
 
-export function installUserAdminRouteHarness(
-  unset: (target: object, key: string) => void,
-): UserAdminRouteHarness {
+export function installUserAdminRouteHarness(): UserAdminRouteHarness {
   let backendServer: http.Server
-  let previousApiBaseUrl: string | undefined
-  let previousPublicApiBaseUrl: string | undefined
   let previousFetch: typeof globalThis.fetch
-  let hadWindow: boolean
-  let previousWindow: unknown
   let backendBaseUrl: string
   let clientRuntimeActive = false
   let clientCookieValue: string | undefined
@@ -52,17 +46,12 @@ export function installUserAdminRouteHarness(
   }
 
   beforeAll(async () => {
-    previousApiBaseUrl = process.env.API_BASE_URL
-    previousPublicApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
-
     backendServer = createWebApiTestServer(serverApp.callback())
     backendBaseUrl = await listenOnFetchSafeLoopback(backendServer)
-    process.env.API_BASE_URL = backendBaseUrl
-    process.env.NEXT_PUBLIC_API_BASE_URL = backendBaseUrl
+    vi.stubEnv('API_BASE_URL', backendBaseUrl)
+    vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', backendBaseUrl)
 
     previousFetch = globalThis.fetch
-    hadWindow = Object.hasOwn(globalThis, 'window')
-    previousWindow = (globalThis as { window?: unknown }).window
     globalThis.fetch = (input, init) => {
       if (!clientRuntimeActive || typeof input !== 'string' || !input.startsWith('/')) {
         return previousFetch(input, init)
@@ -144,24 +133,9 @@ export function installUserAdminRouteHarness(
     await new Promise<void>(resolve => {
       backendServer.close(() => resolve())
     })
-    if (previousApiBaseUrl === undefined) {
-      unset(process.env, 'API_BASE_URL')
-    } else {
-      process.env.API_BASE_URL = previousApiBaseUrl
-    }
-
-    if (previousPublicApiBaseUrl === undefined) {
-      unset(process.env, 'NEXT_PUBLIC_API_BASE_URL')
-    } else {
-      process.env.NEXT_PUBLIC_API_BASE_URL = previousPublicApiBaseUrl
-    }
-
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
     globalThis.fetch = previousFetch
-    if (hadWindow) {
-      ;(globalThis as { window?: unknown }).window = previousWindow
-    } else {
-      unset(globalThis, 'window')
-    }
   })
 
   async function withClientRuntime<T>(
@@ -170,7 +144,7 @@ export function installUserAdminRouteHarness(
   ): Promise<T> {
     clientRuntimeActive = true
     clientCookieValue = cookieHeader?.Cookie
-    ;(globalThis as { window?: unknown }).window = {}
+    vi.stubGlobal('window', {})
 
     try {
       return await run()
@@ -178,11 +152,7 @@ export function installUserAdminRouteHarness(
       clientRuntimeActive = false
       clientCookieValue = undefined
 
-      if (hadWindow) {
-        ;(globalThis as { window?: unknown }).window = previousWindow
-      } else {
-        unset(globalThis, 'window')
-      }
+      vi.unstubAllGlobals()
     }
   }
 

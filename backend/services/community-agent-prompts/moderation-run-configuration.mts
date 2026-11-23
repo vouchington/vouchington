@@ -12,7 +12,6 @@ import {
   type ActiveCommunityAgentPromptCursor,
 } from './get-active-prompts.mts'
 
-const MAX_COMMUNITY_MODERATION_QUESTIONS = 30
 const MAX_COMMUNITY_MODERATION_RULE_CHARACTERS = 40_000
 
 type CommunityModerationPrompt = { id: string; text: string }
@@ -45,9 +44,8 @@ function selectCommunityModerationPrompts(
   let ruleCharacters = 0
   for (const prompt of prompts) {
     if (
-      selected.length === MAX_COMMUNITY_MODERATION_QUESTIONS ||
-      (selected.length > 0 &&
-        ruleCharacters + prompt.text.length > MAX_COMMUNITY_MODERATION_RULE_CHARACTERS)
+      selected.length > 0 &&
+      ruleCharacters + prompt.text.length > MAX_COMMUNITY_MODERATION_RULE_CHARACTERS
     ) {
       break
     }

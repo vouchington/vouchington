@@ -4,10 +4,6 @@ import * as clientRoutes from '@/lib/api/client'
 import { createTestRssFeedItemWithUrl } from '../../../../backend/test-helpers/index.mts'
 import { installClientContentRouteHarness } from '../../../test-helpers/client-content-route-harness.mts'
 
-function unset(target: object, key: string) {
-  delete (target as Record<string, unknown>)[key]
-}
-
 // published_at is a generated column defaulting to the item's insertion instant. The
 // 'no options' test below asserts this item appears in the globally recency-ordered,
 // default-limit-10 feed with no scoping filter — on a dirty, parallel database, other
@@ -23,7 +19,6 @@ describe('client-content-routes', () => {
   let nonMatchingRssFeedItemId = ''
 
   const harness = installClientContentRouteHarness({
-    unset,
     rssFeedItemOptions: () => ({
       createdAt: new Date(Date.now() + RSS_FEED_ITEM_FIXTURE_WINDOW_MS),
     }),

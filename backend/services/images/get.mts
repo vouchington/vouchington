@@ -6,6 +6,31 @@ type GetImageOptions = {
   includeQuarantinePending?: boolean
 }
 
+/** Columns of an image row including its upload state; shared by the upload-state lookups. */
+const IMAGE_UPLOAD_STATE_COLUMNS = `
+      id,
+      created_by_id,
+      created_at,
+      updated_at,
+      deleted_at,
+      deleted_by_id,
+      data,
+      sha_256,
+      s3_key,
+      upload_started_at,
+      upload_completed_at,
+      upload_failed_at,
+      upload_error,
+      upload_staged_at,
+      upload_source_deleted_at,
+      quarantine_pending_at,
+      quarantined_at,
+      quarantine_s3_key,
+      openai_omni_moderation_results,
+      is_flagged_by_openai_omni_moderation,
+      openai_omni_moderation_created_at
+`
+
 export const getImageByAny = async (
   string: string | Buffer,
   { includeQuarantinePending = false }: GetImageOptions = {},
@@ -74,27 +99,7 @@ export const getImageById = async (
   const result = await read<ImageLookupRow & ImageUploadState>(
     `/* getImageById */
     SELECT
-      id,
-      created_by_id,
-      created_at,
-      updated_at,
-      deleted_at,
-      deleted_by_id,
-      data,
-      sha_256,
-      s3_key,
-      upload_started_at,
-      upload_completed_at,
-      upload_failed_at,
-      upload_error,
-      upload_staged_at,
-      upload_source_deleted_at,
-      quarantine_pending_at,
-      quarantined_at,
-      quarantine_s3_key,
-      openai_omni_moderation_results,
-      is_flagged_by_openai_omni_moderation,
-      openai_omni_moderation_created_at
+      ${IMAGE_UPLOAD_STATE_COLUMNS}
     FROM images
     WHERE ${filters.join(' AND ')}
     LIMIT 1
@@ -120,27 +125,7 @@ export const getImageByIdFromPrimary = async (
   const result = await write<ImageLookupRow & ImageUploadState>(
     `/* getImageByIdFromPrimary */
     SELECT
-      id,
-      created_by_id,
-      created_at,
-      updated_at,
-      deleted_at,
-      deleted_by_id,
-      data,
-      sha_256,
-      s3_key,
-      upload_started_at,
-      upload_completed_at,
-      upload_failed_at,
-      upload_error,
-      upload_staged_at,
-      upload_source_deleted_at,
-      quarantine_pending_at,
-      quarantined_at,
-      quarantine_s3_key,
-      openai_omni_moderation_results,
-      is_flagged_by_openai_omni_moderation,
-      openai_omni_moderation_created_at
+      ${IMAGE_UPLOAD_STATE_COLUMNS}
     FROM images
     WHERE ${filters.join(' AND ')}
     LIMIT 1
@@ -168,27 +153,7 @@ export const getImageByHash = async (
   const result = await write<ImageLookupRow & ImageUploadState>(
     `/* getImageByHash */
     SELECT
-      id,
-      created_by_id,
-      created_at,
-      updated_at,
-      deleted_at,
-      deleted_by_id,
-      data,
-      sha_256,
-      s3_key,
-      upload_started_at,
-      upload_completed_at,
-      upload_failed_at,
-      upload_error,
-      upload_staged_at,
-      upload_source_deleted_at,
-      quarantine_pending_at,
-      quarantined_at,
-      quarantine_s3_key,
-      openai_omni_moderation_results,
-      is_flagged_by_openai_omni_moderation,
-      openai_omni_moderation_created_at
+      ${IMAGE_UPLOAD_STATE_COLUMNS}
     FROM images
     WHERE ${filters.join(' AND ')}
     LIMIT 1

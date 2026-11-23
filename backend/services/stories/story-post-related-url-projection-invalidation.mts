@@ -7,8 +7,8 @@ import { isStoryPostRelatedUrlProjectionWorkCurrent } from './story-post-related
 export async function markStoryPostRelatedUrlProjectionInvalidationRequired(
   query: TransactionQuery,
   work: ProjectionWork,
-): Promise<void> {
-  await query(
+): Promise<boolean> {
+  const { rowCount } = await query(
     `/* markStoryPostRelatedUrlProjectionInvalidationRequired */
       UPDATE story_post_related_url_projection_jobs
       SET invalidation_required_at = CURRENT_TIMESTAMP, invalidation_completed_at = NULL
@@ -16,6 +16,7 @@ export async function markStoryPostRelatedUrlProjectionInvalidationRequired(
         AND lease_expires_at > clock_timestamp()`,
     [work.post_id, work.generation, work.lease_token],
   )
+  return rowCount === 1
 }
 
 export async function drainStoryPostRelatedUrlProjectionInvalidation(

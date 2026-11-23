@@ -65,8 +65,6 @@ export async function addPostRating(
 
   await using query = await beginTransaction()
   await assertReviewTopicsAllowReviews([input.topic_id], { query })
-  // ast-grep-ignore: no-three-sequential-awaits -- Take the publication advisory lock before the post row lock, then reject an exceeded rating limit before inserting the rating.
-  await lockPostRatingMutation(query, post.id)
   await assertRatingCountBelowLimit(query, post.id, review_topic_ratings_max_items)
   try {
     await write(
@@ -99,10 +97,6 @@ export async function addPostRating(
   await query.commit()
 
   await settlePostRatingEffects(post.id, [input.topic_id])
-}
-
-async function lockPostRatingMutation(query: TransactionQuery, postId: string) {
-  await query(sql`/* lockPostRatingMutation */ SELECT id FROM posts WHERE id = ${postId}`)
 }
 
 async function assertRatingCountBelowLimit(
@@ -152,7 +146,6 @@ export async function updatePostRating(
   }
 
   await using query = await beginTransaction()
-  await lockPostRatingMutation(query, post.id)
   const updateQuery = sql`/* updatePostRating */ UPDATE post_review_topic_ratings SET`
   if (changes.rating !== undefined && changes.order_index !== undefined) {
     updateQuery.append(sql` rating = ${changes.rating}, order_index = ${changes.order_index}`)

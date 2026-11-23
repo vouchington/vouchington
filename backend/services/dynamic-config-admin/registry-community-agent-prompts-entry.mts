@@ -18,7 +18,7 @@ export const communityAgentPromptsRegistryEntry = defineDynamicConfigNamespace({
       integer: true,
     },
     moderation_page_size: {
-      description: 'Maximum active prompt candidates scanned by one moderation run.',
+      description: 'Maximum active prompt candidates considered by one moderation run.',
       minValue: 1,
       maxValue: COMMUNITY_AGENT_PROMPT_MAX_VALUES.moderation_page_size,
       integer: true,

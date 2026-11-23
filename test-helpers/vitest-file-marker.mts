@@ -33,7 +33,9 @@ export function waitForFileMarker(dir: string, markerNames: string[]) {
       }
     }
   }
-  watcher.on('change', () => void check())
+  watcher.on('change', () => {
+    void check()
+  })
   watcher.on('error', err => {
     if (!settled) {
       settled = true

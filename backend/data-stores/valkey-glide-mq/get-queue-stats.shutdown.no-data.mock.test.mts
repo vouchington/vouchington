@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
-import { onGracefulShutdown } from '@data-stores/graceful-shutdown'
+import {
+  onGracefulShutdown,
+  registerGracefulShutdownPSQL,
+  registerGracefulShutdownValkey,
+} from '@data-stores/graceful-shutdown'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { getQueueStats } from './get-queue-stats.mts'
 
@@ -18,17 +22,16 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => {
 })
 
 describe('queue stats shutdown', () => {
+  // Keep the real connections open: this test only exercises the queue close failure.
+  registerGracefulShutdownValkey(async () => {})
+  registerGracefulShutdownPSQL(async () => {})
+
   it('reports a queue close failure with its queue name and finishes shutdown', async () => {
     const queueName = `stats-shutdown-${crypto.randomUUID()}`
     await getQueueStats(queueName)
     const failure = 'queue close failed'
     closeQueue.mockRejectedValueOnce(failure)
-    await expect(
-      onGracefulShutdown('SIGTERM', {
-        onGracefulShutdownValkey: async () => {},
-        onGracefulShutdownPSQL: async () => {},
-      }),
-    ).resolves.toBeUndefined()
+    await expect(onGracefulShutdown('SIGTERM')).resolves.toBeUndefined()
 
     expect(closeQueue).toHaveBeenCalledOnce()
     expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(

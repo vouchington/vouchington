@@ -14,7 +14,6 @@ import { createCategoryTopicRelationsInTransaction } from './category-relations.
 import { markRssFeedItemCategorySnapshotsForReconciliation } from './category-snapshot-reconciliations.mts'
 import { chunkArray } from './processing-limits.mts'
 import { runCategoryTransaction } from './category-transaction.mts'
-import { recordStoryPublicationChangesForCategoryTopics } from './story-publication-change.mts'
 import {
   clearUnlinkedTopicAliasCategoryBatch,
   type CategoryClearRawPage,
@@ -58,18 +57,8 @@ async function clearCategoryBatch(
       invalidateCache: false,
       enqueueTopHashtagRefresh: false,
     })
-    await Promise.all([
-      markRssFeedItemCategorySnapshotsForReconciliation(query, [
-        ...new Set(rows.map(row => row.rss_feed_item_id)),
-      ]),
-      recordStoryPublicationChangesForCategoryTopics(
-        query,
-        rows.map(row => ({
-          rss_feed_item_id: row.rss_feed_item_id,
-          previous_topic_id: row.topic_id,
-          topic_id: row.replacement_topic_id,
-        })),
-      ),
+    await markRssFeedItemCategorySnapshotsForReconciliation(query, [
+      ...new Set(rows.map(row => row.rss_feed_item_id)),
     ])
     return { rows, statTargets, hasMore }
   }

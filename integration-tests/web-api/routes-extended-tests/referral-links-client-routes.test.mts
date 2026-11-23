@@ -6,13 +6,8 @@ import { installRoutesExtendedHarness } from '../../test-helpers/routes-extended
 
 const integrationClientReads = createIntegrationClientReads(clientRoutes.clientApi)
 
-function unset(target: object, key: string) {
-  delete (target as Record<string, unknown>)[key]
-}
-
 describe('routes-extended', () => {
   const harness = installRoutesExtendedHarness({
-    unset,
     workerSecret: 'with-cookie',
   })
 

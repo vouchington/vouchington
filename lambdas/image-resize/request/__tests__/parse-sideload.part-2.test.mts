@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 import type { APIGatewayProxyEvent } from 'aws-lambda'
 
@@ -26,32 +26,14 @@ function createMockEvent(
 }
 
 describe('parseSideloadRequest — signature verification', () => {
-  const savedEnv = process.env[SIDELOAD_SIGNING_KEYS_ENV]
-  const savedEnvironment = process.env.ENVIRONMENT
-  const savedNodeEnv = process.env.NODE_ENV
-
   beforeEach(() => {
-    process.env[SIDELOAD_SIGNING_KEYS_ENV] = TEST_SIDELOAD_SIGNING_KEY
-    process.env.NODE_ENV = 'test'
-    delete process.env.ENVIRONMENT
+    vi.stubEnv(SIDELOAD_SIGNING_KEYS_ENV, TEST_SIDELOAD_SIGNING_KEY)
+    vi.stubEnv('NODE_ENV', 'test')
+    vi.stubEnv('ENVIRONMENT', undefined)
   })
 
   afterEach(() => {
-    if (savedEnv === undefined) {
-      delete process.env[SIDELOAD_SIGNING_KEYS_ENV]
-    } else {
-      process.env[SIDELOAD_SIGNING_KEYS_ENV] = savedEnv
-    }
-    if (savedEnvironment === undefined) {
-      delete process.env.ENVIRONMENT
-    } else {
-      process.env.ENVIRONMENT = savedEnvironment
-    }
-    if (savedNodeEnv === undefined) {
-      delete process.env.NODE_ENV
-    } else {
-      process.env.NODE_ENV = savedNodeEnv
-    }
+    vi.unstubAllEnvs()
   })
 
   function makeSignedEvent(url: string, extraParams: Record<string, string> = {}) {
@@ -116,15 +98,15 @@ describe('parseSideloadRequest — signature verification', () => {
     // Signed with old key
     const sig = signPath(path, [oldKey])
     // Lambda configured with [newKey, oldKey]
-    process.env[SIDELOAD_SIGNING_KEYS_ENV] = `${TEST_SIDELOAD_SIGNING_KEY},${oldKey}`
+    vi.stubEnv(SIDELOAD_SIGNING_KEYS_ENV, `${TEST_SIDELOAD_SIGNING_KEY},${oldKey}`)
     const event = createMockEvent(base64url, { w: '800', sig })
     const result = parseSideloadRequest(event)
     expect(result.url).toBe(url)
   })
 
   it('rejects unsigned sideload requests in staging when signing keys are missing', () => {
-    delete process.env[SIDELOAD_SIGNING_KEYS_ENV]
-    process.env.ENVIRONMENT = 'staging'
+    vi.stubEnv(SIDELOAD_SIGNING_KEYS_ENV, undefined)
+    vi.stubEnv('ENVIRONMENT', 'staging')
     const url = 'https://example.com/image.jpg'
     const base64url = toBase64Url(url)
     const event = createMockEvent(base64url, { w: '800' })
@@ -143,8 +125,8 @@ describe('parseSideloadRequest — signature verification', () => {
   })
 
   it('keeps unsigned sideload requests available outside deployed environments', () => {
-    delete process.env[SIDELOAD_SIGNING_KEYS_ENV]
-    process.env.NODE_ENV = 'test'
+    vi.stubEnv(SIDELOAD_SIGNING_KEYS_ENV, undefined)
+    vi.stubEnv('NODE_ENV', 'test')
     const url = 'https://example.com/image.jpg'
     const base64url = toBase64Url(url)
     const event = createMockEvent(base64url, { w: '800' })

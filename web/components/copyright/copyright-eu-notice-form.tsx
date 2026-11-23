@@ -7,12 +7,14 @@ import { TurnstileField } from '@/components/shared/turnstile-field'
 import { useTurnstileToken } from '@/hooks/use-turnstile-token'
 import { useAuth } from '@/lib/auth/context'
 import { createCopyrightEuNotice } from '@/lib/api/client/copyright-notices'
+import { useTranslations } from '@/lib/i18n/use-translations'
 import onError, { onSuccess } from '@/lib/on-error'
 import { DeclarationCheckbox, LabeledInput, LabeledTextarea } from './copyright-form-fields'
 import { CopyrightEuGuestReceipt } from './copyright-eu-guest-receipt'
 
 export function CopyrightEuNoticeForm() {
   const router = useRouter()
+  const t = useTranslations()
   const { currentUser } = useAuth()
   const turnstile = useTurnstileToken('copyright-eu-notices.create')
   const [pending, startTransition] = useTransition()
@@ -59,6 +61,9 @@ export function CopyrightEuNoticeForm() {
       } catch (err) {
         onError(err, {
           fallback: 'We could not submit this notice. Please try again.',
+          displayMessageByCode: {
+            copyright_submission_in_progress: t('shared.copyrightSubmissionInProgress'),
+          },
           tags: { form: 'copyright-eu-notice' },
         })
         turnstile.reset()

@@ -10,7 +10,7 @@ import { applyCommittedRssFeedStateChangeEffects } from './state-effects.mts'
 import { runRssFeedStateTransaction } from './state-transaction.mts'
 import {
   insertRssFeedStateChanges,
-  lockLatestRssFeedStates,
+  readLatestRssFeedStates,
   type RssFeedStateInsert,
 } from './state-changes.mts'
 
@@ -23,8 +23,7 @@ function currentUserCanModify(currentUser: PrivateUser, change: RssFeedStateInse
 }
 
 /**
- * Applies one decision per kind to a feed under one publication-scope lock: the latest decision of
- * every kind is read once, and the kinds whose value differs are appended together. A kind that
+ * Reads each requested kind once and appends the kinds whose value differs together. A kind that
  * already has the requested value is left alone. Kinds must be distinct.
  */
 export async function setRssFeedStatesAsCurrentUser(
@@ -36,7 +35,7 @@ export async function setRssFeedStatesAsCurrentUser(
   if (changes.length === 0) return 'noop'
   for (const change of changes) assert(currentUserCanModify(currentUser, change), 403, 'Forbidden')
   const run = async (query: TransactionQuery): Promise<SetStatesResult> => {
-    const latest = await lockLatestRssFeedStates(
+    const latest = await readLatestRssFeedStates(
       query,
       rssFeedId,
       changes.map(change => change.kind),
@@ -47,8 +46,7 @@ export async function setRssFeedStatesAsCurrentUser(
     if (updates.length === 0) return 'noop'
     await insertRssFeedStateChanges(rssFeedId, updates, currentUser.id, { query })
     for (const update of updates) {
-      // oxlint-disable-next-line no-await-in-loop -- one publication change per kind, in request order
-      await recordRssFeedStatePublicationChange(query, rssFeedId, update.kind)
+      recordRssFeedStatePublicationChange(query, rssFeedId, update, latest.get(update.kind)?.id)
     }
     return 'updated'
   }

@@ -19,7 +19,12 @@ import { softDeleteEntityRelation } from '@services/entity-relations/delete'
 import type { PrivateUser } from '@services/users/types'
 import { prepareStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
-import { processOwnedStoryProjectionPage } from '../../../test-helpers/services/stories/story-post-related-url-projection.mts'
+import { createTestStoryProjectionLease } from '@voucha/test-helpers/entities/story-projection-work'
+import { admitStoryPostRelatedUrlProjectionPrefix } from '../story-post-related-url-projection-relations.mts'
+import {
+  processOwnedStoryProjectionPage,
+  supersedeStoryProjectionBeforeInvalidation,
+} from '../../../test-helpers/services/stories/story-post-related-url-projection.mts'
 
 let testUser: PrivateUser
 
@@ -132,6 +137,30 @@ describe('story post related URL projection', () => {
     await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual(
       expect.arrayContaining([firstUrl.id, secondUrl.id, manualUrl.id]),
     )
+  })
+
+  it('rolls back an empty-prefix prune when a newer generation commits before invalidation', async () => {
+    const { post, story } = await createProjectablePost('superseded-prune')
+    await drainProjection(post.id)
+    const originalUrls = await getPostRelatedUrlIds(post.id)
+    expect(originalUrls).toHaveLength(1)
+    await refreshStoryPostForStory(story.id)
+    const work = await createTestStoryProjectionLease(post.id)
+    if (!work) throw new Error('Expected the owned projection lease')
+
+    const restore = supersedeStoryProjectionBeforeInvalidation(post.id, story.id)
+    try {
+      await expect(admitStoryPostRelatedUrlProjectionPrefix(work, [])).resolves.toEqual({
+        ok: false,
+        processed: 0,
+      })
+    } finally {
+      restore()
+    }
+
+    await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual(originalUrls)
+    const current = await createTestStoryProjectionLease(post.id)
+    expect(current).toMatchObject({ generation: String(BigInt(work.generation) + 1n) })
   })
 
   it('defers stale-generation receipt cleanup to bounded worker reconciliation', async () => {

@@ -18,6 +18,7 @@
 {"descriptor":null,"id":"copy.copyright.claimantMisuse.newestNoticeReceived"},
 {"descriptor":{"kind":"plural","numberParameters":["count"],"valueParameter":"count"},"id":"copy.copyright.claimantMisuse.noticesInspected"},
 {"descriptor":null,"id":"copy.copyright.claimantMisuse.oldestNoticeReceived"},
+{"descriptor":null,"id":"copy.copyright.submissionInProgress"},
 {"descriptor":null,"id":"copy.copyright.targetLimit"},
 {"descriptor":{"kind":"plural","numberParameters":["max"],"valueParameter":"max"},"id":"copy.copyright.targetLimitMax"},
 {"descriptor":null,"id":"copy.email.api-key-expiry.action"},
