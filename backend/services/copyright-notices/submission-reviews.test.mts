@@ -151,15 +151,19 @@ describe('copyright submission moderator reviews', () => {
     const recommendation = aggregate?.appealRecommendations[0]
     if (!recommendation) throw new Error('fixture recommendation missing')
 
-    const result = await reviewCopyrightAppeal({
+    const decision = {
       submissionId: appeal.submission.id,
       currentUser: fixture.moderator,
       recommendationId: recommendation.id,
       manualFallbackReason: null,
       rationale: 'The supplied record supports reversal.',
-      decisions: [{ restrictionId: fixture.restrictionId, action: 'reverse' }],
-    })
-    expect(result.reviewIds).toHaveLength(1)
+      decisions: [{ restrictionId: fixture.restrictionId, action: 'reverse' as const }],
+    }
+    const [result, replay] = await Promise.all([
+      reviewCopyrightAppeal(decision),
+      reviewCopyrightAppeal(decision),
+    ])
+    expect(replay).toEqual(result)
     const reviewed = await getCopyrightNoticePrivateAggregate(fixture.noticeId)
     expect(reviewed?.restrictions[0]).toMatchObject({
       human_review_action: 'reverse',
@@ -174,21 +178,18 @@ describe('copyright submission moderator reviews', () => {
         }),
       ]),
     )
-    expect(reviewed?.appealReviews).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ id: result.reviewIds[0], action: 'reverse' }),
-      ]),
-    )
+    expect(reviewed?.appealReviews).toEqual([
+      expect.objectContaining({ id: result.reviewIds[0], action: 'reverse' }),
+    ])
+    await expect(
+      reviewCopyrightAppeal({ ...decision, rationale: 'A replayed rationale.' }),
+    ).resolves.toEqual(result)
     await expect(
       reviewCopyrightAppeal({
-        submissionId: appeal.submission.id,
-        currentUser: fixture.moderator,
-        recommendationId: recommendation.id,
-        manualFallbackReason: null,
-        rationale: 'The same completed review may be safely replayed.',
-        decisions: [{ restrictionId: fixture.restrictionId, action: 'reverse' }],
+        ...decision,
+        decisions: [{ restrictionId: fixture.restrictionId, action: 'confirm' }],
       }),
-    ).resolves.toEqual(result)
+    ).rejects.toMatchObject({ status: 409 })
   })
 
   it('requires one decision for every active restriction named by an appeal', async () => {
@@ -266,12 +267,14 @@ describe('copyright submission moderator reviews', () => {
         is_accepted: true,
       }),
     ])
-    const forwarding = aggregate?.deliveryIntents.find(
+    const forwardingIntents = aggregate?.deliveryIntents.filter(
       intent =>
         intent.copyright_notice_submission_id === counter.submission.id &&
         intent.delivery_kind === 'counter_notice_forwarding' &&
         intent.channel === 'email',
     )
+    expect(forwardingIntents).toHaveLength(1)
+    const forwarding = forwardingIntents?.[0]
     if (!forwarding) throw new Error('counter-notice forwarding was not queued')
     const delivery = await prepareCopyrightEmailDelivery(forwarding.id)
     expect(delivery.recipientEmail).toBe('claimant@example.test')
@@ -286,12 +289,10 @@ describe('copyright submission moderator reviews', () => {
     expect(delivery.text).toContain('Consent to service of process:')
     expect(delivery.text).toContain('Electronic signature: Poster')
     await expect(
-      reviewCopyrightCounterNotice({
-        submissionId: counter.submission.id,
-        currentUser: fixture.moderator,
-        is_accepted: true,
-        rationale: 'The completed review may be safely replayed.',
-      }),
+      reviewCopyrightCounterNotice({ ...review, rationale: 'A replayed rationale.' }),
     ).resolves.toEqual(result)
+    await expect(
+      reviewCopyrightCounterNotice({ ...review, is_accepted: false }),
+    ).rejects.toMatchObject({ status: 409 })
   })
 })
