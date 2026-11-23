@@ -58,7 +58,7 @@ describe('workflow env policy', () => {
       'docs/overview/architecture/dynamic-config.md': './dev/config-inventory\n',
       'docs/development/local-env-vars.md': './dev/config-inventory\n',
       'docs/development/quality/static-code-analysis/README.md': './dev/config-inventory\n',
-      'pnpm-workspace.yaml': 'minimumReleaseAge: 2880\n',
+      'pnpm-workspace.yaml': 'minimumReleaseAge: 10080\n',
     })
 
     const errors = (await checkConfigInventoryPolicy(ctx)).errors

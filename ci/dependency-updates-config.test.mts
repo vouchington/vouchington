@@ -8,7 +8,9 @@ const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 
 type RenovatePackageRule = {
   automerge?: boolean
-  minimumReleaseAge?: string
+  matchFileNames?: string[]
+  matchPackageNames?: string[]
+  minimumReleaseAge?: string | null
 }
 
 type DependabotUpdate = {
@@ -137,18 +139,19 @@ describe('dependency update configuration', () => {
     }
     const dependabot = parseYaml(readRepoFile('.github/dependabot.yml')) as DependabotConfig
     const renovate = JSON.parse(readRepoFile('renovate.json')) as {
+      internalChecksFilter?: string
+      minimumReleaseAge?: string
       packageRules?: RenovatePackageRule[]
     }
     const cooldowns =
       dependabot.updates?.flatMap(update =>
         update.cooldown ? [update.cooldown['default-days']] : [],
       ) ?? []
-    const renovateReleaseAges =
-      renovate.packageRules?.flatMap(rule =>
-        rule.minimumReleaseAge === undefined ? [] : [rule.minimumReleaseAge],
-      ) ?? []
+    const firstPartyExemptions = (renovate.packageRules ?? []).filter(
+      rule => rule.minimumReleaseAge === null,
+    )
 
-    expect(workspace.minimumReleaseAge).toBe(2880)
+    expect(workspace.minimumReleaseAge).toBe(10080)
     expect(cooldowns).toHaveLength(dependabot.updates?.length ?? 0)
     expect(cooldowns.every(days => days === 7)).toBe(true)
     const cooldownMinutes = cooldowns.map(days => {
@@ -158,6 +161,18 @@ describe('dependency update configuration', () => {
     expect(cooldownMinutes.every(minutes => minutes >= (workspace.minimumReleaseAge ?? 0))).toBe(
       true,
     )
-    expect(renovateReleaseAges.every(age => age === '2 days')).toBe(true)
+    expect(renovate.minimumReleaseAge).toBe('7 days')
+    expect(renovate.internalChecksFilter).toBe('strict')
+    expect(firstPartyExemptions.flatMap(rule => rule.matchFileNames ?? [])).toEqual([
+      'ci/dependency-mirror/images.json',
+    ])
+    expect(firstPartyExemptions.flatMap(rule => rule.matchPackageNames ?? [])).toEqual([
+      'ghcr.io/vouchington/dependency-*',
+    ])
+    expect(
+      (renovate.packageRules ?? []).filter(
+        rule => typeof rule.minimumReleaseAge === 'string' && rule.minimumReleaseAge !== '7 days',
+      ),
+    ).toEqual([])
   })
 })
