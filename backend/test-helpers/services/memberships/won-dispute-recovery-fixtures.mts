@@ -19,6 +19,7 @@ type WonDisputeRecoveryOperations = IneligibleStripePurchaseOperations & {
 export async function createWonDisputeRecoveryFixture(
   initialRefundedMinorUnits = 0,
   targetAmountsMinorUnits = [1_000],
+  targetKind: 'charge' | 'payment_intent' = 'payment_intent',
 ) {
   const user = await createTestUser()
   const currentSku = await createTestSku({ plan: 'plus' })
@@ -37,12 +38,13 @@ export async function createWonDisputeRecoveryFixture(
   const paymentIntentIds = targetAmountsMinorUnits.map(
     (_, index) => `pi_won_dispute_${index}_${subscriptionId}`,
   )
-  replayStripePaymentIntentCharges(
-    paymentIntentIds.map((paymentIntentId, index) => ({
-      paymentIntentId,
-      chargeId: chargeIds[index]!,
-    })),
-  )
+  if (targetKind === 'payment_intent')
+    replayStripePaymentIntentCharges(
+      paymentIntentIds.map((paymentIntentId, index) => ({
+        paymentIntentId,
+        chargeId: chargeIds[index]!,
+      })),
+    )
   const claim = (await claimTestIneligiblePurchaseReversalOperations(
     {
       effectiveAt: undefined,
@@ -54,13 +56,13 @@ export async function createWonDisputeRecoveryFixture(
       userId: user.id,
     },
     targetAmountsMinorUnits.map((targetAmountMinorUnits, index) => ({
-      chargeId: null,
+      chargeId: targetKind === 'charge' ? chargeIds[index]! : null,
       currency: 'usd',
       amountMinorUnits: index === 0 ? initialRefundedMinorUnits : 0,
       externallySatisfiedMinorUnits:
         targetAmountMinorUnits - (index === 0 ? initialRefundedMinorUnits : 0),
       invoiceId,
-      paymentIntentId: paymentIntentIds[index]!,
+      paymentIntentId: targetKind === 'payment_intent' ? paymentIntentIds[index]! : null,
       qualifyingAmountMinorUnits: targetAmountMinorUnits,
     })),
     { currency: 'usd', qualifyingAmountMinorUnits: amountMinorUnits },
