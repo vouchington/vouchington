@@ -27,13 +27,16 @@ describe('runVitestProjectGroup', () => {
     expect(docker).toEqual([
       'backend/analytics-integration',
       'backend-data-stores',
+      'backend-ai-usage-monthly-ddl',
       'backend-partition-retirement',
       'backend-platform-stats-cache',
       'backend-mocks',
       'backend-real-glide-mq',
     ])
     expect(modules.filter(project => docker.includes(project as never))).toEqual([])
-    expect(projectsForVitestGroup('backend-default')).toEqual(['ts-shared', ...modules, ...docker])
+    const core = ['ts-shared', ...modules, ...docker]
+    expect(projectsForVitestGroup('backend-default')).toEqual(core)
+    expect(projectsForVitestGroup('backend-core')).toEqual(core)
   })
 
   it('runs every shared credentialed project in the backend group and alone in its own group', () => {
@@ -87,6 +90,8 @@ describe('runVitestProjectGroup', () => {
           'backend/analytics-integration',
           '--project',
           'backend-data-stores',
+          '--project',
+          'backend-ai-usage-monthly-ddl',
           '--project',
           'backend-partition-retirement',
           '--project',

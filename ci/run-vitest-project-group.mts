@@ -16,6 +16,7 @@ const dockerFreeBackendProjects = [
 const dockerBackedBackendProjects = [
   'backend/analytics-integration',
   'backend-data-stores',
+  'backend-ai-usage-monthly-ddl',
   'backend-partition-retirement',
   'backend-platform-stats-cache',
   'backend-mocks',
