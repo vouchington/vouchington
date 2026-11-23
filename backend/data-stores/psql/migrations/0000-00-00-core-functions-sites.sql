@@ -38,7 +38,7 @@ DECLARE
   column_name text;
   notice_id text := current_setting('app.copyright_case_purge_notice_id', true);
 BEGIN
-  IF NOT fn_copyright_case_purge_permitted(table_name)
+  IF fn_copyright_case_purge_permitted(table_name) IS NOT TRUE
     OR COALESCE(old_row ->> CASE WHEN table_name = 'copyright_notices' THEN 'id'
       ELSE 'copyright_notice_id' END, '') <> notice_id THEN RETURN false; END IF;
   allowed := CASE table_name
@@ -91,10 +91,12 @@ BEGIN
     AND (to_jsonb(OLD) - 'is_deletion_claimed') IS NOT DISTINCT FROM
       (to_jsonb(NEW) - 'is_deletion_claimed')
   THEN RETURN NEW; END IF;
+  -- The row trigger fires on the partition, while the purge scopes its permit to the parent.
   IF TG_OP = 'UPDATE' AND TG_TABLE_SCHEMA = 'public'
-    AND TG_TABLE_NAME = 'copyright_territorial_decisions'
+    AND pg_catalog.pg_partition_root(TG_RELID) =
+      pg_catalog.to_regclass('public.copyright_territorial_decisions')
     AND fn_copyright_case_purge_pointer_cut_permitted(
-      TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW))
+      'copyright_territorial_decisions', to_jsonb(OLD), to_jsonb(NEW))
   THEN RETURN NEW; END IF;
   IF TG_OP = 'DELETE' AND TG_TABLE_SCHEMA = 'public'
     AND starts_with(TG_TABLE_NAME, 'copyright_')
