@@ -108,6 +108,22 @@ describe('won Stripe dispute reversal recovery', () => {
     )
   })
 
+  it('claims a direct charge recovery without a Stripe lookup', async () => {
+    const requests = replayStripePaymentIntentCharges([])
+    const fixture = await createWonDisputeRecoveryFixture(0, [1_000], 'charge')
+    const reversalCase = await getReversalCase(fixture)
+    const target = {
+      ...getTarget(fixture, fixture.paymentIntentIds[0]!),
+      chargeId: fixture.chargeIds[0]!,
+      paymentIntentId: null,
+    }
+
+    await expect(
+      claimWonStripeDisputeRecovery(reversalCase, fixture.disputeId, target),
+    ).resolves.toMatchObject({ target, leaseToken: expect.any(String) })
+    expect(requests).toHaveLength(0)
+  })
+
   it('retries a failed recovery at the newly observed provider remainder', async () => {
     const fixture = await createWonDisputeRecoveryFixture()
     const reversalCase = await getReversalCase(fixture)
