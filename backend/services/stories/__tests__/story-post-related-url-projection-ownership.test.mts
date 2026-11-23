@@ -5,12 +5,17 @@ import {
   relationLimitsConfig,
 } from '@services/entity-relations/relation-limits'
 import {
+  beginTransaction,
   createTestUserDirect,
   getPostRelatedUrlIds,
   insertTestStory,
   insertTestStoryRssFeedItemsBatch,
   insertTestUrlDirect,
 } from '@voucha/test-helpers'
+import { createTestStoryProjectionLease } from '@voucha/test-helpers/entities/story-projection-work'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
+import { getTestPostgresBackendProcessId } from '@voucha/test-helpers/postgres-lock-wait'
+import { admitStoryPostRelatedUrlProjectionPrefix } from '../story-post-related-url-projection-relations.mts'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { upsertSystemUser } from '@services/users/system-users'
@@ -81,6 +86,56 @@ describe('story post related URL projection ownership', () => {
 
     await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual(
       expect.arrayContaining([sourceUrl.id, manualUrl.id]),
+    )
+  })
+
+  it('rolls back pruning when a manual confirmation commits during the prune write', async () => {
+    const suffix = crypto.randomUUID()
+    const [user, story, confirmedUrl, companionUrl] = await Promise.all([
+      createTestUserDirect(),
+      insertTestStory({ title: `Projection confirmation race ${suffix}` }),
+      insertTestUrlDirect(null, `https://story-confirmed-${suffix}.example.test/article`),
+      insertTestUrlDirect(null, `https://story-companion-${suffix}.example.test/article`),
+    ])
+    if (!confirmedUrl || !companionUrl) throw new Error('Expected projection URLs')
+    await insertTestStoryRssFeedItemsBatch({ storyId: story.id, urlId: confirmedUrl.id, count: 1 })
+    await insertTestStoryRssFeedItemsBatch({ storyId: story.id, urlId: companionUrl.id, count: 1 })
+    const {
+      response: { post },
+    } = await prepareStoryPost(story.id, user)
+    await drainProjection(post.id)
+
+    await refreshStoryPostForStory(story.id)
+    const work = await createTestStoryProjectionLease(post.id)
+    if (!work) throw new Error('Expected the owned projection lease')
+    const relation = getEntityRelationMetadataOrThrow({
+      subjectType: 'post',
+      predicate: 'related',
+      objectType: 'url',
+    })
+    await using confirmation = await beginTransaction()
+    await upsertEntityRelation(user, relation, { id: post.id }, [{ id: confirmedUrl.id }], {
+      query: confirmation,
+    })
+    const result = await withTestOwnedPostgresWait(
+      {
+        holderProcessId: await getTestPostgresBackendProcessId(confirmation),
+        pool: 'write',
+        lock: { kind: 'transaction' },
+        queryMarker: 'pruneStoryPostRelatedUrlsOutsidePrefix',
+        releaseHolder: () => confirmation[Symbol.asyncDispose](),
+      },
+      async waitForLock => {
+        const pending = admitStoryPostRelatedUrlProjectionPrefix(work, [])
+        await waitForLock(pending)
+        await confirmation.commit()
+        return pending
+      },
+    )
+
+    expect(result).toEqual({ ok: false, processed: 0 })
+    expect((await getPostRelatedUrlIds(post.id)).toSorted()).toEqual(
+      [confirmedUrl.id, companionUrl.id].toSorted(),
     )
   })
 })
