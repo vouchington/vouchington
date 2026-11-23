@@ -1,5 +1,5 @@
 import { createWorker, type NamedQueueJob } from '@data-stores/valkey-glide-mq'
-import { getWorkerConcurrency } from '@modules/queue-config'
+import { getWorkerConcurrency } from '@vouchington/utils/worker-concurrency'
 import { CRAWL_EMBEDS_QUEUE_NAME } from '@queues/crawl-embeds/config'
 import type { CrawlEmbedsJobPayloads } from '@queues/crawl-embeds/types'
 import { processCrawlEmbedsJob } from './processors.mts'

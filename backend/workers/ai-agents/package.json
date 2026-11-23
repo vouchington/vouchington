@@ -34,7 +34,6 @@
     "@modules/model-providers": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",
-    "@modules/queue-config": "workspace:^",
     "@modules/structured-decisions": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/ai-agents": "workspace:^",
@@ -67,6 +66,7 @@
     "@voucha/types": "workspace:^",
     "@vouchington/ai": "^0.4.1",
     "@vouchington/queue-errors": "^0.2.1",
+    "@vouchington/utils": "^0.12.1",
     "glide-mq": "^0.20.0",
     "openai": "^7.57.0",
     "p-map": "^7.1.1"

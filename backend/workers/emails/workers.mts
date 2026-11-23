@@ -1,5 +1,5 @@
 import { createWorker } from '@data-stores/valkey-glide-mq'
-import { getWorkerConcurrency } from '@modules/queue-config'
+import { getWorkerConcurrency } from '@vouchington/utils/worker-concurrency'
 import { parseEmailJob } from '@queues/emails/payload/job-payload'
 import { QUEUE_NAME } from '@queues/emails/config'
 import processEmail from './processors.mts'

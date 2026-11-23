@@ -42,7 +42,7 @@
     "@queues/heartbeat": "workspace:^",
     "@queues/image-uploads": "workspace:^",
     "@queues/unfurl-referral-links": "workspace:^",
-    "@vouchington/worker-runtime": "^0.3.1",
+    "@vouchington/worker-runtime": "^0.3.2",
     "@workers/ai-agents": "workspace:^",
     "@workers/background-cpu": "workspace:^",
     "@workers/crawl-browser": "workspace:^",

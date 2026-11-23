@@ -20,7 +20,6 @@
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@email-templates/core": "workspace:^",
     "@modules/aws": "workspace:^",
-    "@modules/queue-config": "workspace:^",
     "@modules/stripe": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/memberships": "workspace:^",
@@ -31,6 +30,7 @@
     "@services/stripe-event-processing": "workspace:^",
     "@services/users": "workspace:^",
     "@vouchington/queue-errors": "^0.2.1",
+    "@vouchington/utils": "^0.12.1",
     "glide-mq": "^0.20.0"
   },
   "devDependencies": {

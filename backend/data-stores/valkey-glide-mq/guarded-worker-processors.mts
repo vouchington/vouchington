@@ -1,124 +1,41 @@
-import { AsyncLocalStorage } from 'node:async_hooks'
-import type { BatchProcessor, Job, JobOptions, Processor, WorkerOptions } from 'glide-mq'
+import { TimeUnit, type Script } from '@glidemq/speedkey'
+import {
+  ADMIT_SCHEDULED_RUN_LUA,
+  DEFAULT_MAX_STALLED_COUNT,
+  RELEASE_SCHEDULED_RUN_LUA,
+  createGuardedProcessors,
+  createScheduledRunLease,
+} from '@vouchington/worker-runtime/glide-mq'
 import onError from '@modules/on-error'
-import { withScheduledRunLease } from './scheduled-run-lease.mts'
+import { workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { workerQueueCommandClient } from './glide-mq-shared-client.mts'
+import { registerWorkerQueueScript } from './glide-mq-scripts.mts'
 
-type ActiveJob = { queue: string; jobId: string; dedupId?: string }
-const activeJobs = new AsyncLocalStorage<ActiveJob[]>()
-type LeaseOptions = Pick<WorkerOptions, 'lockDuration' | 'maxStalledCount' | 'prefix'>
+const scripts = new Map<string, Script>([
+  [ADMIT_SCHEDULED_RUN_LUA, registerWorkerQueueScript(ADMIT_SCHEDULED_RUN_LUA)],
+  [RELEASE_SCHEDULED_RUN_LUA, registerWorkerQueueScript(RELEASE_SCHEDULED_RUN_LUA)],
+])
 
-export function wrapSingleProcessor<D, R>(
-  queue: string,
-  processor: Processor<D, R>,
-  options: LeaseOptions,
-): Processor<D, R> {
-  return job => runJob(queue, job, processor, options)
-}
+const lease = createScheduledRunLease({
+  prefix: workerQueuePrefix,
+  onError,
+  defaultMaxStalledCount: DEFAULT_MAX_STALLED_COUNT,
+  client: {
+    hget: (key, field) => workerQueueCommandClient.hget(key, field),
+    get: key => workerQueueCommandClient.get(key),
+    set: (key, value, expiryMs) =>
+      workerQueueCommandClient.set(key, value, {
+        expiry: { type: TimeUnit.Milliseconds, count: expiryMs },
+      }),
+    hincrBy: (key, field, amount) => workerQueueCommandClient.hincrBy(key, field, amount),
+    runScript: (lua, keys, args) =>
+      workerQueueCommandClient.invokeScript(scripts.get(lua)!, { keys, args }),
+  },
+})
 
-export function wrapBatchProcessor<D, R>(
-  queue: string,
-  processor: BatchProcessor<D, R>,
-  options: LeaseOptions,
-): BatchProcessor<D, R> {
-  return async jobs => {
-    const releases: Array<() => Promise<void>> = []
-    const runnable: Job<D, R>[] = []
-    try {
-      for (const job of jobs) {
-        // oxlint-disable-next-line no-await-in-loop -- preserve batch order when two jobs share a scheduler lease
-        const release = await withScheduledRunLease(queue, job, options)
-        if (release) {
-          releases.push(release)
-          runnable.push(job)
-        }
-      }
-      const values = runnable.length
-        ? await activeJobs.run(
-            runnable.map(job => activeJob(queue, job)),
-            () => processor(runnable),
-          )
-        : []
-      const result = jobs.map(job => {
-        const index = runnable.indexOf(job)
-        return index < 0 ? (undefined as R) : values[index]!
-      })
-      await releaseAfterFailure(releases)
-      return result
-    } catch (err) {
-      await releaseAfterFailure(releases)
-      throw err
-    }
-  }
-}
-
-async function runJob<D, R>(
-  queue: string,
-  job: Job<D, R>,
-  processor: Processor<D, R>,
-  options: LeaseOptions,
-): Promise<R> {
-  const release = await withScheduledRunLease(queue, job, options)
-  if (!release) return undefined as R
-  try {
-    const result = await activeJobs.run([activeJob(queue, job)], () => processor(job))
-    await releaseAfterFailure([release])
-    return result
-  } catch (err) {
-    await releaseAfterFailure([release])
-    throw err
-  }
-}
-
-async function releaseAfterFailure(releases: Array<() => Promise<void>>): Promise<void> {
-  const results = await Promise.allSettled(releases.map(release => release()))
-  for (const result of results) {
-    if (result.status !== 'rejected') continue
-    try {
-      const reason: unknown = result.reason
-      onError(reason instanceof Error ? reason : new Error(String(reason), { cause: reason }))
-    } catch (err) {
-      // Diagnostics must not replace the original processor or lease error.
-      console.error('scheduled_lease_release_reporting_failed', err)
-    }
-  }
-}
-
-function activeJob(queue: string, job: Job): ActiveJob {
-  return { queue, jobId: job.id, dedupId: job.opts.deduplication?.id }
-}
-
-/** True when this processor is already running `jobId` on `queue`. Re-adding that id is rejected. */
-export function isActiveProcessorJob(queue: string, jobId: string | undefined): boolean {
-  if (!jobId) return false
-  return activeJobs.getStore()?.some(job => job.queue === queue && job.jobId === jobId) ?? false
-}
-
-export function rejectSelfAdd(queue: string, jobName: string, opts?: JobOptions): boolean {
-  const active = activeJobs
-    .getStore()
-    ?.find(
-      job =>
-        job.queue === queue &&
-        ((opts?.jobId && opts.jobId === job.jobId) ||
-          (opts?.deduplication?.id && opts.deduplication.id === job.dedupId)),
-    )
-  if (!active) return false
-  const error: Error & { extra?: Record<string, unknown> } = new Error(
-    `Job ${active.jobId} tried to add itself to queue ${queue}`,
-  )
-  error.extra = {
-    queue,
-    jobName,
-    jobId: opts?.jobId ?? null,
-    dedupId: opts?.deduplication?.id ?? null,
-    activeJobId: active.jobId,
-    activeDedupId: active.dedupId ?? null,
-  }
-  if (process.env.NODE_ENV !== 'production') throw error
-  try {
-    onError(error)
-  } catch (err) {
-    console.error('self_add_guard_reporting_failed', err)
-  }
-  return true
-}
+/** Scheduled-run leases and the self-add guard, bound to the worker-queue command client. */
+export const guardedProcessors = createGuardedProcessors({
+  lease,
+  onError,
+  throwOnSelfAdd: process.env.NODE_ENV !== 'production',
+})

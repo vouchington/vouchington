@@ -1,9 +1,6 @@
 import type { Job } from 'glide-mq'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-  wrapBatchProcessor,
-  wrapSingleProcessor,
-} from '@data-stores/valkey-glide-mq/guarded-worker-processors'
+import { guardedProcessors } from '@data-stores/valkey-glide-mq/guarded-worker-processors'
 import {
   BLOOM_FILTER_DEFAULTS,
   backfillBloomFilterJobOptions,
@@ -115,12 +112,12 @@ describe('blocklist rebuild admission', () => {
   })
 
   it('throws when the running rebuild and its follow-up are both already active', async () => {
-    const run = wrapBatchProcessor(
-      QUEUE_NAME,
+    const run = guardedProcessors.wrapBatchProcessor(
       async jobs => {
         await enqueueRebuildBloomFilter(emailBlocklist)
         return jobs.map(() => undefined)
       },
+      QUEUE_NAME,
       {},
     )
 
@@ -134,11 +131,11 @@ describe('blocklist rebuild admission', () => {
 
   it('skips the rebuild id that is already running and admits the follow-up', async () => {
     const existing = await bloomFilters.getJob(emailFollowUpJobId)
-    const run = wrapSingleProcessor(
-      QUEUE_NAME,
+    const run = guardedProcessors.wrapSingleProcessor(
       async () => {
         await enqueueRebuildBloomFilter(emailBlocklist)
       },
+      QUEUE_NAME,
       {},
     )
     try {

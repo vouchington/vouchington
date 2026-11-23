@@ -81,7 +81,10 @@ async function releaseFinishedJobIds(
         const claim = await acquireTerminalJobRemoval(client, namespace, jobId)
         if (claim.state === 'terminal') {
           const data = preserveData ? await claim.readData() : null
-          const retainedData = data === null ? undefined : (JSON.parse(data.toString()) as unknown)
+          const retainedData =
+            data == null
+              ? undefined
+              : (JSON.parse(Buffer.from(data as string | Uint8Array).toString('utf8')) as unknown)
           if (await claim.remove()) released.set(jobId, retainedData)
         } else {
           if (claim.state === 'missing') released.set(jobId, undefined)
