@@ -109,7 +109,7 @@ jobs:
           overwrite: true
           name: storybook-node-test-report
           path: storybook-test-report.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: warn
       - name: Preserve full web-storybook LCOV
         timeout-minutes: 1
@@ -178,7 +178,7 @@ jobs:
           overwrite: true
           name: storybook-browser-junit
           path: storybook-browser-test-report.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore
       - name: Upload bounded Storybook browser diagnostics
         if: ${{ failure() }}
@@ -188,7 +188,7 @@ jobs:
           overwrite: true
           name: browser-debug-log-storybook
           path: storybook-browser-diagnostics.log
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore
       - name: Preserve full web-storybook-browser LCOV
         timeout-minutes: 1

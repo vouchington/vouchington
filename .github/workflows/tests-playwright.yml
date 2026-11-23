@@ -195,7 +195,7 @@ jobs:
             ${{ runner.temp }}/otel-output
             ${{ runner.temp }}/playwright-web-server-logs
           include-hidden-files: true
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: warn
       - name: Upload JUnit test results
         # Retain passing test counts for no-skip evidence as well as failures and retries.
@@ -207,7 +207,7 @@ jobs:
           overwrite: true
           name: playwright-junit-shard-${{ matrix.shard }}
           path: test-report.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore
       - name: Upload Playwright test-results (traces, screenshots, videos)
         if: ${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}
@@ -218,7 +218,7 @@ jobs:
           overwrite: true
           name: playwright-test-results-shard-${{ matrix.shard }}
           path: test-results/
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore
       - name: Upload wrangler logs
         if: ${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}
@@ -229,7 +229,7 @@ jobs:
           overwrite: true
           name: wrangler-logs-${{ matrix.shard }}
           path: ${{ runner.temp }}/wrangler-logs/
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore
       - name: Upload web and backend server logs
         if: ${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}
@@ -240,7 +240,7 @@ jobs:
           overwrite: true
           name: playwright-server-logs-shard-${{ matrix.shard }}
           path: ${{ runner.temp }}/playwright-web-server-logs/
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore
       - if: failure()
         uses: ./.github/actions/valkey-logs

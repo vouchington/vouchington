@@ -180,7 +180,7 @@ jobs:
           path: ${{ runner.temp }}/postgresql-snapshot-artifact/
           if-no-files-found: error
           overwrite: true
-          retention-days: 1
+          retention-days: 7
 
   publish:
     needs: [prepare, generate]

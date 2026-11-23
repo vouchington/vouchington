@@ -59,7 +59,7 @@ describe('Main Cloudflare Worker workflow', () => {
       name: 'cloudflare-worker-${{ github.run_id }}-${{ github.run_attempt }}',
       overwrite: true,
       path: 'delivery',
-      'retention-days': 1,
+      'retention-days': 7,
     })
   })
 })

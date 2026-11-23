@@ -62,5 +62,5 @@ jobs:
           name: image-resize-lambda-${{ github.run_id }}-${{ github.run_attempt }}
           path: delivery/image-resize.zip
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
           overwrite: true

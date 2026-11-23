@@ -28,7 +28,7 @@ export function reporterWorkflowFixtures(): Record<string, string> {
           with: {
             name: artifact,
             path: 'test.junit.xml',
-            'retention-days': 1,
+            'retention-days': 7,
             'if-no-files-found': 'warn',
           },
         },
@@ -49,7 +49,7 @@ export const reporterUploadFieldMutations = [
   ['if: ${{ !cancelled() }}', 'if: always()'],
   ['continue-on-error: true', 'continue-on-error: false'],
   ['timeout-minutes: 1', 'timeout-minutes: 0'],
-  ['retention-days: 1', 'retention-days: 2'],
+  ['retention-days: 7', 'retention-days: 2'],
   ['if-no-files-found: warn', 'if-no-files-found: error'],
   ['path: test.junit.xml', 'path: other.junit.xml'],
   ['test.junit.xml', 'test.xml'],

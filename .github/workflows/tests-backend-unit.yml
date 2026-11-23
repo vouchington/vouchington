@@ -216,7 +216,7 @@ jobs:
           overwrite: true
           name: backend-junit-shard-${{ matrix.shard }}
           path: test-report.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore
       # The incremental file survives a step killed by its timeout, which writes no JUnit report.
       - name: Upload backend-shard-${{ matrix.shard }} file progress
@@ -228,7 +228,7 @@ jobs:
           overwrite: true
           name: backend-file-progress-shard-${{ matrix.shard }}
           path: backend-unit-file-progress.log
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore
       - name: Upload backend-shard-${{ matrix.shard }} query-profile hits
         timeout-minutes: 1
@@ -237,7 +237,7 @@ jobs:
           overwrite: true
           name: backend-query-profile-hits-shard-${{ matrix.shard }}
           path: backend-query-profile-hits-shard-${{ matrix.shard }}.json
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: error
       - name: Preserve full backend-shard-${{ matrix.shard }} LCOV
         timeout-minutes: 1
@@ -292,7 +292,7 @@ jobs:
           path: |
             backend-postgres.log
             backend-postgres-relations.csv
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore
 
   check-query-profile-baseline:

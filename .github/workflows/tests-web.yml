@@ -112,7 +112,7 @@ jobs:
           overwrite: true
           name: web-test-report-shard-${{ matrix.shard }}
           path: web-shard-${{matrix.shard}}.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: warn
       - name: Preserve full web-shard-${{ matrix.shard }} LCOV
         timeout-minutes: 1

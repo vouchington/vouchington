@@ -145,7 +145,7 @@ jobs:
           overwrite: true
           name: web-api-junit-shard-${{ matrix.shard }}
           path: web-api-shard-${{ matrix.shard }}.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore
       - name: Preserve full web-api-shard-${{ matrix.shard }} LCOV
         timeout-minutes: 1

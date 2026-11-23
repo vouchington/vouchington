@@ -112,5 +112,5 @@ jobs:
           overwrite: true
           name: test-plan-shadow-${{ github.event.workflow_run.id }}
           path: ${{ runner.temp }}/test-plan-shadow/test-plan-shadow.json
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore

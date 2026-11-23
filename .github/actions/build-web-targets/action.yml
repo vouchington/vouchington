@@ -84,7 +84,7 @@ runs:
         path: ${{ runner.temp }}/web-build-timings.json
         if-no-files-found: warn
         overwrite: true
-        retention-days: 1
+        retention-days: 7
     - name: Stamp shared web build manifest
       if: ${{ inputs.shared-build-cache-mode == 'producer' && success() }}
       shell: bash

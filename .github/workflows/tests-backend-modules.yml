@@ -61,7 +61,7 @@ jobs:
           overwrite: true
           name: backend-modules-junit
           path: backend-modules-test-report.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: warn
       - name: Preserve full backend-modules LCOV
         timeout-minutes: 1
