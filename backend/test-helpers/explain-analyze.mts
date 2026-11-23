@@ -4,9 +4,8 @@ import {
   type ExplainResult,
 } from '@vouchington/explain-plan'
 import type { QueryInput } from '@data-stores/psql/types'
-import { connectWithRetry } from '@data-stores/psql/connect-with-retry'
+import { connectWithRetry, LEADING_QUERY_ANNOTATION_PATTERN } from '@vouchington/postgres'
 import { readPool } from '@data-stores/psql/setup'
-import { LEADING_QUERY_ANNOTATION_PATTERN } from '@data-stores/psql/prepared-statement-name'
 
 export {
   clearCapturedQueries,

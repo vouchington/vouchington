@@ -1,4 +1,4 @@
-import { allowUnannotatedQuery } from '../../../backend/data-stores/psql/prepared-statement-name.mts'
+import { allowUnannotatedQuery } from '@vouchington/postgres'
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { loginAsUser } from '../../helpers/auth.mts'
