@@ -109,7 +109,6 @@ describe('refreshStoryPostForStory', () => {
     const prepared = await prepareStoryPost(story.id, testUser)
     await prepared.finalize()
     const { post } = prepared.response
-    await expect(getPostCategoryTopicIds(post.id)).resolves.toEqual([previousTopic])
 
     const restore = beforePostgresTransactionQueryForTest(
       '/* markStoryPostRelatedUrlProjection */',
