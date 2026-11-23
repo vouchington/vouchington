@@ -148,7 +148,7 @@
     "@vouchington/session-jwt": "^0.0.3",
     "@vouchington/worker-runtime": "^0.3.2",
     "coverage-check": "^0.18.1",
-    "dependency-cruiser": "^18.7.2",
+    "dependency-cruiser": "^18.8.0",
     "eslint-plugin-no-mistakes": "^0.109.117",
     "eslint-plugin-playwright": "^2.12.2",
     "eslint-plugin-react-you-might-not-need-an-effect": "^1.2.0",
