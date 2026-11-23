@@ -74,7 +74,7 @@ async function authorizedAvatarDataUri(
       config,
       dependencies,
     )
-    return { avatarDataUri, cacheable }
+    return { ...(avatarDataUri === undefined ? {} : { avatarDataUri }), cacheable }
   } catch {
     return { cacheable: false }
   }

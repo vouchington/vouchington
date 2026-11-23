@@ -58,7 +58,10 @@ export function createLambdaHandler(
       }
 
       // Parse request using router
-      const request = parseRouterRequest(event, { sideloadSigningKeys })
+      const request = parseRouterRequest(
+        event,
+        sideloadSigningKeys === undefined ? {} : { sideloadSigningKeys },
+      )
 
       // Branch based on request type
       if (request.type === 'og') {

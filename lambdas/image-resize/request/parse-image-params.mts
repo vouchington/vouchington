@@ -73,5 +73,13 @@ export function parseImageParams(
   // Get Accept header for format negotiation
   const acceptHeader = headers['Accept'] || headers['accept']
 
-  return { width, height, quality, lossless, progressive, format, acceptHeader }
+  return {
+    width,
+    ...(height === undefined ? {} : { height }),
+    quality,
+    lossless,
+    progressive,
+    ...(format === undefined ? {} : { format }),
+    ...(acceptHeader === undefined ? {} : { acceptHeader }),
+  }
 }
