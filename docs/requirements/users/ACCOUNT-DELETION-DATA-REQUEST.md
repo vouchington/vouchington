@@ -144,8 +144,14 @@ zero-row `DELETE` rolls its page back, reports more work and leaves the account 
 rediscovery; the batch does not promise to rediscover it in the same run, because a later deadlock in
 the batch stops the pass. A deadlock ends its page without retry. A continuation page already in flight
 (a page that returns more work before the final `DELETE`) can commit its stage deletions after a hold is
-placed; only the page that attempts the final `DELETE` re-checks the hold and rolls back. Placing the
-lock earlier is an owner decision and unchanged from before this design. Incoming references remain unchanged
+placed; only the page that attempts the final `DELETE` re-checks the hold and rolls back. Every page begins
+with an eligibility read that includes the no-open-hold condition and does not lock the account row.
+Accepted limitation (owner decision, 2026-11-22): a hold placed after an intermediate page's eligibility
+read and before that page commits does not stop that page. At most one bounded page of rows is deleted,
+and the next page sees the hold and stops. The hold is a manual administrator action, so the window is very
+unlikely to be hit, and the loss is one page on an account that is already partly purged. Locking the
+account row at the start of every page would hold the lock across the page and conflict with the deliberate
+ordering where the `DELETE` takes the user lock last, after membership grant writes. Incoming references remain unchanged
 until the final user deletion applies their existing null-on-delete behavior.
 
 An operative repeat-infringer incident does not block deletion. The normal deletion phases erase
