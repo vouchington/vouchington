@@ -69,7 +69,10 @@ describe('callAgentToolTurn (real PG)', () => {
     await callAgentToolTurn({
       request,
       callTurn,
-      beforeDispatch: () => Promise.resolve(void order.push('reserve')),
+      beforeDispatch: () => {
+        order.push('reserve')
+        return Promise.resolve()
+      },
       agentSlug: 'autotagger-agent',
       selection: TEST_MODEL_SELECTION,
     })

@@ -71,7 +71,9 @@ describe('CopyrightStaffTerritorial', () => {
     render(
       <CopyrightStaffTerritorial
         item={makeItem(openAcknowledgment)}
-        onReview={action => void action()}
+        onReview={action => {
+          void action()
+        }}
         pending={false}
       />,
     )
@@ -94,7 +96,9 @@ describe('CopyrightStaffTerritorial', () => {
           exhausted_at: '2026-09-01T10:00:00Z',
           escalated: true,
         })}
-        onReview={action => void action()}
+        onReview={action => {
+          void action()
+        }}
         pending={false}
       />,
     )
@@ -122,7 +126,9 @@ describe('CopyrightStaffTerritorial', () => {
     render(
       <CopyrightStaffTerritorial
         item={makeItem(openAcknowledgment, 'uk')}
-        onReview={action => void action()}
+        onReview={action => {
+          void action()
+        }}
         pending={false}
       />,
     )
@@ -148,7 +154,9 @@ describe('CopyrightStaffTerritorial', () => {
     render(
       <CopyrightStaffTerritorial
         item={makeItem(openAcknowledgment, 'uk')}
-        onReview={action => void action()}
+        onReview={action => {
+          void action()
+        }}
         pending={false}
       />,
     )

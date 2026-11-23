@@ -1,7 +1,6 @@
 import { resolveStripeRefundChargeId } from '../refund-issuance.mts'
-import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
+import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { getOrCreateProviderContextId } from '../provider-context.mts'
 import { reconcileFailedIneligiblePurchaseReversal } from '../ineligible-stripe-purchase-reversal-reconcile.mts'
 import {
   createIneligiblePurchaseReversalIdempotencyKey,
@@ -18,16 +17,78 @@ import {
 import { claimIneligiblePurchaseReversalExecution } from './execution-claim.mts'
 import { wasSucceededStripeRefundObserved } from './refund-scan.mts'
 import {
+  createRecoveryOperation,
+  getOriginalReversalWithReceipt,
   getWonDisputeRecoveryAllocatedMinorUnits,
   getWonDisputeRecoveryOperation,
+  type RecoveryPayment,
   type WonDisputeRecoveryOperation,
 } from './won-dispute-recovery-operations.mts'
+
 export async function claimWonStripeDisputeRecovery(
   expectedCase: IneligiblePurchaseReversalCase,
   disputeId: string,
   target: ReversalTarget,
 ): Promise<ClaimedReversal | null> {
+  const paymentReference = target.chargeId ?? target.paymentIntentId
+  if (!paymentReference?.startsWith('pi_'))
+    return claimRecoveryInTransaction(
+      expectedCase,
+      disputeId,
+      target,
+      paymentReference ? { paymentReference, chargeId: paymentReference } : null,
+    )
+
+  const candidate = await getRecoveryCandidate(expectedCase, disputeId, target, write, false)
+  if (!candidate) return null
+  const payment = candidate.operation
+    ? null
+    : { paymentReference, chargeId: await resolveStripeRefundChargeId(paymentReference) }
+  return claimRecoveryInTransaction(expectedCase, disputeId, target, payment)
+}
+
+async function claimRecoveryInTransaction(
+  expectedCase: IneligiblePurchaseReversalCase,
+  disputeId: string,
+  target: ReversalTarget,
+  payment: RecoveryPayment | null,
+): Promise<ClaimedReversal | null> {
   await using query = await beginTransaction()
+  const candidate = await getRecoveryCandidate(expectedCase, disputeId, target, query, true)
+  if (!candidate) {
+    await query.commit()
+    return null
+  }
+  const { reversalCase, idempotencyKey } = candidate
+  const operation =
+    candidate.operation ??
+    (await createRecoveryOperation(
+      reversalCase,
+      idempotencyKey,
+      payment,
+      candidate.amountMinorUnits,
+      query,
+    ))
+  const claim = await claimExistingRecovery(reversalCase, operation, idempotencyKey, target, query)
+  await query.commit()
+  return claim
+}
+
+type RecoveryCandidate = {
+  reversalCase: IneligiblePurchaseReversalCase
+  idempotencyKey: string
+} & (
+  | { operation: WonDisputeRecoveryOperation; amountMinorUnits?: never }
+  | { operation: null; amountMinorUnits: number }
+)
+
+async function getRecoveryCandidate(
+  expectedCase: IneligiblePurchaseReversalCase,
+  disputeId: string,
+  target: ReversalTarget,
+  query: QueryExecutor,
+  lockOperation: boolean,
+): Promise<RecoveryCandidate | null> {
   const reversalCase = await getLockedIneligiblePurchaseReversalCase(
     {
       originatingInvoiceId: expectedCase.originatingInvoiceId,
@@ -37,47 +98,23 @@ export async function claimWonStripeDisputeRecovery(
     },
     query,
   )
-  if (!reversalCase || reversalCase.id !== expectedCase.id) {
-    await query.commit()
-    return null
-  }
+  if (!reversalCase || reversalCase.id !== expectedCase.id) return null
   const originalKey = createIneligiblePurchaseReversalIdempotencyKey(
     reversalCase.providerEnvironment,
     reversalCase.providerApplicationId,
     reversalCase.subscriptionId,
     target,
   )
-  const { rows: originalRows } = await query(sql`/* claimWonStripeDisputeRecovery:original */
-    SELECT operation.id,
-      operation.qualifying_allocation_minor_units::TEXT AS "qualifyingAllocationMinorUnits",
-      receipt.amount_minor_units::TEXT AS "receiptAmountMinorUnits"
-    FROM membership_ineligible_purchase_reversal_case_operations case_operation
-    INNER JOIN membership_operations operation
-      ON operation.id = case_operation.membership_operation_id
-    INNER JOIN membership_automatic_refund_receipts receipt
-      ON receipt.membership_operation_id = operation.id
-    WHERE case_operation.membership_ineligible_purchase_reversal_case_id = ${reversalCase.id}
-      AND operation.idempotency_key = ${originalKey}
-      AND operation.completed_at IS NOT NULL
-  `)
-  const original = originalRows[0] as
-    | {
-        id: string
-        qualifyingAllocationMinorUnits: string
-        receiptAmountMinorUnits: string
-      }
-    | undefined
-  if (!original) {
-    await query.commit()
-    return null
-  }
+  const original = await getOriginalReversalWithReceipt(reversalCase.id, originalKey, query)
+  if (!original) return null
   const idempotencyKey = createWonDisputeRecoveryIdempotencyKey(original.id, disputeId)
-  const existing = await getWonDisputeRecoveryOperation(reversalCase, idempotencyKey, query)
-  if (existing) {
-    const claim = await claimExistingRecovery(reversalCase, existing, idempotencyKey, target, query)
-    await query.commit()
-    return claim
-  }
+  const operation = await getWonDisputeRecoveryOperation(
+    reversalCase,
+    idempotencyKey,
+    query,
+    lockOperation,
+  )
+  if (operation) return { reversalCase, idempotencyKey, operation }
   const allocatedMinorUnits = await getWonDisputeRecoveryAllocatedMinorUnits(
     reversalCase,
     original.id,
@@ -92,37 +129,9 @@ export async function claimWonStripeDisputeRecovery(
         allocatedMinorUnits,
     ),
   )
-  if (amountMinorUnits === 0) {
-    await query.commit()
-    return null
-  }
-  // ast-grep-ignore: no-three-sequential-awaits -- the context must exist before the operation insert, which must precede the locked claim reread
-  const providerContextId = await getOrCreateProviderContextId(
-    {
-      provider: 'stripe',
-      environment: reversalCase.providerEnvironment,
-      applicationId: reversalCase.providerApplicationId,
-    },
-    query,
-  )
-  await query(sql`/* claimWonStripeDisputeRecovery:insert */
-    INSERT INTO membership_operations (
-      membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
-      membership_provider_context_id, operation_kind, idempotency_key, provider_payment_reference, provider_charge_id,
-      qualifying_allocation_minor_units, remaining_refundable_minor_units, currency_code,
-      period_started_at, period_ends_at, collision_at
-    ) VALUES (
-      ${reversalCase.membershipSourceId}, ${reversalCase.membershipProviderLineageId},
-      ${reversalCase.membershipLineageBindingId}, ${providerContextId}, 'collision_resolution', ${idempotencyKey}, ${target.chargeId ?? target.paymentIntentId}, ${await resolveStripeRefundChargeId(target.chargeId ?? target.paymentIntentId!)},
-      ${amountMinorUnits}, ${amountMinorUnits}, ${reversalCase.currency},
-      ${reversalCase.periodStartedAt}, ${reversalCase.periodEndsAt}, ${reversalCase.collisionAt}
-    )
-  `)
-  const created = await getWonDisputeRecoveryOperation(reversalCase, idempotencyKey, query)
-  if (!created) throw new Error('Could not create won-dispute reversal recovery')
-  const claim = await claimExistingRecovery(reversalCase, created, idempotencyKey, target, query)
-  await query.commit()
-  return claim
+  return amountMinorUnits === 0
+    ? null
+    : { reversalCase, idempotencyKey, operation: null, amountMinorUnits }
 }
 
 async function claimExistingRecovery(

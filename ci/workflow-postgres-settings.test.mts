@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { postgresWorkflowPolicyViolations, type OpsWorkflow } from './workflow-ops-policy.mts'
 
 const common = '-c max_connections=300 -c log_min_messages=log'
-const eager = `${common} -c autovacuum_naptime=1s -c autovacuum_analyze_threshold=0 -c autovacuum_analyze_scale_factor=0 -c log_lock_waits=on -c log_min_error_statement=error -c log_line_prefix=%m_pid%p_app%a_xid%x_`
+const eager =
+  '-c max_connections=300 -c log_min_messages=error -c autovacuum_naptime=1s -c autovacuum_analyze_threshold=0 -c autovacuum_analyze_scale_factor=0 -c log_lock_waits=on -c log_min_error_statement=error -c log_line_prefix=%m_pid%p_app%a_xid%x_'
 const path = '.github/workflows/tests-backend-unit.yml'
 const sources = {
   [path]: `image: ghcr.io/vouchington/dependency-pgvector:synthetic@sha256:${'b'.repeat(64)}`,
@@ -16,7 +17,7 @@ function workflow(args: string, job = 'backend-tests'): OpsWorkflow {
 }
 
 describe('PostgreSQL workflow service settings', () => {
-  it('requires eager autoanalyze for backend unit shards', () => {
+  it('requires eager autoanalyze and deadlock logging for backend unit shards', () => {
     expect(postgresWorkflowPolicyViolations(sources, { [path]: workflow(eager) })).toEqual([])
     for (const args of [
       common,
@@ -24,6 +25,7 @@ describe('PostgreSQL workflow service settings', () => {
       eager.replace('-c autovacuum_analyze_threshold=0', ''),
       eager.replace('-c autovacuum_analyze_scale_factor=0', ''),
       eager.replace('-c log_lock_waits=on', ''),
+      eager.replace('log_min_messages=error', 'log_min_messages=log'),
     ]) {
       expect(postgresWorkflowPolicyViolations(sources, { [path]: workflow(args) })).toEqual([
         `${path}#backend-tests POSTGRES_INITDB_ARGS must equal ${eager}`,

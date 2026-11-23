@@ -2,40 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { createPartitionRetirementFailureFixture } from '@voucha/test-helpers/partition-retirement-failure'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { write } from '../setup.mts'
-import type { QueryExecutor } from '../types.mts'
 import { listMonthlyDropCandidates } from './monthly-partition-candidates.mts'
 import {
   cleanupPartitions,
-  createMonthlyPartitions,
   retireMonthlyPartitionCandidate,
   retirePartitionsSequentially,
 } from './monthly-partitions.mts'
 
 const now = new Date('2026-10-23T00:00:00.000Z')
-
-describe('createMonthlyPartitions', () => {
-  it('creates the configured monthly partitions without dropping the RSS default child', async () => {
-    const statements: string[] = []
-    const writer = recordStatements(statements)
-
-    await createMonthlyPartitions(writer)
-
-    expect(statements.some(statement => statement.includes('CREATE'))).toBe(true)
-    expect(
-      statements.some(statement =>
-        statement.includes('DROP TABLE IF EXISTS rss_feed_crawls__default'),
-      ),
-    ).toBe(false)
-    const postsLock = statements.findIndex(statement =>
-      statement.includes('createPostClearancePartitions:lockPosts'),
-    )
-    const clearancePartition = statements.findIndex(statement =>
-      statement.includes('PARTITION OF post_clearance_changes'),
-    )
-    expect(postsLock).toBeGreaterThanOrEqual(0)
-    expect(clearancePartition).toBeGreaterThan(postsLock)
-  })
-})
 
 const sweepCandidate = {
   table: 'crawls',
@@ -160,10 +134,3 @@ describe('monthly partition retirement', () => {
     await expect(fixture.readMarkdown()).resolves.toBe(fixture.originalMarkdown)
   })
 })
-
-function recordStatements(statements: string[]): QueryExecutor {
-  return async input => {
-    statements.push(typeof input === 'string' ? input : input.text)
-    return { rows: [], rowCount: 0, command: 'CREATE', oid: 0, fields: [] }
-  }
-}

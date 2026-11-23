@@ -55,7 +55,9 @@ describe('createStoryClusteringClient', () => {
   it('reserves the provider attempt once, before the single physical request', async () => {
     const calls: string[] = []
     const fetch = provider(calls)
-    const beforeAttempt = vi.fn<() => Promise<void>>(async () => void calls.push('reserve'))
+    const beforeAttempt = vi.fn<() => Promise<void>>(async () => {
+      calls.push('reserve')
+    })
     const client = createStoryClusteringClient(
       { classifierRunId, selection: JEV_OPENROUTER_SELECTION, beforeAttempt },
       { fetch, apiKey: 'test-provider-key' },

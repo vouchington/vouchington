@@ -30,9 +30,14 @@ Test forks and global setup each hold the full per-process pool budget. Their co
 reserved superuser slots must fit the CI Postgres `max_connections`. The image default cannot hold it,
 so CI services raise it, and exceeding it fails tests with `FATAL 53300`. The
 [`postgres-image-policy` test](../../../.github/workflows/postgres-image-policy.test.mts) keeps the
-docker paths on that ceiling. CI also sets `log_min_messages=log`: tests raise `ERROR`s on purpose
+docker paths on that ceiling. Most CI services set `log_min_messages=log`. Tests raise `ERROR`s on purpose
 and the client already receives each one, so the server copy only flooded the service log, while
 startup, checkpoint, crash, `FATAL`, and `PANIC` lines still print.
+
+The [backend unit shards](../../../.github/workflows/tests-backend-unit.yml) retain server-side `ERROR`
+reports because PostgreSQL includes both sides of a deadlock there. The failed-shard artifact includes
+the service log and a catalog snapshot for matching relation OIDs to names. A relation dropped before
+the snapshot can still appear by OID in the log.
 
 ## Pipelining
 
