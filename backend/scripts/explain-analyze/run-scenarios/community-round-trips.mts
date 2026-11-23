@@ -1,5 +1,6 @@
 import { runCommunityAgentPromptPageScenarios } from './community-agent-prompt-pages.mts'
 import { runCommunityMembershipCapScenarios } from './community-membership-caps.mts'
+import { runApplicationQuestionListScenario } from './community-application-question-list.mts'
 import { runCommunityBanPageScenarios } from './community-ban-pages.mts'
 import { randomUUID } from 'node:crypto'
 import { beginTransaction, read } from '@data-stores/psql'
@@ -135,4 +136,5 @@ export async function runCommunityRoundTripScenarios(): Promise<void> {
   await runModmailFirstReplyScenario()
   await runInviteRedeem(communityId)
   await runApplicationQuestions(communityId)
+  await runApplicationQuestionListScenario()
 }
