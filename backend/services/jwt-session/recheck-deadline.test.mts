@@ -51,7 +51,7 @@ describe('authenticated session recheck deadline', () => {
   it('cold-refreshes an authenticated native token that has no recheck deadline', async () => {
     const user = await createTestUser()
     const startedAt = new Date(Date.now())
-    let currentTime = startedAt.getTime()
+    const currentTime = startedAt.getTime()
     const clock = () => currentTime
 
     const minted = await createDeviceAndSessionTokens({
@@ -81,7 +81,7 @@ describe('authenticated session recheck deadline', () => {
   it('rejects a signed UUIDv4 session instead of preserving its recheck deadline', async () => {
     const user = await createTestUser()
     const startedAt = new Date(Date.now())
-    let currentTime = startedAt.getTime()
+    const currentTime = startedAt.getTime()
     const clock = () => currentTime
 
     const did = legacyUuidV4()

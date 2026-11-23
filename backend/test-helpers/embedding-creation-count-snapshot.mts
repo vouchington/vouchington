@@ -25,6 +25,7 @@ export async function createEmbeddingCountSnapshot(
     void operation.catch(() => {})
     return operation
   }
+  // oxlint-disable-next-line prefer-const -- cleanup registered before the assignment can read this if setup throws; const would throw a TDZ ReferenceError
   let setup: Promise<Awaited<ReturnType<typeof getActiveBatchStats>>>
   const close = () => (closing ??= dispose())
   // The registered disposer waits for a transaction acquired after cleanup has started.

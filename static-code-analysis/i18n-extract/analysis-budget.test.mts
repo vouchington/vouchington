@@ -70,7 +70,7 @@ describe('withI18nAnalysisBudget', () => {
   })
 
   it('shares one deadline across successive no-mistakes calls', async () => {
-    let now = 10_000
+    const now = 10_000
     const clock: AnalysisBudgetClock = {
       delay: ms => Promise.reject(new Error(`delay ${ms}`)),
     }

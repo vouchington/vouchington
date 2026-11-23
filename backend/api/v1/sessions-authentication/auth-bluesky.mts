@@ -131,13 +131,12 @@ app.route('/api/v1/auth/bluesky/callback').get(async (ctx: Context) => {
     await completeBlueskyAccountLink(params, currentUser.id, appState.flowId)
     redirectToLinkUi(ctx, { bluesky: 'linked' })
   } catch (err) {
-    let callbackError = err
-    reportBlueskyCallbackError(callbackError, {
+    reportBlueskyCallbackError(err, {
       mode: 'web',
       flowId: appState?.flowId,
       authenticatedUserId,
     })
-    redirectToLinkUi(ctx, { bluesky_error: getBlueskyCallbackErrorCode(callbackError) })
+    redirectToLinkUi(ctx, { bluesky_error: getBlueskyCallbackErrorCode(err) })
   }
 })
 
