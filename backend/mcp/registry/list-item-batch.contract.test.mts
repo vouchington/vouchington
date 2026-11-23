@@ -1,5 +1,7 @@
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import { listImportConfig } from '@services/lists/import-config'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createRandomString,
@@ -20,6 +22,26 @@ const SCOPES = ['lists:read', 'lists:write'] as const
 const PRIVATE_SCOPES = [...SCOPES, 'post-relations.owned-private:write'] as const
 
 describe('add_list_item batch — real DB', () => {
+  it('enforces the configured item batch limit without changing the stored list', async () => {
+    await listImportConfig.waitForInitialization()
+    onTestFinished(overrideDynamicConfigFieldsForTest(listImportConfig, { add_list_items_max: 1 }))
+    const caller = await createTestUser()
+    const list = await createOwnedList(caller.id, WEB_PROVENANCE, { name: 'Configured batch' })
+    const post = await createTestPost({ user: caller })
+    const item = { item_type: 'post' as const, entity: post.id }
+
+    await expect(addVisibleListItems(caller, null, list.id, [item, item])).rejects.toMatchObject({
+      status: 400,
+    })
+    await expect(searchListItems(list.id)).resolves.toMatchObject({ results: [] })
+    await expect(addVisibleListItems(caller, null, list.id, [item])).resolves.toMatchObject([
+      { status: 'added' },
+    ])
+    expect((await searchListItems(list.id)).results.map(result => result.entity_id)).toEqual([
+      post.id,
+    ])
+  })
+
   it('reports a list deleted during the item insert FK check as not found', async () => {
     const caller = { ...(await createTestUser()), membership_plan: 'plus' as const }
     const list = await createOwnedList(caller.id, WEB_PROVENANCE, { name: 'Deleted list race' })

@@ -1,9 +1,23 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, onTestFinished } from 'vitest'
+import { adminImportsWorkConfig } from '@queues/admin-imports/config'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { validateTopicRows } from '../validate-topics.mts'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 
 describe('validateTopicRows (basic)', () => {
+  it('enforces the configured parent slug count for each row', async () => {
+    await adminImportsWorkConfig.waitForInitialization()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(adminImportsWorkConfig, { max_parent_slugs_per_row: 1 }),
+    )
+    const slug = `parent-cap-${randomSuffix()}`
+    const rejected = validateTopicRows([{ slug, parent_slugs: 'first-parent|second-parent' }])
+    expect(rejected.valid).toBe(false)
+    expect(rejected.rows[0].errors).toContain('parent_slugs must contain at most 1 slugs')
+    expect(validateTopicRows([{ slug, parent_slugs: 'first-parent' }]).valid).toBe(true)
+  })
+
   it('accepts valid topic rows with slug only', () => {
     const suffix = randomSuffix()
     const result = validateTopicRows([
