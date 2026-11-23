@@ -1,5 +1,5 @@
 import { writePool, type PoolClient } from '@data-stores/psql'
-import { extractQueryName } from '@data-stores/psql/explain-analyze'
+import { extractQueryName } from '@voucha/test-helpers/explain-analyze'
 import { maybeCaptureQuery } from '@data-stores/psql/query-capture'
 
 /** Capture only named raw client queries during one native scenario callback. */

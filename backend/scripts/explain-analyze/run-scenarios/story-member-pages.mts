@@ -1,4 +1,4 @@
-import { getCapturedQueries, extractQueryName } from '@data-stores/psql/explain-analyze'
+import { getCapturedQueries, extractQueryName } from '@voucha/test-helpers/explain-analyze'
 import { caches } from '@services/entity-cache/caches'
 import type {
   StoryMemberPage,

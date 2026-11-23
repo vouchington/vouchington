@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { write } from '@data-stores/psql'
-import { extractQueryName, getCapturedQueries } from '@data-stores/psql/explain-analyze'
+import { extractQueryName, getCapturedQueries } from '@voucha/test-helpers/explain-analyze'
 import { cleanupPostModerationLedger } from '@services/data-retention/cleanup-post-moderation-ledger'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'

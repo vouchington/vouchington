@@ -3,10 +3,10 @@ import {
   type ExplainPlanCacheMode,
   type ExplainResult,
 } from '@vouchington/explain-plan'
-import type { QueryInput } from './types.mts'
-import { connectWithRetry } from './connect-with-retry.mts'
-import { readPool } from './setup.mts'
-import { LEADING_QUERY_ANNOTATION_PATTERN } from './prepared-statement-name.mts'
+import type { QueryInput } from '@data-stores/psql/types'
+import { connectWithRetry } from '@data-stores/psql/connect-with-retry'
+import { readPool } from '@data-stores/psql/setup'
+import { LEADING_QUERY_ANNOTATION_PATTERN } from '@data-stores/psql/prepared-statement-name'
 
 export {
   clearCapturedQueries,
@@ -14,7 +14,7 @@ export {
   enableQueryCapture,
   getCapturedQueries,
   runWithCapturedQueries,
-} from './query-capture.mts'
+} from '@data-stores/psql/query-capture'
 
 // Production (Aurora Serverless v2) auto-tunes work_mem from live ACU capacity, so there is no
 // fixed production value to pin app-wide. EXPLAIN capture is the one place that needs a fixed,

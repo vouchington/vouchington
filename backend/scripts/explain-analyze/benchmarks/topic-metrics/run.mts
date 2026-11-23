@@ -72,7 +72,7 @@ try {
   const engagement = await import('../../seed-data/engagement.mts')
   const maintenance = await import('../../seed-data/maintenance.mts')
   const psql = await import('@data-stores/psql')
-  const explain = await import('@data-stores/psql/explain-analyze')
+  const explain = await import('@voucha/test-helpers/explain-analyze')
   const { gracefulShutdown } = await import('@data-stores/graceful-shutdown')
   const { getTopicMetricsByAnyBatch } = await import('@services/topics/metrics-batch')
   closePools = gracefulShutdown

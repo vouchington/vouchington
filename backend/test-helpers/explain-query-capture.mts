@@ -4,7 +4,7 @@ import {
   disableQueryCapture,
   enableQueryCapture,
   getCapturedQueries,
-} from '@data-stores/psql/explain-analyze'
+} from './explain-analyze.mts'
 
 /** Exercise native pool queries while a caller-owned capture adapter is installed. */
 export async function runRawPoolCaptureProbe(

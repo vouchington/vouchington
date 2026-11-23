@@ -6,7 +6,7 @@ import {
   getCapturedQueries,
   clearCapturedQueries,
   extractQueryName,
-} from '@data-stores/psql/explain-analyze'
+} from '@voucha/test-helpers/explain-analyze'
 import { captureNamedRawPoolQueries, selectCapturedSetupSql } from './raw-pool-query-capture.mts'
 import type { PrivateUser } from '@services/users/types'
 import { writeFileSync, mkdirSync } from 'node:fs'

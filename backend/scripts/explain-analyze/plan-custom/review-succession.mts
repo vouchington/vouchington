@@ -4,7 +4,7 @@ import {
   type PlanNode,
   processedRows,
 } from '@vouchington/explain-plan'
-import { extractQueryName } from '@data-stores/psql/explain-analyze'
+import { extractQueryName } from '@voucha/test-helpers/explain-analyze'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 export function assertReviewSuccessionCandidatePlanIfApplicable(result: ExplainResult): void {

@@ -4,7 +4,7 @@ import {
   disableQueryCapture,
   enableQueryCapture,
   getCapturedQueries,
-} from '@data-stores/psql/explain-analyze'
+} from '@voucha/test-helpers/explain-analyze'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import {
   getRelationLimitState,
