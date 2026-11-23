@@ -16,12 +16,15 @@ export function buildLivePostAuthorsClause(
   rootAlias: string,
 ): SQLStatement {
   // Scalar primary-key lookups keep these fences out of publication join enumeration.
-  return sql`(COALESCE((
+  const statement = sql`(COALESCE((
       SELECT publication_candidate_author.deleted_at IS NULL
       FROM users publication_candidate_author
       WHERE publication_candidate_author.id = `
     .append(`${candidateAlias}.created_by_id`)
-    .append(sql`), TRUE) AND COALESCE((
+    .append(sql`), TRUE)`)
+  if (candidateAlias === rootAlias) return statement.append(sql`)`)
+  return statement
+    .append(sql` AND COALESCE((
       SELECT publication_root_author.deleted_at IS NULL
       FROM users publication_root_author
       WHERE publication_root_author.id = `)
