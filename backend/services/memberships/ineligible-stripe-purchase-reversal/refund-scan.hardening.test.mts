@@ -64,7 +64,9 @@ describe('durable Stripe refund scan hardening', () => {
     await completeStripeRefundScanCycle(oldCycle)
     const newCycle = await getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)
 
-    await expect(getOrCreateStripeRefundScan(oldCycle, fixture.target)).rejects.toThrow()
+    await expect(getOrCreateStripeRefundScan(oldCycle, fixture.target)).rejects.toThrow(
+      'no longer active',
+    )
 
     const scan = await getOrCreateStripeRefundScan(newCycle, fixture.target)
     expect(newCycle.generation).toBe(oldCycle.generation + 1)
