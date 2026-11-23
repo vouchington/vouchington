@@ -176,7 +176,6 @@
     "session-limit-list-active",
     "session-limit-list-active-cursor",
     "image-delivery-mutation-advisory",
-    "image-surface-owner-domains",
     "image-ready-for-surface",
     "post-image-lock",
     "landing-page-candidates-heavy-first",

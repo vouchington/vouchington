@@ -3,7 +3,7 @@ import { imageSurfaceOwnerIsLiveSql } from '@services/media-delivery-safety/surf
 import {
   imageSurfaceWhere,
   type ImageSurfaceReference,
-} from '@services/media-delivery-safety/surface-lock'
+} from '@services/media-delivery-safety/surface-reference'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import { getTopicTypeSlug } from '@voucha/types/entities/topic'
 import assert from 'http-assert'
