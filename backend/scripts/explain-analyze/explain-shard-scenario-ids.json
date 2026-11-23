@@ -583,6 +583,11 @@
     "membership-orphaned-queued-grant-activation",
     "crawler-refresh-existing-stale",
     "community-muted-topic-exists",
-    "ai-usage-totals-page"
+    "ai-usage-totals-page",
+    "conversation-messages-at-cap",
+    "notifications-inbox-at-cap",
+    "notifications-mark-all-read-at-cap",
+    "related-posts-by-url-at-cap",
+    "rss-ingest-content-at-cap"
   ]
 }

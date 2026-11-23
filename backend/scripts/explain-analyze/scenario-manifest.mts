@@ -8,4 +8,9 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   ...POSTS_AND_FEEDS_SCENARIOS,
   ...SEARCH_AND_TOPICS_SCENARIOS,
   ...USERS_AND_VOTES_SCENARIOS,
+  'conversation-messages-at-cap',
+  'notifications-inbox-at-cap',
+  'notifications-mark-all-read-at-cap',
+  'related-posts-by-url-at-cap',
+  'rss-ingest-content-at-cap',
 ] as const
