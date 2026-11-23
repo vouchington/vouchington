@@ -1,5 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import type { RssFeedItemFeedOptions, RssFeedItemFeedType } from '../../types.mts'
+import type { FeedPageQueryOptions } from './page-query-options.mts'
 import { appendPersonalizedExclusionCTEs } from './personalized-exclusions.mts'
 import { appendRssFeedItemEligibilityFilters } from './eligibility-filters.mts'
 import { appendFollowMembershipFilter } from './follow-membership.mts'
@@ -8,25 +8,6 @@ import {
   appendInspectionStops,
   appendShareCandidates,
 } from './inspection-walks.mts'
-
-export type FeedPageQueryOptions = {
-  communityId?: string
-  currentUserId?: string
-  currentUserIsAdministrator: boolean
-  feedType: RssFeedItemFeedType
-  filters: RssFeedItemFeedOptions
-  cutoffDate: Date
-  itemCutoffId: string
-  cursorSortAt?: string
-  cursorId?: string
-  safeLimit: number
-  minScoreFollowRssFeeds: number
-  minScoreFollowTopics: number
-  includeDirectItems: boolean
-  includeSharedItems: boolean
-  inspectionCap: number
-  inspectionCapMax: number
-}
 
 /**
  * One statement: canonical item walk plus the recipient-indexed share delivery arm. Each arm

@@ -1,5 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import type { FeedPageQueryOptions } from './build-page-query.mts'
+import type { FeedPageQueryOptions } from './page-query-options.mts'
 
 const CURSOR_TEXT = `to_char(walk.sort_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`
 
