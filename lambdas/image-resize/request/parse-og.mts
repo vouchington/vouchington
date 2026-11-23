@@ -1,5 +1,5 @@
 import type { APIGatewayProxyEvent } from 'aws-lambda'
-import { verifyPathSignature, parseSigningKeys } from '@vouchington/utils/url-signing'
+import { verifyPathSignature, parseSigningKeys } from '@vouchington/server-utils/url-signing'
 import { RequestParseError } from '../errors.mts'
 import { SIDELOAD_SIGNING_KEYS_ENV } from '@ts-shared/url-signing'
 import { getOgBase64url } from './event-path.mts'

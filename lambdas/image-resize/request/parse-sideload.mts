@@ -1,5 +1,5 @@
 import type { APIGatewayProxyEvent } from 'aws-lambda'
-import { parseSigningKeys, verifyPathSignature } from '@vouchington/utils/url-signing'
+import { parseSigningKeys, verifyPathSignature } from '@vouchington/server-utils/url-signing'
 import {
   CURRENT_SIDELOAD_PATH_PREFIX,
   isFirstPartyMediaUrl,

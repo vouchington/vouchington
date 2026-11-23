@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
-import undici from 'undici'
-import { vi, type MockInstance } from 'vitest'
+import { vi, type Mock } from 'vitest'
+import * as http from '../modules/utils/http.mts'
 import { RateLimiter, rateLimiterValkeyClient } from '@data-stores/valkey-rate-limiter'
 import { createWebRiskState } from '../services/web-risk/state.mts'
 import { createWebRiskChecker } from '../services/web-risk/check.mts'
@@ -133,15 +133,16 @@ type WebRiskTestContext = {
   fixture: ReturnType<typeof createOwnedWebRiskFixture>
   ownFixture: (options?: OwnedWebRiskOptions) => ReturnType<typeof createOwnedWebRiskFixture>
   setEnabled: (enabled: boolean) => void
-  fetchSpy: MockInstance<typeof undici.fetch>
+  fetchSpy: Mock<ExternalFetch>
 }
+
+type ExternalFetch = ReturnType<typeof http.getExternalFetch>
 
 export async function withGoogleWebRiskTest(
   test: (context: WebRiskTestContext) => Promise<void>,
 ): Promise<void> {
   const fixtures: ReturnType<typeof createOwnedWebRiskFixture>[] = []
   const restores: (() => void)[] = []
-  let fetchSpy: MockInstance<typeof undici.fetch> | undefined
 
   function ownFixture(options?: OwnedWebRiskOptions): ReturnType<typeof createOwnedWebRiskFixture> {
     const owned = createOwnedWebRiskFixture(options)
@@ -154,13 +155,11 @@ export async function withGoogleWebRiskTest(
     await webRiskConfig.waitForInitialization()
     restores.push(overrideDynamicConfigFieldsForTest(webRiskConfig, { enabled: true }))
     const fixture = ownFixture()
-    // The preloaded checker reads this same external CJS object for each provider request.
-    const activeFetchSpy = vi.spyOn(undici, 'fetch')
-    fetchSpy = activeFetchSpy
-    if (!Object.is(undici.fetch, activeFetchSpy)) {
-      throw new Error('The preloaded checker uses a different Undici fetch object')
-    }
-    activeFetchSpy.mockRejectedValue(new Error('Unexpected Web Risk provider request'))
+    const activeFetchSpy = vi
+      .fn<ExternalFetch>()
+      .mockRejectedValue(new Error('Unexpected Web Risk provider request'))
+    const externalFetchSpy = vi.spyOn(http, 'getExternalFetch').mockReturnValue(activeFetchSpy)
+    restores.push(() => externalFetchSpy.mockRestore())
     const context: WebRiskTestContext = {
       fixture,
       ownFixture,
@@ -174,7 +173,6 @@ export async function withGoogleWebRiskTest(
     try {
       await Promise.all(fixtures.splice(0).map(owned => owned.cleanup()))
     } finally {
-      fetchSpy?.mockRestore()
       for (const restore of restores.splice(0).toReversed()) restore()
       vi.unstubAllEnvs()
     }

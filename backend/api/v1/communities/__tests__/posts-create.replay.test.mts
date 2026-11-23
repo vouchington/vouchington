@@ -10,26 +10,22 @@ import {
   softDeleteTopic,
 } from '@voucha/test-helpers'
 import { updateCommunityPostTypeSettings } from '@services/communities'
-import { Response as UndiciResponse } from 'undici'
-import type * as Undici from 'undici'
+import * as http from '@modules/utils/http'
 
-const mockFetch = vi.hoisted(() => vi.fn<typeof Undici.fetch>())
-
-vi.mock<typeof import('undici')>(import('undici'), async importOriginal => {
-  const actual = await importOriginal()
-  return { ...actual, fetch: mockFetch }
-})
+const mockFetch = vi.fn<ReturnType<typeof http.getExternalFetch>>()
 
 describe('POST /api/v1/communities/:idOrSlug/posts replay', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.spyOn(http, 'getExternalFetch').mockReturnValue(mockFetch)
     vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'false')
     mockFetch.mockResolvedValue(
-      new UndiciResponse(JSON.stringify({ success: true, hostname: 'localhost', action: 'test' })),
+      new Response(JSON.stringify({ success: true, hostname: 'localhost', action: 'test' })),
     )
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
     vi.unstubAllEnvs()
   })
 

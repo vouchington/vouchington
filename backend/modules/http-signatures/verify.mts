@@ -1,7 +1,7 @@
 import {
   extractSignatureKeyId,
   verifySignature as verifyPlatformSignature,
-} from '@vouchington/utils/http-signatures'
+} from '@vouchington/server-utils/http-signatures'
 
 export { extractSignatureKeyId }
 

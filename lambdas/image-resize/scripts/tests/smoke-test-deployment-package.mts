@@ -19,7 +19,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { SIDELOAD_SIGNING_KEYS_ENV } from '@ts-shared/url-signing'
-import { signPath } from '@vouchington/utils/url-signing'
+import { signPath } from '@vouchington/server-utils/url-signing'
 import { TEST_SIDELOAD_SIGNING_KEY } from '@ts-shared/url-signing/test-key'
 import { CARD_HEIGHT, CARD_WIDTH } from '../../og/card-frame.mts'
 

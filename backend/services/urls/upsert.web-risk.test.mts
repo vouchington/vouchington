@@ -1,5 +1,5 @@
-import undici, { Response as UndiciResponse } from 'undici'
 import { describe, expect, it, vi, type MockInstance } from 'vitest'
+import * as http from '@modules/utils/http'
 import {
   overrideDynamicConfigFieldsForTest,
   urlExistsForTest,
@@ -40,24 +40,22 @@ describe('addUrl integrates with Google Web Risk blocking', () => {
   it('rejects risky URLs before writing URL rows', async () => {
     vi.stubEnv('GOOGLE_WEB_RISK_API_KEY', 'test-web-risk-key')
     let restoreConfig: (() => void) | undefined
-    let fetchSpy: MockInstance<typeof undici.fetch> | undefined
     let checkSpy: MockInstance<typeof webRiskCheck.assertUrlsAllowedByWebRisk> | undefined
+    let externalFetchSpy: MockInstance<typeof http.getExternalFetch> | undefined
     let fixture: ReturnType<typeof createOwnedWebRiskFixture> | undefined
     try {
       await webRiskConfig.waitForInitialization()
       restoreConfig = overrideDynamicConfigFieldsForTest(webRiskConfig, { enabled: true })
       fixture = createOwnedWebRiskFixture()
       checkSpy = spyOnOwnedWebRiskCheck(fixture)
-      const currentFetchSpy = vi.spyOn(undici, 'fetch')
-      fetchSpy = currentFetchSpy
-      if (undici.fetch !== currentFetchSpy) {
-        throw new Error('The preloaded checker uses a different Undici fetch object')
-      }
-      currentFetchSpy.mockRejectedValue(new Error('Unexpected Web Risk provider request'))
+      const currentFetchSpy = vi
+        .fn<ReturnType<typeof http.getExternalFetch>>()
+        .mockRejectedValue(new Error('Unexpected Web Risk provider request'))
+      externalFetchSpy = vi.spyOn(http, 'getExternalFetch').mockReturnValue(currentFetchSpy)
       const domain = `prewrite-risk-${crypto.randomUUID()}.test`
       const url = `https://${domain}/bad`
       currentFetchSpy.mockResolvedValueOnce(
-        UndiciResponse.json({
+        Response.json({
           threat: { threatTypes: ['MALWARE'] },
         }),
       )
@@ -72,7 +70,7 @@ describe('addUrl integrates with Google Web Risk blocking', () => {
       try {
         await fixture?.cleanup()
       } finally {
-        fetchSpy?.mockRestore()
+        externalFetchSpy?.mockRestore()
         restoreConfig?.()
         vi.unstubAllEnvs()
       }

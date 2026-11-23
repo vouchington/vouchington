@@ -13,10 +13,10 @@ import { isDeployedEnvironment } from '@ts-shared/deploy-environment'
  */
 export function shouldRejectTurnstileTestSecret(
   turnstileSecretKey: string,
-  testSecretKeys: readonly string[],
+  isTestSecretKey: (secret: string) => boolean,
   env: NodeJS.ProcessEnv = process.env,
 ): boolean {
-  return isDeployedEnvironment(env) && testSecretKeys.includes(turnstileSecretKey)
+  return isDeployedEnvironment(env) && isTestSecretKey(turnstileSecretKey)
 }
 
 /**

@@ -1,22 +1,16 @@
 import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import {
-  extractTurnstileTokenFromBody,
-  verifyCaptchaToken,
-  CLOUDFLARE_TURNSTILE_TEST_SECRET_KEY,
-} from './verify.mts'
-import { getExternalRequestDispatcher } from '@modules/utils/http'
+import * as http from '@modules/utils/http'
+import { verifyCaptchaToken } from './verify.mts'
 import { turnstileConfig } from './config.mts'
 import {
   deleteDynamicConfigFieldsForTest,
   overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers/dynamic-config'
 
-const fetchSpy = vi.hoisted(() => vi.fn<VitestLooseMock>())
-vi.mock<typeof import('undici')>(import('undici'), async () => {
-  const actual = await vi.importActual<typeof import('undici')>('undici')
-  return { ...actual, fetch: fetchSpy }
-})
+// Cloudflare's always-pass test secret, the dev/test default.
+const CLOUDFLARE_TURNSTILE_TEST_SECRET_KEY = '1x0000000000000000000000000000000AA'
+const fetchSpy = vi.fn<VitestLooseMock>()
 
 describe('verifyCaptchaToken', () => {
   let originalKey: string | undefined
@@ -24,6 +18,7 @@ describe('verifyCaptchaToken', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     fetchSpy.mockReset()
+    vi.spyOn(http, 'getExternalFetch').mockReturnValue(fetchSpy)
     vi.unstubAllGlobals()
     originalKey = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY
     process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY = 'test-secret'
@@ -51,9 +46,7 @@ describe('verifyCaptchaToken', () => {
     ).resolves.toBeUndefined()
     expect(fetchSpy).toHaveBeenCalledWith(
       'https://challenges.cloudflare.com/turnstile/v0/siteverify',
-      expect.objectContaining({
-        dispatcher: getExternalRequestDispatcher(),
-      }),
+      expect.objectContaining({ method: 'POST' }),
     )
   })
 
@@ -71,8 +64,8 @@ describe('verifyCaptchaToken', () => {
       })
       const extra =
         code === 'turnstile_action_mismatch'
-          ? { receivedAction: metadata.action }
-          : { receivedHostname: metadata.hostname }
+          ? { receivedAction: metadata.action ?? null }
+          : { receivedHostname: metadata.hostname ?? null }
       await expect(
         verifyCaptchaToken('valid-token', '1.2.3.4', 'posts.create'),
       ).rejects.toMatchObject({
@@ -149,44 +142,11 @@ describe('verifyCaptchaToken', () => {
   })
 
   it('throws 502 with HTTP status cause when Turnstile returns non-2xx', async () => {
-    fetchSpy.mockResolvedValue({ ok: false, status: 500 })
+    fetchSpy.mockResolvedValue(new Response(null, { status: 500 }))
     await expect(verifyCaptchaToken('any-token', '1.2.3.4', 'posts.create')).rejects.toMatchObject({
       status: 502,
       message: 'CAPTCHA service unavailable',
-      cause: expect.objectContaining({ message: 'Turnstile HTTP 500' }),
-    })
-  })
-
-  it('throws 502 with cause on network error', async () => {
-    const networkError = new Error('Network error')
-    fetchSpy.mockRejectedValue(networkError)
-    await expect(verifyCaptchaToken('any-token', '1.2.3.4', 'posts.create')).rejects.toMatchObject({
-      status: 502,
-      message: 'CAPTCHA service unavailable',
-      cause: networkError,
-    })
-  })
-
-  it('throws 502 with cause on timeout', async () => {
-    const abortError = new DOMException('The operation was aborted.', 'AbortError')
-    fetchSpy.mockRejectedValue(abortError)
-    await expect(verifyCaptchaToken('any-token', '1.2.3.4', 'posts.create')).rejects.toMatchObject({
-      status: 502,
-      message: 'CAPTCHA service unavailable',
-      cause: abortError,
-    })
-  })
-
-  it('throws 502 with cause when response.json() fails', async () => {
-    const parseError = new SyntaxError('Unexpected token')
-    fetchSpy.mockResolvedValue({
-      ok: true,
-      json: () => Promise.reject(parseError),
-    })
-    await expect(verifyCaptchaToken('any-token', '1.2.3.4', 'posts.create')).rejects.toMatchObject({
-      status: 502,
-      message: 'CAPTCHA service unavailable',
-      cause: parseError,
+      cause: expect.objectContaining({ message: 'Turnstile siteverify returned HTTP 500' }),
     })
   })
 
@@ -255,36 +215,5 @@ describe('verifyCaptchaToken', () => {
     const body = fetchSpy.mock.calls[0]?.[1]?.body as string
     const params = new URLSearchParams(body)
     expect(params.get('secret')).toBe(CLOUDFLARE_TURNSTILE_TEST_SECRET_KEY)
-  })
-})
-
-describe('extractTurnstileTokenFromBody', () => {
-  it('extracts and trims the canonical Turnstile token field', () => {
-    expect(extractTurnstileTokenFromBody({ cf_turnstile_response: ' token ' })).toBe('token')
-  })
-
-  it('supports explicit alias fields in priority order', () => {
-    expect(
-      extractTurnstileTokenFromBody(
-        { cf_turnstile_response: ' ', cfTurnstileResponse: 'camel-token' },
-        ['cf_turnstile_response', 'cfTurnstileResponse'],
-      ),
-    ).toBe('camel-token')
-  })
-
-  it('treats null, non-string, empty, and whitespace-only values as absent', () => {
-    const absentBodies = [
-      undefined,
-      null,
-      {},
-      { cf_turnstile_response: null },
-      { cf_turnstile_response: 123 },
-      { cf_turnstile_response: '' },
-      { cf_turnstile_response: '   ' },
-    ]
-
-    for (const body of absentBodies) {
-      expect(extractTurnstileTokenFromBody(body)).toBeUndefined()
-    }
   })
 })

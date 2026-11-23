@@ -3,11 +3,11 @@ import onError from '@modules/on-error'
 import type { PrivateUser } from '@services/users/types'
 import { isDeployedEnvironment } from '@ts-shared/deploy-environment'
 import { type RecaptchaConfig, getRecaptchaConfig } from './config.mts'
+import type { RecaptchaAssessmentResult } from '@vouchington/utils/recaptcha-enterprise'
 import {
-  type RecaptchaAssessment,
+  type RecaptchaCredentials,
   fetchRecaptchaAssessment,
-  hasRecaptchaCredentials,
-  RecaptchaRateLimitError,
+  getRecaptchaCredentials,
 } from './fetch-assessment.mts'
 import { isHighTrustUser } from './authorization.mts'
 import { isRecaptchaLockedOut, setRecaptchaLockedOutBackground } from './rate-limit-lockout.mts'
@@ -27,23 +27,22 @@ type AssessRecaptchaInput = {
 
 type AssessRecaptchaDependencies = {
   getRecaptchaConfig: () => RecaptchaConfig
-  hasRecaptchaCredentials: () => boolean
+  getRecaptchaCredentials: () => RecaptchaCredentials | undefined
   isRecaptchaLockedOut: () => Promise<boolean>
   fetchRecaptchaAssessment: (
+    credentials: RecaptchaCredentials,
     token: string,
     expectedAction: string,
     ip: string | undefined,
-  ) => Promise<RecaptchaAssessment>
-  recaptchaRateLimitError: new (...args: string[]) => Error
+  ) => Promise<RecaptchaAssessmentResult>
   setRecaptchaLockedOutBackground: () => void
 }
 
 const defaultDependencies: AssessRecaptchaDependencies = {
   getRecaptchaConfig,
-  hasRecaptchaCredentials,
+  getRecaptchaCredentials,
   isRecaptchaLockedOut,
   fetchRecaptchaAssessment,
-  recaptchaRateLimitError: RecaptchaRateLimitError,
   setRecaptchaLockedOutBackground,
 }
 
@@ -75,28 +74,30 @@ export async function assessRecaptchaToken({
   // Never call the paid assessment API outside staging/production. This also keeps dev and test
   // runs from making real network calls.
   if (!isDeployedEnvironment()) return
-  if (!dependencies.hasRecaptchaCredentials()) return
+  const credentials = dependencies.getRecaptchaCredentials()
+  if (!credentials) return
   if (isHighTrustUser(currentUser)) return
   // A score is impossible without a client token; in monitor mode we simply skip rather than block.
   if (!token) return
   if (await dependencies.isRecaptchaLockedOut()) return
 
-  let assessment: RecaptchaAssessment
-  try {
-    assessment = await dependencies.fetchRecaptchaAssessment(token, expectedAction, ip)
-  } catch (err) {
-    if (err instanceof dependencies.recaptchaRateLimitError) {
-      // Stop spending assessments for the rest of the day, then fail open for this request.
-      dependencies.setRecaptchaLockedOutBackground()
-    }
-    onError(err instanceof Error ? err : new Error(String(err)))
+  const assessment = await dependencies.fetchRecaptchaAssessment(
+    credentials,
+    token,
+    expectedAction,
+    ip,
+  )
+  if (assessment.status === 'error') {
+    // Stop spending assessments for the rest of the day, then fail open for this request.
+    if (assessment.failure.kind === 'rate-limited') dependencies.setRecaptchaLockedOutBackground()
+    onError(new Error(assessment.failure.message, { cause: assessment.failure.cause }))
     return
   }
 
-  // An invalid token or a missing score means Google could not evaluate the request. We log it for
-  // visibility but fail open — blocking is strictly score-based.
-  if (!assessment.valid || assessment.score === null) {
-    onError(buildLowScoreReport(currentUser, expectedAction, assessment))
+  // An invalid token means Google could not evaluate the request. We log it for visibility but
+  // fail open — blocking is strictly score-based.
+  if (assessment.status === 'invalid-token') {
+    onError(buildLowScoreReport(currentUser, expectedAction, { ...assessment, score: null }))
     return
   }
 
@@ -119,13 +120,18 @@ type ReportableError = Error & {
   extra?: Record<string, unknown>
 }
 
+type ReportedAssessment =
+  | Extract<RecaptchaAssessmentResult, { status: 'assessed' }>
+  | (Extract<RecaptchaAssessmentResult, { status: 'invalid-token' }> & { score: null })
+
 function buildLowScoreReport(
   currentUser: PrivateUser,
   expectedAction: RecaptchaAction,
-  assessment: RecaptchaAssessment,
+  assessment: ReportedAssessment,
 ): ReportableError {
+  const valid = assessment.status === 'assessed'
   const error: ReportableError = new Error(
-    `reCAPTCHA low-trust signal for ${expectedAction} (score=${assessment.score ?? 'null'}, valid=${assessment.valid})`,
+    `reCAPTCHA low-trust signal for ${expectedAction} (score=${assessment.score ?? 'null'}, valid=${valid})`,
   )
   error.tags = { integration: 'recaptcha', expected_action: expectedAction }
   error.extra = {
@@ -134,8 +140,9 @@ function buildLowScoreReport(
     returned_action: assessment.action,
     action_mismatch: assessment.action !== null && assessment.action !== expectedAction,
     score: assessment.score,
-    valid: assessment.valid,
-    reasons: assessment.reasons,
+    valid,
+    invalid_reason: valid ? null : assessment.invalidReason,
+    reasons: valid ? assessment.reasons : [],
   }
   return error
 }

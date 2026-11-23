@@ -3,7 +3,7 @@ import {
   renderMarkdownToHtml as renderMarkdownToHtmlNative,
 } from '@jongleberry/vurst-markdown'
 import { absolutizeSideloadImageSources } from '@modules/utils/absolute-sideload-html'
-import { parseSigningKeys } from '@vouchington/utils/url-signing'
+import { parseSigningKeys } from '@vouchington/server-utils/url-signing'
 import { SIDELOAD_SIGNING_KEYS_ENV, CURRENT_SIDELOAD_PATH_PREFIX } from '@ts-shared/url-signing'
 
 export type MarkdownRenderOptions = {

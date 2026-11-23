@@ -1,6 +1,7 @@
 import { derivePublicJwk, encodeJwkSet as encodeJwkSetForEnv } from '@vouchington/session-jwt'
 import testPrivateKey from '@ts-shared/session-jwt/test-jwt-private-key'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import * as http from '@modules/utils/http'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-token'
 import {
@@ -19,10 +20,9 @@ import {
 import { contributionLimitConfig } from '@services/contribution-gating/limits-config'
 import { recaptchaConfig } from '@services/recaptcha'
 import { Response as UndiciResponse } from 'undici'
-import type * as Undici from 'undici'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
-const mockFetch = vi.hoisted(() => vi.fn<typeof Undici.fetch>())
+const mockFetch = vi.hoisted(() => vi.fn<VitestLooseMock>())
 
 vi.mock<typeof import('undici')>(import('undici'), async importOriginal => {
   const actual = await importOriginal()
@@ -32,6 +32,7 @@ vi.mock<typeof import('undici')>(import('undici'), async importOriginal => {
 describe('POST /api/v1/posts reCAPTCHA capacity ordering', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.spyOn(http, 'getExternalFetch').mockReturnValue(mockFetch)
     vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'false')
   })
 

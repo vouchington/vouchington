@@ -1,4 +1,4 @@
-import { createTokenSecrets } from '@vouchington/utils/token-secrets'
+import { createTokenSecrets } from '@vouchington/server-utils/token-secrets'
 
 const HASH_ENV = 'VOUCHA_OTP_TOKEN_HASH_SECRET'
 const HASH_ONLY_ENCRYPTION_KEY = { id: 'hash-only', key: Buffer.alloc(32) }

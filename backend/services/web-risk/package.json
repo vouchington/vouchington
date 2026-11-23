@@ -25,7 +25,6 @@
   "dependencies": {
     "@data-stores/valkey": "workspace:^",
     "@data-stores/valkey-rate-limiter": "workspace:^",
-    "@jongleberry/api-server": "^3.1.0",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/hostname-blocking": "workspace:^",
@@ -33,9 +32,9 @@
     "@services/urls-hostnames": "workspace:^",
     "@services/users": "workspace:^",
     "@valkey/valkey-glide": "^2.6.0",
+    "@vouchington/utils": "^0.13.0",
     "http-errors": "^2.0.1",
-    "tldts": "^7.5.4",
-    "undici": "^8.12.4"
+    "tldts": "^7.5.4"
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5",
