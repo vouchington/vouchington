@@ -17,15 +17,17 @@ const CARD_TOPIC = {
 test.describe('Mobile responsiveness', () => {
   test.describe('P0 Landing page', () => {
     for (const [viewportName, viewport] of Object.entries(MOBILE_VIEWPORTS)) {
-      test(`no horizontal scroll at ${viewportName} (${viewport.width}px)`, async ({ page }) => {
-        await page.setViewportSize(viewport)
-        const response = await page.goto(`/@${TEST_USER_USERNAME}`)
-        expect(requireTestValue(response, 'Expected landing-page response').status()).toBe(200)
+      test.describe(viewportName, () => {
+        test('no horizontal scroll', async ({ page }) => {
+          await page.setViewportSize(viewport)
+          const response = await page.goto(`/@${TEST_USER_USERNAME}`)
+          expect(requireTestValue(response, 'Expected landing-page response').status()).toBe(200)
 
-        const hasHorizontalScroll = await page.evaluate(
-          () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
-        )
-        expect(hasHorizontalScroll).toBe(false)
+          const hasHorizontalScroll = await page.evaluate(
+            () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+          )
+          expect(hasHorizontalScroll).toBe(false)
+        })
       })
     }
 
@@ -79,33 +81,35 @@ test.describe('Mobile responsiveness', () => {
       { name: 'iphone-se', ...MOBILE_VIEWPORTS['iphone-se'] },
       { name: 'smallest', ...MOBILE_VIEWPORTS.smallest },
     ]) {
-      test(`card topic at ${viewport.name} (${viewport.width}px)`, async ({ page }) => {
-        await page.setViewportSize({ width: viewport.width, height: viewport.height })
-        await navigateTo(page, `/${CARD_TOPIC.slug}/${CARD_TOPIC.id}/discussions`)
+      test.describe(viewport.name, () => {
+        test('card topic', async ({ page }) => {
+          await page.setViewportSize({ width: viewport.width, height: viewport.height })
+          await navigateTo(page, `/${CARD_TOPIC.slug}/${CARD_TOPIC.id}/discussions`)
 
-        // h1 visible
-        await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+          // h1 visible
+          await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 
-        // No horizontal scroll
-        const hasHorizontalScroll = await page.evaluate(
-          () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
-        )
-        expect(hasHorizontalScroll).toBe(false)
+          // No horizontal scroll
+          const hasHorizontalScroll = await page.evaluate(
+            () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+          )
+          expect(hasHorizontalScroll).toBe(false)
 
-        // Aside hidden on mobile (hidden below lg breakpoint)
-        const aside = page.locator('aside')
-        await expect(aside).toHaveCount(1)
-        await expect(aside).toBeHidden()
+          // Aside hidden on mobile (hidden below lg breakpoint)
+          const aside = page.locator('aside')
+          await expect(aside).toHaveCount(1)
+          await expect(aside).toBeHidden()
 
-        // Menubar navigation is visible and within viewport (seeded card topic always has items)
-        const menubar = page.getByTestId('entity-menubar-nav')
-        await expect(menubar, 'Expected topic menubar navigation to be rendered').toBeVisible()
-        const menubarBox = requireTestValue(
-          await menubar.boundingBox(),
-          'Expected topic menubar bounding box',
-        )
-        expect(menubarBox.x).toBeGreaterThanOrEqual(0)
-        expect(menubarBox.x + menubarBox.width).toBeLessThanOrEqual(viewport.width + 1)
+          // Menubar navigation is visible and within viewport (seeded card topic always has items)
+          const menubar = page.getByTestId('entity-menubar-nav')
+          await expect(menubar, 'Expected topic menubar navigation to be rendered').toBeVisible()
+          const menubarBox = requireTestValue(
+            await menubar.boundingBox(),
+            'Expected topic menubar bounding box',
+          )
+          expect(menubarBox.x).toBeGreaterThanOrEqual(0)
+          expect(menubarBox.x + menubarBox.width).toBeLessThanOrEqual(viewport.width + 1)
+        })
       })
     }
   })

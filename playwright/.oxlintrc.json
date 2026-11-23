@@ -74,6 +74,7 @@
     "playwright/prefer-equality-matcher": "error",
     "playwright/no-export": "error",
     "playwright/prefer-strict-equal": "error",
+    "playwright/no-template-literal-title": "error",
     "playwright/valid-title": "error"
   },
   "overrides": [

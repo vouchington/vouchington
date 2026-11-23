@@ -56,8 +56,8 @@ test.beforeAll(async () => {
   })
 })
 
-function registerDigestSuppressionTest(role: string, getUserId: () => string) {
-  test(`${role} can persist digest suppression independently of vacation`, async ({ page }) => {
+function registerDigestSuppressionTest(title: string, getUserId: () => string) {
+  test(title, async ({ page }) => {
     await loginAsUser(page, getUserId())
     await navigateTo(page, `/communities/${communitySlug}/settings/moderation`)
 
@@ -168,6 +168,12 @@ test.describe('moderator vacation mode', () => {
     await expect(durationPicker).toBeHidden()
   })
 
-  registerDigestSuppressionTest('Community Owner', () => ownerUserId)
-  registerDigestSuppressionTest('Community Moderator', () => moderatorUserId)
+  registerDigestSuppressionTest(
+    'Community Owner can persist digest suppression independently of vacation',
+    () => ownerUserId,
+  )
+  registerDigestSuppressionTest(
+    'Community Moderator can persist digest suppression independently of vacation',
+    () => moderatorUserId,
+  )
 })
