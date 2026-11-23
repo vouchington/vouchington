@@ -76,6 +76,7 @@ export function CopyrightNoticeForm() {
         onError(err, {
           fallback: 'We could not submit this notice. Please try again.',
           displayMessageByCode: {
+            copyright_submission_in_progress: t('shared.copyrightSubmissionInProgress'),
             COPYRIGHT_TARGET_LIMIT_REACHED: t('shared.copyrightTargetLimit'),
           },
           tags: { form: 'copyright-notice' },

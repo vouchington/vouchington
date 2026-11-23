@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, suspendTestUser } from '@voucha/test-helpers'
 import {
@@ -26,27 +27,38 @@ describe('copyright notice routes', () => {
       (await createRequest().post('/api/v1/copyright-notices').send({}).expect(422)).body.message,
     ).toContain('CAPTCHA token is required')
   })
-  it('accepts an authenticated structured form exactly once for an idempotency key', async () => {
+  it('reports an in-progress form submission and replays its receipt after commit', async () => {
     const fixture = await createCopyrightFormFixture()
     const request = createRequest()
     await request.authenticateAs(fixture.claimant)
     const key = crypto.randomUUID()
-    const first = await request
-      .post('/api/v1/copyright-notices')
-      .set('Idempotency-Key', key)
-      .send(fixture.form)
-      .expect(202)
-    const replay = await request
-      .post('/api/v1/copyright-notices')
-      .set('Idempotency-Key', key)
-      .send(fixture.form)
-      .expect(200)
-    expect(first.body).toEqual({
-      copyright_notice: { id: expect.any(String) },
-      is_duplicate: false,
-    })
+    const submit = () =>
+      request.post('/api/v1/copyright-notices').set('Idempotency-Key', key).send(fixture.form)
+    let noticeId: string | undefined
+    const restore = afterPostgresTransactionQueryForTest(
+      'createCopyrightFormIntake:findDuplicate',
+      values => values.includes(key),
+      async () => {
+        const first = await submit().expect(202)
+        expect(first.body).toEqual({
+          copyright_notice: { id: expect.any(String) },
+          is_duplicate: false,
+        })
+        noticeId = first.body.copyright_notice.id
+      },
+    )
+    try {
+      const conflict = await submit().expect(409)
+      expect(conflict.body).toMatchObject({
+        code: 'copyright_submission_in_progress',
+        message: 'Copyright submission in progress. Try again.',
+      })
+    } finally {
+      restore()
+    }
+    const replay = await submit().expect(200)
     expect(replay.body).toEqual({
-      copyright_notice: { id: first.body.copyright_notice.id },
+      copyright_notice: { id: noticeId },
       is_duplicate: true,
     })
   })
