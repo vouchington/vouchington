@@ -3,10 +3,7 @@ import { v7 } from 'uuid'
 import type { StagingRssFeed } from '../../../data-stores/psql/config-driven/utils/staging-rss-feeds.mts'
 import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import {
-  loadSqlParserModule,
-  splitSqlStatements,
-} from '../../../data-stores/psql/migration-runner/sql-statements.mts'
+import { loadSqlParserModule, splitSqlStatements } from '@vouchington/postgres'
 
 // Owned fixtures roll back before another suite can crawl them; bootstrap rows remain untouched.
 export function createStagingRssFeedFixture(): StagingRssFeed {

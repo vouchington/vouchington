@@ -1,4 +1,4 @@
-import { splitSqlStatements } from '../../../../data-stores/psql/migration-runner/sql-statements.mts'
+import { splitSqlStatements } from '@vouchington/postgres'
 import { readStartedIfBlocks, type PrecheckFrame } from './ddl-precheck-stack-helpers.mts'
 import {
   hasStructuralDdl,

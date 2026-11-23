@@ -1,4 +1,5 @@
-import { beginTransaction, isUniqueViolation, type QueryExecutor } from '@data-stores/psql'
+import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
+import { isUniqueViolation } from '@vouchington/postgres'
 import { enqueueDeliverMembershipEntitlementEffectsBestEffort } from '@queues/memberships/enqueues'
 import sql from 'sql-template-strings'
 import { recordMembershipChanges } from '../changes.mts'

@@ -1,5 +1,6 @@
 import { SCOPE_DEFINITIONS, isApiScope } from '@modules/scopes'
-import { beginTransaction, isUniqueViolation, write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
+import { isUniqueViolation } from '@vouchington/postgres'
 import { createOAuthBrowserBindingHash } from './browser-binding.mts'
 import { AUTHORIZATION_REQUEST_TTL_MS } from './constants.mts'
 import { getOAuthClient, getOAuthClientForAuthorization } from './clients.mts'

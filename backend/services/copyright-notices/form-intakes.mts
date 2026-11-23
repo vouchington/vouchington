@@ -1,6 +1,7 @@
 import createHttpError from 'http-errors'
 import { createHash } from 'node:crypto'
-import { beginTransaction, isUniqueViolation } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
+import { isUniqueViolation } from '@vouchington/postgres'
 import { encryptSecret, hashToken } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'

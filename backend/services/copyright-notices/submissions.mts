@@ -4,7 +4,8 @@ import {
   lockCopyrightNoticeForLegalWrite,
 } from './last-legal-activity.mts'
 import { createHash } from 'node:crypto'
-import { beginTransaction, isUniqueViolation } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
+import { isUniqueViolation } from '@vouchington/postgres'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'

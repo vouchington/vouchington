@@ -1,5 +1,5 @@
 import type { MediaBody } from '@vouchington/media'
-import { isUniqueViolation } from '@data-stores/psql'
+import { isUniqueViolation } from '@vouchington/postgres'
 import { enqueueExtractImageMetadata } from '@queues/image-uploads/enqueues'
 import onError from '@modules/on-error'
 import createHttpError from 'http-errors'

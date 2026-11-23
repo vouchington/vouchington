@@ -1,5 +1,5 @@
 import path from 'node:path'
-import type { Psql } from '@vouchington/postgres'
+import { loadSqlParserModule, type Psql } from '@vouchington/postgres'
 import {
   runViews as runPlatformViews,
   type RunViewsOptions as PlatformRunViewsOptions,
@@ -20,7 +20,7 @@ import {
   type RunConfigDrivenOptions,
 } from './migration-runner/migrations.mts'
 import { refreshMaterializedView } from './migration-runner/refresh-materialized-view.mts'
-import { initSqlAst, loadSqlParserModule } from './migration-runner/sql-statements.mts'
+import { initSqlAst } from 'vouchington-tooling/sql-ast'
 import { verifyLiveSchemaMatchesSnapshot } from './schema-snapshot/verify-live-schema.mts'
 import { psql, write } from './setup.mts'
 

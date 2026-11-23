@@ -1,6 +1,7 @@
 import createHttpError from 'http-errors'
 import { createHash } from 'node:crypto'
-import { beginTransaction, isUniqueViolation } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
+import { isUniqueViolation } from '@vouchington/postgres'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
@@ -36,7 +37,6 @@ export type TerritorialCopyrightNoticeReceipt = {
 }
 
 export type TerritorialNoticeRequester = { user: PrivateUser | null; identity: string }
-
 type TerritorialReceiptRow = Omit<TerritorialCopyrightNoticeReceipt, 'is_duplicate'> & {
   request_sha256: Uint8Array
 }

@@ -6,7 +6,7 @@ import { getPartitionStatus } from '../partitions.mts'
 describe('partition catalog failure', () => {
   it('reports and preserves a partition catalog query failure', async () => {
     const { result, error } = await withPostgresPoolQueryFailureForTest(
-      '/* getPartitionStatus */',
+      '/* listPartitionStatusRows */',
       () => getPartitionStatus().catch((err: unknown) => err),
     )
 

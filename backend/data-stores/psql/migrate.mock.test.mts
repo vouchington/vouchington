@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMigrationInitializationFixture } from '@voucha/test-helpers/migration-initialization'
+import { loadSqlParserModule } from '@vouchington/postgres'
+import { initSqlAst } from 'vouchington-tooling/sql-ast'
 import { runViews } from './migrate.mts'
 
 import { migrationInitializers as initialization } from '@voucha/test-helpers/migration-initialization-mocks'
@@ -25,9 +27,8 @@ describe('migration SQL initialization failures', () => {
   })
 
   it('settles both started initializers before retaining their ordered failures and cause', async () => {
-    const statements = await import('./migration-runner/sql-statements.mts')
-    expect(statements.loadSqlParserModule).toBe(initialization.parser)
-    expect(statements.initSqlAst).toBe(initialization.ast)
+    expect(loadSqlParserModule).toBe(initialization.parser)
+    expect(initSqlAst).toBe(initialization.ast)
     const fixture = await createMigrationInitializationFixture()
     const parserError = new Error('SQL parser initialization failed')
     const astError = new Error('SQL AST initialization failed')

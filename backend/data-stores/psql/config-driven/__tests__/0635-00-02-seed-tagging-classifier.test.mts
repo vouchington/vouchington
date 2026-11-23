@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { runConfigDrivenStatementsInTransaction } from '../../migration-runner/config-driven-statements.mts'
+import { runConfigDrivenStatementsInTransaction } from '@vouchington/postgres'
+import { beginTransaction } from '../../setup.mts'
 import {
   getLocalClassifierBySlug,
   listLocalActiveClassifierPromptVersions,
@@ -43,8 +44,8 @@ describe('0635-00-02-seed-tagging-classifier SQL shape', () => {
 describe('0635-00-02-seed-tagging-classifier (real DB)', () => {
   it('reaches a stable single active classifier and prompt version across reruns', async () => {
     const generated = generateSeedTaggingClassifierSQL()
-    await runConfigDrivenStatementsInTransaction(generated, undefined)
-    await runConfigDrivenStatementsInTransaction(generated, undefined)
+    await runConfigDrivenStatementsInTransaction(generated, { beginTransaction })
+    await runConfigDrivenStatementsInTransaction(generated, { beginTransaction })
 
     const classifier = await getLocalClassifierBySlug('tagging')
     expect(classifier).not.toBeNull()
