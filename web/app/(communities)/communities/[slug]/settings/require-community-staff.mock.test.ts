@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeCommunity, makeCommunityResponse } from '@/test-helpers/api-responses/communities'
+import type { CommunityMember } from '@/types/api-responses'
 import { requireCommunityStaff } from './require-community-staff'
 
 const getCurrentUserMock = vi.hoisted(() => vi.fn<VitestLooseMock>())
@@ -19,10 +21,21 @@ vi.mock(import('next/navigation'), () => ({
   redirect: redirectMock,
 }))
 
-const community = { id: 'community-1', name: 'Test Community', slug: 'test-community' }
+const community = makeCommunity()
 
-function membership(role: string, removedAt: string | null = null) {
-  return { role, removed_at: removedAt }
+function membership(role: CommunityMember['role'], removedAt: string | null = null) {
+  return {
+    __entity_type: 'community_member',
+    id: 'member-1',
+    community_id: community.id,
+    user_id: 'user-1',
+    role,
+    approved_by_id: null,
+    created_at: '2026-01-01T00:00:00.000Z',
+    updated_at: '2026-01-01T00:00:00.000Z',
+    removed_at: removedAt,
+    removed_by_id: null,
+  } satisfies CommunityMember
 }
 
 describe('requireCommunityStaff', () => {
@@ -58,15 +71,17 @@ describe('requireCommunityStaff', () => {
   it.each([
     ['a regular member', membership('member')],
     ['a removed owner', membership('owner', '2026-01-01T00:00:00Z')],
-    ['a non-member', null],
+    ['a non-member', undefined],
   ])('returns not found for %s', async (_label, member) => {
-    getCommunityMock.mockResolvedValue({ community, membership: member })
+    getCommunityMock.mockResolvedValue(makeCommunityResponse({ community, membership: member }))
 
     await expect(requireCommunityStaff('test-community')).rejects.toThrow('not found')
   })
 
-  it.each(['owner', 'moderator'])('returns the community for a %s', async role => {
-    getCommunityMock.mockResolvedValue({ community, membership: membership(role) })
+  it.each(['owner', 'moderator'] as const)('returns the community for a %s', async role => {
+    getCommunityMock.mockResolvedValue(
+      makeCommunityResponse({ community, membership: membership(role) }),
+    )
 
     await expect(requireCommunityStaff('test-community')).resolves.toBe(community)
     expect(notFoundMock).not.toHaveBeenCalled()
