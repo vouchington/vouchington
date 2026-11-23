@@ -45,6 +45,7 @@ export function LandingPagesIndex({ username, initialPages }: Props) {
       onError(err, {
         fallback: t('extracted.my.landingPagesIndex.failedToCreateLandingPage_d83f2483'),
       })
+      // oxlint-disable-next-line react-doctor/no-loading-flag-reset-outside-finally -- stays disabled after success while navigation completes to block a double submit; only failure paths reset it
       setLoading(false)
     }
   }

@@ -35,8 +35,12 @@ export function EditOAuthAppForm({ app, onCancel, onSave }: EditOAuthAppFormProp
 
   async function handleSubmit() {
     setSaving(true)
-    const saved = await onSave(changes)
-    setSaving(false)
+    let saved: boolean
+    try {
+      saved = await onSave(changes)
+    } finally {
+      setSaving(false)
+    }
     if (saved) onCancel()
   }
 

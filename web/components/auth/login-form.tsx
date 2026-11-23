@@ -104,6 +104,7 @@ export function LoginForm({
       })
     } finally {
       if (shouldResetLoading) {
+        // oxlint-disable-next-line react-doctor/no-loading-flag-reset-outside-finally -- stays loading after a successful sign-in while navigation completes to block a double submit; failure and MFA paths reset it
         setLoading(false)
       }
     }

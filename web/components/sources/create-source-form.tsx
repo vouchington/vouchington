@@ -91,6 +91,7 @@ export function CreateSourceForm({ onSuccess }: { onSuccess?: () => void }) {
                 ? err.message
                 : t('extracted.sources.createSourceForm.importStreamDisconnected_2a261662'),
             )
+            // oxlint-disable-next-line react-doctor/no-loading-flag-reset-outside-finally -- an aborted submit must not clear the flag of the submit that replaced it, so the reset is skipped when aborted
             setLoading(false)
           }
         }

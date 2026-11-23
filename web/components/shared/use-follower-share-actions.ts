@@ -86,6 +86,7 @@ export const useFollowerShareActions = ({
     } finally {
       if (contextGeneration === contextGenerationRef.current) {
         sharePendingRef.current = false
+        // oxlint-disable-next-line react-doctor/no-loading-flag-reset-outside-finally -- a superseded request must not clear the flag owned by the newer one, so the reset is guarded by the generation check
         setIsSharePending(false)
       }
     }
@@ -129,6 +130,7 @@ export const useFollowerShareActions = ({
     } finally {
       if (contextGeneration === contextGenerationRef.current) {
         sendPendingRef.current = false
+        // oxlint-disable-next-line react-doctor/no-loading-flag-reset-outside-finally -- a superseded request must not clear the flag owned by the newer one, so the reset is guarded by the generation check
         setIsSendPending(false)
       }
     }

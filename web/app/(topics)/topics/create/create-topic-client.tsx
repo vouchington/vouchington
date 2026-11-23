@@ -79,6 +79,7 @@ function CreateTopicPageContent() {
         fallback: t('extracted.create.createTopicClient.failedToCreateTopic_f25ea5ce'),
         tags: { form: 'create-topic' },
       })
+      // oxlint-disable-next-line react-doctor/no-loading-flag-reset-outside-finally -- stays disabled after success while navigation completes to block a double submit; only failure paths reset it
       setSaving(false)
     }
   }

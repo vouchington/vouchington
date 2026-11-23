@@ -42,15 +42,16 @@ export function CopyrightEmailLegalProcessAction({
   async function confirm() {
     setPending(true)
     setError(null)
+    let queue: CopyrightEmailIntakeQueuePage | null
     try {
       await recordCopyrightEmailIntakeLegalProcess(detail.id, reason.trim())
+      queue = await listCopyrightEmailIntakes().catch(() => null)
     } catch (err) {
       setError(copyrightEmailActionError(err, 'We could not record that legal process.'))
-      setPending(false)
       return
+    } finally {
+      setPending(false)
     }
-    const queue = await listCopyrightEmailIntakes().catch(() => null)
-    setPending(false)
     onRecorded(queue)
   }
   function cancel() {

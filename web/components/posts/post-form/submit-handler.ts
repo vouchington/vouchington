@@ -67,6 +67,7 @@ export function usePostFormSubmit({
     } catch (err) {
       shouldResetSubmitting = handleSubmitError(err, router)
     } finally {
+      // oxlint-disable-next-line react-doctor/no-loading-flag-reset-outside-finally -- stays disabled after success while navigation completes to block a double submit; only failure paths reset it
       if (shouldResetSubmitting) setIsSubmitting(false)
     }
   }

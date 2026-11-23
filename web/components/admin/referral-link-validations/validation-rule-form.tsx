@@ -70,7 +70,6 @@ export function ValidationRuleForm({
         result = await createReferralLinkValidationRule(validationId, data)
         onSuccess(t('extracted.referralLinkValidations.validationRuleForm.ruleCreated_1d0e14f1'))
       }
-      setSaving(false)
       onSaved?.(result.validation_rule)
     } catch (err) {
       onError(err, {
@@ -78,6 +77,7 @@ export function ValidationRuleForm({
           'extracted.referralLinkValidations.validationRuleForm.failedToSaveRule_bf356f1f',
         ),
       })
+    } finally {
       setSaving(false)
     }
   }

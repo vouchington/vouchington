@@ -62,13 +62,17 @@ export function RegisterOAuthAppForm({
 
   async function handleSubmit() {
     setSubmitting(true)
-    const registered = await onRegister({
-      client_name: draft.name.trim(),
-      redirect_uris: uris,
-      token_endpoint_auth_method: draft.authMethod,
-      scopes: draft.scopes,
-    })
-    setSubmitting(false)
+    let registered: boolean
+    try {
+      registered = await onRegister({
+        client_name: draft.name.trim(),
+        redirect_uris: uris,
+        token_endpoint_auth_method: draft.authMethod,
+        scopes: draft.scopes,
+      })
+    } finally {
+      setSubmitting(false)
+    }
     if (registered) {
       setDraft(EMPTY_DRAFT)
       setRedirectUrisTouched(false)

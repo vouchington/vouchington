@@ -55,6 +55,7 @@ export default function MfaStep({ loginAttemptId, onSuccess, onBack }: Props) {
       notifySuccess(t('extracted.auth.mfaStep.verified_4f783840'))
       onSuccess()
     } catch (err) {
+      // oxlint-disable-next-line react-doctor/no-loading-flag-reset-outside-finally -- stays disabled after success while navigation completes to block a double submit; only failure paths reset it
       reportTotpError(err)
     }
   }
@@ -82,6 +83,7 @@ export default function MfaStep({ loginAttemptId, onSuccess, onBack }: Props) {
           tags: { form: 'auth-mfa' },
         })
       }
+      // oxlint-disable-next-line react-doctor/no-loading-flag-reset-outside-finally -- stays disabled after success while navigation completes to block a double submit; only failure paths reset it
       setLoading(false)
     }
   }

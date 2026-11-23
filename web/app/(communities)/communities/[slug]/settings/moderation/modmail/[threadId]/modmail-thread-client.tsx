@@ -74,6 +74,7 @@ export function ModmailThreadClient({
     } finally {
       if (generation === generationRef.current && contextThreadId === thread.id) {
         loadingMoreRef.current = false
+        // oxlint-disable-next-line react-doctor/no-loading-flag-reset-outside-finally -- a superseded request must not clear the flag owned by the newer one, so the reset is guarded by the generation check
         setLoadingMore(false)
       }
     }

@@ -157,6 +157,7 @@ export function useNotificationSettings(initialSettings: NotificationSettingsSta
         tags: { form: 'my-notification-settings' },
       })
     } finally {
+      // oxlint-disable-next-line react-doctor/no-loading-flag-reset-outside-finally -- a superseded request must not clear the flag owned by the newer one, so the reset is guarded by the generation check
       if (loadGeneration.current === generation) setLoadingSettings(false)
     }
   }

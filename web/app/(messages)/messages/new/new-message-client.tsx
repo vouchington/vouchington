@@ -45,6 +45,7 @@ export function NewMessageClient({ currentUserId }: Props) {
       onError(err, {
         fallback: t('extracted.new.newMessageClient.failedToCreateConversation_73dbb8f1'),
       })
+      // oxlint-disable-next-line react-doctor/no-loading-flag-reset-outside-finally -- stays disabled after success while navigation completes to block a double submit; only failure paths reset it
       setSubmitting(false)
     }
   }

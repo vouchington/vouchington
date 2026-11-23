@@ -28,8 +28,11 @@ export function OAuthAppRow({ app, onRevoke, onRotate, onUpdate }: OAuthAppRowPr
 
   async function confirm(action: PendingAction) {
     setBusy(true)
-    await (action === 'revoke' ? onRevoke(app.id) : onRotate(app.id))
-    setBusy(false)
+    try {
+      await (action === 'revoke' ? onRevoke(app.id) : onRotate(app.id))
+    } finally {
+      setBusy(false)
+    }
     setConfirming(null)
   }
 

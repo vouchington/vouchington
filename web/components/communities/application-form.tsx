@@ -43,6 +43,7 @@ export function ApplicationForm({ communitySlug, questions }: ApplicationFormPro
           ? err.message
           : t('extracted.communities.applicationForm.failedToSubmitApplication_f7750bae'),
       )
+      // oxlint-disable-next-line react-doctor/no-loading-flag-reset-outside-finally -- stays disabled after success while navigation completes to block a double submit; only failure paths reset it
       setLoading(false)
     }
   }

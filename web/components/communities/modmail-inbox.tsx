@@ -77,6 +77,7 @@ export function ModmailInbox({ communitySlug, initialData }: Props) {
     } finally {
       if (generation === generationRef.current) {
         loadingMoreRef.current = false
+        // oxlint-disable-next-line react-doctor/no-loading-flag-reset-outside-finally -- a superseded request must not clear the flag owned by the newer one, so the reset is guarded by the generation check
         setLoadingMore(false)
       }
     }

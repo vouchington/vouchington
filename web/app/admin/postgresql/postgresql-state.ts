@@ -56,6 +56,7 @@ export function usePostgreSQLAdminState() {
       }
     } finally {
       loadDataPendingRef.current = false
+      // oxlint-disable-next-line react-doctor/no-loading-flag-reset-outside-finally -- a stale effect must not set state after it was superseded, so the reset is guarded by shouldApply
       if (shouldApply()) setLoading(false)
     }
   }

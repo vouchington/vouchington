@@ -104,28 +104,37 @@ export function useLandingPageEditorController(
     event.preventDefault()
     if (loading) return
     setLoading(true)
-    await persistLandingPageDetails({ page, title, subtitle, slug, setPage, router })
-    setLoading(false)
+    try {
+      await persistLandingPageDetails({ page, title, subtitle, slug, setPage, router })
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleSaveItems() {
     if (loading) return
     setLoading(true)
-    await persistLandingPageItems({
-      pageId: page.id,
-      draftItems,
-      setPage,
-      setDraftItems,
-      setItemLimit: candidatePages.setItemLimit,
-    })
-    setLoading(false)
+    try {
+      await persistLandingPageItems({
+        pageId: page.id,
+        draftItems,
+        setPage,
+        setDraftItems,
+        setItemLimit: candidatePages.setItemLimit,
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleSetDefault() {
     if (loading) return
     setLoading(true)
-    await persistDefaultLandingPage({ pageId: page.id, setPage })
-    setLoading(false)
+    try {
+      await persistDefaultLandingPage({ pageId: page.id, setPage })
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleDelete() {

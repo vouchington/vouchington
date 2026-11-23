@@ -53,6 +53,7 @@ export function CrawlerEditForm({ crawler, crawlerId }: CrawlerEditFormProps) {
         fallback: t('extracted.edit.crawlerEditForm.failedToUpdateCrawler_f838359a'),
         tags: { form: 'admin-crawler-edit' },
       })
+      // oxlint-disable-next-line react-doctor/no-loading-flag-reset-outside-finally -- stays disabled after success while navigation completes to block a double submit; only failure paths reset it
       setSaving(false)
     }
   }

@@ -866,6 +866,7 @@
     "react-doctor/js-length-check-first": "error",
     "react-doctor/js-min-max-loop": "error",
     "react-doctor/no-json-parse-stringify-clone": "error",
+    "react-doctor/no-loading-flag-reset-outside-finally": "error",
     "react-doctor/js-set-map-lookups": "off", // 68 findings / 49 files on 2026-08-19
     "no-mistakes/await-array-methods": "error",
     "no-mistakes/no-delete-property": "error",

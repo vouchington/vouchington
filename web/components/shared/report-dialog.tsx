@@ -100,6 +100,7 @@ export function ReportDialog({ entityType, entityId, open, onOpenChange }: Props
         // The token was consumed by the backend's verification; get a fresh one
         // so the user can retry.
         turnstile.reset()
+        // oxlint-disable-next-line react-doctor/no-loading-flag-reset-outside-finally -- stays disabled after a successful report so the success state cannot be resubmitted; failure paths reset it
         setSubmitting(false)
       }
     }

@@ -54,6 +54,7 @@ export function MergeClient({ topic }: { topic: Topic }) {
     } catch (err) {
       /* c8 ignore next 2 -- error path requires injecting a merge failure */
       onError(err, { fallback: t('extracted.settings.mergeClient.failedToMergeTopic_774455fd') })
+      // oxlint-disable-next-line react-doctor/no-loading-flag-reset-outside-finally -- stays disabled after a queued merge so it cannot be submitted twice; only failure resets it
       setSubmitting(false)
     }
   }
