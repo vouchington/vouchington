@@ -1478,17 +1478,6 @@
       - '@jongleberry/'
       - '@jonathanong/'
       - '@vouchington/'
-    temporaryGroups:
-      - reason: typescript-eslint 8.73.0 was published 2026-11-16 and ages out of the 7-day gate on 2026-11-23; remove with the next release-age audit.
-        eligibleForRemovalAt: '2026-11-23T17:04:50Z'
-        selectors:
-          - '@typescript-eslint/parser@8.73.0'
-          - '@typescript-eslint/project-service@8.73.0'
-          - '@typescript-eslint/scope-manager@8.73.0'
-          - '@typescript-eslint/tsconfig-utils@8.73.0'
-          - '@typescript-eslint/types@8.73.0'
-          - '@typescript-eslint/typescript-estree@8.73.0'
-          - '@typescript-eslint/visitor-keys@8.73.0'
     workspaceYaml: pnpm-workspace.yaml
     dependabotPath: .github/dependabot.yml
     lockfilePath: pnpm-lock.yaml
