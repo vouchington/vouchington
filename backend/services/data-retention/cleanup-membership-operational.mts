@@ -85,9 +85,9 @@ async function deleteMembershipOperationalPage(
 ): Promise<{ deleted: number; hasMore: boolean }> {
   await using transaction = await beginTransaction()
   const { rows: cursorRows } = await transaction<CursorRow>(sql`
-    /* deleteMembershipOperationalPage.lockCursor */
+    /* deleteMembershipOperationalPage.readCursor */
     SELECT cursor_at, cursor_id FROM membership_operational_cleanup_cursors
-    WHERE kind = ${kind} FOR UPDATE
+    WHERE kind = ${kind}
   `)
   const cursor = cursorRows[0]
   if (!cursor) throw new Error(`Missing membership retention cursor: ${kind}`)
@@ -107,7 +107,7 @@ async function deleteMembershipOperationalPage(
         )
     `
     if (recordIds !== undefined) statement.append(sql` AND id = ANY(${[...recordIds]}::uuid[])`)
-    statement.append(sql`  ORDER BY delivered_at, id LIMIT ${batchSize + 1} FOR UPDATE SKIP LOCKED
+    statement.append(sql`  ORDER BY delivered_at, id LIMIT ${batchSize + 1}
     `)
     ;({ rows } = await transaction<Candidate>(statement))
   } else if (kind === 'renewal_notices') {
@@ -124,7 +124,7 @@ async function deleteMembershipOperationalPage(
     `
     if (recordIds !== undefined)
       statement.append(sql` AND membership_id = ANY(${[...recordIds]}::uuid[])`)
-    statement.append(sql`  ORDER BY projection_ended_at, membership_id LIMIT ${batchSize + 1} FOR UPDATE SKIP LOCKED
+    statement.append(sql`  ORDER BY projection_ended_at, membership_id LIMIT ${batchSize + 1}
     `)
     ;({ rows } = await transaction<Candidate>(statement))
   } else {
@@ -140,7 +140,7 @@ async function deleteMembershipOperationalPage(
           COALESCE(${afterId}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
         )
       ORDER BY COALESCE(acknowledged_at, skipped_at), id
-      LIMIT ${batchSize + 1} FOR UPDATE SKIP LOCKED
+      LIMIT ${batchSize + 1}
     `))
   }
   const page = rows.slice(0, batchSize)

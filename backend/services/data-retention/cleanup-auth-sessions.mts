@@ -108,10 +108,10 @@ async function cleanupPageInTransaction(
     )
     cursor = (
       await query<Cursor>(
-        `/* lockAuthSessionRetentionCursor */
+        `/* readAuthSessionRetentionCursor */
          SELECT cursor_at::text AS cursor_at, cursor_id, cursor_partition_key, sweep_cutoff_at
          FROM auth_session_retention_cleanup_cursors
-         WHERE cleanup_name = $1 FOR UPDATE`,
+         WHERE cleanup_name = $1`,
         [name],
       )
     ).rows[0]
