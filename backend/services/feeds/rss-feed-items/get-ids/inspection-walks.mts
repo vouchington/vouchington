@@ -1,7 +1,7 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { FeedPageQueryOptions } from './page-query-options.mts'
 
-const CURSOR_TEXT = `to_char(walk.sort_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`
+const CURSOR_TEXT = `to_char(stop.sort_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`
 
 /**
  * Candidates one arm inspects before any eligibility predicate. The hard maximum is bound beside
@@ -58,31 +58,36 @@ export function appendShareCandidates(query: SQLStatement, options: FeedPageQuer
 
 /**
  * Reads the last inspected key of an arm that hit its cap, in the page statement's snapshot, so
- * it is exactly the key the arm stopped at. The one-time filter on the arm's row count skips the
- * walk unless the arm returned a short page, so a normal full page pays nothing. No row means the
- * arm reached the cutoff before the cap.
+ * it is exactly the key the arm stopped at. The stop is the same capped ordered walk the candidates
+ * use, aggregated to its row count and last key (no window function, no OFFSET), and it exists only
+ * when the walk returned exactly the cap. The one-time filter on the arm's row count sits on the
+ * walk's scan, so a full page never executes it. No row means the arm reached the cutoff before
+ * the cap.
  */
 export function appendInspectionStops(query: SQLStatement, options: FeedPageQueryOptions): void {
   const limit = options.safeLimit
-  query.append(sql` UNION ALL (SELECT 'direct_stop'::text, walk.id, NULL::uuid, NULL::timestamptz,
+  query.append(sql` UNION ALL (SELECT 'direct_stop'::text, stop.id, NULL::uuid, NULL::timestamptz,
       NULL::uuid, 'direct'::text, NULL::uuid, NULL::timestamptz, `)
-  query.append(CURSOR_TEXT).append(sql` FROM (SELECT feed_item.id,
-      feed_item.published_at AS sort_at,
-      row_number() OVER (ORDER BY feed_item.published_at DESC, feed_item.id DESC) AS n`)
+  query.append(CURSOR_TEXT).append(sql` FROM (SELECT count(*) AS n,
+      (array_agg(walk.id ORDER BY walk.sort_at ASC, walk.id ASC))[1] AS id,
+      min(walk.sort_at) AS sort_at
+    FROM (SELECT feed_item.id, feed_item.published_at AS sort_at`)
   appendDirectRange(query, options)
   query.append(sql` ORDER BY feed_item.published_at DESC, feed_item.id DESC LIMIT `)
-  query.append(capSql(options)).append(sql`) walk
-    WHERE walk.n = `)
   query.append(capSql(options))
-  query.append(sql` AND (SELECT direct_rows FROM arm_rows) <= ${limit})`)
-  query.append(sql` UNION ALL (SELECT 'share_stop'::text, walk.id, NULL::uuid, NULL::timestamptz,
+  query.append(sql`) walk WHERE (SELECT direct_rows FROM arm_rows) <= ${limit}) stop
+    WHERE stop.n = `)
+  query.append(capSql(options)).append(sql`)`)
+  query.append(sql` UNION ALL (SELECT 'share_stop'::text, stop.id, NULL::uuid, NULL::timestamptz,
       NULL::uuid, 'share'::text, NULL::uuid, NULL::timestamptz, `)
-  query.append(CURSOR_TEXT).append(sql` FROM (SELECT share.id, share.sort_at,
-      row_number() OVER (ORDER BY share.sort_at DESC, share.id DESC) AS n`)
+  query.append(CURSOR_TEXT).append(sql` FROM (SELECT count(*) AS n,
+      (array_agg(walk.id ORDER BY walk.sort_at ASC, walk.id ASC))[1] AS id,
+      min(walk.sort_at) AS sort_at
+    FROM (SELECT share.id, share.sort_at`)
   appendShareRange(query, options)
   query.append(sql` ORDER BY share.sort_at DESC, share.id DESC LIMIT `)
-  query.append(capSql(options)).append(sql`) walk
-    WHERE walk.n = `)
   query.append(capSql(options))
-  query.append(sql` AND (SELECT share_rows FROM arm_rows) <= ${limit})`)
+  query.append(sql`) walk WHERE (SELECT share_rows FROM arm_rows) <= ${limit}) stop
+    WHERE stop.n = `)
+  query.append(capSql(options)).append(sql`)`)
 }
