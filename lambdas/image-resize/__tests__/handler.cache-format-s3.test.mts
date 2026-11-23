@@ -84,7 +84,8 @@ describe('handler.cache-format', () => {
         expect(result.statusCode).toBe(200)
         expect(result.headers?.['Content-Type']).toBe('image/avif')
 
-        const cacheKey = mockFetchImageFromS3.mock.calls[0][2]
+        // `calls[0]!`: the handler under test has just run, so the mock was called at least once.
+        const cacheKey = mockFetchImageFromS3.mock.calls[0]![2]
         expect(cacheKey).toContain('-favif-')
       })
 
@@ -96,7 +97,7 @@ describe('handler.cache-format', () => {
         expect(result.statusCode).toBe(200)
         expect(result.headers?.['Content-Type']).toBe('image/webp')
 
-        const cacheKey = mockFetchImageFromS3.mock.calls[0][2]
+        const cacheKey = mockFetchImageFromS3.mock.calls[0]![2]
         expect(cacheKey).toContain('-fwebp-')
       })
 
@@ -108,7 +109,7 @@ describe('handler.cache-format', () => {
         expect(result.statusCode).toBe(200)
         expect(result.headers?.['Content-Type']).toBe('image/png')
 
-        const cacheKey = mockFetchImageFromS3.mock.calls[0][2]
+        const cacheKey = mockFetchImageFromS3.mock.calls[0]![2]
         expect(cacheKey).toContain('-fpng-')
       })
 
@@ -118,7 +119,7 @@ describe('handler.cache-format', () => {
         expect(result.statusCode).toBe(200)
         expect(result.headers?.['Content-Type']).toBe('image/jpeg')
 
-        const cacheKey = mockFetchImageFromS3.mock.calls[0][2]
+        const cacheKey = mockFetchImageFromS3.mock.calls[0]![2]
         expect(cacheKey).toContain('-fjpeg-')
       })
 
@@ -129,7 +130,7 @@ describe('handler.cache-format', () => {
 
         expect(result.statusCode).toBe(200)
         // Accept: */* lets the server pick; negotiateFormat returns avif (first in SUPPORTED_MIME_TYPES)
-        const cacheKey = mockFetchImageFromS3.mock.calls[0][2]
+        const cacheKey = mockFetchImageFromS3.mock.calls[0]![2]
         expect(cacheKey).toContain('-favif-')
       })
 
@@ -137,8 +138,8 @@ describe('handler.cache-format', () => {
         await handler(createS3Event({ key: 'photo.jpg', w: '400' }, { Accept: 'image/avif' }))
         await handler(createS3Event({ key: 'photo.jpg', w: '400' }, { Accept: 'image/webp' }))
 
-        const avifKey = mockFetchImageFromS3.mock.calls[0][2]
-        const webpKey = mockFetchImageFromS3.mock.calls[1][2]
+        const avifKey = mockFetchImageFromS3.mock.calls[0]![2]
+        const webpKey = mockFetchImageFromS3.mock.calls[1]![2]
 
         expect(avifKey).toContain('-favif-')
         expect(webpKey).toContain('-fwebp-')
@@ -162,7 +163,7 @@ describe('handler.cache-format', () => {
         expect(result.statusCode).toBe(200)
         expect(result.headers?.['Content-Type']).toBe('image/png')
 
-        const cacheKey = mockFetchImageFromS3.mock.calls[0][2]
+        const cacheKey = mockFetchImageFromS3.mock.calls[0]![2]
         expect(cacheKey).toContain('-fpng-')
         expect(cacheKey).not.toContain('-fwebp-')
       })

@@ -73,7 +73,7 @@ export async function fetchImageFromUrl(
     }
 
     const contentType = response.headers.get('content-type') || 'application/octet-stream'
-    const baseContentType = contentType.split(';')[0].trim().toLowerCase()
+    const baseContentType = contentType.split(';')[0]!.trim() // split always yields at least one element.toLowerCase()
     const normalizedContentType = MIME_ALIASES.get(baseContentType) ?? baseContentType
 
     if (!VALID_IMAGE_TYPES.has(normalizedContentType)) {
