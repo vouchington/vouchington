@@ -11,6 +11,7 @@ import {
   insertTestTopic,
   addCategoryToRssFeedItem,
   getPostRelatedUrlIds,
+  getPostCategoryTopicIds,
   getTestPenaltiesByUserId,
   insertTestUrl,
   insertTestUrlHostname,
@@ -18,6 +19,8 @@ import {
   getEntityRelation,
   readAllQueueJobs,
 } from '@voucha/test-helpers'
+import { setTestRssFeedItemCategoryTopicId } from '@voucha/test-helpers/entities/rss-feed-item-categories'
+import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import type { PrivateUser } from '@services/users/types'
 import { upsertSystemUser } from '@services/users/system-users'
@@ -84,6 +87,40 @@ describe('refreshStoryPostForStory', () => {
 
     await expect(refreshStoryPostForStory(story.id)).resolves.toMatchObject({ postId: post.id })
     expect(post.post_type).toBe('story')
+  })
+
+  it('uses item topics committed during refresh', async () => {
+    const suffix = crypto.randomUUID()
+    const story = await insertTestStory({ title: `Concurrent topic refresh ${suffix}` })
+    const previousTopic = await insertTestTopic({
+      name: `Previous topic ${suffix}`,
+      slug: `story-previous-${suffix}`,
+      createdById: testUser.id,
+    })
+    const currentTopic = await insertTestTopic({
+      name: `Current topic ${suffix}`,
+      slug: `story-current-${suffix}`,
+      createdById: testUser.id,
+    })
+    const itemId = await insertItem(story.id)
+    await insertItem(story.id)
+    const category = `refresh-topic-${suffix}`
+    await addCategoryToRssFeedItem(itemId, previousTopic, category)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const { post } = prepared.response
+
+    const restore = beforePostgresTransactionQueryForTest(
+      '/* markStoryPostRelatedUrlProjection */',
+      values => values.includes(post.id),
+      () => setTestRssFeedItemCategoryTopicId(itemId, category, currentTopic),
+    )
+    try {
+      await refreshStoryPostForStory(story.id)
+    } finally {
+      restore()
+    }
+    await expect(getPostCategoryTopicIds(post.id)).resolves.toEqual([currentTopic])
   })
 
   it('is idempotent when called multiple times', async () => {
