@@ -73,14 +73,15 @@ export function EntityAutocomplete<T>({
   dataPw,
 }: EntityAutocompleteProps<T>) {
   const [query, setQuery] = useState(queryLabel)
+  const [syncedQueryLabel, setSyncedQueryLabel] = useState(queryLabel)
   const [results, setResults] = useState<T[]>([])
   const [open, setOpen] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
-  useEffect(() => {
-    queueMicrotask(() => setQuery(queryLabel))
-  }, [queryLabel])
-
+  if (syncedQueryLabel !== queryLabel) {
+    setSyncedQueryLabel(queryLabel)
+    setQuery(queryLabel)
+  }
   const runSearch = (q: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     abortControllerRef.current?.abort()

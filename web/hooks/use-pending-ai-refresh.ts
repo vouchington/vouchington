@@ -27,7 +27,7 @@ export function usePendingAiRefresh(
   }, [refresh, onTimeout])
   useEffect(() => {
     const visible = new Set(pendingKeys)
-    const lifetime = new AbortController()
+    let cancelled = false
     for (const key of deadlines.current.keys()) {
       if (!visible.has(key)) deadlines.current.delete(key)
     }
@@ -38,7 +38,7 @@ export function usePendingAiRefresh(
       if (!visible.has(key)) finalRefreshRequested.current.delete(key)
     }
     queueMicrotask(() => {
-      if (lifetime.signal.aborted) return
+      if (cancelled) return
       setExpiredVisible(current => {
         const next = new Set([...current].filter(key => visible.has(key)))
         return next.size === current.size ? current : next
@@ -50,7 +50,7 @@ export function usePendingAiRefresh(
     }
     if (pendingKeys.length === 0)
       return () => {
-        lifetime.abort()
+        cancelled = true
       }
     const flight = { inFlight: false }
     const interval = window.setInterval(() => {
@@ -82,7 +82,7 @@ export function usePendingAiRefresh(
         })
     }, 5000)
     return () => {
-      lifetime.abort()
+      cancelled = true
       window.clearInterval(interval)
     }
   }, [pendingKeys])

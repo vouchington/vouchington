@@ -74,9 +74,14 @@ export function useTurnstileAction({
     }
     const widgetId = turnstile.render(container, options)
     if (widgetId === undefined) {
-      queueMicrotask(() => setWidgetError(true))
+      let cancelled = false
+      queueMicrotask(() => {
+        if (!cancelled) setWidgetError(true)
+      })
       callbacksRef.current.onError?.()
-      return undefined
+      return () => {
+        cancelled = true
+      }
     }
     widgetIdRef.current = widgetId
     return () => {
