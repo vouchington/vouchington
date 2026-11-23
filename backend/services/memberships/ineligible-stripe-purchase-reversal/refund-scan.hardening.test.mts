@@ -31,15 +31,13 @@ describe('durable Stripe refund scan hardening', () => {
     const completed = await getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)
     await completeStripeRefundScanCycle(completed)
 
-    const cycles = await Promise.all([
-      getOrCreateStripeRefundScanCycle(fixture.reversalCaseId),
-      getOrCreateStripeRefundScanCycle(fixture.reversalCaseId),
-    ])
+    const cycles = await Promise.all(
+      Array.from({ length: 8 }, () => getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)),
+    )
 
-    expect(cycles).toEqual([
-      { generation: completed.generation + 1, reversalCaseId: fixture.reversalCaseId },
-      { generation: completed.generation + 1, reversalCaseId: fixture.reversalCaseId },
-    ])
+    expect(new Set(cycles.map(cycle => cycle.generation))).toEqual(
+      new Set([completed.generation + 1]),
+    )
   })
 
   it('refuses to complete a cycle with an unverified registered target', async () => {
