@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, vi } from 'vitest'
 import {
   beginTransaction,
   createTestUserDirect,
@@ -22,6 +22,7 @@ import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import type { PrivateUser } from '@services/users/types'
 import { upsertSystemUser } from '@services/users/system-users'
 import { background } from '@queues/background/queues'
+import { STORY_POST_RELATED_URL_PROJECTIONS_RECONCILE_JOB } from '@queues/background/enqueues/story-post-related-url-projections-jobs'
 import { prepareStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
 import { processOwnedStoryProjectionPage } from '../../../test-helpers/services/stories/story-post-related-url-projection.mts'
@@ -84,6 +85,42 @@ describe('refreshStoryPostForStory', () => {
 
     await expect(refreshStoryPostForStory(story.id)).resolves.toMatchObject({ postId: post.id })
     expect(post.post_type).toBe('story')
+  })
+
+  it('enqueues URL projection reconciliation only when the refresh transaction commits', async () => {
+    const story = await insertTestStory({})
+    await insertItem(story.id)
+    await insertItem(story.id)
+    const {
+      response: { post },
+    } = await prepareStoryPost(story.id, testUser)
+
+    const add = vi.spyOn(background, 'add')
+    const reconcileCalls = () =>
+      add.mock.calls.filter(
+        ([name]) => name === STORY_POST_RELATED_URL_PROJECTIONS_RECONCILE_JOB.name,
+      )
+    try {
+      {
+        await using query = await beginTransaction()
+        await expect(refreshStoryPostForStory(story.id, { query })).resolves.toMatchObject({
+          postId: post.id,
+        })
+        expect(reconcileCalls()).toHaveLength(0)
+        await query.rollback()
+      }
+      expect(reconcileCalls()).toHaveLength(0)
+
+      await using query = await beginTransaction()
+      await expect(refreshStoryPostForStory(story.id, { query })).resolves.toMatchObject({
+        postId: post.id,
+      })
+      expect(reconcileCalls()).toHaveLength(0)
+      await query.commit()
+      expect(reconcileCalls()).toHaveLength(1)
+    } finally {
+      add.mockRestore()
+    }
   })
 
   it('is idempotent when called multiple times', async () => {

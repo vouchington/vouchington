@@ -1,4 +1,4 @@
-import { read, beginTransaction, write } from '@data-stores/psql'
+import { read, beginTransaction, registerPostCommitAction, write } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { getSystemUserByUsername } from '@services/users/system-users'
@@ -151,7 +151,6 @@ async function refreshStoryPostForStoryInTransaction(
       categoryTopicRelations,
       handleVotes: false,
     })
-    void enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort()
   }
   const impactedTopicIds = [...new Set([...priorTopicIds, ...topicIds])]
   if (
@@ -165,6 +164,7 @@ async function refreshStoryPostForStoryInTransaction(
       impactedTopicIds,
     })
   }
+  registerPostCommitAction(options.query, enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort)
   return {
     postId,
     impactedTopicIds,
