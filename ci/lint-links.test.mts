@@ -85,7 +85,7 @@ exit 0
     const fakeBin = await makeFakeLycheeBin()
     const capturePath = join(fakeBin, 'lychee-args.txt')
 
-    let stdout = ''
+    let stdout: string
     let exitCode = 0
 
     try {

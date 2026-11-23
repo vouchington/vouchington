@@ -47,7 +47,7 @@ describe('story URL source ordered index consolidation', () => {
     if (!url) throw new Error('Expected story URL fixture')
     await insertTestStoryRssFeedItemsBatch({ storyId: story.id, urlId: url.id, count: 1001 })
     enableQueryCapture()
-    let queries: CapturedTestQuery[] = []
+    let queries: CapturedTestQuery[]
     try {
       const rows = await getStoryPostRelatedUrlProjectionPrefix({
         storyId: story.id,

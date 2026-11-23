@@ -14,7 +14,7 @@ describe('public TestQueue exact terminal source', () => {
     let foreign: TestWorker | undefined
     let primary: unknown
     let failed = false
-    let errors: unknown[] = []
+    let errors: unknown[]
     try {
       other = new TestQueue(`other-${randomUUID()}`)
       const source = createTestQueueTerminalSource(queue, undefined)
@@ -58,7 +58,7 @@ describe('public TestQueue exact terminal source', () => {
     let worker: TestWorker | undefined
     let primary: unknown
     let failed = false
-    let errors: unknown[] = []
+    let errors: unknown[]
     try {
       observer = observeElectionTerminalSource(createTestQueueTerminalSource(queue, undefined))
       await observer.ready()
@@ -97,7 +97,7 @@ describe('public TestQueue exact terminal source', () => {
     let observer: ReturnType<typeof observeElectionTerminalSource> | undefined
     let primary: unknown
     let failed = false
-    let errors: unknown[] = []
+    let errors: unknown[]
     try {
       const source = createTestQueueTerminalSource(queue, undefined)
       observer = observeElectionTerminalSource(source)

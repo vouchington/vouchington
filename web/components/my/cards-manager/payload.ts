@@ -27,7 +27,7 @@ export function buildCardUpdatePayload(
   const closed_on = editForm.closed_on || null
   const received_sign_up_bonus_on = editForm.received_sign_up_bonus_on || null
   const creditLimitDraft = editForm.credit_limit.trim()
-  let credit_limit = null
+  let credit_limit: ReturnType<typeof parseMajorUnitsToMoney> | null
   try {
     credit_limit =
       creditLimitDraft === ''

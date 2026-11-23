@@ -53,7 +53,7 @@ export async function invalidateBlocklistReadyMarker(
   filter: BlocklistBloomFilterName,
   readyKey: string,
 ): Promise<number> {
-  let removed = 0
+  let removed: number
   try {
     await bumpBlocklistBloomGeneration(filter)
   } finally {

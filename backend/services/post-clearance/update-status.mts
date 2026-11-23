@@ -25,7 +25,6 @@ export async function updateClearanceStatus(
   trainingEvidence: ModerationTrainingEvidence,
   decision: ClearanceDecisionContext = {},
 ): Promise<void> {
-  let change: Awaited<ReturnType<typeof setPostClearanceStatus>> | null = null
   await using transaction = await beginTransaction()
   const { rows: beforeRows } = await transaction<{
     rejected_at: Date | null
@@ -54,7 +53,7 @@ export async function updateClearanceStatus(
     [postId],
   )
   const previousState = beforeRows[0]
-  change = await setPostClearanceStatus(
+  const change = await setPostClearanceStatus(
     postId,
     status,
     updatedById,

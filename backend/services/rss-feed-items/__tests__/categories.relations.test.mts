@@ -191,8 +191,6 @@ describe('categories relations', () => {
       { rss_feed_item_id: testRssFeedItemId, categories: [categoryText] },
     ])
 
-    // Before backfill: no relation for this topic
-    let mappedTopics = await getRssFeedItemMappedTopics(testRssFeedItemId, 10)
     const user = await createTestUser({ administrator: true })
     const backfillTopic = await createTopic(user!, WEB_PROVENANCE, {
       name: `Backfill Rel Topic ${random}`,
@@ -202,7 +200,7 @@ describe('categories relations', () => {
 
     // After backfill: topic should now be mapped
     await backfillCategoriesForTopicAliases(backfillTopic.id)
-    mappedTopics = await getRssFeedItemMappedTopics(testRssFeedItemId, 10)
+    const mappedTopics = await getRssFeedItemMappedTopics(testRssFeedItemId, 10)
     expect(mappedTopics.some(t => t.id === backfillTopic.id)).toBe(true)
   })
 
