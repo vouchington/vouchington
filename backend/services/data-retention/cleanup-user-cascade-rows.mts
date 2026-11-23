@@ -14,12 +14,12 @@ export async function cleanupUserListRows(
   if (!list) return 0
   const posts = await query(sql`/* cleanupUserListRows:posts */
     WITH candidates AS (SELECT id FROM user_list_posts WHERE user_list_id = ${list.id}
-      ORDER BY id LIMIT ${limit} FOR UPDATE)
+      ORDER BY id LIMIT ${limit})
     DELETE FROM user_list_posts WHERE id IN (SELECT id FROM candidates)`)
   if (posts.rowCount) return posts.rowCount
   const items = await query(sql`/* cleanupUserListRows:feedItems */
     WITH candidates AS (SELECT id FROM user_list_rss_feed_items WHERE user_list_id = ${list.id}
-      ORDER BY id LIMIT ${limit} FOR UPDATE)
+      ORDER BY id LIMIT ${limit})
     DELETE FROM user_list_rss_feed_items WHERE id IN (SELECT id FROM candidates)`)
   if (items.rowCount) return items.rowCount
   const deleted = await query(sql`/* cleanupUserListRows:deleteList */
@@ -34,7 +34,7 @@ export async function cleanupUserNotifications(
 ): Promise<number> {
   const { rowCount } = await query(sql`/* cleanupUserNotifications */
     WITH candidates AS (SELECT id FROM notifications WHERE user_id = ${userId}
-      ORDER BY id LIMIT ${limit} FOR UPDATE)
+      ORDER BY id LIMIT ${limit})
     DELETE FROM notifications WHERE user_id = ${userId} AND id IN (SELECT id FROM candidates)`)
   return rowCount ?? 0
 }
@@ -47,7 +47,7 @@ export async function cleanupUserCommunityMemberships(
   const { rowCount } = await writeCommunityMembershipMutation<{ community_id: string }>(
     sql`/* cleanupUserCommunityMemberships */
     WITH candidates AS (SELECT id FROM community_members WHERE user_id = ${userId}
-      ORDER BY id LIMIT ${limit} FOR UPDATE)
+      ORDER BY id LIMIT ${limit})
     DELETE FROM community_members WHERE id IN (SELECT id FROM candidates) RETURNING community_id`,
     rows => ({ userIds: [userId], communityIds: rows.map(row => row.community_id) }),
     { query },
@@ -62,7 +62,7 @@ export async function cleanupUserNotificationPushReceipts(
 ): Promise<number> {
   const { rowCount } = await query(sql`/* cleanupUserNotificationPushReceipts */
     WITH candidates AS (SELECT notification_id, subscription_id FROM notification_push_intent_subscription_receipts
-      WHERE user_id = ${userId} ORDER BY notification_id, subscription_id LIMIT ${limit} FOR UPDATE)
+      WHERE user_id = ${userId} ORDER BY notification_id, subscription_id LIMIT ${limit})
     DELETE FROM notification_push_intent_subscription_receipts
     WHERE user_id = ${userId} AND (notification_id, subscription_id) IN (SELECT notification_id, subscription_id FROM candidates)`)
   return rowCount ?? 0
@@ -75,7 +75,7 @@ export async function cleanupUserNotificationPushIntents(
 ): Promise<number> {
   const { rowCount } = await query(sql`/* cleanupUserNotificationPushIntents */
     WITH candidates AS (SELECT notification_id FROM notification_push_intents
-      WHERE user_id = ${userId} ORDER BY notification_id LIMIT ${limit} FOR UPDATE)
+      WHERE user_id = ${userId} ORDER BY notification_id LIMIT ${limit})
     DELETE FROM notification_push_intents WHERE user_id = ${userId} AND notification_id IN (SELECT notification_id FROM candidates)`)
   return rowCount ?? 0
 }

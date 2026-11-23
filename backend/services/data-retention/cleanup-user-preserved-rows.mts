@@ -54,7 +54,7 @@ export async function cleanupUserPreservedRows(
       const { rowCount } = await query(sql`/* cleanupSoftDeletedUserBatch: preserve topics */
         -- no-mistakes-disable-next-line postgres-required-predicates: reassign every topic the purged user created, including deleted and merged ones, or deleting the user cascades into them
         WITH candidates AS (SELECT id FROM topics WHERE created_by_id = ${userId}
-          ORDER BY id LIMIT ${limit} FOR UPDATE)
+          ORDER BY id LIMIT ${limit})
         UPDATE topics SET created_by_id = ${DELETED_USER_ID} WHERE id IN (SELECT id FROM candidates)`)
       return rowCount ?? 0
     },
@@ -76,7 +76,7 @@ export async function cleanupUserPreservedRows(
       const { rowCount } =
         await query(sql`/* cleanupSoftDeletedUserBatch: remove membership projections */
         WITH candidates AS (SELECT id FROM memberships WHERE user_id = ${userId}
-          ORDER BY id LIMIT ${limit} FOR UPDATE)
+          ORDER BY id LIMIT ${limit})
         DELETE FROM memberships WHERE id IN (SELECT id FROM candidates)`)
       return rowCount ?? 0
     },

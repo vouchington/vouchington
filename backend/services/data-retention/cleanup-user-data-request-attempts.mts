@@ -44,10 +44,10 @@ async function deleteAttemptPage(
   await query(`/* ensureUserDataRequestAttemptRetentionCursor */
     INSERT INTO user_data_request_attempt_retention_cursors (cleanup_name)
     VALUES ('expired_attempts') ON CONFLICT (cleanup_name) DO NOTHING`)
-  const { rows: cursorRows } = await query<Cursor>(`/* lockUserDataRequestAttemptRetentionCursor */
+  const { rows: cursorRows } = await query<Cursor>(`/* readUserDataRequestAttemptRetentionCursor */
     SELECT cursor_request_id, cursor_processing_attempt_id, cursor_upper_id
     FROM user_data_request_attempt_retention_cursors
-    WHERE cleanup_name = 'expired_attempts' FOR UPDATE`)
+    WHERE cleanup_name = 'expired_attempts'`)
   const cursor = cursorRows[0]!
   const sweepCutoffId = lowerId ? upperId : (cursor.cursor_upper_id ?? upperId)
   const cursorRequestId =
@@ -66,7 +66,7 @@ async function deleteAttemptPage(
     WHERE request_id < $1::uuid
       AND request_id >= $2::uuid
       AND (request_id, processing_attempt_id) > ($3::uuid, $4::uuid)
-    ORDER BY request_id, processing_attempt_id LIMIT $5 FOR UPDATE`,
+    ORDER BY request_id, processing_attempt_id LIMIT $5`,
     [
       sweepCutoffId,
       lowerId ?? MIN_UUIDV7,
