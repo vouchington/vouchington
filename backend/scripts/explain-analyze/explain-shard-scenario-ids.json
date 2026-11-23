@@ -167,6 +167,7 @@
     "modmail-first-reply-last-slot",
     "community-invite-redeem",
     "community-application-questions",
+    "community-application-questions-at-cap",
     "session-limit-hasAuthenticatedSession",
     "session-limit-hasAuthenticatedSession-missing",
     "session-limit-findActiveSessionsForLimit",
