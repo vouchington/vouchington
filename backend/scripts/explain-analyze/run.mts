@@ -27,6 +27,8 @@ import { runCommentDescendantPartitionedPages } from './run-scenarios/comment-de
 import { assertNoLeftoverCommentPartitions } from './seed-data/comment-descendant-partition-storage.mts'
 import { assertNoLeftoverHackerNewsScalePartitions } from './seed-data/hacker-news-scale-fixture.mts'
 import { runHackerNewsScaleScenarios } from './run-scenarios/hacker-news-scale.mts'
+import { runCommunityModerationListCapacityScenarios } from './run-scenarios/community-moderation-list-capacity.mts'
+import { runCommunityRosterReadCapacityScenario } from './run-scenarios/community-roster-read-capacity.mts'
 import { runNotificationUnreadCapacityScenario } from './run-scenarios/notification-unread-capacity.mts'
 
 // EXPLAIN_SHARD splits the CI run (explain-shards.mts); unset runs everything.
@@ -50,6 +52,14 @@ async function main() {
       await runStep(
         runNotificationUnreadCapacityScenario.name,
         runNotificationUnreadCapacityScenario,
+      )
+      await runStep(
+        runCommunityRosterReadCapacityScenario.name,
+        runCommunityRosterReadCapacityScenario,
+      )
+      await runStep(
+        runCommunityModerationListCapacityScenarios.name,
+        runCommunityModerationListCapacityScenarios,
       )
     }
     // The million-post fixture comes last in a full run so its future leaves never touch ordinary plans.
