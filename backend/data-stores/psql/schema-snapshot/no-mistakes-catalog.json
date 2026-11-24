@@ -20903,10 +20903,10 @@
           "unique": true,
           "valid": true
         },
-        "idx_community_invites__community_id": {
+        "idx_community_invites__community_id__id_desc": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_invites__community_id ON public.community_invites USING btree (community_id)",
+          "definition": "CREATE INDEX idx_community_invites__community_id__id_desc ON public.community_invites USING btree (community_id, id DESC)",
           "immediate": true,
           "keys": [
             {
@@ -20915,6 +20915,15 @@
               "descending": false,
               "expression": "community_id",
               "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
