@@ -86,7 +86,6 @@ export async function reviewCopyrightAppeal(
     SELECT id, copyright_restriction_id, action, copyright_notice_appeal_recommendation_id
     FROM copyright_notice_appeal_reviews
     WHERE copyright_notice_submission_id = ${input.submissionId}
-    FOR UPDATE
   `)
   if (existingRows.length > 0) {
     const expected = new Map(
