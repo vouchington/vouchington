@@ -26,7 +26,8 @@ shadow_plan() {
   cd pr || return 1
   git fetch --no-tags --depth=$((ahead + 1)) origin "$HEAD_SHA"
   git update-ref "refs/remotes/origin/$BASE_REF" "$merge_base"
-  unset GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
+  # The planner reads the pull request's own config and files, so it must not see the token.
+  unset GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0 GH_TOKEN
 
   for framework in vitest playwright; do
     "$runner/node_modules/.bin/no-mistakes" --timeout 180 --lock-timeout 0 tests plan "$framework" \
