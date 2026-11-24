@@ -23844,8 +23844,8 @@
         "idx_community_restrictions__community__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_restrictions__community__id ON public.community_restrictions USING btree (community_id, id DESC)",
-          "includedColumns": [],
+          "definition": "CREATE INDEX idx_community_restrictions__community__id ON public.community_restrictions USING btree (community_id, id DESC) INCLUDE (lifted_at, expires_at)",
+          "includedColumns": ["lifted_at", "expires_at"],
           "keys": [
             {
               "column": "community_id",
