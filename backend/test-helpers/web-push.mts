@@ -8,6 +8,7 @@ type TestWebPushEndpointOwner = {
 
 type TestWebPushEndpointOwnershipReplacement = {
   release: () => Promise<void>
+  holderProcessId: number
   replace: (input: {
     userId: string
     endpoint: string
@@ -44,6 +45,7 @@ export async function holdTestWebPushEndpointOwnershipReplacement(
     const holderPid = rows[0]!.pid
     return {
       release,
+      holderProcessId: holderPid,
       replace: async input => {
         try {
           await transaction(sql`/* replaceTestWebPushEndpointOwnershipReplacement.delete */
