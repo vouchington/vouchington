@@ -35,6 +35,5 @@ export async function runNotificationUnreadCapacityScenario(): Promise<void> {
     await write(sql`/* deleteUnreadCapacityOtherRecipients */
       DELETE FROM notifications
       WHERE user_id = ANY(${recipientIds}::uuid[]) AND id = ANY(${notificationIds}::uuid[])`)
-    await write('/* analyzeUnreadCapacityFixtureCleanup */ ANALYZE notifications')
   }
 }

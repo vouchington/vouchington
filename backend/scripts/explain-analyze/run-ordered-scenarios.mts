@@ -1,5 +1,4 @@
 import { runAggregateExistenceScenarios } from './run-scenarios/aggregate-existence.mts'
-import { runNotificationUnreadCapacityScenario } from './run-scenarios/notification-unread-capacity.mts'
 import { runConversationListCapacityScenario } from './run-scenarios/conversation-list-capacity.mts'
 import { runCommunitySearchCapacityScenario } from './run-scenarios/community-search-capacity.mts'
 import { runCommunityMembershipReadCapacityScenarios } from './run-scenarios/community-membership-read-capacity.mts'
@@ -86,7 +85,6 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   // Expiry fixtures come after the shared membership writer's corpus and all ordinary plans.
   runMembershipExpiryPageScenarios,
   runMembershipOrphanedQueuedGrantScenarios,
-  runNotificationUnreadCapacityScenario,
   runConversationListCapacityScenario,
   runCommunitySearchCapacityScenario,
   runCommunityMembershipReadCapacityScenarios,
