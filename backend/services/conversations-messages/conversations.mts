@@ -56,7 +56,6 @@ export async function getConversationsByCreatedById(
       deleted_by_id
     FROM conversations
     WHERE created_by_id = ${createdById}
-      AND created_by_id IS NOT NULL
       AND channel_type = 'chat'
       AND deleted_at IS NULL
   `
