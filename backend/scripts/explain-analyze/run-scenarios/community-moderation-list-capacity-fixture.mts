@@ -65,14 +65,16 @@ export async function seedCommunityModerationListCapacity() {
 
   const { rows: invites } = await transaction<{ id: string; community_id: string }>(sql`
     /* seedCommunityModerationListCapacityInvites */
-    INSERT INTO community_invites (community_id, code_hash, invited_email, invited_by_id, revoked_at)
-    SELECT community_id, upper(lpad(to_hex(ordinal * 10000 + n), 64, '0')),
+    INSERT INTO community_invites (id, community_id, code_hash, invited_email, invited_by_id, revoked_at)
+    SELECT uuidv7((n * CASE WHEN ordinal = 1 THEN 1 ELSE 4 END * 33 + ordinal)
+        * interval '1 second' - interval '1 day'),
+      community_id, upper(lpad(to_hex(ordinal * 10000 + n), 64, '0')),
       ${prefix}::text || '-' || ordinal || '-' || n || '@example.invalid', ${seedUser.id},
       CASE WHEN n % 3 = 0 THEN CURRENT_TIMESTAMP END
     FROM unnest(${communityIds}::uuid[]) WITH ORDINALITY AS community(community_id, ordinal)
     CROSS JOIN generate_series(1, ${targetInviteCount}::int) AS invite(n)
     WHERE ordinal = 1 OR n <= ${targetInviteCount / 4}
-    ORDER BY n * CASE WHEN ordinal = 1 THEN 1 ELSE 4 END, ordinal
+    ORDER BY hashint8(ordinal * 10000 + n), ordinal, n
     RETURNING id, community_id
   `)
 
