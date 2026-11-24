@@ -93,19 +93,23 @@ export async function cleanupOperationalTombstonePage(
   const hasMore = page.length === pageSize
   if (hostnameBlocks && page[0]) {
     if (await hasIncompleteHostnameCleanupRoot(query, page[0].id)) {
-      const more = hasMore
       await query(
         `/* skipProtectedHostnameBlockRetentionCursor */
          UPDATE operational_tombstone_retention_cursors
          SET cursor_at = $2::timestamptz, cursor_record_id = $3::uuid,
              sweep_cutoff_at = $4::timestamptz
          WHERE cleanup_name = $1`,
-        [family, more ? page[0].position_at : null, more ? page[0].id : null, more ? cutoff : null],
+        [
+          family,
+          hasMore ? page[0].position_at : null,
+          hasMore ? page[0].id : null,
+          hasMore ? cutoff : null,
+        ],
       )
       return {
         deleted: 0,
-        hasMore: more,
-        continuation: more ? { at: page[0].position_at, id: page[0].id } : null,
+        hasMore,
+        continuation: hasMore ? { at: page[0].position_at, id: page[0].id } : null,
         stalled: false,
       }
     }
