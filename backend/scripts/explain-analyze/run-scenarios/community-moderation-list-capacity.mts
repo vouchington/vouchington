@@ -119,7 +119,15 @@ async function runRestrictionCapacityScenario(
 ): Promise<void> {
   const scenario = 'search-community-restrictions-at-cap'
   registerScenarioContract(scenario, {
-    expectations: [],
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_community_restrictions__community__id'],
+        noSort: true,
+      },
+      // The cursor has one active row after it, in addition to the page and its lookahead.
+      { kind: 'maxProcessedRows', relation: 'community_restrictions', max: limit + 2 },
+    ],
     seededRows: { community_restrictions: seededRows },
   })
   const scope = `community-restrictions:v1:${communityId}:past:id-desc`
