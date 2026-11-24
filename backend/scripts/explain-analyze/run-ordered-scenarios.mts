@@ -17,6 +17,13 @@ import {
 } from './seed-data/dispatch-work-plans.mts'
 import { runAnalyze } from './seed-data/maintenance.mts'
 import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
+import { runConversationMessageCapacityScenario } from './run-scenarios/conversation-message-capacity.mts'
+import {
+  runMarkNotificationInboxCapacityScenario,
+  runNotificationInboxCapacityScenario,
+} from './run-scenarios/notification-inbox-capacity.mts'
+import { runRelatedPostUrlCapacityScenario } from './run-scenarios/related-post-url-capacity.mts'
+import { runRssIngestCapacityScenario } from './run-scenarios/rss-ingest-capacity.mts'
 
 export type OrderedRunner = () => Promise<unknown>
 
@@ -86,6 +93,11 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runAggregateExistenceScenarios,
   // Keep the extra communities out of ordinary search and ranking plan captures.
   runAiUsageTotalsScenarios,
+  runConversationMessageCapacityScenario,
+  runNotificationInboxCapacityScenario,
+  runMarkNotificationInboxCapacityScenario,
+  runRelatedPostUrlCapacityScenario,
+  runRssIngestCapacityScenario,
 ]
 
 /**
