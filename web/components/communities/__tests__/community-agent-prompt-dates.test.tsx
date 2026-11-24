@@ -44,6 +44,8 @@ describe('community agent prompt dates', () => {
     const expected = formatUtcDateTime(timestamp, locale)
     const entry = {
       id: 'entry-1',
+      agent_prompt_id: 'prompt-1',
+      community_id: 'community-1',
       action: 'created',
       changed_by: { id: 'u-1', username: 'alice' },
       previous_fields: {},
