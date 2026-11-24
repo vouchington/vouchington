@@ -51,7 +51,6 @@ export async function reviewCopyrightCounterNotice(input: {
     JOIN copyright_notice_submissions submission
       ON submission.id = review.copyright_notice_submission_id
     WHERE review.copyright_notice_submission_id = ${input.submissionId}
-    FOR UPDATE OF review, submission
   `)
   const existing = existingRows[0]
   if (existing) {

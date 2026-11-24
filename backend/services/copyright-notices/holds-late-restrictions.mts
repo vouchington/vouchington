@@ -74,9 +74,8 @@ export async function activateLateCopyrightLegalHoldRestrictions(
   `)
   if (rows.length === 0) return []
   assertMediaDeliveryLegalEnforcementEnabled()
-  // One sorted acquisition for every placement, before any revision is read. The per-placement
-  // lock inside prepublishImagePlacementDenial re-enters these locks (advisory xact locks and row locks are
-  // re-entrant), so it adds no new lock order.
+  // Acquire all placement locks before reading revisions. Each denial uses one of those same
+  // placement IDs and runs in the same transaction, which has already marked delivery authority started.
   await lockImageDeliveryMutation(transaction, {
     placementIds: rows.map(restriction => restriction.placement_id),
     placementOnly: true,
@@ -108,7 +107,7 @@ export async function activateLateCopyrightLegalHoldRestrictions(
         revision: placement.revision,
         imageId: placement.imageId,
       },
-      { query: transaction },
+      { query: transaction, placementLocked: true },
     )
     // oxlint-enable no-await-in-loop
   }
