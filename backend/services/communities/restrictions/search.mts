@@ -30,7 +30,7 @@ export async function searchCommunityRestrictions(
       AND lifted_at IS NULL AND (expires_at IS NULL OR expires_at > ${now})`)
   } else {
     // Equal bounds preserve community scoping and keep the community key in the index order.
-    query.append(sql` WHERE community_id BETWEEN ${communityId} AND ${communityId}
+    query.append(sql` WHERE community_id BETWEEN (SELECT ${communityId}::uuid) AND (SELECT ${communityId}::uuid)
       AND (lifted_at IS NOT NULL OR expires_at <= ${now})`)
   }
   if (cursor) query.append(sql` AND id < ${cursor.id}::uuid`)
