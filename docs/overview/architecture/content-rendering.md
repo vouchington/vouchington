@@ -256,6 +256,11 @@ Crawled page titles and markdown on crawl detail are original page text, so they
 `CrawlAuthoredText` instead of the surrounding translated UI chrome. Status codes, timestamps,
 and the language fact remain UI chrome. It is not a post-content boundary.
 
+Fediverse search results carry third-party titles and summaries with no language field. They render
+through `ThirdPartyText` on the search page and in command search, which sets `dir="auto"` and
+omits `lang` rather than guessing. Provider names, hostnames, and result types stay unmarked. It
+is not a post-content boundary.
+
 Moderation report labels retain `target_label` for system-owned fallbacks. Post/comment authored
 fragments travel separately as `target_content`; comment prefixes and deleted/private fallbacks
 stay outside the authored boundary. Inputs, ARIA interpolation, metadata/routes, image alt text,
