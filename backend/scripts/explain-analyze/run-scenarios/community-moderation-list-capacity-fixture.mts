@@ -43,9 +43,9 @@ export async function seedCommunityModerationListCapacity(
           sql` - ${targetInviteCount}::int - 1) * interval '1 minute' + ordinal * interval '100 milliseconds'), `,
         )
     : sql``
-  const { rows: invites } = await transaction<{ id: string; community_id: string }>(sql`
+  const inviteSeed = sql`
     /* seedCommunityModerationListCapacityInvites */
-    INSERT INTO community_invites (`)
+    INSERT INTO community_invites (`
     .append(inviteIdColumn)
     .append(sql`community_id, code_hash, invited_email, invited_by_id, revoked_at)
     SELECT `)
@@ -61,12 +61,9 @@ export async function seedCommunityModerationListCapacity(
     RETURNING id, community_id
   `)
 
-  const { rows: restrictions } = await transaction<{
-    id: string
-    community_id: string
-    expires_at: Date | null
-    lifted_at: Date | null
-  }>(sql`
+  const { rows: invites } = await transaction<{ id: string; community_id: string }>(inviteSeed)
+
+  const restrictionSeed = sql`
     /* seedCommunityModerationListCapacityRestrictions */
     INSERT INTO community_restrictions
       (id, community_id, restriction_type, activated_by_id, activated_at, lifted_at, lifted_by_id, expires_at)
@@ -81,9 +78,15 @@ export async function seedCommunityModerationListCapacity(
       FROM unnest(${communityIds}::uuid[]) WITH ORDINALITY AS community(community_id, ordinal)
       CROSS JOIN generate_series(1, ${restrictionCount}::int) AS restriction(n)
     ) AS fixture
-    ORDER BY `).append(restrictionOrder).append(sql`
+    ORDER BY `.append(restrictionOrder).append(sql`
     RETURNING id, community_id, expires_at, lifted_at
   `)
+  const { rows: restrictions } = await transaction<{
+    id: string
+    community_id: string
+    expires_at: Date | null
+    lifted_at: Date | null
+  }>(restrictionSeed)
   await transaction.commit()
 
   return {
