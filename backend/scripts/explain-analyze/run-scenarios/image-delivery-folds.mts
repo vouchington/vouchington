@@ -2,7 +2,6 @@ import { beginTransaction } from '@data-stores/psql'
 import {
   assertImagesReadyForSurface,
   lockImageDeliveryMutation,
-  lockUserProfileImageOwners,
 } from '@services/media-delivery-safety'
 import { lockPostImageAdmission } from '@services/posts/prepare-locked-image-update'
 import { registerScenarioContract } from '../plan-expectations.mts'
@@ -35,22 +34,6 @@ async function runDeliveryMutationAdvisory(): Promise<void> {
       ),
     undefined,
     'lockImageDeliveryMutation:advisory',
-  )
-}
-
-// Owner-domain keys for ten users in one statement, with the authority marker.
-async function runSurfaceOwnerDomains(): Promise<void> {
-  await runAndCapture(
-    'image-surface-owner-domains',
-    () =>
-      inRolledBackTransaction(tx =>
-        lockUserProfileImageOwners(
-          Array.from({ length: 10 }, (_, i) => seedUuid(i, '01')),
-          tx,
-        ),
-      ),
-    undefined,
-    'lockSurfaceOwnerDomains',
   )
 }
 
@@ -88,7 +71,6 @@ async function runPostImageLock(): Promise<void> {
 
 export async function runImageDeliveryFoldScenarios(): Promise<void> {
   await runDeliveryMutationAdvisory()
-  await runSurfaceOwnerDomains()
   await runImagesReadyForSurface()
   await runPostImageLock()
 }

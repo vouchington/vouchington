@@ -3,7 +3,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { CopyrightNoticeTargetInput } from './types.mts'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
-import type { ImageSurfaceReference } from '@services/media-delivery-safety/surface-lock'
+import type { ImageSurfaceReference } from '@services/media-delivery-safety/surface-reference'
 import {
   resolveCopyrightSurfacePlacement,
   resolveCopyrightSurfacePlacements,
