@@ -1,6 +1,7 @@
 import { write } from '@data-stores/psql'
 import { createConversation, updateConversationTitle } from '@services/conversations-messages'
 import sql from 'sql-template-strings'
+import { registerScenarioContract } from '../plan-expectations.mts'
 import { getConversationsByCreatedById } from '../run-services.mts'
 import { heavyFollowUser, runAndCapture, seedUser } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
@@ -28,6 +29,16 @@ export async function runConversationListCapacityScenario(): Promise<void> {
       (${otherCreatorId}::uuid, ${heavyFollowUser.id}::uuid, 'chat'::conversation_channel_types, NULL)
   `)
   try {
+    registerScenarioContract('conversation-list-at-cap', {
+      expectations: [
+        {
+          kind: 'usesIndexes',
+          indexes: ['idx_conversations__active_chat_created_by_id__id_desc'],
+          noSort: true,
+        },
+        { kind: 'maxProcessedRows', relation: 'conversations', max: PAGE_SIZE + 1 },
+      ],
+    })
     await runAndCapture(
       'conversation-list-at-cap',
       async () => {
