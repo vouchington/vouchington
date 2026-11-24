@@ -432,7 +432,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_comm_invites__user ON community_invites (c
 
 -- RI-usable indexes for FKs whose existing indexes above carry additional predicates or lead with a different column
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_community_invites__community_id ON community_invites (community_id);
+CREATE INDEX IF NOT EXISTS idx_community_invites__community_id__id_desc
+  ON community_invites (community_id, id DESC);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_invites__invited_user_id ON community_invites (invited_user_id) WHERE invited_user_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
