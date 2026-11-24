@@ -16,26 +16,58 @@ function idCursor(id: string): string {
 }
 
 export async function runCommunityModerationListCapacityScenarios(): Promise<void> {
-  const fixture = await seedCommunityModerationListCapacity()
-  const { communityId, communityIds, pendingApplicationIds, inviteIds, pastRestrictionIds } =
-    fixture
+  await write(`/* createCommunityInviteMeasurementIndex */
+    CREATE INDEX idx_explain_community_invites__community_id_id
+    ON community_invites (community_id, id DESC)`)
   try {
-    await write(`/* analyzeCommunityModerationListCapacity */
-      ANALYZE community_applications, community_application_answers, community_invites, community_restrictions`)
-    await runApplicationCapacityScenario(
-      communityId,
-      pendingApplicationIds,
-      fixture.seededApplicationCount,
-    )
-    await runInviteCapacityScenario(communityId, inviteIds, fixture.seededInviteCount)
-    await runRestrictionCapacityScenario(
-      communityId,
-      pastRestrictionIds,
-      fixture.seededRestrictionCount,
-    )
+    for (const layout of ['original', 'shuffled', 'many-shuffled'] as const) {
+      const fixture = await seedCommunityModerationListCapacity(layout)
+      const { communityId, communityIds, pendingApplicationIds, inviteIds, pastRestrictionIds } =
+        fixture
+      try {
+        if (layout === 'original') {
+          await write(`/* analyzeCommunityApplicationListCapacity */
+            ANALYZE community_applications, community_application_answers`)
+          await runApplicationCapacityScenario(
+            communityId,
+            pendingApplicationIds,
+            fixture.seededApplicationCount,
+          )
+        }
+
+        await write(`/* analyzeCommunityModerationListCapacity */
+          ANALYZE community_invites, community_restrictions`)
+        const { rows: correlations } = await write(`/* reportCommunityModerationHeapCorrelation */
+          SELECT tablename, attname, correlation
+          FROM pg_stats
+          WHERE schemaname = current_schema()
+            AND tablename IN ('community_invites', 'community_restrictions')
+            AND attname IN ('community_id', 'id')
+          ORDER BY tablename, attname`)
+        console.log(
+          `Moderation fixture ${layout} (${communityIds.length} communities) heap correlation: ${JSON.stringify(correlations)}`,
+        )
+        const suffix = layout === 'original' ? '' : `-${layout}`
+        await runInviteCapacityScenario(
+          `search-community-invites-at-cap${suffix}`,
+          communityId,
+          inviteIds,
+          fixture.seededInviteCount,
+        )
+        await runRestrictionCapacityScenario(
+          `search-community-restrictions-at-cap${suffix}`,
+          communityId,
+          pastRestrictionIds,
+          fixture.seededRestrictionCount,
+        )
+      } finally {
+        await write(sql`/* deleteCommunityModerationListCapacity */
+          DELETE FROM communities WHERE id = ANY(${communityIds}::uuid[])`)
+      }
+    }
   } finally {
-    await write(sql`/* deleteCommunityModerationListCapacity */
-      DELETE FROM communities WHERE id = ANY(${communityIds}::uuid[])`)
+    await write(`/* dropCommunityInviteMeasurementIndex */
+      DROP INDEX idx_explain_community_invites__community_id_id`)
   }
 }
 
@@ -77,11 +109,11 @@ async function runApplicationCapacityScenario(
 }
 
 async function runInviteCapacityScenario(
+  scenario: string,
   communityId: string,
   inviteIds: readonly string[],
   seededRows: number,
 ): Promise<void> {
-  const scenario = 'search-community-invites-at-cap'
   registerScenarioContract(scenario, {
     expectations: [],
     seededRows: { community_invites: seededRows },
@@ -113,11 +145,11 @@ async function runInviteCapacityScenario(
 }
 
 async function runRestrictionCapacityScenario(
+  scenario: string,
   communityId: string,
   pastIds: readonly string[],
   seededRows: number,
 ): Promise<void> {
-  const scenario = 'search-community-restrictions-at-cap'
   registerScenarioContract(scenario, {
     expectations: [],
     seededRows: { community_restrictions: seededRows },
