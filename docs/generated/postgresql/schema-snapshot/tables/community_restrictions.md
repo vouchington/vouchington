@@ -41,7 +41,7 @@ _none_
 - `community_restrictions_pkey`: `CREATE UNIQUE INDEX community_restrictions_pkey ON public.community_restrictions USING btree (id)`
 - `idx_community_restrictions__activated_by_id`: `CREATE INDEX idx_community_restrictions__activated_by_id ON public.community_restrictions USING btree (activated_by_id) WHERE (activated_by_id IS NOT NULL)`
 - `idx_community_restrictions__active_lookup`: `CREATE INDEX idx_community_restrictions__active_lookup ON public.community_restrictions USING btree (community_id, restriction_type, activated_at, id) WHERE (lifted_at IS NULL)`
-- `idx_community_restrictions__community__id`: `CREATE INDEX idx_community_restrictions__community__id ON public.community_restrictions USING btree (community_id, id DESC)`
+- `idx_community_restrictions__community__id`: `CREATE INDEX idx_community_restrictions__community__id ON public.community_restrictions USING btree (community_id, id DESC) INCLUDE (lifted_at, expires_at)`
 - `idx_community_restrictions__lifted_by_id`: `CREATE INDEX idx_community_restrictions__lifted_by_id ON public.community_restrictions USING btree (lifted_by_id) WHERE (lifted_by_id IS NOT NULL)`
 
 **Triggers:**

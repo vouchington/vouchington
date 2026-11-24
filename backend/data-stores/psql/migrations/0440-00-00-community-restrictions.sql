@@ -34,7 +34,7 @@ CREATE OR REPLACE TRIGGER trigger_community_restrictions_updated_at
   BEFORE UPDATE ON community_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE INDEX IF NOT EXISTS idx_community_restrictions__community__id
-  ON community_restrictions (community_id, id DESC);
+  ON community_restrictions (community_id, id DESC) INCLUDE (lifted_at, expires_at);
 
 CREATE INDEX IF NOT EXISTS idx_community_restrictions__active_lookup
   ON community_restrictions (community_id, restriction_type, activated_at, id)
