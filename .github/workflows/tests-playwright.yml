@@ -158,8 +158,8 @@ jobs:
       - name: Run Playwright tests
         id: run-playwright
         # PLAYWRIGHT_EXECUTION_BUDGET_SECONDS (ci/playwright/shard-total.mts) sizes shards to about
-        # 300s of average test time (about 350s for the heaviest); this ceiling adds a slow-runner
-        # tail on top of it. Assertion failures still fail the step.
+        # 200s of average test time (about 285s for the heaviest, including server startup); this
+        # ceiling leaves about 40% for a slow-runner tail. Assertion failures still fail the step.
         # run-bounded kills the process group one minute under this ceiling. Neither fired when
         # shards 5 and 8 hung until the job cap with their logs dropped (runs 37726973537 and
         # 40397368974), so the background sampler logs memory and the largest processes.

@@ -25,24 +25,28 @@ describe('isRunnablePlaywrightSpec', () => {
 })
 
 describe('playwrightShardTotal', () => {
-  it('uses one shard for zero through 49 runnable spec files', () => {
+  it('uses one shard for zero through 32 runnable spec files', () => {
     expect(playwrightShardTotal(0)).toBe(1)
     expect(playwrightShardTotal(1)).toBe(1)
-    expect(playwrightShardTotal(49)).toBe(1)
+    expect(playwrightShardTotal(32)).toBe(1)
   })
 
   it('adds a shard as the spec count crosses each execution-budget boundary', () => {
-    expect(playwrightShardTotal(50)).toBe(2)
-    expect(playwrightShardTotal(98)).toBe(2)
-    expect(playwrightShardTotal(99)).toBe(3)
-    expect(playwrightShardTotal(147)).toBe(3)
-    expect(playwrightShardTotal(148)).toBe(4)
+    expect(playwrightShardTotal(33)).toBe(2)
+    expect(playwrightShardTotal(65)).toBe(2)
+    expect(playwrightShardTotal(66)).toBe(3)
+    expect(playwrightShardTotal(98)).toBe(3)
+    expect(playwrightShardTotal(99)).toBe(4)
+  })
+
+  it('resolves the 352-spec suite to the eleven shards that keep the slowest near 285 seconds', () => {
+    expect(playwrightShardTotal(352)).toBe(11)
   })
 
   it('uses a valid explicit override instead of the runtime heuristic', () => {
     expect(playwrightShardTotal(30_721, '4')).toBe(4)
     expect(playwrightShardTotal(1, '256')).toBe(256)
-    expect(playwrightShardTotal(50, '')).toBe(2)
+    expect(playwrightShardTotal(33, '')).toBe(2)
   })
 
   it.each(['0', '-1', '1.5', ' 4 ', '257', 'not-a-number'])(
