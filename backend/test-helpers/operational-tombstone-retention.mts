@@ -146,3 +146,26 @@ export async function getTestHostnamePenaltySources(
   )
   return Object.fromEntries(rows.map(row => [row.id, row.source_hostname_block_id]))
 }
+
+export async function touchOperationalAttestationKeyForTest(
+  query: TransactionQuery,
+  id: string,
+  usedAt: Date,
+): Promise<void> {
+  await query(
+    `/* touchOperationalAttestationKeyForTest */
+     UPDATE app_attestation_keys SET last_used_at = $2::timestamptz WHERE id = $1::uuid`,
+    [id, usedAt],
+  )
+}
+
+export async function deleteOperationalAttestationKeysForTest(
+  query: TransactionQuery,
+  ids: readonly string[],
+): Promise<void> {
+  await query(
+    `/* deleteOperationalAttestationKeysForTest */
+     DELETE FROM app_attestation_keys WHERE id = ANY($1::uuid[])`,
+    [ids],
+  )
+}
