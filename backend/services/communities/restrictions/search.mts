@@ -20,38 +20,19 @@ export async function searchCommunityRestrictions(
     ? decodeScopedUuidCursor(options.after, scope, 'Invalid cursor format')
     : undefined
   const now = new Date()
-  const query =
-    status === 'active'
-      ? sql`/* searchCommunityRestrictions */
-        SELECT id, community_id, restriction_type, activated_by_id, activated_at, expires_at,
-          created_at, updated_at, lifted_at, lifted_by_id, reason
-        FROM community_restrictions
-        WHERE community_id = ${communityId}
-          AND lifted_at IS NULL AND (expires_at IS NULL OR expires_at > ${now})
-      `
-      : sql`/* searchCommunityRestrictions */
-        SELECT restriction.id, restriction.community_id, restriction.restriction_type,
-          restriction.activated_by_id, restriction.activated_at, restriction.expires_at,
-          restriction.created_at, restriction.updated_at, restriction.lifted_at,
-          restriction.lifted_by_id, restriction.reason
-        FROM (
-          SELECT community_id, id
-          FROM community_restrictions
-          WHERE community_id BETWEEN ${communityId} AND ${communityId}
-            AND (lifted_at IS NOT NULL OR expires_at <= ${now})
-      `
-  if (cursor) query.append(sql` AND id < ${cursor.id}::uuid`)
+  const query = sql`/* searchCommunityRestrictions */
+    SELECT id, community_id, restriction_type, activated_by_id, activated_at, expires_at,
+      created_at, updated_at, lifted_at, lifted_by_id, reason
+    FROM community_restrictions
+    WHERE community_id = ${communityId}
+  `
   if (status === 'active') {
-    query.append(sql` ORDER BY id DESC LIMIT ${limit + 1}`)
+    query.append(sql` AND lifted_at IS NULL AND (expires_at IS NULL OR expires_at > ${now})`)
   } else {
-    query.append(sql`
-          ORDER BY community_id ASC, id DESC
-          LIMIT ${limit + 1}
-        ) AS page
-        JOIN community_restrictions AS restriction ON restriction.id = page.id
-        ORDER BY page.community_id ASC, page.id DESC
-    `)
+    query.append(sql` AND (lifted_at IS NOT NULL OR expires_at <= ${now})`)
   }
+  if (cursor) query.append(sql` AND id < ${cursor.id}::uuid`)
+  query.append(sql` ORDER BY id DESC LIMIT ${limit + 1}`)
   const { rows } = await read<CommunityRestriction>(query, options)
   const results = rows.slice(0, limit)
   return {
