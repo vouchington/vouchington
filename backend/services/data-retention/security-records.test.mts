@@ -5,12 +5,11 @@ import { getMinUuidv7ForDate } from '@modules/utils'
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import {
   insertTestAccountCopyrightRationale,
-  placeTestAccountPreservationHold,
   readTestCopyrightDecisionRationales,
 } from '@voucha/test-helpers/copyright-mcp-audit'
-import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
-import { testRationaleRetentionEligible } from '@voucha/test-helpers/security-retention'
-import { lockCopyrightRationaleRetentionPage } from '@services/copyright-notices/retention-erasure-preservation'
+import { withCommittedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
+import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
+import { placeUserPreservationHold } from '@services/users'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import {
   createTestPendingOAuthAuthorization,
@@ -34,6 +33,7 @@ import {
 } from '@voucha/test-helpers/entities/oauth-retention-microsecond-page'
 import {
   insertPreservationHoldForTest,
+  readPreservationHoldsForTest,
   releasePreservationHoldForTest,
 } from '@voucha/test-helpers/entities/user-legal-preservation-holds'
 import { cleanupSecurityRecords } from './cleanup-security-records.mts'
@@ -126,48 +126,62 @@ describe('security record cleanup', () => {
     expect(retired.rowCount).toBe(1)
   })
 
-  it('rechecks a noncase rationale after a concurrent account hold commits', async () => {
-    const actor = await createTestUserDirect({ administrator: true })
-    const subject = await createTestUserDirect()
-    const now = new Date()
-    const recordedAt = new Date(Date.UTC(now.getUTCFullYear() - 7, 0, 1))
-    const rationaleId = await insertTestAccountCopyrightRationale(subject.id, actor.id, recordedAt)
-    const cutoff = sourcePlan('copyright_rationales_attempts', now).cutoffAt
-    {
-      await using eligibility = await beginTransaction()
-      expect(await testRationaleRetentionEligible(eligibility, rationaleId, cutoff)).toBe(true)
-    }
-    const listed = Promise.withResolvers<void>()
-    await using hold = await beginTransaction()
-    await placeTestAccountPreservationHold(hold, subject.id, actor.id)
+  it('keeps noncase rationale ciphertext when a hold commits before erasure commits', async () => {
+    const [admin, subject, unheld] = await Promise.all([
+      createTestUser({ administrator: true }),
+      createTestUserDirect(),
+      createTestUserDirect(),
+    ])
+    // A six-year cutoff just past the synthetic rows keeps ordinary aged fixtures out of the page.
+    const earlierAt = new Date('1970-01-01T00:00:00.001Z')
+    const heldAt = new Date('1970-01-01T00:00:00.002Z')
+    const now = new Date('1976-01-01T00:00:00.003Z')
+    const [unheldId, rationaleId] = await Promise.all([
+      insertTestAccountCopyrightRationale(unheld.id, admin.id, earlierAt),
+      insertTestAccountCopyrightRationale(subject.id, admin.id, heldAt),
+    ])
+    const before = await readTestCopyrightDecisionRationales(admin.id)
+    expect(before.map(row => row.id)).toEqual([unheldId, rationaleId])
+    const ciphertext = before[1]!.rationale_ciphertext
 
-    const deletion = withPostgresTransactionForTest(
-      async query => {
-        const locked = await lockCopyrightRationaleRetentionPage(query, [rationaleId])
-        expect(locked.has(rationaleId)).toBe(true)
-        await query(
-          `/* testCopyrightRationaleHoldRace:cutoff */
-           SELECT set_config('app.copyright_rationale_retention_cutoff', $1::text, true)`,
-          [cutoff.toISOString()],
-        )
-        return query(
-          `/* testCopyrightRationaleHoldRace:delete */
-           DELETE FROM copyright_decision_rationales target
-           WHERE target.id = $1::uuid AND
-             fn_copyright_decision_rationale_retention_eligible(target, $2::timestamptz)`,
-          [rationaleId, cutoff],
-        )
+    const inserted = Promise.withResolvers<void>()
+    const allowHoldCommit = Promise.withResolvers<void>()
+    const restore = afterPostgresTransactionQueryForTest(
+      '/* placeUserPreservationHold */',
+      values => values.includes(subject.id),
+      async () => {
+        inserted.resolve()
+        await allowHoldCommit.promise
       },
-      { marker: 'listCopyrightRationaleRetentionAccounts', complete: listed.resolve },
     )
-    // The page has read its candidate before this hold commits. Its account lock must wait,
-    // then the fresh DELETE predicate observes the hold and retains the ciphertext.
-    await listed.promise
-    await hold.commit()
-    expect((await deletion).rowCount).toBe(0)
-    expect((await readTestCopyrightDecisionRationales(actor.id)).map(row => row.id)).toContain(
-      rationaleId,
-    )
+    const hold = placeUserPreservationHold(admin, subject.id, 'matter-rationale-retention')
+    try {
+      await Promise.race([
+        inserted.promise,
+        hold.then(() => {
+          throw new Error('Hold placement completed before reaching the race hook')
+        }),
+      ])
+      await withCommittedPostgresTransactionForTest(async query => {
+        await cleanupSecuritySourcePageInTransaction(query, 'copyright_rationales_attempts', 2, now)
+        // The DELETE runs against an uncommitted hold. Let the hold commit first.
+        allowHoldCommit.resolve()
+        await hold
+      })
+    } finally {
+      allowHoldCommit.resolve()
+      await hold.catch(() => {})
+      restore()
+    }
+
+    expect(await readPreservationHoldsForTest(subject.id)).toEqual([
+      expect.objectContaining({ id: (await hold).id, released_at: null }),
+    ])
+    const after = await readTestCopyrightDecisionRationales(admin.id)
+    expect(after.map(row => row.id)).not.toContain(unheldId)
+    const heldCiphertextPreserved =
+      after.find(row => row.id === rationaleId)?.rationale_ciphertext === ciphertext
+    expect(heldCiphertextPreserved).toBe(true)
   })
 
   it('does not cascade a revoked grant into younger authorization artifacts', async () => {
