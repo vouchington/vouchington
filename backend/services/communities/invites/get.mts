@@ -19,7 +19,7 @@ export async function searchInvites(
       id, community_id, invited_user_id, invited_email, invited_by_id,
       accepted_at, accepted_by_id, declined_at, revoked_at, created_at
     FROM community_invites
-    WHERE community_id = ${communityId}
+    WHERE community_id BETWEEN ${communityId} AND ${communityId}
   `
 
   if (cursorId !== undefined) {
@@ -27,7 +27,7 @@ export async function searchInvites(
   }
 
   query.append(sql`
-    ORDER BY id DESC
+    ORDER BY community_id ASC, id DESC
     LIMIT ${limit + 1}
   `)
 
