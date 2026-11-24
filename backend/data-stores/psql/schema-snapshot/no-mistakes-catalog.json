@@ -27383,6 +27383,38 @@
           "unique": true,
           "valid": true
         },
+        "idx_conversations__active_chat_created_by_id__id_desc": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_conversations__active_chat_created_by_id__id_desc ON public.conversations USING btree (created_by_id, id DESC) WHERE ((created_by_id IS NOT NULL) AND (channel_type = 'chat'::conversation_channel_types) AND (deleted_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((created_by_id IS NOT NULL) AND (channel_type = 'chat'::conversation_channel_types) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_conversations__assigned_moderator_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
