@@ -6,16 +6,16 @@ import {
   type Family,
 } from '../services/data-retention/cleanup-operational-tombstone-plans.mts'
 
-/** Scope both bounded candidate reads to exact owned IDs. */
+/** Add only an exact owned-ID predicate before the real bounded physical candidate SELECT. */
 export function scopeOperationalRetentionQuery(
   query: TransactionQuery,
   family: Family,
   ids: readonly string[],
 ) {
   const conversation = family === 'deleted_conversations'
-  const markers = conversation
-    ? ['listDeletedConversationRetentionCandidate']
-    : ['listOperationalTombstoneCandidates', 'hasMoreOperationalTombstoneCandidates']
+  const marker = conversation
+    ? 'listDeletedConversationRetentionCandidate'
+    : 'listOperationalTombstoneCandidates'
   const from = conversation
     ? 'FROM conversations conversation'
     : `FROM ${PLANS[family].table} source`
@@ -23,10 +23,7 @@ export function scopeOperationalRetentionQuery(
   return new Proxy(query, {
     apply(target, thisArgument, args: Parameters<TransactionQuery>) {
       const [statement, values] = args
-      if (
-        typeof statement === 'string' &&
-        markers.some(marker => statement.includes(`/* ${marker} */`))
-      ) {
+      if (typeof statement === 'string' && statement.includes(`/* ${marker} */`)) {
         if (
           !statement.includes(from) ||
           !statement.includes(' ORDER BY') ||

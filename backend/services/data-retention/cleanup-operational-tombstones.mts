@@ -2,7 +2,7 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
 import { cleanupDeletedConversationPage } from './cleanup-deleted-conversations.mts'
-import { hasMoreCandidates, listCandidates } from './cleanup-operational-tombstone-candidates.mts'
+import { listCandidates } from './cleanup-operational-tombstone-candidates.mts'
 import {
   detachHostnameBlockReferences,
   hasIncompleteHostnameCleanupRoot,
@@ -90,28 +90,22 @@ export async function cleanupOperationalTombstonePage(
   // One root at a time: the same page budget first detaches its FK dependents.
   const pageSize = hostnameBlocks ? 1 : batchSize
   const page = await listCandidates(query, plan, cutoff, pageSize, cursor)
-  const lastAdmitted = page.at(-1)
-  const last =
-    page.length === pageSize &&
-    lastAdmitted !== undefined &&
-    (await hasMoreCandidates(query, plan, cutoff, lastAdmitted))
-      ? lastAdmitted
-      : undefined
-  const hasMore = last !== undefined
+  const hasMore = page.length === pageSize
   if (hostnameBlocks && page[0]) {
     if (await hasIncompleteHostnameCleanupRoot(query, page[0].id)) {
+      const more = hasMore
       await query(
         `/* skipProtectedHostnameBlockRetentionCursor */
          UPDATE operational_tombstone_retention_cursors
          SET cursor_at = $2::timestamptz, cursor_record_id = $3::uuid,
              sweep_cutoff_at = $4::timestamptz
          WHERE cleanup_name = $1`,
-        [family, last?.position_at ?? null, last?.id ?? null, last ? cutoff : null],
+        [family, more ? page[0].position_at : null, more ? page[0].id : null, more ? cutoff : null],
       )
       return {
         deleted: 0,
-        hasMore,
-        continuation: last ? { at: last.position_at, id: last.id } : null,
+        hasMore: more,
+        continuation: more ? { at: page[0].position_at, id: page[0].id } : null,
         stalled: false,
       }
     }
@@ -134,6 +128,7 @@ export async function cleanupOperationalTombstonePage(
         [page.map(candidate => candidate.id), cutoff],
       )
     : { rowCount: 0 }
+  const last = hasMore ? page.at(-1)! : null
   if (trackCursor)
     await query(
       `/* checkpointOperationalTombstoneCursor */

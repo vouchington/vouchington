@@ -35,22 +35,3 @@ export async function listCandidates(
   )
   return rows
 }
-
-export async function hasMoreCandidates(
-  query: TransactionQuery,
-  plan: Plan,
-  cutoff: Date,
-  last: OperationalTombstoneCandidate,
-): Promise<boolean> {
-  const { rows } = await query(
-    `/* hasMoreOperationalTombstoneCandidates */
-     SELECT 1 FROM ${plan.table} source
-     WHERE ${plan.timestamp} < $1::timestamptz
-       AND ${plan.candidatePredicate ?? plan.predicate}
-       AND (${plan.timestamp}, source.id) > ($2::timestamptz, $3::uuid)
-     ORDER BY ${plan.timestamp}, source.id
-     LIMIT 1`,
-    [cutoff, last.position_at, last.id],
-  )
-  return rows.length > 0
-}
