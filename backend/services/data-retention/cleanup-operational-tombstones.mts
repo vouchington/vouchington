@@ -90,6 +90,8 @@ export async function cleanupOperationalTombstonePage(
   // One root at a time: the same page budget first detaches its FK dependents.
   const pageSize = hostnameBlocks ? 1 : batchSize
   const page = await listCandidates(query, plan, cutoff, pageSize, cursor)
+  // A full page may be the tail; the next empty page ends the sweep and clears the cursor.
+  // ast-grep-ignore: pagination-no-exact-limit-has-next -- an exact-full page is confirmed by one empty follow-up page instead of locking or probing a lookahead row.
   const hasMore = page.length === pageSize
   if (hostnameBlocks && page[0]) {
     if (await hasIncompleteHostnameCleanupRoot(query, page[0].id)) {
