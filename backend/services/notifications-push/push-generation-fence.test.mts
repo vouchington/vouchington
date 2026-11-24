@@ -100,7 +100,7 @@ describe('notification push generation fence', () => {
         holderProcessId: holder.holderProcessId,
         pool: 'write',
         lock: { kind: 'transaction' },
-        queryMarker: 'persistClaimedNotificationPushOutcome',
+        queryMarker: 'persistRetryableNotificationPushOutcome',
         releaseHolder: holder.release,
       },
       () =>
@@ -162,7 +162,7 @@ describe('notification push generation fence', () => {
           holderProcessId,
           pool: 'write',
           lock: { kind: 'transaction' },
-          queryMarker: 'persistClaimedNotificationPushOutcome',
+          queryMarker: 'persistRetryableNotificationPushOutcome',
           releaseHolder: async () => {
             resumeTransfer.resolve()
           },

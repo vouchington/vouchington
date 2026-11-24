@@ -10,7 +10,7 @@ export async function persistRetryableNotificationPushOutcome(
   subscription: { id: string; endpoint: string },
 ): Promise<NotificationPushOutcomePersistence> {
   const { rows } = await write<{ outcome: NotificationPushOutcomePersistence }>(sql`
-    /* persistClaimedNotificationPushOutcome:retryable */
+    /* persistRetryableNotificationPushOutcome */
     WITH active_claim AS (
       SELECT 1
       FROM notification_push_intents
