@@ -29,7 +29,7 @@ async function deleteTextEmbeddingCachePage(
   options: Options,
 ): Promise<PersistedPage<never>> {
   await using query = await beginTransaction()
-  const bounds = [cutoff, options.lowerBoundDate ?? '-infinity']
+  const lowerBoundPredicate = options.lowerBoundDate ? 'AND updated_at >= $3::timestamptz' : ''
   const { rows: candidates } = await query<{
     content_sha256: string
   }>(
@@ -37,32 +37,19 @@ async function deleteTextEmbeddingCachePage(
     SELECT encode(content_sha256, 'hex') AS content_sha256
     FROM bedrock_nova_multimodal_v1_embeddings cache
     WHERE updated_at < $1::timestamptz
-      AND updated_at >= $2::timestamptz
+      ${lowerBoundPredicate}
     ORDER BY cache.updated_at, encode(cache.content_sha256, 'hex')
-    LIMIT $3 FOR UPDATE`,
-    [...bounds, batchSize],
+    LIMIT $2 FOR UPDATE`,
+    [cutoff, batchSize, ...(options.lowerBoundDate ? [options.lowerBoundDate] : [])],
   )
   const hashes = candidates.map(row => row.content_sha256)
   const { rowCount } = await query(
     `/* deleteTextEmbeddingRetentionPage */
     DELETE FROM bedrock_nova_multimodal_v1_embeddings
-    WHERE updated_at < $1::timestamptz
-      AND updated_at >= $2::timestamptz
-      AND content_sha256 = ANY(
-        SELECT decode(hash, 'hex') FROM unnest($3::text[]) hash
-      )`,
-    [...bounds, hashes],
+    WHERE content_sha256 = ANY(SELECT decode(hash, 'hex') FROM unnest($1::text[]) hash)`,
+    [hashes],
   )
-  const hasMore =
-    candidates.length === batchSize &&
-    (
-      await query(
-        `/* hasMoreTextEmbeddingRetentionCandidates */
-      SELECT 1 FROM bedrock_nova_multimodal_v1_embeddings
-      WHERE updated_at < $1::timestamptz AND updated_at >= $2::timestamptz LIMIT 1`,
-        bounds,
-      )
-    ).rows.length > 0
+  const hasMore = candidates.length === batchSize
   await query.commit()
   return {
     deleted: rowCount ?? 0,

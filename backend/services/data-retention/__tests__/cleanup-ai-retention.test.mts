@@ -11,14 +11,12 @@ import {
   embeddingBatchExistsForRetentionTest,
   insertEmbeddingBatchForRetentionTest,
   insertTextEmbeddingForRetentionTest,
-  backfillTextEmbeddingTokensForRetentionTest,
   textEmbeddingExistsForRetentionTest,
 } from '@voucha/test-helpers/entities/ai-retention'
 import {
   createExactRetentionWindow,
   createIsolatedRetentionWindow,
 } from '@voucha/test-helpers/retention-window'
-import { finishTestPostgresActionWithoutWaiting } from '@voucha/test-helpers/postgres-lock-skip'
 import { deleteModerationWorkForAdmissionTest } from '@voucha/test-helpers/entities/ai-retention-moderation'
 import { cleanupTextEmbeddingCache } from '../cleanup-text-embeddings.mts'
 import { cleanupTerminalEmbeddingBatches } from '../cleanup-embedding-batches.mts'
@@ -47,46 +45,15 @@ describe('AI and embedding retention', () => {
     await using reader = await beginTransaction()
     const options = { ...window, batchSize: 1, maxBatches: 1 }
     expect(await cleanupTextEmbeddingCache(options)).toMatchObject({ deleted: 1, hasMore: true })
+    expect(await cleanupTextEmbeddingCache(options)).toMatchObject({ deleted: 1, hasMore: true })
     expect(await cleanupTextEmbeddingCache(options)).toMatchObject({
-      deleted: 1,
+      deleted: 0,
       hasMore: false,
       continuation: null,
     })
     expect(
       await Promise.all(hashes.map(hash => textEmbeddingExistsForRetentionTest(reader, hash))),
     ).toEqual([false, false, true])
-  })
-
-  it('evicts the current page while a later eligible vector is busy', async () => {
-    const { aged, ...window } = createExactRetentionWindow(90)
-    await using setup = await beginTransaction()
-    const hashes = [
-      await insertTextEmbeddingForRetentionTest(setup, aged),
-      await insertTextEmbeddingForRetentionTest(setup, aged),
-    ].toSorted()
-    await setup.commit()
-
-    await using holder = await beginTransaction()
-    await backfillTextEmbeddingTokensForRetentionTest(holder, hashes[1]!)
-    const options = { ...window, batchSize: 1, maxBatches: 1 }
-    const page = await finishTestPostgresActionWithoutWaiting(
-      holder,
-      'TextEmbeddingRetention',
-      () => cleanupTextEmbeddingCache(options),
-    )
-    expect(page).toEqual({ deleted: 1, hasMore: true, continuation: null })
-    await holder.rollback()
-
-    await using reader = await beginTransaction()
-    expect(
-      await Promise.all(hashes.map(hash => textEmbeddingExistsForRetentionTest(reader, hash))),
-    ).toEqual([false, true])
-    expect(await cleanupTextEmbeddingCache(options)).toEqual({
-      deleted: 1,
-      hasMore: false,
-      continuation: null,
-    })
-    expect(await textEmbeddingExistsForRetentionTest(reader, hashes[1]!)).toBe(false)
   })
 
   it('deletes only terminal old batches and preserves active tracking', async () => {

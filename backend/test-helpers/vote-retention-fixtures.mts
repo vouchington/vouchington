@@ -62,15 +62,11 @@ export async function setTestPostVoteRetentionDeferredAt(
   postId: string,
   voteId: string,
   deferredAt: Date,
-  query?: TransactionQuery,
 ): Promise<void> {
-  await write(
-    sql`/* setTestPostVoteRetentionDeferredAt */
+  await write(sql`/* setTestPostVoteRetentionDeferredAt */
     UPDATE post_votes SET ballot_retention_deferred_at = ${deferredAt}::timestamptz
     WHERE post_id = ${postId}::uuid AND id = ${voteId}::uuid
-  `,
-    { query },
-  )
+  `)
 }
 
 export async function getTestRetainedPostVoteCount(day: string): Promise<number> {

@@ -42,16 +42,16 @@ async function cleanupDeferredPostVotePage(
   const parameters: unknown[] = []
   if (cutoffId !== null) parameters.push(cutoffId)
   if (voteIds !== undefined) parameters.push(voteIds)
-  const duePredicate = `ballot_retention_deferred_at IS NOT NULL
-       AND ${cutoffId === null ? 'outbound_activitypub_distributed_at IS NOT NULL' : 'id < $1::uuid'}
-       ${voteIds === undefined ? '' : `AND id = ANY($${cutoffId === null ? '1' : '2'}::uuid[])`}`
+  parameters.push(batchSize)
   const { rows: page } = await query<{ post_id: string; id: string }>(
     `/* listDeferredPostVoteSources */
      /* no-mistakes: deadlock-safe -- each capped due page locks rows in ID order before its delete or marker update; the delivered and expired lanes run sequentially. */
      SELECT post_id, id FROM post_votes
-     WHERE ${duePredicate}
-     ORDER BY id LIMIT $${parameters.length + 1} FOR UPDATE`,
-    [...parameters, batchSize],
+     WHERE ballot_retention_deferred_at IS NOT NULL
+       AND ${cutoffId === null ? 'outbound_activitypub_distributed_at IS NOT NULL' : 'id < $1::uuid'}
+       ${voteIds === undefined ? '' : `AND id = ANY($${cutoffId === null ? '1' : '2'}::uuid[])`}
+     ORDER BY id LIMIT $${parameters.length} FOR UPDATE`,
+    parameters,
   )
   const postIds = page.map(row => row.post_id)
   const pageVoteIds = page.map(row => row.id)
@@ -83,18 +83,9 @@ async function cleanupDeferredPostVotePage(
              AND newer.id > vote.id)`,
       [postIds, pageVoteIds],
     )
-  const hasMore =
-    page.length === batchSize &&
-    (
-      await query(
-        `/* hasMoreDeferredPostVoteSources */
-       SELECT 1 FROM post_votes WHERE ${duePredicate} LIMIT 1`,
-        parameters,
-      )
-    ).rows.length > 0
   return {
     scanned: page.length,
     deleted: deletedRows[0]?.deleted ?? 0,
-    hasMore,
+    hasMore: page.length === batchSize,
   }
 }
