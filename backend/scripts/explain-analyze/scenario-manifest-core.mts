@@ -40,6 +40,7 @@ export const CORE_SCENARIOS = [
   'conversation-messages',
   'notification-unread-summary-at-cap',
   'conversation-list-at-cap',
+  'chat-conversation-index-writes',
   'community-search-at-cap',
   'community-membership-cache-user-at-cap',
   'my-community-memberships-at-cap',

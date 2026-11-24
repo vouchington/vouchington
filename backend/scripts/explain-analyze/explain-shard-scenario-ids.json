@@ -390,6 +390,7 @@
   "main-4": [
     "notification-unread-summary-at-cap",
     "conversation-list-at-cap",
+    "chat-conversation-index-writes",
     "community-search-at-cap",
     "community-membership-cache-user-at-cap",
     "my-community-memberships-at-cap",

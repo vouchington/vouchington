@@ -1,4 +1,5 @@
 import { write } from '@data-stores/psql'
+import { createConversation, updateConversationTitle } from '@services/conversations-messages'
 import sql from 'sql-template-strings'
 import { getConversationsByCreatedById } from '../run-services.mts'
 import { heavyFollowUser, runAndCapture, seedUser } from '../run-support.mts'
@@ -44,9 +45,51 @@ export async function runConversationListCapacityScenario(): Promise<void> {
       'getConversationsByCreatedById',
       { exactCapturedNames: ['getConversationsByCreatedById'] },
     )
+    await runChatConversationIndexWrites(chatIds[0]!)
   } finally {
     await write(sql`/* explainConversationListCapacityFixture */
       DELETE FROM conversations WHERE id = ANY(${fixtureIds}::uuid[])
     `)
+  }
+}
+
+async function runChatConversationIndexWrites(conversationId: string): Promise<void> {
+  const createTitle = 'Explain chat index create'
+  const updatedTitle = 'Explain chat index retitle'
+  const operations = ['createConversation', 'updateConversationTitle']
+  let createdId: string | undefined
+
+  try {
+    await runAndCapture(
+      'chat-conversation-index-writes',
+      async () => {
+        const created = await createConversation(seedUser.id, createTitle)
+        createdId = created.id
+        if (created.channel_type !== 'chat' || created.title !== createTitle) {
+          throw new Error('The write benchmark must create an active chat')
+        }
+        const updated = await updateConversationTitle(conversationId, updatedTitle, seedUser.id)
+        if (updated?.id !== conversationId || updated.title !== updatedTitle) {
+          throw new Error('The write benchmark must retitle its seeded chat')
+        }
+      },
+      undefined,
+      operations,
+      {
+        exactCapturedNames: operations,
+        afterCapture: async () => {
+          await write(sql`/* restoreChatConversationIndexWriteFixture */
+            UPDATE conversations SET title = '', updated_by_id = NULL
+            WHERE id = ${conversationId}
+          `)
+        },
+      },
+    )
+  } finally {
+    if (createdId) {
+      await write(sql`/* deleteChatConversationIndexWriteFixture */
+        DELETE FROM conversations WHERE id = ${createdId}
+      `)
+    }
   }
 }
