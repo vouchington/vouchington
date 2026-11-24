@@ -45,6 +45,15 @@ async function fixture() {
 }
 
 describe('restriction cursor resource scope', () => {
+  it('rejects an invalid status before decoding a cursor', async () => {
+    await expect(
+      searchCommunityRestrictions('019e0000-0100-7000-8000-000000000000', {
+        status: 'invalid' as 'past',
+        after: 'invalid',
+      }),
+    ).rejects.toMatchObject({ status: 422 })
+  })
+
   it('rejects another status or community instead of skipping newer history', async () => {
     const { community, other, first, second } = await fixture()
     const page = await searchCommunityRestrictions(community.id, { limit: 1 })
