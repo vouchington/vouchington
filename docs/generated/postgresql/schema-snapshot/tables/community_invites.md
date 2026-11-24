@@ -49,7 +49,7 @@ _none_
 - `idx_comm_invites__user`: `CREATE UNIQUE INDEX idx_comm_invites__user ON public.community_invites USING btree (community_id, invited_user_id) WHERE ((invited_user_id IS NOT NULL) AND (accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL))`
 - `idx_community_invites__accepted_by_user_id`: `CREATE INDEX idx_community_invites__accepted_by_user_id ON public.community_invites USING btree (accepted_by_id) WHERE (accepted_by_id IS NOT NULL)`
 - `idx_community_invites__code_hash`: `CREATE UNIQUE INDEX idx_community_invites__code_hash ON public.community_invites USING btree (code_hash) WHERE ((accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL))`
-- `idx_community_invites__community_id`: `CREATE INDEX idx_community_invites__community_id ON public.community_invites USING btree (community_id)`
+- `idx_community_invites__community_id__id_desc`: `CREATE INDEX idx_community_invites__community_id__id_desc ON public.community_invites USING btree (community_id, id DESC)`
 - `idx_community_invites__invited_by_id`: `CREATE INDEX idx_community_invites__invited_by_id ON public.community_invites USING btree (invited_by_id)`
 - `idx_community_invites__invited_user_id`: `CREATE INDEX idx_community_invites__invited_user_id ON public.community_invites USING btree (invited_user_id) WHERE (invited_user_id IS NOT NULL)`
 - `idx_community_invites__pending_email`: `CREATE UNIQUE INDEX idx_community_invites__pending_email ON public.community_invites USING btree (community_id, invited_email) WHERE ((accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL) AND (invited_email IS NOT NULL))`
