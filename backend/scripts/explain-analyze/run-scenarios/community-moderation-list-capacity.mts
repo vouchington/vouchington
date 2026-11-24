@@ -83,7 +83,14 @@ async function runInviteCapacityScenario(
 ): Promise<void> {
   const scenario = 'search-community-invites-at-cap'
   registerScenarioContract(scenario, {
-    expectations: [],
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_community_invites__community_id__id_desc'],
+        noSort: true,
+      },
+      { kind: 'maxProcessedRows', relation: 'community_invites', max: 110 },
+    ],
     seededRows: { community_invites: seededRows },
   })
   const start = Math.floor(inviteIds.length / 2)
