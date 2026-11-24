@@ -54,12 +54,13 @@ export async function getPostIdsByUrlIds(
     ),
     link_posts AS (
       SELECT
-        cu.origin_url_id,
+        origin.id AS origin_url_id,
         posts.id AS post_id
-      FROM posts
-      INNER JOIN canonical_urls cu ON cu.id = posts.url_id
+      FROM urls origin
+      INNER JOIN posts ON posts.url_id = ANY(ARRAY[origin.id, origin.canonical_url_id])
       INNER JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)
-      WHERE posts.post_type = 'link'
+      WHERE origin.id = ANY(${urlIds}::uuid[])
+        AND posts.post_type = 'link'
         AND posts.deleted_at IS NULL
   `)
 

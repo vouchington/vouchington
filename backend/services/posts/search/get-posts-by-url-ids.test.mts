@@ -133,4 +133,39 @@ describe('get-posts-by-url-ids', () => {
     expect(result[urlId]).toBeDefined()
     expect(result[urlId]).toContain(postId)
   })
+
+  it('matches link posts on both a requested alias and its canonical URL', async () => {
+    const user = await createTestUser()
+    const suffix = crypto.randomUUID()
+    const hostname = `canonical-posts-${suffix}.com`
+    const hostnameId = await insertTestUrlHostname({ hostname })
+    const canonicalUrlId = await insertTestUrl({ url: `https://${hostname}/original`, hostnameId })
+    const aliasUrlId = await insertTestUrl({
+      url: `https://${hostname}/alias`,
+      hostnameId,
+      canonicalUrlId,
+    })
+    const [canonicalPostId, aliasPostId] = await Promise.all([
+      insertTestPost({
+        title: 'Canonical link post',
+        slug: `canonical-link-post-${suffix}`,
+        createdById: user.id,
+        markdown: '',
+        postType: 'link',
+        urlId: canonicalUrlId,
+      }),
+      insertTestPost({
+        title: 'Alias link post',
+        slug: `alias-link-post-${suffix}`,
+        createdById: user.id,
+        markdown: '',
+        postType: 'link',
+        urlId: aliasUrlId,
+      }),
+    ])
+
+    const result = await getPostIdsByUrlIds(null, [aliasUrlId, canonicalUrlId])
+    expect(result[aliasUrlId]?.toSorted()).toEqual([aliasPostId, canonicalPostId].toSorted())
+    expect(result[canonicalUrlId]).toEqual([canonicalPostId])
+  })
 })
