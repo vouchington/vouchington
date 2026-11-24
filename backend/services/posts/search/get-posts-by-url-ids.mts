@@ -26,6 +26,7 @@ export async function getPostIdsByUrlIds(
         isAdministrator: currentUser.roles.includes('administrator'),
       })
     : buildPublicPostEligibilityFilter('posts', 'root_post')
+  const linkPostEligibility = sql`posts.post_type = 'link' AND `.append(eligibilityFilter)
 
   const query = sql`/* getPostIdsByUrlIds */
     WITH canonical_urls AS (
@@ -50,21 +51,30 @@ export async function getPostIdsByUrlIds(
 
   query.append(sql` AND `).append(eligibilityFilter)
 
-  query.append(sql`
+  query
+    .append(sql`
     ),
     link_posts AS (
+      SELECT
+        posts.url_id AS origin_url_id,
+        posts.id AS post_id
+      FROM posts
+      INNER JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)
+      WHERE posts.url_id = ANY(${urlIds}::uuid[])
+        AND `)
+    .append(linkPostEligibility)
+    .append(sql`
+      UNION ALL
       SELECT
         origin.id AS origin_url_id,
         posts.id AS post_id
       FROM urls origin
-      INNER JOIN posts ON posts.url_id = ANY(ARRAY[origin.id, origin.canonical_url_id])
+      INNER JOIN posts ON posts.url_id = origin.canonical_url_id
       INNER JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)
       WHERE origin.id = ANY(${urlIds}::uuid[])
-        AND posts.post_type = 'link'
-        AND posts.deleted_at IS NULL
-  `)
-
-  query.append(sql` AND `).append(eligibilityFilter)
+        AND origin.canonical_url_id IS NOT NULL
+        AND `)
+    .append(linkPostEligibility)
 
   query.append(sql`
     ),
