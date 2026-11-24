@@ -388,6 +388,11 @@
     "retention-retained-user-relation-identities"
   ],
   "main-4": [
+    "notification-unread-summary-at-cap",
+    "conversation-list-at-cap",
+    "community-search-at-cap",
+    "community-membership-cache-user-at-cap",
+    "my-community-memberships-at-cap",
     "first-community-post-id-index",
     "bedrock-copy-existing-topics",
     "bedrock-copy-existing-posts",
