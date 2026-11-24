@@ -110,7 +110,7 @@ jobs:
           overwrite: true
           name: backend-evals-openrouter-junit
           path: backend-evals-openrouter-report.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: warn
       - name: Mint Anthropic federation token
         id: anthropic-token
@@ -146,7 +146,7 @@ jobs:
           overwrite: true
           name: backend-evals-anthropic-junit
           path: backend-evals-anthropic-report.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: warn
       - if: failure()
         uses: ./.github/actions/valkey-logs

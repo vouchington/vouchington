@@ -128,7 +128,7 @@ jobs:
           overwrite: true
           name: postgres-schema-junit
           path: postgres-schema-test-report.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore
       - name: Convert native materialized-view coverage
         if: ${{ inputs.publish_coverage }}

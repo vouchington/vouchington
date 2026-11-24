@@ -170,7 +170,7 @@ jobs:
           overwrite: true
           name: web-integration-junit-shard-${{ matrix.shard }}
           path: web-integration-shard-${{ matrix.shard }}.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore
 
       - name: Preserve full web-integration-shard-${{ matrix.shard }} LCOV
@@ -214,7 +214,7 @@ jobs:
           overwrite: true
           name: web-integration-shard-${{ matrix.shard }}-artifacts
           path: integration-tests/web/artifacts/
-          retention-days: 1
+          retention-days: 7
       - if: failure()
         uses: ./.github/actions/valkey-logs
         timeout-minutes: 1

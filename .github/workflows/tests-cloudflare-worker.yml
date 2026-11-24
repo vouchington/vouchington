@@ -57,7 +57,7 @@ jobs:
           overwrite: true
           name: cloudflare-worker-junit
           path: test-report.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore
       - name: Preserve full cloudflare-worker LCOV
         timeout-minutes: 1

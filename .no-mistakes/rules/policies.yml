@@ -3414,14 +3414,14 @@
   scope: repository
   options:
     actions:
-      # Artifacts expire after a day; cleanup-artifacts-patterns.mts classifies their names.
+      # Artifacts expire after 7 days (public repo); cleanup-artifacts-patterns.mts classifies their names.
       - uses: actions/upload-artifact
         require:
-          retention-days: 1
+          retention-days: 7
           overwrite: true
       - uses: actions/upload-artifact/merge
         require:
-          retention-days: 1
+          retention-days: 7
       # Node comes from .nvmrc, and the package-manager cache stays off.
       - uses: actions/setup-node
         ban: [cache, node-version]

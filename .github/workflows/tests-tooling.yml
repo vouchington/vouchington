@@ -79,7 +79,7 @@ jobs:
           overwrite: true
           name: tooling-junit
           path: tooling-test-report.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: warn
       - name: Preserve full tooling LCOV
         timeout-minutes: 1
