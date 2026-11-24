@@ -24,6 +24,6 @@
   },
   "scripts": {},
   "dependencies": {
-    "@vouchington/server-utils": "^0.0.1"
+    "@vouchington/server-utils": "^0.1.0"
   }
 }

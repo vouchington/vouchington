@@ -29,7 +29,7 @@
     "@services/entity-links": "workspace:^",
     "@ts-shared/url-signing": "workspace:^",
     "@ts-shared/utils": "workspace:^",
-    "@vouchington/server-utils": "^0.0.1",
+    "@vouchington/server-utils": "^0.1.0",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
