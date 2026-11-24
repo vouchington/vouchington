@@ -26,14 +26,15 @@ export async function getPostIdsByUrlIds(
         isAdministrator: currentUser.roles.includes('administrator'),
       })
     : buildPublicPostEligibilityFilter('posts', 'root_post')
-  const linkPostEligibility = sql`posts.post_type = 'link' AND `.append(eligibilityFilter)
 
+  const canonicalUrls = sql`
+    SELECT id AS origin_url_id, id FROM urls WHERE id = ANY(${urlIds}::uuid[])
+    UNION ALL
+    SELECT id AS origin_url_id, canonical_url_id AS id
+    FROM urls WHERE id = ANY(${urlIds}::uuid[]) AND canonical_url_id IS NOT NULL
+  `
   const query = sql`/* getPostIdsByUrlIds */
-    WITH canonical_urls AS (
-      SELECT id AS origin_url_id, id FROM urls WHERE id = ANY(${urlIds})
-      UNION ALL
-      SELECT id AS origin_url_id, canonical_url_id AS id
-      FROM urls WHERE id = ANY(${urlIds}) AND canonical_url_id IS NOT NULL
+    WITH canonical_urls AS (`.append(canonicalUrls).append(sql`
     ),
     relation_posts AS (
       SELECT
@@ -47,7 +48,7 @@ export async function getPostIdsByUrlIds(
         AND rel.votes_score_net > 0
         AND posts.deleted_at IS NULL
         AND posts.post_type != 'topic_recommendation'
-  `
+  `)
 
   query.append(sql` AND `).append(eligibilityFilter)
 
@@ -56,25 +57,17 @@ export async function getPostIdsByUrlIds(
     ),
     link_posts AS (
       SELECT
-        posts.url_id AS origin_url_id,
+        cu.origin_url_id,
         posts.id AS post_id
-      FROM posts
+      FROM (`)
+    .append(canonicalUrls)
+    .append(sql`) cu
+      INNER JOIN posts ON posts.url_id = cu.id
       INNER JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)
-      WHERE posts.url_id = ANY(${urlIds}::uuid[])
+      WHERE posts.post_type = 'link'
+        AND posts.deleted_at IS NULL
         AND `)
-    .append(linkPostEligibility)
-    .append(sql`
-      UNION ALL
-      SELECT
-        origin.id AS origin_url_id,
-        posts.id AS post_id
-      FROM urls origin
-      INNER JOIN posts ON posts.url_id = origin.canonical_url_id
-      INNER JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)
-      WHERE origin.id = ANY(${urlIds}::uuid[])
-        AND origin.canonical_url_id IS NOT NULL
-        AND `)
-    .append(linkPostEligibility)
+    .append(eligibilityFilter)
 
   query.append(sql`
     ),
