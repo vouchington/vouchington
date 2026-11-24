@@ -24,15 +24,18 @@ export async function searchCommunityRestrictions(
     SELECT id, community_id, restriction_type, activated_by_id, activated_at, expires_at,
       created_at, updated_at, lifted_at, lifted_by_id, reason
     FROM community_restrictions
-    WHERE community_id = ${communityId}
   `
   if (status === 'active') {
-    query.append(sql` AND lifted_at IS NULL AND (expires_at IS NULL OR expires_at > ${now})`)
+    query.append(sql` WHERE community_id = ${communityId}
+      AND lifted_at IS NULL AND (expires_at IS NULL OR expires_at > ${now})`)
   } else {
-    query.append(sql` AND (lifted_at IS NOT NULL OR expires_at <= ${now})`)
+    // Equal bounds preserve community scoping and keep the community key in the index order.
+    query.append(sql` WHERE community_id BETWEEN ${communityId} AND ${communityId}
+      AND (lifted_at IS NOT NULL OR expires_at <= ${now})`)
   }
   if (cursor) query.append(sql` AND id < ${cursor.id}::uuid`)
-  query.append(sql` ORDER BY id DESC LIMIT ${limit + 1}`)
+  query.append(status === 'past' ? ' ORDER BY community_id ASC, id DESC' : ' ORDER BY id DESC')
+  query.append(sql` LIMIT ${limit + 1}`)
   const { rows } = await read<CommunityRestriction>(query, options)
   const results = rows.slice(0, limit)
   return {
