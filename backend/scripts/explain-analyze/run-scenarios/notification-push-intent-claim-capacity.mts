@@ -88,7 +88,9 @@ async function capturePushClaim(
   const before = await readStates(userId, scope)
   const previous = before.get(targets.expired)
   assert.equal(before.size, 4)
-  assert.ok(previous?.lease_token && previous.lease_expires_at)
+  assert.ok(previous?.lease_token)
+  const { leased_at: previousLeasedAt, lease_expires_at: previousLeaseExpiresAt } = previous
+  assert.ok(previousLeasedAt && previousLeaseExpiresAt)
   assert.equal(before.get(targets.terminal)?.status, 'delivered')
   assert.equal(before.get(targets.current)?.status, 'pending')
   assert.ok(!before.has(targets.stale))
@@ -126,6 +128,8 @@ async function capturePushClaim(
       assert.ok(pending?.leased_at && pending.lease_expires_at)
       assert.equal(pending.status, 'pending')
       assert.equal(pending.lease_token, reclaimed.lease_token)
+      assert.ok(pending.leased_at.getTime() > previousLeasedAt.getTime())
+      assert.ok(pending.lease_expires_at.getTime() > previousLeaseExpiresAt.getTime())
       assert.equal(
         pending.lease_expires_at.getTime() - pending.leased_at.getTime(),
         NOTIFICATION_PUSH_INTENT_LEASE_SECONDS * 1_000,

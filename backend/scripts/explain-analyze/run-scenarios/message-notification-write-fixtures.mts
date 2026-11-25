@@ -4,6 +4,7 @@ import { write } from '@data-stores/psql'
 import { COMMUNITY_MEMBERSHIP_LIMIT_MAX_VALUES } from '@services/communities/membership-limits'
 import { CONVERSATION_PARTICIPANT_HARD_MAX } from '@services/messaging/participant-limits'
 import sql from 'sql-template-strings'
+import { continueAfterFailure } from '../scenario-failures.mts'
 import { seedUuid } from '../seed-data/common.mts'
 
 /** Model the sender in one slot and fill the other slots with staff outside the community. */
@@ -70,13 +71,40 @@ export async function withCapacityModmailConversation(
     `)
     await work(conversationId, [...moderatorIds, ...staffIds])
   } finally {
-    await write(sql`/* cleanupExplainModmailNotificationCommunity */
-      DELETE FROM communities WHERE id = ${community.id}
-    `)
-    // The community FK has cascading cleanup for the conversation and its notification rows.
+    // The community FK cascades to the conversation and its notification rows.
+    await continueAfterFailure('modmail-notification-community-cleanup', () =>
+      write(sql`/* cleanupExplainModmailNotificationCommunity */
+        DELETE FROM communities WHERE id = ${community.id}
+      `),
+    )
+    // Deleting the fixture users revokes their roles, including when community cleanup fails.
     if (staffIds.length > 0)
-      await write(sql`/* cleanupExplainModmailNotificationStaff */
-        DELETE FROM users WHERE id = ANY(${staffIds}::uuid[])
-      `)
+      await continueAfterFailure('modmail-notification-staff-cleanup', () =>
+        write(sql`/* cleanupExplainModmailNotificationStaff */
+          DELETE FROM users WHERE id = ANY(${staffIds}::uuid[])
+        `),
+      )
   }
+}
+
+export async function seedExistingNotifications(
+  conversationId: string,
+  kind: 'direct_message' | 'modmail',
+  users: string[],
+  targetPath: string,
+) {
+  await write(sql`/* seedExplainMessageNotificationConflicts */
+    INSERT INTO notifications (user_id, entity_type, conversation_id, kind, delivery_type,
+      target_path, read_at, pushed_at)
+    SELECT user_id, ${kind}::notification_entity_types, ${conversationId},
+      ${kind}::notification_kinds, 'subscription', ${targetPath},
+      CURRENT_TIMESTAMP - INTERVAL '1 hour', CURRENT_TIMESTAMP - INTERVAL '1 hour'
+    FROM unnest(${users}::uuid[]) AS recipient(user_id)
+    ORDER BY user_id
+  `)
+  const { rowCount } = await write(sql`/* completeExplainMessageNotificationConflicts */
+    UPDATE notification_push_intents SET delivered_at = CURRENT_TIMESTAMP - INTERVAL '1 hour'
+    WHERE conversation_id = ${conversationId} AND user_id = ANY(${users}::uuid[])
+  `)
+  assert.equal(rowCount, users.length, 'Every seeded notification needs a delivered push intent')
 }
