@@ -144,6 +144,8 @@
     "community-bans-lift-single",
     "community-bans-newest-active",
     "community-bans-history-summary",
+    "user-active-community-bans-at-cap",
+    "user-active-community-bans-continuation-at-cap",
     "community-membership-capacity",
     "community-moderator-capacity",
     "community-membership-cache-user-miss",
