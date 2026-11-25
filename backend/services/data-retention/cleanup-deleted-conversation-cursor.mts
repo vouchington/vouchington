@@ -44,6 +44,7 @@ export async function listCandidate(
       ? `AND (conversation.deleted_at, conversation.id) >
        ($${parameters.push(cursor.cursor_at)}::timestamptz, $${parameters.push(cursor.cursor_record_id)}::uuid)`
       : ''
+  // lock-reason: prevents: cascading away new conversation children outside the capped drain; writer: conversation message, participant, notification and push-intent admission.
   const { rows } = await query<Candidate>(
     `/* no-mistakes: deadlock-safe -- one indexed candidate is locked with SKIP LOCKED after the cursor; no row waits behind another sweeper. */
      /* listDeletedConversationRetentionCandidate */

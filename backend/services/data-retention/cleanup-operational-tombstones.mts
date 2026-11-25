@@ -2,7 +2,10 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
 import { cleanupDeletedConversationPage } from './cleanup-deleted-conversations.mts'
-import { listCandidates } from './cleanup-operational-tombstone-candidates.mts'
+import {
+  deleteUnreferencedTombstonePage,
+  listCandidates,
+} from './cleanup-operational-tombstone-candidates.mts'
 import {
   detachHostnameBlockReferences,
   hasIncompleteHostnameCleanupRoot,
@@ -20,7 +23,7 @@ type CleanupOptions = {
   now?: Date
 }
 
-/** Each capped page commits; only protected actor rows require a persisted sweep position. */
+/** Each capped page commits; actor and hostname sweeps keep a persisted sweep position. */
 export async function cleanupOperationalTombstones(
   family: Family,
   options: CleanupOptions,
@@ -62,58 +65,42 @@ export async function cleanupOperationalTombstonePage(
   if (family === 'deleted_conversations')
     return cleanupDeletedConversationPage(query, batchSize, options)
   const plan = PLANS[family]
+  if (family === 'activitypub_post_likes' || family === 'app_attestation_keys')
+    return deleteUnreferencedTombstonePage(
+      query,
+      family,
+      getPlanCutoffDate(plan, options.now),
+      batchSize,
+    )
+
   const hostnameBlocks = family === 'feed_hostname_blocks' || family === 'other_hostname_blocks'
-  const trackCursor = family === 'remote_actors' || hostnameBlocks
-  let cursor: OperationalTombstoneCursor = {
-    cursor_at: null,
-    cursor_record_id: null,
-    sweep_cutoff_at: null,
-  }
-  if (trackCursor) {
-    await query(
-      `/* ensureOperationalTombstoneCursor */
+
+  await query(
+    `/* ensureOperationalTombstoneCursor */
      INSERT INTO operational_tombstone_retention_cursors (cleanup_name)
      VALUES ($1) ON CONFLICT DO NOTHING`,
-      [family],
-    )
-    cursor = (
-      await query<OperationalTombstoneCursor>(
-        `/* lockOperationalTombstoneCursor */
-       SELECT cursor_at::text AS cursor_at, cursor_record_id, sweep_cutoff_at
-       FROM operational_tombstone_retention_cursors
-       WHERE cleanup_name = $1 FOR UPDATE`,
-        [family],
-      )
-    ).rows[0]
-  }
+    [family],
+  )
+  const {
+    rows: [cursor],
+  } = await query<OperationalTombstoneCursor>(
+    `/* lockOperationalTombstoneCursor */
+     SELECT cursor_at::text AS cursor_at, cursor_record_id, sweep_cutoff_at
+     FROM operational_tombstone_retention_cursors
+     WHERE cleanup_name = $1 FOR UPDATE`,
+    [family],
+  )
   const cutoff = cursor.sweep_cutoff_at ?? getPlanCutoffDate(plan, options.now)
   // One root at a time: the same page budget first detaches its FK dependents.
   const pageSize = hostnameBlocks ? 1 : batchSize
   const page = await listCandidates(query, plan, cutoff, pageSize, cursor)
-  // A full page may be the tail; the next empty page ends the sweep and clears the cursor.
-  // ast-grep-ignore: pagination-no-exact-limit-has-next -- an exact-full page is confirmed by one empty follow-up page instead of locking or probing a lookahead row.
-  const hasMore = page.length === pageSize
+  // Only a full page has a final budget slot. An empty follow-up clears the cursor.
+  const last = page[pageSize - 1]
+  const continuation = last ? { at: last.position_at, id: last.id } : null
   if (hostnameBlocks && page[0]) {
     if (await hasIncompleteHostnameCleanupRoot(query, page[0].id)) {
-      await query(
-        `/* skipProtectedHostnameBlockRetentionCursor */
-         UPDATE operational_tombstone_retention_cursors
-         SET cursor_at = $2::timestamptz, cursor_record_id = $3::uuid,
-             sweep_cutoff_at = $4::timestamptz
-         WHERE cleanup_name = $1`,
-        [
-          family,
-          hasMore ? page[0].position_at : null,
-          hasMore ? page[0].id : null,
-          hasMore ? cutoff : null,
-        ],
-      )
-      return {
-        deleted: 0,
-        hasMore,
-        continuation: hasMore ? { at: page[0].position_at, id: page[0].id } : null,
-        stalled: false,
-      }
+      await checkpointTombstoneCursor(query, family, continuation, cutoff)
+      return { deleted: 0, hasMore: continuation !== null, continuation, stalled: false }
     }
     const references = await detachHostnameBlockReferences(query, page[0].id, batchSize)
     if (references.remain)
@@ -134,19 +121,26 @@ export async function cleanupOperationalTombstonePage(
         [page.map(candidate => candidate.id), cutoff],
       )
     : { rowCount: 0 }
-  const last = hasMore ? page.at(-1)! : null
-  if (trackCursor)
-    await query(
-      `/* checkpointOperationalTombstoneCursor */
+  await checkpointTombstoneCursor(query, family, continuation, cutoff)
+  return {
+    deleted: rowCount ?? 0,
+    hasMore: continuation !== null,
+    continuation,
+    stalled: false,
+  }
+}
+
+async function checkpointTombstoneCursor(
+  query: TransactionQuery,
+  family: Family,
+  continuation: OperationalTombstoneCleanupResult['continuation'],
+  cutoff: Date,
+): Promise<void> {
+  await query(
+    `/* checkpointOperationalTombstoneCursor */
      UPDATE operational_tombstone_retention_cursors
      SET cursor_at = $2::timestamptz, cursor_record_id = $3::uuid, sweep_cutoff_at = $4::timestamptz
      WHERE cleanup_name = $1`,
-      [family, last?.position_at ?? null, last?.id ?? null, last ? cutoff : null],
-    )
-  return {
-    deleted: rowCount ?? 0,
-    hasMore,
-    continuation: last ? { at: last.position_at, id: last.id } : null,
-    stalled: false,
-  }
+    [family, continuation?.at ?? null, continuation?.id ?? null, continuation ? cutoff : null],
+  )
 }
