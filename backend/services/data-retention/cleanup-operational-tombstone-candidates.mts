@@ -46,18 +46,19 @@ export async function deleteUnreferencedTombstonePage(
   limit: number,
 ): Promise<OperationalTombstonePageResult> {
   const plan = PLANS[family]
+  // Collect the bounded IDs first so generic plans use primary-key probes for the delete.
   const { rows } = await query<OperationalTombstoneCandidate>(
     `/* deleteUnreferencedTombstonePage */
      WITH deleted AS (
        DELETE FROM ${plan.table} source
-       WHERE source.id IN (
+       WHERE source.id = ANY(ARRAY(
          /* listOperationalTombstoneCandidates */
          SELECT source.id FROM ${plan.table} source
          WHERE ${plan.timestamp} < $1::timestamptz
            AND ${plan.predicate}
          ORDER BY ${plan.timestamp}, source.id
          LIMIT $2
-       )
+       ))
        AND ${plan.timestamp} < $1::timestamptz
        AND ${plan.predicate}
        RETURNING source.id, ${plan.timestamp} AS position_at
