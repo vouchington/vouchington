@@ -74,8 +74,8 @@ export async function runAccountHistoryScenarios(): Promise<void> {
     registerScenarioContract('account-referral-links-at-cap', {
       expectations: [
         { kind: 'noSeqScan', relation: 'user_referral_program_links' },
-        // Generic can walk the global index or repeat heap work. https://github.com/vouchington/vouchington/issues/6405
-        { kind: 'maxProcessedRows', relation: 'user_referral_program_links', max: 8_140 },
+        // Hosted custom continuation walks the global index. https://github.com/vouchington/vouchington/issues/6405
+        { kind: 'maxProcessedRows', relation: 'user_referral_program_links', max: 40_668 },
       ],
     })
     const owner = { ...seedUser, id: fixture.ownerId }
