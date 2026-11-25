@@ -74,6 +74,7 @@ export async function replaceActiveClassifierThreshold(
     SELECT id, lower_threshold_override::float8 AS lower, upper_threshold_override::float8 AS upper
     FROM classifier_candidate_thresholds
     WHERE candidate_id = $1 AND prompt_version_id = $2 AND deactivated_at IS NULL
+    -- lock-reason: prevents: a concurrent replacement deactivating the revision after this read has selected it for comparison and deactivation; writer: replaceActiveClassifierThreshold
     FOR UPDATE`,
     [scope.candidateId, promptVersionId],
   )

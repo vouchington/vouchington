@@ -67,6 +67,7 @@ export async function lockClassifierRun<C, L, E>(
     JOIN classifiers classifier ON classifier.id = run.classifier_id
     JOIN users actor ON actor.id = run.shared_actor_user_id AND actor.deleted_at IS NULL
     WHERE run.id = ${target.runId}
+    -- lock-reason: prevents: a lease or terminal state change between authorization and committing run outcomes or effects; writer: claimClassifierRun and abandonClassifierRunSweeps
     FOR UPDATE OF run
   `)
   const row = rows[0]
