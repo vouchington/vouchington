@@ -60,7 +60,13 @@ async function runHashtagWrite(aliases: string[]): Promise<void> {
     (await readAliases(aliases.slice(0, half))).map(row => [row.alias, row.id]),
   )
   assert.equal(baseline.size, half)
-  registerScenarioContract(scenario, { allowEmptyResult: true, expectations: [] })
+  registerScenarioContract(scenario, {
+    allowEmptyResult: true,
+    expectations: [
+      { kind: 'maxInputRows', nodeType: 'Sort', max: aliases.length },
+      { kind: 'maxInputRows', nodeType: 'Function Scan', max: aliases.length },
+    ],
+  })
   await runAndCapture(
     scenario,
     async () => {
@@ -105,6 +111,7 @@ async function runCategoryInsert(fixture: RssWriteCapacityFixture, rows: ItemCat
   const marker = 'insertMissingCategories'
   const half = rows.length / 2
   registerScenarioContract(scenario, {
+    // #6417 owns the measured custom-plan topic_aliases catalog scan.
     expectations: [],
   })
   await runAndCapture(
@@ -157,6 +164,7 @@ async function runCategoryUpdate(fixture: RssWriteCapacityFixture, rows: ItemCat
   const scenario = 'rss-item-category-update-at-cap'
   const marker = 'updateMatchedCategories'
   registerScenarioContract(scenario, {
+    // #6417 owns the measured custom-plan rss_feed_item_categories heap scan.
     expectations: [],
   })
   await runAndCapture(
