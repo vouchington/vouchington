@@ -109,6 +109,8 @@ export async function recordDsaStatementSubmissionResult(input: {
     SELECT id, submitted_at
     FROM copyright_dsa_statement_submissions
     WHERE id = ${input.submissionId} AND lease_token = ${input.leaseToken}
+    -- lock-reason: prevents: competing outcomes allocating the same attempt number before updating the lease
+    -- writer: lease-expiry claims and concurrent result recorders
     FOR UPDATE
   `)
   const item = itemRows[0]

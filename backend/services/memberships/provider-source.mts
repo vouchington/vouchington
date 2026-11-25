@@ -125,6 +125,7 @@ async function createOrLockProviderSource(
     user_id: string | null
     source_kind: MembershipProviderSourceKind
   }
+  // lock-reason: prevents: a concurrent provider observation from advancing source state between source ownership validation and projection; writer: lockAndCreateProviderObservationSource
   const { rows } = await query<SourceRow>(sql`/* createMembership: lock provider source */
     SELECT id, user_id, source_kind FROM membership_sources
     WHERE membership_provider_lineage_id = ${lineageId}

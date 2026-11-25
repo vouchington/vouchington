@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import type { Tool, ToolApiEndpoint } from '@services/openai-agents/tool-types'
+import type { Tool } from '@services/openai-agents/tool-types'
+import type { ToolApiEndpoint } from '@vouchington/mcp-server/types'
 import { ALL_TOOLS } from './index.mts'
 
 // MCP charges a tool call to the rate-limit bucket of each REST route in `meta.api`, so a tool that

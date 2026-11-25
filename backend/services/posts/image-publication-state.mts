@@ -48,6 +48,7 @@ export async function getLockedPostImagePublicationState(
       post.clearance_is_platform_override AS clearance_platform_override
     FROM posts post
     WHERE post.id = ${postId}
+    -- lock-reason: prevents: publishing images using clearance or owner state that changed during the write; writer: post image updates and moderation clearance.
     FOR UPDATE OF post
   `)
   assert(rows.length > 0, 404, 'Post not found')

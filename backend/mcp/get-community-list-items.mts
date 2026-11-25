@@ -1,7 +1,7 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { communityReferenceSchema } from './entity-reference-schema.mts'
 import { searchCommunityListItems, type CommunityListItemType } from '@services/communities'
-import type { ToolApiEndpoint } from '@services/openai-agents/tool-types'
+import type { ToolApiEndpoint } from '@vouchington/mcp-server/types'
 import type { BasicUser } from '@services/users/types'
 import {
   COMMUNITY_LIST_ITEM_TYPES,
@@ -17,7 +17,7 @@ import {
 } from './mcp-community-output.mts'
 import { pageProperties, type McpPage } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT, type InvalidCursorResult } from './paged-search.mts'
-import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
 import { selectApiByArgument } from '@vouchington/mcp-server/tools'
 import { clampToolLimit } from './search-system.mts'
 
@@ -67,7 +67,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     annotations: { readOnlyHint: true },
     api: Object.values(ENDPOINTS),
     selectApi: selectApiByArgument('item_type', ENDPOINTS),
-    outputSchema: foundOrNotFoundSchema(pageProperties(mcpCommunityListItemSchema())),
+    outputSchema: outcomeSchema('success', pageProperties(mcpCommunityListItemSchema())),
   },
   function:
     (_currentUser: BasicUser) =>

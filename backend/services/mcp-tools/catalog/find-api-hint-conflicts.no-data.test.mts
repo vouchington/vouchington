@@ -1,4 +1,5 @@
-import type { Tool, ToolAnnotations, ToolApiEndpoint } from '@services/openai-agents/tool-types'
+import type { Tool, ToolAnnotations } from '@services/openai-agents/tool-types'
+import type { ToolApiEndpoint } from '@vouchington/mcp-server/types'
 import { describe, expect, it } from 'vitest'
 import { findApiHintConflicts } from './find-api-hint-conflicts.mts'
 

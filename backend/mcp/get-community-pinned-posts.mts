@@ -4,7 +4,7 @@ import { getPinnedPosts } from '@services/communities'
 import type { BasicUser } from '@services/users/types'
 import { COMMUNITY_NOT_FOUND, loadPublicCommunity } from './mcp-community-output.mts'
 import { loadMcpPosts, mcpPostSchema, type McpPostSummary as McpPost } from './mcp-post-output.mts'
-import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
 
 type ToolArgs = {
   community_id: string
@@ -30,7 +30,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     requiredScopes: ['communities:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/communities/:idOrSlug/pinned-posts' }],
-    outputSchema: foundOrNotFoundSchema({
+    outputSchema: outcomeSchema('success', {
       pinned_posts: { type: 'array', items: mcpPostSchema() },
     }),
   },

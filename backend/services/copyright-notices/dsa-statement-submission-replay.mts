@@ -28,6 +28,8 @@ export async function replayDsaStatementSubmission(
     sql`/* replayDsaStatementSubmission:lockSubmission */
     SELECT submitted_at, failed_at, copyright_restriction_id
     FROM copyright_dsa_statement_submissions
+    -- lock-reason: prevents: resetting the same dead-lettered round twice or replacing a rebuilt payload
+    -- writer: competing administrator replays
     WHERE id = ${submissionId} FOR UPDATE
   `,
   )

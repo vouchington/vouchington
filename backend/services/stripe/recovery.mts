@@ -15,6 +15,7 @@ export async function claimRecoverableStripeEvents(
   batchSize = getStripeWorkLimit('recovery_batch_size'),
 ): Promise<RecoverableStripeEvent[]> {
   const dispatchTimeout = getStripeWorkLimit('dispatch_timeout_minutes')
+  // lock-reason: prevents: overlapping recovery runs from reclaiming the same Stripe event work; writer: claimRecoverableStripeEvents
   const { rows } = await write(sql`/* claimRecoverableStripeEvents */
     WITH candidates AS (
       SELECT stripe_event_id FROM stripe_event_processing_work_items

@@ -62,6 +62,7 @@ export async function getWonDisputeRecoveryOperation(
       AND operation.operation_kind = 'collision_resolution'
       AND operation.idempotency_key = ${idempotencyKey}
   `
+  // lock-reason: prevents: claiming dispute recovery using refund state superseded by a competing recovery claim; writer: claimExistingRecovery
   if (lockOperation) statement.append(sql` FOR UPDATE OF operation`)
   const { rows } = await query(statement)
   return (rows[0] as WonDisputeRecoveryOperation | undefined) ?? null

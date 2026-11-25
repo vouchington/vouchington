@@ -19,7 +19,8 @@ import createHttpError from 'http-errors'
 import { requirePrivateToolUser } from './private-user.mts'
 import { pageInfoSchema } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT } from './paged-search.mts'
-import { closedObject, foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
+import { objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
+import { pickProperties } from './read-tool-output-schema.mts'
 import { clampToolLimit } from './search-system.mts'
 
 type ListArgs = { rss_feed_id: string; limit?: number; after?: string }
@@ -39,10 +40,10 @@ type ListResult =
   | { success: false; error: string }
 type DetailResult = { success: true; crawl: Summary | Detail } | { success: false; error: string }
 const MAX_LIMIT = 100
-const summarySchema = closedObject(
+const summarySchema = objectSchema(
   pickProperties('RssFeedCrawlSummary', ['id', 'response_code', 'created_at']),
 )
-const detailSchema = closedObject({
+const detailSchema = objectSchema({
   ...pickProperties('RssFeedCrawlDetail', ['id', 'response_code', 'created_at', 'redirect_url_id']),
   feed_data: { type: ['string', 'null'] },
   feed_data_sha256: { type: ['string', 'null'] },
@@ -88,7 +89,7 @@ export const listRssFeedCrawlsTool: MergedToolSource<ListArgs, ListResult> = {
     requiredScopes: ['rss-feeds:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/rss-feeds/:id/crawls' }],
-    outputSchema: foundOrNotFoundSchema({
+    outputSchema: outcomeSchema('success', {
       results: { type: 'array', items: summarySchema },
       page_info: pageInfoSchema(),
     }),
@@ -132,7 +133,7 @@ export const getRssFeedCrawlTool: MergedToolSource<DetailArgs, DetailResult> = {
     requiredScopes: ['rss-feeds:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/rss-feeds/:id/crawls/:crawlId' }],
-    outputSchema: foundOrNotFoundSchema({ crawl: { oneOf: [summarySchema, detailSchema] } }),
+    outputSchema: outcomeSchema('success', { crawl: { oneOf: [summarySchema, detailSchema] } }),
   },
   function:
     (currentUser: BasicUser) =>

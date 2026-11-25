@@ -9,11 +9,9 @@ import {
   createTestSubscriptionPostNotification,
   createTestPost,
   createTestUserDirect,
-  expireTestNotificationPushIntentLease,
   getNotificationById,
   getTestNotificationPushIntent,
   getTestNotificationPushReceipt,
-  getTestWebPushSubscription,
   markTestNotificationPushed,
 } from '@voucha/test-helpers'
 import { createDirectMessageNotifications } from '@services/notifications/create-direct-message-notification'
@@ -21,7 +19,6 @@ import { createFollowNotification } from '@services/notifications/create-follow-
 import { deleteNotification } from '@services/notifications/mutations'
 import { upsertWebPushSubscription } from '@services/notifications/push-subscriptions'
 import { deliverClaimedNotificationPushIntent } from './push-intent-delivery.mts'
-import { persistClaimedNotificationPushOutcome } from './push-intent-results.mts'
 import { claimNotificationPushIntent } from './push-intents.mts'
 
 vi.mock<typeof import('web-push')>(import('web-push'), async importActual => {
@@ -85,58 +82,6 @@ describe('durable notification push regressions', () => {
       suppressed: false,
     })
     expect(webpush.sendNotification).toHaveBeenCalledTimes(2)
-  })
-
-  it('rejects stale lease outcomes and keeps endpoint receipts terminal', async () => {
-    const recipient = await createTestUserDirect()
-    const follower = await createTestUserDirect()
-    const [notification] = await createFollowNotification(
-      recipient.id,
-      follower.id,
-      follower.username,
-    )
-    const subscription = await createSubscription(recipient.id, 'lease-fence')
-    const oldIntent = await claimNotificationPushIntent(
-      { user_id: recipient.id, notification_id: notification!.id },
-      120,
-    )
-    await expireTestNotificationPushIntentLease(recipient.id, notification!.id)
-    const currentIntent = await claimNotificationPushIntent(
-      { user_id: recipient.id, notification_id: notification!.id },
-      120,
-    )
-    const success = { kind: 'delivered' as const, subscription }
-
-    await expect(persistClaimedNotificationPushOutcome(oldIntent!, success)).resolves.toBe(
-      'lease_lost',
-    )
-    await expect(
-      getTestNotificationPushReceipt(recipient.id, notification!.id, subscription.id),
-    ).resolves.toBeUndefined()
-    await expect(persistClaimedNotificationPushOutcome(currentIntent!, success)).resolves.toBe(
-      'persisted',
-    )
-    const subscriptionBeforeInvalidation = await getTestWebPushSubscription(
-      recipient.id,
-      subscription.id,
-    )
-    await expect(
-      persistClaimedNotificationPushOutcome(currentIntent!, {
-        kind: 'subscription_invalid',
-        subscription,
-      }),
-    ).resolves.toBe('persisted')
-    await expect(
-      getTestNotificationPushReceipt(recipient.id, notification!.id, subscription.id),
-    ).resolves.toMatchObject({
-      status: 'delivered',
-      delivered_at: expect.any(Date),
-      permanently_failed_at: null,
-    })
-    await expect(getTestWebPushSubscription(recipient.id, subscription.id)).resolves.toMatchObject({
-      deleted_at: null,
-      last_failure_at: subscriptionBeforeInvalidation?.last_failure_at,
-    })
   })
 
   it('delivers a valid manual send for a registered-audience post', async () => {

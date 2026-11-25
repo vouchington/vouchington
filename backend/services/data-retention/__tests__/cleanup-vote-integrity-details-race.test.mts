@@ -16,7 +16,7 @@ import { createTestVoteRetentionPost } from '@voucha/test-helpers/vote-retention
 import { cleanupVoteIntegrityDetails } from '../cleanup-vote-integrity-details.mts'
 
 describe('vote integrity detail retention', () => {
-  it('redacts unrelated flags while a resolver deletion is updating a selected flag', async () => {
+  it('redacts both flags after a concurrent resolver deletion', async () => {
     const { postId } = await createTestVoteRetentionPost()
     const resolver = await createTestUserDirect()
     const now = new Date('2026-10-23T12:00:00.000Z')
@@ -44,15 +44,14 @@ describe('vote integrity detail retention', () => {
       () => cleanupVoteIntegrityDetails(2, now, [held, available]),
     )
 
-    expect(await getTestVoteIntegrityFlagDetails(held)).toEqual(details)
+    expect(await getTestVoteIntegrityFlagDetails(held)).toEqual({ score: 3 })
     expect(await getTestVoteIntegrityFlagDetails(available)).toEqual({ score: 3 })
     expect(await getTestVoteIntegrityFlagResolver(held)).toBeNull()
-    expect(page).toEqual({ scanned: 2, redacted: 1, hasMore: false })
+    expect(page).toEqual({ scanned: 2, redacted: 2, hasMore: true })
     expect(await cleanupVoteIntegrityDetails(2, now, [held, available])).toEqual({
-      scanned: 1,
-      redacted: 1,
+      scanned: 0,
+      redacted: 0,
       hasMore: false,
     })
-    expect(await getTestVoteIntegrityFlagDetails(held)).toEqual({ score: 3 })
   })
 })

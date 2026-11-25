@@ -1,4 +1,4 @@
-import type { ToolApiEndpoint, ToolOutputSchema } from '@services/openai-agents/tool-types'
+import type { ToolApiEndpoint, ToolOutputSchema } from '@vouchington/mcp-server/types'
 import { adminOutputSchema } from './untrusted-output.mts'
 import {
   COMMUNITY_MODERATION_NO_CONTENT_SCHEMA,

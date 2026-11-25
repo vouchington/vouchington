@@ -12,6 +12,7 @@ export async function lockAndAssertMergeParticipants(
   sourceTopicId: string,
   destinationTopicId: string,
 ): Promise<void> {
+  // lock-reason: prevents: admitting a merge before an in-flight post tag referencing the source commits; writer: tagPostWithTopics
   const { rows } = await query<MergeRow>(
     // no-mistakes-disable-next-line postgres-required-predicates: lifecycle output enables precise 404/409 assertions below
     `/* mergeTopicAliases lockTopics */ SELECT id, topic_type, deleted_at IS NOT NULL AS is_deleted, merged_into_topic_id IS NOT NULL AS is_merged, EXISTS (SELECT 1 FROM topic_aliases WHERE alias = topics.slug AND unlink_requested_at IS NOT NULL) AS has_pending_slug_alias FROM topics WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`,

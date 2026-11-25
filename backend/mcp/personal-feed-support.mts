@@ -19,7 +19,8 @@ import type { PrivateUser } from '@services/users/types'
 import type { FilterablePostType } from '@ts-shared/feed-capabilities'
 import createHttpError from 'http-errors'
 import { INVALID_CURSOR_RESULT } from './paged-search.mts'
-import { closedObject, pickProperties } from './read-tool-output-schema.mts'
+import { objectSchema } from '@vouchington/mcp-server/schema'
+import { pickProperties } from './read-tool-output-schema.mts'
 
 type CommonArgs = {
   limit?: number
@@ -91,7 +92,7 @@ export const commonProperties = {
   min_score_follow_topics: { type: 'number' },
 }
 export function feedItemSchema(component: 'Post' | 'ViewRssFeedItem') {
-  return closedObject(
+  return objectSchema(
     {
       hacker_news_references: mcpHackerNewsReferenceSchema(),
       id: pickProperties(component, ['id']).id!,
@@ -103,7 +104,7 @@ export function feedItemSchema(component: 'Post' | 'ViewRssFeedItem') {
     ['hacker_news_references'],
   )
 }
-export const referralSchema = closedObject(
+export const referralSchema = objectSchema(
   pickProperties('ReferralLinkFeedRow', [
     'id',
     'user_id',

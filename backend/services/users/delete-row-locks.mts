@@ -11,6 +11,7 @@ async function lockTargetUserRow(
   query: TransactionQuery,
   userId: string,
 ): Promise<UserDeletionTarget | undefined> {
+  // lock-reason: prevents: the privacy marker overtaking in-flight owned-data writes; writer: active-user mutation callers.
   const { rows } = await query<UserDeletionTarget>(sql`/* deleteUser:lockUserRow */
     SELECT id, username FROM users
     WHERE id = ${userId}

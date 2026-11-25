@@ -7,8 +7,8 @@ import {
 } from '@services/communities'
 import { attachCommunityProvenance } from '@services/content-provenance'
 import createHttpError from 'http-errors'
-import { nullable } from '@vouchington/mcp-server/schema'
-import { closedObject, pickProperties } from './read-tool-output-schema.mts'
+import { nullable, objectSchema } from '@vouchington/mcp-server/schema'
+import { pickProperties } from './read-tool-output-schema.mts'
 
 /** The page sizes of the community read tools: the signed-out REST cap, not the service's 100. */
 export const COMMUNITY_PAGE_LIMIT = { min: 1, max: 25, default: 20 } as const
@@ -169,9 +169,9 @@ export async function toMcpCommunityEntries(
 /** The properties of an `McpCommunityEntry`, from the generated `Community` contracts. */
 export function mcpCommunityEntryProperties() {
   return {
-    community: closedObject(pickProperties('Community', COMMUNITY_FIELDS), ['provenance']),
-    owner: nullable(closedObject(pickProperties('CommunityOwner', ['id', 'username']))),
-    metrics: nullable(closedObject(pickProperties('CommunityMetrics', METRIC_FIELDS))),
+    community: objectSchema(pickProperties('Community', COMMUNITY_FIELDS), ['provenance']),
+    owner: nullable(objectSchema(pickProperties('CommunityOwner', ['id', 'username']))),
+    metrics: nullable(objectSchema(pickProperties('CommunityMetrics', METRIC_FIELDS))),
   }
 }
 
@@ -192,5 +192,5 @@ export function communityPageInputProperties(noun: string) {
 }
 
 export function communityPageInfoSchema() {
-  return closedObject(pickProperties('PageInfo', ['has_next_page', 'start_cursor', 'end_cursor']))
+  return objectSchema(pickProperties('PageInfo', ['has_next_page', 'start_cursor', 'end_cursor']))
 }

@@ -26,7 +26,6 @@
     "@data-stores/psql": "workspace:^",
     "@modules/activitypub-uris": "workspace:^",
     "@modules/http-signatures": "workspace:^",
-    "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/activitypub": "workspace:^",
     "@services/ap-actor-keys": "workspace:^",
@@ -35,8 +34,7 @@
     "@services/users": "workspace:^",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
-    "ssrf-guard": "^1.0.0",
-    "undici": "^8.12.4"
+    "ssrf-guard": "^1.0.0"
   },
   "devDependencies": {
     "@services/elections-votes": "workspace:^",

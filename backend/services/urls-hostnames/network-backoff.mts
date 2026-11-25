@@ -7,9 +7,8 @@ import {
   CrawlerResponseSizeExceededError,
   CrawlerServerError,
   CrawlerTimeoutError,
-  isCrawlerNetworkDnsError,
-  isCrawlerNetworkTlsHostnameError,
 } from '@modules/on-error/errors'
+import { isDnsLookupError, isTlsHostnameMismatchError } from '@vouchington/http-transport/fetch'
 import { HttpNoBodyError } from '@vouchington/sentry'
 import { trackNetworkBackoffClosed, trackNetworkBackoffOpened } from '@services/analytics'
 
@@ -34,8 +33,8 @@ export function isHostnameUnreachableError(error: unknown): error is CrawlerNetw
   return (
     error instanceof CrawlerNetworkError &&
     error.responseStatus === null &&
-    !isCrawlerNetworkDnsError(error) &&
-    !isCrawlerNetworkTlsHostnameError(error)
+    !isDnsLookupError(error) &&
+    !isTlsHostnameMismatchError(error)
   )
 }
 
@@ -165,6 +164,7 @@ export async function resetHostnameFailures(
         AND (($2 AND consecutive_dns_failures > 0)
           OR consecutive_network_failures > 0
           OR network_backoff_step > 0)
+      -- lock-reason: prevents: reporting a stale backoff duration when a concurrent failure advances the step on PostgreSQL 18.4; writer: recordHostnameNetworkFailure
       FOR UPDATE
     ) previous
     WHERE h.id = previous.id

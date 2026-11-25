@@ -1,5 +1,6 @@
 import type { PrivateUser } from '@services/users/types'
-import type { ToolApiEndpoint, ToolAnnotations } from '@services/openai-agents/tool-types'
+import type { ToolAnnotations } from '@services/openai-agents/tool-types'
+import type { ToolApiEndpoint } from '@vouchington/mcp-server/types'
 import {
   getTopicClaimState,
   type TopicClaim,

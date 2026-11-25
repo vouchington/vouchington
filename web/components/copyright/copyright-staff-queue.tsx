@@ -1,6 +1,6 @@
 'use client'
 
-import { pageHasContinuation } from '@/lib/api/page-has-continuation'
+import { pageHasContinuation } from '@vouchington/api-client'
 import { useState, useTransition } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'

@@ -7,12 +7,11 @@ export async function insertTestRetentionToken(
   query: TransactionQuery,
   family: 'email_address_login_tokens' | 'phone_number_login_tokens',
   at: Date,
+  address = family === 'email_address_login_tokens'
+    ? `tests+${randomUUID()}@voucha.ai`
+    : `+1555${randomInt(1000000, 9999999)}`,
 ): Promise<string> {
   const id = v7({ msecs: at.getTime() })
-  const address =
-    family === 'email_address_login_tokens'
-      ? `tests+${randomUUID()}@voucha.ai`
-      : `+1555${randomInt(1000000, 9999999)}`
   const valueColumn = family === 'email_address_login_tokens' ? 'email_address' : 'phone_number'
   const purposeColumn = family === 'email_address_login_tokens' ? ', purpose' : ''
   const purposeValue = family === 'email_address_login_tokens' ? ", 'login'" : ''

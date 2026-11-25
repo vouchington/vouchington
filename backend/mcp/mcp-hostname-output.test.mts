@@ -1,9 +1,8 @@
 import { getRegisteredToolByName } from '@voucha/mcp/registry/index'
 import { readFileSync } from 'node:fs'
-import { assertMcpLocalSchemaRefs } from '../test-helpers/mcp-local-schema-refs.mts'
 import { describe, expect, it } from 'vitest'
 import { HOSTNAME_PAGE_LIMIT, hostnamesPageProperties } from './mcp-hostname-output.mts'
-import { inlineSchemaReferences } from '@vouchington/mcp-server/schema'
+import { assertLocalSchemaRefs, inlineSchemaReferences } from '@vouchington/mcp-server/schema'
 import searchHostnamesTool from './search-hostnames.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 
@@ -77,7 +76,7 @@ describe('hostname read tool output schemas', () => {
       success: { const: false },
       error: { type: 'string' },
     })
-    assertMcpLocalSchemaRefs(tool.meta?.outputSchema)
+    assertLocalSchemaRefs(tool.meta?.outputSchema)
   })
 
   it.each(TOOLS)('names the documented REST twin of %s', (_name, tool, path) => {

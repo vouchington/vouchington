@@ -90,12 +90,18 @@ export async function recordTerritorialCopyrightRedressDecision(
   )
   const created = rows[0]
   assert(created, 500, labels.redressDecisionFailed)
-  await transaction(sql`/* recordTerritorialCopyrightRedressDecision:current */
-    UPDATE copyright_territorial_redress_requests SET
+  const { rowCount } = await transaction(sql`/* recordTerritorialCopyrightRedressDecision:current */
+    UPDATE copyright_territorial_redress_requests request SET
       current_staff_decision_identity_id = ${created.id},
       staff_disposition = ${created.staff_disposition}, decided_at = ${created.decided_at},
       decided_by_id = ${actor.id}, rationale_ciphertext = ${rationaleCiphertext}
-    WHERE id = ${redressId}`)
+    WHERE request.id = ${redressId} AND request.current_staff_decision_identity_id IS NULL
+      AND EXISTS (
+        SELECT 1 FROM copyright_notices notice
+        WHERE notice.id = request.copyright_notice_id
+          AND notice.current_territorial_decision_identity_id = request.copyright_territorial_decision_id
+      )`)
+  assert(rowCount === 1, 409, 'The redress request is no longer open for a decision')
   const restoreIntentIds: string[] = []
   const deliveries: CopyrightStatementDeliveryInput[] = []
   let staydownImageIds: string[] = []

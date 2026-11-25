@@ -12,6 +12,7 @@ export async function lockActivePostAuthorImageAdmission(
   await runSequentially([
     async () => {
       try {
+        // lock-reason: prevents: admitting an authored post after the account deletion fence; writer: post creation and account deletion.
         await lockActiveUserSubjectsForMutation(query, [creatorId])
       } catch (err) {
         if ((err as { code?: string }).code === '23514')

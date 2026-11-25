@@ -2,7 +2,6 @@ import { isRecommendationOnly } from '@services/search-params/post-recommendatio
 import { getPostHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import type { HackerNewsReferenceCounts } from '@services/urls/hacker-news-references-types'
 import { mcpHackerNewsReferenceSchema } from './mcp-hacker-news-output.mts'
-import { closedObject } from './read-tool-output-schema.mts'
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { getPaginationLimits } from '@services/pagination'
 import type { BasicUser } from '@services/users/types'
@@ -28,7 +27,7 @@ import {
 import { canonicalEntityId } from './resolve-entity-reference.mts'
 import { resolvedTopicFilters } from './resolve-topic.mts'
 import { requirePrivateToolUser } from './private-user.mts'
-import { outcomeSchema } from '@vouchington/mcp-server/schema'
+import { objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
 import { componentSchema } from './route-response-schema.mts'
 import {
   postSearchFilterSchemaProperties,
@@ -54,7 +53,7 @@ type ToolResult =
 const OUTPUT_SCHEMA = outcomeSchema('success', {
   results: {
     type: 'array',
-    items: closedObject(
+    items: objectSchema(
       {
         hacker_news_references: mcpHackerNewsReferenceSchema(),
         id: { type: 'string' },

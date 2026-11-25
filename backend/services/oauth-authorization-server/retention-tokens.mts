@@ -8,6 +8,7 @@ export async function lockExpiredOAuthRetentionFamilies(
   window: { lowerBoundDate?: Date; now: Date },
   limit: number,
 ): Promise<string[]> {
+  // lock-reason: prevents: cascading a newly issued child outside the bounded token drain; writer: OAuth token issuance.
   // Page the expiry index before inspecting children. An EXISTS filter here would rescan
   // arbitrarily many earlier empty families to find one with a child.
   const families = await query<{ id: string }>(
@@ -112,6 +113,7 @@ async function deleteRefreshTokenPage(
   limit: number,
 ): Promise<number> {
   const fromFamily = source.kind === 'family'
+  // lock-reason: prevents: deleting a replacement while its predecessor still refers to it; writer: refresh token rotation and token retention.
   // A replacement UUID can sort before its predecessor on another API replica.
   // Page by the stored generation, then lock at most the page's rows in that order.
   const pageSql = fromFamily

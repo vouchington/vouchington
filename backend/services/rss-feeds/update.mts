@@ -43,6 +43,7 @@ export const updateRssFeedById = async (
       priorTopicId = prior.rows[0]?.topic_id ?? null
       await assertTopicHasHostname(changes.topic_id, { query })
     }
+    // lock-reason: prevents: publishing an outdated former topic when topic_id changes without setting changes; writer: updateRssFeedById
     const existing = await query<{ id: string; topic_id: string }>(
       changes.topic_id === undefined && stateChanges.length === 0
         ? sql`/* updateRssFeedById:exists */ SELECT id, topic_id FROM rss_feeds WHERE id = ${id}`

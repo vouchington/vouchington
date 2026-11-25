@@ -1,8 +1,5 @@
-import {
-  CrawlerNetworkError,
-  CrawlerRateLimitError,
-  isCrawlerNetworkDnsError,
-} from '@modules/on-error/errors'
+import { CrawlerNetworkError, CrawlerRateLimitError } from '@modules/on-error/errors'
+import { isDnsLookupError } from '@vouchington/http-transport/fetch'
 import onError from '@modules/on-error'
 import { trackDomainRateLimitLocked } from '@services/analytics'
 import { recordHostnameDnsFailure } from '@services/urls-hostnames/dns-failures'
@@ -75,7 +72,7 @@ function trackDnsFailure(
   hostnameId: string,
   resolveCanary: (() => Promise<void>) | undefined,
 ) {
-  if (error instanceof CrawlerNetworkError && isCrawlerNetworkDnsError(error)) {
+  if (error instanceof CrawlerNetworkError && isDnsLookupError(error)) {
     // Deliberately not awaited by recordCrawlError: this is a best-effort tracking side effect,
     // not part of the crawl-error recording flow, so it isolates its own errors via `.catch`
     // rather than propagating a promise the (synchronous, fire-and-forget) caller would await.

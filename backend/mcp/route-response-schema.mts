@@ -1,7 +1,7 @@
 import contracts from '@voucha/api-contracts/v1/request-contracts.json' with { type: 'json' }
-import type { ToolApiEndpoint, ToolOutputSchema } from '@services/openai-agents/tool-types'
+import type { ToolApiEndpoint, ToolOutputSchema } from '@vouchington/mcp-server/types'
 import {
-  inlineSchemaReferences,
+  resolveComponentSchema,
   resolveRouteResponse,
   routePropertySchema,
   type JsonSchema,
@@ -12,8 +12,6 @@ const { components, responses } = contracts as unknown as {
   components: SchemaComponents
   responses: Record<string, JsonSchema>
 }
-
-const COMPONENT_PREFIX = '#/components/schemas/'
 
 /**
  * The response schema of a tool's REST twin, self-contained for MCP clients.
@@ -34,9 +32,7 @@ export function routeResponseSchema(endpoint: ToolApiEndpoint): ToolOutputSchema
  * section to that route's documented schema.
  */
 export function componentSchema(name: string): JsonSchema {
-  const schema = inlineSchemaReferences({ $ref: `${COMPONENT_PREFIX}${name}` }, components)
-  if (schema['$defs']) throw new Error('A recursive response contract cannot be nested.')
-  return schema
+  return resolveComponentSchema(name, components)
 }
 
 /** One property of a named component, for a tool that keeps only part of an entity. */

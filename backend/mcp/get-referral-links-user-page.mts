@@ -11,10 +11,11 @@ import {
 } from '@services/user-referral-program-links'
 import { userReferralLinkPrivateFieldNames } from '@services/user-referral-program-links/columns'
 import type { BasicUser } from '@services/users/types'
-import { iso, pageProperties, sanitizedTitle } from './mcp-read-output.mts'
+import { iso, pageProperties } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT } from './paged-search.mts'
 import { requirePrivateToolUser } from './private-user.mts'
-import { closedObject } from './read-tool-output-schema.mts'
+import { objectSchema } from '@vouchington/mcp-server/schema'
+import { sanitizeTitle } from '@vouchington/mcp-server/untrusted'
 import { componentSchema } from './route-response-schema.mts'
 
 export type UserReferralLinksArgs = {
@@ -30,10 +31,10 @@ const userReferralLinkProperties = componentSchema('UserReferralLink')['properti
   Record<string, unknown>
 >
 
-export const USER_REFERRAL_LINK_PAGE_SCHEMA = closedObject({
+export const USER_REFERRAL_LINK_PAGE_SCHEMA = objectSchema({
   success: { const: true },
   ...pageProperties(
-    closedObject(
+    objectSchema(
       {
         ...userReferralLinkProperties,
         referral_program_name: { type: 'string' },
@@ -90,13 +91,13 @@ async function serializeLink(link: UserReferralLinkListItem) {
     updated_at: iso(link.updated_at),
     deleted_at: link.deleted_at === null ? null : iso(link.deleted_at),
     parent_link_id: link.parent_link_id,
-    referral_program_name: await sanitizedTitle(link.referral_program_name),
+    referral_program_name: await sanitizeTitle(link.referral_program_name),
     referral_program_slug: link.referral_program_slug,
     url: link.url,
   }
   if (!('label' in link)) return serialized
   const text = async (value: string | null | undefined) =>
-    value === null || value === undefined ? null : sanitizedTitle(value)
+    value === null || value === undefined ? null : sanitizeTitle(value)
   const timestamp = (value: Date | null | undefined) =>
     value === null || value === undefined ? null : iso(value)
   return {

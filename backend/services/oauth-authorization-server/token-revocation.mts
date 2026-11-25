@@ -77,6 +77,7 @@ export async function revokeOAuthToken(input: {
       ],
     )
   } else {
+    // lock-reason: prevents: revocation and refresh reuse from traversing the family in opposite row orders; writer: refresh token rotation and reuse recovery.
     const refresh = await query<{ family_id: string }>(
       `/* revokeOAuthToken refresh */ SELECT refresh.family_id
        FROM oauth_refresh_tokens AS refresh
