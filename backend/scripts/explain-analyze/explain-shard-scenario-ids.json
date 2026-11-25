@@ -598,6 +598,9 @@
     "conversation-messages-at-cap",
     "notifications-inbox-at-cap",
     "notifications-mark-all-read-at-cap",
+    "direct-message-notifications-at-cap",
+    "modmail-notifications-at-cap",
+    "notification-push-intent-claim-at-cap",
     "related-posts-by-url-at-cap",
     "rss-ingest-content-at-cap"
   ]
