@@ -120,7 +120,6 @@ export async function runModerationRerunOutcomeScenarios(): Promise<void> {
       reportRunIds.push(...batchRunIds)
       const scenarioId = `report-rerun-failed-batch-${batchSize}` as const
       register(scenarioId, batchSize * 2)
-      // no-mistakes-disable-next-line query-reached-per-item: two fixed batch sizes require separate serialized custom/generic plan captures.
       await runAndCapture(
         scenarioId,
         async () => {

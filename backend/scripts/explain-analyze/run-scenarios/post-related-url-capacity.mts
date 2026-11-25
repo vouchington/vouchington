@@ -32,7 +32,6 @@ export async function runPostUrlCapacityScenarios(): Promise<void> {
     ] as const
     for (const [index, [limit, subjectIndex]] of cases.entries()) {
       relationLimitsConfig.fields.set('post_related_url', limit)
-      // no-mistakes-disable-next-line query-reached-per-item: four fixed populations own separate captured plans and row budgets.
       await captureCapacity(POST_URL_CAPACITY_SCENARIOS[index]!, limit, seed.posts[subjectIndex]!)
     }
     relationLimitsConfig.fields.set('post_related_url', 1000)

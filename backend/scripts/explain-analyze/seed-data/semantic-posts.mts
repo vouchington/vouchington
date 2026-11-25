@@ -18,7 +18,6 @@ export async function seedSemanticPosts(): Promise<void> {
   await using transaction = await beginTransaction()
   await transaction(`/* seedSemanticPosts */ DROP INDEX ${HNSW_INDEX}`)
   for (let offset = 0; offset < ids.length; offset += 1_000) {
-    // no-mistakes-disable-next-line query-reached-per-item: 40 fixed 1k-row pages keep vector writes below one statement deadline.
     await transaction(
       `/* seedSemanticPosts */
     UPDATE posts

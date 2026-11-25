@@ -49,7 +49,6 @@ export async function runHackerNewsReadmissionScenarios(): Promise<void> {
         ],
         allowEmptyResult: page.expected === 0,
       })
-      // no-mistakes-disable-next-line query-reached-per-item: first, populated and exhausted composite pages each capture the same bounded production selector.
       await runAndCapture(
         id,
         async () => {

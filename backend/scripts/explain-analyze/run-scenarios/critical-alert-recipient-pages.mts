@@ -57,7 +57,6 @@ async function captureReportChecks(reportId: string): Promise<void> {
       forbidSequentialScans: ['moderation_reports'],
       ...(!expected ? { allowEmptyResult: true } : {}),
     })
-    // no-mistakes-disable-next-line query-reached-per-item: live and missing PK probes own separate plan contracts.
     await runAndCapture(
       id,
       async () => assert.equal(await isCriticalAlertReportLive(candidateId), expected),
@@ -82,7 +81,6 @@ async function captureRecipientPages(): Promise<void> {
       ],
       forbidSequentialScans: ['user_roles'],
     })
-    // no-mistakes-disable-next-line query-reached-per-item: first and deep cursor have separate bounded plan contracts.
     await runAndCapture(
       id,
       async () => {

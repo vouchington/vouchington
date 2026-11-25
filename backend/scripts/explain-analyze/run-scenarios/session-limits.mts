@@ -28,7 +28,6 @@ export async function runSessionLimitScenarios(): Promise<void> {
       allowEmptyResult: missingProbe,
       expectations: [{ kind: 'maxProcessedRows', relation: 'user_sessions', max }],
     })
-    // no-mistakes-disable-next-line query-reached-per-item: the fixed scenario list captures independent query plans against the same bounded fixture
     await runAndCapture(
       label,
       async () => {

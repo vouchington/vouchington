@@ -86,7 +86,6 @@ export async function runVoteWeightDispatchScenarios(): Promise<void> {
         { kind: 'maxProcessedRows', relation: 'membership_source_states', max: 520 },
       ],
     })
-    // no-mistakes-disable-next-line query-reached-per-item: fixed branch scenarios serialize process-global query capture
     await runAndCapture(
       scenarioId,
       () =>
@@ -135,7 +134,6 @@ export async function runVoteWeightDispatchScenarios(): Promise<void> {
               { kind: 'maxProcessedRows', relation: 'membership_sources', max: 520 },
             ],
     })
-    // no-mistakes-disable-next-line query-reached-per-item: fixed branch scenarios serialize process-global query capture
     await runAndCapture(
       scenarioId,
       () =>

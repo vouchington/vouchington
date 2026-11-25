@@ -88,7 +88,6 @@ export async function seedHackerNewsFilterFixture(
   )
   for (let start = 0; start < postCount; start += batchSize) {
     const count = Math.min(batchSize, postCount - start)
-    // no-mistakes-disable-next-line query-reached-per-item: each call writes one set-based fixture batch capped at 5000 rows; the loop has a finite corpus limit.
     await q(
       `INSERT INTO posts(id,created_via,post_type,title,created_by_id,approved_at,url_id,
       votes_score_up,votes_count_up,bedrock_nova_multimodal_v1_content_sha256,llm_moderation_content_sha256)
@@ -98,7 +97,6 @@ export async function seedHackerNewsFilterFixture(
       FROM generate_series($3::int,$3::int+$8::int-1)i`,
       [token, fixture.actorId, start, postCount, ...fixture.postPrefixes, count, fixture.urlIds],
     )
-    // no-mistakes-disable-next-line query-reached-per-item: each call writes one set-based fixture batch capped at 5000 rows; the loop has a finite corpus limit.
     await q(
       `INSERT INTO relation__post__related__url(subject_id,object_id,created_by_id,votes_score_up,votes_count_up)
       SELECT ((CASE WHEN i<$4*.2 THEN $5 WHEN i<$4*.5 THEN $6 ELSE $7 END)
@@ -128,14 +126,12 @@ export async function seedHackerNewsFilterFixture(
   )
   for (let start = 0; start < rssCount; start += batchSize) {
     const count = Math.min(batchSize, rssCount - start)
-    // no-mistakes-disable-next-line query-reached-per-item: each call writes one set-based fixture batch capped at 5000 rows; the loop has a finite corpus limit.
     await q(
       `INSERT INTO rss_feed_item_guids(id,url_hostname_id,guid)
       SELECT ($1||$2||lpad(to_hex(i),6,'0'))::uuid,$3,'hn-plan-'||$2||'-'||i
       FROM generate_series($4::int,$4::int+$5::int-1)i`,
       [fixture.rssPrefix, token, fixture.hostnameId, start, count],
     )
-    // no-mistakes-disable-next-line query-reached-per-item: each call writes one set-based fixture batch capped at 5000 rows; the loop has a finite corpus limit.
     await q(
       `INSERT INTO rss_feed_items(id,url_id,data,bedrock_nova_multimodal_v1_content_sha256)
       SELECT ($1||$2||lpad(to_hex(i),6,'0'))::uuid,($3::uuid[])[i%1000+1],
@@ -143,7 +139,6 @@ export async function seedHackerNewsFilterFixture(
       FROM generate_series($4::int,$4::int+$5::int-1)i`,
       [fixture.rssPrefix, token, fixture.urlIds, start, count, recent.toISOString()],
     )
-    // no-mistakes-disable-next-line query-reached-per-item: each call writes one set-based fixture batch capped at 5000 rows; the loop has a finite corpus limit.
     await q(
       `INSERT INTO rss_feed_item_sources(rss_feed_id,rss_feed_item_id,published_at)
       SELECT $1,($2||$3||lpad(to_hex(i),6,'0'))::uuid,$6
@@ -170,7 +165,6 @@ export async function setHackerNewsFilterDensity(
   )
   for (let start = 0; start < f.postCount; start += f.batchSize) {
     const count = Math.min(f.batchSize, f.postCount - start)
-    // no-mistakes-disable-next-line query-reached-per-item: each call writes one set-based fixture batch capped at 5000 rows; the loop has a finite corpus limit.
     await q(
       `UPDATE posts SET has_hacker_news_references=i%500<$2
       FROM generate_series($3::int,$3::int+$8::int-1)i
@@ -180,7 +174,6 @@ export async function setHackerNewsFilterDensity(
     )
   }
   for (let start = 0; start < f.rssCount; start += f.batchSize) {
-    // no-mistakes-disable-next-line query-reached-per-item: each call writes one set-based fixture batch capped at 5000 rows; the loop has a finite corpus limit.
     await q(
       `UPDATE rss_feed_items SET has_hacker_news_references=i%500<$2
       FROM generate_series($3::int,$3::int+$4::int-1)i

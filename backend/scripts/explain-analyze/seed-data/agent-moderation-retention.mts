@@ -186,7 +186,6 @@ async function seedReleasedCommunityNoise(day: string, occurredAt: Date): Promis
   )
   for (let start = 0; start < communityIds.length; start += BATCH_SIZE) {
     const batch = communityIds.slice(start, start + BATCH_SIZE)
-    // no-mistakes-disable-next-line query-reached-per-item: fixed rollup noise is inserted in bounded batches below PostgreSQL bind limits
     await write(
       `/* seedAgentModerationRetentionReleasedNoise */
        INSERT INTO moderation_transparency_released_daily_rollups

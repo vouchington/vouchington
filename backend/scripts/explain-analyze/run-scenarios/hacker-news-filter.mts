@@ -45,11 +45,8 @@ export async function runHackerNewsFilterScenarios(): Promise<void> {
     if (!user) throw new Error('Hacker News feed fixture user is missing')
     for (const density of ['low', 'high'] as const) {
       await using update = await beginTransaction()
-      // no-mistakes-disable-next-line query-reached-per-item: two fixed density states each seed bounded fixture batches before independent plan captures.
       await setHackerNewsFilterDensity(update, fixture, density === 'high')
-      // no-mistakes-disable-next-line query-reached-per-item: each fixed density validates its own transaction snapshot through capped post batches.
       await verifyHackerNewsFilterFixtureTruth(update, fixture, buildHackerNewsPostUrlsSql)
-      // no-mistakes-disable-next-line query-reached-per-item: each of two fixed density states needs statistics refreshed before its independent plans.
       await update(
         '/* analyzeHackerNewsFilterFixture */ ANALYZE posts,rss_feed_items,url_hacker_news_totals,relation__post__related__url',
       )
@@ -92,7 +89,6 @@ export async function runHackerNewsFilterScenarios(): Promise<void> {
                 posts: 'HN searches may span UUIDv7 post ranges within the selected window.',
               },
             })
-            // no-mistakes-disable-next-line query-reached-per-item: the fixed sort/window/density matrix requires independent plans and serial process-global query capture.
             await runAndCapture(id, () =>
               read(
                 buildPostSearchQuery(viewer.user, {
@@ -118,7 +114,6 @@ export async function runHackerNewsFilterScenarios(): Promise<void> {
           rss_feed_items: 'Production RSS search orders published dates across item ID ranges.',
         },
       })
-      // no-mistakes-disable-next-line query-reached-per-item: the fixed sort/window/density matrix requires independent plans and serial process-global query capture.
       await runAndCapture(id, () =>
         searchRssFeedItems({ has_hacker_news_references: true, limit: 25 }),
       )
@@ -135,7 +130,6 @@ export async function runHackerNewsFilterScenarios(): Promise<void> {
             rss_feed_items: 'Personalized RSS windows rank eligible followed-source deliveries.',
           },
         })
-        // no-mistakes-disable-next-line query-reached-per-item: each fixed window and density captures the actual bounded feed query independently.
         await runAndCapture(feedId, () =>
           getRssFeedItemFeedIds(user, {
             feed_type: 'follow_rss_feeds',

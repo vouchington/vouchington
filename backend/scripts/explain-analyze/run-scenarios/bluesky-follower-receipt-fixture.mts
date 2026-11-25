@@ -60,7 +60,6 @@ export async function seedFollowerReceipts(): Promise<void> {
   }
   for (let offset = 0; offset < NOISE_AUTH_IDS.length; offset += 25) {
     // 25 followers × 20 followees per autocommit statement bounds advisory locks.
-    // no-mistakes-disable-next-line query-reached-per-item: fixed interleaved fixture chunks commit separately to release user advisory locks
     await write(
       `/* seedExplainBlueskyFollower:noiseReceipts */ INSERT INTO bluesky_follow_records
          (follower_user_id, followee_user_id, follower_account_link_authorization_id, record_uri)

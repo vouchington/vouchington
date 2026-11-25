@@ -45,7 +45,6 @@ async function deleteUserBatches(
     )
     const started = performance.now()
     try {
-      // no-mistakes-disable-next-line query-reached-per-item: each statement deletes one bounded slot-noise user batch so the users FK SET NULL cannot cover the whole cohort.
       await query(
         `/* cleanupCommunityAgentPromptSlotCountNoise:${name} */
         DELETE FROM users WHERE id = ANY($1::uuid[])`,

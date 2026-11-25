@@ -50,7 +50,6 @@ async function main(): Promise<void> {
     await seedFollows(subjectId, objectIds)
     // Unrelated subjects make the indexed predicate representative rather than nearly universal.
     for (const noiseSubjectId of objectIds.slice(0, 3)) {
-      // no-mistakes-disable-next-line query-reached-per-item: fixed unrelated-subject corpus for the standalone scale measurement
       await seedFollows(
         noiseSubjectId,
         objectIds.filter(id => id !== noiseSubjectId),
@@ -119,7 +118,6 @@ async function seedUsers(userIds: readonly string[]): Promise<void> {
       const base = values.length - 1
       rows.push(`($${base}, $${base + 1})`)
     }
-    // no-mistakes-disable-next-line query-reached-per-item: bounded bulk INSERT chunks seed the standalone scale scenario
     await write(
       `/* seedRelationLimitBenchmarkUsers */ INSERT INTO users (id, username)
        VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
@@ -138,7 +136,6 @@ async function seedFollows(subjectId: string, objectIds: readonly string[]): Pro
       const base = values.length - 2
       rows.push(`($${base}, $${base + 1}, $${base + 2})`)
     }
-    // no-mistakes-disable-next-line query-reached-per-item: bounded bulk INSERT chunks seed the standalone scale scenario
     await write(
       `/* seedRelationLimitBenchmarkFollows */ INSERT INTO relation__user__follow__user
        (subject_id, object_id, created_by_id) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,

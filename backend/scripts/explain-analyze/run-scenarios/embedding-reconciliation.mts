@@ -37,9 +37,7 @@ export async function runEmbeddingReconciliationScenarios(): Promise<void> {
   })
   for (const tableName of ['topics', 'posts', 'rss_feed_items'] as const) {
     // This cohort leaves 20 sparse mismatches in a mostly matching production-sized table.
-    // no-mistakes-disable-next-line query-reached-per-item: three fixed corpus relations need distinct bounded fixture pages.
     await markEmbeddingCorpusMatched(tableName)
-    // no-mistakes-disable-next-line query-reached-per-item: one set-based sparse mismatch update per fixed relation.
     await write(
       `/* seedExplainEmbeddingMismatch:sparse */
        UPDATE ${tableName} SET bedrock_nova_multimodal_v1_input_sha256 = NULL
@@ -47,7 +45,6 @@ export async function runEmbeddingReconciliationScenarios(): Promise<void> {
          WHERE bedrock_nova_multimodal_v1_content_sha256 IS NOT NULL
          ORDER BY id LIMIT 20)`,
     )
-    // no-mistakes-disable-next-line query-reached-per-item: one set-based cache fixture per fixed relation.
     await write(
       `/* seedExplainEmbeddingMismatch:cache */
        INSERT INTO bedrock_nova_multimodal_v1_embeddings (content_sha256, embedding)
@@ -58,7 +55,6 @@ export async function runEmbeddingReconciliationScenarios(): Promise<void> {
          AND bedrock_nova_multimodal_v1_content_sha256 IS NOT NULL
        ORDER BY id LIMIT 1 ON CONFLICT DO NOTHING`,
     )
-    // no-mistakes-disable-next-line query-reached-per-item: refresh changed relation stats before each separate plan.
     await write(`/* seedExplainEmbeddingMismatch:analyze */
         ANALYZE ${tableName}, bedrock_nova_multimodal_v1_embeddings`)
     registerScenarioContract(`bedrock-copy-existing-${tableName}`, {
@@ -92,7 +88,6 @@ export async function runEmbeddingReconciliationScenarios(): Promise<void> {
       }),
     })
     let updatedIds: string[] = []
-    // no-mistakes-disable-next-line query-reached-per-item: three fixed production table variants each require their own EXPLAIN plan.
     await runAndCapture(
       `bedrock-copy-existing-${tableName}`,
       async () => {
@@ -124,7 +119,6 @@ export async function runEmbeddingReconciliationScenarios(): Promise<void> {
 async function markEmbeddingCorpusMatched(tableName: 'topics' | 'posts' | 'rss_feed_items') {
   const pages = tableName === 'posts' ? 21 : tableName === 'rss_feed_items' ? 6 : 1
   for (let page = 0; page < pages; page++) {
-    // no-mistakes-disable-next-line query-reached-per-item: at most 21 fixed 5k-row fixture pages avoid one statement deadline.
     const { rowCount } = await write(
       `/* seedExplainEmbeddingMismatch:matchedPage */
        WITH candidates AS (

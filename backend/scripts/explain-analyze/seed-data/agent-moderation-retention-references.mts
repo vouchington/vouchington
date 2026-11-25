@@ -30,7 +30,6 @@ export async function insertAgentModerationRetentionReferenceNoise(
     const ids = batch.map(row => row.id)
     const postIds = batch.map(row => row.postId)
     const moderationIds = batch.map(row => row.moderationId)
-    // no-mistakes-disable-next-line query-reached-per-item: fixed reference cohorts use bounded batches and must populate each FK-backed table
     await write(
       `/* seedAgentModerationRetentionReferenceNoise */
        INSERT INTO moderation_training_feedbacks
@@ -42,7 +41,6 @@ export async function insertAgentModerationRetentionReferenceNoise(
        ON CONFLICT (id) DO NOTHING`,
       [ids, postIds, moderationIds],
     )
-    // no-mistakes-disable-next-line query-reached-per-item: fixed reference cohorts use bounded batches and must populate each FK-backed table
     await write(
       `/* seedAgentModerationRetentionReferenceNoise */
        INSERT INTO vote_integrity_flags
@@ -53,7 +51,6 @@ export async function insertAgentModerationRetentionReferenceNoise(
        ON CONFLICT (id) DO NOTHING`,
       [ids, postIds, moderationIds],
     )
-    // no-mistakes-disable-next-line query-reached-per-item: fixed reference cohorts use bounded batches and must populate each FK-backed table
     await write(
       `/* seedAgentModerationRetentionReferenceNoise */
        INSERT INTO agent_moderation_votes
@@ -69,7 +66,6 @@ export async function insertAgentModerationRetentionReferenceNoise(
         postIds,
       ],
     )
-    // no-mistakes-disable-next-line query-reached-per-item: fixed reference cohorts use bounded batches and must populate each FK-backed table
     await write(
       `/* seedAgentModerationRetentionReferenceNoise */
        INSERT INTO moderator_actions
