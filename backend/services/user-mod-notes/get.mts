@@ -23,6 +23,7 @@ export async function listUserModNotes(
   const limit = typeof options?.limit === 'number' ? Math.min(Math.max(options.limit, 1), 100) : 20
   const beforeId = options?.beforeId ?? null
 
+  // A single-value range keeps target_user_id in the scoped index order.
   const query = sql`/* listUserModNotes */
     SELECT n.id, n.created_at, n.target_user_id, n.author_user_id,
       author_profile.username AS author_username,
@@ -31,7 +32,7 @@ export async function listUserModNotes(
     FROM (
       SELECT id, created_at, target_user_id, author_user_id, community_id, body, deleted_at
       FROM user_moderator_notes
-      WHERE target_user_id = ${targetUserId}
+      WHERE target_user_id BETWEEN ${targetUserId} AND ${targetUserId}
         AND deleted_at IS NULL
   `
 
@@ -48,7 +49,7 @@ export async function listUserModNotes(
 
   // The projection joins are keyed and can only decorate the selected notes.
   query.append(sql`
-      ORDER BY id DESC
+      ORDER BY target_user_id ASC, id DESC
       LIMIT ${limit + 1}
     ) n
     LEFT JOIN view_users_public author_profile ON author_profile.id = n.author_user_id
