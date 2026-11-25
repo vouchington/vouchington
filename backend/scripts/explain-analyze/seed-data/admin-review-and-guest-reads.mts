@@ -30,7 +30,12 @@ export const GUEST_CAPABILITY_FIXTURE_IDS = Array.from(
   .toReversed()
 
 const backgroundCapabilityIds = Array.from({ length: 400 }, (_, index) =>
-  seedUuidAtTimestamp(FIXTURE_TIME, CAPABILITY_BASE + GUEST_CAPABILITY_FIXTURE_COUNT + index),
+  seedUuidAtTimestamp(
+    FIXTURE_TIME,
+    index < 200
+      ? CAPABILITY_BASE - 200 + index
+      : CAPABILITY_BASE + GUEST_CAPABILITY_FIXTURE_COUNT + index,
+  ),
 )
 const allCapabilityIds = [...GUEST_CAPABILITY_FIXTURE_IDS, ...backgroundCapabilityIds]
 const capabilityNoticeIds = allCapabilityIds.map(

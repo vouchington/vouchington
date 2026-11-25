@@ -39,9 +39,12 @@ export async function listCopyrightGuestCapabilities(input: {
       capability.revoked_at
     FROM copyright_notice_guest_capabilities capability
     LEFT JOIN users issuer ON issuer.id = capability.issued_by_id AND issuer.deleted_at IS NULL
-    WHERE capability.copyright_notice_id = ${input.noticeId}`
+    -- Keep notice ID in the ordering so a global ID scan cannot walk other notices.
+    WHERE capability.copyright_notice_id BETWEEN ${input.noticeId} AND ${input.noticeId}`
   if (input.afterId) query.append(sql` AND capability.id < ${input.afterId}`)
-  query.append(sql` ORDER BY capability.id DESC LIMIT ${input.limit + 1}`)
+  query.append(
+    sql` ORDER BY capability.copyright_notice_id DESC, capability.id DESC LIMIT ${input.limit + 1}`,
+  )
   // Read the primary so a capability issued a moment ago appears when staff reload the list.
   await using transaction = await beginTransaction()
   const { rows } = await transaction<CopyrightGuestCapabilitySummary>(query)
