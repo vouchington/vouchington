@@ -59,7 +59,7 @@ active_links AS (
 ),
 `,
     )
-    .append(rankingCtesSql(referralProgramId))
+    .append(rankingCtesSql(referralProgramId, 'out-of-network'))
     .append(
       `,
 ranked AS (

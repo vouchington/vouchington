@@ -8,6 +8,8 @@ import {
   insertTestPost,
   insertTestPostReview,
   insertTestDataPoint,
+  insertTestTopic,
+  setTopicReferralProgramId,
   setPostVotesScoreUp,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
@@ -123,6 +125,71 @@ describe('get-prioritized prioritized referral out-of-network ranking', () => {
     const noneIdx = group5.findIndex(l => l.user_id === noneUser.id)
     expect(bothIdx).toBeLessThan(oneIdx)
     expect(oneIdx).toBeLessThan(noneIdx)
+  })
+
+  it('counts only public contributions for the requested program and its linked topics', async () => {
+    const { user: contributor } = await createUserWithLink('contribution-scope')
+    const suffix = createRandomString(8)
+    const [linkedId, unrelatedId] = await Promise.all([
+      insertTestTopic({
+        name: `Linked Card ${suffix}`,
+        slug: `linked-card-${suffix}`,
+        topicType: 'card',
+        createdById: admin.id,
+      }),
+      insertTestTopic({
+        name: `Unrelated Card ${suffix}`,
+        slug: `unrelated-card-${suffix}`,
+        topicType: 'card',
+        createdById: admin.id,
+      }),
+    ])
+    await setTopicReferralProgramId(linkedId, referralProgramId)
+
+    const reviewSlug = `public-scope-review-${suffix}`
+    const [publicReview, privateReview, unrelatedDataPoint] = await Promise.all([
+      insertTestPost({
+        title: `Public Scope Review ${suffix}`,
+        slug: reviewSlug,
+        createdById: contributor.id,
+        markdown: 'Public review',
+        postType: 'review',
+      }),
+      insertTestPost({
+        title: `Private Scope Review ${suffix}`,
+        slug: `private-scope-review-${suffix}`,
+        createdById: contributor.id,
+        markdown: 'Private review',
+        postType: 'review',
+        privacy: 'private',
+        broadcast: 'followers',
+      }),
+      insertTestDataPoint({
+        title: `Unrelated Scope Data Point ${suffix}`,
+        slug: `unrelated-scope-data-point-${suffix}`,
+        createdById: contributor.id,
+        topicId: unrelatedId,
+      }),
+    ])
+    await Promise.all([
+      insertTestPostReview(publicReview, referralProgramId, 2),
+      insertTestPostReview(publicReview, linkedId, 4),
+      insertTestPostReview(publicReview, unrelatedId, 5),
+      insertTestPostReview(privateReview, referralProgramId),
+      setPostVotesScoreUp(privateReview, 50),
+      setPostVotesScoreUp(unrelatedDataPoint, 100),
+    ])
+
+    const { links } = await rankedLinks()
+    expect(links.filter(link => link.user_id === contributor.id)).toEqual([
+      expect.objectContaining({
+        contribution_rank: 2,
+        best_score: 0,
+        review_post_id: publicReview,
+        review_post_slug: reviewSlug,
+        review_avg_rating: 3,
+      }),
+    ])
   })
 
   it('sorts by membership tier rank within same contribution rank', async () => {
