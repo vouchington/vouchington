@@ -7385,6 +7385,9 @@ importers:
       '@services/posts':
         specifier: workspace:^
         version: link:../posts
+      '@services/rss-feed-items':
+        specifier: workspace:^
+        version: link:../rss-feed-items
       '@services/urls':
         specifier: workspace:^
         version: link:../urls
@@ -7410,9 +7413,6 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
-      '@services/rss-feed-items':
-        specifier: workspace:^
-        version: link:../rss-feed-items
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../rss-feeds

@@ -5,13 +5,32 @@ import {
   registerRssFeedPageScenario,
   runRssFeedFirstAndContinuationScenarios,
 } from './rss-feed-pages.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { rssFeedItemsWorkConfig } from '@services/rss-feed-items/work-limits'
 import { getPostIds, getRssFeedItemFeedIds, searchRssFeedItems } from '../run-services.mts'
+
+async function runCappedFeedScenario(scenarioId: string, cap: number): Promise<void> {
+  const restoreCap = overrideDynamicConfigFieldsForTest(rssFeedItemsWorkConfig, {
+    feed_candidate_inspection_cap: cap,
+  })
+  try {
+    registerRssFeedPageScenario(scenarioId, true)
+    await runAndCapture(scenarioId, () =>
+      getRssFeedItemFeedIds(seedUser, { limit: 25, time_range: '1w' }),
+    )
+  } finally {
+    restoreCap()
+  }
+}
 
 export async function runFeedRssScenarios(): Promise<void> {
   await runRssFeedFirstAndContinuationScenarios('rss-feed-item-feed', seedUser, {
     limit: 25,
     time_range: '1w',
   })
+  // A low cap makes both arms capped, so the page statement also runs the boundary lookups.
+  await runCappedFeedScenario('rss-feed-item-feed-capped', 100)
+  await runCappedFeedScenario('rss-feed-item-feed-capped-1000', 1000)
   registerRssFeedPageScenario('rss-feed-item-feed-follow-rss-feeds')
   await runAndCapture('rss-feed-item-feed-follow-rss-feeds', () =>
     getRssFeedItemFeedIds(seedUser, {

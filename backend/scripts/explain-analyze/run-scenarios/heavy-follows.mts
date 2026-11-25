@@ -2,14 +2,10 @@ import { heavyFollowUser, runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { getPostFeedIds, getPostIds, getRssFeedItemFeedIds } from '../run-services.mts'
 import {
-  RSS_FEED_WEEKLY_STORY_ID,
-  RSS_FEED_WEEKLY_STORY_TOKEN,
-  RSS_FEED_WEEKLY_WORKLOAD_RARE_TOKEN,
-} from '../seed-data/rss-feed-weekly-workload.mts'
-import {
   registerRssFeedPageScenario,
   runRssFeedFirstAndContinuationScenarios,
 } from './rss-feed-pages.mts'
+import { runRssFeedWeeklyPagedScenarios } from './rss-feed-weekly-paged.mts'
 import { runRssFeedWeeklyFilterScenarios } from './rss-feed-weekly-filters.mts'
 import { runRssFeedWeeklyProxyScenario } from './rss-feed-weekly-proxy.mts'
 
@@ -132,33 +128,7 @@ export async function runHeavyFollowScenarios() {
       }),
     'heavy-all',
   )
-  registerRssFeedPageScenario('rss-feed-item-feed-heavy-story-skew')
-  await runAndCapture('rss-feed-item-feed-heavy-story-skew', async () => {
-    const page = await getRssFeedItemFeedIds(heavyFollowUser, {
-      feed_type: 'all',
-      limit: 25,
-      time_range: '1w',
-      text_search_query: RSS_FEED_WEEKLY_STORY_TOKEN,
-    })
-    if (
-      page.results.length !== 1 ||
-      page.results[0]?.story_id !== RSS_FEED_WEEKLY_STORY_ID ||
-      page.page_info.has_next_page
-    ) {
-      throw new Error('RSS story-skew scenario must return one canonical direct representative')
-    }
-  })
-  registerRssFeedPageScenario('rss-feed-item-feed-weekly-selective-text')
-  await runAndCapture('rss-feed-item-feed-weekly-selective-text', async () => {
-    const page = await getRssFeedItemFeedIds(heavyFollowUser, {
-      feed_type: 'all',
-      limit: 25,
-      time_range: 'all',
-      text_search_query: RSS_FEED_WEEKLY_WORKLOAD_RARE_TOKEN,
-    })
-    if (page.results.length !== 2 || page.page_info.has_next_page)
-      throw new Error('Weekly selective RSS text search must find its two oldest in-window items')
-  })
+  await runRssFeedWeeklyPagedScenarios()
   await runRssFeedWeeklyFilterScenarios()
   await runRssFeedWeeklyProxyScenario()
 

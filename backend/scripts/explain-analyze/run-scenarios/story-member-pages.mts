@@ -1,3 +1,4 @@
+import type { RssFeedItemFeedOptions } from '@services/feeds/types'
 import { getCapturedQueries, extractQueryName } from '@voucha/test-helpers/explain-analyze'
 import { caches } from '@services/entity-cache/caches'
 import type {
@@ -15,6 +16,7 @@ import {
   hydrateStoryMemberPage,
 } from '../run-services.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { pageRssFeedToEnd } from './rss-feed-page-to-end.mts'
 
 const HYDRATION_QUERY_NAMES = [
   'getRssFeedItemsByIdBatch',
@@ -29,15 +31,13 @@ export async function runStoryMemberPageScenarios(): Promise<void> {
   // The seed dates these items six days before its anchor day. Under the wall clock, the feed's
   // 7-day cutoff passes them for 15 minutes after noon UTC each day, so the lookup must use the
   // same pinned clock as the captured scenarios.
-  const feedPage = await withSeedAnchorClock(() =>
-    getRssFeedItemFeedIds(viewer, {
-      limit: 25,
-      text_search_query: feedSearchToken,
-    }),
-  )
-  const primary = feedPage.results[0]
+  const feedOptions: RssFeedItemFeedOptions = { limit: 25, text_search_query: feedSearchToken }
+  const readFeed = (options: RssFeedItemFeedOptions) =>
+    withSeedAnchorClock(() => getRssFeedItemFeedIds(viewer, options))
+  const feedPaged = await pageRssFeedToEnd(await readFeed(feedOptions), feedOptions, readFeed)
+  const primary = feedPaged.results[0]
   if (
-    feedPage.results.length !== 1 ||
+    feedPaged.results.length !== 1 ||
     primary?.delivery_type !== 'direct' ||
     primary.story_id !== storyId
   )

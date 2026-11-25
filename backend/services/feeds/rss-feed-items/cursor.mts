@@ -55,17 +55,23 @@ export function parseRssFeedItemFeedCursor(
   return { sort_at_lt: cursor.timestamp, id_lt: cursor.id }
 }
 
+/**
+ * `inspectedStop` is the last candidate position a capped walk inspected. It replaces the last
+ * returned row as the continuation so an empty or short page still advances through the feed.
+ */
 export function buildRssFeedItemFeedPageInfo(
   rows: FeedCursorRow[],
   hasNextPage: boolean,
   scope: string,
+  inspectedStop: FeedCursorRow | null = null,
 ): PageInfo {
   const encode = (row: FeedCursorRow) =>
     encodeScopedPreciseTimestampCursor(row.cursor_sort_at, row.cursor_id, scope)
+  const continuation = inspectedStop ?? rows.at(-1)
   return {
     has_next_page: hasNextPage,
     start_cursor: rows.length > 0 ? encode(rows[0]) : null,
-    end_cursor: hasNextPage && rows.length > 0 ? encode(rows.at(-1)!) : null,
+    end_cursor: hasNextPage && continuation ? encode(continuation) : null,
   }
 }
 
