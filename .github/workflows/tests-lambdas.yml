@@ -34,7 +34,7 @@ jobs:
           fetch-depth: 1
         if: steps.checkout.outcome != 'success'
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@273d313fc952c000baa7ee36056ca0e403666581 # v3.6.4
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@587aba5d3c208c86523968bacee37f401a08e7b8 # v3.7.0
         timeout-minutes: 5
         with:
           deadline-seconds: '270'
@@ -69,7 +69,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 1
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@273d313fc952c000baa7ee36056ca0e403666581 # v3.6.4
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@587aba5d3c208c86523968bacee37f401a08e7b8 # v3.7.0
         with:
           suite: lambdas
       - name: Upload full lambdas LCOV to GitHub (attempt 2)
@@ -77,7 +77,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 1
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@273d313fc952c000baa7ee36056ca0e403666581 # v3.6.4
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@587aba5d3c208c86523968bacee37f401a08e7b8 # v3.7.0
         with:
           suite: lambdas
           name-suffix: -retry
