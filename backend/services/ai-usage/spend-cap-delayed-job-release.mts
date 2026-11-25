@@ -20,8 +20,8 @@ const beginReleaseScript = registerWorkerQueueScript(
 const promotePageScript = registerWorkerQueueScript(
   loadScript('promote-spend-cap-release-page.lua', import.meta.url),
 )
-const deleteEntryScript = registerWorkerQueueScript(
-  loadScript('delete-spend-cap-release-entry.lua', import.meta.url),
+const deleteEntriesScript = registerWorkerQueueScript(
+  loadScript('delete-spend-cap-release-entries.lua', import.meta.url),
 )
 const completeReleaseScript = registerWorkerQueueScript(
   loadScript('complete-spend-cap-release.lua', import.meta.url),
@@ -76,10 +76,7 @@ export async function releaseSpendCapDelayedJobs(
     (action): action is Extract<ReleaseAction, { kind: 'delete' }> => action?.kind === 'delete',
   )
   const [, released] = await Promise.all([
-    pMap(deletions, action => deleteEntry(key, lease, action.field, action.phase), {
-      concurrency: RELEASE_CONCURRENCY,
-      stopOnError: false,
-    }),
+    deleteEntries(key, lease, deletions),
     promotePage(key, lease, day, promotions, queue.name),
   ])
   return {
@@ -148,15 +145,15 @@ async function promotePage(
   return Number(promoted)
 }
 
-async function deleteEntry(
+async function deleteEntries(
   key: string,
   lease: string,
-  field: string,
-  phase: string,
+  entries: { field: string; phase: string }[],
 ): Promise<void> {
-  await workerQueueCommandClient.invokeScript(deleteEntryScript, {
+  if (entries.length === 0) return
+  await workerQueueCommandClient.invokeScript(deleteEntriesScript, {
     keys: [key],
-    args: [lease, field, phase],
+    args: [lease, ...entries.flatMap(({ field, phase }) => [field, phase])],
   })
 }
 
