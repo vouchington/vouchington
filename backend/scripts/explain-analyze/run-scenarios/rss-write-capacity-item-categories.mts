@@ -111,8 +111,12 @@ async function runCategoryInsert(fixture: RssWriteCapacityFixture, rows: ItemCat
   const marker = 'insertMissingCategories'
   const half = rows.length / 2
   registerScenarioContract(scenario, {
-    // #6417 owns the measured custom-plan topic_aliases catalog scan.
-    expectations: [],
+    expectations: [
+      { kind: 'noSeqScan', relation: 'rss_category_identities' },
+      { kind: 'noSeqScan', relation: 'topic_aliases' },
+      { kind: 'maxProcessedRows', relation: 'rss_category_identities', max: rows.length },
+      { kind: 'maxProcessedRows', relation: 'topic_aliases', max: rows.length },
+    ],
   })
   await runAndCapture(
     scenario,
@@ -164,8 +168,13 @@ async function runCategoryUpdate(fixture: RssWriteCapacityFixture, rows: ItemCat
   const scenario = 'rss-item-category-update-at-cap'
   const marker = 'updateMatchedCategories'
   registerScenarioContract(scenario, {
-    // #6417 owns the measured custom-plan rss_feed_item_categories heap scan.
-    expectations: [],
+    expectations: [
+      { kind: 'noSeqScan', relation: 'rss_category_identities' },
+      { kind: 'noSeqScan', relation: 'rss_feed_item_categories' },
+      { kind: 'maxProcessedRows', relation: 'rss_category_identities', max: rows.length },
+      // One candidate lookup, one target lookup, and one returned update per pair.
+      { kind: 'maxProcessedRows', relation: 'rss_feed_item_categories', max: rows.length * 3 },
+    ],
   })
   await runAndCapture(
     scenario,
