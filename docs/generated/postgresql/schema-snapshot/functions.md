@@ -388,6 +388,14 @@ CREATE OR REPLACE FUNCTION public.fn_project_activitypub_post_likes()
  LANGUAGE plpgsql
 ```
 
+## `fn_project_capture_inserted_notification_push_intents`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_capture_inserted_notification_push_intents()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_project_capture_notification_push_intent`
 
 ```sql
