@@ -106,6 +106,8 @@ async function lockDsaStatementSubmission(
       ON restriction.id = submission.copyright_restriction_id
     WHERE submission.id = ${submissionId} AND submission.failed_at IS NULL
       AND restriction.imposed_at >= ${from}
+    -- lock-reason: prevents: claiming from a stale attempt round or counting the same lease expiry twice
+    -- writer: competing claims and workers recording a submission result
     FOR UPDATE OF submission
   `)
   return rows[0] ?? null
