@@ -1,13 +1,10 @@
 import { isCurrencyCode } from '@ts-shared/money'
+import { parseStripeInvoicePaymentTarget, type StripeInvoicePaymentLike } from '@vouchington/stripe'
 import type { ReversalTarget } from './ineligible-stripe-purchase-reversal-types.mts'
 
 type StripeInvoicePayment = {
   amount_paid: number | null
-  payment?: {
-    charge?: string | { id: string } | null
-    payment_intent?: string | { id: string } | null
-    type: string
-  } | null
+  payment?: StripeInvoicePaymentLike | null
 }
 
 export type StripeInvoiceForReversal = {
@@ -23,23 +20,13 @@ export function getInvoicePaymentTargets(invoice: StripeInvoiceForReversal): Rev
   const targets = new Map<string, ReversalTarget>()
   for (const payment of invoice.payments?.data ?? []) {
     if (payment.amount_paid === null || payment.amount_paid <= 0) continue
-    const paymentSource = payment.payment
+    const paymentTarget = parseStripeInvoicePaymentTarget(payment.payment)
     const target = {
       amountMinorUnits: payment.amount_paid,
-      chargeId:
-        paymentSource?.type === 'charge'
-          ? typeof paymentSource.charge === 'string'
-            ? paymentSource.charge
-            : (paymentSource.charge?.id ?? null)
-          : null,
+      chargeId: paymentTarget.chargeId,
       currency: invoice.currency,
       invoiceId: invoice.id,
-      paymentIntentId:
-        paymentSource?.type === 'payment_intent'
-          ? typeof paymentSource.payment_intent === 'string'
-            ? paymentSource.payment_intent
-            : (paymentSource.payment_intent?.id ?? null)
-          : null,
+      paymentIntentId: paymentTarget.paymentIntentId,
       qualifyingAmountMinorUnits: payment.amount_paid,
     }
     if (!target.chargeId && !target.paymentIntentId)

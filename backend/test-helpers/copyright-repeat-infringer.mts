@@ -140,3 +140,20 @@ export async function readTestRepeatInfringerIncidents(accountId: string) {
   `)
   return rows
 }
+
+export async function readTestRepeatInfringerDisposition(incidentId: string) {
+  const { rows } = await read<{
+    current_disposition: string | null
+    is_operative: boolean
+    history: string[]
+  }>(sql`/* readTestRepeatInfringerDisposition */
+    SELECT incident.current_disposition, incident.is_operative, ARRAY(
+      SELECT disposition.disposition::text
+      FROM copyright_repeat_infringer_dispositions disposition
+      WHERE disposition.copyright_repeat_infringer_incident_id = incident.id
+      ORDER BY disposition.id
+    ) AS history
+    FROM copyright_repeat_infringer_incidents incident WHERE incident.id = ${incidentId}
+  `)
+  return rows[0] ?? null
+}

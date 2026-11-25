@@ -46,6 +46,7 @@ export async function cleanupSecuritySourcePageInTransaction(
     source === 'copyright_rationales_attempts' ||
     source === 'oauth_events' ||
     source === 'oauth_native_mints'
+  // lock-reason: prevents: cascading new OAuth client authorizations outside the guarded cleanup page; writer: OAuth authorization admission.
   const page = await query<{ id: string; key_at: string }>(
     `/* listSecurityRetentionPage:${source} */
      SELECT target.id, (${plan.keyAt})::text AS key_at
@@ -126,6 +127,7 @@ async function lockOAuthRetentionPageAccounts(
      WHERE id = ANY($1::uuid[]) AND user_id IS NOT NULL ORDER BY user_id`,
     [ids],
   )
+  // lock-reason: prevents: deleting OAuth records after a concurrent preservation hold commits; writer: account preservation hold placement.
   await lockUsersForShare(
     query,
     accounts.rows.map(account => account.user_id),

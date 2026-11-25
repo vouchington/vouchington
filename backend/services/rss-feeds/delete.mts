@@ -50,6 +50,7 @@ export async function softDeleteRssFeedById(id: string): Promise<boolean> {
  */
 export async function hardDeleteRssFeedById(id: string): Promise<boolean> {
   await using query = await beginTransaction()
+  // lock-reason: prevents: hiding a feed before an in-flight admin import reference is visible to the retention check; writer: updateRowCompleted
   const { rows: feedRows } = await query<{ id: string }>(
     `/* hardDeleteRssFeedById:lockFeed */
     SELECT id FROM rss_feeds WHERE id = $1::uuid FOR UPDATE`,

@@ -2,9 +2,10 @@ import type { CommunityListItem, CommunityListItemType } from '@services/communi
 import { getRssFeedByIdCachedBatch } from '@services/entity-fetch'
 import { getUrlsByIdBatch } from '@services/urls'
 import { getUrlHostnamesByAnyBatch } from '@services/urls-hostnames'
-import { iso, sanitizedTitle } from './mcp-read-output.mts'
-import { nullable } from '@vouchington/mcp-server/schema'
-import { closedObject, pickProperties } from './read-tool-output-schema.mts'
+import { iso } from './mcp-read-output.mts'
+import { nullable, objectSchema } from '@vouchington/mcp-server/schema'
+import { sanitizeTitle } from '@vouchington/mcp-server/untrusted'
+import { pickProperties } from './read-tool-output-schema.mts'
 
 /** The kinds of thing a community list holds, in the order the counts report them. */
 export const COMMUNITY_LIST_ITEM_TYPES = [
@@ -41,7 +42,7 @@ async function labelsFor(
   const label = async (rows: Array<Labelled | null | undefined>, field: string) => {
     const byId = new Map(rows.flatMap(row => (row ? [[row.id, row[field] as string]] : [])))
     return Promise.all(
-      entityIds.map(id => (byId.has(id) ? sanitizedTitle(byId.get(id)!) : Promise.resolve(null))),
+      entityIds.map(id => (byId.has(id) ? sanitizeTitle(byId.get(id)!) : Promise.resolve(null))),
     )
   }
   switch (itemType) {
@@ -79,7 +80,7 @@ export async function toMcpCommunityListItems(
 
 /** The schema of an `McpCommunityListItem`, from the generated `CommunityListItem` contract. */
 export const mcpCommunityListItemSchema = () =>
-  closedObject({
+  objectSchema({
     ...pickProperties('CommunityListItem', ITEM_FIELDS),
     label: nullable({ type: 'string' }),
   })

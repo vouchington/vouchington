@@ -8,6 +8,7 @@ export async function processTopicMergeVoteReferencePage(
   destinationId: string,
   limit: number,
 ): Promise<number> {
+  // lock-reason: prevents: retention deleting a selected vote before its merge choice is applied; writer: runVoteRetentionCleanupPage
   const { rows } = await query<{ id: string }>(
     `/* processTopicMergeVoteReferencePage choose */ WITH page AS MATERIALIZED (
       SELECT id, user_id FROM topic_votes

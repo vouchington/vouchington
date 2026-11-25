@@ -39,6 +39,7 @@ export async function cleanupActivityPubTerminalIdentityPage(
   batchSize: number,
 ): Promise<number> {
   const source = SOURCES[kind]
+  // lock-reason: prevents: terminal identity removal interleaving with an incoming Follow or Like payload; writer: ActivityPub Follow, Like and Undo admission.
   // Cap the physical terminal-identity page before checking or deleting related payload rows.
   const { rows } = await query<{ id: string }>(
     `/* cleanupActivityPubTerminalIdentityPage */

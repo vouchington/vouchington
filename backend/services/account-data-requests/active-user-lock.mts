@@ -2,7 +2,7 @@ import type { TransactionQuery } from '@data-stores/psql'
 import { lockUsersForShare } from '@services/user-deletions/active-user-mutation-lock'
 
 /**
- * Fences an export transition against user deletion and reports whether the owner is still active.
+ * lock-reason: prevents: export state changing after the deletion sweep captures its object keys; writer: account deletion.
  * The users row is locked `FOR SHARE`, so deletion cannot commit between the active check and the
  * export transition it fences.
  */

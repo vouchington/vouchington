@@ -86,6 +86,7 @@ export async function scheduleRefundReconciliationRetry(
   dueAt: Date,
   failureMessage: string,
 ): Promise<void> {
+  // lock-reason: prevents: refund retry scheduling locking work before a competing completion removes it; writer: completeRefundReconciliation
   const { rows } = await write(sql`/* scheduleRefundReconciliationRetry */
     WITH candidate AS (
       SELECT id FROM membership_operations WHERE id = ${lease.id} AND completed_at IS NULL FOR UPDATE

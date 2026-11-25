@@ -3,7 +3,7 @@ import type { ToolInvocationContext } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
 import { loadReadableList } from './list-read-access.mts'
 import { LIST_NOT_FOUND, mcpListSchema, toMcpLists, type McpList } from './mcp-list-output.mts'
-import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
 
 type ToolArgs = {
   list_id: string
@@ -29,7 +29,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     requiredScopes: ['lists:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/lists/:id' }],
-    outputSchema: foundOrNotFoundSchema({ list: mcpListSchema() }),
+    outputSchema: outcomeSchema('success', { list: mcpListSchema() }),
   },
   function:
     (currentUser: BasicUser) =>

@@ -3,7 +3,7 @@ const { cases: CASES, groups: GROUPS, incompatible: INCOMPATIBLE } = fixtures
 import { describe, expect, it } from 'vitest'
 import { getRegisteredToolByName } from '@voucha/mcp/registry/index'
 import { withScopePrerequisites, type ApiScope } from '@modules/scopes'
-import { validateToolArguments } from './validate-tool-arguments.mts'
+import { validateToolArguments } from '@vouchington/mcp-server/schema'
 import { planMcpCalls } from './classify-calls.mts'
 import { USER_MCP_SERVER_CONFIG } from './config.mts'
 

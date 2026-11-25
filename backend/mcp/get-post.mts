@@ -4,7 +4,8 @@ import type { BasicUser } from '@services/users/types'
 import { resolveReadableThread } from './mcp-post-access.mts'
 import { mcpPostSchema, toMcpPosts, type McpPost } from './mcp-post-output.mts'
 import type { Post } from '@services/posts/types'
-import { foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
+import { pickProperties } from './read-tool-output-schema.mts'
 
 type ToolArgs = {
   post_id: string
@@ -43,7 +44,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     requiredScopes: ['posts:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/posts/:idOrSlug' }],
-    outputSchema: foundOrNotFoundSchema({ post: detailsSchema }),
+    outputSchema: outcomeSchema('success', { post: detailsSchema }),
   },
   function:
     (currentUser: BasicUser) =>

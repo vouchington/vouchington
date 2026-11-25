@@ -7,7 +7,8 @@ import type {
 } from '@services/recommended-rss-feeds/types'
 import { findPageOrNull, INVALID_CURSOR_RESULT } from './paged-search.mts'
 import { pageInfoSchema } from './mcp-read-output.mts'
-import { closedObject, foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
+import { objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
+import { pickProperties } from './read-tool-output-schema.mts'
 import { clampToolLimit } from './search-system.mts'
 
 type PageArgs = { limit?: number; after?: string }
@@ -22,7 +23,7 @@ const pageProperties = {
   after: { type: 'string' },
 }
 const feedIdSchema = pickProperties('ViewRssFeed', ['id']).id!
-const recommendedSchema = closedObject({
+const recommendedSchema = objectSchema({
   id: feedIdSchema,
   recommendation_score: { type: 'number' },
   recommendation_reasons: { type: 'array', items: { type: 'string' } },
@@ -51,7 +52,7 @@ export const getRecommendedRssFeedsTool: MergedToolSource<
     requiredScopes: ['rss-feeds:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/rss-feeds/recommended' }],
-    outputSchema: foundOrNotFoundSchema({
+    outputSchema: outcomeSchema('success', {
       results: { type: 'array', items: recommendedSchema },
       page_info: pageInfoSchema(),
     }),

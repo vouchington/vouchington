@@ -91,10 +91,18 @@ describe('legal record retention', () => {
     await expect(legalRecordExists('user_deletion_requests', oldestId)).resolves.toBe(false)
     await expect(legalRecordExists('user_deletion_requests', middleId)).resolves.toBe(false)
     await expect(legalRecordExists('user_deletion_requests', newestId)).resolves.toBe(true)
+    expect(await cleanupLegalRecords({ ...limits, maxBatches: 1 }, now, [newestId])).toContainEqual(
+      {
+        family: 'user_deletion_request',
+        scanned: 1,
+        deleted: 1,
+        hasMore: true,
+      },
+    )
     expect(await cleanupLegalRecords(limits, now, ids)).toContainEqual({
       family: 'user_deletion_request',
-      scanned: 1,
-      deleted: 1,
+      scanned: 0,
+      deleted: 0,
       hasMore: false,
     })
   })
@@ -182,7 +190,7 @@ describe('legal record retention', () => {
       family: 'identity_verification_attempt',
       scanned: 1,
       deleted: 1,
-      hasMore: false,
+      hasMore: true,
     })
     expect(await legalRecordExists('identity_verification_attempts', unrelated)).toBe(false)
     expect(await legalRecordExists('identity_verification_attempts', parent)).toBe(true)

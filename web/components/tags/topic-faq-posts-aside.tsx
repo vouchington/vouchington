@@ -4,7 +4,7 @@ import { TopicFaqPostsAsideContent } from './topic-faq-posts-aside-content'
 import { TopicFaqPostsAsideStreaming } from './topic-faq-posts-aside-streaming'
 import { renderAuthGatedStreaming } from './render-auth-gated-streaming'
 import type { Topic } from '@/types/topics'
-import { pageHasContinuation } from '@/lib/api/page-has-continuation'
+import { pageHasContinuation } from '@vouchington/api-client'
 import { TAG_ASIDE_SEARCH_PARAMS } from './tag-relation-configs'
 import { getTranslations } from '@/lib/i18n/get-translations'
 

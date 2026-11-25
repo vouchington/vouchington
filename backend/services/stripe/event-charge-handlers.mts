@@ -1,4 +1,8 @@
-import { getStripeObjectNumber, getStripeObjectString } from '@vouchington/stripe'
+import {
+  getStripeInvoiceSubscriptionId,
+  getStripeObjectNumber,
+  getStripeObjectString,
+} from '@vouchington/stripe'
 import { getStripeInvoice, listStripeRefundsForCharge } from '@modules/stripe'
 import {
   DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT,
@@ -40,10 +44,7 @@ export async function handleChargeRefunded(
   }
 
   const invoice = await getStripeInvoice(invoiceId)
-  const parent = invoice.parent as unknown as {
-    subscription_details?: { subscription?: string }
-  } | null
-  const subscriptionId = parent?.subscription_details?.subscription ?? null
+  const subscriptionId = getStripeInvoiceSubscriptionId(invoice)
   if (!subscriptionId) {
     onError(
       new Error('charge.refunded: no subscription on invoice — skipping (non-subscription charge)'),

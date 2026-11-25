@@ -16,7 +16,10 @@ import {
   type ModerationSummaryStageResult,
   type PageStep,
 } from './moderation-summary-pages.mts'
-import { resolveModerationSummaryStageLimits } from './moderation-summary-work.mts'
+import {
+  getModerationSummaryEvasionRankCap,
+  resolveModerationSummaryStageLimits,
+} from './moderation-summary-work.mts'
 export type { ModerationSummaryCollection, ModerationSummaryRankedCommunity }
 
 export function rankModerationSummaryCommunities(
@@ -112,7 +115,7 @@ export function completeModerationSummaryRank(
     metrics.pending_applications +
     metrics.pending_reports +
     metrics.escalated_items +
-    metrics.suspected_ban_evaders
+    Math.min(metrics.suspected_ban_evaders, getModerationSummaryEvasionRankCap())
   if (pendingScore === 0) return { ...collection, scan: null }
   return {
     ...collection,

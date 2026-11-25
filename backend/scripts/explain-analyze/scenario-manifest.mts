@@ -16,4 +16,5 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'direct-message-notifications-at-cap',
   'modmail-notifications-at-cap',
   'notification-push-intent-claim-at-cap',
+  'rss-hard-delete-sources-at-cap',
 ] as const

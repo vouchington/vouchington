@@ -71,6 +71,7 @@ export async function lockTopicRecommendationForMutation(
   query: TransactionQuery,
   recommendationId: string,
 ): Promise<void> {
+  // lock-reason: prevents: approval using stale details while an edit replaces hostnames or landing pages; writer: writeTopicRecommendationUpdate
   await query(sql`/* lockTopicRecommendationForMutation */
     SELECT post_id FROM post_topic_recommendations
     WHERE post_id = ${recommendationId} FOR UPDATE

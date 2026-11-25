@@ -50,6 +50,7 @@ export async function createModerationAppealDraft(
         AND EXISTS (
           SELECT 1 FROM moderation_appeal_resolution_runs run
           WHERE run.id = ${input.runId}::uuid AND run.moderation_appeal_id = moderation_appeals.id
+          -- lock-reason: prevents: a failure or expiry marker landing between run admission and draft completion; writer: markAppealResolutionRunsFailed and markAppealResolutionRunsExpired
           FOR UPDATE
         )
       RETURNING

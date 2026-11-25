@@ -9,6 +9,7 @@ export async function processTopicMergeOperationPage(
   expectedGeneration: number,
 ): Promise<number | null> {
   await using query = await beginTransaction()
+  // lock-reason: prevents: overlapping merge pages processing and checkpointing the same operation state; writer: processTopicMergeOperationPage
   // no-mistakes-disable-next-line postgres-required-predicates: committed redirect sources remain readable while this operation settles effects and cleanup.
   const { rows } = await query<TopicMergeOperationRow>(
     `/* processTopicMergeOperationPage lock */

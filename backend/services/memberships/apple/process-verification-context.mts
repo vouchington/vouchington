@@ -30,6 +30,7 @@ export async function getPendingAppleVerification(
   verificationId: string,
   query: QueryExecutor,
 ): Promise<AppleVerificationContext | null> {
+  // lock-reason: prevents: competing Apple verification and notification paths from accepting or rejecting the same pending evidence concurrently; writer: acceptAndInsertAppleObservation
   const { rows } = await query(sql`/* getPendingAppleVerification */
     SELECT verification.id AS "verificationId", verification.user_id AS "userId",
       verification.membership_purchase_intent_id AS "purchaseIntentId",

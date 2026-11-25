@@ -13,7 +13,8 @@ import {
   type McpStory,
   type McpStoryItem,
 } from './mcp-story-output.mts'
-import { closedObject, foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
+import { objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
+import { pickProperties } from './read-tool-output-schema.mts'
 import { clampToolLimit } from './search-system.mts'
 
 type ToolArgs = {
@@ -64,10 +65,10 @@ const tool: Tool<ToolArgs, ToolResult> = {
     requiredScopes: ['posts:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/stories/:id' }],
-    outputSchema: foundOrNotFoundSchema({
+    outputSchema: outcomeSchema('success', {
       story: mcpStorySchema(),
       items: { type: 'array', items: mcpStoryItemSchema() },
-      page_info: closedObject(
+      page_info: objectSchema(
         pickProperties('PageInfo', ['has_next_page', 'start_cursor', 'end_cursor']),
       ),
     }),

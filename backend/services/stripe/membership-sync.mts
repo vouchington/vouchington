@@ -19,8 +19,8 @@ import { reconcileLockedStripeMembershipSource } from './membership-sync/reconci
 import { recoverConcurrentStripeMembershipSource } from './membership-sync/concurrent-source-recovery.mts'
 import { syncOrCreateStripeMembershipInTransaction } from './membership-sync/sync-or-create.mts'
 import { getStripeMembershipSourceIdentity } from './membership-sync/source-identity.mts'
+import { getStripeObjectId } from '@vouchington/stripe'
 import { getStripeSubscriptionMembershipValues } from './membership-sync/subscription-values.mts'
-import { getStripeSubscriptionCustomerId } from './membership-sync/transaction.mts'
 import { recordStripeMembershipProviderFacts } from './membership-provider-facts.mts'
 import { MissingStripeMembershipFactContextError } from './membership-provider-facts/context.mts'
 
@@ -43,7 +43,7 @@ export async function ensureMembershipFromStripeSubscription(
   if ('deleted' in customer && customer.deleted) {
     throw new Error(`Stripe customer ${customerId} was deleted`)
   }
-  const subscriptionCustomerId = getStripeSubscriptionCustomerId(subscription)
+  const subscriptionCustomerId = getStripeObjectId(subscription.customer)
   if (subscriptionCustomerId && subscriptionCustomerId !== customerId)
     throw new Error(
       `Stripe subscription ${subscriptionId} customer does not match the event customer`,

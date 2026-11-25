@@ -13,7 +13,8 @@ vi.mock(
   () => ({ serverApi: { get: mockGet } }) as unknown as typeof import('./instance'),
 )
 
-vi.mock(import('../return-null-for-missing-entity'), () => ({
+vi.mock(import('@vouchington/api-client'), async importOriginal => ({
+  ...(await importOriginal()),
   returnNullForMissingEntity: mockReturnNullForMissingEntity,
 }))
 

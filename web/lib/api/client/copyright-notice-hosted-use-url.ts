@@ -2,7 +2,7 @@
 
 import { getPostTypeFromSlug } from '@/lib/route-configs'
 import { getTopicTypeFromSlug } from '@/types/topics'
-import { assertPathIdentifier } from './path-identifiers'
+import { assertPathIdentifier } from '@vouchington/api-client'
 
 export type HostedUse =
   | { kind: 'post'; identifier: string; hostedUseUrl: string }

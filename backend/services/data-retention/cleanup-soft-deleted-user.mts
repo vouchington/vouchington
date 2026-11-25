@@ -79,7 +79,8 @@ async function deletePurgedUser(
   lowerBoundDate?: Date,
 ): Promise<number> {
   await assertAuthorDeletionDrainedPosts(query, targetId)
-  // A legal hold placed first must be visible to the DELETE below: it needs a snapshot taken after this lock is granted.
+  // lock-reason: prevents: committing account purge under a newly placed legal hold; writer: account preservation hold placement.
+  // The DELETE needs a snapshot taken after the user lock is granted.
   await query(sql`/* cleanupSoftDeletedUserBatch:lockUser */
     SELECT 1 FROM users WHERE id = ${targetId} FOR NO KEY UPDATE`)
   const { rows } = await query<{ deleted: number }>(sql`/* cleanupSoftDeletedUserBatch:delete */

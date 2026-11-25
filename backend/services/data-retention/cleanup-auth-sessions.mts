@@ -1,11 +1,12 @@
 import { beginTransaction, withTransactionOptions, type TransactionQuery } from '@data-stores/psql'
+import { getRetentionCutoffDate } from './cleanup-options.mts'
+import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
 import {
-  listCandidates,
+  deleteExpiredLoginTokens,
+  deleteProtectedAuthSessionPage,
   type CleanupName,
   type Cursor,
 } from './cleanup-auth-session-candidates.mts'
-import { getRetentionCutoffDate } from './cleanup-options.mts'
-import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
 
 export type AuthSessionCleanupOptions = {
   batchSize?: number
@@ -117,49 +118,19 @@ async function cleanupPageInTransaction(
     ).rows[0]
   }
   const sweepCutoff = cursor?.sweep_cutoff_at ?? cutoff
-  const candidates = await listCandidates(
-    query,
-    name,
-    sweepCutoff,
-    batchSize + 1,
-    cursor,
-    lowerBoundDate,
-  )
-  const page = candidates.slice(0, batchSize)
-  let deleted = 0
-  if (page.length > 0) {
-    const ids = page.map(row => row.id)
-    const deletion =
-      name === 'web_push_subscriptions'
-        ? await query(
-            `/* deleteWebPushSubscriptionTombstonePage */
-             DELETE FROM web_push_subscriptions subscription
-             WHERE subscription.user_id = ANY($1::uuid[])
-             AND (subscription.user_id, subscription.id) IN (
-               SELECT * FROM unnest($1::uuid[], $2::uuid[])
-             )
-             AND NOT EXISTS (
-               SELECT 1 FROM notification_push_intent_subscription_receipts receipt
-               WHERE receipt.user_id = subscription.user_id
-                 AND receipt.subscription_id = subscription.id
-             )`,
-            [
-              page.map(row => {
-                if (!row.user_id) throw new Error('Push subscription candidate lacks user_id')
-                return row.user_id
-              }),
-              ids,
-            ],
-          )
-        : await query(
-            `/* deleteAuthSessionRetentionPage */
-             DELETE FROM ${name} WHERE id = ANY($1::uuid[])`,
-            [ids],
-          )
-    deleted = deletion.rowCount ?? 0
-  }
-  const hasMore = candidates.length > batchSize
-  const last = hasMore ? page.at(-1)! : null
+  const { page, deleted } =
+    name === 'email_address_login_tokens' || name === 'phone_number_login_tokens'
+      ? await deleteExpiredLoginTokens(query, name, sweepCutoff, batchSize, cursor, lowerBoundDate)
+      : await deleteProtectedAuthSessionPage(
+          query,
+          name,
+          sweepCutoff,
+          batchSize,
+          cursor,
+          lowerBoundDate,
+        )
+  const hasMore = page.length === batchSize
+  const last = hasMore ? page.at(-1) : undefined
   let continuation: Position | null = null
   if (last) {
     if (name === 'web_push_subscriptions' && !last.user_id)
