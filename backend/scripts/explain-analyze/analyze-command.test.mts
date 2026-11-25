@@ -236,6 +236,32 @@ describe('generic plan regression gate', () => {
     ).not.toThrow()
   })
 
+  it('limits the main timing baseline to the report-only continuation capture', () => {
+    const scenario = 'community-moderation-queue-report-continuation'
+    const custom = {
+      ...planResult('force_custom_plan', 500),
+      scenario_id: scenario,
+      name: 'searchCommunityModerationQueue:force_custom_plan',
+    }
+    const generic = {
+      ...planResult('force_generic_plan', 5_250),
+      scenario_id: scenario,
+      name: 'searchCommunityModerationQueue:force_generic_plan',
+    }
+    const atBaseline = [custom, generic]
+    expect(() => assertNoGenericPlanRegressions(atBaseline, atBaseline)).not.toThrow()
+
+    const aboveBaseline = [custom, { ...generic, execution_time_ms: 5_251 }]
+    expect(() => assertNoGenericPlanRegressions(aboveBaseline, aboveBaseline)).toThrow(
+      /community-moderation-queue-report-continuation capture 0/,
+    )
+
+    const anotherCapture = atBaseline.map(result => ({ ...result, capture_index: 1 }))
+    expect(() => assertNoGenericPlanRegressions(anotherCapture, anotherCapture)).toThrow(
+      /community-moderation-queue-report-continuation capture 1/,
+    )
+  })
+
   it('does not compare different scenarios or statements', () => {
     const custom = planResult('force_custom_plan', 10)
     const generic = planResult('force_generic_plan', 1000)
