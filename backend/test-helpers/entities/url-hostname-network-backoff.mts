@@ -9,6 +9,7 @@ export type TestHostnameNetworkBackoff = {
   network_backoff_probe_claimed_at: Date | null
   consecutive_dns_failures: number
   is_crawlable: boolean
+  updated_at: Date
 }
 
 export async function getTestHostnameNetworkBackoff(
@@ -16,7 +17,7 @@ export async function getTestHostnameNetworkBackoff(
 ): Promise<TestHostnameNetworkBackoff | undefined> {
   const { rows } = await write<TestHostnameNetworkBackoff>(sql`/* getTestHostnameNetworkBackoff */
     SELECT consecutive_network_failures, network_backoff_step, network_backoff_ends_at,
-      network_backoff_probe_claimed_at, consecutive_dns_failures, is_crawlable
+      network_backoff_probe_claimed_at, consecutive_dns_failures, is_crawlable, updated_at
     FROM url_hostnames
     WHERE id = ${hostnameId}
     LIMIT 1
@@ -42,16 +43,18 @@ export async function expireTestHostnameNetworkBackoff(hostnameId: string): Prom
   `)
 }
 
-/** Advances an already open backoff in a competing session before the reset can commit. */
-export function advanceTestBackoffDuringReset(
+/** Opens or advances a backoff in a competing session before the reset can commit. */
+export function changeTestBackoffDuringReset(
   hostnameId: string,
+  step: 1 | 2,
   reset: () => Promise<void>,
 ): Promise<void> {
   return commitRelationWriteDuringCompetingMutationForTest(
     query =>
-      query(sql`/* advanceTestBackoffDuringReset */
-      UPDATE url_hostnames SET network_backoff_step = 2,
-        network_backoff_ends_at = CURRENT_TIMESTAMP + INTERVAL '2 hours'
+      query(sql`/* changeTestBackoffDuringReset */
+      UPDATE url_hostnames SET network_backoff_step = ${step},
+        consecutive_network_failures = 0,
+        network_backoff_ends_at = CURRENT_TIMESTAMP + make_interval(hours => ${step})
       WHERE id = ${hostnameId}`),
     'resetHostnameFailures',
     reset,
