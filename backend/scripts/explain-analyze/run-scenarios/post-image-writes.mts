@@ -24,6 +24,7 @@ import {
 } from './post-image-placement-fixtures.mts'
 
 const pageSize = POST_CONTENT_LIMITS_MAX_VALUES.post_images_max
+const placementWriteSize = Math.floor(pageSize / 2)
 const createImageStatement = 'createPost:images'
 const deleteImagesStatement = 'setPostImages:deleteImages'
 const insertImagesStatement = 'setPostImages:insertImages'
@@ -55,7 +56,10 @@ async function runCreateImages() {
   const { postId, original } = await seedPostImageWriteFixture(pageSize)
   const unrelated = await readPostImageRows(seedPostId)
   assert.ok(unrelated.length > 0, 'Expected the seeded image corpus')
-  registerScenarioContract(scenario, { expectations: [], allowEmptyResult: true })
+  registerScenarioContract(scenario, {
+    allowEmptyResult: true,
+    expectations: [{ kind: 'maxFunctionScanRows', max: pageSize }],
+  })
   await runAndCapture(
     scenario,
     async () => {
@@ -149,7 +153,10 @@ async function runPlacementWrite({ id, statement }: (typeof placementWrites)[num
   const requestedIds = replacement.map(row => row.image_id)
   const unrelated = await readPostImagePlacements(seedPostId)
   let created: ReturnType<typeof assertPostImagePlacementChange> = []
-  registerScenarioContract(id, { expectations: [], allowEmptyResult: true })
+  registerScenarioContract(id, {
+    allowEmptyResult: true,
+    expectations: [{ kind: 'maxFunctionScanRows', max: placementWriteSize }],
+  })
   await runAndCapture(
     id,
     async () => {
@@ -160,7 +167,7 @@ async function runPlacementWrite({ id, statement }: (typeof placementWrites)[num
         await readPostImagePlacements(postId, query),
         requestedIds,
       )
-      assert.equal(created.length, Math.floor(pageSize / 2))
+      assert.equal(created.length, placementWriteSize)
       assert.deepEqual(await readPostImagePlacements(seedPostId, query), unrelated)
       assertCapturedImageWrites([statement])
       await query.rollback()
@@ -169,12 +176,9 @@ async function runPlacementWrite({ id, statement }: (typeof placementWrites)[num
     statement,
     {
       afterCapture: async () => {
-        if (statement !== 'syncPostImagePlacements:retainBindings') {
-          await preparePostImagePlacementReplay(
-            created,
-            statement === 'syncPostImagePlacements:createChild',
-          )
-        }
+        if (statement === 'syncPostImagePlacements:retainBindings') return
+        const createChild = statement === 'syncPostImagePlacements:createChild'
+        await preparePostImagePlacementReplay(created, createChild)
       },
     },
   )
