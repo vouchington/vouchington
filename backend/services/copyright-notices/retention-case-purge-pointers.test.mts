@@ -72,6 +72,7 @@ async function settleTerritorialCaseDeliveries(noticeId: string) {
 }
 
 describe('territorial decision predecessor purge', () => {
+  // no-mistakes-timeout-reason: a real case purge runs bounded pages, each under the shared purge lock behind every parallel purge test
   it('cuts a successor link only under the matching case and table permit', async () => {
     const scene = await createTestEuParticipantCase('no_action')
     const noticeId = scene.receipt.notice_id
@@ -122,7 +123,7 @@ describe('territorial decision predecessor purge', () => {
       predecessor,
       { id: successor.id, supersedes_decision_id: null },
     ])
-  })
+  }, 30_000)
 })
 
 describe('territorial decision history purge', () => {
