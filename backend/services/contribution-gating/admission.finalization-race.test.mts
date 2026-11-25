@@ -20,7 +20,7 @@ import { CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES } from './admission-rep
 import { normalizeContributionAdmissionAudit } from './admission-audit.mts'
 import { claimContributionAdmission } from './admission-reservations.mts'
 import { publishFinalizedContributionResponse } from './publish-finalized-response.mts'
-import { commitRelationWriteDuringCompetingMutationForTest } from '../../test-helpers/relation-write-interleaving.mts'
+import { commitRelationWriteDuringCompetingMutationForTest } from '@voucha/test-helpers/relation-write-interleaving'
 
 const MINIMUM_REPLAY_RETENTION_SECONDS = CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES * 60 - 30
 
