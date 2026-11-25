@@ -30,4 +30,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'rss-item-category-insert-at-cap',
   'rss-item-category-update-at-cap',
   'rss-feed-category-upsert-at-cap',
+  'direct-message-notifications-at-cap',
+  'modmail-notifications-at-cap',
+  'notification-push-intent-claim-at-cap',
 ] as const

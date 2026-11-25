@@ -1,3 +1,4 @@
+import { runMessageNotificationWriteCapacity } from './run-scenarios/message-notification-write-capacity.mts'
 import { runAggregateExistenceScenarios } from './run-scenarios/aggregate-existence.mts'
 import { runConversationListCapacityScenario } from './run-scenarios/conversation-list-capacity.mts'
 import { runAccountListCapacityScenarios } from './run-scenarios/account-lists-at-cap.mts'
@@ -111,6 +112,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runTopicClaimCapacityScenarios,
   runRssFeedCrawlCapacityScenario,
   runAdminReviewAndGuestReadScenarios,
+  runMessageNotificationWriteCapacity,
   runRelatedPostUrlCapacityScenario,
   runRssIngestCapacityScenario,
   runRssHardDeleteSourceCapacityScenario,
