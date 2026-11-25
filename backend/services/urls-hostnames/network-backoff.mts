@@ -165,6 +165,7 @@ export async function resetHostnameFailures(
         AND (($2 AND consecutive_dns_failures > 0)
           OR consecutive_network_failures > 0
           OR network_backoff_step > 0)
+      -- lock-reason: prevents: reporting a stale backoff duration when a concurrent failure advances the step on PostgreSQL 18.4; writer: recordHostnameNetworkFailure
       FOR UPDATE
     ) previous
     WHERE h.id = previous.id
