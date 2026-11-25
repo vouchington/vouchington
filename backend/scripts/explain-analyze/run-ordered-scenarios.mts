@@ -37,6 +37,15 @@ import { runRssIngestCapacityScenario } from './run-scenarios/rss-ingest-capacit
 import { runRssHardDeleteSourceCapacityScenario } from './run-scenarios/rss-hard-delete-source-capacity.mts'
 import { runRssWriteCapacityScenarios } from './run-scenarios/rss-write-capacity.mts'
 
+import { runUserListCapacityScenario } from './run-scenarios/user-list-capacity.mts'
+import {
+  runTopicAliasCapacityScenario,
+  runTopicHostnameCapacityScenario,
+} from './run-scenarios/topic-identity-capacity.mts'
+import { runTopHashtagCapacityScenario } from './run-scenarios/top-hashtag-capacity.mts'
+import { runTopicChildCapacityScenario } from './run-scenarios/topic-child-capacity.mts'
+import { runUrlEmbedCapacityScenario } from './run-scenarios/url-embed-capacity.mts'
+
 export type OrderedRunner = () => Promise<unknown>
 
 // Order matters: earlier scenarios mutate the one shared corpus. See the comments in the
@@ -122,6 +131,12 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runAccountListCapacityScenarios,
   runRssWriteCapacityScenarios,
   runAccountHistoryScenarios,
+  runUserListCapacityScenario,
+  runTopicAliasCapacityScenario,
+  runTopicHostnameCapacityScenario,
+  runTopHashtagCapacityScenario,
+  runTopicChildCapacityScenario,
+  runUrlEmbedCapacityScenario,
 ]
 
 /**
