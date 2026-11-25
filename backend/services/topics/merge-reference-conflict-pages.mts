@@ -8,6 +8,7 @@ export async function processTopicMergeClaimReferencePage(
   destinationId: string,
   limit: number,
 ): Promise<number> {
+  // lock-reason: prevents: detaching moderator history or deleting a claim based on a stale merge winner; writer: revokeTopicClaim
   const { rows } = await query<{ id: string; loser_id: string | null }>(
     `/* processTopicMergeClaimPage select */ SELECT s.id,
       CASE WHEN d.id IS NULL THEN NULL WHEN s.verified_at IS NOT NULL AND d.verified_at IS NULL THEN d.id ELSE s.id END AS loser_id

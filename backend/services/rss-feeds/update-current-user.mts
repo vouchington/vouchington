@@ -33,6 +33,7 @@ export async function updateRssFeedWithStateAsCurrentUser(
       const updatedFieldId = await updateRssFeedById(id, fieldChanges, options)
       if (!updatedFieldId) return null
     } else {
+      // lock-reason: prevents: a SHARE-to-UPDATE projection deadlock and duplicate same-value setting decisions; writer: updateRssFeedWithStateAsCurrentUser
       const existing = await query(
         stateChanges.is_enabled === undefined && stateChanges.discoverable === undefined
           ? sql`/* updateRssFeedWithStateAsCurrentUser:exists */ SELECT id FROM rss_feeds WHERE id = ${id}`
