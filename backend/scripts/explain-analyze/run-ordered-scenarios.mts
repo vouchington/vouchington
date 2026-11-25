@@ -1,5 +1,6 @@
 import { runAggregateExistenceScenarios } from './run-scenarios/aggregate-existence.mts'
 import { runConversationListCapacityScenario } from './run-scenarios/conversation-list-capacity.mts'
+import { runAccountListCapacityScenarios } from './run-scenarios/account-lists-at-cap.mts'
 import { runCommunitySearchCapacityScenario } from './run-scenarios/community-search-capacity.mts'
 import { runCommunityMembershipReadCapacityScenarios } from './run-scenarios/community-membership-read-capacity.mts'
 import { runExistenceFilterScenarios } from './run-scenarios/existence-filters.mts'
@@ -106,6 +107,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runRelatedPostUrlCapacityScenario,
   runRssIngestCapacityScenario,
   runRssHardDeleteSourceCapacityScenario,
+  runAccountListCapacityScenarios,
 ]
 
 /**

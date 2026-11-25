@@ -14,4 +14,8 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'related-posts-by-url-at-cap',
   'rss-ingest-content-at-cap',
   'rss-hard-delete-sources-at-cap',
+  'account-email-addresses-at-cap',
+  'account-api-keys-at-cap',
+  'account-oauth-apps-at-cap',
+  'account-oauth-grants-at-cap',
 ] as const
