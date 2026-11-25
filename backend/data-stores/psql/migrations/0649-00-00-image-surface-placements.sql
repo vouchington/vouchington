@@ -252,6 +252,7 @@ BEGIN
 
   IF p_image_id IS NULL THEN RETURN; END IF;
 
+  -- lock-reason: prevents: projecting delivery authority for a concurrently retired placement revision; writer: syncImageSurfacePlacement retires media_placements.
   SELECT placement.id, placement.revision INTO v_placement_id, v_revision
   FROM image_surface_placements surface
   JOIN media_placements placement ON placement.id = surface.placement_id

@@ -132,8 +132,8 @@ DECLARE
   owner_table TEXT := 'retained_' || family::text || '_identities';
   pinned_id UUID;
 BEGIN
-  -- Cleanup can remove an orphan between the conflict and key-share reads.
-  -- Retry until this transaction pins the retained owner.
+  -- lock-reason: prevents: orphan cleanup deleting a retained identity before the following foreign-key write.
+  -- Writer: cleanupRetainedIdentityRoots. Retry when cleanup wins before the identity is pinned.
   LOOP
     EXECUTE format('INSERT INTO %I (id) VALUES ($1) ON CONFLICT (id) DO NOTHING', owner_table)
       USING identity_id;

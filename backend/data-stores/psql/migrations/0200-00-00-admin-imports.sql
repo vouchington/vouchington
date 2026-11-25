@@ -101,7 +101,8 @@ BEGIN
     RAISE EXCEPTION 'Unsupported import batch parent' USING ERRCODE = 'check_violation';
   END IF;
   IF TG_TABLE_NAME = 'user_rss_feed_import_row_discoveries' THEN
-    -- Discovery runs after batch creation and can race its terminal update.
+    -- lock-reason: prevents: delayed RSS discovery adding a child to a completed import.
+    -- Writers: completeRssFeedImportBatch and completeStalledUserRssFeedImports update user_rss_feed_import_batches.
     SELECT completed_at INTO batch_completed_at
     FROM user_rss_feed_import_batches WHERE id = NEW.batch_id FOR SHARE;
   ELSE
@@ -164,6 +165,8 @@ AS $$
 DECLARE
   requested_at TIMESTAMPTZ;
 BEGIN
+  -- lock-reason: prevents: adding an admin_import_rows reference after hard deletion accepts the feed.
+  -- Writer: hardDeleteRssFeedById writes rss_feeds.hard_delete_requested_at.
   SELECT hard_delete_requested_at INTO requested_at
   FROM rss_feeds WHERE id = NEW.rss_feed_id FOR SHARE;
   IF requested_at IS NOT NULL THEN

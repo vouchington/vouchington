@@ -362,6 +362,7 @@ BEGIN
        AND retention_cutoff <= CURRENT_TIMESTAMP - INTERVAL '12 months'
        AND uuid_extract_timestamp(OLD.id) < retention_cutoff THEN
       -- Hold placement locks the account row FOR NO KEY UPDATE; share it before checking for a hold.
+      -- lock-reason: prevents: deleting a native mint covered by a concurrent legal hold; writer: placeUserPreservationHold locks users before writing user_legal_preservation_holds.
       PERFORM 1 FROM users WHERE id = OLD.user_id FOR SHARE;
       IF NOT EXISTS (
         SELECT 1 FROM user_legal_preservation_holds preservation_hold

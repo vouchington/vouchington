@@ -373,6 +373,7 @@ BEGIN
     OR NEW.recommendation_completed_at < COALESCE(OLD.recommendation_completed_at, '-infinity'::timestamptz) THEN
     RAISE EXCEPTION 'copyright email intake current recommendation is the only mutable live result' USING ERRCODE = 'check_violation';
   END IF;
+  -- lock-reason: prevents: persisting a private recommendation after evidence erasure; writer: eraseIntakePage marks copyright_notice_email_intake_receipts erased.
   PERFORM 1 FROM copyright_notice_email_intake_receipts receipt
     WHERE receipt.id = NEW.id AND receipt.erased_at IS NULL FOR SHARE;
   IF NOT FOUND THEN

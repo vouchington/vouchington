@@ -220,7 +220,8 @@ DECLARE
   target_id UUID := (to_jsonb(NEW) ->> TG_ARGV[2])::uuid;
   change_filter TEXT := CASE WHEN TG_NARGS = 7 THEN format(' AND %I = %L', TG_ARGV[5], TG_ARGV[6]) ELSE '' END;
 BEGIN
-  -- Serialize on the target before re-reading the latest committed log entry.
+  -- lock-reason: prevents: projecting an older change when the newest value appears unchanged before a concurrent append commits.
+  -- Writers: insertRssFeedStateChanges and fediverse integration insertChange append to their change tables.
   EXECUTE format('SELECT %I FROM %I.%I WHERE %I = $1 FOR UPDATE',
     TG_ARGV[1], TG_TABLE_SCHEMA, TG_ARGV[0], TG_ARGV[1]) USING target_id;
   EXECUTE format(

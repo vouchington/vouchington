@@ -62,12 +62,14 @@ BEGIN
     SELECT unnest(ARRAY[NEW.reply_message_intake_receipt_id, NEW.ancestor_message_intake_receipt_id])
     ORDER BY 1
   LOOP
+    -- lock-reason: prevents: admitting a thread edge while its private source is deleted; writer: eraseIntakePage deletes copyright_notice_email_intakes.
     PERFORM 1 FROM copyright_notice_email_intakes
       WHERE id = intake_id AND raw_storage_object_id IS NOT NULL FOR KEY SHARE;
     IF NOT FOUND THEN
       RAISE EXCEPTION 'copyright email ancestor source is no longer live'
         USING ERRCODE = 'foreign_key_violation';
     END IF;
+    -- lock-reason: prevents: admitting a thread edge while its receipt is marked erased; writer: eraseIntakePage updates copyright_notice_email_intake_receipts.
     PERFORM 1 FROM copyright_notice_email_intake_receipts
       WHERE id = intake_id AND erased_at IS NULL FOR SHARE;
     IF NOT FOUND THEN
@@ -156,6 +158,7 @@ BEGIN
     RETURN OLD;
   END IF;
   IF TG_OP = 'INSERT' THEN
+    -- lock-reason: prevents: linking a case to an object claimed for physical deletion; writer: eraseCopyrightCaseEvidencePage claims copyright_notice_storage_objects.
     PERFORM 1 FROM copyright_notice_storage_objects
       WHERE id = object_id AND NOT is_deletion_claimed FOR UPDATE;
     IF NOT FOUND THEN
@@ -165,6 +168,7 @@ BEGIN
     RETURN NEW;
   END IF;
   -- A claimed object must keep its case link until physical deletion has cleared the intake FK.
+  -- lock-reason: prevents: dropping the case link while physical deletion holds the claim; writer: eraseCopyrightCaseEvidencePage claims copyright_notice_storage_objects.
   PERFORM 1 FROM copyright_notice_storage_objects
     WHERE id = object_id AND NOT is_deletion_claimed FOR UPDATE;
   IF NOT FOUND THEN

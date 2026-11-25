@@ -63,6 +63,7 @@ BEGIN
         WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_receipt_id)
     ORDER BY notice.id
   LOOP
+    -- lock-reason: prevents: accepting new rationale ciphertext after case evidence erasure; writer: runLockedPage marks copyright_notices evidence erased.
     PERFORM 1 FROM copyright_notices WHERE id = case_id FOR KEY SHARE;
   END LOOP;
   IF EXISTS (SELECT 1 FROM copyright_notices erased

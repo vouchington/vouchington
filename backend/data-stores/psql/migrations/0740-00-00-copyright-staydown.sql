@@ -152,6 +152,7 @@ BEGIN
     SELECT DISTINCT candidate.id FROM unnest(ARRAY[old_case_id, new_case_id]) candidate(id)
     WHERE candidate.id IS NOT NULL ORDER BY candidate.id
   LOOP
+    -- lock-reason: prevents: a blocker-generation change crossing the case purge proof; writer: runLockedPage and deleteCopyrightCaseFinalTail write copyright_notices.
     PERFORM 1 FROM copyright_notices WHERE id = case_id FOR KEY SHARE;
     IF FOUND THEN
       INSERT INTO copyright_notice_thread_blocker_generations
