@@ -132,7 +132,7 @@ BEGIN
     intake_id := (to_jsonb(NEW) ->> 'copyright_notice_email_intake_id')::uuid;
   END IF;
   IF intake_id IS NULL THEN RETURN NEW; END IF;
-  -- lock-reason: prevents: writing a new audit event while its private source is deleted; writer: eraseIntakePage deletes copyright_notice_email_intakes.
+  -- lock-reason: prevents: inserting a copyright email intake child row while its private source is being deleted; writer: eraseIntakePage deletes copyright_notice_email_intakes.
   PERFORM 1 FROM copyright_notice_email_intakes intake
   WHERE intake.id = intake_id AND intake.raw_storage_object_id IS NOT NULL
   FOR KEY SHARE;
@@ -140,7 +140,7 @@ BEGIN
     RAISE EXCEPTION 'copyright email intake is under retention erasure'
       USING ERRCODE = 'check_violation';
   END IF;
-  -- lock-reason: prevents: writing a new audit event while its source receipt is marked erased; writer: eraseIntakePage updates copyright_notice_email_intake_receipts.
+  -- lock-reason: prevents: inserting a copyright email intake child row while its receipt is being marked erased; writer: eraseIntakePage updates copyright_notice_email_intake_receipts.
   PERFORM 1 FROM copyright_notice_email_intake_receipts receipt
   WHERE receipt.id = intake_id AND receipt.erased_at IS NULL FOR SHARE;
   IF NOT FOUND THEN
