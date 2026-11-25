@@ -1,4 +1,5 @@
 import type { BasicUser } from '@services/users/types'
+import { areHackerNewsReferencesVisible } from '@services/urls/hacker-news-visibility-config'
 import { isAdminUser } from '@services/users/authorization'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import {
@@ -15,6 +16,7 @@ export function buildBaseFilters(
   {
     exclude_for_user_id,
     following_phase,
+    has_hacker_news_references,
     include_archived_communities,
     post_types,
     profileCountPostType,
@@ -28,7 +30,12 @@ export function buildBaseFilters(
     ...(profileCountPostType ? [sql`posts.community_id IS NULL`] : []),
     // A profile count's only post_type predicate is its literal, so the partial index can be proved.
     ...(!profileCountPostType && !post_types?.length ? [sql`posts.post_type != 'comment'`] : []),
-    buildDiscoveryEligibility(currentUser, isAdmin, include_archived_communities === true),
+    buildDiscoveryEligibility(
+      currentUser,
+      isAdmin,
+      include_archived_communities === true,
+      has_hacker_news_references === true && areHackerNewsReferencesVisible(),
+    ),
     ...(following_phase && currentUser
       ? [buildFollowingPhaseFilter(currentUser.id, following_phase)]
       : []),
@@ -48,13 +55,35 @@ function buildDiscoveryEligibility(
   viewer: BasicUser | undefined,
   isAdmin: boolean,
   includeArchivedCommunities: boolean,
+  useHackerNewsEligibility: boolean,
 ): SQLStatement {
+  // One access-root row gives the planner one public eligibility tree. A root needs no post lookup.
+  if (!viewer && useHackerNewsEligibility) {
+    return sql`EXISTS (
+    SELECT 1 FROM (
+      SELECT posts.id, posts.deleted_at, posts.created_by_id, posts.approved_at,
+        posts.archived_at, posts.privacy, posts.broadcast, posts.community_id, posts.post_type
+      WHERE posts.root_post_id IS NULL
+      UNION ALL
+      SELECT stored_root.id, stored_root.deleted_at, stored_root.created_by_id,
+        stored_root.approved_at, stored_root.archived_at, stored_root.privacy,
+        stored_root.broadcast, stored_root.community_id, stored_root.post_type
+      FROM posts stored_root WHERE stored_root.id = posts.root_post_id
+    ) root_post WHERE `
+      .append(
+        buildPublicPostEligibilityFilter('posts', 'root_post', {
+          includeArchivedCommunities,
+          reuseCandidateAuthorCheck: true,
+        }),
+      )
+      .append(sql`)`)
+  }
   const viewerOptions = {
     currentUserId: viewer?.id ?? '',
     includeArchivedCommunities,
     isAdministrator: isAdmin,
   }
-  // Root posts already supply their own access row; only replies need a keyed root probe.
+  // Root posts already supply their own access row. Replies need a keyed root probe.
   return sql`CASE WHEN posts.root_post_id IS NULL THEN `
     .append(
       viewer

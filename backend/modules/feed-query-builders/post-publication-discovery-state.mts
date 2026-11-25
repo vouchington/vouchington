@@ -4,6 +4,7 @@ export function buildDiscoveryStateClause(
   candidateAlias: string,
   rootAlias: string,
   requireUnarchived = true,
+  reuseCandidateAuthorCheck = false,
 ): SQLStatement {
   const statement = sql`(`
   if (requireUnarchived)
@@ -21,13 +22,20 @@ export function buildDiscoveryStateClause(
         AND publication_suspension.lifted_at IS NULL
     )`)
   if (candidateAlias === rootAlias) return statement.append(sql`)`)
-  return statement
-    .append(sql` AND NOT EXISTS (
+  statement
+    .append(
+      reuseCandidateAuthorCheck
+        ? ` AND (${candidateAlias}.created_by_id IS NOT DISTINCT FROM ${rootAlias}.created_by_id OR `
+        : ' AND ',
+    )
+    .append(sql`NOT EXISTS (
       SELECT 1
       FROM user_suspensions publication_root_suspension
       WHERE publication_root_suspension.user_id = `)
     .append(`${rootAlias}.created_by_id`).append(sql`
         AND publication_root_suspension.lifted_at IS NULL
-    )
+    )`)
+  if (reuseCandidateAuthorCheck) statement.append(sql`)`)
+  return statement.append(sql`
   )`)
 }
