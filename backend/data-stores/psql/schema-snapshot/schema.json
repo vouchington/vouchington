@@ -155766,6 +155766,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_user_referral_program_links__user_id__list": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_referral_program_links__user_id__list ON public.user_referral_program_links USING btree (user_id, id DESC) WHERE ((deleted_at IS NULL) AND (parent_link_id IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((deleted_at IS NULL) AND (parent_link_id IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "user_referral_program_links_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,

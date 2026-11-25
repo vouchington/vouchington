@@ -74,8 +74,8 @@ export async function runAccountHistoryScenarios(): Promise<void> {
     registerScenarioContract('account-referral-links-at-cap', {
       expectations: [
         { kind: 'noSeqScan', relation: 'user_referral_program_links' },
-        // Hosted custom continuation walks the global index. https://github.com/vouchington/vouchington/issues/6405
-        { kind: 'maxProcessedRows', relation: 'user_referral_program_links', max: 40_668 },
+        // A smaller corpus can choose a bitmap scan over the owner's 200 rows.
+        { kind: 'maxProcessedRows', relation: 'user_referral_program_links', max: 200 },
       ],
     })
     const owner = { ...seedUser, id: fixture.ownerId }

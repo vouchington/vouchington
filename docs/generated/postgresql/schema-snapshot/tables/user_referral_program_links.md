@@ -73,6 +73,7 @@ _none_
 - `idx_user_referral_program_links__url_id`: `CREATE INDEX idx_user_referral_program_links__url_id ON public.user_referral_program_links USING btree (url_id) WHERE (deleted_at IS NULL)`
 - `idx_user_referral_program_links__url_id__foreign_key`: `CREATE INDEX idx_user_referral_program_links__url_id__foreign_key ON public.user_referral_program_links USING btree (url_id) WHERE (url_id IS NOT NULL)`
 - `idx_user_referral_program_links__user_id__foreign_key`: `CREATE INDEX idx_user_referral_program_links__user_id__foreign_key ON public.user_referral_program_links USING btree (user_id) WHERE (user_id IS NOT NULL)`
+- `idx_user_referral_program_links__user_id__list`: `CREATE INDEX idx_user_referral_program_links__user_id__list ON public.user_referral_program_links USING btree (user_id, id DESC) WHERE ((deleted_at IS NULL) AND (parent_link_id IS NULL))`
 - `user_referral_program_links_pkey`: `CREATE UNIQUE INDEX user_referral_program_links_pkey ON public.user_referral_program_links USING btree (id)`
 
 **Triggers:**
