@@ -373,8 +373,9 @@ CREATE INDEX IF NOT EXISTS idx_conversations__resolved_by_id
   WHERE resolved_by_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- Supports the subject foreign key and ordered modmail pages scoped to a community.
 CREATE INDEX IF NOT EXISTS idx_conversations__subject_user_id
-  ON conversations (subject_user_id)
+  ON conversations (subject_user_id, community_id, last_activity_at DESC, id DESC)
   WHERE subject_user_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
