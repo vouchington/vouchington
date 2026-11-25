@@ -16,6 +16,7 @@ import {
 
 const PAGE_SIZE = 100
 const TARGET_CLAIM_COUNT = PAGE_SIZE + 1
+const TOPIC_REJECTED_PER_LIVE_CLAIM = 80
 export async function runTopicClaimCapacityScenarios(): Promise<void> {
   const topicId = await createTopicClaimFixtureTopic()
   let claimantIds: string[] = []
@@ -32,14 +33,14 @@ export async function runTopicClaimCapacityScenarios(): Promise<void> {
     const fixture = await insertTopicClaimFixtures(
       claimantIds.map(() => topicId),
       claimantIds,
+      TOPIC_REJECTED_PER_LIVE_CLAIM,
     )
     assert.equal(fixture.liveIds.length, TARGET_CLAIM_COUNT)
-    assert.equal(fixture.allIds.length, TARGET_CLAIM_COUNT * (HISTORY_PER_LIVE_CLAIM + 1))
+    assert.equal(fixture.allIds.length, TARGET_CLAIM_COUNT * (TOPIC_REJECTED_PER_LIVE_CLAIM + 1))
     await write('/* analyzeTopicClaimCapacity */ ANALYZE topic_claims')
     registerScenarioContract('topic-claims-for-topic-at-live-cap', {
       expectations: [
-        // #6412 tracks the generic first page scanning rejected history.
-        { kind: 'maxProcessedRows', relation: 'topic_claims', max: 505 },
+        { kind: 'maxProcessedRows', relation: 'topic_claims', max: TARGET_CLAIM_COUNT },
       ],
       seededRows: { topic_claims: fixture.allIds.length + background.allIds.length },
     })
