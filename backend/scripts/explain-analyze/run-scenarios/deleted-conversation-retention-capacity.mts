@@ -41,12 +41,16 @@ async function runReceiptPage(fixture: Fixture) {
   const name = 'deleteDeletedConversationNotificationReceiptPage'
   registerScenarioContract(scenario, {
     allowEmptyResult: true,
-    // Main's custom plan scans receipts from other conversations. Tighten in #6418.
     expectations: [
       {
         kind: 'maxProcessedRows',
         relation: 'notification_push_intent_subscription_receipts',
-        max: 11_001,
+        max: pageSize,
+      },
+      {
+        kind: 'usesIndexes',
+        indexes: ['notification_push_intent_subscription_receipts_pkey'],
+        noSort: true,
       },
     ],
     seededRows: fixture.seededRows,
