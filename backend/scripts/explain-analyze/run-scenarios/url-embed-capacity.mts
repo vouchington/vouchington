@@ -1,14 +1,19 @@
 import assert from 'node:assert/strict'
+import { read } from '@data-stores/psql'
 import { paginationMaxima } from '@services/pagination/config'
 import { getUrlEmbedsByUrlIds } from '@services/rss-feed-items/get-url-embeds'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
-import { FEED_URL_COUNT, seedUuid } from '../seed-data/common.mts'
+import { CATEGORY_PROJECTION_NOISE_ROWS } from '../seed-data/category-projection.mts'
+import { crawlSeedUuid, FEED_URL_COUNT, ITEM_URL_POOL, seedUuid } from '../seed-data/common.mts'
+import { seedCrawlMarkdown } from '../seed-data/crawls.mts'
+import { RSS_FEED_WEEKLY_WORKLOAD_ITEM_COUNT } from '../seed-data/rss-feed-weekly-workload.mts'
 
 const scenario = 'url-embeds-at-post-page-cap'
 const queryName = 'getUrlEmbedsByUrlIds'
 const rssCount = 60
 const crawlCount = 20
+const firstCrawlIndex = 60
 
 export async function runUrlEmbedCapacityScenario(): Promise<void> {
   // The post and feed handlers deduplicate at most one URL per returned post. The seeded
@@ -16,12 +21,33 @@ export async function runUrlEmbedCapacityScenario(): Promise<void> {
   const rssIds = Array.from({ length: rssCount }, (_, index) =>
     seedUuid(FEED_URL_COUNT + index, '03'),
   )
-  const crawlIds = Array.from({ length: crawlCount }, (_, index) => seedUuid(60 + index, '03'))
+  const crawlFixtures = Array.from({ length: crawlCount }, (_, index) => {
+    const seedIndex = firstCrawlIndex + index
+    return {
+      urlId: seedUuid(seedIndex, '03'),
+      markdown: seedCrawlMarkdown(crawlSeedUuid(seedIndex, '12'), seedIndex),
+    }
+  })
   const plainIds = Array.from(
     { length: paginationMaxima.max_limit - rssCount - crawlCount },
     (_, index) => seedUuid(2000 + index, '03'),
   )
-  const ids = [...rssIds, ...crawlIds, ...plainIds]
+  const ids = [...rssIds, ...crawlFixtures.map(fixture => fixture.urlId), ...plainIds]
+  // Category projection seeds a newer history on the first item URL before this scenario.
+  // The remaining URLs use the last UUIDv7 assigned by the weekly workload seed.
+  const lastCycle =
+    ITEM_URL_POOL * Math.floor((RSS_FEED_WEEKLY_WORKLOAD_ITEM_COUNT - 1) / ITEM_URL_POOL)
+  const expectedGuids = rssIds.map((_, index) =>
+    index === 0
+      ? `seed-category-projection-history-${CATEGORY_PROJECTION_NOISE_ROWS}`
+      : `seed-week-dense-item-${lastCycle + index}`,
+  )
+  const { rows } = await read<{ guid: string; id: string }>(
+    '/* lookupEmbedCapacitySeedIds */ SELECT guid, id FROM rss_feed_item_guids WHERE guid = ANY($1::text[])',
+    [expectedGuids],
+  )
+  const itemIdsByGuid = new Map(rows.map(row => [row.guid, row.id]))
+  assert.equal(itemIdsByGuid.size, rssCount)
   registerScenarioContract(scenario, {
     crossPartition: {
       rss_feed_items: 'A URL may reference item rows in any arrival-time partition.',
@@ -41,8 +67,13 @@ export async function runUrlEmbedCapacityScenario(): Promise<void> {
     async () => {
       const embeds = await getUrlEmbedsByUrlIds(ids, {}, 'administrator')
       assert.deepEqual(Object.keys(embeds).toSorted(), ids.toSorted())
-      for (const id of rssIds) assert.ok(embeds[id]?.rss_feed_item_id)
-      for (const id of crawlIds) assert.ok(embeds[id]?.markdown)
+      assert.deepEqual(
+        rssIds.map(id => embeds[id]?.rss_feed_item_id),
+        expectedGuids.map(guid => itemIdsByGuid.get(guid)),
+      )
+      // The response exposes crawl content. Its seed markdown carries the exact crawl ID.
+      for (const { urlId, markdown } of crawlFixtures)
+        assert.equal(embeds[urlId]?.markdown, markdown)
       for (const id of plainIds) {
         const embed = embeds[id]!
         assert.equal(embed.rss_feed_item_id, null)
