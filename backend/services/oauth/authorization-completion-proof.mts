@@ -1,5 +1,6 @@
-import { createHash, timingSafeEqual } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import createHttpError from 'http-errors'
+import { safeEqual } from '@vouchington/oauth-server'
 import type { CompletionRow } from './authorization-completion-types.mts'
 
 export function assertCompletionProof(authorization: CompletionRow, verifier?: string): void {
@@ -17,10 +18,4 @@ export function assertCompletionProof(authorization: CompletionRow, verifier?: s
   } else if (verifier !== undefined) {
     throw createHttpError(422, 'Web OAuth completion does not accept a proof verifier')
   }
-}
-
-export function safeEqual(left: string, right: string): boolean {
-  const leftBuffer = Buffer.from(left)
-  const rightBuffer = Buffer.from(right)
-  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer)
 }

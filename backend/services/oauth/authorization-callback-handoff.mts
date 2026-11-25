@@ -1,6 +1,6 @@
 import { decryptSecret } from '@modules/token-secrets'
 import createHttpError from 'http-errors'
-import { safeEqual } from './authorization-completion-proof.mts'
+import { safeEqual } from '@vouchington/oauth-server'
 import type { BrokerCallbackMode, BrokerOAuthProvider, BrokerPurpose } from './broker-config.mts'
 import {
   getCompletionTokenPurpose,
