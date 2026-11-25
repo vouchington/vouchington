@@ -31,6 +31,8 @@ export async function runUrlEmbedCapacityScenario(): Promise<void> {
       // #6398 tracks the hosted custom item scan and the local full source-association scan.
       { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: 36_689 },
       { kind: 'maxProcessedRows', relation: 'rss_feed_item_sources', max: 75_433 },
+      { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 2_578 },
+      { kind: 'maxProcessedRows', relation: 'topics', max: 15_070 },
     ],
   })
   await runAndCapture(

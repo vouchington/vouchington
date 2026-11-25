@@ -44,4 +44,12 @@ export const BASELINE_FINGERPRINTS = [
   'topic-search-best|0|buildTopicSearchQuery:force_custom_plan|force_custom_plan:topics',
   'topic-search-best|0|buildTopicSearchQuery:force_generic_plan|force_generic_plan:topics',
   'topic-search-text|0|buildTopicSearchQuery:force_custom_plan|force_custom_plan:topics',
+  // #6396: paired CI 45645552593 scans topic_aliases in these two ranking plans.
+  'top-hashtags-at-cap|0|searchTopHashtags:force_custom_plan|force_custom_plan:topic_aliases',
+  'top-hashtags-at-cap|1|searchTopHashtags:force_generic_plan|force_generic_plan:topic_aliases',
+  // #6398: paired CI 45645552593 scans RSS feeds and topics during embed hydration.
+  'url-embeds-at-post-page-cap|0|getUrlEmbedsByUrlIds:force_custom_plan|force_custom_plan:rss_feeds',
+  'url-embeds-at-post-page-cap|0|getUrlEmbedsByUrlIds:force_custom_plan|force_custom_plan:topics',
+  'url-embeds-at-post-page-cap|0|getUrlEmbedsByUrlIds:force_generic_plan|force_generic_plan:rss_feeds',
+  'url-embeds-at-post-page-cap|0|getUrlEmbedsByUrlIds:force_generic_plan|force_generic_plan:topics',
 ] as const
