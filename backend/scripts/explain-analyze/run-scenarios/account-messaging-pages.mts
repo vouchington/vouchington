@@ -21,7 +21,11 @@ async function captureModmailInbox(fixture: Fixture): Promise<void> {
       { kind: 'noSeqScan', relation: 'conversations' },
       {
         kind: 'usesIndexes',
-        indexes: ['idx_conversations__subject_user_id'],
+        indexes: [
+          'idx_conversations__subject_user_id',
+          'idx_conversations__modmail_subject_activity',
+        ],
+        anyOf: true,
         noSort: true,
       },
       // The fixture's first page visits 101 visible threads plus six deleted threads.
