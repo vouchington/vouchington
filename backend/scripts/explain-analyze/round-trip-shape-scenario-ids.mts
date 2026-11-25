@@ -15,7 +15,6 @@ export const ROUND_TRIP_SHAPE_SCENARIO_IDS = [
   'modmail-opening-two-parties',
   'modmail-first-reply-last-slot',
   'community-invite-redeem',
-  'community-application-questions',
   'community-application-questions-at-cap',
   'rss-feed-state-changes',
   'post-visibility-batch',

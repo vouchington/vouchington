@@ -13,4 +13,8 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'notifications-mark-all-read-at-cap',
   'related-posts-by-url-at-cap',
   'rss-ingest-content-at-cap',
+  'post-review-ratings-write-at-cap',
+  'post-data-point-topics-insert-at-cap',
+  'post-data-point-topics-replace-at-cap',
+  'community-application-questions-write-at-cap',
 ] as const

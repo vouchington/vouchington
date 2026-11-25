@@ -145,6 +145,8 @@
   },
   "devDependencies": {
     "@services/openai-agents": "workspace:^",
+    "@services/post-content-limits": "workspace:^",
+    "@services/tag-limits": "workspace:^",
     "@vouchington/explain-plan": "^0.0.1",
     "husky": "^9.1.7",
     "vouchington-tooling": "^3.7.0"
