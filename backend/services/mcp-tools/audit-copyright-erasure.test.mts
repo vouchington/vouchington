@@ -1,3 +1,4 @@
+import { useCopyrightCasePurgeIsolation } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-isolation'
 import { runCopyrightAdmissionWinsDestructionRace } from '@voucha/test-helpers/copyright-admission-destruction-race'
 import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { createRetentionEmailCase } from '@voucha/test-helpers/services/copyright-notices/retention-email-case'
@@ -26,6 +27,7 @@ import { ADMIN_MCP_SERVER_CONFIG } from './config.mts'
 describe('MCP copyright audit after evidence erasure', () => {
   useAutomaticProvisionalWithholding()
   const bucket = useCopyrightEvidenceBucket()
+  useCopyrightCasePurgeIsolation('shared')
   const setPageSize = useCopyrightCasePurgePageSize()
 
   it('retains an admitted rationale through purge admission and removes it with the owned case', async () => {

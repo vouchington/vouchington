@@ -1,3 +1,4 @@
+import { useCopyrightCasePurgeIsolation } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-isolation'
 import { describe, expect, it } from 'vitest'
 import type { Job } from 'glide-mq'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
@@ -119,6 +120,7 @@ async function finishResidualWithNativeWorker(data: CopyrightCasePurgeJobData): 
 describe('copyright case purge pages', () => {
   useAutomaticProvisionalWithholding()
   const bucket = useCopyrightEvidenceBucket()
+  useCopyrightCasePurgeIsolation('shared')
   const setPageSize = useCopyrightCasePurgePageSize()
 
   // no-mistakes-timeout-reason: reviewed email fixture, bounded PostgreSQL pages, and native worker continuation

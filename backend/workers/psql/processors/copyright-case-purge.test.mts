@@ -1,3 +1,4 @@
+import { useCopyrightCasePurgeIsolation } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-isolation'
 import { describe, expect, it, vi } from 'vitest'
 import type { CopyrightCasePurgeJobData } from '@queues/psql/types'
 import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
@@ -6,6 +7,7 @@ import { commitCopyrightCorrespondenceAfterPurgeSnapshot } from '@voucha/test-he
 import { processCopyrightCasePurge } from './copyright-case-purge.mts'
 
 describe('copyright case purge native conflict', () => {
+  useCopyrightCasePurgeIsolation('shared')
   it('ends the pass after native serialization abort without saving or rescheduling the page', async () => {
     const entry = await createRetentionMinimalCase()
     const before = await getCopyrightNoticePrivateAggregate(entry.noticeId)

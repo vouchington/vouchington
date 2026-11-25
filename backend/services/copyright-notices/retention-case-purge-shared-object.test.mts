@@ -1,3 +1,4 @@
+import { useCopyrightCasePurgeIsolation } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-isolation'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
@@ -64,6 +65,7 @@ async function assertKeyReused(key: string): Promise<void> {
 describe('copyright case purge shared evidence ownership', () => {
   useAutomaticProvisionalWithholding()
   const bucket = useCopyrightEvidenceBucket()
+  useCopyrightCasePurgeIsolation('exclusive')
   const setPageSize = useCopyrightCasePurgePageSize()
 
   // no-mistakes-timeout-reason: two reviewed email cases and their bounded PostgreSQL and S3 pages

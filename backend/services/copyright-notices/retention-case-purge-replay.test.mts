@@ -1,3 +1,4 @@
+import { useCopyrightCasePurgeIsolation } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-isolation'
 import { describe, expect, it } from 'vitest'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
@@ -66,6 +67,7 @@ async function finishCase(data: CopyrightCasePurgeJobData): Promise<void> {
 describe('initial copyright submission replay during case purge', () => {
   useAutomaticProvisionalWithholding()
   const bucket = useCopyrightEvidenceBucket()
+  useCopyrightCasePurgeIsolation('exclusive')
   const setPageSize = useCopyrightCasePurgePageSize()
 
   // no-mistakes-timeout-reason: reviewed form fixture and bounded case purge pages through final root deletion

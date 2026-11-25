@@ -1,3 +1,4 @@
+import { useCopyrightCasePurgeIsolation } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-isolation'
 import {
   raceCopyrightPurgeWithCorrespondence,
   readCopyrightPurgeAssessmentPointers,
@@ -38,6 +39,7 @@ function firstPage(noticeId: string): CopyrightCasePurgeJobData {
 describe('copyright case purge holds placed mid-purge', () => {
   useAutomaticProvisionalWithholding()
   const bucket = useCopyrightEvidenceBucket()
+  useCopyrightCasePurgeIsolation('shared')
   const setPageSize = useCopyrightCasePurgePageSize()
 
   // no-mistakes-timeout-reason: reviewed email fixture and bounded PostgreSQL purge pages

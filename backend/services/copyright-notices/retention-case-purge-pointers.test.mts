@@ -1,3 +1,4 @@
+import { useCopyrightCasePurgeIsolation } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-isolation'
 import { describe, expect, it } from 'vitest'
 import {
   createTestEuParticipantCase,
@@ -126,6 +127,7 @@ describe('territorial decision predecessor purge', () => {
 })
 
 describe('territorial decision history purge', () => {
+  useCopyrightCasePurgeIsolation('shared')
   const setPageSize = useCopyrightCasePurgePageSize()
 
   it('deletes monthly decision and redress history only for the permitted case and table', async () => {

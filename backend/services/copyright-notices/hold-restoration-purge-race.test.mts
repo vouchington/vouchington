@@ -1,3 +1,4 @@
+import { useCopyrightCasePurgeIsolation } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-isolation'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { createCopyrightRecoveryPurgeScene } from '@voucha/test-helpers/copyright-recovery-purge-scene'
@@ -17,6 +18,7 @@ const purgeNow = new Date('2100-01-01T12:00:00.000Z')
 describe('blocked restoration recovery versus case purge', () => {
   useAutomaticProvisionalWithholding()
   useCopyrightEvidenceBucket()
+  useCopyrightCasePurgeIsolation('shared')
   const setPageSize = useCopyrightCasePurgePageSize()
   beforeEach(() => {
     installTestMediaDeliveryEdge()
