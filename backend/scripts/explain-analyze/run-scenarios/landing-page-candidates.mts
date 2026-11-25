@@ -38,7 +38,6 @@ export async function runLandingPageCandidateScenarios(): Promise<void> {
       seededRows: { user_landing_page_candidates: 10_000 },
       crossPartition,
     })
-    // no-mistakes-disable-next-line query-reached-per-item: two fixed first/cursor scenarios need separate serialized production query captures and plan gates
     await runAndCapture(scenario, async () => {
       const page = await getLandingPageCandidateIds(LANDING_PAGE_REVIEW_OWNER_ID, 101, cursor)
       if (page.length !== 101 || page.some(row => row.tier !== 1))
@@ -64,7 +63,6 @@ export async function runLandingPageCandidateScenarios(): Promise<void> {
       ],
       crossPartition,
     })
-    // no-mistakes-disable-next-line query-reached-per-item: two fixed public/owner scenarios need separate serialized production query captures and plan gates
     await runAndCapture(scenario, async () => {
       const reviews = await getLandingPageReviewsByIds(
         LANDING_PAGE_REVIEW_OWNER_ID,

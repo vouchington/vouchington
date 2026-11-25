@@ -143,7 +143,6 @@ export async function insertAgentModerationRetentionBulk(
   }
   for (let start = 0; start < rows.length; start += BATCH_SIZE) {
     const batch = rows.slice(start, start + BATCH_SIZE)
-    // no-mistakes-disable-next-line query-reached-per-item: fixed retention fixtures are inserted in bounded batches below PostgreSQL bind limits
     await write(
       `/* seedAgentModerationRetentionBulk */
        INSERT INTO agent_moderations
@@ -163,7 +162,6 @@ export async function insertAgentModerationRetentionBulk(
       ],
     )
     // Refresh predecessor lookup estimates before the next bounded batch fires insert triggers.
-    // no-mistakes-disable-next-line query-reached-per-item: each finite fixture batch refreshes statistics for the following batch's trigger queries.
     await write('/* analyzeAgentModerationRetentionBulk */ ANALYZE agent_moderations')
   }
 }

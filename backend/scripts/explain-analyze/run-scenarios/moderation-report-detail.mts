@@ -36,7 +36,6 @@ export async function runModerationReportDetailScenarios(): Promise<void> {
         ],
         forbidSequentialScans: ['moderation_reports'],
       })
-      // no-mistakes-disable-next-line query-reached-per-item: four fixed FK kinds each need their real keyed report probe.
       await runAndCapture(
         reportId,
         async () => {
@@ -63,7 +62,6 @@ export async function runModerationReportDetailScenarios(): Promise<void> {
         ],
         forbidSequentialScans: ['moderation_report_judgements'],
       })
-      // no-mistakes-disable-next-line query-reached-per-item: four fixed FK kinds each need their actual latest-judgement probe.
       await runAndCapture(
         judgementId,
         async () => {

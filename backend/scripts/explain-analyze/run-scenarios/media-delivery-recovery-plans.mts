@@ -134,7 +134,6 @@ export async function captureRecovery(): Promise<void> {
         ],
         seededRows,
       })
-      // no-mistakes-disable-next-line query-reached-per-item: four fixed scopes have independent captured plans.
       await runAndCapture(
         scenario.id,
         () =>

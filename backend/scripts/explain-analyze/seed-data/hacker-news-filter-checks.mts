@@ -12,7 +12,6 @@ export async function verifyHackerNewsFilterFixtureTruth(
   let mismatches = 0
   let qualifying = 0
   for (let offset = 0; offset < f.postCount; offset += f.batchSize) {
-    // no-mistakes-disable-next-line query-reached-per-item: each call verifies one capped batch of candidate posts against the shared card selector.
     const { rows } = await q(
       `SELECT count(*) FILTER(WHERE candidate.has_hacker_news_references
       IS DISTINCT FROM EXISTS(SELECT 1 FROM (${buildPostUrls('candidate.id')}) selected
@@ -64,27 +63,23 @@ export async function cleanupHackerNewsFilterFixture(
     values?: unknown[],
   ) => query<Row>(`/* cleanupHackerNewsFilterFixture */ ${text}`, values)
   for (let offset = 0; offset < f.postCount; offset += f.batchSize) {
-    // no-mistakes-disable-next-line query-reached-per-item: each cleanup statement deletes one explicitly limited owned fixture batch; the loop has a finite corpus cap.
     const { rows } = await q<{ id: string }>(
       `WITH candidates AS(SELECT id FROM posts WHERE created_by_id=$1 ORDER BY id LIMIT $2)
       DELETE FROM posts USING candidates WHERE posts.id=candidates.id RETURNING posts.id`,
       [f.actorId, f.batchSize],
     )
     if (rows.length)
-      // no-mistakes-disable-next-line query-reached-per-item: one set-based retained-identity delete consumes the preceding capped RETURNING batch, not individual rows.
       await q('DELETE FROM retained_post_identities WHERE id=ANY($1::uuid[])', [
         rows.map(row => row.id),
       ])
   }
   for (let offset = 0; offset < f.rssCount; offset += f.batchSize) {
-    // no-mistakes-disable-next-line query-reached-per-item: each cleanup statement deletes one explicitly limited owned fixture batch; the loop has a finite corpus cap.
     const { rows } = await q<{ id: string }>(
       `WITH candidates AS(SELECT id FROM rss_feed_item_guids WHERE url_hostname_id=$1 ORDER BY id LIMIT $2)
       DELETE FROM rss_feed_item_guids USING candidates WHERE rss_feed_item_guids.id=candidates.id RETURNING rss_feed_item_guids.id`,
       [f.hostnameId, f.batchSize],
     )
     if (rows.length)
-      // no-mistakes-disable-next-line query-reached-per-item: one set-based retained-identity delete consumes the preceding capped RETURNING batch, not individual rows.
       await q('DELETE FROM retained_rss_feed_item_identities WHERE id=ANY($1::uuid[])', [
         rows.map(row => row.id),
       ])
@@ -93,7 +88,6 @@ export async function cleanupHackerNewsFilterFixture(
   await q('DELETE FROM topics WHERE id=$1', [f.topicId])
   await q('DELETE FROM retained_topic_identities WHERE id=$1', [f.topicId])
   for (let offset = 0; offset < 6000; offset += f.batchSize) {
-    // no-mistakes-disable-next-line query-reached-per-item: each cleanup statement deletes one explicitly limited owned fixture batch; the loop has a finite corpus cap.
     await q(
       `WITH candidates AS(SELECT id FROM urls WHERE hostname_id=$1 ORDER BY id LIMIT $2)
       DELETE FROM urls USING candidates WHERE urls.id=candidates.id`,

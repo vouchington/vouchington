@@ -49,7 +49,6 @@ export async function deleteOwnedUrlsInBatches(
     const started = performance.now()
     let deleted: number
     try {
-      // no-mistakes-disable-next-line query-reached-per-item: each cleanup statement deletes one explicitly limited owned fixture batch; the loop has a finite corpus cap.
       const result = await query(hostnameId, READMISSION_URL_DELETE_BATCH_ROWS)
       deleted = result.rowCount ?? 0
     } catch (err) {

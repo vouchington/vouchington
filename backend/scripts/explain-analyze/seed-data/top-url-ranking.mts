@@ -134,7 +134,6 @@ async function seedTopUrlItems(): Promise<void> {
     const ids = Array.from({ length: OLD_PARTITION_ITEM_COUNT }, (_, index) =>
       topUrlOldItemId(year, index),
     )
-    // no-mistakes-disable-next-line query-reached-per-item: two fixed historical partitions each receive one bounded, set-based fixture cohort.
     await write(
       `/* seedTopUrlRanking.oldGuids */ INSERT INTO rss_feed_item_guids
         (id, url_hostname_id, guid)
@@ -143,7 +142,6 @@ async function seedTopUrlItems(): Promise<void> {
         ON CONFLICT (id) DO NOTHING`,
       [ids, topUrlHostId(0), year],
     )
-    // no-mistakes-disable-next-line query-reached-per-item: two fixed historical partitions each receive one bounded, set-based fixture cohort.
     await write(
       `/* seedTopUrlRanking.oldItems */ INSERT INTO rss_feed_items
         (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256)

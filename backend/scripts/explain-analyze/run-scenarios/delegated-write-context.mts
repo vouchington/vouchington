@@ -19,7 +19,6 @@ export async function runDelegatedWriteContextScenarios(): Promise<void> {
       forbidSequentialScans: ['posts'],
       crossPartition: { posts: 'Parent and stored root are two explicit UUIDv7 keys.' },
     })
-    // no-mistakes-disable-next-line query-reached-per-item: two fixed depth witnesses independently verify the same at-most-two-row authorization context query.
     await runAndCapture(
       id,
       async () => {
@@ -40,7 +39,6 @@ export async function runDelegatedWriteContextScenarios(): Promise<void> {
       forbidSequentialScans: ['posts'],
       allowEmptyResult: suffix === 'missing',
     })
-    // no-mistakes-disable-next-line query-reached-per-item: fixed hit/miss probes independently capture the one written-row lock, always rolled back after capture.
     await runAndCapture(
       id,
       async () => {

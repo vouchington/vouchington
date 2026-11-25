@@ -101,7 +101,6 @@ export async function runMediaDeliveryLockPlans(): Promise<void> {
           media_placements: 2 * NOISE_PER_FAMILY + TARGET_COUNT,
         },
       })
-      // no-mistakes-disable-next-line query-reached-per-item: ten fixed selector/query cases capture independent plans.
       await runAndCapture(
         id,
         async () => {

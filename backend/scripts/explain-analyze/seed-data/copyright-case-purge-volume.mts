@@ -77,7 +77,6 @@ export async function seedDueCaseEvidenceVolume(
     // Maintain the case clock once for each bounded chunk of actual new links.
     for (let from = bounds[0] ?? 0; from < (bounds[1] ?? 0); from += LINK_CHUNK) {
       await using transaction = await beginTransaction()
-      // no-mistakes-disable-next-line query-reached-per-item: each statement is one bounded chunk of a set-based seed
       await transaction(
         `/* seedExplainCopyrightPurgeVolume:links */
       WITH inserted AS (

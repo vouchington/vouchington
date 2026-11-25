@@ -23,7 +23,6 @@ export async function insertCommentRows(
     const parentIds = batch.map(row => row.parentId)
     const rootIds = batch.map(row => row.rootId)
     const approved = batch.map(row => row.approved ?? true)
-    // no-mistakes-disable-next-line query-reached-per-item: each chunk is a bounded set-based seed insert
     await query(
       `/* seedCommentDescendantPartition:posts */ INSERT INTO posts (
          id, created_via, post_type, markdown, parent_post_id, root_post_id,
@@ -67,7 +66,6 @@ export async function createCommentPartitions(
   for (const month of months) {
     const from = seedUuidAtTimestamp(month, 0)
     const to = seedUuidAtTimestamp(addUtcMonths(month, 1), 0)
-    // no-mistakes-disable-next-line query-reached-per-item: create the fixed 24 monthly partitions in the isolated EXPLAIN database
     await query(
       `/* seedCommentDescendantPartition:partition */ CREATE TABLE IF NOT EXISTS ${partitionName(month)} PARTITION OF posts
        FOR VALUES FROM ('${from}'::uuid) TO ('${to}'::uuid)`,

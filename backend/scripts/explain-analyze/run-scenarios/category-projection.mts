@@ -79,7 +79,6 @@ export async function runCategoryProjectionScenarios(): Promise<void> {
       },
     })
     let changeId = ''
-    // no-mistakes-disable-next-line query-reached-per-item: fixed EXPLAIN cases must restore and capture independent plans serially.
     await runAndCapture(
       id,
       async () => {

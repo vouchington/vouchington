@@ -73,7 +73,6 @@ export async function captureReferralValidationKeyed(input: {
         referral_program_link_validation_rule_sets: input.seededValidations,
       },
     })
-    // no-mistakes-disable-next-line query-reached-per-item: fixed UUID and slug probes capture separate plans.
     await runAndCapture(scenario.id, async () => {
       const result = await getReferralLinkValidationForProgram(input.programId, scenario.validation)
       assert.equal(

@@ -30,7 +30,6 @@ export async function runIngestionRawPageScenarios(): Promise<void> {
           { kind: 'usesIndexes', indexes: [`${provider}_accounts_pkey`], noSort: true },
         ],
       })
-      // no-mistakes-disable-next-line query-reached-per-item: six fixed provider/eligibility cases need separate serialized custom/generic plan captures.
       await runAndCapture(scenarioId, async () => {
         let count = 0
         for await (const row of stream({
@@ -61,7 +60,6 @@ export async function runIngestionRawPageScenarios(): Promise<void> {
         },
       ],
     })
-    // no-mistakes-disable-next-line query-reached-per-item: two fixed Bedrock lifecycle cases need separate serialized plan captures.
     await runAndCapture(scenarioId, async () => {
       const page = await getStaleBatches(24, {
         afterId,

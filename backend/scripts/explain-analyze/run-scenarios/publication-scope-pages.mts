@@ -90,7 +90,6 @@ async function capturePublicationScopePages(): Promise<void> {
         { kind: 'usesIndexes', indexes: [index], noSort: true },
       ],
     })
-    // no-mistakes-disable-next-line query-reached-per-item: fixed scenario cases need separate captures and owning plan contracts, as in the existing EXPLAIN harness.
     await runAndCapture(id, async () => {
       const page = await listLiveScopePostPage(kind, subject, null)
       if (kind === 'alias_post_relations') assert.equal(page.ids.length, 0)
@@ -137,7 +136,6 @@ async function capturePublicationScopePages(): Promise<void> {
           : []),
       ],
     })
-    // no-mistakes-disable-next-line query-reached-per-item: two fixed owner kinds require separate raw-category captures and plan gates.
     await runAndCapture(id, async () => {
       const page = await listLiveTopicMergeCategoryOwnersPage(
         kind,

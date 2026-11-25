@@ -38,7 +38,6 @@ export async function runEngagementEmailRecipientScenarios(): Promise<void> {
         user_email_addresses: 40_000,
       },
     })
-    // no-mistakes-disable-next-line query-reached-per-item: three fixed recipient selectors need independent production SQL captures.
     await runAndCapture(id, async () => {
       const recipients = await run()
       if (recipients.length === 0) throw new Error(`${id} needs eligible recipients`)

@@ -126,7 +126,6 @@ export async function captureHackerNewsScaleReference(
   const modes = getExplainPlanCacheModes()
   for (const planCacheMode of modes) {
     const input = { text: reference.text, values: reference.values, planCacheMode }
-    // no-mistakes-disable-next-line query-reached-per-item: each of two fixed plan modes requires independently evicted statement buffers before its cold/warm diagnostic pair.
     await hackerNewsCachePreparation('cold', eviction => {
       context.observations.push({ scenario: prefix, reference: true, planCacheMode, eviction })
     })(input)

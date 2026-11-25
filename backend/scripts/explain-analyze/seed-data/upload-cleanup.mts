@@ -54,7 +54,6 @@ export async function seedUploadCleanup(): Promise<void> {
       }
     }
     await using transaction = await beginTransaction()
-    // no-mistakes-disable-next-line query-reached-per-item: finite deterministic fixture population is inserted in bounded 500-row transaction batches
     await transaction(
       `/* seedUploadCleanup:images */
       INSERT INTO images (id, created_by_id, data, s3_key, sha_256,
