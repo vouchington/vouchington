@@ -6,6 +6,8 @@ import { getImagePlacementForCopyright } from '@services/images/placements'
 import { createTestUserDirect, softDeleteUser } from '@voucha/test-helpers'
 import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
 import { readTestCopyrightRestrictionAdministratorLift } from '@voucha/test-helpers/copyright-administrator-lifts'
+import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
+import { observeTestPostgresClientQueries } from '@voucha/test-helpers/postgres-query-pool-observer'
 import { createTestLiftClaimantReceipt } from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
 import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -23,7 +25,7 @@ describe('administrator copyright restriction lifts', () => {
     vi.unstubAllEnvs()
   })
 
-  it('lifts a confirmed post restriction after its author is deleted and retains the audit decision', async () => {
+  it('records one administrator lift when two sessions restore an ownerless restriction', async () => {
     const [poster, moderator, administrator] = await Promise.all([
       createTestUserDirect(),
       createTestUserDirect({ extraRoles: ['moderator'] }),
@@ -53,13 +55,15 @@ describe('administrator copyright restriction lifts', () => {
     await softDeleteUser(poster.id)
     const rationale = `Verified deletion and ownerless target ${crypto.randomUUID()}`
     const liftedAt = new Date()
-    const lift = await liftCopyrightRestrictionWithoutSetter({
+    const input = {
       currentUser: administrator,
       noticeId,
       restrictionId: restriction.id,
       rationale,
       liftedAt,
-    })
+    }
+    const { lift, competingLift } = await raceAdministratorLifts(input)
+    expect(competingLift).toMatchObject({ status: 'rejected', reason: { status: 409 } })
 
     const persisted = await readTestCopyrightRestrictionAdministratorLift(restriction.id)
     expect(persisted).toMatchObject({
@@ -147,3 +151,47 @@ describe('administrator copyright restriction lifts', () => {
     await expect(readTestCopyrightRestrictionAdministratorLift(restriction.id)).resolves.toBeNull()
   })
 })
+
+async function raceAdministratorLifts(
+  input: Parameters<typeof liftCopyrightRestrictionWithoutSetter>[0],
+) {
+  let contender: Promise<[PromiseSettledResult<{ id: string }>]> | undefined
+  try {
+    const { result: lift } = await observeTestPostgresClientQueries(
+      () => liftCopyrightRestrictionWithoutSetter(input),
+      async query => {
+        if (
+          contender ||
+          !query.text.includes('/* liftCopyrightRestrictionWithoutSetter:current */') ||
+          !query.values.includes(input.restrictionId)
+        )
+          return
+        // The first decision is uncommitted when the second session enters the same case.
+        const started = Promise.withResolvers<void>()
+        const restore = beforePostgresTransactionQueryForTest(
+          '/* lockCopyrightActionGenerationForWrite */',
+          values => values.includes(input.noticeId),
+          async () => started.resolve(),
+        )
+        try {
+          contender = Promise.allSettled([
+            liftCopyrightRestrictionWithoutSetter({ ...input, rationale: 'Concurrent lift' }),
+          ] as const)
+          await Promise.race([
+            started.promise,
+            contender.then(() => {
+              throw new Error('Contending lift ended before reaching case admission')
+            }),
+          ])
+        } finally {
+          restore()
+        }
+      },
+    )
+    if (!contender) throw new Error('First lift did not reach its decision write')
+    const [competingLift] = await contender
+    return { lift, competingLift }
+  } finally {
+    await contender
+  }
+}
