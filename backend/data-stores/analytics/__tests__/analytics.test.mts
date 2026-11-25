@@ -1,7 +1,8 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import * as onErrorModule from '@modules/on-error'
 import { flush, writeRecord } from '../backend-local.mts'
 import type { CrawlerRequestRecord } from '../tables.mts'
 
@@ -143,6 +144,47 @@ describe('analytics', () => {
       } finally {
         process.env.ANALYTICS_LOCAL_DIR = testDir
         await fs.promises.rm(altDir, { recursive: true, force: true })
+      }
+    })
+
+    it('reports background flush errors to onError and rejects explicit flush errors', async () => {
+      const blockingFile = path.join(testDir, 'blocking-file')
+      await fs.promises.mkdir(testDir, { recursive: true })
+      await fs.promises.writeFile(blockingFile, 'not a directory')
+
+      const reported = Promise.withResolvers<Error>()
+      const onErrorSpy = vi.spyOn(onErrorModule, 'default').mockImplementation(err => {
+        reported.resolve(err)
+      })
+      const sampleRecord: CrawlerRequestRecord = {
+        event_id: crypto.randomUUID(),
+        event_date: '2024-06-19',
+        event_time: new Date('2024-06-19T00:00:00Z'),
+        env: 'test',
+        event_type: 'request',
+        crawler_type: 'html',
+        domain: 'error.example.com',
+        success: true,
+        duration_ms: 5,
+      }
+
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      try {
+        process.env.ANALYTICS_LOCAL_DIR = blockingFile
+        writeRecord('crawler_requests', sampleRecord)
+
+        vi.advanceTimersByTime(1_000)
+        const error = await reported.promise
+        expect(error).toBeInstanceOf(Error)
+
+        writeRecord('crawler_requests', sampleRecord)
+        await expect(flush()).rejects.toThrow(/EEXIST|ENOTDIR/)
+      } finally {
+        vi.useRealTimers()
+        onErrorSpy.mockRestore()
+        process.env.ANALYTICS_LOCAL_DIR = testDir
+        await flush()
+        await fs.promises.rm(blockingFile, { force: true })
       }
     })
   })
