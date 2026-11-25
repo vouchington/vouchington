@@ -7,9 +7,8 @@ import {
   CrawlerResponseSizeExceededError,
   CrawlerServerError,
   CrawlerTimeoutError,
-  isCrawlerNetworkDnsError,
-  isCrawlerNetworkTlsHostnameError,
 } from '@modules/on-error/errors'
+import { isDnsLookupError, isTlsHostnameMismatchError } from '@vouchington/http-transport/fetch'
 import { HttpNoBodyError } from '@vouchington/sentry'
 import { trackNetworkBackoffClosed, trackNetworkBackoffOpened } from '@services/analytics'
 
@@ -34,8 +33,8 @@ export function isHostnameUnreachableError(error: unknown): error is CrawlerNetw
   return (
     error instanceof CrawlerNetworkError &&
     error.responseStatus === null &&
-    !isCrawlerNetworkDnsError(error) &&
-    !isCrawlerNetworkTlsHostnameError(error)
+    !isDnsLookupError(error) &&
+    !isTlsHostnameMismatchError(error)
   )
 }
 

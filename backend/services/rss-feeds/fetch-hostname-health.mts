@@ -1,9 +1,6 @@
 import onError from '@modules/on-error'
-import {
-  CrawlerNetworkError,
-  isCrawlerNetworkDnsError,
-  isCrawlerNetworkTlsHostnameError,
-} from '@modules/on-error/errors'
+import { CrawlerNetworkError } from '@modules/on-error/errors'
+import { isDnsLookupError, isTlsHostnameMismatchError } from '@vouchington/http-transport/fetch'
 import { getUrlHostnameCrawlerDetailsById } from '@services/urls-hostnames'
 import {
   recordHostnameConfigurationFailure,
@@ -47,10 +44,10 @@ export async function recordRssFetchHostnameFailure(
   resolveDnsCanary: (() => Promise<void>) | undefined,
 ) {
   await lockRssFetchHostnameOnRateLimit(failure, fetchHostnameId, feedUrl)
-  if (failure instanceof CrawlerNetworkError && isCrawlerNetworkDnsError(failure)) {
+  if (failure instanceof CrawlerNetworkError && isDnsLookupError(failure)) {
     await recordHostnameDnsFailure(fetchHostnameId, resolveDnsCanary).catch(onError)
   }
-  if (failure instanceof CrawlerNetworkError && isCrawlerNetworkTlsHostnameError(failure)) {
+  if (failure instanceof CrawlerNetworkError && isTlsHostnameMismatchError(failure)) {
     await recordHostnameConfigurationFailure(fetchHostnameId).catch(onError)
   }
   if (isHostnameUnreachableError(failure)) {
