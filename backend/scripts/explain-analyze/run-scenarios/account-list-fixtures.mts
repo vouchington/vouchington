@@ -67,6 +67,7 @@ export async function seedAccountListFixture() {
     FROM unnest(${userIds}::uuid[]) AS owners(user_id)
     CROSS JOIN generate_series(1, CASE WHEN user_id = ${owner.id} THEN ${ACCOUNT_HISTORY}
       ELSE 8 END) n
+    ORDER BY (user_id = ${owner.id}) DESC, user_id, n
     RETURNING id, owner_user_id, revoked_at`)
   const activeClients = new Set(
     clients.filter(client => client.revoked_at === null).map(client => client.id),
@@ -84,6 +85,7 @@ export async function seedAccountListFixture() {
     FROM oauth_clients client
     CROSS JOIN generate_series(1, ${GRANTS_PER_APP}) n
     WHERE client.id = ANY(${clients.map(client => client.id)}::uuid[])
+    ORDER BY n, client.id
     RETURNING id, user_id, client_id, revoked_at`)
   await transaction(sql`
     /* seedAccountListOAuthTokenUse */

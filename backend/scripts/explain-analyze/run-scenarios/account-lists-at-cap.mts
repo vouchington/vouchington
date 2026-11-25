@@ -114,7 +114,8 @@ export async function runAccountListCapacityScenarios(): Promise<void> {
     )
     registerScenarioContract('account-oauth-grants-at-cap', {
       expectations: [
-        { kind: 'maxProcessedRows', relation: 'oauth_grants', max: 115 },
+        // Lookahead is 101 grants. At most one client in every eight is revoked in the fixture.
+        { kind: 'maxProcessedRows', relation: 'oauth_grants', max: 116 },
         { kind: 'usesIndexes', indexes: ['idx_oauth_grants__user_active'], noSort: true },
         { kind: 'noSeqScan', relation: 'oauth_access_tokens' },
       ],
