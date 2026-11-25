@@ -8,9 +8,8 @@ export async function cleanupUserListRows(
   userId: string,
   limit: number,
 ): Promise<number> {
-  // lock-reason: prevents: a final list DELETE cascading new entries outside the row budget; writer: user list item admission.
   const { rows } = await query<{ id: string }>(sql`/* cleanupUserListRows:list */
-    SELECT id FROM user_lists WHERE owner_user_id = ${userId} ORDER BY id LIMIT 1 FOR UPDATE`)
+    SELECT id FROM user_lists WHERE owner_user_id = ${userId} ORDER BY id LIMIT 1`)
   const list = rows[0]
   if (!list) return 0
   const posts = await query(sql`/* cleanupUserListRows:posts */
@@ -23,8 +22,13 @@ export async function cleanupUserListRows(
       ORDER BY id LIMIT ${limit})
     DELETE FROM user_list_rss_feed_items WHERE id IN (SELECT id FROM candidates)`)
   if (items.rowCount) return items.rowCount
+  // Recheck committed entries after both child-page deletes. An entry that commits after this
+  // snapshot is still erased by the list FK cascade.
   const deleted = await query(sql`/* cleanupUserListRows:deleteList */
-    DELETE FROM user_lists WHERE id = ${list.id}`)
+    DELETE FROM user_lists list
+    WHERE list.id = ${list.id} AND list.owner_user_id = ${userId}
+      AND NOT EXISTS (SELECT 1 FROM user_list_posts WHERE user_list_id = list.id)
+      AND NOT EXISTS (SELECT 1 FROM user_list_rss_feed_items WHERE user_list_id = list.id)`)
   return deleted.rowCount ?? 0
 }
 

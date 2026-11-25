@@ -13,8 +13,8 @@ export async function getModerationCleanupCandidates(
   const after = cursorId ?? '00000000-0000-0000-0000-000000000000'
   let rows: { id: string }[]
   switch (kind) {
-    // lock-reason: prevents: cascading a new judgement or clearing a new report reference outside the approved deletion; writer: report judgement, action and appeal writers.
     case 'reports':
+      // lock-reason: prevents: cascading a newly admitted judgement run or clearing a new judgement’s report link; writers: createReportJudgementRun (moderation_report_judgement_runs), insertReportJudgement (moderation_report_judgements).
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:reports */
         SELECT id FROM moderation_reports WHERE id > ${after} AND id < ${upperId}
         ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
@@ -66,20 +66,20 @@ export async function getModerationCleanupCandidates(
         SELECT id FROM vote_weight_penalties WHERE id > ${after} AND id < ${upperId}
         ORDER BY id LIMIT ${limit}`))
       break
-    // lock-reason: prevents: cascading a concurrent appeal or notification; writer: warning appeal and notification admission.
     case 'warnings':
+      // lock-reason: prevents: deleting a warning with a newly filed appeal or notification; writers: insertModerationAppeal (moderation_appeals), createUserWarningNotification (notifications).
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:warnings */
         SELECT id FROM user_warnings WHERE id > ${after} AND id < ${upperId}
         ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
       break
-    // lock-reason: prevents: cascading a concurrent suspension appeal; writer: suspension appeal admission.
     case 'suspensions':
+      // lock-reason: prevents: deleting a suspension with a newly filed appeal; writer: insertModerationAppeal writes moderation_appeals.
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:suspensions */
         SELECT id FROM user_suspensions WHERE id > ${after} AND id < ${upperId}
         ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
       break
-    // lock-reason: prevents: cascading an appeal or clearing a new notification reference; writer: ban appeal and notification admission.
     case 'bans':
+      // lock-reason: prevents: erasing a newly filed ban appeal or clearing a notification reference; writers: insertModerationAppeal (moderation_appeals), createCommunityBanNotification (notifications).
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:bans */
         SELECT id FROM community_bans WHERE id > ${after} AND id < ${upperId}
         ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))

@@ -49,7 +49,8 @@ async function listCandidates(
     name === 'web_push_subscriptions'
       ? `${alias}.${timestampColumn}, ${alias}.id, ${alias}.user_id`
       : `${alias}.${timestampColumn}, ${alias}.id`
-  // lock-reason: prevents: cascading a concurrent session dependent or push receipt outside the cleanup guard; writer: OAuth session use and push receipt admission.
+  // lock-reason: prevents: an expired user_sessions row cascading a newly minted grant; writer: mintNativeSessionMcpToken writes oauth_grants.
+  // lock-reason: prevents: a web_push_subscriptions tombstone deletion cascading a newly admitted receipt; writer: persistClaimedNotificationPushOutcome writes notification_push_intent_subscription_receipts.
   const { rows } = await query<Candidate>(
     `/* listAuthSessionRetentionCandidates */
      -- cross-partition: expiry and tombstone retention must inspect every partition through each child index
