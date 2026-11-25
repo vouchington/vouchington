@@ -119,7 +119,13 @@ export async function verifyOAuthClient(
   reviewed: OAuthClientVerificationReview,
 ): Promise<OAuthClientVerificationResult> {
   return runWithTransaction(undefined, async (query: TransactionQuery) => {
-    const { rows } = await query<AdminOAuthClientView & { previous_verified_at: Date | null }>(
+    // lock-reason: prevents: stale before-state in the verification audit; writer: concurrent OAuth client verification or owner edits.
+    // PostgreSQL 18.4 can return stale OLD values after an UPDATE wait on this triggered table.
+    const { rows: previous } = await query<{ verified_at: Date | null }>(
+      '/* verifyOAuthClient:previous */ SELECT verified_at FROM oauth_clients WHERE id = $1 FOR UPDATE',
+      [id],
+    )
+    const { rows } = await query<AdminOAuthClientView>(
       `/* verifyOAuthClient */ UPDATE oauth_clients
      SET verified_at = CURRENT_TIMESTAMP,
          verified_by_id = $2
@@ -128,20 +134,19 @@ export async function verifyOAuthClient(
        AND redirect_uris = $4::text[]
        AND metadata_url IS NULL
        AND revoked_at IS NULL
-     RETURNING WITH (OLD AS prior) id, client_id, client_name, client_type, redirect_uris,
-       scopes::text[] AS scopes, owner_user_id, verified_at, verified_by_id, created_at,
-       prior.verified_at AS previous_verified_at`,
+     RETURNING id, client_id, client_name, client_type, redirect_uris, scopes::text[] AS scopes, owner_user_id,
+       verified_at, verified_by_id, created_at`,
       [id, currentUserId, reviewed.client_name, reviewed.redirect_uris],
     )
-    if (rows[0]) {
-      const { previous_verified_at, ...client } = rows[0]
+    const client = rows[0]
+    if (client) {
       await recordModeratorAction(
         currentUserId,
         {
           actionType: 'oauth_client_verify',
           oauthClientId: id,
           metadata: {
-            before: { verified_at: previous_verified_at },
+            before: { verified_at: previous[0]?.verified_at ?? null },
             after: {
               verified_at: client.verified_at,
               client_name: client.client_name,
@@ -164,15 +169,19 @@ export async function verifyOAuthClient(
 /** Clears verification. Returns false when no such client exists. */
 export async function unverifyOAuthClient(currentUserId: string, id: string): Promise<boolean> {
   return runWithTransaction(undefined, async (query: TransactionQuery) => {
+    // lock-reason: prevents: stale before-state in the unverification audit; writer: concurrent OAuth client verification or owner edits.
+    // The same PostgreSQL 18.4 RETURNING OLD limitation applies here.
     const { rows } = await query<OAuthClientVerificationReview & { verified_at: Date | null }>(
-      `/* unverifyOAuthClient */ UPDATE oauth_clients
-     SET verified_at = NULL, verified_by_id = NULL
-     WHERE id = $1
-     RETURNING WITH (OLD AS prior) prior.client_name, prior.redirect_uris, prior.verified_at`,
+      '/* unverifyOAuthClient:previous */ SELECT client_name, redirect_uris, verified_at FROM oauth_clients WHERE id = $1 FOR UPDATE',
       [id],
     )
     const previous = rows[0]
     if (!previous) return false
+    await query(
+      `/* unverifyOAuthClient */ UPDATE oauth_clients
+    SET verified_at = NULL, verified_by_id = NULL WHERE id = $1`,
+      [id],
+    )
     await recordModeratorAction(
       currentUserId,
       {

@@ -153,7 +153,6 @@ describe('staff OAuth client verification', () => {
       outcome: 'verified',
       client: { id: client.id, owner_user_id: owner.id, verified_by_id: admin.id },
     })
-    expect(result).not.toHaveProperty('client.previous_verified_at')
     await expect(listedIds('verified')).resolves.toContain(client.id)
     await expect(listedIds('unverified')).resolves.not.toContain(client.id)
     await expect(listedIds('all')).resolves.toContain(client.id)
