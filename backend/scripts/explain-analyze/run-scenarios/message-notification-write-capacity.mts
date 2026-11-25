@@ -83,6 +83,7 @@ async function captureNotificationUpsert(input: {
   const existingPath =
     kind === 'modmail' ? `/messages/modmail/prior-community-slug/${conversationId}` : targetPath
 
+  // Current row bounds hold in both modes. Forced-custom trigger costs are tracked in #6399 and #6400.
   registerScenarioContract(scenario, {
     expectations: [{ kind: 'maxProcessedRows', relation: 'notifications', max: recipients.length }],
     forbidSequentialScans: ['notifications'],
