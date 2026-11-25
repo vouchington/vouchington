@@ -384,6 +384,7 @@
     "hacker-news-readmission-mostly-fresh-later",
     "hacker-news-readmission-mostly-fresh-exhausted",
     "hacker-news-retention-page",
+    "hacker-news-retention-deletes-at-cap",
     "retention-expired-oauth-authorizations",
     "retention-retained-user-identity-roots",
     "retention-retained-user-relation-identities"
