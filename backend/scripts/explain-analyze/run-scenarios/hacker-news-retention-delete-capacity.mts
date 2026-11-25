@@ -39,11 +39,11 @@ export async function runHackerNewsRetentionDeleteCapacityScenario(): Promise<vo
           relation: 'url_hacker_news_stories',
           max: batchSize * 12 * 2,
         },
-        // Tighten the custom-plan comment ceiling in #6422.
+        // Read each selected comment once for the candidate page and once for deletion.
         {
           kind: 'maxProcessedRows',
           relation: 'url_hacker_news_comments',
-          max: fixture.seededRows.url_hacker_news_comments + 25 + batchSize * 18,
+          max: batchSize * 18 * 2,
         },
         { kind: 'maxProcessedRows', relation: 'url_hacker_news_totals', max: batchSize },
       ],
