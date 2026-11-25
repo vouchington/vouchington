@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { flush, getPartitionPath, writeRecord } from '../backend-local.mts'
+import { flush, writeRecord } from '../backend-local.mts'
 import type { CrawlerRequestRecord } from '../tables.mts'
 
 describe('analytics', () => {
@@ -46,7 +46,7 @@ describe('analytics', () => {
       writeRecord('crawler_requests', record)
       await flush()
 
-      const filePath = getPartitionPath('crawler_requests', eventDate)
+      const filePath = path.join(testDir, 'crawler_requests', `${eventDate}.jsonl`)
       expect(fs.existsSync(filePath)).toBe(true)
 
       const content = fs.readFileSync(filePath, 'utf8').trim()
@@ -84,8 +84,8 @@ describe('analytics', () => {
       })
       await flush()
 
-      const file16 = getPartitionPath('crawler_requests', '2024-06-16')
-      const file17 = getPartitionPath('crawler_requests', '2024-06-17')
+      const file16 = path.join(testDir, 'crawler_requests', '2024-06-16.jsonl')
+      const file17 = path.join(testDir, 'crawler_requests', '2024-06-17.jsonl')
       expect(fs.existsSync(file16)).toBe(true)
       expect(fs.existsSync(file17)).toBe(true)
 

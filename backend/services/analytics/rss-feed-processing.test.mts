@@ -8,7 +8,6 @@ describe('rss-feed-processing analytics', () => {
   let originalAnalyticsLocalDir: string | undefined
   let originalAnalyticsBackend: string | undefined
   let flush: typeof import('@data-stores/analytics/backend-local').flush
-  let getPartitionPath: typeof import('@data-stores/analytics/backend-local').getPartitionPath
   let trackRssFeedProcessingTruncated: typeof import('./rss-feed-processing.mts').trackRssFeedProcessingTruncated
 
   beforeAll(async () => {
@@ -17,7 +16,7 @@ describe('rss-feed-processing analytics', () => {
     testDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'analytics-rss-feed-test-'))
     process.env.ANALYTICS_LOCAL_DIR = testDir
     process.env.ANALYTICS_BACKEND = 'local'
-    ;({ flush, getPartitionPath } = await import('@data-stores/analytics/backend-local'))
+    ;({ flush } = await import('@data-stores/analytics/backend-local'))
     ;({ trackRssFeedProcessingTruncated } = await import('./rss-feed-processing.mts'))
   })
 
@@ -55,7 +54,10 @@ describe('rss-feed-processing analytics', () => {
 
     const eventDate = now.toISOString().slice(0, 10)
     const rows = (
-      await fs.promises.readFile(getPartitionPath('rss_feed_processing', eventDate), 'utf8')
+      await fs.promises.readFile(
+        path.join(testDir, 'rss_feed_processing', `${eventDate}.jsonl`),
+        'utf8',
+      )
     )
       .trim()
       .split('\n')

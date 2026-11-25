@@ -30,11 +30,6 @@ function getWriter(directory: string): JsonlPartitionWriter<BufferedAnalyticsRec
   return writer
 }
 
-/** Returns the partition path for the given table and date string (YYYY-MM-DD). */
-export function getPartitionPath(table: AnalyticsTableName, eventDate: string): string {
-  return path.join(getAnalyticsLocalDir(), table, `${eventDate}.jsonl`)
-}
-
 export function writeRecord<T extends AnalyticsTableName>(
   table: T,
   record: AnalyticsTableRegistry[T],
