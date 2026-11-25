@@ -1,5 +1,6 @@
 import { getFollowerDistributionsWorkLimit } from './work-limits.mts'
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
+import sql from 'sql-template-strings'
 import type { FollowerDistributionProcessResult } from './types.mts'
 import type { ProcessOptions } from './process-types.mts'
 import {
@@ -60,19 +61,12 @@ export async function advanceFollowerDistributionChunkCursor(
   cursorRecipientId: string,
   completed: boolean,
 ): Promise<void> {
-  await using query = await beginTransaction()
-
-  const distribution = await getDistributionForUpdate(distributionId, query)
-  if (!distribution || distribution.completed_at || distribution.failed_at) {
-    await query.commit()
-    return
-  }
-  await updateDistributionCursor(distribution.id, cursorRecipientId, query)
-  if (completed) {
-    await markDistributionCompleted(distribution.id, query)
-  }
-
-  await query.commit()
+  await write(sql`/* advanceFollowerDistributionChunkCursor */
+    UPDATE follower_distributions
+    SET cursor_recipient_id = ${cursorRecipientId},
+        completed_at = CASE WHEN ${completed} THEN CURRENT_TIMESTAMP ELSE completed_at END
+    WHERE id = ${distributionId} AND completed_at IS NULL AND failed_at IS NULL
+  `)
 }
 
 function emptyResult(

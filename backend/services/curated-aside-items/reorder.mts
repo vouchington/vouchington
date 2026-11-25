@@ -1,4 +1,4 @@
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import createHttpError from 'http-errors'
 import { currentUserCanManageCuratedAsides } from './authorization.mts'
@@ -14,11 +14,19 @@ export async function reorderCuratedItems(
   }
 
   if (itemIds.length === 0) return
+  if (itemIds.length === 1) {
+    await write(sql`/* reorderCuratedItems */
+      UPDATE curated_aside_items
+      SET position = 0
+      WHERE id = ${itemIds[0]}
+        AND aside_type = ${asideType}
+        AND deleted_at IS NULL
+    `)
+    return
+  }
 
   const positions = itemIds.map((_, i) => i)
   await using query = await beginTransaction()
-  // Pre-lock in ascending id order to prevent ABBA deadlocks when concurrent
-  // reorder requests touch overlapping item sets in different orderings.
   await query(
     sql`/* reorderCuratedItems lockRows */
       SELECT id FROM curated_aside_items
@@ -26,6 +34,7 @@ export async function reorderCuratedItems(
         AND aside_type = ${asideType}
         AND deleted_at IS NULL
       ORDER BY id
+      -- lock-reason: prevents: ABBA deadlock when concurrent multi-item reorders overlap in different orders; writer: reorderCuratedItems
       FOR UPDATE
     `,
   )

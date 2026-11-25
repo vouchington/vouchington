@@ -19,6 +19,7 @@ export async function getDistributionForUpdate(
     FROM follower_distributions
     JOIN users ON users.id = follower_distributions.sender_user_id
     WHERE follower_distributions.id = ${distributionId}
+    -- lock-reason: prevents: committing recipient writes after a competing failure or cursor advance changes the selected chunk; writer: markFollowerDistributionFailed and advanceFollowerDistributionChunkCursor
     FOR UPDATE OF follower_distributions
   `)
   return (rows[0] as DistributionRow | undefined) ?? null

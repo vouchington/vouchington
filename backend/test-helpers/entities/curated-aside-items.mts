@@ -1,6 +1,7 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { CuratedAsideItem, CuratedAsideType } from '@voucha/types/entities/curated-aside-item'
+import { commitRelationWriteDuringCompetingMutationForTest } from '../relation-write-interleaving.mts'
 
 export async function insertTestCuratedAsideItem(data: {
   asideType: CuratedAsideType
@@ -30,4 +31,31 @@ export async function insertTestCuratedAsideItem(data: {
     `,
   )
   return rows[0]!
+}
+
+/** Persists a soft delete before a competing reorder can update the same item. */
+export function commitTestCuratedAsideSoftDeleteDuringReorder<T>(
+  itemId: string,
+  reorder: () => Promise<T>,
+): Promise<T> {
+  return commitRelationWriteDuringCompetingMutationForTest(
+    query =>
+      query(sql`/* commitTestCuratedAsideSoftDeleteDuringReorder */
+        UPDATE curated_aside_items SET deleted_at = CURRENT_TIMESTAMP
+        WHERE id = ${itemId} AND deleted_at IS NULL
+      `),
+    'reorderCuratedItems',
+    reorder,
+  )
+}
+
+/** Durable state of an item, including one hidden by its soft deletion. */
+export async function getTestCuratedAsideItemState(
+  itemId: string,
+): Promise<{ position: number; deleted_at: Date | null } | null> {
+  const { rows } = await write<{ position: number; deleted_at: Date | null }>(sql`
+    /* getTestCuratedAsideItemState */
+    SELECT position, deleted_at FROM curated_aside_items WHERE id = ${itemId}
+  `)
+  return rows[0] ?? null
 }
