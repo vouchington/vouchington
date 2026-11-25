@@ -68,6 +68,7 @@ async function deleteCompletedImportPage(
   const batchColumn = family === 'admin' ? 'admin_batch_id' : 'rss_batch_id'
   const batchTable = family === 'admin' ? 'admin_import_batches' : 'user_rss_feed_import_batches'
   let batchId = cursor[batchColumn]
+  // lock-reason: prevents: an import batch cascade or cursor SET NULL midway through the capped child drain; writer: account purge and import batch cleanup.
   if (batchId) {
     const { rows } = await query<{ id: string }>(
       `/* lockCurrentImportRetentionBatch */
@@ -96,7 +97,6 @@ async function deleteCompletedImportPage(
     cursor.cursor_discovery_url_id = null
     await updateCursor(query, family, batchColumn, batchId, cursor)
   }
-
   let deleted = 0
   if (cursor.phase === 'discoveries') {
     const { rows } = await query<{ import_row_id: string; discovery_url_id: string }>(
