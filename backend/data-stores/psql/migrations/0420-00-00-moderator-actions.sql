@@ -130,6 +130,10 @@ CREATE INDEX IF NOT EXISTS idx_moderator_actions__community__id
   ON moderator_actions (community_id, id DESC);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderator_actions__community__type__id
+  ON moderator_actions (community_id, action_type, id DESC);
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__id
   ON moderator_actions (id DESC);
 

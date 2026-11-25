@@ -80090,6 +80090,40 @@
           "unique": false,
           "valid": true
         },
+        "idx_moderator_actions__community__type__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderator_actions__community__type__id ON public.moderator_actions USING btree (community_id, action_type, id DESC)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "action_type",
+              "descending": false,
+              "expression": "action_type",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_moderator_actions__community_application_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
