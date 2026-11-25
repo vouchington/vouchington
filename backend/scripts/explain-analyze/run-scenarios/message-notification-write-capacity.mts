@@ -67,7 +67,7 @@ async function captureNotificationUpsert(input: {
   const existingPath =
     kind === 'modmail' ? `/messages/modmail/prior-community-slug/${conversationId}` : targetPath
 
-  // Current row bounds hold in both modes. Forced-custom trigger costs are tracked in #6399 and #6400.
+  // The separate modmail capture cost is tracked in #6400.
   registerScenarioContract(scenario, {
     expectations: [{ kind: 'maxProcessedRows', relation: 'notifications', max: recipients.length }],
     forbidSequentialScans: ['notifications'],
@@ -122,6 +122,18 @@ async function captureNotificationUpsert(input: {
   )
 }
 async function runDirectMessageNotifications() {
+  const {
+    rows: [guard],
+  } = await write<{
+    reuses_plan: boolean | null
+  }>(sql`/* assertExplainPushIntentConversationPlanReuse */
+    SELECT 'plan_cache_mode=force_generic_plan' = ANY(proconfig) AS reuses_plan
+    FROM pg_proc
+    WHERE oid = 'fn_reject_notification_push_intent_conversation_mismatch()'::regprocedure
+  `)
+  // The nested one-row lookup must reuse its plan even when the outer upsert forces custom plans.
+  assert.equal(guard?.reuses_plan, true, 'The push-intent guard must reuse one generic lookup plan')
+
   const participantIds = Array.from({ length: CONVERSATION_PARTICIPANT_HARD_MAX - 1 }, (_, index) =>
     seedUuid(10_000 + index, '01'),
   )
