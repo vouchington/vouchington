@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { v7 } from 'uuid'
 import {
@@ -11,6 +12,7 @@ import {
   embeddingBatchExistsForRetentionTest,
   insertEmbeddingBatchForRetentionTest,
   insertTextEmbeddingForRetentionTest,
+  refreshTextEmbeddingDuringRetentionForTest,
   textEmbeddingExistsForRetentionTest,
 } from '@voucha/test-helpers/entities/ai-retention'
 import {
@@ -54,6 +56,29 @@ describe('AI and embedding retention', () => {
     expect(
       await Promise.all(hashes.map(hash => textEmbeddingExistsForRetentionTest(reader, hash))),
     ).toEqual([false, false, true])
+  })
+
+  it('preserves a selected embedding refreshed before eviction can delete it', async () => {
+    const retentionDays = 90
+    const retentionMs = retentionDays * 24 * 60 * 60 * 1_000
+    const aged = new Date(Date.now() - retentionMs - randomInt(2, 2 ** 40))
+    const now = new Date(aged.getTime() + retentionMs + 1)
+    await using setup = await beginTransaction()
+    const hash = await insertTextEmbeddingForRetentionTest(setup, aged)
+    await setup.commit()
+
+    const result = await refreshTextEmbeddingDuringRetentionForTest(hash, () =>
+      cleanupTextEmbeddingCache({
+        retentionDays,
+        now,
+        lowerBoundDate: aged,
+        batchSize: 1,
+        maxBatches: 1,
+      }),
+    )
+    await using reader = await beginTransaction()
+    expect(result).toMatchObject({ deleted: 0, hasMore: false, continuation: null })
+    await expect(textEmbeddingExistsForRetentionTest(reader, hash)).resolves.toBe(true)
   })
 
   it('deletes only terminal old batches and preserves active tracking', async () => {
