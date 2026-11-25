@@ -10,10 +10,7 @@ import {
   createTestReleasedLegalHold,
   legalRecordExists,
 } from '@voucha/test-helpers/entities/legal-retention'
-import {
-  getTestPostgresBackendProcessId,
-  observeTestPostgresActionOrWait,
-} from '@voucha/test-helpers/postgres-lock-wait'
+import { commitTestPostgresHolderAfterActionOrWait } from '@voucha/test-helpers/postgres-lock-skip'
 import { cleanupLegalRecords } from './cleanup-legal-records.mts'
 
 describe('legal record retention', () => {
@@ -183,11 +180,11 @@ describe('legal record retention', () => {
       parent,
     )
     const limits = { batchSize: 1, maxBatches: 1 }
-    const checkoutPid = await getTestPostgresBackendProcessId(checkout)
-    const cleanup = cleanupLegalRecords(limits, now, [parent, unrelated])
-    await observeTestPostgresActionOrWait(checkoutPid, 'deleteExpiredLegalRecordPage', cleanup)
-    await checkout.commit()
-    const page = await cleanup
+    const page = await commitTestPostgresHolderAfterActionOrWait(
+      checkout,
+      'deleteExpiredLegalRecordPage',
+      () => cleanupLegalRecords(limits, now, [parent, unrelated]),
+    )
 
     expect(page).toContainEqual({
       family: 'identity_verification_attempt',

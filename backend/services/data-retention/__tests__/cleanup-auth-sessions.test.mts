@@ -17,10 +17,7 @@ import {
   testRetentionTombstoneExists,
 } from '@voucha/test-helpers'
 import { issueEmailAddressLoginToken } from '@services/users/authentication'
-import {
-  getTestPostgresBackendProcessId,
-  observeTestPostgresActionOrWait,
-} from '@voucha/test-helpers/postgres-lock-wait'
+import { commitTestPostgresHolderAfterActionOrWait } from '@voucha/test-helpers/postgres-lock-skip'
 import {
   cleanupEmailAddressLoginTokens,
   cleanupExpiredUserSessions,
@@ -46,17 +43,18 @@ describe('auth and session retention', () => {
 
     await using writer = await beginTransaction()
     await issueEmailAddressLoginToken(emailAddress, undefined, { query: writer })
-    const writerPid = await getTestPostgresBackendProcessId(writer)
-    const cleanup = cleanupEmailAddressLoginTokens({
-      batchSize: 1,
-      maxBatches: 1,
-      now,
-      lowerBoundDate: window.lowerBoundDate,
-    })
-    await observeTestPostgresActionOrWait(writerPid, 'deleteAuthSessionRetentionTokenPage', cleanup)
-    await writer.commit()
-
-    expect(await cleanup).toEqual({ deleted: 1, hasMore: true, continuation: { at: null, id } })
+    const result = await commitTestPostgresHolderAfterActionOrWait(
+      writer,
+      'deleteAuthSessionRetentionTokenPage',
+      () =>
+        cleanupEmailAddressLoginTokens({
+          batchSize: 1,
+          maxBatches: 1,
+          now,
+          lowerBoundDate: window.lowerBoundDate,
+        }),
+    )
+    expect(result).toEqual({ deleted: 1, hasMore: true, continuation: { at: null, id } })
     await using read = await beginTransaction()
     expect(await testRetentionRowExists(read, 'email_address_login_tokens', id)).toBe(false)
   })
