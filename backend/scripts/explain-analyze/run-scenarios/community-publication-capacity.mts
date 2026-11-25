@@ -119,8 +119,7 @@ async function runAgentModerations({
   const finalPageCursor = encodeScopedUuidCursor(moderationIds[limit * 2 - 1]!, scope)
   registerScenarioContract(scenario, {
     seededRows,
-    // Allow today's broad post-history scan until both plans can use the community scope (#6403).
-    expectations: [{ kind: 'maxProcessedRows', relation: 'agent_moderations', max: 735 }],
+    expectations: [{ kind: 'maxProcessedRows', relation: 'agent_moderations', max: 110 }],
   })
   await runAndCapture(
     scenario,
