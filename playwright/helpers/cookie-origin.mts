@@ -1,4 +1,4 @@
-import { test } from '@playwright/test'
+import { test } from './test.mts'
 
 type TestInfoSource = () => { project: { use: { baseURL?: string } } }
 
