@@ -31,6 +31,7 @@ export async function listCommunityAgentPromptHistory(
 ): Promise<ListCommunityAgentPromptHistoryResult> {
   const limit = Math.min(options.limit ?? DEFAULT_LIMIT, 50)
 
+  // A single-value range keeps community_id as an ordering key for the scoped index.
   const query = sql`/* listCommunityAgentPromptHistory */
     SELECT
       c.id,
@@ -44,7 +45,7 @@ export async function listCommunityAgentPromptHistory(
       u.username AS changed_by_username
     FROM community_agent_prompt_revisions c
     LEFT JOIN users u ON u.id = c.revised_by_id AND u.deleted_at IS NULL
-    WHERE c.community_id = ${communityId}`
+    WHERE c.community_id BETWEEN ${communityId} AND ${communityId}`
 
   if (options.promptId) {
     query.append(sql` AND c.community_agent_prompt_id = ${options.promptId}`)
@@ -53,7 +54,7 @@ export async function listCommunityAgentPromptHistory(
     query.append(sql` AND c.id < ${options.before}`)
   }
 
-  query.append(sql` ORDER BY c.id DESC LIMIT ${limit + 1}`)
+  query.append(sql` ORDER BY c.community_id ASC, c.id DESC LIMIT ${limit + 1}`)
 
   const { rows } = await read<{
     id: string
