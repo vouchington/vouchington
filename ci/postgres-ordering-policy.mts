@@ -59,7 +59,6 @@ export const expectedDirectiveInventory = [
   'backend/services/communities/list-items/add.mts:1',
   // Delivery batches take sorted case locks before the ordered blocker generation rows.
   'backend/services/crawl-chunks/create.mts:1',
-  'backend/services/data-retention/cleanup-deferred-post-votes.mts:2',
   // Both retention readers lock a bounded (timestamp, id) keyset page with SKIP LOCKED.
   // The directive covers only that ordered candidate read; deletes recheck eligibility.
   'backend/services/data-retention/cleanup-deleted-conversation-cursor.mts:1',
