@@ -5,8 +5,7 @@
  */
 
 import { clientApi } from './instance'
-import { assertPathIdentifier } from './path-identifiers'
-import { returnNullForMissingEntity } from '../return-null-for-missing-entity'
+import { assertPathIdentifier, returnNullForMissingEntity } from '@vouchington/api-client'
 import type { PostResponseBody, PostsResponseBody } from '@/types/api-responses'
 import type { PostType } from '@/types/posts'
 

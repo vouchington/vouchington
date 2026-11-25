@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useLayoutEffect, useRef } from 'react'
-import { pageHasContinuation } from '@/lib/api/page-has-continuation'
+import { pageHasContinuation } from '@vouchington/api-client'
 import { PaginatedListFooter } from './paginated-list-footer'
 import { useConsecutiveEmptyPages } from './use-consecutive-empty-pages'
 
