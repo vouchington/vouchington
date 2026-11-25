@@ -192,7 +192,7 @@ describe('Stripe membership provider fact snapshots', () => {
     const subscription = makeSubscription(subscriptionId, sku.stripe_price_id, 500, 'usd', true)
     Reflect.deleteProperty(subscription, 'start_date')
     Reflect.deleteProperty(subscription, 'current_period_start')
-    Object.assign(subscription.items.data[0]!, { current_period_start: 1_750_000_000 })
+    Object.assign(subscription.items.data[0]!, { current_period_start: 1_742_000_000 })
 
     const result = await recordStripeMembershipProviderFacts({
       stripeEventId: event.id,
@@ -200,7 +200,7 @@ describe('Stripe membership provider fact snapshots', () => {
       subscription,
     })
 
-    const expectedEffectiveAt = new Date(1_750_000_000_000)
+    const expectedEffectiveAt = new Date(1_742_000_000_000)
     await expect(getTestMembershipSourceState(membership.id)).resolves.toMatchObject({
       effective_at: expectedEffectiveAt,
     })
