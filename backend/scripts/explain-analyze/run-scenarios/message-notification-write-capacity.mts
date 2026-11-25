@@ -9,8 +9,12 @@ import { extractQueryName, getCapturedQueries } from '@voucha/test-helpers/expla
 import sql from 'sql-template-strings'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
+import { continueAfterFailure } from '../scenario-failures.mts'
 import { seedUuid } from '../seed-data/common.mts'
-import { withCapacityModmailConversation } from './message-notification-write-fixtures.mts'
+import {
+  seedExistingNotifications,
+  withCapacityModmailConversation,
+} from './message-notification-write-fixtures.mts'
 import { runNotificationPushIntentClaimCapacity } from './notification-push-intent-claim-capacity.mts'
 
 const senderId = seedUser.id
@@ -44,26 +48,6 @@ async function resetNotifications(conversationId: string, affected: ReturnedNoti
     WHERE conversation_id = ${conversationId}
       AND user_id = ANY(${affected.map(row => row.user_id)}::uuid[])
       AND id = ANY(${affected.map(row => row.id)}::uuid[])
-  `)
-}
-async function seedExistingNotifications(
-  conversationId: string,
-  kind: 'direct_message' | 'modmail',
-  users: string[],
-  targetPath: string,
-) {
-  await write(sql`/* seedExplainMessageNotificationConflicts */
-    INSERT INTO notifications (user_id, entity_type, conversation_id, kind, delivery_type,
-      target_path, read_at, pushed_at)
-    SELECT user_id, ${kind}::notification_entity_types, ${conversationId},
-      ${kind}::notification_kinds, 'subscription', ${targetPath},
-      CURRENT_TIMESTAMP - INTERVAL '1 hour', CURRENT_TIMESTAMP - INTERVAL '1 hour'
-    FROM unnest(${users}::uuid[]) AS recipient(user_id)
-    ORDER BY user_id
-  `)
-  await write(sql`/* completeExplainMessageNotificationConflicts */
-    UPDATE notification_push_intents SET delivered_at = CURRENT_TIMESTAMP - INTERVAL '1 hour'
-    WHERE conversation_id = ${conversationId} AND user_id = ANY(${users}::uuid[])
   `)
 }
 async function captureNotificationUpsert(input: {
@@ -194,7 +178,10 @@ async function runModmailNotifications() {
   })
 }
 export async function runMessageNotificationWriteCapacity() {
-  await runDirectMessageNotifications()
-  await runModmailNotifications()
-  await runNotificationPushIntentClaimCapacity()
+  await continueAfterFailure('direct-message-notifications-at-cap', runDirectMessageNotifications)
+  await continueAfterFailure('modmail-notifications-at-cap', runModmailNotifications)
+  await continueAfterFailure(
+    'notification-push-intent-claim-at-cap',
+    runNotificationPushIntentClaimCapacity,
+  )
 }
