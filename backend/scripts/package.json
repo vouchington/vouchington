@@ -131,7 +131,7 @@
     "@voucha/test-helpers": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/ai": "^0.4.1",
-    "@vouchington/mcp-server": "^0.2.0",
+    "@vouchington/mcp-server": "^0.2.1",
     "@vouchington/postgres": "^0.6.2",
     "@vouchington/rss-parser": "^0.1.0",
     "@vouchington/utils": "^0.13.0",
@@ -147,6 +147,6 @@
     "@services/openai-agents": "workspace:^",
     "@vouchington/explain-plan": "^0.0.1",
     "husky": "^9.1.7",
-    "vouchington-tooling": "^3.6.4"
+    "vouchington-tooling": "^3.7.0"
   }
 }

@@ -102,7 +102,7 @@
     "@ts-shared/utils": "workspace:^",
     "@voucha/api-contracts": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/mcp-server": "^0.2.0",
+    "@vouchington/mcp-server": "^0.2.1",
     "@vouchington/sentry": "^0.7.0",
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
