@@ -5,7 +5,7 @@ import { TopicRelatedTopicsAsideContent } from './topic-related-topics-aside-con
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { Topic } from '@/types/topics'
 import type { EntityRelationsResponse } from '@/lib/api/entity-relations'
-import { pageHasContinuation } from '@/lib/api/page-has-continuation'
+import { pageHasContinuation } from '@vouchington/api-client'
 
 interface TopicRelatedTopicsAsideStreamingProps {
   topic: Topic

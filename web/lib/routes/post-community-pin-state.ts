@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/nextjs'
 
 import { getCommunity, getCommunityPinnedPosts } from '@/lib/api/server'
-import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
+import { returnNullForMissingEntity } from '@vouchington/api-client'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 
 export async function loadPostCommunityPinState(postCommunity: { slug: string } | null) {

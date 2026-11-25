@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { getMyLandingPageAnalytics } from '@/lib/api/server/landing-page-analytics'
 import { getMyLandingPage, getMyLandingPages } from '@/lib/api/server'
-import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
+import { returnNullForMissingEntity } from '@vouchington/api-client'
 import { LandingPageAnalyticsDashboard } from '@/components/my/landing-page-analytics-dashboard'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 

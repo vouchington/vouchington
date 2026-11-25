@@ -22,7 +22,8 @@ vi.mock<typeof import('react')>(import('react'), async importOriginal => {
   }
 })
 
-vi.mock(import('@/lib/api/return-null-for-missing-entity'), () => ({
+vi.mock(import('@vouchington/api-client'), async importOriginal => ({
+  ...(await importOriginal()),
   returnNullForMissingEntity: vi.fn<VitestLooseMock>(async (promise: Promise<unknown>) => promise),
 }))
 
@@ -35,7 +36,7 @@ import {
   getReferralProgramLinkedValidation,
   getUserReferralLinksList,
 } from '../referral-links'
-import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
+import { returnNullForMissingEntity } from '@vouchington/api-client'
 
 const mockReturnNullForMissingEntity = vi.mocked(returnNullForMissingEntity)
 

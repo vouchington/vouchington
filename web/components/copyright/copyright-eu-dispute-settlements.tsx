@@ -3,7 +3,7 @@
 import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { formatUtcDate } from '@ts-shared/utils/format'
 import { PaginatedListFooter } from '@/components/shared/paginated-list-footer'
-import { pageHasContinuation } from '@/lib/api/page-has-continuation'
+import { pageHasContinuation } from '@vouchington/api-client'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import { listCopyrightEuDisputeSettlements } from '@/lib/api/client/copyright-eu-dispute-settlements'
 import type {

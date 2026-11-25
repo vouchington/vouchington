@@ -4,7 +4,7 @@ import { PostRelatedPostsAsideContent } from './post-related-posts-aside-content
 import { PostRelatedPostsAsideStreaming } from './post-related-posts-aside-streaming'
 import { renderAuthGatedStreaming } from './render-auth-gated-streaming'
 import type { Post } from '@/types/posts'
-import { pageHasContinuation } from '@/lib/api/page-has-continuation'
+import { pageHasContinuation } from '@vouchington/api-client'
 import { TAG_ASIDE_SEARCH_PARAMS } from './tag-relation-configs'
 
 interface PostRelatedPostsAsideProps {

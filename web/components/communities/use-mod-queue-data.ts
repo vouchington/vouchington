@@ -3,7 +3,7 @@
 import { useMemo, useReducer, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
-import { pageHasContinuation } from '@/lib/api/page-has-continuation'
+import { pageHasContinuation } from '@vouchington/api-client'
 import {
   getCommunityPendingModerationReportsClient,
   type ModerationReportSortParam,
