@@ -9,7 +9,7 @@ import type {
   OAuthAccountUpsertOptions,
   PreparedOAuthAccount,
 } from '@services/oauth-accounts/reauthentication'
-import { getProviderFetch } from '@modules/api-egress-proxy'
+import { apiEgressProxyTransport } from '@modules/api-egress-proxy'
 
 export async function prepareGithubAccount(
   code: string,
@@ -24,7 +24,11 @@ export async function prepareGithubAccount(
   return prepareRedeemedProviderAccount(
     githubProvider({ clientId: GITHUB_CLIENT_ID, clientSecret: GITHUB_CLIENT_SECRET }),
     { code, redirectUri, codeVerifier: options.codeVerifier },
-    { ...options, label: 'GitHub', fetch: getProviderFetch('github_oauth_enabled') },
+    {
+      ...options,
+      label: 'GitHub',
+      fetch: apiEgressProxyTransport.getRoutedFetch('github_oauth_enabled'),
+    },
   )
 }
 
@@ -36,6 +40,10 @@ export async function upsertGithubAccount(
   return redeemProviderAccount(
     githubProvider({ clientId: GITHUB_CLIENT_ID, clientSecret: GITHUB_CLIENT_SECRET }),
     { code, redirectUri, codeVerifier: options.codeVerifier },
-    { ...options, label: 'GitHub', fetch: getProviderFetch('github_oauth_enabled') },
+    {
+      ...options,
+      label: 'GitHub',
+      fetch: apiEgressProxyTransport.getRoutedFetch('github_oauth_enabled'),
+    },
   )
 }

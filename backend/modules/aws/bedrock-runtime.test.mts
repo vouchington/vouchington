@@ -2,13 +2,13 @@ import { once } from 'node:events'
 import { createServer } from 'node:http'
 import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime'
 import { afterAll, describe, expect, it, vi } from 'vitest'
-import { installApiEgressProxyRoutingResolver } from '@modules/api-egress-proxy'
+import { apiEgressProxyTransport } from '@modules/api-egress-proxy'
 import { fetchWithTimeoutSimple, getExternalRequestDispatcher } from '@modules/utils/http'
 import { BedrockEmbeddingsClient } from './bedrock-runtime.mts'
 
 describe('BedrockEmbeddingsClient', () => {
   afterAll(() => {
-    installApiEgressProxyRoutingResolver(() => false)
+    apiEgressProxyTransport.setRoutingResolver(() => false)
     vi.unstubAllEnvs()
   })
 
@@ -53,7 +53,7 @@ describe('BedrockEmbeddingsClient', () => {
 
   it('keeps client creation lazy and fails closed when selected proxy configuration is absent', () => {
     vi.stubEnv('API_EGRESS_PROXY_URL', '')
-    installApiEgressProxyRoutingResolver(() => true)
+    apiEgressProxyTransport.setRoutingResolver(() => true)
     expect(() => BedrockEmbeddingsClient.config).toThrow(
       'API_EGRESS_PROXY_URL is required when API egress proxying is enabled',
     )
@@ -64,9 +64,11 @@ describe('BedrockEmbeddingsClient', () => {
     vi.stubEnv('BEDROCK_AWS_ACCESS_KEY_ID', 'synthetic-bedrock-access-key')
     vi.stubEnv('BEDROCK_AWS_SECRET_ACCESS_KEY', 'synthetic-bedrock-secret-key')
     vi.stubEnv('BEDROCK_AWS_SESSION_TOKEN', 'synthetic-bedrock-session-token')
-    installApiEgressProxyRoutingResolver(() => false)
+    apiEgressProxyTransport.setRoutingResolver(() => false)
     const directConfig = BedrockEmbeddingsClient.config
-    installApiEgressProxyRoutingResolver(provider => provider === 'bedrock_embeddings_enabled')
+    apiEgressProxyTransport.setRoutingResolver(
+      provider => provider === 'bedrock_embeddings_enabled',
+    )
 
     const proxiedConfig = BedrockEmbeddingsClient.config
     expect(proxiedConfig).not.toBe(directConfig)
@@ -77,7 +79,7 @@ describe('BedrockEmbeddingsClient', () => {
       sessionToken: 'synthetic-bedrock-session-token',
     })
     expect(BedrockEmbeddingsClient.config).toBe(proxiedConfig)
-    installApiEgressProxyRoutingResolver(() => false)
+    apiEgressProxyTransport.setRoutingResolver(() => false)
     expect(BedrockEmbeddingsClient.config).toBe(directConfig)
 
     const server = createServer((_request, response) => response.end('owned HTTP survives'))
@@ -95,7 +97,9 @@ describe('BedrockEmbeddingsClient', () => {
       const dispatcher = getExternalRequestDispatcher()
 
       BedrockEmbeddingsClient.destroy()
-      installApiEgressProxyRoutingResolver(provider => provider === 'bedrock_embeddings_enabled')
+      apiEgressProxyTransport.setRoutingResolver(
+        provider => provider === 'bedrock_embeddings_enabled',
+      )
       BedrockEmbeddingsClient.destroy()
       expect(destroy).toHaveBeenCalledTimes(2)
       expect(destroyedClients[0]).toBeInstanceOf(BedrockRuntimeClient)

@@ -181,4 +181,32 @@ describe('handleChargeRefunded', () => {
     const matching = refunds.filter(r => r.stripe_refund_id === refundId)
     expect(matching.length).toBe(1)
   })
+
+  it('resolves a legacy top-level invoice.subscription to record the refund', async () => {
+    mockGetStripeInvoice.mockResolvedValue({
+      parent: null,
+      subscription: subId,
+    } as never)
+    const chargeId = `ch_wch_legacy_${Math.random().toString(36).slice(2, 10)}`
+    const refundId = `re_wch_legacy_${Math.random().toString(36).slice(2, 10)}`
+    const eventData = {
+      id: chargeId,
+      invoice: 'in_legacy_1',
+      created: 1_700_000_000,
+      payment_intent: 'pi_wch_legacy',
+      refunds: {
+        data: [{ id: refundId, amount: 1000, currency: 'usd', payment_intent: 'pi_wch_legacy' }],
+        has_more: false,
+      },
+    }
+
+    await handleTestChargeRefund('evt_legacy_sub_1', eventData)
+
+    const refunds = await getTestMembershipRefunds(user.id)
+    const recorded = refunds.find(r => r.stripe_refund_id === refundId)
+    expect(recorded).toBeDefined()
+    expect(recorded!.amount).toEqual({ amount: 1000, currency: 'usd' })
+    expect(recorded!.stripe_charge_id).toBe(chargeId)
+    expect(mockListStripeRefundsForCharge).not.toHaveBeenCalled()
+  })
 })

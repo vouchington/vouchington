@@ -5,7 +5,7 @@ import type {
 } from '../types.mts'
 import onError from '@modules/on-error'
 import { fetch } from 'undici'
-import { getProviderRequestDispatcher } from '@modules/api-egress-proxy'
+import { apiEgressProxyTransport } from '@modules/api-egress-proxy'
 import {
   FEDIVERSE_ADAPTER_BUDGET_MS,
   FEDIVERSE_LEMMY_HOST,
@@ -56,7 +56,7 @@ async function fetchLemmySearch(
   url.searchParams.set('limit', String(limit))
 
   const response = await fetch(url, {
-    dispatcher: getProviderRequestDispatcher('fediverse_search_enabled'),
+    dispatcher: apiEgressProxyTransport.getRoutedRequestDispatcher('fediverse_search_enabled'),
     signal,
     headers: { Accept: 'application/json' },
   })

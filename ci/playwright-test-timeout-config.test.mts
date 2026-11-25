@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import { createVouchaPlaywrightConfig } from '../playwright/config/shared-config.mts'
+import { browserErrorsFixture } from '../playwright/helpers/test.mts'
 
 const baseOptions = {
   backendCommand: 'node backend/entrypoints/api/serve.mts',
@@ -44,4 +45,21 @@ describe('Playwright test deadline cap', () => {
     expect(config.timeout).toBe(30_000)
     expect(config.projects?.[0]?.timeout).toBe(30_000)
   })
+
+  it.each([0, -1, 30_001, Number.POSITIVE_INFINITY, Number.NaN])(
+    'rejects effective timeout %s before monitoring and the test body',
+    async timeout => {
+      let ran = false
+      await expect(
+        browserErrorsFixture(
+          { context: {} as Parameters<typeof browserErrorsFixture>[0]['context'] },
+          async () => {
+            ran = true
+          },
+          { timeout } as Parameters<typeof browserErrorsFixture>[2],
+        ),
+      ).rejects.toThrow(RangeError)
+      expect(ran).toBe(false)
+    },
+  )
 })

@@ -1,22 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  getApiEgressProxyUrl,
-  getProviderRequestDispatcher,
-  installApiEgressProxyRoutingResolver,
-} from './transport.mts'
+import { apiEgressProxyTransport, getApiEgressProxyUrl } from './transport.mts'
 
 describe('API egress proxy transport', () => {
   afterEach(() => {
-    installApiEgressProxyRoutingResolver(undefined)
+    apiEgressProxyTransport.setRoutingResolver(undefined)
     vi.restoreAllMocks()
     vi.unstubAllEnvs()
   })
 
   it('fails closed when a proxy-selected provider has no valid proxy URL', () => {
     vi.stubEnv('API_EGRESS_PROXY_URL', '')
-    installApiEgressProxyRoutingResolver(() => true)
-    expect(() => getProviderRequestDispatcher('stripe_enabled')).toThrow(
+    apiEgressProxyTransport.setRoutingResolver(() => true)
+    expect(() => apiEgressProxyTransport.getRoutedRequestDispatcher('stripe_enabled')).toThrow(
       'API_EGRESS_PROXY_URL is required when API egress proxying is enabled',
     )
   })

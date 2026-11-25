@@ -2,11 +2,11 @@ import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { SqsMessage } from '@vouchington/worker-runtime/sqs'
 import { getTestStripeEventByStripeEventId } from '@voucha/test-helpers/stripe-event-readers'
-import type { ingestStripeEvent } from '@services/stripe/events'
+import * as stripeEvents from '@services/stripe/events'
 import { memberships } from '@queues/memberships/queues'
 import { processStripeEventsSqsMessage } from '../processors.mts'
 
-type StripeEvent = Parameters<typeof ingestStripeEvent>[0]
+type StripeEvent = Parameters<typeof stripeEvents.ingestStripeEvent>[0]
 type StripeInvoice = Extract<StripeEvent, { type: 'invoice.paid' }>['data']['object']
 type StripeInvoicePayment = Extract<StripeEvent, { type: 'invoice_payment.paid' }>['data']['object']
 
@@ -179,5 +179,29 @@ describe('processStripeEventsSqsMessage', () => {
     // Locks in the envelope-unwrap contract: a bare (non-enveloped) event must never be accepted
     // as `.detail` and must never reach insertStripeEvent.
     expect(await getTestStripeEventByStripeEventId(event.id)).toBeNull()
+  })
+
+  it('rejects non-JSON SQS bodies before ingestStripeEvent so SQS routes them to the DLQ', async () => {
+    const ingestSpy = vi.spyOn(stripeEvents, 'ingestStripeEvent')
+    try {
+      const malformed: SqsMessage = {
+        messageId: randomUUID(),
+        receiptHandle: randomUUID(),
+        body: 'not json',
+      }
+
+      await expect(processStripeEventsSqsMessage(malformed)).rejects.toThrow(SyntaxError)
+      expect(ingestSpy).not.toHaveBeenCalled()
+
+      // Prove the spy observes the real import binding on a valid delivery.
+      const validEvent = createStripeEvent()
+      await processStripeEventsSqsMessage(eventBridgeMessage(validEvent))
+      const stored = await getTestStripeEventByStripeEventId(validEvent.id)
+      expect(stored).toMatchObject({ stripe_event_id: validEvent.id })
+      createdRecordIds.push(stored!.id)
+      expect(ingestSpy).toHaveBeenCalledTimes(1)
+    } finally {
+      ingestSpy.mockRestore()
+    }
   })
 })

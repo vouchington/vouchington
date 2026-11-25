@@ -1,5 +1,5 @@
 import OpenAI from 'openai'
-import { getProviderFetch } from '@modules/api-egress-proxy'
+import { apiEgressProxyTransport } from '@modules/api-egress-proxy'
 
 let moderationClient: OpenAI | undefined
 const MODERATION_ATTEMPT_TIMEOUT_MS = 5_000
@@ -14,7 +14,7 @@ function getModerationClient(): OpenAI {
     if (!apiKey) throw new Error('OPENAI_API_KEY is not set')
     moderationClient = new OpenAI({
       apiKey,
-      fetch: getProviderFetch('openai_moderation_enabled', 'long-running'),
+      fetch: apiEgressProxyTransport.getRoutedFetch('openai_moderation_enabled', 'long-running'),
     })
   }
   return moderationClient

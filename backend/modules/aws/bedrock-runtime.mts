@@ -1,6 +1,6 @@
 import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime'
 import { addGracefulShutdownDrainCallback } from '@data-stores/graceful-shutdown'
-import { getApiEgressProxyUrl, isApiEgressProxyRouteEnabled } from '@modules/api-egress-proxy'
+import { apiEgressProxyTransport, getApiEgressProxyUrl } from '@modules/api-egress-proxy'
 import { getReceiverBoundProperty } from '@modules/utils/receiver-bound-property'
 import { HttpsProxyAgent } from 'https-proxy-agent'
 import { BEDROCK_AWS_REGION, createResponseBodyBoundAwsRequestHandler } from './config.mts'
@@ -10,7 +10,7 @@ let directBedrockRuntimeClient: BedrockRuntimeClient | undefined
 let proxiedBedrockRuntimeClient: BedrockRuntimeClient | undefined
 
 function getBedrockRuntimeClient(): BedrockRuntimeClient {
-  if (!isApiEgressProxyRouteEnabled('bedrock_embeddings_enabled')) {
+  if (!apiEgressProxyTransport.isProxyRouteEnabled('bedrock_embeddings_enabled')) {
     return getDirectBedrockRuntimeClient()
   }
   if (!proxiedBedrockRuntimeClient) {

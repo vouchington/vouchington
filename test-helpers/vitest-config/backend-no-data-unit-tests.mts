@@ -33,6 +33,7 @@ export const backendNoDataUnitTestFiles = [
   'backend/services/dynamic-config-admin/registry-shared-ordering.test.mts',
   'backend/services/oauth/__tests__/authorization-account-microsoft.test.mts',
   'backend/modules/model-providers/openai-generate.no-data.test.mts',
+  'backend/modules/utils/http-egress-guardrail.no-data.test.mts',
   'backend/api/response-helpers.no-data.test.mts',
   'backend/api/v1/users/users-query-contract.no-data.test.mts',
   'backend/data-stores/valkey/inflight-saturation.no-data.test.mts',

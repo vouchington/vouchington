@@ -5,7 +5,7 @@ import type {
 } from '../types.mts'
 import onError from '@modules/on-error'
 import { fetch } from 'undici'
-import { getProviderRequestDispatcher } from '@modules/api-egress-proxy'
+import { apiEgressProxyTransport } from '@modules/api-egress-proxy'
 import { FEDIVERSE_PEERTUBE_HOST, FEDIVERSE_PROVIDER_TIMEOUT_MS } from '@voucha/config'
 import { decodeFediverseCursor, encodeFediverseCursor } from '../cursor.mts'
 import { buildPeerTubeCombinedBucket, decodePeerTubeCombinedCursor } from './peertube-cursor.mts'
@@ -43,7 +43,7 @@ async function fetchPeerTubeVideos(
     url.searchParams.set('count', String(count))
 
     const response = await fetch(url, {
-      dispatcher: getProviderRequestDispatcher('fediverse_search_enabled'),
+      dispatcher: apiEgressProxyTransport.getRoutedRequestDispatcher('fediverse_search_enabled'),
       signal: controller.signal,
       headers: { Accept: 'application/json' },
     })
@@ -75,7 +75,7 @@ async function fetchPeerTubeChannels(
     url.searchParams.set('count', String(count))
 
     const response = await fetch(url, {
-      dispatcher: getProviderRequestDispatcher('fediverse_search_enabled'),
+      dispatcher: apiEgressProxyTransport.getRoutedRequestDispatcher('fediverse_search_enabled'),
       signal: controller.signal,
       headers: { Accept: 'application/json' },
     })
