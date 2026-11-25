@@ -10,7 +10,7 @@ import { entityRelationViewerFor } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import { canonicalEntityIds } from './resolve-entity-reference.mts'
-import { sanitizedTitle } from './mcp-read-output.mts'
+import { sanitizeTitle } from '@vouchington/mcp-server/untrusted'
 import { getListAddItemsLimit } from '@services/lists/import-config'
 
 // The structured MCP result cap is 512 KiB. Echoed items stay under half of that.
@@ -97,7 +97,7 @@ export async function addVisibleListItems(
         list_item: {
           ...list_item,
           entity_label:
-            list_item.entity_label === null ? null : await sanitizedTitle(list_item.entity_label),
+            list_item.entity_label === null ? null : await sanitizeTitle(list_item.entity_label),
         },
       }
     }),

@@ -5,7 +5,7 @@ import type { BasicUser } from '@services/users/types'
 import { requirePrivateToolUser } from './private-user.mts'
 import { pageInfoSchema } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT } from './paged-search.mts'
-import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
 import { clampToolLimit } from './search-system.mts'
 import {
   pageProperties,
@@ -35,7 +35,7 @@ const getReferralLinkFeedTool: MergedToolSource<ReferralArgs, ReferralResult> = 
     requiredScopes: ['feeds:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/feeds/referral_links/:feed_type' }],
-    outputSchema: foundOrNotFoundSchema({
+    outputSchema: outcomeSchema('success', {
       results: { type: 'array', items: referralSchema },
       page_info: pageInfoSchema(),
     }),

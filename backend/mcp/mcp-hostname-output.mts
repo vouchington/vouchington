@@ -1,14 +1,10 @@
 import { indexById } from '@modules/utils'
 import { getHostnameElectionByIdCachedBatch } from '@services/entity-fetch'
 import { toPublicViewHostname, type ViewHostname } from '@services/urls-hostnames'
-import { nullable } from '@vouchington/mcp-server/schema'
-import { closedObject, pickProperties } from './read-tool-output-schema.mts'
-import {
-  pageProperties,
-  sanitizedTitle,
-  type McpPage,
-  type McpPageLimit,
-} from './mcp-read-output.mts'
+import { nullable, objectSchema } from '@vouchington/mcp-server/schema'
+import { sanitizeTitle } from '@vouchington/mcp-server/untrusted'
+import { pickProperties } from './read-tool-output-schema.mts'
+import { pageProperties, type McpPage, type McpPageLimit } from './mcp-read-output.mts'
 
 /** Both hostname read tools page like the signed-out REST routes: 25 at most, 25 by default. */
 export const HOSTNAME_PAGE_LIMIT: McpPageLimit = { min: 1, max: 25, default: 25 }
@@ -38,7 +34,7 @@ export async function toMcpHostnames(rows: ViewHostname[]): Promise<McpHostname[
       const election = elections[id]
       return {
         id,
-        hostname: await sanitizedTitle(hostname),
+        hostname: await sanitizeTitle(hostname),
         topic_id,
         election: election
           ? {
@@ -54,9 +50,9 @@ export async function toMcpHostnames(rows: ViewHostname[]): Promise<McpHostname[
 
 /** The properties of an `McpHostname`, from the generated hostname contracts. */
 function mcpHostnameSchema() {
-  return closedObject({
+  return objectSchema({
     ...pickProperties('PublicViewHostname', ['id', 'hostname', 'topic_id']),
-    election: nullable(closedObject(pickProperties('ViewHostnameElection', ELECTION_FIELDS))),
+    election: nullable(objectSchema(pickProperties('ViewHostnameElection', ELECTION_FIELDS))),
   })
 }
 

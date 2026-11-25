@@ -6,7 +6,7 @@ import { VALID_FILTERABLE_POST_TYPES } from '@ts-shared/feed-capabilities'
 import { requirePrivateToolUser } from './private-user.mts'
 import { pageInfoSchema } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT } from './paged-search.mts'
-import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
 import { clampToolLimit } from './search-system.mts'
 import {
   commonProperties,
@@ -45,7 +45,7 @@ const getPostFeedTool: MergedToolSource<PostArgs, FeedResult> = {
     requiredScopes: ['feeds:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/feeds/posts/:feed_type' }],
-    outputSchema: foundOrNotFoundSchema({
+    outputSchema: outcomeSchema('success', {
       results: { type: 'array', items: feedItemSchema('Post') },
       page_info: pageInfoSchema(),
     }),

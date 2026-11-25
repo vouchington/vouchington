@@ -14,7 +14,7 @@ import {
 import { resolveReadableThreads } from './mcp-post-access.mts'
 import { pageInputProperties, pageProperties, type McpPage } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT, type InvalidCursorResult } from './paged-search.mts'
-import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
 import { clampToolLimit } from './search-system.mts'
 
 type ToolArgs = {
@@ -50,7 +50,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     requiredScopes: ['lists:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/lists/:id/items' }],
-    outputSchema: foundOrNotFoundSchema(pageProperties(mcpListItemSchema())),
+    outputSchema: outcomeSchema('success', pageProperties(mcpListItemSchema())),
   },
   function:
     (currentUser: BasicUser) =>

@@ -9,9 +9,8 @@ import {
   type McpPageLimit,
 } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT, type InvalidCursorResult } from './paged-search.mts'
-import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
 import { routeResponseSchema } from './route-response-schema.mts'
-import { routePropertySchema } from '@vouchington/mcp-server/schema'
+import { outcomeSchema, routePropertySchema } from '@vouchington/mcp-server/schema'
 import { clampToolLimit } from './search-system.mts'
 
 type ToolArgs = {
@@ -44,7 +43,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     requiredScopes: ['reference-data:read'],
     annotations: { readOnlyHint: true },
     api: [API],
-    outputSchema: foundOrNotFoundSchema(pageProperties(CURRENCY_SCHEMA)),
+    outputSchema: outcomeSchema('success', pageProperties(CURRENCY_SCHEMA)),
   },
   function:
     (_currentUser: BasicUser) =>

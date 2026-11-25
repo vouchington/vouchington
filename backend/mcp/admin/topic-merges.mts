@@ -6,7 +6,7 @@ import {
   getTopicsByAnyWithRedirectBatch,
 } from '@services/topics'
 import { adminInput, createAdminTool, TEXT_INPUT, UUID_INPUT } from './create-admin-tool.mts'
-import type { ToolOutputSchema } from '@services/openai-agents/tool-types'
+import type { ToolOutputSchema } from '@vouchington/mcp-server/types'
 
 const outputSchema: ToolOutputSchema = {
   type: 'object',

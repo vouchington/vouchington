@@ -27,7 +27,7 @@ import {
   type McpRssFeedItem,
 } from './mcp-rss-output.mts'
 import { pageInfoSchema, type McpPage } from './mcp-read-output.mts'
-import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
 import { clampToolLimit } from './search-system.mts'
 
 type ListArgs = PagedSearchArgs & {
@@ -102,7 +102,7 @@ export const listRssFeedItemsTool: MergedToolSource<ListArgs, ListResult> = {
     requiredScopes: ['rss-feed-items:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/rss-feed-items' }],
-    outputSchema: foundOrNotFoundSchema({
+    outputSchema: outcomeSchema('success', {
       results: { type: 'array', items: mcpRssFeedItemSchema() },
       page_info: pageInfoSchema(),
     }),
@@ -178,7 +178,7 @@ export const getRssFeedItemTool: MergedToolSource<DetailArgs, DetailResult> = {
     requiredScopes: ['rss-feed-items:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/rss-feed-items/:id' }],
-    outputSchema: foundOrNotFoundSchema({ rss_feed_item: mcpRssFeedItemSchema(true) }),
+    outputSchema: outcomeSchema('success', { rss_feed_item: mcpRssFeedItemSchema(true) }),
   },
   function:
     (_currentUser: BasicUser) =>

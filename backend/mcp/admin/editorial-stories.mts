@@ -6,13 +6,14 @@ import {
   setEditorialStoryOfficialItem,
   renameEditorialStory,
 } from '@services/stories'
+import type { ToolOutputSchema } from '@vouchington/mcp-server/types'
 import { adminInput, createAdminTool, UUID_INPUT } from './create-admin-tool.mts'
 import { adminRouteOutputSchema } from './output-schema.mts'
 
 const root = '/api/v1/stories/{storyId}'
 const writes = { readOnlyHint: false, idempotentHint: false, openWorldHint: false }
 const itemInput = adminInput({ story_id: UUID_INPUT, item_id: UUID_INPUT }, ['story_id', 'item_id'])
-const okSchema: import('@services/openai-agents/tool-types').ToolOutputSchema = {
+const okSchema: ToolOutputSchema = {
   type: 'object',
   properties: { success: { type: 'boolean' } },
   required: ['success'],
