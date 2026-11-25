@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
+import sql from 'sql-template-strings'
 import { v7 } from 'uuid'
 import { withTestOwnedPostgresWait } from '../postgres-client-lock-observer.mts'
 import { getTestPostgresBackendProcessId } from '../postgres-lock-wait.mts'
@@ -19,6 +20,29 @@ export async function insertTextEmbeddingForRetentionTest(
     [hash, ZERO_VECTOR, updatedAt],
   )
   return hash
+}
+
+export async function seedTextEmbeddingRetentionCapacityForTest(options: {
+  prefix: string
+  olderCount: number
+  eligibleCount: number
+  freshCount: number
+  lowerBoundDate: Date
+  now: Date
+}): Promise<void> {
+  const { prefix, olderCount, eligibleCount, freshCount, lowerBoundDate, now } = options
+  await write(sql`
+    /* seedTextEmbeddingRetentionCapacity */
+    INSERT INTO bedrock_nova_multimodal_v1_embeddings (content_sha256, embedding, updated_at)
+    SELECT digest(${prefix}::text || ':' || n, 'sha256'), ${ZERO_VECTOR}::vector,
+      CASE
+        WHEN n <= ${olderCount} THEN ${lowerBoundDate}::timestamptz - interval '1 day'
+        WHEN n > ${olderCount + eligibleCount} THEN ${now}::timestamptz - interval '1 day'
+        ELSE ${lowerBoundDate}::timestamptz + n * interval '1 second'
+      END
+    FROM generate_series(1, ${olderCount + eligibleCount + freshCount}::int) AS input(n)
+    ON CONFLICT (content_sha256) DO NOTHING
+  `)
 }
 
 export async function refreshTextEmbeddingDuringRetentionForTest<T>(

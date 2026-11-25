@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { write } from '@data-stores/psql'
 import { cleanupTextEmbeddingCache } from '@services/data-retention/cleanup-text-embeddings'
 import { DATA_RETENTION_MAX_VALUES } from '@services/data-retention/config'
+import { seedTextEmbeddingRetentionCapacityForTest } from '@voucha/test-helpers/entities/ai-retention'
 import sql from 'sql-template-strings'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
@@ -17,21 +18,15 @@ export async function runTextEmbeddingRetentionCapacityScenario(): Promise<void>
   const scenario = 'text-embedding-retention-at-cap'
   const queryName = 'deleteTextEmbeddingRetentionPage'
   const prefix = randomUUID()
-  async function seedRows() {
-    await write(sql`
-      /* seedTextEmbeddingRetentionCapacity */
-      INSERT INTO bedrock_nova_multimodal_v1_embeddings (content_sha256, embedding, updated_at)
-      SELECT digest(${prefix}::text || ':' || n, 'sha256'),
-        ('[' || repeat('0,', 1023) || '0]')::vector,
-        CASE
-          WHEN n <= ${excludedRows} THEN ${lowerBoundDate}::timestamptz - interval '1 day'
-          WHEN n > ${excludedRows + pageSize + 1} THEN ${now}::timestamptz - interval '1 day'
-          ELSE ${lowerBoundDate}::timestamptz + n * interval '1 second'
-        END
-      FROM generate_series(1, ${totalRows}::int) AS input(n)
-      ON CONFLICT (content_sha256) DO NOTHING
-    `)
-  }
+  const seedRows = () =>
+    seedTextEmbeddingRetentionCapacityForTest({
+      prefix,
+      olderCount: excludedRows,
+      eligibleCount: pageSize + 1,
+      freshCount: excludedRows,
+      lowerBoundDate,
+      now,
+    })
 
   async function survivingOrdinals() {
     const { rows } = await write<{ n: number }>(sql`
