@@ -36,10 +36,10 @@
     "@vouchington/utils": "^0.13.0",
     "pg": "^8.23.1",
     "sql-template-strings": "^2.2.2",
-    "vouchington-tooling": "^3.7.0"
+    "vouchington-tooling": "^3.9.0"
   },
   "devDependencies": {
-    "no-mistakes": "^0.109.119",
+    "no-mistakes": "^0.109.121",
     "oxfmt": "^0.79.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2"
   }
