@@ -90,8 +90,7 @@ export async function runTopicClaimCapacityScenarios(): Promise<void> {
     await write('/* analyzeTopicClaimCapacity */ ANALYZE topic_claims')
     registerScenarioContract('topic-claims-for-user-at-live-cap', {
       expectations: [
-        // #6415 tracks the generic continuation scanning other users' claims.
-        { kind: 'maxProcessedRows', relation: 'topic_claims', max: 10_101 },
+        { kind: 'maxProcessedRows', relation: 'topic_claims', max: TARGET_CLAIM_COUNT },
       ],
       seededRows: { topic_claims: userFixture.allIds.length + background.allIds.length },
     })
