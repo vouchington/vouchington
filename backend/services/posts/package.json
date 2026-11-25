@@ -89,6 +89,6 @@
     "@services/web-risk": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.1"
   }
 }
