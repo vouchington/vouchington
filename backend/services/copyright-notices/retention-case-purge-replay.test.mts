@@ -1,4 +1,3 @@
-import { useCopyrightCasePurgeIsolation } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-isolation'
 import { describe, expect, it } from 'vitest'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
@@ -18,7 +17,7 @@ import {
 } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-replay-fixture'
 import { createCopyrightFormIntake } from './form-intakes.mts'
 import { createCopyrightEmailIntake, ErasedCopyrightEmailIntakeReplay } from './email-intakes.mts'
-import { runCopyrightCasePurgePage } from './retention-case-purge-page.mts'
+import { runIsolatedCopyrightCasePurgePage } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-isolation'
 import {
   insertTestCopyrightDecisionRationaleForCase,
   insertTestCopyrightDecisionRationaleForIntake,
@@ -40,7 +39,7 @@ function firstPage(noticeId: string): CopyrightCasePurgeJobData {
 async function runToPointerCut(noticeId: string): Promise<CopyrightCasePurgeJobData> {
   let data = firstPage(noticeId)
   for (let page = 0; page < 1_000; page += 1) {
-    const result = await runCopyrightCasePurgePage(data, PURGE_NOW)
+    const result = await runIsolatedCopyrightCasePurgePage(data, PURGE_NOW)
     if (!result.hasMore)
       throw new Error(`Copyright purge stopped before pointer cuts at ${data.phase}`)
     data = result.data
@@ -52,7 +51,7 @@ async function runToPointerCut(noticeId: string): Promise<CopyrightCasePurgeJobD
 async function finishCase(data: CopyrightCasePurgeJobData): Promise<void> {
   let current = data
   for (let page = 0; page < 1_000; page += 1) {
-    const result = await runCopyrightCasePurgePage(current, PURGE_NOW)
+    const result = await runIsolatedCopyrightCasePurgePage(current, PURGE_NOW)
     if (!result.hasMore) {
       const state = await readCopyrightCasePurgeFixture(current.noticeId)
       if (state.live || state.retained)
@@ -67,7 +66,6 @@ async function finishCase(data: CopyrightCasePurgeJobData): Promise<void> {
 describe('initial copyright submission replay during case purge', () => {
   useAutomaticProvisionalWithholding()
   const bucket = useCopyrightEvidenceBucket()
-  useCopyrightCasePurgeIsolation('exclusive')
   const setPageSize = useCopyrightCasePurgePageSize()
 
   // no-mistakes-timeout-reason: reviewed form fixture and bounded case purge pages through final root deletion
@@ -79,7 +77,7 @@ describe('initial copyright submission replay during case purge', () => {
     expect(before).toMatchObject({ isDuplicate: true, intake: { id: form.intakeId } })
 
     const pointer = await runToPointerCut(form.noticeId)
-    const during = await runCopyrightCasePurgePage(pointer, PURGE_NOW)
+    const during = await runIsolatedCopyrightCasePurgePage(pointer, PURGE_NOW)
     expect(during.data.phase).toBe('pointers')
     await expect(createCopyrightFormIntake(form.input)).resolves.toMatchObject({
       isDuplicate: true,
@@ -113,7 +111,7 @@ describe('initial copyright submission replay during case purge', () => {
     await expect(createCopyrightEmailIntake(input)).resolves.toMatchObject({ isNew: false })
 
     const pointer = await runToPointerCut(email.noticeId)
-    const during = await runCopyrightCasePurgePage(pointer, PURGE_NOW)
+    const during = await runIsolatedCopyrightCasePurgePage(pointer, PURGE_NOW)
     expect(during.data.phase).toBe('pointers')
     await expect(createCopyrightEmailIntake(input)).rejects.toBeInstanceOf(
       ErasedCopyrightEmailIntakeReplay,

@@ -1,4 +1,3 @@
-import { useCopyrightCasePurgeIsolation } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-isolation'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
@@ -17,7 +16,7 @@ import {
   settleCopyrightCasePurgeFixtureActions,
   useCopyrightCasePurgePageSize,
 } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-fixture'
-import { runCopyrightCasePurgePage } from './retention-case-purge-page.mts'
+import { runIsolatedCopyrightCasePurgePage } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-isolation'
 
 const PURGE_NOW = new Date('2100-01-01T12:00:00.000Z')
 
@@ -35,7 +34,7 @@ function firstPage(noticeId: string): CopyrightCasePurgeJobData {
 async function finishCase(data: CopyrightCasePurgeJobData): Promise<void> {
   let current = data
   for (let page = 0; page < 1_000; page += 1) {
-    const result = await runCopyrightCasePurgePage(current, PURGE_NOW)
+    const result = await runIsolatedCopyrightCasePurgePage(current, PURGE_NOW)
     if (!result.hasMore) {
       const state = await readCopyrightCasePurgeFixture(current.noticeId)
       if (state.live || state.retained)
@@ -65,7 +64,6 @@ async function assertKeyReused(key: string): Promise<void> {
 describe('copyright case purge shared evidence ownership', () => {
   useAutomaticProvisionalWithholding()
   const bucket = useCopyrightEvidenceBucket()
-  useCopyrightCasePurgeIsolation('exclusive')
   const setPageSize = useCopyrightCasePurgePageSize()
 
   // no-mistakes-timeout-reason: two reviewed email cases and their bounded PostgreSQL and S3 pages
@@ -101,7 +99,7 @@ describe('copyright case purge shared evidence ownership', () => {
 
     let data = firstPage(second.noticeId)
     for (let page = 0; page < 1_000; page += 1) {
-      const result = await runCopyrightCasePurgePage(data, PURGE_NOW)
+      const result = await runIsolatedCopyrightCasePurgePage(data, PURGE_NOW)
       if (!result.hasMore) throw new Error('Second case stopped before claiming shared object')
       data = result.data
       if (

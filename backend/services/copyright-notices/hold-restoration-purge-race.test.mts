@@ -1,4 +1,3 @@
-import { useCopyrightCasePurgeIsolation } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-isolation'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { createCopyrightRecoveryPurgeScene } from '@voucha/test-helpers/copyright-recovery-purge-scene'
@@ -11,14 +10,13 @@ import {
 } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-fixture'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import { recoverBlockedCopyrightHoldRestoration } from './hold-restoration-recovery.mts'
-import { runCopyrightCasePurgePage } from './retention-case-purge-page.mts'
+import { runIsolatedCopyrightCasePurgePage } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-isolation'
 
 const purgeNow = new Date('2100-01-01T12:00:00.000Z')
 
 describe('blocked restoration recovery versus case purge', () => {
   useAutomaticProvisionalWithholding()
   useCopyrightEvidenceBucket()
-  useCopyrightCasePurgeIsolation('shared')
   const setPageSize = useCopyrightCasePurgePageSize()
   beforeEach(() => {
     installTestMediaDeliveryEdge()
@@ -41,7 +39,7 @@ describe('blocked restoration recovery versus case purge', () => {
       values => values.includes(scene.restore.id),
       async () => {
         for (let step = 0; step < 1000; step += 1) {
-          const page = await runCopyrightCasePurgePage(data, purgeNow)
+          const page = await runIsolatedCopyrightCasePurgePage(data, purgeNow)
           data = page.data
           if (!page.hasMore) {
             purgeCompleted = true
