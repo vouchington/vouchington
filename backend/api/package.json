@@ -270,6 +270,6 @@
     "@voucha/test-helpers": "workspace:^",
     "node-app-attest": "^2.2.0",
     "supertest": "^7.3.2",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.1"
   }
 }
