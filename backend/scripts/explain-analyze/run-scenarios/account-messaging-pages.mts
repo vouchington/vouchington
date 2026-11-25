@@ -19,7 +19,7 @@ async function captureModmailInbox(fixture: Fixture): Promise<void> {
   registerScenarioContract(scenario, {
     expectations: [
       { kind: 'noSeqScan', relation: 'conversations' },
-      // Custom reads all subject threads before sorting. https://github.com/vouchington/vouchington/issues/6404
+      // Both plan modes can scan all subject threads before sorting the first page. https://github.com/vouchington/vouchington/issues/6404
       { kind: 'maxProcessedRows', relation: 'conversations', max: 320 },
     ],
   })
