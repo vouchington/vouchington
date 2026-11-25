@@ -5,7 +5,7 @@ import sql from 'sql-template-strings'
 
 const BACKGROUND_OWNERS = 400
 export const ACCOUNT_HISTORY = 220
-export const GRANTS_PER_APP = 3
+const GRANTS_PER_APP = 3
 // USER_EMAIL_ADDRESSES_MAX in backend/services/user-product-limits/config.mts.
 export const EMAIL_STORAGE_CAP = 25
 
