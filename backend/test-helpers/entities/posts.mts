@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { read, write, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
@@ -148,6 +148,7 @@ export async function updatePostTitleMarkdown(
   postId: string,
   title: string,
   markdown: string,
+  options: QueryOptions = {},
 ): Promise<void> {
   await write(
     sql`/* updatePostTitleMarkdown */
@@ -156,6 +157,7 @@ export async function updatePostTitleMarkdown(
       markdown = ${markdown}
     WHERE id = ${postId}
   `,
+    options,
   )
 }
 

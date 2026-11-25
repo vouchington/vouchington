@@ -22,12 +22,19 @@ export async function updateStoryPostAgentResult(
   await invalidate.posts(postId)
 
   async function updatePostInTransaction(): Promise<boolean> {
+    const { rowCount } = await query(sql`/* updateStoryPostAgentResult:writeSummary */
+      UPDATE posts SET ai_summary_markdown = ${aiSummaryMarkdown}
+      WHERE id = ${postId} AND post_type = 'story'
+    `)
+    if (rowCount === 0) return false
+
+    // Read hash inputs after the summary write settles concurrent edits on this post.
     const { rows: postRows } = await query<{
       title: string | null
       markdown: string | null
       structured_data: unknown
       images: Array<{ image_id: string; order_index: number; caption?: string }> | null
-    }>(sql`/* updateStoryPostAgentResult */
+    }>(sql`/* updateStoryPostAgentResult:readHashInputs */
       SELECT
         title,
         markdown,
@@ -49,12 +56,9 @@ export async function updateStoryPostAgentResult(
           WHERE post_images.post_id = posts.id
         ), '[]'::json) AS images
       FROM posts
-      WHERE id = ${postId} AND post_type = 'story'
-      -- lock-reason: prevents: writing a story summary digest against concurrently edited post content; writer: story summarization and post edits.
-      FOR UPDATE
+      WHERE id = ${postId}
     `)
-    const post = postRows[0]
-    if (!post) return false
+    const post = postRows[0]!
     const currentTitle = post.title ?? ''
     const currentMarkdown = post.markdown ?? ''
     const embeddingContentSha = createPostTextEmbeddingContent({
@@ -70,14 +74,12 @@ export async function updateStoryPostAgentResult(
       ai_summary_markdown: aiSummaryMarkdown,
       images: post.images ?? [],
     }).content_sha256
-    const { rows } = await query<{ id: string }>(sql`/* updateStoryPostAgentResult */
-    UPDATE posts
-    SET ai_summary_markdown = ${aiSummaryMarkdown},
-        bedrock_nova_multimodal_v1_content_sha256 = ${embeddingContentSha},
-        llm_moderation_content_sha256 = ${moderationContentSha}
-    WHERE id = ${postId} AND post_type = 'story'
-    RETURNING id`)
-    if (!rows[0]) return false
+    await query(sql`/* updateStoryPostAgentResult:writeHashes */
+      UPDATE posts
+      SET bedrock_nova_multimodal_v1_content_sha256 = ${embeddingContentSha},
+          llm_moderation_content_sha256 = ${moderationContentSha}
+      WHERE id = ${postId}
+    `)
     await resetPostClearance(postId, null, { query })
     await recordPostPublicationChange(query, {
       scope: { type: 'post', postId },
