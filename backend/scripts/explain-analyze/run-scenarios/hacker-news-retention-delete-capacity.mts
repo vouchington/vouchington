@@ -33,13 +33,11 @@ export async function runHackerNewsRetentionDeleteCapacityScenario(): Promise<vo
     registerScenarioContract(scenario, {
       allowEmptyResult: true,
       expectations: [
-        // These are the current custom-plan scan baselines for the full configured page.
-        // The selector scenario also leaves up to 25 children of each kind.
-        // Tighten the custom-plan story ceiling in #6421.
+        // Read each selected story once for the candidate page and once for deletion.
         {
           kind: 'maxProcessedRows',
           relation: 'url_hacker_news_stories',
-          max: fixture.seededRows.url_hacker_news_stories + 25 + batchSize * 12,
+          max: batchSize * 12 * 2,
         },
         // Tighten the custom-plan comment ceiling in #6422.
         {
