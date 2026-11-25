@@ -5040,7 +5040,7 @@
         "idx_agent_moderations__post_prompt_live_newest": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_agent_moderations__post_prompt_live_newest ON ONLY public.agent_moderations USING btree (post_id, prompt_id, id DESC) WHERE (deleted_at IS NULL)",
+          "definition": "CREATE INDEX idx_agent_moderations__post_prompt_live_newest ON ONLY public.agent_moderations USING btree (post_id, prompt_id, id) WHERE (deleted_at IS NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -5059,9 +5059,9 @@
             },
             {
               "column": "id",
-              "descending": true,
+              "descending": false,
               "expression": "id",
-              "nullsFirst": true,
+              "nullsFirst": false,
               "opclass": "uuid_ops"
             }
           ],

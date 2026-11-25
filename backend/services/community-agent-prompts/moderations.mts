@@ -21,7 +21,7 @@ export async function searchCommunityAgentModerations(
     ? decodeScopedUuidCursor(options.after, scope, 'Invalid moderation cursor').id
     : undefined
   // A result beyond a prompt's page cannot be in the merged page.
-  // The scalar limit keeps the per-prompt index walk ordered in custom plans.
+  // The single-value prompt range keeps the prompt key in the ordered index walk.
   const fetchLimit = options.limit + 1
   const statement = sql`/* searchCommunityAgentModerations */
     SELECT
@@ -35,12 +35,12 @@ export async function searchCommunityAgentModerations(
       SELECT am.id, am.post_id, am.is_flagged, am.created_at
       FROM agent_moderations am
       WHERE am.post_id = ${postId}
-        AND am.prompt_id = cap.id
+        AND am.prompt_id BETWEEN cap.id AND cap.id
         AND am.deleted_at IS NULL
   `
   if (afterId) statement.append(sql` AND am.id > ${afterId}::uuid`)
   statement.append(sql`
-      ORDER BY am.id ASC LIMIT (SELECT ${fetchLimit}::bigint)
+      ORDER BY am.prompt_id ASC, am.id ASC LIMIT (SELECT ${fetchLimit}::bigint)
     ) am
     WHERE cap.community_id = ${communityId}
       AND cap.deleted_at IS NULL

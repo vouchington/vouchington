@@ -931,8 +931,11 @@ CREATE INDEX IF NOT EXISTS idx_agent_moderations__post_prompt_newest
   ON agent_moderations (post_id, prompt_id, id DESC);
 -- A full index could heap-filter arbitrarily many soft-deleted successors when
 -- an insert looks up the prior live keeper; this partial index bounds that probe.
+-- Forward order supports live history by prompt and ID. Newest probes fix both
+-- leading keys and can walk the same index backward.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_agent_moderations__post_prompt_live_newest
-  ON agent_moderations (post_id, prompt_id, id DESC) WHERE deleted_at IS NULL;
+  ON agent_moderations (post_id, prompt_id, id) WHERE deleted_at IS NULL;
 
 -- RI-usable index for the prompt_id FK
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
