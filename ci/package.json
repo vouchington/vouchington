@@ -10,7 +10,7 @@
   "dependencies": {
     "@ts-shared/utils": "workspace:^",
     "@vouchington/localization": "^0.3.1",
-    "@vouchington/localization-compiler": "^0.3.0",
+    "@vouchington/localization-compiler": "^0.3.1",
     "@vouchington/postgres": "^0.6.2",
     "coverage-check": "^0.18.1",
     "jsonc-parser": "^3.3.1",
@@ -21,7 +21,7 @@
     "remark-parse": "^11.0.0",
     "remark-rehype": "^11.1.2",
     "unified": "^11.0.5",
-    "vouchington-tooling": "^3.6.4"
+    "vouchington-tooling": "^3.7.0"
   },
   "devDependencies": {
     "@types/picomatch": "^4.0.3",
