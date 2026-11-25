@@ -5,6 +5,7 @@ import {
   insertTestPost,
   setPostVotesScoreUp,
   seedSearchEmbeddingCache,
+  suspendTestUser,
 } from '@voucha/test-helpers'
 import { setHackerNewsReferenceFlagsForTest } from '@voucha/test-helpers/hacker-news-references'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
@@ -139,6 +140,68 @@ describe('Hacker News hot search bounds', () => {
         ),
       ).toEqual([pending, approved])
     } finally {
+      await Promise.all(ids.map(id => deleteTestPost(id)))
+    }
+  })
+
+  it('checks both an anonymous candidate and its access root', async () => {
+    const [owner, suspended] = await Promise.all([createTestUserDirect(), createTestUserDirect()])
+    await Promise.all([
+      postsWorkConfig.waitForInitialization(),
+      hackerNewsVisibilityConfig.waitForInitialization(),
+    ])
+    const restoreVisibility = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
+      references_visible: true,
+    })
+    const ids: string[] = []
+    async function insertCandidate(options: Partial<Parameters<typeof insertTestPost>[0]> = {}) {
+      const id = await insertTestPost({
+        createdById: owner.id,
+        createdAt: new Date(NON_DECAYING_INSTANT + ids.length),
+        title: crypto.randomUUID(),
+        slug: crypto.randomUUID(),
+        markdown: 'Anonymous HN access fixture',
+        ...options,
+      })
+      ids.push(id)
+      return id
+    }
+    try {
+      const root = await insertCandidate()
+      const suspendedRoot = await insertCandidate({ createdById: suspended.id })
+      await suspendTestUser(suspended.id)
+      const privateRoot = await insertCandidate({ privacy: 'private', broadcast: 'followers' })
+      const reply = await insertCandidate({ parentId: root, rootId: root, postType: 'comment' })
+      const privateReply = await insertCandidate({
+        parentId: privateRoot,
+        rootId: privateRoot,
+        postType: 'comment',
+      })
+      const pendingReply = await insertCandidate({
+        parentId: root,
+        rootId: root,
+        postType: 'comment',
+        clearanceStatus: 'pending',
+      })
+      const suspendedRootReply = await insertCandidate({
+        parentId: suspendedRoot,
+        rootId: suspendedRoot,
+        postType: 'comment',
+      })
+      const candidates = [root, reply, privateReply, pendingReply, suspendedRootReply]
+      await Promise.all(candidates.map(id => setPostVotesScoreUp(id, 1)))
+      await setHackerNewsReferenceFlagsForTest(candidates, [])
+      const page = await getPostIds(undefined, {
+        user_id: owner.id,
+        has_hacker_news_references: true,
+        post_types: ['discussion', 'comment'],
+        sort: 'hot',
+        time_range: '1m',
+        limit: candidates.length,
+      })
+      expect(page.results.map(row => row.id)).toEqual([reply, root])
+    } finally {
+      restoreVisibility()
       await Promise.all(ids.map(id => deleteTestPost(id)))
     }
   })

@@ -49,25 +49,38 @@ function buildDiscoveryEligibility(
   isAdmin: boolean,
   includeArchivedCommunities: boolean,
 ): SQLStatement {
+  // One access-root row gives the planner one public eligibility tree. A root needs no post lookup.
+  if (!viewer) {
+    return sql`EXISTS (
+    SELECT 1 FROM (
+      SELECT posts.id, posts.deleted_at, posts.created_by_id, posts.approved_at,
+        posts.archived_at, posts.privacy, posts.broadcast, posts.community_id, posts.post_type
+      WHERE posts.root_post_id IS NULL
+      UNION ALL
+      SELECT stored_root.id, stored_root.deleted_at, stored_root.created_by_id,
+        stored_root.approved_at, stored_root.archived_at, stored_root.privacy,
+        stored_root.broadcast, stored_root.community_id, stored_root.post_type
+      FROM posts stored_root WHERE stored_root.id = posts.root_post_id
+    ) root_post WHERE `
+      .append(
+        buildPublicPostEligibilityFilter('posts', 'root_post', {
+          includeArchivedCommunities,
+          reuseCandidateAuthorCheck: true,
+        }),
+      )
+      .append(sql`)`)
+  }
   const viewerOptions = {
-    currentUserId: viewer?.id ?? '',
+    currentUserId: viewer.id,
     includeArchivedCommunities,
     isAdministrator: isAdmin,
   }
-  // Root posts already supply their own access row; only replies need a keyed root probe.
+  // Root posts already supply their own access row. Replies need a keyed root probe.
   return sql`CASE WHEN posts.root_post_id IS NULL THEN `
-    .append(
-      viewer
-        ? buildViewerPostDiscoveryEligibilityFilter('posts', 'posts', viewerOptions)
-        : buildPublicPostEligibilityFilter('posts', 'posts', { includeArchivedCommunities }),
-    )
+    .append(buildViewerPostDiscoveryEligibilityFilter('posts', 'posts', viewerOptions))
     .append(sql` ELSE EXISTS (
     SELECT 1 FROM posts root_post WHERE root_post.id = posts.root_post_id AND `)
-    .append(
-      viewer
-        ? buildViewerPostDiscoveryEligibilityFilter('posts', 'root_post', viewerOptions)
-        : buildPublicPostEligibilityFilter('posts', 'root_post', { includeArchivedCommunities }),
-    )
+    .append(buildViewerPostDiscoveryEligibilityFilter('posts', 'root_post', viewerOptions))
     .append(sql`) END`)
 }
 
