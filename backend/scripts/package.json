@@ -148,6 +148,7 @@
     "valkyries": "^0.15.0"
   },
   "devDependencies": {
+    "@services/notifications-push": "workspace:^",
     "@services/openai-agents": "workspace:^",
     "@vouchington/explain-plan": "^0.0.1",
     "husky": "^9.1.7",
