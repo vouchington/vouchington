@@ -37,7 +37,7 @@ export async function checkAutomaticWithholdingCaps(
     SELECT count(*)::int AS total
     FROM copyright_notices notice
     JOIN copyright_notice_submissions submission ON submission.copyright_notice_id = notice.id
-    -- no-mistakes-disable-next-line postgres-required-predicates: assessed_at defines the exact rolling cap across retained assessment partitions
+    -- no-mistakes-disable-next-line postgres-required-predicates: assessed_at defines the best-effort rolling cap across retained assessment partitions
     JOIN copyright_notice_submission_assessments assessment
       ON assessment.copyright_notice_submission_id = submission.id
     WHERE notice.claimant_user_id = ${input.claimantId}
@@ -62,7 +62,7 @@ export async function checkAutomaticWithholdingCaps(
     JOIN copyright_notice_targets target ON target.placement_id = image_placement.placement_id
     JOIN copyright_notice_submissions submission
       ON submission.copyright_notice_id = target.copyright_notice_id
-    -- no-mistakes-disable-next-line postgres-required-predicates: assessed_at defines the exact rolling cap across retained assessment partitions
+    -- no-mistakes-disable-next-line postgres-required-predicates: assessed_at defines the best-effort rolling cap across retained assessment partitions
     JOIN copyright_notice_submission_assessments assessment
       ON assessment.copyright_notice_submission_id = submission.id
     WHERE post.created_by_id = ANY(${posterIds}::uuid[])
