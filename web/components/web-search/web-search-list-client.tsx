@@ -37,7 +37,7 @@ export function WebSearchListClient({ initialData, query }: WebSearchListClientP
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
-      isEmpty={results.length === 0}
+      itemCount={results.length}
       emptyState={
         <EmptyState
           icon='search'

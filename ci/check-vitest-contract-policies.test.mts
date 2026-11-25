@@ -63,7 +63,7 @@ describe('tracked Vitest workflow contract checkers', () => {
     await writeTrackedPolicyFixture(
       root,
       path,
-      sources[path]!.replace('retention-days: 1', 'retention-days: 2'),
+      sources[path]!.replace('retention-days: 7', 'retention-days: 2'),
     )
     expect(checkVitestReporterPolicy(root)).toEqual([
       '.github/workflows/tests-web.yml: web-tests JUnit upload policy',

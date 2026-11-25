@@ -1,7 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import type { CommunityPostsResponseBody } from '@/types/api-responses'
+import { setupInfiniteScrollObserverHarness } from '@/test-helpers/infinite-scroll-observer-harness'
 
 const mockNav = createNavMock()
 
@@ -37,7 +38,9 @@ const emptyPosts = {
   posts_metrics: {},
 } as CommunityPostsResponseBody
 
-describe('ModQueue pending-post continuation', () => {
+describe('ModQueue continuation', () => {
+  const observer = setupInfiniteScrollObserverHarness()
+
   afterEach(() => {
     vi.clearAllMocks()
     mockNav.reset()
@@ -68,5 +71,33 @@ describe('ModQueue pending-post continuation', () => {
     expect(screen.queryByText('No pending posts.')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
     expect(loadMore).toHaveBeenCalledOnce()
+  })
+
+  it('continues an empty reports page without a scroll', async () => {
+    const loadMoreReports = vi.fn<() => Promise<void>>(async () => {})
+    mockUsePaginatedList.mockImplementation((_initialPage, endpoint) => ({
+      pages: [],
+      hasNextPage: endpoint.endsWith('/reports/pending'),
+      endCursor: endpoint.endsWith('/reports/pending') ? 'report-cursor' : null,
+      loadMore: loadMoreReports,
+      loadingMore: false,
+      fetchError: null,
+      clearError: vi.fn<() => void>(),
+      resetKey: 0,
+    }))
+
+    render(
+      <ModQueue
+        data={emptyPosts}
+        communitySlug='credit-cards'
+      />,
+    )
+
+    expect(screen.queryByText('No pending reports.')).not.toBeInTheDocument()
+    await act(async () => {
+      observer.flushRaf()
+      observer.triggerIntersection(true)
+    })
+    expect(loadMoreReports).toHaveBeenCalledOnce()
   })
 })

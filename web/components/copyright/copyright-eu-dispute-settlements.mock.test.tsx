@@ -36,6 +36,22 @@ describe('CopyrightEuDisputeSettlements continuation', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
+  it('offers manual continuation on an empty page and shows empty state at the end', async () => {
+    list.mockResolvedValueOnce(makeCopyrightEuDisputeSettlementsPage([]))
+    render(
+      <CopyrightEuDisputeSettlements
+        noticeId={noticeId}
+        data={makeCopyrightEuDisputeSettlementsPage([], 'empty-cursor')}
+      />,
+    )
+    expect(screen.queryByText('No dispute settlement has been recorded.')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
+
+    expect(await screen.findByText('No dispute settlement has been recorded.')).toBeVisible()
+    expect(list).toHaveBeenCalledExactlyOnceWith(noticeId, { after: 'empty-cursor' })
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
   it('keeps loaded records on failure and retries the same cursor', async () => {
     list
       .mockRejectedValueOnce(new Error('Connection lost'))

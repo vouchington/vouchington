@@ -7,12 +7,14 @@ import { InfiniteScroll } from '../infinite-scroll'
 import { setupInfiniteScrollObserverHarness } from '@/test-helpers/infinite-scroll-observer-harness'
 
 describe('InfiniteScroll', () => {
-  const { flushRaf, triggerIntersection, triggerScroll } = setupInfiniteScrollObserverHarness()
+  const { mockObserve, flushRaf, triggerIntersection, triggerScroll } =
+    setupInfiniteScrollObserverHarness()
 
   it('does not call onLoadMore when not intersecting', async () => {
     const onLoadMore = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
     render(
       <InfiniteScroll
+        itemCount={1}
         hasNextPage
         endCursor='cursor1'
         onLoadMore={onLoadMore}
@@ -34,6 +36,7 @@ describe('InfiniteScroll', () => {
     const onLoadMore = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
     render(
       <InfiniteScroll
+        itemCount={1}
         hasNextPage
         endCursor='cursor1'
         onLoadMore={onLoadMore}
@@ -61,6 +64,7 @@ describe('InfiniteScroll', () => {
       .mockResolvedValue(undefined)
     render(
       <InfiniteScroll
+        itemCount={1}
         hasNextPage
         endCursor='cursor1'
         onLoadMore={onLoadMore}
@@ -92,6 +96,7 @@ describe('InfiniteScroll', () => {
 
     render(
       <InfiniteScroll
+        itemCount={1}
         hasNextPage
         endCursor='cursor1'
         onLoadMore={onLoadMore}
@@ -123,6 +128,7 @@ describe('InfiniteScroll', () => {
     const onLoadMore = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
     const { rerender } = render(
       <InfiniteScroll
+        itemCount={1}
         hasNextPage
         endCursor='cursor1'
         onLoadMore={onLoadMore}
@@ -151,6 +157,7 @@ describe('InfiniteScroll', () => {
     // Changing resetKey clears the loaded-cursor guard; same endCursor fires again
     rerender(
       <InfiniteScroll
+        itemCount={1}
         hasNextPage
         endCursor='cursor1'
         onLoadMore={onLoadMore}
@@ -179,6 +186,7 @@ describe('InfiniteScroll', () => {
       .mockResolvedValue(undefined)
     const { rerender } = render(
       <InfiniteScroll
+        itemCount={1}
         hasNextPage
         endCursor='cursor1'
         onLoadMore={onLoadMore}
@@ -201,6 +209,7 @@ describe('InfiniteScroll', () => {
     // query's first page coincidentally ends on the same cursor value.
     rerender(
       <InfiniteScroll
+        itemCount={1}
         hasNextPage
         endCursor='cursor1'
         onLoadMore={onLoadMore}
@@ -210,10 +219,18 @@ describe('InfiniteScroll', () => {
       </InfiniteScroll>,
     )
 
+    flushRaf()
+    act(() => triggerIntersection(true))
+    expect(onLoadMore).toHaveBeenCalledOnce()
+    mockObserve.mockClear()
+
     // The stale request now resolves, reporting that it did start a request.
     await act(async () => {
       resolveFirstLoad(true)
     })
+
+    flushRaf()
+    expect(mockObserve).toHaveBeenCalledOnce()
 
     // The guard must not have been re-stamped by the stale completion: the new query's
     // cursor1 has never actually been requested, so intersection must trigger a real load.

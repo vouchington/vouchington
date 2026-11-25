@@ -178,7 +178,7 @@ jobs:
           if-no-files-found: error
           # The archive is already zstd-compressed.
           compression-level: 0
-          retention-days: 1
+          retention-days: 7
       - name: Upload crawl tier check coverage
         timeout-minutes: 1
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -187,7 +187,7 @@ jobs:
           name: explain-seed-coverage-${{ github.run_id }}
           path: backend/scripts/explain-analyze/output/pruning-v8/
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
       - name: Upload seed diagnostics
         if: always()
         continue-on-error: true
@@ -199,7 +199,7 @@ jobs:
           path: |
             backend/scripts/explain-analyze/output/seed-resources.txt
             backend/scripts/explain-analyze/output/seed-posts.jsonl
-          retention-days: 1
+          retention-days: 7
       - if: failure()
         uses: ./.github/actions/valkey-logs
         timeout-minutes: 1
@@ -341,7 +341,7 @@ jobs:
           overwrite: true
           name: explain-analyze-results-${{ matrix.shard }}
           path: backend/scripts/explain-analyze/output/
-          retention-days: 1
+          retention-days: 7
       - if: failure()
         uses: ./.github/actions/valkey-logs
         timeout-minutes: 1
@@ -407,7 +407,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@95129ce4ac652ea4adf29635b91e42de2557c502 # v3.6.2
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@273d313fc952c000baa7ee36056ca0e403666581 # v3.6.4
         with:
           suite: backend-native-migrations
       - name: Upload full native migration LCOV (attempt 2)
@@ -415,7 +415,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@95129ce4ac652ea4adf29635b91e42de2557c502 # v3.6.2
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@273d313fc952c000baa7ee36056ca0e403666581 # v3.6.4
         with:
           suite: backend-native-migrations
           name-suffix: -retry
@@ -438,4 +438,4 @@ jobs:
           overwrite: true
           name: explain-analyze-results
           path: backend/scripts/explain-analyze/output/
-          retention-days: 1
+          retention-days: 7

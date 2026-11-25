@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   createRandomString,
@@ -16,6 +16,42 @@ import { searchListItems } from '../items.mts'
 import { getManageableList } from '../manage.mts'
 
 describe('community list feed import cap', () => {
+  it('copies only the configured item count from each feed', async () => {
+    await listImportConfig.waitForInitialization()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(listImportConfig, { import_feed_item_limit: 1 }),
+    )
+    const owner = await createTestUser()
+    const community = await insertTestCommunity({ createdById: owner.id })
+    const suffix = createRandomString(8)
+    const topicId = await insertTestTopic({
+      createdById: owner.id,
+      name: `Item cap ${suffix}`,
+      slug: `item-cap-${suffix}`,
+    })
+    const feedId = await insertTestRssFeed({ topicId, title: `Item cap ${suffix}` })
+    await insertTestCommunityListItem({
+      communityId: community.id,
+      itemType: 'rss_feed',
+      entityId: feedId,
+      addedById: owner.id,
+    })
+    const first = await createTestRssFeedItemWithUrl(feedId)
+    const second = await createTestRssFeedItemWithUrl(feedId)
+    const inserted = await insertTestList({ ownerUserId: owner.id, name: `Item cap ${suffix}` })
+    const list = await getManageableList(owner.id, inserted.id)
+
+    await expect(
+      importCommunityList(list, {
+        communityId: community.id,
+        viewer: { kind: 'user', userId: owner.id, staffRole: null },
+      }),
+    ).resolves.toMatchObject({ items: 1 })
+    const importedIds = (await searchListItems(list.id)).results.map(item => item.entity_id)
+    expect(importedIds).toEqual([second.id])
+    expect(importedIds).not.toContain(first.id)
+  })
+
   it('reads at most the configured number of feeds from an existing over-cap list', async () => {
     const owner = await createTestUser()
     const community = await insertTestCommunity({ createdById: owner.id })

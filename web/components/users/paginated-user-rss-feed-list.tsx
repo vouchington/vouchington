@@ -59,7 +59,7 @@ export function PaginatedUserRssFeedList({
       fetchError={state.fetchError}
       clearError={state.clearError}
       resetKey={state.resetKey}
-      isEmpty={results.length === 0}
+      itemCount={results.length}
       emptyState={
         <EmptyState
           title={emptyTitle}

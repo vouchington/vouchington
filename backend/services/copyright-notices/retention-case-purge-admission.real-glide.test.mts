@@ -1,3 +1,4 @@
+import { withCopyrightCasePurgeIsolation } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-isolation'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { v7 } from 'uuid'
 import type { Job } from 'glide-mq'
@@ -222,7 +223,10 @@ describe('copyright purge admission and clock sync', () => {
     const worker = await startRealGlideBackgroundLifecycle({
       queueNamePrefix: 'copyright_case_purge_orphan',
       connection: { connection: workerQueueConnection, prefix: workerQueuePrefix },
-      processor: job => processCopyrightCasePurge(job as Job<CopyrightCasePurgeJobData>),
+      processor: job =>
+        withCopyrightCasePurgeIsolation(() =>
+          processCopyrightCasePurge(job as Job<CopyrightCasePurgeJobData>),
+        ),
     })
     try {
       const job = await worker.add(

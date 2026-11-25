@@ -16,7 +16,7 @@ Run the same steps as `.github/workflows/explain-analyze.yml` (custom and generi
 - `node backend/scripts/explain-analyze/pruning/run.mts` (proves pruning on explicit partitions, writes `pruning-proof-*.json`)
 - `pnpm run explain:dump`
 
-If PostgreSQL cannot run here, download the `explain-analyze-results` artifact from the newest `main` run of the Nightly workflow (`nightly.yml`), whatever its conclusion, and review `results-*.json` (kept 1 day; a failed run leaves only per-shard `explain-analyze-results-<shard>` artifacts, and `pruning-proof-*.json` only when present). If neither works, report `Outcome: incomplete`.
+If PostgreSQL cannot run here, download the `explain-analyze-results` artifact from the newest `main` run of the Nightly workflow (`nightly.yml`), whatever its conclusion, and review `results-*.json` (kept 7 days; a failed run leaves only per-shard `explain-analyze-results-<shard>` artifacts, and `pruning-proof-*.json` only when present). If neither works, report `Outcome: incomplete`.
 
 If a plan-shape gate fails, read the `results-*.json` in `backend/scripts/explain-analyze/output/` before the thrown message: `collectAndGate()` in `run-support.mts` records each result before gating it.
 

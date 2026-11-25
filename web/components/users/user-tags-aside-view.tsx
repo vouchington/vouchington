@@ -107,7 +107,7 @@ export function UserTagsAsideView({
         fetchError={pagination.fetchError}
         clearError={pagination.clearError}
         resetKey={pagination.resetKey}
-        isEmpty={relations.length === 0}
+        itemCount={relations.length}
         emptyState={
           <div className='text-sm text-muted-foreground'>
             {t('extracted.users.userTagsAsideView.noUserTagsYet_71772144')}

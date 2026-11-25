@@ -55,7 +55,7 @@ vi.mock(import('../command-search/command-link-item'), () => ({
         onOpenChange(false)
       }}
     >
-      {label.kind === 'ui-text'
+      {label.kind === 'ui-text' || label.kind === 'third-party-text'
         ? label.text
         : label.kind === 'rss-item-title'
           ? label.title?.trim()
@@ -199,6 +199,8 @@ describe('extra command search result groups', () => {
       expect.stringContaining('https://social.example/post/1?utm_source=voucha'),
     )
     expect(screen.getByText('Unsafe Post')).toBeInTheDocument()
+    expect(screen.getByText('Unsafe Post')).toHaveAttribute('dir', 'auto')
+    expect(screen.getByText('Unsafe Post')).not.toHaveAttribute('lang')
     expect(screen.queryByRole('button', { name: /unsafe post/i })).not.toBeInTheDocument()
     fireEvent.click(videoButton)
     expect(onOpenChange).toHaveBeenCalledWith(false)

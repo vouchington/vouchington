@@ -35,7 +35,7 @@ export function ListItemsAccumulator({ activeTab, initialData, listId, mediaType
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
-      isEmpty={items.length === 0}
+      itemCount={items.length}
       emptyState={
         <p
           className='text-muted-foreground'

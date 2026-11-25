@@ -120,6 +120,7 @@ export function NotificationsPage({
       )}
 
       <InfiniteScroll
+        itemCount={pushActions.subscriptionCount}
         hasNextPage={pushActions.pagination.hasNextPage}
         endCursor={pushActions.pagination.endCursor}
         onLoadMore={handleLoadMorePushSubscriptions}

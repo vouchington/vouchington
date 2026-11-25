@@ -147,7 +147,7 @@ export function EmailManager({ initialData, initialEmailAddresses }: Props) {
         fetchError={pagination.fetchError}
         clearError={pagination.clearError}
         resetKey={pagination.resetKey}
-        isEmpty={emails.length === 0}
+        itemCount={emails.length}
         emptyState={<EmailList {...listProps} />}
       >
         <EmailList {...listProps} />

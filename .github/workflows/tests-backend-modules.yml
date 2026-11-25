@@ -61,7 +61,7 @@ jobs:
           overwrite: true
           name: backend-modules-junit
           path: backend-modules-test-report.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: warn
       - name: Preserve full backend-modules LCOV
         timeout-minutes: 1
@@ -73,7 +73,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@95129ce4ac652ea4adf29635b91e42de2557c502 # v3.6.2
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@273d313fc952c000baa7ee36056ca0e403666581 # v3.6.4
         with:
           suite: backend-modules
       - name: Upload full backend-modules LCOV to GitHub (attempt 2)
@@ -81,7 +81,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@95129ce4ac652ea4adf29635b91e42de2557c502 # v3.6.2
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@273d313fc952c000baa7ee36056ca0e403666581 # v3.6.4
         with:
           suite: backend-modules
           name-suffix: -retry

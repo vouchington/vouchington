@@ -105,7 +105,7 @@ export function ApplicationReview({ data, communitySlug }: ApplicationReviewProp
         fetchError={fetchError}
         clearError={clearError}
         resetKey={resetKey}
-        isEmpty={applications.length === 0}
+        itemCount={applications.length}
         emptyState={
           <EmptyState
             icon='inbox'

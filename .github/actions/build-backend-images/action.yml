@@ -199,4 +199,4 @@ runs:
           sbom-*.cdx.json
         if-no-files-found: ignore
         overwrite: true
-        retention-days: 1
+        retention-days: 7

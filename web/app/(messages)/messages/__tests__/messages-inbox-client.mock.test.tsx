@@ -1,5 +1,6 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { setupInfiniteScrollObserverHarness } from '@/test-helpers/infinite-scroll-observer-harness'
 
 const { mockGetMyMessagesClient, mockOnError } = vi.hoisted(() => ({
   mockGetMyMessagesClient: vi.fn<VitestLooseMock>(),
@@ -70,15 +71,6 @@ vi.mock(import('@/components/shared/time-ago'), () => ({
   TimeAgo: () => <time>now</time>,
 }))
 
-vi.mock<typeof import('@/test-helpers/infinite-scroll')>(
-  import('@/test-helpers/infinite-scroll'),
-  async importOriginal => importOriginal(),
-)
-vi.mock(
-  import('@/components/shared/infinite-scroll'),
-  async () => import('@/test-helpers/infinite-scroll'),
-)
-
 import { MessagesInboxClient } from '../messages-inbox-client'
 import type { DirectConversation } from '@/types/messages'
 
@@ -95,6 +87,7 @@ function makeConversation(overrides: Partial<DirectConversation> = {}): DirectCo
 }
 
 describe('MessagesInboxClient', () => {
+  const { flushRaf, triggerIntersection, triggerScroll } = setupInfiniteScrollObserverHarness()
   beforeEach(() => {
     vi.resetAllMocks()
   })
@@ -258,7 +251,7 @@ describe('MessagesInboxClient', () => {
         page_info: { has_next_page: false, end_cursor: null },
       })
 
-    const { container } = render(
+    render(
       <MessagesInboxClient
         initialConversations={[makeConversation()]}
         initialHasMore
@@ -266,9 +259,11 @@ describe('MessagesInboxClient', () => {
       />,
     )
 
-    fireEvent.click(container.querySelector('[data-pw="test-auto-continuation"]')!)
-    await waitFor(() => expect(mockGetMyMessagesClient).toHaveBeenCalledWith('cursor-1'))
-    fireEvent.click(container.querySelector('[data-pw="test-manual-continuation"]')!)
+    flushRaf()
+    triggerScroll()
+    await act(async () => triggerIntersection(true))
+    expect(mockGetMyMessagesClient).toHaveBeenCalledWith('cursor-1')
+    fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
     await waitFor(() => expect(mockGetMyMessagesClient).toHaveBeenCalledWith('cursor-2'))
   })
 

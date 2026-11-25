@@ -2,6 +2,7 @@ import { beginBoundedTransaction, withTransactionOptions, write } from '@data-st
 import sql from 'sql-template-strings'
 import { lockCopyrightActionGenerationForWrite } from '../../../services/copyright-notices/action-delivery-generation.mts'
 import { cutCopyrightCasePointerPage } from '../../../services/copyright-notices/retention-case-purge-pointers.mts'
+import { withCopyrightCasePurgeIsolation } from './retention-case-purge-isolation.mts'
 
 export async function readTerritorialDecisionPredecessors(noticeId: string) {
   const { rows } = await write<{ id: string; supersedes_decision_id: string | null }>(sql`
@@ -12,16 +13,19 @@ export async function readTerritorialDecisionPredecessors(noticeId: string) {
   return rows
 }
 
-export async function runTerritorialDecisionPointerCut(noticeId: string) {
-  await using query = await beginBoundedTransaction({
-    isolationLevel: 'serializable',
-    connectionTimeoutMs: 5_000,
-    statementTimeoutMs: 20_000,
+/** A purge pointer page outside `runCopyrightCasePurgePage`, so it takes the purge lock itself. */
+export function runTerritorialDecisionPointerCut(noticeId: string) {
+  return withCopyrightCasePurgeIsolation(async () => {
+    await using query = await beginBoundedTransaction({
+      isolationLevel: 'serializable',
+      connectionTimeoutMs: 5_000,
+      statementTimeoutMs: 20_000,
+    })
+    await lockCopyrightActionGenerationForWrite(noticeId, query)
+    const result = await cutCopyrightCasePointerPage(query, noticeId, 0, 20, null)
+    await query.commit()
+    return result
   })
-  await lockCopyrightActionGenerationForWrite(noticeId, query)
-  const result = await cutCopyrightCasePointerPage(query, noticeId, 0, 20, null)
-  await query.commit()
-  return result
 }
 
 export async function clearTerritorialDecisionPredecessorWithScope(

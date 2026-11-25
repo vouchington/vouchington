@@ -114,7 +114,7 @@ export function AliasesClient({
           fetchError={fetchError}
           clearError={clearError}
           resetKey={resetKey}
-          isEmpty={aliases.length === 0}
+          itemCount={aliases.length}
           emptyState={
             <p className='text-sm text-muted-foreground'>
               {t('extracted.aliases.aliasesClient.noAliasesYet_a985d7c2')}

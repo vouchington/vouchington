@@ -56,6 +56,7 @@ _none_
 **Indexes:**
 
 - `conversations_pkey`: `CREATE UNIQUE INDEX conversations_pkey ON public.conversations USING btree (id)`
+- `idx_conversations__active_chat_created_by_id__id_desc`: `CREATE INDEX idx_conversations__active_chat_created_by_id__id_desc ON public.conversations USING btree (created_by_id, id DESC) WHERE ((created_by_id IS NOT NULL) AND (channel_type = 'chat'::conversation_channel_types) AND (deleted_at IS NULL))`
 - `idx_conversations__assigned_moderator_id`: `CREATE INDEX idx_conversations__assigned_moderator_id ON public.conversations USING btree (assigned_moderator_user_id) WHERE (assigned_moderator_user_id IS NOT NULL)`
 - `idx_conversations__community_id`: `CREATE INDEX idx_conversations__community_id ON public.conversations USING btree (community_id, id DESC) WHERE (community_id IS NOT NULL)`
 - `idx_conversations__created_by_id__id_desc`: `CREATE INDEX idx_conversations__created_by_id__id_desc ON public.conversations USING btree (created_by_id, id DESC) WHERE (created_by_id IS NOT NULL)`

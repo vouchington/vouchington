@@ -24,38 +24,6 @@ vi.mock(
   () => navMockModule as unknown as typeof import('next/navigation'),
 )
 
-vi.mock(import('@/components/shared/infinite-scroll'), () => ({
-  InfiniteScroll: ({
-    children,
-    hasNextPage,
-    endCursor,
-    onLoadMore,
-    isEmpty,
-    emptyState,
-  }: {
-    children: ReactNode
-    isEmpty?: boolean
-    emptyState?: ReactNode
-    hasNextPage: boolean
-    endCursor: string | null
-    onLoadMore: () => Promise<boolean | void>
-  }) => (
-    <div>
-      {isEmpty ? (hasNextPage && endCursor ? null : emptyState) : children}
-      {hasNextPage && endCursor ? (
-        <button
-          type='button'
-          data-pw='mock-load-more'
-          aria-label='Load more'
-          onClick={() => {
-            void onLoadMore()
-          }}
-        />
-      ) : null}
-    </div>
-  ),
-}))
-
 vi.mock(import('@/lib/api/client'), () => ({
   getPaginatedPage: vi.fn<VitestLooseMock>(),
 }))

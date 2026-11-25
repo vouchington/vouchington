@@ -127,6 +127,7 @@ export function CardsManager({ initialData }: Props) {
       data-pw='cards-manager'
     >
       <InfiniteScroll
+        itemCount={cards.length}
         hasNextPage={hasNextPage}
         endCursor={endCursor}
         onLoadMore={loadMore}

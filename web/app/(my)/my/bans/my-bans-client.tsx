@@ -29,7 +29,7 @@ export function MyBansClient({ initialData }: MyBansClientProps) {
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
-      isEmpty={bans.length === 0}
+      itemCount={bans.length}
       emptyState={
         <p
           className='text-sm text-muted-foreground'

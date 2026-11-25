@@ -23,6 +23,7 @@ export function PasskeyManager({ initialData, mfaStatus }: Props) {
           : { kind: 'setup', panel: <PasskeyManagerSetup passkey={passkey} /> }
       }
       credential='passkey'
+      itemCount={passkey.passkeys.length}
       list={<PasskeyManagerList passkey={passkey} />}
       mfaStatus={mfaStatus}
       onReauthClose={passkey.handleCloseReauthDialog}

@@ -102,7 +102,7 @@ export function ManageTagsContent({
           fetchError={pagination.fetchError}
           clearError={pagination.clearError}
           resetKey={pagination.resetKey}
-          isEmpty={relations.length === 0}
+          itemCount={relations.length}
           emptyState={tagList}
         >
           {tagList}

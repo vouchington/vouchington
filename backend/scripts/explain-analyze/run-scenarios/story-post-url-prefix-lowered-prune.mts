@@ -38,12 +38,12 @@ export async function captureLoweredCapPrune(relationIndexes: readonly string[])
     forbidSequentialScans: ['relation__post__related__url'],
     seededRows: { relation__post__related__url: seed.relationRows },
   })
-  await captureRollback(id, 'pruneStoryPostRelatedUrlsOutsidePrefix', query =>
-    pruneStoryPostRelatedUrlsOutsidePrefix(
+  await captureRollback(id, 'pruneStoryPostRelatedUrlsOutsidePrefix', async query => {
+    await pruneStoryPostRelatedUrlsOutsidePrefix(
       query,
       projectionWork(seed.posts[1]!, MAXIMUM_LEASE),
       seed.user,
       admittedUrlIds,
-    ),
-  )
+    )
+  })
 }

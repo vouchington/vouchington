@@ -1,11 +1,9 @@
-import createHttpError from 'http-errors'
 import {
   advanceCopyrightLastLegalActivityAt,
   lockCopyrightNoticeForLegalWrite,
 } from './last-legal-activity.mts'
 import { createHash } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
-import { isUniqueViolation } from '@vouchington/postgres'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -14,6 +12,7 @@ import { v7 as uuidv7 } from 'uuid'
 import type { PrivateUser } from '@services/users/types'
 import type { CopyrightNoticeSubmissionRecord } from './types.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
+import { throwCopyrightSubmissionRequestConflict } from './submission-request-conflict.mts'
 
 export type CopyrightAppealInput = {
   reason: string
@@ -90,6 +89,7 @@ async function createAuthenticatedCopyrightSubmission(
   const canonicalIdempotencyKey = idempotencyKey.toLowerCase()
   const idempotencyKeySha256 = createHash('sha256').update(canonicalIdempotencyKey).digest()
   await using transaction = await beginTransaction()
+  const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
   const { rows: existingRows } = await transaction<
     CopyrightNoticeSubmissionRecord & {
       request_sha256: Buffer
@@ -113,7 +113,6 @@ async function createAuthenticatedCopyrightSubmission(
     await transaction.commit()
     return { submission: existing, isDuplicate: true }
   }
-  const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
   assert(lockedNotice, 404, 'Copyright notice not found')
   assert(lockedNotice.jurisdiction === 'us_dmca', 422, 'Use the territorial complaint process')
   const ownershipStatement = sql`/* createCopyrightSubmission:posterTargets */
@@ -164,18 +163,12 @@ async function createAuthenticatedCopyrightSubmission(
     INSERT INTO copyright_notice_lifecycle_changes (
       copyright_notice_id, change_type, changed_by_id, copyright_notice_submission_id
     ) VALUES (${noticeId}, ${`${kind}_received`}, ${currentUser.id}, ${submission.id})
-  `).catch((err: unknown) => {
-    if (
-      isUniqueViolation(err) &&
-      'constraint' in err &&
-      err.constraint === 'uq_copyright_submission_requests__requester__key_digest'
-    ) {
-      throw createHttpError(409, 'Idempotency-Key was submitted concurrently; try again', {
-        cause: err,
-      })
-    }
-    throw err
-  })
+  `).catch((err: unknown) =>
+    throwCopyrightSubmissionRequestConflict(
+      err,
+      'uq_copyright_submission_requests__requester__key_digest',
+    ),
+  )
   await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   await createCopyrightDeliveryIntent(
     {

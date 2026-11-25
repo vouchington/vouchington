@@ -23,7 +23,7 @@ import {
   prepareCopyrightEmailDelivery,
   recordEuCopyrightStatementOfReasons,
 } from './index.mts'
-import { runCopyrightCasePurgePage } from './retention-case-purge-page.mts'
+import { runIsolatedCopyrightCasePurgePage } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-isolation'
 import { COPYRIGHT_CASE_PURGE_PHASES } from './retention-case-purge-order.mts'
 
 const PURGE_NOW = new Date('2100-01-01T12:00:00.000Z')
@@ -39,7 +39,7 @@ async function runTerritorialCasePurge(noticeId: string) {
   }
   for (let page = 0; page < 1_000; page += 1) {
     try {
-      const result = await runCopyrightCasePurgePage(cursor, PURGE_NOW)
+      const result = await runIsolatedCopyrightCasePurgePage(cursor, PURGE_NOW)
       if (!result.hasMore) return result.data.phase
       cursor = result.data
     } catch (err) {
@@ -72,6 +72,7 @@ async function settleTerritorialCaseDeliveries(noticeId: string) {
 }
 
 describe('territorial decision predecessor purge', () => {
+  // no-mistakes-timeout-reason: a real case purge runs bounded pages, each under the shared purge lock behind every parallel purge test
   it('cuts a successor link only under the matching case and table permit', async () => {
     const scene = await createTestEuParticipantCase('no_action')
     const noticeId = scene.receipt.notice_id
@@ -122,12 +123,13 @@ describe('territorial decision predecessor purge', () => {
       predecessor,
       { id: successor.id, supersedes_decision_id: null },
     ])
-  })
+  }, 30_000)
 })
 
 describe('territorial decision history purge', () => {
   const setPageSize = useCopyrightCasePurgePageSize()
 
+  // no-mistakes-timeout-reason: a real case purge is a few hundred bounded pages, each run under the shared purge lock behind every parallel purge test
   it('deletes monthly decision and redress history only for the permitted case and table', async () => {
     await setPageSize(20)
     const scene = await createTestEuParticipantCase('no_action')
@@ -188,5 +190,5 @@ describe('territorial decision history purge', () => {
       decision: null,
       redress: null,
     })
-  })
+  }, 30_000)
 })

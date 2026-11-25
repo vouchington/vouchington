@@ -6,12 +6,14 @@ import { CommandItem } from '@/components/ui/command'
 import { TextLink } from '@/components/ui/text-link'
 import { PostContentText, type PostContentTextValue } from '@/components/posts/post-content-text'
 import { RssFeedItemTitle } from '@/components/rss-feed-items/rss-feed-item-title'
+import { ThirdPartyText } from '@/components/shared/third-party-text'
 import { ExternalLink } from '@/components/ui/external-link'
 
 type InteractionKind = 'keyboard' | 'plain' | 'modified'
 
 type CommandItemLabel =
   | { kind: 'ui-text'; text: string }
+  | { kind: 'third-party-text'; text: string }
   | { kind: 'post-content'; content: PostContentTextValue; fallback: string }
   | {
       kind: 'rss-item-title'
@@ -92,6 +94,12 @@ export function CommandLinkItem({
         title={label.title}
         detectedLanguage={label.detectedLanguage}
         fallback={label.fallback}
+      />
+    ) : label.kind === 'third-party-text' ? (
+      <ThirdPartyText
+        as='span'
+        className='font-medium'
+        text={label.text}
       />
     ) : (
       <span className='font-medium'>{label.text}</span>

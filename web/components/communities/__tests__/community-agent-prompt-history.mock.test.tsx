@@ -1,4 +1,4 @@
-import { fireEvent, render, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { CommunityAgentPromptHistoryEntry } from '@/lib/api/client/community-agent-prompts'
 import { CommunityAgentPromptHistory } from '../community-agent-prompt-history'
@@ -38,7 +38,7 @@ function entry(
 
 describe('CommunityAgentPromptHistory', () => {
   afterEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
   })
 
   it('renders the card wrapper', () => {
@@ -93,6 +93,29 @@ describe('CommunityAgentPromptHistory', () => {
     expect(
       document.querySelector('[data-pw="community-agent-prompt-history-load-more"]'),
     ).not.toBeNull()
+  })
+
+  it('advances through an empty response using the next cursor', async () => {
+    mocks.fetchCommunityAgentPromptHistory
+      .mockResolvedValueOnce({ entries: [], next_cursor: 'second-cursor' })
+      .mockResolvedValueOnce({ entries: [], next_cursor: null })
+    render(
+      <CommunityAgentPromptHistory
+        initialEntries={[]}
+        initialNextCursor='first-cursor'
+        communitySlug={COMMUNITY_SLUG}
+      />,
+    )
+
+    expect(screen.queryByText('No changes recorded')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Load more' })).toBeEnabled())
+    fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
+    expect(mocks.fetchCommunityAgentPromptHistory).toHaveBeenNthCalledWith(2, COMMUNITY_SLUG, {
+      before: 'second-cursor',
+    })
+    expect(await screen.findByText('No changes recorded')).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Load more' })).not.toBeInTheDocument()
   })
 
   it('hides load-more button when cursor is null', () => {

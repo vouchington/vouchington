@@ -25,7 +25,7 @@
     "@vouchington/worker-runtime": "^0.3.2"
   },
   "devDependencies": {
-    "@aws-sdk/client-sqs": "^3.1169.0",
+    "@aws-sdk/client-sqs": "^3.1171.0",
     "@voucha/test-helpers": "workspace:^"
   }
 }

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import { runAfterPostgresWriteForTest } from '../../../test-helpers/injected-failures.mts'
 import { createRefundScanCase } from '../../../test-helpers/services/memberships/refund-scan-case.mts'
 import { getRefundableReversalTargets } from '../ineligible-stripe-purchase-reversal-targets.mts'
 import {
@@ -15,6 +16,32 @@ import {
 } from './refund-scan.mts'
 
 describe('durable Stripe refund scan hardening', () => {
+  it('joins the first cycle when a peer creates it during admission', async () => {
+    const fixture = await createRefundScanCase()
+    const expected = { generation: 1, reversalCaseId: fixture.reversalCaseId }
+    let peerStarted = false
+    onTestFinished(
+      runAfterPostgresWriteForTest(async (statement, values, result) => {
+        if (
+          peerStarted ||
+          !values.includes(fixture.reversalCaseId) ||
+          !statement.includes('getOrCreateStripeRefundScanCycle:read') ||
+          result.rows.length !== 0
+        )
+          return
+        peerStarted = true
+        await expect(getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)).resolves.toEqual(
+          expected,
+        )
+      }),
+    )
+
+    await expect(getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)).resolves.toEqual(
+      expected,
+    )
+    expect(peerStarted).toBe(true)
+  })
+
   it('allows concurrent workers to complete the same verified cycle', async () => {
     const fixture = await createRefundScanCase()
     const cycle = await getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)
@@ -22,6 +49,53 @@ describe('durable Stripe refund scan hardening', () => {
     await expect(
       Promise.all([completeStripeRefundScanCycle(cycle), completeStripeRefundScanCycle(cycle)]),
     ).resolves.toEqual([undefined, undefined])
+  })
+
+  it('admits a worker to the verified generation when a peer completes it during admission', async () => {
+    const fixture = await createRefundScanCase()
+    const cycle = await getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)
+    const scanOptions = {
+      reversalCaseId: fixture.reversalCaseId,
+      target: fixture.target,
+      listRefundsForPaymentPage: async () => ({
+        refunds: [{ amount: 500, currency: 'usd', id: fixture.firstRefundId, status: 'succeeded' }],
+        hasMore: false,
+        nextCursor: undefined,
+      }),
+    }
+    const expected = { alreadyRefundedMinorUnits: 500, refundDeferred: false }
+    await expect(
+      getDurableStripeRefundHistory({
+        ...scanOptions,
+        callBudget: createStripeRefundScanCallBudget(2),
+        scanCycle: cycle,
+      }),
+    ).resolves.toEqual(expected)
+
+    let completed = false
+    onTestFinished(
+      runAfterPostgresWriteForTest(async (statement, values) => {
+        if (completed || !values.includes(fixture.reversalCaseId)) return
+        if (
+          !statement.includes('getOrCreateStripeRefundScanCycle:read') &&
+          !statement.includes('getOrCreateStripeRefundScanCycle:rotate')
+        )
+          return
+        await completeStripeRefundScanCycle(cycle)
+        completed = true
+      }),
+    )
+
+    const joined = await getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)
+    expect(completed).toBe(true)
+    expect(joined).toEqual(cycle)
+    await expect(
+      getDurableStripeRefundHistory({
+        ...scanOptions,
+        callBudget: createStripeRefundScanCallBudget(0),
+        scanCycle: joined,
+      }),
+    ).resolves.toEqual(expected)
   })
 
   it('rotates a completed cycle once and returns the same open generation after', async () => {
@@ -54,6 +128,37 @@ describe('durable Stripe refund scan hardening', () => {
       reversalCaseId: fixture.reversalCaseId,
     }
     expect(cycles).toEqual([expected, expected])
+  })
+
+  it('joins the winning generation when a peer rotates and completes it during admission', async () => {
+    const fixture = await createRefundScanCase()
+    const completed = await getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)
+    await completeStripeRefundScanCycle(completed)
+
+    const expected = {
+      generation: completed.generation + 1,
+      reversalCaseId: fixture.reversalCaseId,
+    }
+    let peerStarted = false
+    onTestFinished(
+      runAfterPostgresWriteForTest(async (statement, values) => {
+        if (
+          peerStarted ||
+          !values.includes(fixture.reversalCaseId) ||
+          !statement.includes('getOrCreateStripeRefundScanCycle:read')
+        )
+          return
+        peerStarted = true
+        const winner = await getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)
+        expect(winner).toEqual(expected)
+        await completeStripeRefundScanCycle(winner)
+      }),
+    )
+
+    await expect(getOrCreateStripeRefundScanCycle(fixture.reversalCaseId)).resolves.toEqual(
+      expected,
+    )
+    expect(peerStarted).toBe(true)
   })
 
   it('refuses to register a scan against a cycle generation that has been rotated', async () => {

@@ -52,7 +52,7 @@ export async function deleteNotificationEmailPage(
        AND (notification.user_id, notification.id) IN
        (SELECT candidate.user_id, candidate.id
         FROM unnest($1::uuid[], $2::uuid[]) AS candidate(user_id, id))
-       AND notification.deleted_at IS NOT NULL
+       AND notification.deleted_at < $4::timestamptz
        AND notification.delete_reason = $3::notification_delete_reasons
        AND notification.entity_type <> 'copyright_notice'
        AND notification.event_key IS NULL
@@ -72,6 +72,7 @@ export async function deleteNotificationEmailPage(
       }),
       ids,
       name === 'system_pruned_notifications' ? 'system_pruned' : 'user_deleted',
+      cutoff,
     ],
   )
   return deleted.rowCount ?? 0

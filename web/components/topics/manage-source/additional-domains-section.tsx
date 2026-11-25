@@ -54,7 +54,7 @@ export function AdditionalDomains({
         loadingMore={loadingMore}
         fetchError={fetchError}
         clearError={clearError}
-        isEmpty={additionalHostnames.length === 0}
+        itemCount={additionalHostnames.length}
         emptyState={list}
       >
         {list}

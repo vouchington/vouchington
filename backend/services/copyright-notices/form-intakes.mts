@@ -1,7 +1,5 @@
-import createHttpError from 'http-errors'
 import { createHash } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
-import { isUniqueViolation } from '@vouchington/postgres'
 import { encryptSecret, hashToken } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
@@ -15,6 +13,7 @@ import {
 } from './placement-resolution.mts'
 import { claimantCanViewCopyrightImagePlacements } from './placement-visibility-batch.mts'
 import { assertStructuredNoticeStatutoryFields } from './form-input-validation.mts'
+import { throwCopyrightSubmissionRequestConflict } from './submission-request-conflict.mts'
 
 export type CreateCopyrightFormIntakeInput = {
   currentUser: PrivateUser | null
@@ -129,18 +128,12 @@ export async function createCopyrightFormIntake(
       ${encryptSecret(input.request.electronicSignature, purpose)}
     )
     RETURNING id, copyright_notice_id, copyright_notice_submission_id, requester_user_id
-  `).catch((err: unknown) => {
-    if (
-      isUniqueViolation(err) &&
-      'constraint' in err &&
-      err.constraint === 'uq_cop_not_for_inta__requester_identity_sha256__idempotency_key'
-    ) {
-      throw createHttpError(409, 'Idempotency-Key was submitted concurrently; try again', {
-        cause: err,
-      })
-    }
-    throw err
-  })
+  `).catch((err: unknown) =>
+    throwCopyrightSubmissionRequestConflict(
+      err,
+      'uq_cop_not_for_inta__requester_identity_sha256__idempotency_key',
+    ),
+  )
   const intake = rows[0]
   assert(intake, 500, 'Copyright form intake was not created')
   await transaction(sql`/* createCopyrightFormIntake:screeningExecution */

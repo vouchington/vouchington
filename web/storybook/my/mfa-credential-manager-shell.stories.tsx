@@ -32,6 +32,7 @@ export const Passkeys: Story = {
       <MfaCredentialManagerShell
         action={{ handleAdd: () => undefined, kind: 'list' }}
         credential='passkey'
+        itemCount={1}
         list={<p>MacBook Pro</p>}
         mfaStatus={mfaStatus}
         onReauthClose={() => undefined}
@@ -49,6 +50,7 @@ export const Authenticators: Story = {
       <MfaCredentialManagerShell
         action={{ handleAdd: () => undefined, kind: 'list' }}
         credential='totp'
+        itemCount={1}
         list={<p>1Password</p>}
         mfaStatus={mfaStatus}
         onReauthClose={() => undefined}
@@ -66,6 +68,7 @@ export const AuthenticatorSetup: Story = {
       <MfaCredentialManagerShell
         action={{ kind: 'setup', panel: <p>Scan the setup QR code.</p> }}
         credential='totp'
+        itemCount={1}
         list={<p>1Password</p>}
         mfaStatus={mfaStatus}
         onReauthClose={() => undefined}

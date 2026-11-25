@@ -87,6 +87,7 @@ export function ModerationTransparencyPanel({
     )
   }
 
+  const canLoadMore = isAllTime && Boolean(displayed.next_cursor)
   return (
     <section className='space-y-3'>
       {showTitle ? (
@@ -104,13 +105,16 @@ export function ModerationTransparencyPanel({
         </div>
       ) : null}
       {displayed.buckets.length === 0 ? (
-        <Card>
-          <CardContent className='p-4 text-sm text-muted-foreground'>
-            {t(
-              'extracted.moderationAnalytics.moderationTransparencyPanel.noAggregateDataIsAvailableForThisPeriod_83f45b65',
-            )}
-          </CardContent>
-        </Card>
+        !canLoadMore &&
+        !fetchError && (
+          <Card>
+            <CardContent className='p-4 text-sm text-muted-foreground'>
+              {t(
+                'extracted.moderationAnalytics.moderationTransparencyPanel.noAggregateDataIsAvailableForThisPeriod_83f45b65',
+              )}
+            </CardContent>
+          </Card>
+        )
       ) : (
         <div className='overflow-x-auto rounded-md border'>
           <table
@@ -181,7 +185,7 @@ export function ModerationTransparencyPanel({
       {isAllTime ? (
         <PaginatedListFooter
           fetchError={fetchError}
-          canLoadMore={Boolean(displayed.next_cursor)}
+          canLoadMore={canLoadMore}
           loadingMore={loadingMore}
           clearError={clearError}
           loadMore={loadOlder}

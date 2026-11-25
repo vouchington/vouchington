@@ -80,7 +80,7 @@ jobs:
         timeout-minutes: 1
       - uses: ./.github/actions/setup-backend
         timeout-minutes: 6
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-aws@95129ce4ac652ea4adf29635b91e42de2557c502 # v3.6.2
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-aws@273d313fc952c000baa7ee36056ca0e403666581 # v3.6.4
         timeout-minutes: 2
         with:
           role-arn: ${{ secrets.AWS_TEST_ROLE_ARN }}
@@ -105,7 +105,7 @@ jobs:
           overwrite: true
           name: backend-live-junit-bedrock
           path: backend-bedrock-test-report.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: warn
 
   backend-openai:
@@ -198,7 +198,7 @@ jobs:
           overwrite: true
           name: backend-live-junit-openai
           path: backend-openai-test-report.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: warn
       - if: failure()
         uses: ./.github/actions/valkey-logs
@@ -294,7 +294,7 @@ jobs:
           overwrite: true
           name: backend-live-junit-openrouter
           path: backend-openrouter-test-report.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: warn
       - if: failure()
         uses: ./.github/actions/valkey-logs
@@ -401,7 +401,7 @@ jobs:
           overwrite: true
           name: backend-live-junit-anthropic
           path: backend-anthropic-test-report.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: warn
       - if: failure()
         uses: ./.github/actions/valkey-logs
@@ -454,5 +454,5 @@ jobs:
           overwrite: true
           name: backend-live-junit-lightpanda
           path: backend-lightpanda-test-report.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: warn

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, vi } from 'vitest'
 import {
   beginTransaction,
   createTestUserDirect,
@@ -11,6 +11,7 @@ import {
   insertTestTopic,
   addCategoryToRssFeedItem,
   getPostRelatedUrlIds,
+  getPostCategoryTopicIds,
   getTestPenaltiesByUserId,
   insertTestUrl,
   insertTestUrlHostname,
@@ -18,10 +19,13 @@ import {
   getEntityRelation,
   readAllQueueJobs,
 } from '@voucha/test-helpers'
+import { setTestRssFeedItemCategoryTopicId } from '@voucha/test-helpers/entities/rss-feed-item-categories'
+import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import type { PrivateUser } from '@services/users/types'
 import { upsertSystemUser } from '@services/users/system-users'
 import { background } from '@queues/background/queues'
+import { STORY_POST_RELATED_URL_PROJECTIONS_RECONCILE_JOB } from '@queues/background/enqueues/story-post-related-url-projections-jobs'
 import { prepareStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
 import { processOwnedStoryProjectionPage } from '../../../test-helpers/services/stories/story-post-related-url-projection.mts'
@@ -84,6 +88,76 @@ describe('refreshStoryPostForStory', () => {
 
     await expect(refreshStoryPostForStory(story.id)).resolves.toMatchObject({ postId: post.id })
     expect(post.post_type).toBe('story')
+  })
+
+  it('enqueues URL projection reconciliation only when the refresh transaction commits', async () => {
+    const story = await insertTestStory({})
+    await insertItem(story.id)
+    await insertItem(story.id)
+    const {
+      response: { post },
+    } = await prepareStoryPost(story.id, testUser)
+
+    const add = vi.spyOn(background, 'add')
+    const reconcileCalls = () =>
+      add.mock.calls.filter(
+        ([name]) => name === STORY_POST_RELATED_URL_PROJECTIONS_RECONCILE_JOB.name,
+      )
+    try {
+      {
+        await using query = await beginTransaction()
+        await expect(refreshStoryPostForStory(story.id, { query })).resolves.toMatchObject({
+          postId: post.id,
+        })
+        expect(reconcileCalls()).toHaveLength(0)
+        await query.rollback()
+      }
+      expect(reconcileCalls()).toHaveLength(0)
+
+      await using query = await beginTransaction()
+      await expect(refreshStoryPostForStory(story.id, { query })).resolves.toMatchObject({
+        postId: post.id,
+      })
+      expect(reconcileCalls()).toHaveLength(0)
+      await query.commit()
+      expect(reconcileCalls()).toHaveLength(1)
+    } finally {
+      add.mockRestore()
+    }
+  })
+
+  it('uses item topics committed during refresh', async () => {
+    const suffix = crypto.randomUUID()
+    const story = await insertTestStory({ title: `Concurrent topic refresh ${suffix}` })
+    const previousTopic = await insertTestTopic({
+      name: `Previous topic ${suffix}`,
+      slug: `story-previous-${suffix}`,
+      createdById: testUser.id,
+    })
+    const currentTopic = await insertTestTopic({
+      name: `Current topic ${suffix}`,
+      slug: `story-current-${suffix}`,
+      createdById: testUser.id,
+    })
+    const itemId = await insertItem(story.id)
+    await insertItem(story.id)
+    const category = `refresh-topic-${suffix}`
+    await addCategoryToRssFeedItem(itemId, previousTopic, category)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const { post } = prepared.response
+
+    const restore = beforePostgresTransactionQueryForTest(
+      '/* markStoryPostRelatedUrlProjection */',
+      values => values.includes(post.id),
+      () => setTestRssFeedItemCategoryTopicId(itemId, category, currentTopic),
+    )
+    try {
+      await refreshStoryPostForStory(story.id)
+    } finally {
+      restore()
+    }
+    await expect(getPostCategoryTopicIds(post.id)).resolves.toEqual([currentTopic])
   })
 
   it('is idempotent when called multiple times', async () => {

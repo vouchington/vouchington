@@ -84,16 +84,16 @@ importers:
         version: 0.0.3
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       coverage-check:
         specifier: ^0.18.1
         version: 0.18.1(@vitest/coverage-v8@5.1.0)(vitest@5.1.0)
       dependency-cruiser:
-        specifier: ^18.7.2
-        version: 18.7.2
+        specifier: ^18.8.0
+        version: 18.8.0
       eslint-plugin-no-mistakes:
-        specifier: ^0.109.117
-        version: 0.109.117(@typescript-eslint/parser@8.73.0(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@7.0.2))(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
+        specifier: ^0.109.119
+        version: 0.109.119(@typescript-eslint/parser@8.73.0(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@7.0.2))(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint-plugin-playwright:
         specifier: ^2.12.2
         version: 2.12.2(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
@@ -119,8 +119,8 @@ importers:
         specifier: ^6
         version: 6.45.1
       no-mistakes:
-        specifier: ^0.109.117
-        version: 0.109.117(vitest@5.1.0)
+        specifier: ^0.109.119
+        version: 0.109.119(vitest@5.1.0)
       oxfmt:
         specifier: ^0.79.0
         version: 0.79.0
@@ -152,8 +152,8 @@ importers:
         specifier: ^5.1.0
         version: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
-        specifier: ^3.6.2
-        version: 3.6.2(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.2)(@vouchington/worker-runtime@0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.117(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
+        specifier: ^3.6.4
+        version: 3.6.4(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.2)(@vouchington/worker-runtime@0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.119(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -215,7 +215,7 @@ importers:
         version: link:../../services/ai-usage
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.9.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.10.0(zod@3.25.76))(openai@7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -249,10 +249,10 @@ importers:
         version: link:../../services/users
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.9.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.10.0(zod@3.25.76))(openai@7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       openai:
-        specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+        specifier: ^7.59.0
+        version: 7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -301,7 +301,7 @@ importers:
         version: link:../../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.9.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.10.0(zod@3.25.76))(openai@7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
     devDependencies:
       '@ts-shared/utils':
         specifier: workspace:^
@@ -338,7 +338,7 @@ importers:
         version: link:../../services/classifiers
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.9.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.10.0(zod@3.25.76))(openai@7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -360,7 +360,7 @@ importers:
         version: link:../../services/classifiers
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.9.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.10.0(zod@3.25.76))(openai@7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
 
   backend/agents/community-moderation:
     dependencies:
@@ -427,8 +427,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       openai:
-        specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+        specifier: ^7.59.0
+        version: 7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
 
   backend/agents/copyright-appeal-recommendation:
     dependencies:
@@ -508,7 +508,7 @@ importers:
         version: link:../../../ts-shared/utils
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.9.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.10.0(zod@3.25.76))(openai@7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -542,10 +542,10 @@ importers:
         version: link:../../services/topic-claims
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.9.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.10.0(zod@3.25.76))(openai@7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       openai:
-        specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+        specifier: ^7.59.0
+        version: 7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
     devDependencies:
       '@services/users':
         specifier: workspace:^
@@ -591,7 +591,7 @@ importers:
         version: link:../../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.9.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.10.0(zod@3.25.76))(openai@7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -625,10 +625,10 @@ importers:
         version: link:../../services/moderation-reports
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.9.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.10.0(zod@3.25.76))(openai@7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       openai:
-        specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+        specifier: ^7.59.0
+        version: 7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -690,10 +690,10 @@ importers:
         version: link:../../services/stories
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.9.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.10.0(zod@3.25.76))(openai@7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       openai:
-        specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+        specifier: ^7.59.0
+        version: 7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -1306,10 +1306,10 @@ importers:
         version: 0.4.0(@jongleberry/api-server@3.1.0)(valkyries@0.15.0)
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
       '@vouchington/session-jwt':
         specifier: ^0.0.3
         version: 0.0.3
@@ -1318,7 +1318,7 @@ importers:
         version: 0.13.0
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -1412,7 +1412,7 @@ importers:
         version: link:../../types
       '@vouchington/aws':
         specifier: ^0.1.3
-        version: 0.1.3(@aws-sdk/client-cloudwatch@3.1169.0)(@aws-sdk/client-firehose@3.1169.0)(@aws-sdk/client-iam@3.1169.0)(@aws-sdk/client-s3@3.1169.0)(@aws-sdk/client-ses@3.1169.0)(@aws-sdk/client-sqs@3.1169.0)(@smithy/node-http-handler@4.14.2)
+        version: 0.1.3(@aws-sdk/client-cloudwatch@3.1171.0)(@aws-sdk/client-firehose@3.1171.0)(@aws-sdk/client-iam@3.1171.0)(@aws-sdk/client-s3@3.1171.0)(@aws-sdk/client-ses@3.1171.0)(@aws-sdk/client-sqs@3.1171.0)(@smithy/node-http-handler@4.14.2)
 
   backend/data-stores/graceful-shutdown:
     dependencies:
@@ -1423,8 +1423,8 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
     devDependencies:
       vitest:
         specifier: ^5.1.0
@@ -1461,7 +1461,7 @@ importers:
         version: 0.6.2
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -1472,12 +1472,12 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       vouchington-tooling:
-        specifier: ^3.6.2
-        version: 3.6.2(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.2)(@vouchington/worker-runtime@0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.117(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
+        specifier: ^3.6.4
+        version: 3.6.4(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.2)(@vouchington/worker-runtime@0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.119(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
     devDependencies:
       no-mistakes:
-        specifier: ^0.109.117
-        version: 0.109.117(vitest@5.1.0)
+        specifier: ^0.109.119
+        version: 0.109.119(vitest@5.1.0)
       oxfmt:
         specifier: ^0.79.0
         version: 0.79.0
@@ -1547,7 +1547,7 @@ importers:
         version: 0.13.0
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -1764,7 +1764,7 @@ importers:
         version: link:../../queues/unfurl-referral-links
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       '@workers/ai-agents':
         specifier: workspace:^
         version: link:../../workers/ai-agents
@@ -1888,7 +1888,7 @@ importers:
         version: link:../../queues/vote-aggregation
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       '@workers/background':
         specifier: workspace:^
         version: link:../../workers/background
@@ -2203,7 +2203,7 @@ importers:
         version: 0.2.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -2327,35 +2327,35 @@ importers:
   backend/modules/aws:
     dependencies:
       '@aws-sdk/client-bedrock':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@aws-sdk/client-bedrock-runtime':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@aws-sdk/client-cloudfront':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@aws-sdk/client-cloudwatch':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@aws-sdk/client-dynamodb':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@aws-sdk/client-firehose':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@aws-sdk/client-s3':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@aws-sdk/client-ses':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@aws-sdk/client-sqs':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@aws-sdk/s3-request-presigner':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@data-stores/graceful-shutdown':
         specifier: workspace:^
         version: link:../../data-stores/graceful-shutdown
@@ -2379,7 +2379,7 @@ importers:
         version: link:../../../ts-shared/url-signing
       '@vouchington/aws':
         specifier: ^0.1.3
-        version: 0.1.3(@aws-sdk/client-cloudwatch@3.1169.0)(@aws-sdk/client-firehose@3.1169.0)(@aws-sdk/client-iam@3.1169.0)(@aws-sdk/client-s3@3.1169.0)(@aws-sdk/client-ses@3.1169.0)(@aws-sdk/client-sqs@3.1169.0)(@smithy/node-http-handler@4.14.2)
+        version: 0.1.3(@aws-sdk/client-cloudwatch@3.1171.0)(@aws-sdk/client-firehose@3.1171.0)(@aws-sdk/client-iam@3.1171.0)(@aws-sdk/client-s3@3.1171.0)(@aws-sdk/client-ses@3.1171.0)(@aws-sdk/client-sqs@3.1171.0)(@smithy/node-http-handler@4.14.2)
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -2397,8 +2397,8 @@ importers:
   backend/modules/bluesky-oauth:
     dependencies:
       '@atproto/oauth-client-node':
-        specifier: ^0.5.16
-        version: 0.5.16
+        specifier: ^0.5.17
+        version: 0.5.17
       '@modules/api-egress-proxy':
         specifier: workspace:^
         version: link:../api-egress-proxy
@@ -2407,7 +2407,7 @@ importers:
         version: link:../utils
       '@vouchington/oauth-client':
         specifier: ^0.1.0
-        version: 0.1.0(@atproto/oauth-client-node@0.5.16)
+        version: 0.1.0(@atproto/oauth-client-node@0.5.17)
 
   backend/modules/csv:
     dependencies:
@@ -2446,8 +2446,8 @@ importers:
   backend/modules/http-signatures:
     dependencies:
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
 
   backend/modules/markdown-extraction:
     dependencies:
@@ -2464,8 +2464,8 @@ importers:
   backend/modules/model-providers:
     dependencies:
       '@anthropic-ai/sdk':
-        specifier: ^1.9.0
-        version: 1.9.0(zod@3.25.76)
+        specifier: ^1.10.0
+        version: 1.10.0(zod@3.25.76)
       '@modules/openai-utils':
         specifier: workspace:^
         version: link:../openai-utils
@@ -2477,7 +2477,7 @@ importers:
         version: link:../utils
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.9.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.10.0(zod@3.25.76))(openai@7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
 
   backend/modules/on-error:
     dependencies:
@@ -2485,14 +2485,14 @@ importers:
         specifier: workspace:^
         version: link:../request-client-info
       '@sentry/node':
-        specifier: ^11.13.0
-        version: 11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
+        specifier: ^11.14.0
+        version: 11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
 
   backend/modules/openai-utils:
     dependencies:
@@ -2510,7 +2510,7 @@ importers:
         version: link:../utils
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.9.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.10.0(zod@3.25.76))(openai@7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       '@vouchington/queue-errors':
         specifier: ^0.2.1
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
@@ -2518,8 +2518,8 @@ importers:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       openai:
-        specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+        specifier: ^7.59.0
+        version: 7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
 
   backend/modules/openrouter-utils:
     dependencies:
@@ -2531,10 +2531,10 @@ importers:
         version: link:../utils
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.9.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.10.0(zod@3.25.76))(openai@7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       openai:
-        specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+        specifier: ^7.59.0
+        version: 7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
 
   backend/modules/pagination:
     dependencies:
@@ -2561,13 +2561,13 @@ importers:
         version: link:../utils
       '@vouchington/aws':
         specifier: ^0.1.3
-        version: 0.1.3(@aws-sdk/client-cloudwatch@3.1169.0)(@aws-sdk/client-firehose@3.1169.0)(@aws-sdk/client-iam@3.1169.0)(@aws-sdk/client-s3@3.1169.0)(@aws-sdk/client-ses@3.1169.0)(@aws-sdk/client-sqs@3.1169.0)(@smithy/node-http-handler@4.14.2)
+        version: 0.1.3(@aws-sdk/client-cloudwatch@3.1171.0)(@aws-sdk/client-firehose@3.1171.0)(@aws-sdk/client-iam@3.1171.0)(@aws-sdk/client-s3@3.1171.0)(@aws-sdk/client-ses@3.1171.0)(@aws-sdk/client-sqs@3.1171.0)(@smithy/node-http-handler@4.14.2)
       '@vouchington/queue-errors':
         specifier: ^0.2.1
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -2612,8 +2612,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
 
   backend/modules/rss-unreliable-status-codes:
     dependencies:
@@ -2635,7 +2635,7 @@ importers:
         version: 0.13.0
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
 
   backend/modules/scopes:
     dependencies:
@@ -2689,7 +2689,7 @@ importers:
         version: link:../../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.9.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.10.0(zod@3.25.76))(openai@7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       undici:
         specifier: ^8.12.4
         version: 8.12.4
@@ -2697,8 +2697,8 @@ importers:
   backend/modules/token-secrets:
     dependencies:
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
 
   backend/modules/topic-labels: {}
 
@@ -2736,10 +2736,10 @@ importers:
         version: 0.1.1
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -2776,7 +2776,7 @@ importers:
     dependencies:
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
 
   backend/queues/account-lifecycle:
     dependencies:
@@ -2794,7 +2794,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -2812,7 +2812,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -2911,7 +2911,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -2932,7 +2932,7 @@ importers:
         version: link:../../modules/scheduled-job-manifest
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -2977,7 +2977,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -3148,7 +3148,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -3191,7 +3191,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
 
   backend/queues/find-your-friends:
     dependencies:
@@ -3351,7 +3351,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -3369,7 +3369,7 @@ importers:
         version: link:../background
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -3391,7 +3391,7 @@ importers:
         version: link:../background
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -3476,7 +3476,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -3501,7 +3501,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -3535,7 +3535,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -3559,7 +3559,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
 
   backend/queues/unfurl-referral-links:
     dependencies:
@@ -3595,7 +3595,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
 
   backend/queues/user-rss-feed-imports:
     dependencies:
@@ -3613,7 +3613,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -3637,7 +3637,7 @@ importers:
         version: link:../../types
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -3996,7 +3996,7 @@ importers:
         version: link:../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.9.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.10.0(zod@3.25.76))(openai@7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       '@vouchington/mcp-server':
         specifier: ^0.2.0
         version: 0.2.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))
@@ -4041,8 +4041,8 @@ importers:
         specifier: ^9.1.7
         version: 9.1.7
       vouchington-tooling:
-        specifier: ^3.6.2
-        version: 3.6.2(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.2)(@vouchington/worker-runtime@0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.117(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
+        specifier: ^3.6.4
+        version: 3.6.4(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.2)(@vouchington/worker-runtime@0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.119(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
 
   backend/service-registrations:
     dependencies:
@@ -4081,11 +4081,11 @@ importers:
   backend/services/account-data-requests:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@aws-sdk/s3-request-presigner':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -4307,7 +4307,7 @@ importers:
         version: link:../../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.9.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.10.0(zod@3.25.76))(openai@7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       '@vouchington/postgres':
         specifier: ^0.6.2
         version: 0.6.2
@@ -4516,7 +4516,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -4540,8 +4540,8 @@ importers:
   backend/services/articles:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -4615,7 +4615,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -4721,8 +4721,8 @@ importers:
   backend/services/bedrock-embeddings:
     dependencies:
       '@aws-sdk/client-bedrock-runtime':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -4782,11 +4782,11 @@ importers:
   backend/services/bedrock-embeddings-batch:
     dependencies:
       '@aws-sdk/client-bedrock':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@aws-sdk/client-s3':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -4904,7 +4904,7 @@ importers:
         version: 2.6.0
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -4928,8 +4928,8 @@ importers:
   backend/services/bluesky-follows:
     dependencies:
       '@atproto/api':
-        specifier: ^0.32.1
-        version: 0.32.1
+        specifier: ^0.32.2
+        version: 0.32.2
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -5119,7 +5119,7 @@ importers:
         version: 2.6.0
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -5369,7 +5369,7 @@ importers:
         version: 0.0.5
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -5464,7 +5464,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -5551,7 +5551,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -5585,8 +5585,8 @@ importers:
   backend/services/copyright-notices:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -5673,7 +5673,7 @@ importers:
         version: 0.6.2
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -5819,7 +5819,7 @@ importers:
         version: 0.1.1
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       ssrf-guard:
         specifier: ^1.0.0
         version: 1.0.0
@@ -5927,7 +5927,7 @@ importers:
         version: 0.1.1
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       ssrf-guard:
         specifier: ^1.0.0
         version: 1.0.0
@@ -5990,8 +5990,8 @@ importers:
   backend/services/crawls:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -6078,7 +6078,7 @@ importers:
         version: 0.1.1
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -6782,7 +6782,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -6909,7 +6909,7 @@ importers:
         version: link:../../test-helpers
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
 
   backend/services/entity-cache:
     dependencies:
@@ -7231,10 +7231,10 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -7629,7 +7629,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -7650,11 +7650,11 @@ importers:
   backend/services/images:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@aws-sdk/s3-request-presigner':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -7778,7 +7778,7 @@ importers:
         version: 0.0.5
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -7854,7 +7854,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/session-jwt':
         specifier: ^0.0.3
         version: 0.0.3
@@ -8025,8 +8025,8 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/utils
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -8172,7 +8172,7 @@ importers:
         version: 0.6.2
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/uuid-v7':
         specifier: ^0.0.0
         version: 0.0.0
@@ -8263,7 +8263,7 @@ importers:
         version: 0.6.2
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -8400,7 +8400,7 @@ importers:
         version: 2.6.0
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -8934,7 +8934,7 @@ importers:
         version: 0.6.2
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -8998,7 +8998,7 @@ importers:
         version: 0.6.2
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -9169,7 +9169,7 @@ importers:
         version: link:../../config
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -9249,7 +9249,7 @@ importers:
         version: 0.6.2
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       confusables:
         specifier: ^1.1.1
         version: 1.1.1
@@ -9530,10 +9530,10 @@ importers:
         version: link:../ai-usage
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.9.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.10.0(zod@3.25.76))(openai@7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       openai:
-        specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+        specifier: ^7.59.0
+        version: 7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -9678,7 +9678,7 @@ importers:
         version: link:../../test-helpers
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
@@ -10089,7 +10089,7 @@ importers:
         version: 0.6.2
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/uuid-v7':
         specifier: ^0.0.0
         version: 0.0.0
@@ -10998,8 +10998,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
 
   backend/services/rss-feeds:
     dependencies:
@@ -11337,8 +11337,8 @@ importers:
   backend/services/sitemaps:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -11510,7 +11510,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -11624,7 +11624,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -11749,7 +11749,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -11868,7 +11868,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -12112,8 +12112,8 @@ importers:
         specifier: ^0.2.1
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
       pg-copy-streams:
         specifier: ^7.0.0
         version: 7.0.0
@@ -12156,7 +12156,7 @@ importers:
         version: 0.0.2
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -12205,7 +12205,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -12359,7 +12359,7 @@ importers:
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -12475,7 +12475,7 @@ importers:
         version: 0.0.5
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -12651,7 +12651,7 @@ importers:
         version: 0.6.2
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -12697,7 +12697,7 @@ importers:
         version: link:../../test-helpers
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
 
   backend/services/valkey-admin:
     dependencies:
@@ -12935,23 +12935,23 @@ importers:
   backend/test-helpers:
     dependencies:
       '@aws-sdk/client-cloudfront':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@aws-sdk/client-dynamodb':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@aws-sdk/client-firehose':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@aws-sdk/client-iam':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@aws-sdk/client-s3':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@aws-sdk/client-sqs':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@data-stores/analytics':
         specifier: workspace:^
         version: link:../data-stores/analytics
@@ -13019,8 +13019,8 @@ importers:
         specifier: workspace:^
         version: link:../queues/psql
       '@sentry/node':
-        specifier: ^11.13.0
-        version: 11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
+        specifier: ^11.14.0
+        version: 11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
       '@services/reporting-daily-rollups':
         specifier: workspace:^
         version: link:../services/reporting-daily-rollups
@@ -13044,10 +13044,10 @@ importers:
         version: link:../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.9.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.10.0(zod@3.25.76))(openai@7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       '@vouchington/aws':
         specifier: ^0.1.3
-        version: 0.1.3(@aws-sdk/client-cloudwatch@3.1169.0)(@aws-sdk/client-firehose@3.1169.0)(@aws-sdk/client-iam@3.1169.0)(@aws-sdk/client-s3@3.1169.0)(@aws-sdk/client-ses@3.1169.0)(@aws-sdk/client-sqs@3.1169.0)(@smithy/node-http-handler@4.14.2)
+        version: 0.1.3(@aws-sdk/client-cloudwatch@3.1171.0)(@aws-sdk/client-firehose@3.1171.0)(@aws-sdk/client-iam@3.1171.0)(@aws-sdk/client-s3@3.1171.0)(@aws-sdk/client-ses@3.1171.0)(@aws-sdk/client-sqs@3.1171.0)(@smithy/node-http-handler@4.14.2)
       '@vouchington/http-transport':
         specifier: ^0.1.1
         version: 0.1.1
@@ -13077,7 +13077,7 @@ importers:
         version: 0.0.0
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -13085,11 +13085,11 @@ importers:
         specifier: ^6.2.17
         version: 6.2.17
       no-mistakes:
-        specifier: ^0.109.117
-        version: 0.109.117(vitest@5.1.0)
+        specifier: ^0.109.119
+        version: 0.109.119(vitest@5.1.0)
       openai:
-        specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+        specifier: ^7.59.0
+        version: 7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
       otpauth:
         specifier: ^9.6.0
         version: 9.6.0
@@ -13115,8 +13115,8 @@ importers:
         specifier: ^0.15.0
         version: 0.15.0
       vouchington-tooling:
-        specifier: ^3.6.2
-        version: 3.6.2(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.2)(@vouchington/worker-runtime@0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.117(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
+        specifier: ^3.6.4
+        version: 3.6.4(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.2)(@vouchington/worker-runtime@0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.119(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
     devDependencies:
       '@apple/app-store-server-library':
         specifier: ^3.1.0
@@ -13200,14 +13200,14 @@ importers:
         specifier: workspace:^
         version: link:../../ts-shared/deploy-environment
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       '@workers/heartbeat':
         specifier: workspace:^
         version: link:../workers/heartbeat
@@ -13498,7 +13498,7 @@ importers:
         version: link:../../types
       '@vouchington/ai':
         specifier: ^0.4.1
-        version: 0.4.1(@anthropic-ai/sdk@1.9.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
+        version: 0.4.1(@anthropic-ai/sdk@1.10.0(zod@3.25.76))(openai@7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))
       '@vouchington/queue-errors':
         specifier: ^0.2.1
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
@@ -13509,8 +13509,8 @@ importers:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       openai:
-        specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+        specifier: ^7.59.0
+        version: 7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
       p-map:
         specifier: ^7.1.1
         version: 7.1.1
@@ -13813,8 +13813,8 @@ importers:
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@aws-sdk/client-bedrock':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
@@ -13868,11 +13868,11 @@ importers:
         version: link:../../services/bedrock-embeddings
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
     devDependencies:
       '@aws-sdk/client-sqs':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -14111,7 +14111,7 @@ importers:
         version: 0.0.1(playwright-core@1.65.1)
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       ssrf-guard:
         specifier: ^1.0.0
         version: 1.0.0
@@ -14240,7 +14240,7 @@ importers:
         version: link:../../services/urls
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -14323,7 +14323,7 @@ importers:
         version: link:../../services/users
       '@vouchington/aws':
         specifier: ^0.1.3
-        version: 0.1.3(@aws-sdk/client-cloudwatch@3.1169.0)(@aws-sdk/client-firehose@3.1169.0)(@aws-sdk/client-iam@3.1169.0)(@aws-sdk/client-s3@3.1169.0)(@aws-sdk/client-ses@3.1169.0)(@aws-sdk/client-sqs@3.1169.0)(@smithy/node-http-handler@4.14.2)
+        version: 0.1.3(@aws-sdk/client-cloudwatch@3.1171.0)(@aws-sdk/client-firehose@3.1171.0)(@aws-sdk/client-iam@3.1171.0)(@aws-sdk/client-s3@3.1171.0)(@aws-sdk/client-ses@3.1171.0)(@aws-sdk/client-sqs@3.1171.0)(@smithy/node-http-handler@4.14.2)
       '@workers/emails':
         specifier: workspace:^
         version: link:../emails
@@ -14846,7 +14846,7 @@ importers:
         version: link:../../test-helpers
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       web-push:
         specifier: ^4.0.0
         version: 4.0.0(supports-color@10.2.2)
@@ -14897,8 +14897,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       openai:
-        specifier: ^7.57.0
-        version: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+        specifier: ^7.59.0
+        version: 7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
 
   backend/workers/post-mentions:
     dependencies:
@@ -15066,14 +15066,14 @@ importers:
         version: link:../../services/ses-bounce-events
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
     devDependencies:
       '@aws-sdk/client-sqs':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -15081,8 +15081,8 @@ importers:
   backend/workers/ses-inbound:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -15137,14 +15137,14 @@ importers:
         version: link:../../../ts-shared/ses-inbound-contract
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
     devDependencies:
       '@aws-sdk/client-sqs':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -15202,11 +15202,11 @@ importers:
         version: link:../../services/stripe
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
-        version: 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+        version: 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
     devDependencies:
       '@aws-sdk/client-sqs':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -15358,8 +15358,8 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
       no-mistakes:
-        specifier: ^0.109.117
-        version: 0.109.117(vitest@5.1.0)
+        specifier: ^0.109.119
+        version: 0.109.119(vitest@5.1.0)
       picomatch:
         specifier: ^4.0.4
         version: 4.0.7
@@ -15379,8 +15379,8 @@ importers:
         specifier: ^11.0.5
         version: 11.0.5
       vouchington-tooling:
-        specifier: ^3.6.2
-        version: 3.6.2(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.2)(@vouchington/worker-runtime@0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.117(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
+        specifier: ^3.6.4
+        version: 3.6.4(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.2)(@vouchington/worker-runtime@0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.119(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
     devDependencies:
       '@types/picomatch':
         specifier: ^4.0.3
@@ -15401,8 +15401,8 @@ importers:
   cloudflare-worker:
     dependencies:
       '@sentry/cloudflare':
-        specifier: ^11.13.0
-        version: 11.13.0(@cloudflare/workers-types@5.20261116.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(wrangler@4.163.0(@cloudflare/workers-types@5.20261116.1)(@types/node@26.6.6))
+        specifier: ^11.14.0
+        version: 11.14.0(@cloudflare/workers-types@5.20261118.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(wrangler@4.164.0(@cloudflare/workers-types@5.20261118.1)(@types/node@26.6.6))
       '@ts-shared/cache':
         specifier: workspace:^
         version: link:../ts-shared/cache
@@ -15447,8 +15447,8 @@ importers:
         version: 5.2.3
     devDependencies:
       '@cloudflare/workers-types':
-        specifier: ^5.20261116.1
-        version: 5.20261116.1
+        specifier: ^5.20261118.1
+        version: 5.20261118.1
       '@types/node':
         specifier: ^26.6.6
         version: 26.6.6
@@ -15462,8 +15462,8 @@ importers:
         specifier: ^5.1.0
         version: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       wrangler:
-        specifier: ^4.163.0
-        version: 4.163.0(@cloudflare/workers-types@5.20261116.1)(@types/node@26.6.6)
+        specifier: ^4.164.0
+        version: 4.164.0(@cloudflare/workers-types@5.20261118.1)(@types/node@26.6.6)
 
   email-templates:
     dependencies:
@@ -15481,8 +15481,8 @@ importers:
         specifier: ^2.3.1
         version: 2.3.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@react-email/ui':
-        specifier: ^6.11.13
-        version: 6.11.13(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        specifier: ^6.11.16
+        version: 6.11.16(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@ts-shared/languages':
         specifier: workspace:^
         version: link:../ts-shared/languages
@@ -15497,7 +15497,7 @@ importers:
         version: 19.3.0(@types/react@19.3.0)
       '@vouchington/email':
         specifier: ^0.2.1
-        version: 0.2.1(@react-email/render@2.3.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-email@6.11.13(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2))(react@19.3.1)
+        version: 0.2.1(@react-email/render@2.3.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-email@6.11.16(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2))(react@19.3.1)
       esbuild:
         specifier: ^0.28.2
         version: 0.28.2
@@ -15508,8 +15508,8 @@ importers:
         specifier: ^19.3.1
         version: 19.3.1(react@19.3.1)
       react-email:
-        specifier: ^6.11.13
-        version: 6.11.13(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)
+        specifier: ^6.11.16
+        version: 6.11.16(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)
       vitest:
         specifier: ^5.1.0
         version: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
@@ -15517,11 +15517,11 @@ importers:
   lambdas/image-resize:
     dependencies:
       '@aws-sdk/client-dynamodb':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@aws-sdk/client-s3':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@fontsource/inter':
         specifier: ^5.3.0
         version: 5.3.0
@@ -15538,8 +15538,8 @@ importers:
         specifier: ^0.2.0
         version: 0.2.0
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
       satori:
         specifier: ^0.63.2
         version: 0.63.2
@@ -15572,11 +15572,11 @@ importers:
   lambdas/shared:
     dependencies:
       '@aws-sdk/client-ssm':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
       '@sentry/aws-serverless':
-        specifier: ^11.13.0
-        version: 11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
+        specifier: ^11.14.0
+        version: 11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
       '@ts-shared/deploy-environment':
         specifier: workspace:^
         version: link:../../ts-shared/deploy-environment
@@ -15594,8 +15594,8 @@ importers:
   lambdas/test-helpers:
     dependencies:
       '@aws-sdk/client-dynamodb':
-        specifier: ^3.1169.0
-        version: 3.1169.0
+        specifier: ^3.1171.0
+        version: 3.1171.0
 
   playwright:
     dependencies:
@@ -15616,8 +15616,8 @@ importers:
         specifier: ^0.6.2
         version: 0.6.2
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -15625,8 +15625,8 @@ importers:
         specifier: ^5.1.0
         version: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
-        specifier: ^3.6.2
-        version: 3.6.2(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.2)(@vouchington/worker-runtime@0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.117(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
+        specifier: ^3.6.4
+        version: 3.6.4(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.2)(@vouchington/worker-runtime@0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.119(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
 
   static-code-analysis:
     dependencies:
@@ -15643,21 +15643,21 @@ importers:
         specifier: ^8.20.0
         version: 8.20.0
       no-mistakes:
-        specifier: ^0.109.117
-        version: 0.109.117(vitest@5.1.0)
+        specifier: ^0.109.119
+        version: 0.109.119(vitest@5.1.0)
       oxfmt:
         specifier: ^0.79.0
         version: 0.79.0
       vouchington-tooling:
-        specifier: ^3.6.2
-        version: 3.6.2(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.2)(@vouchington/worker-runtime@0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.117(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
+        specifier: ^3.6.4
+        version: 3.6.4(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.2)(@vouchington/worker-runtime@0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.119(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
     devDependencies:
       dependency-cruiser:
-        specifier: ^18.7.2
-        version: 18.7.2
+        specifier: ^18.8.0
+        version: 18.8.0
       typescript:
         specifier: npm:@typescript/typescript6@^6.0.2
         version: '@typescript/typescript6@6.0.2'
@@ -15759,8 +15759,8 @@ importers:
   ts-shared/url-signing:
     dependencies:
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
 
   ts-shared/user-profile-collections:
     dependencies:
@@ -15781,7 +15781,7 @@ importers:
         version: 0.0.0
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -15858,8 +15858,8 @@ importers:
         specifier: ^1.4.1
         version: 1.4.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@sentry/nextjs':
-        specifier: ^11.13.0
-        version: 11.13.0(@cloudflare/workers-types@5.20261116.1)(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react@19.3.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))(wrangler@4.163.0(@cloudflare/workers-types@5.20261116.1)(@types/node@26.6.6))
+        specifier: ^11.14.0
+        version: 11.14.0(@cloudflare/workers-types@5.20261118.1)(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react@19.3.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))(wrangler@4.164.0(@cloudflare/workers-types@5.20261118.1)(@types/node@26.6.6))
       '@simplewebauthn/browser':
         specifier: ^14.0.0
         version: 14.0.0
@@ -15916,10 +15916,10 @@ importers:
         version: 0.1.0(react@19.3.1)
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/server-utils':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.1.0
+        version: 0.1.0
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -15945,8 +15945,8 @@ importers:
         specifier: ^5.2.3
         version: 5.2.3
       lucide-react:
-        specifier: ^1.73.0
-        version: 1.73.0(@types/react@19.3.0)(react@19.3.1)
+        specifier: ^1.74.0
+        version: 1.74.0(@types/react@19.3.0)(react@19.3.1)
       next:
         specifier: ^16.4.6
         version: 16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -15963,8 +15963,8 @@ importers:
         specifier: ^19.3.1
         version: 19.3.1(react@19.3.1)
       recharts:
-        specifier: ^3.10.1
-        version: 3.10.1(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react-is@17.0.2)(react@19.3.1)(redux@5.0.1)
+        specifier: ^3.11.0
+        version: 3.11.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react-is@17.0.2)(react@19.3.1)(redux@5.0.1)
       server-only:
         specifier: ^0.0.1
         version: 0.0.1
@@ -16036,8 +16036,8 @@ importers:
         specifier: ^8.3.8
         version: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
       vouchington-tooling:
-        specifier: ^3.6.2
-        version: 3.6.2(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.2)(@vouchington/worker-runtime@0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.117(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
+        specifier: ^3.6.4
+        version: 3.6.4(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.2)(@vouchington/worker-runtime@0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.119(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
 
 packages:
 
@@ -16048,8 +16048,8 @@ packages:
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
 
-  '@anthropic-ai/sdk@1.9.0':
-    resolution: {integrity: sha512-xDu4za3B+rK+5ZI8wLLoosiIuwi1ktZk/3L3KKNahwO50O34H+622hly8JdXzaEerLQDhsqwVzp81Nrw80BYHg==}
+  '@anthropic-ai/sdk@1.10.0':
+    resolution: {integrity: sha512-j4uVct5p3aGIz/BU4K8VU5vt2A6AueHTvx2gfF3xr4mVpwH9IJMWEAUKNwSwdZSJOHQq1Za2tv5huYc5v02D0w==}
     hasBin: true
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
@@ -16159,8 +16159,8 @@ packages:
     resolution: {integrity: sha512-vfvoDhu6ds6BT3Pqe+d2/LBU1WpDRtt69y6zltlfMCoucPm82m1j50/Wb6xTvv+oZ+2j0JyZVXsmXQ12SWYQJg==}
     engines: {node: '>=22'}
 
-  '@atproto/api@0.32.1':
-    resolution: {integrity: sha512-T04XWeeO3hpCE2vhEZc6jwDcV47E4o1yGrq67rf5rGtObfmZYFwa53/y5On7NrLtpihIZs5FgvplIRb2Aye3Rw==}
+  '@atproto/api@0.32.2':
+    resolution: {integrity: sha512-DSgkhHohW9MCPcH4d9I7dm32svh8fOM6c28+tQgyQU0H1cm61FTOVi8LwdsQPJSZUicMI9AQHHtj+6++ZcIrvA==}
     engines: {node: '>=22'}
 
   '@atproto/common-web@0.5.17':
@@ -16195,12 +16195,12 @@ packages:
     resolution: {integrity: sha512-O9Igzy9RAWQRoH+N6xC8O6qMtQ5UR55bQqbL9a7k7Ou8Z1WV/6ePR6NOFqTIQNFd4XEHxJhGXzcGDR8eM7QdIw==}
     engines: {node: '>=22'}
 
-  '@atproto/oauth-client-node@0.5.16':
-    resolution: {integrity: sha512-fNM5LByMPR/VbSW5pLv3mIHdEelg/8UpNqyO6xh4vRUg9+y2cj9AAF+po/G7EfL7y97InLkH/yKNFt0AvGzABQ==}
+  '@atproto/oauth-client-node@0.5.17':
+    resolution: {integrity: sha512-3TDCTX//Er0yAijUdy437mr8TB/9oeVQpAQ/IfG8/3e7HQApQFAaVKY/BmOSshu0PiR8k1hgj6N2kiJVckBhYw==}
     engines: {node: '>=22'}
 
-  '@atproto/oauth-client@0.9.3':
-    resolution: {integrity: sha512-aw702CHLp9OnefcQ+UyeqCSm/C4KoSNezEo8H/FbOODGb+nff9OVyatWuteI52CdNbN54FkYKhFLL+2YFPPbYw==}
+  '@atproto/oauth-client@0.9.4':
+    resolution: {integrity: sha512-79Vls848FA9WmfWB5lrmIFM2t0XAtSG9+aRy8FrzzdwiHiqtFg/n0ag7xDnjtHSTg89kxIW4qaK2XN2dditGsg==}
     engines: {node: '>=22'}
 
   '@atproto/oauth-resolver@0.0.3':
@@ -16223,52 +16223,52 @@ packages:
     resolution: {integrity: sha512-OHlfkNzDFjYnwNPABhwAkDTUi0HPjfsKUHJDR0bSMORpCXNzRpInPCNCIT08xKDhjaPlcLJ+2Av+Sk7hHnuC8A==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-bedrock-runtime@3.1169.0':
-    resolution: {integrity: sha512-KkMuq9IW+H8VHTEw/qV+ArI70w1WoqDuM/ZLX87MXB0yV31ihqY+2lwZ+zeD5spcZpmlLuUzXTPyMpWE2ZnbtA==}
+  '@aws-sdk/client-bedrock-runtime@3.1171.0':
+    resolution: {integrity: sha512-J7h82AeM+bxirSbueFwm+3yECzI/NLJOWd5E/A+AEVu5mj4alWXn8VQCWlNORlAhEv/HcCmz1B+KROI6I4/V/g==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-bedrock@3.1169.0':
-    resolution: {integrity: sha512-ZeBXxZg90apw6JVn5yJ2c+k4EFq6HiuW0NT6GmRVYHg3PmjjKEgY9180LBBpPUe4Qg37r1LdyFhqGqDh8sbsoQ==}
+  '@aws-sdk/client-bedrock@3.1171.0':
+    resolution: {integrity: sha512-GZ17UsQ8A7DUMDMGqZVQDSQjffXLAt9H69EhNlbDuTQ6gF9uItaAt20xxp0eZgsnVX1HiOiLvtCO48N7KzZHmw==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-cloudfront@3.1169.0':
-    resolution: {integrity: sha512-WTApNj+nbEu2xKsBsWjODypbm7ZSV+dllV7SzfRmR+wh21HqjJLLExtmywgAQje1/UC/AROBtbghIjE3MpXQrw==}
+  '@aws-sdk/client-cloudfront@3.1171.0':
+    resolution: {integrity: sha512-TsTAQA0D1ooSIIwuTtA8gkPmodRt9ULB+4rYmUoEn1C3Hl9qc+o+xXNfBuQxEjp+mQ/uyEjsgiMdN8YHE8GI6A==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-cloudwatch@3.1169.0':
-    resolution: {integrity: sha512-ZLZqG4BC3zbGvgqC8uIUvSf2n3CMu711blIOTtiRoQj9kZMXml/pW9ZyWh/ru1xqLS4fxhkvw+tgc5VavjWoDw==}
+  '@aws-sdk/client-cloudwatch@3.1171.0':
+    resolution: {integrity: sha512-1F5vunomt4EofXFFMhuJ2ClVj/beMQwONiiQmMWLHNJuogXYjgA0wkUTkD89wPGIb7JKfmf51PPQJuNI/YUv/Q==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-dynamodb@3.1169.0':
-    resolution: {integrity: sha512-FqvqV/l5gJCluCLxE37sNxd9UFunnZFwc/yQCizLYN368rlbFbcJ3SiHqYvJEmZZFFV3sWs9kyn3D3HiGxjumA==}
+  '@aws-sdk/client-dynamodb@3.1171.0':
+    resolution: {integrity: sha512-zCRMytp/eL7K9nxw+5L1pNMjlWsF5GuMSBb1mmAqUYv1yqemOHD4SDeViYD4Rl8L3yiBfbvSg+rzuMLA++ioDw==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-firehose@3.1169.0':
-    resolution: {integrity: sha512-58Wriva9lhMOzL9HZu5XToLZxfO65bUlf0nNttdbVrmQzcyZRkMQfHUhUxpsLT/x4Lt3amNaYFBI2VF6spmicw==}
+  '@aws-sdk/client-firehose@3.1171.0':
+    resolution: {integrity: sha512-7skyj5Ix0lbIY+Fx4bAD45J/XBrlrhO6FqzmGNFeE+lupw6PjDgnHT/dTQ/GQmzPtnsAmYxzB+bHLqyx0m6FiA==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-iam@3.1169.0':
-    resolution: {integrity: sha512-JcGWDLOKnPw9F8eCJBk9SutgXGev9vljIUIISa52Qkw3B7o2Z6QzP/nLtqtQ3yXpSvgDxsdF2WeSUf6UeQHeVQ==}
+  '@aws-sdk/client-iam@3.1171.0':
+    resolution: {integrity: sha512-wX1OIw1TEVig0RLuCcOXDNQyS6rbN16t4HmnBc4FmcLSdrjKqn+fADE7F7t0vr7rIX5x1yUOdyPqVcusH70Bzg==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/client-s3@3.1164.0':
     resolution: {integrity: sha512-RCzGDlPFT0vH+rTIW+ukSsdeTC4RuFPDDvTracNW40CES6twgv7OXBXR1oVkhO3u7qY4UECbjF/kJmTSNx7eWQ==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-s3@3.1169.0':
-    resolution: {integrity: sha512-5IjQ2R1TM5lMuUvCvCfGNG9q6g3nxdputC9FY7YQJf1ygVUwsOruEYxQqpjik1nZdl8mNvV57Mhivtp2JbgBtg==}
+  '@aws-sdk/client-s3@3.1171.0':
+    resolution: {integrity: sha512-EIWM2ZuLBYqwM1W1PkNIWrQzFy6Y7WBwVpEDpnCrMtcQyIN3VOXbf0uy+0xG2dbv+PcvxIlEK8A1ohdbyMV72w==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-ses@3.1169.0':
-    resolution: {integrity: sha512-akY4NjxmPvYbjcu5gk1aTYbySEyqakGXvGJLtGUwMWLKZMoxew4fo4ZCzYKGIE12XaLzwlO13qib+3bvPo1fZA==}
+  '@aws-sdk/client-ses@3.1171.0':
+    resolution: {integrity: sha512-VIe/yvf4NfqjHnjQNgTU6aBn0ZZBUW88zkw72FAQD/bVFAIdSVX00NZiaWaQFL5XE6OiUeB6eVCjuxs9mrXPsw==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-sqs@3.1169.0':
-    resolution: {integrity: sha512-7bX9EB7CH/L/CuYv/4l3/LlBofBfyjZqFHbsLHJ/Wki08fMsq6g/RCsCKU29UmCINLdX13Un9YtWu5Gv8pHxCA==}
+  '@aws-sdk/client-sqs@3.1171.0':
+    resolution: {integrity: sha512-q6vhSOKZpDfPDcy3q3jtQo1sPZbXILRJ+yN8qb3xEltbAb0DGf2LzycwDqhIZo/GpkkNALUSAQlHLaZmGQAzxA==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-ssm@3.1169.0':
-    resolution: {integrity: sha512-EAqUE22l8bOeCPMNxnahMhKrWW2n7siZjVL1rNWWaD9prTTwDbMf2xeaAOqVx5lLOz+3sSuicM6OMY5yYTR1Eg==}
+  '@aws-sdk/client-ssm@3.1171.0':
+    resolution: {integrity: sha512-LfnOfMSzvp6XKq7RpMB+/36SbNgbOElrx7Z5VNLeve2Y2+nnsxPQahjUYuKp+SZwYydZenqgtrWE/IV2c4KsuQ==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/core@3.981.0':
@@ -16343,8 +16343,8 @@ packages:
     resolution: {integrity: sha512-acHTTzMB13CU6dU4sxABYExMI3PQM2zStWH2MiUwJp/7QKTrLg2f7mbzSXoegW2kYOk2tdqQYagsZrWB8Xv7eA==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/s3-request-presigner@3.1169.0':
-    resolution: {integrity: sha512-ydc+uJnL8s1rMyPgEWjjiV6C/UFqrQhsAHOhEW5GerQtB0zpgpENupEY3AeeXunWxdQakdDLrNJetimZ0wbhRw==}
+  '@aws-sdk/s3-request-presigner@3.1171.0':
+    resolution: {integrity: sha512-WOntr6iXx3O99Cp3MBxurnTMMicuQ2DjQXt/AqJuGfseZhOcu9BuIBEdH5aRo9Ggvw1gyQRiAFttexU+zr5NGw==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/signature-v4-multi-region@3.996.52':
@@ -16355,8 +16355,8 @@ packages:
     resolution: {integrity: sha512-ngJ8mxXqtQ9mnp7QV6TWKJCxkpjVfPWxKQSc2FYhCyCfOVFIGdFv7P+/RqVffFrJAorwBPpktnv32gNlcEgF4g==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/token-providers@3.1169.0':
-    resolution: {integrity: sha512-ScQiQuJIAFevAHjCh/E159qaWeQtw8KUZ4PGUfHMeJU0VXaF4HE8PSgNXY/y4nmqrT8/gD3SoFhuFT5dy1cisA==}
+  '@aws-sdk/token-providers@3.1171.0':
+    resolution: {integrity: sha512-2BUCF7mA5py/cZEL/AIByNAgdgUQjcG4M9ABwzPg24WJO5C1LpLCqPT9Vv0TWh9S49XYZc1N9T1J7958ivLKcw==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/types@3.975.1':
@@ -16477,38 +16477,38 @@ packages:
       workerd:
         optional: true
 
-  '@cloudflare/workerd-darwin-64@1.20261116.1':
-    resolution: {integrity: sha512-+zzaR7CQXcT10Tbor784vI80+rO0NEy/jkTL7ZJP6PYmwjdDj2udk+sN9Ui1nqDs+frYYUtB+7nI7kycONFb0Q==}
+  '@cloudflare/workerd-darwin-64@1.20261117.1':
+    resolution: {integrity: sha512-qfAYw6iPoey0BmPsp4z5ARWOa+XSBD3gQzmcBI2ql9pKTSA5eEC8F1oI6BIk/FVguhomfSn5gS4RzbWhTd/EpQ==}
     engines: {node: '>=16'}
     cpu: [x64]
     os: [darwin]
 
-  '@cloudflare/workerd-darwin-arm64@1.20261116.1':
-    resolution: {integrity: sha512-jOZBuQL3FdFC9FcVzfSDEWu1/jx3/asrQAU7TydMop8kdZWhqT4dslE3rC6cMait6w32XaglzEtV6OM1Ove9ZA==}
+  '@cloudflare/workerd-darwin-arm64@1.20261117.1':
+    resolution: {integrity: sha512-cInx5Cr9O27oW+ujyI49lTRQZra/lMgWUFiKmGY3jxDncATSxzfQ6udXHkVvK4//1/PfxQTDyMjdQUIN8m6Aqg==}
     engines: {node: '>=16'}
     cpu: [arm64]
     os: [darwin]
 
-  '@cloudflare/workerd-linux-64@1.20261116.1':
-    resolution: {integrity: sha512-/HnEV29Ykg3t9X6llrnlOJ9+N+cXFNsuPTTdRiE1L/hXIkI39o1RZVjEgj3GtyWtpuhsJ1mNLrNshrEjCvzk0w==}
+  '@cloudflare/workerd-linux-64@1.20261117.1':
+    resolution: {integrity: sha512-gZLA8X11m/luZwn+YA3+mDu61vdxNJzpksP/QZqjydKTQ+VUCulsK5gtn9Bqst1p3KJu2kafQpJ1nDQv4B23jA==}
     engines: {node: '>=16'}
     cpu: [x64]
     os: [linux]
 
-  '@cloudflare/workerd-linux-arm64@1.20261116.1':
-    resolution: {integrity: sha512-hH73ERVfyoQ19DzbjPv/Gp4klU6F7gpx99JIlkmelC3vfsXPpsJdJsNAJA8LIxILa+gfH7tfxSSciCzr+0vqOQ==}
+  '@cloudflare/workerd-linux-arm64@1.20261117.1':
+    resolution: {integrity: sha512-gxWngFojq41ULKNKb9rpWYvKotN5hT2I/xot+Bpy31cXzrwcTgtDLSMb2t75sW5BJxH7hihFvikgYb577kB3Zg==}
     engines: {node: '>=16'}
     cpu: [arm64]
     os: [linux]
 
-  '@cloudflare/workerd-windows-64@1.20261116.1':
-    resolution: {integrity: sha512-eUxFymDyGt3jYjE3/OsNZlSYM5jjCKx8h4nlGRdljtK1fRUT+llI8COE/1gaqMppS6x8qN6tc8vcyRXT4pxqxw==}
+  '@cloudflare/workerd-windows-64@1.20261117.1':
+    resolution: {integrity: sha512-0OR2Btx5EDonOKvvuGDq8rxBSggxoF1ThQjbZN3vsu3GlaF/oXW5f9/iB78OgV0CzMPTi+hZgzc1NR95UJCURA==}
     engines: {node: '>=16'}
     cpu: [x64]
     os: [win32]
 
-  '@cloudflare/workers-types@5.20261116.1':
-    resolution: {integrity: sha512-bym4dNT9Hnm+goedLTTTH85T6S4wOJJaOpKgk9MlEGU18/JKsChN+wHvSWUAIy5YVSm6LnuaUu3d3N4K0m8Dtg==}
+  '@cloudflare/workers-types@5.20261118.1':
+    resolution: {integrity: sha512-b1ppAa/0wrXvboTHbfyYnyYsh13OHu4ONP1h0HclZ0fEabwh2qT18YPY/z+wjyOs3o/BkyD0HCA800Ox+nju/Q==}
 
   '@commitlint/cli@21.2.4':
     resolution: {integrity: sha512-g3M/wrQdElqGH5vROIeL2QiYIxrzqUkhCgsDyDlWfKEyQdCt10OyMB28W2cJtpZ+VNGMvmaN923infr1hOfyrg==}
@@ -17335,28 +17335,13 @@ packages:
       '@emnapi/core': ^1.7.1 || ^2.0.0-alpha.4
       '@emnapi/runtime': ^1.7.1 || ^2.0.0-alpha.4
 
-  '@next/env@16.4.3':
-    resolution: {integrity: sha512-a7tz1QCcWWkwC/rPJcPMJk/UNRu9CFhDd3OHYE5hddbJrs8BqRTalxI6GlKCWEGzRLHN+S/B7a4PAHCtm25aBQ==}
-
   '@next/env@16.4.6':
     resolution: {integrity: sha512-SunBjJ6t+oBtecS3dTjdVuMhUogP5wD/vrGL5EVuQYM1iS4O5ilL51HkiJ3sPjMzRHiCChvr4dbaSJbR7F3lxA==}
-
-  '@next/swc-darwin-arm64@16.4.3':
-    resolution: {integrity: sha512-4yq5EXBt+VDtAZwTyfijaFp5D2C5oz3Ikw5a2kiX2K9nw72vrZX2q5UuAlkPtUMO1tQz6JTKpaKWjS7OOefTDQ==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [darwin]
 
   '@next/swc-darwin-arm64@16.4.6':
     resolution: {integrity: sha512-kJ4VVZkley17xKaJx72QN2IBqjrj7zenCQZaUF0l9ShS/1Mt2kW4+Z5KGG6vgr3L/J562xTOizVyM1iA/u5nlg==}
     engines: {node: '>= 10'}
     cpu: [arm64]
-    os: [darwin]
-
-  '@next/swc-darwin-x64@16.4.3':
-    resolution: {integrity: sha512-1Rvkn/LUhnEF8WxnRkOrqGhbwXui1bkWFxONKIbN+r7C+9KHDSZ+iUoj4CzymVMWUyZIyx9szcb9+kbKhD500A==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
     os: [darwin]
 
   '@next/swc-darwin-x64@16.4.6':
@@ -17365,26 +17350,12 @@ packages:
     cpu: [x64]
     os: [darwin]
 
-  '@next/swc-linux-arm64-gnu@16.4.3':
-    resolution: {integrity: sha512-dCKpXErGg3abUM6t5JTJV/ottVBTStJB5lRJTbgdUdQaQ+jNHiK56Hsc0YAEg/rinSh42hYG3HWiYmEMdilnxg==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [linux]
-    libc: [glibc]
-
   '@next/swc-linux-arm64-gnu@16.4.6':
     resolution: {integrity: sha512-9nI6O8vvczH2D9ZNdMGqb/3NuT15T9ksOZnAmx9/gjF2cOi74+xxyf1Hk96uIMfm14c9y6wHeBq6SH8g6udvcA==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
-
-  '@next/swc-linux-arm64-musl@16.4.3':
-    resolution: {integrity: sha512-WwYbhWkhYBvBtib1K4W0kL8MW2snBD2A5b3SN4vPpqalZbZs5+bQ1yzAdepVoOqrFfEW3dmREy4Zs1MrWcrFbw==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [linux]
-    libc: [musl]
 
   '@next/swc-linux-arm64-musl@16.4.6':
     resolution: {integrity: sha512-7/qPhTxDp2ScluOJOhLuhWmlA17o1yZ0SIgpISBCpBxXgtnK4+KGywBpFkfLPiU1rnSM1faFGzYkH6i7JdTrqA==}
@@ -17393,26 +17364,12 @@ packages:
     os: [linux]
     libc: [musl]
 
-  '@next/swc-linux-x64-gnu@16.4.3':
-    resolution: {integrity: sha512-QymWvfUwDEC5/lpJOsxX5VAbyoR2D13+2Jsjz4be7gT4LPqEgdpkeLIR/HFfCLgKzoMhpJbp6I/JnogyNZHcaA==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [linux]
-    libc: [glibc]
-
   '@next/swc-linux-x64-gnu@16.4.6':
     resolution: {integrity: sha512-oOpbNa8XOW1qCGd9VvzC4fbkkRxEls7/WI6tz+YHC0xRA7KpV1U7DrAnCPjzVyOk/karzWEepCOcTIDmwK8FwQ==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
-
-  '@next/swc-linux-x64-musl@16.4.3':
-    resolution: {integrity: sha512-Vmjd9D7DpA4Vv3cUlr82QWgJD/BQZmns801vtC5VWHg6jCIA4a5vMKpQnfrM2pyCrp2eV0ENdUg4PlN3bAc2Yw==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [linux]
-    libc: [musl]
 
   '@next/swc-linux-x64-musl@16.4.6':
     resolution: {integrity: sha512-aM8CZ+OR2EwXaAYw7KGkW2GDmNDsLBIRe1MMRZCJPTdw/xhTD0IMUVO4sf3KqrzuRouGzwwLZn34+gFeVXiUQA==}
@@ -17421,22 +17378,10 @@ packages:
     os: [linux]
     libc: [musl]
 
-  '@next/swc-win32-arm64-msvc@16.4.3':
-    resolution: {integrity: sha512-lG1pPdPLk7gTyGb00n5JIMLdBJgjb+UEhSdZvFbhUMg0DyC6z4B7RnpSKF9VCd4imkLObVbXOFA0kFCpw7yFow==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [win32]
-
   '@next/swc-win32-arm64-msvc@16.4.6':
     resolution: {integrity: sha512-U0p7/tEtqvHX2crhd841CDwKtp5CFkKXVjOhmfccR3Pvp64sj8KBwRqsvltqLOwVBbj0NtkxwXSDpEHYGbxeXQ==}
     engines: {node: '>= 10'}
     cpu: [arm64]
-    os: [win32]
-
-  '@next/swc-win32-x64-msvc@16.4.3':
-    resolution: {integrity: sha512-NmQC9RkJdnPXRaMxtkCzobB3teVjqF33oSOnwDfi+XYGWWYpt+xlGK3mtktSKLbdjwaWbJu2OkkMiRFGUUncKg==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
     os: [win32]
 
   '@next/swc-win32-x64-msvc@16.4.6':
@@ -19605,8 +19550,8 @@ packages:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
       react-dom: ^18.0 || ^19.0 || ^19.0.0-rc
 
-  '@react-email/ui@6.11.13':
-    resolution: {integrity: sha512-+17JgfOvrIjSR+JeVnxcF/qWsklND/4RyW0JQ7vrSMilpuDLjCzG4pmAR7XIah/tsxlTGju6PM5OUq+k/eidqA==}
+  '@react-email/ui@6.11.16':
+    resolution: {integrity: sha512-Lv7RaPjKoqFEZoUQ7EibbRxEiuu1xAa1/pBKe/ILTVG8502elgQznOnTbhtno9GI0Sf758DE+kWgszPqvjbomg==}
 
   '@reduxjs/toolkit@2.12.0':
     resolution: {integrity: sha512-KiT+RzZbp6mQET+Mg+h2c97+9j1sNflUxQkIHI7Yuzf6Peu+OYpmkn6nbHWmLLWj+1ZODUJFwGZ7gx3L9R9EOw==}
@@ -19900,20 +19845,20 @@ packages:
     peerDependencies:
       selderee: ~0.12.0
 
-  '@sentry/aws-serverless@11.13.0':
-    resolution: {integrity: sha512-snYa3g462um+GghdG5748N2L8eM3urofNZjFQrcmjQovN9dDD8F4YvMicSA5wxnbhRPm8oDU6TMUV7hKS5wl9Q==}
+  '@sentry/aws-serverless@11.14.0':
+    resolution: {integrity: sha512-A4ID4LSBFkrDkub1a9PE1hzqy1H/2MPirQeqGyRppMuIm4N/kXIsvKgWPRh9SClQEgi/gYOgvHzh36p3hUascA==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/browser-utils@11.13.0':
-    resolution: {integrity: sha512-Ivdvp/jq3ykimisXxOKWWwrAL0mfZEFgTST8RUJKZ75RIOTT2uZuffqC1YwXYXobElIpgZOSLjdpXhCIepTCTA==}
+  '@sentry/browser-utils@11.14.0':
+    resolution: {integrity: sha512-QyMFyX9l7vXUCYJ7DoE0Au13oFoOmJLB1XPk0tnq3XI8DYoBUP8i1I32xtVJ9O0XR2r2Kc/e3RIKY3Bxl2/BAw==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/browser@11.13.0':
-    resolution: {integrity: sha512-PfoIXdu9zCr8X4DtneQuPzEPMGuw2Ue1hWj+d9x+OOzvqpQSzh8LylnxHpBoyuQYZdHS/Bm7knBzpBHJYQ5l7w==}
+  '@sentry/browser@11.14.0':
+    resolution: {integrity: sha512-LqcMvAv6FOoJW7hB1kXT1vQqbm1+FZjFm5ZyWE2CUR7hO6rEY+qyUMoCdBgPiJRYVJMWau6wp5BRowWqvoSAeA==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/bundler-plugins@11.13.0':
-    resolution: {integrity: sha512-MYH2ygxSQDf6Iuh+EmQUX4+ygWKQOWDk4j3N8O2qA9hV/8FDlUa6NSSZh30prWsSas2KJh3+63mZHwltbYYF+g==}
+  '@sentry/bundler-plugins@11.14.0':
+    resolution: {integrity: sha512-Afi4P+OLJP/fRjbt3h4r8ujBC9KulU9RB1pBhe8PgGHddo5hpXdn2eoDQMHPTnADqNONqqCP1DzbGwFmxVQkXA==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
     peerDependencies:
       rollup: '>=3.2.0'
@@ -19924,8 +19869,8 @@ packages:
       webpack:
         optional: true
 
-  '@sentry/cloudflare@11.13.0':
-    resolution: {integrity: sha512-F7LMS3uI7WbjEFTE6hyOtESJ+m9rSBBolM66cvx71CahCeuo51sDUVN1UwBJ5AD36P+Mja+//TyOSVTVW5Fg2Q==}
+  '@sentry/cloudflare@11.14.0':
+    resolution: {integrity: sha512-0VbCSvFhhOjqlyDNgB2r4Suk/mg+CH69rB6zal5KzC4F6VmKHCWv+dqivGB9jJtCDWC7dekX9ltzuXBzkfHUPA==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
     peerDependencies:
       '@cloudflare/workers-types': ^4.x || ^5.x
@@ -19943,20 +19888,20 @@ packages:
     resolution: {integrity: sha512-5aa3g/VOnMoL8yHbfkYIWBYC3BLgMudgRNBTKNMrcMEj1mE9aKIt/CYCG7sasijhiSU4nTcSEzyM2voIVzLCng==}
     engines: {node: '>=14'}
 
-  '@sentry/core@11.13.0':
-    resolution: {integrity: sha512-dRJI8RwAZvtEtW62awlZdSt8EN6fuyb3cTED78A/IgIkhNcAhhR41x+B2GuMOOJ5lrb/dOCuWLBhZwwyHW2/pg==}
+  '@sentry/core@11.14.0':
+    resolution: {integrity: sha512-toRRdaZnm0anz/4gEkzyZC0yTCvR4R7U+024WQfjCwgklIFaYo9mjIBoElU8MJ1Sske0/RyvA0zltHfra6PvsQ==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/feedback@11.13.0':
-    resolution: {integrity: sha512-2K5S7DP1iPs7TxHIhaldzXrdxGlKUn20+isyBh1Z38IuwM15QOXCREnqtP4knmn4LOXhssL51cOrl2p74TdzZw==}
+  '@sentry/feedback@11.14.0':
+    resolution: {integrity: sha512-g6/UMRie3Cb4GE+0/fmxWmV0dtPDqrsk7298X4DiG1TPSj4EMB7JtTGjLaRCQyRhCHEoL2XfqQDFS2pWdNXOow==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/nextjs@11.13.0':
-    resolution: {integrity: sha512-8nU2poR7WaoD33ZdlLucpt2rh2D9qubRm1YGJ1vERaZ0ZooyLdZsgtYmVqdAe9AdPCTIvUGzl59SjsV64TUvcg==}
+  '@sentry/nextjs@11.14.0':
+    resolution: {integrity: sha512-uKOd6KJRbUxDety+616oJbopNQYohgtwpiWamwnzhgNofUl/UqJahSA3CPymtiZAnLQUMFgwl/tZWH3IIld8XA==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
     peerDependencies:
-      '@sentry/bun': 11.13.0
-      '@sentry/deno': 11.13.0
+      '@sentry/bun': 11.14.0
+      '@sentry/deno': 11.14.0
       next: ^14.0 || ^15.0.0-rc.0 || ^16.0.0-0
     peerDependenciesMeta:
       '@sentry/bun':
@@ -19964,18 +19909,18 @@ packages:
       '@sentry/deno':
         optional: true
 
-  '@sentry/node@11.13.0':
-    resolution: {integrity: sha512-Yj9fsfiTKmitluyH7jbGHJox58tSpoRY0318v8EvICDpp4VcCc8Kn36PZFO9chj6ezKQHNGIxxL53O4OF7u1Kg==}
+  '@sentry/node@11.14.0':
+    resolution: {integrity: sha512-dAxkiRg7vwI1j+/bv4EbshmtrGHmS6CeX1+4SFSYbvTqUSAd6GYGFnIeLdW2NcX2Y6qG7zKz9svv/wreCm7m8g==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/opentelemetry@11.13.0':
-    resolution: {integrity: sha512-dhynqfjuL1mSM1SdzsbJvdf2JMjrSw7TdPSYHYH8m1KgAOeUdXBAAxP5M/9663vZ+IYhp0JlVxLxWgVtAh2aIQ==}
+  '@sentry/opentelemetry@11.14.0':
+    resolution: {integrity: sha512-K+Vg7nNnGg90w1QSvNDWJSABeuDnvqGxHEcBtjkrzApqz3CDQ0bq6q9dG8B5af1QT3YPGsQh7RG9qqDkxClcBQ==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
     peerDependencies:
       '@opentelemetry/api': ^1.9.0
 
-  '@sentry/react@11.13.0':
-    resolution: {integrity: sha512-/HSK0IefnBw9JFK/3UDiYIRbqL9yMhg+0A2w0LBl0t30XyHIiynn6tOsLUuPapUfWd6ULPBp+STFFfsfbQMtCg==}
+  '@sentry/react@11.14.0':
+    resolution: {integrity: sha512-iGy5UMrwSCwWypAkNLtnY6Shc2WpPsXC4yXv6geJ6+/sJBUs3nCv7A3gNne8+ePxgFKnT3fXrv4kDBpWn8O5Mw==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
     peerDependencies:
       react: 17.x || 18.x || 19.x
@@ -19984,24 +19929,24 @@ packages:
       react-router:
         optional: true
 
-  '@sentry/replay-canvas@11.13.0':
-    resolution: {integrity: sha512-xIDk6GKBU0IPCo7cSzSWHF8QlN24GdL7WLiTTre/XWFmFznwBBG60Y7lN+pnN2SNxmtmhHHp9WhjqcMAhZ096g==}
+  '@sentry/replay-canvas@11.14.0':
+    resolution: {integrity: sha512-eKkWsIMv/EP2aCGkzuYDSdhCrRD6bc5WhfhFUPTTWcM4s9E+FFUBFZc8CBlIUBNomnPjUg4W0N9gvdg16ungvw==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/replay@11.13.0':
-    resolution: {integrity: sha512-nLaAAbC2XZb6p0HQNM7u+pqB3xUbhojX+NXCVtYB/gFUvy8cwroJJVDov1coQnHrASIZ8X1yhOJG5d2k9/K/yQ==}
+  '@sentry/replay@11.14.0':
+    resolution: {integrity: sha512-qGgTWOmGkSWokXLDung64T2EzQONIQJL1ahtHAd5XF9QvGQG6208sLM6ctXoh1wcyONnoRmVdabjQeY27QSPHA==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/server-runtime-injection@11.13.0':
-    resolution: {integrity: sha512-fX+wXIbIAmu8TNhF5NMtZ21BKw8rPgXKQi7ka2eqx/JOTcdtPr22YaCiKZrljgdP9qzcD8y0oxDPrTz+PzgOmQ==}
+  '@sentry/server-runtime-injection@11.14.0':
+    resolution: {integrity: sha512-oYNxjgEqHWsyuVk6lCcKlOH8NFbQ0kJfdfUqxVQpg9T0iaBcMEDPeDaZ9RRRhv7ybKV6KQbMMUhGhdIN9lyieQ==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/server-utils@11.13.0':
-    resolution: {integrity: sha512-572farncJRHPqX3NIczJRwbo00WM8mQiwl7A+1hla3OWtI5KTIFXPC9UjTNqU2Km4angophhmDdK+ZxHCe+SyA==}
+  '@sentry/server-utils@11.14.0':
+    resolution: {integrity: sha512-ipL76Amg5yX9Lkoo++6xdy0Gnmci08AoY8ygM9ECYflWLYlBMxDf/6jMnsqKjV4M6O2bUg+KR3IoSrviy0jlwA==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/vercel-edge@11.13.0':
-    resolution: {integrity: sha512-2qi0W1TiGW8ANRU317+7KI6iJnreqiu2H938Iszh7RXXiVa3C1IyqVQDx+lVoKf9aD8acP8/5QntrVGE7gA9Gw==}
+  '@sentry/vercel-edge@11.14.0':
+    resolution: {integrity: sha512-wqPCz1QX1QO1fd7mEMpcPNrxeu6dFzsUYlcOQJFPDVrrelrZM1QkpHm35IGTAs0XIo1X5qznrZQ1VUej3QoGHg==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
   '@shaderfrog/glsl-parser@7.0.1':
@@ -21143,8 +21088,8 @@ packages:
       '@sentry/node':
         optional: true
 
-  '@vouchington/server-utils@0.0.1':
-    resolution: {integrity: sha512-a1IvEvOMpSJNgXTTQkT5j9WZFy368dOYcW9G2SfzURf1FkJGsZbUhP5kSQPCrb8WXk3tGb+k73ox3KsDUAyEjQ==}
+  '@vouchington/server-utils@0.1.0':
+    resolution: {integrity: sha512-BmRv8osxxZcIMQ8LpxEK/DY0e4l+9CNSfMIL57k29z4Z41kR63V9xXR7x7tXnhbX2BqFycpuAbo3M6Wz5eZtwA==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/session-jwt@0.0.3':
@@ -21578,10 +21523,6 @@ packages:
     resolution: {integrity: sha512-/rFeCpNJQbhSZjGVwO9RFV3xPqbnERS8MmIQzCtD/zl6gpJuV/bMLuN92oG3F7d8oDEHHRrujSXNUr8fpjntKw==}
     engines: {node: '>=18'}
 
-  commander@15.0.0:
-    resolution: {integrity: sha512-z67u4ZhzCL/Tydu1lJARtEZYWbWaN7oYLHbsuzocr6y4N6WZAagG3RQ4FW61V1/0+jImpj293XfrcYnd1qxtPg==}
-    engines: {node: '>=22.12.0'}
-
   commander@15.1.0:
     resolution: {integrity: sha512-cgnQ88TRrWcC7pVq46RzJVRMktu3W2RcbnoidnfBsl1bmDCBwJS/udcIZpKoCrbAYYaCqsz1yZCVIgbIaU3ddQ==}
     engines: {node: '>=22.12.0'}
@@ -21860,8 +21801,8 @@ packages:
     resolution: {integrity: sha512-g7nH6P6dyDioJogAAGprGpCtVImJhpPk/roCzdb3fIh61/s/nPsfR6onyMwkCAR/OlC3yBC0lESvUoQEAssIrw==}
     engines: {node: '>= 0.8'}
 
-  dependency-cruiser@18.7.2:
-    resolution: {integrity: sha512-3Pkco0Kx3GI8tG6DTUDfl9RSZVOXMqD+lvili8m0qw2+zhGFcZMyPspUgb7Crqps1UkL23SFXslpj7a9hj11+A==}
+  dependency-cruiser@18.8.0:
+    resolution: {integrity: sha512-GNrm+vy8qSM0X3l3n6616iDdWDIvhnQzimd4q/csyusz8ZYrniFzIIOP1uixXXVkt9mVMcRE6vM5f6juKV5etQ==}
     engines: {node: ^22||^24||>=26}
     hasBin: true
 
@@ -22004,6 +21945,10 @@ packages:
     resolution: {integrity: sha512-9vhedylFonb2YGogzUKX6+Ja72gOJbN1QHAqdrvqLwhdl/QWbKopzoUC9EbQNVsAns/bx/4uyqalrQAoy1IByw==}
     engines: {node: '>=10.13.0'}
 
+  enhanced-resolve@5.27.0:
+    resolution: {integrity: sha512-Do6BB2xzlcc/odFg+XEYyneAx4T/WfywO71yw9ePS2tVfRsf7JVR4mUeELadIeHzixkzbG5DpluiEFPi2WGfYQ==}
+    engines: {node: '>=10.13.0'}
+
   entities@4.5.0:
     resolution: {integrity: sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw==}
     engines: {node: '>=0.12'}
@@ -22079,8 +22024,8 @@ packages:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
 
-  eslint-plugin-no-mistakes@0.109.117:
-    resolution: {integrity: sha512-lwhoMYrO57UC5hV3xNupHdApzyoxmjK3OM1Z46NtA+bW084WPjXnaBz+odhCoiY95ooOYTfi2HSCEUt8AXxXTA==}
+  eslint-plugin-no-mistakes@0.109.119:
+    resolution: {integrity: sha512-Q8MaZ3XcvIjwBEcUar+f5ESNEo0GfhlKe5O94CCbC+e+mskBpAJ6hAmSgYdizGLKdt0tZapgYtIAYXZWwRHWJQ==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
     peerDependencies:
       '@typescript-eslint/parser': '>=8'
@@ -23063,8 +23008,8 @@ packages:
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
 
-  lucide-react@1.73.0:
-    resolution: {integrity: sha512-fVOzGviL9mTfHenG1PbCfIceavyGlnpYNSYr+aGZHLRymAJ7DTP6KHuqt0uBkCKAoenr1UVkwSbDIYt2xIesEQ==}
+  lucide-react@1.74.0:
+    resolution: {integrity: sha512-A1doIs/1fj1WnPbtIT7WRiM6Kvw5NUg+BtkoOh3Shpr4obwSDVt6WxCEcNH56EWprzuCoKle1OF0RqIkojwL1A==}
     peerDependencies:
       '@types/react': '*'
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
@@ -23275,8 +23220,8 @@ packages:
     resolution: {integrity: sha512-I9jwMn07Sy/IwOj3zVkVik2JTvgpaykDZEigL6Rx6N9LbMywwUSMtxET+7lVoDLLd3O3IXwJwvuuns8UB/HeAg==}
     engines: {node: '>=4'}
 
-  miniflare@5.20261116.0-beta:
-    resolution: {integrity: sha512-vQozfXz0eh4VlXJPsn/sxV3siRHmhl5kghZplFsTAt7+8gSPmjbZkYQEA4VudmcN9HTbI8pOqPynckIaIenwPg==}
+  miniflare@5.20261117.0-beta:
+    resolution: {integrity: sha512-D2ygY04wQUmbpwgBhj828piErZoj7UMlXNGr4EWQp/c1PNGHyYOh0dMIyobjwOXiD5Ifl1EaEVAoNuBHK+qtkw==}
     engines: {node: '>=22.12.0'}
     peerDependencies:
       kerberos: ^2.0.0
@@ -23360,27 +23305,6 @@ packages:
   neo-async@2.6.2:
     resolution: {integrity: sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw==}
 
-  next@16.4.3:
-    resolution: {integrity: sha512-OqxKTGi9u80FydydsMNYNjnuje9Au+kvHlt2GZ//ftdpDHm1dxKqAaENoOOTX5wKzn+9vaKUNIfZeyZUuLhCnA==}
-    engines: {node: '>=20.9.0'}
-    hasBin: true
-    peerDependencies:
-      '@opentelemetry/api': ^1.1.0
-      '@playwright/test': ^1.51.1
-      babel-plugin-react-compiler: '*'
-      react: ^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0
-      react-dom: ^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0
-      sass: ^1.3.0
-    peerDependenciesMeta:
-      '@opentelemetry/api':
-        optional: true
-      '@playwright/test':
-        optional: true
-      babel-plugin-react-compiler:
-        optional: true
-      sass:
-        optional: true
-
   next@16.4.6:
     resolution: {integrity: sha512-QZJiYhaZLJMo2KpkQGQIwvmd79WVsAWeYIU554a8d7zArS3si/IRy3lBNV/rtYhE70oLwdLYhPAXLPx8HwcwtA==}
     engines: {node: '>=20.9.0'}
@@ -23402,30 +23326,30 @@ packages:
       sass:
         optional: true
 
-  no-mistakes-darwin-arm64@0.109.117:
-    resolution: {integrity: sha512-iha+znzEaTXSuXHzYY8u0IZ+dGvc5q+CIV/OuaS8R4He9qTDLVcdB0z8+6mevi7HrP4qHLSgaJt7p8B8sPSjCA==}
+  no-mistakes-darwin-arm64@0.109.119:
+    resolution: {integrity: sha512-/8wSBKUmw0pHzyfqpKY5/19YBUgL2VvcPoNMC9OyYII4OleMa8qtQp8oWCq1Oo5TmC0wEuaLAysziox3lgjh9A==}
     cpu: [arm64]
     os: [darwin]
 
-  no-mistakes-linux-arm64-gnu@0.109.117:
-    resolution: {integrity: sha512-lf14KOZGwu6xT+oguX1r04FWRSvD+LfZeJGzrgLvIjO2PL+0tXkcg9qLEf+5BY03/YjZ95ecLmVGr/PQU5IDkQ==}
+  no-mistakes-linux-arm64-gnu@0.109.119:
+    resolution: {integrity: sha512-Ug5aNqae48YDI7f7A+jHEKJh9ZZrRvDGrvgCCmRVWfhJrz8gGhXhlSLKlgbyAF5wpIxSEFMY64IhN2VCrqGsQA==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-linux-x64-gnu@0.109.117:
-    resolution: {integrity: sha512-vlria/okaE4RMdkN5UowrlwVa0SKR9VvlglbE/GOiWgHQI41FznElVqVAo3f1YVZA+vz0YRU5ucyVdtycfsJTQ==}
+  no-mistakes-linux-x64-gnu@0.109.119:
+    resolution: {integrity: sha512-NNkWWEywQSZeXQ3zqTDiFEk/a1rgso8WQw543+YjWFsFQs9pFVHSttNbjS2L5jD3F0Fn1xxXzXBikmoBKL5EKw==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-win32-x64-msvc@0.109.117:
-    resolution: {integrity: sha512-WpczmeFA5QDW8201f12GEcq0og/e8hrChEOicU4czP5UmrEqxz4RSW91oFXi3zt6EGbfKaJIAzPNKtrn7vjPkw==}
+  no-mistakes-win32-x64-msvc@0.109.119:
+    resolution: {integrity: sha512-BUQ+OLVU4iGlFtfng4EXKI6SVhctm6BzWVoOd0ENoGzpK6V7kb2AqBthjwMJRAZT3agDccYzxhV9o5wwA7yXjg==}
     cpu: [x64]
     os: [win32]
 
-  no-mistakes@0.109.117:
-    resolution: {integrity: sha512-Uwm0iNVxLkSJyslcJDaHKQyDL6gnEVjhTseZrK+ZNiiaE5eowfK6iNIx03Ndz0ebLM2j/Rf7SvyIsWASPkD1RA==}
+  no-mistakes@0.109.119:
+    resolution: {integrity: sha512-qEV66Y7LoHY49Xuz1zUwNhelsV7fPr4H1sKk1H4W/7Ekt1RzoPmz+YnkUXLYHC1MQmB8cm91RlSwHnJB5c4s2A==}
     hasBin: true
     peerDependencies:
       vitest: ^5.0.3
@@ -23508,8 +23432,8 @@ packages:
     resolution: {integrity: sha512-YgBpdJHPyQ2UE5x+hlSXcnejzAvD0b22U2OuAP+8OnlJT+PjWPxtgmGqKKc+RgTM63U9gN0YzrYc71R2WT/hTA==}
     engines: {node: '>=18'}
 
-  openai@7.57.0:
-    resolution: {integrity: sha512-RbmrdE5NdfW6nGq/FaCJ3KFCZpotoExPzruQUSMCTw/ouUFO08vpvVdSmgmPxQMFAiv9EXZCEXvcWYU+n6NzsQ==}
+  openai@7.59.0:
+    resolution: {integrity: sha512-wPYKJkLPFEdNJ2tThSg4jE1Ptsv4X3u8g8LIvu0Qz/UIhsKeCzl73rl48PtQsDVrJL/ku0liXOsbyd2TsRsPJw==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
       '@aws-sdk/credential-provider-node': '>=3.972.0 <4'
@@ -23910,8 +23834,8 @@ packages:
     peerDependencies:
       react: ^19.3.1
 
-  react-email@6.11.13:
-    resolution: {integrity: sha512-GyTIMXrQF4oF9L9XkEu9rZYelgjqzLKzfR+aNIR29nFN5D3S7+Tilyl9AcxhOrVU2c/dUVxnwGv+uACBZrTt4Q==}
+  react-email@6.11.16:
+    resolution: {integrity: sha512-/d0gipOg2mB4IOqM46SfcQIZsJP2rumyxZWREOB8hKcyLAFDSlurCyvfWKVA85JaMUZECVFTN/U0UdqUAIBgXQ==}
     engines: {node: '>=20.19.0'}
     hasBin: true
     peerDependencies:
@@ -23975,13 +23899,17 @@ packages:
     resolution: {integrity: sha512-YTUo+Flmw4ZXiWfQKGcwwc11KnoRAYgzAE2E7mXKCjSviTKShtxBsN6YUUBB2gtaBzKzeKunxhUwNHQuRryhWA==}
     engines: {node: '>= 4'}
 
-  recharts@3.10.1:
-    resolution: {integrity: sha512-QXFrvt6IVcw7eeZCoyXTwkIJAX3Dv1nyVhMicXJ47GsGDDpcN8z6o644DibE9XjpBTThtsomLKnTV6lc+cVFUA==}
+  recharts@3.11.0:
+    resolution: {integrity: sha512-Hs7vXskAYl82TKKkeikPxMFOaOqVJBoqxay6a4Oj+sBURVorpSKk8J732vyNsmedxK08lpPhyj2GL4E6ZMHR6Q==}
     engines: {node: '>=18'}
     peerDependencies:
+      '@types/react': '*'
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-is: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 
   rechoir@0.8.0:
     resolution: {integrity: sha512-/vxpCXddiX8NGfGO/mTafwjq4aFa/71pvamip0++IQk3zG8cbCj0fifNPrjjF1XMXUne91jL9OoxmdykoEtifQ==}
@@ -24919,8 +24847,8 @@ packages:
       jsdom:
         optional: true
 
-  vouchington-tooling@3.6.2:
-    resolution: {integrity: sha512-IAxzpYCGDMyod5bgZtgxRk9Ek81vBJwvZBspbYuomFIhcBWuoamMpTQsA5VPiU8EuhJRH1tB9TmLHR89Kwohlg==}
+  vouchington-tooling@3.6.4:
+    resolution: {integrity: sha512-97EmCLfSPktiA/ahIv9/tp4t3WH5WI7TcOzQIIoM2IH7lu8ISsWi2PmqUNDoMyrsQCbGm0UZve31bO2bwnrfYw==}
     engines: {node: '>=24.0.0'}
     hasBin: true
     peerDependencies:
@@ -25045,17 +24973,17 @@ packages:
     resolution: {integrity: sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA==}
     engines: {node: '>=0.10.0'}
 
-  workerd@1.20261116.1:
-    resolution: {integrity: sha512-w3uPBuALjYs4n/p6x5SodorOe5y1bsBZ3RYeH1g0W5l73vT+yPGI7/WtxfzXbxZqpeCZ0/RfEwgD8Pc43uzu+w==}
+  workerd@1.20261117.1:
+    resolution: {integrity: sha512-iakDbGVtJRiErpWSM5fYT0z3spJ2Mo1x/POsEajBNLqUbTRwm8vMqbB7g8zPN2tzs6eZYNiO5ECyEnAXO9Foxw==}
     engines: {node: '>=16'}
     hasBin: true
 
-  wrangler@4.163.0:
-    resolution: {integrity: sha512-EBM/QOpQsce6LenEDv1nXsK+AX9BYfAhE5yHosriPhFZPj47Z0usk6oGYWgPpLPa5qYDzhm9EDzaDD/WI5lzOA==}
+  wrangler@4.164.0:
+    resolution: {integrity: sha512-WwM+DL4F+zvz1id0CAPa06CAmTb6nOq1adR+Dy5AdwDsDXH5xDjSmDUUBQQN8KgSEuPCOLvzkrdMDUODIDml1A==}
     engines: {node: '>=22.12.0'}
     hasBin: true
     peerDependencies:
-      '@cloudflare/workers-types': ^5.20261116.1
+      '@cloudflare/workers-types': ^5.20261117.1
     peerDependenciesMeta:
       '@cloudflare/workers-types':
         optional: true
@@ -25184,7 +25112,7 @@ snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
 
-  '@anthropic-ai/sdk@1.9.0(zod@3.25.76)':
+  '@anthropic-ai/sdk@1.10.0(zod@3.25.76)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       json-schema-to-ts: 3.1.1
@@ -25295,7 +25223,7 @@ snapshots:
 
   '@atproto-labs/simple-store@0.5.1': {}
 
-  '@atproto/api@0.32.1':
+  '@atproto/api@0.32.2':
     dependencies:
       '@atproto/common-web': 0.5.17
       '@atproto/lexicon': 0.7.19
@@ -25351,7 +25279,7 @@ snapshots:
       multiformats: 13.4.2
       zod: 3.25.76
 
-  '@atproto/oauth-client-node@0.5.16':
+  '@atproto/oauth-client-node@0.5.17':
     dependencies:
       '@atproto-labs/did-resolver': 0.3.13
       '@atproto-labs/handle-resolver-node': 0.2.17
@@ -25360,10 +25288,10 @@ snapshots:
       '@atproto/jwk': 0.7.4
       '@atproto/jwk-jose': 0.2.4
       '@atproto/jwk-webcrypto': 0.3.4
-      '@atproto/oauth-client': 0.9.3
+      '@atproto/oauth-client': 0.9.4
       '@atproto/oauth-types': 0.7.7
 
-  '@atproto/oauth-client@0.9.3':
+  '@atproto/oauth-client@0.9.4':
     dependencies:
       '@atproto-labs/did-resolver': 0.3.13
       '@atproto-labs/fetch': 0.4.2
@@ -25414,14 +25342,14 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-bedrock-runtime@3.1169.0':
+  '@aws-sdk/client-bedrock-runtime@3.1171.0':
     dependencies:
       '@aws-sdk/core': 3.981.0
       '@aws-sdk/credential-provider-node': 3.972.97
       '@aws-sdk/eventstream-handler-node': 3.972.42
       '@aws-sdk/middleware-eventstream': 3.972.38
       '@aws-sdk/middleware-websocket': 3.972.66
-      '@aws-sdk/token-providers': 3.1169.0
+      '@aws-sdk/token-providers': 3.1171.0
       '@aws-sdk/types': 3.975.1
       '@smithy/core': 3.40.0
       '@smithy/fetch-http-handler': 5.8.1
@@ -25429,11 +25357,11 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-bedrock@3.1169.0':
+  '@aws-sdk/client-bedrock@3.1171.0':
     dependencies:
       '@aws-sdk/core': 3.981.0
       '@aws-sdk/credential-provider-node': 3.972.97
-      '@aws-sdk/token-providers': 3.1169.0
+      '@aws-sdk/token-providers': 3.1171.0
       '@aws-sdk/types': 3.975.1
       '@smithy/core': 3.40.0
       '@smithy/fetch-http-handler': 5.8.1
@@ -25441,7 +25369,7 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-cloudfront@3.1169.0':
+  '@aws-sdk/client-cloudfront@3.1171.0':
     dependencies:
       '@aws-sdk/core': 3.981.0
       '@aws-sdk/credential-provider-node': 3.972.97
@@ -25452,7 +25380,7 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-cloudwatch@3.1169.0':
+  '@aws-sdk/client-cloudwatch@3.1171.0':
     dependencies:
       '@aws-sdk/core': 3.981.0
       '@aws-sdk/credential-provider-node': 3.972.97
@@ -25464,7 +25392,7 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-dynamodb@3.1169.0':
+  '@aws-sdk/client-dynamodb@3.1171.0':
     dependencies:
       '@aws-sdk/core': 3.981.0
       '@aws-sdk/credential-provider-node': 3.972.97
@@ -25477,7 +25405,7 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-firehose@3.1169.0':
+  '@aws-sdk/client-firehose@3.1171.0':
     dependencies:
       '@aws-sdk/core': 3.981.0
       '@aws-sdk/credential-provider-node': 3.972.97
@@ -25488,7 +25416,7 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-iam@3.1169.0':
+  '@aws-sdk/client-iam@3.1171.0':
     dependencies:
       '@aws-sdk/core': 3.981.0
       '@aws-sdk/credential-provider-node': 3.972.97
@@ -25513,7 +25441,7 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-s3@3.1169.0':
+  '@aws-sdk/client-s3@3.1171.0':
     dependencies:
       '@aws-sdk/checksums': 3.1002.5
       '@aws-sdk/core': 3.981.0
@@ -25527,7 +25455,7 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-ses@3.1169.0':
+  '@aws-sdk/client-ses@3.1171.0':
     dependencies:
       '@aws-sdk/core': 3.981.0
       '@aws-sdk/credential-provider-node': 3.972.97
@@ -25538,7 +25466,7 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-sqs@3.1169.0':
+  '@aws-sdk/client-sqs@3.1171.0':
     dependencies:
       '@aws-sdk/core': 3.981.0
       '@aws-sdk/credential-provider-node': 3.972.97
@@ -25550,7 +25478,7 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-ssm@3.1169.0':
+  '@aws-sdk/client-ssm@3.1171.0':
     dependencies:
       '@aws-sdk/core': 3.981.0
       '@aws-sdk/credential-provider-node': 3.972.97
@@ -25727,7 +25655,7 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.8.1
 
-  '@aws-sdk/s3-request-presigner@3.1169.0':
+  '@aws-sdk/s3-request-presigner@3.1171.0':
     dependencies:
       '@aws-sdk/core': 3.981.0
       '@aws-sdk/signature-v4-multi-region': 3.996.52
@@ -25752,7 +25680,7 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.8.1
 
-  '@aws-sdk/token-providers@3.1169.0':
+  '@aws-sdk/token-providers@3.1171.0':
     dependencies:
       '@aws-sdk/core': 3.981.0
       '@aws-sdk/nested-clients': 3.998.3
@@ -25902,28 +25830,28 @@ snapshots:
 
   '@cloudflare/kv-asset-handler@0.5.0': {}
 
-  '@cloudflare/unenv-preset@2.16.2(unenv@2.0.0-rc.24)(workerd@1.20261116.1)':
+  '@cloudflare/unenv-preset@2.16.2(unenv@2.0.0-rc.24)(workerd@1.20261117.1)':
     dependencies:
       unenv: 2.0.0-rc.24
     optionalDependencies:
-      workerd: 1.20261116.1
+      workerd: 1.20261117.1
 
-  '@cloudflare/workerd-darwin-64@1.20261116.1':
+  '@cloudflare/workerd-darwin-64@1.20261117.1':
     optional: true
 
-  '@cloudflare/workerd-darwin-arm64@1.20261116.1':
+  '@cloudflare/workerd-darwin-arm64@1.20261117.1':
     optional: true
 
-  '@cloudflare/workerd-linux-64@1.20261116.1':
+  '@cloudflare/workerd-linux-64@1.20261117.1':
     optional: true
 
-  '@cloudflare/workerd-linux-arm64@1.20261116.1':
+  '@cloudflare/workerd-linux-arm64@1.20261117.1':
     optional: true
 
-  '@cloudflare/workerd-windows-64@1.20261116.1':
+  '@cloudflare/workerd-windows-64@1.20261117.1':
     optional: true
 
-  '@cloudflare/workers-types@5.20261116.1': {}
+  '@cloudflare/workers-types@5.20261118.1': {}
 
   '@commitlint/cli@21.2.4(@typescript/typescript6@6.0.2)(conventional-commits-parser@7.1.2)':
     dependencies:
@@ -26653,53 +26581,27 @@ snapshots:
       '@tybys/wasm-util': 0.10.4
     optional: true
 
-  '@next/env@16.4.3': {}
-
   '@next/env@16.4.6': {}
 
-  '@next/swc-darwin-arm64@16.4.3':
-    optional: true
-
   '@next/swc-darwin-arm64@16.4.6':
-    optional: true
-
-  '@next/swc-darwin-x64@16.4.3':
     optional: true
 
   '@next/swc-darwin-x64@16.4.6':
     optional: true
 
-  '@next/swc-linux-arm64-gnu@16.4.3':
-    optional: true
-
   '@next/swc-linux-arm64-gnu@16.4.6':
-    optional: true
-
-  '@next/swc-linux-arm64-musl@16.4.3':
     optional: true
 
   '@next/swc-linux-arm64-musl@16.4.6':
     optional: true
 
-  '@next/swc-linux-x64-gnu@16.4.3':
-    optional: true
-
   '@next/swc-linux-x64-gnu@16.4.6':
-    optional: true
-
-  '@next/swc-linux-x64-musl@16.4.3':
     optional: true
 
   '@next/swc-linux-x64-musl@16.4.6':
     optional: true
 
-  '@next/swc-win32-arm64-msvc@16.4.3':
-    optional: true
-
   '@next/swc-win32-arm64-msvc@16.4.6':
-    optional: true
-
-  '@next/swc-win32-x64-msvc@16.4.3':
     optional: true
 
   '@next/swc-win32-x64-msvc@16.4.6':
@@ -28667,11 +28569,11 @@ snapshots:
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
 
-  '@react-email/ui@6.11.13(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@react-email/ui@6.11.16(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
       esbuild: 0.28.2
       jiti: 2.6.1
-      next: 16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      next: 16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
     transitivePeerDependencies:
       - '@babel/core'
       - '@opentelemetry/api'
@@ -28862,36 +28764,36 @@ snapshots:
       domhandler: 5.0.3
       selderee: 0.12.0
 
-  '@sentry/aws-serverless@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))':
+  '@sentry/aws-serverless@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))':
     dependencies:
       '@sentry/conventions': 0.33.0
-      '@sentry/core': 11.13.0
-      '@sentry/node': 11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
-      '@sentry/server-runtime-injection': 11.13.0
-      '@sentry/server-utils': 11.13.0
+      '@sentry/core': 11.14.0
+      '@sentry/node': 11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
+      '@sentry/server-runtime-injection': 11.14.0
+      '@sentry/server-utils': 11.14.0
       '@types/aws-lambda': 8.10.164
     transitivePeerDependencies:
       - rollup
       - webpack
 
-  '@sentry/browser-utils@11.13.0':
+  '@sentry/browser-utils@11.14.0':
     dependencies:
       '@sentry/conventions': 0.33.0
-      '@sentry/core': 11.13.0
+      '@sentry/core': 11.14.0
       web-vitals: 6.2.3
 
-  '@sentry/browser@11.13.0':
+  '@sentry/browser@11.14.0':
     dependencies:
-      '@sentry/browser-utils': 11.13.0
+      '@sentry/browser-utils': 11.14.0
       '@sentry/conventions': 0.33.0
-      '@sentry/core': 11.13.0
-      '@sentry/feedback': 11.13.0
-      '@sentry/replay': 11.13.0
-      '@sentry/replay-canvas': 11.13.0
+      '@sentry/core': 11.14.0
+      '@sentry/feedback': 11.14.0
+      '@sentry/replay': 11.14.0
+      '@sentry/replay-canvas': 11.14.0
 
-  '@sentry/bundler-plugins@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))':
+  '@sentry/bundler-plugins@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))':
     dependencies:
-      '@sentry/core': 11.13.0
+      '@sentry/core': 11.14.0
       dotenv: 17.4.2
       glob: 14.0.4
       magic-string: 1.4.3
@@ -28901,44 +28803,44 @@ snapshots:
       rollup: 4.63.4
       webpack: 5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)
 
-  '@sentry/cloudflare@11.13.0(@cloudflare/workers-types@5.20261116.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(wrangler@4.163.0(@cloudflare/workers-types@5.20261116.1)(@types/node@26.6.6))':
+  '@sentry/cloudflare@11.14.0(@cloudflare/workers-types@5.20261118.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(wrangler@4.164.0(@cloudflare/workers-types@5.20261118.1)(@types/node@26.6.6))':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@sentry/conventions': 0.33.0
-      '@sentry/core': 11.13.0
-      '@sentry/opentelemetry': 11.13.0(@opentelemetry/api@1.9.1)
-      '@sentry/server-utils': 11.13.0
+      '@sentry/core': 11.14.0
+      '@sentry/opentelemetry': 11.14.0(@opentelemetry/api@1.9.1)
+      '@sentry/server-utils': 11.14.0
       magic-string: 0.30.21
     optionalDependencies:
-      '@cloudflare/workers-types': 5.20261116.1
+      '@cloudflare/workers-types': 5.20261118.1
       vite: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
-      wrangler: 4.163.0(@cloudflare/workers-types@5.20261116.1)(@types/node@26.6.6)
+      wrangler: 4.164.0(@cloudflare/workers-types@5.20261118.1)(@types/node@26.6.6)
 
   '@sentry/conventions@0.33.0': {}
 
-  '@sentry/core@11.13.0':
+  '@sentry/core@11.14.0':
     dependencies:
       '@sentry/conventions': 0.33.0
 
-  '@sentry/feedback@11.13.0':
+  '@sentry/feedback@11.14.0':
     dependencies:
-      '@sentry/core': 11.13.0
+      '@sentry/core': 11.14.0
 
-  '@sentry/nextjs@11.13.0(@cloudflare/workers-types@5.20261116.1)(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react@19.3.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))(wrangler@4.163.0(@cloudflare/workers-types@5.20261116.1)(@types/node@26.6.6))':
+  '@sentry/nextjs@11.14.0(@cloudflare/workers-types@5.20261118.1)(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react@19.3.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))(wrangler@4.164.0(@cloudflare/workers-types@5.20261118.1)(@types/node@26.6.6))':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@rollup/plugin-commonjs': 28.0.1(rollup@4.63.4)
-      '@sentry/browser-utils': 11.13.0
-      '@sentry/bundler-plugins': 11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
-      '@sentry/cloudflare': 11.13.0(@cloudflare/workers-types@5.20261116.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(wrangler@4.163.0(@cloudflare/workers-types@5.20261116.1)(@types/node@26.6.6))
+      '@sentry/browser-utils': 11.14.0
+      '@sentry/bundler-plugins': 11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
+      '@sentry/cloudflare': 11.14.0(@cloudflare/workers-types@5.20261118.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(wrangler@4.164.0(@cloudflare/workers-types@5.20261118.1)(@types/node@26.6.6))
       '@sentry/conventions': 0.33.0
-      '@sentry/core': 11.13.0
-      '@sentry/node': 11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
-      '@sentry/opentelemetry': 11.13.0(@opentelemetry/api@1.9.1)
-      '@sentry/react': 11.13.0(react@19.3.1)
-      '@sentry/server-runtime-injection': 11.13.0
-      '@sentry/server-utils': 11.13.0
-      '@sentry/vercel-edge': 11.13.0
+      '@sentry/core': 11.14.0
+      '@sentry/node': 11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
+      '@sentry/opentelemetry': 11.14.0(@opentelemetry/api@1.9.1)
+      '@sentry/react': 11.14.0(react@19.3.1)
+      '@sentry/server-runtime-injection': 11.14.0
+      '@sentry/server-utils': 11.14.0
+      '@sentry/vercel-edge': 11.14.0
       next: 16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       rollup: 4.63.4
       stacktrace-parser: 0.1.11
@@ -28950,58 +28852,58 @@ snapshots:
       - webpack
       - wrangler
 
-  '@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))':
+  '@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@sentry/bundler-plugins': 11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
+      '@sentry/bundler-plugins': 11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
       '@sentry/conventions': 0.33.0
-      '@sentry/core': 11.13.0
-      '@sentry/opentelemetry': 11.13.0(@opentelemetry/api@1.9.1)
-      '@sentry/server-runtime-injection': 11.13.0
-      '@sentry/server-utils': 11.13.0
+      '@sentry/core': 11.14.0
+      '@sentry/opentelemetry': 11.14.0(@opentelemetry/api@1.9.1)
+      '@sentry/server-runtime-injection': 11.14.0
+      '@sentry/server-utils': 11.14.0
     transitivePeerDependencies:
       - rollup
       - webpack
 
-  '@sentry/opentelemetry@11.13.0(@opentelemetry/api@1.9.1)':
+  '@sentry/opentelemetry@11.14.0(@opentelemetry/api@1.9.1)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@sentry/conventions': 0.33.0
-      '@sentry/core': 11.13.0
+      '@sentry/core': 11.14.0
 
-  '@sentry/react@11.13.0(react@19.3.1)':
+  '@sentry/react@11.14.0(react@19.3.1)':
     dependencies:
-      '@sentry/browser': 11.13.0
+      '@sentry/browser': 11.14.0
       '@sentry/conventions': 0.33.0
-      '@sentry/core': 11.13.0
+      '@sentry/core': 11.14.0
       react: 19.3.1
 
-  '@sentry/replay-canvas@11.13.0':
+  '@sentry/replay-canvas@11.14.0':
     dependencies:
-      '@sentry/core': 11.13.0
-      '@sentry/replay': 11.13.0
+      '@sentry/core': 11.14.0
+      '@sentry/replay': 11.14.0
 
-  '@sentry/replay@11.13.0':
+  '@sentry/replay@11.14.0':
     dependencies:
-      '@sentry/browser-utils': 11.13.0
-      '@sentry/core': 11.13.0
+      '@sentry/browser-utils': 11.14.0
+      '@sentry/core': 11.14.0
 
-  '@sentry/server-runtime-injection@11.13.0':
+  '@sentry/server-runtime-injection@11.14.0':
     dependencies:
-      '@sentry/core': 11.13.0
-      '@sentry/server-utils': 11.13.0
+      '@sentry/core': 11.14.0
+      '@sentry/server-utils': 11.14.0
 
-  '@sentry/server-utils@11.13.0':
+  '@sentry/server-utils@11.14.0':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@sentry/conventions': 0.33.0
-      '@sentry/core': 11.13.0
+      '@sentry/core': 11.14.0
 
-  '@sentry/vercel-edge@11.13.0':
+  '@sentry/vercel-edge@11.14.0':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@sentry/core': 11.13.0
-      '@sentry/server-utils': 11.13.0
+      '@sentry/core': 11.14.0
+      '@sentry/server-utils': 11.14.0
 
   '@shaderfrog/glsl-parser@7.0.1': {}
 
@@ -29906,12 +29808,12 @@ snapshots:
       convert-source-map: 2.0.0
       tinyrainbow: 3.2.0
 
-  '@vouchington/ai@0.4.1(@anthropic-ai/sdk@1.9.0(zod@3.25.76))(openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))':
+  '@vouchington/ai@0.4.1(@anthropic-ai/sdk@1.10.0(zod@3.25.76))(openai@7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76))':
     dependencies:
       ajv: 8.20.0
     optionalDependencies:
-      '@anthropic-ai/sdk': 1.9.0(zod@3.25.76)
-      openai: 7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
+      '@anthropic-ai/sdk': 1.10.0(zod@3.25.76)
+      openai: 7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76)
 
   '@vouchington/api-client@0.3.0(react@19.3.1)':
     optionalDependencies:
@@ -29921,14 +29823,14 @@ snapshots:
     dependencies:
       '@simplewebauthn/server': 14.1.0
 
-  '@vouchington/aws@0.1.3(@aws-sdk/client-cloudwatch@3.1169.0)(@aws-sdk/client-firehose@3.1169.0)(@aws-sdk/client-iam@3.1169.0)(@aws-sdk/client-s3@3.1169.0)(@aws-sdk/client-ses@3.1169.0)(@aws-sdk/client-sqs@3.1169.0)(@smithy/node-http-handler@4.14.2)':
+  '@vouchington/aws@0.1.3(@aws-sdk/client-cloudwatch@3.1171.0)(@aws-sdk/client-firehose@3.1171.0)(@aws-sdk/client-iam@3.1171.0)(@aws-sdk/client-s3@3.1171.0)(@aws-sdk/client-ses@3.1171.0)(@aws-sdk/client-sqs@3.1171.0)(@smithy/node-http-handler@4.14.2)':
     optionalDependencies:
-      '@aws-sdk/client-cloudwatch': 3.1169.0
-      '@aws-sdk/client-firehose': 3.1169.0
-      '@aws-sdk/client-iam': 3.1169.0
-      '@aws-sdk/client-s3': 3.1169.0
-      '@aws-sdk/client-ses': 3.1169.0
-      '@aws-sdk/client-sqs': 3.1169.0
+      '@aws-sdk/client-cloudwatch': 3.1171.0
+      '@aws-sdk/client-firehose': 3.1171.0
+      '@aws-sdk/client-iam': 3.1171.0
+      '@aws-sdk/client-s3': 3.1171.0
+      '@aws-sdk/client-ses': 3.1171.0
+      '@aws-sdk/client-sqs': 3.1171.0
       '@smithy/node-http-handler': 4.14.2
 
   '@vouchington/browser-crawl@0.0.1(playwright-core@1.65.1)':
@@ -29954,12 +29856,12 @@ snapshots:
     dependencies:
       '@vouchington/utils': 0.13.0
 
-  '@vouchington/email@0.2.1(@react-email/render@2.3.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-email@6.11.13(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2))(react@19.3.1)':
+  '@vouchington/email@0.2.1(@react-email/render@2.3.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-email@6.11.16(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2))(react@19.3.1)':
     dependencies:
       '@react-email/render': 2.3.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@vouchington/localization': 0.3.1(react@19.3.1)
       react: 19.3.1
-      react-email: 6.11.13(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)
+      react-email: 6.11.16(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)
 
   '@vouchington/embeds@0.1.0':
     dependencies:
@@ -30014,18 +29916,18 @@ snapshots:
 
   '@vouchington/media@0.2.0':
     dependencies:
-      '@aws-sdk/client-s3': 3.1169.0
-      '@aws-sdk/s3-request-presigner': 3.1169.0
+      '@aws-sdk/client-s3': 3.1171.0
+      '@aws-sdk/s3-request-presigner': 3.1171.0
 
   '@vouchington/memberships@0.2.0': {}
 
-  '@vouchington/oauth-client@0.1.0(@atproto/oauth-client-node@0.5.16)':
+  '@vouchington/oauth-client@0.1.0(@atproto/oauth-client-node@0.5.17)':
     dependencies:
       '@atproto-labs/fetch-node': 0.4.5
       '@atproto-labs/handle-resolver-node': 0.2.17
       '@atproto/jwk': 0.7.4
       '@atproto/jwk-jose': 0.2.4
-      '@atproto/oauth-client-node': 0.5.16
+      '@atproto/oauth-client-node': 0.5.17
 
   '@vouchington/oauth-server@0.9.0':
     dependencies:
@@ -30079,16 +29981,16 @@ snapshots:
     dependencies:
       react: 19.3.1
 
-  '@vouchington/sentry@0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))':
+  '@vouchington/sentry@0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))':
     dependencies:
-      '@sentry/core': 11.13.0
+      '@sentry/core': 11.14.0
       '@vouchington/utils': 0.13.0
       http-errors: 2.0.1
     optionalDependencies:
-      '@sentry/browser': 11.13.0
-      '@sentry/node': 11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
+      '@sentry/browser': 11.14.0
+      '@sentry/node': 11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
 
-  '@vouchington/server-utils@0.0.1': {}
+  '@vouchington/server-utils@0.1.0': {}
 
   '@vouchington/session-jwt@0.0.3':
     dependencies:
@@ -30105,11 +30007,11 @@ snapshots:
     dependencies:
       uuid: 14.0.3
 
-  '@vouchington/worker-runtime@0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)':
+  '@vouchington/worker-runtime@0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)':
     dependencies:
       glide-mq: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     optionalDependencies:
-      '@aws-sdk/client-sqs': 3.1169.0
+      '@aws-sdk/client-sqs': 3.1171.0
       vitest: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   '@webassemblyjs/ast@1.14.1':
@@ -30547,8 +30449,6 @@ snapshots:
 
   commander@13.1.0: {}
 
-  commander@15.0.0: {}
-
   commander@15.1.0: {}
 
   commander@2.20.3:
@@ -30783,15 +30683,15 @@ snapshots:
 
   depd@2.0.0: {}
 
-  dependency-cruiser@18.7.2:
+  dependency-cruiser@18.8.0:
     dependencies:
       acorn: 8.19.0
       acorn-jsx: 5.3.2(acorn@8.19.0)
       acorn-jsx-walk: 2.0.0
       acorn-loose: 8.5.2
       acorn-walk: 8.3.5
-      commander: 15.0.0
-      enhanced-resolve: 5.26.0
+      commander: 15.1.0
+      enhanced-resolve: 5.27.0
       ignore: 7.0.14
       interpret: 3.1.1
       is-installed-globally: 1.0.1
@@ -30947,6 +30847,11 @@ snapshots:
       graceful-fs: 4.2.11
       tapable: 2.3.3
 
+  enhanced-resolve@5.27.0:
+    dependencies:
+      graceful-fs: 4.2.11
+      tapable: 2.3.3
+
   entities@4.5.0: {}
 
   entities@7.0.1: {}
@@ -31023,7 +30928,7 @@ snapshots:
 
   escape-string-regexp@5.0.0: {}
 
-  eslint-plugin-no-mistakes@0.109.117(@typescript-eslint/parser@8.73.0(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@7.0.2))(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
+  eslint-plugin-no-mistakes@0.109.119(@typescript-eslint/parser@8.73.0(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@7.0.2))(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
     dependencies:
       eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
     optionalDependencies:
@@ -32010,7 +31915,7 @@ snapshots:
     dependencies:
       yallist: 3.1.1
 
-  lucide-react@1.73.0(@types/react@19.3.0)(react@19.3.1):
+  lucide-react@1.74.0(@types/react@19.3.0)(react@19.3.1):
     dependencies:
       react: 19.3.1
     optionalDependencies:
@@ -32389,12 +32294,12 @@ snapshots:
 
   min-indent@1.0.1: {}
 
-  miniflare@5.20261116.0-beta(@types/node@26.6.6):
+  miniflare@5.20261117.0-beta(@types/node@26.6.6):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       sharp: 0.35.5(@types/node@26.6.6)
       undici: 7.30.1
-      workerd: 1.20261116.1
+      workerd: 1.20261117.1
       ws: 8.21.0
       youch: 4.1.0-beta.10
     transitivePeerDependencies:
@@ -32483,34 +32388,6 @@ snapshots:
   neo-async@2.6.2:
     optional: true
 
-  next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
-    dependencies:
-      '@next/env': 16.4.3
-      '@swc/helpers': 0.5.23
-      baseline-browser-mapping: 2.11.25
-      caniuse-lite: 1.0.30001810
-      postcss: 8.5.23
-      react: 19.3.1
-      react-dom: 19.3.1(react@19.3.1)
-      styled-jsx: 5.1.6(@babel/core@7.29.7(supports-color@10.2.2))(react@19.3.1)
-    optionalDependencies:
-      '@next/swc-darwin-arm64': 16.4.3
-      '@next/swc-darwin-x64': 16.4.3
-      '@next/swc-linux-arm64-gnu': 16.4.3
-      '@next/swc-linux-arm64-musl': 16.4.3
-      '@next/swc-linux-x64-gnu': 16.4.3
-      '@next/swc-linux-x64-musl': 16.4.3
-      '@next/swc-win32-arm64-msvc': 16.4.3
-      '@next/swc-win32-x64-msvc': 16.4.3
-      '@opentelemetry/api': 1.9.1
-      '@playwright/test': 1.65.1
-      babel-plugin-react-compiler: 1.0.0
-      sharp: 0.35.5(@types/node@26.6.6)
-    transitivePeerDependencies:
-      - '@babel/core'
-      - '@types/node'
-      - babel-plugin-macros
-
   next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
     dependencies:
       '@next/env': 16.4.6
@@ -32539,24 +32416,24 @@ snapshots:
       - '@types/node'
       - babel-plugin-macros
 
-  no-mistakes-darwin-arm64@0.109.117:
+  no-mistakes-darwin-arm64@0.109.119:
     optional: true
 
-  no-mistakes-linux-arm64-gnu@0.109.117:
+  no-mistakes-linux-arm64-gnu@0.109.119:
     optional: true
 
-  no-mistakes-linux-x64-gnu@0.109.117:
+  no-mistakes-linux-x64-gnu@0.109.119:
     optional: true
 
-  no-mistakes-win32-x64-msvc@0.109.117:
+  no-mistakes-win32-x64-msvc@0.109.119:
     optional: true
 
-  no-mistakes@0.109.117(vitest@5.1.0):
+  no-mistakes@0.109.119(vitest@5.1.0):
     optionalDependencies:
-      no-mistakes-darwin-arm64: 0.109.117
-      no-mistakes-linux-arm64-gnu: 0.109.117
-      no-mistakes-linux-x64-gnu: 0.109.117
-      no-mistakes-win32-x64-msvc: 0.109.117
+      no-mistakes-darwin-arm64: 0.109.119
+      no-mistakes-linux-arm64-gnu: 0.109.119
+      no-mistakes-linux-x64-gnu: 0.109.119
+      no-mistakes-win32-x64-msvc: 0.109.119
       vitest: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   node-app-attest@2.2.0:
@@ -32625,7 +32502,7 @@ snapshots:
       is-inside-container: 1.0.0
       wsl-utils: 0.1.0
 
-  openai@7.57.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76):
+  openai@7.59.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@3.25.76):
     optionalDependencies:
       '@aws-sdk/credential-provider-node': 3.972.97
       '@smithy/signature-v4': 5.7.5
@@ -33140,7 +33017,7 @@ snapshots:
       react: 19.3.1
       scheduler: 0.28.0
 
-  react-email@6.11.13(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2):
+  react-email@6.11.16(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2):
     dependencies:
       '@babel/parser': 7.29.2
       '@babel/traverse': 7.29.0(supports-color@10.2.2)
@@ -33150,7 +33027,6 @@ snapshots:
       conf: 15.1.0
       css-tree: 3.2.1
       esbuild: 0.28.2
-      glob: 14.0.4
       jiti: 2.6.1
       log-symbols: 7.0.1
       marked: 15.0.12
@@ -33219,7 +33095,7 @@ snapshots:
       tiny-invariant: 1.3.3
       tslib: 2.8.1
 
-  recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react-is@17.0.2)(react@19.3.1)(redux@5.0.1):
+  recharts@3.11.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react-is@17.0.2)(react@19.3.1)(redux@5.0.1):
     dependencies:
       '@reduxjs/toolkit': 2.12.0(react-redux@9.3.0(@types/react@19.3.0)(react@19.3.1)(redux@5.0.1))(react@19.3.1)
       clsx: 2.1.1
@@ -33235,8 +33111,9 @@ snapshots:
       tiny-invariant: 1.3.3
       use-sync-external-store: 1.6.0(react@19.3.1)
       victory-vendor: 37.3.6
+    optionalDependencies:
+      '@types/react': 19.3.0
     transitivePeerDependencies:
-      - '@types/react'
       - redux
 
   rechoir@0.8.0:
@@ -34243,7 +34120,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vouchington-tooling@3.6.2(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.2)(@vouchington/worker-runtime@0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.117(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76):
+  vouchington-tooling@3.6.4(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.2)(@vouchington/worker-runtime@0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.119(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76):
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3
@@ -34264,9 +34141,9 @@ snapshots:
       '@playwright/test': 1.65.1
       '@typescript/typescript6': 6.0.2
       '@vouchington/postgres': 0.6.2
-      '@vouchington/worker-runtime': 0.3.2(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+      '@vouchington/worker-runtime': 0.3.2(@aws-sdk/client-sqs@3.1171.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
       next: 16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      no-mistakes: 0.109.117(vitest@5.1.0)
+      no-mistakes: 0.109.119(vitest@5.1.0)
       pg: 8.23.1
       react: 19.3.1
       typescript: '@typescript/typescript6@6.0.2'
@@ -34331,7 +34208,7 @@ snapshots:
       acorn-import-phases: 1.0.4(acorn@8.19.0)
       browserslist: 4.29.0
       chrome-trace-event: 1.0.4
-      enhanced-resolve: 5.26.0
+      enhanced-resolve: 5.27.0
       es-module-lexer: 2.3.2
       eslint-scope: 5.1.1
       events: 3.3.0
@@ -34387,27 +34264,27 @@ snapshots:
 
   word-wrap@1.2.5: {}
 
-  workerd@1.20261116.1:
+  workerd@1.20261117.1:
     optionalDependencies:
-      '@cloudflare/workerd-darwin-64': 1.20261116.1
-      '@cloudflare/workerd-darwin-arm64': 1.20261116.1
-      '@cloudflare/workerd-linux-64': 1.20261116.1
-      '@cloudflare/workerd-linux-arm64': 1.20261116.1
-      '@cloudflare/workerd-windows-64': 1.20261116.1
+      '@cloudflare/workerd-darwin-64': 1.20261117.1
+      '@cloudflare/workerd-darwin-arm64': 1.20261117.1
+      '@cloudflare/workerd-linux-64': 1.20261117.1
+      '@cloudflare/workerd-linux-arm64': 1.20261117.1
+      '@cloudflare/workerd-windows-64': 1.20261117.1
 
-  wrangler@4.163.0(@cloudflare/workers-types@5.20261116.1)(@types/node@26.6.6):
+  wrangler@4.164.0(@cloudflare/workers-types@5.20261118.1)(@types/node@26.6.6):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.5.0
-      '@cloudflare/unenv-preset': 2.16.2(unenv@2.0.0-rc.24)(workerd@1.20261116.1)
+      '@cloudflare/unenv-preset': 2.16.2(unenv@2.0.0-rc.24)(workerd@1.20261117.1)
       '@cspotcode/source-map-support': 0.8.1
       blake3-wasm: 2.1.5
       esbuild: 0.28.2
-      miniflare: 5.20261116.0-beta(@types/node@26.6.6)
+      miniflare: 5.20261117.0-beta(@types/node@26.6.6)
       path-to-regexp: 6.3.0
       unenv: 2.0.0-rc.24
-      workerd: 1.20261116.1
+      workerd: 1.20261117.1
     optionalDependencies:
-      '@cloudflare/workers-types': 5.20261116.1
+      '@cloudflare/workers-types': 5.20261118.1
       fsevents: 2.3.3
     transitivePeerDependencies:
       - '@types/node'

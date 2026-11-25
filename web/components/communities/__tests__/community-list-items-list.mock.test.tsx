@@ -5,36 +5,8 @@ import type { CommunityListItem } from '@/types/api-responses'
 import type { CommunityListPageData } from '@/types/api-responses/community-list-pages'
 import { CommunityListItemsList } from '../community-list-items-list'
 
-type InfiniteScrollProps = Parameters<
-  typeof import('@/components/shared/infinite-scroll').InfiniteScroll
->[0]
-
 vi.mock(import('@/lib/api/client'), () => ({
   getPaginatedPage: vi.fn<VitestLooseMock>(),
-}))
-
-vi.mock(import('@/components/shared/infinite-scroll'), () => ({
-  InfiniteScroll: ({
-    children,
-    hasNextPage,
-    isEmpty,
-    emptyState,
-    onLoadMore,
-  }: InfiniteScrollProps) => (
-    <div>
-      {isEmpty ? (hasNextPage ? null : emptyState) : children}
-      {hasNextPage ? (
-        <button
-          type='button'
-          onClick={() => {
-            void onLoadMore()
-          }}
-        >
-          Load more
-        </button>
-      ) : null}
-    </div>
-  ),
 }))
 
 vi.mock(import('../community-list-item-card'), () => ({

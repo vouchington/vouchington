@@ -19,7 +19,7 @@ import {
 import { placeUserPreservationHold } from '../users/preservation-holds.mts'
 import { runCopyrightAccountClockSyncPage } from './retention-account-clock-sync.mts'
 import { placeCopyrightCasePreservationHold } from './retention-review-closures.mts'
-import { runCopyrightCasePurgePage } from './retention-case-purge-page.mts'
+import { runIsolatedCopyrightCasePurgePage } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-isolation'
 
 // PostgreSQL fixtures use clock_timestamp(), so only the service's injected clock moves forward.
 const PURGE_NOW = new Date('2100-01-01T12:00:00.000Z')
@@ -49,11 +49,11 @@ describe('copyright case purge holds placed mid-purge', () => {
     ])
     await addCopyrightCasePurgeFixtureParty(entry.noticeId, entry.posterId)
     await publishCopyrightCasePurgeCoverage(entry.noticeId)
-    const first = await runCopyrightCasePurgePage(firstPage(entry.noticeId), PURGE_NOW)
+    const first = await runIsolatedCopyrightCasePurgePage(firstPage(entry.noticeId), PURGE_NOW)
     expect(first.hasMore).toBe(true)
 
     await placeUserPreservationHold(admin, entry.posterId, 'party-hold-during-purge')
-    const deferred = await runCopyrightCasePurgePage(first.data, PURGE_NOW)
+    const deferred = await runIsolatedCopyrightCasePurgePage(first.data, PURGE_NOW)
     expect(deferred).toMatchObject({ hasMore: true, deferred: true })
     expect(deferred.data).toEqual(first.data)
 
@@ -66,10 +66,10 @@ describe('copyright case purge holds placed mid-purge', () => {
       sync = await runCopyrightAccountClockSyncPage(sync.data)
     expect(sync.hasMore).toBe(false)
     let data = deferred.data
-    let page = await runCopyrightCasePurgePage(data, PURGE_NOW)
+    let page = await runIsolatedCopyrightCasePurgePage(data, PURGE_NOW)
     for (let step = 0; step < 200 && page.hasMore; step += 1) {
       data = page.data
-      page = await runCopyrightCasePurgePage(data, PURGE_NOW)
+      page = await runIsolatedCopyrightCasePurgePage(data, PURGE_NOW)
     }
     expect(page.hasMore).toBe(false)
     expect(await readCopyrightCasePurgeFixture(entry.noticeId)).toMatchObject({ live: true })
@@ -84,19 +84,19 @@ describe('copyright case purge holds placed mid-purge', () => {
     for (const key of entry.evidenceKeys) await bucket.put(key, { versions: 3, deleteMarker: true })
     let data = firstPage(entry.noticeId)
     for (let step = 0; step < 1_000 && data.phase !== 'evidence'; step += 1) {
-      const page = await runCopyrightCasePurgePage(data, PURGE_NOW)
+      const page = await runIsolatedCopyrightCasePurgePage(data, PURGE_NOW)
       expect(page.hasMore).toBe(true)
       data = page.data
     }
     expect(data.phase).toBe('evidence')
-    const started = await runCopyrightCasePurgePage(data, PURGE_NOW)
+    const started = await runIsolatedCopyrightCasePurgePage(data, PURGE_NOW)
     expect(started.hasMore).toBe(true)
     const versionsBeforeHold = await Promise.all(entry.evidenceKeys.map(bucket.countVersions))
     // The started page erased part of the evidence; the rest must survive the hold.
     expect(versionsBeforeHold.reduce((total, count) => total + count)).toBeGreaterThan(0)
 
     await placeCopyrightCasePreservationHold(entry.moderator, entry.noticeId, 'litigation_threat')
-    const stopped = await runCopyrightCasePurgePage(started.data, PURGE_NOW)
+    const stopped = await runIsolatedCopyrightCasePurgePage(started.data, PURGE_NOW)
     expect(stopped.hasMore).toBe(false)
     expect(await Promise.all(entry.evidenceKeys.map(bucket.countVersions))).toEqual(
       versionsBeforeHold,
@@ -116,14 +116,14 @@ describe('copyright case purge holds placed mid-purge', () => {
       step < 1_000 && !(data.phase === 'pointers' && data.phaseIndex === 1);
       step += 1
     ) {
-      const page = await runCopyrightCasePurgePage(data, PURGE_NOW)
+      const page = await runIsolatedCopyrightCasePurgePage(data, PURGE_NOW)
       expect(page.hasMore).toBe(true)
       data = page.data
     }
     expect(data).toMatchObject({ phase: 'pointers', phaseIndex: 1 })
     const { pageOutcome, message } = await raceCopyrightPurgeWithCorrespondence(
       entry.noticeId,
-      () => runCopyrightCasePurgePage(data, PURGE_NOW),
+      () => runIsolatedCopyrightCasePurgePage(data, PURGE_NOW),
     )
     const [pointers, aggregate] = await Promise.all([
       readCopyrightPurgeAssessmentPointers(entry.noticeId),

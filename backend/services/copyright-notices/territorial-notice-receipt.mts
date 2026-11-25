@@ -1,7 +1,5 @@
-import createHttpError from 'http-errors'
 import { createHash } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
-import { isUniqueViolation } from '@vouchington/postgres'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
@@ -14,6 +12,7 @@ import {
   assertIdempotencyKey,
   sameSha256,
   territorialRequestSha256,
+  territorialCopyrightUnavailableMessage,
   type TerritorialCopyrightJurisdiction,
   type TerritorialNoticeRequest,
   type EuTerritorialNoticeRequest,
@@ -27,6 +26,7 @@ import {
   insertReceiptQuery,
   insertRoutingQuery,
 } from './territorial-notice-receipt-sql.mts'
+import { throwCopyrightSubmissionRequestConflict } from './submission-request-conflict.mts'
 
 export type TerritorialCopyrightNoticeReceipt = {
   notice_id: string
@@ -70,6 +70,7 @@ export async function receiveTerritorialCopyrightNoticeInTransaction(
   const fields = noticeFields(request, jurisdiction)
   const requestSha256 = territorialRequestSha256(fields)
   const identitySha256 = createHash('sha256').update(requester.identity).digest()
+  const approval = await lockCurrentCopyrightJurisdictionPolicy(jurisdiction, transaction)
   const { rows: existingRows } = await transaction<TerritorialReceiptRow>(
     existingReceiptQuery(jurisdiction, identitySha256, idempotencyKey),
   )
@@ -88,7 +89,7 @@ export async function receiveTerritorialCopyrightNoticeInTransaction(
       is_duplicate: true,
     }
   }
-  const approval = await lockCurrentCopyrightJurisdictionPolicy(jurisdiction, transaction)
+  assert(approval, 403, territorialCopyrightUnavailableMessage(jurisdiction))
   const labels = territorialLabels(jurisdiction)
   const purpose = `${labels.noticePurpose}:${idempotencyKey}`
   const failure = labels.noticeFailed
@@ -125,18 +126,12 @@ export async function receiveTerritorialCopyrightNoticeInTransaction(
         : null,
       'goodFaithStatement' in fields ? fields.goodFaithStatement : null,
     ),
-  ).catch((err: unknown) => {
-    if (
-      isUniqueViolation(err) &&
-      'constraint' in err &&
-      err.constraint === 'uq_copyright_territorial_notice_receipts__idempotency'
-    ) {
-      throw createHttpError(409, 'Idempotency-Key was submitted concurrently; try again', {
-        cause: err,
-      })
-    }
-    throw err
-  })
+  ).catch((err: unknown) =>
+    throwCopyrightSubmissionRequestConflict(
+      err,
+      'uq_copyright_territorial_notice_receipts__idempotency',
+    ),
+  )
   const receipt = receipts[0]
   assert(receipt, 500, failure)
   await transaction(insertRoutingQuery(receipt.id))

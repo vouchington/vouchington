@@ -34,17 +34,19 @@ jobs:
     permissions:
       actions: read
       contents: read
+    # No job-level token: the plan and comparison steps read pull-request-controlled files.
     env:
       SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
       SOURCE_WORKFLOW: ${{ github.event.workflow_run.name }}
       HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
       BASE_REF: ${{ github.event.workflow_run.pull_requests[0].base.ref }}
-      GH_TOKEN: ${{ github.token }}
     steps:
       # Areas skipped by path filters upload no JUnit reports, so stop before any checkout.
       - name: Find JUnit reports
         id: reports
         timeout-minutes: 2
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           count=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/artifacts?per_page=100" \
@@ -74,7 +76,7 @@ jobs:
         id: pnpm-version
         if: steps.reports.outputs.count != '0'
         timeout-minutes: 1
-        uses: vouchington/vouchington-tooling/.github/actions/resolve-pnpm-version@95129ce4ac652ea4adf29635b91e42de2557c502 # v3.6.2
+        uses: vouchington/vouchington-tooling/.github/actions/resolve-pnpm-version@273d313fc952c000baa7ee36056ca0e403666581 # v3.6.4
       - uses: pnpm/setup@731dfb6463bbd11c11fd0ee11fe00ed0e36d48a1 # v3.2.0
         if: steps.reports.outputs.count != '0'
         timeout-minutes: 1
@@ -86,6 +88,8 @@ jobs:
       - name: Download JUnit reports
         if: steps.reports.outputs.count != '0'
         timeout-minutes: 3
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: >-
           gh run download "$SOURCE_RUN_ID" --repo "$GITHUB_REPOSITORY" --dir junit
           --pattern '*junit*' --pattern '*test-report*'
@@ -93,6 +97,8 @@ jobs:
         if: steps.reports.outputs.count != '0'
         timeout-minutes: 4
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: source .github/workflows/test-plan-shadow-compute-plans.sh
       - name: Compare plans with JUnit results
         if: ${{ !cancelled() && steps.reports.outputs.count != '0' }}
@@ -112,5 +118,5 @@ jobs:
           overwrite: true
           name: test-plan-shadow-${{ github.event.workflow_run.id }}
           path: ${{ runner.temp }}/test-plan-shadow/test-plan-shadow.json
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore

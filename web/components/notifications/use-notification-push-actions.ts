@@ -174,6 +174,7 @@ export function useNotificationPushActions(
   const currentSubscription = getCurrentSubscription(subscriptions, currentBinding)
   return {
     currentSubscriptionId: currentSubscription?.id,
+    subscriptionCount: subscriptions.length,
     handleDisablePush,
     handleEnablePush,
     pushEnabled: Boolean(currentSubscription),

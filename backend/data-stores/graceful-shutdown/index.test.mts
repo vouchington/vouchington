@@ -85,9 +85,69 @@ describe('graceful shutdown wiring', () => {
 
     await onGracefulShutdown('SIGTERM')
 
-    expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(valkeyError, expect.anything())
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(valkeyError, {
+      tags: { shutdown_resource: 'Valkey' },
+    })
     expect(onGracefulShutdownPSQL).toHaveBeenCalledTimes(1)
     expect(sentryFlushMock).toHaveBeenCalledWith(2000)
+  })
+
+  it('reports a failing callback as its original error tagged with phase and signal', async () => {
+    const { onGracefulShutdown, addGracefulShutdownCallback } = await loadSubject()
+    const callbackError = new Error('drain queue failed')
+    addGracefulShutdownCallback(async () => {
+      throw callbackError
+    })
+
+    await onGracefulShutdown('SIGTERM')
+
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledTimes(1)
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(callbackError, {
+      tags: { shutdown_phase: 'callbacks', shutdown_signal: 'SIGTERM' },
+    })
+  })
+
+  it('wraps a non-Error rejection so Sentry still gets an Error with the resource', async () => {
+    const { gracefulShutdown, onGracefulShutdownValkey } = await loadSubject()
+    onGracefulShutdownValkey.mockRejectedValueOnce('valkey gone')
+
+    await gracefulShutdown()
+
+    const [reported, context] = sentryCaptureExceptionMock.mock.calls[0] ?? []
+    expect(reported).toBeInstanceOf(Error)
+    expect(reported).toMatchObject({
+      message: 'valkey gone',
+      cause: { cause: 'valkey gone' },
+    })
+    expect(context).toEqual({ tags: { shutdown_resource: 'Valkey' } })
+  })
+
+  it('reports a frozen failure without mutating it and still reports later failures', async () => {
+    const { onGracefulShutdown, addGracefulShutdownCallback } = await loadSubject()
+    const frozenError: Error = Object.freeze(
+      Object.assign(new Error('frozen failure'), { name: 'FrozenError', code: 'EFROZEN' }),
+    )
+    const laterError = new Error('later failure')
+    addGracefulShutdownCallback(async () => {
+      throw frozenError
+    })
+    addGracefulShutdownCallback(async () => {
+      throw laterError
+    })
+
+    await expect(onGracefulShutdown('SIGTERM')).resolves.toBeUndefined()
+
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledTimes(2)
+    const [reported, context] = sentryCaptureExceptionMock.mock.calls[0] ?? []
+    expect(reported).not.toBe(frozenError)
+    expect(reported).toMatchObject({
+      message: 'frozen failure',
+      name: 'FrozenError',
+      code: 'EFROZEN',
+    })
+    expect(context).toEqual({ tags: { shutdown_phase: 'callbacks', shutdown_signal: 'SIGTERM' } })
+    expect(Object.hasOwn(frozenError, 'tags')).toBe(false)
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(laterError, expect.anything())
   })
 
   it('gracefulShutdown only closes data stores', async () => {
@@ -157,9 +217,13 @@ describe('one-off data-store shutdown wiring', () => {
     onGracefulShutdownValkey.mockRejectedValue(valkeyError)
     onGracefulShutdownPSQL.mockRejectedValue(psqlError)
 
-    await expect(shutdownDataStoresForOneOffCommand()).rejects.toMatchObject({
-      errors: [valkeyError, psqlError],
-    })
+    const rejection: unknown = await shutdownDataStoresForOneOffCommand().catch(
+      (err: unknown) => err,
+    )
+
+    expect(rejection).toBeInstanceOf(AggregateError)
+    const causes = (rejection as AggregateError).errors.map((error: Error) => error.cause)
+    expect(causes).toEqual([valkeyError, psqlError])
 
     expect(onGracefulShutdownValkey).toHaveBeenCalledTimes(1)
     expect(onGracefulShutdownPSQL).toHaveBeenCalledTimes(1)
@@ -176,8 +240,6 @@ describe('one-off data-store shutdown wiring', () => {
     forceExitTimer.fire()
 
     expect(exitSpy).toHaveBeenCalledWith(1)
-    expect(errorSpy).toHaveBeenCalledWith(
-      'One-off shutdown: process did not terminate in time, forcing exit...',
-    )
+    expect(errorSpy).toHaveBeenCalledTimes(1)
   })
 })

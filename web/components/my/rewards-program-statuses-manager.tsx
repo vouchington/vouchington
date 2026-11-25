@@ -155,6 +155,7 @@ export function RewardsProgramStatusesManager({ initialPage }: Props) {
       data-pw='rewards-program-statuses-manager'
     >
       <InfiniteScroll
+        itemCount={statuses.length}
         hasNextPage={pagination.hasNextPage}
         endCursor={pagination.endCursor}
         onLoadMore={handleLoadMore}

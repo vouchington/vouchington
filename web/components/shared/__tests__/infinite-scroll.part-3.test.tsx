@@ -21,6 +21,7 @@ describe('InfiniteScroll', () => {
 
     render(
       <InfiniteScroll
+        itemCount={1}
         hasNextPage
         endCursor='cursor1'
         loadingMore={false}
@@ -46,6 +47,7 @@ describe('InfiniteScroll', () => {
     const clearError = vi.fn<() => void>()
     const { rerender } = render(
       <InfiniteScroll
+        itemCount={1}
         hasNextPage
         endCursor='cursor1'
         loadingMore={false}
@@ -63,6 +65,7 @@ describe('InfiniteScroll', () => {
 
     rerender(
       <InfiniteScroll
+        itemCount={1}
         hasNextPage
         endCursor='cursor1'
         loadingMore={false}
@@ -86,6 +89,7 @@ describe('InfiniteScroll', () => {
     const clearError = vi.fn<VitestLooseMock>()
     render(
       <InfiniteScroll
+        itemCount={1}
         hasNextPage={false}
         endCursor={null}
         fetchError={new Error('refresh failed')}
@@ -106,6 +110,7 @@ describe('InfiniteScroll', () => {
     const onLoadMore = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
     const { rerender } = render(
       <InfiniteScroll
+        itemCount={1}
         hasNextPage
         endCursor='cursor1'
         onLoadMore={onLoadMore}
@@ -123,6 +128,7 @@ describe('InfiniteScroll', () => {
     // check to retrigger a load for the new query.
     rerender(
       <InfiniteScroll
+        itemCount={1}
         hasNextPage
         endCursor='cursor1'
         onLoadMore={onLoadMore}

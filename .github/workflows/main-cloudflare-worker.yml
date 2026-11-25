@@ -50,7 +50,7 @@ jobs:
           fetch-depth: 1
         if: steps.checkout.outcome != 'success'
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@95129ce4ac652ea4adf29635b91e42de2557c502 # v3.6.2
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@273d313fc952c000baa7ee36056ca0e403666581 # v3.6.4
         timeout-minutes: 3
         with:
           deadline-seconds: '150'
@@ -64,5 +64,5 @@ jobs:
           name: cloudflare-worker-${{ github.run_id }}-${{ github.run_attempt }}
           path: delivery
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
           overwrite: true

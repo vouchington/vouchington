@@ -14,12 +14,17 @@ export async function searchInvites(
 ): Promise<{ results: CommunityInvite[]; page_info: PageInfo }> {
   const { limit, cursorId } = resolveCommunityIdCursorPage(options)
 
+  // Keep BETWEEN with equal bounds and ORDER BY community_id ASC, id DESC to steer
+  // PostgreSQL toward the (community_id, id DESC) index. Replacing BETWEEN with =
+  // brings back the primary-key walk (933 rows on the ID-ordered fixture).
+  // https://github.com/vouchington/vouchington/issues/6043#issuecomment-7145653113
+  // The capacity scenario's plan contract fails if PostgreSQL uses that walk again.
   const query = sql`/* searchInvites */
     SELECT 'community_invite'::text AS __entity_type,
       id, community_id, invited_user_id, invited_email, invited_by_id,
       accepted_at, accepted_by_id, declined_at, revoked_at, created_at
     FROM community_invites
-    WHERE community_id = ${communityId}
+    WHERE community_id BETWEEN ${communityId} AND ${communityId}
   `
 
   if (cursorId !== undefined) {
@@ -27,7 +32,7 @@ export async function searchInvites(
   }
 
   query.append(sql`
-    ORDER BY id DESC
+    ORDER BY community_id ASC, id DESC
     LIMIT ${limit + 1}
   `)
 

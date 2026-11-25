@@ -130,7 +130,7 @@ export function ActiveSessionsManager({ initialData, initialSessions }: Props) {
         fetchError={pagination.fetchError}
         clearError={pagination.clearError}
         resetKey={pagination.resetKey}
-        isEmpty={sessions.length === 0}
+        itemCount={sessions.length}
         emptyState={
           <p className='text-sm text-muted-foreground'>{t('settings.activeSessions.empty')}</p>
         }

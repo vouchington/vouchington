@@ -98,11 +98,13 @@ export function ModmailInbox({ communitySlug, initialData }: Props) {
         fetchError={hasLoadedFirstPage ? loadError : null}
         clearError={() => setLoadError(null)}
         resetKey={communitySlug}
-        isEmpty={hasLoadedFirstPage && threads.length === 0}
+        itemCount={threads.length}
         emptyState={
-          <p className='text-sm text-muted-foreground'>
-            {t('extracted.communities.modmailInbox.noModmailThreadsYet_2115a287')}
-          </p>
+          hasLoadedFirstPage ? (
+            <p className='text-sm text-muted-foreground'>
+              {t('extracted.communities.modmailInbox.noModmailThreadsYet_2115a287')}
+            </p>
+          ) : undefined
         }
       >
         {threads.length > 0 ? (

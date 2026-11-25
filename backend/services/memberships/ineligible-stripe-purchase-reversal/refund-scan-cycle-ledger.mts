@@ -1,4 +1,5 @@
 import { beginTransaction, type QueryExecutor, write } from '@data-stores/psql'
+import assert from 'node:assert/strict'
 import sql from 'sql-template-strings'
 import type { StripeRefundScanTarget } from './refund-scan-target.mts'
 
@@ -23,37 +24,47 @@ export type StripeRefundScanCycle = {
 export async function getOrCreateStripeRefundScanCycle(
   reversalCaseId: string,
 ): Promise<StripeRefundScanCycle> {
-  await createOrRotateCycle(reversalCaseId)
-  const current = await readCycle(reversalCaseId)
-  if (current.completedAt) throw new Error('Could not rotate Stripe refund scan cycle')
-  return { generation: current.generation, reversalCaseId }
+  const current = (await readCycle(reversalCaseId)) ?? (await createCycle(reversalCaseId))
+  if (current.completedAt === null) return { generation: current.generation, reversalCaseId }
+
+  const rotated = await rotateCompletedCycle(reversalCaseId, current.generation)
+  if (rotated !== null) return { generation: rotated, reversalCaseId }
+
+  const winner = await readCycle(reversalCaseId)
+  const advanced = winner && winner.generation > current.generation
+  assert(advanced, 'Could not rotate Stripe refund scan cycle')
+  return { generation: winner.generation, reversalCaseId }
 }
 
-// Two unconditional statements, no row lock taken on a row this call does not write.
-// The rotate UPDATE matches nothing on an open cycle. On a completed cycle a concurrent
-// second caller waits on the row the first is writing, re-checks completed_at and
-// updates nothing, so the cycle rotates exactly once; the only row lock left in
-// getOrCreateStripeRefundScanCycle is the one that UPDATE takes on the row it writes.
-// A cycle may complete while a late scan registered concurrently is still unverified.
-// That worker verifies its own scan before any refund and the next run rotates and
-// re-registers; completed_at only feeds case-closed retention.
-async function createOrRotateCycle(reversalCaseId: string): Promise<void> {
-  await write(sql`/* getOrCreateStripeRefundScanCycle:insert */
+async function createCycle(reversalCaseId: string) {
+  const { rowCount, rows } = await write<{
+    generation: string
+  }>(sql`/* getOrCreateStripeRefundScanCycle:insert */
     INSERT INTO membership_ineligible_purchase_reversal_refund_scan_cycles (
       membership_ineligible_purchase_reversal_case_id
     ) VALUES (${reversalCaseId}) ON CONFLICT DO NOTHING
+    RETURNING generation::TEXT AS generation
   `)
-  await write(sql`/* getOrCreateStripeRefundScanCycle:rotate */
+  if (rowCount === 1) return { completedAt: null, generation: parseGeneration(rows[0]?.generation) }
+  const winner = await readCycle(reversalCaseId)
+  assert(winner, 'Could not create Stripe refund scan cycle')
+  return winner
+}
+
+async function rotateCompletedCycle(reversalCaseId: string, generation: number) {
+  const { rowCount, rows } = await write<{
+    generation: string
+  }>(sql`/* getOrCreateStripeRefundScanCycle:rotate */
     UPDATE membership_ineligible_purchase_reversal_refund_scan_cycles
     SET generation = generation + 1, completed_at = NULL
     WHERE membership_ineligible_purchase_reversal_case_id = ${reversalCaseId}
-      AND completed_at IS NOT NULL
+      AND generation = ${generation} AND completed_at IS NOT NULL
+    RETURNING generation::TEXT AS generation
   `)
+  return rowCount === 1 ? parseGeneration(rows[0]?.generation) : null
 }
 
-async function readCycle(
-  reversalCaseId: string,
-): Promise<{ completedAt: Date | null; generation: number }> {
+async function readCycle(reversalCaseId: string) {
   const { rows } = await write<{ completedAt: Date | null; generation: string }>(
     sql`/* getOrCreateStripeRefundScanCycle:read */
       SELECT generation::TEXT AS generation, completed_at AS "completedAt"
@@ -62,11 +73,16 @@ async function readCycle(
     `,
   )
   const current = rows[0]
-  if (!current) throw new Error('Could not create Stripe refund scan cycle')
-  const generation = Number(current.generation)
+  return (
+    current && { completedAt: current.completedAt, generation: parseGeneration(current.generation) }
+  )
+}
+
+function parseGeneration(value: string | undefined): number {
+  const generation = Number(value)
   if (!Number.isSafeInteger(generation) || generation < 1)
     throw new Error('Persisted Stripe refund scan cycle generation is invalid')
-  return { completedAt: current.completedAt, generation }
+  return generation
 }
 
 export async function completeStripeRefundScanCycle(cycle: StripeRefundScanCycle): Promise<void> {

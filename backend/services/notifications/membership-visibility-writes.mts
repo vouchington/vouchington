@@ -44,8 +44,7 @@ export async function reconcileMembershipNotificationVisibility(
           AND (notification.${publicationColumn}, notification.user_id, notification.id)
             ${cursorOperator} ($1::uuid, $2::uuid, $3::uuid)
         ORDER BY notification.${publicationColumn}, notification.user_id, notification.id
-        LIMIT $4
-        FOR UPDATE OF notification`,
+        LIMIT $4`,
       [
         input.entityId,
         input.after?.userId ?? FIRST_UUID,

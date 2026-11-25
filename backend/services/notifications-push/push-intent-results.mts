@@ -1,6 +1,10 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { NotificationPushIntent } from './push-intents.mts'
+import {
+  persistRetryableNotificationPushOutcome,
+  type NotificationPushOutcomePersistence,
+} from './push-intent-retry-outcome.mts'
 
 /** Minimal subscription fields needed for push delivery. */
 export type PushSubscriptionRow = {
@@ -16,9 +20,6 @@ export type NotificationPushEndpointOutcome =
   | { kind: 'retryable_failure'; subscription: PushSubscriptionRow }
   | { kind: 'subscription_invalid'; subscription: PushSubscriptionRow }
   | { kind: 'notification_terminal_failure'; subscription: PushSubscriptionRow }
-
-/** Separates intent lease fencing from an endpoint generation replaced while it was in flight. */
-export type NotificationPushOutcomePersistence = 'persisted' | 'lease_lost' | 'subscription_stale'
 
 /** Lists deliverable endpoints only while this exact intent lease still owns the work. */
 export async function listPendingActivePushSubscriptions(
@@ -78,15 +79,13 @@ export async function persistClaimedNotificationPushOutcome(
   intent: NotificationPushIntent,
   outcome: NotificationPushEndpointOutcome,
 ): Promise<NotificationPushOutcomePersistence> {
+  if (outcome.kind === 'retryable_failure')
+    return persistRetryableNotificationPushOutcome(intent, outcome.subscription)
+
   const { id, endpoint } = outcome.subscription
   const isDelivered = outcome.kind === 'delivered'
-  const isRetryableFailure = outcome.kind === 'retryable_failure'
   const isSubscriptionInvalid = outcome.kind === 'subscription_invalid'
-  const terminalStatus = isDelivered
-    ? 'delivered'
-    : isRetryableFailure
-      ? 'pending'
-      : 'permanently_failed'
+  const terminalStatus = isDelivered ? 'delivered' : 'permanently_failed'
   const { rows } = await write<{ outcome: NotificationPushOutcomePersistence }>(sql`
     /* persistClaimedNotificationPushOutcome */
     WITH active_claim AS MATERIALIZED (
@@ -112,7 +111,6 @@ export async function persistClaimedNotificationPushOutcome(
     ), terminal_input AS (
       SELECT ${endpoint}::text AS endpoint,
         ${terminalStatus}::notification_push_endpoint_statuses AS status
-      WHERE NOT ${isRetryableFailure}
     ), receipts AS (
       INSERT INTO notification_push_intent_subscription_receipts (
         user_id, notification_id, subscription_id, endpoint, delivered_at, permanently_failed_at
@@ -153,8 +151,7 @@ export async function persistClaimedNotificationPushOutcome(
             ELSE subscription.last_success_at
           END,
           last_failure_at = CASE
-            WHEN (${isRetryableFailure} AND subscription.id = ${id}::uuid)
-              OR subscription.id IN (SELECT subscription_id FROM receipts WHERE status = 'permanently_failed') THEN CURRENT_TIMESTAMP
+            WHEN subscription.id IN (SELECT subscription_id FROM receipts WHERE status = 'permanently_failed') THEN CURRENT_TIMESTAMP
             ELSE subscription.last_failure_at
           END,
           deleted_at = CASE
@@ -167,7 +164,6 @@ export async function persistClaimedNotificationPushOutcome(
         AND subscription.endpoint = ${endpoint}
         AND (
           (${isDelivered} AND subscription.id = ${id}::uuid)
-          OR (${isRetryableFailure} AND subscription.id = ${id}::uuid)
           OR subscription.id IN (SELECT subscription_id FROM receipts WHERE status = 'permanently_failed')
         )
         AND (

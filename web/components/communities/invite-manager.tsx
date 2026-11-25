@@ -164,7 +164,7 @@ export function InviteManager({ data, communitySlug, onInviteCreated }: InviteMa
           fetchError={fetchError}
           clearError={clearError}
           resetKey={resetKey}
-          isEmpty={invites.length === 0}
+          itemCount={invites.length}
           emptyState={
             <EmptyState
               icon='inbox'

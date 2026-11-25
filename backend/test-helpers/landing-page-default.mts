@@ -1,6 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
 
 /** Inserts the promotion target first so the unique-index regression has a checked heap order. */
 export async function insertTestLandingPagesInPromotionOrder(userId: string) {
@@ -28,27 +27,4 @@ export async function insertTestLandingPagesInPromotionOrder(userId: string) {
   )
   await query.commit()
   return { targetId, defaultId, targetPrecedesDefault: rows[0]!.target_precedes_default }
-}
-
-/** Holds exactly the existing creation lock; callers release it before awaiting the blocked mutation. */
-export async function holdTestLandingPageUserLock(userId: string) {
-  const query = await beginTransaction()
-  try {
-    await query(
-      sql`/* holdTestLandingPageUserLock */ SELECT pg_advisory_xact_lock(hashtext(${userId}))`,
-    )
-    const processId = await getTestPostgresBackendProcessId(query)
-    return {
-      processId,
-      async release() {
-        await query.commit()
-      },
-      async [Symbol.asyncDispose]() {
-        await query[Symbol.asyncDispose]()
-      },
-    }
-  } catch (err) {
-    await query[Symbol.asyncDispose]()
-    throw err
-  }
 }

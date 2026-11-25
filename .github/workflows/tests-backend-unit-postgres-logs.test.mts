@@ -45,6 +45,6 @@ describe('backend-unit PostgreSQL lock diagnostics', () => {
       'backend-postgres.log',
       'backend-postgres-relations.csv',
     ])
-    expect(upload?.with?.['retention-days']).toBe(1)
+    expect(upload?.with?.['retention-days']).toBe(7)
   })
 })

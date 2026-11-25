@@ -32,7 +32,6 @@ import {
   stageStoryPostRelatedUrlProjectionReceipts,
 } from './story-post-related-url-projection-source.mts'
 import type { ProjectionWork, SourceRow } from './story-post-related-url-projection-types.mts'
-import { lockStoryPostRelatedUrlProjectionWork } from './story-post-related-url-projection-work.mts'
 
 type StoryTeller = Awaited<ReturnType<typeof requireStoryTeller>>
 
@@ -84,11 +83,17 @@ async function admitPreparedRows(
     { query: transaction },
     webRiskBlockedUrls,
   )
-  if (!(await lockStoryPostRelatedUrlProjectionWork(transaction, work))) return { ok: false }
   if (!(await stageStoryPostRelatedUrlProjectionReceipts(work, decisions, transaction)))
     return { ok: false }
   const eligibleUrlIds = admittedUrlIds(decisions)
-  await pruneStoryPostRelatedUrlsOutsidePrefix(transaction, work, storyTeller.id, eligibleUrlIds)
+  const prune = await pruneStoryPostRelatedUrlsOutsidePrefix(
+    transaction,
+    work,
+    storyTeller.id,
+    eligibleUrlIds,
+  )
+  if (!prune.ok) return prune
+  let needsInvalidation = prune.pruned
   const relation = getEntityRelationMetadataOrThrow({
     subjectType: 'post',
     objectType: 'url',
@@ -136,8 +141,7 @@ async function admitPreparedRows(
     }
     await handleElectionVotes(creator, relation, internalRelations, { query: transaction })
     await recordPostRelatedUrlPublicationChanges(transaction, newlyActiveSubjectIds)
-    if (newlyActiveSubjectIds.length > 0)
-      await markStoryPostRelatedUrlProjectionInvalidationRequired(transaction, work)
+    needsInvalidation ||= newlyActiveSubjectIds.length > 0
   }
   const alreadyActive: EntityRelation[] = []
   for (const urlId of eligibleUrlIds) {
@@ -177,6 +181,12 @@ async function admitPreparedRows(
     [...internalRelations, ...alreadyActive],
     ineligibleUrlIds,
   )
+  // Roll back relation changes if a newer generation took ownership before recording invalidation.
+  if (
+    needsInvalidation &&
+    !(await markStoryPostRelatedUrlProjectionInvalidationRequired(transaction, work))
+  )
+    return { ok: false }
   if (!(await markRelationReceiptsWritten(transaction, work, decisions))) return { ok: false }
   return { ok: true, relation, internalRelations }
 }

@@ -19503,10 +19503,10 @@
           "unique": true,
           "valid": true
         },
-        "idx_community_invites__community_id": {
+        "idx_community_invites__community_id__id_desc": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_invites__community_id ON public.community_invites USING btree (community_id)",
+          "definition": "CREATE INDEX idx_community_invites__community_id__id_desc ON public.community_invites USING btree (community_id, id DESC)",
           "includedColumns": [],
           "keys": [
             {
@@ -19514,6 +19514,13 @@
               "descending": false,
               "expression": "community_id",
               "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
               "opclass": "uuid_ops"
             }
           ],
@@ -25605,6 +25612,33 @@
           "primary": true,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_conversations__active_chat_created_by_id__id_desc": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_conversations__active_chat_created_by_id__id_desc ON public.conversations USING btree (created_by_id, id DESC) WHERE ((created_by_id IS NOT NULL) AND (channel_type = 'chat'::conversation_channel_types) AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((created_by_id IS NOT NULL) AND (channel_type = 'chat'::conversation_channel_types) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_conversations__assigned_moderator_id": {

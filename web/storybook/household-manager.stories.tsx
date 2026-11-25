@@ -132,6 +132,7 @@ export const OwnedSectionConfirmation: Story = {
   render: () => (
     <HouseholdSectionView
       confirmingKey='household-owned:membership-1'
+      pagination={{ hasNextPage: false, endCursor: null, onLoadMore: fn(async () => false) }}
       onCancelRemove={fn()}
       onConfirmRemove={fn()}
       onRequestRemove={fn()}
