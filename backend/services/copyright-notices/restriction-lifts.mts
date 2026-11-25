@@ -4,6 +4,7 @@ import { encryptSecret } from '@modules/token-secrets'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
+import createError from 'http-errors'
 import sql from 'sql-template-strings'
 import { currentUserCanLiftCopyrightRestriction } from './authorization.mts'
 import { createCopyrightClaimantDecisionNoticeInTransaction } from './claimant-decision-notices.mts'
@@ -23,53 +24,37 @@ export async function liftCopyrightRestrictionWithoutSetter(input: {
   assert(input.rationale.trim() && input.rationale.length <= 10_000, 422, 'rationale is required')
   await using transaction = await beginTransaction()
   await lockCopyrightActionGenerationForWrite(input.noticeId, transaction)
-  const { rows: placementRows } = await transaction<{ placement_id: string }>(sql`
-    /* liftCopyrightRestrictionWithoutSetter:findPlacement */
-    SELECT target.placement_id FROM copyright_restrictions restriction
-    JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-    WHERE restriction.id = ${input.restrictionId} AND target.copyright_notice_id = ${input.noticeId}
-  `)
-  const placement = placementRows[0]
-  assert(placement, 404, 'Copyright restriction not found')
-  const { rows: locked } = await transaction<{
-    target_id: string
-    lifted_at: Date | null
-    administrator_lift_decided_at: Date | null
-  }>(sql`
-    /* liftCopyrightRestrictionWithoutSetter:lock */
-    SELECT target.id AS target_id, restriction.lifted_at,
-      restriction.administrator_lift_decided_at
-    FROM copyright_notices notice
-    JOIN copyright_notice_targets target ON target.copyright_notice_id = notice.id
-    JOIN copyright_restrictions restriction ON restriction.copyright_notice_target_id = target.id
-    WHERE notice.id = ${input.noticeId} AND restriction.id = ${input.restrictionId}
-    FOR UPDATE OF restriction
-  `)
-  const restriction = locked[0]
-  assert(restriction, 404, 'Copyright restriction not found')
-  assert(
-    restriction.lifted_at === null && restriction.administrator_lift_decided_at === null,
-    409,
-    'Copyright restriction is already lifted',
-  )
-  const respondersSql = sql`/* liftCopyrightRestrictionWithoutSetter:responders */
-    SELECT EXISTS (SELECT 1 FROM copyright_notice_targets target
-      CROSS JOIN LATERAL `
-    .append(copyrightPlacementPartiesSql('respond'))
-    .append(sql` party WHERE target.id = ${restriction.target_id}) AS has_responder`)
-  const { rows: responders } = await transaction<{ has_responder: boolean }>(respondersSql)
-  assert(!responders[0]?.has_responder, 409, 'A live account can respond to this restriction')
   const rationaleCiphertext = encryptSecret(
     input.rationale,
     `copyright-restriction-lift:${input.restrictionId}`,
   )
-  await transaction(sql`/* liftCopyrightRestrictionWithoutSetter:current */
-    UPDATE copyright_restrictions
+  const decision = sql`/* liftCopyrightRestrictionWithoutSetter:current */
+    UPDATE copyright_restrictions restriction
     SET administrator_lift_decided_at = ${input.liftedAt},
       administrator_lift_decided_by_id = ${input.currentUser.id},
       administrator_lift_rationale_ciphertext = ${rationaleCiphertext}
-    WHERE id = ${input.restrictionId} AND administrator_lift_decided_at IS NULL
-  `)
+    FROM copyright_notice_targets target
+    WHERE restriction.id = ${input.restrictionId}
+      AND restriction.lifted_at IS NULL AND restriction.administrator_lift_decided_at IS NULL
+      AND target.id = restriction.copyright_notice_target_id
+      AND target.copyright_notice_id = ${input.noticeId}
+      AND NOT EXISTS (SELECT 1 FROM LATERAL `
+    .append(copyrightPlacementPartiesSql('respond'))
+    .append(sql` party)`)
+  const { rowCount } = await transaction(decision)
+  if (rowCount !== 1) {
+    const { rows } = await transaction<{ already_lifted: boolean }>(sql`
+      /* liftCopyrightRestrictionWithoutSetter:conflict */
+      SELECT restriction.lifted_at IS NOT NULL
+        OR restriction.administrator_lift_decided_at IS NOT NULL AS already_lifted
+      FROM copyright_restrictions restriction
+      JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
+      WHERE restriction.id = ${input.restrictionId} AND target.copyright_notice_id = ${input.noticeId}
+    `)
+    assert(rows[0], 404, 'Copyright restriction not found')
+    assert(!rows[0].already_lifted, 409, 'Copyright restriction is already lifted')
+    throw createError(409, 'A live account can respond to this restriction')
+  }
   const { rows: lifts } = await transaction<{ id: string }>(sql`
     /* liftCopyrightRestrictionWithoutSetter:insert */
     INSERT INTO copyright_restriction_administrator_lifts (
