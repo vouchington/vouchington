@@ -41,7 +41,7 @@ async function runReceiptPage(fixture: Fixture) {
   const name = 'deleteDeletedConversationNotificationReceiptPage'
   registerScenarioContract(scenario, {
     allowEmptyResult: true,
-    // Main's custom plan scans receipts from other conversations. Tighten with the plan fix.
+    // Main's custom plan scans receipts from other conversations. Tighten in #6418.
     expectations: [
       {
         kind: 'maxProcessedRows',
@@ -89,7 +89,7 @@ async function runMessagePage(fixture: Fixture) {
     allowEmptyResult: true,
     expectations: [
       { kind: 'singleLeaf', parent: 'conversation_messages', key: 'conversation_id' },
-      // Main scans the target leaf twice in the custom plan. Tighten with the plan fix.
+      // Main scans the target leaf twice in the custom plan. Tighten in #6419.
       { kind: 'maxProcessedRows', relation: 'conversation_messages', max: 23_002 },
     ],
     seededRows: fixture.seededRows,
@@ -126,7 +126,7 @@ async function runParticipantPage(fixture: Fixture) {
   const name = 'deleteConversationParticipantPage'
   registerScenarioContract(scenario, {
     allowEmptyResult: true,
-    // Main's custom plan scans unrelated participants. Tighten with the plan fix.
+    // Main's custom plan scans unrelated participants. Tighten in #6420.
     expectations: [{ kind: 'maxProcessedRows', relation: 'conversation_participants', max: 4_100 }],
     seededRows: fixture.seededRows,
   })
