@@ -14,8 +14,8 @@ const queryName = 'searchCommunityModerationQueue'
 const reportVisits = {
   // Tighten after bounding the merged source pages. https://github.com/vouchington/vouchington/issues/6390
   merged: { first: 56_588_482, continuation: 54_419_103 },
-  // Tighten after replacing the broad report lookups. https://github.com/vouchington/vouchington/issues/6391
-  report: { first: 4_708_014, continuation: 51_927_745 },
+  // Page selection and distinct-reporter enrichment together, in both forced modes.
+  report: { first: 1_333, continuation: 1_221 },
 }
 
 function queueCursor(row: { id: string; created_at: Date }): string {
@@ -43,6 +43,12 @@ export async function runCommunityModerationQueueCapacityScenarios(): Promise<vo
               relation: 'moderation_reports',
               max: reportVisits[mode][page],
             },
+            ...(source
+              ? ([
+                  { kind: 'maxProcessedRows', relation: 'moderation_report_judgements', max: 0 },
+                  { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: limit + 1 },
+                ] as const)
+              : []),
           ],
           seededRows: {
             posts: SEEDED_ROWS_BY_RELATION.posts! + fixture.seededRows.posts,

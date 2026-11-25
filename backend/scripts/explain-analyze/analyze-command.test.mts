@@ -236,7 +236,7 @@ describe('generic plan regression gate', () => {
     ).not.toThrow()
   })
 
-  it('limits the main timing baseline to the report-only continuation capture', () => {
+  it('applies the standard timing safeguard to each report-only continuation capture', () => {
     const scenario = 'community-moderation-queue-report-continuation'
     const custom = {
       ...planResult('force_custom_plan', 500),
@@ -244,19 +244,16 @@ describe('generic plan regression gate', () => {
       name: 'searchCommunityModerationQueue:force_custom_plan',
     }
     const generic = {
-      ...planResult('force_generic_plan', 5_400),
+      ...planResult('force_generic_plan', 5_001),
       scenario_id: scenario,
       name: 'searchCommunityModerationQueue:force_generic_plan',
     }
-    const atBaseline = [custom, generic]
-    expect(() => assertNoGenericPlanRegressions(atBaseline, atBaseline)).not.toThrow()
-
-    const aboveBaseline = [custom, { ...generic, execution_time_ms: 5_401 }]
-    expect(() => assertNoGenericPlanRegressions(aboveBaseline, aboveBaseline)).toThrow(
+    const results = [custom, generic]
+    expect(() => assertNoGenericPlanRegressions(results, results)).toThrow(
       /community-moderation-queue-report-continuation capture 0/,
     )
 
-    const anotherCapture = atBaseline.map(result => ({ ...result, capture_index: 1 }))
+    const anotherCapture = results.map(result => ({ ...result, capture_index: 1 }))
     expect(() => assertNoGenericPlanRegressions(anotherCapture, anotherCapture)).toThrow(
       /community-moderation-queue-report-continuation capture 1/,
     )
