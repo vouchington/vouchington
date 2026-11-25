@@ -92,7 +92,11 @@ export async function seedAccountReferralFixture() {
     CROSS JOIN unnest(${urlIds}::uuid[]) WITH ORDINALITY AS links(url_id, slot)
     WHERE user_id = ${ownerId} OR slot <= 8
     RETURNING id, user_id, deleted_at`)
-  const { rows: clicks } = await query<{ id: string; referrer_user_id: string }>(sql`
+  const { rows: clicks } = await query<{
+    id: string
+    referrer_user_id: string
+    user_id: string | null
+  }>(sql`
     /* seedAccountReferralClicks */
     INSERT INTO session_referral_attributions (session_id, referrer_user_id, user_id, landing_url, signed_up_at)
     SELECT gen_random_uuid(), referrer_id, CASE WHEN n % 4 = 0 AND referrer_id = ${ownerId}
@@ -100,15 +104,17 @@ export async function seedAccountReferralFixture() {
       CASE WHEN n % 4 = 0 AND referrer_id = ${ownerId} THEN CURRENT_TIMESTAMP END
     FROM unnest(${userIds}::uuid[]) AS referrers(referrer_id)
     CROSS JOIN generate_series(1, CASE WHEN referrer_id = ${ownerId} THEN ${OWNER_HISTORY} ELSE 15 END) n
-    RETURNING id, referrer_user_id`)
+    RETURNING id, referrer_user_id, user_id`)
   await query.commit()
   return {
     ownerId,
+    referredUserId,
     userIds,
     hostnameId,
     urlIds,
     programId,
     clickIds: clicks.map(row => row.id),
+    convertedClickIds: new Set(clicks.filter(row => row.user_id !== null).map(row => row.id)),
     ownerLinkIds: links
       .filter(row => row.user_id === ownerId && row.deleted_at === null)
       .map(row => row.id)

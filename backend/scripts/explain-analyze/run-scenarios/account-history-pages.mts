@@ -107,7 +107,18 @@ export async function runAccountHistoryScenarios(): Promise<void> {
       'account-referral-clicks-at-cap',
       'getReferralClickLog',
       fixture.ownerClickIds,
-      after => getReferralClickLog(fixture.ownerId, { limit: LIMIT, after }),
+      async after => {
+        const page = await getReferralClickLog(fixture.ownerId, { limit: LIMIT, after })
+        let hasConvertedClick = false
+        for (const { id } of page.results) {
+          const converted = fixture.convertedClickIds.has(id)
+          assert.equal(page.clicks[id]?.user_id, converted ? fixture.referredUserId : null)
+          assert.equal(page.clicks[id]?.signed_up_at != null, converted)
+          hasConvertedClick ||= converted
+        }
+        assert.deepEqual(Object.keys(page.users), hasConvertedClick ? [fixture.referredUserId] : [])
+        return page
+      },
     )
   } finally {
     await deleteAccountReferralFixture(fixture)
