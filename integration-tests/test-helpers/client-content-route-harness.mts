@@ -18,8 +18,13 @@ import {
   buildWebApiTestProxyHeaders,
   createWebApiTestCookieHeader,
   createWebApiMfaTestCookieHeader,
-  listenOnFetchSafeLoopback,
 } from '../web-api/routes.mts'
+import {
+  closeWebApiClientRuntime,
+  createLoopbackClientFetch,
+  listenOnFetchSafeLoopback,
+  withWebApiClientRuntime,
+} from 'vouchington-tooling/integration-test-helpers'
 
 const EIGHT_DAYS_MS = 8 * 24 * 60 * 60 * 1000
 
@@ -86,22 +91,18 @@ export function installClientContentRouteHarness(
     vi.stubEnv('PLAYWRIGHT_TEST', 'true')
 
     previousFetch = globalThis.fetch
-    globalThis.fetch = (input, init) => {
-      if (!clientRuntimeActive || typeof input !== 'string' || !input.startsWith('/')) {
-        return previousFetch(input, init)
-      }
-      const headers = buildWebApiTestProxyHeaders(init?.headers)
-      if (process.env.CF_WORKER_SECRET) {
-        headers.set('X-CF-Worker-Secret', process.env.CF_WORKER_SECRET)
-      }
-      if (clientCookieValue) {
-        headers.set('Cookie', clientCookieValue)
-        if ((init?.method ?? 'GET').toUpperCase() !== 'GET') {
-          headers.set('Origin', backendBaseUrl)
-        }
-      }
-      return previousFetch(`${backendBaseUrl}${input}`, { ...init, headers })
-    }
+    globalThis.fetch = createLoopbackClientFetch({
+      baseUrl: backendBaseUrl,
+      previousFetch,
+      isActive: () => clientRuntimeActive,
+      getCookie: () => clientCookieValue,
+      buildHeaders: buildWebApiTestProxyHeaders,
+      extraHeader: {
+        name: 'X-CF-Worker-Secret',
+        value: process.env.CF_WORKER_SECRET,
+        mode: 'always',
+      },
+    })
 
     const user = await createTestUserWithAge(EIGHT_DAYS_MS)
     const admin = await createTestUser({ administrator: true })
@@ -133,29 +134,25 @@ export function installClientContentRouteHarness(
     await options.afterPenalty?.(ctx)
   })
 
-  afterAll(async () => {
-    await new Promise<void>(resolve => {
-      backendServer.close(() => resolve())
-    })
-    vi.unstubAllEnvs()
-    vi.unstubAllGlobals()
-    globalThis.fetch = previousFetch
-  })
+  afterAll(() =>
+    closeWebApiClientRuntime({
+      backendServer,
+      previousFetch,
+    }),
+  )
 
-  async function withClientRuntime<T>(
+  function withClientRuntime<T>(
     run: () => Promise<T>,
     cookieHeader?: Record<string, string>,
   ): Promise<T> {
-    clientRuntimeActive = true
-    clientCookieValue = cookieHeader?.Cookie
-    vi.stubGlobal('window', {})
-    try {
-      return await run()
-    } finally {
-      clientRuntimeActive = false
-      clientCookieValue = undefined
-      vi.unstubAllGlobals()
-    }
+    return withWebApiClientRuntime({
+      cookieHeader,
+      setActive: (active, cookie) => {
+        clientRuntimeActive = active
+        clientCookieValue = cookie
+      },
+      run,
+    })
   }
 
   return harness

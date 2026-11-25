@@ -7,7 +7,8 @@ import {
   createTestUser,
   getSessionReferralAttributionsWithUtm,
 } from '../../../backend/test-helpers/index.mts'
-import { createWebApiTestCookieHeader, listenOnFetchSafeLoopback } from '../routes.mts'
+import { createWebApiTestCookieHeader } from '../routes.mts'
+import { listenOnFetchSafeLoopback } from 'vouchington-tooling/integration-test-helpers'
 import type { CookieHeader } from '../routes-extended.mts'
 
 describe('routes-extended', () => {

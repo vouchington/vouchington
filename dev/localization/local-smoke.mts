@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { fileURLToPath } from 'node:url'
 import { catalogRevision, loadCatalogDirectory } from '@vouchington/localization-compiler'
-import { isHealthy, waitFor } from '../../integration-tests/web/helpers/wait.mts'
+import { isHealthy, waitFor } from 'vouchington-tooling/integration-test-helpers'
 import { WEB_CHROME_SELECTOR } from '../../web/lib/i18n/route-selectors.generated.mts'
 import {
   isLocalizationSsrRevisionDiagnosticEnabled,

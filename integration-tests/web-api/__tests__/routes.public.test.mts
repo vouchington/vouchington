@@ -12,7 +12,8 @@ import {
   insertTestUrl,
   insertTestUrlHostname,
 } from '../../../backend/test-helpers/index.mts'
-import { createWebApiTestServer, listenOnFetchSafeLoopback } from '../routes.mts'
+import { createWebApiTestServer } from '../routes.mts'
+import { listenOnFetchSafeLoopback } from 'vouchington-tooling/integration-test-helpers'
 
 describe('routes — public and direct', () => {
   let backendServer: http.Server

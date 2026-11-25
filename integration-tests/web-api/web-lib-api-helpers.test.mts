@@ -2,11 +2,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { randomUUID } from 'node:crypto'
 import http from 'node:http'
 import serverApp from '../../backend/entrypoints/api/index.mts'
+import { createWebApiTestServer, buildWebApiTestProxyHeaders } from './routes.mts'
 import {
-  createWebApiTestServer,
-  buildWebApiTestProxyHeaders,
+  createLoopbackClientFetch,
   listenOnFetchSafeLoopback,
-} from './routes.mts'
+} from 'vouchington-tooling/integration-test-helpers'
 import { ApiError } from '@vouchington/api-client'
 import { getRateLimitMessage } from '@/lib/api/rate-limit-error'
 import { buildWorkerSecretHeader } from '@/lib/api/worker-secret'
@@ -38,24 +38,18 @@ describe('web/lib/api utility helpers — integration', () => {
     hadWindow = Object.hasOwn(globalThis, 'window')
     previousWindow = (globalThis as { window?: unknown }).window
 
-    globalThis.fetch = (input, init) => {
-      if (!clientRuntimeActive || typeof input !== 'string' || !input.startsWith('/')) {
-        return previousFetch(input, init)
-      }
-
-      const headers = buildWebApiTestProxyHeaders(init?.headers)
-      if (process.env.CF_WORKER_SECRET) {
-        headers.set('X-CF-Worker-Secret', process.env.CF_WORKER_SECRET)
-      }
-      if (clientCookieValue) {
-        headers.set('Cookie', clientCookieValue)
-        if ((init?.method ?? 'GET').toUpperCase() !== 'GET') {
-          headers.set('Origin', backendBaseUrl)
-        }
-      }
-
-      return previousFetch(`${backendBaseUrl}${input}`, { ...init, headers })
-    }
+    globalThis.fetch = createLoopbackClientFetch({
+      baseUrl: backendBaseUrl,
+      previousFetch,
+      isActive: () => clientRuntimeActive,
+      getCookie: () => clientCookieValue,
+      buildHeaders: buildWebApiTestProxyHeaders,
+      extraHeader: {
+        name: 'X-CF-Worker-Secret',
+        value: process.env.CF_WORKER_SECRET,
+        mode: 'always',
+      },
+    })
   })
 
   afterAll(async () => {

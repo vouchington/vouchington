@@ -8,29 +8,31 @@ import {
 import { seedPlaywrightTestData } from '../../../backend/test-helpers/playwright-seed-data.mts'
 import { invalidate } from '../../../backend/services/entity-cache/index.mts'
 import { prepareLocalizationCatalog } from './localization-catalog.mts'
-import { createTraceProxy, type TraceProxyHandle } from './backend-trace-proxy.mts'
-import { ensureBuildArtifactsExist } from './build-state.mts'
-import { allocateReservedPorts, type ReservedPort } from './ports.mts'
-import { cleanupGlobalSetupState, startReservedProcess } from './global-setup-utils.mts'
-import { waitForService, type ManagedProcess } from './processes.mts'
+import {
+  BUILD_ARTIFACTS_HINT,
+  getRequiredWebBuildArtifacts,
+  PLAYWRIGHT_TOPIC_IDS,
+} from './constants.mts'
+import {
+  allocateReservedPorts,
+  cleanupManagedServices,
+  createTraceProxy,
+  ensureRequiredPathsExist,
+  startReservedProcess,
+  waitForService,
+  type ManagedProcess,
+  type ReservedPort,
+  type TraceProxyHandle,
+} from 'vouchington-tooling/integration-test-helpers'
 
 const ROOT_DIR = process.cwd()
 const WEB_DIR = resolve(ROOT_DIR, 'web')
 const WORKER_DIR = resolve(ROOT_DIR, 'cloudflare-worker')
 const WORKER_DEV_VARS_PATH = resolve(WORKER_DIR, '.dev.vars')
 
-const PLAYWRIGHT_TOPIC_IDS = [
-  '019c64e6-f710-74cb-b36d-130af8ff1067',
-  '019c64e6-f713-7bf3-8b1e-a869aa7c9cf1',
-  '019c64e6-f716-722f-b05c-f4c4f7b93cd0',
-  '019c64e6-b100-7000-b000-000000000001',
-  '019c64e6-b200-7000-b000-000000000001',
-  '019c64e6-b300-7000-b000-000000000001',
-  '019c64e6-b400-7000-b000-000000000001',
-] as const
-
 export default async function globalSetup(): Promise<() => Promise<void>> {
   const artifactsDir = resolve(ROOT_DIR, 'integration-tests', 'web', 'artifacts')
+  const serviceLogsDir = resolve(artifactsDir, 'service-logs')
   mkdirSync(artifactsDir, { recursive: true })
   const existingWorkerDevVars = existsSync(WORKER_DEV_VARS_PATH)
     ? readFileSync(WORKER_DEV_VARS_PATH, 'utf8')
@@ -42,8 +44,21 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
   const cachePlaceholderNonce = randomBytes(32).toString('hex')
   const testUserEmail = `tests-${randomBytes(6).toString('hex')}@voucha.ai`
 
+  const cleanup = async (): Promise<void> => {
+    await cleanupManagedServices({
+      processes,
+      reservedPorts,
+      closeables: [traceProxy],
+      filesToRestore: [{ path: WORKER_DEV_VARS_PATH, existingContent: existingWorkerDevVars }],
+    })
+    await teardownDataStores()
+  }
+
   try {
-    ensureBuildArtifactsExist()
+    ensureRequiredPathsExist(getRequiredWebBuildArtifacts(WEB_DIR, WORKER_DIR), {
+      prefix: '[web-integration]',
+      hint: BUILD_ARTIFACTS_HINT,
+    })
     await prepareLocalizationCatalog()
 
     console.log('\n[web-integration] Preparing data stores...')
@@ -62,15 +77,10 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
       workerReservation,
       inspectorReservation,
     ] = allocatedPorts
-    const backendPort = backendReservation.port
-    const imageLambdaPort = imageLambdaReservation.port
-    const nextPort = nextReservation.port
-    const workerPort = workerReservation.port
-    const inspectorPort = inspectorReservation.port
-    const backendOrigin = `http://127.0.0.1:${backendPort}`
-    const imageOrigin = `http://127.0.0.1:${imageLambdaPort}`
-    const webOrigin = `http://127.0.0.1:${nextPort}`
-    const workerOrigin = `http://127.0.0.1:${workerPort}`
+    const backendOrigin = `http://127.0.0.1:${backendReservation.port}`
+    const imageOrigin = `http://127.0.0.1:${imageLambdaReservation.port}`
+    const webOrigin = `http://127.0.0.1:${nextReservation.port}`
+    const workerOrigin = `http://127.0.0.1:${workerReservation.port}`
 
     traceProxy = await createTraceProxy(0, backendOrigin)
     const traceOrigin = traceProxy.origin
@@ -102,11 +112,12 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
       cwd: ROOT_DIR,
       env: {
         NODE_ENV: 'test',
-        PORT: String(backendPort),
+        PORT: String(backendReservation.port),
         CF_WORKER_SECRET: workerSecret,
         IMAGE_ORIGIN: imageOrigin,
       },
       logFilePrefix: 'backend',
+      logsDir: serviceLogsDir,
     })
     const imageLambdaProcess = await startReservedProcess(imageLambdaReservation, processes, {
       name: 'lambdas',
@@ -115,11 +126,12 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
       cwd: ROOT_DIR,
       env: {
         NODE_ENV: 'test',
-        IMAGE_LAMBDA_PORT: String(imageLambdaPort),
+        IMAGE_LAMBDA_PORT: String(imageLambdaReservation.port),
         S3_BUCKET_IMAGES: 'test-images',
         S3_BUCKET_RENDERS: 'test-renders',
       },
       logFilePrefix: 'lambdas',
+      logsDir: serviceLogsDir,
     })
     const nextProcess = await startReservedProcess(nextReservation, processes, {
       name: 'web',
@@ -129,7 +141,7 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
       env: {
         NODE_ENV: 'test',
         VITEST: '',
-        PORT: String(nextPort),
+        PORT: String(nextReservation.port),
         HOSTNAME: '127.0.0.1',
         API_BASE_URL: traceOrigin,
         NEXT_PUBLIC_API_BASE_URL: traceOrigin,
@@ -141,6 +153,7 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
         IMAGE_ORIGIN: imageOrigin,
       },
       logFilePrefix: 'web',
+      logsDir: serviceLogsDir,
     })
     // Spawn via start.mts (not the wrangler binary) to inherit its MAX_RESTARTS
     // auto-restart supervision, already used by Playwright and the worker smoke test
@@ -153,8 +166,8 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
       cwd: ROOT_DIR,
       env: {
         NODE_ENV: 'test',
-        WORKER_PORT: String(workerPort),
-        INSPECTOR_PORT: String(inspectorPort),
+        WORKER_PORT: String(workerReservation.port),
+        INSPECTOR_PORT: String(inspectorReservation.port),
         // workerOrigin above is always http://127.0.0.1; force HTTP regardless of
         // whether ./dev/initialize generated mkcert certs in dev/certs.
         WRANGLER_LOCAL_PROTOCOL: 'http',
@@ -164,6 +177,7 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
         WORKER_LOG_DIR: resolve(artifactsDir, 'wrangler-logs'),
       },
       logFilePrefix: 'worker',
+      logsDir: serviceLogsDir,
     })
 
     await Promise.all([
@@ -175,25 +189,9 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
     ])
     console.log('[web-integration] Services are ready.\n')
 
-    return async () => {
-      await cleanupGlobalSetupState({
-        existingWorkerDevVars,
-        processes,
-        reservedPorts,
-        traceProxy,
-        workerDevVarsPath: WORKER_DEV_VARS_PATH,
-      })
-      await teardownDataStores()
-    }
+    return cleanup
   } catch (err) {
-    await cleanupGlobalSetupState({
-      existingWorkerDevVars,
-      processes,
-      reservedPorts,
-      traceProxy,
-      workerDevVarsPath: WORKER_DEV_VARS_PATH,
-    })
-    await teardownDataStores()
+    await cleanup()
     throw err
   }
 }

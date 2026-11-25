@@ -2,12 +2,28 @@ import { randomUUID } from 'node:crypto'
 import { discoverOwnedAssets, type DiscoveredAsset } from './html-assets.mts'
 import { TEST_USER_EMAIL } from './constants.mts'
 import { insertEmailAddressLoginToken } from '../../../backend/test-helpers/entities/email-addresses.mts'
-import { fetchAssetMetadataCached } from './asset-metadata-cache.mts'
-import type { TracedRequest } from './backend-trace-proxy.mts'
-import { printTrace, writePageArtifact } from './client-artifacts.mts'
-import { WebIntegrationCookies } from './client-cookies.mts'
-import { fetchWithTransportRetry, retryOnTransportError } from './fetch-retry.mts'
+import {
+  createAssetMetadataCache,
+  fetchWithTransportRetry,
+  printTrace,
+  retryOnTransportError,
+  WebIntegrationCookies,
+  writePageArtifact,
+  type AssetMetadata,
+  type TracedRequest,
+} from 'vouchington-tooling/integration-test-helpers'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
+
+// Worker-local /_next/static/* cache keyed by traceOrigin collapses concurrent loadPage() fetches.
+const assetMetadataCaches = new Map<string, ReturnType<typeof createAssetMetadataCache>>()
+
+function getAssetMetadataCache(traceOrigin: string): ReturnType<typeof createAssetMetadataCache> {
+  const existing = assetMetadataCaches.get(traceOrigin)
+  if (existing) return existing
+  const created = createAssetMetadataCache({ traceOrigin })
+  assetMetadataCaches.set(traceOrigin, created)
+  return created
+}
 
 export interface PageLoadResult {
   response: Response
@@ -41,10 +57,7 @@ export class WebIntegrationClient {
         return this.request('/api/v1/auth/email-address/login', {
           method: 'POST',
           userAgent: options.userAgent,
-          body: {
-            email_address: TEST_USER_EMAIL,
-            token: rawToken,
-          },
+          body: { email_address: TEST_USER_EMAIL, token: rawToken },
           headers: {
             'Content-Type': 'application/json',
             'cf-connecting-ip': createUniqueLoginIp(),
@@ -59,10 +72,7 @@ export class WebIntegrationClient {
   // No one-time token and idempotent in effect, so opt in explicitly rather than relying on the
   // POST method's default (non-idempotent) classification.
   logout(): Promise<Response> {
-    return this.request('/api/v1/auth/logout', {
-      method: 'POST',
-      idempotent: true,
-    })
+    return this.request('/api/v1/auth/logout', { method: 'POST', idempotent: true })
   }
 
   async request(
@@ -120,22 +130,18 @@ export class WebIntegrationClient {
   async loadPage(
     path: string,
     artifactName: string,
-    options: {
-      userAgent?: string
-    } = {},
+    options: { userAgent?: string } = {},
   ): Promise<PageLoadResult> {
     const response = await this.request(path, { userAgent: options.userAgent })
     const requestId = response.headers.get('x-request-id')
     const html = await response.text()
     const tracedRequests = await this.getTraceRequests(requestId ?? undefined)
-    const discoveredAssets = discoverOwnedAssets(html, response.url)
     const assets = await Promise.all(
-      discoveredAssets.map(async asset => {
-        const metadata = await this.fetchAssetMetadata(asset.url)
-        return { ...asset, ...metadata }
-      }),
+      discoverOwnedAssets(html, response.url).map(async asset => ({
+        ...asset,
+        ...(await this.fetchAssetMetadata(asset.url)),
+      })),
     )
-
     await writePageArtifact(this.artifactsDir, artifactName, {
       page: path,
       finalUrl: response.url,
@@ -143,16 +149,8 @@ export class WebIntegrationClient {
       tracedRequests,
       discoveredAssets: assets,
     })
-
     printTrace(path, tracedRequests)
-
-    return {
-      response,
-      html,
-      tracedRequests,
-      assets,
-      requestId,
-    }
+    return { response, html, tracedRequests, assets, requestId }
   }
 
   clearCookies(): void {
@@ -167,10 +165,11 @@ export class WebIntegrationClient {
     this.cookies.set(name, value)
   }
 
-  private fetchAssetMetadata(url: string): Promise<{ status: number; contentType: string | null }> {
-    return fetchAssetMetadataCached(url, assetUrl =>
-      this.request(new URL(assetUrl).pathname + new URL(assetUrl).search),
-    )
+  private fetchAssetMetadata(url: string): Promise<AssetMetadata> {
+    return getAssetMetadataCache(this.traceOrigin)(url, assetUrl => {
+      const parsed = new URL(assetUrl)
+      return this.request(parsed.pathname + parsed.search)
+    })
   }
 
   async getTraceRequests(requestId?: string | null): Promise<TracedRequest[]> {
@@ -186,9 +185,6 @@ export class WebIntegrationClient {
 }
 
 function createUniqueLoginIp(): string {
-  const uuidHex = randomUUID().replaceAll('-', '')
-  const uniqueHextets = Array.from({ length: 6 }, (_, index) =>
-    uuidHex.slice(index * 4, index * 4 + 4),
-  )
-  return `2001:db8:${uniqueHextets.join(':')}`
+  const hex = randomUUID().replaceAll('-', '')
+  return `2001:db8:${Array.from({ length: 6 }, (_, i) => hex.slice(i * 4, i * 4 + 4)).join(':')}`
 }

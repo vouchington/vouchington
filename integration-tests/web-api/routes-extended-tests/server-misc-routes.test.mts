@@ -14,8 +14,8 @@ import {
   createWebApiTestServer,
   createWebApiTestCookieHeader,
   createWebApiMfaTestCookieHeader,
-  listenOnFetchSafeLoopback,
 } from '../routes.mts'
+import { listenOnFetchSafeLoopback } from 'vouchington-tooling/integration-test-helpers'
 import type { CookieHeader } from '../routes-extended.mts'
 
 describe('server-misc-routes', () => {

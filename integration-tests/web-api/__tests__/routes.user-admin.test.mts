@@ -27,11 +27,8 @@ import {
 
 import { createHousehold } from '../../../backend/services/individuals-households/index.mts'
 
-import {
-  createWebApiTestServer,
-  createWebApiTestCookieHeader,
-  listenOnFetchSafeLoopback,
-} from '../routes.mts'
+import { createWebApiTestServer, createWebApiTestCookieHeader } from '../routes.mts'
+import { listenOnFetchSafeLoopback } from 'vouchington-tooling/integration-test-helpers'
 
 describe('routes — user and admin', () => {
   let backendServer: http.Server

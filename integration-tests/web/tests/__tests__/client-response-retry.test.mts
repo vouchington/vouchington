@@ -1,7 +1,7 @@
 import http from 'node:http'
 import { describe, expect, it } from 'vitest'
 import { WebIntegrationClient } from '../../helpers/client.mts'
-import { listenOnFetchSafeEphemeralPort } from '../../helpers/ports.mts'
+import { listenOnFetchSafeEphemeralPort } from 'vouchington-tooling/integration-test-helpers'
 
 describe('WebIntegrationClient response retry', () => {
   it('retries a missing request-id response and returns the accepted response unchanged', async () => {
