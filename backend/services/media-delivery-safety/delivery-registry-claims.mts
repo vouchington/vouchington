@@ -15,6 +15,7 @@ export async function claimMediaDeliveryProjections(
   now = new Date(),
 ): Promise<MediaDeliveryClaim[]> {
   if (mediaDeliveryRegistryRecordIds.length === 0) return []
+  // lock-reason: prevents: claiming overlapping projection work in different row orders; writer: projection batch claimers.
   const statement = sql`/* claimMediaDeliveryProjections */
     WITH candidate AS (
       SELECT work.media_delivery_registry_record_id FROM media_delivery_registry_projection_work_items work
@@ -54,6 +55,7 @@ export async function ownsMediaDeliveryProjection(
   query: QueryExecutor,
   claim: MediaDeliveryClaim,
 ): Promise<boolean> {
+  // lock-reason: prevents: publishing after recovery replaces an execution claim; writer: projection recovery and the active publisher.
   const { rows } = await query(sql`/* ownsMediaDeliveryProjection */
     SELECT 1 FROM media_delivery_registry_projection_work_items
     WHERE media_delivery_registry_record_id = ${claim.media_delivery_registry_record_id} AND generation = ${claim.generation}

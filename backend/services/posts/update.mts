@@ -75,6 +75,7 @@ export const updatePost = async (
         delegated,
       )
       const options = { query }
+      // lock-reason: prevents: deriving categories or revisions from a post concurrently being edited; writer: normal post edits and hashtag mutations.
       if (!delegated)
         await query(
           sql`/* updatePost.lock */ SELECT id FROM posts WHERE id = ${post.id} FOR UPDATE`,
