@@ -4037,6 +4037,9 @@ importers:
       '@services/openai-agents':
         specifier: workspace:^
         version: link:../services/openai-agents
+      '@services/post-content-limits':
+        specifier: workspace:^
+        version: link:../services/post-content-limits
       '@vouchington/explain-plan':
         specifier: ^0.0.1
         version: 0.0.1
