@@ -40,53 +40,47 @@ async function cleanupDeferredPostVotePage(
   voteIds?: readonly string[],
 ): Promise<DeferredPostVotePage> {
   const parameters: unknown[] = []
-  if (cutoffId !== null) parameters.push(cutoffId)
-  if (voteIds !== undefined) parameters.push(voteIds)
-  parameters.push(batchSize + 1)
-  const { rows: due } = await query<{ post_id: string; id: string }>(
-    `/* listDeferredPostVoteSources */
-     /* no-mistakes: deadlock-safe -- each capped due page locks rows in ID order before its delete or marker update; the delivered and expired lanes run sequentially. */
-     SELECT post_id, id FROM post_votes
-     WHERE ballot_retention_deferred_at IS NOT NULL
-       AND ${cutoffId === null ? 'outbound_activitypub_distributed_at IS NOT NULL' : 'id < $1::uuid'}
-       ${voteIds === undefined ? '' : `AND id = ANY($${cutoffId === null ? '1' : '2'}::uuid[])`}
-     ORDER BY id LIMIT $${parameters.length} FOR UPDATE`,
+  const due =
+    cutoffId === null
+      ? 'vote.outbound_activitypub_distributed_at IS NOT NULL'
+      : `vote.id < $${parameters.push(cutoffId)}::uuid`
+  const scope =
+    voteIds === undefined ? '' : `AND vote.id = ANY($${parameters.push(voteIds)}::uuid[])`
+  const limit = parameters.push(batchSize)
+  const { rows } = await query<{ deleted: number; released: number }>(
+    `/* cleanupDeferredPostVotePage */
+     WITH candidates AS (
+       SELECT vote.post_id, vote.id, vote.user_id FROM post_votes vote
+       WHERE vote.ballot_retention_deferred_at IS NOT NULL AND ${due} ${scope}
+       ORDER BY vote.id LIMIT $${limit}
+     ), classified AS (
+       SELECT candidate.post_id, candidate.id, candidate.user_id,
+         EXISTS (
+           SELECT 1 FROM post_votes newer
+           WHERE newer.post_id = candidate.post_id AND newer.user_id = candidate.user_id
+             AND newer.id > candidate.id
+           LIMIT 1
+         ) AS superseded
+       FROM candidates candidate
+     ), deleted AS (
+       DELETE FROM post_votes vote USING classified candidate
+       WHERE vote.post_id = candidate.post_id AND vote.id = candidate.id
+         AND vote.user_id IS NOT DISTINCT FROM candidate.user_id AND candidate.superseded
+         AND vote.ballot_retention_deferred_at IS NOT NULL AND ${due}
+       RETURNING vote.id, vote.score, vote.score_is_semantic
+     ), released AS (
+       UPDATE post_votes vote SET ballot_retention_deferred_at = NULL
+       FROM classified candidate
+       WHERE vote.post_id = candidate.post_id AND vote.id = candidate.id
+         AND vote.user_id IS NOT DISTINCT FROM candidate.user_id AND NOT candidate.superseded
+         AND vote.ballot_retention_deferred_at IS NOT NULL AND ${due}
+       RETURNING vote.id
+     )${POST_VOTE_RETENTION_TALLY_SQL}
+     SELECT (SELECT COUNT(*)::int FROM deleted) AS deleted,
+       (SELECT COUNT(*)::int FROM released) AS released`,
     parameters,
   )
-  const page = due.slice(0, batchSize)
-  const postIds = page.map(row => row.post_id)
-  const pageVoteIds = page.map(row => row.id)
-  const { rows: deletedRows } = await query<{ deleted: number }>(
-    `/* deleteDeferredPostVoteSources */
-     /* no-mistakes: deadlock-safe -- due rows are locked in ID order; daily aggregate keys are inserted in day order. */
-     WITH selected AS (SELECT * FROM unnest($1::uuid[], $2::uuid[]) AS source(post_id, id)),
-       deleted AS (
-         DELETE FROM post_votes old USING selected
-         WHERE old.post_id = selected.post_id AND old.id = selected.id
-           AND EXISTS (SELECT 1 FROM post_votes newer
-             WHERE newer.post_id = old.post_id AND newer.user_id = old.user_id
-               AND newer.id > old.id)
-         RETURNING old.id, old.score, old.score_is_semantic
-       )${POST_VOTE_RETENTION_TALLY_SQL}
-     SELECT COUNT(*)::int AS deleted FROM deleted`,
-    [postIds, pageVoteIds],
-  )
-  // If a formerly superseded row is current again, it is a current ballot and must
-  // leave the due index so that the next page can make progress.
-  if (page.length > 0)
-    await query(
-      `/* releaseCurrentDeferredPostVoteSources */
-       UPDATE post_votes vote SET ballot_retention_deferred_at = NULL
-       FROM unnest($1::uuid[], $2::uuid[]) AS source(post_id, id)
-       WHERE vote.post_id = source.post_id AND vote.id = source.id
-         AND NOT EXISTS (SELECT 1 FROM post_votes newer
-           WHERE newer.post_id = vote.post_id AND newer.user_id = vote.user_id
-             AND newer.id > vote.id)`,
-      [postIds, pageVoteIds],
-    )
-  return {
-    scanned: page.length,
-    deleted: deletedRows[0]?.deleted ?? 0,
-    hasMore: due.length > batchSize,
-  }
+  const result = rows[0]!
+  const scanned = result.deleted + result.released
+  return { scanned, deleted: result.deleted, hasMore: scanned === batchSize }
 }

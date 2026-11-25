@@ -1,6 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto'
-import type { TransactionQuery } from '@data-stores/psql'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { v7 } from 'uuid'
+import { withTestOwnedPostgresWait } from '../postgres-client-lock-observer.mts'
+import { getTestPostgresBackendProcessId } from '../postgres-lock-wait.mts'
 
 const ZERO_VECTOR = `[${Array(1_024).fill(0).join(',')}]`
 
@@ -17,6 +19,35 @@ export async function insertTextEmbeddingForRetentionTest(
     [hash, ZERO_VECTOR, updatedAt],
   )
   return hash
+}
+
+export async function refreshTextEmbeddingDuringRetentionForTest<T>(
+  hash: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  await using refresh = await beginTransaction()
+  await refresh(
+    `/* refreshTextEmbeddingDuringRetentionForTest */
+    UPDATE bedrock_nova_multimodal_v1_embeddings
+    SET input_token_count = 1
+    WHERE content_sha256 = decode($1, 'hex') AND input_token_count IS NULL`,
+    [hash],
+  )
+  return await withTestOwnedPostgresWait(
+    {
+      holderProcessId: await getTestPostgresBackendProcessId(refresh),
+      pool: 'write',
+      lock: { kind: 'transaction' },
+      queryMarker: 'deleteTextEmbeddingRetentionPage',
+      releaseHolder: () => refresh[Symbol.asyncDispose](),
+    },
+    async waitForLock => {
+      const pending = operation()
+      await waitForLock(pending)
+      await refresh.commit()
+      return pending
+    },
+  )
 }
 
 export async function textEmbeddingExistsForRetentionTest(

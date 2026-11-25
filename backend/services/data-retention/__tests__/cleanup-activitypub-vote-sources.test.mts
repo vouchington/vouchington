@@ -2,14 +2,18 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import {
+  beginTransaction,
   createTestUserDirect,
   getTestPostVoteIds,
   getTestPostVoteRetentionDeferredAt,
+  getTestRetainedPostVoteCount,
   insertTestPost,
   insertTestPostVote,
   setTestPostVoteActivityPubSource,
   setTestPostVoteRetentionDeferredAt,
 } from '@voucha/test-helpers'
+import { commitTestPostgresHolderAfterActionOrWait } from '@voucha/test-helpers/postgres-lock-skip'
+import { createExactRetentionWindow } from '@voucha/test-helpers/retention-window'
 import { listPendingOutboundDistributionPage } from '../../activitypub-delivery/distribution-recovery.mts'
 import { cleanupSupersededVoteBallots } from '../cleanup-vote-ballots.mts'
 import { cleanupDeferredPostVoteBallots } from '../cleanup-deferred-post-votes.mts'
@@ -105,6 +109,39 @@ describe('ActivityPub ballot source retention', () => {
     expect(await getTestPostVoteRetentionDeferredAt(postId, voteId)).toBeNull()
   })
 
+  it('counts only the deleted ballot when another page releases the current ballot', async () => {
+    const { userId, postId } = await postForTest()
+    const { aged } = createExactRetentionWindow(90)
+    const day = aged.toISOString().slice(0, 10)
+    const sourceTime = Date.parse(day)
+    const older = uuidv7({ msecs: sourceTime })
+    const current = uuidv7({ msecs: sourceTime + 1 })
+    for (const id of [older, current]) {
+      await insertTestPostVote(postId, userId, '127.0.0.1', 1, id)
+      await setTestPostVoteActivityPubSource(postId, id, id, null, NOW)
+      await setTestPostVoteRetentionDeferredAt(postId, id, NOW)
+    }
+    const before = await getTestRetainedPostVoteCount(day)
+
+    await using winner = await beginTransaction()
+    expect(
+      await cleanupDeferredPostVoteBallots(1, NOW, {
+        query: winner,
+        voteIds: [current],
+      }),
+    ).toMatchObject({ scanned: 1, deleted: 0 })
+    const overlapping = await commitTestPostgresHolderAfterActionOrWait(
+      winner,
+      'cleanupDeferredPostVotePage',
+      () => cleanupDeferredPostVoteBallots(2, NOW, { voteIds: [older, current] }),
+    )
+
+    expect(overlapping).toEqual({ scanned: 1, deleted: 1, hasMore: false })
+    expect(await getTestPostVoteIds(postId, userId)).toEqual([current])
+    expect(await getTestPostVoteRetentionDeferredAt(postId, current)).toBeNull()
+    expect(await getTestRetainedPostVoteCount(day)).toBe(before + 1)
+  })
+
   it('limits a due-source cleanup to its owned vote ID', async () => {
     const first = await postForTest()
     const second = await postForTest()
@@ -125,7 +162,12 @@ describe('ActivityPub ballot source retention', () => {
     ).rejects.toThrow('Scoped deferred post ballots must fit one page')
 
     const firstPage = await cleanupDeferredPostVoteBallots(1, futureNow, { voteIds: [firstId] })
-    expect(firstPage).toMatchObject({ scanned: 1, deleted: 1, hasMore: false })
+    expect(firstPage).toMatchObject({ scanned: 1, deleted: 1, hasMore: true })
+    expect(await cleanupDeferredPostVoteBallots(1, futureNow, { voteIds: [firstId] })).toEqual({
+      scanned: 0,
+      deleted: 0,
+      hasMore: false,
+    })
     expect(await getTestPostVoteIds(second.postId, second.userId)).toEqual([secondId, newerId])
     await cleanupDeferredPostVoteBallots(1, futureNow, { voteIds: [secondId] })
   })
