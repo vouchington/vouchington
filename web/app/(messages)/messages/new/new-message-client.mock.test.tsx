@@ -70,6 +70,13 @@ describe('NewMessageClient', () => {
     expect(container.querySelector('[data-pw="new-message-form"]')).not.toBeNull()
   })
 
+  it('associates the Message label with the textarea', () => {
+    const { container } = render(<NewMessageClient currentUserId='u-1' />)
+    const label = container.querySelector('label') as HTMLLabelElement
+    expect(label.htmlFor).toBe('new-message-body-input')
+    expect(container.querySelector('textarea')?.id).toBe('new-message-body-input')
+  })
+
   it('disables submit when no recipients (initial state)', () => {
     const { container } = render(<NewMessageClient currentUserId='u-1' />)
     const submit = container.querySelector(
