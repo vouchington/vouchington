@@ -27,7 +27,11 @@ export async function runUrlEmbedCapacityScenario(): Promise<void> {
       rss_feed_items: 'A URL may reference item rows in any arrival-time partition.',
       crawls: 'The latest eligible crawl for an origin URL may be in any arrival-time partition.',
     },
-    expectations: [],
+    expectations: [
+      // #6398 tracks the hosted custom item scan and the local full source-association scan.
+      { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: 36_689 },
+      { kind: 'maxProcessedRows', relation: 'rss_feed_item_sources', max: 75_433 },
+    ],
   })
   await runAndCapture(
     scenario,

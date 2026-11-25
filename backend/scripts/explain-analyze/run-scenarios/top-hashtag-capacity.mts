@@ -61,7 +61,11 @@ export async function runTopHashtagCapacityScenario(): Promise<void> {
     const expectedIds = [...ids.slice(0, lastRank), ...ids.slice(lastRank).toReversed()]
     registerScenarioContract(scenario, {
       seededRows: { mv_top_hashtags: aliasIds.length + 1 },
-      expectations: [],
+      expectations: [
+        // #6396 tracks the full alias and ranking scans in the current custom/generic plans.
+        { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 4_628 },
+        { kind: 'maxProcessedRows', relation: 'mv_top_hashtags', max: 602 },
+      ],
     })
     await runAndCapture(
       scenario,
