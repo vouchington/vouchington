@@ -1,10 +1,6 @@
 import type { BasicUser, PrivateUser } from '@services/users/types'
-import type {
-  Tool,
-  ToolInvocationContext,
-  ToolMeta,
-  ToolOutputSchema,
-} from '@services/openai-agents/tool-types'
+import type { Tool, ToolInvocationContext, ToolMeta } from '@services/openai-agents/tool-types'
+import type { ToolOutputSchema } from '@vouchington/mcp-server/types'
 import {
   createManageEntityTool as createPackageManageEntityTool,
   type ManageEntityArgs,

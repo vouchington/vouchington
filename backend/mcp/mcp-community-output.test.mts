@@ -1,13 +1,12 @@
 import { getRegisteredToolByName } from '@voucha/mcp/registry/index'
 import { readFileSync } from 'node:fs'
-import { assertMcpLocalSchemaRefs } from '../test-helpers/mcp-local-schema-refs.mts'
 import { describe, expect, it } from 'vitest'
 import getCommunityMembersTool from './get-community-members.mts'
 import getCommunityPinnedPostsTool from './get-community-pinned-posts.mts'
 import getCommunityTool from './get-community.mts'
 import { COMMUNITY_PAGE_LIMIT, mcpCommunityEntryProperties } from './mcp-community-output.mts'
 import { mcpPostSchema } from './mcp-post-output.mts'
-import { inlineSchemaReferences } from '@vouchington/mcp-server/schema'
+import { assertLocalSchemaRefs, inlineSchemaReferences } from '@vouchington/mcp-server/schema'
 import searchCommunitiesTool from './search-communities.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 
@@ -113,7 +112,7 @@ describe('community read tool output schemas', () => {
       success: { const: false },
       error: { type: 'string' },
     })
-    assertMcpLocalSchemaRefs(schema)
+    assertLocalSchemaRefs(schema)
   })
 
   it.each(TOOLS)('names the documented REST twin of %s', (_name, tool, path) => {

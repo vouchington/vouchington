@@ -31,7 +31,8 @@ vi.mock(import('@/lib/api/server'), () => ({
 vi.mock(import('@/lib/api/server/landing-page-analytics'), () => ({
   getMyLandingPageAnalytics: mockGetMyLandingPageAnalytics,
 }))
-vi.mock(import('@/lib/api/return-null-for-missing-entity'), () => ({
+vi.mock(import('@vouchington/api-client'), async importOriginal => ({
+  ...(await importOriginal()),
   returnNullForMissingEntity: mockReturnNullForMissingEntity,
 }))
 vi.mock(import('@/lib/seo/metadata'), () => ({

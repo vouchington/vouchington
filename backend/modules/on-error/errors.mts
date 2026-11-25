@@ -173,8 +173,3 @@ export class CrawlerHttpClientError extends Error {
     this.duration = duration
   }
 }
-
-export {
-  isCrawlerNetworkDnsError,
-  isCrawlerNetworkTlsHostnameError,
-} from './crawler-network-error-causes.mts'

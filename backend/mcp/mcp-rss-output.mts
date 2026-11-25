@@ -16,7 +16,8 @@ import { attachRssFeedProvenance } from '@services/content-provenance'
 import type { ViewRssFeed } from '@services/rss-feeds/types'
 import type { ViewRssFeedItem } from '@services/rss-feed-items/types'
 import { firstVisibleRssTextField } from '@modules/utils'
-import { closedObject, pickProperties } from './read-tool-output-schema.mts'
+import { objectSchema } from '@vouchington/mcp-server/schema'
+import { pickProperties } from './read-tool-output-schema.mts'
 
 export type McpRssFeed = {
   id: string
@@ -42,7 +43,7 @@ export type McpRssFeedItem = {
 }
 
 export function mcpRssFeedSchema() {
-  return closedObject(
+  return objectSchema(
     {
       ...pickProperties('ViewRssFeed', [
         'id',
@@ -59,7 +60,7 @@ export function mcpRssFeedSchema() {
 }
 
 export function mcpRssFeedItemSchema(details = false) {
-  return closedObject(
+  return objectSchema(
     {
       hacker_news_references: mcpHackerNewsReferenceSchema(details),
       id: pickProperties('ViewRssFeedItem', ['id']).id!,

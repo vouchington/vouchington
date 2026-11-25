@@ -26,6 +26,7 @@ export async function publishPersistedDeliveryRecords(
   const ids = records.map(record => record.media_delivery_registry_record_id)
   const generations = records.map(record => record.generation)
   const leaseTokens = records.map(record => record.lease_token)
+  // lock-reason: prevents: publishing an edge record after its lease or generation was replaced; writer: registry recovery and edge acknowledgement.
   const { rows: owned } = await query(sql`/* ownsMediaDeliveryProjections */
     SELECT 1 FROM media_delivery_registry_projection_work_items work
     JOIN unnest(${ids}::uuid[], ${generations}::bigint[], ${leaseTokens}::uuid[])

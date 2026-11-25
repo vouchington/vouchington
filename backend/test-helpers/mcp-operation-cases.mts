@@ -16,7 +16,7 @@ import { userMergedAccountGroups } from '../mcp/registry/user-merged-account-too
 import { adminMergedGroups } from '../mcp/registry/admin-merged-tools.mts'
 import { listToolsForAudience, isToolMcpEligible } from '../mcp/registry/select.mts'
 import { toolRouteKeys } from './mcp-route-keys.mts'
-import { validateToolArguments } from '../services/mcp-tools/validate-tool-arguments.mts'
+import { validateToolArguments } from '@vouchington/mcp-server/schema'
 import type { Tool } from '../services/openai-agents/tool-types.mts'
 
 type Audience = import('../services/oauth-authorization-server/resources.mts').OAuthResourceAudience

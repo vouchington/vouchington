@@ -15,16 +15,6 @@ vi.mock(
     }) as unknown as typeof import('./instance'),
 )
 
-vi.mock(
-  import('../return-null-for-missing-entity'),
-  () =>
-    ({
-      returnNullForMissingEntity: async (promise: Promise<unknown>) => {
-        return promise
-      },
-    }) as unknown as typeof import('../return-null-for-missing-entity'),
-)
-
 describe('post server api helpers', () => {
   beforeEach(() => {
     mockGet.mockReset()

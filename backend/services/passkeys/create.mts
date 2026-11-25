@@ -23,6 +23,7 @@ export async function createPasskey(
   const maxPasskeys = getUserPasskeysMax()
 
   return runWithTransaction(options.query, async query => {
+    // lock-reason: prevents: saving a passkey after credential erasure starts; writer: account deletion.
     await query(sql`/* createPasskey */ SELECT fn_lock_active_user_for_mutation(${userId}, TRUE)`)
     await query(sql`/* createPasskey: mark vote weight dirty */
     UPDATE users SET vote_weight_recalculated_at = NULL WHERE id = ${userId}`)

@@ -17,7 +17,7 @@ vi.mock(
     }) as unknown as typeof import('@/components/my/mfa-reauth-dialog'),
 )
 
-vi.mock(import('@vouchington/api-client'), () => {
+vi.mock(import('@vouchington/api-client'), async importOriginal => {
   class ApiError extends Error {
     status: number
     code?: string
@@ -28,7 +28,7 @@ vi.mock(import('@vouchington/api-client'), () => {
       this.code = code
     }
   }
-  return { ApiError }
+  return { ...(await importOriginal()), ApiError }
 })
 
 vi.mock(

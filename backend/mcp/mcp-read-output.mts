@@ -1,27 +1,9 @@
-import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
+import { objectSchema } from '@vouchington/mcp-server/schema'
 import type { SearchPageInfo } from './paged-search.mts'
-import { closedObject, pickProperties } from './read-tool-output-schema.mts'
+import { pickProperties } from './read-tool-output-schema.mts'
 
 /** The page sizes of a paged MCP read tool. `max` is the signed-out REST cap, not the service's. */
 export type McpPageLimit = { readonly min: number; readonly max: number; readonly default: number }
-
-/**
- * Free text from another user, as an MCP client receives it: sanitized, then fenced as external.
- * Missing or empty text is `null`, so a client never reads an empty fence as content.
- */
-export async function externalText(
-  text: string | null,
-  source: string,
-  contentType: string,
-): Promise<string | null> {
-  if (text === null || text.trim() === '') return null
-  return wrapExternalContent(await sanitizePromptInjection(text), { source, contentType })
-}
-
-/** A name, title or username: sanitized as a title, never fenced. */
-export function sanitizedTitle(text: string): Promise<string> {
-  return sanitizePromptInjection(text, { isTitle: true })
-}
 
 export const iso = (value: Date | string): string => new Date(value).toISOString()
 
@@ -44,7 +26,7 @@ export function pageInputProperties(
 }
 
 export function pageInfoSchema() {
-  return closedObject(pickProperties('PageInfo', ['has_next_page', 'start_cursor', 'end_cursor']))
+  return objectSchema(pickProperties('PageInfo', ['has_next_page', 'start_cursor', 'end_cursor']))
 }
 
 /** A successful page of a paged read tool: its results and the cursor for the next page. */

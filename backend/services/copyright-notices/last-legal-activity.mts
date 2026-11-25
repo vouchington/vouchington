@@ -25,10 +25,12 @@ export async function lockCopyrightNoticeForLegalWrite(
   const { rows } = await query<{ jurisdiction: string }>(sql`/* lockCopyrightNoticeForLegalWrite */
     WITH generation AS MATERIALIZED (
       SELECT copyright_notice_id FROM copyright_notice_thread_blocker_generations
+      -- lock-reason: prevents: case-root and blocker-generation lock inversion; writer: copyright action generation and legal fact writers.
       WHERE copyright_notice_id = ${noticeId}::uuid FOR UPDATE
     )
     SELECT jurisdiction FROM copyright_notices
     WHERE id = COALESCE((SELECT copyright_notice_id FROM generation), ${noticeId}::uuid)
+    -- lock-reason: prevents: legal facts racing case closure or purge; writer: legal hold, closure, and case purge transactions.
     FOR NO KEY UPDATE`)
   return rows[0]
     ? ({ noticeId, jurisdiction: rows[0].jurisdiction } as LockedCopyrightNotice)

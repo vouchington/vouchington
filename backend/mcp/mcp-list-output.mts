@@ -1,7 +1,9 @@
 import { attachListProvenance } from '@services/content-provenance'
 import type { List, ListItem } from '@services/lists'
-import { externalText, iso, sanitizedTitle, type McpPageLimit } from './mcp-read-output.mts'
-import { closedObject, pickProperties } from './read-tool-output-schema.mts'
+import { iso, type McpPageLimit } from './mcp-read-output.mts'
+import { objectSchema } from '@vouchington/mcp-server/schema'
+import { sanitizeTitle, wrapExternalText } from '@vouchington/mcp-server/untrusted'
+import { pickProperties } from './read-tool-output-schema.mts'
 
 /** The list read tools page like the signed-out REST routes: 25 at most, 20 by default. */
 export const LIST_PAGE_LIMIT: McpPageLimit = { min: 1, max: 25, default: 20 }
@@ -66,8 +68,8 @@ export type McpListItem = {
  */
 async function toMcpList(list: List): Promise<McpList> {
   const [name, description] = await Promise.all([
-    sanitizedTitle(list.name),
-    externalText(list.description, 'list', 'list_description'),
+    sanitizeTitle(list.name),
+    wrapExternalText(list.description, 'list', 'list_description'),
   ])
   return {
     id: list.id,
@@ -96,7 +98,7 @@ export async function toMcpListItem(item: ListItem): Promise<McpListItem> {
     list_id: item.list_id,
     item_type: item.item_type,
     entity_id: item.entity_id,
-    entity_label: item.entity_label === null ? null : await sanitizedTitle(item.entity_label),
+    entity_label: item.entity_label === null ? null : await sanitizeTitle(item.entity_label),
     order_index: item.order_index,
     media_type: item.media_type,
     created_at: iso(item.created_at),
@@ -104,7 +106,7 @@ export async function toMcpListItem(item: ListItem): Promise<McpListItem> {
 }
 
 /** The schema of an `McpList`, from the generated `List` contract. */
-export const mcpListSchema = () => closedObject(pickProperties('List', LIST_FIELDS), ['provenance'])
+export const mcpListSchema = () => objectSchema(pickProperties('List', LIST_FIELDS), ['provenance'])
 
 /** The schema of an `McpListItem`, from the generated `ListItem` contract. */
-export const mcpListItemSchema = () => closedObject(pickProperties('ListItem', LIST_ITEM_FIELDS))
+export const mcpListItemSchema = () => objectSchema(pickProperties('ListItem', LIST_ITEM_FIELDS))

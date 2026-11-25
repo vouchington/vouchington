@@ -16,7 +16,6 @@ function mockSonner() {
 vi.mock(import('sonner'), mockSonner)
 function mockRateLimitError() {
   return {
-    isRateLimitError: () => false,
     getRateLimitMessage: () => '',
   } as unknown as typeof import('@/lib/api/rate-limit-error')
 }

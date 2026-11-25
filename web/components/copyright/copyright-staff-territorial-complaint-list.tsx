@@ -1,6 +1,6 @@
 'use client'
 
-import { pageHasContinuation } from '@/lib/api/page-has-continuation'
+import { pageHasContinuation } from '@vouchington/api-client'
 import { PaginatedListFooter } from '@/components/shared/paginated-list-footer'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import {

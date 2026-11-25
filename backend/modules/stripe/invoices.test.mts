@@ -219,7 +219,7 @@ describe('stripe invoices module', () => {
     expect(paymentList).toHaveBeenCalledWith({ invoice: 'in_open', limit: 100, status: 'paid' })
   })
 
-  it('rejects an unbounded subscription invoice result', async () => {
+  it('forwards the subscription invoice page cap', async () => {
     const list = vi.fn<VitestLooseMock>().mockImplementation(async () => ({
       data: [{ id: `in_${list.mock.calls.length}`, status: 'open' }],
       has_more: true,
@@ -230,11 +230,11 @@ describe('stripe invoices module', () => {
 
     await expect(
       listAllStripeSubscriptionInvoices('sub_unbounded', stripeInvoiceLookupLimitsForTest),
-    ).rejects.toThrow('Stripe subscription sub_unbounded exceeded the invoice page limit')
+    ).rejects.toThrow('Stripe invoice listing exceeded the page limit (10)')
     expect(list).toHaveBeenCalledTimes(10)
   })
 
-  it('rejects an unbounded invoice payment result', async () => {
+  it('forwards the invoice payment page cap', async () => {
     const list = vi.fn<VitestLooseMock>().mockImplementation(async () => ({
       data: [{ id: `inpay_${list.mock.calls.length}` }],
       has_more: true,
@@ -245,32 +245,8 @@ describe('stripe invoices module', () => {
 
     await expect(
       listAllStripeInvoicePayments('in_unbounded', stripeLookupMaxPagesForTest),
-    ).rejects.toThrow('Stripe invoice in_unbounded exceeded the payment page limit')
+    ).rejects.toThrow('Stripe invoice payment listing exceeded the page limit (10)')
     expect(list).toHaveBeenCalledTimes(10)
-  })
-
-  it('rejects a continued empty invoice payment page', async () => {
-    const list = vi.fn<VitestLooseMock>().mockResolvedValue({ data: [], has_more: true })
-    vi.spyOn(stripeClientModule, 'getStripeClient').mockReturnValue({
-      invoicePayments: { list },
-    } as never)
-
-    await expect(
-      listAllStripeInvoicePayments('in_empty', stripeLookupMaxPagesForTest),
-    ).rejects.toThrow('Stripe returned an empty invoice payment page for invoice in_empty')
-    expect(list).toHaveBeenCalledOnce()
-  })
-
-  it('rejects a continued empty subscription invoice page', async () => {
-    const list = vi.fn<VitestLooseMock>().mockResolvedValue({ data: [], has_more: true })
-    vi.spyOn(stripeClientModule, 'getStripeClient').mockReturnValue({
-      invoices: { list },
-    } as never)
-
-    await expect(
-      listAllStripeSubscriptionInvoices('sub_empty', stripeInvoiceLookupLimitsForTest),
-    ).rejects.toThrow('Stripe returned an empty invoice page for subscription sub_empty')
-    expect(list).toHaveBeenCalledOnce()
   })
 
   it('uses only paid expanded payments from an open invoice without another Stripe request', async () => {

@@ -50,6 +50,7 @@ export async function updateStoryPostAgentResult(
         ), '[]'::json) AS images
       FROM posts
       WHERE id = ${postId} AND post_type = 'story'
+      -- lock-reason: prevents: writing a story summary digest against concurrently edited post content; writer: story summarization and post edits.
       FOR UPDATE
     `)
     const post = postRows[0]

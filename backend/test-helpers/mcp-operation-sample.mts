@@ -1,6 +1,6 @@
 import { createUniqueTestEmail } from './data.mts'
 import type { Tool } from '../services/openai-agents/tool-types.mts'
-import { validateToolArguments } from '../services/mcp-tools/validate-tool-arguments.mts'
+import { validateToolArguments } from '@vouchington/mcp-server/schema'
 
 const UUID = '00000000-0000-4000-8000-000000000001'
 

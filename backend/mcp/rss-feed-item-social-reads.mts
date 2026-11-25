@@ -10,7 +10,8 @@ import { isAdminUser } from '@services/users/authorization'
 import type { BasicUser } from '@services/users/types'
 import { pageInfoSchema } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT } from './paged-search.mts'
-import { closedObject, foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
+import { objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
+import { pickProperties } from './read-tool-output-schema.mts'
 import { clampToolLimit } from './search-system.mts'
 
 type DetailArgs = { rss_feed_item_id: string }
@@ -28,9 +29,9 @@ type VotesResult =
     }
   | { success: false; error: string }
 
-const followUsersSchema = closedObject({
+const followUsersSchema = objectSchema({
   total: pickProperties('FollowContextUsers', ['total']).total!,
-  users: { type: 'array', items: closedObject({ id: pickProperties('BasicUser', ['id']).id! }) },
+  users: { type: 'array', items: objectSchema({ id: pickProperties('BasicUser', ['id']).id! }) },
 })
 
 export const getRssFeedItemFollowContextTool: MergedToolSource<DetailArgs, FollowResult> = {
@@ -50,7 +51,7 @@ export const getRssFeedItemFollowContextTool: MergedToolSource<DetailArgs, Follo
     requiredScopes: ['rss-feed-items:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/rss-feed-items/:id/follow-context' }],
-    outputSchema: foundOrNotFoundSchema({
+    outputSchema: outcomeSchema('success', {
       positive_by_following: followUsersSchema,
       negative_by_following: followUsersSchema,
     }),
@@ -101,10 +102,10 @@ export const getRssFeedItemVotesTool: MergedToolSource<VotesArgs, VotesResult> =
     requiredScopes: ['rss-feed-items:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/rss-feed-items/:id/votes' }],
-    outputSchema: foundOrNotFoundSchema({
+    outputSchema: outcomeSchema('success', {
       results: {
         type: 'array',
-        items: closedObject(
+        items: objectSchema(
           pickProperties('ElectionVote_sentiment', [
             'user_id',
             'entity_id',

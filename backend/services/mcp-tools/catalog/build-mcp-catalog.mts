@@ -4,7 +4,8 @@ import {
   isToolMcpEligible,
   listToolsForAudience,
 } from '@voucha/mcp/registry/select'
-import type { Tool, ToolApiEndpoint, ToolMeta } from '@services/openai-agents/tool-types'
+import type { Tool, ToolMeta } from '@services/openai-agents/tool-types'
+import type { ToolApiEndpoint } from '@vouchington/mcp-server/types'
 import { ALL_MCP_SERVER_CONFIGS } from '../config.mts'
 import type { OAuthResourceAudience } from '@services/oauth-authorization-server/resources'
 

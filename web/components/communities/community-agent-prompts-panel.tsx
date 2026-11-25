@@ -10,7 +10,7 @@ import {
 } from '@/lib/api/client/community-agent-prompts'
 import { CommunityAgentPromptForm } from './community-agent-prompt-form'
 import { CommunityAgentPromptItem } from './community-agent-prompt-item'
-import { pageHasContinuation } from '@/lib/api/page-has-continuation'
+import { pageHasContinuation } from '@vouchington/api-client'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface Props {

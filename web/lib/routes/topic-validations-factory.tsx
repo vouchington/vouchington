@@ -7,7 +7,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 import type { ReferralLinkValidation } from '@/lib/api/client/referral-link-validations'
-import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
+import { returnNullForMissingEntity } from '@vouchington/api-client'
 import { getTopic, serverApi } from '@/lib/api/server'
 import { requireAdmin } from '@/lib/auth/require-admin'
 import { createTopicPathname } from '@/lib/links/entity-href'

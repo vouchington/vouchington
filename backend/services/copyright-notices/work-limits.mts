@@ -3,13 +3,17 @@ import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 import type { CopyrightActionReconcileStage } from '@queues/notifications/types'
 import type { CopyrightAgentDispatchStage } from '@queues/ai-agents/enqueues/copyright-agent-dispatch-stages'
 
+import { COPYRIGHT_FORM_RISK_NOTES_MAX } from './form-screening-guidance.mts'
+
 const additionalDefaults = {
   delivery_lease_minutes: 15,
   screening_lease_minutes: 15,
+  form_screening_risk_notes_max: COPYRIGHT_FORM_RISK_NOTES_MAX,
 }
 export const copyrightNoticesAdditionalMaxValues = {
   delivery_lease_minutes: 360,
   screening_lease_minutes: 360,
+  form_screening_risk_notes_max: COPYRIGHT_FORM_RISK_NOTES_MAX,
   association_search_candidate_rows: 1000,
 }
 
@@ -20,6 +24,7 @@ export const copyrightSweepConfig = new DynamicConfig({
     max_batches_per_run: 'number',
     delivery_lease_minutes: 'number',
     screening_lease_minutes: 'number',
+    form_screening_risk_notes_max: 'number',
     association_search_candidate_rows: 'number',
     forms_batch_size: 'number',
     forms_max_batches_per_run: 'number',

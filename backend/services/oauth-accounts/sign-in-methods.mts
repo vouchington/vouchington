@@ -9,6 +9,7 @@ export async function assertUserHasSignInMethod(
   currentUserId: string,
   query: TransactionQuery,
 ): Promise<void> {
+  // lock-reason: prevents: finishing a sign-in method mutation during account erasure; writer: account deletion.
   await query(
     '/* assertUserHasSignInMethod:userFence */ SELECT fn_lock_active_user_for_mutation($1)',
     [currentUserId],

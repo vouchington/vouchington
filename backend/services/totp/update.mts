@@ -10,6 +10,7 @@ export async function renameTotpAuthenticator(
   assert(name.length >= 1 && name.length <= 100 && name.trim() === name, 422, 'Invalid name')
 
   await using query = await beginTransaction()
+  // lock-reason: prevents: changing an owned authenticator during credential erasure; writer: account deletion.
   await query(sql`/* renameTotpAuthenticator */ SELECT fn_lock_active_user_for_mutation(${userId})`)
   const result = await query(sql`/* renameTotpAuthenticator */
       UPDATE user_totp_authenticators

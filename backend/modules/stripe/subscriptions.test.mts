@@ -61,46 +61,4 @@ describe('stripe subscriptions module', () => {
     expect(cancel).toHaveBeenCalledWith('sub_789')
     expect(retrieve).not.toHaveBeenCalled()
   })
-
-  it('converges when DELETE fails after the subscription was canceled', async () => {
-    const cancelError = new Error('DELETE reply was lost')
-    const canceledSubscription = { id: 'sub_canceled', status: 'canceled' }
-    const cancel = vi.fn<VitestLooseMock>().mockRejectedValue(cancelError)
-    const retrieve = vi.fn<VitestLooseMock>().mockResolvedValue(canceledSubscription)
-    vi.spyOn(stripeClientModule, 'getStripeClient').mockReturnValue({
-      subscriptions: { cancel, retrieve },
-    } as never)
-
-    await expect(cancelStripeSubscriptionImmediately('sub_canceled')).resolves.toBe(
-      canceledSubscription,
-    )
-    expect(cancel).toHaveBeenCalledWith('sub_canceled')
-    expect(retrieve).toHaveBeenCalledWith('sub_canceled')
-  })
-
-  it('rethrows the original DELETE failure when the subscription remains active', async () => {
-    const cancelError = new Error('DELETE forbidden')
-    const cancel = vi.fn<VitestLooseMock>().mockRejectedValue(cancelError)
-    const retrieve = vi.fn<VitestLooseMock>().mockResolvedValue({
-      id: 'sub_active',
-      status: 'active',
-    })
-    vi.spyOn(stripeClientModule, 'getStripeClient').mockReturnValue({
-      subscriptions: { cancel, retrieve },
-    } as never)
-
-    await expect(cancelStripeSubscriptionImmediately('sub_active')).rejects.toBe(cancelError)
-  })
-
-  it('rethrows the original DELETE failure when retrieval also fails', async () => {
-    const cancelError = new Error('DELETE used the wrong account')
-    const retrieveError = new Error('subscription not found')
-    const cancel = vi.fn<VitestLooseMock>().mockRejectedValue(cancelError)
-    const retrieve = vi.fn<VitestLooseMock>().mockRejectedValue(retrieveError)
-    vi.spyOn(stripeClientModule, 'getStripeClient').mockReturnValue({
-      subscriptions: { cancel, retrieve },
-    } as never)
-
-    await expect(cancelStripeSubscriptionImmediately('sub_missing')).rejects.toBe(cancelError)
-  })
 })

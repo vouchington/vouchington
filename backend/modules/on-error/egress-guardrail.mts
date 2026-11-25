@@ -5,17 +5,16 @@ import { useFullConsoleOutput, consoleContext } from './console-format.mts'
 /**
  * Record that the API process attempted direct egress to a host that is neither on the IPv6
  * allowlist (`@modules/utils/ipv6-allowlist`) nor exempt as internal/private — see
- * `backend/modules/utils/http-egress-guardrail.mts`, the undici interceptor that calls this.
+ * `backend/modules/utils/http.mts`, which wires `createOriginGuardrailInterceptor` to call this.
  *
  * This is a warn-mode-only observability signal ahead of the IPv4-removal epic (#7987): it never
  * blocks the request, it only reports so off-allowlist direct egress becomes visible before any
  * future fail-closed enforcement.
  *
  * This function is called from a live request hot path (every outbound HTTP call the API
- * dispatcher makes). It intentionally does NOT throttle itself — the caller
- * (`reportOffAllowlistEgress` in `@modules/utils/http-egress-guardrail.mts`) dedupes by host per
- * process before calling this, so this function fires at most once per distinct off-allowlist host
- * per process.
+ * dispatcher makes). It intentionally does NOT throttle itself — the shared
+ * `createOriginGuardrailInterceptor` instance in `@modules/utils/http` dedupes by host before
+ * calling this, so this function fires at most once per distinct off-allowlist host per process.
  */
 export function recordOffAllowlistEgress(
   host: string,

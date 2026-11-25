@@ -1,80 +1,39 @@
 import type Stripe from 'stripe'
+import { collectStripePages } from '@vouchington/stripe'
 import { getStripeClient } from './client.mts'
 
 /* no-mistakes: integration=stripe */
-export async function listAllStripeInvoicePayments(
+export function listAllStripeInvoicePayments(
   invoiceId: string,
   maxPages: number,
 ): Promise<Stripe.InvoicePayment[]> {
-  return listStripeInvoicePaymentPages(invoiceId, undefined, [], 0, maxPages)
+  return collectStripePages({
+    fetchPage: startingAfter =>
+      getStripeClient().invoicePayments.list({
+        invoice: invoiceId,
+        status: 'paid',
+        limit: 100,
+        ...(startingAfter ? { starting_after: startingAfter } : {}),
+      }),
+    maxPages,
+    label: 'invoice payment',
+  })
 }
 
 /* no-mistakes: integration=stripe */
-export async function listAllStripeInvoicePaymentsForPaymentIntent(
+export function listAllStripeInvoicePaymentsForPaymentIntent(
   paymentIntentId: string,
   maxPages: number,
 ): Promise<Stripe.InvoicePayment[]> {
-  return listStripeInvoicePaymentIntentPages(paymentIntentId, undefined, [], 0, maxPages)
-}
-
-async function listStripeInvoicePaymentIntentPages(
-  paymentIntentId: string,
-  startingAfter: string | undefined,
-  payments: Stripe.InvoicePayment[],
-  pageCount: number,
-  maxPages: number,
-): Promise<Stripe.InvoicePayment[]> {
-  if (pageCount >= maxPages)
-    throw new Error(
-      `Stripe payment intent ${paymentIntentId} exceeded the invoice payment page limit`,
-    )
-  const page = await getStripeClient().invoicePayments.list({
-    payment: { payment_intent: paymentIntentId, type: 'payment_intent' },
-    status: 'paid',
-    limit: 100,
-    ...(startingAfter ? { starting_after: startingAfter } : {}),
-  })
-  const collected = [...payments, ...page.data]
-  if (!page.has_more) return collected
-  const lastPayment = page.data.at(-1)
-  if (!lastPayment)
-    throw new Error(
-      `Stripe returned an empty invoice payment page for payment intent ${paymentIntentId}`,
-    )
-  return listStripeInvoicePaymentIntentPages(
-    paymentIntentId,
-    lastPayment.id,
-    collected,
-    pageCount + 1,
+  return collectStripePages({
+    fetchPage: startingAfter =>
+      getStripeClient().invoicePayments.list({
+        payment: { payment_intent: paymentIntentId, type: 'payment_intent' },
+        status: 'paid',
+        limit: 100,
+        ...(startingAfter ? { starting_after: startingAfter } : {}),
+      }),
     maxPages,
-  )
-}
-
-async function listStripeInvoicePaymentPages(
-  invoiceId: string,
-  startingAfter: string | undefined,
-  payments: Stripe.InvoicePayment[],
-  pageCount: number,
-  maxPages: number,
-): Promise<Stripe.InvoicePayment[]> {
-  if (pageCount >= maxPages)
-    throw new Error(`Stripe invoice ${invoiceId} exceeded the payment page limit`)
-  const page = await getStripeClient().invoicePayments.list({
-    invoice: invoiceId,
-    status: 'paid',
-    limit: 100,
-    ...(startingAfter ? { starting_after: startingAfter } : {}),
+    label: 'invoice payment',
   })
-  const collected = [...payments, ...page.data]
-  if (!page.has_more) return collected
-  const lastPayment = page.data.at(-1)
-  if (!lastPayment)
-    throw new Error(`Stripe returned an empty invoice payment page for invoice ${invoiceId}`)
-  return listStripeInvoicePaymentPages(
-    invoiceId,
-    lastPayment.id,
-    collected,
-    pageCount + 1,
-    maxPages,
-  )
 }

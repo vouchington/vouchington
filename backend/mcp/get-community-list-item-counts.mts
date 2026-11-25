@@ -4,7 +4,8 @@ import { getCommunityListItemCounts } from '@services/communities'
 import type { BasicUser } from '@services/users/types'
 import { COMMUNITY_LIST_ITEM_TYPES } from './mcp-community-list-item-output.mts'
 import { COMMUNITY_NOT_FOUND, loadPublicCommunity } from './mcp-community-output.mts'
-import { foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
+import { pickProperties } from './read-tool-output-schema.mts'
 
 type ToolArgs = { community_id: string }
 
@@ -28,7 +29,8 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     requiredScopes: ['communities:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/communities/:idOrSlug/list-items/counts' }],
-    outputSchema: foundOrNotFoundSchema(
+    outputSchema: outcomeSchema(
+      'success',
       pickProperties('CommunityListItemCounts', COMMUNITY_LIST_ITEM_TYPES),
     ),
   },

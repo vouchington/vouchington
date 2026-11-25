@@ -64,6 +64,7 @@ export async function replayFailedMediaDeliveryRegistryRecords(
         WHERE id = candidates.media_delivery_registry_record_id
         LIMIT 1
       ) record
+    -- lock-reason: prevents: replaying overlapping registry generations in different row orders; writer: operator replay and registry generation changes.
     ORDER BY record.id FOR UPDATE OF record
   `)
   const { rows: locked } = await transaction<{ id: string }>(candidates)

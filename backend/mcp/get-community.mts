@@ -9,7 +9,7 @@ import {
   toMcpCommunityEntries,
   type McpCommunityEntry,
 } from './mcp-community-output.mts'
-import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
 
 type ToolArgs = {
   community_id: string
@@ -35,7 +35,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     requiredScopes: ['communities:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/communities/:idOrSlug' }],
-    outputSchema: foundOrNotFoundSchema(mcpCommunityEntryProperties()),
+    outputSchema: outcomeSchema('success', mcpCommunityEntryProperties()),
   },
   function:
     (_currentUser: BasicUser) =>

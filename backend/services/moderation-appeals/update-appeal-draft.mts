@@ -39,6 +39,7 @@ export async function updateModerationAppealDraft(
     previous AS MATERIALIZED (
       SELECT id, public_response, internal_notes FROM moderation_appeals
       WHERE id = ${appealId} AND sent_at IS NULL AND resolved_at IS NULL
+      -- lock-reason: prevents: recording a stale before-image in draft edit history on PostgreSQL 18.4; writer: updateModerationAppealDraft
       FOR UPDATE
     ),
     updated AS (

@@ -1,7 +1,6 @@
 import { resolveMcpToolCall } from './resolve-tool-call.mts'
 import { listMcpToolsForUser } from './list-tools.mts'
 import { callMcpTool } from './call-tool.mts'
-import { mcpToolCallIsDispatched } from './classify-calls.mts'
 import { buildRateLimitedToolResult } from './rate-limited-result.mts'
 import { handleStatelessMcpRequest } from '@vouchington/mcp-server/http'
 import { MCP_SERVER_INSTRUCTIONS } from './instructions.mts'
@@ -52,7 +51,6 @@ export function handleMcpHttpRequest(ctx: McpRequestContext): Promise<McpHttpRes
         ctx.copyrightDecisionToolsEnabled,
         { ip: ctx.clientIp, ...controls },
       ),
-    isDispatchedToolCall: mcpToolCallIsDispatched,
     rateLimitedCalls: ctx.rateLimitedCalls,
     buildRateLimitedResult: rateLimit =>
       buildRateLimitedToolResult(rateLimit.retryAfterSeconds, rateLimit.message),

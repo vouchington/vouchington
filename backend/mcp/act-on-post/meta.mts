@@ -1,8 +1,5 @@
-import type {
-  ToolApiEndpoint,
-  ToolMeta,
-  ToolOutputSchema,
-} from '@services/openai-agents/tool-types'
+import type { ToolMeta } from '@services/openai-agents/tool-types'
+import type { ToolApiEndpoint, ToolOutputSchema } from '@vouchington/mcp-server/types'
 import { POST_WRITE_SCOPES } from '../post-write-tool-support.mts'
 import { postReferenceSchema } from '../entity-reference-schema.mts'
 

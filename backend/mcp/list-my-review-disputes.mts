@@ -10,7 +10,7 @@ import {
   type SearchPageInfo,
 } from './paged-search.mts'
 import { requirePrivateToolUser } from './private-user.mts'
-import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
 import { clampToolLimit } from './search-system.mts'
 
 type Args = { status?: (typeof REVIEW_DISPUTE_STATUSES)[number]; limit?: number; after?: string }
@@ -41,7 +41,7 @@ const tool: MergedToolSource<Args, Result> = {
     requiredScopes: ['disputes:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/disputes' }],
-    outputSchema: foundOrNotFoundSchema({
+    outputSchema: outcomeSchema('success', {
       disputes: { type: 'array', items: DISPUTE_SCHEMA },
       page_info: pageInfoSchema(),
     }),

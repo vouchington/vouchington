@@ -1,6 +1,5 @@
 import { getRegisteredToolByName } from '@voucha/mcp/registry/index'
 import { readFileSync } from 'node:fs'
-import { assertMcpLocalSchemaRefs } from '../../test-helpers/mcp-local-schema-refs.mts'
 import { describe, expect, it } from 'vitest'
 import getPostAncestorsTool from '../get-post-ancestors.mts'
 import getPostDescendantsTool from '../get-post-descendants.mts'
@@ -9,7 +8,7 @@ import getStoryTool from '../get-story.mts'
 import { mcpPostSchema } from '../mcp-post-output.mts'
 import { PUBLIC_POST_FIELDS } from '@services/posts/public-post-projection'
 import { mcpStoryItemSchema, mcpStorySchema } from '../mcp-story-output.mts'
-import { inlineSchemaReferences } from '@vouchington/mcp-server/schema'
+import { assertLocalSchemaRefs, inlineSchemaReferences } from '@vouchington/mcp-server/schema'
 import type { Tool } from '@services/openai-agents/tool-types'
 
 type JsonSchema = Record<string, unknown>
@@ -136,7 +135,7 @@ describe('post and story read tool output schemas', () => {
       success: { const: false },
       error: { type: 'string' },
     })
-    assertMcpLocalSchemaRefs(schema)
+    assertLocalSchemaRefs(schema)
   })
 
   it.each([
