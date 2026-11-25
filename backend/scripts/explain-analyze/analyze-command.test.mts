@@ -244,14 +244,14 @@ describe('generic plan regression gate', () => {
       name: 'searchCommunityModerationQueue:force_custom_plan',
     }
     const generic = {
-      ...planResult('force_generic_plan', 5_250),
+      ...planResult('force_generic_plan', 5_400),
       scenario_id: scenario,
       name: 'searchCommunityModerationQueue:force_generic_plan',
     }
     const atBaseline = [custom, generic]
     expect(() => assertNoGenericPlanRegressions(atBaseline, atBaseline)).not.toThrow()
 
-    const aboveBaseline = [custom, { ...generic, execution_time_ms: 5_251 }]
+    const aboveBaseline = [custom, { ...generic, execution_time_ms: 5_401 }]
     expect(() => assertNoGenericPlanRegressions(aboveBaseline, aboveBaseline)).toThrow(
       /community-moderation-queue-report-continuation capture 0/,
     )
