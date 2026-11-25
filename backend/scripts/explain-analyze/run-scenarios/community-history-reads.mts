@@ -8,6 +8,7 @@ import { listUserModNotes } from '@services/user-mod-notes/get'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { seedCommunityHistoryReads } from './community-history-reads-fixture.mts'
+import { assertCommunityHistoryEndings } from './community-history-read-endings.mts'
 
 const pageSize = 100
 // The HTTP history route has no limit argument and uses the service's default.
@@ -22,6 +23,7 @@ export async function runCommunityHistoryReadScenarios(): Promise<void> {
     await runPromptHistory(fixture)
     await runModeratorActions(fixture)
     await runUserModNotes(fixture)
+    await assertCommunityHistoryEndings(fixture, pageSize, promptHistoryPageSize)
   } finally {
     await fixture.cleanup()
   }
