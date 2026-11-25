@@ -88,7 +88,7 @@ export async function createAppleVerificationLineage(
     SELECT id, provider_account_id FROM membership_provider_lineages
     WHERE membership_provider_context_id = ${contextId}
       AND provider_lineage_id = ${observation.providerLineageId}`
-  // lock-reason: prevents: direct Apple verifications from deciding lineage ownership concurrently before the account bind; writer: createAppleVerificationLineage
+  // lock-reason: prevents: an App Store notification binding the lineage between direct verification reading its owner and attempting the bind; writer: persistAppleNotificationObservation
   let {
     rows: [existing],
   } = await query<{

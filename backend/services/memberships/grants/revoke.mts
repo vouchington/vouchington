@@ -59,7 +59,7 @@ async function revokeGrantInTransaction(
   const userId = (userRows[0] as { user_id: string } | undefined)?.user_id
   if (!userId) return { expired: 0, kind: 'result', result: null }
   const { expired } = await expireElapsedMemberships(userId, query)
-  // lock-reason: prevents: a competing revocation from passing the pending-grant check before the first revocation commits; writer: revokeMembershipGrant
+  // lock-reason: prevents: account erasure revoking the grant between reading its revocation state and recording the administrator revocation; writer: terminateRetainedMembershipGrants
   const { rows } = await query(sql`/* revokeMembershipGrant: lock grant */
     SELECT grant_row.id, grant_row.user_id, grant_row.membership_source_id,
       grant_row.membership_product_id, grant_row.revoked_at,
