@@ -7,7 +7,7 @@ import {
 import { createDirectMessageNotifications } from './create-direct-message-notification.mts'
 
 describe('create-direct-message-notification', () => {
-  it('upserts on conflict (returns updated notification on re-notification)', async () => {
+  it('captures fresh and regenerated intent generations in a mixed recipient upsert', async () => {
     const user = await createTestUser()
     const other = await createTestUser()
     const conversation = await createTestDirectConversation({ user1Id: user.id, user2Id: other.id })
@@ -15,17 +15,25 @@ describe('create-direct-message-notification', () => {
     const first = await createDirectMessageNotifications([user.id], conversation.id)
     expect(first).toHaveLength(1)
     expect(first[0]!.user_id).toBe(user.id)
-    expect(first[0]!.id).toBeTruthy()
-
-    const second = await createDirectMessageNotifications([user.id], conversation.id)
-    expect(second).toHaveLength(1)
-    // The notification id is regenerated on upsert
-    expect(second[0]!.user_id).toBe(user.id)
-    expect(second[0]!.id).not.toBe(first[0]!.id)
-    expect(await getTestNotificationPushIntent(user.id, first[0]!.id)).toBeUndefined()
-    expect(await getTestNotificationPushIntent(user.id, second[0]!.id)).toMatchObject({
+    const original = first[0]!.id
+    await expect(getTestNotificationPushIntent(user.id, original)).resolves.toMatchObject({
       status: 'pending',
       conversation_id: conversation.id,
     })
+
+    const second = await createDirectMessageNotifications(
+      [user.id, other.id, user.id, other.id],
+      conversation.id,
+    )
+    expect(second.map(row => row.user_id).toSorted()).toEqual([user.id, other.id].toSorted())
+    expect(second.find(row => row.user_id === user.id)?.id).not.toBe(original)
+    await expect(getTestNotificationPushIntent(user.id, original)).resolves.toBeUndefined()
+    const intents = await Promise.all(
+      second.map(row => getTestNotificationPushIntent(row.user_id, row.id)),
+    )
+    expect(intents).toEqual([
+      expect.objectContaining({ status: 'pending', conversation_id: conversation.id }),
+      expect.objectContaining({ status: 'pending', conversation_id: conversation.id }),
+    ])
   })
 })
